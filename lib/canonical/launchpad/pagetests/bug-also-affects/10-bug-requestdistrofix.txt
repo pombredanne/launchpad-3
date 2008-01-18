@@ -163,7 +163,7 @@ notification will still be displayed.
 If we confirm that we indeed want to add an unlinked task, we get
 redirected to the bug page.
 
-    >>> browser.getControl('Yes').click()
+    >>> browser.getControl('Add Anyway').click()
     >>> browser.url
     'http://bugs.launchpad.dev/debian/+source/evolution/+bug/1'
     >>> print browser.contents

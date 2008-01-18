@@ -531,7 +531,7 @@ An active mailing list has an archive url.
     >>> list_one.status.name
     'ACTIVE'
     >>> list_one.archive_url
-    u'http://lists.launchpad.dev/archives/team-one'
+    u'http://lists.launchpad.dev/team-one'
 
 Inactive mailing lists also have an archive url, because once activated, a
 mailing list could have an archive and archives are never deleted.
@@ -541,4 +541,4 @@ mailing list could have an archive and archives are never deleted.
     >>> list_one.status.name
     'INACTIVE'
     >>> list_one.archive_url
-    u'http://lists.launchpad.dev/archives/team-one'
+    u'http://lists.launchpad.dev/team-one'

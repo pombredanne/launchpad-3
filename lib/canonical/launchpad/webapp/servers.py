@@ -377,6 +377,8 @@ class BasicLaunchpadRequest:
         self.breadcrumbs = []
         self.traversed_objects = []
         self._wsgi_keys = set()
+        self.needs_datepicker_iframe = False
+        self.needs_datetimepicker_iframe = False
         super(BasicLaunchpadRequest, self).__init__(
             body_instream, environ, response)
 
@@ -600,6 +602,13 @@ class LaunchpadTestRequest(TestRequest):
     >>> from zope.interface.verify import verifyObject
     >>> verifyObject(IBrowserFormNG, request.form_ng)
     True
+
+    It also provides the  hooks for popup calendar iframes:
+
+    >>> request.needs_datetimepicker_iframe
+    False
+    >>> request.needs_datepicker_iframe
+    False
     """
     implements(INotificationRequest, IBasicLaunchpadRequest,
                canonical.launchpad.layers.LaunchpadLayer)
@@ -611,6 +620,8 @@ class LaunchpadTestRequest(TestRequest):
             skin=skin, outstream=outstream, REQUEST_METHOD=method, **kw)
         self.breadcrumbs = []
         self.traversed_objects = []
+        self.needs_datepicker_iframe = False
+        self.needs_datetimepicker_iframe = False
 
     @property
     def uuid(self):
@@ -844,7 +855,7 @@ class FeedsPublication(LaunchpadBrowserPublication):
                 getattr(naked_result, 'status', None) == 301):
                 return result
             else:
-                return None
+                raise NotFound(self, '', request)
         else:
             # There are still url segments to traverse.
             return result
