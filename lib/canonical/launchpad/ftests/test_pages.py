@@ -157,6 +157,7 @@ def extract_link_from_tag(tag, base=None):
     else:
         return urljoin(base, href)
 
+
 def extract_text(content):
     """Return the text stripped of all tags.
 
@@ -345,7 +346,7 @@ class PageStoryTestCase(unittest.TestCase):
             result = self.defaultTestResult()
         PageTestLayer.startStory()
         try:
-            # TODO RBC 20060117 we can hook in pre and post story actions
+            # XXX RBC 20060117 we can hook in pre and post story actions
             # here much more tidily (and in self.debug too)
             # - probably via self.setUp and self.tearDown
             self._suite.run(result)

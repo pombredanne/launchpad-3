@@ -31,7 +31,8 @@ was supplied (through comments) are 'Incomplete (without response)'.
 Bugs that have been marked incomplete and for which new information was
 supplied are 'Incomplete (with response)'.
 
-    >>> user_browser.open('http://bugs.launchpad.dev/jokosher/+bugs?advanced=1')
+    >>> user_browser.open(
+    ...     'http://bugs.launchpad.dev/jokosher/+bugs?advanced=1')
     >>> user_browser.getControl(name='field.status:list').value = (
     ...     ['INCOMPLETE_WITH_RESPONSE'])
     >>> user_browser.getControl('Search', index=1).click()
@@ -55,7 +56,8 @@ comment for the bug.
 
 He tries again to find that bug using the advanced search form.
 
-    >>> user_browser.open('http://bugs.launchpad.dev/jokosher/+bugs?advanced=1')
+    >>> user_browser.open(
+    ...     'http://bugs.launchpad.dev/jokosher/+bugs?advanced=1')
     >>> user_browser.getControl(name='field.status:list').value = (
     ...     ['INCOMPLETE_WITH_RESPONSE'])
     >>> user_browser.getControl('Search', index=1).click()
@@ -66,7 +68,8 @@ The bug is there, since he supplied new information in a comment. No
 Privileges Person makes sure that it no longer is in the list of
 incomplete bugs without response.
 
-    >>> user_browser.open('http://bugs.launchpad.dev/jokosher/+bugs?advanced=1')
+    >>> user_browser.open(
+    ...     'http://bugs.launchpad.dev/jokosher/+bugs?advanced=1')
     >>> user_browser.getControl(name='field.status:list').value = (
     ...     ['INCOMPLETE_WITH_RESPONSE'])
     >>> user_browser.getControl('Search', index=1).click()
