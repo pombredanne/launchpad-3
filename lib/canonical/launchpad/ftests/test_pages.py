@@ -127,6 +127,29 @@ def get_feedback_messages(content):
     return [extract_text(tag) for tag in soup]
 
 
+def print_radio_button_field(content, name):
+    """Find the input called field.name, and print a friendly representation.
+
+    The resulting output will look something like:
+    (*) A checked option
+    ( ) An unchecked option
+    """
+    main = BeautifulSoup(content)
+    buttons =  main.findAll(
+        'input', {'name': 'field.%s' % name})
+    for button in buttons:
+        if button.parent.name == 'label':
+            label = extract_text(button.parent)
+        else:
+            label = extract_text(
+                main.find('label', attrs={'for': button['id']}))
+        if button.get('checked', None):
+            radio = '(*)'
+        else:
+            radio = '( )'
+        print radio, label
+
+
 IGNORED_ELEMENTS = [Comment, Declaration, ProcessingInstruction]
 ELEMENTS_INTRODUCING_NEWLINE = [
     'p', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'ul', 'ol', 'pre', 'dl',
@@ -290,6 +313,7 @@ def setUpGlobs(test):
     test.globs['print_tab_links'] = print_tab_links
     test.globs['print_action_links'] = print_action_links
     test.globs['print_comments'] = print_comments
+    test.globs['print_radio_button_field'] = print_radio_button_field
 
 
 class PageStoryTestCase(unittest.TestCase):

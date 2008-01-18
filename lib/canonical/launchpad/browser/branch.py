@@ -58,6 +58,7 @@ from canonical.launchpad.webapp.uri import URI
 
 from canonical.widgets import SinglePopupWidget
 from canonical.widgets.branch import TargetBranchWidget
+from canonical.widgets.itemswidgets import LaunchpadRadioWidgetWithDescription
 
 
 def quote(text):
@@ -561,6 +562,8 @@ class BranchEditView(BranchEditFormView, BranchNameValidationMixin):
     field_names = ['product', 'private', 'url', 'name', 'title', 'summary',
                    'lifecycle_status', 'whiteboard', 'home_page', 'author']
 
+    custom_widget('lifecycle_status', LaunchpadRadioWidgetWithDescription)
+
     def setUpFields(self):
         LaunchpadFormView.setUpFields(self)
         # This is to prevent users from converting push/import
@@ -630,11 +633,13 @@ class BranchEditView(BranchEditFormView, BranchNameValidationMixin):
 class BranchAddView(LaunchpadFormView, BranchNameValidationMixin):
 
     schema = IBranch
-    field_names = ['branch_type', 'product', 'url', 'name', 'title',
+    field_names = ['product', 'branch_type', 'url', 'name', 'title',
                    'summary', 'lifecycle_status', 'whiteboard', 'home_page',
                    'author']
 
     branch = None
+    custom_widget('branch_type', LaunchpadRadioWidgetWithDescription)
+    custom_widget('lifecycle_status', LaunchpadRadioWidgetWithDescription)
 
     @property
     def initial_values(self):
