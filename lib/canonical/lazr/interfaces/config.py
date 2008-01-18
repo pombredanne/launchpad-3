@@ -150,7 +150,7 @@ class IConfigSchema(Interface):
     def getByCategory(name):
         """Return a list of ISectionSchemas that belong to the category name.
 
-        ISectionSchema names may be made from a category name and a group
+        `ISectionSchema` names may be made from a category name and a group
         name, separated by a dot (.). The category is synonymous with a
         arbitrary resource such as a database or a vhost. Thus database.bugs
         and database.answers are two sections that both use the database
@@ -195,7 +195,7 @@ class IStackableConfig(IConfigSchema):
         """Return the named section.
 
         :name: a section or category name.
-        :return: the matching ISection or ICategory.
+        :return: the matching `ISection` or `ICategory`.
         :raise: AttributeError if there is no section or category with the
             name.
         """
@@ -213,15 +213,15 @@ class IStackableConfig(IConfigSchema):
         :param conf_name: the name of the config.
         :param conf_data: a string of unparsed config data.
 
-        This method appends the parsed ConfigData to the overlays property.
+        This method appends the parsed `IConfigData` to the overlays property.
         """
 
     def pop(conf_name):
         """Remove conf_name from the overlays stack.
 
-        :param conf_name: the name of the ConfigData to remove.
-        :return: the tuple of ConfigData that was removed from overlays.
-        :raise NoConfigError: if no ConfigData has the conf_name.
+        :param conf_name: the name of the `IConfigData` to remove.
+        :return: the tuple of `IConfigData` that was removed from overlays.
+        :raise NoConfigError: if no `IConfigData` has the conf_name.
 
         This method removes the named ConfigData from the stack; ConfigData
         above the named ConfigData are removed too.
@@ -231,13 +231,14 @@ class IStackableConfig(IConfigSchema):
 class ICategory(Interface):
     """A group of related sections.
 
-    The sections within a category are access as attributes of the ICategory.
+    The sections within a category are access as attributes of the
+    `ICategory`.
     """
 
     def __getattr__(name):
         """Return the named section.
 
         :name: a section name.
-        :return: the matching ISection.
+        :return: the matching `ISection`.
         :raise: AttributeError if there is no section with the name.
         """

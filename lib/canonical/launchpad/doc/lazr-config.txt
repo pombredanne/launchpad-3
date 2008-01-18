@@ -771,7 +771,7 @@ property returns None.
 
 Config provides attribute-based access to its members. So long as the
 section, category, and key names conform to Python identifier naming
-rules, they can be access as attributes. The Python code will not
+rules, they can be accessed as attributes. The Python code will not
 compile, or will cause a runtime error if the object being accessed has
 a bad name.
 
@@ -780,7 +780,7 @@ Sections appear to be attributes of the config.
     >>> config.section_1 is config['section_1']
     True
 
-Accessing an unknown section, or a section who's name is not a valid
+Accessing an unknown section, or a section whose name is not a valid
 Python identifier will raise an AttributeError.
 
     >>> config.section-5
