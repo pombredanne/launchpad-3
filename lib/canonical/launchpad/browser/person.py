@@ -2814,7 +2814,7 @@ class PersonEditEmailsView(LaunchpadFormView):
         """
         # Only beta testers are allowed to subscribe to mailing lists.
         if not self.isBetaUser:
-            return form.fields()
+            return form.FormFields()
         mailing_list_set = getUtility(IMailingListSet)
         fields = []
         terms = [SimpleTerm("Preferred address"),
@@ -2830,7 +2830,7 @@ class PersonEditEmailsView(LaunchpadFormView):
                                title=team.name,
                                source=SimpleVocabulary(terms), default=value)
                 fields.append(field)
-        return form.fields(*fields)
+        return form.FormFields(*fields)
 
     @property
     def mailing_list_widgets(self):
