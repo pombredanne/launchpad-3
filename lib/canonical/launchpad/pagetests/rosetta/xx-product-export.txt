@@ -85,6 +85,8 @@ But not when it's non-development mode:
     Actions
     Change translators
     See import queue
+    >>> # Reset global configuration...
+    >>> config.devmode = True
 
 Even "hacking the URL" to the download option will fail.
 
