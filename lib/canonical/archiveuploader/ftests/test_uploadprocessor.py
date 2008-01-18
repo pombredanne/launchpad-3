@@ -666,6 +666,28 @@ class TestUploadProcessor(TestUploadProcessorBase):
         [queue_item] = queue_items
         self.assertEqual(queue_item.sourcepackagerelease.section.name, "misc")
 
+    def testLZMADebUpload(self):
+        """Make sure that data files compressed with lzma in Debs work.
+
+        Each Deb contains a data.tar.xxx file where xxx is one of gz, bz2
+        or lzma.  Here we make sure that lzma works.
+        """
+        # Upload our lzma Deb.
+        self.setupBreezy()
+        self.layer.txn.commit()
+        self.options.context = 'absolutely-anything'
+        uploadprocessor = UploadProcessor(
+            self.options, self.layer.txn, self.log)
+        upload_dir = self.queueUpload("bar_1.0-1_binary_lzma")
+        self.processUpload(uploadprocessor, upload_dir)
+
+        # Check the email generated to see if it worked.
+        from_addr, to_addrs, raw_msg = stub.test_emails.pop()
+        self.assertTrue(
+            "rejected" not in raw_msg,
+            "Expected acceptance email not rejection. Actually Got:\n%s"
+                % raw_msg)
+
 
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)
