@@ -48,9 +48,6 @@
 
       </table>
 
-      <metal:attachment-form
-          use-macro="context/@@bug-attachment-macros/attachment-form" />
-
       <div class="actions" metal:fill-slot="buttons">
         <input tal:replace="structure view/actions/field.actions.submit_bug/render" />
       </div>

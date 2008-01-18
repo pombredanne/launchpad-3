@@ -107,6 +107,14 @@
     </td>
   </tr>
 
+  <tr>
+    <td colspan="2">
+
+      <metal:attachment-form
+          use-macro="context/@@bug-attachment-macros/attachment-form" />
+
+    </td>
+  </tr>
 </metal:basic_filebug_widgets>
 
 
