@@ -22,8 +22,10 @@ import os
 import md5
 import re
 import sha
+import shutil
 import subprocess
 import sys
+import tempfile
 import time
 
 from zope.component import getUtility
@@ -70,6 +72,14 @@ class TarFileDateChecker:
         """Callback designed to cope with apt_inst.debExtract.
 
         It check and store timestamp details of the extracted DEB.
+        """
+        self.check_cutoff(name, mtime)
+
+    def check_cutoff(self, name, mtime):
+        """Check the timestamp details of the supplied file.
+
+        Store the name of the file with its mtime timestamp if it's
+        outside the required date range.
         """
         if mtime > self.future_cutoff:
             self.future_files[name] = mtime
@@ -679,20 +689,41 @@ class BaseBinaryUploadFile(PackageUploadFile):
 
         tar_checker = TarFileDateChecker(future_cutoff, past_cutoff)
         tar_checker.reset()
-        import pdb; pdb.set_trace()
         try:
             deb_file = open(self.filepath, "rb")
             apt_inst.debExtract(deb_file, tar_checker.callback,
                                 "control.tar.gz")
-            data_files = ("data.tar.gz", "data.tar.bz2", "data.tar.lzma")
-            for file in data_files:
-                deb_file.seek(0)
-                try:
-                    apt_inst.debExtract(deb_file, tar_checker.callback, file)
-                except SystemError:
-                    continue
-                else:
-                    deb_file.close()
+            # XXX 2008-01-18 Julian
+            # To work around a bug in debExtract which fails on lzma
+            # archives, we'll extract the archive ourselves to a temp
+            # directory.  This code should be changed when python-apt is
+            # fixed.
+            # Oh, and bring on Python 2.5 that lets me use
+            # try/except/finally properly. :/
+            tmpdir = tempfile.mkdtemp()
+            deb_file.seek(0)
+            try:
+                # apt_inst kindly changes the CWD under our feet, let's
+                # save it and restore after this call.  This only seems
+                # to be a problem for the test harness, explicitly when
+                # the tmp dir gets removed later.
+                cwd = os.getcwd()
+                apt_inst.debExtractArchive(deb_file, tmpdir)
+                os.chdir(cwd)
+            except SystemError:
+                yield UploadError("Unable to unpack %s" % self.filename)
+                deb_file.close()
+                shutil.rmtree(tmpdir)
+                return
+            deb_file.close()
+
+            # Examine all the files that were extracted:
+            for dirpath, dirnames, filenames in os.walk(tmpdir):
+                for filename in filenames:
+                    tar_checker.check_cutoff(
+                        filename,
+                        os.stat(os.path.join(dirpath, filename)).st_mtime)
+
                     future_files = tar_checker.future_files.keys()
                     if future_files:
                         first_file = future_files[0]
@@ -714,11 +745,6 @@ class BaseBinaryUploadFile(PackageUploadFile):
                             "far into the future (e.g. %s [%s])."
                              % (self.filename, len(ancient_files), first_file,
                                 timestamp))
-                    return
-
-            deb_file.close()
-            yield UploadError(
-                "Could not find data tarball in %s" % self.filename)
 
         except (SystemExit, KeyboardInterrupt):
             raise
@@ -730,6 +756,8 @@ class BaseBinaryUploadFile(PackageUploadFile):
             # them all and make them into rejection messages instead
             yield UploadError("%s: deb contents timestamp check failed: %s"
                  % (self.filename, error))
+
+        shutil.rmtree(tmpdir)
 
 #
 #   Database relationship methods

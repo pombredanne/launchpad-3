@@ -5,7 +5,7 @@ Format: 1.7
 Date: Thu, 16 Feb 2006 15:34:09 +0000
 Source: bar
 Binary: bar
-Architecture: source
+Architecture: i386
 Version: 1.0-1
 Distribution: breezy
 Urgency: low
@@ -18,14 +18,12 @@ Changes:
  .
    * Initial version
 Files: 
- 75305dcfc9db56bda0b747c92bdcfc20 512 devel optional bar_1.0-1.dsc
- fc1464e5985b962a042d5354452f361d 164 devel optional bar_1.0.orig.tar.gz
- 3fb96747a0cd8bf64c4fcd3e3e339a1a 586 devel optional bar_1.0-1.diff.gz
+ 04498e02477c94201771562a47189b03 648 devel optional bar_1.0-1_i386.deb
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1.4.6 (GNU/Linux)
 
-iD8DBQFHkQfwjn63CGxkqMURAgveAKCRRH+VZ8fST0RqL7ahex/EYIwTogCdH8YN
-WjJFfzAm0iuz4le2n973peI=
-=JfrH
+iD8DBQFHkJDojn63CGxkqMURAm6cAJwLsmrVPMLJvgogfbay/hd1G7ccbgCgnYqc
+hc1Ur9pKXMQWtY++egxCOrY=
+=Xgyn
 -----END PGP SIGNATURE-----
