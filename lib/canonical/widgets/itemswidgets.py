@@ -166,7 +166,9 @@ class LaunchpadRadioWidgetWithDescription(LaunchpadRadioWidget):
     def renderValue(self, value):
         # Render the items in a table to align the descriptions.
         rendered_items = self.renderItems(value)
-        return "<table>%s</table>" % ''.join(rendered_items)
+        return (
+            '<table class="radio-button-widget">%s</table>'
+            % ''.join(rendered_items))
 
 
 class CheckBoxMatrixWidget(LabeledMultiCheckBoxWidget):

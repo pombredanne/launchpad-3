@@ -445,26 +445,19 @@ with ( ).
 
   >>> print_radio_button_field = test.globs['print_radio_button_field']
   >>> contents = '''
-  ... <html>
-  ... <body>
-  ...   <div id="maincontent">
-  ...     Main content area
-  ...     <label>
-  ...       <input type="radio" name="field.foo" id="field.foo.1" value="ONE">
-  ...       One
-  ...     </label>
-  ...     <label>
-  ...       <input type="radio" name="field.foo" id="field.foo.1"
-  ...              value="TWO" checked="checked">
-  ...       Two
-  ...     </label>
-  ...     <label>
-  ...       <input type="radio" name="field.foo" id="field.foo.1" value="THREE">
-  ...       Three
-  ...     </label>
-  ...   </div>
-  ... </body>
-  ... </html>
+  ... <label>
+  ...   <input type="radio" name="field.foo" id="field.foo.1" value="ONE">
+  ...   One
+  ... </label>
+  ... <label>
+  ...   <input type="radio" name="field.foo" id="field.foo.1"
+  ...          value="TWO" checked="checked">
+  ...   Two
+  ... </label>
+  ... <label>
+  ...   <input type="radio" name="field.foo" id="field.foo.1" value="THREE">
+  ...   Three
+  ... </label>
   ... '''
   >>> print_radio_button_field(contents, 'foo')
   ( ) One
@@ -474,38 +467,31 @@ with ( ).
 Sometimes the label isn't directly above the radio button.
 
   >>> contents = '''
-  ... <html>
-  ...   <body>
-  ...     <div id="maincontent">
-  ...       Main content area
-  ...       <table>
-  ...         <tr>
-  ...           <td rowspan="2"><input class="radioType" id="field.branch_type.0" name="field.branch_type" type="radio" value="HOSTED" /></td>
-  ...           <td><label for="field.branch_type.0">Hosted</label></td>
-  ...         </tr>
-  ...         <tr>
-  ...           <td>Launchpad is the primary location of this branch.</td>
-  ...         </tr>
-  ...         <tr>
-  ...           <td rowspan="2"><input class="radioType" checked="checked" id="field.branch_type.1" name="field.branch_type" type="radio" value="MIRRORED" /></td>
-  ...           <td><label for="field.branch_type.1">Mirrored</label></td>
-  ...         </tr>
-  ...         <tr>
-  ...           <td>Primarily hosted elsewhere and is periodically mirrored
-  ...            from the remote location into Launchpad.</td>
-  ...         </tr>
-  ...         <tr>
-  ...           <td rowspan="2"><input class="radioType" id="field.branch_type.2" name="field.branch_type" type="radio" value="REMOTE" /></td>
-  ...           <td><label for="field.branch_type.2">Remote</label></td>
-  ...         </tr>
-  ...         <tr>
-  ...           <td>Registered in Launchpad with an external location,
-  ...           but is not to be mirrored, nor available through Launchpad.</td>
-  ...         </tr>
-  ...       </table>
-  ...     </div>
-  ...   </body>
-  ... </html>
+  ... <table>
+  ...   <tr>
+  ...     <td rowspan="2"><input class="radioType" id="field.branch_type.0" name="field.branch_type" type="radio" value="HOSTED" /></td>
+  ...     <td><label for="field.branch_type.0">Hosted</label></td>
+  ...   </tr>
+  ...   <tr>
+  ...     <td>Launchpad is the primary location of this branch.</td>
+  ...   </tr>
+  ...   <tr>
+  ...     <td rowspan="2"><input class="radioType" checked="checked" id="field.branch_type.1" name="field.branch_type" type="radio" value="MIRRORED" /></td>
+  ...     <td><label for="field.branch_type.1">Mirrored</label></td>
+  ...   </tr>
+  ...   <tr>
+  ...     <td>Primarily hosted elsewhere and is periodically mirrored
+  ...      from the remote location into Launchpad.</td>
+  ...   </tr>
+  ...   <tr>
+  ...     <td rowspan="2"><input class="radioType" id="field.branch_type.2" name="field.branch_type" type="radio" value="REMOTE" /></td>
+  ...     <td><label for="field.branch_type.2">Remote</label></td>
+  ...   </tr>
+  ...   <tr>
+  ...     <td>Registered in Launchpad with an external location,
+  ...     but is not to be mirrored, nor available through Launchpad.</td>
+  ...   </tr>
+  ... </table>
   ... '''
   >>> print_radio_button_field(contents, 'branch_type')
   ( ) Hosted
