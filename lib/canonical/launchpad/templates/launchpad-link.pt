@@ -1,4 +1,4 @@
-<strong id="disabled" tal:condition="not: context/enabled">
+<strong tal:condition="not: context/enabled">
   <tal:link-text replace="structure context/escapedtext">
     Disabled text
   </tal:link-text>
