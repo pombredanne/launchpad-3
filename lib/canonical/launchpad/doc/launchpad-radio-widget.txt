@@ -19,6 +19,7 @@ an enumerated type.
     >>> request = LaunchpadTestRequest()
     >>> radio_widget = LaunchpadRadioWidget(
     ...     branch_type_field, branch_type_field.vocabulary, request)
+    >>> radio_widget.setRenderedValue(branch_type_field.vocabulary.HOSTED)
 
 The widget is rendered as a collection of labels with the radio
 buttons inside.
@@ -26,12 +27,13 @@ buttons inside.
     >>> html = BeautifulSoup(radio_widget())
     >>> for label in html.findAll('label'):
     ...     print label.renderContents()
-    <input class="radioType" id="field.branch_type.0" name="field.branch_type"
-           type="radio" value="HOSTED" />&nbsp;Hosted
+    <input class="radioType" checked="checked" id="field.branch_type.0"
+           name="field.branch_type" type="radio" value="HOSTED" />&nbsp;Hosted
     <input class="radioType" id="field.branch_type.1" name="field.branch_type"
            type="radio" value="MIRRORED" />&nbsp;Mirrored
     <input class="radioType" id="field.branch_type.2" name="field.branch_type"
            type="radio" value="REMOTE" />&nbsp;Remote
+
 
 = LaunchpadRadioWidgetWithDescription =
 
@@ -40,6 +42,7 @@ along with the titles from the enumerated type vocabulary.
 
     >>> radio_widget = LaunchpadRadioWidgetWithDescription(
     ...     branch_type_field, branch_type_field.vocabulary, request)
+    >>> radio_widget.setRenderedValue(branch_type_field.vocabulary.HOSTED)
 
 The widget is rendered in a table with the descriptions lined up
 under the labels.  The labels are rendered next to the radio buttons,
@@ -48,14 +51,17 @@ to associate the label with the radio button input.
 
     >>> print radio_widget()
     <table class="radio-button-widget"><tr>
-      <td rowspan="2"><input class="radioType" id="field.branch_type.0" name="field.branch_type" type="radio" value="HOSTED" /></td>
+      <td rowspan="2"><input class="radioType" checked="checked"
+          id="field.branch_type.0" name="field.branch_type" type="radio"
+          value="HOSTED" /></td>
       <td><label for="field.branch_type.0">Hosted</label></td>
     </tr>
     <tr>
       <td>Launchpad is the primary location of this branch. </td>
     </tr>
     <tr>
-      <td rowspan="2"><input class="radioType" id="field.branch_type.1" name="field.branch_type" type="radio" value="MIRRORED" /></td>
+      <td rowspan="2"><input class="radioType" id="field.branch_type.1"
+          name="field.branch_type" type="radio" value="MIRRORED" /></td>
       <td><label for="field.branch_type.1">Mirrored</label></td>
     </tr>
     <tr>
@@ -63,7 +69,8 @@ to associate the label with the radio button input.
       from the remote location into Launchpad.  </td>
     </tr>
     <tr>
-      <td rowspan="2"><input class="radioType" id="field.branch_type.2" name="field.branch_type" type="radio" value="REMOTE" /></td>
+      <td rowspan="2"><input class="radioType" id="field.branch_type.2"
+          name="field.branch_type" type="radio" value="REMOTE" /></td>
       <td><label for="field.branch_type.2">Remote</label></td>
     </tr>
     <tr>
@@ -88,15 +95,18 @@ rows are not rendered.
     ...     branch_type_field, Fruit, request)
     >>> print radio_widget()
     <table class="radio-button-widget"><tr>
-      <td><input class="radioType" id="field.branch_type.0" name="field.branch_type" type="radio" value="APPLE" /></td>
+      <td><input class="radioType" id="field.branch_type.0"
+                 name="field.branch_type" type="radio" value="APPLE" /></td>
       <td><label for="field.branch_type.0">Apple</label></td>
     </tr>
     <tr>
-      <td><input class="radioType" id="field.branch_type.1" name="field.branch_type" type="radio" value="PEAR" /></td>
+      <td><input class="radioType" id="field.branch_type.1"
+                 name="field.branch_type" type="radio" value="PEAR" /></td>
       <td><label for="field.branch_type.1">Pear</label></td>
     </tr>
     <tr>
-      <td><input class="radioType" id="field.branch_type.2" name="field.branch_type" type="radio" value="ORANGE" /></td>
+      <td><input class="radioType" id="field.branch_type.2"
+                 name="field.branch_type" type="radio" value="ORANGE" /></td>
       <td><label for="field.branch_type.2">Orange</label></td>
     </tr>
     </table>
