@@ -442,6 +442,30 @@ class FileBugViewBase(LaunchpadFormView):
                 '</span>. You may choose to <a href="+secrecy">change '
                 'this</a>.')
 
+        # XXX: Bjorn Tillenius 2005-06-16:
+        # Write proper FileUpload field and widget instead of this hack.
+        file_ = self.request.form.get(self.widgets['filecontent'].name)
+        if file_:
+            # Slashes in filenames cause problems, convert them to dashes
+            # instead.
+            filename = file_.filename.replace('/', '-')
+
+            # if no description was given use the converted filename
+            file_description = None
+            if 'attachment_description' in data:
+                file_description = data['attachment_description']
+            if not file_description:
+                file_description = filename
+
+            # Process the attachment.
+            bug.addAttachment(
+                owner=self.user, file_=StringIO(data['filecontent']),
+                filename=filename, description=file_description,
+                comment=None, is_patch=data['patch'])
+
+            self.request.response.addNotification(
+                "Attachment %(filename)s added to bug.", filename=filename)
+
         self.request.response.redirect(canonical_url(bug.bugtasks[0]))
 
     @action("Subscribe to This Bug Report", name="this_is_my_bug",

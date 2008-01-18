@@ -72,7 +72,7 @@ Selecting a valid product will take us to the next filebug step.
     #5 Firefox install instructions should be complete
     Open, last updated 2006-07-14
 
-The user can now choose to add an attachment to the bug. We create a
+The user can choose to add an attachment to the bug. We create a
 file-like object to demonstrate this.
 
     >>> from cStringIO import StringIO
@@ -82,7 +82,7 @@ file-like object to demonstrate this.
     >>> user_browser.getControl('Attachment').add_file(
     ...   example_file, 'text/plain', 'example.txt')
     >>> user_browser.getControl('Description').value = ("A description "
-    ...     "of the attachment.")
+    ...     "of the attachment")
 
 Entering a description and submitting the bug takes the user to the bug
 page.
@@ -93,6 +93,18 @@ page.
     'http://bugs.launchpad.dev/firefox/+bug/...'
     >>> user_browser.title
     'Bug #... in Mozilla Firefox: ...SVG causes Firefox to crash...'
+
+We can check that the attachment is there and that its URL points to the
+right place:
+
+    >>> attachments = find_portlet(user_browser.contents, 'Bug attachments')
+    >>> for li_tag in attachments.findAll('li', 'download'):
+    ...     print li_tag.a.renderContents()
+    ...     print extract_link_from_tag(li_tag.a,
+    ...         base='http://localhost:58000')
+    A description of the attachment
+    http://localhost:58000/.../example.txt
+
 
 == Advanced filebug page ==
 
