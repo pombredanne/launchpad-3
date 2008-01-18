@@ -571,9 +571,22 @@
                 </div>
               </td>
 	      <td>
-		<tal:combinator
-                     condition="view/shouldShowTagsCombinatorWidget"
-                     replace="structure view/widgets/tags_combinator" />
+                <div condition="view/shouldShowTagsCombinatorWidget"
+                     class="value">
+                  <label>
+                    <input id="field.tags_combinator.0"
+                           name="field.tags_combinator"
+                           value="ANY" checked="checked"
+                           class="radioType" type="radio" />&nbsp;Any
+                  </label>
+                  <br />
+                  <label>
+                    <input id="field.tags_combinator.1"
+                           name="field.tags_combinator"
+                           value="ALL"
+                           class="radioType" type="radio" />&nbsp;All
+                  </label>
+                </div>
 	      </td>
 	    </tr>
             <tr>
