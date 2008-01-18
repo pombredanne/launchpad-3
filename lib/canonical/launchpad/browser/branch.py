@@ -38,6 +38,7 @@ from canonical.database.constants import UTC_NOW
 
 from canonical.lp import decorates
 from canonical.launchpad.browser.branchref import BranchRef
+from canonical.launchpad.browser.feeds import BranchFeedLink, FeedsMixin
 from canonical.launchpad.browser.launchpad import StructuralObjectPresentation
 from canonical.launchpad.browser.objectreassignment import (
     ObjectReassignmentView)
@@ -242,9 +243,13 @@ class BranchContextMenu(ContextMenu):
         return Link('+linkbug', text, icon='edit')
 
 
-class BranchView(LaunchpadView):
+class BranchView(LaunchpadView, FeedsMixin):
 
     __used_for__ = IBranch
+
+    feed_types = (
+        BranchFeedLink,
+        )
 
     def initialize(self):
         self.notices = []
