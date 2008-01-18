@@ -228,6 +228,11 @@
       permission="zope.Public"
       />
 
+  <browser:defaultView
+      for="canonical.launchpad.interfaces.ILink"
+      name="+link"
+      />
+
   <browser:page
       for="canonical.launchpad.webapp.interfaces.ILink"
       name="+link"
