@@ -381,6 +381,13 @@ def validate_distrotask(bug, distribution, sourcepackagename=None):
 
     If validation fails, a LaunchpadValidationError will be raised.
     """
+    if sourcepackagename and len(distribution.serieses) > 0:
+        # If the distribution has at least one series, check that the
+        # source package has been published in the distribution.
+        try:
+            distribution.guessPackageNames(sourcepackagename.name)
+        except NotFoundError, e:
+            raise LaunchpadValidationError(unicode(e))
     new_source_package = distribution.getSourcePackage(sourcepackagename)
     if sourcepackagename and bug.getBugTask(new_source_package) is not None:
         # Ensure this distribution/sourcepackage task is unique.
