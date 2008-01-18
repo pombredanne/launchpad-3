@@ -88,11 +88,16 @@ class BugWatchUpdater(object):
 
     def updateBugTracker(self, bug_tracker):
         """Updates the given bug trackers's bug watches."""
-        # We only want to update each bugwatch once per day, so we limit
-        # the watches that we need to update to those which haven't been
-        # updated for 24 hours.
+        # XXX 2007-01-18 gmb:
+        #     Once we start running checkwatches more frequently we need
+        #     to update the comment and the call to
+        #     getBugWatchesNeedingUpdate() below. We'll be checking
+        #     those watches which haven't been checked for 24 hours, not
+        #     23.
+        # We want 1 day, but we'll use 23 hours because we can't count
+        # on the cron job hitting exactly the same time every day
         bug_watches_to_update = (
-            bug_tracker.getBugWatchesNeedingUpdate(24))
+            bug_tracker.getBugWatchesNeedingUpdate(23))
 
         try:
             remotesystem = self._getExternalBugTracker(bug_tracker)
