@@ -11,6 +11,7 @@ The print_text function is required to present the contents
 of builf 17 page after it is filtered by 'extract_text', a simple
 'print' results in a UnicodeDecodeError. Note that the usual procedure
 works fine for build 10 (see below in 'Builds created by Gina' section).
+See further information about this issue in bug #69988.
 
     >>> def print_text(text):
     ...     print str(text)
