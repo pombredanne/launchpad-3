@@ -253,7 +253,7 @@ def print_comments(page):
 def print_batch_header(soup):
     """Print the batch navigator header."""
     navigation = soup.find('td', {'class' : 'batch-navigation-index'})
-    print extract_text(navigation).encode('utf-8')
+    print extract_text(navigation).encode('ASCII', 'backslashreplace')
 
 
 def setupBrowser(auth=None):
