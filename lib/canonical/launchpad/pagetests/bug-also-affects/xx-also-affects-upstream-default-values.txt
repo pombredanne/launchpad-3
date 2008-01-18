@@ -9,7 +9,7 @@ automatically chosen if a packaging link is found.
     >>> user_browser.getControl(name='field.product').value
     'firefox'
 
-If the source package has no upstream link. like thunderbird in Ubuntu,
+If the source package has no upstream link. like pmount in Ubuntu,
 then the product widget will have no initial value.
 
     >>> user_browser.open(
@@ -39,8 +39,7 @@ Let's follow the link and specify the packaging information.
     ...     'thunderbird/trunk')
     >>> user_browser.getControl('Change').click()
 
-Now the upstream product will be chosen automatically also for
-thunderbird.
+Now the upstream product will be chosen automatically also for pmount.
 
     >>> user_browser.open(
     ...     'http://launchpad.dev/ubuntu/+source/pmount/+bug/8')
