@@ -990,8 +990,8 @@ But if a non-existing entry is requested, a KeyError is raised:
     ...
     KeyError: 'broken'
 
-Also, we report also when the selected facet does not exist with
-a TraversalError exception:
+We also report when the selected facet does not exist with a
+TraversalError exception:
 
     >>> test_tales(
     ...     'CONTEXTS/menu:broken/bar', context=house, view=view,
@@ -1007,6 +1007,12 @@ because the menus system doesn't need to know anything about the view object.
     >>> links = test_tales('context/menu:context', context=house)
     >>> for link in links.values():
     ...     print link.url
+    http://launchpad.dev/sesamestreet/number73/+firstcontext
+
+The link is also reachable by name:
+
+    >>> link = test_tales('context/menu:context/first', context=house)
+    >>> print link.url
     http://launchpad.dev/sesamestreet/number73/+firstcontext
 
 When there is no menu for a thing, we get an empty iterator.

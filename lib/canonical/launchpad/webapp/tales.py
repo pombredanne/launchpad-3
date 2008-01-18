@@ -102,8 +102,8 @@ class MenuAPI:
     def _getFacetLinks(self, facet_name):
         """Return a dictionary with all links available in the given facet.
 
-        If the facet name is not valid, we get a TraversalError exception that
-        is raised outside this method.
+        If the facet name is not valid, we raise the TraversalError exception
+        that we get from queryAdapter.
         """
         menu = queryAdapter(self._context, IApplicationMenu, facet_name)
         if menu is None:
