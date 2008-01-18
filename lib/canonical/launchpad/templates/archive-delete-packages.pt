@@ -110,7 +110,7 @@
    Search for the wanted packages, then select one of more of them for
    deletion. A message is displayed below the list of packages if
    there were more than 10 packages found; you may want to refine your
-   search if the packages you are interested are not listed. A short
+   search if the packages you are interested in are not listed. A short
    text comment should be provided when deleting packages, it will be
    recorded and displayed when presenting the package information.A
    deleted package will disappear from the archive indexes within 20
