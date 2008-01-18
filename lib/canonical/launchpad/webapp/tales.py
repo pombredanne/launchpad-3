@@ -164,6 +164,7 @@ class MenuAPI:
             menu.request = self._request
             return list(menu.iterlinks(requesturi=self._requesturi()))
 
+    @property
     def context(self):
         menu = IContextMenu(self._context, None)
         if menu is None:
