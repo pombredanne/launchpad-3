@@ -570,21 +570,22 @@ Searching for bugs with any of the tags returns both of them.
     >>> from canonical.launchpad.searchbuilder import all, any
     >>> from sets import Set
     >>> any_params = BugTaskSearchParams(
-    ...     tag=any('test-tag-1', 'test-tag-2'), user=None)
+    ...     tag=any('test-tag-1', 'test-tag-2'),
+    ...     orderby='-title', user=None)
     >>> any_tasks = Set(list(firefox.searchTasks(any_params)))
     >>> for task in any_tasks:
     ...    print task.bug.title, task.bug.tags
-    test bug b [u'test-tag-1']
     test bug a [u'test-tag-1', u'test-tag-2']
+    test bug b [u'test-tag-1']
 
 Searching for bugs with any of the tags returns only test bug a.
 
     >>> from canonical.launchpad.searchbuilder import all, any
     >>> from sets import Set
-    >>> any_params = BugTaskSearchParams(
+    >>> all_params = BugTaskSearchParams(
     ...     tag=all('test-tag-1', 'test-tag-2'), user=None)
-    >>> any_tasks = Set(list(firefox.searchTasks(any_params)))
-    >>> for task in any_tasks:
+    >>> all_tasks = Set(list(firefox.searchTasks(all_params)))
+    >>> for task in all_tasks:
     ...    print task.bug.title, task.bug.tags
     test bug a [u'test-tag-1', u'test-tag-2']
 
