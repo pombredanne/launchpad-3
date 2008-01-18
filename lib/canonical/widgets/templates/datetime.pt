@@ -1,5 +1,5 @@
 <div tal:define="val view/formvalue">
-  <input size="15" type="text"
+  <input size="17" type="text"
          tal:attributes="name view/name; id view/name; value val" />
   <a href="javascript:void(0)"
      tal:attributes="

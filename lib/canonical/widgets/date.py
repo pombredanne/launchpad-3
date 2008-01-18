@@ -318,6 +318,7 @@ class DateTimeWidget(TextWidget):
         if not self._renderedValueSet():
             if self.hasInput():
                 try:
+                    import pdb; pdb.set_trace()
                     value = self.getInputValue()
                 except InputErrors:
                     return self._getRequestValue()
@@ -423,6 +424,32 @@ class DateWidget(DateTimeWidget):
         if parsed is None:
             return parsed
         return parsed.date()
+
+    def _toFormValue(self, value):
+        """Convert a date or datetime to its string representation.
+
+          >>> from zope.publisher.browser import TestRequest
+          >>> from zope.schema import Field
+          >>> field = Field(__name__='foo', title=u'Foo')
+          >>> widget = DateWidget(field, TestRequest())
+
+        The 'missing' value is converted to an empty string:
+
+          >>> widget._toFormValue(field.missing_value)
+          u''
+
+        Dates are displayed without the corresponding time or time
+        zone information:
+
+          >>> dt = datetime(2006, 1, 1, 12, 0, 0,
+          ...                        tzinfo=pytz.timezone('UTC'))
+          >>> widget._toFormValue(dt)
+          '2006-01-01'
+
+        """
+        if value == self.context.missing_value:
+            return self._missing
+        return value.strftime(self.timeformat)
 
     def setRenderedValue(self, value):
         """Render a date from the underlying datetime."""

@@ -119,7 +119,7 @@
             <th>Subscription expires:</th>
             <td tal:condition="view/canChangeExpirationDate" style="white-space: nowrap">
               <metal:radios use-macro="template/macros/expiry-radios" />
-              <span tal:replace="structure view/dateChooserWithCurrentExpirationSelected" />
+              <span tal:replace="structure view/expirationdate_widget" />
             </td>
             <td tal:condition="not: view/canChangeExpirationDate">
               <span tal:condition="context/dateexpires"
@@ -194,7 +194,7 @@
                     Don't change<br />
                 </label>
                 <metal:radios use-macro="template/macros/expiry-radios" />
-                <span tal:replace="structure view/dateChooserForExpiredMembers" />
+                <span tal:replace="structure view/expirationdate_widget" />
               </td>
             </tr>
           </tal:expired>
@@ -206,7 +206,7 @@
               <th>Subscription expires:</th>
               <td>
                 <metal:radios use-macro="template/macros/expiry-radios" />
-                <span tal:replace="structure view/dateChooserWithCurrentExpirationSelected" />
+                <span tal:replace="structure view/expirationdate_widget" />
               </td>
             </tr>
           </tal:not-expired>
@@ -256,7 +256,7 @@
               <th>Expires?</th>
               <td>
                 <metal:radios use-macro="template/macros/expiry-radios" />
-                <span tal:replace="structure view/dateChooserForProposedMembers" />
+                <span tal:replace="structure view/expirationdate_widget" />
               </td>
             </tr>
 

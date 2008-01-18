@@ -8,18 +8,23 @@ __all__ = [
     ]
 
 import pytz
-import datetime
+from datetime import datetime
 
+from zope.app.form import CustomWidgetFactory
 from zope.component import getUtility
+from zope.formlib import form
+from zope.schema import Datetime
 
 from canonical.launchpad import _
-from canonical.launchpad.webapp import canonical_url
+from canonical.launchpad.webapp import canonical_url, custom_widget
 
 from canonical.launchpad.interfaces import (
     ILaunchBag, ILaunchpadCelebrities, TeamMembershipStatus,
     UnexpectedFormData)
 from canonical.launchpad.browser.launchpad import (
     StructuralHeaderPresentation)
+
+from canonical.widgets import DateTimeWidget
 
 
 class TeamMembershipSHP(StructuralHeaderPresentation):
@@ -33,20 +38,26 @@ class TeamMembershipSHP(StructuralHeaderPresentation):
 
 class TeamMembershipEditView:
 
-    monthnames = {1: 'January', 2: 'February', 3: 'March', 4: 'April',
-                  5: 'May', 6: 'June', 7: 'July', 8: 'August', 9: 'September',
-                  10: 'October', 11: 'November', 12: 'December'}
-
     def __init__(self, context, request):
         self.context = context
         self.request = request
         self.user = getUtility(ILaunchBag).user
+        self.errors = []
         self.errormessage = ""
+        self.prefix = 'membership'
+        self.max_year = 2050
+        fields = form.Fields(Datetime(
+            __name__='expirationdate', title=_('Expiration date')))
+        fields['expirationdate'].custom_widget = \
+            CustomWidgetFactory(DateTimeWidget)
+        data = {'expirationdate':
+                 datetime(2005, 5, 5, tzinfo=pytz.timezone('UTC'))}
+        self.widgets = form.setUpWidgets(
+            fields, self.prefix, context, request, ignore_request=False,
+            data=data)
+        self.expirationdate_widget = self.widgets['expirationdate']
 
-    #
     # Boolean helpers
-    #
-
     def userIsTeamOwnerOrLPAdmin(self):
         return (self.user.inTeam(self.context.team.teamowner) or
                 self.user.inTeam(getUtility(ILaunchpadCelebrities).admin))
@@ -247,17 +258,12 @@ class TeamMembershipEditView:
         API to the caller, who needs to check only for that specific
         exception.
         """
-        year = int(self.request.form.get('year'))
-        month = int(self.request.form.get('month'))
-        day = int(self.request.form.get('day'))
-
-        if 0 in (year, month, day):
-            raise ValueError('incomplete date provided')
-
-        expires = datetime.datetime(year, month, day,
-                                    tzinfo=pytz.timezone('UTC'))
-
-        now = datetime.datetime.now(pytz.timezone('UTC'))
+        data = {}
+        for error in form.getWidgetsData(self.widgets, self.prefix, data):
+            self.errors.append(error)
+        assert not self.errors, 'Errors processing form XXX'
+        expires = data['expirationdate']
+        now = datetime.now(pytz.timezone('UTC'))
         if expires <= now:
             raise ValueError('date provided is in the past')
 
@@ -278,42 +284,4 @@ class TeamMembershipEditView:
     def dateChooserWithCurrentExpirationSelected(self):
         return self._buildDateChooser(self.context.dateexpires)
 
-    # XXX: salgado 2005-03-15: This will be replaced as soon as we have
-    # browser:form.
-    def _buildDateChooser(self, selected=None):
-        # Get form values and use them as the selected value.
-        html = '<select name="day">'
-        html += '<option value="0"></option>'
-        for day in range(1, 32):
-            if selected and day == selected.day:
-                html += '<option selected value="%d">%d</option>' % (day, day)
-            else:
-                html += '<option value="%d">%d</option>' % (day, day)
-        html += '</select>'
-
-        html += '<select name=month>'
-        html += '<option value="0"></option>'
-        for month in range(1, 13):
-            monthname = self.monthnames[month]
-            if selected and month == selected.month:
-                html += ('<option selected value="%d">%s</option>' %
-                         (month, monthname))
-            else:
-                html += ('<option value="%d">%s</option>' %
-                         (month, monthname))
-        html += '</select>'
-
-        # XXX: salgado 2005-03-16: We need to define it somewhere else, but
-        # it's not that urgent, so I'll leave it here for now.
-        max_year = 2050
-        html += '<select name="year">'
-        html += '<option value="0"></option>'
-        for year in range(datetime.datetime.utcnow().year, max_year):
-            if selected and year == selected.year:
-                html += '<option selected value="%d">%d</option>' % (year, year)
-            else:
-                html += '<option value="%d">%d</option>' % (year, year)
-        html += '</select>'
-
-        return html
 
