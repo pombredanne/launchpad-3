@@ -123,7 +123,7 @@ class IBuilder(IHasOwner):
 
     active = Bool(
         title=_('Active'), required=False,
-        description=_('Whether to present or not the builder publicly.'))
+        description=_('Whether or not to present the builder publicly.'))
 
     slave = Attribute("xmlrpclib.Server instance corresponding to builder.")
     currentjob = Attribute("Build Job being processed")
