@@ -101,10 +101,7 @@
     </dd>
   </dl>
 
-  <p style="clear: right;">
-    Below, we list the icons which are used in each of the applications that
-    make up Launchpad.
-  </p>
+  <p style="clear: right;">These are the icons used in Launchpad.</p>
 
   <table class="listing">
     <tbody>
@@ -141,6 +138,16 @@
         <td>Inside the header for a column sorted descending.</td>
       </tr>
       <tr>
+        <td>arrowStart</td>
+        <td><img src="/@@/arrowStart" /></td>
+        <td>Arrow start. Not used.</td>
+      </tr>
+      <tr>
+        <td>arrowEnd</td>
+        <td><img src="/@@/arrowEnd" /></td>
+        <td>Arrow end. Not used.</td>
+      </tr>
+      <tr>
         <td>arrowTop</td>
         <td><img src="/@@/arrowTop" /></td>
         <td>Arrow top. Not used.</td>
@@ -151,9 +158,28 @@
         <td>Arrow bottom. Not used.</td>
       </tr>
       <tr>
+        <td>arrowLeft</td>
+        <td><img src="/@@/arrowLeft" /></td>
+        <td>Arrow left.</td>
+      </tr>
+      <tr>
+        <td>arrowRight</td>
+        <td><img src="/@@/arrowRight" /></td>
+        <td>Arrow right.</td>
+      </tr>
+      <tr>
         <td>bullet</td>
         <td><img src="/@@/bullet" /></td>
         <td>The default bullet for lists with no special bullet specified.</td>
+      </tr>
+      <tr>
+        <td>crowd</td>
+        <td><img alt="" src="/@@/crowd" /></td>
+        <td rowspan="2">Many people are subscribed to this thing.</td>
+      </tr>
+      <tr>
+        <td>crowd-large</td>
+        <td><img alt="" src="/@@/crowd-large" /></td>
       </tr>
       <tr>
         <td>distribution-badge</td>
@@ -281,7 +307,7 @@
       </tr>
       <tr>
         <td>person-inactive-badge</td>
-        <td><img alt="" src="/@@/person-badge" /></td>
+        <td><img alt="" src="/@@/person-inactive-badge" /></td>
         <td rowspan="4">
           A person who does not use Launchpad.
         </td>

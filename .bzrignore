@@ -6,6 +6,7 @@ configs/+config-overrides.zcml
 +*
 sourcecode/buildbot
 sourcecode/bzr
+sourcecode/bzr-loom
 sourcecode/bzrtools
 sourcecode/cscvs
 sourcecode/gnarly

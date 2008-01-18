@@ -34,6 +34,7 @@ __all__ = [
     'ProductSetNavigation',
     'ProductSetContextMenu',
     'ProductSetView',
+    'ProductBranchOverviewView',
     'ProductBranchesView',
     'PillarSearchItem',
     ]
@@ -66,7 +67,8 @@ from canonical.launchpad.browser.branchref import BranchRef
 from canonical.launchpad.browser.bugtask import (
     BugTargetTraversalMixin, get_buglisting_search_filter_url)
 from canonical.launchpad.browser.faqtarget import FAQTargetNavigationMixin
-from canonical.launchpad.browser.feeds import FeedsMixin
+from canonical.launchpad.browser.feeds import (
+    FeedsMixin, ProductBranchesFeedLink)
 from canonical.launchpad.browser.launchpad import (
     StructuralObjectPresentation, DefaultShortLink)
 from canonical.launchpad.browser.objectreassignment import (
@@ -392,12 +394,17 @@ class ProductBranchesMenu(ApplicationMenu):
 
     usedfor = IProduct
     facet = 'branches'
-    links = ['branch_add', ]
+    links = ['branch_add', 'list_branches']
 
     def branch_add(self):
         text = 'Register branch'
         summary = 'Register a new Bazaar branch for this project'
         return Link('+addbranch', text, summary, icon='add')
+
+    def list_branches(self):
+        text = 'List branches'
+        summary = 'List the branches for this project'
+        return Link('+branches', text, summary, icon='add')
 
 
 class ProductSpecificationsMenu(ApplicationMenu):
@@ -772,7 +779,7 @@ class ProductDownloadFilesView(LaunchpadView,
                 if release.files.count() > 0:
                     return True
         return False
-    
+
     @cachedproperty
     def any_download_files_with_signatures(self):
         """Across series and releases do any download files have signatures?
@@ -1263,6 +1270,39 @@ class ProductShortLink(DefaultShortLink):
         return self.context.displayname
 
 
+class ProductBranchOverviewView(LaunchpadView, SortSeriesMixin, FeedsMixin):
+    """View for the product code overview."""
+
+    __used_for__ = IProduct
+
+    feed_types = (
+        ProductBranchesFeedLink,
+        )
+
+    @cachedproperty
+    def recent_revision_branches(self):
+        """Branches that have the most recent revisions."""
+        branch_set = getUtility(IBranchSet)
+        return branch_set.getBranchesWithRecentRevisionsForProduct(
+            self.context, 5, self.user)
+
+    @property
+    def codebrowse_root(self):
+        """Return the link to codebrowse for this branch."""
+        return config.codehosting.codebrowse_root
+
+    @cachedproperty
+    def recent_revisions(self):
+        """The tip revision for each of the recent revision branches."""
+        return [branch.getBranchRevision(branch.revision_count)
+                for branch in self.recent_revision_branches]
+
+    @cachedproperty
+    def latest_branches(self):
+        """The lastest branches registered for the product."""
+        return self.context.getLatestBranches(visible_by_user=self.user)
+
+
 class ProductBranchesView(BranchListingView):
     """View for branch listing for a product."""
 
@@ -1270,12 +1310,19 @@ class ProductBranchesView(BranchListingView):
     no_sort_by = (BranchListingSort.PRODUCT,)
 
     @cachedproperty
+    def hide_dormant_initial_value(self):
+        """If there are more than one page of branches, hide dormant ones."""
+        page_size = config.launchpad.branchlisting_batch_size
+        return self.context.branches.count() > page_size
+
+    @cachedproperty
     def development_focus_branch(self):
         return self.context.development_focus.series_branch
 
-    def _branches(self, lifecycle_status):
+    def _branches(self, lifecycle_status, show_dormant):
         return getUtility(IBranchSet).getBranchesForProduct(
-            self.context, lifecycle_status, self.user, self.sort_by)
+            self.context, lifecycle_status, self.user, self.sort_by,
+            show_dormant)
 
     @property
     def no_branch_message(self):

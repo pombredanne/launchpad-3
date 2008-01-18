@@ -99,13 +99,14 @@ def find_tags_by_class(content, class_, only_first=False):
 def find_portlet(content, name):
     """Find and return the portlet with the given title. Sequences of
     whitespace are considered equivalent to one space, and beginning and
-    ending whitespace is also ignored.
+    ending whitespace is also ignored, as are non-text elements such as
+    images.
     """
     whitespace_re = re.compile('\s+')
     name = whitespace_re.sub(' ', name.strip())
     for portlet in find_tags_by_class(content, 'portlet'):
         if portlet.find('h2'):
-            portlet_title = portlet.find('h2').renderContents()
+            portlet_title = extract_text(portlet.find('h2'))
             if name == whitespace_re.sub(' ', portlet_title.strip()):
                 return portlet
     return None
@@ -124,6 +125,29 @@ def get_feedback_messages(content):
         content,
         parseOnlyThese=SoupStrainer(['div', 'p'], {'class': message_classes}))
     return [extract_text(tag) for tag in soup]
+
+
+def print_radio_button_field(content, name):
+    """Find the input called field.name, and print a friendly representation.
+
+    The resulting output will look something like:
+    (*) A checked option
+    ( ) An unchecked option
+    """
+    main = BeautifulSoup(content)
+    buttons =  main.findAll(
+        'input', {'name': 'field.%s' % name})
+    for button in buttons:
+        if button.parent.name == 'label':
+            label = extract_text(button.parent)
+        else:
+            label = extract_text(
+                main.find('label', attrs={'for': button['id']}))
+        if button.get('checked', None):
+            radio = '(*)'
+        else:
+            radio = '( )'
+        print radio, label
 
 
 IGNORED_ELEMENTS = [Comment, Declaration, ProcessingInstruction]
@@ -241,6 +265,7 @@ def print_action_links(content):
         elif entry.strong:
             print entry.strong.string
 
+
 def print_comments(page):
     """Print the comments on a BugTask index page."""
     main_content = find_main_content(page)
@@ -296,6 +321,7 @@ def setUpGlobs(test):
     test.globs['print_tab_links'] = print_tab_links
     test.globs['print_action_links'] = print_action_links
     test.globs['print_comments'] = print_comments
+    test.globs['print_radio_button_field'] = print_radio_button_field
     test.globs['print_batch_header'] = print_batch_header
 
 
