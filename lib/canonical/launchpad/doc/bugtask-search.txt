@@ -541,6 +541,54 @@ We can file a bug against it and see that show up in a search:
     1
 
 
+== Searching by tags ==
+
+It is possible to search for bugs by their tags. Tags in the search
+parameters can be combined using either ''any'' or ''all''.
+
+First, we create some test bugs.
+
+    >>> firefox = getUtility(IProductSet).get(4)
+    >>> foobar = getUtility(IPersonSet).get(16)
+
+The first bug is tagged with both 'test-tag-1' and 'test-tag-2'.
+
+    >>> params = CreateBugParams(
+    ...     title="test bug a", comment="test bug a", owner=foobar)
+    >>> test_bug_a = firefox.createBug(params)
+    >>> test_bug_a.tags = ['test-tag-1', 'test-tag-2']
+
+The second bug is tagged with only 'test-tag-1'.
+
+    >>> params = CreateBugParams(
+    ...     title="test bug b", comment="test bug b", owner=foobar)
+    >>> test_bug_b = firefox.createBug(params)
+    >>> test_bug_b.tags = ['test-tag-1']
+
+Searching for bugs with any of the tags returns both of them.
+
+    >>> from canonical.launchpad.searchbuilder import all, any
+    >>> from sets import Set
+    >>> any_params = BugTaskSearchParams(
+    ...     tag=any('test-tag-1', 'test-tag-2'), user=None)
+    >>> any_tasks = Set(list(firefox.searchTasks(any_params)))
+    >>> for task in any_tasks:
+    ...    print task.bug.title, task.bug.tags
+    test bug b [u'test-tag-1']
+    test bug a [u'test-tag-1', u'test-tag-2']
+
+Searching for bugs with any of the tags returns only test bug a.
+
+    >>> from canonical.launchpad.searchbuilder import all, any
+    >>> from sets import Set
+    >>> any_params = BugTaskSearchParams(
+    ...     tag=all('test-tag-1', 'test-tag-2'), user=None)
+    >>> any_tasks = Set(list(firefox.searchTasks(any_params)))
+    >>> for task in any_tasks:
+    ...    print task.bug.title, task.bug.tags
+    test bug a [u'test-tag-1', u'test-tag-2']
+
+
 == Ordering search results ==
 
 The result returned by bugtask searches can come sorted by a specified order
