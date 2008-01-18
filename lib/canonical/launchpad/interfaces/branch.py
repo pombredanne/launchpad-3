@@ -357,6 +357,10 @@ class IBranch(IHasOwner):
         title=_('Author'), required=False, vocabulary='ValidPersonOrTeam',
         description=_("The author of the branch. Leave blank if the author "
                       "does not have a Launchpad account."))
+    reviewer = Choice(
+        title=_('Reviewer'), required=False, vocabulary='ValidPersonOrTeam',
+        description=_("The reviewer of a branch is the person or team that "
+                      "is responsible for authorising code to be merged."))
 
     # Product attributes
     product = Choice(
