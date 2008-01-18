@@ -20,7 +20,6 @@ import apt_inst
 import apt_pkg
 import os
 import md5
-import re
 import sha
 import shutil
 import subprocess
