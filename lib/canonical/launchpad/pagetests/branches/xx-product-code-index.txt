@@ -12,13 +12,16 @@ The page has the following important elements:
 
 == Link to branch listings ==
 
-The link to the branch listing is the first thing on the page.
+The link to the branch listing is in the actions portlet.
 
     >>> browser.open('http://code.launchpad.dev/firefox')
     >>> print browser.title
     Code overview for Mozilla Firefox
+    >>> print_action_links(browser.contents)
+    Register branch: http://code.launchpad.dev/firefox/+addbranch
+    List branches: http://code.launchpad.dev/firefox/+branches
 
-    >>> browser.getLink('List currently active branches').click()
+    >>> browser.getLink('List branches').click()
     >>> print browser.title
     Mozilla Firefox's Bazaar branches registered in Launchpad
 
@@ -43,26 +46,19 @@ the user is told this.
     ---
     CSS style: highlighted
     Series: trunk Current development focus
-    No branch specified
+    Branch: None specified
     ---
     CSS style: unhighlighted
     Series: 1.0
-    No branch specified
+    Branch: None specified
 
 Specify a branch as the main development focus branch.
 
     >>> admin_browser.open(
     ...     'http://code.launchpad.dev/firefox/trunk/+source')
+    >>> admin_browser.getControl('Bazaar').click()
     >>> admin_browser.getControl(name="field.user_branch").value = (
     ...     '~name12/firefox/main')
-    >>> admin_browser.getControl('Update Details').click()
-
-And set a branch for the 1.0 series.
-
-    >>> admin_browser.open(
-    ...     'http://code.launchpad.dev/firefox/1.0/+source')
-    >>> admin_browser.getControl(name="field.user_branch").value = (
-    ...     '~sabdfl/firefox/release-0.9')
     >>> admin_browser.getControl('Update Details').click()
 
 This branch is now shown, along with the bzr branch example.
@@ -71,14 +67,56 @@ This branch is now shown, along with the bzr branch example.
     >>> print_official_branches(browser)
     ---
     CSS style: highlighted
-    Series: trunk   Current development focus
+    Series: trunk  Current development focus
     Branch: main: Mozilla Firefox Mainline
-    Example: bzr branch lp:firefox
+    To get a copy of this branch, use the command:
+    bzr branch lp:firefox
     ---
     CSS style: unhighlighted
     Series: 1.0
-    Branch: release-0.9: Mozilla Firefox 0.9
-    Example: bzr branch lp:firefox/1.0
+    Branch: None specified
+
+Users that have permission to set the association between branches
+and product series are able to to this from the code overview page.
+There are links shown after the branches to "change" an existing
+branch, or to "set" one if there is not one set.
+
+    >>> admin_browser.open('http://code.launchpad.dev/firefox')
+    >>> print_official_branches(admin_browser)
+    ---
+    CSS style: highlighted
+    Series: trunk Current development focus
+    Branch: main: Mozilla Firefox Mainline (change)
+    To get a copy of this branch, use the command:
+    bzr branch lp:firefox
+    ---
+    CSS style: unhighlighted
+    Series: 1.0
+    Branch: None specified (set)
+
+    >>> admin_browser.getLink('set').click()
+    >>> print admin_browser.title
+    Link an existing branch to Mozilla Firefox Series: 1.0
+
+    >>> admin_browser.getControl('Branch').value = (
+    ...     '~sabdfl/firefox/release-0.9')
+    >>> admin_browser.getControl('Update').click()
+    >>> print admin_browser.title
+    Code overview for Mozilla Firefox
+
+    >>> print_official_branches(admin_browser)
+    ---
+    CSS style: highlighted
+    Series: trunk Current development focus
+    Branch: main: Mozilla Firefox Mainline (change)
+    To get a copy of this branch, use the command:
+    bzr branch lp:firefox
+    ---
+    CSS style: unhighlighted
+    Series: 1.0
+    Branch: release-0.9: Mozilla Firefox 0.9 (change)
+    To get a copy of this branch, use the command:
+    bzr branch lp:firefox/1.0
 
 
 == Recent revisions ==

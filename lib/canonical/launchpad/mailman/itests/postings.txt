@@ -30,6 +30,8 @@ this stanza can be removed.
     >>> browser.getControl('Apply for Mailing List').click()
 
     >>> list_one = itest_helper.review_list('itest-one')
+    >>> from canonical.database.sqlbase import commit
+    >>> commit()
     >>> itest_helper.wait_for_mailman()
     >>> from Mailman.Utils import list_names
     >>> sorted(name for name in list_names() if name.startswith('itest-'))
@@ -67,26 +69,25 @@ non-existent or empty.
 == Unvalidated member postings ==
 
 Similarly, an address that has been registered with Launchpad but not verified
-should also be summarily discarded.  To demonstrate this, we'll add Anne as a
+will also be summarily discarded.  To demonstrate this, we'll add Anne as a
 normal Launchpad user, but de-certify her alternative address.  This is
 equivalent to making it unvalidated.
 
     >>> from canonical.launchpad.ftests.mailinglists_helper import (
     ...     get_alternative_email, new_person)
     >>> from canonical.launchpad.ftests import login, logout
-    >>> login('foo.bar@canonical.com')    
+    >>> login('foo.bar@canonical.com')
     >>> anne = new_person('Anne')
     >>> alternative_email = get_alternative_email(anne)
     >>> from canonical.launchpad.interfaces import EmailAddressStatus
     >>> alternative_email.status = EmailAddressStatus.NEW
-    >>> from canonical.database.sqlbase import commit
     >>> commit()
     >>> print alternative_email.email, alternative_email.statusname
     aperson@example.org New Email Address
 
     >>> vette_watcher.resync()
     >>> inject('itest-one', """\
-    ... From: aperson@example.com
+    ... From: aperson@example.org
     ... To: itest-one@lists.launchpad.dev
     ... Subject: A non-member post
     ... Message-ID: <second-injection>
@@ -128,11 +129,10 @@ list.
     >>> messages = smtpd.getMessages()
     >>> len(messages)
     1
-    >>> message = messages[0]
-    >>> print message.as_string()
+    >>> print messages[0].as_string()
     Subject: Auto-discard notification
-    From: itest-one-bounces@launchpad.dev
-    To: itest-one-owner@launchpad.dev
+    From: itest-one-bounces@lists.launchpad.dev
+    To: itest-one-owner@lists.launchpad.dev
     ...
     <BLANKLINE>
     The attached message has been automatically discarded.
@@ -167,6 +167,7 @@ to the mailing list.
     >>> print anne.preferredemail.email, anne.preferredemail.statusname
     anne.person@example.com Preferred Email Address
     >>> smtp_watcher.resync()
+    >>> smtpd.reset()
     >>> inject('itest-one', """\
     ... From: anne.person@example.com
     ... To: itest-one@lists.launchpad.dev
@@ -177,28 +178,167 @@ to the mailing list.
     ... """)
     >>> smtp_watcher.wait_for_growth()
 
-To show that this message will make it through by reading the mbox file.
-There are now two messages in the mbox file, the previous auto-discard notice,
-and the newly posted message.
+Anne's message got posted to the mailing list.  Two copies were sent; one to
+Anne herself as a member of the mailing list, and another to the
+mail-archive.com archiving recipient.  These copies are very similar,
+differing only in the headers used to do VERP bounce detection.
 
     >>> messages = smtpd.getMessages()
     >>> len(messages)
     2
-    >>> message = messages[1]
-    >>> print message.as_string()
+    >>> from operator import itemgetter
+    >>> messages.sort(key=itemgetter('sender'))
+
+Here's the copy sent to Anne...
+
+    >>> print messages[0].as_string()
     From: anne.person@example.com
     To: itest-one@lists.launchpad.dev
     Message-ID: <fifth-injection>
     Subject: [Itest-one] A member post
     ...
+    Sender: itest-one-bounces+anne.person=example.com@lists.launchpad.dev
+    Errors-To: itest-one-bounces+anne.person=example.com@lists.launchpad.dev
+    Received: by smtp2mbox
     <BLANKLINE>
     Hi, I am now a member of this team's list!
     _______________________________________________
-    Itest-one mailing list
-    Itest-one@launchpad.dev
-    http://.../mailman/listinfo/itest-one
+    Mailing list: http://launchpad.dev/~itest-one
+    Post to     : itest-one@lists.launchpad.dev
+    Unsubscribe : http://launchpad.dev/people/+me/+editemails
+    More help   : http://help.launchpad.dev/ListHelp
     <BLANKLINE>
     <BLANKLINE>
+
+...and the copy sent to the archives.
+
+    >>> print messages[1].as_string()
+    From: anne.person@example.com
+    To: itest-one@lists.launchpad.dev
+    Message-ID: <fifth-injection>
+    Subject: [Itest-one] A member post
+    ...
+    Sender: itest-one-bounces+archive=mail-archive.com@lists.launchpad.dev
+    Errors-To: itest-one-bounces+archive=mail-archive.com@lists.launchpad.dev
+    Received: by smtp2mbox
+    <BLANKLINE>
+    Hi, I am now a member of this team's list!
+    _______________________________________________
+    Mailing list: http://launchpad.dev/~itest-one
+    Post to     : itest-one@lists.launchpad.dev
+    Unsubscribe : http://launchpad.dev/people/+me/+editemails
+    More help   : http://help.launchpad.dev/ListHelp
+    <BLANKLINE>
+    <BLANKLINE>
+
+Anne cannot post from her alternative email address because it has not been
+validated yet.
+
+    >>> smtpd.reset()
+    >>> vette_watcher.resync()
+    >>> inject('itest-one', """\
+    ... From: aperson@example.org
+    ... To: itest-one@lists.launchpad.dev
+    ... Subject: A non-member post
+    ... Message-ID: <sixth-injection>
+    ...
+    ... Hi, I am not a verified member of this team (yet).
+    ... """)
+    >>> vette_watcher.wait_for_growth()
+    >>> smtpd.getMailboxSize() <= 0
+    True
+
+However, once she validates this address, she can post from it.
+
+    >>> alternative_email.status = EmailAddressStatus.VALIDATED
+    >>> commit()
+    >>> itest_helper.wait_for_mailman()
+    >>> smtp_watcher.resync()
+    >>> inject('itest-one', """\
+    ... From: aperson@example.org
+    ... To: itest-one@lists.launchpad.dev
+    ... Subject: A member post
+    ... Message-ID: <sixth-injection>
+    ...
+    ... Hi, I am now a verified member of this team!
+    ... """)
+    >>> smtp_watcher.wait_for_growth()
+    >>> messages = smtpd.getMessages()
+    >>> len(messages)
+    2
+    >>> messages.sort(key=itemgetter('sender'))
+
+    >>> print messages[0].as_string()
+    From: aperson@example.org
+    To: itest-one@lists.launchpad.dev
+    Message-ID: <sixth-injection>
+    Subject: [Itest-one] A member post
+    ...
+    Sender: itest-one-bounces+anne.person=example.com@lists.launchpad.dev
+    Errors-To: itest-one-bounces+anne.person=example.com@lists.launchpad.dev
+    Received: by smtp2mbox
+    <BLANKLINE>
+    Hi, I am now a verified member of this team!
+    _______________________________________________
+    Mailing list: http://launchpad.dev/~itest-one
+    Post to     : itest-one@lists.launchpad.dev
+    Unsubscribe : http://launchpad.dev/people/+me/+editemails
+    More help   : http://help.launchpad.dev/ListHelp
+    <BLANKLINE>
+    <BLANKLINE>
+
+    >>> print messages[1].as_string()
+    From: aperson@example.org
+    To: itest-one@lists.launchpad.dev
+    Message-ID: <sixth-injection>
+    Subject: [Itest-one] A member post
+    ...
+    Sender: itest-one-bounces+archive=mail-archive.com@lists.launchpad.dev
+    Errors-To: itest-one-bounces+archive=mail-archive.com@lists.launchpad.dev
+    Received: by smtp2mbox
+    <BLANKLINE>
+    Hi, I am now a verified member of this team!
+    _______________________________________________
+    Mailing list: http://launchpad.dev/~itest-one
+    Post to     : itest-one@lists.launchpad.dev
+    Unsubscribe : http://launchpad.dev/people/+me/+editemails
+    More help   : http://help.launchpad.dev/ListHelp
+    <BLANKLINE>
+    <BLANKLINE>
+
+There should also be no held requests pending.
+
+    # The mailing list must be locked to make this query.
+    >>> from Mailman.MailList import MailList
+    >>> mailing_list = MailList('itest-one')
+    >>> mailing_list.NumRequestsPending()
+    0
+    >>> mailing_list.Unlock()
+
+
+== Preventing archiver forgeries ==
+
+We archive messages by sending them to a special address owned by the Mail
+Archive <http://www.mail-archive.com>.  This address becomes a recipient of
+the mailing list, but we also prevent this address from being used to post
+messages to the list.
+
+    >>> from canonical.config import config
+    >>> config.mailman.archive_address
+    'archive@mail-archive.com'
+    >>> smtpd.reset()
+    >>> vette_watcher.resync()
+    >>> inject('itest-one', """\
+    ... From: %s
+    ... To: itest-one@lists.launchpad.dev
+    ... Subject: A forgery
+    ... Message-ID: <seventh-injection>
+    ...
+    ... Hi, I am forging me some spam!
+    ... """ % config.mailman.archive_address)
+    >>> vette_watcher.wait_for_growth()
+    >>> smtpd.getMailboxSize() <= 0
+    True
 
 
 == Clean up ==

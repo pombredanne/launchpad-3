@@ -21,8 +21,10 @@
               tal:condition="archs">
             <li tal:repeat="arch archs">
               <a tal:attributes="href arch/fmt:url">
-                <tal:title replace="arch/displayname" />
-                <tal:details replace="arch/@@+details" />
+                <tal:title replace="arch/architecturetag" />
+                <tal:official condition="arch/official">
+                  (official)
+                </tal:official>
               </a>
             </li>
           </ul>

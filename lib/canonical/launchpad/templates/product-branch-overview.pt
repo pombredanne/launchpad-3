@@ -19,10 +19,6 @@
   <tal:comment condition="nothing">
     Here is where we'd add the branch searching form.
   </tal:comment>
-  <p>
-    <a href="+branches">List currently active branches</a> for
-    <tal:project-name replace="context/displayname"/>.
-  </p>
 
   <div class="left">
     <div class="section portlet" id="official-branches">
@@ -37,44 +33,6 @@
         </div>
 
       </div>
-    </div>
-  </div>
-
-  <div class="right">
-    <div class="section portlet">
-      <h2>Recent revisions</h2>
-      <p>
-        These are the branches with the most recent revisions.
-      </p>
-
-      <table>
-        <tal:branches repeat="rev_no view/recent_revisions">
-          <tr tal:define="branch rev_no/branch">
-            <td>
-              <img src="/@@/branch"/>
-            </td>
-            <td>
-              <div>
-                <tal:branch replace="structure branch/fmt:title-link"/>
-                <tal:badges replace="structure branch/badges:small"/>
-              </div>
-              <div class="lesser">
-                registered by
-                  <a tal:attributes="href branch/owner/fmt:url"
-                     tal:content="branch/owner/browsername">Foo Bar</a>
-              </div>
-              <dl>
-                <dd>
-                  <tal:revision define="codebrowse string:${view/codebrowse_root}${rev_no/branch/unique_name}">
-                    <metal:landing-target use-macro="rev_no/branch/@@+macros/revision-text"/>
-                  </tal:revision>
-                </dd>
-              </dl>
-            </td>
-          </tr>
-        </tal:branches>
-      </table>
-
     </div>
 
     <div
@@ -115,7 +73,44 @@
     </div>
 
   </div>
+  <div class="right">
 
+    <div class="section portlet">
+      <h2>Recent revisions</h2>
+      <p>
+        These are the branches with the most recent revisions.
+      </p>
+
+      <table>
+        <tal:branches repeat="rev_no view/recent_revisions">
+          <tr tal:define="branch rev_no/branch">
+            <td>
+              <img src="/@@/branch"/>
+            </td>
+            <td>
+              <div>
+                <tal:branch replace="structure branch/fmt:title-link"/>
+                <tal:badges replace="structure branch/badges:small"/>
+              </div>
+              <div class="lesser">
+                registered by
+                  <a tal:attributes="href branch/owner/fmt:url"
+                     tal:content="branch/owner/browsername">Foo Bar</a>
+              </div>
+              <dl>
+                <dd>
+                  <tal:revision define="codebrowse string:${view/codebrowse_root}${rev_no/branch/unique_name}">
+                    <metal:landing-target use-macro="rev_no/branch/@@+macros/revision-text"/>
+                  </tal:revision>
+                </dd>
+              </dl>
+            </td>
+          </tr>
+        </tal:branches>
+      </table>
+
+    </div>
+  </div>
 </div>
 
 </body>

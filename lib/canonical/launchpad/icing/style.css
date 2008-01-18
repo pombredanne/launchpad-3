@@ -161,8 +161,6 @@ td.error {
 
 form {border: 0; margin: 0; padding: 0;}
 input[type="text"], input[type="password"], textarea {
-  background-color: #fff;
-  color: #656565;
   font-family: sans-serif;
   margin: 0;
 }
@@ -174,16 +172,20 @@ input[type="submit"], input[type="text"], select, textarea {
   margin-right: 0.5em;
 }
 input.urlTextType {width: 100%;}
-.fieldRequired, .fieldOptional {color: #999;}
-.formHelp {margin-bottom: 1em;}
+.fieldRequired, .fieldOptional {color: #999; font-weight: normal;}
+.formHelp {margin-top: 0.2em; margin-bottom: 0.5em; color: #777;}
 /* Hack to add breathing room to bug status forms: */
 table.listing div.field>table {margin-top: 0.5em;}
 table.listing div.field>label, table.listing div.field>div>label,
 table.listing div.actions {
   display: block; margin-top: 1em;
 }
+/* XXX 20080110 mpt: We make textareas slightly narrower in IE to avoid the
+right side being clipped (bug 156202). This should be rechecked post-2.0. */
 textarea {width: 100%;}
-table.form {width: 100%;}
+* html textarea {width: 95%;}
+
+table.form {margin-top: 1em; margin-bottom: 1em; width: 100%;}
 /* XXX: this is just to make tables look more consistent when used in a
  * summary pagelet; the concrete use case is in
  * person-pagelet-details.pt. We should move to use tables everywhere
@@ -952,8 +954,8 @@ a conditional comment in main-template.pt to work around the above rule. */
   text-decoration: none;
 }
 #portlets .portletBody {
-  border-left: 4px solid #ebebeb;
-  border-right: 4px solid #ebebeb;
+  border-left: 2px solid #ebebeb;
+  border-right: 2px solid #ebebeb;
   background-color: #EBEBEB;
   padding: 3px 12px 3px 8px !important;
   color: #717171;
@@ -1267,10 +1269,10 @@ body.tab-bugs #actions h2, body.tab-bugs #actions h2:hover {
 .statusNEW,           .statusNEW a           {color: #930;}
 .statusINCOMPLETE,    .statusINCOMPLETE a    {color: red;}
 .statusCONFIRMED,     .statusCONFIRMED a     {color: red;}
-.statusTRIAGED,       .statusTRIAGED a       {color: black;}
+.statusTRIAGED,       .statusTRIAGED a       {color: #f60;}
 .statusINPROGRESS,    .statusINPROGRESS a    {color: black;}
-.statusFIXRELEASED,   .statusFIXRELEASED a   {color: black;}
-.statusFIXCOMMITTED,  .statusFIXCOMMITTED a  {color: black;}
+.statusFIXCOMMITTED,  .statusFIXCOMMITTED a  {color: #050;}
+.statusFIXRELEASED,   .statusFIXRELEASED a   {color: green;}
 .statusINVALID,       .statusINVALID a       {color: gray;}
 .statusWONTFIX,       .statusWONTFIX a       {color: gray;}
 .importanceCRITICAL,  .importanceCRITICAL a  {color: red;}

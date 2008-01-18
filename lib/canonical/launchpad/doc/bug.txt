@@ -126,7 +126,7 @@ firefox_crashes bug private, we must first ensure that Sample Person is
 subscribed to the bug!
 
     >>> sample_person = current_user()
-    >>> subscription = firefox_crashes.subscribe(sample_person)
+    >>> subscription = firefox_crashes.subscribe(sample_person, sample_person)
 
 Even though we are logged in and subscribed to the bug, we are
 prevented from using the private attribute to mark bug #6 private:
@@ -237,7 +237,8 @@ the Cc list:
     >>> personset = getUtility(IPersonSet)
 
     >>> ubuntu_team = personset.get(17)
-    >>> subscription = blackhole_trash_folder.subscribe(ubuntu_team)
+    >>> subscription = blackhole_trash_folder.subscribe(
+    ...     ubuntu_team, ubuntu_team)
 
 Jeff Waugh, a member of the Ubuntu Team, is able to access this bug:
 
@@ -753,7 +754,7 @@ IBug.date_last_updated.
     >>> firefox_bug.isSubscribed(ubuntu_team)
     False
 
-    >>> subscription = firefox_bug.subscribe(ubuntu_team)
+    >>> subscription = firefox_bug.subscribe(ubuntu_team, ubuntu_team)
 
     >>> current_date_last_updated = firefox_bug.date_last_updated
 

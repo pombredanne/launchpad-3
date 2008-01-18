@@ -393,12 +393,17 @@ class ProductBranchesMenu(ApplicationMenu):
 
     usedfor = IProduct
     facet = 'branches'
-    links = ['branch_add', ]
+    links = ['branch_add', 'list_branches']
 
     def branch_add(self):
         text = 'Register branch'
         summary = 'Register a new Bazaar branch for this project'
         return Link('+addbranch', text, summary, icon='add')
+
+    def list_branches(self):
+        text = 'List branches'
+        summary = 'List the branches for this project'
+        return Link('+branches', text, summary, icon='add')
 
 
 class ProductSpecificationsMenu(ApplicationMenu):
@@ -1300,12 +1305,19 @@ class ProductBranchesView(BranchListingView):
     no_sort_by = (BranchListingSort.PRODUCT,)
 
     @cachedproperty
+    def hide_dormant_initial_value(self):
+        """If there are more than one page of branches, hide dormant ones."""
+        page_size = config.launchpad.branchlisting_batch_size
+        return self.context.branches.count() > page_size
+
+    @cachedproperty
     def development_focus_branch(self):
         return self.context.development_focus.series_branch
 
-    def _branches(self, lifecycle_status):
+    def _branches(self, lifecycle_status, show_dormant):
         return getUtility(IBranchSet).getBranchesForProduct(
-            self.context, lifecycle_status, self.user, self.sort_by)
+            self.context, lifecycle_status, self.user, self.sort_by,
+            show_dormant)
 
     @property
     def no_branch_message(self):

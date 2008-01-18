@@ -460,7 +460,7 @@ series of a distribution.
 
     >>> from datetime import datetime
     >>> [milestone.name for milestone in debian.milestones]
-    [u'3.1-rc1', u'3.1']
+    [u'3.1', u'3.1-rc1']
 
     >>> woody = debian['woody']
     >>> debian_milestone = woody.newMilestone(
@@ -470,8 +470,7 @@ They're ordered by dateexpected.
 
     >>> [(milestone.name, milestone.dateexpected.strftime('%Y-%m-%d'))
     ...  for milestone in debian.milestones]
-    [(u'woody-rc1', '2028-10-01'), (u'3.1-rc1', '2056-02-16'),
-     (u'3.1', '2056-05-16')]
+    [(u'3.1', '2056-05-16'), (u'3.1-rc1', '2056-02-16'), (u'woody-rc1', '2028-10-01')]
 
 Only milestones which have visible=True are returned by the .milestones
 property.
@@ -479,12 +478,12 @@ property.
     >>> debian_milestone.visible = False
     >>> flush_database_updates()
     >>> [milestone.name for milestone in debian.milestones]
-    [u'3.1-rc1', u'3.1']
+    [u'3.1', u'3.1-rc1']
 
 To get all milestones of a given distro we have the .all_milestones property.
 
     >>> [milestone.name for milestone in debian.all_milestones]
-    [u'woody-rc1', u'3.1-rc1', u'3.1']
+    [u'3.1', u'3.1-rc1', u'woody-rc1']
 
 
 == Handling Personal Package Archives ==
