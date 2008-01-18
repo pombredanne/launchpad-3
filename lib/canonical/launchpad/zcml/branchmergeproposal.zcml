@@ -51,6 +51,14 @@
   </browser:pages>
 
   <browser:page
+    name="+delete"
+    for="canonical.launchpad.interfaces.IBranchMergeProposal"
+    class="canonical.launchpad.browser.BranchMergeProposalDeleteView"
+    facet="branches"
+    permission="launchpad.Edit"
+    template="../templates/branchmergeproposal-delete.pt" />
+
+  <browser:page
     name="+work-in-progress"
     for="canonical.launchpad.interfaces.IBranchMergeProposal"
     class="canonical.launchpad.browser.BranchMergeProposalWorkInProgressView"

@@ -21,6 +21,12 @@
 
   <h1>Proposal to merge branch</h1>
 
+  <p tal:condition="mergeproposal/queue_status/enumvalue:MERGED">
+    The <tal:source-branch replace="structure context/source_branch/fmt:link">
+    has been <strong>merged</strong> into
+    <tal:target-branch replace="structure context/target_branch/fmt:link">
+  </p>
+
   <tal:whiteboard condition="context/whiteboard">
     <h2>Whiteboard</h2>
     <div id="branch-whiteboard-value"
@@ -29,7 +35,8 @@
     </div>
   </tal:whiteboard>
 
-  <div id="source-revisions">
+  <div id="source-revisions"
+       tal:condition="not: mergeproposal/queue_status/enumvalue:MERGED">
   <h2>Unmerged revisions</h2>
 
     <tal:history-available condition="context/source_branch/revision_count"
@@ -42,7 +49,6 @@
       <p>Recent revisions are not available due to the source branch being remote.</p>
     </tal:remote-branch>
   </div>
-
 </div>
 
 </body>

@@ -6,6 +6,7 @@ __metaclass__ = type
 __all__ = [
     'BranchMergeProposalSOP',
     'BranchMergeProposalContextMenu',
+    'BranchMergeProposalDeleteView',
     'BranchMergeProposalEditView',
     'BranchMergeProposalMergedView',
     'BranchMergeProposalRequestReviewView',
@@ -55,13 +56,18 @@ class BranchMergeProposalContextMenu(ContextMenu):
     """Context menu for branches."""
 
     usedfor = IBranchMergeProposal
-    links = ['edit', 'set_work_in_progress', 'request_review', 'review',
-             'merge']
+    links = ['edit', 'delete', 'set_work_in_progress', 'request_review',
+             'review', 'merge']
 
     @enabled_with_permission('launchpad.Edit')
     def edit(self):
         text = 'Edit details'
         return Link('+edit', text, icon='edit')
+
+    @enabled_with_permission('launchpad.Edit')
+    def delete(self):
+        text = 'Delete proposal to merge'
+        return Link('+delete', text, icon='edit')
 
     @enabled_with_permission('launchpad.Edit')
     def set_work_in_progress(self):
@@ -95,12 +101,18 @@ class BranchMergeProposalContextMenu(ContextMenu):
             valid_reviewer = (self.context.isPersonValidReviewer(self.user) or
                               self.user.inTeam(lp_admins))
             enabled = self.context.isReviewable() and valid_reviewer
+        # Disable the link if the branch is already merged.
+        if self.context.queue_status == BranchMergeProposalStatus.MERGED:
+            enabled = False
         return Link('+review', text, icon='edit', enabled=enabled)
 
     @enabled_with_permission('launchpad.Edit')
     def merge(self):
         text = 'Mark as merged'
-        return Link('+merged', text, icon='edit')
+        # Disable the link if the branch is already merged.
+        if self.context.queue_status == BranchMergeProposalStatus.MERGED:
+            enabled = False
+        return Link('+merged', text, icon='edit', enabled=enabled)
 
 
 class UnmergedRevisionsMixin:
@@ -303,23 +315,37 @@ class ReviewBranchMergeProposalView(MergeProposalEditView,
 
 
 class BranchMergeProposalEditView(MergeProposalEditView):
-    """The view to control the editing and deletion of merge proposals."""
+    """The view to control the editing of merge proposals."""
     schema = IBranchMergeProposal
     label = "Edit branch merge proposal"
     field_names = ["whiteboard"]
+
+    @property
+    def next_url(self):
+        return canonical_url(self.context)
+
+    @action('Update', name='update')
+    def update_action(self, action, data):
+        """Update the whiteboard and go back to the source branch."""
+        self.updateContextFromData(data)
+
+    @action('Cancel', name='cancel', validator='validate_cancel')
+    def cancel_action(self, action, data):
+        """Do nothing and go back to the source branch."""
+
+
+class BranchMergeProposalDeleteView(MergeProposalEditView):
+    """The view to control the deletion of merge proposals."""
+    schema = IBranchMergeProposal
+    label = "Delete branch merge proposal"
+    field_names = []
 
     def initialize(self):
         # Store the source branch for `next_url` to make sure that
         # it is available in the situation where the merge proposal
         # is deleted.
         self.source_branch = self.context.source_branch
-        self.next_url = canonical_url(self.context)
-        super(BranchMergeProposalEditView, self).initialize()
-
-    @action('Update', name='update')
-    def update_action(self, action, data):
-        """Update the whiteboard and go back to the source branch."""
-        self.updateContextFromData(data)
+        super(BranchMergeProposalDeleteView, self).initialize()
 
     @action('Delete proposal', name='delete')
     def delete_action(self, action, data):
@@ -331,6 +357,7 @@ class BranchMergeProposalEditView(MergeProposalEditView):
     @action('Cancel', name='cancel', validator='validate_cancel')
     def cancel_action(self, action, data):
         """Do nothing and go back to the source branch."""
+        self.next_url = canonical_url(self.context)
 
 
 class BranchMergeProposalMergedView(LaunchpadEditFormView):
@@ -338,6 +365,11 @@ class BranchMergeProposalMergedView(LaunchpadEditFormView):
     schema = IBranchMergeProposal
     label = "Edit branch merge proposal"
     field_names = ["merged_revno"]
+
+    @property
+    def initial_values(self):
+        # Default to reviewing the tip of the source branch.
+        return {'merged_revno': self.context.source_branch.revision_count}
 
     @property
     def next_url(self):
