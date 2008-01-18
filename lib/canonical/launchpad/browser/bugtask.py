@@ -88,6 +88,8 @@ from canonical.launchpad.event.sqlobjectevent import SQLObjectModifiedEvent
 
 from canonical.launchpad.browser.bug import BugContextMenu, BugTextView
 from canonical.launchpad.browser.bugcomment import build_comments_from_chunks
+from canonical.launchpad.browser.feeds import (
+    BugTargetLatestBugsFeedLink, FeedsMixin, PersonLatestBugsFeedLink)
 from canonical.launchpad.browser.mentoringoffer import CanBeMentoredView
 from canonical.launchpad.browser.launchpad import StructuralObjectPresentation
 
@@ -395,7 +397,7 @@ class BugTaskTextView(LaunchpadView):
         return view.render()
 
 
-class BugTaskView(LaunchpadView, CanBeMentoredView):
+class BugTaskView(LaunchpadView, CanBeMentoredView, FeedsMixin):
     """View class for presenting information about an `IBugTask`."""
 
     def __init__(self, context, request):
@@ -507,7 +509,7 @@ class BugTaskView(LaunchpadView, CanBeMentoredView):
 
     def _handleSubscribe(self):
         """Handle a subscribe request."""
-        self.context.bug.subscribe(self.user)
+        self.context.bug.subscribe(self.user, self.user)
         self.notices.append("You have been subscribed to this bug.")
 
     def _handleUnsubscribe(self, user):
@@ -843,6 +845,14 @@ class BugTaskEditView(LaunchpadEditFormView):
         return editable_field_names
 
     @property
+    def is_question(self):
+        """Return True or False if this bug was converted into a question.
+
+        Bugtasks cannot be edited if the bug was converted into a question.
+        """
+        return self.context.bug.getQuestionCreatedFromBug() is not None
+
+    @property
     def next_url(self):
         """See `LaunchpadFormView`."""
         return canonical_url(self.context)
@@ -1033,7 +1043,7 @@ class BugTaskEditView(LaunchpadEditFormView):
         bugtask = context
 
         if self.request.form.get('subscribe', False):
-            bugtask.bug.subscribe(self.user)
+            bugtask.bug.subscribe(self.user, self.user)
             self.request.response.addNotification(
                 "You have been subscribed to this bug.")
 
@@ -1524,8 +1534,14 @@ class NominatedBugListingBatchNavigator(BugListingBatchNavigator):
         return bugtask_listing_item
 
 
-class BugTaskSearchListingView(LaunchpadFormView):
+class BugTaskSearchListingView(LaunchpadFormView, FeedsMixin):
     """View that renders a list of bugs for a given set of search criteria."""
+
+    # Only include <link> tags for bug feeds when using this view.
+    feed_types = (
+        BugTargetLatestBugsFeedLink,
+        PersonLatestBugsFeedLink,
+        )
 
     # These widgets are customised so as to keep the presentation of this view
     # and its descendants consistent after refactoring to use
@@ -1544,6 +1560,23 @@ class BugTaskSearchListingView(LaunchpadFormView):
             return IUpstreamProductBugTaskSearch
         else:
             return IBugTaskSearch
+
+    @property
+    def feed_links(self):
+        """Prevent conflicts between the page and the atom feed.
+
+        The latest-bugs atom feed matches the default output of this
+        view, but it does not match this view's bug listing when
+        any search parameters are passed in.
+        """
+        if self.request.get('QUERY_STRING', '') == '':
+            # There is no query in this request, so it's okay for this page to
+            # have its feed links.
+            return super(BugTaskSearchListingView, self).feed_links
+        else:
+            # The query changes the results so that they would not match the
+            # feed.  In this case, suppress the feed links.
+            return []
 
     def initialize(self):
         """Initialize the view with the request.
@@ -2550,7 +2583,7 @@ class BugTaskRemoveQuestionView(LaunchpadFormView):
         # The question.owner was implicitly unsubscribed when the bug
         # was unlinked. We resubscribe the owner if he was subscribed.
         if owner_is_subscribed is True:
-            self.context.bug.subscribe(question.owner)
+            self.context.bug.subscribe(question.owner, self.user)
         self.request.response.addNotification(
             'Removed Question #%s: <a href="%s">%s<a>.'
             % (question.id, canonical_url(question),

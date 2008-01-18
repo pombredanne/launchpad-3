@@ -781,9 +781,10 @@ permissive database user.
   >>> commit()
   >>> LaunchpadZopelessLayer.switchDbUser(config.builddmaster.dbuser)
 
-Now, there is no new build candidate.
+Now, there we have another build candidate.
 
-  >>> a_builder.findBuildCandidate() is None
+  >>> new_candidate = a_builder.findBuildCandidate()
+  >>> new_candidate.id != old_candidate.id
   True
 
 Because the 'previous' candidate was marked as superseded, so it's not
@@ -874,6 +875,7 @@ Similarly, PPA builds pass the 'archives' arguments:
   >>> cprov_archive = getUtility(IPersonSet).getByName('cprov').archive
   >>> removeSecurityProxy(a_build).archive = cprov_archive
   >>> a_builder.trusted = False
+  >>> a_builder.vm_host = 'localhost.ppa'
   >>> commit()
   >>> a_builder.setSlaveForTesting(OkSlave())
   >>> a_builder.is_available

@@ -13,12 +13,9 @@ MAILMAN_SITE_LIST = 'unused_mailman_site_list'
 # pulling incoming messages from a POP account.
 MTA = None
 
-# Turn off all archiving.
-ARCHIVE_TO_MBOX = -1
-
 # Disable runners for features we don't need.
 QRUNNERS = [
-##     ('ArchRunner',     1), # messages for the archiver
+    ('ArchRunner',     1), # messages for the archiver
     ('BounceRunner',   1), # for processing the qfile/bounces directory
 ##     ('CommandRunner',  1), # commands and bounces from the outside world
     ('IncomingRunner', 1), # posts from the outside world
@@ -38,3 +35,4 @@ DEFAULT_SEND_GOODBYE_MSG = No
 DEFAULT_DIGESTABLE = No
 DEFAULT_BOUNCE_NOTIFY_OWNER_ON_DISABLE = No
 DEFAULT_BOUNCE_NOTIFY_OWNER_ON_REMOVAL = No
+VERP_PERSONALIZED_DELIVERIES = Yes

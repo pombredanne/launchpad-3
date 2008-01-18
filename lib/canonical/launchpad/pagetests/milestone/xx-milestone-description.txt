@@ -22,21 +22,12 @@ We can set the description while creating a milestone for a Distribution.
     >>> test_browser.getControl('Name').value = 'milestone1'
     >>> test_browser.getControl('Description').value = (
     ...     "Description of first Ubuntu milestone.")
-    >>> test_browser.getControl('Add').click()
+    >>> test_browser.getControl('Register milestone').click()
 
 The description appears on the milestone index page.
 
     >>> test_browser.open('http://launchpad.dev/ubuntu/+milestone/milestone1')
     >>> for tag in find_tags_by_class(test_browser.contents, 'description'):
-    ...     print extract_text(tag)
-    Description of first Ubuntu milestone.
-
-The description also appears on the milestone listing page.
-
-    >>> test_browser.open('http://launchpad.dev/ubuntu/+milestones')
-    >>> content = test_browser.contents
-    >>> milestone_tag = find_tag_by_id(content, 'milestone-milestone1')    
-    >>> for tag in milestone_tag.findAll(attrs={'class': 'description'}):
     ...     print extract_text(tag)
     Description of first Ubuntu milestone.
 
@@ -46,7 +37,7 @@ We can edit the description after creating the milestone.
     ...     'http://launchpad.dev/ubuntu/+milestone/milestone1/+edit')
     >>> test_browser.getControl('Description').value = (
     ...     "Modified description of first Ubuntu milestone.")
-    >>> test_browser.getControl('Change').click()
+    >>> test_browser.getControl('Update').click()
 
 And see that it is indeed modified on the milestone page.
 
@@ -65,7 +56,7 @@ We can set the description while creating a milestone for a Product.
     >>> test_browser.getControl('Name').value = 'milestone1'
     >>> test_browser.getControl('Description').value = (
     ...     "Description of first alsa-utils milestone.")
-    >>> test_browser.getControl('Add').click()
+    >>> test_browser.getControl('Register milestone').click()
 
 The description appears on the milestone index page.
 
@@ -75,22 +66,13 @@ The description appears on the milestone index page.
     ...     print extract_text(tag)
     Description of first alsa-utils milestone.
 
-The description also appears on the milestone listing page.
-
-    >>> test_browser.open('http://launchpad.dev/alsa-utils/+milestones')
-    >>> content = test_browser.contents
-    >>> milestone_tag = find_tag_by_id(content, 'milestone-milestone1')    
-    >>> for tag in milestone_tag.findAll(attrs={'class': 'description'}):
-    ...     print extract_text(tag)
-    Description of first alsa-utils milestone.
-
 We can edit the description after creating the milestone.
 
     >>> test_browser.open(
     ...     'http://launchpad.dev/alsa-utils/+milestone/milestone1/+edit')
     >>> test_browser.getControl('Description').value = (
     ...     "Modified description of first alsa-utils milestone.")
-    >>> test_browser.getControl('Change').click()
+    >>> test_browser.getControl('Update').click()
 
 And see that it is indeed modified on the milestone page.
 

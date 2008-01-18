@@ -11,7 +11,6 @@ from zope.interface import implements
 from sqlobject import ForeignKey
 
 from canonical.database.sqlbase import SQLBase
-from canonical.launchpad import _
 from canonical.launchpad.interfaces import IBugMessage, IBugMessageSet
 from canonical.launchpad.database.message import Message, MessageChunk
 
@@ -25,6 +24,8 @@ class BugMessage(SQLBase):
     # db field names
     bug = ForeignKey(dbName='bug', foreignKey='Bug', notNull=True)
     message = ForeignKey(dbName='message', foreignKey='Message', notNull=True)
+    bugwatch = ForeignKey(dbName='bugwatch', foreignKey='BugWatch',
+        notNull=False, default=None)
 
 class BugMessageSet:
     """See canonical.launchpad.interfaces.IBugMessageSet."""

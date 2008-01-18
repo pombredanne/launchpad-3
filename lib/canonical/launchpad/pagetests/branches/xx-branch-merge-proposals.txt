@@ -244,11 +244,35 @@ branch widget is shown.
     ...     print widget
     <input type="text" ...
 
+Test validation of errors...
+
+The target branch is a required field, so attempting to register without
+setting it gives an appropriate error.
+
+    >>> nopriv_browser.getControl('Register').click()
+    >>> for message in get_feedback_messages(nopriv_browser.contents):
+    ...     print extract_text(message)
+    There is 1 error.
+    Required input is missing.
+
+Invalid errors are also shown.
+
+    >>> nopriv_browser.getControl(
+    ...     name='field.target_branch.target_branch').value = (
+    ...         'fooix')
+    >>> nopriv_browser.getControl('Register').click()
+    >>> for message in get_feedback_messages(nopriv_browser.contents):
+    ...     print extract_text(message)
+    There is 1 error.
+    Invalid value
+
+
 When a branch is set as the development focus, then a radio button
 is shown.
 
     >>> admin_browser.open('http://launchpad.dev/firefox/trunk')
     >>> admin_browser.getLink('Edit source').click()
+    >>> admin_browser.getControl('Bazaar').click()
     >>> admin_browser.getControl(name='field.user_branch').value = (
     ...     '~name12/firefox/main')
     >>> admin_browser.getControl('Update Details').click()
@@ -289,3 +313,25 @@ focus before, then that is also shown as a radio option.
     ~name12/firefox/main checked
     ~sabdfl/firefox/release-0.9
     other
+
+
+== Registering a merge, and junk branches ==
+
+Junk branches cannot be proposed for merging.  The action option is not
+shown for junk branches.
+
+    >>> nopriv_browser.open(
+    ...     'http://code.launchpad.dev/~sabdfl/+junk/testdoc')
+    >>> nopriv_browser.getLink('Propose for merging').click()
+    Traceback (most recent call last):
+    ...
+    LinkNotFoundError
+
+Even if the user hand crafts the URL to look like a proposal to merge,
+they'll get a 404.
+
+    >>> nopriv_browser.open(
+    ...     'http://code.launchpad.dev/~sabdfl/+junk/testdoc/+register-merge')
+    Traceback (most recent call last):
+    ...
+    NotFound: ...

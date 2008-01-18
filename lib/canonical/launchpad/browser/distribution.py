@@ -52,8 +52,10 @@ from canonical.launchpad.browser.bugtask import BugTargetTraversalMixin
 from canonical.launchpad.browser.build import BuildRecordsView
 from canonical.launchpad.browser.editview import SQLObjectEditView
 from canonical.launchpad.browser.faqtarget import FAQTargetNavigationMixin
+from canonical.launchpad.browser.feeds import FeedsMixin
 from canonical.launchpad.browser.launchpad import StructuralObjectPresentation
-from canonical.launchpad.components.request_country import request_country
+from canonical.launchpad.components.request_country import (
+    ipaddress_from_request, request_country)
 from canonical.launchpad.browser.questiontarget import (
     QuestionTargetFacetMixin, QuestionTargetTraversalMixin)
 from canonical.launchpad.webapp import (
@@ -403,7 +405,7 @@ class DistributionTranslationsMenu(ApplicationMenu):
         return Link('+select-language-pack-admin', text, icon='edit')
 
 
-class DistributionView(HasAnnouncementsView, BuildRecordsView):
+class DistributionView(HasAnnouncementsView, BuildRecordsView, FeedsMixin):
     """Default Distribution view class."""
 
     def initialize(self):
@@ -632,21 +634,29 @@ class DistributionCountryArchiveMirrorsView(LaunchpadView):
     """
 
     def render(self):
+        request = self.request
         if not self.context.full_functionality:
-            self.request.response.setStatus(404)
+            request.response.setStatus(404)
             return u''
-        country = request_country(self.request)
+        ip_address = ipaddress_from_request(request)
+        country = request_country(request)
         mirrors = getUtility(IDistributionMirrorSet).getBestMirrorsForCountry(
             country, MirrorContent.ARCHIVE)
         body = "\n".join(mirror.base_url for mirror in mirrors)
-        self.request.response.setHeader(
-            'content-type', 'text/plain;charset=utf-8')
+        request.response.setHeader('content-type', 'text/plain;charset=utf-8')
         if country is None:
             country_name = 'Unknown'
         else:
             country_name = country.name
-        self.request.response.setHeader(
-            'X-Generated-For-Country', country_name)
+        request.response.setHeader('X-Generated-For-Country', country_name)
+        request.response.setHeader('X-Generated-For-IP', ip_address)
+        # XXX: These are here only for debugging
+        # https://launchpad.net/bugs/173729. -- Guilherme Salgado, 2008-01-09
+        request.response.setHeader(
+            'X-REQUEST-HTTP_X_FORWARDED_FOR',
+            request.get('HTTP_X_FORWARDED_FOR'))
+        request.response.setHeader(
+            'X-REQUEST-REMOTE_ADDR', request.get('REMOTE_ADDR'))
         return body.encode('utf-8')
 
 

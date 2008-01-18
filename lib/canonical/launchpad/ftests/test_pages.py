@@ -4,6 +4,10 @@
 
 Set up the test data in the database first.
 """
+# Stop lint warning about not initializing TestCase parent on
+# PageStoryTestCase, see the comment bellow.
+# pylint: disable-msg=W0231
+
 __metaclass__ = type
 
 import doctest
@@ -13,6 +17,7 @@ import unittest
 
 from BeautifulSoup import (BeautifulSoup, Comment, Declaration,
     NavigableString, PageElement, ProcessingInstruction, SoupStrainer, Tag)
+from urlparse import urljoin
 
 from zope.app.testing.functional import HTTPCaller, SimpleCookie
 from zope.testbrowser.testing import Browser
@@ -41,7 +46,8 @@ class UnstickyCookieHTTPCaller(HTTPCaller):
         HTTPCaller.__init__(self, *args, **kw)
     def __call__(self, *args, **kw):
         if self._debug:
-            import pdb; pdb.set_trace()
+            import pdb
+            pdb.set_trace()
         try:
             return HTTPCaller.__call__(self, *args, **kw)
         finally:
@@ -77,28 +83,30 @@ def find_tags_by_class(content, class_, only_first=False):
     """Find and return one or more tags matching the given class(es)"""
     match_classes = set(class_.split())
     def class_matcher(value):
-        if value is None: return False
+        if value is None:
+            return False
         classes = set(value.split())
         return match_classes.issubset(classes)
     soup = BeautifulSoup(
         content, parseOnlyThese=SoupStrainer(attrs={'class': class_matcher}))
     if only_first:
-        find=BeautifulSoup.find
+        find = BeautifulSoup.find
     else:
-        find=BeautifulSoup.findAll
+        find = BeautifulSoup.findAll
     return find(soup, attrs={'class': class_matcher})
 
 
 def find_portlet(content, name):
     """Find and return the portlet with the given title. Sequences of
     whitespace are considered equivalent to one space, and beginning and
-    ending whitespace is also ignored.
+    ending whitespace is also ignored, as are non-text elements such as
+    images.
     """
     whitespace_re = re.compile('\s+')
     name = whitespace_re.sub(' ', name.strip())
     for portlet in find_tags_by_class(content, 'portlet'):
         if portlet.find('h2'):
-            portlet_title = portlet.find('h2').renderContents()
+            portlet_title = extract_text(portlet.find('h2'))
             if name == whitespace_re.sub(' ', portlet_title.strip()):
                 return portlet
     return None
@@ -111,8 +119,8 @@ def find_main_content(content):
 
 def get_feedback_messages(content):
     """Find and return the feedback messages of the page."""
-    message_classes = [
-        'message', 'informational message', 'error message', 'warning message']
+    message_classes = ['message', 'informational message', 'error message',
+                       'warning message']
     soup = BeautifulSoup(
         content,
         parseOnlyThese=SoupStrainer(['div', 'p'], {'class': message_classes}))
@@ -127,10 +135,28 @@ ELEMENTS_INTRODUCING_NEWLINE = [
 
 
 NEWLINES_RE = re.compile(u'\n+')
-LEADING_AND_TRAILING_SPACES_RE = re.compile(u'(^[ \t]+)|([ \t]$)', re.MULTILINE)
+LEADING_AND_TRAILING_SPACES_RE = re.compile(
+    u'(^[ \t]+)|([ \t]$)', re.MULTILINE)
 TABS_AND_SPACES_RE = re.compile(u'[ \t]+')
 NBSP_RE = re.compile(u'&nbsp;|&#160;')
 
+
+def extract_link_from_tag(tag, base=None):
+    """Return a link from <a> `tag`, optionally considered relative to `base`.
+
+    A `tag` should contain a 'href' attribute, and `base` will commonly
+    be extracted from browser.url.
+    """
+    if not isinstance(tag, PageElement):
+        link = BeautifulSoup(tag)
+    else:
+        link = tag
+
+    href = dict(link.attrs).get('href')
+    if base is None:
+        return href
+    else:
+        return urljoin(base, href)
 
 def extract_text(content):
     """Return the text stripped of all tags.
@@ -180,6 +206,9 @@ def parse_relationship_section(content):
     soup = BeautifulSoup(content)
     section = soup.find('ul')
     whitespace_re = re.compile('\s+')
+    if section is None:
+        print 'EMPTY SECTION'
+        return
     for li in section.findAll('li'):
         if li.a:
             link = li.a
@@ -255,6 +284,7 @@ def setUpGlobs(test):
     test.globs['find_portlet'] = find_portlet
     test.globs['find_main_content'] = find_main_content
     test.globs['get_feedback_messages'] = get_feedback_messages
+    test.globs['extract_link_from_tag'] = extract_link_from_tag
     test.globs['extract_text'] = extract_text
     test.globs['parse_relationship_section'] = parse_relationship_section
     test.globs['print_tab_links'] = print_tab_links

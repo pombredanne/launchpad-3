@@ -1,5 +1,4 @@
-The Bug Watch Widget
-====================
+= The Bug Watch Widget =
 
 There's a custom widget used to link a bug watch to a bug task. It's a
 simple RadioWidget with some modifications.
@@ -52,8 +51,9 @@ selected.
     NOT SELECTED: <label...> The Mozilla.org Bug Tracker <a...>#2000</a>...
     NOT SELECTED: <label...> The Mozilla.org Bug Tracker <a...>#42</a>...
     NOT SELECTED: <label...> Debian Bug tracker <a...>#304014</a>...
-    NOT SELECTED: <label...> <select...name="field.bugtracker"...
-        <input...name="field.remotebug...>
+    NOT SELECTED: <label...>
+    <div>URL: <input...></div>
+    </label>
 
 If we pass a bug watch to renderItems(), the corresponding radio button
 will be selected.
@@ -69,8 +69,9 @@ will be selected.
     NOT SELECTED: <label...> The Mozilla.org Bug Tracker <a...>#2000</a>...
     NOT SELECTED: <label...> The Mozilla.org Bug Tracker <a...>#42</a>...
     NOT SELECTED: <label...> Debian Bug tracker <a...>#304014</a>...
-    NOT SELECTED: <label...> <select...name="field.bugtracker"...
-        <input...name="field.remotebug...>
+    NOT SELECTED: <label...>
+    <div>URL: <input...></div>
+    </label>
 
 If we pass _new_bugwatch_value to renderItems(), the corresponding radio
 button will be selected.
@@ -83,8 +84,9 @@ button will be selected.
     NOT SELECTED: <label...> The Mozilla.org Bug Tracker <a...>#2000</a>...
     NOT SELECTED: <label...> The Mozilla.org Bug Tracker <a...>#42</a>...
     NOT SELECTED: <label...> Debian Bug tracker <a...>#304014</a>...
-    SELECTED: <label...> <select...name="field.bugtracker"...
-        <input...name="field.remotebug...>
+    SELECTED: <label...>
+    <div>URL: <input...></div>
+    </label>
 
 Now let's use the widget to actually create a new bug watch. First let's take a look at which bug watches are currently associated with the bug.
 
@@ -100,8 +102,8 @@ Now let's create a new bug watch, pointing at bug #84 in the Gnome tracker.
 
     >>> NEW = BugTaskBugWatchWidget._new_bugwatch_value
     >>> request = LaunchpadTestRequest(form={
-    ...     'field.bugwatch': NEW, 'field.bugtracker': '2',
-    ...     'field.remotebug': '84'})
+    ...     'field.bugwatch': NEW,
+    ...     'field.url': u'http://bugzilla.gnome.org/show_bug.cgi?id=84'})
     >>> bugwatch_widget = BugTaskBugWatchWidget(
     ...     bugwatch_field, bugwatch_field.vocabulary, request)
     >>> bugwatch = bugwatch_widget.getInputValue()
@@ -123,8 +125,8 @@ If we try to create a bug watch that already exists, the existing bug
 watch is being returned, and no new bug watch is created.
 
     >>> request = LaunchpadTestRequest(form={
-    ...     'field.bugwatch': NEW, 'field.bugtracker': '2',
-    ...     'field.remotebug': '84'})
+    ...     'field.bugwatch': NEW,
+    ...     'field.url': u'http://bugzilla.gnome.org/show_bug.cgi?id=84'})
     >>> bugwatch_widget = BugTaskBugWatchWidget(
     ...     bugwatch_field, bugwatch_field.vocabulary, request)
     >>> bugwatch = bugwatch_widget.getInputValue()
@@ -142,10 +144,12 @@ watch is being returned, and no new bug watch is created.
     Debian Bug tracker: #304014
 
 
-If we forget to enter a bug number, a WidgetInputError is being raised.
+If we enter a URL that doesn't match an existing bug tracker,
+a WidgetInputError is being raised.
 
     >>> request = LaunchpadTestRequest(form={
-    ...     'field.bugwatch': NEW, 'field.bugtracker': '2'})
+    ...     'field.bugwatch': NEW,
+    ...     'field.url': 'http://not.a.bug.tracker/'})
     >>> bugwatch_widget = BugTaskBugWatchWidget(
     ...     bugwatch_field, bugwatch_field.vocabulary, request)
 
@@ -159,8 +163,8 @@ part of the vocabulary, we've overridden _toFieldValue(), so that when
 it's passed 'NEW', it will return the newly created bug watch.
 
     >>> request = LaunchpadTestRequest(form={
-    ...     'field.bugwatch': NEW, 'field.bugtracker': '2',
-    ...     'field.remotebug': '168'})
+    ...     'field.bugwatch': NEW,
+    ...     'field.url': 'http://bugzilla.gnome.org/show_bug.cgi?id=177'})
     >>> bugwatch_widget = BugTaskBugWatchWidget(
     ...     bugwatch_field, bugwatch_field.vocabulary, request)
     >>> bugwatch = bugwatch_widget._toFieldValue(NEW)
