@@ -258,6 +258,14 @@ class Branch(SQLBase):
             return self.unique_name
 
     @property
+    def code_reviewer(self):
+        """See `IBranch`."""
+        if self.reviewer:
+            return self.reviewer
+        else:
+            return self.owner
+
+    @property
     def sort_key(self):
         """See `IBranch`."""
         if self.product is None:

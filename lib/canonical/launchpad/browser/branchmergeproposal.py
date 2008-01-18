@@ -110,8 +110,8 @@ class BranchMergeProposalContextMenu(ContextMenu):
     def merge(self):
         text = 'Mark as merged'
         # Disable the link if the branch is already merged.
-        if self.context.queue_status == BranchMergeProposalStatus.MERGED:
-            enabled = False
+        enabled = (
+            self.context.queue_status != BranchMergeProposalStatus.MERGED)
         return Link('+merged', text, icon='edit', enabled=enabled)
 
 

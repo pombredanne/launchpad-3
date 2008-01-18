@@ -21,22 +21,16 @@
 
   <h1>Proposal to merge branch</h1>
 
-  <p tal:condition="mergeproposal/queue_status/enumvalue:MERGED">
-    The <tal:source-branch replace="structure context/source_branch/fmt:link">
-    has been <strong>merged</strong> into
-    <tal:target-branch replace="structure context/target_branch/fmt:link">
-  </p>
-
   <tal:whiteboard condition="context/whiteboard">
     <h2>Whiteboard</h2>
-    <div id="branch-whiteboard-value"
+    <div id="branch-whiteboard-value" class="whiteboard"
       tal:content="structure context/whiteboard/fmt:text-to-html">
       Whiteboard text goes here.
     </div>
   </tal:whiteboard>
 
   <div id="source-revisions"
-       tal:condition="not: mergeproposal/queue_status/enumvalue:MERGED">
+       tal:condition="not: context/queue_status/enumvalue:MERGED">
   <h2>Unmerged revisions</h2>
 
     <tal:history-available condition="context/source_branch/revision_count"

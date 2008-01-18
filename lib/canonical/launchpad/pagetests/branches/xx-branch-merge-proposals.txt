@@ -167,6 +167,7 @@ target branches or the registrant of the merge proposal.
 
     >>> print_action_links(sample_browser.contents)
     Edit details: .../+merge/.../+edit
+    Delete proposal to merge: .../+merge/.../+delete
     Request review: .../+merge/.../+request-review
     Review proposal: .../+merge/.../+review
     Mark as merged: .../+merge/.../+merged
@@ -188,11 +189,10 @@ button options are:
     >>> sample_browser.getLink('Edit details').click()
     >>> print_submit_buttons(sample_browser.contents)
     Update
-    Delete proposal
     Cancel
 
     >>> print sample_browser.title
-    Edit branch merge proposal
+    Edit proposal to merge branch
     >>> sample_browser.getControl('Whiteboard').value = (
     ...     "This is the updated whiteboard.\n"
     ...     "Demo url: http://launchpad.dev/+foo")
@@ -214,7 +214,7 @@ Merge proposals can be deleted, when either abandoned or created in error.
 When a merge proposal is deleted, the user is taken back to the main page
 for the source_branch.
 
-    >>> sample_browser.getLink('Edit details').click()
+    >>> sample_browser.getLink('Delete proposal to merge').click()
     >>> sample_browser.getControl('Delete proposal').click()
     >>> print sample_browser.url
     http://code.launchpad.dev/~sabdfl/firefox/release-0.9
@@ -293,7 +293,7 @@ is shown as a link.
     ~name12/gnome-terminal/main - view proposal details
       This is the whiteboard
       Merge proposed by No Privileges Person
-      Merged ... ago as revision 42
+      Merged ... ago at revision 42
 
 Gone from the target branch.
 

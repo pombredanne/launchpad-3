@@ -223,7 +223,9 @@
         <metal:landing-target use-macro="context/@@+macros/merge-proposal"/>
       </tal:landing-candidate>
     </tal:proposals>
-    <a href="+landing-candidates">more&#8230;</a>
+    <tal:show-link condition="view/show_candidate_more_link">
+      <a href="+landing-candidates">more&#8230;</a>
+    </tal:show-link>
   </div>
 
   <div id="recent-revisions">

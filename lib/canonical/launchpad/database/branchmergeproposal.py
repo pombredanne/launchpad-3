@@ -83,10 +83,7 @@ class BranchMergeProposal(SQLBase):
         """See `IBranchMergeProposal`."""
         if reviewer is None:
             return False
-        target_review_team = self.target_branch.reviewer
-        if target_review_team is None:
-            target_review_team = self.target_branch.owner
-        return reviewer.inTeam(target_review_team)
+        return reviewer.inTeam(self.target_branch.code_reviewer)
 
     def isReviewable(self):
         """See `IBranchMergeProposal`."""

@@ -352,18 +352,22 @@ class BranchView(LaunchpadView):
             targets_added.add(target_id)
         return targets
 
-    @cachedproperty
+    @property
     def latest_landing_candidates(self):
         """Return a decorated filtered list of landing candidates."""
         # Only show the most recent 5 landing_candidates
-        candidates = self.context.landing_candidates[:5]
-        return [DecoratedMergeProposal(proposal) for proposal in candidates]
+        return self.landing_candidates[:5]
 
     @cachedproperty
     def landing_candidates(self):
         """Return a decorated list of landing candidates."""
         candidates = self.context.landing_candidates
         return [DecoratedMergeProposal(proposal) for proposal in candidates]
+
+    @property
+    def show_candidate_more_link(self):
+        """Only show the link if there are more than five."""
+        return len(self.landing_candidates) > 5
 
 
 class DecoratedMergeProposal:

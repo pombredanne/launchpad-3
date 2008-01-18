@@ -233,7 +233,7 @@ class IBranchMergeProposal(Interface):
         """
 
     def getUnlandedSourceBranchRevisions():
-        """Returns a sequence of `BranchRevision` objects.
+        """Return a sequence of `BranchRevision` objects.
 
         Returns those revisions that are in the revision history for the
         source branch that are not in the revision history of the target

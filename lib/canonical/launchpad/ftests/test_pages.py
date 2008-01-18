@@ -246,7 +246,10 @@ def print_action_links(content):
 
 
 def print_submit_buttons(content):
-    """Print the submit button values found in the main content."""
+    """Print the submit button values found in the main content.
+
+    Use this to check that the buttons on a page match your expectations.
+    """
     buttons = find_main_content(content).findAll(
         'input', attrs={'class': 'button', 'type': 'submit'})
     if buttons is None:
