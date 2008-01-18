@@ -2812,6 +2812,9 @@ class PersonEditEmailsView(LaunchpadFormView):
         If a team doesn't have a mailing list, or the mailing list
         isn't usable, it's not included.
         """
+        # Only beta testers are allowed to subscribe to mailing lists.
+        if not self.isBetaUser:
+            return form.fields()
         mailing_list_set = getUtility(IMailingListSet)
         fields = []
         terms = [SimpleTerm("Preferred address"),
