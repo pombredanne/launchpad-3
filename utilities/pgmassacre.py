@@ -13,16 +13,16 @@ from signal import SIGTERM, SIGQUIT, SIGKILL, SIGINT
 from optparse import OptionParser
 
 
-def connect():
+def connect(dbname='template1'):
     if options.user is not None:
-        return psycopg.connect("dbname=template1 user=%s" % options.user)
+        return psycopg.connect("dbname=%s user=%s" % (dbname, options.user))
     else:
-        return psycopg.connect("dbname=template1")
+        return psycopg.connect("dbname=%s" % dbname)
 
 
 def send_signal(database, signal):
     con = connect()
-    con.set_isolation_level(1)
+    con.set_isolation_level(1) # READ COMMITTED. We rollback changes we make.
     cur = con.cursor()
 
     # Install PL/PythonU if it isn't already
@@ -55,6 +55,22 @@ def send_signal(database, signal):
 
     cur.execute("SELECT _pgmassacre_killall(%(signal)s)", vars())
     con.rollback()
+    con.close()
+
+
+def rollback_prepared_transactions(database):
+    con = connect(database)
+    con.set_isolation_level(0) # Autocommit so we can ROLLBACK PREPARED.
+    cur = con.cursor()
+
+    # Get a list of outstanding prepared transactions.
+    cur.execute(
+            "SELECT gid FROM pg_prepared_xacts WHERE database=%(database)s",
+            vars()
+            )
+    xids = [row[0] for row in cur.fetchall()]
+    for xid in xids:
+        cur.execute("ROLLBACK PREPARED %(xid)s", vars())
     con.close()
 
 
@@ -112,41 +128,55 @@ def main():
                 "%s has fled the building. Database does not exist" % database
         return 0
 
-    # Stop connetions to the doomed database
-    cur.execute(
-        "UPDATE pg_database SET datallowconn=false WHERE datname=%s", [database]
-        )
+    # Rollback prepared transactions.
+    rollback_prepared_transactions(database)
 
-    con.commit()
-    con.close()
+    try:
+        # Stop connetions to the doomed database
+        cur.execute(
+            "UPDATE pg_database SET datallowconn=false WHERE datname=%s",
+            [database]
+            )
 
-    # Terminate current statements
-    send_signal(database, SIGINT)
+        con.commit()
+        con.close()
 
-    # Shutdown current connections normally
-    send_signal(database, SIGTERM)
+        # Terminate current statements
+        send_signal(database, SIGINT)
 
-    # Shutdown current connections immediately
-    if still_open(database):
-        send_signal(database, SIGQUIT)
+        # Shutdown current connections normally
+        send_signal(database, SIGTERM)
 
-    # Shutdown current connections nastily
-    if still_open(database):
-        send_signal(database, SIGKILL)
+        # Shutdown current connections immediately
+        if still_open(database):
+            send_signal(database, SIGQUIT)
 
-    if still_open(database):
-        print >> sys.stderr, \
-                "Unable to kill all backends! Database not destroyed."
-        return 9
+        # Shutdown current connections nastily
+        if still_open(database):
+            send_signal(database, SIGKILL)
 
-    # Destroy the database
-    con = connect()
-    con.set_isolation_level(0) # Required to execute commands like DROP DATABASE
-    cur = con.cursor()
-    cur.execute("DROP DATABASE %s" % database) # Not quoted
-    return 0
+        if still_open(database):
+            print >> sys.stderr, \
+                    "Unable to kill all backends! Database not destroyed."
+            return 9
 
-    # print "Mwahahahaha!"
+        # Destroy the database
+        con = connect()
+        con.set_isolation_level(0) # Required to execute commands like DROP DATABASE
+        cur = con.cursor()
+        cur.execute("DROP DATABASE %s" % database) # Not quoted
+        return 0
+    finally:
+        # In case something messed up, allow connections again so we can
+        # inspect the damage.
+        con = connect()
+        con.set_isolation_level(0)
+        cur = con.cursor()
+        cur.execute(
+                "UPDATE pg_database SET datallowconn=TRUE WHERE datname=%s",
+                [database]
+                )
+
 
 if __name__ == '__main__':
     sys.exit(main())
