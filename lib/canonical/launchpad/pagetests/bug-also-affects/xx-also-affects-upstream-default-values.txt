@@ -16,10 +16,10 @@ then the product widget will have no initial value.
     ...     'http://launchpad.dev/ubuntu/+source/mozilla-firefox/'
     ...     '+bug/8/+distrotask')
     >>> user_browser.getControl('Distribution').value = ['ubuntu']
-    >>> user_browser.getControl('Source Package').value = 'thunderbird'
+    >>> user_browser.getControl('Source Package').value = 'pmount'
     >>> user_browser.getControl('Continue').click()
     >>> user_browser.url
-    'http://bugs.launchpad.dev/ubuntu/+source/thunderbird/+bug/8'
+    'http://bugs.launchpad.dev/ubuntu/+source/pmount/+bug/8'
 
     >>> user_browser.getLink('Project').click()
     >>> user_browser.getControl('Project').value
@@ -43,9 +43,9 @@ Now the upstream product will be chosen automatically also for
 thunderbird.
 
     >>> user_browser.open(
-    ...     'http://launchpad.dev/ubuntu/+source/thunderbird/+bug/8')
+    ...     'http://launchpad.dev/ubuntu/+source/pmount/+bug/8')
     >>> user_browser.getLink('Project').click()
     >>> user_browser.url
-    'http://.../ubuntu/+source/thunderbird/+bug/8/+choose-affected-product'
+    'http://.../ubuntu/+source/pmount/+bug/8/+choose-affected-product'
     >>> user_browser.getControl(name='field.product').value
     'thunderbird'
