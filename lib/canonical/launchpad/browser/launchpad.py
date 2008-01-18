@@ -5,6 +5,7 @@ __metaclass__ = type
 __all__ = [
     'AppFrontPageSearchView',
     'Breadcrumbs',
+    'Link',
     'LoginStatus',
     'MaintenanceMessage',
     'MenuBox',
@@ -154,16 +155,34 @@ class MenuBox(LaunchpadView):
 
     def initialize(self):
         menuapi = MenuAPI(self.context)
+        # We are only interested on enabled links in non development mode.
         self.contextmenuitems = [
-            link for link in menuapi.context() if link.enabled]
+            link for link in menuapi.context() if (link.enabled or
+                                                   config.devmode)]
         self.applicationmenuitems = [
-            link for link in menuapi.application() if link.enabled]
+            link for link in menuapi.application() if (link.enabled or
+                                                       config.devmode)]
 
     def render(self):
         if not self.contextmenuitems and not self.applicationmenuitems:
             return ''
         else:
             return self.template()
+
+
+class Link(LaunchpadView):
+    """View class that helps its template render a menu link.
+
+    The link is not rendered if it's not enabled and we are not in development
+    mode.
+    """
+
+    def render(self):
+        """Render the menu link if it's enabled or we're in dev mode."""
+        if self.context.enabled or config.devmode:
+            return self.template()
+        else:
+            return ''
 
 
 class Breadcrumbs(LaunchpadView):

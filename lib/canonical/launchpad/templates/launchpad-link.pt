@@ -1,0 +1,16 @@
+<strong id="disabled" tal:condition="not: context/enabled">
+  <tal:link-text replace="structure context/escapedtext">
+    Disabled text
+  </tal:link-text>
+  (disabled)
+</strong>
+<tal:link-enabled condition="context/enabled">
+  <a tal:condition="context/linked"
+     tal:attributes="href context/url; title context/summary"
+     tal:content="structure context/escapedtext"
+    >link text</a>
+  <strong tal:condition="not: context/linked"
+          tal:content="structure context/escapedtext">
+    Unlinked text
+  </strong>
+</tal:link-enabled>

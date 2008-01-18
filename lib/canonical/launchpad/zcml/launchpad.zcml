@@ -228,6 +228,14 @@
       permission="zope.Public"
       />
 
+  <browser:page
+      for="canonical.launchpad.webapp.interfaces.ILink"
+      name="+link"
+      class="canonical.launchpad.browser.launchpad.Link"
+      template="../templates/launchpad-link.pt"
+      permission="zope.Public"
+      />
+
   <!-- breadcrumbs -->
   <browser:page
       for="zope.interface.Interface"
