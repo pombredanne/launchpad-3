@@ -297,7 +297,7 @@ class SourcePackageRelease(SQLBase):
         queries.append(
             "Build.distroarchseries IN %s" % sqlvalues(architectures))
 
-        # Follow archive inheritance across distribution officla archives,
+        # Follow archive inheritance across distribution offical archives,
         # for example:
         # guadalinex/foobar/PRIMARY was initialised from ubuntu/dapper/PRIMARY
         # guadalinex/foobar/PARTNER was initialised from ubuntu/dapper/PARTNER

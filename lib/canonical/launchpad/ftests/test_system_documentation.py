@@ -691,7 +691,10 @@ special = {
             '../doc/publishing.txt',
             layer=LaunchpadZopelessLayer, optionflags=default_optionflags
             ),
-
+    'sourcepackagerelease-build-lookup.txt': LayeredDocFileSuite(
+            '../doc/sourcepackagerelease-build-lookup.txt',
+            layer=LaunchpadZopelessLayer, optionflags=default_optionflags
+            ),
     }
 
 
