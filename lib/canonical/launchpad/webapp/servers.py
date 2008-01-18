@@ -867,7 +867,7 @@ class FeedsPublication(LaunchpadBrowserPublication):
                 getattr(naked_result, 'status', None) == 301):
                 return result
             else:
-                return None
+                raise NotFound(self, '', request)
         else:
             # There are still url segments to traverse.
             return result

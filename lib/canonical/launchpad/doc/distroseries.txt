@@ -638,7 +638,7 @@ The one submitting the string will be Carlos.  He's an editor for this POFile.
 
     >>> carlos = getUtility(IPersonSet).getByName('carlos')
 
-    >>> from canonical.launchpad.ftests import time_counter
+    >>> from canonical.launchpad.testing import time_counter
     >>> # "Clock" that's guaranteed always to progress between calls.
     >>> now = time_counter(delta=datetime.datetime.resolution).next
 

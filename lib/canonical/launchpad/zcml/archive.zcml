@@ -89,6 +89,16 @@
     template="../templates/archive-admin.pt"
     />
 
+  <browser:pages
+    for="canonical.launchpad.interfaces.IArchive"
+    permission="launchpad.Edit"
+    class="canonical.launchpad.browser.ArchivePackageDeletionView">
+    <browser:page
+      template="../templates/archive-delete-packages.pt"
+      facet="overview"
+      name="+delete-packages"
+      />
+  </browser:pages>
 
   <!-- ArchiveSet -->
   <content class="canonical.launchpad.database.ArchiveSet">
