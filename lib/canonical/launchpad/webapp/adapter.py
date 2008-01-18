@@ -320,6 +320,14 @@ def clear_request_started():
     _local.request_statements = []
 
 
+def summarize_requests():
+    """Produce human-readable summary of requests issued so far."""
+    secs = get_request_duration()
+    statements = getattr(_local, 'request_statements', [])
+    log = "%s queries issued in %.2f seconds" % (len(statements), secs)
+    return log
+
+
 def store_sql_statements_and_request_duration(event):
     event.request.setInWSGIEnvironment(
         'launchpad.sqlstatements', len(get_request_statements()))

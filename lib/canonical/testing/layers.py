@@ -735,6 +735,7 @@ class PageTestLayer(LaunchpadFunctionalLayer):
             access_logger.log(MockHTTPTask(response._response, first_line))
             return response
 
+        cls.orig__call__ = zope.app.testing.functional.HTTPCaller.__call__
         zope.app.testing.functional.HTTPCaller.__call__ = my__call__
         cls.resetBetweenTests(True)
 
@@ -742,7 +743,7 @@ class PageTestLayer(LaunchpadFunctionalLayer):
     @profiled
     def tearDown(cls):
         cls.resetBetweenTests(True)
-        zope.app.testing.functional.HTTPCaller.__call__ = orig__call__
+        zope.app.testing.functional.HTTPCaller.__call__ = cls.orig__call__
 
     @classmethod
     @profiled
