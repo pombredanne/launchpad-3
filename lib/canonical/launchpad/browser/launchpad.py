@@ -5,7 +5,7 @@ __metaclass__ = type
 __all__ = [
     'AppFrontPageSearchView',
     'Breadcrumbs',
-    'Link',
+    'LinkView',
     'LoginStatus',
     'MaintenanceMessage',
     'MenuBox',
@@ -171,7 +171,7 @@ class MenuBox(LaunchpadView):
             return self.template()
 
 
-class Link(LaunchpadView):
+class LinkView(LaunchpadView):
     """View class that helps its template render a menu link.
 
     The link is not rendered if it's not enabled and we are not in development

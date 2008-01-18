@@ -231,7 +231,7 @@
   <browser:page
       for="canonical.launchpad.webapp.interfaces.ILink"
       name="+link"
-      class="canonical.launchpad.browser.launchpad.Link"
+      class="canonical.launchpad.browser.launchpad.LinkView"
       template="../templates/launchpad-link.pt"
       permission="zope.Public"
       />
