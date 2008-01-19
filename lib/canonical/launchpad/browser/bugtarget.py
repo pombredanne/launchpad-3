@@ -394,8 +394,9 @@ class FileBugViewBase(LaunchpadFormView):
                 'A comment with additional information was added to the'
                 ' bug report.')
 
-        # XXX: Bjorn Tillenius 2005-06-16:
-        # Write proper FileUpload field and widget instead of this hack.
+        # XXX 2007-01-19 gmb:
+        #     We need to have a proper FileUpload widget rather than
+        #     this rather hackish solution.
         attachment = self.request.form.get(self.widgets['filecontent'].name)
         if attachment is not None or extra_data.attachments is not None:
             # Attach all the comments to a single empty comment.
