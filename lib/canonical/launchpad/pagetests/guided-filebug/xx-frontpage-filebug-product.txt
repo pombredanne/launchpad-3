@@ -64,7 +64,8 @@ Selecting a valid product will take us to the next filebug step.
     >>> user_browser.getControl('Continue').click()
 
 A list of similar bugs is shown. Duplicates are removed from the list
-and replaced by the bug they duplicate.
+and replaced by the bug they duplicate. In the listing below bug 6
+also matches, but is a duplicate of bug 5 so does not appear.
 
     >>> from canonical.launchpad.ftests.bug import print_bugs_list
     >>> print_bugs_list(user_browser.contents, "similar-bugs")
