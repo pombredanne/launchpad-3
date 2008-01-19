@@ -672,16 +672,14 @@ class FileBugGuidedView(FileBugViewBase):
         # than one time. 4 is an arbitrary number that should be large
         # enough.
         matching_bugs = []
-        matching_bugs_set = set()
         matching_bugs_limit = self._MATCHING_BUGS_LIMIT
         for bugtask in matching_bugtasks[:4*matching_bugs_limit]:
             bug = bugtask.bug
             duplicateof = bug.duplicateof
             if duplicateof is not None:
                 bug = duplicateof
-            if bug not in matching_bugs_set:
+            if bug not in matching_bugs:
                 matching_bugs.append(bug)
-                matching_bugs_set.add(bug)
                 if len(matching_bugs) >= matching_bugs_limit:
                     break
 
