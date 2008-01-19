@@ -25,6 +25,7 @@ from zope.schema import Choice, List
 from zope.schema.vocabulary import SimpleVocabulary, SimpleTerm
 
 from canonical.cachedproperty import cachedproperty
+from canonical.database.sqlbase import flush_database_updates
 from canonical.launchpad import _
 from canonical.launchpad.browser.build import BuildRecordsView
 from canonical.launchpad.browser.sourceslist import (
@@ -227,7 +228,7 @@ class ArchivePackageDeletionView(ArchiveViewBase, LaunchpadFormView):
     schema = IArchivePackageDeletionForm
 
     # Maximum number of 'sources' presented.
-    max_sources_presented = 10
+    max_sources_presented = 50
 
     custom_widget('deletion_comment', StrippedTextWidget, displayWidth=50)
     custom_widget('selected_sources', LabeledMultiCheckBoxWidget)
@@ -253,6 +254,13 @@ class ArchivePackageDeletionView(ArchiveViewBase, LaunchpadFormView):
             self.prefix, self.context, self.request,
             data=self.initial_values, ignore_request=False)
 
+    def focusedElementScript(self):
+        """See `LaunchpadFormView`."""
+        # Do not set any focus if the form is not going to be presented.
+        if not self.has_published_sources:
+            return ''
+        return LaunchpadFormView.focusedElementScript(self)
+
     def createSelectedSourcesField(self):
         """Creates the 'selected_sources' field.
 
@@ -274,7 +282,21 @@ class ArchivePackageDeletionView(ArchiveViewBase, LaunchpadFormView):
             custom_widget=self.custom_widgets['selected_sources'],
             render_context=self.render_context)
 
-    @cachedproperty
+    def refreshSelectedSourcesWidget(self):
+        """Refresh 'selected_sources' widget.
+
+        It's called after deletions to eliminate the just-deleted records
+        from the widget presented.
+        """
+        flush_database_updates()
+        self.form_fields = self.form_fields.omit('selected_sources')
+        self.form_fields = (
+            self.createSelectedSourcesField() + self.form_fields)
+        self.widgets = form.setUpWidgets(
+            self.form_fields, self.prefix, self.context, self.request,
+            data=self.initial_values, ignore_request=False)
+
+    @property
     def sources(self):
         """Query source publishing records.
 
@@ -295,7 +317,7 @@ class ArchivePackageDeletionView(ArchiveViewBase, LaunchpadFormView):
             status=PackagePublishingStatus.PUBLISHED)
         return bool(published_sources)
 
-    @cachedproperty
+    @property
     def available_sources_size(self):
         """Number of available sources."""
         return self.sources.count()
@@ -345,6 +367,13 @@ class ArchivePackageDeletionView(ArchiveViewBase, LaunchpadFormView):
             source.requestDeletion(self.user, comment)
             for bin in source.getPublishedBinaries():
                 bin.requestDeletion(self.user, comment)
+
+        # We end up issuing the published_source query twice this way,
+        # because we need the original available source vocabulary to
+        # validade the the submitted deletion request. Once the deletion
+        # request is validated and performed we call 'flush_database_updates'
+        # and rebuild the 'selected_sources' widget.
+        self.refreshSelectedSourcesWidget()
 
         # Present a page notification describing the action.
         messages = []
