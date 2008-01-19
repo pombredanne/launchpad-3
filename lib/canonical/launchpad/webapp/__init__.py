@@ -109,10 +109,9 @@ class StandardLaunchpadFacets(FacetMenu):
     #   usedfor = IWhatever
 
     links = ['overview', 'branches', 'bugs', 'specifications', 'translations',
-        'answers']
+             'answers']
 
-    enable_only = ['overview', 'bugs', 'specifications',
-                   'translations', 'calendar']
+    enable_only = ['overview', 'bugs', 'specifications', 'translations']
 
     defaultlink = 'overview'
 
@@ -161,12 +160,6 @@ class StandardLaunchpadFacets(FacetMenu):
         text = 'Bounties'
         summary = 'View related bounty offers'
         return Link(target, text, summary)
-
-    def calendar(self):
-        """Disabled calendar link."""
-        target = '+branches'
-        text = 'Calendar'
-        return Link(target, text, enabled=False)
 
     def branches(self):
         # this is disabled by default, because relatively few objects have
