@@ -47,9 +47,12 @@
         </div>
       </tal:no_sources>
 
-      <tal:sources define="widget nocall:view/widgets/selected_sources"
-                   condition="view/available_sources_size">
-        <table class="listing" style="margin-top: 1em; margin-bottom: 1em;">
+      <tal:sources condition="view/available_sources_size"
+                   define="widget nocall:view/widgets/selected_sources;
+                           field_name widget/context/__name__;
+                           error python:view.getFieldError(field_name);
+                           error_class python:error and 'error' or None;">
+        <table class="listing" style="margin-top: 1em;">
           <thead>
           <tr class="ppa_package_row">
             <th colspan="2">Source</th>
@@ -84,15 +87,28 @@
         </table>
         <input tal:attributes="name string:${widget/name}-empty-marker"
                type="hidden" value="1" />
+        <div tal:attributes="class string:${error_class} message"
+             tal:condition="error"
+             tal:content="structure error">Error message</div>
       </tal:sources>
 
       <tal:actions condition="view/available_sources_size"
-                   define="widget nocall:view/widgets/deletion_comment">
-        <label tal:attributes="for widget/name"
-               tal:content="widget/label">Label</label>
-        <input tal:replace="structure widget" />
-        <input tal:replace="structure
-           view/actions/field.actions.delete/render" />
+                   define="widget nocall:view/widgets/deletion_comment;
+                           field_name widget/context/__name__;
+                           error python:view.getFieldError(field_name);
+                           error_class python:error and 'error' or None;">
+        <div style="margin-top: 1em;">
+          <p class="formHelp" tal:condition="widget/hint"
+             tal:content="widget/hint">Some Help Text</p>
+          <label tal:attributes="for widget/name"
+                 tal:content="widget/label">Label</label>
+          <input tal:replace="structure widget" />
+          <input tal:replace="structure
+             view/actions/field.actions.delete/render" />
+        </div>
+        <div tal:attributes="class string:${error_class} message"
+             tal:condition="error"
+             tal:content="structure error">Error message</div>
       </tal:actions>
 
    </div> <!-- widgets -->

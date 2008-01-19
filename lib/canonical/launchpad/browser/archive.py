@@ -321,10 +321,11 @@ class ArchivePackageDeletionView(ArchiveViewBase, LaunchpadFormView):
         form.getWidgetsData(self.widgets, 'field', data)
 
         if len(data.get('selected_sources')) == 0:
-            self.addError("No sources selected.")
+            self.setFieldError('selected_sources', 'No sources selected.')
 
         if data.get('deletion_comment') is None:
-            self.addError("Deletion comment is required.")
+            self.setFieldError(
+                'deletion_comment', 'Deletion comment is required.')
 
     @action(_("Delete Packages"), name="delete", validator="validate_delete")
     def action_delete(self, action, data):
