@@ -6,13 +6,17 @@ __metaclass__ = type
 
 __all__ = [
     'AnnouncementsFeedLink',
+    'BranchFeedLink',
     'BugFeedLink',
     'BugTargetLatestBugsFeedLink',
     'FeedLinkBase',
     'FeedsMixin',
     'FeedsNavigation',
     'FeedsRootUrlData',
+    'PersonBranchesFeedLink',
     'PersonLatestBugsFeedLink',
+    'ProductBranchesFeedLink',
+    'ProjectBranchesFeedLink',
     'RootAnnouncementsFeedLink',
     ]
 
@@ -23,13 +27,14 @@ from zope.security.interfaces import Unauthorized
 
 from canonical.config import config
 from canonical.launchpad.interfaces import (
-    IAnnouncementSet, IBugSet, IBugTaskSet, IFeedsApplication,
+    IAnnouncementSet, IBranch, IBugSet, IBugTaskSet, IFeedsApplication,
     IPersonSet, IPillarNameSet, NotFoundError)
 from canonical.launchpad.interfaces import (
-    IBugTask, IBugTarget, IHasAnnouncements, ILaunchpadRoot, IPerson)
+    IBugTarget, IBugTask, IHasAnnouncements, ILaunchpadRoot, IPerson,
+    IProduct, IProject)
 from canonical.launchpad.layers import FeedsLayer
 from canonical.launchpad.webapp import (
-    canonical_name, canonical_url, Navigation, stepto)
+    Navigation, canonical_name, canonical_url, stepto)
 from canonical.launchpad.webapp.publisher import RedirectionView
 from canonical.launchpad.webapp.interfaces import ICanonicalUrlData
 from canonical.launchpad.webapp.vhosts import allvhosts
@@ -214,6 +219,47 @@ class RootAnnouncementsFeedLink(AnnouncementsFeedLink):
         return urlappend(self.rooturl, 'announcements.atom')
 
 
+class BranchesFeedLinkBase(FeedLinkBase):
+    """Base class for objects with branches."""
+
+    @property
+    def title(self):
+        return 'Latest Branches for %s' % self.context.displayname
+
+    @property
+    def href(self):
+        return urlappend(canonical_url(self.context, rootsite='feeds'),
+                         'branches.atom')
+
+
+class ProjectBranchesFeedLink(BranchesFeedLinkBase):
+    """Feed links for branches on a project."""
+    usedfor = IProject
+
+
+class ProductBranchesFeedLink(BranchesFeedLinkBase):
+    """Feed links for branches on a product."""
+    usedfor = IProduct
+
+
+class PersonBranchesFeedLink(BranchesFeedLinkBase):
+    """Feed links for branches on a person."""
+    usedfor = IPerson
+
+
+class BranchFeedLink(FeedLinkBase):
+    """Feed links for revisions on a branch."""
+    usedfor = IBranch
+
+    @property
+    def title(self):
+        return 'Latest Revisions for Branch %s' % self.context.displayname
+    @property
+    def href(self):
+        return urlappend(canonical_url(self.context, rootsite="feeds"),
+                         'branch.atom')
+
+
 class FeedsMixin:
     """Mixin which adds the feed_links attribute to a view object.
 
@@ -228,6 +274,10 @@ class FeedsMixin:
         BugFeedLink,
         BugTargetLatestBugsFeedLink,
         PersonLatestBugsFeedLink,
+        ProjectBranchesFeedLink,
+        ProductBranchesFeedLink,
+        PersonBranchesFeedLink,
+        BranchFeedLink,
         )
 
     @property
@@ -235,4 +285,3 @@ class FeedsMixin:
         return [feed_type(self.context)
                 for feed_type in self.feed_types
                 if feed_type.usedfor.providedBy(self.context)]
-

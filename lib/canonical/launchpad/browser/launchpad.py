@@ -25,6 +25,7 @@ __all__ = [
 
 import cgi
 import urllib
+import operator
 import os
 import re
 import time
@@ -157,12 +158,14 @@ class MenuBox(LaunchpadView):
         menuapi = MenuAPI(self.context)
         # We are only interested on enabled links in non development mode.
         context_menu_links = menuapi.context
-        self.contextmenuitems = [
+        self.contextmenuitems = sorted([
             link for link in context_menu_links.values() if (link.enabled or
-                                                             config.devmode)]
-        self.applicationmenuitems = [
+                                                             config.devmode)],
+            key=operator.attrgetter('text'))
+        self.applicationmenuitems = sorted([
             link for link in menuapi.application() if (link.enabled or
-                                                       config.devmode)]
+                                                       config.devmode)],
+            key=operator.attrgetter('text'))
 
     def render(self):
         if not self.contextmenuitems and not self.applicationmenuitems:

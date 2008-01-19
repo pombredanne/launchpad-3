@@ -127,6 +127,29 @@ def get_feedback_messages(content):
     return [extract_text(tag) for tag in soup]
 
 
+def print_radio_button_field(content, name):
+    """Find the input called field.name, and print a friendly representation.
+
+    The resulting output will look something like:
+    (*) A checked option
+    ( ) An unchecked option
+    """
+    main = BeautifulSoup(content)
+    buttons =  main.findAll(
+        'input', {'name': 'field.%s' % name})
+    for button in buttons:
+        if button.parent.name == 'label':
+            label = extract_text(button.parent)
+        else:
+            label = extract_text(
+                main.find('label', attrs={'for': button['id']}))
+        if button.get('checked', None):
+            radio = '(*)'
+        else:
+            radio = '( )'
+        print radio, label
+
+
 IGNORED_ELEMENTS = [Comment, Declaration, ProcessingInstruction]
 ELEMENTS_INTRODUCING_NEWLINE = [
     'p', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'ul', 'ol', 'pre', 'dl',
@@ -157,6 +180,7 @@ def extract_link_from_tag(tag, base=None):
         return href
     else:
         return urljoin(base, href)
+
 
 def extract_text(content):
     """Return the text stripped of all tags.
@@ -241,6 +265,7 @@ def print_action_links(content):
         elif entry.strong:
             print entry.strong.string
 
+
 def print_comments(page):
     """Print the comments on a BugTask index page."""
     main_content = find_main_content(page)
@@ -249,6 +274,12 @@ def print_comments(page):
             print "Attachment: %s" % li_tag.a.renderContents()
         print comment.div.renderContents()
         print "-"*40
+
+
+def print_batch_header(soup):
+    """Print the batch navigator header."""
+    navigation = soup.find('td', {'class' : 'batch-navigation-index'})
+    print extract_text(navigation).encode('ASCII', 'backslashreplace')
 
 
 def setupBrowser(auth=None):
@@ -290,6 +321,8 @@ def setUpGlobs(test):
     test.globs['print_tab_links'] = print_tab_links
     test.globs['print_action_links'] = print_action_links
     test.globs['print_comments'] = print_comments
+    test.globs['print_radio_button_field'] = print_radio_button_field
+    test.globs['print_batch_header'] = print_batch_header
 
 
 class PageStoryTestCase(unittest.TestCase):
@@ -339,7 +372,7 @@ class PageStoryTestCase(unittest.TestCase):
             result = self.defaultTestResult()
         PageTestLayer.startStory()
         try:
-            # TODO RBC 20060117 we can hook in pre and post story actions
+            # XXX RBC 20060117 we can hook in pre and post story actions
             # here much more tidily (and in self.debug too)
             # - probably via self.setUp and self.tearDown
             self._suite.run(result)

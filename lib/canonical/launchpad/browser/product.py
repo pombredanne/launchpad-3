@@ -67,7 +67,8 @@ from canonical.launchpad.browser.branchref import BranchRef
 from canonical.launchpad.browser.bugtask import (
     BugTargetTraversalMixin, get_buglisting_search_filter_url)
 from canonical.launchpad.browser.faqtarget import FAQTargetNavigationMixin
-from canonical.launchpad.browser.feeds import FeedsMixin
+from canonical.launchpad.browser.feeds import (
+    FeedsMixin, ProductBranchesFeedLink)
 from canonical.launchpad.browser.launchpad import (
     StructuralObjectPresentation, DefaultShortLink)
 from canonical.launchpad.browser.objectreassignment import (
@@ -778,7 +779,7 @@ class ProductDownloadFilesView(LaunchpadView,
                 if release.files.count() > 0:
                     return True
         return False
-    
+
     @cachedproperty
     def any_download_files_with_signatures(self):
         """Across series and releases do any download files have signatures?
@@ -1269,10 +1270,14 @@ class ProductShortLink(DefaultShortLink):
         return self.context.displayname
 
 
-class ProductBranchOverviewView(LaunchpadView, SortSeriesMixin):
+class ProductBranchOverviewView(LaunchpadView, SortSeriesMixin, FeedsMixin):
     """View for the product code overview."""
 
     __used_for__ = IProduct
+
+    feed_types = (
+        ProductBranchesFeedLink,
+        )
 
     @cachedproperty
     def recent_revision_branches(self):
