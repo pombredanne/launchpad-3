@@ -1,5 +1,5 @@
 <strong style="display:none;" tal:condition="not: context/enabled"
-        tal:attributes="class string:menu-link-${context/name};">
+        tal:attributes="class string:menu-link-${context/name}-disabled;">
   <tal:link-text replace="structure context/escapedtext">
     Disabled text
   </tal:link-text>
