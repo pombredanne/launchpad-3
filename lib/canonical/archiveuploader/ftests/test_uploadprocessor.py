@@ -712,11 +712,10 @@ class TestUploadProcessor(TestUploadProcessorBase):
         self.processUpload(uploadprocessor, upload_dir)
 
         # It will fail because of the bad version:
-
         from_addr, to_addrs, raw_msg = stub.test_emails.pop()
         self.assertTrue(
             "Pre-Depends dpkg version should be" in raw_msg,
-            "Expected error about dpkg Pre-Depends version, actually got\n%s"
+            "Expected error about dpkg Pre-Depends version, actually got:\n%s"
                 % raw_msg)
 
         # Finally lets upload a good one to make sure it does work.
@@ -736,7 +735,7 @@ class TestUploadProcessor(TestUploadProcessorBase):
             version="1.0-1", exact_match=True)
         self.assertEqual(
             queue_items.count(), 1,
-            "Expected one 'bar' item in the queue, actually got %d" 
+            "Expected one 'bar' item in the queue, actually got %d."
                 % queue_items.count())
 
 
