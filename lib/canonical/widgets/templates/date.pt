@@ -1,10 +1,11 @@
-<div tal:define="val view/formvalue">
+<tal:datepicker define="val view/formvalue">
   <input size="10" type="text"
          tal:attributes="name view/name; id view/name; value val;" />
   <a href="javascript:void(0)"
      tal:attributes="
        onclick string:pickDate('${view/name}', ${view/daterange});"
      ><span class="PopcalTrigger"
-      ><img name="popcal" align="absmiddle" src="/+popcalxp/calbtn.gif"
-           width="34" height="22" border="0" alt="(choose)"></span></a>
-</div>
+      ><img name="popcal" align="absmiddle"
+            src="/+popcalxp/calbtn.gif"
+            width="34" height="22" border="0" alt="(choose)"></span></a>
+</tal:datepicker>

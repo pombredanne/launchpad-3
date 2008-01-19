@@ -48,18 +48,26 @@
     </tr>
   </metal:macro>
   <metal:macro define-macro="expiry-radios">
+  <table><tbody><tr><td>
     <label for="never">
       <input tal:attributes="checked python: view.neverExpiresIsSelected()
                                              and 'checked' or ''"
-             type="radio" id="never" value="never" name="expires" />
+        onclick="
+          document.getElementById('membership.expirationdate').disabled=true;"
+        type="radio" id="never" value="never" name="expires" />
         Never<br />
-    </label>
-    <label for="date">
+    </label></td></tr>
+    <tr><td><label for="date">
       <input tal:attributes="checked python: view.expiresIsSelected()
                                              and 'checked' or ''"
-      type="radio" id="date" value="date" name="expires" />
-      On
-    </label>
+      type="radio" id="date" value="date" name="expires"
+      onclick="pickDate('membership.expirationdate');
+       document.getElementById('membership.expirationdate').disabled=false;" />
+      On&nbsp;
+    </label></td><td>
+    <span tal:content="structure view/expirationdate_widget"
+      onclick="document.getElementById('date').value='date';" />
+    </td></tr></table>
   </metal:macro>
 </metal:macros>
 
@@ -119,7 +127,6 @@
             <th>Subscription expires:</th>
             <td tal:condition="view/canChangeExpirationDate" style="white-space: nowrap">
               <metal:radios use-macro="template/macros/expiry-radios" />
-              <span tal:replace="structure view/expirationdate_widget" />
             </td>
             <td tal:condition="not: view/canChangeExpirationDate">
               <span tal:condition="context/dateexpires"
@@ -194,7 +201,6 @@
                     Don't change<br />
                 </label>
                 <metal:radios use-macro="template/macros/expiry-radios" />
-                <span tal:replace="structure view/expirationdate_widget" />
               </td>
             </tr>
           </tal:expired>
@@ -206,7 +212,6 @@
               <th>Subscription expires:</th>
               <td>
                 <metal:radios use-macro="template/macros/expiry-radios" />
-                <span tal:replace="structure view/expirationdate_widget" />
               </td>
             </tr>
           </tal:not-expired>
@@ -256,7 +261,6 @@
               <th>Expires?</th>
               <td>
                 <metal:radios use-macro="template/macros/expiry-radios" />
-                <span tal:replace="structure view/expirationdate_widget" />
               </td>
             </tr>
 

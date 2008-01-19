@@ -1,4 +1,4 @@
-<div tal:define="val view/formvalue">
+<tal:datetimepicker define="val view/formvalue">
   <input size="17" type="text"
          tal:attributes="name view/name; id view/name; value val" />
   <a href="javascript:void(0)"
@@ -17,4 +17,4 @@
            href="/people/+me/+edit">login to set time zone</a> ]
     </tal:can_change>
   </tal:display_zone>
-</div>
+</tal:datetimepicker>

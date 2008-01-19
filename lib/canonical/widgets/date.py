@@ -318,7 +318,6 @@ class DateTimeWidget(TextWidget):
         if not self._renderedValueSet():
             if self.hasInput():
                 try:
-                    import pdb; pdb.set_trace()
                     value = self.getInputValue()
                 except InputErrors:
                     return self._getRequestValue()

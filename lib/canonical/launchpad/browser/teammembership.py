@@ -8,12 +8,12 @@ __all__ = [
     ]
 
 import pytz
-from datetime import datetime
+from datetime import datetime, date
 
 from zope.app.form import CustomWidgetFactory
 from zope.component import getUtility
 from zope.formlib import form
-from zope.schema import Datetime
+from zope.schema import Date
 
 from canonical.launchpad import _
 from canonical.launchpad.webapp import canonical_url, custom_widget
@@ -24,7 +24,7 @@ from canonical.launchpad.interfaces import (
 from canonical.launchpad.browser.launchpad import (
     StructuralHeaderPresentation)
 
-from canonical.widgets import DateTimeWidget
+from canonical.widgets import DateWidget
 
 
 class TeamMembershipSHP(StructuralHeaderPresentation):
@@ -46,12 +46,14 @@ class TeamMembershipEditView:
         self.errormessage = ""
         self.prefix = 'membership'
         self.max_year = 2050
-        fields = form.Fields(Datetime(
+        fields = form.Fields(Date(
             __name__='expirationdate', title=_('Expiration date')))
         fields['expirationdate'].custom_widget = \
-            CustomWidgetFactory(DateTimeWidget)
-        data = {'expirationdate':
-                 datetime(2005, 5, 5, tzinfo=pytz.timezone('UTC'))}
+            CustomWidgetFactory(DateWidget)
+        current_expiration = None
+        if self.context.dateexpires is not None:
+            current_expiration = self.context.dateexpires.date()
+        data = {'expirationdate': current_expiration}
         self.widgets = form.setUpWidgets(
             fields, self.prefix, context, request, ignore_request=False,
             data=data)
@@ -261,11 +263,17 @@ class TeamMembershipEditView:
         data = {}
         for error in form.getWidgetsData(self.widgets, self.prefix, data):
             self.errors.append(error)
-        assert not self.errors, 'Errors processing form XXX'
+        assert not self.errors, 'Errors processing expiration date XXX'
         expires = data['expirationdate']
-        now = datetime.now(pytz.timezone('UTC'))
-        if expires <= now:
-            raise ValueError('date provided is in the past')
+        # We used a date picker, so we have a date. What we want is a
+        # datetime in UTC
+        if expires is not None:
+            UTC = pytz.timezone('UTC')
+            expires = datetime(expires.year, expires.month, expires.day,
+                               tzinfo=UTC)
+            now = datetime.now(UTC)
+            if expires <= now:
+                raise ValueError('date provided is in the past')
 
         return expires
 

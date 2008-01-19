@@ -2,3 +2,4 @@
 # landing. There is a test to ensure it is empty in trunk.
 
  * make sure all the date scenarios are addressed
+ * set the minimum and maximum dates
