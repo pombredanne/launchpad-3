@@ -2821,6 +2821,9 @@ class PersonEditEmailsView(LaunchpadFormView):
         If a team doesn't have a mailing list, or the mailing list
         isn't usable, it's not included.
         """
+        # Only beta testers are allowed to subscribe to mailing lists.
+        if not self.isBetaUser:
+            return form.FormFields()
         mailing_list_set = getUtility(IMailingListSet)
         fields = []
         terms = [SimpleTerm("Preferred address"),
@@ -2836,7 +2839,7 @@ class PersonEditEmailsView(LaunchpadFormView):
                                title=team.name,
                                source=SimpleVocabulary(terms), default=value)
                 fields.append(field)
-        return form.fields(*fields)
+        return form.FormFields(*fields)
 
     @property
     def mailing_list_widgets(self):

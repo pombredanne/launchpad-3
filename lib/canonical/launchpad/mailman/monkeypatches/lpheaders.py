@@ -33,8 +33,8 @@ def process(mlist, msg, msgdata):
     # We really don't want to have to VERP these headers in, so we use a
     # generic header that Launchpad will redirect to the user's actual page.
     # The subscribe and unsubscribe pages are the same.
-    msg['List-Subscribe'] = list_unsubscribe
-    msg['List-Unsubscribe'] = list_unsubscribe
+    msg['List-Subscribe'] = '<%s>' % list_unsubscribe
+    msg['List-Unsubscribe'] = '<%s>' % list_unsubscribe
     msg['List-Post'] = '<mailto:%s>' % list_post
     msg['List-Archive'] = '<%s>' % list_archive
     msg['List-Owner'] = '<%s>' % list_owner
