@@ -75,7 +75,7 @@ matching the given text.
     ...     name='field.name_filter').value = 'nonexistentpackage'
     >>> admin_browser.getControl("Update").click()
     >>> print_ppa_packages(admin_browser.contents)
-    No matching package for 'nonexistentpackage'.
+    No matching source packages for 'nonexistentpackage'.
 
     >>> admin_browser.getControl(
     ...     name='field.name_filter').value = 'pmount'
@@ -204,7 +204,7 @@ Any user can see that all packages present in Celso's PPA are deleted.
     iceweasel - 1.0  2007-07-09  Deleted    Warty           Editors
     pmount - 0.1-1   2007-07-09  Deleted    Warty           Editors
 
-Finally, we can check for maliciously submitted forms containing
+Here we can check for maliciously submitted forms containing
 invalid data.
 
 An already deleted source:
@@ -231,3 +231,24 @@ An invalid value.
     ...
     ItemNotFoundError: insufficient items with name 'blah'
 
+After updating the list we should see a empty page.
+
+    >>> admin_browser.getControl('Update').click()
+
+    >>> print extract_text(find_main_content(admin_browser.contents))
+    Delete packages from PPA for Celso Providelo
+    This PPA does not contain any source packages published.
+    ...
+
+A clear message is presented for PPAs that doesn't contain any
+published source packages.
+
+    >>> admin_browser.open('http://launchpad.dev/~no-priv/+archive')
+    >>> admin_browser.getLink('Delete packages').click()
+    >>> admin_browser.title
+    'Delete packages from PPA for No Privileges Person'
+
+    >>> print extract_text(find_main_content(admin_browser.contents))
+    Delete packages from PPA for No Privileges Person
+    This PPA does not contain any source packages published.
+    ...

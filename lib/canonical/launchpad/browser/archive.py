@@ -289,6 +289,13 @@ class ArchivePackageDeletionView(ArchiveViewBase, LaunchpadFormView):
             name=name_filter, status=PackagePublishingStatus.PUBLISHED)
 
     @cachedproperty
+    def has_published_sources(self):
+        """Whether or not the PPA has published source packages."""
+        published_sources = self.context.getPublishedSources(
+            status=PackagePublishingStatus.PUBLISHED)
+        return bool(published_sources)
+
+    @cachedproperty
     def available_sources_size(self):
         """Number of available sources."""
         return self.sources.count()
