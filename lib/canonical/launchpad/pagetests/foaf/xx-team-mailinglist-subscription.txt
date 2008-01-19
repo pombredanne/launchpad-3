@@ -42,6 +42,47 @@ Now Carlos can apply for a mailing list for his team.
     >>> browser.getControl('Apply for Mailing List').click()
 
 
+== Beta testers ==
+
+A person who is not a member of the beta testers team cannot subscribe to
+mailing lists even if the team they are a member of has a mailing list.
+
+    >>> from canonical.launchpad.ftests import login, logout
+    >>> login('foo.bar@canonical.com')
+    >>> from canonical.launchpad.interfaces import (
+    ...     ILaunchpadCelebrities, IPersonSet)
+    >>> from zope.component import getUtility
+    >>> beta = getUtility(ILaunchpadCelebrities).launchpad_beta_testers
+    >>> person_set = getUtility(IPersonSet)
+    >>> no_team_memberships = person_set.getByName('no-team-memberships')
+    >>> rosetta_admins = person_set.getByName('rosetta-admins')
+    >>> sabdfl = person_set.getByName('sabdfl')
+    >>> rosetta_admins.addMember(no_team_memberships, reviewer=sabdfl)
+    >>> logout()
+    >>> from canonical.database.sqlbase import flush_database_updates
+    >>> flush_database_updates()
+
+    >>> no_team_browser = setupBrowser(
+    ...     auth="Basic no-team-memberships@test.com:test")
+    >>> no_team_browser.open('http://launchpad.dev/people/+me/+editemails')
+    >>> no_team_browser.getControl(name='field.subscription.rosetta-admins')
+    Traceback (most recent call last):
+    ...
+    LookupError: name 'field.subscription.rosetta-admins'
+    
+Once the person joins the beta testers team, they can join the mailing list.
+
+    >>> login('foo.bar@canonical.com')
+    >>> beta.addMember(no_team_memberships, reviewer=sabdfl)
+    >>> flush_database_updates()    
+    >>> logout()
+    >>> no_team_browser.open('http://launchpad.dev/people/+me/+editemails')
+    >>> rosetta_admins = no_team_browser.getControl(
+    ...     name='field.subscription.rosetta-admins')
+    >>> rosetta_admins.displayOptions
+    ['Preferred address', "Don't subscribe", 'no-team-memberships@test.com']
+
+
 == Subscription management ==
 
 To subscribe to a mailing list, Carlos uses his subscription management

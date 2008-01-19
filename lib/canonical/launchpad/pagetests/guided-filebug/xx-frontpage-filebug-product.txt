@@ -63,14 +63,16 @@ Selecting a valid product will take us to the next filebug step.
     ...     name='field.bugtarget.product').value = 'firefox'
     >>> user_browser.getControl('Continue').click()
 
+A list of similar bugs is shown. Duplicates are removed from the list
+and replaced by the bug they duplicate. In the listing below bug 6
+also matches, but is a duplicate of bug 5 so does not appear.
+
     >>> from canonical.launchpad.ftests.bug import print_bugs_list
     >>> print_bugs_list(user_browser.contents, "similar-bugs")
-    #6 Firefox crashes when Save As dialog for a nonexistent window is closed
-    Closed, last updated ... ago
-    #1 Firefox does not support SVG
-    Open, last updated 2006-05-19
     #5 Firefox install instructions should be complete
     Open, last updated 2006-07-14
+    #1 Firefox does not support SVG
+    Open, last updated 2006-05-19
 
 Entering a description and submitting the bug takes the user to the bug
 page.

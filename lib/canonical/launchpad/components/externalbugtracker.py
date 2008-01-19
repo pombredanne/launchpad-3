@@ -100,6 +100,7 @@ _exception_to_bugwatcherrortype = [
    (UnparseableBugData, BugWatchErrorType.UNPARSABLE_BUG),
    (UnparseableBugTrackerVersion, BugWatchErrorType.UNPARSABLE_BUG_TRACKER),
    (UnsupportedBugTrackerVersion, BugWatchErrorType.UNSUPPORTED_BUG_TRACKER),
+   (UnknownBugTrackerTypeError, BugWatchErrorType.UNSUPPORTED_BUG_TRACKER),
    (socket.timeout, BugWatchErrorType.TIMEOUT)]
 
 def get_bugwatcherrortype_for_error(error):

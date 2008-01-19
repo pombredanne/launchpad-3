@@ -664,7 +664,6 @@ class FileBugGuidedView(FileBugViewBase):
     @cachedproperty
     def similar_bugs(self):
         """Return the similar bugs based on the user search."""
-        matching_bugs = []
         title = self.getSearchText()
         if not title:
             return []
@@ -700,10 +699,16 @@ class FileBugGuidedView(FileBugViewBase):
         # affects more than one source package, it will be returned more
         # than one time. 4 is an arbitrary number that should be large
         # enough.
-        for bugtask in matching_bugtasks[:4*self._MATCHING_BUGS_LIMIT]:
-            if not bugtask.bug in matching_bugs:
-                matching_bugs.append(bugtask.bug)
-                if len(matching_bugs) >= self._MATCHING_BUGS_LIMIT:
+        matching_bugs = []
+        matching_bugs_limit = self._MATCHING_BUGS_LIMIT
+        for bugtask in matching_bugtasks[:4*matching_bugs_limit]:
+            bug = bugtask.bug
+            duplicateof = bug.duplicateof
+            if duplicateof is not None:
+                bug = duplicateof
+            if bug not in matching_bugs:
+                matching_bugs.append(bug)
+                if len(matching_bugs) >= matching_bugs_limit:
                     break
 
         return matching_bugs
