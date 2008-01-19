@@ -229,7 +229,7 @@
       />
 
   <browser:defaultView
-      for="canonical.launchpad.interfaces.ILink"
+      for="canonical.launchpad.webapp.interfaces.ILink"
       name="+link"
       />
 
