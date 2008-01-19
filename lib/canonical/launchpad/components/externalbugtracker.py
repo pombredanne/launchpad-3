@@ -770,6 +770,22 @@ class DebBugs(ExternalBugTracker):
 
         return debian_bug
 
+    def _loadLog(self, debian_bug):
+        """Load the debbugs comment log for a given bug."""
+        if self.debbugs_db is None:
+            raise BugNotFound(bug_id)
+
+        # If we can't find the log in the debbugs database we try the
+        # archive.
+        try:
+            self.debbugs_db.load_log(debian_bug)
+        except debbugs.LogParseFailed:
+            # If there is no log for this bug in the archive a
+            # LogParseFailed error will be raised. However, we let that
+            # propagate upwards since we need to make the callsite deal
+            # with the fact that there's no log to parse.
+            self.debbugs_db_archive.load_log(debian_bug)
+
     def getRemoteImportance(self, bug_id):
         """See `ExternalBugTracker`.
 
@@ -833,7 +849,7 @@ class DebBugs(ExternalBugTracker):
         debian_bug = self._findBug(bug_watch.remotebug)
 
         try:
-            self.debbugs_db.load_log(debian_bug)
+            self._loadLog(debian_bug)
         except debbugs.LogParseFailed:
             log.warn("Unable to import comments for DebBugs bug #%s. "
                 "Could not parse comment log." %  bug_watch.remotebug)
