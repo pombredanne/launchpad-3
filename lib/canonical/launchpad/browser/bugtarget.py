@@ -397,7 +397,7 @@ class FileBugViewBase(LaunchpadFormView):
         # XXX: Bjorn Tillenius 2005-06-16:
         # Write proper FileUpload field and widget instead of this hack.
         attachment = self.request.form.get(self.widgets['filecontent'].name)
-        if attachment or extra_data.attachments:
+        if attachment is not None or extra_data.attachments is not None:
             # Attach all the comments to a single empty comment.
             attachment_comment = bug.newMessage(
                 owner=self.user, subject=bug.followup_subject(), content=None)
@@ -424,7 +424,7 @@ class FileBugViewBase(LaunchpadFormView):
                 file_description = None
                 if 'attachment_description' in data:
                     file_description = data['attachment_description']
-                if not file_description:
+                if file_description is None:
                     file_description = filename
 
                 bug.addAttachment(

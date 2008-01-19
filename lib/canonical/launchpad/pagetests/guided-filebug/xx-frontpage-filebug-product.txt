@@ -87,7 +87,7 @@ page.
 
 == Advanced filebug page ==
 
-From the frontpage filebug page it's possible to go to the advanced
+From the front page filebug page it's possible to go to the advanced
 filebug page and file a bug directly.
 
     >>> user_browser.open('http://bugs.launchpad.dev/')
