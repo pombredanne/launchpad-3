@@ -329,6 +329,29 @@ branch widget is shown.
     ...     print widget
     <input type="text" ...
 
+Test validation of errors...
+
+The target branch is a required field, so attempting to register without
+setting it gives an appropriate error.
+
+    >>> nopriv_browser.getControl('Register').click()
+    >>> for message in get_feedback_messages(nopriv_browser.contents):
+    ...     print extract_text(message)
+    There is 1 error.
+    Required input is missing.
+
+Invalid errors are also shown.
+
+    >>> nopriv_browser.getControl(
+    ...     name='field.target_branch.target_branch').value = (
+    ...         'fooix')
+    >>> nopriv_browser.getControl('Register').click()
+    >>> for message in get_feedback_messages(nopriv_browser.contents):
+    ...     print extract_text(message)
+    There is 1 error.
+    Invalid value
+
+
 When a branch is set as the development focus, then a radio button
 is shown.
 

@@ -36,7 +36,7 @@ no FAQ is associated to the question, the 'No existing FAQs are
 relevant' option is selected.
 
     >>> def printFAQOptions(contents):
-    ...     buttons =  find_main_content(user_browser.contents).findAll(
+    ...     buttons =  find_main_content(contents).findAll(
     ...         'input', {'name': 'field.faq'})
     ...     for button in buttons:
     ...         label = extract_text(button.parent)

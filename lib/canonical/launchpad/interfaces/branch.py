@@ -117,29 +117,28 @@ class BranchType(DBEnumeratedType):
     HOSTED = DBItem(1, """
         Hosted
 
-        Hosted branches have their main repository on the supermirror.
+        Launchpad is the primary location of this branch.
         """)
 
     MIRRORED = DBItem(2, """
         Mirrored
 
-        Mirrored branches are primarily hosted elsewhere and are
-        periodically pulled from the remote site into the supermirror.
+        Primarily hosted elsewhere and is periodically mirrored
+        from the remote location into Launchpad.
         """)
 
     IMPORTED = DBItem(3, """
         Imported
 
-        Imported branches have been converted from some other revision
-        control system into bzr and are made available through the
-        supermirror.
+        Branches that have been converted from some other revision
+        control system into bzr and are made available through Launchpad.
         """)
 
     REMOTE = DBItem(4, """
         Remote
 
-        Remote branches are those that are registered in Launchpad
-        with an external location, but are not to be mirrored.
+        Registered in Launchpad with an external location,
+        but is not to be mirrored, nor available through Launchpad.
         """)
 
 
@@ -307,13 +306,8 @@ class IBranch(IHasOwner):
     # Personally I'd like a LAZR way to do number 2.
     branch_type = Choice(
         title=_("Branch Type"), required=True,
-        vocabulary=UICreatableBranchType,
-        description=_("Hosted branches have Launchpad code hosting as the "
-                      "primary location and can be pushed to.  Mirrored "
-                      "branches are pulled from the remote location "
-                      "specified and cannot be pushed to.  Remote branches "
-                      "are not mirrored by Launchpad, nor can they be "
-                      "pushed to."))
+        vocabulary=UICreatableBranchType)
+
     name = TextLine(
         title=_('Name'), required=True, description=_("Keep very "
         "short, unique, and descriptive, because it will be used in URLs. "
@@ -391,15 +385,7 @@ class IBranch(IHasOwner):
     # Stats and status attributes
     lifecycle_status = Choice(
         title=_('Status'), vocabulary=BranchLifecycleStatus,
-        default=BranchLifecycleStatus.NEW,
-        description=_(
-        "The author's assessment of the branch's maturity. "
-        " Mature: recommend for production use."
-        " Development: useful work that is expected to be merged eventually."
-        " Experimental: not recommended for merging yet, and maybe ever."
-        " Merged: integrated into mainline, of historical interest only."
-        " Abandoned: no longer considered relevant by the author."
-        " New: unspecified maturity."))
+        default=BranchLifecycleStatus.NEW)
 
     # Mirroring attributes
     last_mirrored = Datetime(

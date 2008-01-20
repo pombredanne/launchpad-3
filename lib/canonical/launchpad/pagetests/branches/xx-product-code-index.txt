@@ -19,7 +19,6 @@ The link to the branch listing is in the actions portlet.
     Code overview for Mozilla Firefox
     >>> print_action_links(browser.contents)
     Register branch: http://code.launchpad.dev/firefox/+addbranch
-    List branches: http://code.launchpad.dev/firefox/+branches
 
     >>> browser.getLink('List branches').click()
     >>> print browser.title

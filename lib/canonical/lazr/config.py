@@ -20,7 +20,7 @@ import StringIO
 from zope.interface import implements
 
 from canonical.lazr.interfaces import (
-    ConfigErrors, IConfigData, IConfigLoader, IConfigSchema,
+    ConfigErrors, ICategory, IConfigData, IConfigLoader, IConfigSchema,
     InvalidSectionNameError, ISection, ISectionSchema, IStackableConfig,
     NoCategoryError, NoConfigError, RedefinedSectionError, UnknownKeyError,
     UnknownSectionError)
@@ -265,6 +265,14 @@ class Config:
             ConfigData(schema.filename, schema._getRequiredSections()), )
         self.schema = schema
 
+    def __getattr__(self, name):
+        """See `IStackableConfig`."""
+        if name in self.data._sections:
+            return self.data._sections[name]
+        elif name in self.data._category_names:
+            return Category(name, self.data.getByCategory(name))
+        raise AttributeError("No section or category named %s." % name)
+
     @property
     def data(self):
         """See `IStackableConfig`."""
@@ -479,6 +487,14 @@ class Section:
         """See `ISection`"""
         return self._options[key]
 
+    def __getattr__(self, name):
+        """See `ISection`."""
+        if name in self._options:
+            return self._options[name]
+        else:
+            raise AttributeError(
+                "No section key named %s." % name)
+
     def update(self, items):
         """Update the keys with new values.
 
@@ -501,3 +517,22 @@ class Section:
         mutation.
         """
         return copy.deepcopy(self)
+
+
+class Category:
+    """See `ICategory`."""
+    implements(ICategory)
+
+    def __init__(self, name, sections):
+        """Initialize the Category its name and a list of sections."""
+        self.name = name
+        self._sections = {}
+        for section in sections:
+            self._sections[section.name] = section
+
+    def __getattr__(self, name):
+        """See `ICategory`."""
+        full_name = "%s.%s" % (self.name, name)
+        if full_name in self._sections:
+            return self._sections[full_name]
+        raise AttributeError("No section named %s." % name)

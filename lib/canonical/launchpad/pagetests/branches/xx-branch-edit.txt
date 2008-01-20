@@ -81,15 +81,20 @@ To change the branch status, the +edit page is also used:
 
 The form displays the branch current status.
 
-    >>> browser.getControl('Status').displayValue
-    ['Experimental']
+    >>> print_radio_button_field(browser.contents, 'lifecycle_status')
+    ( ) Mature
+    ( ) Development
+    (*) Experimental
+    ( ) Merged
+    ( ) Abandoned
+    ( ) New
     >>> browser.getControl('Whiteboard').value
     ''
 
 The user selects the new status value and enters a more complete status message
 in the 'Whiteboard':
 
-    >>> browser.getControl('Status').displayValue = ['Merged'];
+    >>> browser.getControl('Merged').click()
     >>> browser.getControl('Whiteboard').value = \
     ...     "The brave shall prevail. Ka'plah!"
     >>> browser.getControl('Change Branch').click()
@@ -110,7 +115,7 @@ Set the branch status back to its initial state.
 
     >>> browser.open('http://launchpad.dev'
     ...     '/~name12/gnome-terminal/klingon/+edit')
-    >>> browser.getControl('Status').displayValue = ['Experimental'];
+    >>> browser.getControl('Experimental').click()
     >>> browser.getControl('Whiteboard').value = ''
     >>> browser.getControl('Change Branch').click()
 

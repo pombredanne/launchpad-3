@@ -254,6 +254,17 @@ class IFeedTypedData(Interface):
         description=u"Data contents",
         required=True)
 
+    content_type = Text(
+        title=u"Content type",
+        description=u"The actual content type for this object.  Must be"
+                     "one of those listed in content_types.",
+        required=False)
+
+    root_url = Text(
+        title=u"Root URL",
+        description=u"URL for the root of the site that produced the content, "
+                     "i.e. 'http://code.launchpad.net'",
+        required=False)
 
 class IFeedPerson(Interface):
     """Interface for a person in a feed."""

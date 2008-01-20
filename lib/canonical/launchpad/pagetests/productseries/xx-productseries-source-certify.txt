@@ -101,9 +101,9 @@ upstream project moves from CVS to Subversion.
   >>> browser.getControl('Delete Import').click()
   >>> browser.url
   'http://launchpad.dev/a52dec/trunk'
-  >>> extract_text(
+  >>> print extract_text(
   ...     find_tag_by_id(browser.contents, 'no-rcs-details'))
-  u'No revision control details recorded for trunk.'
+  No revision control details recorded for a52dec Series: trunk.
 
 These operations are only permitted for VCS operators and Launchpad
 admins, so a user will not see these buttons:
