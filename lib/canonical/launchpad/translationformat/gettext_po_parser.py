@@ -723,12 +723,8 @@ class POParser(object):
                         string)
                     raise TranslationFormatSyntaxError(
                         line_number=self._lineno,
-<<<<<<< TREE
                         message=("extra content found after string: (%s)" %
                                  string))
-=======
-                        message=message)
->>>>>>> MERGE-SOURCE
                 break
             elif string[0] == '\\' and string[1] in escape_map:
                 # We got one of the special escaped chars we know about, we
