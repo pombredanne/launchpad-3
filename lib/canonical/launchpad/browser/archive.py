@@ -234,10 +234,10 @@ class ArchivePackageDeletionView(ArchiveViewBase, LaunchpadFormView):
     custom_widget('selected_sources', LabeledMultiCheckBoxWidget)
 
     def setUpFields(self):
-        """Override `LaunchpadFormView`
+        """Override `LaunchpadFormView`.
 
-        Additionally to set schema fields also initialize 'name_filter'
-        widget required to setup 'selected_sources' field.
+        In addition to setting schema fields, also initialize the
+        'name_filter' widget required to setup 'selected_sources' field.
 
         See `createSelectedSourcesField` method.
         """

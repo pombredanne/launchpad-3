@@ -92,12 +92,12 @@
                            error python:view.getFieldError(field_name);">
         <div style="margin-top: 1em;">
           <label tal:attributes="for widget/name"
-                 tal:content="widget/label">Label</label>
+                 tal:content="string:${widget/label}:">Label</label>
           <input tal:replace="structure widget" />
-          <p class="formHelp" tal:condition="widget/hint"
-             tal:content="widget/hint">Some Help Text</p>
           <input tal:replace="structure
              view/actions/field.actions.delete/render" />
+          <p class="formHelp" tal:condition="widget/hint"
+             tal:content="widget/hint">Some Help Text</p>
         </div>
         <div class="error message" tal:condition="error"
              tal:content="structure error">Error message</div>
@@ -113,9 +113,10 @@
 </div> <!--main -->
 
 <p metal:fill-slot="help">
-   Search for the wanted packages, then select one of more of them for
+   Search for the desired packages, then select one of more of them for
    deletion. A message is displayed below the list of packages if
-   there were more than 10 packages found; you may want to refine your
+   there were more than <tal:max_sources replace="view/max_sources_presented"
+   /> packages found; you may want to refine your
    search if the packages you are interested in are not listed. A short
    text comment should be provided when deleting packages, it will be
    recorded and displayed when presenting the package information.A
