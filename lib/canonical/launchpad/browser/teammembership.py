@@ -8,7 +8,7 @@ __all__ = [
     ]
 
 import pytz
-from datetime import datetime, date
+from datetime import datetime, date, timedelta
 
 from zope.app.form import CustomWidgetFactory
 from zope.component import getUtility
@@ -48,16 +48,48 @@ class TeamMembershipEditView:
         self.max_year = 2050
         fields = form.Fields(Date(
             __name__='expirationdate', title=_('Expiration date')))
-        fields['expirationdate'].custom_widget = \
-            CustomWidgetFactory(DateWidget)
-        current_expiration = None
-        if self.context.dateexpires is not None:
-            current_expiration = self.context.dateexpires.date()
-        data = {'expirationdate': current_expiration}
+        expiration_field = fields['expirationdate']
+        expiration_field.custom_widget = CustomWidgetFactory(DateWidget)
+        expires = self.context.dateexpires
+        UTC = pytz.timezone('UTC') 
+        if self.isExpired():
+            # For expired members, we will present the team's default
+            # renewal date.
+            expires = self.context.team.defaultrenewedexpirationdate
+        if self.isDeactivated():
+            # For members who were deactivated, we present by default
+            # their original expiration date, or, if that has passed, or
+            # never set, the team's default renewal date
+            if (expires is None) or (
+                expires < datetime.now(UTC)):
+                expires = self.context.team.defaultrenewedexpirationdate
+        if expires is not None:
+            # We get a datetime from the database, but we want to use a
+            # datepicker so we must feed it a plain date without time.
+            expires = expires.date()
+        data = {'expirationdate': expires}
         self.widgets = form.setUpWidgets(
             fields, self.prefix, context, request, ignore_request=False,
             data=data)
-        self.expirationdate_widget = self.widgets['expirationdate']
+        self.expiration_widget = self.widgets['expirationdate']
+        # Set the acceptable date range for expiration.
+        # If there is no default membership period or renewal period, then
+        # there is no maximum date of membership. However, if 
+        renewal_limit = self.context.team.defaultrenewedexpirationdate
+        initial_limit = None
+        if self.context.team.defaultmembershipperiod is not None:
+            initial_limit = self.context.datejoined + timedelta(
+                self.context.team.defaultmembershipperiod)
+        team_max = None
+        if initial_limit is not None and renewal_limit is not None:
+            team_max = max(initial_limit, renewal_limit)
+        elif initial_limit is not None:
+            team_max = initial_limit
+        elif renewal_limit is not None:
+            team_max = renewal_limit
+        self.expiration_widget.to_date = team_max
+        self.expiration_widget.from_date = datetime.now(UTC).date()
+        import pdb; pdb.set_trace()
 
     # Boolean helpers
     def userIsTeamOwnerOrLPAdmin(self):
@@ -224,6 +256,12 @@ class TeamMembershipEditView:
             self.request.response.redirect(
                 '%s/+members' % canonical_url(self.context.team))
 
+    def date_picker_trigger(self):
+        """Function call to trigger the date picker."""
+        return """pickDate('membership.expirationdate', %s);
+         document.getElementById('membership.expirationdate').disabled=false;
+         """ % (self.expiration_widget.daterange)
+
     def _setMembershipData(self, status):
         """Set all data specified on the form, for this TeamMembership.
 
@@ -276,20 +314,4 @@ class TeamMembershipEditView:
                 raise ValueError('date provided is in the past')
 
         return expires
-
-    #
-    # Helper methods for widgets and processing
-    #
-
-    def dateChooserForExpiredMembers(self):
-        expires = self.context.team.defaultrenewedexpirationdate
-        return self._buildDateChooser(expires)
-
-    def dateChooserForProposedMembers(self):
-        expires = self.context.team.defaultexpirationdate
-        return self._buildDateChooser(expires)
-
-    def dateChooserWithCurrentExpirationSelected(self):
-        return self._buildDateChooser(self.context.dateexpires)
-
 

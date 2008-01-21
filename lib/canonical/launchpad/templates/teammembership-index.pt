@@ -48,7 +48,6 @@
     </tr>
   </metal:macro>
   <metal:macro define-macro="expiry-radios">
-  <table><tbody><tr><td>
     <label for="never">
       <input tal:attributes="checked python: view.neverExpiresIsSelected()
                                              and 'checked' or ''"
@@ -56,18 +55,20 @@
           document.getElementById('membership.expirationdate').disabled=true;"
         type="radio" id="never" value="never" name="expires" />
         Never<br />
-    </label></td></tr>
-    <tr><td><label for="date">
-      <input tal:attributes="checked python: view.expiresIsSelected()
-                                             and 'checked' or ''"
-      type="radio" id="date" value="date" name="expires"
-      onclick="pickDate('membership.expirationdate');
-       document.getElementById('membership.expirationdate').disabled=false;" />
+    </label>
+    <label for="date">
+      <input tal:attributes="
+        checked python: view.expiresIsSelected() and 'checked' or '';
+        onclick view/date_picker_trigger"
+        type="radio" id="date" value="date" name="expires" />
       On&nbsp;
-    </label></td><td>
-    <span tal:content="structure view/expirationdate_widget"
-      onclick="document.getElementById('date').value='date';" />
-    </td></tr></table>
+    </label>
+    <script language="JavaScript" type="text/javascript">
+      function datePickerCallback(y,m,d,e) {
+        alert('here')
+      };
+    </script>
+    <span tal:replace="structure view/expiration_widget" />
   </metal:macro>
 </metal:macros>
 
@@ -75,7 +76,7 @@
 
       <div tal:condition="view/isActive"> 
 
-        <h1>Active member</h1>
+        <h1>Active member <tal:who replace="context/person/browsername" /></h1>
 
         <p>
           <metal:person use-macro="template/macros/person" />
@@ -151,7 +152,7 @@
 
       <div tal:condition="view/isInactive"> 
 
-        <h1>Inactive member</h1>
+        <h1>Inactive member <tal:who replace="context/person/browsername" /></h1>
         <p tal:condition="view/isExpired">
           <metal:person use-macro="template/macros/person" />
           is an <em>Expired Member</em> of
@@ -233,7 +234,7 @@
 
       <div tal:condition="view/isProposed"> 
 
-        <h1>Proposed member</h1>
+        <h1>Proposed member <tal:who replace="context/person/browsername" /></h1>
         <p>
           <metal:person use-macro="template/macros/person" />
           wants to join this team.
@@ -281,7 +282,8 @@
 
       <div tal:condition="view/isDeclined"> 
 
-        <h1>Declined member</h1>
+        <h1>Declined member <tal:who replace="context/person/browsername"
+        /></h1>
         <p>
           <metal:person use-macro="template/macros/person" />
           asked to join this team, but the request was declined.

@@ -248,7 +248,7 @@ class LaunchpadFormView(LaunchpadView):
 
     @property
     def error_count(self):
-        # this should use ngettext if we ever translate Launchpad's UI
+        # this should use gettext if we ever translate Launchpad's UI
         count = len(self.form_wide_errors)
         for field in self.form_fields:
             if field.__name__ in self.widget_errors:

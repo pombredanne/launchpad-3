@@ -84,12 +84,9 @@ able to renew it himself.
     >>> team_admin_browser.open(
     ...     'http://launchpad.dev/~ubuntu-mirror-admins/+member/karl')
     >>> team_admin_browser.getControl(name='expires').value = ['date']
-    >>> team_admin_browser.getControl(name='day').value = [
-    ...     str(day_after_tomorrow.day)]
-    >>> team_admin_browser.getControl(name='year').value = [
-    ...     str(day_after_tomorrow.year)]
-    >>> team_admin_browser.getControl(name='month').value = [
-    ...     str(day_after_tomorrow.month)]
+    >>> team_admin_browser.getControl(
+    ...     name='membership.expirationdate').value = \
+    ...     day_after_tomorrow.date().strftime('%Y-%m-%d')
     >>> team_admin_browser.getControl(name='change').click()
 
     >>> team_admin_browser.url

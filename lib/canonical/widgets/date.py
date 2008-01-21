@@ -191,12 +191,12 @@ class DateTimeWidget(TextWidget):
           >>> widget.from_date = from_date
           >>> widget.to_date = None
           >>> widget.daterange
-          '[[2004,04,05],[]]'
+          '[[2004,04,05],null]'
 
           >>> widget.from_date = None
           >>> widget.to_date = to_date
           >>> widget.daterange
-          '[[],[2004,04,10]]'
+          '[null,[2004,04,10]]'
 
           >>> widget.from_date = from_date
           >>> widget.to_date = to_date
@@ -214,11 +214,11 @@ class DateTimeWidget(TextWidget):
             return 'null'
         daterange = '['
         if self.from_date is None:
-            daterange += '[],'
+            daterange += 'null,'
         else:
             daterange += self.from_date.strftime('[%Y,%m,%d],')
         if self.to_date is None:
-            daterange += '[]]'
+            daterange += 'null]'
         else:
             daterange += self.to_date.strftime('[%Y,%m,%d]]')
         return daterange
@@ -455,7 +455,10 @@ class DateWidget(DateTimeWidget):
         if value is None:
             self._data = None
             return
-        self._data = value.date()
+        if isinstance(value, datetime):
+            self._data = value.date()
+        else:
+            self._data = value
 
 
 class DatetimeDisplayWidget(DisplayWidget):
