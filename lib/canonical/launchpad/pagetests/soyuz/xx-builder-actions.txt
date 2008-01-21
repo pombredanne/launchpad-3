@@ -48,6 +48,38 @@ details of the builder
     >>> cprov_browser.getControl(name="field.owner").value
     'launchpad-buildd-admins'
 
+The 'manual' field isn't available in +edit, because it can be
+modified separately via its own form, 'Change mode' (see below).
+
+    >>> cprov_browser.getControl(name="field.manual")
+    Traceback (most recent call last):
+    ...
+    LookupError: name 'field.manual'
+
+The same happens to the fields 'vm_host', 'builderok', 'failnotes' and
+'active' which are only available via 'Administer builder' form (see
+below).
+
+    >>> cprov_browser.getControl(name="field.vm_host")
+    Traceback (most recent call last):
+    ...
+    LookupError: name 'field.vm_host'
+
+    >>> cprov_browser.getControl(name="field.builderok")
+    Traceback (most recent call last):
+    ...
+    LookupError: name 'field.builderok'
+
+    >>> cprov_browser.getControl(name="field.failnotes")
+    Traceback (most recent call last):
+    ...
+    LookupError: name 'field.failnotes'
+
+    >>> cprov_browser.getControl(name="field.active")
+    Traceback (most recent call last):
+    ...
+    LookupError: name 'field.active'
+
 Any change should take effect immediately:
 
     >>> print str(cprov_browser.title)
@@ -145,7 +177,7 @@ however we have a placeholder page in place.
     Cancel job
     Bob The Builder is processing:
     Build of                         Queued     Started    Time spent so far
-    i386 build of mozilla-firefox... 2005-09-30 2005-06-15 135 weeks
+    i386 build of mozilla-firefox... 2005-09-30 2005-06-15 ... weeks
     Are you sure ?
 
     >>> cprov_browser.getControl("Cancel job").click()
