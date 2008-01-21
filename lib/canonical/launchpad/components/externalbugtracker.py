@@ -771,11 +771,19 @@ class DebBugs(ExternalBugTracker):
         return debian_bug
 
     def _loadLog(self, debian_bug):
-        """Load the debbugs comment log for a given bug."""
+        """Load the debbugs comment log for a given bug.
+
+        This method is analogous to _findBug() in that if the comment
+        log cannot be loaded from the main database it will attempt to
+        load the log from the archive database.
+
+        If no comment log can be found, a debbugs.LogParseFailed error
+        will be raised.
+        """
         if self.debbugs_db is None:
             raise BugNotFound(bug_id)
 
-        # If we can't find the log in the debbugs database we try the
+        # If we can't find the log in the main database we try the
         # archive.
         try:
             self.debbugs_db.load_log(debian_bug)
