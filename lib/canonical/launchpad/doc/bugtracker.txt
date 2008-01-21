@@ -325,19 +325,6 @@ the error that was raised:
     'Unsupported Bugtracker'
 
 
-== Updating selected bug trackers ==
-
-The BugWatchUpdater class can be instructed to update only a subset of
-bugtrackers. This is acheived by passing a list of bug tracker names to
-the updateBugTrackers() method. No watches will actually be updated
-because all the watches had their lastchecked time set to UTC_NOW above.
-
-    >>> updater = BugWatchUpdater(transaction)
-    >>> updater._login()
-    >>> updater.updateBugTrackers(['debbugs', 'mozilla.org'])
-    INFO...No watches to update on http://bugs.debian.org
-    INFO...No watches to update on https://bugzilla.mozilla.org/
-
 
 == Batched Bugwatch Updating ==
 
@@ -382,3 +369,18 @@ requests are actually made.
     ...     urllib2.urlopen = urlopen
     INFO Updating 5 watches on http://bugs.example.com
     ERROR:root:Connection timed out when updating http://bugs.example.com
+
+
+== Updating selected bug trackers ==
+
+The BugWatchUpdater class can be instructed to update only a subset of
+bugtrackers. This is acheived by passing a list of bug tracker names to
+the updateBugTrackers() method. No watches will actually be updated
+because all the watches had their lastchecked time set to UTC_NOW above.
+
+    >>> updater = BugWatchUpdater(transaction, log=FakeLogger())
+    >>> updater._login()
+    >>> updater.updateBugTrackers(['debbugs', 'gnome-bugzilla'])
+    INFO No watches to update on http://bugzilla.gnome.org/bugs
+    INFO No watches to update on http://bugs.debian.org
+

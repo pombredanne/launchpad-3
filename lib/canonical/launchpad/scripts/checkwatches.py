@@ -11,6 +11,7 @@ import socket
 from zope.component import getUtility
 
 from canonical.database.constants import UTC_NOW
+from canonical.database.sqlbase import sqlvalues
 from canonical.launchpad.components import externalbugtracker
 from canonical.launchpad.interfaces import (
     ILaunchpadCelebrities, IBugTrackerSet)
@@ -40,15 +41,24 @@ class BugWatchUpdater(object):
         """Tear down the Bug Watch Updater Interaction."""
         endInteraction()
 
-    def updateBugTrackers(self):
-        """Update all the bug trackers that have watches pending."""
+    def updateBugTrackers(self, bug_trackers=[]):
+        """Update all the bug trackers that have watches pending.
+
+        If bug tracker names are specified in bug_trackers only those
+        bug trackers will be checked.
+        """
         ubuntu_bugzilla = getUtility(ILaunchpadCelebrities).ubuntu_bugzilla
 
         # Set up an interaction as the Bug Watch Updater since the
         # notification code expects a logged in user.
         self._login()
 
-        for bug_tracker in getUtility(IBugTrackerSet):
+        bug_tracker_set = getUtility(IBugTrackerSet)
+        if bug_trackers:
+            bug_tracker_set = bug_tracker_set.getBugTrackersByName(
+                bug_trackers)
+
+        for bug_tracker in bug_tracker_set:
             self.txn.begin()
             # Save the url for later, since we might need it to report an
             # error after a transaction has been aborted.
