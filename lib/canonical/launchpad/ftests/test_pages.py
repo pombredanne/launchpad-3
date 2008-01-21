@@ -204,6 +204,9 @@ def extract_text(content):
             result.append(unicode(node))
         else:
             if isinstance(node, Tag):
+                # If the node has the class "sortkey" then it is invisible.
+                if node.get('class') == 'sortkey':
+                    continue
                 if node.name.lower() in ELEMENTS_INTRODUCING_NEWLINE:
                     result.append(u'\n')
             # Process this node's children next.
