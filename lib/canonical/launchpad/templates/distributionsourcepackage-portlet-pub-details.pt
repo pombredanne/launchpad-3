@@ -23,7 +23,6 @@
           <tal:component replace="pub/component/name"/>
           /
           <tal:section replace="pub/section/name"/>
-          <br/>
         </div>
       </tal:block>
     </div>

@@ -323,7 +323,7 @@ class ISourcePackagePublishingHistory(ISecureSourcePackagePublishingHistory):
 
     suite_name = Attribute(
         "Return the suite name for this publishing record.  Suite "
-        "name is built from distroseries-<pocket> where -pocket is "
+        "name is built from distroseries<-pocket> where -pocket is "
         "empty if it's the release pocket.")
 
     def getPublishedBinaries():

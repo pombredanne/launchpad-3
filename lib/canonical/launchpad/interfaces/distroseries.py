@@ -274,7 +274,7 @@ class IDistroSeries(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
     def suite_name(pocket):
         """Return the suite name for this distroseries and the given pocket.
 
-        Suite name is formed of distroseries<-pocket> where -pocket is
+        Suite name is built from distroseries<-pocket> where -pocket is
         omitted for the release pocket.
         """
 
