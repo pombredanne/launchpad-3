@@ -72,6 +72,6 @@ def debug_proxy(obj):
         if not zope.proxy.isProxy(proxy):
             break
         printer = proxy_formatters.get(type(proxy), default_proxy_formatter)
-        print printer(proxy)
+        print >>buf, printer(proxy)
     return buf.getvalue()
 
