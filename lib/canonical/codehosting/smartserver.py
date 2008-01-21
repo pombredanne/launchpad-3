@@ -68,9 +68,8 @@ class ExecOnlySession:
             protocol.write(str(e) + '\r\n')
             protocol.loseConnection()
             raise
-        sorted_environment = sorted(self.environment.items())
         log.msg('Running: %r, %r, %r'
-                % (executable, arguments, sorted_environment))
+                % (executable, arguments, self.environment))
         self._transport = self.reactor.spawnProcess(
             protocol, executable, arguments, env=self.environment)
 
@@ -139,7 +138,6 @@ class RestrictedExecOnlySession(ExecOnlySession):
 
 def launch_smart_server(avatar):
     import sys
-    from canonical.codehosting import plugins
     from twisted.internet import reactor
 
     command = (

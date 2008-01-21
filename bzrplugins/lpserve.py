@@ -10,16 +10,13 @@ __metaclass__ = type
 __all__ = ['cmd_launchpad_server']
 
 
-import os
 import sys
 import xmlrpclib
 
 from bzrlib.commands import Command, register_command
 from bzrlib.option import Option
 from bzrlib import urlutils, ui
-from bzrlib import trace
 
-from bzrlib import plugin
 from bzrlib.smart import medium, server
 from bzrlib.transport import chroot, get_transport, remote
 
@@ -38,9 +35,9 @@ class cmd_launchpad_server(Command):
                help='serve on stdin/out for use from inetd or sshd'),
         Option('port',
                help='listen for connections on nominated port of the form '
-                    '[hostname:]portnumber. Passing 0 as the port number will '
-                    'result in a dynamically allocated port. Default port is '
-                    '4155.',
+                    '[hostname:]portnumber. Passing 0 as the port number will'
+                    ' result in a dynamically allocated port. Default port is'
+                    ' 4155.',
                type=str),
         Option('upload-directory',
                help='upload branches to this directory. Defaults to '
@@ -104,8 +101,8 @@ class cmd_launchpad_server(Command):
         """Run the given smart server."""
         # for the duration of this server, no UI output is permitted.
         # note that this may cause problems with blackbox tests. This should
-        # be changed with care though, as we dont want to use bandwidth sending
-        # progress over stderr to smart server clients!
+        # be changed with care though, as we dont want to use bandwidth
+        # sending progress over stderr to smart server clients!
         old_factory = ui.ui_factory
         try:
             ui.ui_factory = ui.SilentUIFactory()
@@ -116,20 +113,6 @@ class cmd_launchpad_server(Command):
     def run(self, user_id, port=None, upload_directory=None,
             mirror_directory=None, authserver_url=None, inet=False):
         from canonical.codehosting import transport
-        try:
-            os.unlink('/home/abentley/log')
-        except:
-            pass
-        log = open('/home/abentley/log', 'w')
-        print >> log, ('*!*!*!* ' + os.environ['BZR_PLUGIN_PATH'])
-        print >> log, plugin.all_plugins()
-        print >> log, 'BZR_HOME=%r' % os.environ.get('BZR_HOME')
-        print >> log, 'HOME=%r' % os.environ.get('HOME')
-        print >> log, '_log_file_name=%r' % (trace._bzr_log_filename,)
-        log.flush()
-        bzrlog = open(trace._bzr_log_filename)
-        log.write(bzrlog.read())
-        log.close()
         if upload_directory is None:
             upload_directory = config.codehosting.branches_root
         if mirror_directory is None:
