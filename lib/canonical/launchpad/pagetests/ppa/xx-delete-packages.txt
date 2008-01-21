@@ -75,7 +75,7 @@ matching the given text.
     ...     name='field.name_filter').value = 'nonexistentpackage'
     >>> admin_browser.getControl("Update").click()
     >>> print_ppa_packages(admin_browser.contents)
-    No matching package for 'nonexistentpackage'.
+    No matching source packages for 'nonexistentpackage'.
 
     >>> admin_browser.getControl(
     ...     name='field.name_filter').value = 'pmount'
@@ -120,7 +120,7 @@ is issued.
 
 Once the deletion is successfully requested, Foo Bar sees an
 informational message containing the summary of the action
-performed. The results presented are old.
+performed. The results should not include the just-deleted source.
 
     >>> admin_browser.getControl("Update").click()
     >>> admin_browser.getControl(
@@ -137,18 +137,35 @@ performed. The results presented are old.
 
     >>> print_ppa_packages(admin_browser.contents)
     Source           Published   Status     Series          Section
-    cdrkit - 1.0     2007-07-09  Published  Breezy-autotest Editors
     iceweasel - 1.0  2007-07-09  Published  Warty           Editors
     pmount - 0.1-1   2007-07-09  Published  Warty           Editors
 
-When Foo Bar refreshes the page an up-to-date list is be presented
-excluding the just-deleted packages.
+Here we can check for maliciously submitted forms containing
+invalid data.
 
-    >>> admin_browser.getControl("Update").click()
-    >>> print_ppa_packages(admin_browser.contents)
-    Source           Published   Status     Series          Section
-    iceweasel - 1.0  2007-07-09  Published  Warty           Editors
-    pmount - 0.1-1   2007-07-09  Published  Warty           Editors
+An already deleted source:
+
+    >>> admin_browser.getControl(
+    ...    name='field.selected_sources').value = ['27']
+    Traceback (most recent call last):
+    ...
+    ItemNotFoundError: insufficient items with name '27'
+
+An nonexistent source:
+
+    >>> admin_browser.getControl(
+    ...    name='field.selected_sources').value = ['100']
+    Traceback (most recent call last):
+    ...
+    ItemNotFoundError: insufficient items with name '100'
+
+An invalid value.
+
+    >>> admin_browser.getControl(
+    ...    name='field.selected_sources').value = ['blah']
+    Traceback (most recent call last):
+    ...
+    ItemNotFoundError: insufficient items with name 'blah'
 
 The deleted record is now presented accordingly in the +index page. We
 will use another browser to inspect the results of our deletions.
@@ -193,6 +210,17 @@ Multiple packages can be deleted in one single batch.
     pmount 0.1-1 in warty
     Deletion comment: DO IT AGAIN !
 
+The page doesn't present the form anymore, since there are no sources
+available for deletion.
+
+    >>> print extract_text(find_main_content(admin_browser.contents))
+    Source and binaries deleted by Foo Bar request:
+    iceweasel 1.0 in warty
+    pmount 0.1-1 in warty
+    Deletion comment: DO IT AGAIN !
+    Delete packages from PPA for Celso Providelo
+    This PPA does not contain any source packages published.
+
 Any user can see that all packages present in Celso's PPA are deleted.
 
     >>> cprov_browser.getControl(
@@ -204,30 +232,14 @@ Any user can see that all packages present in Celso's PPA are deleted.
     iceweasel - 1.0  2007-07-09  Deleted    Warty           Editors
     pmount - 0.1-1   2007-07-09  Deleted    Warty           Editors
 
-Finally, we can check for maliciously submitted forms containing
-invalid data.
+A clear message is presented for PPAs that don't contain any
+published source packages.
 
-An already deleted source:
+    >>> admin_browser.open('http://launchpad.dev/~no-priv/+archive')
+    >>> admin_browser.getLink('Delete packages').click()
+    >>> admin_browser.title
+    'Delete packages from PPA for No Privileges Person'
 
-    >>> admin_browser.getControl(
-    ...    name='field.selected_sources').value = ['27']
-    Traceback (most recent call last):
-    ...
-    ItemNotFoundError: insufficient items with name '27'
-
-An nonexistent source:
-
-    >>> admin_browser.getControl(
-    ...    name='field.selected_sources').value = ['100']
-    Traceback (most recent call last):
-    ...
-    ItemNotFoundError: insufficient items with name '100'
-
-An invalid value.
-
-    >>> admin_browser.getControl(
-    ...    name='field.selected_sources').value = ['blah']
-    Traceback (most recent call last):
-    ...
-    ItemNotFoundError: insufficient items with name 'blah'
-
+    >>> print extract_text(find_main_content(admin_browser.contents))
+    Delete packages from PPA for No Privileges Person
+    This PPA does not contain any source packages published.
