@@ -345,8 +345,11 @@ class IBranch(IHasOwner):
         default=False)
 
     # People attributes
-    owner = Choice(title=_('Owner'), required=True, vocabulary='ValidOwner',
-        description=_("Branch owner, either a valid Person or Team."))
+    owner = Choice(
+        title=_('Owner'), required=True,
+        vocabulary='PersonActiveMembershipPlusSelf',
+        description=_("Either yourself or a team you are a member of. "
+                      "This controls who can modify the branch."))
     author = Choice(
         title=_('Author'), required=False, vocabulary='ValidPersonOrTeam',
         description=_("The author of the branch. Leave blank if the author "

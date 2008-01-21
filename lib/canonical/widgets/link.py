@@ -24,3 +24,7 @@ class LinkWidget(DisplayWidget):
     def __call__(self):
         adapter = queryAdapter(self._data, IPathAdapter, 'fmt')
         return adapter.link('')
+
+    def hasInput(self):
+        """The widget never has input."""
+        return False

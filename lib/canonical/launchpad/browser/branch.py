@@ -60,6 +60,7 @@ from canonical.launchpad.webapp.uri import URI
 from canonical.widgets import SinglePopupWidget
 from canonical.widgets.branch import TargetBranchWidget
 from canonical.widgets.itemswidgets import LaunchpadRadioWidgetWithDescription
+from canonical.widgets.link import LinkWidget
 
 
 def quote(text):
@@ -638,7 +639,7 @@ class BranchEditView(BranchEditFormView, BranchNameValidationMixin):
 class BranchAddView(LaunchpadFormView, BranchNameValidationMixin):
 
     schema = IBranch
-    field_names = ['product', 'branch_type', 'url', 'name', 'title',
+    field_names = ['owner', 'product', 'name', 'branch_type', 'url', 'title',
                    'summary', 'lifecycle_status', 'whiteboard', 'home_page',
                    'author']
 
@@ -660,9 +661,9 @@ class BranchAddView(LaunchpadFormView, BranchNameValidationMixin):
                 branch_type=BranchType.items[ui_branch_type.name],
                 name=data['name'],
                 creator=self.user,
-                owner=self.user,
+                owner=data['owner'],
                 author=self.getAuthor(data),
-                product=self.getProduct(data),
+                product=data['product'],
                 url=data['url'],
                 title=data['title'],
                 summary=data['summary'],
@@ -672,7 +673,7 @@ class BranchAddView(LaunchpadFormView, BranchNameValidationMixin):
             if self.branch.branch_type == BranchType.MIRRORED:
                 self.branch.requestMirror()
         except BranchCreationForbidden:
-            self.setForbiddenError(self.getProduct(data))
+            self.setForbiddenError(data['product'])
         else:
             notify(SQLObjectCreatedEvent(self.branch))
             self.next_url = canonical_url(self.branch)
@@ -691,18 +692,22 @@ class BranchAddView(LaunchpadFormView, BranchNameValidationMixin):
         """A method that is overridden in the derived classes."""
         return data['author']
 
-    def hasProduct(self, data):
-        """Is the product defined in the data dict."""
-        return 'product' in data
-
-    def getProduct(self, data):
-        """A method that is overridden in the derived classes."""
-        return data.get('product')
-
     def validate(self, data):
-        if self.hasProduct(data) and 'name' in data:
+        if 'name' in data:
             self.validate_branch_name(
-                self.user, self.getProduct(data), data['name'])
+                self.user, data.get('product'), data['name'])
+
+        owner = data['owner']
+        if not self.user.inTeam(owner):
+            self.setFieldError(
+                'owner',
+                'You are not a member of %s' % data['owner'].displayname)
+
+        if owner.isTeam() and data.get('product') is None:
+            error = self.getFieldError('product')
+            if not error:
+                self.setFieldError('product',
+                                   'Teams cannot have junk branches.')
 
         branch_type = data.get('branch_type')
         # If branch_type failed to validate, then the rest of the method
@@ -752,35 +757,26 @@ class BranchAddView(LaunchpadFormView, BranchNameValidationMixin):
 class PersonBranchAddView(BranchAddView):
     """See `BranchAddView`."""
 
+    initial_focus_widget = 'product'
+
     @property
     def initial_values(self):
         return {'author': self.context,
+                'owner': self.context,
                 'branch_type': UICreatableBranchType.MIRRORED}
 
 
 class ProductBranchAddView(BranchAddView):
     """See `BranchAddView`."""
 
+    initial_focus_widget = 'name'
+
     @property
-    def field_names(self):
-        fields = list(BranchAddView.field_names)
-        fields.remove('product')
-        return fields
-
-    def hasProduct(self, data):
-        return True
-
-    def getProduct(self, data):
-        return self.context
-
-    def setForbiddenError(self, product):
-        """There is no product widget, so set a form wide error."""
-        assert product is not None, (
-            "BranchCreationForbidden should never be raised for "
-            "junk branches.")
-        self.addError(
-            "You are not allowed to create branches in %s."
-            % (quote(product.displayname)))
+    def initial_values(self):
+        return {'author': self.user,
+                'owner' : self.user,
+                'branch_type': UICreatableBranchType.MIRRORED,
+                'product': self.context}
 
 
 class BranchReassignmentView(ObjectReassignmentView):
