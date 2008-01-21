@@ -398,24 +398,13 @@ class FileBugViewBase(LaunchpadFormView):
         #     We need to have a proper FileUpload widget rather than
         #     this rather hackish solution.
         attachment = self.request.form.get(self.widgets['filecontent'].name)
-        if attachment is not None or extra_data.attachments is not None:
+        if attachment is not None or extra_data.attachments:
             # Attach all the comments to a single empty comment.
             attachment_comment = bug.newMessage(
                 owner=self.user, subject=bug.followup_subject(), content=None)
 
-            for attachment in extra_data.attachments:
-                bug.addAttachment(
-                    owner=self.user, file_=attachment['content'],
-                    description=attachment['description'],
-                    comment=attachment_comment,
-                    filename=attachment['filename'],
-                    content_type=attachment['content_type'])
-                notifications.append(
-                    'The file "%s" was attached to the bug report.' %
-                        cgi.escape(attachment['filename']))
-
             # Deal with attachments added in the filebug form.
-            if attachment:
+            if attachment is not None:
                 # We convert slashes in filenames to hyphens to avoid
                 # problems.
                 filename = attachment.filename.replace('/', '-')
@@ -436,6 +425,17 @@ class FileBugViewBase(LaunchpadFormView):
                 notifications.append(
                     'The file "%s" was attached to the bug report.' %
                         cgi.escape(filename))
+
+            for attachment in extra_data.attachments:
+                bug.addAttachment(
+                    owner=self.user, file_=attachment['content'],
+                    description=attachment['description'],
+                    comment=attachment_comment,
+                    filename=attachment['filename'],
+                    content_type=attachment['content_type'])
+                notifications.append(
+                    'The file "%s" was attached to the bug report.' %
+                        cgi.escape(attachment['filename']))
 
         if extra_data.subscribers:
             # Subscribe additional subscribers to this bug

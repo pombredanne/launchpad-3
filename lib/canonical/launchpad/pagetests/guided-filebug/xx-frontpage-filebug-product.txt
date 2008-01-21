@@ -101,24 +101,12 @@ filebug page and file a bug directly.
     ...     name='field.bugtarget.product').value = 'evolution'
     >>> user_browser.getControl('Summary').value = 'Evolution crashes'
     >>> user_browser.getControl('Further information').value = 'Crash.'
-    >>> user_browser.getControl('Attachment').add_file(
-    ...   example_file, 'text/plain', 'example-2.txt')
-    >>> user_browser.getControl('Description').value = ("Another "
-    ...     "attachment")
 
     >>> user_browser.getControl('Submit Bug Report').click()
     >>> user_browser.url
     'http://bugs.launchpad.dev/evolution/+bug/...'
     >>> user_browser.title
     'Bug #... in Evolution: ...Evolution crashes...'
-
-    >>> attachments = find_portlet(user_browser.contents, 'Bug attachments')
-    >>> for li_tag in attachments.findAll('li', 'download'):
-    ...     print li_tag.a.renderContents()
-    Another attachment
-
-    >>> user_browser.getLink('Another attachment').url
-    'http://localhost:58000/.../example-2.txt'
 
 Once again, trying to file a bug against a product that doesn't use 
 Launchpad Bugs results in an informational page being displayed.
