@@ -10,18 +10,20 @@ __metaclass__ = type
 __all__ = ['cmd_launchpad_server']
 
 
+import os
 import sys
 import xmlrpclib
 
 from bzrlib.commands import Command, register_command
 from bzrlib.option import Option
 from bzrlib import urlutils, ui
+from bzrlib import trace
 
+from bzrlib import plugin
 from bzrlib.smart import medium, server
 from bzrlib.transport import chroot, get_transport, remote
 
 from canonical.config import config
-from canonical.codehosting import transport
 
 
 class cmd_launchpad_server(Command):
@@ -72,6 +74,7 @@ class cmd_launchpad_server(Command):
         :return: A `LaunchpadTransport`.
         """
         # XXX: JonathanLange 2007-05-29: The 'chroot' lines lack unit tests.
+        from canonical.codehosting import transport
         hosted_transport = self._get_chrooted_transport(hosted_url)
         mirror_transport = self._get_chrooted_transport(mirror_url)
         lp_server = transport.LaunchpadServer(
@@ -112,6 +115,21 @@ class cmd_launchpad_server(Command):
 
     def run(self, user_id, port=None, upload_directory=None,
             mirror_directory=None, authserver_url=None, inet=False):
+        from canonical.codehosting import transport
+        try:
+            os.unlink('/home/abentley/log')
+        except:
+            pass
+        log = open('/home/abentley/log', 'w')
+        print >> log, ('*!*!*!* ' + os.environ['BZR_PLUGIN_PATH'])
+        print >> log, plugin.all_plugins()
+        print >> log, 'BZR_HOME=%r' % os.environ.get('BZR_HOME')
+        print >> log, 'HOME=%r' % os.environ.get('HOME')
+        print >> log, '_log_file_name=%r' % (trace._bzr_log_filename,)
+        log.flush()
+        bzrlog = open(trace._bzr_log_filename)
+        log.write(bzrlog.read())
+        log.close()
         if upload_directory is None:
             upload_directory = config.codehosting.branches_root
         if mirror_directory is None:

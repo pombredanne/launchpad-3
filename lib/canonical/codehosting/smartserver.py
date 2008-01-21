@@ -4,8 +4,7 @@
 
 __metaclass__ = type
 __all__ = [
-    'ExecOnlySession', 'RestrictedExecOnlySession', 'get_bzr_path',
-    'launch_smart_server']
+    'ExecOnlySession', 'RestrictedExecOnlySession', 'launch_smart_server']
 
 import os
 import urlparse
@@ -17,7 +16,7 @@ from twisted.internet.process import ProcessExitedAlready
 from twisted.python import log
 
 from canonical.config import config
-from canonical.codehosting import get_bzr_path, get_bzr_plugins_path
+from canonical.codehosting import get_bzr_path
 
 
 class ForbiddenCommand(Exception):
@@ -69,8 +68,9 @@ class ExecOnlySession:
             protocol.write(str(e) + '\r\n')
             protocol.loseConnection()
             raise
+        sorted_environment = sorted(self.environment.items())
         log.msg('Running: %r, %r, %r'
-                % (executable, arguments, self.environment))
+                % (executable, arguments, sorted_environment))
         self._transport = self.reactor.spawnProcess(
             protocol, executable, arguments, env=self.environment)
 
@@ -147,7 +147,6 @@ def launch_smart_server(avatar):
         % {'python': sys.executable, 'bzr': get_bzr_path()})
 
     environment = dict(os.environ)
-    environment['BZR_PLUGIN_PATH'] = get_bzr_plugins_path()
 
     # Extract the hostname from the supermirror root config.
     hostname = urlparse.urlparse(config.codehosting.supermirror_root)[1]

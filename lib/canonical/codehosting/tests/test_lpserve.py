@@ -14,7 +14,7 @@ import unittest
 
 import bzrlib
 from bzrlib.commands import get_cmd_object
-from bzrlib.plugin import set_plugins_path
+from bzrlib.plugins import lpserve
 from bzrlib.smart import medium
 from bzrlib.tests import TestCaseInTempDir
 from bzrlib.transport import get_transport, remote
@@ -24,15 +24,12 @@ from twisted.internet import process
 
 from canonical.tests.test_twisted import TwistedTestCase
 
-from canonical.codehosting import plugins, get_bzr_plugins_path
+from canonical.codehosting import plugins
 from canonical.codehosting.tests.helpers import deferToThread
 from canonical.config import config
 from canonical.codehosting.tests.servers import Authserver
 
 from canonical.testing import TwistedLayer
-os.environ['BZR_PLUGIN_PATH'] = get_bzr_plugins_path()
-set_plugins_path()
-from bzrlib.plugins import lpserve
 
 
 ROCKETFUEL_ROOT = os.path.dirname(

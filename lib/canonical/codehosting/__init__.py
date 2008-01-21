@@ -9,6 +9,7 @@ __all__ = [
 
 
 import os.path
+from bzrlib.plugin import set_plugins_path
 from bzrlib.progress import ProgressBarStack
 from bzrlib.ui import SilentUIFactory
 
@@ -59,4 +60,8 @@ def get_bzr_path():
 
 def get_bzr_plugins_path():
     """Find the path to the Bazaar plugins for this rocketfuel instance"""
-    return get_rocketfuel_root() + '/bzr-plugins'
+    return get_rocketfuel_root() + '/bzrplugins'
+
+
+os.environ['BZR_PLUGIN_PATH'] = get_bzr_plugins_path()
+set_plugins_path()

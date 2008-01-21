@@ -17,6 +17,7 @@ import bzrlib.branch
 from bzrlib.builtins import cmd_branch, cmd_push
 from bzrlib.errors import (
     BzrCommandError, NotBranchError, TransportNotPossible)
+from bzrlib.plugins.loom import branch as loom_branch
 from bzrlib.repofmt.weaverepo import RepositoryFormat7
 from bzrlib.repository import format_registry
 
@@ -507,6 +508,26 @@ class AcceptanceTests(SSHTestCase):
         self.assertRaises(
             (BzrCommandError, TransportNotPossible),
             self.push, self.local_branch_path, remote_url)
+
+    @deferToThread
+    def test_can_push_loom_branch(self):
+        # We can push and pull a loom branch.
+        tree = self.make_branch_and_tree('loom')
+        tree.lock_write()
+        try:
+            tree.branch.nick = 'bottom-thread'
+            loom_branch.loomify(tree.branch)
+        finally:
+            tree.unlock()
+        loomtree = tree.bzrdir.open_workingtree()
+        loomtree.lock_write()
+        loomtree.branch.new_thread('bottom-thread')
+        loomtree.commit('this is a commit', rev_id='commit-1')
+        loomtree.unlock()
+        loomtree.branch.record_loom('sample loom')
+        remote_url = self.getTransportURL('~testuser/+junk/loom')
+        self.push('loom', remote_url)
+        self.assertBranchesMatch('loom', remote_url)
 
 
 class SmartserverTests(SSHTestCase):
