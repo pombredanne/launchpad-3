@@ -664,7 +664,7 @@ class BranchAddView(LaunchpadFormView, BranchNameValidationMixin):
                 owner=data['owner'],
                 author=self.getAuthor(data),
                 product=data['product'],
-                url=data['url'],
+                url=data.get('url'),
                 title=data['title'],
                 summary=data['summary'],
                 lifecycle_status=data['lifecycle_status'],
