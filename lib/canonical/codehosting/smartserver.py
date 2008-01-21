@@ -136,11 +136,17 @@ class RestrictedExecOnlySession(ExecOnlySession):
             % {'avatarId': self.avatar.avatarId})
 
 
-def get_bzr_path():
+def get_rocketfuel_root():
     import bzrlib
-    ROCKETFUEL_ROOT = os.path.dirname(
-        os.path.dirname(os.path.dirname(bzrlib.__file__)))
-    return ROCKETFUEL_ROOT + '/sourcecode/bzr/bzr'
+    return os.path.dirname(os.path.dirname(os.path.dirname(bzrlib.__file__)))
+
+
+def get_bzr_path():
+    return get_rocketfuel_root() + '/sourcecode/bzr/bzr'
+
+
+def get_bzr_plugins_path():
+    return get_rocketfuel_root() + '/bzr-plugins'
 
 
 def launch_smart_server(avatar):
@@ -148,13 +154,12 @@ def launch_smart_server(avatar):
     from canonical.codehosting import plugins
     from twisted.internet import reactor
 
-    bzr_plugin_path = os.path.abspath(os.path.dirname(plugins.__file__))
     command = (
         "%(python)s %(bzr)s lp-serve --inet "
         % {'python': sys.executable, 'bzr': get_bzr_path()})
 
     environment = dict(os.environ)
-    environment['BZR_PLUGIN_PATH'] = bzr_plugin_path
+    environment['BZR_PLUGIN_PATH'] = get_bzr_plugins_path()
 
     # Extract the hostname from the supermirror root config.
     hostname = urlparse.urlparse(config.codehosting.supermirror_root)[1]
