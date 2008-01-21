@@ -234,10 +234,14 @@ class ArchivePackageDeletionView(ArchiveViewBase, LaunchpadFormView):
     custom_widget('selected_sources', LabeledMultiCheckBoxWidget)
 
     def setUpFields(self):
-        """See `LaunchpadFormView`."""
+        """Override `LaunchpadFormView`
+
+        Additionally to set schema fields also initialize 'name_filter'
+        widget required to setup 'selected_sources' field.
+
+        See `createSelectedSourcesField` method.
+        """
         LaunchpadFormView.setUpFields(self)
-        # We have to setup the 'name_filter' schema widget earlier
-        # because their values are required to setup 'selected_sources' field.
         self.widgets = form.setUpWidgets(
             self.form_fields.select('name_filter'),
             self.prefix, self.context, self.request,
@@ -247,16 +251,20 @@ class ArchivePackageDeletionView(ArchiveViewBase, LaunchpadFormView):
             self.createSelectedSourcesField() + self.form_fields)
 
     def setUpWidgets(self):
-        """See `LaunchpadFormView`."""
-        # Omitting the fields already processed in setUpFields.
+        """Override `LaunchpadFormView`.
+
+        Omitting the fields already processed in setUpFields ('name_filter').
+        """
         self.widgets += form.setUpWidgets(
             self.form_fields.omit('name_filter'),
             self.prefix, self.context, self.request,
             data=self.initial_values, ignore_request=False)
 
     def focusedElementScript(self):
-        """See `LaunchpadFormView`."""
-        # Do not set any focus if the form is not going to be presented.
+        """Override `LaunchpadFormView`.
+
+        Ensure focus is only set if there are sources actually presented.
+        """
         if not self.has_published_sources:
             return ''
         return LaunchpadFormView.focusedElementScript(self)

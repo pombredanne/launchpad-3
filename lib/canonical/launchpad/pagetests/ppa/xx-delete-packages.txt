@@ -210,7 +210,7 @@ Multiple packages can be deleted in one single batch.
     pmount 0.1-1 in warty
     Deletion comment: DO IT AGAIN !
 
-The page doesn't present the form anymore, since there not sources
+The page doesn't present the form anymore, since there are no sources
 available for deletion.
 
     >>> print extract_text(find_main_content(admin_browser.contents))
@@ -232,7 +232,7 @@ Any user can see that all packages present in Celso's PPA are deleted.
     iceweasel - 1.0  2007-07-09  Deleted    Warty           Editors
     pmount - 0.1-1   2007-07-09  Deleted    Warty           Editors
 
-A clear message is presented for PPAs that doesn't contain any
+A clear message is presented for PPAs that don't contain any
 published source packages.
 
     >>> admin_browser.open('http://launchpad.dev/~no-priv/+archive')
