@@ -325,6 +325,20 @@ the error that was raised:
     'Unsupported Bugtracker'
 
 
+== Updating selected bug trackers ==
+
+The BugWatchUpdater class can be instructed to update only a subset of
+bugtrackers. This is acheived by passing a list of bug tracker names to
+the updateBugTrackers() method. No watches will actually be updated
+because all the watches had their lastchecked time set to UTC_NOW above.
+
+    >>> updater = BugWatchUpdater(transaction)
+    >>> updater._login()
+    >>> updater.updateBugTrackers(['debbugs', 'mozilla.org'])
+    INFO...No watches to update on http://bugs.debian.org
+    INFO...No watches to update on https://bugzilla.mozilla.org/
+
+
 == Batched Bugwatch Updating ==
 
 checkwatches.py will only update those bugs that need updating, but
