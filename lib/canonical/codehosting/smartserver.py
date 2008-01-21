@@ -17,6 +17,7 @@ from twisted.internet.process import ProcessExitedAlready
 from twisted.python import log
 
 from canonical.config import config
+from canonical.codehosting import get_bzr_path, get_bzr_plugins_path
 
 
 class ForbiddenCommand(Exception):
@@ -134,19 +135,6 @@ class RestrictedExecOnlySession(ExecOnlySession):
         return ExecOnlySession.getCommandToRun(
             self, self.executed_command_template
             % {'avatarId': self.avatar.avatarId})
-
-
-def get_rocketfuel_root():
-    import bzrlib
-    return os.path.dirname(os.path.dirname(os.path.dirname(bzrlib.__file__)))
-
-
-def get_bzr_path():
-    return get_rocketfuel_root() + '/sourcecode/bzr/bzr'
-
-
-def get_bzr_plugins_path():
-    return get_rocketfuel_root() + '/bzr-plugins'
 
 
 def launch_smart_server(avatar):

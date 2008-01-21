@@ -15,7 +15,7 @@ from twisted.internet.protocol import ProcessProtocol
 from canonical.codehosting.sshserver import LaunchpadAvatar
 from canonical.codehosting.tests.helpers import AvatarTestCase
 
-from canonical.codehosting import smartserver, plugins
+from canonical.codehosting import get_bzr_plugins_path, plugins, smartserver
 
 
 class MockReactor:
@@ -296,7 +296,7 @@ class TestSessionIntegration(AvatarTestCase):
             "ISession(avatar) doesn't adapt to ExecOnlySession. "
             "Got %r instead." % (session,))
         self.assertEqual(
-            os.path.abspath(os.path.dirname(plugins.__file__)),
+            os.path.abspath(get_bzr_plugins_path()),
             session.environment['BZR_PLUGIN_PATH'])
         self.assertEqual(
             '%s@bazaar.launchpad.dev' % self.avatar.lpname,
