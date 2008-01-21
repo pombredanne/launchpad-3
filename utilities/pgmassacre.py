@@ -5,7 +5,6 @@ dropdb only more so.
 Cut off access, slaughter connections and burn the database to the ground.
 """
 
-import os
 import sys
 import time
 import psycopg
@@ -14,6 +13,7 @@ from optparse import OptionParser
 
 
 def connect(dbname='template1'):
+    """Connect to the database, returning the DB-API connection."""
     if options.user is not None:
         return psycopg.connect("dbname=%s user=%s" % (dbname, options.user))
     else:
@@ -25,12 +25,12 @@ def send_signal(database, signal):
     con.set_isolation_level(1) # READ COMMITTED. We rollback changes we make.
     cur = con.cursor()
 
-    # Install PL/PythonU if it isn't already
+    # Install PL/PythonU if it isn't already.
     cur.execute("SELECT TRUE FROM pg_language WHERE lanname = 'plpythonu'")
     if cur.fetchone() is None:
         cur.execute('CREATE LANGUAGE "plpythonu"')
 
-    # Create a stored procedure to kill a backend process
+    # Create a stored procedure to kill a backend process.
     qdatabase = str(psycopg.QuotedString(database))
     cur.execute("""
         CREATE OR REPLACE FUNCTION _pgmassacre_killall(integer)
@@ -59,6 +59,11 @@ def send_signal(database, signal):
 
 
 def rollback_prepared_transactions(database):
+    """Rollback any prepared transactions.
+
+    For some crazy reason PostgreSQL will refuse to drop a database with
+    outstanding prepared transactions.
+    """
     con = connect(database)
     con.set_isolation_level(0) # Autocommit so we can ROLLBACK PREPARED.
     cur = con.cursor()
@@ -75,8 +80,9 @@ def rollback_prepared_transactions(database):
 
 
 def still_open(database):
-    """Return True if there are still open connections. Waits a while
-    to ensure that connections shutting down have a chance to.
+    """Return True if there are still open connections.
+    
+    Waits a while to ensure that connections shutting down have a chance to.
     """
     con = connect()
     con.set_isolation_level(1)
@@ -90,12 +96,14 @@ def still_open(database):
             """, vars())
         if cur.fetchone() is None:
             return False
-        time.sleep(0.6) # Stats only updated every 500ms
+        time.sleep(0.6) # Stats only updated every 500ms.
     con.rollback()
     con.close()
     return True
 
+
 options = None
+
 
 def main():
     parser = OptionParser()
@@ -106,14 +114,17 @@ def main():
     (options, args) = parser.parse_args()
 
     if len(args) != 1:
-        print >> sys.stderr, \
+        print >> sys.stderr, (
                 'Must specify one, and only one, database to destroy'
+                )
         sys.exit(1)
 
     database = args[0]
 
     if database in ('template1', 'template0'):
-        print >> sys.stderr, "Put the gun down and back away from the vehicle!"
+        print >> sys.stderr, (
+                "Put the gun down and back away from the vehicle!"
+                )
         return 666
 
     con = connect()
@@ -122,17 +133,21 @@ def main():
 
     # Ensure the database exists. Note that the script returns success
     # if the database does not exist to ease scripting.
-    cur.execute("SELECT count(*) FROM pg_database WHERE datname=%s", [database])
+    cur.execute(
+            "SELECT count(*) FROM pg_database WHERE datname=%s", [database]
+            )
     if cur.fetchone()[0] == 0:
-        print >> sys.stderr, \
-                "%s has fled the building. Database does not exist" % database
+        print >> sys.stderr, (
+                "%s has fled the building. Database does not exist"
+                % database
+                )
         return 0
 
     # Rollback prepared transactions.
     rollback_prepared_transactions(database)
 
     try:
-        # Stop connetions to the doomed database
+        # Stop connections to the doomed database.
         cur.execute(
             "UPDATE pg_database SET datallowconn=false WHERE datname=%s",
             [database]
@@ -141,30 +156,32 @@ def main():
         con.commit()
         con.close()
 
-        # Terminate current statements
+        # Terminate current statements.
         send_signal(database, SIGINT)
 
-        # Shutdown current connections normally
+        # Shutdown current connections normally.
         send_signal(database, SIGTERM)
 
-        # Shutdown current connections immediately
+        # Shutdown current connections immediately.
         if still_open(database):
             send_signal(database, SIGQUIT)
 
-        # Shutdown current connections nastily
+        # Shutdown current connections nastily.
         if still_open(database):
             send_signal(database, SIGKILL)
 
         if still_open(database):
-            print >> sys.stderr, \
+            print >> sys.stderr, (
                     "Unable to kill all backends! Database not destroyed."
+                    )
             return 9
 
-        # Destroy the database
+        # Destroy the database.
         con = connect()
-        con.set_isolation_level(0) # Required to execute commands like DROP DATABASE
+        # AUTOCOMMIT required to execute commands like DROP DATABASE.
+        con.set_isolation_level(0)
         cur = con.cursor()
-        cur.execute("DROP DATABASE %s" % database) # Not quoted
+        cur.execute("DROP DATABASE %s" % database) # Not quoted.
         return 0
     finally:
         # In case something messed up, allow connections again so we can
