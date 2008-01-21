@@ -271,6 +271,13 @@ class IDistroSeries(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
         development moves on to the other pockets.
         """
 
+    def suite_name(pocket):
+        """Return the suite name for this distroseries and the given pocket.
+
+        Suite name is formed of distroseries<-pocket> where -pocket is
+        omitted for the release pocket.
+        """
+
     def canUploadToPocket(pocket):
         """Decides whether or not allow uploads for a given pocket.
 
@@ -284,8 +291,9 @@ class IDistroSeries(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
                 warty-updates -> ALLOW
                 edgy-security -> DENY
 
-        Note that FROZEN is not considered either 'stable' or 'unstable' state.
-        Uploads to a FROZEN distroseries will end up in UNAPPROVED queue.
+        Note that FROZEN is not considered either 'stable' or 'unstable'
+        state.  Uploads to a FROZEN distroseries will end up in the
+        UNAPPROVED queue.
 
         Return True if the upload is allowed and False if denied.
         """

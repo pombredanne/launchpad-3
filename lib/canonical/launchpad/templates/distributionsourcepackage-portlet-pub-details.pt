@@ -17,12 +17,14 @@
 
     <div tal:condition="context/current_publishing_records">
       <tal:block repeat="pub context/current_publishing_records">
-        <b><tal:name replace="pub/distroseries/name/capitalize"/></b>
-        (<tal:version replace="pub/sourcepackagerelease/version"/>):
-        <tal:component replace="pub/component/name"/>
-        /
-        <tal:section replace="pub/section/name"/>
-        <br/>
+        <div tal:condition="pub/distroseries/active">
+          <b><tal:name replace="pub/suite_name/capitalize"/></b>
+          (<tal:version replace="pub/sourcepackagerelease/version"/>):
+          <tal:component replace="pub/component/name"/>
+          /
+          <tal:section replace="pub/section/name"/>
+          <br/>
+        </div>
       </tal:block>
     </div>
 
