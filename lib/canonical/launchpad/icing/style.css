@@ -60,6 +60,9 @@ thead th, tr.thead th {text-align: center;}
 /* XXX: 20061026 jamesh Disabled since BjornT reported display problems */
 /* wbr:after {content: "\00200B"} */
 
+/* Opera doesn't use the general tr above for the radio button table */
+table.radio-button-widget tr td {vertical-align: top;}
+
 /* === Overall presentation === */
 
 html {

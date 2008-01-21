@@ -15,25 +15,18 @@
    <tal:portlet replace="structure context/distribution/@@+portlet-ppa-architectures" />
 </metal:portlets>
 
-<div metal:fill-slot="main" tal:define="ppa_active view/is_active">
+<div metal:fill-slot="main">
 
   <h1>Delete packages from <tal:title replace="context/title" /></h1>
 
+    <tal:inactive_ppa_header condition="not: view/has_published_sources">
+      <p>This PPA does not contain any source packages published.</p>
+    </tal:inactive_ppa_header>
+
   <div metal:use-macro="context/@@launchpad_form/form">
 
-    <div metal:fill-slot="extra_info">
-
-      <tal:active_ppa_header condition="ppa_active">
-        <p>Select one or more published sources you want to delete.</p>
-      </tal:active_ppa_header>
-
-      <tal:inactive_ppa_header condition="not: ppa_active">
-        <p>This PPA does not contain any packages yet.</p>
-      </tal:inactive_ppa_header>
-
-    </div> <!--extra_info -->
-
-    <div class="form" tal:condition="ppa_active" metal:fill-slot="widgets">
+    <div class="form" metal:fill-slot="widgets"
+         tal:condition="view/has_published_sources">
 
       <tal:search define="name_widget nocall:view/widgets/name_filter">
          <label tal:attributes="for name_widget/name"
@@ -45,14 +38,16 @@
 
       <tal:no_sources tal:condition="not:view/available_sources_size">
         <div id="empty-result" style="border: 1px solid;">
-          <p>No matching package for '<tal:name_filter
-             tal:replace="request/field.name_filter" />'.</p>
+          <p>No matching source packages for '<tal:name_filter
+             tal:replace="request/field.name_filter|nothing" />'.</p>
         </div>
       </tal:no_sources>
 
-      <tal:sources define="widget nocall:view/widgets/selected_sources"
-                   condition="view/available_sources_size">
-        <table class="listing">
+      <tal:sources condition="view/available_sources_size"
+                   define="widget nocall:view/widgets/selected_sources;
+                           field_name widget/context/__name__;
+                           error python:view.getFieldError(field_name);">
+        <table class="listing" style="margin-top: 1em;">
           <thead>
           <tr class="ppa_package_row">
             <th colspan="2">Source</th>
@@ -87,15 +82,25 @@
         </table>
         <input tal:attributes="name string:${widget/name}-empty-marker"
                type="hidden" value="1" />
+        <div class="error message" tal:condition="error"
+             tal:content="structure error">Error message</div>
       </tal:sources>
 
       <tal:actions condition="view/available_sources_size"
-                   define="widget nocall:view/widgets/deletion_comment">
-        <label tal:attributes="for widget/name"
-               tal:content="widget/label">Label</label>
-        <input tal:replace="structure widget" />
-        <input tal:replace="structure
-           view/actions/field.actions.delete/render" />
+                   define="widget nocall:view/widgets/deletion_comment;
+                           field_name widget/context/__name__;
+                           error python:view.getFieldError(field_name);">
+        <div style="margin-top: 1em;">
+          <label tal:attributes="for widget/name"
+                 tal:content="string:${widget/label}:">Label</label>
+          <input tal:replace="structure widget" />
+          <input tal:replace="structure
+             view/actions/field.actions.delete/render" />
+          <p class="formHelp" tal:condition="widget/hint"
+             tal:content="widget/hint">Some Help Text</p>
+        </div>
+        <div class="error message" tal:condition="error"
+             tal:content="structure error">Error message</div>
       </tal:actions>
 
    </div> <!-- widgets -->
@@ -104,12 +109,14 @@
    </div> <!--empties buttons section -->
 
   </div> <!-- launchpad_form -->
+
 </div> <!--main -->
 
 <p metal:fill-slot="help">
-   Search for the wanted packages, then select one of more of them for
+   Search for the desired packages, then select one of more of them for
    deletion. A message is displayed below the list of packages if
-   there were more than 10 packages found; you may want to refine your
+   there were more than <tal:max_sources replace="view/max_sources_presented"
+   /> packages found; you may want to refine your
    search if the packages you are interested in are not listed. A short
    text comment should be provided when deleting packages, it will be
    recorded and displayed when presenting the package information.A

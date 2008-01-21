@@ -238,6 +238,18 @@ components since partner is allowed for upload:
     partner
 
 
+== Handy properties ==
+
+IDistroSeries.suite_name can be used to return a string representing the
+suite name of the current distroseries and the supplied pocket.
+
+    >>> hoary.suite_name(PackagePublishingPocket.RELEASE)
+    u'hoary'
+
+    >>> hoary.suite_name(PackagePublishingPocket.UPDATES)
+    u'hoary-updates'
+
+
 == DistroSeries can be initialised from their parents ==
 
 When a distroseries is derived from another distroseries (be it a
@@ -638,7 +650,7 @@ The one submitting the string will be Carlos.  He's an editor for this POFile.
 
     >>> carlos = getUtility(IPersonSet).getByName('carlos')
 
-    >>> from canonical.launchpad.ftests import time_counter
+    >>> from canonical.launchpad.testing import time_counter
     >>> # "Clock" that's guaranteed always to progress between calls.
     >>> now = time_counter(delta=datetime.datetime.resolution).next
 

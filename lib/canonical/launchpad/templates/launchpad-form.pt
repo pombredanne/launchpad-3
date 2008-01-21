@@ -91,7 +91,7 @@
                   show_optional python:view.showOptionalMarker(field_name)">
     <tal:is-visible condition="widget/visible">
       <tr tal:condition="python: view.isSingleLineLayout(field_name)">
-        <th tal:condition="display_label|python:True">
+        <th tal:condition="display_label|widget/display_label|python:True">
           <label tal:attributes="for widget/name"
                  tal:content="string:${widget/label}:">Label</label><br />
           <span tal:condition="show_optional"
@@ -110,7 +110,7 @@
         </td>
       </tr>
       <tal:block condition="python: view.isMultiLineLayout(field_name)">
-        <tr>
+        <tr tal:condition="display_label|widget/display_label|python:True">
           <th colspan="2" style="text-align: left"><label
               tal:attributes="for widget/name"
               tal:content="string:${widget/label}:">Label:</label>
