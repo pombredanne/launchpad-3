@@ -321,7 +321,11 @@ class LaunchpadBrowserPublication(
             else:
                 view_name = unrestricted_ob.__class__.__name__
             pageid = '%s:%s' % (context.__class__.__name__, view_name)
-        request.setInWSGIEnvironment('launchpad.pageid', pageid)
+        # The view name used in the pageid usually comes from ZCML and so
+        # it will be a unicode string although it shouldn't.  To avoid
+        # problems we encode it into ASCII.
+        request.setInWSGIEnvironment(
+            'launchpad.pageid', pageid.encode('ASCII'))
 
         return mapply(ob, request.getPositionalArguments(), request)
 

@@ -698,7 +698,7 @@ class MockHTTPTask:
         self.request = response._request
         # We have no way of knowing when the task started, so we use
         # the current time here. That shouldn't be a problem since we don't
-        # care about that for our tests.
+        # care about that for our tests anyway.
         self.start_time = time.time()
         self.status = response.getStatus()
         self.bytes_written = int(response.getHeader('Content-length'))
@@ -731,7 +731,7 @@ class PageTestLayer(LaunchpadFunctionalLayer):
             """Call HTTPCaller.__call__ and log the page hit."""
             response = orig__call__(
                 obj, request_string, handle_errors=handle_errors, form=form)
-            first_line = request_string.splitlines()[0]
+            first_line = request_string.strip().splitlines()[0]
             access_logger.log(MockHTTPTask(response._response, first_line))
             return response
 
