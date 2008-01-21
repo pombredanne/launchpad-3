@@ -8,6 +8,7 @@ sourcecode/buildbot
 sourcecode/bzr
 sourcecode/bzrtools
 sourcecode/cscvs
+sourcecode/feedvalidator
 sourcecode/gnarly
 sourcecode/hct
 sourcecode/launchpad-loggerhead
