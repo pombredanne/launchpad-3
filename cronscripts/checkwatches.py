@@ -14,11 +14,18 @@ from canonical.launchpad.scripts.base import LaunchpadCronScript
 from canonical.launchpad.scripts.checkwatches import BugWatchUpdater
 
 class CheckWatches(LaunchpadCronScript):
+
+    def add_my_options(self):
+        """See `LaunchpadScript`."""
+        self.parser.add_option('-t', '--bug-tracker', action='append',
+            dest='bug_trackers')
+
+
     def main(self):
         start_time = time.time()
 
         updater = BugWatchUpdater(self.txn, self.logger)
-        updater.updateBugTrackers()
+        updater.updateBugTrackers(self.options.bug_trackers)
 
         run_time = time.time() - start_time
         self.logger.info("Time for this run: %.3f seconds." %

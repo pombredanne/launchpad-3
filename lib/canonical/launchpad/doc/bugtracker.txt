@@ -384,3 +384,24 @@ because all the watches had their lastchecked time set to UTC_NOW above.
     INFO No watches to update on http://bugzilla.gnome.org/bugs
     INFO No watches to update on http://bugs.debian.org
 
+This functionality can also be used with the checkwatches cronscript,
+allowing a user to pass a list of bugtrackers to check at the command
+line.
+
+    >>> import subprocess
+    >>> process = subprocess.Popen(
+    ...     ['cronscripts/checkwatches.py', '--bug-tracker=mozilla.org',
+    ...      '--bug-tracker=debbugs'], stdin=subprocess.PIPE,
+    ...     stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    >>> (out, err) = process.communicate()
+    >>> out
+    ''
+    >>> process.returncode
+    0
+
+    >>> print err
+    INFO    creating lockfile
+    INFO    No watches to update on https://bugzilla.mozilla.org/
+    INFO    No watches to update on http://bugs.debian.org
+    INFO    Time for this run: ... seconds.
+    <BLANKLINE>
