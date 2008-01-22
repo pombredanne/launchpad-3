@@ -164,14 +164,15 @@ class TeamMembership(SQLBase):
             "This membership's expiration date must be in the future: %s"
             % self.dateexpires.strftime('%Y-%m-%d'))
         member = self.person
+        team = self.team
         if member.isTeam():
             recipient = member.teamowner
             templatename = 'membership-expiration-warning-bulk.txt'
+            subject = '%s will expire soon from %s' % (member.name, team.name)
         else:
             recipient = member
             templatename = 'membership-expiration-warning-personal.txt'
-        team = self.team
-        subject = 'Team membership about to expire'
+            subject = 'Your membership in %s is about to expire' % team.name
 
         if team.renewal_policy == TeamMembershipRenewalPolicy.ONDEMAND:
             how_to_renew = (

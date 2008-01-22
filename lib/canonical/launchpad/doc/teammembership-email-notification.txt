@@ -387,10 +387,10 @@ the other team admins.
     >>> print_distinct_messages_and_recipients()
     From: Ubuntu Team <noreply@launchpad.net>
     To: colin.watson@ubuntulinux.com
-    Subject: Team membership about to expire
+    Subject: Your membership in ubuntu-team is about to expire
     <BLANKLINE>
     On ..., nine days from now, your membership
-    of the Ubuntu Team (ubuntu-team) Launchpad team
+    in the Ubuntu Team (ubuntu-team) Launchpad team
     is due to expire.
     <http://launchpad.dev/~ubuntu-team>
     <BLANKLINE>
@@ -424,7 +424,7 @@ ubuntu-team's admins.
     >>> print_distinct_messages_and_recipients()
     From: Ubuntu Team <noreply@launchpad.net>
     To: beta-admin@launchpad.net
-    Subject: Team membership about to expire
+    Subject: launchpad-beta-testers will expire soon from ubuntu-team
     <BLANKLINE>
     On ..., nine days from now, the membership
     of Launchpad Beta Testers (launchpad-beta-testers) (which you are
@@ -458,10 +458,10 @@ renew his own membership.
     >>> print_distinct_messages_and_recipients()
     From: Ubuntu Team <noreply@launchpad.net>
     To: colin.watson@ubuntulinux.com
-    Subject: Team membership about to expire
+    Subject: Your membership in ubuntu-team is about to expire
     <BLANKLINE>
     On ..., nine days from now, your membership
-    of the Ubuntu Team (ubuntu-team) Launchpad team
+    in the Ubuntu Team (ubuntu-team) Launchpad team
     is due to expire.
     <http://launchpad.dev/~ubuntu-team>
     <BLANKLINE>
@@ -480,7 +480,7 @@ renew his own membership.
     >>> print_distinct_messages_and_recipients()
     From: Ubuntu Team <noreply@launchpad.net>
     To: beta-admin@launchpad.net
-    Subject: Team membership about to expire
+    Subject: launchpad-beta-testers will expire soon from ubuntu-team
     <BLANKLINE>
     On ..., nine days from now, the membership
     of Launchpad Beta Testers (launchpad-beta-testers) (which you are
@@ -516,10 +516,10 @@ where he can extend it.
     >>> print_distinct_messages_and_recipients()
     From: Landscape Developers <noreply@launchpad.net>
     To: test@canonical.com
-    Subject: Team membership about to expire
+    Subject: Your membership in landscape-developers is about to expire
     <BLANKLINE>
     On ..., nine days from now, your membership
-    of the Landscape Developers (landscape-developers) Launchpad team
+    in the Landscape Developers (landscape-developers) Launchpad team
     is due to expire.
     <http://launchpad.dev/~landscape-developers>
     <BLANKLINE>
