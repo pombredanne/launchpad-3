@@ -67,6 +67,16 @@
           <h2>What&#8217;s new here?</h2>
           <table>
             <tbody>
+            <tr>
+             <td><img src="/@@/news" alt="" /></td>
+             <td>
+              <a href="https://help.launchpad.net/PPAQuickStart#delete">
+                <strong>Delete packages from your PPA</strong><br />
+                You can now delete packages from your personal and team PPAs
+                using Launchpad's web interface.
+               </a>
+              </td>
+             </tr>
              <tr>
                <td><img src="/@@/news" alt="" /></td>
                <td>
