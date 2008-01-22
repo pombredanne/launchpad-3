@@ -109,7 +109,7 @@ Launchpad.
     http://bugs.debian.org/cgi-bin/bugreport.cgi?bug=308994
     /redfish/+bug/15/comments/1
 
-If sabfl leaves the Launchpad Developers team the comment will no longer
+If sabdfl leaves the Launchpad Developers team the comment will no longer
 be visible to him:
 
     >>> login('foo.bar@canonical.com')
