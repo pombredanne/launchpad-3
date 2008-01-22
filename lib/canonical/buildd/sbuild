@@ -2188,7 +2188,7 @@ sub version_cmp {
 	my $v1 = shift;
 	my $rel = shift;
 	my $v2 = shift;
-	if ($v1 == "=*=PROVIDED=*=") {
+	if ($v1 eq "=*=PROVIDED=*=") {
 		return 0;
 	}
 	
