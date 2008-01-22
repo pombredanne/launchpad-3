@@ -26,7 +26,7 @@ from canonical.cachedproperty import cachedproperty
 from canonical.config import config
 from canonical import encoding
 from canonical.database.constants import UTC_NOW
-from canonical.database.sqlbase import flush_database_updates
+from canonical.database.sqlbase import flush_database_updates, commit
 from canonical.launchpad.scripts import log, debbugs
 from canonical.launchpad.interfaces import (
     BugTaskImportance, BugTaskStatus, BugTrackerType, BugWatchErrorType,
@@ -918,6 +918,11 @@ class DebBugs(ExternalBugTracker):
                 parsed_message=parsed_comment)
 
             bug_message = bug_watch.bug.linkMessage(message, bug_watch)
+
+            # We deliberately commit here since we don't want a later
+            # error to end up rolling back sucessfully imported
+            # comments.
+            commit()
         else:
             bug_message = None
 
