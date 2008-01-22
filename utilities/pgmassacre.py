@@ -71,8 +71,7 @@ def rollback_prepared_transactions(database):
     # Get a list of outstanding prepared transactions.
     cur.execute(
             "SELECT gid FROM pg_prepared_xacts WHERE database=%(database)s",
-            vars()
-            )
+            vars())
     xids = [row[0] for row in cur.fetchall()]
     for xid in xids:
         cur.execute("ROLLBACK PREPARED %(xid)s", vars())
@@ -108,23 +107,20 @@ options = None
 def main():
     parser = OptionParser()
     parser.add_option("-U", "--user", dest="user", default=None,
-            help="Connect as USER", metavar="USER",
-            )
+            help="Connect as USER", metavar="USER")
     global options
     (options, args) = parser.parse_args()
 
     if len(args) != 1:
         print >> sys.stderr, (
-                'Must specify one, and only one, database to destroy'
-                )
+                'Must specify one, and only one, database to destroy')
         sys.exit(1)
 
     database = args[0]
 
     if database in ('template1', 'template0'):
         print >> sys.stderr, (
-                "Put the gun down and back away from the vehicle!"
-                )
+                "Put the gun down and back away from the vehicle!")
         return 666
 
     con = connect()
@@ -134,13 +130,11 @@ def main():
     # Ensure the database exists. Note that the script returns success
     # if the database does not exist to ease scripting.
     cur.execute(
-            "SELECT count(*) FROM pg_database WHERE datname=%s", [database]
-            )
+            "SELECT count(*) FROM pg_database WHERE datname=%s", [database])
     if cur.fetchone()[0] == 0:
         print >> sys.stderr, (
                 "%s has fled the building. Database does not exist"
-                % database
-                )
+                % database)
         return 0
 
     # Rollback prepared transactions.
@@ -150,8 +144,7 @@ def main():
         # Stop connections to the doomed database.
         cur.execute(
             "UPDATE pg_database SET datallowconn=false WHERE datname=%s",
-            [database]
-            )
+            [database])
 
         con.commit()
         con.close()
@@ -172,8 +165,7 @@ def main():
 
         if still_open(database):
             print >> sys.stderr, (
-                    "Unable to kill all backends! Database not destroyed."
-                    )
+                    "Unable to kill all backends! Database not destroyed.")
             return 9
 
         # Destroy the database.
@@ -191,8 +183,7 @@ def main():
         cur = con.cursor()
         cur.execute(
                 "UPDATE pg_database SET datallowconn=TRUE WHERE datname=%s",
-                [database]
-                )
+                [database])
 
 
 if __name__ == '__main__':
