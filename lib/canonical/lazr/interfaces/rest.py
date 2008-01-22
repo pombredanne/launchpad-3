@@ -10,14 +10,16 @@ __all__ = [
     'IEntryResource',
     'IHTTPResource',
     'IJSONPublishable',
-    'IServiceRoot'
+    'IServiceRoot',
+    'IServiceRootResource'
     ]
 
 from zope.interface import Interface, Attribute
 from zope.publisher.interfaces import IPublishTraverse
+from canonical.launchpad.webapp.interfaces import ICanonicalUrlData
 
 
-class IHTTPResource(IPublishTraverse):
+class IHTTPResource(IPublishTraverse, ICanonicalUrlData):
     """An object published through HTTP."""
 
     def __call__(self):
@@ -36,12 +38,23 @@ class IJSONPublishable(Interface):
 
 class IServiceRoot(Interface):
     """A service root object that can be turned into a resource."""
-    def asResource(request):
+
+    def asResource(self, request):
         """Return a top-level resource for this service."""
+
+
+class IServiceRootResource(IHTTPResource):
+    """A top-level resource object."""
+
+    def getTopLevelCollectionResource(name):
+        """Look up a top-level collection resource by URL fragment."""
 
 
 class IEntryResource(IHTTPResource):
     """A resource that represents an individual Launchpad object."""
+
+    def path(self):
+        """Find the URL fragment the entry uses for itself."""
 
     def do_GET(self):
         """Retrieve this entry.
@@ -50,8 +63,11 @@ class IEntryResource(IHTTPResource):
         """
 
 
-class ICollectionResource(IHTTPResource):
+class ICollectionResource(IHTTPResource, IPublishTraverse):
     """A resource that represents a collection of entry resources."""
+
+    def path(self):
+        """Find the URL fragment that names this collection."""
 
     def do_GET(self):
         """Retrieve this collection.

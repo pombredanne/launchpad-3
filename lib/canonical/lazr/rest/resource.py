@@ -22,8 +22,8 @@ from zope.schema.interfaces import IField
 from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.interfaces import ICanonicalUrlData
 from canonical.lazr.interfaces import (
-    ICollection, ICollectionResource, IEntry, IHTTPResource, IJSONPublishable,
-    IServiceRoot)
+    ICollection, ICollectionResource, IEntry, IEntryResource, IHTTPResource,
+    IJSONPublishable, IServiceRoot, IServiceRootResource)
 
 class ResourceJSONEncoder(simplejson.JSONEncoder):
     """A JSON encoder for JSON-exposable resources like entry resources.
@@ -42,7 +42,7 @@ class ResourceJSONEncoder(simplejson.JSONEncoder):
 
 class HTTPResource:
     """See `IHTTPResource`."""
-    implements(IHTTPResource, ICanonicalUrlData)
+    implements(IHTTPResource)
 
     def __init__(self, context, request):
         self.context = context
@@ -72,14 +72,14 @@ class ReadOnlyResource(HTTPResource):
 
 class EntryResource(ReadOnlyResource):
     """An individual object, published to the web."""
-    implements(IJSONPublishable)
+    implements(IEntryResource, IJSONPublishable)
 
     rootsite = None
     @property
     def inside(self):
         """Find the top-level collection resource associated with this entry.
         """
-        return self.root_resource.topLevelCollectionResource(
+        return self.root_resource.getTopLevelCollectionResource(
             self.context.parent_collection_name)
 
     def __init__(self, context, request):
@@ -88,7 +88,7 @@ class EntryResource(ReadOnlyResource):
 
     @property
     def path(self):
-        """Find the identifying fragment the entry uses for itself."""
+        """See `IEntryResource`."""
         return self.context.fragment()
 
     def toDataForJSON(self):
@@ -122,8 +122,10 @@ class CollectionResource(ReadOnlyResource):
 
     rootsite = None
     inside = None
+
     @property
     def path(self):
+        """See `ICollectionResource`."""
         return self.collection_name
 
     def publishTraverse(self, request, name):
@@ -144,12 +146,12 @@ class CollectionResource(ReadOnlyResource):
 
 class ServiceRootResource(ReadOnlyResource):
     """A resource that responds to GET by describing the service."""
-    implements(IPublishTraverse)
+    implements(IServiceRootResource)
 
     inside = None
     path = ''
 
-    def topLevelCollectionResource(self, name):
+    def getTopLevelCollectionResource(self, name):
         if name in self.context.top_level_collections:
             return CollectionResource(
                 self.context.top_level_collections[name](), name,
@@ -157,7 +159,7 @@ class ServiceRootResource(ReadOnlyResource):
         return None
 
     def publishTraverse(self, request, name):
-        resource = self.topLevelCollectionResource(name)
+        resource = self.getTopLevelCollectionResource(name)
         if resource is None:
             raise NotFound(self, name)
         return resource
