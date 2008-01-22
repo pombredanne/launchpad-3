@@ -10,7 +10,6 @@ __all__ = [
     'IEntryResource',
     'IHTTPResource',
     'IJSONPublishable',
-    'IServiceRoot',
     'IServiceRootResource'
     ]
 
@@ -36,15 +35,8 @@ class IJSONPublishable(Interface):
         structures and IJSONPublishable objects.
         """
 
-class IServiceRoot(Interface):
-    """A service root object that can be turned into a resource."""
-
-    def asResource(self, request):
-        """Return a top-level resource for this service."""
-
-
 class IServiceRootResource(IHTTPResource):
-    """A top-level resource object."""
+    """A service root object that also acts as a resource."""
 
     def getTopLevelCollectionResource(name):
         """Look up a top-level collection resource by URL fragment."""

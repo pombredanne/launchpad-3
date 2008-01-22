@@ -10,13 +10,8 @@
         <allow
             interface="canonical.launchpad.interfaces.IWebServiceApplication" />
         <allow interface='zope.publisher.interfaces.IPublishTraverse' />
-        <allow interface='canonical.lazr.interfaces.IHTTPResource' />
-        <allow interface='canonical.lazr.interfaces.IServiceRoot' />
-    </securedutility>
-
-    <class class="canonical.lazr.rest.ServiceRootResource">
         <allow interface='canonical.lazr.interfaces.IServiceRootResource' />
-    </class>
+    </securedutility>
 
     <class class="canonical.lazr.rest.CollectionResource">
         <allow interface='canonical.lazr.interfaces.ICollectionResource' />

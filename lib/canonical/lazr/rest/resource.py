@@ -10,7 +10,6 @@ __all__ = [
     'EntryResource',
     'HTTPResource',
     'ReadOnlyResource',
-    'ServiceRoot',
     'ServiceRootResource'
     ]
 
@@ -23,7 +22,7 @@ from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.interfaces import ICanonicalUrlData
 from canonical.lazr.interfaces import (
     ICollection, ICollectionResource, IEntry, IEntryResource, IHTTPResource,
-    IJSONPublishable, IServiceRoot, IServiceRootResource)
+    IJSONPublishable, IServiceRootResource)
 
 class ResourceJSONEncoder(simplejson.JSONEncoder):
     """A JSON encoder for JSON-exposable resources like entry resources.
@@ -54,8 +53,7 @@ class HTTPResource:
 
     @property
     def root_resource(self):
-        return self.request.publication.getApplication(
-            self.request).asResource(self.request)
+        return self.request.publication.getApplication(self.request)
 
 
 class ReadOnlyResource(HTTPResource):
@@ -80,7 +78,7 @@ class EntryResource(ReadOnlyResource):
         """Find the top-level collection resource associated with this entry.
         """
         return self.root_resource.getTopLevelCollectionResource(
-            self.context.parent_collection_name)
+            self.request, self.context.parent_collection_name)
 
     def __init__(self, context, request):
         """Associate this resource with a specific object and request."""
@@ -144,29 +142,46 @@ class CollectionResource(ReadOnlyResource):
         return ResourceJSONEncoder().encode(entry_resources)
 
 
-class ServiceRootResource(ReadOnlyResource):
+class ServiceRootResource(HTTPResource):
     """A resource that responds to GET by describing the service."""
     implements(IServiceRootResource)
 
     inside = None
     path = ''
 
-    def getTopLevelCollectionResource(self, name):
-        if name in self.context.top_level_collections:
+    top_level_collections = {}
+
+    def __init__(self):
+        """Initialize the service root.
+
+        Unlike other resources, which are initialized per request, the
+        service root resource is initialized only once. Thus there is
+        no request object. There is also no context object, because the
+        service root resource just is the service root object itself.
+        """
+        super(ServiceRootResource, self).__init__(None, None)
+
+    def __call__(self, REQUEST=None):
+        """Handle a GET request."""
+        if REQUEST.method == "GET":
+            return "This is a web service."
+        else:
+            REQUEST.response.setStatus(405)
+            REQUEST.response.setHeader("Allow", "GET")
+
+    def getTopLevelCollectionResource(self, request, name):
+        if name in self.top_level_collections:
             return CollectionResource(
-                self.context.top_level_collections[name](), name,
-                self.request)
-        return None
+                self.top_level_collections[name](), name, request)
+        else:
+            return None
 
     def publishTraverse(self, request, name):
-        resource = self.getTopLevelCollectionResource(name)
+        resource = self.getTopLevelCollectionResource(request, name)
         if resource is None:
             raise NotFound(self, name)
-        return resource
-
-    def do_GET(self):
-        """Return a description of the resource."""
-        return "This is a web service."
+        else:
+            return resource
 
 
 class Entry:
@@ -185,23 +200,3 @@ class Collection:
     def __init__(self, context):
         """Associate the entry with some database business object."""
         self.context = context
-
-
-class ServiceRoot:
-    """A web service."""
-    implements(IServiceRoot, IPublishTraverse, ICanonicalUrlData)
-
-    inside = None
-    path = ''
-
-    top_level_collections = {}
-
-    def asResource(self, request):
-        return ServiceRootResource(self, request)
-
-    def publishTraverse(self, request, name):
-        return self.asResource(request).publishTraverse(request, name)
-
-    def __call__(self, REQUEST=None):
-        if REQUEST:
-            return self.asResource(REQUEST)()
