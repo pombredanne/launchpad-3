@@ -126,8 +126,12 @@ class VPOExportSet:
             join += '''
                   JOIN TranslationMessage ON
                     TranslationMessage.pofile = POFile.id AND
-                    TranslationMessage.date_reviewed > %s AND
-                    TranslationMessage.is_current IS TRUE''' % sqlvalues(date)
+                    TranslationMessage.is_current IS TRUE'''
+
+            where += '''
+                AND (TranslationMessage.date_reviewed > %s OR
+                     POTemplate.date_last_updated > %s)''' % sqlvalues(
+                    date, date)
 
         if component is not None:
             join += '''
@@ -150,6 +154,8 @@ class VPOExportSet:
 
         if languagepack:
             where += ' AND POTemplate.languagepack'
+
+        
 
         return join + where
 
