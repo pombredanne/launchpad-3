@@ -10,6 +10,7 @@ __all__ = [
 
 
 from zope.component import adapts
+
 from canonical.lazr.rest import Collection, Entry
 from canonical.launchpad.interfaces import IPerson, IPersonEntry
 from canonical.lp import decorates

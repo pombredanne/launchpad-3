@@ -192,5 +192,6 @@ class WebServiceApplication(ServiceRootResource):
     """See IWebServiceApplication."""
     implements(IWebServiceApplication)
 
+    # See ServiceRootResource for more on top_level_collections
     top_level_collections = { 'people' : lambda : getUtility(IPersonSet) }
     rootsite = 'api'

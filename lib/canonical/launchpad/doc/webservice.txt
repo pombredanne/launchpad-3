@@ -1,18 +1,18 @@
 = RESTful Web Services =
 
-LAZR builds on Zope conventions to make it easy to expose your
-business objects as RESTful HTTP resources. I'll demonstrate these
-features by defining some business objects for managing recipes, and
-then publishing them as resources through a web service.
+LAZR builds on Zope conventions to make it easy to expose your model
+objects as RESTful HTTP resources. I'll demonstrate these features by
+defining a model for managing recipes, and then publishing the model
+objects as resources through a web service.
 
 
-== Example business objects ==
+== Example model objects ==
 
-Here's the interface for a simple business object that contains a
-recipe. This is the kind of business object you'd find in any Zope
+Here's the interface for a simple model object that contains a
+recipe. This is the kind of model object you'd find in any Zope
 application, with no special knowledge of web services.
 
-    >>> # All classes defined in this test should be new-style classes.
+    # All classes defined in this test are new-style classes.
     >>> __metaclass__ = type
 
     >>> from zope.interface import Interface
@@ -37,7 +37,7 @@ Here's a simple implementation of Recipe.
     ...         self.id = id
     ...         self.name = name
 
-Here are the "business objects" themselves:
+Here are the "model objects" themselves:
 
     >>> R1 = Recipe(1, "Green eggs and ham")
     >>> R2 = Recipe(7, "Steak au poivre")
@@ -62,33 +62,33 @@ Here's a simple RecipeSet with a predefined list of recipes.
 
 == Defining the resources ==
 
-LAZR provides an interface, IEntry, for the individual business object
-exposed through the resource. Right now it's just a marker interface,
-but it's expected to define a number of data fields: the same kind of
-fields defined by a business object interface like IRecipe.
+LAZR provides an interface, IEntry, used by an individual model object
+exposed through a specific resource. Right now it's just a marker
+interface, but it's expected to define a number of data fields: the
+same kind of fields defined by a model interface like IRecipe.
 
-If we wanted to expose our IRecipe business objects through the web
-service exactly as they are, we could simply define a class that
-includes both interfaces.
+If we wanted to expose our IRecipe model through the web service
+exactly as it;s defined, we could simply define a class that includes
+both interfaces.
 
     >>> from canonical.lazr.interfaces import IEntry
     >>> class IRecipeEntry1(IEntry, IRecipe):
     ...     """An IRecipe exposed as an entry."""
 
-But most of the time, we don't want to expose our business objects
-directly through the web service. There will be fields we don't want
-to expose, synthetic fields we do want to expose, fields we want to
-expose under a different name, and so on. In that case, our IEntry
-subclass will define the interface we _do_ want to expose through the
-web service. Here, we're exposing an IEntry that exposes the
-underlying recipe's name but not its ID:
+But most of the time, we don't want to expose our models directly
+through the web service. There will be fields we don't want to expose,
+synthetic fields we do want to expose, fields we want to expose under
+a different name, and so on. In that case, our IEntry subclass will
+define the interface we _do_ want to expose through the web
+service. Here, we're exposing an IEntry that exposes the underlying
+recipe's name but not its ID:
 
     >>> class IRecipeEntry(IEntry):
     ...     """The part of a recipe that we expose through the web service."""
     ...     name = IRecipe.get('name')
 
 Here's the implementation of IRecipeEntry: a simple decorator on the
-original business object. It subclasses Entry, a simple base class
+original model object. It subclasses Entry, a simple base class
 that defines a constructor.
 
     >>> from zope.component import adapts
@@ -129,7 +129,7 @@ in Python code:
 LAZR also defines an interface and a base class for collections of
 objects. I'll use it to expose the RecipeSet collection through the
 web service. A collection must define a method called find(), which
-returns the business objects in the collection.
+returns the model objects in the collection.
 
     >>> from canonical.lazr.rest import Collection
     >>> class RecipeCollection(Collection):
@@ -164,8 +164,9 @@ isn't implemented yet).
 Of course, a CollectionResource has to expose a collection _of_
 something. That's why each CollectionResource is associated with some
 concrete implementation of ICollection, like RecipeCollection. All you
-have to do is define the behavior of the collection, and
+have to do is define the behaviour of the collection, and
 CollectionResource takes care of exposing the collection through HTTP.
+
 Similarly, you can implement RecipeEntry to the IEntry interface, and
 expose it through the web as an EntryResource.
 
@@ -182,7 +183,6 @@ root of the object tree.
     ...    implements(IWebServiceApplication)
     ...    top_level_collections = { 'recipes' : RecipeSet }
     ...    rootsite = 'api'
-
 
 If you call the service root resource, and pass in an HTTP request, it
 will act as though you had performed a GET on the URL
@@ -202,8 +202,16 @@ will act as though you had performed a GET on the URL
 
 The ServiceRoot has a list of top-level collections and implements
 IPublishTraverse, so that a request to a registered collection is
-delegated to the appropriate CollectionResource. Here's an example,
-equivalent to requesting 'http://api.launchpad.net/recipes/'.
+delegated to the appropriate CollectionResource. The
+top_level_collections attribute maps URL fragments to factory methods
+or other callables, and the return value of the factory method is
+used as the context of a CollectionResource. In MyServiceRootResource,
+the URL fragment "recipes" is mapped to the RecipeSet class.
+
+The following example is equivalent to requesting
+'http://api.launchpad.net/recipes/'. The code calls the registered
+factory method (RecipeSet()) and wraps the resulting model object
+in a CollectionResource.
 
     >>> collection = app.publishTraverse(request, "recipes")
     >>> collection
@@ -228,7 +236,7 @@ EntryResources, and the base EntryResource class knows how to use the
 entry schema class (in this case, IRecipeEntry) to publish a JSON
 document.
 
-A CollectionResource object also implements publishTraverse(): you can
+A CollectionResource object also implements IPublishTraverse: you can
 navigate from a collection to one of the entries in that collection.
 It's the corresponding Collection's job to implement lookupEntry() so
 that (for instance) /recipes/10 is mapped to the "Raw celery" Entry.
@@ -247,17 +255,15 @@ If the user tries to traverse to a nonexistent object, the result is a
 NotFound exception:
 
     >>> from zope.publisher.interfaces import NotFound
-    >>> try:
-    ...     app.publishTraverse(request, "nosuchcollection")
-    ... except NotFound, e:
-    ...     print "Not found."
-    Not found.
+    >>> app.publishTraverse(request, "nosuchcollection")
+    Traceback (most recent call last):
+    ...
+    NotFound: ... name: 'nosuchcollection'
 
-    >>> try:
-    ...     collection.publishTraverse(request, "104")
-    ... except NotFound, e:
-    ...     print "Not found."
-    Not found.
+    >>> collection.publishTraverse(request, "104")
+    Traceback (most recent call last):
+    ...
+    NotFound: ... name: '104'
 
 Eventually, an entry will be responsible for implementing
 publishTraverse() to related entries (/recipes/10/owner) and

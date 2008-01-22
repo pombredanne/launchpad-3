@@ -15,14 +15,16 @@ __all__ = [
 
 
 import simplejson
+
 from zope.interface import implements
-from zope.publisher.interfaces import IPublishTraverse, NotFound
+from zope.publisher.interfaces import NotFound
 from zope.schema.interfaces import IField
+
 from canonical.launchpad.webapp import canonical_url
-from canonical.launchpad.webapp.interfaces import ICanonicalUrlData
 from canonical.lazr.interfaces import (
     ICollection, ICollectionResource, IEntry, IEntryResource, IHTTPResource,
     IJSONPublishable, IServiceRootResource)
+
 
 class ResourceJSONEncoder(simplejson.JSONEncoder):
     """A JSON encoder for JSON-exposable resources like entry resources.
@@ -36,7 +38,7 @@ class ResourceJSONEncoder(simplejson.JSONEncoder):
         """Convert the given object to a simple data structure."""
         if IJSONPublishable.providedBy(obj):
             return obj.toDataForJSON()
-        return super(ResourceJSONEncoder, self).default(obj)
+        return simplejson.JSONEncoder.default(self, obj)
 
 
 class HTTPResource:
@@ -148,7 +150,6 @@ class ServiceRootResource(HTTPResource):
 
     inside = None
     path = ''
-
     top_level_collections = {}
 
     def __init__(self):
@@ -189,7 +190,7 @@ class Entry:
     implements(IEntry)
 
     def __init__(self, context):
-        """Associate the entry with some database business object."""
+        """Associate the entry with some database model object."""
         self.context = context
 
 
@@ -198,5 +199,5 @@ class Collection:
     implements(ICollection)
 
     def __init__(self, context):
-        """Associate the entry with some database business object."""
+        """Associate the entry with some database model object."""
         self.context = context
