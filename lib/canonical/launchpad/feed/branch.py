@@ -61,9 +61,8 @@ class BranchFeedBase(FeedBase):
     @property
     def link_self(self):
         """See `IFeed`."""
-        return "%s/%s.%s" % (
-            canonical_url(self.context), self.feedname, self.format)
-
+        return "%s/%s.%s" % (canonical_url(self.context, rootsite="feeds"),
+                             self.feedname, self.format)
     @property
     def logo(self):
         """See `IFeed`."""

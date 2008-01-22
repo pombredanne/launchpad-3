@@ -58,6 +58,13 @@ which will include an entry for each branch.
     <id>tag:launchpad.net,2006-10-16:/code/~name12/+junk/junk.dev</id>
     <id>tag:launchpad.net,2006-10-16:/code/~name12/+junk/junk.contrib</id>
 
+Ensure the self link is correct and there is only one.
+
+    >>> links = parse_links(browser.contents, rel="self")
+    >>> for link in links:
+    ...     print link
+    <link rel="self" href="http://feeds.launchpad.dev/~name12/branches.atom" />
+
 The <update> field for the feed will be the most recent value for the
 updated field in all of the entries.
 
@@ -135,6 +142,11 @@ which will include an entry for each branch.
     <id>tag:launchpad.net,2006-10-16:/code/~sabdfl/firefox/release-0.9</id>
     <id>tag:launchpad.net,2006-10-16:/code/~sabdfl/firefox/release-0.9.2</id>
 
+    >>> links = parse_links(browser.contents, rel="self")
+    >>> for link in links:
+    ...     print link
+    <link rel="self" href="http://feeds.launchpad.dev/firefox/branches.atom" />
+
 The <update> field for the feed will be the most recent value for the
 updated field in all of the entries.
 
@@ -165,6 +177,11 @@ which will include an entry for each branch.
     <id>tag:launchpad.net,2006-10-16:/code/~sabdfl/firefox/release-0.9</id>
     <id>tag:launchpad.net,2006-10-16:/code/~sabdfl/firefox/release-0.9.2</id>
     <id>tag:launchpad.net,2006-10-16:/code/~stevea/thunderbird/main</id>
+
+    >>> links = parse_links(browser.contents, rel="self")
+    >>> for link in links:
+    ...     print link
+    <link rel="self" href="http://feeds.launchpad.dev/mozilla/branches.atom" />
 
 The <update> field for the feed will be the most recent value for the
 updated field in all of the entries.
@@ -199,6 +216,10 @@ own <id>, which in the case of a single branch feed will be identical.
     ...     print id_
     <id>tag:launchpad.net,2006-10-16:/code/~sabdfl/firefox/release--0.9.1</id>
     <id>tag:launchpad.net,2005-03-09:/code/~sabdfl/firefox/release--0.9.1/revision/1</id>
+    >>> links = parse_links(browser.contents, rel="self")
+    >>> for link in links:
+    ...     print link
+    <link rel="self" href="http://feeds.launchpad.dev/~sabdfl/firefox/release--0.9.1/branch.atom" />
     >>> strainer = SoupStrainer('updated')
     >>> updated_dates = [extract_text(tag) for tag in BSS(browser.contents,
     ...                  parseOnlyThese=strainer)]
