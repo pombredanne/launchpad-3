@@ -533,7 +533,8 @@ class ILaunchpadUsage(Interface):
         title=_('People can ask questions in Launchpad Answers'),
         required=True)
     official_codehosting = Bool(
-        title=_('Launchpad is used to provide access to source code'),
+        title=_('Code for this project is published in Bazaar branches on'
+                ' Launchpad'),
         required=True)
     official_malone = Bool(
         title=_('Bugs in this project are tracked in Launchpad'),
