@@ -238,6 +238,18 @@ components since partner is allowed for upload:
     partner
 
 
+== Handy properties ==
+
+IDistroSeries.suite_name can be used to return a string representing the
+suite name of the current distroseries and the supplied pocket.
+
+    >>> hoary.suite_name(PackagePublishingPocket.RELEASE)
+    u'hoary'
+
+    >>> hoary.suite_name(PackagePublishingPocket.UPDATES)
+    u'hoary-updates'
+
+
 == DistroSeries can be initialised from their parents ==
 
 When a distroseries is derived from another distroseries (be it a
