@@ -532,6 +532,8 @@ class ILaunchpadUsage(Interface):
     official_answers = Bool(
         title=_('People can ask questions in Launchpad Answers'),
         required=True)
+    official_blueprints = Bool(
+        title=_('This project uses blueprints'), required=True)
     official_codehosting = Bool(
         title=_('Code for this project is published in Bazaar branches on'
                 ' Launchpad'),

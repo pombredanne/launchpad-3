@@ -821,10 +821,11 @@ class ProductEditView(ProductLicenseMixin, LaunchpadEditFormView):
     field_names = [
         "displayname", "title", "summary", "description",
         "bug_reporting_guidelines", "project", "official_codehosting",
-        "bugtracker", "enable_bug_expiration", "official_rosetta",
-        "official_answers", "homepageurl", "sourceforgeproject",
-        "freshmeatproject", "wikiurl", "screenshotsurl", "downloadurl",
-        "programminglang", "development_focus", "licenses", "license_info"]
+        "bugtracker", "enable_bug_expiration", "official_blueprints",
+        "official_rosetta", "official_answers", "homepageurl",
+        "sourceforgeproject", "freshmeatproject", "wikiurl", "screenshotsurl",
+        "downloadurl", "programminglang", "development_focus", "licenses",
+        "license_info"]
     custom_widget(
         'licenses', LicenseWidget, column_count=3, orientation='vertical')
     custom_widget('bugtracker', ProductBugTrackerWidget)
