@@ -70,17 +70,13 @@ LIST_OWNER_HEADER_TEMPLATE = '%(list_owner_header_template)s'
 
 SITE_LIST_OWNER = '%(site_list_owner)s'
 
-# Modify the global pipeline to add some handlers for Launchpad specific
-# functionality.
-# - ensure posters are Launchpad members.
-GLOBAL_PIPELINE.insert(0, 'LaunchpadMember')
-# - insert our own RFC 2369 and RFC 5064 headers; this must appear after
-#   CookHeaders
-index = GLOBAL_PIPELINE.index('CookHeaders')
-GLOBAL_PIPELINE.insert(index + 1, 'LaunchpadHeaders')
-
 DEFAULT_MSG_FOOTER = '''_______________________________________________
 %(footer)s'''
+
+# Set up MHonArc archiving.
+PUBLIC_EXTERNAL_ARCHIVER = '\
+/usr/bin/mhonarc -add -outdir %(archive_dir)s/%%(listname)s'
+PRIVATE_EXTERNAL_ARCHIVER = PUBLIC_EXTERNAL_ARCHIVER
 """ % dict(
     launchpad_top=launchpad_top,
     smtp_host=host,
@@ -93,6 +89,7 @@ DEFAULT_MSG_FOOTER = '''_______________________________________________
     archive_url_template=config.mailman.archive_url_template,
     list_owner_header_template=config.mailman.list_owner_header_template,
     footer=footer,
+    archive_dir=os.path.join(config.mailman.build.var_dir, 'mhonarc'),
     )
     finally:
         config_file.close()
