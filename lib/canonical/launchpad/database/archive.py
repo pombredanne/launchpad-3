@@ -45,6 +45,8 @@ class Archive(SQLBase):
 
     enabled = BoolCol(dbName='enabled', notNull=False, default=True)
 
+    private = BoolCol(dbName='private', notNull=True, default=False)
+
     authorized_size = IntCol(
         dbName='authorized_size', notNull=False, default=1024)
 
