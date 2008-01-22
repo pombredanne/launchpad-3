@@ -18,7 +18,10 @@ class CheckWatches(LaunchpadCronScript):
     def add_my_options(self):
         """See `LaunchpadScript`."""
         self.parser.add_option('-t', '--bug-tracker', action='append',
-            dest='bug_trackers')
+            dest='bug_trackers', metavar="BUG_TRACKER",
+            help="Only check a given bug tracker. Specifying more than "
+                "one bugtracker using this option will check all the "
+                "bugtrackers specified.")
 
 
     def main(self):

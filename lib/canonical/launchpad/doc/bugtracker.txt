@@ -388,7 +388,6 @@ This functionality can also be used with the checkwatches cronscript,
 allowing a user to pass a list of bugtrackers to check at the command
 line.
 
-    >>> import subprocess
     >>> process = subprocess.Popen(
     ...     ['cronscripts/checkwatches.py', '--bug-tracker=mozilla.org',
     ...      '--bug-tracker=debbugs'], stdin=subprocess.PIPE,
@@ -405,3 +404,28 @@ line.
     INFO    No watches to update on http://bugs.debian.org
     INFO    Time for this run: ... seconds.
     <BLANKLINE>
+
+The help for the checkwatches cronscript explains the usage of the bug
+tracker option fully.
+
+    >>> process = subprocess.Popen(
+    ...     ['cronscripts/checkwatches.py', '-h'],
+    ...     stdin=subprocess.PIPE, stdout=subprocess.PIPE,
+    ...     stderr=subprocess.PIPE)
+    >>> (out, err) = process.communicate()
+    >>> print out
+    usage: checkwatches.py [options]
+    <BLANKLINE>
+    options:
+      -h, --help            show this help message and exit
+      -v, --verbose         Increase verbosity. May be specified
+                            multiple times.
+      -q, --quiet           Decrease verbosity. May be specified
+                            multiple times.
+      --log-file=LOG_FILE   Send log to the given file, rather than
+                            stderr.
+      -t BUG_TRACKER, --bug-tracker=BUG_TRACKER
+                            Only check a given bug tracker. Specifying
+                            more than one bugtracker using this option
+                            will check all the bugtrackers specified.
+
