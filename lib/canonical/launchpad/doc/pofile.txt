@@ -924,11 +924,10 @@ exports it as UTF-8
 Given that pofile's export time is newer than potemplate's date last
 updated, cached export is valid.
 
-    # Due to all changes in this test were done in the same transaction, we
-    # need to commit the transaction so we do a POFile export in a different
-    # transaction from where its translations were changed. This is important
-    # so we are sure we get different time stamps for POFile.date_updated and
-    # POFile.exporttime..
+    # Since all of the changes in this test are in the same transaction we
+    # must first commit the current transaction so we can do a POFile
+    # export in another. This is important so we are sure we get different
+    # time stamps for POFile.date_updated and POFile.exporttime.
     >>> transaction.commit()
     >>> discarded = pofile.export()
     >>> transaction.commit()
@@ -941,6 +940,10 @@ updated, cached export is valid.
 But if potemplate's date last updated is newer, cached export is not valid
 anymore.
 
+    >>> pofile.date_changed >= pofile.potemplate.date_last_updated
+    True
+    >>> pofile.is_cached_export_valid
+    True
     >>> from datetime import timedelta
     >>> pofile.potemplate.date_last_updated = (
     ...     pofile.date_changed + timedelta(seconds=60))
