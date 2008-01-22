@@ -325,19 +325,22 @@ date after the last generated language pack.
     |     1 | rosetta-grumpy/timestamp.txt
     |     1 | rosetta-grumpy/mapping.txt
 
-There is also another way to get an old translation file exported again
-as part of a language pack update, which is when the system gets an
-update for the template of that translation file. That's noted by
-IPOTemplate.date_last_updated. We set it to today, which will cause
-that the export includes all files again.
+There is another situation where a translation file is exported again
+as part of a language pack update, even without being changed.  It is
+re-exported if its template has been changed since the last language
+pack was produced.
+
+The latest template change is noted in IPOTemplate.date_last_updated.
+An update to the template causes that field to be updated, so that the
+next export will include all its translations as well.
 
     >>> template.date_last_updated = datetime.datetime.now(UTC)
 
     # Save changes.
     >>> transaction.commit()
 
-Then, export with a date limit: even stating that base package was done
-in the newest date we are handling (2000-01-03)...
+We export a language pack with changes relative to a base language
+pack that was exported on 2000-01-03:
 
     >>> series.language_pack_base.date_exported = d2000_01_03
     >>> flush_database_caches()
@@ -350,11 +353,10 @@ in the newest date we are handling (2000-01-03)...
     ...     logger=logger)
     >>> transaction.commit()
 
-    # Get the generated tarball.
+The Spanish translation has not changed since 2000-01-03, but the
+template has.  That's why we get both translations:
+
     >>> tarfile = string_to_tarfile(language_pack.file.read())
-
-... we get both translation files
-
     >>> examine_tarfile(tarfile)
     |     0 | rosetta-grumpy/
     |     0 | rosetta-grumpy/es/
@@ -365,6 +367,7 @@ in the newest date we are handling (2000-01-03)...
     |    21 | rosetta-grumpy/cy/LC_MESSAGES/test.po
     |     1 | rosetta-grumpy/timestamp.txt
     |     1 | rosetta-grumpy/mapping.txt
+
 
 == Script arguments and concurrency ==
 
