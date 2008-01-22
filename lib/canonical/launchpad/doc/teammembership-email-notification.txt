@@ -216,7 +216,7 @@ member.
     >>> print_distinct_messages_and_recipients()
     From: Ubuntu Team <noreply@launchpad.net>
     To: marilize@hbd.com
-    Subject: marilize joined ubuntu-team
+    Subject: You have been added to ubuntu-team
     <BLANKLINE>
     Celso Providelo (cprov) added you as a member of Ubuntu Team (ubuntu-
     team).

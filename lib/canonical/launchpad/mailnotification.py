@@ -1105,10 +1105,11 @@ def notify_team_join(event):
         # notification to the person too.
         member_addrs = contactEmailAddresses(person)
 
-        subject = '%s joined %s' % (person.name, team.name)
+        subject = 'You have been added to %s' % team.name
         templatename = 'new-member-notification.txt'
         if person.isTeam():
             templatename = 'new-member-notification-for-teams.txt'
+            subject = '%s joined %s' % (person.name, team.name)
 
         template = get_email_template(templatename)
         replacements = {
