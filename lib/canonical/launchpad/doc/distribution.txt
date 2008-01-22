@@ -345,7 +345,16 @@ officially. Ubuntu uses all of them:
     True
     >>> ubuntu.official_answers
     True
-    
+
+Except codehosting, which is read-only because officially using codehosting is
+not supported for distributions.
+
+    >>> ubuntu.official_codehosting
+    False
+    >>> ubuntu.official_codehosting = True
+    Traceback (most recent call last):
+    ForbiddenAttribute: ('official_codehosting', ...)
+
 While Debian uses none:
 
     >>> debian.official_malone

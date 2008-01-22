@@ -112,6 +112,8 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
         default=None)
     official_answers = BoolCol(
         dbName='official_answers', notNull=True, default=False)
+    official_codehosting = BoolCol(
+        dbName='official_codehosting', notNull=True, default=False)
     official_malone = BoolCol(
         dbName='official_malone', notNull=True, default=False)
     official_rosetta = BoolCol(

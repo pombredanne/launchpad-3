@@ -532,6 +532,9 @@ class ILaunchpadUsage(Interface):
     official_answers = Bool(
         title=_('People can ask questions in Launchpad Answers'),
         required=True)
+    official_codehosting = Bool(
+        title=_('Launchpad is used to provide access to source code'),
+        required=True)
     official_malone = Bool(
         title=_('Bugs in this project are tracked in Launchpad'),
         required=True)

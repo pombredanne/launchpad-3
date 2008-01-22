@@ -321,6 +321,15 @@ To get all milestones of a given product we have the .all_milestones property.
 
 == Products With Branches ==
 
+Products can now specify whether they officially support Launchpad as a
+location for their branches.
+
+    >>> print firefox.official_codehosting
+    False
+    >>> firefox.official_codehosting = True
+    >>> print firefox.official_codehosting
+    True
+
 We can also find all the products that have branches.
 
     >>> productset.getProductsWithBranches().count()
