@@ -72,8 +72,7 @@
              <td>
               <a href="https://help.launchpad.net/PPAQuickStart#delete">
                 <strong>Delete packages from your PPA</strong><br />
-                You can now delete packages from your personal and team PPAs
-                using Launchpad's web interface.
+                You can now delete packages from your PPAs using Launchpad's web interface.
                </a>
               </td>
              </tr>
