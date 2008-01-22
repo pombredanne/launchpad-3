@@ -20,8 +20,6 @@ matches the bug's summary and description.
     New, last updated 2006-07-14
     #5 Firefox install instructions should be complete
     New, last updated 2006-07-14
-    #6 Firefox crashes when Save As dialog for a nonexistent window is closed
-    New, last updated 2006-05-19
 
 If we instead enter a summary that matches bug #4 better, the result will
 be reversed.

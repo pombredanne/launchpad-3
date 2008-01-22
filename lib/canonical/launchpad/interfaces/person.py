@@ -376,14 +376,10 @@ class IPersonChangePassword(Interface):
     """The schema used by Person +changepassword form."""
 
     currentpassword = PasswordField(
-            title=_('Current password'), required=True, readonly=False,
-            description=_("The password you use to log into Launchpad.")
-            )
+        title=_('Current password'), required=True, readonly=False)
 
     password = PasswordField(
-            title=_('New password'), required=True, readonly=False,
-            description=_("Enter the same password in each field.")
-            )
+        title=_('New password'), required=True, readonly=False)
 
 
 class IPersonClaim(Interface):
@@ -426,9 +422,7 @@ class IPerson(IHasSpecifications, IHasMentoringOffers, IQuestionCollection,
             "here.")
             )
     password = PasswordField(
-            title=_('Password'), required=True, readonly=False,
-            description=_("Enter the same password in each field.")
-            )
+        title=_('Password'), required=True, readonly=False)
     karma = Int(
             title=_('Karma'), readonly=False,
             description=_('The cached total karma for this person.')
@@ -1264,8 +1258,7 @@ class INewPersonForm(IPerson):
     """
 
     password = PasswordField(
-        title=_('Create password'), required=True, readonly=False,
-        description=_("Enter the same password in each field."))
+        title=_('Create password'), required=True, readonly=False)
 
 
 class ITeam(IPerson, IHasIcon):

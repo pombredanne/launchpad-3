@@ -69,6 +69,8 @@ class Branch(SQLBase):
 
     owner = ForeignKey(dbName='owner', foreignKey='Person', notNull=True)
     author = ForeignKey(dbName='author', foreignKey='Person', default=None)
+    reviewer = ForeignKey(
+        dbName='reviewer', foreignKey='Person', default=None)
 
     product = ForeignKey(dbName='product', foreignKey='Product', default=None)
 

@@ -9,7 +9,7 @@ __all__ = [
 
 
 from zope.app.form import CustomWidgetFactory
-from zope.app.form.interfaces import IInputWidget
+from zope.app.form.interfaces import IInputWidget, InputErrors
 from zope.app.form.utility import setUpWidget
 from zope.component import getUtility
 from zope.schema.vocabulary import SimpleVocabulary, SimpleTerm
@@ -98,7 +98,11 @@ class TargetBranchWidget(LaunchpadRadioWidget):
         if (len(self.branch_selector_vocab) == 0 or
             form_value == "other"):
             # Get the value from the branch selector widget.
-            return self.other_branch_widget.getInputValue()
+            try:
+                return self.other_branch_widget.getInputValue()
+            except InputErrors:
+                self._error = self.other_branch_widget._error
+                raise
         else:
             term = self.branch_selector_vocab.getTermByToken(form_value)
             return term.value

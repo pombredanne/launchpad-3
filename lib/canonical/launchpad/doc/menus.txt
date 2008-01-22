@@ -973,13 +973,46 @@ is selected, we get a couple of menus.
     ...     print link.url
     http://launchpad.dev/sesamestreet/number73/+first
 
+You can traverse to an individual menu item from the facet menu:
+
+    >>> link = test_tales(
+    ...     'CONTEXTS/menu:foo/first', context=house, view=view,
+    ...     request=request)
+    >>> print link.url
+    http://launchpad.dev/sesamestreet/number73/+first
+
+But if a non-existing entry is requested, a KeyError is raised:
+
+    >>> test_tales(
+    ...     'CONTEXTS/menu:foo/broken', context=house, view=view,
+    ...     request=request)
+    Traceback (most recent call last):
+    ...
+    KeyError: 'broken'
+
+We also report when the selected facet does not exist with a
+TraversalError exception:
+
+    >>> test_tales(
+    ...     'CONTEXTS/menu:broken/bar', context=house, view=view,
+    ...     request=request)
+    Traceback (most recent call last):
+    ...
+    TraversalError: ..., 'broken')
+
 We can also get a context menu as menu:context.  It makes no difference
 whether the TALES code is CONTEXTS/menu:context or context/menu:context,
 because the menus system doesn't need to know anything about the view object.
 
     >>> links = test_tales('context/menu:context', context=house)
-    >>> for link in links:
+    >>> for link in links.values():
     ...     print link.url
+    http://launchpad.dev/sesamestreet/number73/+firstcontext
+
+The link is also reachable by name:
+
+    >>> link = test_tales('context/menu:context/first', context=house)
+    >>> print link.url
     http://launchpad.dev/sesamestreet/number73/+firstcontext
 
 When there is no menu for a thing, we get an empty iterator.
@@ -996,6 +1029,15 @@ When there is no menu for a thing, we get an empty iterator.
     ...     context=root, view=view, request=request)
     >>> list(menu)
     []
+
+And thus, we don't have a facet to navigate to:
+
+    >>> test_tales(
+    ...     'CONTEXTS/menu:foo/+first', context=root, view=view,
+    ...     request=request)
+    Traceback (most recent call last):
+    ...
+    TraversalError: ..., 'foo')
 
 
 == Cleaning up ==

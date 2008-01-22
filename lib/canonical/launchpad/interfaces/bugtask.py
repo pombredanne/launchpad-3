@@ -7,6 +7,7 @@ __metaclass__ = type
 
 __all__ = [
     'BUG_CONTACT_BUGTASK_STATUSES',
+    'BugTagsSearchCombinator',
     'BugTaskImportance',
     'BugTaskSearchParams',
     'BugTaskStatus',
@@ -53,7 +54,7 @@ from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.validators.name import name_validator
 from canonical.launchpad.webapp.interfaces import ITableBatchNavigator
 from canonical.lazr import (
-    DBEnumeratedType, DBItem, use_template)
+    DBEnumeratedType, DBItem, EnumeratedType, Item, use_template)
 
 
 class BugTaskImportance(DBEnumeratedType):
@@ -224,6 +225,26 @@ class BugTaskStatusSearch(DBEnumeratedType):
         This bug requires more information, but no additional
         details were supplied yet..
         """)
+
+
+class BugTagsSearchCombinator(EnumeratedType):
+    """Bug Tags Search Combinator
+
+    The possible values for combining the list of tags in a bug search.
+    """
+
+    ANY = Item("""
+        Any
+
+        Search for bugs tagged with any of the specified tags.
+        """)
+
+    ALL = Item("""
+        All
+
+        Search for bugs tagged with all of the specified tags.
+        """)
+
 
 class BugTaskStatusSearchDisplay(DBEnumeratedType):
     """Bug Task Status
@@ -579,6 +600,11 @@ class IBugTaskSearch(IBugTaskSearchBase):
     tag = List(
         title=_("Tags"), description=_("Separated by whitespace."),
         value_type=Tag(), required=False)
+    tags_combinator = Choice(
+        title=_("Tags combination"),
+        description=_("Search for any or all of the tags specified."),
+        vocabulary=BugTagsSearchCombinator, required=False,
+        default=BugTagsSearchCombinator.ANY)
 
 
 class IPersonBugTaskSearch(IBugTaskSearchBase):
