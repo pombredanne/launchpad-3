@@ -155,8 +155,6 @@ class VPOExportSet:
         if languagepack:
             where += ' AND POTemplate.languagepack'
 
-        
-
         return join + where
 
     def get_distroseries_pofiles(self, series, date=None, component=None,
