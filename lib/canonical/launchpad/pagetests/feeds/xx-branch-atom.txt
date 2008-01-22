@@ -5,30 +5,8 @@ using BeautifulStoneSoup instead of BeautifulSoup or the helper functions.
 
     >>> from BeautifulSoup import BeautifulStoneSoup as BSS
     >>> from BeautifulSoup import SoupStrainer
-
-Define a helper function for parsing the entries:
-
-    >>> def parse_entries(contents):
-    ...     entries = [tag for tag in BSS(contents,
-    ...                parseOnlyThese=SoupStrainer('entry'))]
-    ...     return entries
-
-Define a helper function for parsing links:
-
-    >>> def parse_links(contents, rel):
-    ...     strainer = SoupStrainer('link', rel=rel)
-    ...     entries = [tag for tag in BSS(contents,
-    ...                parseOnlyThese=strainer,
-    ...                selfClosingTags=['link'])]
-    ...     return entries
-
-Define a helper function for parsing ids:
-
-    >>> def parse_ids(contents):
-    ...     strainer = SoupStrainer('id')
-    ...     ids = [tag for tag in BSS(contents,
-    ...                parseOnlyThese=strainer)]
-    ...     return ids
+    >>> from canonical.launchpad.ftests.feeds_helper import (
+    ...     parse_entries, parse_ids, parse_links)
 
 Login as the Sample Person.
 
