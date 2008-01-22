@@ -220,8 +220,8 @@ class POTemplateSubsetView:
 class POTemplateView(LaunchpadView, TranslationsMixin):
 
     def initialize(self):
-        self.description = self.context.description
         """Get the requested languages and submit the form."""
+        self.description = self.context.description
         self.submitForm()
 
     def requestPoFiles(self):
@@ -389,6 +389,9 @@ class POTemplateEditView(SQLObjectEditView):
                 product=context.product, distribution=context.distribution,
                 sourcepackagename=context.sourcepackagename)
         if self.old_translation_domain != context.translation_domain:
+            # We only update date_last_updated when translation_domain field
+            # is changed because is the only significative change that,
+            # somehow, affects the content of the potemplate.
             UTC = pytz.timezone('UTC')
             context.date_last_updated = datetime.datetime.now(UTC)
 

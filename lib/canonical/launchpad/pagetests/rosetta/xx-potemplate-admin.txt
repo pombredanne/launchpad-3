@@ -21,7 +21,7 @@ page.
   http://translations.launchpad.dev/evolution/trunk/+pots/evolution-2.2/+admin
 
 Now, we should be sure that the admin form gets all required fields to allow
-a Rosetta Expert to administrate it.
+a Rosetta Expert to administer it.
 
   >>> browser.getControl(name='field.name').value
   'evolution-2.2'
@@ -69,7 +69,7 @@ Check to be sure that an admin can reach the POTemplate admin page.
   http://translations.launchpad.dev/evolution/trunk/+pots/evolution-2.2/+admin
 
 Now, we should be sure that the admin form gets all required fields to allow
-an admin to administrate it.
+an admin to administer it.
 
   >>> admin_browser.getControl(name='field.name').value
   'evolution-2.2'
@@ -137,7 +137,7 @@ exported as part of language packs.
   >>> admin_browser.getControl(name='field.languagepack').value = True
   >>> admin_browser.getControl(name='UPDATE_SUBMIT').click()
 
-Finally, lets rename 'evolution-2.2' to 'evolution-renamed'.
+Finally, let's rename 'evolution-2.2' to 'evolution-renamed'.
 
   >>> admin_browser.open(
   ...     'http://translations.launchpad.dev/evolution/trunk/+pots/'
@@ -149,7 +149,7 @@ above.
   >>> admin_browser.getControl(name='field.languagepack').value
   True
 
-And now lets get back to renaming.
+And now let's get back to renaming.
 
   >>> admin_browser.getControl(name='field.name').value = 'evolution-renamed'
   >>> admin_browser.getControl(name='UPDATE_SUBMIT').click()
