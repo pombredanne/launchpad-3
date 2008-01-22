@@ -40,3 +40,4 @@ thread*.request
 lib/mailman
 TAGS
 sourcecode/bzr-loom
+sourcecode/feedvalidator

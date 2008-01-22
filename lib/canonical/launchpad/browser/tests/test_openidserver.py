@@ -63,7 +63,6 @@ class SimpleRegistrationTestCase(unittest.TestCase):
             ('fullname', u'David Allouche'),
             ('nickname', u'ddaa'),
             ('email', u'david.allouche@canonical.com'),
-            ('timezone', u'UTC'),
             ('x_address1', u'Velvet Zephyr Woods'),
             ('x_address2', u'5423'),
             ('x_city', u'whatever'),
@@ -87,8 +86,7 @@ class SimpleRegistrationTestCase(unittest.TestCase):
         self.assertEqual(view.sreg_fields, [
             ('fullname', u'No Privileges Person'),
             ('nickname', u'no-priv'),
-            ('email', u'no-priv@canonical.com'),
-            ('timezone', u'UTC')])
+            ('email', u'no-priv@canonical.com')])
 
 
 def test_suite():
