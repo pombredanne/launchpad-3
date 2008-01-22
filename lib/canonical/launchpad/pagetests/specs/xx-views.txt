@@ -66,6 +66,38 @@ on sprint, product, person, project and distribution.
     HTTP/1.1 200 Ok
     ...
 
+The other way of sorting blueprints is by assignee:
+
+    >>> print http(r"""
+    ... GET /firefox/+assignments HTTP/1.1
+    ... """)
+    HTTP/1.1 200 Ok
+    ...
+
+    >>> print http(r"""
+    ... GET /ubuntu/+assignments HTTP/1.1
+    ... """)
+    HTTP/1.1 200 Ok
+    ...
+
+    >>> print http(r"""
+    ... GET /mozilla/+assignments HTTP/1.1
+    ... """)
+    HTTP/1.1 200 Ok
+    ...
+
+    >>> print http(r"""
+    ... GET /~carlos/+assignments HTTP/1.1
+    ... """)
+    HTTP/1.1 200 Ok
+    ...
+
+    >>> print http(r"""
+    ... GET /sprints/ubz/+assignments HTTP/1.1
+    ... """)
+    HTTP/1.1 200 Ok
+    ...
+
 Also, we should have "+documentation" views on product, productseries,
 project, distro and distroseries.
 
