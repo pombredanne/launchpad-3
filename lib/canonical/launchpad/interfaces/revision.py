@@ -47,6 +47,16 @@ class IRevisionAuthor(Interface):
     person = Choice(title=_('Author'), required=False, readonly=False,
         vocabulary='ValidPersonOrTeam')
 
+    def linkToLaunchpadPerson():
+        """Attempt to link the revision author to a Launchpad `Person`.
+
+        This method looks to see if the `email` address used in the
+        text of `RevisionAuthor.name` has been validated against a
+        `Person`.
+
+        Return true if a valid link is made.
+        """
+
 
 class IRevisionParent(Interface):
     """The association between a revision and its parent revisions."""
@@ -68,7 +78,9 @@ class IRevisionSet(Interface):
     """The set of all revisions."""
 
     def getByRevisionId(revision_id):
-        """Find a revision by revision_id. None if the revision is not known.
+        """Find a revision by revision_id.
+
+        None if the revision is not known.
         """
 
     def new(revision_id, log_body, revision_date, revision_author,

@@ -70,7 +70,6 @@ class BzrSync:
     """
     def __init__(self, trans_manager, branch, branch_url=None, logger=None):
         self.trans_manager = trans_manager
-        self._admin = getUtility(ILaunchpadCelebrities).admin
         self.email_from = config.noreply_from_address
 
         if logger is None:
@@ -86,6 +85,7 @@ class BzrSync:
         # of the email as possible, but we don't want to send them until
         # the information has been committed.
         self.initializeEmailQueue()
+        self.karma_events = {}
 
     def initializeEmailQueue(self):
         """Create an email queue and determine whether to create diffs.
@@ -401,8 +401,7 @@ class BzrSync:
                 revision_id=revision_id,
                 log_body=bzr_revision.message,
                 revision_date=revision_date,
-                revision_author=bzr_revision.committer,
-                owner=self._admin,
+                revision_author=bzr_revision.get_apparent_author(),
                 parent_ids=bzr_revision.parent_ids,
                 properties=bzr_revision.properties)
 

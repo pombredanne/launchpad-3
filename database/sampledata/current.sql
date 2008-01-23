@@ -3946,7 +3946,6 @@ ALTER TABLE packaging ENABLE TRIGGER ALL;
 
 ALTER TABLE person DISABLE TRIGGER ALL;
 
-
 INSERT INTO person (id, displayname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, icon, mugshot, hide_email_addresses, creation_rationale, creation_comment, registrant, logo, renewal_policy, openid_identifier, account_status_comment, account_status, personal_standing, personal_standing_reason_text, mail_resumption_date, mailing_list_auto_subscribe_policy, mailing_list_receive_duplicates, visibility, verbose_bugnotifications) VALUES (1, 'Mark Shuttleworth', 'K7Qmeansl6RbuPfulfcmyDQOzp70OxVh5Fcf', NULL, NULL, 'sabdfl', NULL, NULL, NULL, NULL, 1, NULL, '2005-06-06 08:59:51.591618', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, 8, NULL, NULL, NULL, 10, 'sabdfl_oid', NULL, 20, 0, NULL, NULL, 1, true, 1, false);
 INSERT INTO person (id, displayname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, icon, mugshot, hide_email_addresses, creation_rationale, creation_comment, registrant, logo, renewal_policy, openid_identifier, account_status_comment, account_status, personal_standing, personal_standing_reason_text, mail_resumption_date, mailing_list_auto_subscribe_policy, mailing_list_receive_duplicates, visibility, verbose_bugnotifications) VALUES (2, 'Robert Collins', 'ID1adsprLaTBox18F6dpSdtSdqCiOdpgUXBo4oG17qhg73jSDTVe3g==', NULL, NULL, 'lifeless', NULL, NULL, NULL, NULL, 1, NULL, '2005-06-06 08:59:51.598107', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, 8, NULL, NULL, NULL, 10, 'lifeless_oid', NULL, 20, 0, NULL, NULL, 1, true, 1, false);
 INSERT INTO person (id, displayname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, icon, mugshot, hide_email_addresses, creation_rationale, creation_comment, registrant, logo, renewal_policy, openid_identifier, account_status_comment, account_status, personal_standing, personal_standing_reason_text, mail_resumption_date, mailing_list_auto_subscribe_policy, mailing_list_receive_duplicates, visibility, verbose_bugnotifications) VALUES (3, 'Dave Miller', NULL, NULL, NULL, 'justdave', NULL, NULL, NULL, NULL, 1, NULL, '2005-06-06 08:59:51.610048', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, 1, NULL, NULL, NULL, 10, 'justdave_oid', NULL, 10, 0, NULL, NULL, 1, true, 1, false);
@@ -4029,6 +4028,7 @@ INSERT INTO person (id, displayname, "password", teamowner, teamdescription, nam
 INSERT INTO person (id, displayname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, icon, mugshot, hide_email_addresses, creation_rationale, creation_comment, registrant, logo, renewal_policy, openid_identifier, account_status_comment, account_status, personal_standing, personal_standing_reason_text, mail_resumption_date, mailing_list_auto_subscribe_policy, mailing_list_receive_duplicates, visibility, verbose_bugnotifications) VALUES (243614, 'josh', NULL, NULL, NULL, 'jbuhl-nospam', NULL, NULL, NULL, NULL, 1, NULL, '2007-12-18 16:31:34.790641', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, 15, 'when the comments for debbugs #308994 were imported into Launchpad.', 62, NULL, 10, '6KHNEe3', NULL, 10, 0, NULL, NULL, 1, true, 1, false);
 INSERT INTO person (id, displayname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, icon, mugshot, hide_email_addresses, creation_rationale, creation_comment, registrant, logo, renewal_policy, openid_identifier, account_status_comment, account_status, personal_standing, personal_standing_reason_text, mail_resumption_date, mailing_list_auto_subscribe_policy, mailing_list_receive_duplicates, visibility, verbose_bugnotifications) VALUES (243615, 'Sjoerd Simons', NULL, NULL, NULL, 'sjoerd', NULL, NULL, NULL, NULL, 1, NULL, '2007-12-18 16:31:34.790641', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, 15, 'when the comments for debbugs #308994 were imported into Launchpad.', 62, NULL, 10, 'yEzBPbd', NULL, 10, 0, NULL, NULL, 1, true, 1, false);
 INSERT INTO person (id, displayname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, icon, mugshot, hide_email_addresses, creation_rationale, creation_comment, registrant, logo, renewal_policy, openid_identifier, account_status_comment, account_status, personal_standing, personal_standing_reason_text, mail_resumption_date, mailing_list_auto_subscribe_policy, mailing_list_receive_duplicates, visibility, verbose_bugnotifications) VALUES (243616, 'Martin Pitt', NULL, NULL, NULL, 'mpitt', NULL, NULL, NULL, NULL, 1, NULL, '2007-12-18 16:31:34.790641', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, 15, 'when the comments for debbugs #308994 were imported into Launchpad.', 62, NULL, 10, 'R8FpwXd', NULL, 10, 0, NULL, NULL, 1, true, 1, false);
+
 
 ALTER TABLE person ENABLE TRIGGER ALL;
 
@@ -7333,17 +7333,17 @@ ALTER TABLE requestedcds ENABLE TRIGGER ALL;
 
 ALTER TABLE revision DISABLE TRIGGER ALL;
 
-INSERT INTO revision (id, date_created, log_body, revision_author, gpgkey, "owner", revision_id, revision_date) VALUES (1, '2005-03-09 15:45:00', 'Import of Mozilla Firefox 0.9.2', 1, NULL, 1, 'mozilla@arch.ubuntu.com/mozilla--release--0.9.2--base-0', '2005-03-09 15:40:00');
-INSERT INTO revision (id, date_created, log_body, revision_author, gpgkey, "owner", revision_id, revision_date) VALUES (2, '2005-03-09 15:50:00', 'Import of Mozilla Firefox 0.9.1', 1, NULL, 1, 'mozilla@arch.ubuntu.com/mozilla--release--0.9.1--base-0', '2005-03-09 15:45:00');
-INSERT INTO revision (id, date_created, log_body, revision_author, gpgkey, "owner", revision_id, revision_date) VALUES (3, '2005-03-09 15:55:00', 'Import of Mozilla Firefox 0.9', 1, NULL, 1, 'mozilla@arch.ubuntu.com/mozilla--release--0.9--base-0', '2005-03-09 15:50:00');
-INSERT INTO revision (id, date_created, log_body, revision_author, gpgkey, "owner", revision_id, revision_date) VALUES (4, '2005-10-31 17:21:47.38177', 'initial import (empty)', 11, NULL, 25, 'test@canonical.com-20051031165248-6f1bb97973c2b4f4', '2005-10-31 11:52:48.37692');
-INSERT INTO revision (id, date_created, log_body, revision_author, gpgkey, "owner", revision_id, revision_date) VALUES (5, '2005-10-31 17:21:47.66327', 'add foo', 11, NULL, 25, 'test@canonical.com-20051031165338-5f2f3d6b10bb3bf0', '2005-10-31 11:53:38.324658');
-INSERT INTO revision (id, date_created, log_body, revision_author, gpgkey, "owner", revision_id, revision_date) VALUES (6, '2005-10-31 17:21:47.701102', 'fix bug 1', 11, NULL, 25, 'test@canonical.com-20051031165532-3113df343e494daa', '2005-10-31 11:55:32.559368');
-INSERT INTO revision (id, date_created, log_body, revision_author, gpgkey, "owner", revision_id, revision_date) VALUES (7, '2005-10-31 17:21:47.745231', 'merge new feature', 13, NULL, 25, 'test@canonical.com-20051031165901-43b9644ec2eacc4e', '2005-10-31 11:59:01.742211');
-INSERT INTO revision (id, date_created, log_body, revision_author, gpgkey, "owner", revision_id, revision_date) VALUES (8, '2005-10-31 17:21:47.786347', 'resolve criss-cross', 12, NULL, 25, 'foo@localhost-20051031170239-5fce7d6bd3f01efc', '2005-10-31 12:02:39.750015');
-INSERT INTO revision (id, date_created, log_body, revision_author, gpgkey, "owner", revision_id, revision_date) VALUES (9, '2005-10-31 17:21:47.82293', 'fix bug in bar', 12, NULL, 25, 'foo@localhost-20051031170357-1301ad6d387feb23', '2005-10-31 12:03:57.157495');
-INSERT INTO revision (id, date_created, log_body, revision_author, gpgkey, "owner", revision_id, revision_date) VALUES (10, '2005-10-31 17:21:47.917914', 'add a new feature', 12, NULL, 25, 'foo@localhost-20051031165758-48acedf2b6a2e898', '2005-10-31 11:57:58.936419');
-INSERT INTO revision (id, date_created, log_body, revision_author, gpgkey, "owner", revision_id, revision_date) VALUES (11, '2005-10-31 17:21:47.954856', 'merge foo bugfix', 12, NULL, 25, 'foo@localhost-20051031170008-098959758bf79803', '2005-10-31 12:00:08.648379');
+INSERT INTO revision (id, date_created, log_body, revision_author, gpgkey, revision_id, revision_date) VALUES (1, '2005-03-09 15:45:00', 'Import of Mozilla Firefox 0.9.2', 1, NULL, 'mozilla@arch.ubuntu.com/mozilla--release--0.9.2--base-0', '2005-03-09 15:40:00');
+INSERT INTO revision (id, date_created, log_body, revision_author, gpgkey, revision_id, revision_date) VALUES (2, '2005-03-09 15:50:00', 'Import of Mozilla Firefox 0.9.1', 1, NULL, 'mozilla@arch.ubuntu.com/mozilla--release--0.9.1--base-0', '2005-03-09 15:45:00');
+INSERT INTO revision (id, date_created, log_body, revision_author, gpgkey, revision_id, revision_date) VALUES (3, '2005-03-09 15:55:00', 'Import of Mozilla Firefox 0.9', 1, NULL, 'mozilla@arch.ubuntu.com/mozilla--release--0.9--base-0', '2005-03-09 15:50:00');
+INSERT INTO revision (id, date_created, log_body, revision_author, gpgkey, revision_id, revision_date) VALUES (4, '2005-10-31 17:21:47.38177', 'initial import (empty)', 11, NULL, 'test@canonical.com-20051031165248-6f1bb97973c2b4f4', '2005-10-31 11:52:48.37692');
+INSERT INTO revision (id, date_created, log_body, revision_author, gpgkey, revision_id, revision_date) VALUES (5, '2005-10-31 17:21:47.66327', 'add foo', 11, NULL, 'test@canonical.com-20051031165338-5f2f3d6b10bb3bf0', '2005-10-31 11:53:38.324658');
+INSERT INTO revision (id, date_created, log_body, revision_author, gpgkey, revision_id, revision_date) VALUES (6, '2005-10-31 17:21:47.701102', 'fix bug 1', 11, NULL, 'test@canonical.com-20051031165532-3113df343e494daa', '2005-10-31 11:55:32.559368');
+INSERT INTO revision (id, date_created, log_body, revision_author, gpgkey, revision_id, revision_date) VALUES (7, '2005-10-31 17:21:47.745231', 'merge new feature', 13, NULL, 'test@canonical.com-20051031165901-43b9644ec2eacc4e', '2005-10-31 11:59:01.742211');
+INSERT INTO revision (id, date_created, log_body, revision_author, gpgkey, revision_id, revision_date) VALUES (8, '2005-10-31 17:21:47.786347', 'resolve criss-cross', 12, NULL, 'foo@localhost-20051031170239-5fce7d6bd3f01efc', '2005-10-31 12:02:39.750015');
+INSERT INTO revision (id, date_created, log_body, revision_author, gpgkey, revision_id, revision_date) VALUES (9, '2005-10-31 17:21:47.82293', 'fix bug in bar', 12, NULL, 'foo@localhost-20051031170357-1301ad6d387feb23', '2005-10-31 12:03:57.157495');
+INSERT INTO revision (id, date_created, log_body, revision_author, gpgkey, revision_id, revision_date) VALUES (10, '2005-10-31 17:21:47.917914', 'add a new feature', 12, NULL, 'foo@localhost-20051031165758-48acedf2b6a2e898', '2005-10-31 11:57:58.936419');
+INSERT INTO revision (id, date_created, log_body, revision_author, gpgkey, revision_id, revision_date) VALUES (11, '2005-10-31 17:21:47.954856', 'merge foo bugfix', 12, NULL, 'foo@localhost-20051031170008-098959758bf79803', '2005-10-31 12:00:08.648379');
 
 
 ALTER TABLE revision ENABLE TRIGGER ALL;
@@ -7351,19 +7351,19 @@ ALTER TABLE revision ENABLE TRIGGER ALL;
 
 ALTER TABLE revisionauthor DISABLE TRIGGER ALL;
 
-INSERT INTO revisionauthor (id, name) VALUES (1, 'mark.shuttleworth');
-INSERT INTO revisionauthor (id, name) VALUES (2, 'steve.alexander');
-INSERT INTO revisionauthor (id, name) VALUES (3, 'alexander.limi');
-INSERT INTO revisionauthor (id, name) VALUES (4, 'james.blackwell');
-INSERT INTO revisionauthor (id, name) VALUES (5, 'christian.reis');
-INSERT INTO revisionauthor (id, name) VALUES (6, 'colin.watson');
-INSERT INTO revisionauthor (id, name) VALUES (7, 'scott.james.remnant');
-INSERT INTO revisionauthor (id, name) VALUES (8, 'andrew.bennetts');
-INSERT INTO revisionauthor (id, name) VALUES (9, 'dave.miller');
-INSERT INTO revisionauthor (id, name) VALUES (10, 'jeff.waugh');
-INSERT INTO revisionauthor (id, name) VALUES (11, 'Sample Committer <test@canonical.com>');
-INSERT INTO revisionauthor (id, name) VALUES (12, 'foo <foo@localhost>');
-INSERT INTO revisionauthor (id, name) VALUES (13, 'bar@localhost');
+INSERT INTO revisionauthor (id, name, email, person) VALUES (1, 'mark.shuttleworth', NULL, NULL);
+INSERT INTO revisionauthor (id, name, email, person) VALUES (2, 'steve.alexander', NULL, NULL);
+INSERT INTO revisionauthor (id, name, email, person) VALUES (3, 'alexander.limi', NULL, NULL);
+INSERT INTO revisionauthor (id, name, email, person) VALUES (4, 'james.blackwell', NULL, NULL);
+INSERT INTO revisionauthor (id, name, email, person) VALUES (5, 'christian.reis', NULL, NULL);
+INSERT INTO revisionauthor (id, name, email, person) VALUES (6, 'colin.watson', NULL, NULL);
+INSERT INTO revisionauthor (id, name, email, person) VALUES (7, 'scott.james.remnant', NULL, NULL);
+INSERT INTO revisionauthor (id, name, email, person) VALUES (8, 'andrew.bennetts', NULL, NULL);
+INSERT INTO revisionauthor (id, name, email, person) VALUES (9, 'dave.miller', NULL, NULL);
+INSERT INTO revisionauthor (id, name, email, person) VALUES (10, 'jeff.waugh', NULL, NULL);
+INSERT INTO revisionauthor (id, name, email, person) VALUES (11, 'Sample Committer <test@canonical.com>', NULL, NULL);
+INSERT INTO revisionauthor (id, name, email, person) VALUES (12, 'foo <foo@localhost>', NULL, NULL);
+INSERT INTO revisionauthor (id, name, email, person) VALUES (13, 'bar@localhost', NULL, NULL);
 
 
 ALTER TABLE revisionauthor ENABLE TRIGGER ALL;
@@ -8324,7 +8324,6 @@ INSERT INTO teammembership (id, person, team, status, datejoined, dateexpires, r
 INSERT INTO teammembership (id, person, team, status, datejoined, dateexpires, reviewer, reviewercomment) VALUES (77, 19, 17, 2, '2008-01-16 23:56:17.986769', NULL, 1, 'Yeah, we want in!');
 
 
-
 ALTER TABLE teammembership ENABLE TRIGGER ALL;
 
 
@@ -8485,7 +8484,6 @@ INSERT INTO teamparticipation (id, team, person) VALUES (169, 17, 19);
 INSERT INTO teamparticipation (id, team, person) VALUES (170, 32, 4);
 INSERT INTO teamparticipation (id, team, person) VALUES (171, 32, 33);
 INSERT INTO teamparticipation (id, team, person) VALUES (172, 17, 33);
-
 
 
 ALTER TABLE teamparticipation ENABLE TRIGGER ALL;

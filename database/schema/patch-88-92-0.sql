@@ -4,7 +4,7 @@ ALTER TABLE RevisionAuthor
   ADD COLUMN email text;
 
 ALTER TABLE RevisionAuthor
-  ADD COLUMN person int REFERENCES (Person);
+  ADD COLUMN person int REFERENCES Person;
 
 -- Revision.owner is a useless field and is always set to be
 -- the launchpad administrator team.

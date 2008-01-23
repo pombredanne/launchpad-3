@@ -8,6 +8,7 @@ __all__ = [
 
 import email
 
+from zope.component import getUtility
 from zope.interface import implements
 from sqlobject import (
     ForeignKey, IntCol, StringCol, SQLObjectNotFound, SQLMultipleJoin)
@@ -17,6 +18,7 @@ from canonical.database.constants import DEFAULT
 from canonical.database.datetimecol import UtcDateTimeCol
 
 from canonical.launchpad.interfaces import (
+    EmailAddressStatus, IEmailAddressSet,
     IRevision, IRevisionAuthor, IRevisionParent, IRevisionProperty,
     IRevisionSet)
 from canonical.launchpad.helpers import shortlist
@@ -77,7 +79,24 @@ class RevisionAuthor(SQLBase):
     name_without_email = property(_getNameWithoutEmail)
 
     email = StringCol(notNull=False)
-    person = ForeignKey(dbName='person', foreignKey='Person', notNull=False)
+    person = ForeignKey(dbName='person', foreignKey='Person', notNull=False,
+                        default=None)
+
+    def linkToLaunchpadPerson(self):
+        """See `IRevisionAuthor`."""
+        if self.person is not None or self.email is None:
+            return False
+        lp_email = getUtility(IEmailAddressSet).getByEmail(self.email)
+        # If not found, we didn't link this person.
+        if lp_email is None:
+            return False
+        # Only accept an email address that is validated.
+        if lp_email.status in (EmailAddressStatus.VALIDATED,
+                               EmailAddressStatus.PREFERRED):
+            self.person = lp_email.person
+            return True
+        else:
+            return False
 
 
 class RevisionParent(SQLBase):
@@ -114,6 +133,14 @@ class RevisionSet:
     def getByRevisionId(self, revision_id):
         return Revision.selectOneBy(revision_id=revision_id)
 
+    def _createRevisionAuthor(self, revision_author):
+        """Extract out the email and check to see if it matches a Person."""
+        email_address = email.Utils.parseaddr(revision_author)[1]
+        # If there is no @, then it isn't a real email address.
+        if '@' not in email_address:
+            email_address = None
+        return RevisionAuthor(name=revision_author, email=email_address)
+
     def new(self, revision_id, log_body, revision_date, revision_author,
             parent_ids, properties):
         """See IRevisionSet.new()"""
@@ -123,7 +150,8 @@ class RevisionSet:
         try:
             author = RevisionAuthor.byName(revision_author)
         except SQLObjectNotFound:
-            author = RevisionAuthor(name=revision_author)
+            author = self._createRevisionAuthor(revision_author)
+        author.linkToLaunchpadPerson()
 
         revision = Revision(revision_id=revision_id,
                             log_body=log_body,
