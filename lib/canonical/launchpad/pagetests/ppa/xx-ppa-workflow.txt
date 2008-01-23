@@ -237,6 +237,15 @@ But more importantly, only LP administrators can 'administer' Personal
 Package Archives.
 
     >>> admin_browser.getLink("Administer archive").click()
+    >>> admin_browser.url
+    'http://launchpad.dev/~carlos/+archive/+admin'
+
+Trying to shortcut the URL as a non-privileged user does not work:
+
+    >>> sample_browser.open("http://launchpad.dev/~carlos/+archive/+admin")
+    Traceback (most recent call last):
+    ...
+    Unauthorized...
 
 The administration procedure allows us to:
 
