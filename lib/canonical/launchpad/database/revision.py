@@ -27,7 +27,6 @@ class Revision(SQLBase):
 
     implements(IRevision)
 
-    owner = ForeignKey(dbName='owner', foreignKey='Person', notNull=True)
     date_created = UtcDateTimeCol(notNull=True, default=DEFAULT)
     log_body = StringCol(notNull=True)
     gpgkey = ForeignKey(dbName='gpgkey', foreignKey='GPGKey', default=None)
@@ -77,6 +76,9 @@ class RevisionAuthor(SQLBase):
 
     name_without_email = property(_getNameWithoutEmail)
 
+    email = StringCol(notNull=False)
+    person = ForeignKey(dbName='person', foreignKey='Person', notNull=False)
+
 
 class RevisionParent(SQLBase):
     """The association between a revision and its parent."""
@@ -112,7 +114,7 @@ class RevisionSet:
     def getByRevisionId(self, revision_id):
         return Revision.selectOneBy(revision_id=revision_id)
 
-    def new(self, revision_id, log_body, revision_date, revision_author, owner,
+    def new(self, revision_id, log_body, revision_date, revision_author,
             parent_ids, properties):
         """See IRevisionSet.new()"""
         if properties is None:
@@ -126,8 +128,7 @@ class RevisionSet:
         revision = Revision(revision_id=revision_id,
                             log_body=log_body,
                             revision_date=revision_date,
-                            revision_author=author,
-                            owner=owner)
+                            revision_author=author)
         seen_parents = set()
         for sequence, parent_id in enumerate(parent_ids):
             if parent_id in seen_parents:

@@ -20,8 +20,6 @@ class IRevision(IHasOwner):
 
     id = Int(title=_('The database revision ID'))
 
-    owner = Choice(title=_('Owner'), required=True, readonly=True,
-        vocabulary='ValidPersonOrTeam')
     date_created = Datetime(
         title=_("Date Created"), required=True, readonly=True)
     log_body = Attribute("The revision log message.")
@@ -43,7 +41,11 @@ class IRevisionAuthor(Interface):
     """Committer of a Bazaar revision."""
 
     name = TextLine(title=_("Revision Author Name"), required=True)
-    name_without_email = Attribute("Revision author name without email address")
+    name_without_email = Attribute(
+        "Revision author name without email address")
+    email = Attribute("The email address extracted from the author text")
+    person = Choice(title=_('Author'), required=False, readonly=False,
+        vocabulary='ValidPersonOrTeam')
 
 
 class IRevisionParent(Interface):
@@ -69,6 +71,6 @@ class IRevisionSet(Interface):
         """Find a revision by revision_id. None if the revision is not known.
         """
 
-    def new(revision_id, log_body, revision_date, revision_author, owner,
+    def new(revision_id, log_body, revision_date, revision_author,
             parent_ids, properties):
         """Create a new Revision with the given revision ID."""
