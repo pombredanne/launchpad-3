@@ -663,7 +663,6 @@ debbugsstatusmap = {'open':      BugTaskStatus.NEW,
 class DebBugs(ExternalBugTracker):
     """A class that deals with communications with a debbugs db."""
 
-    import_comments = True
     implements(ISupportsCommentImport)
 
     # We don't support different versions of debbugs.
