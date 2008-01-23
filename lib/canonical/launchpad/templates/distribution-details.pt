@@ -43,7 +43,7 @@
             Bug tracking<br />
           </tal:malone>
           <tal:blueprints condition="context/official_blueprints">
-            Blueprints
+            Blueprints<br />
           </tal:blueprints>
           <tal:rosetta condition="context/official_rosetta">
             Translations<br />
