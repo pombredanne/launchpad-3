@@ -32,6 +32,12 @@ from canonical.launchpad.scripts.tests.webserver_helper import WebserverHelper
 from canonical.testing import LaunchpadZopelessLayer
 
 
+def close_bzrsync_safely(bzrsync):
+    """Close self.bzrsync if it is set and not closed already."""
+    if bzrsync.db_branch is not None:
+        bzrsync.close()
+
+
 class BzrSyncTestCase(TestCaseWithTransport):
     """Common base for BzrSync test cases."""
 
@@ -49,17 +55,10 @@ class BzrSyncTestCase(TestCaseWithTransport):
         LaunchpadZopelessLayer.switchDbUser(config.branchscanner.dbuser)
         self.txn = LaunchpadZopelessLayer.txn
         self.setUpAuthor()
-        self.bzrsync = None
 
     def tearDown(self):
-        self.closeBzrSyncSafely()
         self.webserver_helper.tearDown()
         TestCaseWithTransport.tearDown(self)
-
-    def closeBzrSyncSafely(self):
-        """Close self.bzrsync if it is set and not closed already."""
-        if self.bzrsync is not None and self.bzrsync.db_branch is not None:
-            self.bzrsync.close()
 
     def join(self, name):
         return self.webserver_helper.join(name)
@@ -140,9 +139,9 @@ class BzrSyncTestCase(TestCaseWithTransport):
         This method allow subclasses to instrument the BzrSync instance used
         in syncBranch.
         """
-        self.closeBzrSyncSafely()
-        self.bzrsync = BzrSync(self.txn, db_branch, bzr_branch_url)
-        return self.bzrsync
+        bzrsync = BzrSync(self.txn, db_branch, bzr_branch_url)
+        self.addCleanup(lambda: close_bzrsync_safely(bzrsync))
+        return bzrsync
 
     def syncAndCount(self, new_revisions=0, new_numbers=0,
                      new_parents=0, new_authors=0):
@@ -914,42 +913,41 @@ class TestBzrSyncNoEmail(BzrSyncTestCase):
                          "There should be no subscribers to the branch.")
 
     def test_empty_branch(self):
-        self.makeBzrSync(
-            self.db_branch, self.bzr_branch_url).syncBranchAndClose()
-        self.assertEqual(len(self.bzrsync.pending_emails), 0,
+        bzrsync = self.makeBzrSync(self.db_branch, self.bzr_branch_url)
+        bzrsync.syncBranchAndClose()
+        self.assertEqual(len(bzrsync.pending_emails), 0,
                          "There should be no pending emails.")
 
     def test_import_revision(self):
         self.commitRevision()
-        self.makeBzrSync(
-            self.db_branch, self.bzr_branch_url).syncBranchAndClose()
-        self.assertEqual(len(self.bzrsync.pending_emails), 0,
+        bzrsync = self.makeBzrSync(self.db_branch, self.bzr_branch_url)
+        bzrsync.syncBranchAndClose()
+        self.assertEqual(len(bzrsync.pending_emails), 0,
                          "There should be no pending emails.")
 
     def test_import_uncommit(self):
         self.commitRevision()
-        self.makeBzrSync(
-            self.db_branch, self.bzr_branch_url).syncBranchAndClose()
+        bzrsync = self.makeBzrSync(self.db_branch, self.bzr_branch_url)
+        bzrsync.syncBranch()
         stub.test_emails = []
         self.uncommitRevision()
-        self.makeBzrSync(
-            self.db_branch, self.bzr_branch_url).syncBranchAndClose()
-        self.assertEqual(len(self.bzrsync.pending_emails), 0,
+        bzrsync.syncBranchAndClose()
+        self.assertEqual(len(bzrsync.pending_emails), 0,
                          "There should be no pending emails.")
 
     def test_import_recommit(self):
         # No emails should have been generated.
         self.commitRevision('first')
-        self.makeBzrSync(
-            self.db_branch, self.bzr_branch_url).syncBranchAndClose()
+        bzrsync = self.makeBzrSync(self.db_branch, self.bzr_branch_url)
+        bzrsync.syncBranchAndClose()
         stub.test_emails = []
         self.uncommitRevision()
         self.writeToFile(filename="hello.txt",
                          contents="Hello World\n")
         self.commitRevision('second')
-        self.makeBzrSync(
-            self.db_branch, self.bzr_branch_url).syncBranchAndClose()
-        self.assertEqual(len(self.bzrsync.pending_emails), 0,
+        bzrsync = self.makeBzrSync(self.db_branch, self.bzr_branch_url)
+        bzrsync.syncBranchAndClose()
+        self.assertEqual(len(bzrsync.pending_emails), 0,
                          "There should be no pending emails.")
 
 
