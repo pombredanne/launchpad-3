@@ -5,62 +5,62 @@
 We should be able to see a "+specs" and a "+portlet-latestspecs" view
 on sprint, product, person, project and distribution.
 
-    >>> print http(r"""
+    >>> print http("""
     ... GET /firefox/+portlet-latestspecs HTTP/1.1
     ... """)
     HTTP/1.1 200 Ok
     ...
 
-    >>> print http(r"""
+    >>> print http("""
     ... GET /ubuntu/+portlet-latestspecs HTTP/1.1
     ... """)
     HTTP/1.1 200 Ok
     ...
 
-    >>> print http(r"""
+    >>> print http("""
     ... GET /mozilla/+portlet-latestspecs HTTP/1.1
     ... """)
     HTTP/1.1 200 Ok
     ...
 
-    >>> print http(r"""
+    >>> print http("""
     ... GET /~carlos/+portlet-latestspecs HTTP/1.1
     ... """)
     HTTP/1.1 200 Ok
     ...
 
-    >>> print http(r"""
+    >>> print http("""
     ... GET /sprints/ubz/+portlet-latestspecs HTTP/1.1
     ... """)
     HTTP/1.1 200 Ok
     ...
 
 
-    >>> print http(r"""
+    >>> print http("""
     ... GET /firefox/+specs HTTP/1.1
     ... """)
     HTTP/1.1 200 Ok
     ...
 
-    >>> print http(r"""
+    >>> print http("""
     ... GET /ubuntu/+specs HTTP/1.1
     ... """)
     HTTP/1.1 200 Ok
     ...
 
-    >>> print http(r"""
+    >>> print http("""
     ... GET /mozilla/+specs HTTP/1.1
     ... """)
     HTTP/1.1 200 Ok
     ...
 
-    >>> print http(r"""
+    >>> print http("""
     ... GET /~carlos/+specs HTTP/1.1
     ... """)
     HTTP/1.1 200 Ok
     ...
 
-    >>> print http(r"""
+    >>> print http("""
     ... GET /sprints/ubz/+specs HTTP/1.1
     ... """)
     HTTP/1.1 200 Ok
@@ -68,31 +68,31 @@ on sprint, product, person, project and distribution.
 
 The other way of sorting blueprints is by assignee:
 
-    >>> print http(r"""
+    >>> print http("""
     ... GET /firefox/+assignments HTTP/1.1
     ... """)
     HTTP/1.1 200 Ok
     ...
 
-    >>> print http(r"""
+    >>> print http("""
     ... GET /ubuntu/+assignments HTTP/1.1
     ... """)
     HTTP/1.1 200 Ok
     ...
 
-    >>> print http(r"""
+    >>> print http("""
     ... GET /mozilla/+assignments HTTP/1.1
     ... """)
     HTTP/1.1 200 Ok
     ...
 
-    >>> print http(r"""
+    >>> print http("""
     ... GET /~carlos/+assignments HTTP/1.1
     ... """)
     HTTP/1.1 200 Ok
     ...
 
-    >>> print http(r"""
+    >>> print http("""
     ... GET /sprints/ubz/+assignments HTTP/1.1
     ... """)
     HTTP/1.1 200 Ok
@@ -102,31 +102,31 @@ Also, we should have "+documentation" views on product, productseries,
 project, distro and distroseries.
 
 
-    >>> print http(r"""
+    >>> print http("""
     ... GET /firefox/+documentation HTTP/1.1
     ... """)
     HTTP/1.1 200 Ok
     ...
 
-    >>> print http(r"""
+    >>> print http("""
     ... GET /firefox/1.0/+documentation HTTP/1.1
     ... """)
     HTTP/1.1 200 Ok
     ...
 
-    >>> print http(r"""
+    >>> print http("""
     ... GET /ubuntu/+documentation HTTP/1.1
     ... """)
     HTTP/1.1 200 Ok
     ...
 
-    >>> print http(r"""
+    >>> print http("""
     ... GET /ubuntu/hoary/+documentation HTTP/1.1
     ... """)
     HTTP/1.1 200 Ok
     ...
 
-    >>> print http(r"""
+    >>> print http("""
     ... GET /mozilla/+documentation HTTP/1.1
     ... """)
     HTTP/1.1 200 Ok
@@ -136,7 +136,7 @@ project, distro and distroseries.
 Some of the listings are supposed to indicate if there is an informational
 spec there using a badge:
 
-    >>> print http(r"""
+    >>> print http("""
     ... GET /kubuntu/+documentation HTTP/1.1
     ... """)
     HTTP/1.1 200 Ok
