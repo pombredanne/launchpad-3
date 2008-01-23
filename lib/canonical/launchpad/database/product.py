@@ -120,6 +120,13 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
         dbName='official_malone', notNull=True, default=False)
     official_rosetta = BoolCol(
         dbName='official_rosetta', notNull=True, default=False)
+
+    @property
+    def official_anything(self):
+        return True in (self.official_malone, self.official_rosetta,
+                        self.official_blueprints, self.official_answers,
+                        self.official_codehosting)
+
     enable_bug_expiration = BoolCol(dbName='enable_bug_expiration',
         notNull=True, default=False)
     active = BoolCol(dbName='active', notNull=True, default=True)
