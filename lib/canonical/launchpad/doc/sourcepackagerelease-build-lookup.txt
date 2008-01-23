@@ -95,6 +95,61 @@ this context.
     i386 build of evolution 1.0 in ubuntu hoary RELEASE
 
 
+== Sources with architecture-independent and specific binaries ==
+
+Even if the source package builds a architecture-independent package,
+no Build record will be returned by getBuildByArch() if arch-specific
+binary packages were not built (see bug #65712 for further
+information).
+
+In order to be independent of the sampledata we will use the
+SoyuzTestPublisher helper to create fake but complete publications for
+this test.
+
+    >>> from canonical.launchpad.interfaces import (
+    ...    PackagePublishingStatus)
+    >>> from canonical.launchpad.tests.test_publishing import (
+    ...     SoyuzTestPublisher)
+
+    >>> test_publisher = SoyuzTestPublisher()
+
+    >>> name16 = getUtility(IPersonSet).getByName('name16')
+    >>> test_publisher.person = name16
+
+Let's create and publish a source which produces an
+architecture-independent binary.
+
+    >>> foo_pub_src = test_publisher.getPubSource(
+    ...     version="1.0", architecturehintlist='all',
+    ...     distroseries=hoary, archive=ubuntu.main_archive,
+    ...     status=PackagePublishingStatus.PUBLISHED)
+
+    >>> foo_pub_binaries = test_publisher.getPubBinaries(
+    ...     distroseries=hoary, pub_source=foo_pub_src,
+    ...     status=PackagePublishingStatus.PUBLISHED)
+
+The build record for foo in hoary/i386 was created.
+
+    >>> test_build_i386 = foo_pub_src.sourcepackagerelease.getBuildByArch(
+    ...     hoary_i386, ubuntu.main_archive)
+    >>> print test_build_i386.title
+    i386 build of foo 1.0 in ubuntu hoary RELEASE
+
+And despite of having a architecture-independent binary published in
+hoary hppa, the build lookup in this architecture returns None, i.e,
+the build doesn't exist.
+
+    >>> for pub in foo_pub_binaries:
+    ...     print pub.displayname
+    foo-bin 1.0 in hoary i386
+    foo-bin 1.0 in hoary hppa
+
+    >>> test_build_hppa = foo_pub_src.sourcepackagerelease.getBuildByArch(
+    ...     hoary_hppa, ubuntu.main_archive)
+    >>> print test_build_hppa
+    None
+
+
 == Sources copied from PRIMARY to PPAs ==
 
 Sources published (uploaded or copied) to the PPA do not share builds
@@ -106,6 +161,13 @@ Let's start by copying a PRIMARY archive source to Celso's PPA.
 
     >>> copy = hoary_evo_sp['1.0'].current_published.copyTo(
     ...    hoary, pocket_release, cprov.archive)
+
+No suitable build will be found for it.
+
+    >>> test_build_i386_ppa = copy.sourcepackagerelease.getBuildByArch(
+    ...     hoary_i386, cprov.archive)
+    >>> print test_build_i386_ppa
+    None
 
 Then we can creating a build record representing the intent to build
 the copied source using the current PPA context. The PPA build context
@@ -162,22 +224,8 @@ Launchpad also allow copies from published sources including
 corresponding binaries from PRIMARY archive to PPA or from one PPA to
 other.
 
-In order to be independent of the sampledata we will use the
-SoyuzTestPublisher helper to create fake but complete publications for
-this test.
-
-    >>> from canonical.launchpad.tests.test_publishing import (
-    ...     SoyuzTestPublisher)
-    >>> test_publisher = SoyuzTestPublisher()
-
-    >>> name16 = getUtility(IPersonSet).getByName('name16')
-    >>> test_publisher.person = name16
-
 We will create a foo_1.0 source, build and i386 binary published in
 hoary PRIMARY archive.
-
-    >>> from canonical.launchpad.interfaces import (
-    ...    PackagePublishingStatus)
 
     >>> foo_pub_src = test_publisher.getPubSource(
     ...     version="0.1", architecturehintlist='i386',
@@ -189,7 +237,6 @@ hoary PRIMARY archive.
     ...     status=PackagePublishingStatus.PUBLISHED)
 
     >>> foo_source_release = foo_pub_src.sourcepackagerelease
-
     >>> build_primary = foo_source_release.getBuildByArch(
     ...     hoary_i386, ubuntu.main_archive)
 
@@ -205,82 +252,104 @@ Then we can copy source and binary from PRIMARY archive to Celso's PPA:
     ...    hoary, pocket_release, cprov.archive)
     >>> cprov_bin = foo_pub_binaries[0].copyTo(
     ...    hoary, pocket_release, cprov.archive)
+    >>> cprov_src.status = PackagePublishingStatus.PUBLISHED
+    >>> cprov_bin.status = PackagePublishingStatus.PUBLISHED
+    >>> from canonical.database.sqlbase import flush_database_updates
+    >>> flush_database_updates()
 
 A build record is clearly not required here, since both, source and
-binary got copied from PRIMARY archive, however the system is not able
-to identify this situation and cannot locate the the original build
-(See bug #181736.)
+binary got copied from PRIMARY archive, thus the system is able to
+identify this situation and locate the the original build. See the
+bug #181736 report for previous mistakes in this area.
 
     >>> cprov_spr = cprov_src.sourcepackagerelease
     >>> cprov_build = cprov_spr.getBuildByArch(
     ...     hoary_i386, cprov.archive)
-    >>> print cprov_build
+
+    >>> print cprov_build.title
+    i386 build of foo 0.1 in ubuntu hoary RELEASE
+
+    >>> print cprov_build.archive.title
+    Primary Archive for Ubuntu Linux
+
+Another possible situation is when the user wants to rebuild the
+same source published in hoary to another suite, let's say
+breezy-autotest in his PPA.
+
+    >>> cprov_foo_src = cprov.archive.getPublishedSources(name='foo')[0]
+
+    >>> breezy_autotest = ubuntu['breezy-autotest']
+    >>> bt_cprov_src = cprov_foo_src.copyTo(
+    ...    breezy_autotest, pocket_release, cprov.archive)
+    >>> bt_cprov_src.status = PackagePublishingStatus.PUBLISHED
+    >>> flush_database_updates()
+
+When only the source is copied we do want to rebuild, so it's correct
+when the build lookup returns None.
+
+    >>> bt_cprov_spr = bt_cprov_src.sourcepackagerelease
+    >>> breezy_autotest_i386 = breezy_autotest['i386']
+    >>> bt_cprov_build = bt_cprov_spr.getBuildByArch(
+    ...     breezy_autotest_i386, cprov.archive)
+    >>> print bt_cprov_build
     None
 
-Now we can also copy the source and its binary from Celso's PPA to
-Mark Shuttleworth's PPA.
+It's even possible to copy source and binaries from hoary to warty
+suite in Celso's PPA.
 
-    >>> from canonical.database.sqlbase import flush_database_updates
-    >>> cprov_src.status = PackagePublishingStatus.PUBLISHED
-    >>> cprov_bin.status = PackagePublishingStatus.PUBLISHED
+    >>> cprov_foo_src = cprov.archive.getPublishedSources(
+    ...    name='foo', distroseries=hoary)[0]
+    >>> cprov_foo_bin = cprov_foo_src.getPublishedBinaries()[0]
+
+    >>> warty = ubuntu['warty']
+    >>> warty_cprov_src = cprov_foo_src.copyTo(
+    ...    warty, pocket_release, cprov.archive)
+    >>> warty_cprov_bin = cprov_foo_bin.copyTo(
+    ...    warty, pocket_release, cprov.archive)
+    >>> warty_cprov_src.status = PackagePublishingStatus.PUBLISHED
+    >>> warty_cprov_bin.status = PackagePublishingStatus.PUBLISHED
     >>> flush_database_updates()
-    >>> cprov_foo_src = cprov.archive.getPublishedSources(name='foo')[0]
+
+In this case the system is also able to locate the original build by
+following the build path of the corresponding published binaries.
+
+    >>> warty_cprov_spr = warty_cprov_src.sourcepackagerelease
+    >>> warty_i386 = warty['i386']
+    >>> warty_cprov_build = warty_cprov_spr.getBuildByArch(
+    ...     warty_i386, cprov.archive)
+
+    >>> print warty_cprov_build.title
+    i386 build of foo 0.1 in ubuntu hoary RELEASE
+
+    >>> print warty_cprov_build.archive.title
+    Primary Archive for Ubuntu Linux
+
+Now we can also copy the hoary source and its binary from Celso's PPA
+to Mark Shuttleworth's PPA.
+
+    >>> cprov_foo_src = cprov.archive.getPublishedSources(
+    ...    name='foo', distroseries=hoary)[0]
     >>> cprov_foo_bin = cprov_foo_src.getPublishedBinaries()[0]
 
     >>> sabdfl = getUtility(IPersonSet).getByName('sabdfl')
     >>> sabdfl_src = cprov_foo_src.copyTo(
     ...    hoary, pocket_release, sabdfl.archive)
-
     >>> sabdfl_bin = cprov_foo_bin.copyTo(
     ...    hoary, pocket_release, sabdfl.archive)
+    >>> sabdfl_src.status = PackagePublishingStatus.PUBLISHED
+    >>> sabdfl_bin.status = PackagePublishingStatus.PUBLISHED
+    >>> flush_database_updates()
 
-The same problem happens here, the system is not able to locate the
-original build.
+The published binaries build path is followed again to find the
+original build that happened in the primary archive.
 
     >>> sabdfl_spr = sabdfl_src.sourcepackagerelease
     >>> sabdfl_build = sabdfl_spr.getBuildByArch(
     ...     hoary_i386, sabdfl.archive)
-    >>> print sabdfl_build
-    None
 
+    >>> print sabdfl_build.title
+    i386 build of foo 0.1 in ubuntu hoary RELEASE
 
-== Sources with architecture-independent and specific binaries ==
-
-Even if the source package builds a architecture-independent package,
-no Build record will be returned by getBuildByArch() if arch-specific
-binary packages were not built (see bug #65712 for further
-information).
-
-Let's create and publish a source which produces an
-architecture-independent binary.
-
-    >>> foo_pub_src = test_publisher.getPubSource(
-    ...     version="1.0", architecturehintlist='all',
-    ...     distroseries=hoary, archive=ubuntu.main_archive,
-    ...     status=PackagePublishingStatus.PUBLISHED)
-
-    >>> foo_pub_binaries = test_publisher.getPubBinaries(
-    ...     distroseries=hoary, pub_source=foo_pub_src,
-    ...     status=PackagePublishingStatus.PUBLISHED)
-
-The build record for foo in hoary/i386 was created.
-
-    >>> test_build_i386 = foo_pub_src.sourcepackagerelease.getBuildByArch(
-    ...     hoary_i386, ubuntu.main_archive)
-    >>> print test_build_i386.title
-    i386 build of foo 1.0 in ubuntu hoary RELEASE
-
-And despite of having a architecture-independent binary published in
-hoary hppa, the build lookup n this architecture return None, i.e, the
-build doesn't exist.
-
-    >>> for pub in foo_pub_binaries:
-    ...     print pub.displayname
-    foo-bin 1.0 in hoary i386
-    foo-bin 1.0 in hoary hppa
-
-    >>> test_build_hppa = foo_pub_src.sourcepackagerelease.getBuildByArch(
-    ...     hoary_hppa, ubuntu.main_archive)
-    >>> print test_build_hppa
-    None
+    >>> print sabdfl_build.archive.title
+    Primary Archive for Ubuntu Linux
 

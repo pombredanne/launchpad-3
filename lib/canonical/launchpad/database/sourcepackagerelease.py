@@ -269,6 +269,41 @@ class SourcePackageRelease(SQLBase):
 
     def getBuildByArch(self, distroarchseries, archive):
         """See ISourcePackageRelease."""
+        # First we try to follow any possibly published architecture-specific
+        # binaries for this source in the given (distroarchseries, archive)
+        # location.
+        clauseTables = [
+            'BinaryPackagePublishingHistory', 'BinaryPackageRelease']
+
+        query = """
+            BinaryPackageRelease.build = Build.id AND
+            BinaryPackagePublishingHistory.binarypackagerelease =
+                BinaryPackageRelease.id AND
+            BinaryPackageRelease.architecturespecific = true AND
+            Build.sourcepackagerelease = %s AND
+            BinaryPackagePublishingHistory.distroarchseries = %s AND
+            BinaryPackagePublishingHistory.archive = %s
+        """ % sqlvalues(self, distroarchseries, archive)
+
+        build_from_published_binaries = Build.selectOne(
+            query, clauseTables=clauseTables)
+
+        # If there was published binary we can use its original build.
+        # This case covers the situations when both, source and binaries
+        # got copied from other location.
+        if build_from_published_binaries is not None:
+            return build_from_published_binaries
+
+        # If there was no published binary we have to try to find a suitable
+        # build in all possible location across the distroseries inheritance
+        # tree.
+        queries = ["Build.sourcepackagerelease = %s" % sqlvalues(self)]
+
+        # Find out all the possible parent DistroArchSeries
+        # a build could be issued (then inherited).
+        parent_architectures = []
+        archtag = distroarchseries.architecturetag
+
         # XXX cprov 20070720: this code belongs to IDistroSeries content
         # class as 'parent_series' property. Other parts of the system
         # can benefit of this, like SP.packagings, for instance.
@@ -278,12 +313,6 @@ class SourcePackageRelease(SQLBase):
             parent_series.append(candidate)
             candidate = candidate.parent_series
 
-        queries = ["Build.sourcepackagerelease = %s" % sqlvalues(self)]
-
-        # Find out all the possible parent DistroArchSeries
-        # a build could be issued (then inherited).
-        parent_architectures = []
-        archtag = distroarchseries.architecturetag
         for series in parent_series:
             try:
                 candidate = series[archtag]
@@ -291,6 +320,7 @@ class SourcePackageRelease(SQLBase):
                 pass
             else:
                 parent_architectures.append(candidate)
+        # end-of-XXX.
 
         architectures = [
             architecture.id for architecture in parent_architectures]
@@ -316,19 +346,10 @@ class SourcePackageRelease(SQLBase):
         queries.append(
             "Build.archive IN %s" % sqlvalues(archives))
 
-        # Query ONE only allowed build record for this sourcerelease
+        # Query only the last build record for this sourcerelease
         # across all possible locations.
         query = " AND ".join(queries)
 
-        # XXX cprov 20070924: the SelectFirst hack is only required because
-        # sampledata has duplicated (broken) build records. Once we are in
-        # position to clean up the sampledata and install a proper constraint
-        # on Build table:
-        # UNIQUE(distribution, architecturetag, sourcepackagerelease, archive)
-        # we should use SelectOne (and, obviously, remove the orderBy).
-        # One detail that might influence in this strategy is
-        # automatic-rebuild when we may have to consider rebuild_index in the
-        # constraint.  See more information on bug #148195.
         return Build.selectFirst(query, orderBy=['-datecreated'])
 
     def override(self, component=None, section=None, urgency=None):
