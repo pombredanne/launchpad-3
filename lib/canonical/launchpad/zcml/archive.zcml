@@ -15,7 +15,7 @@
       />
     <require
       permission="launchpad.Admin"
-      set_attributes="distribution purpose enabled authorized_size"
+      set_attributes="distribution purpose enabled authorized_size private"
       />
   </content>
 
