@@ -781,7 +781,7 @@ class DebBugs(ExternalBugTracker):
         will be raised.
         """
         if self.debbugs_db is None:
-            raise BugNotFound(bug_id)
+            raise BugNotFound(debian_bug.id)
 
         # If we can't find the log in the main database we try the
         # archive.
@@ -872,8 +872,8 @@ class DebBugs(ExternalBugTracker):
                 imported_comments.append(bug_message)
 
         if len(imported_comments) > 0:
-            log.info("Imported %i comments for remote bug %s on %s. "
-                "(Launchpad bug %s)" %
+            log.info("Imported %i comments for remote bug %s on %s into "
+                "Launchpad bug %s." %
                 (len(imported_comments), bug_watch.remotebug, self.baseurl,
                  bug_watch.bug.id))
 

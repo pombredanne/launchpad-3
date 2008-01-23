@@ -217,7 +217,6 @@ class Database:
                 stdout=subprocess.PIPE, stdin=subprocess.PIPE,
                 stderr=subprocess.PIPE)
             logreader = process.stdout
-            err = process.stderr
             comment = cStringIO.StringIO()
             for line in logreader:
                 if line == '.\n':
@@ -234,6 +233,7 @@ class Database:
                     'Unterminated comment from debbugs-log.pl')
 
             process.wait()
+            err = process.stderr
             errors = "\n".join(err.readlines())
             if process.returncode != 0:
                 raise LogParseFailed(errors)
