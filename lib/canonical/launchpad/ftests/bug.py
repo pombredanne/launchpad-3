@@ -42,7 +42,10 @@ def print_subscribers(bug_page, subscriber_portlet_index):
     else:
         for li in portlet.fetch('li'):
             if li.a:
-                print li.a.renderContents()
+                sub_display = li.a.renderContents()
+                if li.a.has_key('title'):
+                    sub_display += (' (%s)' % li.a['title'])
+                print sub_display
 
 
 def print_remote_bugtasks(content):

@@ -94,6 +94,7 @@ import pytz
 import urllib
 
 from zope.app.form.browser import SelectWidget, TextAreaWidget
+from zope.app.form.browser.itemswidgets import RadioWidget
 from zope.app.session.interfaces import ISession
 from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 from zope.event import notify
@@ -1422,6 +1423,10 @@ class ReportedBugTaskSearchListingView(BugTaskSearchListingView):
         """Should the reporter widget be shown on the advanced search page?"""
         return False
 
+    def shouldShowTagsCombinatorWidget(self):
+        """Should the tags combinator widget show on the search page?"""
+        return False
+
 
 class BugContactPackageBugsSearchListingView(BugTaskSearchListingView):
     """Bugs reported on packages for a bug contact."""
@@ -1672,6 +1677,10 @@ class PersonAssignedBugTaskSearchListingView(BugTaskSearchListingView):
     def shouldShowAssignedToTeamPortlet(self):
         """Should the team assigned bugs portlet be shown?"""
         return True
+
+    def shouldShowTagsCombinatorWidget(self):
+        """Should the tags combinator widget show on the search page?"""
+        return False
 
     def getSearchPageHeading(self):
         """The header for the search page."""
@@ -2642,7 +2651,8 @@ class PersonEditHomePageView(BasePersonEditView):
 
 class PersonEditView(BasePersonEditView):
 
-    field_names = ['displayname', 'name', 'hide_email_addresses', 'timezone']
+    field_names = ['displayname', 'name', 'hide_email_addresses',
+        'verbose_bugnotifications', 'timezone']
     custom_widget('timezone', SelectWidget, size=15)
 
 
@@ -2811,6 +2821,9 @@ class PersonEditEmailsView(LaunchpadFormView):
         If a team doesn't have a mailing list, or the mailing list
         isn't usable, it's not included.
         """
+        # Only beta testers are allowed to subscribe to mailing lists.
+        if not self.isBetaUser:
+            return form.FormFields()
         mailing_list_set = getUtility(IMailingListSet)
         fields = []
         terms = [SimpleTerm("Preferred address"),
@@ -2826,7 +2839,7 @@ class PersonEditEmailsView(LaunchpadFormView):
                                title=team.name,
                                source=SimpleVocabulary(terms), default=value)
                 fields.append(field)
-        return form.fields(*fields)
+        return form.FormFields(*fields)
 
     @property
     def mailing_list_widgets(self):

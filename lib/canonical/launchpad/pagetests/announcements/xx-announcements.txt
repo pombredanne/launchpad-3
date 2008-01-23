@@ -8,6 +8,9 @@ news feed.
     >>> from BeautifulSoup import BeautifulStoneSoup as BSS
     >>> from BeautifulSoup import BeautifulSoup
     >>> from BeautifulSoup import SoupStrainer
+    >>> from canonical.launchpad.ftests.feeds_helper import (
+    ...     parse_ids, parse_links)
+
     >>> NOANNOUNCE = 'no announcements for this project'
     >>> SHOWLNK = 'Show announcements'
     >>> def latest_news(content):
@@ -28,12 +31,6 @@ news feed.
     ...     if announcements is None:
     ...         return ''
     ...     return extract_text(announcements)
-    >>> def announcement_ids(contents):
-    ...     """Return all id tags in the announcement listings."""
-    ...     strainer = SoupStrainer('id')
-    ...     tags = [tag for tag in BSS(contents,
-    ...                                parseOnlyThese=strainer)]
-    ...     return tags
 
 == Making an announcement ==
 
@@ -572,7 +569,15 @@ The feeds are published even when there are no announcements.
     >>> 'NetApplet Announcements' in nopriv_browser.contents
     True
 
-    >>> for id_ in announcement_ids(nopriv_browser.contents):
+The "self" link should point to the original URL, in the feeds.launchpad.dev domain.
+
+    >>> strainer = SoupStrainer('link', rel='self')
+    >>> links = parse_links(nopriv_browser.contents, rel='self')
+    >>> for link in links:
+    ...     print link
+    <link rel="self" href="http://feeds.launchpad.dev/netapplet/announcements.atom" />
+
+    >>> for id_ in parse_ids(nopriv_browser.contents):
     ...     print extract_text(id_)
     tag:launchpad.net,2005-03-10:/netapplet/+announcements
 
@@ -590,7 +595,7 @@ Retracted items do not show up either.
     ...     'http://feeds.launchpad.dev/guadalinex/announcements.atom')
     >>> 'Kubuntu announcement headline' in nopriv_browser.contents
     True
-    >>> for id_ in announcement_ids(nopriv_browser.contents):
+    >>> for id_ in parse_ids(nopriv_browser.contents):
     ...     print extract_text(id_)
     tag:launchpad.net,2006-10-16:/guadalinex/+announcements
     tag:launchpad.net,...:/+announcement/28
@@ -618,12 +623,18 @@ products.
     True
     >>> 'Derby announcement headline' in nopriv_browser.contents
     True
-    >>> for id_ in announcement_ids(nopriv_browser.contents):
+    >>> for id_ in parse_ids(nopriv_browser.contents):
     ...     print extract_text(id_)
     tag:launchpad.net,2004-09-24:/apache/+announcements
     tag:launchpad.net,...:/+announcement/26
     tag:launchpad.net,...:/+announcement/24
     tag:launchpad.net,...:/+announcement/25
+
+    >>> strainer = SoupStrainer('link', rel='self')
+    >>> links = parse_links(nopriv_browser.contents, rel='self')
+    >>> for link in links:
+    ...     print link
+    <link rel="self" href="http://feeds.launchpad.dev/apache/announcements.atom" />
 
 Finally, there is a feed for all announcements across all projects
 hosted in Launchpad:

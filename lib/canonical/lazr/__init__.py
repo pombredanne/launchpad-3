@@ -8,3 +8,5 @@ to a dedicated LAZR branch and a sourcecode link added.
 """
 
 from canonical.lazr.enum import *
+from canonical.lazr.folder import ExportedFolder
+

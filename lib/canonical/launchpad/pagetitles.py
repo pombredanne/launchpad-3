@@ -118,6 +118,8 @@ archive_edit = ContextTitle('Edit %s')
 
 archive_index = ContextTitle('%s')
 
+archive_delete_packages = ContextTitle('Delete packages from %s')
+
 bazaar_all_branches = 'All branches in the Launchpad Bazaar'
 
 bazaar_index = 'Launchpad Code'
@@ -995,6 +997,8 @@ productrelease_index = ContextDisplayName('%s in Launchpad')
 products_index = 'Projects registered in Launchpad'
 
 productseries_export = ContextTitle('Download translations for "%s"')
+
+productseries_linkbranch = ContextTitle('Link an existing branch to %s')
 
 productseries_index = ContextTitle('Overview of %s')
 

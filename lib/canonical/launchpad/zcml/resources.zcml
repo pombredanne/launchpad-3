@@ -28,7 +28,10 @@
     <resource name="arrowDown" file="../images/arrowDown.png" />
     <resource name="arrowTop" file="../images/arrowTop.png" />
     <resource name="arrowUp" file="../images/arrowUp.png" />
-    <resource name="arrowRight" file="../images/arrowRight.gif" />
+    <resource name="arrowLeft" file="../images/arrowLeft.png" />
+    <resource name="arrowRight" file="../images/arrowRight.png" />
+    <resource name="arrowStart" file="../images/arrowStart.png" />
+    <resource name="arrowEnd" file="../images/arrowEnd.png" />
     <resource name="build-building" file="../images/build-building.gif" />
     <resource name="build-chrootwait" file="../images/build-chrootwait.png" />
     <resource name="build-depwait" file="../images/build-depwait.png" />

@@ -293,15 +293,14 @@ list (since the archiver will display an informative message to that effect).
     >>> browser.open('http://launchpad.dev/~landscape-developers')
     >>> print extract_text(
     ...     find_tag_by_id(browser.contents, 'mailing-list-archive'))
-    http://lists.launchpad.dev/archives/landscape-developers
+    http://lists.launchpad.dev/landscape-developers
 
 The archive link is clickable, though we won't click it because Mailman isn't
 running.
 
-    >>> browser.getLink(
-    ...     'http://lists.launchpad.dev/archives/landscape-developers')
-    <Link text='http://lists.launchpad.dev/archives/landscape-developers'
-          url='http://lists.launchpad.dev/archives/landscape-developers'>
+    >>> browser.getLink('http://lists.launchpad.dev/landscape-developers')
+    <Link text='http://lists.launchpad.dev/landscape-developers'
+          url='http://lists.launchpad.dev/landscape-developers'>
 
 When the mailing list is constructed and made active, it can be used as
 the team's contact address.
@@ -506,7 +505,7 @@ are never deleted.
     >>> browser.open('http://launchpad.dev/~landscape-developers')
     >>> print extract_text(
     ...     find_tag_by_id(browser.contents, 'mailing-list-archive'))
-    http://lists.launchpad.dev/archives/landscape-developers
+    http://lists.launchpad.dev/landscape-developers
 
 An inactive mailing list can be reactivated.
 
@@ -542,7 +541,7 @@ Of course, the reactivated list still has a link to its archive.
     >>> browser.open('http://launchpad.dev/~landscape-developers')
     >>> print extract_text(
     ...     find_tag_by_id(browser.contents, 'mailing-list-archive'))
-    http://lists.launchpad.dev/archives/landscape-developers
+    http://lists.launchpad.dev/landscape-developers
 
 
 == Beta test availability ==

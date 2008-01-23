@@ -71,10 +71,10 @@ class BugWatchErrorType(DBEnumeratedType):
         """)
 
     UNSUPPORTED_BUG_TRACKER = DBItem(7, """
-        Unsupported Bugtracker Version
+        Unsupported Bugtracker
 
-        The remote server is using a version of its bug tracker software
-        which Launchpad does not currently support.
+        The remote server is using bug tracker software which Launchpad
+        does not currently support.
         """)
 
 

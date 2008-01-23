@@ -170,6 +170,8 @@ We can search for bugs with some specific tag.
     ...     print bugtask.bug.id, bugtask.bug.tags
     1 [u'sco', u'svg']
 
+We can also search for bugs with any of the tags in a supplied list.
+
     >>> from canonical.launchpad.searchbuilder import any
     >>> crash_dataloss_tasks = ubuntu.searchTasks(BugTaskSearchParams(
     ...     tag=any(u'crash', u'dataloss'), orderby='id', user=None))
@@ -178,6 +180,17 @@ We can search for bugs with some specific tag.
     2 [u'dataloss', u'pebcak']
     9 [u'crash']
     10 [u'crash']
+
+And for bugs with all of the tags in a supplied list.
+
+    >>> from canonical.launchpad.searchbuilder import all
+    >>> getUtility(IBugSet).get(10).tags = [u'crash', u'burn']
+    >>> crash_burn_tasks = ubuntu.searchTasks(BugTaskSearchParams(
+    ...     tag=all(u'crash', u'burn'), orderby='id', user=None))
+    >>> for bugtask in crash_burn_tasks:
+    ...     print bugtask.bug.id, bugtask.bug.tags
+    10 [u'burn', u'crash']
+    >>> getUtility(IBugSet).get(10).tags = [u'crash']
 
 Tags are also searched when searching for some text in general. For
 example, if we search for 'some-tag', we find nothing at the moment:

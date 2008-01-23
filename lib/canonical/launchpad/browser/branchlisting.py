@@ -23,6 +23,9 @@ from canonical.lp import decorates
 
 from canonical.cachedproperty import cachedproperty
 from canonical.launchpad.browser.branch import BranchBadges
+from canonical.launchpad.browser.feeds import (
+    FeedsMixin, PersonBranchesFeedLink, ProductBranchesFeedLink,
+    ProjectBranchesFeedLink)
 from canonical.launchpad.interfaces import (
     BranchLifecycleStatus, BranchLifecycleStatusFilter,
     BranchListingSort,
@@ -149,7 +152,7 @@ class BranchListingBatchNavigator(TableBatchNavigator):
             return "listing sortable"
 
 
-class BranchListingView(LaunchpadFormView):
+class BranchListingView(LaunchpadFormView, FeedsMixin):
     """A base class for views of branch listings."""
     schema = IBranchListingFilter
     field_names = ['lifecycle', 'sort_by', 'hide_dormant']
@@ -162,6 +165,15 @@ class BranchListingView(LaunchpadFormView):
     # no_sort_by is a sequence of items from the BranchListingSort
     # enumeration to not offer in the sort_by widget.
     no_sort_by = ()
+
+    # Set the feed types to be only the various branches feed links.  The
+    # `feed_links` property will screen this list and produce only the feeds
+    # appropriate to the context.
+    feed_types = (
+        ProjectBranchesFeedLink,
+        ProductBranchesFeedLink,
+        PersonBranchesFeedLink,
+        )
 
     @property
     def heading(self):

@@ -1,4 +1,4 @@
-# Copyright 2007 Canonical Ltd.  All rights reserved.
+# Copyright 2007-2008 Canonical Ltd.  All rights reserved.
 
 """XMLRPC runner for querying Launchpad."""
 
@@ -285,7 +285,11 @@ class XMLRPCRunner(Runner):
                              ' no password ')
                 # Additional hard coded list defaults.
                 # - Personalize regular delivery so that we can VERP these.
+                # - Turn off RFC 2369 headers; we'll do them differently
+                # - enable $-string substitutions in headers/footers
                 mlist.personalize = 1
+                mlist.include_rfc2369_headers = False
+                mlist.use_dollar_strings = True
                 mlist.Save()
             # We have to use a bare except here because of the legacy string
             # exceptions that Mailman can raise.
