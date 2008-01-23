@@ -15,10 +15,11 @@ __all__ = [
 
 
 import simplejson
+import urllib
 
 from zope.interface import implements
 from zope.publisher.interfaces import NotFound
-from zope.schema.interfaces import IField
+from zope.schema.interfaces import IField, IObject
 
 from canonical.launchpad.webapp import canonical_url
 from canonical.lazr.interfaces import (
@@ -89,7 +90,10 @@ class EntryResource(ReadOnlyResource):
     @property
     def path(self):
         """See `IEntryResource`."""
-        return self.context.fragment()
+        return urllib.quote(self.context.fragment())
+
+    def getRelatedEntryResource(self, name):
+        return EntryResource(self.context.lookupEntry(name), self.request)
 
     def toDataForJSON(self):
         """Turn the object into a simple data structure.
@@ -98,11 +102,18 @@ class EntryResource(ReadOnlyResource):
         the resource interface.
         """
         dict = {}
-        dict['self_resource'] = canonical_url(self, request=self.request)
+        dict['self_link'] = canonical_url(self, request=self.request)
         schema = self.context.schema
         for name in schema.names():
-            if IField.providedBy(schema.get(name)):
+            element = schema.get(name)
+            if IObject.providedBy(element):
+                related_resource = self.getRelatedEntryResource(name)
+                key = name + '_link'
+                dict[key] = canonical_url(related_resource,
+                                          request=self.request)
+            elif IField.providedBy(element):
                 dict[name] = getattr(self.context, name)
+
         return dict
 
     def do_GET(self):

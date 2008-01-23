@@ -16,32 +16,58 @@ application, with no special knowledge of web services.
     >>> __metaclass__ = type
 
     >>> from zope.interface import Interface
-    >>> from zope.schema import Int, TextLine
-    >>> class IRecipe(Interface):
-    ...     name = Int(title=u"Unique ID", required=True)
+    >>> from zope.schema import Int, TextLine, Object
+
+    >>> class IPerson(Interface):
     ...     name = TextLine(title=u"Name", required=True)
 
-Here's the interface for the 'set' object that manages the individual
-recipes:
+    >>> class IRecipe(Interface):
+    ...     id = Int(title=u"Unique ID", required=True)
+    ...     name = TextLine(title=u"Name", required=True)
+    ...     authorName = TextLine(title=u"The name of the recipe's author")
+
+Here's the interface for the 'set' objects that manage the recipes and
+people. The inconsistent naming is intentional.
 
     >>> class IRecipeSet(Interface):
     ...     def getAll(self):
     ...         "Get all recipes."
+    ...
+    ...     def get(self, id):
+    ...         "Retrieve a single recipe by ID."
 
-Here's a simple implementation of Recipe.
+    >>> class IPersonSet(Interface):
+    ...     def getAllPeople(self):
+    ...         "Get all people."
+    ...
+    ...     def getPerson(self, name):
+    ...         "Retrieve a single person by name."
+
+
+Here are simple implementations of Person and Recipe.
 
     >>> from zope.interface import implements
+
+    >>> class Person:
+    ...     implements(IPerson)
+    ...     def __init__(self, name):
+    ...         self.name = name
+
     >>> class Recipe:
     ...     implements(IRecipe)
-    ...     def __init__(self, id, name):
+    ...     def __init__(self, id, name, author):
     ...         self.id = id
     ...         self.name = name
+    ...         self.authorName = author.name
 
 Here are the "model objects" themselves:
 
-    >>> R1 = Recipe(1, "Green eggs and ham")
-    >>> R2 = Recipe(7, "Steak au poivre")
-    >>> R3 = Recipe(10, "Raw celery")
+    >>> P1 = Person("Jacob Berendes")
+    >>> P2 = Person("Julia Child")
+
+    >>> R1 = Recipe(1, "Green eggs and ham", P1)
+    >>> R2 = Recipe(7, "Steak au poivre", P2)
+    >>> R3 = Recipe(10, "Raw celery", P1)
 
 Here's a simple RecipeSet with a predefined list of recipes.
 
@@ -59,6 +85,22 @@ Here's a simple RecipeSet with a predefined list of recipes.
     ...             return match[0]
     ...         return None
 
+Here's a simple PersonSet with predefined people.
+
+    >>> class PersonSet:
+    ...     implements(IPersonSet)
+    ...     def __init__(self):
+    ...         self.people = [P1, P2]
+    ...
+    ...     def getAllPeople(self):
+    ...         return self.people
+    ...
+    ...     def getPerson(self, name):
+    ...         match = [p for p in self.people if p.name == name]
+    ...         if len(match) > 0:
+    ...             return match[0]
+    ...         return None
+
 
 == Defining the resources ==
 
@@ -67,25 +109,26 @@ exposed through a specific resource. Right now it's just a marker
 interface, but it's expected to define a number of data fields: the
 same kind of fields defined by a model interface like IRecipe.
 
-If we wanted to expose our IRecipe model through the web service
-exactly as it;s defined, we could simply define a class that includes
-both interfaces.
+There's not much to our IPerson model, and we can expose it through
+the web service exactly as it's defined, by defining a class that
+includes both interfaces:
 
     >>> from canonical.lazr.interfaces import IEntry
-    >>> class IRecipeEntry1(IEntry, IRecipe):
-    ...     """An IRecipe exposed as an entry."""
+    >>> class IPersonEntry(IEntry, IPerson):
+    ...     """An IPerson exposed as an entry."""
 
 But most of the time, we don't want to expose our models directly
 through the web service. There will be fields we don't want to expose,
 synthetic fields we do want to expose, fields we want to expose under
 a different name, and so on. In that case, our IEntry subclass will
 define the interface we _do_ want to expose through the web
-service. Here, we're exposing an IEntry that exposes the underlying
-recipe's name but not its ID:
+service. Here, we're exposing an IRecipe that exposes the underlying
+Recipe's name but not its ID.
 
     >>> class IRecipeEntry(IEntry):
-    ...     """The part of a recipe that we expose through the web service."""
+    ...     "The part of a recipe that we expose through the web service."
     ...     name = IRecipe.get('name')
+    ...     author = Object(schema=IPerson)
 
 Here's the implementation of IRecipeEntry: a simple decorator on the
 original model object. It subclasses Entry, a simple base class
@@ -94,6 +137,23 @@ that defines a constructor.
     >>> from zope.component import adapts
     >>> from canonical.lp import decorates
     >>> from canonical.lazr.rest import Entry
+
+    >>> class PersonEntry(Entry):
+    ...     """A person, as exposed through the web service."""
+    ...     adapts(IPerson)
+    ...     decorates(IPersonEntry)
+    ...     schema = IPersonEntry
+    ...
+    ...     parent_collection_name = 'people'
+    ...
+    ...     def fragment(self):
+    ...         """Use the person's name as its URI fragment."""
+    ...         return self.context.name
+
+The "schema" attribute points to the interface class that defines the
+attributes exposed through the web service. Here, "schema" is
+IPersonEntry, which exposes only 'name'.
+
     >>> class RecipeEntry(Entry):
     ...     """A recipe, as exposed through the web service."""
     ...     adapts(IRecipe)
@@ -105,25 +165,29 @@ that defines a constructor.
     ...     def fragment(self):
     ...         """Use the recipe's ID as its URI fragment."""
     ...         return str(self.context.id)
+    ...
+    ...     def lookupEntry(self, name):
+    ...         """Look up an associated entry."""
+    ...         if name == 'author':
+    ...             return PersonSet().getPerson(self.context.authorName)
 
+Here, "schema" is IRecipeEntry, which exposes both "name" and "author".
 
-The "schema" attribute points to the interface class that defines the
-attributes exposed through the web service. In this case, it's
-IRecipeEntry, which exposes only 'name'.
-
-We need to register RecipeEntry as an adapter from IRecipe to
-IRecipeEntry. In ZCML it would look like this.
+We need to register these entries as an adapter from IRecipe/IPerson
+to IRecipeEntry/IPersonEntry. In ZCML a registration would look like
+this.
 
     <adapter
-        for="canonical.launchpad.interfaces.IRecipe"
-        provides="canonical.launchpad.interfaces.IRecipeEntry"
-        factory="canonical.launchpad.rest.RecipeEntry"
+        for="my.app.interfaces.IPerson"
+        provides="my.app.interfaces.IPersonEntry"
+        factory="my.app.rest.PersonEntry"
         />
 
 Since we're in the middle of a Python test we need to do the equivalent
 in Python code:
 
     >>> from zope.component import provideAdapter
+    >>> provideAdapter(PersonEntry, [IPerson], IPersonEntry)
     >>> provideAdapter(RecipeEntry, [IRecipe], IRecipeEntry)
 
 LAZR also defines an interface and a base class for collections of
@@ -132,6 +196,21 @@ web service. A collection must define a method called find(), which
 returns the model objects in the collection.
 
     >>> from canonical.lazr.rest import Collection
+    >>> from canonical.lazr.interfaces import ICollection
+
+    >>> class PersonCollection(Collection):
+    ...     """A collection of people, as exposed through the web service."""
+    ...
+    ...     def find(self):
+    ...        """Find all the people."""
+    ...        return self.context.getAllPeople()
+    ...
+    ...     def lookupEntry(self, name):
+    ...        """Find a single person by name."""
+    ...        return self.context.getPerson(name)
+
+    >>> provideAdapter(PersonCollection, [IPersonSet], ICollection)
+
     >>> class RecipeCollection(Collection):
     ...     """A collection of recipes, as exposed through the web service."""
     ...
@@ -143,10 +222,9 @@ returns the model objects in the collection.
     ...        """Find a single recipe by ID."""
     ...        return self.context.get(int(id))
 
-    >>> from canonical.lazr.interfaces import ICollection
     >>> provideAdapter(RecipeCollection, [IRecipeSet], ICollection)
 
-As with Entry, Collection is a simple base class that defines a
+Like Entry, Collection is a simple base class that defines a
 constructor.
 
 
@@ -181,7 +259,8 @@ root of the object tree.
     >>> from canonical.launchpad.interfaces import IWebServiceApplication
     >>> class MyServiceRootResource(ServiceRootResource):
     ...    implements(IWebServiceApplication)
-    ...    top_level_collections = { 'recipes' : RecipeSet }
+    ...    top_level_collections = { 'people': PersonSet,
+    ...                              'recipes': RecipeSet }
     ...    rootsite = 'api'
 
 If you call the service root resource, and pass in an HTTP request, it
@@ -224,10 +303,12 @@ in a CollectionResource.
     >>> representation = simplejson.loads(collection())
     >>> len(representation)
     3
-    >>> representation[0]['self_resource']
+    >>> representation[0]['self_link']
     u'http://api.launchpad.dev/recipes/1'
     >>> representation[0]['name']
     u'Green eggs and ham'
+    >>> representation[0]['author_link']
+    u'http://api.launchpad.dev/people/Jacob%20Berendes'
 
 Calling the CollectionResource object makes it process the incoming
 request. Since this is a GET request, calling the resource publishes
@@ -248,8 +329,9 @@ that (for instance) /recipes/10 is mapped to the "Raw celery" Entry.
     u'http://api.launchpad.dev/recipes/10'
 
     >>> simplejson.loads(entry())
-    {u'self_resource': u'http://api.launchpad.dev/recipes/10',
-     u'name': u'Raw celery'}
+    {u'self_link': u'http://api.launchpad.dev/recipes/10',
+     u'name': u'Raw celery',
+     u'author_link': u'http://api.launchpad.dev/people/Jacob%20Berendes'}
 
 If the user tries to traverse to a nonexistent object, the result is a
 NotFound exception:
