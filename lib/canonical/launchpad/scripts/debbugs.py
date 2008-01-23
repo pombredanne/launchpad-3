@@ -233,8 +233,9 @@ class Database:
                 raise LogParseFailed(
                     'Unterminated comment from debbugs-log.pl')
 
+            process.wait()
             errors = "\n".join(err.readlines())
-            if errors:
+            if process.returncode != 0:
                 raise LogParseFailed(errors)
 
         except IOError, e:
