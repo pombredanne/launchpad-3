@@ -67,6 +67,8 @@ A Launchpad administrator, however, can see the controls.
     >>> print admin_browser.getControl(
     ...     name='field.enable_bug_expiration').value
     True
+    >>> print admin_browser.getControl(name='field.official_blueprints').value
+    False
     >>> print admin_browser.getControl(name='field.official_answers').value
     True
 
@@ -77,11 +79,24 @@ distribution Overview page.
     >>> admin_browser.getControl(
     ...     name='field.enable_bug_expiration').value = False
     >>> admin_browser.getControl(name='field.official_malone').value = False
+    >>> admin_browser.getControl(name='field.official_blueprints').value = (
+    ... True)
     >>> admin_browser.getControl(name='field.official_answers').value = False
     >>> admin_browser.getControl('Change').click()
 
     >>> print admin_browser.url
     http://launchpad.dev/ubuntu
+    >>> content = find_main_content(admin_browser.contents)
+    >>> label_cell = content.find('th', text='Uses Launchpad for:')
+    >>> print extract_text(label_cell.findNext())
+    Blueprints
+
+    Print an emdash when distribution uses nothing
+
+    >>> admin_browser.getLink('Change distribution details').click()
+    >>> admin_browser.getControl(name='field.official_blueprints').value = (
+    ... False)
+    >>> admin_browser.getControl('Change').click()
     >>> content = find_main_content(admin_browser.contents)
     >>> label_cell = content.find('th', text='Uses Launchpad for:')
     >>> print extract_text(label_cell.findNext())

@@ -544,6 +544,8 @@ class ILaunchpadUsage(Interface):
     official_rosetta = Bool(
         title=_('Translations for this project are done in Launchpad'),
         required=True)
+    official_anything = Bool (
+        title=_('Uses Launchpad for something'),)
     enable_bug_expiration = Bool(
         title=_('Expire Incomplete bug reports when they become inactive'),
         required=True)
