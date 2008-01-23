@@ -355,6 +355,11 @@ not supported for distributions.
     Traceback (most recent call last):
     ForbiddenAttribute: ('official_codehosting', ...)
 
+Also except blueprints, because the field formerly wasn't available.
+
+    >>> ubuntu.official_blueprints
+    False
+
 While Debian uses none:
 
     >>> debian.official_malone
@@ -362,6 +367,10 @@ While Debian uses none:
     >>> debian.official_rosetta
     False
     >>> debian.official_answers
+    False
+    >>> debian.official_codehosting
+    False
+    >>> debian.official_blueprints
     False
 
 Gentoo only uses Malone
@@ -373,6 +382,33 @@ Gentoo only uses Malone
     >>> print gentoo.official_answers
     False
 
+Non-admins cannot set these values
+
+    >>> debian.official_blueprints = True
+    Traceback (most recent call last):
+    Unauthorized: (..., 'official_blueprints', 'launchpad.Admin')
+    >>> debian.official_malone = True
+    Traceback (most recent call last):
+    Unauthorized: (..., 'official_malone', 'launchpad.Admin')
+    >>> debian.official_rosetta = True
+    Traceback (most recent call last):
+    Unauthorized: (..., 'official_rosetta', 'launchpad.Admin')
+
+    Launchpad admins should be able to set these fields
+
+    >>> from canonical.launchpad.ftests import login
+    >>> login('mark@hbd.com')
+    >>> debian = getUtility(ILaunchpadCelebrities).debian
+    >>> debian.official_blueprints = True
+    >>> debian.official_blueprints
+    True
+    >>> debian.official_malone = True
+    >>> debian.official_malone
+    True
+    >>> debian.official_rosetta = True
+    >>> debian.official_rosetta
+    True
+    >>> flush_database_updates()
 
 === Specification Listings ===
 

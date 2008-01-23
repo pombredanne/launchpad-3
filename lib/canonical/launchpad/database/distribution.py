@@ -136,6 +136,8 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
         joinColumn='distribution', prejoins=["uploader", "component"])
     official_answers = BoolCol(dbName='official_answers', notNull=True,
         default=False)
+    official_blueprints = BoolCol(dbName='official_blueprints', notNull=True,
+        default=False)
 
     @property
     def official_codehosting(self):
