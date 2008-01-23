@@ -202,7 +202,8 @@ class Database:
         bug.description = description.decode(charset)
 
     def load_log(self, bug):
-        log = os.path.join(self.root, 'db-h', self._hash(bug), '%d.log' % bug.id)
+        log = os.path.join(self.root, self.subdir, self._hash(bug),
+            '%d.log' % bug.id)
         comments = []
 
         # We set the perl path manually so that debbugs-log.pl can

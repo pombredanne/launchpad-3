@@ -135,6 +135,13 @@ creating.
     ...     file = StringIO(contents),
     ...     contentType = 'application/x-po')
 
+Get some dates.
+
+    >>> UTC = pytz.timezone('UTC')
+    >>> d2000_01_01 = datetime.datetime(year=2000, month=1, day=1, tzinfo=UTC)
+    >>> d2000_01_02 = datetime.datetime(year=2000, month=1, day=2, tzinfo=UTC)
+    >>> d2000_01_03 = datetime.datetime(year=2000, month=1, day=3, tzinfo=UTC)
+
 Create a PO template and put a single message set in it.
 
     >>> pot_header = 'Content-Type: text/plain; charset=UTF-8\n'
@@ -146,12 +153,10 @@ Create a PO template and put a single message set in it.
     >>> potmsgset = template.createMessageSetFromText(u'blah', None)
     >>> potmsgset.sequence = 1
 
-Get some dates.
+We set the template last update date to the oldest date we are going to
+play with, so it doesn't affect translations export.
 
-    >>> UTC = pytz.timezone('UTC')
-    >>> d2000_01_01 = datetime.datetime(year=2000, month=1, day=1, tzinfo=UTC)
-    >>> d2000_01_02 = datetime.datetime(year=2000, month=1, day=2, tzinfo=UTC)
-    >>> d2000_01_03 = datetime.datetime(year=2000, month=1, day=3, tzinfo=UTC)
+    >>> template.date_last_updated = d2000_01_01
 
 Create a Spanish PO file, with an active translation submission created
 on 2000/01/01.
@@ -314,6 +319,49 @@ date after the last generated language pack.
 
     >>> examine_tarfile(tarfile)
     |     0 | rosetta-grumpy/
+    |     0 | rosetta-grumpy/cy/
+    |     0 | rosetta-grumpy/cy/LC_MESSAGES/
+    |    21 | rosetta-grumpy/cy/LC_MESSAGES/test.po
+    |     1 | rosetta-grumpy/timestamp.txt
+    |     1 | rosetta-grumpy/mapping.txt
+
+There is another situation where a translation file is exported again
+as part of a language pack update, even without being changed.  It is
+re-exported if its template has been changed since the last language
+pack was produced.
+
+The latest template change is noted in IPOTemplate.date_last_updated.
+An update to the template causes that field to be updated, so that the
+next export will include all its translations as well.
+
+    >>> template.date_last_updated = datetime.datetime.now(UTC)
+
+    # Save changes.
+    >>> transaction.commit()
+
+We export a language pack with changes relative to a base language
+pack that was exported on 2000-01-03:
+
+    >>> series.language_pack_base.date_exported = d2000_01_03
+    >>> flush_database_caches()
+    >>> language_pack = export_language_pack(
+    ...     distribution_name='ubuntu',
+    ...     series_name='grumpy',
+    ...     component=None,
+    ...     force_utf8=True,
+    ...     output_file=None,
+    ...     logger=logger)
+    >>> transaction.commit()
+
+The Spanish translation has not changed since 2000-01-03, but the
+template has.  That's why we get both translations:
+
+    >>> tarfile = string_to_tarfile(language_pack.file.read())
+    >>> examine_tarfile(tarfile)
+    |     0 | rosetta-grumpy/
+    |     0 | rosetta-grumpy/es/
+    |     0 | rosetta-grumpy/es/LC_MESSAGES/
+    |    21 | rosetta-grumpy/es/LC_MESSAGES/test.po
     |     0 | rosetta-grumpy/cy/
     |     0 | rosetta-grumpy/cy/LC_MESSAGES/
     |    21 | rosetta-grumpy/cy/LC_MESSAGES/test.po
