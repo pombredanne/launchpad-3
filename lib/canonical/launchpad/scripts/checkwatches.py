@@ -11,7 +11,7 @@ import socket
 from zope.component import getUtility
 
 from canonical.database.constants import UTC_NOW
-from canonical.database.sqlbase import sqlvalues
+from canonical.database.sqlbase import commit
 from canonical.launchpad.components import externalbugtracker
 from canonical.launchpad.interfaces import (
     ILaunchpadCelebrities, IBugTrackerSet)
@@ -76,7 +76,15 @@ class BugWatchUpdater(object):
                         "Skipping updating Ubuntu Bugzilla watches.")
                 else:
                     self.updateBugTracker(bug_tracker)
-                self.txn.commit()
+
+                # XXX 2008-01-22 gmb:
+                #     We should be using self.txn.commit() here, however
+                #     there's a known issue with ztm.commit() in that it
+                #     only works once per Zopeless script run (bug
+                #     3989). Using commit() directly is the best
+                #     available workaround, but we need to change this
+                #     once the bug is resolved.
+                commit()
             except (KeyboardInterrupt, SystemExit):
                 # We should never catch KeyboardInterrupt or SystemExit.
                 raise
