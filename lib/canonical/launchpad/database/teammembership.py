@@ -336,7 +336,7 @@ class TeamMembership(SQLBase):
                    % {'member': member.name, 'team': team.name})
         if new_status == TeamMembershipStatus.EXPIRED:
             template_name = 'membership-expired'
-            subject = 'membership of %s expired' % member.name
+            subject = '%s expired from team' % member.name
         elif (new_status == TeamMembershipStatus.APPROVED and
               old_status != TeamMembershipStatus.ADMIN):
             if old_status == TeamMembershipStatus.INVITED:

@@ -599,7 +599,7 @@ is automatically renewed.
     ----------------------------------------
     From: Launchpad Administrators <noreply@launchpad.net>
     To: foo.bar@canonical.com, guilherme.salgado@canonical.com
-    Subject: membership of sabdfl expired
+    Subject: sabdfl expired from team
     <BLANKLINE>
     The membership of Mark Shuttleworth (sabdfl) in the Launchpad
     Administrators (admins) team has expired.
@@ -610,7 +610,7 @@ is automatically renewed.
     ----------------------------------------
     From: Launchpad Administrators <noreply@launchpad.net>
     To: mark@hbd.com
-    Subject: membership of sabdfl expired
+    Subject: sabdfl expired from team
     <BLANKLINE>
     Your membership in the Launchpad Administrators (admins) team has
     expired.
