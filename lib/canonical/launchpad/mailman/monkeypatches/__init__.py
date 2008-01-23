@@ -74,8 +74,12 @@ DEFAULT_MSG_FOOTER = '''_______________________________________________
 %(footer)s'''
 
 # Set up MHonArc archiving.
-PUBLIC_EXTERNAL_ARCHIVER = '\
-/usr/bin/mhonarc -add -outdir %(archive_dir)s/%%(listname)s'
+PUBLIC_EXTERNAL_ARCHIVER = '/usr/bin/mhonarc \
+-add \
+-dbfile %(var_dir)s/archives/private/%%(listname)s.mbox/mhonarc.db \
+-outdir %(var_dir)s/mhonarc/%%(listname)s \
+-stderr %(var_dir)s/logs/mhonarc \
+-stdout %(var_dir)s/logs/mhonarc'
 PRIVATE_EXTERNAL_ARCHIVER = PUBLIC_EXTERNAL_ARCHIVER
 """ % dict(
     launchpad_top=launchpad_top,
@@ -89,7 +93,7 @@ PRIVATE_EXTERNAL_ARCHIVER = PUBLIC_EXTERNAL_ARCHIVER
     archive_url_template=config.mailman.archive_url_template,
     list_owner_header_template=config.mailman.list_owner_header_template,
     footer=footer,
-    archive_dir=os.path.join(config.mailman.build.var_dir, 'mhonarc'),
+    var_dir=config.mailman.build.var_dir,
     )
     finally:
         config_file.close()
