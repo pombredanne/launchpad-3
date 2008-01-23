@@ -143,7 +143,7 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
     def official_codehosting(self):
         # XXX: Aaron Bentley 2008-01-22
         # At this stage, we can't directly associate branches with source
-        # packages or anything else resulting in a distributions, so saying
+        # packages or anything else resulting in a distribution, so saying
         # that a distribution supports codehosting at this stage makes
         # absolutely no sense at all.
         return False
