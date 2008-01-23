@@ -236,6 +236,12 @@ LP-admins can also 'edit' PPAs of other people:
 But more importantly, only LP administrators can 'administer' Personal
 Package Archives.
 
+    >>> sample_browser.open("http://launchpad.dev/~carlos/+archive")
+    >>> print sample_browser.getLink("Administer archive")
+    Traceback (most recent call last):
+    ...
+    LinkNotFoundError
+
     >>> admin_browser.getLink("Administer archive").click()
     >>> admin_browser.url
     'http://launchpad.dev/~carlos/+archive/+admin'

@@ -43,7 +43,7 @@ class Archive(SQLBase):
     purpose = EnumCol(dbName='purpose', unique=False, notNull=True,
         schema=ArchivePurpose)
 
-    enabled = BoolCol(dbName='enabled', notNull=False, default=True)
+    enabled = BoolCol(dbName='enabled', notNull=True, default=True)
 
     private = BoolCol(dbName='private', notNull=True, default=False)
 
