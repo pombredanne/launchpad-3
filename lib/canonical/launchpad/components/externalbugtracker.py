@@ -663,6 +663,7 @@ debbugsstatusmap = {'open':      BugTaskStatus.NEW,
 class DebBugs(ExternalBugTracker):
     """A class that deals with communications with a debbugs db."""
 
+    import_comments = True
     implements(ISupportsCommentImport)
 
     # We don't support different versions of debbugs.
@@ -858,9 +859,10 @@ class DebBugs(ExternalBugTracker):
 
         try:
             self._loadLog(debian_bug)
-        except debbugs.LogParseFailed:
+        except debbugs.LogParseFailed, error:
             log.warn("Unable to import comments for DebBugs bug #%s. "
-                "Could not parse comment log." %  bug_watch.remotebug)
+                "Could not parse comment log. %s" %
+                (bug_watch.remotebug, error))
             return
 
         imported_comments = []
@@ -871,8 +873,10 @@ class DebBugs(ExternalBugTracker):
                 imported_comments.append(bug_message)
 
         if len(imported_comments) > 0:
-            log.info("Imported %i comments for remote bug %s on %s." %
-                (len(imported_comments), bug_watch.remotebug, self.baseurl))
+            log.info("Imported %i comments for remote bug %s on %s. "
+                "(Launchpad bug %s)" %
+                (len(imported_comments), bug_watch.remotebug, self.baseurl,
+                 bug_watch.bug.id))
 
     def _importDebBugsComment(self, comment, bug_watch):
         """Import a debbugs comment and link it to a bug watch.

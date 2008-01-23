@@ -3,6 +3,7 @@
 
 import os
 import re
+import subprocess
 from datetime import datetime
 import email
 import cStringIO
@@ -209,10 +210,14 @@ class Database:
         # We set the perl path manually so that debbugs-log.pl can
         # always find the Debbugs::Log module.
         debbugs_path = os.path.dirname(self.debbugs_pl)
-        command = "perl -I %s %s %s" % (debbugs_path, self.debbugs_pl, log)
+        command = ['perl', '-I', debbugs_path, self.debbugs_pl, log]
 
         try:
-            logreader = os.popen(command, 'r')
+            process = subprocess.Popen(command,
+                stdout=subprocess.PIPE, stdin=subprocess.PIPE,
+                stderr=subprocess.PIPE)
+            logreader = process.stdout
+            err = process.stderr
             comment = cStringIO.StringIO()
             for line in logreader:
                 if line == '.\n':
@@ -222,11 +227,16 @@ class Database:
                     comment.write(line[1:])
                 else:
                     comment.write(line)
+            logreader.close()
+
             if comment.tell() != 0:
-                raise LogParseFailed('Unterminated comment from debbugs-log.pl')
-            exitcode = logreader.close()
-            if exitcode is not None:
-                raise LogParseFailed('debbugs-log.pl exited with code %d' % exitcode)
+                raise LogParseFailed(
+                    'Unterminated comment from debbugs-log.pl')
+
+            errors = "\n".join(err.readlines())
+            if errors:
+                raise LogParseFailed(errors)
+
         except IOError, e:
             if e.errno == 2:
                 raise LogMissing, log
