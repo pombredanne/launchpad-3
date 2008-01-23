@@ -13,6 +13,7 @@ Translations officially) are found on the +edit page.
     Active
     Doesn&rsquo;t use Code
     Uses Bugs
+    Doesn&rsquo;t use Blueprints
     Doesn&rsquo;t use Translations
     Uses Answers
 
@@ -74,6 +75,7 @@ tracker, not even Launchpad.
     Active
     Uses Code
     Doesn&rsquo;t use Bugs
+    Doesn&rsquo;t use Blueprints
     Doesn&rsquo;t use Translations
     Uses Answers
 
@@ -98,6 +100,7 @@ Now let's go back and choose to use a specific bug tracker.
     Active
     Uses Code
     Doesn&rsquo;t use Bugs
+    Doesn&rsquo;t use Blueprints
     Doesn&rsquo;t use Translations
     Uses Answers
 
@@ -124,6 +127,7 @@ Let's reset it to the way it was before.
     Active
     Uses Code
     Uses Bugs
+    Doesn&rsquo;t use Blueprints
     Doesn&rsquo;t use Translations
     Uses Answers
 
@@ -166,6 +170,7 @@ The Status of Launchpad uses shows the bug tracker was changed.
     Active
     Doesn&rsquo;t use Code
     Doesn&rsquo;t use Bugs
+    Doesn&rsquo;t use Blueprints
     Doesn&rsquo;t use Translations
     Doesn&rsquo;t use Answers
 
