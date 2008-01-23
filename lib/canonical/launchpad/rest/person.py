@@ -12,19 +12,25 @@ __all__ = [
 from zope.component import adapts
 
 from canonical.lazr.rest import Collection, Entry
-from canonical.launchpad.interfaces import IPerson, IPersonEntry
+from canonical.launchpad.interfaces import IPerson, IPersonEntry, ITeam
 from canonical.lp import decorates
 
 
 class PersonEntry(Entry):
-    """A person."""
+    """A person or team."""
     adapts(IPerson)
     decorates(IPersonEntry)
     schema = IPersonEntry
 
     parent_collection_name = 'people'
 
+    def lookupEntry(self, name):
+        """See `IEntry`."""
+        if name == 'owner' and self.context.isTeam():
+            return self.context.teamowner
+
     def fragment(self):
+        """See `IEntry`."""
         return self.context.name
 
 
@@ -41,4 +47,4 @@ class PersonCollection(Collection):
 
     def find(self):
         """Return all the people on the site."""
-        return self.context.getAllValidPersons()
+        return self.context.find("")

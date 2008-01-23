@@ -93,7 +93,10 @@ class EntryResource(ReadOnlyResource):
         return urllib.quote(self.context.fragment())
 
     def getRelatedEntryResource(self, name):
-        return EntryResource(self.context.lookupEntry(name), self.request)
+        entry = self.context.lookupEntry(name)
+        if entry is not None:
+            return EntryResource(entry, self.request)
+        return None
 
     def toDataForJSON(self):
         """Turn the object into a simple data structure.
@@ -108,9 +111,10 @@ class EntryResource(ReadOnlyResource):
             element = schema.get(name)
             if IObject.providedBy(element):
                 related_resource = self.getRelatedEntryResource(name)
-                key = name + '_link'
-                dict[key] = canonical_url(related_resource,
-                                          request=self.request)
+                if related_resource is not None:
+                    key = name + '_link'
+                    dict[key] = canonical_url(related_resource,
+                                              request=self.request)
             elif IField.providedBy(element):
                 dict[name] = getattr(self.context, name)
 
