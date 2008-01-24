@@ -1,5 +1,7 @@
 # Copyright 2004 Canonical Ltd.  All rights reserved.
 # pylint: disable-msg=E0211,E0213
+# XXX Aaron Bentley 2008-01-24: See comment from kiko re:import shims
+# pylint: disable-msg=W0611
 
 """Interfaces pertaining to the launchpad application.
 
