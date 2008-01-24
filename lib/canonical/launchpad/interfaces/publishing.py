@@ -321,12 +321,17 @@ class ISourcePackagePublishingHistory(ISecureSourcePackagePublishingHistory):
         "correspondent to the sourcepackagerelease attribute inside "
         "a specific distroseries")
 
+    suite_name = Attribute(
+        "Return the suite name for this publishing record.  Suite "
+        "name is built from distroseries<-pocket> where -pocket is "
+        "empty if it's the release pocket.")
+
     def getPublishedBinaries():
         """Return all resulted IBinaryPackagePublishingHistory.
 
         Follow the build record and return every PUBLISHED binary publishing
-        record for DistroArchSeries in this DistroSeries, ordered by
-        architecturetag.
+        record for DistroArchSeries in this DistroSeries and in the same
+        Pocket, ordered by architecturetag.
         """
 
     def changeOverride(new_component=None, new_section=None):

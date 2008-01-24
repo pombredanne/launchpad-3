@@ -26,7 +26,7 @@ from canonical.cachedproperty import cachedproperty
 from canonical.config import config
 from canonical import encoding
 from canonical.database.constants import UTC_NOW
-from canonical.database.sqlbase import flush_database_updates
+from canonical.database.sqlbase import flush_database_updates, commit
 from canonical.launchpad.scripts import log, debbugs
 from canonical.launchpad.interfaces import (
     BugTaskImportance, BugTaskStatus, BugTrackerType, BugWatchErrorType,
@@ -100,6 +100,7 @@ _exception_to_bugwatcherrortype = [
    (UnparseableBugData, BugWatchErrorType.UNPARSABLE_BUG),
    (UnparseableBugTrackerVersion, BugWatchErrorType.UNPARSABLE_BUG_TRACKER),
    (UnsupportedBugTrackerVersion, BugWatchErrorType.UNSUPPORTED_BUG_TRACKER),
+   (UnknownBugTrackerTypeError, BugWatchErrorType.UNSUPPORTED_BUG_TRACKER),
    (socket.timeout, BugWatchErrorType.TIMEOUT)]
 
 def get_bugwatcherrortype_for_error(error):
@@ -769,6 +770,30 @@ class DebBugs(ExternalBugTracker):
 
         return debian_bug
 
+    def _loadLog(self, debian_bug):
+        """Load the debbugs comment log for a given bug.
+
+        This method is analogous to _findBug() in that if the comment
+        log cannot be loaded from the main database it will attempt to
+        load the log from the archive database.
+
+        If no comment log can be found, a debbugs.LogParseFailed error
+        will be raised.
+        """
+        if self.debbugs_db is None:
+            raise BugNotFound(bug_id)
+
+        # If we can't find the log in the main database we try the
+        # archive.
+        try:
+            self.debbugs_db.load_log(debian_bug)
+        except debbugs.LogParseFailed:
+            # If there is no log for this bug in the archive a
+            # LogParseFailed error will be raised. However, we let that
+            # propagate upwards since we need to make the callsite deal
+            # with the fact that there's no log to parse.
+            self.debbugs_db_archive.load_log(debian_bug)
+
     def getRemoteImportance(self, bug_id):
         """See `ExternalBugTracker`.
 
@@ -832,7 +857,7 @@ class DebBugs(ExternalBugTracker):
         debian_bug = self._findBug(bug_watch.remotebug)
 
         try:
-            self.debbugs_db.load_log(debian_bug)
+            self._loadLog(debian_bug)
         except debbugs.LogParseFailed:
             log.warn("Unable to import comments for DebBugs bug #%s. "
                 "Could not parse comment log." %  bug_watch.remotebug)
@@ -893,6 +918,17 @@ class DebBugs(ExternalBugTracker):
                 parsed_message=parsed_comment)
 
             bug_message = bug_watch.bug.linkMessage(message, bug_watch)
+
+            # XXX 2008-01-22 gmb:
+            #     We should be using self.txn.commit() here, however,
+            #     bug 3989 (ztm.commit() only works once pers zopeless
+            #     run) prevents us from doing so. Using commit()
+            #     directly is the best available workaround, but we need
+            #     to change this once the bug is resolved.
+            # We deliberately commit here since we don't want a later
+            # error to end up rolling back sucessfully imported
+            # comments.
+            commit()
         else:
             bug_message = None
 
@@ -1527,6 +1563,7 @@ class Trac(ExternalBugTracker):
     def convertRemoteStatus(self, remote_status):
         """See `IExternalBugTracker`"""
         status_map = {
+            'accepted': BugTaskStatus.CONFIRMED,
             'assigned': BugTaskStatus.CONFIRMED,
             # XXX: 2007-08-06 Graham Binns:
             #      We should follow dupes if possible.

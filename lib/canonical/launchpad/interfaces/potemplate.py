@@ -117,7 +117,7 @@ class IPOTemplate(IRosettaStats):
             "translations based on the name."),
         required=True)
 
-    translation_domain = Text(
+    translation_domain = TextLine(
         title=_("Translation domain"),
         description=_("The translation domain for a translation template. "
             "Used with PO file format when generating MO files for inclusion "

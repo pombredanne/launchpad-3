@@ -1,0 +1,44 @@
+= Structural Subscriptions =
+
+Structural subscriptions allow a user to subscribe to a launchpad
+structure like a product, project, productseries, distribution,
+distroseries, milestone or a combination of sourcepackagename and
+distribution.
+
+    >>> from zope.component import getUtility
+    >>> from canonical.launchpad.interfaces import (
+    ...     IDistributionSet, IPersonSet, IProductSet,
+    ...     ISourcePackageNameSet)
+    >>> from canonical.launchpad.database.structuralsubscription import (
+    ...    StructuralSubscription)
+
+    >>> person_set = getUtility(IPersonSet)
+    >>> foobar = person_set.getByEmail('foo.bar@canonical.com')
+    >>> sampleperson = person_set.getByEmail('test@canonical.com')
+    >>> firefox = getUtility(IProductSet).getByName("firefox")
+    >>> ubuntu = getUtility(IDistributionSet).getByName("ubuntu")
+
+    >>> ff_sub = StructuralSubscription(product=firefox,
+    ...     subscriber=sampleperson, subscribed_by=foobar)
+    >>> ff_sub.target
+    <Product at ...>
+    >>> ff_sub.bug_notification_level
+    <DBItem BugNotificationLevel.NOTHING, (10) Nothing>
+
+    >>> ubuntu_sub = StructuralSubscription(distribution=ubuntu,
+    ...     subscriber=sampleperson, subscribed_by=foobar)
+    >>> ubuntu_sub.target
+    <Distribution at ...>
+    >>> ubuntu_sub.blueprint_notification_level
+    <DBItem BlueprintNotificationLevel.NOTHING, (10) Nothing>
+
+    >>> evolution = getUtility(ISourcePackageNameSet).getOrCreateByName(
+    ...    'evolution')
+    >>> evolution_sub = StructuralSubscription(distribution=ubuntu,
+    ...     sourcepackagename=evolution, subscriber=sampleperson,
+    ...     subscribed_by=foobar)
+    >>> evolution_sub.target
+    <...DistributionSourcePackage object at ...>
+
+    >>> sampleperson.structural_subscriptions.count()
+    3

@@ -16,15 +16,17 @@ __all__ = [
     'MINUTES',
     ]
 
+from BeautifulSoup import BeautifulSoup
+from datetime import datetime
 import operator
 import os
 import time
+from urlparse import urljoin
 from xml.sax.saxutils import escape as xml_escape
-from BeautifulSoup import BeautifulStoneSoup
-from datetime import datetime
 
 from zope.app.datetimeutils import rfc1123_date
 from zope.app.pagetemplate import ViewPageTemplateFile
+from zope.component import getUtility
 from zope.interface import implements
 
 from canonical.cachedproperty import cachedproperty
@@ -32,17 +34,22 @@ from canonical.config import config
 # XXX - bac - 2007-09-20, modules in canonical.lazr should not import from
 # canonical.launchpad, but we're doing it here as an expediency to get a
 # working prototype.  Bug 153795.
-from canonical.launchpad.webapp import canonical_url, LaunchpadFormView
+from canonical.launchpad.interfaces import ILaunchpadRoot
+from canonical.launchpad.webapp import (
+    LaunchpadFormView, canonical_url, urlparse)
 from canonical.launchpad.webapp.vhosts import allvhosts
 from canonical.lazr.interfaces import (
-    IFeed, IFeedPerson, IFeedTypedData, UnsupportedFeedFormat)
+    IFeed, IFeedEntry, IFeedPerson, IFeedTypedData, UnsupportedFeedFormat)
 
 SUPPORTED_FEEDS = ('.atom', '.html')
-MINUTES = 60 # seconds in a minute
+MINUTES = 60 # Seconds in a minute.
 
 
 class FeedBase(LaunchpadFormView):
-    """Base class for feeds."""
+    """See `IFeed`.
+
+    Base class for feeds.
+    """
 
     implements(IFeed)
 
@@ -55,9 +62,10 @@ class FeedBase(LaunchpadFormView):
                       'html': 'templates/feed-html.pt'}
 
     def __init__(self, context, request):
-        self.context = context
-        self.request = request
+        super(FeedBase, self).__init__(context, request)
         self.format = self.feed_format
+        self.root_url = canonical_url(getUtility(ILaunchpadRoot),
+                                      rootsite=self.rootsite)
 
     def initialize(self):
         """See `IFeed`."""
@@ -73,9 +81,10 @@ class FeedBase(LaunchpadFormView):
         raise NotImplementedError
 
     @property
-    def url(self):
+    def link_self(self):
         """See `IFeed`."""
-        raise NotImplementedError
+        return "%s/%s.%s" % (canonical_url(self.context, rootsite="feeds"),
+                             self.feedname, self.format)
 
     @property
     def site_url(self):
@@ -83,15 +92,42 @@ class FeedBase(LaunchpadFormView):
         return allvhosts.configs['mainsite'].rooturl[:-1]
 
     @property
-    def alternate_url(self):
+    def link_alternate(self):
         """See `IFeed`."""
         return canonical_url(self.context, rootsite=self.rootsite)
+
+    @property
+    def feed_id(self):
+        """See `IFeed`.
+
+        Override this method if the context used does not create a
+        meaningful id.
+        """
+        # Get the creation date, if available.  Otherwise use a fixed date, as
+        # allowed by the RFC.
+        if hasattr(self.context, 'datecreated'):
+            datecreated = self.context.datecreated.date().isoformat()
+        elif hasattr(self.context, 'date_created'):
+            datecreated = self.context.date_created.date().isoformat()
+        else:
+            datecreated = "2008"
+        url_path = urlparse(self.link_alternate)[2]
+        if self.rootsite != 'mainsite':
+            id_ = 'tag:launchpad.net,%s:/%s%s' % (
+                datecreated,
+                self.rootsite,
+                url_path)
+        else:
+            id_ = 'tag:launchpad.net,%s:%s' % (
+                datecreated,
+                url_path)
+        return id_
 
     def getItems(self):
         """See `IFeed`."""
         raise NotImplementedError
 
-    def getPublicRawItems():
+    def getPublicRawItems(self):
         """See `IFeed`."""
         raise NotImplementedError
 
@@ -156,7 +192,14 @@ class FeedBase(LaunchpadFormView):
 
     def renderAtom(self):
         """See `IFeed`."""
-        return ViewPageTemplateFile(self.template_files['atom'])(self)
+        self.request.response.setHeader('content-type',
+                                        'application/atom+xml;charset=utf-8')
+        template_file = ViewPageTemplateFile(self.template_files['atom'])
+        result = template_file(self)
+        # XXX EdwinGrubbs 2008-01-10 bug=181903
+        # Zope3 requires the content-type to start with "text/" if
+        # the result is a unicode object.
+        return result.encode('utf-8')
 
     def renderHTML(self):
         """See `IFeed`."""
@@ -164,22 +207,30 @@ class FeedBase(LaunchpadFormView):
 
 
 class FeedEntry:
-    """An entry for a feed."""
+    """See `IFeedEntry`.
+
+    An individual entry for a feed.
+    """
+
+    implements(IFeedEntry)
+
     def __init__(self,
                  title,
-                 id_,
                  link_alternate,
+                 date_created,
                  date_updated,
                  date_published=None,
                  authors=None,
                  contributors=None,
                  content=None,
+                 id_=None,
                  generator=None,
                  logo=None,
                  icon=None):
         self.title = title
         self.link_alternate = link_alternate
         self.content = content
+        self.date_created = date_created
         self.date_updated = date_updated
         self.date_published = date_published
         if date_updated is None:
@@ -190,13 +241,30 @@ class FeedEntry:
         if contributors is None:
             contribuors = []
         self.contributors = contributors
-        self.id = id_
+        self.id = self.construct_id()
 
     @property
     def last_modified(self):
         if self.date_published is not None:
             return max(self.date_published, self.date_updated)
         return self.date_updated
+
+    def construct_id(self):
+        url_path = urlparse(self.link_alternate)[2]
+        # Strip the first portion of the path, which will be the
+        # project/product identifier but is not wanted in the <id> as it may
+        # change if the entry is re-assigned which would break the permanence
+        # of the <id>.
+        try:
+            unique_url_path = url_path[url_path.index('/', 1):]
+        except ValueError:
+            # This condition should not happen, but if the call to index
+            # raises a ValueError because '/' was not in the path, then fall
+            # back to using the entire path.
+            unique_url_path = url_path
+        return 'tag:launchpad.net,%s:%s' % (
+            self.date_created.date().isoformat(),
+            unique_url_path)
 
 
 class FeedTypedData:
@@ -206,25 +274,40 @@ class FeedTypedData:
 
     content_types = ['text', 'html', 'xhtml']
 
-    def __init__(self, content, content_type='text'):
+    def __init__(self, content, content_type='text', root_url=None):
         self._content = content
         if content_type not in self.content_types:
             raise UnsupportedFeedFormat("%s: is not valid" % content_type)
         self.content_type = content_type
+        self.root_url = root_url
 
     @property
     def content(self):
-        if self.content_type in ('text', 'html'):
-            return xml_escape(self._content)
-        elif self.content_type == 'xhtml':
-            soup = BeautifulStoneSoup(
-                self._content,
-                convertEntities=BeautifulStoneSoup.HTML_ENTITIES)
-            return unicode(soup)
+        if (self.content_type in ('html', 'xhtml') and
+            self.root_url is not None):
+            # Unqualified hrefs must be qualified using the original subdomain
+            # or they will try be served from http://feeds.launchpad.net,
+            # which will not work.
+            soup = BeautifulSoup(self._content)
+            a_tags = soup.findAll('a')
+            for a_tag in a_tags:
+                if a_tag['href'].startswith('/'):
+                    a_tag['href'] = urljoin(self.root_url, a_tag['href'])
+            altered_content = unicode(soup)
+        else:
+            altered_content = self._content
 
+        if self.content_type in ('text', 'html'):
+            altered_content = xml_escape(altered_content)
+        elif self.content_type == 'xhtml':
+            soup = BeautifulSoup(
+                altered_content,
+                convertEntities=BeautifulSoup.HTML_ENTITIES)
+            altered_content = unicode(soup)
+        return altered_content
 
 class FeedPerson:
-    """Data for person in a feed.
+    """See `IFeedPerson`.
 
     If this class is consistently used we will not accidentally leak email
     addresses.

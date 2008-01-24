@@ -69,6 +69,7 @@ __all__ = [
     'IShipItApplication',
     'IStructuralHeaderPresentation',
     'IStructuralObjectPresentation',
+    'IWebServiceApplication',
     'IWriteZODBAnnotation',
     'IZODBAnnotation',
     'NameNotAvailable',
@@ -291,6 +292,10 @@ class IReadZODBAnnotation(Interface):
 
     def __delitem__(namespace):
         """Removes annotation at the given namespace."""
+
+
+class IWebServiceApplication(ILaunchpadApplication):
+    """Launchpad web service application root."""
 
 
 class IWriteZODBAnnotation(Interface):

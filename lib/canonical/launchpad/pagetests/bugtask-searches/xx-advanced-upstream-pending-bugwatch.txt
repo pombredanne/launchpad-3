@@ -43,7 +43,7 @@ product. He does not provide bug watch information.
 
     >>> browser.getLink('Also affects project').click()
     >>> browser.getControl('Add to Bug Report').click()
-    >>> browser.getControl('Yes, Add Anyway').click()
+    >>> browser.getControl('Add Anyway').click()
     >>> browser.title
     'Bug #... in alsa-utils: ...Test Bug 1...'
 

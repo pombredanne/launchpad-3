@@ -11,6 +11,7 @@ __all__ = [
     'IAdminTeamMergeSchema',
     'INACTIVE_ACCOUNT_STATUSES',
     'INewPerson',
+    'INewPersonForm',
     'IObjectReassignment',
     'IPerson',
     'IPersonChangePassword',
@@ -375,14 +376,10 @@ class IPersonChangePassword(Interface):
     """The schema used by Person +changepassword form."""
 
     currentpassword = PasswordField(
-            title=_('Current password'), required=True, readonly=False,
-            description=_("The password you use to log into Launchpad.")
-            )
+        title=_('Current password'), required=True, readonly=False)
 
     password = PasswordField(
-            title=_('New Password'), required=True, readonly=False,
-            description=_("Enter the same password in each field.")
-            )
+        title=_('New password'), required=True, readonly=False)
 
 
 class IPersonClaim(Interface):
@@ -425,7 +422,7 @@ class IPerson(IHasSpecifications, IHasMentoringOffers, IQuestionCollection,
             "here.")
             )
     password = PasswordField(
-            title=_('Password'), required=True, readonly=False)
+        title=_('Password'), required=True, readonly=False)
     karma = Int(
             title=_('Karma'), readonly=False,
             description=_('The cached total karma for this person.')
@@ -684,6 +681,10 @@ class IPerson(IHasSpecifications, IHasMentoringOffers, IQuestionCollection,
                       "used as a key by FOAF RDF spec"),
         readonly=True)
 
+    verbose_bugnotifications = Bool(
+        title=_("Include bug descriptions when sending me bug notifications"),
+        required=False, default=True)
+
     defaultmembershipperiod = Int(
         title=_('Subscription period'), required=False,
         description=_(
@@ -718,8 +719,9 @@ class IPerson(IHasSpecifications, IHasMentoringOffers, IQuestionCollection,
             "new members can be added only by a team administrator."))
 
     renewal_policy = Choice(
-        title=_("When someone's membership is about to expire, Launchpad "
-                "should notify them and"),
+        title=_(
+            "When someone's membership is about to expire, "
+            "notify them and"),
         required=True, vocabulary=TeamMembershipRenewalPolicy,
         default=TeamMembershipRenewalPolicy.NONE)
 
@@ -757,6 +759,9 @@ class IPerson(IHasSpecifications, IHasMentoringOffers, IQuestionCollection,
         title=_("Teams may be Public, Private Membership, or Private."),
         required=True, vocabulary=PersonVisibility,
         default=PersonVisibility.PUBLIC)
+
+    structural_subscriptions = Attribute(
+        "The structural subscriptions for this person.")
 
     @invariant
     def personCannotHaveIcon(person):
@@ -1244,6 +1249,16 @@ class IPerson(IHasSpecifications, IHasMentoringOffers, IQuestionCollection,
 
         :target: An object providing `IBugTarget` to search within.
         """
+
+
+class INewPersonForm(IPerson):
+    """Interface used to create new Launchpad accounts.
+
+    The only change with `IPerson` is a customised Password field.
+    """
+
+    password = PasswordField(
+        title=_('Create password'), required=True, readonly=False)
 
 
 class ITeam(IPerson, IHasIcon):

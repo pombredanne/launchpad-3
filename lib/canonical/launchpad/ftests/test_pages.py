@@ -4,6 +4,10 @@
 
 Set up the test data in the database first.
 """
+# Stop lint warning about not initializing TestCase parent on
+# PageStoryTestCase, see the comment bellow.
+# pylint: disable-msg=W0231
+
 __metaclass__ = type
 
 import doctest
@@ -42,7 +46,8 @@ class UnstickyCookieHTTPCaller(HTTPCaller):
         HTTPCaller.__init__(self, *args, **kw)
     def __call__(self, *args, **kw):
         if self._debug:
-            import pdb; pdb.set_trace()
+            import pdb
+            pdb.set_trace()
         try:
             return HTTPCaller.__call__(self, *args, **kw)
         finally:
@@ -78,28 +83,30 @@ def find_tags_by_class(content, class_, only_first=False):
     """Find and return one or more tags matching the given class(es)"""
     match_classes = set(class_.split())
     def class_matcher(value):
-        if value is None: return False
+        if value is None:
+            return False
         classes = set(value.split())
         return match_classes.issubset(classes)
     soup = BeautifulSoup(
         content, parseOnlyThese=SoupStrainer(attrs={'class': class_matcher}))
     if only_first:
-        find=BeautifulSoup.find
+        find = BeautifulSoup.find
     else:
-        find=BeautifulSoup.findAll
+        find = BeautifulSoup.findAll
     return find(soup, attrs={'class': class_matcher})
 
 
 def find_portlet(content, name):
     """Find and return the portlet with the given title. Sequences of
     whitespace are considered equivalent to one space, and beginning and
-    ending whitespace is also ignored.
+    ending whitespace is also ignored, as are non-text elements such as
+    images.
     """
     whitespace_re = re.compile('\s+')
     name = whitespace_re.sub(' ', name.strip())
     for portlet in find_tags_by_class(content, 'portlet'):
         if portlet.find('h2'):
-            portlet_title = portlet.find('h2').renderContents()
+            portlet_title = extract_text(portlet.find('h2'))
             if name == whitespace_re.sub(' ', portlet_title.strip()):
                 return portlet
     return None
@@ -112,12 +119,35 @@ def find_main_content(content):
 
 def get_feedback_messages(content):
     """Find and return the feedback messages of the page."""
-    message_classes = [
-        'message', 'informational message', 'error message', 'warning message']
+    message_classes = ['message', 'informational message', 'error message',
+                       'warning message']
     soup = BeautifulSoup(
         content,
         parseOnlyThese=SoupStrainer(['div', 'p'], {'class': message_classes}))
     return [extract_text(tag) for tag in soup]
+
+
+def print_radio_button_field(content, name):
+    """Find the input called field.name, and print a friendly representation.
+
+    The resulting output will look something like:
+    (*) A checked option
+    ( ) An unchecked option
+    """
+    main = BeautifulSoup(content)
+    buttons =  main.findAll(
+        'input', {'name': 'field.%s' % name})
+    for button in buttons:
+        if button.parent.name == 'label':
+            label = extract_text(button.parent)
+        else:
+            label = extract_text(
+                main.find('label', attrs={'for': button['id']}))
+        if button.get('checked', None):
+            radio = '(*)'
+        else:
+            radio = '( )'
+        print radio, label
 
 
 IGNORED_ELEMENTS = [Comment, Declaration, ProcessingInstruction]
@@ -128,7 +158,8 @@ ELEMENTS_INTRODUCING_NEWLINE = [
 
 
 NEWLINES_RE = re.compile(u'\n+')
-LEADING_AND_TRAILING_SPACES_RE = re.compile(u'(^[ \t]+)|([ \t]$)', re.MULTILINE)
+LEADING_AND_TRAILING_SPACES_RE = re.compile(
+    u'(^[ \t]+)|([ \t]$)', re.MULTILINE)
 TABS_AND_SPACES_RE = re.compile(u'[ \t]+')
 NBSP_RE = re.compile(u'&nbsp;|&#160;')
 
@@ -149,6 +180,7 @@ def extract_link_from_tag(tag, base=None):
         return href
     else:
         return urljoin(base, href)
+
 
 def extract_text(content):
     """Return the text stripped of all tags.
@@ -198,6 +230,9 @@ def parse_relationship_section(content):
     soup = BeautifulSoup(content)
     section = soup.find('ul')
     whitespace_re = re.compile('\s+')
+    if section is None:
+        print 'EMPTY SECTION'
+        return
     for li in section.findAll('li'):
         if li.a:
             link = li.a
@@ -230,6 +265,7 @@ def print_action_links(content):
         elif entry.strong:
             print entry.strong.string
 
+
 def print_comments(page):
     """Print the comments on a BugTask index page."""
     main_content = find_main_content(page)
@@ -238,6 +274,12 @@ def print_comments(page):
             print "Attachment: %s" % li_tag.a.renderContents()
         print comment.div.renderContents()
         print "-"*40
+
+
+def print_batch_header(soup):
+    """Print the batch navigator header."""
+    navigation = soup.find('td', {'class' : 'batch-navigation-index'})
+    print extract_text(navigation).encode('ASCII', 'backslashreplace')
 
 
 def setupBrowser(auth=None):
@@ -279,6 +321,8 @@ def setUpGlobs(test):
     test.globs['print_tab_links'] = print_tab_links
     test.globs['print_action_links'] = print_action_links
     test.globs['print_comments'] = print_comments
+    test.globs['print_radio_button_field'] = print_radio_button_field
+    test.globs['print_batch_header'] = print_batch_header
 
 
 class PageStoryTestCase(unittest.TestCase):
@@ -328,7 +372,7 @@ class PageStoryTestCase(unittest.TestCase):
             result = self.defaultTestResult()
         PageTestLayer.startStory()
         try:
-            # TODO RBC 20060117 we can hook in pre and post story actions
+            # XXX RBC 20060117 we can hook in pre and post story actions
             # here much more tidily (and in self.debug too)
             # - probably via self.setUp and self.tearDown
             self._suite.run(result)

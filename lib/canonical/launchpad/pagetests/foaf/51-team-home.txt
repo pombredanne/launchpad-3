@@ -12,7 +12,7 @@ details about the team.
     >>> print extract_text(
     ...     find_tag_by_id(browser.contents, 'recently-approved'))
     Recently approved
-    Launchpad Beta Testers (launchpad-beta-testers)
+    Warty Gnome Team (warty-gnome)
     Daniel Silverstone (kinnison)
     Celso Providelo (cprov)
     Jeff Waugh (jdub)
@@ -35,6 +35,7 @@ details about the team.
     Membership: 10 active members
                  2 proposed members
                  1 invited members
+                 1 inactive members
 
     >>> print extract_text(
     ...     find_tag_by_id(browser.contents, 'contact-details'))

@@ -33,7 +33,7 @@ from canonical.lazr.interfaces import IFeed
 import canonical.launchpad.layers
 from canonical.launchpad.interfaces import (
     IFeedsApplication, IPrivateApplication, IOpenIdApplication,
-    IShipItApplication)
+    IShipItApplication, IWebServiceApplication)
 
 from canonical.launchpad.webapp.notifications import (
     NotificationRequest, NotificationResponse, NotificationList)
@@ -337,23 +337,6 @@ class WebServiceRequestPublicationFactory(
             vhost_name, request_factory, publication_factory, port,
             ['GET', 'HEAD', 'POST', 'PUT', 'DELETE', 'OPTIONS'])
 
-    def checkRequest(self, environment):
-        """See `VirtualHostRequestPublicationFactory`.
-
-        Accept only requests where the MIME type is application/json
-        """
-        request_factory, publication_factory = (
-            super(WebServiceRequestPublicationFactory, self).checkRequest(
-                environment))
-        if request_factory is None:
-            mime_type = environment.get('CONTENT_TYPE')
-            method = environment.get('REQUEST_METHOD')
-            if (method in ['PUT', 'POST'] and mime_type != 'application/json'):
-                request_factory = ProtocolErrorRequest
-                # 415 - Unsupported Media Type
-                publication_factory = ProtocolErrorPublicationFactory(415)
-        return request_factory, publication_factory
-
 
     def canHandle(self, environment):
         """See `IRequestPublicationFactory`.
@@ -394,6 +377,8 @@ class BasicLaunchpadRequest:
         self.breadcrumbs = []
         self.traversed_objects = []
         self._wsgi_keys = set()
+        self.needs_datepicker_iframe = False
+        self.needs_datetimepicker_iframe = False
         super(BasicLaunchpadRequest, self).__init__(
             body_instream, environ, response)
 
@@ -617,6 +602,13 @@ class LaunchpadTestRequest(TestRequest):
     >>> from zope.interface.verify import verifyObject
     >>> verifyObject(IBrowserFormNG, request.form_ng)
     True
+
+    It also provides the  hooks for popup calendar iframes:
+
+    >>> request.needs_datetimepicker_iframe
+    False
+    >>> request.needs_datepicker_iframe
+    False
     """
     implements(INotificationRequest, IBasicLaunchpadRequest,
                canonical.launchpad.layers.LaunchpadLayer)
@@ -628,6 +620,8 @@ class LaunchpadTestRequest(TestRequest):
             skin=skin, outstream=outstream, REQUEST_METHOD=method, **kw)
         self.breadcrumbs = []
         self.traversed_objects = []
+        self.needs_datepicker_iframe = False
+        self.needs_datetimepicker_iframe = False
 
     @property
     def uuid(self):
@@ -861,7 +855,7 @@ class FeedsPublication(LaunchpadBrowserPublication):
                 getattr(naked_result, 'status', None) == 301):
                 return result
             else:
-                return None
+                raise NotFound(self, '', request)
         else:
             # There are still url segments to traverse.
             return result
@@ -874,7 +868,26 @@ class FeedsBrowserRequest(LaunchpadBrowserRequest):
 # ---- web service
 
 class WebServicePublication(LaunchpadBrowserPublication):
-    """The publication used for Launchpad feed requests."""
+    """The publication used for Launchpad web service requests."""
+
+    root_object_interface = IWebServiceApplication
+
+    def getDefaultTraversal(self, request, ob):
+        """Publish the WebServiceApplication as the top-level object.
+
+        This is called when the client requests '/' and traversal
+        bottoms out at the IWebServiceApplication itself. It's needed
+        because WebServiceRequest inherits (through LaunchpadRequest)
+        the BrowserRequest semantics. In these semantics,
+        getDefaultTraversal (defined by IBrowserPublication) is called
+        unless the object provides IBrowserPublisher.
+
+        Rather than making our resources provide an unrelated
+        interface (IBrowserPublisher), we implement this as the
+        equivalent of a no-op.
+        """
+        return (ob, None)
+
 
 class WebServiceClientRequest(LaunchpadBrowserRequest):
     """Request type for a resource published through the web service."""

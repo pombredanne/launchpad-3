@@ -21,7 +21,7 @@
   <h2>Ask your question!</h2>
 
   <p>
-    You can to post questions directly to the <a
+    You can post questions directly to the <a
     tal:attributes="href
         modules/canonical.launchpad.webapp.vhosts/allvhosts/configs/answers/rooturl">Launchpad
     answer</a> tracker.

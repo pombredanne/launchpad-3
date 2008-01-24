@@ -364,11 +364,16 @@ class Archive(SQLBase):
         """ % sqlvalues(self)
 
         clauseTables = ['LibraryFileAlias', 'BinaryPackageFilePublishing']
-        result = LibraryFileContent.select(query, clauseTables=clauseTables)
+        # We are careful to use DISTINCT here to eliminate files that
+        # are published in more than one place.
+        result = LibraryFileContent.select(query, clauseTables=clauseTables,
+            distinct=True)
 
-        size = result.sum('filesize')
-        if size is None:
-            return 0
+        # XXX 2008-01-16 Julian.  Unfortunately SQLObject has got a bug
+        # where it ignores DISTINCT on a .sum() operation, so resort to
+        # Python addition.  Revert to using result.sum('filesize') when
+        # SQLObject gets dropped.
+        size = sum([lfc.filesize for lfc in result])
         return size
 
     @property

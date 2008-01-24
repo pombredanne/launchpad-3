@@ -3,13 +3,15 @@
 
 __metaclass__ = type
 
-__all__ = ['SourcePackageFilePublishing', 'BinaryPackageFilePublishing',
-           'SecureSourcePackagePublishingHistory',
-           'SecureBinaryPackagePublishingHistory',
-           'SourcePackagePublishingHistory',
-           'BinaryPackagePublishingHistory',
-           'IndexStanzaFields',
-           ]
+__all__ = [
+    'BinaryPackageFilePublishing',
+    'BinaryPackagePublishingHistory',
+    'IndexStanzaFields',
+    'SecureBinaryPackagePublishingHistory',
+    'SecureSourcePackagePublishingHistory',
+    'SourcePackageFilePublishing',
+    'SourcePackagePublishingHistory',
+    ]
 
 from warnings import warn
 import os
@@ -22,12 +24,11 @@ from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
 from canonical.launchpad.interfaces import (
-    ISourcePackageFilePublishing, IBinaryPackageFilePublishing,
-    ISecureSourcePackagePublishingHistory, IBinaryPackagePublishingHistory,
-    ISecureBinaryPackagePublishingHistory, ISourcePackagePublishingHistory,
-    IArchiveSafePublisher, PackagePublishingPriority,
-    PackagePublishingStatus, PackagePublishingPocket,
-    PoolFileOverwriteError)
+    IArchiveSafePublisher, IBinaryPackageFilePublishing,
+    IBinaryPackagePublishingHistory, ISecureBinaryPackagePublishingHistory,
+    ISecureSourcePackagePublishingHistory, ISourcePackageFilePublishing,
+    ISourcePackagePublishingHistory, PackagePublishingPriority,
+    PackagePublishingStatus, PackagePublishingPocket, PoolFileOverwriteError)
 from canonical.launchpad.scripts.ftpmaster import ArchiveOverriderError
 
 
@@ -429,11 +430,13 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
             Build.sourcepackagerelease=%s AND
             DistroArchSeries.distroseries=%s AND
             BinaryPackagePublishingHistory.archive=%s AND
+            BinaryPackagePublishingHistory.pocket=%s AND
             BinaryPackagePublishingHistory.status=%s
             """ % sqlvalues(
                     self.sourcepackagerelease,
                     self.distroseries,
                     self.archive,
+                    self.pocket,
                     PackagePublishingStatus.PUBLISHED)
 
         orderBy = ['BinaryPackageName.name',
@@ -493,6 +496,11 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
         name = release.sourcepackagename.name
         return "%s %s in %s" % (name, release.version,
                                 self.distroseries.name)
+
+    @property
+    def suite_name(self):
+        """See `IPublishing`."""
+        return self.distroseries.suite_name(self.pocket)
 
     def buildIndexStanzaFields(self):
         """See `IPublishing`."""

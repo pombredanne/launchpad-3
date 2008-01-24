@@ -451,11 +451,6 @@ application/json.
     WebServiceClientRequest
     WebServicePublication
 
-    >>> print_request_and_publication(
-    ...     'api.launchpad.dev', method='POST', mime_type='application/xml')
-    ProtocolErrorRequest
-    ProtocolErrorPublication: status=415
-
 XXX: We don't want to expose the web service until it's ready, so
 we've defined a config variable which controls its availability. This
 test will go away when we decide to deploy the web service on

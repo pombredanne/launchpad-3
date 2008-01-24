@@ -115,7 +115,8 @@ class FileBugData:
                         content_type=part['Content-type'],
                         content=StringIO(part.get_payload(decode=True)))
                     if part.get('Content-Description'):
-                        attachment['description'] = part['Content-Description']
+                        attachment['description'] = (
+                            part['Content-Description'])
                     else:
                         attachment['description'] = attachment['filename']
                     self.attachments.append(attachment)
@@ -419,7 +420,7 @@ class FileBugViewBase(LaunchpadFormView):
                     # we'll just ignore it.
                     pass
                 else:
-                    bug.subscribe(person)
+                    bug.subscribe(person, self.user)
                     notifications.append(
                         '%s has been subscribed to this bug.' %
                         person.displayname)
@@ -452,7 +453,7 @@ class FileBugViewBase(LaunchpadFormView):
             self.request.response.addNotification(
                 "You are already subscribed to this bug.")
         else:
-            bug.subscribe(self.user)
+            bug.subscribe(self.user, self.user)
             self.request.response.addNotification(
                 "You have been subscribed to this bug.")
 
@@ -635,7 +636,6 @@ class FileBugGuidedView(FileBugViewBase):
     @cachedproperty
     def similar_bugs(self):
         """Return the similar bugs based on the user search."""
-        matching_bugs = []
         title = self.getSearchText()
         if not title:
             return []
@@ -671,10 +671,16 @@ class FileBugGuidedView(FileBugViewBase):
         # affects more than one source package, it will be returned more
         # than one time. 4 is an arbitrary number that should be large
         # enough.
-        for bugtask in matching_bugtasks[:4*self._MATCHING_BUGS_LIMIT]:
-            if not bugtask.bug in matching_bugs:
-                matching_bugs.append(bugtask.bug)
-                if len(matching_bugs) >= self._MATCHING_BUGS_LIMIT:
+        matching_bugs = []
+        matching_bugs_limit = self._MATCHING_BUGS_LIMIT
+        for bugtask in matching_bugtasks[:4*matching_bugs_limit]:
+            bug = bugtask.bug
+            duplicateof = bug.duplicateof
+            if duplicateof is not None:
+                bug = duplicateof
+            if bug not in matching_bugs:
+                matching_bugs.append(bug)
+                if len(matching_bugs) >= matching_bugs_limit:
                     break
 
         return matching_bugs
@@ -987,8 +993,8 @@ class BugTargetBugsView(BugTaskSearchListingView, FeedsMixin):
         bug_statuses_to_show = list(UNRESOLVED_BUGTASK_STATUSES)
         if IDistroSeries.providedBy(self.context):
             bug_statuses_to_show.append(BugTaskStatus.FIXRELEASED)
-        bug_counts = sorted(
-            self.context.getBugCounts(self.user, bug_statuses_to_show).items())
+        bug_counts = sorted(self.context.getBugCounts(
+            self.user, bug_statuses_to_show).items())
         self.bug_count_items = [
             BugCountDataItem(status.title, count, self.status_color[status])
             for status, count in bug_counts]
