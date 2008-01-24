@@ -983,9 +983,8 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
         Archive.purpose = %s AND
         Archive.distribution = %s AND
         SourcePackagePublishingHistory.archive = archive.id AND
-        (SourcePackagePublishingHistory.status = %s OR
-         (SourcePackagePublishingHistory.status = %s AND
-          SourcePackagePublishingHistory.scheduleddeletiondate is null))
+        SourcePackagePublishingHistory.scheduleddeletiondate is null AND
+        SourcePackagePublishingHistory.status IN (%s, %s)
          """ % sqlvalues(ArchivePurpose.PPA, self,
                          PackagePublishingStatus.PENDING,
                          PackagePublishingStatus.DELETED)
@@ -998,9 +997,8 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
         Archive.purpose = %s AND
         Archive.distribution = %s AND
         BinaryPackagePublishingHistory.archive = archive.id AND
-        (BinaryPackagePublishingHistory.status = %s OR
-         (BinaryPackagePublishingHistory.status = %s AND
-          BinaryPackagePublishingHistory.scheduleddeletiondate is null))
+        BinaryPackagePublishingHistory.scheduleddeletiondate is null AND
+        BinaryPackagePublishingHistory.status IN (%s, %s)
         """ % sqlvalues(ArchivePurpose.PPA, self,
                         PackagePublishingStatus.PENDING,
                         PackagePublishingStatus.DELETED)

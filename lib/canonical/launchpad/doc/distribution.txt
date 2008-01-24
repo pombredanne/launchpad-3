@@ -651,8 +651,7 @@ source to another location within the PPA.
       >>> print src_pub.status.name
       PENDING
 
-      >>> pending_ppas = ubuntu.getPendingPublicationPPAs()
-      >>> [pending_ppa] = pending_ppas
+      >>> [pending_ppa] = ubuntu.getPendingPublicationPPAs()
       >>> pending_ppa.id == cprov.archive.id
       True
 
@@ -666,14 +665,13 @@ pending-publication state:
       >>> ubuntu.getPendingPublicationPPAs().count()
       0
 
-We can also make Celso's PPA pending publication by delete a published
+We can also make Celso's PPA pending publication by deleting a published
 source.
 
       >>> src_pub = cprov_src.requestDeletion(cprov, 'go away !')
       >>> syncUpdate(src_pub)
 
-      >>> pending_ppas = ubuntu.getPendingPublicationPPAs()
-      >>> [pending_ppa] = pending_ppas
+      >>> [pending_ppa] = ubuntu.getPendingPublicationPPAs()
       >>> pending_ppa.id == cprov.archive.id
       True
 
@@ -691,8 +689,7 @@ state:
       >>> print bin_pub.status.name
       PENDING
 
-      >>> pending_ppas = ubuntu.getPendingPublicationPPAs()
-      >>> [pending_ppa] = pending_ppas
+      >>> [pending_ppa] = ubuntu.getPendingPublicationPPAs()
       >>> pending_ppa.id == cprov.archive.id
       True
 
@@ -710,8 +707,7 @@ A binary deletion will also make Celso's PPA pending publication.
       >>> bin_pub = cprov_bin.requestDeletion(cprov, 'go away !')
       >>> syncUpdate(bin_pub)
 
-      >>> pending_ppas = ubuntu.getPendingPublicationPPAs()
-      >>> [pending_ppa] = pending_ppas
+      >>> [pending_ppa] = ubuntu.getPendingPublicationPPAs()
       >>> pending_ppa.id == cprov.archive.id
       True
 
