@@ -151,8 +151,9 @@ that defines a constructor.
     ...         return self.context.name
 
 The "schema" attribute points to the interface class that defines the
-attributes exposed through the web service. Here, "schema" is
-IRecipeEntry, which exposes only 'name'.
+attributes exposed through the web service. Above, "schema" is
+IRecipeEntry, which exposes only "name". Below, "schema" is
+IRecipeEntry, which exposes both "name" and "author".
 
     >>> class RecipeEntry(Entry):
     ...     """A recipe, as exposed through the web service."""
@@ -170,8 +171,6 @@ IRecipeEntry, which exposes only 'name'.
     ...     def author(self):
     ...         "See `IRecipeEntry`."
     ...         return AuthorSet().getAuthor(self.context.authorName)
-
-Here, "schema" is IRecipeEntry, which exposes both "name" and "author".
 
 We need to register these entries as an adapter from IRecipe/IAuthor
 to IRecipeEntry/IAuthorEntry. In ZCML a registration would look like
