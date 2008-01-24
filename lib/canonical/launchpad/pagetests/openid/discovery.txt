@@ -155,6 +155,16 @@ identifiers:
     DiscoveryFailure: ...
 
 
+== Invalid Persistent Identifiers ==
+
+Discovery is not possible on non-existent persistent identifiers:
+
+    >>> print_endpoints('http://openid.launchpad.dev/+id/no-such-id')
+    Traceback (most recent call last):
+      ...
+    DiscoveryFailure: ...
+
+
 == Cleanup ==
 
     >>> setDefaultFetcher(None)
