@@ -11,7 +11,6 @@ __all__ = [
     'ProjectBranchFeed',
     ]
 
-from BeautifulSoup import BeautifulSoup
 from zope.app.pagetemplate import ViewPageTemplateFile
 from zope.interface import implements
 from zope.security.interfaces import Unauthorized
@@ -21,7 +20,7 @@ from canonical.launchpad.browser import (
 from canonical.config import config
 from canonical.launchpad.webapp import canonical_url, urlappend, urlparse
 from canonical.launchpad.interfaces import (
-    IBranch, ILaunchpadRoot, IPerson, IProduct, IProject)
+    IBranch, IPerson, IProduct, IProject)
 from canonical.lazr.feed import (
     FeedBase, FeedEntry, FeedPerson, FeedTypedData, MINUTES)
 from canonical.lazr.interfaces import (

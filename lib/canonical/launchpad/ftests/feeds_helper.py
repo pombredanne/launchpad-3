@@ -25,7 +25,6 @@ from canonical.launchpad.webapp.publisher import LaunchpadView
 #   Test didn't reset the socket default timeout.
 default = socket.getdefaulttimeout()
 import feedvalidator
-from feedvalidator.mediaTypes import FEED_TYPES
 socket.setdefaulttimeout(default)
 
 
@@ -88,8 +87,10 @@ def validate_feed(content, content_type, base_uri):
                 # which column contains the error.
                 max_line_length = 66
                 wrapped_column_number = column_number % max_line_length
-                for line_number in range(max(error_line_number-2, 1),
-                                         min(error_line_number+3, len(lines))):
+                line_number_range = range(
+                    max(error_line_number-2, 1),
+                    min(error_line_number+3, len(lines)))
+                for line_number in line_number_range:
                     unicode_line = unicode(
                         lines[line_number-1], 'ascii', 'replace')
                     ascii_line = unicode_line.encode('ascii', 'replace')
