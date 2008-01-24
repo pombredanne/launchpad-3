@@ -79,7 +79,8 @@ PUBLIC_EXTERNAL_ARCHIVER = '/usr/bin/mhonarc \
 -dbfile %(var_dir)s/archives/private/%%(listname)s.mbox/mhonarc.db \
 -outdir %(var_dir)s/mhonarc/%%(listname)s \
 -stderr %(var_dir)s/logs/mhonarc \
--stdout %(var_dir)s/logs/mhonarc'
+-stdout %(var_dir)s/logs/mhonarc \
+-umask 022'
 PRIVATE_EXTERNAL_ARCHIVER = PUBLIC_EXTERNAL_ARCHIVER
 """ % dict(
     launchpad_top=launchpad_top,
