@@ -43,7 +43,11 @@ class PublisherFetcher(fetchers.Urllib2Fetcher):
     """An `HTTPFetcher` that passes requests on to the Zope publisher."""
     def __init__(self):
         super(PublisherFetcher, self).__init__()
-        self.urlopen = urllib2.build_opener(PublisherHTTPHandler).open
+        self.opener = urllib2.build_opener(PublisherHTTPHandler)
+
+    def urlopen(self, request):
+        request.add_header('X-zope-handle-errors', True)
+        return self.opener.open(request)
 
 
 def make_endpoint(protocol_uri, claimed_id, local_id=None):
