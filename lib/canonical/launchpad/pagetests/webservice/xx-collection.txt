@@ -14,7 +14,7 @@ which responds to GET.
   [{"self_link": "http:\/\/api.launchpad.dev\/people\/limi", "name": "limi"},
   ...
   {"self_link": "http:\/\/api.launchpad.dev\/people\/rosetta-admins",
-  "owner_link": "http:\/\/api.launchpad.dev\/people\/admins",
+  "teamowner_link": "http:\/\/api.launchpad.dev\/people\/admins",
   "name": "rosetta-admins"},
   ...
   {"self_link": "http:\/\/api.launchpad.dev\/people\/skacel",
@@ -31,5 +31,5 @@ The elements of a collection can be looked up by unique identifier:
   Content-Type: application/json
   <BLANKLINE>
   {"self_link": "http:\/\/api.launchpad.dev\/people\/admins",
-  "owner_link": "http:\/\/api.launchpad.dev\/people\/sabdfl",
+  "teamowner_link": "http:\/\/api.launchpad.dev\/people\/sabdfl",
    "name": "admins"}

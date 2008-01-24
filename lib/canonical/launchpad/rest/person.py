@@ -26,7 +26,7 @@ class PersonEntry(Entry):
 
     def lookupEntry(self, name):
         """See `IEntry`."""
-        if name == 'owner' and self.context.isTeam():
+        if name == 'teamowner' and self.context.isTeam():
             return self.context.teamowner
 
     def fragment(self):

@@ -1257,7 +1257,7 @@ class IPersonEntry(IEntry):
     """The part of a person that we expose through the web service."""
 
     name = IPerson.get('name')
-    owner = Object(schema=IPerson)
+    teamowner = Object(schema=IPerson)
 
 
 class INewPersonForm(IPerson):
