@@ -92,12 +92,6 @@ class EntryResource(ReadOnlyResource):
         """See `IEntryResource`."""
         return urllib.quote(self.context.fragment())
 
-    def getRelatedEntryResource(self, name):
-        entry = self.context.lookupEntry(name)
-        if entry is not None:
-            return EntryResource(entry, self.request)
-        return None
-
     def toDataForJSON(self):
         """Turn the object into a simple data structure.
 
@@ -110,8 +104,10 @@ class EntryResource(ReadOnlyResource):
         for name in schema.names():
             element = schema.get(name)
             if IObject.providedBy(element):
-                related_resource = self.getRelatedEntryResource(name)
-                if related_resource is not None:
+                related_entry = getattr(self.context, name)
+                if related_entry is not None:
+                    related_resource = EntryResource(related_entry,
+                                                     self.request)
                     key = name + '_link'
                     dict[key] = canonical_url(related_resource,
                                               request=self.request)

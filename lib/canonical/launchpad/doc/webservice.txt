@@ -166,10 +166,10 @@ IPersonEntry, which exposes only 'name'.
     ...         """Use the recipe's ID as its URI fragment."""
     ...         return str(self.context.id)
     ...
-    ...     def lookupEntry(self, name):
-    ...         """Look up an associated entry."""
-    ...         if name == 'author':
-    ...             return PersonSet().getPerson(self.context.authorName)
+    ...     @property
+    ...     def author(self):
+    ...         "See `IRecipeEntry`."
+    ...         return PersonSet().getPerson(self.context.authorName)
 
 Here, "schema" is IRecipeEntry, which exposes both "name" and "author".
 

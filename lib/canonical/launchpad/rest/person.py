@@ -24,9 +24,10 @@ class PersonEntry(Entry):
 
     parent_collection_name = 'people'
 
-    def lookupEntry(self, name):
-        """See `IEntry`."""
-        if name == 'teamowner' and self.context.isTeam():
+    @property
+    def teamowner(self):
+        """See `IPersonEntry`."""
+        if self.context.isTeam():
             return self.context.teamowner
 
     def fragment(self):
