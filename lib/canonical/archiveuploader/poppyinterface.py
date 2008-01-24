@@ -35,8 +35,8 @@ class PoppyInterface:
             "host": host,
             "port": port
             }
-        self.logger.debug("Accepting new session in fsroot: %s" % fsroot);
-        self.logger.debug("Session from %s:%s" % (host,port))
+        self.logger.debug("Accepting new session in fsroot: %s" % fsroot)
+        self.logger.debug("Session from %s:%s" % (host, port))
 
     def client_done_hook(self, fsroot, host, port):
         """A client has completed. If it authenticated then it stands a chance
@@ -66,10 +66,16 @@ class PoppyInterface:
         # See bug #156795.
         self.lock.acquire(blocking=True)
 
-        # Adjust lockfile permissions to allow the runner of process-upload
-        # (lp_queue, member of lp_upload group) to be blocked on it (g+w).
-        mode = stat.S_IMODE(os.stat(lockfile_path).st_mode)
-        os.chmod(lockfile_path, mode | stat.S_IWGRP)
+        # If the lockfile was created by this process, adjust its
+        # permissions to allow the runner of process-upload (lp_queue,
+        # member of lp_upload group) to be blocked on it (g+w).
+        try:
+            mode = stat.S_IMODE(os.stat(lockfile_path).st_mode)
+            os.chmod(lockfile_path, mode | stat.S_IWGRP)
+        except OSError:
+            # Carry on if it fails, assuming the disk is fine, it can only
+            # mean that this user (lp_upload) doesn't own the lockfile.
+            pass
 
         try:
             self.targetcount += 1
@@ -125,8 +131,8 @@ class PoppyInterface:
         self.clients[fsroot]["distro"] = self.allow_user
         return True
 
-        # When we get on with the poppy path stuff, the below may be useful and
-        # is thus left in rather than being removed.
+        # When we get on with the poppy path stuff, the below may be useful
+        # and is thus left in rather than being removed.
 
         #try:
         #    d = Distribution.byName(user)

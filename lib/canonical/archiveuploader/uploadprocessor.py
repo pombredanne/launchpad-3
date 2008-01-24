@@ -188,8 +188,11 @@ class UploadProcessor:
         lockfile_path = os.path.join(fsroot, ".lock")
         fsroot_lock = GlobalLock(lockfile_path)
         # see client_done_hook method in poppyinterface.py.
-        mode = stat.S_IMODE(os.stat(lockfile_path).st_mode)
-        os.chmod(lockfile_path, mode | stat.S_IWGRP)
+        try:
+            mode = stat.S_IMODE(os.stat(lockfile_path).st_mode)
+            os.chmod(lockfile_path, mode | stat.S_IWGRP)
+        except OSError:
+            pass
 
         try:
             fsroot_lock.acquire(blocking=True)
