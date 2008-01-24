@@ -61,20 +61,21 @@ class PoppyInterface:
         # same filesystem (non-atomic "rename").
         lockfile_path = os.path.join(self.targetpath, ".lock")
         self.lock = GlobalLock(lockfile_path)
+
         # XXX cprov 20071024: We try to acquire the lock as soon as possible
         # after creating the lockfile but are still open to a race.
         # See bug #156795.
         self.lock.acquire(blocking=True)
+        mode = stat.S_IMODE(os.stat(lockfile_path).st_mode)
 
-        # If the lockfile was created by this process, adjust its
-        # permissions to allow the runner of process-upload (lp_queue,
-        # member of lp_upload group) to be blocked on it (g+w).
+        # XXX cprov 20081024: The lockfile permission can only be changed
+        # by its owner. Since we can't predict which process will create
+        # it in production systems we simply ignore errors when trying to
+        # grant the right permission. At least, one of the process will
+        # be able to do so. See further information in bug #185731.
         try:
-            mode = stat.S_IMODE(os.stat(lockfile_path).st_mode)
             os.chmod(lockfile_path, mode | stat.S_IWGRP)
         except OSError:
-            # Carry on if it fails, assuming the disk is fine, it can only
-            # mean that this user (lp_upload) doesn't own the lockfile.
             pass
 
         try:

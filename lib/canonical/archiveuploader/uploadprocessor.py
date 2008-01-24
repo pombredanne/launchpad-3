@@ -187,12 +187,17 @@ class UploadProcessor:
         # PoppyInterface for the other locking place.
         lockfile_path = os.path.join(fsroot, ".lock")
         fsroot_lock = GlobalLock(lockfile_path)
-        # see client_done_hook method in poppyinterface.py.
+        mode = stat.S_IMODE(os.stat(lockfile_path).st_mode)
+
+        # XXX cprov 20081024: The lockfile permission can only be changed
+        # by its owner. Since we can't predict which process will create
+        # it in production systems we simply ignore errors when trying to
+        # grant the right permission. At least, one of the process will
+        # be able to do so. See further information in bug #185731.
         try:
-            mode = stat.S_IMODE(os.stat(lockfile_path).st_mode)
             os.chmod(lockfile_path, mode | stat.S_IWGRP)
-        except OSError:
-            pass
+        except OSError, err:
+            self.log.debug('Could not fix the lockfile permission: %s' % err)
 
         try:
             fsroot_lock.acquire(blocking=True)
