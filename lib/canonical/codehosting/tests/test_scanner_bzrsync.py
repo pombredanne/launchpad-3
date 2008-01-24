@@ -24,6 +24,7 @@ from canonical.launchpad.mail import stub
 from canonical.launchpad.interfaces import (
     BranchSubscriptionDiffSize, BranchSubscriptionNotificationLevel,
     BranchType, IBranchSet, IPersonSet, IRevisionSet)
+from canonical.launchpad.testing import LaunchpadObjectFactory
 from canonical.codehosting.scanner.bzrsync import (
     BzrSync, RevisionModifiedError)
 from canonical.codehosting.codeimport.tests.helpers import (
@@ -48,6 +49,7 @@ class BzrSyncTestCase(TestCaseWithTransport):
 
     def setUp(self):
         TestCaseWithTransport.setUp(self)
+        self.factory = LaunchpadObjectFactory()
         self.webserver_helper = WebserverHelper()
         self.webserver_helper.setUp()
         self.setUpBzrBranch()
@@ -74,18 +76,7 @@ class BzrSyncTestCase(TestCaseWithTransport):
 
     def makeDatabaseBranch(self):
         LaunchpadZopelessLayer.txn.begin()
-        arbitraryowner = getUtility(IPersonSet).get(1)
-        date_created = datetime.datetime(2000, 1, 1, 12, tzinfo=pytz.UTC)
-        new_branch = getUtility(IBranchSet).new(
-            branch_type=BranchType.HOSTED,
-            name="test",
-            creator=arbitraryowner,
-            owner=arbitraryowner,
-            product=None,
-            url=None,
-            title="Test branch",
-            summary="Branch for testing",
-            date_created=date_created)
+        new_branch = self.factory.makeBranch()
         LaunchpadZopelessLayer.txn.commit()
         return new_branch
 
@@ -572,7 +563,7 @@ class TestBzrSyncModified(BzrSyncTestCase):
 
     def setUp(self):
         BzrSyncTestCase.setUp(self)
-        self.bzrsync = BzrSync(self.txn, self.db_branch, self.bzr_branch_url)
+        self.bzrsync = self.makeBzrSync(self.db_branch, self.bzr_branch_url)
 
     def test_timestampToDatetime_with_negative_fractional(self):
         # timestampToDatetime should convert a negative, fractional timestamp
@@ -761,11 +752,13 @@ class TestBzrSyncEmail(BzrSyncTestCase):
         uncommit_email_body = uncommit_email[2]
         expected = '1 revision was removed from the branch.'
         self.assertTextIn(expected, uncommit_email_body)
-        subject = 'Subject: [Branch ~sabdfl/+junk/test] Test branch'
+        subject = (
+            'Subject: [Branch %s] Test branch' % self.db_branch.unique_name)
         self.assertTextIn(expected, uncommit_email_body)
         recommit_email_body = recommit_email[2]
         body_bits = [
-            'Subject: [Branch ~sabdfl/+junk/test] Rev 1: second',
+            'Subject: [Branch %s] Rev 1: second'
+            % self.db_branch.unique_name,
             'revno: 1',
             'committer: Revision Author <author@example.com>',
             'branch nick: bzr_branch',
