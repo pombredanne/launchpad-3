@@ -7,7 +7,7 @@ __all__ = [
     'IThing',
     'Thing',
     'ThingFeedView',
-    'validateFeed',
+    'validate_feed',
     ]
 
 
@@ -50,7 +50,7 @@ class ThingFeedView(LaunchpadView):
         return "a feed view on an IThing"
 
 
-def validateFeed(content, content_type, base_uri):
+def validate_feed(content, content_type, base_uri):
     """Validate the content of an Atom, RSS, or KML feed.
 
     :param content: string containing xml feed
@@ -83,13 +83,13 @@ def validateFeed(content, content_type, base_uri):
                     errors.append('Location: %s' % base_uri)
                 error_line_number = item.params['line']
                 column_number = item.params['column']
-                errors.append('-')
+                errors.append('=')
                 # Wrap the line with the error to make it clearer
                 # which column contains the error.
                 max_line_length = 66
                 wrapped_column_number = column_number % max_line_length
-                for line_number in range(max(error_line_number-99, 1),
-                                         min(error_line_number+99, len(lines))):
+                for line_number in range(max(error_line_number-2, 1),
+                                         min(error_line_number+3, len(lines))):
                     unicode_line = unicode(
                         lines[line_number-1], 'ascii', 'replace')
                     ascii_line = unicode_line.encode('ascii', 'replace')
@@ -97,8 +97,8 @@ def validateFeed(content, content_type, base_uri):
                     if line_number == error_line_number:
                         # Point to the column where the error occurs, e.g.
                         # Error: <feed><entriez>
-                        # Point: _____________^______________
-                        point_list = ['.'] * max_line_length
+                        # Point: ~~~~~~~~~~~~~^~~~~~~~~~~~~~~
+                        point_list = ['~'] * max_line_length
                         point_list[wrapped_column_number] = '^'
                         point_string = ''.join(point_list)
                         index = column_number/max_line_length + 1
@@ -106,7 +106,7 @@ def validateFeed(content, content_type, base_uri):
                     errors.append(
                         "% 3d: %s" % (line_number,
                                       '\n   : '.join(wrapped_lines)))
-                errors.append('-')
+                errors.append('=')
     if len(errors) == 0:
         print "No Errors"
     else:

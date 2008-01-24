@@ -82,13 +82,6 @@ class BugsFeedBase(FeedBase):
             status = True)
 
     @property
-    def link_self(self):
-        """See `IFeed`."""
-        return "%s/%s.%s" % (
-            canonical_url(self.context, rootsite='feeds'),
-                          self.feedname, self.format)
-
-    @property
     def logo(self):
         """See `IFeed`."""
         return "%s/@@/bug" % self.site_url

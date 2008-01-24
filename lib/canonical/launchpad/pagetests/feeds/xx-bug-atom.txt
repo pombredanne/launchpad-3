@@ -5,7 +5,7 @@ using BeautifulStoneSoup instead of BSS or the helper functions.
 
     >>> from BeautifulSoup import BeautifulStoneSoup as BSS
     >>> from BeautifulSoup import SoupStrainer
-    >>> from canonical.launchpad.ftests.feeds_helper import validateFeed
+    >>> from canonical.launchpad.ftests.feeds_helper import validate_feed
 
 Please note that when displaying the results of the feeds in a reader
 the order of entries may not be the same as generated.  Some readers
@@ -38,7 +38,7 @@ the bugs page for the product, while the alternate link for entries
 point to the bugs themselves.
 
     >>> browser.open('http://feeds.launchpad.dev/jokosher/latest-bugs.atom')
-    >>> validateFeed(browser.contents, 
+    >>> validate_feed(browser.contents,
     ...              browser.headers['content-type'], browser.url)
     No Errors
     >>> BSS(browser.contents).title.contents
@@ -95,7 +95,7 @@ This feed gets the latest bugs for a project, and has the same type of content
 as the latest bugs feed for a product.
 
     >>> browser.open('http://feeds.launchpad.dev/mozilla/latest-bugs.atom')
-    >>> validateFeed(browser.contents, 
+    >>> validate_feed(browser.contents,
     ...              browser.headers['content-type'], browser.url)
     No Errors
     >>> BSS(browser.contents).title.contents
@@ -140,7 +140,7 @@ This feed gets the latest bugs for a distribution, and has the same type
 of content as the latest bugs feed for a product.
 
     >>> browser.open('http://feeds.launchpad.dev/ubuntu/latest-bugs.atom')
-    >>> validateFeed(browser.contents, 
+    >>> validate_feed(browser.contents,
     ...              browser.headers['content-type'], browser.url)
     No Errors
     >>> BSS(browser.contents).title.contents
@@ -171,7 +171,7 @@ type of content as the latest bugs feed for a product.
     >>> browser.open(
     ...     'http://feeds.launchpad.dev/ubuntu/+source/thunderbird'
     ...     '/latest-bugs.atom')
-    >>> validateFeed(browser.contents, 
+    >>> validate_feed(browser.contents,
     ...              browser.headers['content-type'], browser.url)
     No Errors
     >>> BSS(browser.contents).title.contents
@@ -200,7 +200,7 @@ type of content as the latest bugs feed for a product.
 
     >>> browser.open(
     ...     'http://feeds.launchpad.dev/ubuntu/hoary/latest-bugs.atom')
-    >>> validateFeed(browser.contents, 
+    >>> validate_feed(browser.contents,
     ...              browser.headers['content-type'], browser.url)
     No Errors
     >>> BSS(browser.contents).title.contents
@@ -231,7 +231,7 @@ type of content as the latest bugs feed for a product.
 
     >>> browser.open(
     ...     'http://feeds.launchpad.dev/firefox/1.0/latest-bugs.atom')
-    >>> validateFeed(browser.contents, 
+    >>> validate_feed(browser.contents,
     ...              browser.headers['content-type'], browser.url)
     No Errors
     >>> BSS(browser.contents).title.contents
@@ -260,7 +260,7 @@ type of content as the latest bugs feed for a product.
 This feed gets the latest bugs for a person.
 
     >>> browser.open('http://feeds.launchpad.dev/~name16/latest-bugs.atom')
-    >>> validateFeed(browser.contents, 
+    >>> validate_feed(browser.contents,
     ...              browser.headers['content-type'], browser.url)
     No Errors
     >>> BSS(browser.contents).title.contents
@@ -327,7 +327,7 @@ some results.
 
     >>> browser.open(
     ...    'http://feeds.launchpad.dev/~simple-team/latest-bugs.atom')
-    >>> validateFeed(browser.contents, 
+    >>> validate_feed(browser.contents,
     ...              browser.headers['content-type'], browser.url)
     No Errors
     >>> BSS(browser.contents).title.contents
@@ -407,7 +407,7 @@ to True.
 This feed shows the status of a single bug.
 
     >>> browser.open('http://feeds.launchpad.dev/bugs/1/bug.atom')
-    >>> validateFeed(browser.contents, 
+    >>> validate_feed(browser.contents,
     ...              browser.headers['content-type'], browser.url)
     No Errors
     >>> BSS(browser.contents).title.contents
