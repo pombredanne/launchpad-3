@@ -3,12 +3,9 @@
 Some statuses, e.g. Won't Fix, are restricted. Only members of the Bug
 Contact team may change a bug to that status.
 
+    >>> from canonical.launchpad.ftests.bug import print_bug_affects_table
     >>> def print_highlighted_bugtask(browser):
-    ...     contents = browser.contents
-    ...     for listing in find_tags_by_class(contents, 'listing'):
-    ...         for highlight in listing('tr', attrs={'class':'highlight'}):
-    ...             for td in highlight('td')[0:3]:
-    ...                 print ' '.join(td(text=lambda t: not t.isspace()))
+    ...     print_bug_affects_table(browser.contents, highlighted_only=True)
 
 == Unprivileged users ==
 
@@ -28,7 +25,7 @@ An unprivileged user can confirm the bug:
     >>> print user_browser.url
     http://bugs.launchpad.dev/ubuntu/+source/mozilla-firefox/+bug/1
     >>> print_highlighted_bugtask(user_browser)
-    mozilla-firefox (Ubuntu)  Confirmed  Medium
+    mozilla-firefox (Ubuntu)  Confirmed  Medium  &mdash;
 
 But he cannot change the status to Won't Fix or to Triaged, and so
 those statuses are not shown in the UI:
@@ -83,7 +80,7 @@ The new Bug Contact for Ubuntu can change the status to Won't Fix:
     >>> print bug_contact_browser.url
     http://bugs.launchpad.dev/ubuntu/+source/mozilla-firefox/+bug/1
     >>> print_highlighted_bugtask(bug_contact_browser)
-    mozilla-firefox (Ubuntu)  Won't Fix  Medium
+    mozilla-firefox (Ubuntu)  Won't Fix  Medium  &mdash;
 
 Now the bug has been changed, a regular user can see the Won't Fix
 status. Earlier it was not even displayed as an option.
@@ -108,7 +105,7 @@ And a regular user can change other aspects of the bug:
     >>> print bug_contact_browser.url
     http://bugs.launchpad.dev/ubuntu/+source/mozilla-firefox/+bug/1
     >>> print_highlighted_bugtask(bug_contact_browser)
-    mozilla-firefox (Ubuntu)  Won't Fix  Medium
+    mozilla-firefox (Ubuntu)  Won't Fix  Medium  &mdash;
 
 The Bug Contact for Ubuntu can also change the status to Triaged:
 
@@ -126,5 +123,5 @@ The Bug Contact for Ubuntu can also change the status to Triaged:
     >>> print bug_contact_browser.url
     http://bugs.launchpad.dev/ubuntu/+source/iceweasel/+bug/1
     >>> print_highlighted_bugtask(bug_contact_browser)
-    iceweasel (Ubuntu)  Triaged  Medium
+    iceweasel (Ubuntu)  Triaged  Medium  &mdash;
 

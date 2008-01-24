@@ -5,6 +5,20 @@
           tasklink view/taskLink;
           form_row_id string:task${context/id}">
   <tr tal:attributes="class view/getTaskRowCSSClass">
+    <td align="right">
+      <a
+        tal:condition="expandable"
+        tal:attributes="
+          href tasklink;
+          onclick string:return toggleFormVisibility('${form_row_id}')
+        "
+      >
+        <img
+          src="/@@/bug-status-expand"
+          alt=""
+        />
+      </a>
+    </td>
     <td width="14" tal:condition="nothing"><a tal:condition="expandable"
            tal:attributes="
               href tasklink;
@@ -84,6 +98,19 @@
       />
     </td>
 
+    <td style="padding-right: 0em" align="right">
+      <a
+        tal:condition="expandable"
+        tal:attributes="
+          href tasklink;
+          onclick string:return toggleFormVisibility('${form_row_id}')
+        "
+      ><img
+        src="/@@/bug-status-expand"
+        alt="[edit]"
+      /></a>
+    </td>
+
     <td style="margin: 0; padding: 0; vertical-align: middle">
       <tal:has_watch condition="context/bugwatch">
         <a style="display: block; text-decoration: none; padding: 0.25em"
@@ -120,18 +147,6 @@
       </tal:has_no_watch>
     </td>
     </tal:not-conjoined-task>
-    <td class="icon right">
-      <a
-        tal:condition="expandable"
-        tal:attributes="
-          href tasklink;
-          onclick string:return toggleFormVisibility('${form_row_id}')
-        "
-      ><img
-        src="/@@/bug-status-expand"
-        alt="[edit]"
-      /></a>
-    </td>
   </tr>
   <tal:form condition="view/displayEditForm">
     <tr

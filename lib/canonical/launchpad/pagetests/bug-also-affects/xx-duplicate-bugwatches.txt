@@ -47,20 +47,12 @@ same bug watch.
     >>> user_browser.open(
     ...     'http://launchpad.dev/debian/+source/mozilla-firefox/'
     ...     '+bug/8/')
-    >>> affects_table = find_tags_by_class(user_browser.contents, 'listing')[0]
-    >>> task_rows = [
-    ...     row for row in affects_table.tbody.fetch('tr', recursive=False)
-    ...     if row.get('style') != 'display: none']
-    >>> for row in task_rows:
-    ...     target_td, bugwatch_td = row('td')[0], row('td')[-2]
-    ...     if bugwatch_td.img:
-    ...         bugwatch = bugwatch_td.img.nextSibling
-    ...     else:
-    ...         bugwatch = '-'
-    ...     print "%s: %s" % (target_td.a.string, bugwatch)
-    evolution (Debian): debbugs #42
-    mozilla-firefox (Debian): Foo Bar
-    thunderbird (Debian): debbugs #42
+
+    >>> from canonical.launchpad.ftests.bug import print_bug_affects_table
+    >>> print_bug_affects_table(user_browser.contents)
+    evolution (Debian)   Unknown Unknown   debbugs #42
+    ...
+    thunderbird (Debian) Unknown Unknown   debbugs #42
 
 
 == Adding the same bug watch to two different bugs ==
