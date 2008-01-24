@@ -109,7 +109,7 @@
       tal:condition="expandable"
       style="display: none"
     >
-     <td colspan="5" tal:content="structure context/@@+edit-form" />
+     <td colspan="6" tal:content="structure context/@@+edit-form" />
     </tr>
   </tal:form>
 </tal:bugtask>
