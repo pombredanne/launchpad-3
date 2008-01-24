@@ -80,6 +80,7 @@ PUBLIC_EXTERNAL_ARCHIVER = '/usr/bin/mhonarc \
 -outdir %(var_dir)s/mhonarc/%%(listname)s \
 -stderr %(var_dir)s/logs/mhonarc \
 -stdout %(var_dir)s/logs/mhonarc \
+-spammode \
 -umask 022'
 PRIVATE_EXTERNAL_ARCHIVER = PUBLIC_EXTERNAL_ARCHIVER
 """ % dict(
