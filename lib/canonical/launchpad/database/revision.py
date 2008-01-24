@@ -13,7 +13,7 @@ from zope.interface import implements
 from sqlobject import (
     ForeignKey, IntCol, StringCol, SQLObjectNotFound, SQLMultipleJoin)
 
-from canonical.database.sqlbase import SQLBase, sqlvalues
+from canonical.database.sqlbase import SQLBase
 from canonical.database.constants import DEFAULT
 from canonical.database.datetimecol import UtcDateTimeCol
 
@@ -91,8 +91,7 @@ class RevisionAuthor(SQLBase):
         if lp_email is None:
             return False
         # Only accept an email address that is validated.
-        if lp_email.status in (EmailAddressStatus.VALIDATED,
-                               EmailAddressStatus.PREFERRED):
+        if lp_email.status != EmailAddressStatus.NEW:
             self.person = lp_email.person
             return True
         else:
@@ -139,7 +138,10 @@ class RevisionSet:
         # If there is no @, then it isn't a real email address.
         if '@' not in email_address:
             email_address = None
-        return RevisionAuthor(name=revision_author, email=email_address)
+
+        author = RevisionAuthor(name=revision_author, email=email_address)
+        author.linkToLaunchpadPerson()
+        return author
 
     def new(self, revision_id, log_body, revision_date, revision_author,
             parent_ids, properties):
@@ -151,7 +153,6 @@ class RevisionSet:
             author = RevisionAuthor.byName(revision_author)
         except SQLObjectNotFound:
             author = self._createRevisionAuthor(revision_author)
-        author.linkToLaunchpadPerson()
 
         revision = Revision(revision_id=revision_id,
                             log_body=log_body,
@@ -170,3 +171,8 @@ class RevisionSet:
             RevisionProperty(revision=revision, name=name, value=value)
 
         return revision
+
+    def checkNewVerifiedEmail(self, email):
+        """See `IRevisionSet`."""
+        for author in RevisionAuthor.selectBy(email=email.email):
+            author.person = email.person

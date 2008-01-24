@@ -14,6 +14,8 @@ ALTER TABLE Revision
 --   with this column?
 
 -- Need indexes for people merge
+CREATE INDEX revisionauthor__email__idx
+  ON RevisionAuthor(email);
 CREATE INDEX revisionauthor__person__idx
   ON RevisionAuthor(person);
 

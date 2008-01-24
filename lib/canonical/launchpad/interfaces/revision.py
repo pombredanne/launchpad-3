@@ -86,3 +86,10 @@ class IRevisionSet(Interface):
     def new(revision_id, log_body, revision_date, revision_author,
             parent_ids, properties):
         """Create a new Revision with the given revision ID."""
+
+    def checkNewVerifiedEmail(email):
+        """Look to see if this email address has been used to commit revsions.
+
+        If it has, then associate the RevisionAuthor with the Launchpad person
+        who owns this email address.
+        """
