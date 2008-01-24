@@ -4,12 +4,11 @@
 
 __metaclass__ = type
 __all__ = [
+    'ConsumerView',
     'PublisherFetcher',
     'complete_from_browser',
-    'install_consumerview',
     'make_endpoint',
     'make_identifier_select_endpoint',
-    'uninstall_consumerview',
 ]
 
 from StringIO import StringIO
@@ -21,11 +20,6 @@ from openid.consumer.discover import (
     OPENID_2_0_TYPE, OPENID_IDP_2_0_TYPE)
 from openid.message import IDENTIFIER_SELECT
 
-from zope.app.testing.ztapi import browserView
-from zope.interface import implements
-from zope.publisher.interfaces.browser import IBrowserPublisher
-from zope.security.checker import (
-    Checker, CheckerPublic, defineChecker, undefineChecker)
 from zope.testbrowser.testing import PublisherHTTPHandler
 
 from canonical.launchpad.webapp import LaunchpadView
@@ -36,7 +30,6 @@ class ConsumerView(LaunchpadView):
     """Register a view that renders the parameters in the response
     in an easily testable format.
     """
-    implements(IBrowserPublisher)
     def render(self):
         out = StringIO()
         print >> out, 'Consumer received %s' % self.request.method
@@ -44,20 +37,6 @@ class ConsumerView(LaunchpadView):
         for key in keys:
             print >> out, '%s:%s' % (key, self.request.form[key])
         return out.getvalue()
-    def browserDefault(self, request):
-        return self, ()
-
-
-def install_consumer():
-    defineChecker(ConsumerView, Checker({
-        '__call__': CheckerPublic,
-        'browserDefault': CheckerPublic,
-        'render': CheckerPublic}))
-    browserView(None, '+openid-consumer', ConsumerView)
-
-
-def uninstall_consumer():
-    undefineChecker(ConsumerView)
 
 
 class PublisherFetcher(fetchers.Urllib2Fetcher):
