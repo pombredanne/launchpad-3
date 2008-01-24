@@ -124,6 +124,21 @@ URL.
     ----
 
 
+== Invalid Persistent Identifiers ==
+
+Discovery is not possible on non-existent persistent identifiers:
+
+    >>> anon_browser.open('http://openid.launchpad.dev/+id/no-such-id')
+    Traceback (most recent call last):
+      ...
+    NotFound: ...
+
+    >>> print_endpoints('http://openid.launchpad.dev/+id/no-such-id')
+    Traceback (most recent call last):
+      ...
+    DiscoveryFailure: ...
+
+
 == No OpenID for Teams ==
 
 Launchpad teams do not have OpenID identifiers:
@@ -150,16 +165,6 @@ identifiers:
     No services discovered
 
     >>> print_endpoints('http://openid.launchpad.dev/+id/spiv_oid')
-    Traceback (most recent call last):
-      ...
-    DiscoveryFailure: ...
-
-
-== Invalid Persistent Identifiers ==
-
-Discovery is not possible on non-existent persistent identifiers:
-
-    >>> print_endpoints('http://openid.launchpad.dev/+id/no-such-id')
     Traceback (most recent call last):
       ...
     DiscoveryFailure: ...
