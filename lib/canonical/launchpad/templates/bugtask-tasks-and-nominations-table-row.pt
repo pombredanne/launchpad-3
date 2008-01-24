@@ -6,17 +6,18 @@
           form_row_id string:task${context/id}">
   <tr tal:attributes="class view/getTaskRowCSSClass">
     <td align="right">
-      <metal:expander metal:define-macro="expander"
-                      tal:define="link_text link_text|nothing">
+      <metal:expander
+          metal:define-macro="expander"
+          tal:define="expander_link_text expander_link_text|nothing">
         <a tal:condition="expandable"
            tal:attributes="
             href tasklink;
             onclick string:return toggleFormVisibility('${form_row_id}')">
           <img src="/@@/bug-status-expand" alt="[edit]" />
-          <tal:link_text tal:replace="link_text" />
+          <tal:link_text tal:replace="expander_link_text" />
         </a>
         <tal:no_expander tal:condition="not: expandable"
-                         tal:replace="link_text" />
+                         tal:replace="expander_link_text" />
       </metal:expander>
     </td>
     <td style="padding: 0.3em 0em 0.3em 1.5em"
@@ -55,12 +56,12 @@
 
     <tal:not-conjoined-task condition="not:context/conjoined_master">
     <td tal:attributes="class string:status${context/status/name}"
-        tal:define="link_text context/status/title">
+        tal:define="expander_link_text context/status/title">
       <metal:expander metal:use-macro="template/macros/expander" />
     </td>
 
     <td tal:attributes="class string:importance${context/importance/name}"
-        tal:define="link_text context/importance/title">
+        tal:define="expander_link_text context/importance/title">
       <metal:expander metal:use-macro="template/macros/expander" />
     </td>
 
