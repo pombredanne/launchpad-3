@@ -66,32 +66,6 @@ class PublisherFetcher(fetchers.Urllib2Fetcher):
         super(PublisherFetcher, self).__init__()
         self.urlopen = urllib2.build_opener(PublisherHTTPHandler).open
 
-    def fetch(self, url, body=None, headers=None):
-        if not fetchers._allowedURL(url):
-            raise ValueError('Bad URL scheme: %r' % (url,))
-
-        if headers is None:
-            headers = {}
-
-        headers.setdefault(
-            'User-Agent',
-            "%s Python-urllib/%s" % (fetchers.USER_AGENT,
-                                     urllib2.__version__,))
-        headers.setdefault('X-zope-handle-errors', True)
-
-        req = urllib2.Request(url, data=body, headers=headers)
-        try:
-            f = self.urlopen(req)
-            try:
-                return self._makeResponse(f)
-            finally:
-                f.close()
-        except urllib2.HTTPError, why:
-            try:
-                return self._makeResponse(why)
-            finally:
-                why.close()
-
 
 def make_endpoint(protocol_uri, claimed_id, local_id=None):
     """Create an endpoint for use with `Consumer.beginWithoutDiscovery`.
