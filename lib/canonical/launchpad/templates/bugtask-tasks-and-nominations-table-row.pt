@@ -19,13 +19,6 @@
                          tal:replace="link_text" />
       </metal:expander>
     </td>
-    <td width="14" tal:condition="nothing"><a tal:condition="expandable"
-           tal:attributes="
-              href tasklink;
-              onclick string:return toggleFormVisibility('${form_row_id}')"
-          ><img tal:attributes="id string:${form_row_id}-edit"
-               width="14" height="14"
-               src="/@@/treeCollapsed" alt="edit" /></a></td>
     <td style="padding: 0.3em 0em 0.3em 1.5em"
         tal:condition="indent_task"
         tal:define="series_targetname view/getSeriesTargetName">
