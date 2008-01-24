@@ -9,10 +9,11 @@ __all__ = [
     ]
 
 
-from zope.component import adapts
+from zope.component import adapts, getUtility
 
 from canonical.lazr.rest import Collection, Entry
-from canonical.launchpad.interfaces import IPerson, IPersonEntry, ITeam
+from canonical.launchpad.interfaces import (
+    IPerson, IPersonEntry, IPersonSet, ITeam)
 from canonical.lp import decorates
 
 
@@ -34,6 +35,11 @@ class PersonEntry(Entry):
         """See `IEntry`."""
         return self.context.name
 
+    def lookupCollection(self, name):
+        """See `IEntry`."""
+        if name == 'members' and self.context.isTeam():
+            return getUtility(IPersonSet)
+
 
 class PersonCollection(Collection):
     """A collection of people."""
@@ -48,4 +54,7 @@ class PersonCollection(Collection):
 
     def find(self, scope, relationship):
         """Return all the people on the site."""
-        return self.context.find("")
+        if scope is None:
+            return self.context.find("")
+        elif scope.context.isTeam() and relationship == 'members':
+            return scope.context.allmembers

@@ -40,9 +40,11 @@ from zope.interface.exceptions import Invalid
 from zope.interface.interface import invariant
 from zope.component import getUtility
 
-from canonical.launchpad import _
 from canonical.lazr import DBEnumeratedType, DBItem, EnumeratedType, Item
 from canonical.lazr.interfaces import IEntry
+from canonical.lazr.rest.schema import CollectionField
+
+from canonical.launchpad import _
 from canonical.launchpad.fields import (
     BlacklistableContentNameField, IconImageUpload, LogoImageUpload,
     MugshotImageUpload, PasswordField, StrippedTextLine)
@@ -1258,6 +1260,7 @@ class IPersonEntry(IEntry):
 
     name = IPerson.get('name')
     teamowner = Object(schema=IPerson)
+    members = CollectionField(schema=IPerson)
 
 
 class INewPersonForm(IPerson):

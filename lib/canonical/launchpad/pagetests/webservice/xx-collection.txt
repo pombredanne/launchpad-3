@@ -13,12 +13,7 @@ which responds to GET.
   <BLANKLINE>
   [{"self_link": "http:\/\/api.launchpad.dev\/people\/limi", "name": "limi"},
   ...
-  {"self_link": "http:\/\/api.launchpad.dev\/people\/rosetta-admins",
-  "teamowner_link": "http:\/\/api.launchpad.dev\/people\/admins",
-  "name": "rosetta-admins"},
-  ...
-  {"self_link": "http:\/\/api.launchpad.dev\/people\/skacel",
-   "name": "skacel"}]
+  {"self_link": "http:\/\/api.launchpad.dev\/people\/skacel", "name": "skacel"}]
 
 The elements of a collection can be looked up by unique identifier:
 
@@ -30,6 +25,18 @@ The elements of a collection can be looked up by unique identifier:
   ...
   Content-Type: application/json
   <BLANKLINE>
-  {"self_link": "http:\/\/api.launchpad.dev\/people\/admins",
-  "teamowner_link": "http:\/\/api.launchpad.dev\/people\/sabdfl",
-   "name": "admins"}
+  {"self_link": "http:\/\/api.launchpad.dev\/people\/admins", "members_collection_link": "http:\/\/api.launchpad.dev\/people\/admins\/members", "teamowner_link": "http:\/\/api.launchpad.dev\/people\/sabdfl", "name": "admins"}
+
+A collection may be scoped to an element:
+
+  >>> print http(r"""
+  ... GET /people/admins/members HTTP/1.1
+  ... Host: api.launchpad.dev
+  ... """)
+  HTTP/1.1 200 Ok
+  ...
+  Content-Type: application/json
+  <BLANKLINE>
+  [{"self_link": "http:\/\/api.launchpad.dev\/people\/spiv", "name": "spiv"},
+  ...
+  {"self_link": "http:\/\/api.launchpad.dev\/people\/stub", "name": "stub"}]
