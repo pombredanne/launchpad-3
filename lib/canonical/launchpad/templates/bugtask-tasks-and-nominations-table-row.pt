@@ -6,18 +6,18 @@
           form_row_id string:task${context/id}">
   <tr tal:attributes="class view/getTaskRowCSSClass">
     <td align="right">
-      <a
-        tal:condition="expandable"
-        tal:attributes="
-          href tasklink;
-          onclick string:return toggleFormVisibility('${form_row_id}')
-        "
-      >
-        <img
-          src="/@@/bug-status-expand"
-          alt=""
-        />
-      </a>
+      <metal:expander metal:define-macro="expander"
+                      tal:define="link_text link_text|nothing">
+        <a tal:condition="expandable"
+           tal:attributes="
+            href tasklink;
+            onclick string:return toggleFormVisibility('${form_row_id}')">
+          <img src="/@@/bug-status-expand" alt="[edit]" />
+          <tal:link_text tal:replace="link_text" />
+        </a>
+        <tal:no_expander tal:condition="not: expandable"
+                         tal:replace="link_text" />
+      </metal:expander>
     </td>
     <td width="14" tal:condition="nothing"><a tal:condition="expandable"
            tal:attributes="
@@ -61,54 +61,18 @@
     </tal:conjoined-task>
 
     <tal:not-conjoined-task condition="not:context/conjoined_master">
-    <td tal:attributes="class string:status${context/status/name}">
-      <a
-        tal:condition="expandable"
-        tal:attributes="
-          href tasklink;
-          onclick string:return toggleFormVisibility('${form_row_id}')
-        "
-      >
-        <img
-          src="/@@/bug-status-expand"
-          alt=""
-        />
-        <tal:status replace="context/status/title" />
-      </a>
-      <tal:status condition="not:expandable" replace="context/status/title" />
+    <td tal:attributes="class string:status${context/status/name}"
+        tal:define="link_text context/status/title">
+      <metal:expander metal:use-macro="template/macros/expander" />
     </td>
 
-    <td tal:attributes="class string:importance${context/importance/name}">
-      <a
-        tal:condition="expandable"
-        tal:attributes="
-          href tasklink;
-          onclick string:return toggleFormVisibility('${form_row_id}')
-        "
-      >
-        <img
-          src="/@@/bug-status-expand"
-          alt=""
-        />
-        <tal:importance replace="context/importance/title" />
-      </a>
-      <tal:importance
-        condition="not:expandable"
-        replace="context/importance/title"
-      />
+    <td tal:attributes="class string:importance${context/importance/name}"
+        tal:define="link_text context/importance/title">
+      <metal:expander metal:use-macro="template/macros/expander" />
     </td>
 
     <td style="padding-right: 0em" align="right">
-      <a
-        tal:condition="expandable"
-        tal:attributes="
-          href tasklink;
-          onclick string:return toggleFormVisibility('${form_row_id}')
-        "
-      ><img
-        src="/@@/bug-status-expand"
-        alt="[edit]"
-      /></a>
+      <metal:expander metal:use-macro="template/macros/expander" />
     </td>
 
     <td style="margin: 0; padding: 0; vertical-align: middle">
