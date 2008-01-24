@@ -231,9 +231,10 @@
       </p>
     </tal:block>
   </tal:mentors>
-
-  <p tal:condition="view/userCanMentor">
-    &raquo; <a href="+mentor">Offer to mentor someone fixing this bug</a>
+  <p tal:define="link context/menu:context/offermentoring"
+     tal:condition="link/enabled">
+    &raquo; <a tal:attributes="href link/url">
+      Offer to mentor someone fixing this bug</a>
   </p>
 
   <tal:comment repeat="comment view/getBugCommentsForDisplay">

@@ -10,6 +10,7 @@ def test_suite():
     suite.layer = LaunchpadFunctionalLayer
     suite.addTest(doctest.DocTestSuite('canonical.widgets.password'))
     suite.addTest(doctest.DocTestSuite('canonical.widgets.textwidgets'))
+    suite.addTest(doctest.DocTestSuite('canonical.widgets.date'))
     return suite
 
 if __name__ == '__main__':

@@ -18,12 +18,11 @@ from zope.security.interfaces import Unauthorized
 from canonical.config import config
 from canonical.launchpad.webapp import canonical_url, urlparse
 from canonical.launchpad.webapp.publisher import LaunchpadView
-from canonical.launchpad.browser.bugtask import BugTaskView
 from canonical.launchpad.browser import (
     BugsBugTaskSearchListingView, BugTargetView,
     PersonRelatedBugsView)
 from canonical.launchpad.interfaces import (
-    IBug, IBugTarget, IBugTaskSet, IDistribution, IMaloneApplication, IPerson)
+    IBug, IBugTarget, IBugTaskSet, IMaloneApplication, IPerson)
 from canonical.lazr.feed import (
     FeedBase, FeedEntry, FeedPerson, FeedTypedData, MINUTES)
 
@@ -50,16 +49,6 @@ class BugFeedContentView(LaunchpadView):
     def __init__(self, context, request, feed):
         super(BugFeedContentView, self).__init__(context, request)
         self.feed = feed
-
-    @property
-    def bug_comments_for_display(self):
-        """Get the rendered bug comments.
-
-        Using the existing templates and views, transform the comments for the
-        bug into a representation to be used as the 'content' in the bug feed.
-        """
-        bug_task_view = BugTaskView(self.context.bugtasks[0], self.request)
-        return bug_task_view.getBugCommentsForDisplay()
 
     def render(self):
         """Render the view."""
@@ -91,12 +80,6 @@ class BugsFeedBase(FeedBase):
             bugtargetdisplayname = True,
             importance = True,
             status = True)
-
-    @property
-    def link_self(self):
-        """See `IFeed`."""
-        return "%s/%s.%s" % (
-            canonical_url(self.context), self.feedname, self.format)
 
     @property
     def logo(self):
