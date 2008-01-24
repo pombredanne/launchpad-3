@@ -9,6 +9,7 @@ distribution officially uses Launchpad.
     >>> print extract_text(label_cell.findNext())
     Answers
     Bug tracking
+    Blueprints
     Translations
 
 Unprivileged Launchpad users cannot access the page for changing these
@@ -68,7 +69,7 @@ A Launchpad administrator, however, can see the controls.
     ...     name='field.enable_bug_expiration').value
     True
     >>> print admin_browser.getControl(name='field.official_blueprints').value
-    False
+    True
     >>> print admin_browser.getControl(name='field.official_answers').value
     True
 
@@ -80,18 +81,12 @@ distribution Overview page.
     ...     name='field.enable_bug_expiration').value = False
     >>> admin_browser.getControl(name='field.official_malone').value = False
     >>> admin_browser.getControl(name='field.official_blueprints').value = (
-    ... True)
+    ... False)
     >>> admin_browser.getControl(name='field.official_answers').value = False
     >>> admin_browser.getControl('Change').click()
 
     >>> print admin_browser.url
     http://launchpad.dev/ubuntu
-    >>> content = find_main_content(admin_browser.contents)
-    >>> label_cell = content.find('th', text='Uses Launchpad for:')
-    >>> print extract_text(label_cell.findNext())
-    Blueprints
-
-    Print an emdash when distribution uses nothing
 
     >>> admin_browser.getLink('Change distribution details').click()
     >>> admin_browser.getControl(name='field.official_blueprints').value = (
@@ -99,6 +94,9 @@ distribution Overview page.
     >>> admin_browser.getControl('Change').click()
     >>> content = find_main_content(admin_browser.contents)
     >>> label_cell = content.find('th', text='Uses Launchpad for:')
+
+Print an emdash when distribution uses nothing
+
     >>> print extract_text(label_cell.findNext())
     &mdash;
 

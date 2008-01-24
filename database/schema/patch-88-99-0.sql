@@ -2,7 +2,8 @@ SET client_min_messages=ERROR;
 
 ALTER TABLE Product
     ADD COLUMN official_codehosting BOOLEAN;
-/* Set official_codhosting value to True if the development focus series of
+
+/* Set official_codehosting value to True if the development focus series of
    the product has a hosted branch specified */
 UPDATE Product
 SET official_codehosting = TRUE
