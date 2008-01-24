@@ -99,9 +99,6 @@
             </span>
           </a>
         </tal:has_assignee>
-        <tal:no_assignee condition="not: context/assignee">
-          &mdash;
-        </tal:no_assignee>
       </tal:has_no_watch>
     </td>
     </tal:not-conjoined-task>
