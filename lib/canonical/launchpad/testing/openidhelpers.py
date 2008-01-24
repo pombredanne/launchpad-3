@@ -20,8 +20,6 @@ from openid.consumer.discover import (
     OPENID_2_0_TYPE, OPENID_IDP_2_0_TYPE)
 from openid.message import IDENTIFIER_SELECT
 
-from zope.testbrowser.testing import PublisherHTTPHandler
-
 from canonical.launchpad.webapp import LaunchpadView
 from canonical.launchpad.webapp.vhosts import allvhosts
 
@@ -43,6 +41,10 @@ class PublisherFetcher(fetchers.Urllib2Fetcher):
     """An `HTTPFetcher` that passes requests on to the Zope publisher."""
     def __init__(self):
         super(PublisherFetcher, self).__init__()
+        # This module does "from test import pystone".  Doing this
+        # import earlier causes "make run" to fail due to test.py
+        # shadowing the package.
+        from zope.testbrowser.testing import PublisherHTTPHandler
         self.opener = urllib2.build_opener(PublisherHTTPHandler)
 
     def urlopen(self, request):
