@@ -94,7 +94,6 @@ import pytz
 import urllib
 
 from zope.app.form.browser import SelectWidget, TextAreaWidget
-from zope.app.form.browser.itemswidgets import RadioWidget
 from zope.app.session.interfaces import ISession
 from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 from zope.event import notify
