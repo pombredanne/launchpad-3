@@ -3029,7 +3029,8 @@ class PersonEditEmailsView(LaunchpadFormView):
         newemail = data['newemail']
         if not valid_email(newemail):
             self.addError(
-                "'%s' doesn't seem to be a valid email address." % newemail)
+                "'%s' doesn't seem to be a valid email address." %
+                cgi.escape(newemail))
             return self.errors
 
         email = getUtility(IEmailAddressSet).getByEmail(newemail)
