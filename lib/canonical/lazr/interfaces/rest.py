@@ -5,6 +5,7 @@
 __metaclass__ = type
 __all__ = [
     'ICollection',
+    'ICollectionField',
     'ICollectionResource',
     'IEntry',
     'IEntryResource',
@@ -15,7 +16,11 @@ __all__ = [
 
 from zope.interface import Interface, Attribute
 from zope.publisher.interfaces import IPublishTraverse
+from zope.schema.interfaces import IObject
 from canonical.launchpad.webapp.interfaces import ICanonicalUrlData
+
+class ICollectionField(IObject):
+    """A collection associated with an entry."""
 
 
 class IHTTPResource(IPublishTraverse, ICanonicalUrlData):
@@ -97,8 +102,8 @@ class ICollection(Interface):
         :return: An IEntry object.
         """
 
-    def find(self):
-        """Retrieve all entries in the collection.
+    def find(self, scope, relationship):
+        """Retrieve all entries in the collection under the given scope.
 
         :return: A list of IEntry objects.
         """

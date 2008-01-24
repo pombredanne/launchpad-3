@@ -46,6 +46,6 @@ class PersonCollection(Collection):
         else:
             return person
 
-    def find(self):
+    def find(self, scope, relationship):
         """Return all the people on the site."""
         return self.context.find("")

@@ -23,8 +23,8 @@ from zope.schema.interfaces import IField, IObject
 
 from canonical.launchpad.webapp import canonical_url
 from canonical.lazr.interfaces import (
-    ICollection, ICollectionResource, IEntry, IEntryResource, IHTTPResource,
-    IJSONPublishable, IServiceRootResource)
+    ICollection, ICollectionField, ICollectionResource, IEntry,
+    IEntryResource, IHTTPResource, IJSONPublishable, IServiceRootResource)
 
 
 class ResourceJSONEncoder(simplejson.JSONEncoder):
@@ -92,6 +92,15 @@ class EntryResource(ReadOnlyResource):
         """See `IEntryResource`."""
         return urllib.quote(self.context.fragment())
 
+    def publishTraverse(self, request, name):
+        """Fetch a scoped collection resource by name."""
+        collection = self.context.lookupCollection(name)
+        if collection is None:
+            raise NotFound(self, name)
+        else:
+            return CollectionResource(self.context, collection, name,
+                                      self.request)
+
     def toDataForJSON(self):
         """Turn the object into a simple data structure.
 
@@ -103,7 +112,15 @@ class EntryResource(ReadOnlyResource):
         schema = self.context.schema
         for name in schema.names():
             element = schema.get(name)
-            if IObject.providedBy(element):
+            if ICollectionField.providedBy(element):
+                related_collection = self.context.lookupCollection(name)
+                if related_collection is not None:
+                    related_resource = CollectionResource(
+                        self.context, related_collection, name, self.request)
+                    key = name + '_collection_link'
+                    dict[key] = canonical_url(related_resource,
+                                              request=self.request)
+            elif IObject.providedBy(element):
                 related_entry = getattr(self.context, name)
                 if related_entry is not None:
                     related_resource = EntryResource(related_entry,
@@ -126,13 +143,20 @@ class CollectionResource(ReadOnlyResource):
     """A resource that serves a list of entry resources."""
     implements(ICollectionResource)
 
-    def __init__(self, context, collection_name, request):
+    def __init__(self, scope, context, collection_name, request):
         super(CollectionResource, self).__init__(
             ICollection(context), request)
+        self.scope = scope
         self.collection_name = collection_name
 
     rootsite = None
-    inside = None
+
+    @property
+    def inside(self):
+        """The collection is inside its scope."""
+        if self.scope is None:
+            return None
+        return EntryResource(self.scope, self.request)
 
     @property
     def path(self):
@@ -149,8 +173,9 @@ class CollectionResource(ReadOnlyResource):
 
     def do_GET(self):
         """Fetch a collection and render it as JSON."""
+        entries = self.context.find(self.scope, self.collection_name) or []
         entry_resources = [EntryResource(entry, self.request)
-                           for entry in self.context.find()]
+                           for entry in entries]
         self.request.response.setHeader('Content-type', 'application/json')
         return ResourceJSONEncoder().encode(entry_resources)
 
@@ -183,7 +208,7 @@ class ServiceRootResource(HTTPResource):
 
     def getTopLevelCollectionResource(self, request, name):
         if name in self.top_level_collections:
-            return CollectionResource(
+            return CollectionResource(None,
                 self.top_level_collections[name](), name, request)
         else:
             return None
