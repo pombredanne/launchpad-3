@@ -99,8 +99,8 @@ class TestLaunchpadServerCommand(TwistedTestCase, TestCaseInTempDir):
                                             allow_plugins=True)
 
         # Connect to the server
-        # We use this url because while this is no valid URL to connect to this
-        # server instance, the transport needs a URL.
+        # We use this url because while this is no valid URL to connect to
+        # this server instance, the transport needs a URL.
         client_medium = medium.SmartSimplePipesClientMedium(
             process.stdout, process.stdin)
         transport = remote.RemoteTransport(
@@ -153,13 +153,13 @@ class TestLaunchpadServerCommand(TwistedTestCase, TestCaseInTempDir):
 
     @deferToThread
     def test_bzr_serve_inet_readwrite(self):
-        # Test the server when running as an 'inet' service. That is, listening
-        # on stdin and writing to stdout.
+        # Test the server when running as an 'inet' service. That is,
+        # listening on stdin and writing to stdout.
         #
         # When the server is started normally (i.e. allowing writes), we can
         # use a transport pointing at the server to make directories, create
-        # files and so forth. These operations are then translated to the local
-        # file system.
+        # files and so forth. These operations are then translated to the
+        # local file system.
         local_transport = get_transport(config.codehosting.branches_root)
         old_file_list = list(local_transport.iter_files_recursive())
         self.assertEqual([], old_file_list)
@@ -178,13 +178,13 @@ class TestLaunchpadServerCommand(TwistedTestCase, TestCaseInTempDir):
 
     @deferToThread
     def test_bzr_serve_port_readwrite(self):
-        # Test the server when running as an 'port' service. That is, listening
-        # on a TCP port.
+        # Test the server when running as an 'port' service. That is,
+        # listening on a TCP port.
         #
         # When the server is started normally (i.e. allowing writes), we can
         # use a transport pointing at the server to make directories, create
-        # files and so forth. These operations are then translated to the local
-        # file system.
+        # files and so forth. These operations are then translated to the
+        # local file system.
 
         # XXX: JonathanLange 2007-07-06, This test is almost identical to
         # test_bzr_serve_inet_readwrite. Both tests should be refactored to
@@ -208,7 +208,7 @@ class TestLaunchpadServerCommand(TwistedTestCase, TestCaseInTempDir):
 
 
 def test_suite():
-    # XXX: JonathanLange 2007-08-17, These tests are failing intermittently and
-    # spuriously on PQM. Disabling for the 1.1.8 release rush hour.
+    # XXX: JonathanLange 2007-08-17, These tests are failing intermittently
+    # and spuriously on PQM. Disabling for the 1.1.8 release rush hour.
     return unittest.TestSuite()
 #    return unittest.TestLoader().loadTestsFromName(__name__)
