@@ -70,12 +70,6 @@ class BzrSyncTestCase(TestCaseWithTransport):
         syncer = self.makeBzrSync(db_branch, bzr_branch)
         syncer.syncBranchAndClose()
 
-    def join(self, name):
-        return self.webserver_helper.join(name)
-
-    def url(self, name):
-        return self.webserver_helper.get_remote_url(name)
-
     def makeBzrBranchAndTree(self, db_branch):
         path = relpath(os.getcwd(),
                        local_path_from_url(db_branch.warehouse_url))
