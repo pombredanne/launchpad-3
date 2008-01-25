@@ -1614,7 +1614,11 @@ class BugTaskSet:
         else:
             bug_clause = 'AND Bug.id = %s' % sqlvalues(bug)
 
-        bug_privacy_filter = get_bug_privacy_filter(user)
+        if user == getUtility(ILaunchpadCelebrities).janitor:
+            # The janitor needs access to all bugs.
+            bug_privacy_filter = ''
+        else:
+            bug_privacy_filter = get_bug_privacy_filter(user)
         if bug_privacy_filter:
             bug_privacy_filter = "AND " + bug_privacy_filter
         unconfirmed_bug_join = self._getUnconfirmedBugJoin()
