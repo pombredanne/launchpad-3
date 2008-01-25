@@ -68,7 +68,7 @@ class BzrSync:
     If the contructor succeeds, a read-lock for the underlying bzrlib branch is
     held, and must be released by calling the `close` method.
     """
-    def __init__(self, trans_manager, branch, branch_url, logger=None):
+    def __init__(self, trans_manager, branch, logger=None):
         self.trans_manager = trans_manager
         self._admin = getUtility(ILaunchpadCelebrities).admin
         self.email_from = config.noreply_from_address
@@ -78,7 +78,7 @@ class BzrSync:
         self.logger = logger
 
         self.db_branch = branch
-        self.bzr_branch = Branch.open(branch_url)
+        self.bzr_branch = Branch.open(branch.warehouse_url)
         self.bzr_branch.lock_read()
         # We want to generate the email contents as close to the source
         # of the email as possible, but we don't want to send them until
