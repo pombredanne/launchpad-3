@@ -21,6 +21,8 @@ from zope.interface import implements
 from zope.publisher.interfaces import NotFound
 from zope.schema.interfaces import IField, IObject
 
+# XXX leonardr 2008-01-25 bug=185958:
+# canonica_url code should be moved into lazr.
 from canonical.launchpad.webapp import canonical_url
 from canonical.lazr.interfaces import (
     ICollection, ICollectionResource, IEntry, IEntryResource, IHTTPResource,
@@ -56,7 +58,10 @@ class HTTPResource:
 
     @property
     def root_resource(self):
-        return self.request.publication.getApplication(self.request)
+        try:
+            return self.request.publication.getApplication(self.request)
+        except NotFound:
+            return None
 
 
 class ReadOnlyResource(HTTPResource):
@@ -80,7 +85,7 @@ class EntryResource(ReadOnlyResource):
     def inside(self):
         """Find the top-level collection resource associated with this entry.
         """
-        return self.root_resource.getTopLevelCollectionResource(
+        return self.root_resource.publishTraverse(
             self.request, self.context.parent_collection_name)
 
     def __init__(self, context, request):
@@ -126,7 +131,7 @@ class CollectionResource(ReadOnlyResource):
     """A resource that serves a list of entry resources."""
     implements(ICollectionResource)
 
-    def __init__(self, context, collection_name, request):
+    def __init__(self, context, request, collection_name):
         super(CollectionResource, self).__init__(
             ICollection(context), request)
         self.collection_name = collection_name
@@ -155,23 +160,17 @@ class CollectionResource(ReadOnlyResource):
         return ResourceJSONEncoder().encode(entry_resources)
 
 
-class ServiceRootResource(HTTPResource):
+class ServiceRootResource:
     """A resource that responds to GET by describing the service."""
     implements(IServiceRootResource)
 
     inside = None
     path = ''
-    top_level_collections = {}
+    rootsite = None
 
-    def __init__(self):
-        """Initialize the service root.
-
-        Unlike other resources, which are initialized per request, the
-        service root resource is initialized only once. Thus there is
-        no request object. There is also no context object, because the
-        service root resource just is the service root object itself.
-        """
-        super(ServiceRootResource, self).__init__(None, None)
+    @property
+    def top_level_collections(self):
+        return {}
 
     def __call__(self, REQUEST=None):
         """Handle a GET request."""
@@ -181,19 +180,12 @@ class ServiceRootResource(HTTPResource):
             REQUEST.response.setStatus(405)
             REQUEST.response.setHeader("Allow", "GET")
 
-    def getTopLevelCollectionResource(self, request, name):
+    def publishTraverse(self, request, name):
         if name in self.top_level_collections:
             return CollectionResource(
-                self.top_level_collections[name](), name, request)
+                self.top_level_collections[name](), request, name)
         else:
-            return None
-
-    def publishTraverse(self, request, name):
-        resource = self.getTopLevelCollectionResource(request, name)
-        if resource is None:
             raise NotFound(self, name)
-        else:
-            return resource
 
 
 class Entry:

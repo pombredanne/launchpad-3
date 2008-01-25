@@ -258,9 +258,10 @@ root of the object tree.
     >>> from canonical.launchpad.interfaces import IWebServiceApplication
     >>> class MyServiceRootResource(ServiceRootResource):
     ...    implements(IWebServiceApplication)
-    ...    top_level_collections = { 'authors': AuthorSet,
-    ...                              'recipes': RecipeSet }
-    ...    rootsite = 'api'
+    ...    @property
+    ...    def top_level_collections(self):
+    ...        return { 'authors' : AuthorSet,
+    ...                 'recipes' : RecipeSet }
 
 If you call the service root resource, and pass in an HTTP request, it
 will act as though you had performed a GET on the URL
@@ -278,6 +279,16 @@ will act as though you had performed a GET on the URL
     >>> app(request)
     'This is a web service.'
 
+The canonical_url function generates the URL to a resource. It works
+on any object that provides ICanonicalUrlData.
+
+    >>> from canonical.launchpad.webapp import canonical_url
+    >>> from canonical.launchpad.webapp.interfaces import ICanonicalUrlData
+    >>> ICanonicalUrlData.providedBy(app)
+    True
+    >>> canonical_url(app, request=request)
+    u'http://api.launchpad.dev/'
+
 The ServiceRoot has a list of top-level collections and implements
 IPublishTraverse, so that a request to a registered collection is
 delegated to the appropriate CollectionResource. The
@@ -294,9 +305,13 @@ in a CollectionResource.
     >>> collection = app.publishTraverse(request, "recipes")
     >>> collection
     <canonical.lazr.rest.resource.CollectionResource object ...>
-    >>> from canonical.launchpad.webapp import canonical_url
+    >>> ICanonicalUrlData.providedBy(collection)
+    True
     >>> canonical_url(collection, request=request)
     u'http://api.launchpad.dev/recipes'
+
+Calling the collection resource yields a JSON document, which can be
+parsed with standard tools and manipulated:
 
     >>> import simplejson
     >>> representation = simplejson.loads(collection())

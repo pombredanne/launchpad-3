@@ -38,9 +38,6 @@ class IJSONPublishable(Interface):
 class IServiceRootResource(IHTTPResource):
     """A service root object that also acts as a resource."""
 
-    def getTopLevelCollectionResource(name):
-        """Look up a top-level collection resource by URL fragment."""
-
 
 class IEntryResource(IHTTPResource):
     """A resource that represents an individual Launchpad object."""

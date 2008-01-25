@@ -193,5 +193,6 @@ class WebServiceApplication(ServiceRootResource):
     implements(IWebServiceApplication)
 
     # See ServiceRootResource for more on top_level_collections
-    top_level_collections = { 'people' : lambda : getUtility(IPersonSet) }
-    rootsite = 'api'
+    @property
+    def top_level_collections(self):
+        return { 'people' : lambda : getUtility(IPersonSet) }
