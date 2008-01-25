@@ -53,24 +53,32 @@ warning message to the user. By default the limit is 50.
 
     >>> view.max_sources_presented
     50
+
     >>> view.has_undisplayed_sources
     False
+
+Using a lower limit we can see the described mechanism working.
 
     >>> view.max_sources_presented = 2
     >>> view.initialize()
 
     >>> view.available_sources_size
     3
+
     >>> view.has_undisplayed_sources
     True
+
     >>> len(view.widgets.get('selected_sources').vocabulary)
     2
+
+Restoring the default widget limit.
 
     >>> view.max_sources_presented = 50
     >>> view.initialize()
 
-This view also provides package filtering by source package name, by
-default all available sources are presented with empty filter.
+This view also provides package filtering by source package name, so
+the user can refine the available options presented. By default all
+available sources are presented with empty filter.
 
     >>> for pub in view.sources:
     ...     print pub.displayname
@@ -78,7 +86,8 @@ default all available sources are presented with empty filter.
     iceweasel 1.0 in warty
     pmount 0.1-1 in warty
 
-Whatever is passed as filter results in a corresponding set of results.
+Whatever is passed as 'name_filter' results in a corresponding set of
+filtered results.
 
     >>> name_filter_request = LaunchpadTestRequest(
     ...     form={'field.name_filter': 'pmount'})
@@ -90,8 +99,8 @@ Whatever is passed as filter results in a corresponding set of results.
     ...     print pub.displayname
     pmount 0.1-1 in warty
 
-When submitted deletions immediately takes effects resulting in a page
-which the available options already excluding the deleted items.
+When submitted, deletions immediately take effect resulting in a page
+which the available options already exclude the deleted items.
 
     >>> delete_all_request = LaunchpadTestRequest(
     ...    form={'field.actions.delete': 'Delete Packages',
@@ -112,7 +121,7 @@ which the available options already excluding the deleted items.
     >>> import transaction
     >>> transaction.commit()
 
-If by any chance the form containing already deleted items is
+If by any chance, the form containing already deleted items, is
 re-POSTed to the page, the code is able to identify such invalid
 situation and ignore it. See bug #185922 for reference.
 
