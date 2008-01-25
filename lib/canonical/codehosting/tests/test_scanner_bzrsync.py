@@ -25,13 +25,12 @@ from canonical.launchpad.database import (
 from canonical.launchpad.mail import stub
 from canonical.launchpad.interfaces import (
     BranchSubscriptionDiffSize, BranchSubscriptionNotificationLevel,
-    BranchType, IBranchSet, IPersonSet, IRevisionSet)
+    IBranchSet, IPersonSet, IRevisionSet)
 from canonical.launchpad.testing import LaunchpadObjectFactory
 from canonical.codehosting.scanner.bzrsync import (
     BzrSync, RevisionModifiedError)
 from canonical.codehosting.codeimport.tests.helpers import (
     instrument_method, InstrumentedMethodObserver)
-from canonical.launchpad.scripts.tests.webserver_helper import WebserverHelper
 from canonical.testing import LaunchpadZopelessLayer
 
 
@@ -51,8 +50,6 @@ class BzrSyncTestCase(TestCaseWithTransport):
 
     def setUp(self):
         TestCaseWithTransport.setUp(self)
-        self.webserver_helper = WebserverHelper()
-        self.webserver_helper.setUp()
         self._warehouse_root_url = config.supermirror.warehouse_root_url
         config.supermirror.warehouse_root_url = (
             local_path_to_url(os.getcwd()) + '/')
@@ -65,7 +62,6 @@ class BzrSyncTestCase(TestCaseWithTransport):
         self.setUpAuthor()
 
     def tearDown(self):
-        self.webserver_helper.tearDown()
         config.supermirror.warehouse_root_url = self._warehouse_root_url
         TestCaseWithTransport.tearDown(self)
 
