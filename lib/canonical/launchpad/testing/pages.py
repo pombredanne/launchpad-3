@@ -1,9 +1,5 @@
-
 # Copyright 2004 Canonical Ltd.  All rights reserved.
-"""Run all of the pagetests, in priority order.
-
-Set up the test data in the database first.
-"""
+"""Testing infrastructure for page tests."""
 # Stop lint warning about not initializing TestCase parent on
 # PageStoryTestCase, see the comment bellow.
 # pylint: disable-msg=W0231
@@ -24,9 +20,6 @@ from zope.testbrowser.testing import Browser
 
 from canonical.functional import PageTestDocFileSuite, SpecialOutputChecker
 from canonical.testing import PageTestLayer
-
-
-here = os.path.dirname(os.path.realpath(__file__))
 
 
 class UnstickyCookieHTTPCaller(HTTPCaller):
@@ -433,24 +426,4 @@ def PageTestSuite(storydir, package=None, setUp=setUpGlobs):
           for filename in numberedfilenames])
     suite.addTest(PageStoryTestCase(abs_storydir, storysuite))
 
-    return suite
-
-
-def test_suite():
-    pagetestsdir = os.path.join('..', 'pagetests')
-    abs_pagetestsdir = os.path.abspath(
-        os.path.normpath(os.path.join(here, pagetestsdir)))
-
-    stories = [
-        os.path.join(pagetestsdir, d)
-        for d in os.listdir(abs_pagetestsdir)
-        if not d.startswith('.') and
-           os.path.isdir(os.path.join(abs_pagetestsdir, d))
-        ]
-    stories.sort()
-
-    suite = unittest.TestSuite()
-
-    for storydir in stories:
-        suite.addTest(PageTestSuite(storydir))
     return suite
