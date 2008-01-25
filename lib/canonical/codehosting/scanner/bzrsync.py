@@ -62,6 +62,40 @@ def set_bug_branch_status(bug, branch, status):
     return bug_branch
 
 
+def get_diff(bzr_branch, bzr_revision):
+    repo = bzr_branch.repository
+    if bzr_revision.parent_ids:
+        ids = (bzr_revision.revision_id, bzr_revision.parent_ids[0])
+        tree_new, tree_old = repo.revision_trees(ids)
+    else:
+        # can't get both trees at once, so one at a time
+        tree_new = repo.revision_tree(bzr_revision.revision_id)
+        tree_old = repo.revision_tree(None)
+
+    diff_content = StringIO()
+    show_diff_trees(tree_old, tree_new, diff_content)
+    raw_diff = diff_content.getvalue()
+    return raw_diff.decode('utf8', 'replace')
+
+
+def get_revision_message(bzr_branch, bzr_revision):
+    outf = StringIO()
+    lf = log_formatter('long', to_file=outf)
+    rev_id = bzr_revision.revision_id
+    rev1 = rev2 = bzr_branch.revision_id_to_revno(rev_id)
+    if rev1 == 0:
+        rev1 = None
+        rev2 = None
+
+    show_log(bzr_branch,
+             lf,
+             start_revision=rev1,
+             end_revision=rev2,
+             verbose=True
+             )
+    return outf.getvalue()
+
+
 class BzrSync:
     """Import version control metadata from a Bazaar branch into the database.
 
@@ -78,8 +112,6 @@ class BzrSync:
         self.logger = logger
 
         self.db_branch = branch
-        self.bzr_branch = Branch.open(branch.warehouse_url)
-        self.bzr_branch.lock_read()
         # We want to generate the email contents as close to the source
         # of the email as possible, but we don't want to send them until
         # the information has been committed.
@@ -177,12 +209,16 @@ class BzrSync:
             bug_statuses[bug] = status
         return bug_statuses
 
-    def syncBranchAndClose(self):
+    def syncBranchAndClose(self, bzr_branch=None):
         """Synchronize the database with a Bazaar branch and close resources.
 
         Convenience method that implements the proper idiom for the common
         case of calling `syncBranch` and `close`.
         """
+        if bzr_branch is None:
+            bzr_branch = Branch.open(self.db_branch.warehouse_url)
+        self.bzr_branch = bzr_branch
+        self.bzr_branch.lock_read()
         try:
             self.syncBranch()
         finally:
@@ -208,7 +244,7 @@ class BzrSync:
         self.logger.info("    from %s", self.bzr_branch.base)
         # Get the history and ancestry from the branch first, to fail early
         # if something is wrong with the branch.
-        self.retrieveBranchDetails()
+        self.retrieveBranchDetails(self.bzr_branch)
         # The BranchRevision, Revision and RevisionParent tables are only
         # written to by the branch-scanner, so they are not subject to
         # write-lock contention. Update them all in a single transaction to
@@ -245,17 +281,17 @@ class BzrSync:
         # of a branch, not one for each revision.
         self.initial_scan = not bool(self.db_history)
 
-    def retrieveBranchDetails(self):
+    def retrieveBranchDetails(self, bzr_branch):
         """Retrieve ancestry from the the bzr branch on disk."""
         self.logger.info("Retrieving ancestry from bzrlib.")
-        self.last_revision = self.bzr_branch.last_revision()
+        self.last_revision = bzr_branch.last_revision()
         # Make bzr_ancestry a set for consistency with db_ancestry.
         bzr_ancestry_ordered = (
-            self.bzr_branch.repository.get_ancestry(self.last_revision))
+            bzr_branch.repository.get_ancestry(self.last_revision))
         first_ancestor = bzr_ancestry_ordered.pop(0)
         assert first_ancestor is None, 'history horizons are not supported'
         self.bzr_ancestry = set(bzr_ancestry_ordered)
-        self.bzr_history = self.bzr_branch.revision_history()
+        self.bzr_history = bzr_branch.revision_history()
 
     def planDatabaseChanges(self):
         """Plan database changes to synchronize with bzrlib data.
@@ -470,8 +506,8 @@ class BzrSync:
                     continue
                 if (not self.initial_scan
                     and self.subscribers_want_notification):
-                    message = self.getRevisionMessage(revision)
-                    revision_diff = self.getDiff(revision)
+                    message = get_revision_message(self.bzr_branch, revision)
+                    revision_diff = get_diff(self.bzr_branch, revision)
                     # Use the first (non blank) line of the commit message
                     # as part of the subject, limiting it to 100 characters
                     # if it is longer.
@@ -519,38 +555,6 @@ class BzrSync:
         if ((last_revision != self.db_branch.last_scanned_id)
                 or (revision_count != self.db_branch.revision_count)):
             self.db_branch.updateScannedDetails(last_revision, revision_count)
-
-    def getDiff(self, bzr_revision):
-        repo = self.bzr_branch.repository
-        if bzr_revision.parent_ids:
-            ids = (bzr_revision.revision_id, bzr_revision.parent_ids[0])
-            tree_new, tree_old = repo.revision_trees(ids)
-        else:
-            # can't get both trees at once, so one at a time
-            tree_new = repo.revision_tree(bzr_revision.revision_id)
-            tree_old = repo.revision_tree(None)
-
-        diff_content = StringIO()
-        show_diff_trees(tree_old, tree_new, diff_content)
-        raw_diff = diff_content.getvalue()
-        return raw_diff.decode('utf8', 'replace')
-
-    def getRevisionMessage(self, bzr_revision):
-        outf = StringIO()
-        lf = log_formatter('long', to_file=outf)
-        rev_id = bzr_revision.revision_id
-        rev1 = rev2 = self.bzr_branch.revision_id_to_revno(rev_id)
-        if rev1 == 0:
-            rev1 = None
-            rev2 = None
-
-        show_log(self.bzr_branch,
-                 lf,
-                 start_revision=rev1,
-                 end_revision=rev2,
-                 verbose=True
-                 )
-        return outf.getvalue()
 
     def sendRevisionNotificationEmails(self):
         """Send out the pending emails.
