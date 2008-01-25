@@ -12,27 +12,6 @@ NameVirtualHost 127.0.0.88:80
 </VirtualHost>
 
 <VirtualHost 127.0.0.88:80>
-  ServerName launchpad.dev
-  ServerAlias answers.launchpad.dev
-  ServerAlias blueprints.launchpad.dev
-  ServerAlias bugs.launchpad.dev
-  ServerAlias code.launchpad.dev
-  ServerAlias feeds.launchpad.dev
-  ServerAlias shipit.edubuntu.dev
-  ServerAlias shipit.kubuntu.dev
-  ServerAlias shipit.ubuntu.dev
-  ServerAlias translations.launchpad.dev
-  ServerAlias xmlrpc.launchpad.dev
-  <Proxy *>
-    Order deny,allow
-    Allow from 127.0.0.0/255.0.0.0
-  </Proxy>
-  ProxyPreserveHost on
-
-  ProxyPass / http://localhost:8086/ retry=1
-</VirtualHost>
-
-<VirtualHost 127.0.0.88:80>
   ServerName codebrowse.launchpad.dev
   RedirectMatch permanent /(.*) http://bazaar.launchpad.dev/$1
 </VirtualHost>
@@ -90,3 +69,17 @@ NameVirtualHost 127.0.0.88:80
   </Location>
 </VirtualHost>
 
+<VirtualHost 127.0.0.88:80>
+  ServerName launchpad.dev
+  ServerAlias *.launchpad.dev
+  ServerAlias shipit.edubuntu.dev
+  ServerAlias shipit.kubuntu.dev
+  ServerAlias shipit.ubuntu.dev
+  <Proxy *>
+    Order deny,allow
+    Allow from 127.0.0.0/255.0.0.0
+  </Proxy>
+  ProxyPreserveHost on
+
+  ProxyPass / http://localhost:8086/ retry=1
+</VirtualHost>

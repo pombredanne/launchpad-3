@@ -228,6 +228,17 @@ launchpad.pot:
 sourcecode/launchpad-loggerhead/sourcecode/loggerhead:
 	ln -s ../../loggerhead sourcecode/launchpad-loggerhead/sourcecode/loggerhead
 
+install: reload-apache
+
+/etc/apache2/sites-available/local-launchpad: configs/default/local-launchpad-apache
+	cp configs/default/local-launchpad-apache $@
+
+/etc/apache2/sites-enabled/local-launchpad: /etc/apache2/sites-available/local-launchpad
+	a2ensite local-launchpad
+
+reload-apache: /etc/apache2/sites-enabled/local-launchpad
+	/etc/init.d/apache2 reload
+
 static:
 	$(PYTHON) scripts/make-static.py
 
@@ -241,5 +252,5 @@ tags:
 		ftest_build ftest_inplace test_build test_inplace pagetests \
 		check importdcheck check_merge schema default launchpad.pot \
 		check_launchpad_on_merge check_merge_ui pull rewritemap scan \
-		sync_branches check_loggerhead_on_merge
+		sync_branches check_loggerhead_on_merge reload-apache
 

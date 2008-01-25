@@ -123,14 +123,16 @@ class CodebrowseService(Service):
     def should_launch(self):
         return False
 
-    def stop_codebrowse(self):
-        subprocess.call(
-            ['make', '-C', 'sourcecode/launchpad-loggerhead', 'stop'])
-
     def launch(self):
-        subprocess.call(
-            ['make', '-C', 'sourcecode/launchpad-loggerhead', 'start'])
-        atexit.register(self.stop_codebrowse)
+        process = subprocess.Popen(
+            ['make', '-C', 'sourcecode/launchpad-loggerhead', 'fg'],
+            stdin=subprocess.PIPE)
+        process.stdin.close()
+        def stop_process():
+            if process.poll() is None:
+                os.kill(process.pid, signal.SIGTERM)
+                process.wait()
+        atexit.register(stop_process)
 
 
 def prepare_for_librarian():
