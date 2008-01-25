@@ -1582,8 +1582,8 @@ class BugTaskSet:
 
         return bugtask
 
-    def findExpirableBugTasks(self, min_days_old, bug=None, target=None,
-                              user=None):
+    def findExpirableBugTasks(self, min_days_old, user,
+                              bug=None, target=None):
         """See `IBugTaskSet`.
 
         The list of Incomplete bugtasks is selected from products and
@@ -1608,6 +1608,9 @@ class BugTaskSet:
         list because they can only be expired by calling the master bugtask's
         transitionToStatus() method. See 'Conjoined Bug Tasks' in
         c.l.doc/bugtasks.txt.
+
+        Only bugtask the specified user has permission to view are
+        returned. The Janitor celebrity has permission to view all bugs.
         """
         if bug is None:
             bug_clause = ''

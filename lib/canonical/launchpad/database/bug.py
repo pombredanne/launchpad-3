@@ -286,7 +286,10 @@ class Bug(SQLBase):
         if not self.permits_expiration:
             return False
 
-        bugtasks = getUtility(IBugTaskSet).findExpirableBugTasks(0, self)
+        # Do the search as the Janitor. If the user has access to view
+        # this property, he has permission to see the bug.
+        bugtasks = getUtility(IBugTaskSet).findExpirableBugTasks(
+            0, getUtility(ILaunchpadCelebrities).janitor, bug=self)
         return len(bugtasks) > 0
 
     @property
