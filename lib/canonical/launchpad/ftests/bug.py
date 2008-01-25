@@ -51,7 +51,7 @@ def print_subscribers(bug_page, subscriber_portlet_index):
 def print_bug_affects_table(content, highlighted_only=False):
     """Print information about all the bug tasks in the 'affects' table.
 
-        :param highlighted_only: Only print the highlighted row
+        :param highlighted_only: Only print the highlighted row.
     """
     main_content = find_main_content(content)
     affects_table = main_content.first('table', {'class': 'listing'})
