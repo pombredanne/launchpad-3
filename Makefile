@@ -133,10 +133,10 @@ run: inplace stop bzr_version_info
 	LPCONFIG=${LPCONFIG} PYTHONPATH=$(TWISTEDPATH):$(Z3LIBPATH):$(PYTHONPATH) \
 		 $(PYTHON) -t $(STARTSCRIPT) -r librarian -C $(CONFFILE)
 
-run_all: inplace stop bzr_version_info
+run_all: inplace stop bzr_version_info sourcecode/launchpad-loggerhead/sourcecode/loggerhead
 	rm -f thread*.request
 	LPCONFIG=${LPCONFIG} PYTHONPATH=$(TWISTEDPATH):$(Z3LIBPATH):$(PYTHONPATH) \
-		 $(PYTHON) -t $(STARTSCRIPT) -r librarian,buildsequencer,authserver,sftp,mailman \
+		 $(PYTHON) -t $(STARTSCRIPT) -r librarian,buildsequencer,authserver,sftp,mailman,codebrowse \
 		 -C $(CONFFILE)
 
 pull_branches: bzr_version_info
@@ -224,6 +224,9 @@ launchpad.pot:
 	$(PYTHON) sourcecode/zope/utilities/i18nextract.py \
 	    -d launchpad -p lib/canonical/launchpad \
 	    -o locales
+
+sourcecode/launchpad-loggerhead/sourcecode/loggerhead:
+	ln -s ../../loggerhead sourcecode/launchpad-loggerhead/sourcecode/loggerhead
 
 static:
 	$(PYTHON) scripts/make-static.py

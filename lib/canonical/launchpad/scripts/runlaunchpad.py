@@ -118,6 +118,21 @@ class MailmanService(Service):
             atexit.register(runmailman.stop_mailman)
 
 
+class CodebrowseService(Service):
+    @property
+    def should_launch(self):
+        return False
+
+    def stop_codebrowse(self):
+        subprocess.call(
+            ['make', '-C', 'sourcecode/launchpad-loggerhead', 'stop'])
+
+    def launch(self):
+        subprocess.call(
+            ['make', '-C', 'sourcecode/launchpad-loggerhead', 'start'])
+        atexit.register(self.stop_codebrowse)
+
+
 def prepare_for_librarian():
     if not os.path.isdir(config.librarian.server.root):
         os.makedirs(config.librarian.server.root, 0700)
@@ -132,6 +147,7 @@ SERVICES = {
                           config.authserver),
     'sftp': TacFile('sftp', 'daemons/sftp.tac', config.codehosting),
     'mailman': MailmanService(),
+    'codebrowse': CodebrowseService(),
     }
 
 
