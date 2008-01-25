@@ -78,6 +78,7 @@ Branch URLs are required for mirrored branches.
     Last mirrored: Not mirrored yet
     Next mirror: As soon as possible
 
+
 == Creating a remote branch ==
 
 The contents of Remote branches are not accessible through Launchpad.
@@ -177,13 +178,33 @@ with that product, and a link to other branches maintained by that person.
 
 == Finding person/+addbranch ==
 
-We can also create a branch from a person's page. First, check that the
-+addbranch link is present in the code facet of a person.
+The user is only able to register a branch where either they or a team
+that they are a member of are the owner, so the 'Register branch' option
+is only shown on the code pages for teams that the user is a member of,
+and their own code page.
 
-    >>> user_browser.open('http://launchpad.dev/~lifeless')
-    >>> user_browser.getLink('Code').click()
-    >>> print user_browser.getLink('Register branch').url
-    http://code.launchpad.dev/~lifeless/+addbranch
+Since no-priv is not a member of lifeless, the Register branch link is not
+shown.
+
+    >>> user_browser.open('http://code.launchpad.dev/~lifeless')
+    >>> user_browser.getLink('Register branch')
+    Traceback (most recent call last):
+    ...
+    LinkNotFoundError
+
+    >>> browser.open('http://code.launchpad.dev/~landscape-developers')
+    >>> browser.getLink('Register branch').click()
+    >>> print browser.getControl('Owner').displayValue
+    ['Landscape Developers']
+
+The user is able to change the owner of the branch to any team that
+the user is a member of, or to themselves.
+
+    >>> for option in browser.getControl('Owner').displayOptions:
+    ...     print option
+    Sample Person
+    Landscape Developers
+    Warty Security Team
 
 
 == Adding a branch to a person ==
@@ -230,7 +251,6 @@ owner-product-name is unique for all branches.
 For this example, we will use ~name12/gnome-terminal/main. Check that it
 already exists.
 
-    >>> browser = setupBrowser(auth='Basic test@canonical.com:test')
     >>> browser.open(
     ...     'http://launchpad.dev/~name12/+branch/gnome-terminal/main')
 

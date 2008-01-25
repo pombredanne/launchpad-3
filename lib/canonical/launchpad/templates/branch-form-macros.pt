@@ -1,0 +1,70 @@
+ <tal:root
+   xmlns:tal="http://xml.zope.org/namespaces/tal"
+   xmlns:metal="http://xml.zope.org/namespaces/metal"
+   omit-tag="">
+
+<metal:add-branch define-macro="add-branch-content">
+
+  <div>
+    The resulting location of the branch will be:
+    <strong><span id="branch-unique-name"></span></strong>
+  </div>
+
+  <div metal:use-macro="context/@@launchpad_form/form">
+  </div>
+
+<script type="text/javascript">
+function update_branch_url()
+{
+  var branch_type_field = document.getElementsByName('field.branch_type')
+  var form = branch_type_field[0].form;
+  var branch_type = 'None';
+  for (var i = 0; i < branch_type_field.length; i++) {
+    if (branch_type_field[i].checked) {
+      branch_type = branch_type_field[i].value;
+      break;
+    }
+  }
+  updateField(form['field.url'], branch_type != 'HOSTED');
+}
+
+function update_branch_unique_name()
+{
+  var unique_name = document.getElementById("branch-unique-name")
+  var owner = document.getElementById("field.owner")
+  var product_name = document.getElementById("field.product").value
+  if (product_name == '') {
+    product_name = '+junk'
+  }
+  var name = document.getElementById("field.name").value
+  if (name == '') {
+    name = '&lt;name&gt;'
+  }
+  var branch_name = "~" + owner.value + "/" + product_name + "/" + name
+  unique_name.innerHTML = branch_name
+}
+
+function hookUpUniqueNameFields()
+{
+  connect('field.product', 'onkeyup', update_branch_unique_name);
+  connect('field.product', 'onchange', update_branch_unique_name);
+  connect('field.owner', 'onkeyup', update_branch_unique_name);
+  connect('field.owner', 'onchange', update_branch_unique_name);
+  connect('field.name', 'onkeyup', update_branch_unique_name);
+  connect('field.branch_type.0', 'onclick', update_branch_url);
+  connect('field.branch_type.1', 'onclick', update_branch_url);
+  connect('field.branch_type.2', 'onclick', update_branch_url);
+  update_branch_unique_name();
+}
+
+registerLaunchpadFunction(hookUpUniqueNameFields);
+registerLaunchpadFunction(update_branch_url);
+
+</script>
+
+  <metal:javascript
+      metal:use-macro="context/@@branch-javascript-macros/branch-name-from-url" />
+
+</metal:add-branch>
+
+</tal:root>
