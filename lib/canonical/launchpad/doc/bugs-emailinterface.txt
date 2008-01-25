@@ -824,7 +824,8 @@ If we specify an invalid tag to be added, an error message will be sent:
     ...
     A tag you specified is invalid: bad_tag
     <BLANKLINE>
-    Tags can only contain alphanumeric characters.
+    Tags must start with a letter or number and be lowercase. The
+    characters +, - and . are also allowed after the first character.
     ...
 
 We will receive the same message if we specify an invalid tag to be removed:
@@ -840,8 +841,19 @@ We will receive the same message if we specify an invalid tag to be removed:
     ...
     A tag you specified is invalid: bad_tag
     <BLANKLINE>
-    Tags can only contain alphanumeric characters.
+    Tags must start with a letter or number and be lowercase. The
+    characters +, - and . are also allowed after the first character.
     ...
+
+As the message says, tags can contain a few non-alphanumeric character
+after the first character.
+
+    >>> submit_commands(bug_four, 'tag with-hyphen+period.')
+    >>> for tag in bug_four.tags:
+    ...     print tag
+    bar
+    layout-test
+    with-hyphen+period.
 
 
 === duplicate $bug_id ===

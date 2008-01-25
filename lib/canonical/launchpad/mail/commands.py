@@ -26,6 +26,7 @@ from canonical.launchpad.event import (
 from canonical.launchpad.event.interfaces import (
     ISQLObjectCreatedEvent, ISQLObjectModifiedEvent)
 
+from canonical.launchpad.validators.name import valid_name
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.snapshot import Snapshot
 
@@ -830,7 +831,8 @@ class TagEmailCommand(EmailCommand):
 
     def execute(self, bug, current_event):
         """See `IEmailCommand`."""
-        string_args = list(self.string_args)
+        # Tags are always lowercase.
+        string_args = [arg.lower() for arg in self.string_args]
         # Bug.tags returns a Zope List, which does not support Python list
         # operations so we need to convert it.
         tags = list(bug.tags)
@@ -849,8 +851,8 @@ class TagEmailCommand(EmailCommand):
             else:
                 remove = False
                 tag = arg
-            # Tag must contain only alphanumeric characters
-            if re.search('[^a-zA-Z0-9]', tag):
+            # Tag must be a valid name.
+            if not valid_name(tag):
                 raise EmailProcessingError(
                     get_error_message('invalid-tag.txt', tag=tag))
             if remove:
