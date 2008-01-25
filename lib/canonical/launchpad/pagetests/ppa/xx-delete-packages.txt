@@ -192,6 +192,14 @@ will use another browser to inspect the results of our deletions.
     iceweasel - 1.0  2007-07-09  Published  Warty           Editors
     pmount - 0.1-1   2007-07-09  Published  Warty           Editors
 
+Before deleting the remaining sources we will save a in this state for
+the form re-submission tests.
+
+    >>> re_post_browser = setupBrowser(
+    ...     auth="Basic foo.bar@canonical.com:test")
+    >>> re_post_browser.open('http://launchpad.dev/~cprov/+archive')
+    >>> re_post_browser.getLink('Delete packages').click()
+
 Multiple packages can be deleted in one single batch.
 
     >>> admin_browser.getControl("Update").click()
@@ -220,6 +228,21 @@ available for deletion.
     Deletion comment: DO IT AGAIN !
     Delete packages from PPA for Celso Providelo
     This PPA does not contain any source packages published.
+
+All the packages were deleted via the admin_browser, now we will
+re-POST the same deletion request via the browser saved in the
+previous state to check if the bug 185922 is really fixed.
+
+    >>> re_post_browser.getControl(
+    ...    name='field.selected_sources').value = ['28', '29']
+    >>> re_post_browser.getControl(
+    ...    "Deletion comment").value = "DO IT AGAIN !"
+    >>> re_post_browser.getControl("Delete Packages").click()
+
+    >>> print extract_text(find_main_content(re_post_browser.contents))
+    Delete packages from PPA for Celso Providelo
+    This PPA does not contain any source packages published.
+    There is 1 error.
 
 Any user can see that all packages present in Celso's PPA are deleted.
 
