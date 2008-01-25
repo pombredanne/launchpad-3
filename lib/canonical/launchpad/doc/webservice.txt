@@ -24,7 +24,7 @@ application, with no special knowledge of web services.
     >>> class IRecipe(Interface):
     ...     id = Int(title=u"Unique ID", required=True)
     ...     name = TextLine(title=u"Name", required=True)
-    ...     authorName = TextLine(title=u"The name of the recipe's author")
+    ...     author = Object(schema=IAuthor)
 
 Here's the interface for the 'set' objects that manage the recipes and
 authors. The inconsistent naming is intentional.
@@ -58,7 +58,7 @@ Here are simple implementations of IAuthor and IRecipe.
     ...     def __init__(self, id, name, author):
     ...         self.id = id
     ...         self.name = name
-    ...         self.authorName = author.name
+    ...         self.author = author
 
 Here are the "model objects" themselves:
 
@@ -123,12 +123,14 @@ synthetic fields we do want to expose, fields we want to expose under
 a different name, and so on. In that case, our IEntry subclass will
 define the interface we _do_ want to expose through the web
 service. Here, we're exposing an IRecipe that exposes the underlying
-Recipe's name but not its ID.
+Recipe's name and author but not its ID. References to associated
+objects (like the recipe's author) are represented with the
+zope.schema.Object type.
 
     >>> class IRecipeEntry(IEntry):
     ...     "The part of a recipe that we expose through the web service."
     ...     name = IRecipe.get('name')
-    ...     author = Object(schema=IAuthor)
+    ...     author = IRecipe.get('author')
 
 Here's the implementation of IRecipeEntry: a simple decorator on the
 original model object. It subclasses Entry, a simple base class
@@ -152,7 +154,7 @@ that defines a constructor.
 
 The "schema" attribute points to the interface class that defines the
 attributes exposed through the web service. Above, "schema" is
-IRecipeEntry, which exposes only "name". Below, "schema" is
+IAuthorEntry, which exposes only "name". Below, "schema" is
 IRecipeEntry, which exposes both "name" and "author".
 
     >>> class RecipeEntry(Entry):
@@ -167,10 +169,6 @@ IRecipeEntry, which exposes both "name" and "author".
     ...         """Use the recipe's ID as its URI fragment."""
     ...         return str(self.context.id)
     ...
-    ...     @property
-    ...     def author(self):
-    ...         "See `IRecipeEntry`."
-    ...         return AuthorSet().getAuthor(self.context.authorName)
 
 We need to register these entries as an adapter from IRecipe/IAuthor
 to IRecipeEntry/IAuthorEntry. In ZCML a registration would look like
@@ -311,16 +309,24 @@ in a CollectionResource.
     u'http://api.launchpad.dev/recipes'
 
 Calling the collection resource yields a JSON document, which can be
-parsed with standard tools and manipulated:
+parsed with standard tools.
 
     >>> import simplejson
     >>> representation = simplejson.loads(collection())
+
+The collection resource is a list of entries. Each entry has some
+associated information (like 'name'), a 'self_link' (the URL to the
+entry's resource), and possibly links to associated resources.
+
     >>> len(representation)
     3
-    >>> representation[0]['self_link']
-    u'http://api.launchpad.dev/recipes/1'
     >>> representation[0]['name']
     u'Green eggs and ham'
+    >>> representation[0]['self_link']
+    u'http://api.launchpad.dev/recipes/1'
+
+Each recipe, for instance, has a link to its author.
+
     >>> representation[0]['author_link']
     u'http://api.launchpad.dev/authors/Jacob%20Berendes'
 

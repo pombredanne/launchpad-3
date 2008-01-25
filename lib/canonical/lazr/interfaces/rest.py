@@ -78,12 +78,6 @@ class IEntry(IJSONPublishable):
         in a collection of all such entries.
         """
 
-    def lookupEntry(self, name):
-        """Look up an entry associated with this entry.
-
-        :param name: The name of the relationship, eg. "owner"
-        """
-
 
 class ICollection(Interface):
     """A collection, driven by an ICollectionResource."""
