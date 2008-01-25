@@ -296,6 +296,58 @@ is set to 0, no bugtasks are replaced.
     ROLE         EXPIRE  AGE  STATUS      ASSIGNED  DUP    MILE   REPLIES
 
 
+== Privacy ==
+
+The user parameter indicate which user is performing the search. Only
+bugs that the user has permission to view are returned. A value of None
+indicates the anonymous user.
+
+    >>> expirable_bugtasks = bugtaskset.findExpirableBugTasks(
+    ...     0, user=None, target=ubuntu)
+    >>> bug_ids = set(bugtask.bug.id for bugtask in expirable_bugtasks)
+    >>> print sorted(bug_ids)
+    [16L, 23L]
+
+If one of the bugs is set to private, anonymous users can no longer see
+it as being marked for expiration.
+
+    >>> from canonical.launchpad.interfaces import IBugSet
+    >>> from canonical.launchpad.ftests import syncUpdate
+    >>> bug_16 = getUtility(IBugSet).get(16)
+    >>> bug_16.setPrivate(True, sample_person)
+    True
+    >>> syncUpdate(bug_16)
+
+    >>> expirable_bugtasks = bugtaskset.findExpirableBugTasks(
+    ...     0, user=None, target=ubuntu)
+    >>> bug_ids = set(bugtask.bug.id for bugtask in expirable_bugtasks)
+    >>> print sorted(bug_ids)
+    [23L]
+
+No Privileges Person can't see the bug either...
+
+    >>> no_priv = getUtility(IPersonSet).getByName('no-priv')
+    >>> bug_16.unsubscribe(no_priv)
+    >>> expirable_bugtasks = bugtaskset.findExpirableBugTasks(
+    ...     0, user=no_priv, target=ubuntu)
+    >>> bug_ids = set(bugtask.bug.id for bugtask in expirable_bugtasks)
+    >>> print sorted(bug_ids)
+    [23L]
+
+... unless he's subscribed to the bug.
+
+    >>> bug_16.subscribe(no_priv, sample_person)
+    <BugSubscription at ...>
+    >>> expirable_bugtasks = bugtaskset.findExpirableBugTasks(
+    ...     0, user=no_priv, target=ubuntu)
+    >>> bug_ids = set(bugtask.bug.id for bugtask in expirable_bugtasks)
+    >>> print sorted(bug_ids)
+    [16L, 23L]
+
+    >>> bug_16.setPrivate(False, sample_person)
+    True
+
+
 == The default expiration age ==
 
 The expiration age is set using the

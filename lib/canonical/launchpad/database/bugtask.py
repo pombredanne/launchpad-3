@@ -1582,7 +1582,8 @@ class BugTaskSet:
 
         return bugtask
 
-    def findExpirableBugTasks(self, min_days_old, bug=None, target=None):
+    def findExpirableBugTasks(self, min_days_old, bug=None, target=None,
+                              user=None):
         """See `IBugTaskSet`.
 
         The list of Incomplete bugtasks is selected from products and
@@ -1613,6 +1614,9 @@ class BugTaskSet:
         else:
             bug_clause = 'AND Bug.id = %s' % sqlvalues(bug)
 
+        bug_privacy_filter = get_bug_privacy_filter(user)
+        if bug_privacy_filter:
+            bug_privacy_filter = "AND " + bug_privacy_filter
         unconfirmed_bug_join = self._getUnconfirmedBugJoin()
         (target_join, target_clause) = self._getTargetJoinAndClause(target)
         all_bugtasks = BugTask.select("""
@@ -1626,6 +1630,7 @@ class BugTaskSet:
                 WHERE
                 """ + target_clause + """
                 """ + bug_clause + """
+                """ + bug_privacy_filter + """
                     AND BugTask.assignee IS NULL
                     AND BugTask.bugwatch IS NULL
                     AND BugTask.milestone IS NULL
