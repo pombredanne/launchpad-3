@@ -168,7 +168,7 @@ checks available at http://feedvalidator.org
 Occasionally, there will be suggestions from feedvalidator that we will
 ignore. For example, when the <title type="text"> element contains html,
 we want to view the html as opposed to having the title text formatted.
-Therefore, we won't set type="html".
+Therefore, we won't set type="html" for the title element.
 
     >>> feed = """<?xml version="1.0" encoding="UTF-8"?>
     ... <feed xmlns="http://www.w3.org/2005/Atom" xml:lang="en">
