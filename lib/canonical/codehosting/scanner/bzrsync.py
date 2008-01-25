@@ -140,9 +140,7 @@ class BzrSync:
     def close(self):
         """Explicitly release resources."""
         # release the read lock on the bzrlib branch
-        self.bzr_branch.unlock()
         # prevent further use of that object
-        self.bzr_branch = None
         self.db_branch = None
         self.bzr_history = None
 
@@ -217,14 +215,14 @@ class BzrSync:
         """
         if bzr_branch is None:
             bzr_branch = Branch.open(self.db_branch.warehouse_url)
-        self.bzr_branch = bzr_branch
-        self.bzr_branch.lock_read()
+        bzr_branch.lock_read()
         try:
-            self.syncBranch()
+            self.syncBranch(bzr_branch)
         finally:
+            bzr_branch.unlock()
             self.close()
 
-    def syncBranch(self):
+    def syncBranch(self, bzr_branch):
         """Synchronize the database view of a branch with Bazaar data.
 
         Several tables must be updated:
@@ -241,10 +239,10 @@ class BzrSync:
           the sync is complete.
         """
         self.logger.info("Scanning branch: %s", self.db_branch.unique_name)
-        self.logger.info("    from %s", self.bzr_branch.base)
+        self.logger.info("    from %s", bzr_branch.base)
         # Get the history and ancestry from the branch first, to fail early
         # if something is wrong with the branch.
-        self.retrieveBranchDetails(self.bzr_branch)
+        self.retrieveBranchDetails(bzr_branch)
         # The BranchRevision, Revision and RevisionParent tables are only
         # written to by the branch-scanner, so they are not subject to
         # write-lock contention. Update them all in a single transaction to
@@ -253,9 +251,9 @@ class BzrSync:
         self.retrieveDatabaseAncestry()
         (revisions_to_insert_or_check, branchrevisions_to_delete,
             branchrevisions_to_insert) = self.planDatabaseChanges()
-        self.syncRevisions(revisions_to_insert_or_check)
+        self.syncRevisions(bzr_branch, revisions_to_insert_or_check)
         self.deleteBranchRevisions(branchrevisions_to_delete)
-        self.insertBranchRevisions(branchrevisions_to_insert)
+        self.insertBranchRevisions(bzr_branch, branchrevisions_to_insert)
         self.trans_manager.commit()
         # Now that these changes have been committed, send the pending emails.
         if self.subscribers_want_notification:
@@ -368,7 +366,7 @@ class BzrSync:
         return (revisions_to_insert_or_check, branchrevisions_to_delete,
             branchrevisions_to_insert)
 
-    def syncRevisions(self, revisions_to_insert_or_check):
+    def syncRevisions(self, bzr_branch, revisions_to_insert_or_check):
         """Import all the revisions added to the ancestry of the branch."""
         self.logger.info("Inserting or checking %d revisions.",
             len(revisions_to_insert_or_check))
@@ -376,7 +374,7 @@ class BzrSync:
         for revision_id in revisions_to_insert_or_check:
             # If the revision is a ghost, it won't appear in the repository.
             try:
-                revision = self.bzr_branch.repository.get_revision(
+                revision = bzr_branch.repository.get_revision(
                     revision_id)
             except NoSuchRevision:
                 self.logger.debug("%d of %d: %s is a ghost",
@@ -484,7 +482,7 @@ class BzrSync:
         for branchrevision in sorted(branchrevisions_to_delete):
             branch_revision_set.delete(branchrevision)
 
-    def insertBranchRevisions(self, branchrevisions_to_insert):
+    def insertBranchRevisions(self, bzr_branch, branchrevisions_to_insert):
         """Insert a batch of BranchRevision rows."""
         self.logger.info("Inserting %d branchrevision records.",
             len(branchrevisions_to_insert))
@@ -498,16 +496,15 @@ class BzrSync:
             # is just in the ancestry so no email is generated.
             if sequence is not None:
                 try:
-                    revision = self.bzr_branch.repository.get_revision(
-                        revision_id)
+                    revision = bzr_branch.repository.get_revision(revision_id)
                 except NoSuchRevision:
                     self.logger.debug("%d of %d: %s is a ghost",
                                       self.curr, self.last, revision_id)
                     continue
                 if (not self.initial_scan
                     and self.subscribers_want_notification):
-                    message = get_revision_message(self.bzr_branch, revision)
-                    revision_diff = get_diff(self.bzr_branch, revision)
+                    message = get_revision_message(bzr_branch, revision)
+                    revision_diff = get_diff(bzr_branch, revision)
                     # Use the first (non blank) line of the commit message
                     # as part of the subject, limiting it to 100 characters
                     # if it is longer.

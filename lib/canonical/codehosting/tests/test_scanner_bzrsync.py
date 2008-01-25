@@ -495,15 +495,23 @@ class TestBzrSyncPerformance(BzrSyncTestCase):
 
     def makeBzrSync(self, db_branch):
         bzrsync = BzrSyncTestCase.makeBzrSync(self, db_branch)
+
         def unary_method_called(name, args, kwargs):
             (single_arg,) = args
             self.assertEqual(kwargs, {})
             self.calls[name].append(single_arg)
         unary_observer = InstrumentedMethodObserver(
             called=unary_method_called)
-        instrument_method(unary_observer, bzrsync, 'syncRevisions')
+
+        def collect_second_argument(name, args, kwargs):
+            self.assertEqual(kwargs, {})
+            self.calls[name].append(args[1])
+        second_arg_observer = InstrumentedMethodObserver(
+            called=collect_second_argument)
+        instrument_method(second_arg_observer, bzrsync, 'syncRevisions')
         instrument_method(unary_observer, bzrsync, 'deleteBranchRevisions')
-        instrument_method(unary_observer, bzrsync, 'insertBranchRevisions')
+        instrument_method(
+            second_arg_observer, bzrsync, 'insertBranchRevisions')
         return bzrsync
 
     def test_no_change(self):
