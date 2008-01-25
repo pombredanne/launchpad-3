@@ -1,0 +1,126 @@
+= Archive View Classes and Pages =
+
+    >>> from zope.component import getView
+    >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
+
+Let's use Celso's PPA for the tests.
+
+    >>> from canonical.launchpad.interfaces import IPersonSet
+    >>> cprov = getUtility(IPersonSet).getByName('cprov')
+
+
+== ArchivePackageDeletionView ==
+
+We use ArchivePackageDeletionView to provide the mechnisms used to
+delete packages from a PPA via the UI.
+
+This view is only accessible by users with 'launchpad.Edit' permission
+in the archive, that would be only the PPA owner (or administrators of
+the Team owning the PPA) and Launchpad administrators. See further
+tests in pagetests/xx-delete-packages.txt.
+
+We will use the PPA owner, Celso user, to satisfy the references
+required for deleting packages.
+
+    >>> login('celso.providelo@canonical.com')
+
+Issuing a empty request we can inspect the internal attributes used to
+build the page.
+
+    >>> empty_request = LaunchpadTestRequest(form={})
+    >>> view = getView(cprov.archive, "+delete-packages", empty_request)
+    >>> view.initialize()
+
+We query the available PUBLISHED sources and use them to build the
+'selected_sources' widget.
+
+    >>> [pub.id for pub in view.sources]
+    [27, 28, 29]
+
+    >>> view.has_published_sources
+    True
+
+    >>> view.available_sources_size
+    3
+
+    >>> len(view.widgets.get('selected_sources').vocabulary)
+    3
+
+The 'selected_sources' widget has a limit controlled via a hard-coded
+view attribute. We only present up to 'max_sources_presented' options
+and if the available number options exceed this number, we present a
+warning message to the user. By default the limit is 50.
+
+    >>> view.max_sources_presented
+    50
+    >>> view.has_undisplayed_sources
+    False
+
+    >>> view.max_sources_presented = 2
+    >>> view.initialize()
+
+    >>> view.available_sources_size
+    3
+    >>> view.has_undisplayed_sources
+    True
+    >>> len(view.widgets.get('selected_sources').vocabulary)
+    2
+
+    >>> view.max_sources_presented = 50
+    >>> view.initialize()
+
+This view also provides package filtering by source package name, by
+default all available sources are presented with empty filter.
+
+    >>> for pub in view.sources:
+    ...     print pub.displayname
+    cdrkit 1.0 in breezy-autotest
+    iceweasel 1.0 in warty
+    pmount 0.1-1 in warty
+
+Whatever is passed as filter results in a corresponding set of results.
+
+    >>> name_filter_request = LaunchpadTestRequest(
+    ...     form={'field.name_filter': 'pmount'})
+    >>> view = getView(
+    ...    cprov.archive, "+delete-packages", name_filter_request)
+    >>> view.initialize()
+
+    >>> for pub in view.sources:
+    ...     print pub.displayname
+    pmount 0.1-1 in warty
+
+When submitted deletions immediately takes effects resulting in a page
+which the available options already excluding the deleted items.
+
+    >>> delete_all_request = LaunchpadTestRequest(
+    ...    form={'field.actions.delete': 'Delete Packages',
+    ...          'field.name_filter': '',
+    ...          'field.deletion_comment': 'Go away',
+    ...          'field.selected_sources': ['27', '28', '29'],
+    ...          'field.selected_sources-empty-marker': 1})
+    >>> delete_all_request.method = 'POST'
+
+    >>> view = getView(cprov.archive, "+delete-packages", delete_all_request)
+    >>> view.initialize()
+
+    >>> view.available_sources_size
+    0
+    >>> view.has_published_sources
+    False
+
+    >>> import transaction
+    >>> transaction.commit()
+
+If by any chance the form containing already deleted items is
+re-POSTed to the page, the code is able to identify such invalid
+situation and ignore it. See bug #185922 for reference.
+
+    >>> view = getView(cprov.archive, "+delete-packages", delete_all_request)
+    >>> view.initialize()
+    >>> view.available_sources_size
+    0
+    >>> view.has_published_sources
+    False
+    >>> len(view.errors)
+    2
