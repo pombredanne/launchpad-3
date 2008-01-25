@@ -114,3 +114,20 @@ in the current ubuntu distroseries.
     <input type="text" name="ubuntupkg" size="30"
     value="mozilla" />
     ...
+
+Markup in the source package name is escaped in error notices to
+prevent XSS markup injection. No Privileges Person cannot insert an
+executable script into the page using an invalid source package name.
+
+    >>> user_browser.open('http://launchpad.dev/bzr/trunk/')
+    >>> user_browser.getLink('Link to Ubuntu package').click()
+    >>> user_browser.title
+    'Ubuntu source package'
+
+    >>> user_browser.getControl(name='ubuntupkg').value = (
+    ...     "bzr<script>window.alert('XSS')</script>")
+    >>> user_browser.getControl('Update').click()
+    >>> for message in get_feedback_messages(user_browser.contents):
+    ...     print message
+    Invalid source package name
+    bzr&lt;script&gt;window.alert('XSS')&lt;/script&gt;
