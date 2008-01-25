@@ -66,6 +66,38 @@ Get the set of POTMsgSets that are untranslated.
     13
 
 
+== path ==
+
+A PO file has a storage path that determines where the file is to be
+stored in a filesystem tree (such as an export tarball).  The path
+ends with the actual file name and should include a language code.
+
+    >>> pofile_xh = potemplate.getPOFileByLang('xh')
+    >>> pofile_xh.path
+    u'xh.po'
+
+To change this path, use setPathIfUnique().
+
+    >>> pofile_xh.setPathIfUnique('xh2.po')
+    >>> pofile_xh.path
+    u'xh2.po'
+
+The path must be unique within its distribution series package or
+product release series, so that a single file system tree can contain
+all translations found there.
+
+If the given path is not locally unique, setPathIfUnique() simply does
+nothing.  There can be no naming conflict in that case because the PO
+file's existing path is already supposed to be unique.
+
+Here we try to copy the path of another translation of the same template
+but the PO file correctly retains its original path.
+
+    >>> pofile_xh.setPathIfUnique(pofile.path)
+    >>> pofile_xh.path
+    u'xh2.po'
+
+
 == updateHeader() ==
 
 This method is used to update the header of the POFile to a newer version.
@@ -153,6 +185,44 @@ Now, we can see how we detect that it's older with an older date.
     ...     2005, 8, 18, 13, 21, tzinfo=UTC)
     >>> pofile.isTranslationRevisionDateOlder(header)
     True
+
+
+If the revision date of the stored translation file is missing, the new
+one is considered an update.
+
+    >>> from zope.security.proxy import removeSecurityProxy
+    >>> from canonical.launchpad.translationformat.gettext_po_parser import (
+    ...     POHeader)
+
+    >>> old_pofile = removeSecurityProxy(potemplate.newPOFile('tl'))
+    >>> old_pofile.header = """
+    ...     Project-Id-Version: foo
+    ...     MIME-Version: 1.0
+    ...     Content-Type: text/plain; charset=UTF-8
+    ...     Content-Transfer-Encoding: 8bit
+    ...     """
+    >>> new_header = POHeader("""
+    ...     Project-Id-Version: foo
+    ...     PO-Revision-Date: 2007-05-03 14:00+0200
+    ...     MIME-Version: 1.0
+    ...     Content-Type: text/plain; charset=UTF-8
+    ...     Content-Transfer-Encoding: 8bit
+    ...     """)
+
+    >>> old_pofile.isTranslationRevisionDateOlder(new_header)
+    False
+
+
+This even goes if the new file also omits the revision date.
+
+    >>> new_header = POHeader("""
+    ...     Project-Id-Version: foo
+    ...     MIME-Version: 1.0
+    ...     Content-Type: text/plain; charset=UTF-8
+    ...     Content-Transfer-Encoding: 8bit
+    ...     """)
+    >>> old_pofile.isTranslationRevisionDateOlder(new_header)
+    False
 
 
 == canEditTranslations ==
@@ -383,7 +453,6 @@ handling suggestions because it allows anyone to add suggestions.
 
     Leave the permission back to OPEN.
     >>> product.translationpermission = TranslationPermission.OPEN
-    >>> transaction.commit()
 
 == plural_forms ==
 
@@ -852,6 +921,37 @@ exports it as UTF-8
     "Content-Type: text/plain; charset=UTF-8\n"
     ...
 
+Given that pofile's export time is newer than potemplate's date last
+updated, cached export is valid.
+
+    # Since all of the changes in this test are in the same transaction we
+    # must first commit the current transaction so we can do a POFile
+    # export in another. This is important so we are sure we get different
+    # time stamps for POFile.date_updated and POFile.exporttime.
+    >>> transaction.commit()
+    >>> discarded = pofile.export()
+    >>> transaction.commit()
+    >>> pofile = POFile.get(1)
+    >>> pofile.exporttime >= pofile.potemplate.date_last_updated
+    True
+    >>> pofile.is_cached_export_valid
+    True
+
+But if potemplate's date last updated is newer, cached export is not valid
+anymore.
+
+    >>> pofile.date_changed >= pofile.potemplate.date_last_updated
+    True
+    >>> pofile.is_cached_export_valid
+    True
+    >>> from datetime import timedelta
+    >>> pofile.potemplate.date_last_updated = (
+    ...     pofile.date_changed + timedelta(seconds=60))
+    >>> pofile.date_changed >= pofile.potemplate.date_last_updated
+    False
+    >>> pofile.is_cached_export_valid
+    False
+
 
 == getPOTMsgSetChangedInLaunchpad ==
 
@@ -878,6 +978,18 @@ Launchpad.
     >>> len(potmsgsets)
     1
     >>> stats = pofile_changed.updateStatistics()
+    >>> print pofile_changed.updatesCount()
+    1
+
+This message is also counted as translated message (number of translated
+messages is the number of imported/currentCount plus number of newly
+translated in Launchpad/rosettaCount plus number of changed in
+Launchpad/updatesCount):
+
+    >>> print pofile_changed.currentCount()
+    7
+    >>> print pofile_changed.rosettaCount()
+    0
     >>> print pofile_changed.updatesCount()
     1
 
@@ -1141,7 +1253,7 @@ And when we submit another translation that is fuzzy...
     %d foo     1     None       True      True
 
 
-== Translations credits ==
+== Translation credits ==
 
 Translation credits are handled automatically, and cannot be
 translated in any other way except through a published upload.
@@ -1182,6 +1294,8 @@ If we submit non-published translation, it's refused.
     ...     alsa_translation, alsa_translation.owner,
     ...     {0: u'Unhappy translator'}, is_fuzzy=False, is_imported=False,
     ...     lock_timestamp=datetime.datetime.now(UTC))
+    >>> print no_credits
+    None
     >>> flush_database_updates()
     >>> current = potmsgset.getCurrentTranslationMessage(
     ...     alsa_translation.language)

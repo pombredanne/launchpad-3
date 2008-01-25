@@ -101,7 +101,25 @@ class LibraryFileAliasResource(resource.Resource):
         if dbfilename.encode('utf-8') != filename:
             return fourOhFour
         if self.storage.hasFile(dbcontentID) or self.upstreamHost is None:
+            # XXX: Brad Crittenden 2007-12-05 bug=174204: When encodings are stored
+            # as part of a file's metadata this logic will be replaced.
+
+            # This fix is in response to Bug 173096.  The Ubuntu team wants their
+            # log files to be automatically unzipped.  Previously this was done by
+            # having Apache add an encoding for all content that was .gz or .tgz.
+            # Doing so violates the intent of the Content-Encoding header and
+            # caused other gzipped files served from the Librarian to be treated
+            # incorrectly by browsers.  The fix shown here is to still support the
+            # encoding of Ubuntu log files while allowing others to pass with no
+            # encoding.  Apache will be changed to remove the Content-Encoding
+            # header for gzip.
+            if filename.endswith(".txt.gz"):
+                encoding = "gzip"
+                mimetype = "text/plain"
+            else:
+                encoding = None
             return File(mimetype.encode('ascii'),
+                        encoding,
                         self.storage._fileLocation(dbcontentID))
         else:
             return proxy.ReverseProxyResource(self.upstreamHost,
@@ -113,10 +131,10 @@ class LibraryFileAliasResource(resource.Resource):
 
 class File(static.File):
     isLeaf = True
-    def __init__(self, contentType, *args, **kwargs):
+    def __init__(self, contentType, encoding=None, *args, **kwargs):
         static.File.__init__(self, *args, **kwargs)
         self.type = contentType
-        self.encoding = None
+        self.encoding = encoding
 
 
 class DigestSearchResource(resource.Resource):
@@ -163,4 +181,3 @@ Disallow: /
 def _eb(failure, request):
     """Generic errback for failures during a render_GET."""
     request.processingFailed(failure)
-

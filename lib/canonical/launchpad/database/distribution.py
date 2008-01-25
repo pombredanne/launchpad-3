@@ -11,7 +11,7 @@ from zope.component import getUtility
 from sqlobject import (
     BoolCol, ForeignKey, SQLMultipleJoin, SQLRelatedJoin, StringCol,
     SQLObjectNotFound)
-from sqlobject.sqlbuilder import AND, OR, SQLConstant
+from sqlobject.sqlbuilder import SQLConstant
 
 from canonical.cachedproperty import cachedproperty
 
@@ -30,6 +30,7 @@ from canonical.launchpad.database.bugtask import BugTask, BugTaskSet
 from canonical.launchpad.database.faq import FAQ, FAQSearch
 from canonical.launchpad.database.mentoringoffer import MentoringOffer
 from canonical.launchpad.database.milestone import Milestone
+from canonical.launchpad.database.announcement import MakesAnnouncements
 from canonical.launchpad.database.question import (
     QuestionTargetSearch, QuestionTargetMixin)
 from canonical.launchpad.database.specification import (
@@ -62,13 +63,14 @@ from canonical.launchpad.helpers import shortlist
 from canonical.launchpad.webapp.url import urlparse
 
 from canonical.launchpad.interfaces import (
-    ArchivePurpose, BugTaskStatus, DistroSeriesStatus, IArchiveSet, IBuildSet,
-    IDistribution, IDistributionSet, IFAQTarget, IHasBuildRecords, IHasIcon,
-    IHasLogo, IHasMugshot, ILaunchpadCelebrities, ILaunchpadUsage,
-    IQuestionTarget, ISourcePackageName, MirrorContent,
-    PackagePublishingStatus, PackageUploadStatus, NotFoundError,
-    QUESTION_STATUS_DEFAULT_SEARCH, SpecificationDefinitionStatus,
-    SpecificationFilter, SpecificationImplementationStatus, SpecificationSort,
+    ArchivePurpose, BugTaskStatus, DistroSeriesStatus, IArchiveSet,
+    IBuildSet, IDistribution, IDistributionSet, IFAQTarget,
+    IHasBuildRecords, IHasIcon, IHasLogo, IHasMugshot,
+    ILaunchpadCelebrities, ILaunchpadUsage, IQuestionTarget,
+    ISourcePackageName, MirrorContent, MirrorStatus, PackagePublishingStatus,
+    PackageUploadStatus, NotFoundError, QUESTION_STATUS_DEFAULT_SEARCH,
+    SpecificationDefinitionStatus, SpecificationFilter,
+    SpecificationImplementationStatus, SpecificationSort,
     TranslationPermission)
 
 from canonical.archivepublisher.debversion import Version
@@ -76,13 +78,15 @@ from canonical.archivepublisher.debversion import Version
 from canonical.launchpad.validators.name import sanitize_name, valid_name
 
 
-class Distribution(SQLBase, BugTargetBase, HasSpecificationsMixin,
-                   HasSprintsMixin, HasTranslationImportsMixin,
-                   KarmaContextMixin, QuestionTargetMixin):
+class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
+                   HasSpecificationsMixin, HasSprintsMixin,
+                   HasTranslationImportsMixin, KarmaContextMixin,
+                   QuestionTargetMixin):
     """A distribution of an operating system, e.g. Debian GNU/Linux."""
     implements(
-        IDistribution, IFAQTarget, IHasBuildRecords, IHasLogo, IHasMugshot,
-        IHasIcon, ILaunchpadUsage, IQuestionTarget)
+        IDistribution, IFAQTarget, IHasBuildRecords,
+        IHasIcon, IHasLogo, IHasMugshot, ILaunchpadUsage,
+        IQuestionTarget)
 
     _table = 'Distribution'
     _defaultOrder = 'name'
@@ -103,6 +107,7 @@ class Distribution(SQLBase, BugTargetBase, HasSpecificationsMixin,
     owner = ForeignKey(dbName='owner', foreignKey='Person', notNull=True)
     bugcontact = ForeignKey(
         dbName='bugcontact', foreignKey='Person', notNull=False, default=None)
+    bug_reporting_guidelines = StringCol(default=None)
     security_contact = ForeignKey(
         dbName='security_contact', foreignKey='Person', notNull=False,
         default=None)
@@ -135,6 +140,8 @@ class Distribution(SQLBase, BugTargetBase, HasSpecificationsMixin,
         default=False)
     official_rosetta = BoolCol(dbName='official_rosetta', notNull=True,
         default=False)
+    enable_bug_expiration = BoolCol(dbName='enable_bug_expiration',
+        notNull=True, default=False)
     translation_focus = ForeignKey(dbName='translation_focus',
         foreignKey='DistroSeries', notNull=False, default=None)
     source_package_caches = SQLMultipleJoin('DistributionSourcePackageCache',
@@ -175,42 +182,47 @@ class Distribution(SQLBase, BugTargetBase, HasSpecificationsMixin,
     def all_milestones(self):
         """See `IDistribution`."""
         return Milestone.selectBy(
-            distribution=self, orderBy=['dateexpected', 'name'])
+            distribution=self, orderBy=['-dateexpected', 'name'])
 
     @property
     def milestones(self):
         """See `IDistribution`."""
         return Milestone.selectBy(
-            distribution=self, visible=True, orderBy=['dateexpected', 'name'])
+            distribution=self, visible=True, orderBy=['-dateexpected', 'name'])
 
     @property
     def archive_mirrors(self):
-        """See canonical.launchpad.interfaces.IDistribution."""
+        """See `IDistribution`."""
         return DistributionMirror.selectBy(
-            distribution=self, content=MirrorContent.ARCHIVE,
-            official_approved=True, official_candidate=True, enabled=True)
+            distribution=self, content=MirrorContent.ARCHIVE, enabled=True,
+            status=MirrorStatus.OFFICIAL, official_candidate=True)
 
     @property
     def cdimage_mirrors(self):
-        """See canonical.launchpad.interfaces.IDistribution."""
+        """See `IDistribution`."""
         return DistributionMirror.selectBy(
-            distribution=self, content=MirrorContent.RELEASE,
-            official_approved=True, official_candidate=True, enabled=True)
+            distribution=self, content=MirrorContent.RELEASE, enabled=True,
+            status=MirrorStatus.OFFICIAL, official_candidate=True)
 
     @property
     def disabled_mirrors(self):
-        """See canonical.launchpad.interfaces.IDistribution."""
+        """See `IDistribution`."""
         return DistributionMirror.selectBy(
-            distribution=self, official_approved=True,
+            distribution=self, status=MirrorStatus.OFFICIAL,
             official_candidate=True, enabled=False)
 
     @property
     def unofficial_mirrors(self):
-        """See canonical.launchpad.interfaces.IDistribution."""
-        query = OR(DistributionMirror.q.official_candidate==False,
-                   DistributionMirror.q.official_approved==False)
-        return DistributionMirror.select(
-            AND(DistributionMirror.q.distributionID==self.id, query))
+        """See `IDistribution`."""
+        return DistributionMirror.selectBy(
+            distribution=self, status=MirrorStatus.UNOFFICIAL)
+
+    @property
+    def pending_review_mirrors(self):
+        """See `IDistribution`."""
+        return DistributionMirror.selectBy(
+            distribution=self, status=MirrorStatus.PENDING_REVIEW,
+            official_candidate=True)
 
     @property
     def full_functionality(self):
@@ -769,8 +781,8 @@ class Distribution(SQLBase, BugTargetBase, HasSpecificationsMixin,
             log.debug("Considering source version %s" % spr.version)
             # changelog may be empty, in which case we don't want to add it
             # to the set as the join would fail below.
-            if spr.changelog is not None:
-                sprchangelog.add(spr.changelog)
+            if spr.changelog_entry is not None:
+                sprchangelog.add(spr.changelog_entry)
             binpkgs = BinaryPackageRelease.select("""
                 BinaryPackageRelease.build = Build.id AND
                 Build.sourcepackagerelease = %s
@@ -971,9 +983,11 @@ class Distribution(SQLBase, BugTargetBase, HasSpecificationsMixin,
         Archive.purpose = %s AND
         Archive.distribution = %s AND
         SourcePackagePublishingHistory.archive = archive.id AND
-        SourcePackagePublishingHistory.status = %s
+        SourcePackagePublishingHistory.scheduleddeletiondate is null AND
+        SourcePackagePublishingHistory.status IN (%s, %s)
          """ % sqlvalues(ArchivePurpose.PPA, self,
-                         PackagePublishingStatus.PENDING)
+                         PackagePublishingStatus.PENDING,
+                         PackagePublishingStatus.DELETED)
 
         src_archives = Archive.select(
             src_query, clauseTables=['SourcePackagePublishingHistory'],
@@ -983,9 +997,11 @@ class Distribution(SQLBase, BugTargetBase, HasSpecificationsMixin,
         Archive.purpose = %s AND
         Archive.distribution = %s AND
         BinaryPackagePublishingHistory.archive = archive.id AND
-        BinaryPackagePublishingHistory.status = %s
+        BinaryPackagePublishingHistory.scheduleddeletiondate is null AND
+        BinaryPackagePublishingHistory.status IN (%s, %s)
         """ % sqlvalues(ArchivePurpose.PPA, self,
-                        PackagePublishingStatus.PENDING)
+                        PackagePublishingStatus.PENDING,
+                        PackagePublishingStatus.DELETED)
 
         bin_archives = Archive.select(
             bin_query, clauseTables=['BinaryPackagePublishingHistory'],

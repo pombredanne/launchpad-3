@@ -22,8 +22,7 @@
     <div tal:replace="structure context/@@+portlet-search" />
     
       <div
-        tal:condition="context/target/sourcepackagename|nothing"
-        tal:replace="structure context/target/@@+portlet-details"
+        tal:replace="structure context/target/@@+portlet-details | nothing"
       />
     </metal:portlets>
 
@@ -75,11 +74,8 @@
   <p class="informational message"
      id="can-expire"
      tal:condition="context/bug/can_expire"
-    >This bug report will expire in
-    <tal:days_to_expiration replace="view/days_to_expiration">
-      59
-    </tal:days_to_expiration>
-    days if no further activity occurs.
+    >
+    <tal:expiration_message replace="view/expiration_message" />
     (<a href="https://help.launchpad.net/BugStatuses">find out why</a>)
   </p>
 
@@ -143,10 +139,6 @@
         </form>
 
   <div tal:replace="structure context/bug/@@+bugtasks-and-nominations-table" />
-
-  <script tal:condition="view/auto_toggle_task_js"
-	  tal:content= "view/auto_toggle_task_js"
-	  type="text/javascript" />
 
   <tal:branches define="bug_branches view/bug_branches"
                 condition="bug_branches">
@@ -239,14 +231,17 @@
       </p>
     </tal:block>
   </tal:mentors>
-
-  <p tal:condition="view/userCanMentor">
-    &raquo; <a href="+mentor">Offer to mentor someone fixing this bug</a>
+  <p tal:define="link context/menu:context/offermentoring"
+     tal:condition="link/enabled">
+    &raquo; <a tal:attributes="href link/url">
+      Offer to mentor someone fixing this bug</a>
   </p>
 
   <tal:comment repeat="comment view/getBugCommentsForDisplay">
-    <metal:comment-box
-        metal:use-macro="context/@@bugcomment-macros/comment-box" />
+    <tal:comment-box condition="comment/can_be_shown">
+      <metal:comment-box
+          metal:use-macro="context/@@bugcomment-macros/comment-box" />
+    </tal:comment-box>
   </tal:comment>
 
   <tal:logged-in condition="view/user">

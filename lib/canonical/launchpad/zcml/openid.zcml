@@ -27,17 +27,27 @@
         layer="canonical.launchpad.layers.OpenIdLayer" />
 
     <!-- Root document -->
+
+    <browser:defaultView
+        for="canonical.launchpad.interfaces.IOpenIdApplication"
+        name="+index"
+        />
+
     <browser:page
         layer="canonical.launchpad.layers.OpenIdLayer"
         for="canonical.launchpad.interfaces.IOpenIdApplication"
         permission="zope.Public"
         name="+index"
+        class="canonical.launchpad.browser.openiddiscovery.OpenIdApplicationIndexView"
         template="../templates/openid-index.pt"
         />
 
-    <browser:defaultView
+    <browser:page
         for="canonical.launchpad.interfaces.IOpenIdApplication"
-        name="+index"
+        name="+xrds"
+        permission="zope.Public"
+        class="canonical.launchpad.browser.openiddiscovery.OpenIdApplicationIndexView"
+        attribute="xrds"
         />
 
     <!-- OpenID persistent identity URLs -->
@@ -51,6 +61,7 @@
         for="canonical.launchpad.interfaces.IOpenIDPersistentIdentity"
         path_expression="string:+id/${person/openid_identifier}"
         parent_utility="canonical.launchpad.interfaces.IOpenIdApplication"
+        rootsite="openid"
         />
 
     <browser:defaultView
@@ -133,6 +144,25 @@
           set_schema="canonical.launchpad.interfaces.IOpenIDRPConfig" />
     </content>
 
+    <browser:url
+        for="canonical.launchpad.interfaces.IOpenIDRPConfig"
+        path_expression="string:${id}"
+        parent_utility="canonical.launchpad.interfaces.IOpenIDRPConfigSet"
+        />
+
+    <browser:page
+        for="canonical.launchpad.interfaces.IOpenIDRPConfig"
+        name="+edit"
+        class="canonical.launchpad.browser.openidrpconfig.OpenIDRPConfigEditView"
+        permission="launchpad.Admin"
+        template="../templates/openidrpconfig-edit.pt"
+        />
+
+    <browser:defaultView
+        for="canonical.launchpad.interfaces.IOpenIDRPConfig"
+        name="+edit"
+        />
+
     <!-- IOpenIDRPConfigSet -->
 
     <securedutility
@@ -142,6 +172,37 @@
           interface="canonical.launchpad.interfaces.IOpenIDRPConfigSet"
           />
     </securedutility>
+
+    <browser:url
+        for="canonical.launchpad.interfaces.IOpenIDRPConfigSet"
+        path_expression="string:+rpconfig"
+        parent_utility="canonical.launchpad.interfaces.IOpenIdApplication"
+        />
+
+    <browser:navigation
+        module="canonical.launchpad.browser.openidrpconfig"
+        classes="OpenIDRPConfigSetNavigation"
+        />
+
+    <browser:page
+        for="canonical.launchpad.interfaces.IOpenIDRPConfigSet"
+        name="+add"
+        class="canonical.launchpad.browser.openidrpconfig.OpenIDRPConfigAddView"
+        permission="launchpad.Admin"
+        template="../templates/openidrpconfig-add.pt"
+        />
+
+    <browser:page
+        for="canonical.launchpad.interfaces.IOpenIDRPConfigSet"
+        name="+index"
+        permission="launchpad.Admin"
+        template="../templates/openidrpconfigset-index.pt"
+        />
+
+    <browser:defaultView
+        for="canonical.launchpad.interfaces.IOpenIDRPConfigSet"
+        name="+index"
+        />
 
 </configure>
 

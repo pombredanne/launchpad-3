@@ -168,16 +168,35 @@ First, we need to add fake librarian files so that email notifications work:
   ...     insertFakeChangesFileForAllPackageUploads)
   >>> insertFakeChangesFileForAllPackageUploads()
 
-Go back to the "new" queue and accept an item:
+Upload a new "bar" source so we can accept it later.  We need to login to
+upload.
+
+  >>> from canonical.launchpad.ftests import login, logout
+  >>> login('foo.bar@canonical.com')
+  >>> from canonical.launchpad.scripts.ftests.test_queue import (
+  ...     upload_bar_source)
+  >>> bar_src = upload_bar_source()
+  >>> import transaction
+  >>> transaction.commit()
+  >>> logout()
+
+Swallow any email generated at the upload:
+
+  >>> from canonical.launchpad.mail import stub
+  >>> from canonical.launchpad.tests.mail_helpers import pop_notifications
+  >>> swallow = pop_notifications()
+
+Go back to the "new" queue and accept "bar":
 
   >>> upload_manager_browser.open(
   ...    "http://localhost/ubuntu/breezy-autotest/+queue")
-  >>> upload_manager_browser.getControl(name="QUEUE_ID").value=['4']
+  >>> upload_manager_browser.getControl(name="QUEUE_ID").value=['15']
   >>> upload_manager_browser.getControl(name="Accept").click()
   >>> upload_manager_browser.contents
-  '...Accepting Results:<br><br>OK: alsa-utils...
+  '...Accepting Results:<br><br>OK: bar...
   ...netapplet-1.0.0.tar.gz...
   ...netapplet-1.0.0.tar.gz...
+  ...alsa-utils...
   ...netapplet...
   ...pmount (i386)...
   ...mozilla-firefox (i386)...'
@@ -186,16 +205,16 @@ Accepting queue items results in an email to the uploader and (usually) an
 email to the distroseries' announcement list (see
 nascentupload-announcements.txt).
 
-  >>> from canonical.launchpad.mail import stub
-  >>> from canonical.launchpad.tests.mail_helpers import pop_notifications
-  >>> [notification] = pop_notifications()
+  >>> [notification, announcement] = pop_notifications()
   >>> notification['To']
   'Daniel Silverstone <daniel.silverstone@canonical.com>'
+  >>> announcement['To']
+  'autotest_changes@ubuntu.com'
 
 Forcing a duplicated submission on a queue item is recognised:
 
   >>> upload_manager_browser.reload()
-  >>> message = 'FAILED: alsa-utils (Queue item already accepted)'
+  >>> message = 'FAILED: bar (The source bar - 1.0-1 is already accepted'
   >>> message in upload_manager_browser.contents
   True
 
@@ -204,13 +223,16 @@ No emails are sent in this case:
   >>> len(stub.test_emails)
   0
 
-Breeze past the unaccepted queue to ensure an admin can see it:
+Because it's a single source upload, accepting bar will not put it in the
+accepted queue since it skips that state and goes straight to being published.
+Let's accept mozilla-firefox so we can see it in the accepted queue:
 
-  >>> upload_manager_browser.getControl(
-  ...    name="queue_state").displayValue=['Accepted']
-  >>> upload_manager_browser.getControl("Update").click()
+  >>> upload_manager_browser.open(
+  ...    "http://localhost/ubuntu/breezy-autotest/+queue")
+  >>> upload_manager_browser.getControl(name="QUEUE_ID").value=['1']
+  >>> upload_manager_browser.getControl(name="Accept").click()
   >>> upload_manager_browser.contents
-  '...netapplet...'
+  '...Accepting Results:<br><br>OK: mozilla-firefox...'
 
 The item is moved to the ACCEPTED queue:
 
@@ -218,14 +240,14 @@ The item is moved to the ACCEPTED queue:
   ...    name="queue_state").displayValue=['Accepted']
   >>> upload_manager_browser.getControl("Update").click()
   >>> upload_manager_browser.contents
-  '...alsa-utils...'
+  '...mozilla-firefox...'
 
 Going back to the "new" queue, we can see our item has gone:
 
   >>> upload_manager_browser.getControl(
   ...    name="queue_state").displayValue=['New']
   >>> upload_manager_browser.getControl("Update").click()
-  >>> 'alsa-utils' in admin_browser.contents
+  >>> 'mozilla-firefox' in upload_manager_browser.contents
   False
 
 
@@ -239,8 +261,7 @@ Reject netapplet:
   '...Rejecting Results:<br><br>OK: netapplet...
   ...netapplet-1.0.0.tar.gz...
   ...netapplet-1.0.0.tar.gz...
-  ...pmount (i386)...
-  ...mozilla-firefox (i386)...'
+  ...pmount (i386)...'
 
 One rejection email is generated:
 

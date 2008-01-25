@@ -8,6 +8,7 @@ from canonical.launchpad.database.codeimportmachine import *
 from canonical.launchpad.database.codeimportresult import *
 from canonical.launchpad.database.milestone import *
 from canonical.launchpad.database.person import *
+from canonical.launchpad.database.personlocation import *
 from canonical.launchpad.database.pillar import *
 from canonical.launchpad.database.product import *
 from canonical.launchpad.database.productbounty import *
@@ -18,6 +19,7 @@ from canonical.launchpad.database.productrelease import *
 from canonical.launchpad.database.project import *
 from canonical.launchpad.database.projectbounty import *
 from canonical.launchpad.database.poll import *
+from canonical.launchpad.database.announcement import *
 from canonical.launchpad.database.answercontact import *
 from canonical.launchpad.database.bug import *
 from canonical.launchpad.database.bugbranch import *
@@ -81,6 +83,7 @@ from canonical.launchpad.database.builder import *
 from canonical.launchpad.database.buildqueue import *
 from canonical.launchpad.database.publishing import *
 from canonical.launchpad.database.faq import *
+from canonical.launchpad.database.featuredproject import *
 from canonical.launchpad.database.files import *
 from canonical.launchpad.database.bounty import *
 from canonical.launchpad.database.bountymessage import *

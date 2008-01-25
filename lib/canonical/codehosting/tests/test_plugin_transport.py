@@ -339,7 +339,8 @@ class TestLaunchpadTransport(TestCase):
         # Unlocking a branch requests a mirror.
         self.lockBranch('~testuser/firefox/baz')
         self.unlockBranch('~testuser/firefox/baz')
-        self.assertEqual([1], self.server.authserver._request_mirror_log)
+        self.assertEqual(
+            [(self.user_id, 1)], self.server.authserver._request_mirror_log)
 
 
 class TestLaunchpadTransportReadOnly(TestCase):
@@ -494,18 +495,15 @@ class TestLoggingSetup(TestCase):
         logging.getLogger('codehosting').info('Hello hello')
         self.assertEqual(sys.stderr.getvalue(), '')
 
-    def test_bzrLogGoesToStderr(self):
-        # Once set_up_logging is called, any info messages logged to the bzr
-        # logger should be logged to stderr so they will appear on the user's
-        # terminal.
+    def test_leavesBzrHandlersUnchanged(self):
+        # Bazaar's log handling is untouched by set_up_logging.
+        root_handlers = logging.getLogger('').handlers
+        bzr_handlers = logging.getLogger('bzr').handlers
 
-        # This test is somewhat artificial. Really, we want to test that the
-        # bzr log handling is untouched by set_up_logging.
         set_up_logging()
 
-        # Make sure that a logged message does not go to stderr.
-        logging.getLogger('bzr').info('Hello hello')
-        self.assertEqual(sys.stderr.getvalue(), 'Hello hello\n')
+        self.assertEqual(root_handlers, logging.getLogger('').handlers)
+        self.assertEqual(bzr_handlers, logging.getLogger('bzr').handlers)
 
 
 def test_suite():

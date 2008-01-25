@@ -1,9 +1,0 @@
-Do an advanced search with dupes turned on and find the duplicate in the results.
-
-  >>> print http(r"""
-  ... GET /firefox/+bugs?field.searchtext=&field.status%3Alist=New&field.status%3Alist=Confirmed&field.status-empty-marker=1&field.importance-empty-marker=1&field.assignee=&field.unassigned.used=&field.omit_dupes=&field.milestone-empty-marker=1&search=Search HTTP/1.1
-  ... """)
-  HTTP/1.1 200 Ok
-  ...
-  ...4 results...
-  ...Firefox crashes when Save As dialog for a nonexistent window is closed...

@@ -311,7 +311,8 @@ class Build(SQLBase):
         self, binarypackagename, version, summary, description,
         binpackageformat, component,section, priority, shlibdeps,
         depends, recommends, suggests, conflicts, replaces, provides,
-        essential, installedsize, architecturespecific):
+        pre_depends, enhances, breaks, essential, installedsize,
+        architecturespecific):
         """See IBuild."""
         return BinaryPackageRelease(
             build=self, binarypackagename=binarypackagename, version=version,
@@ -320,8 +321,8 @@ class Build(SQLBase):
             component=component, section=section, priority=priority,
             shlibdeps=shlibdeps, depends=depends, recommends=recommends,
             suggests=suggests, conflicts=conflicts, replaces=replaces,
-            provides=provides, essential=essential,
-            installedsize=installedsize,
+            provides=provides, pre_depends=pre_depends, enhances=enhances,
+            breaks=breaks, essential=essential, installedsize=installedsize,
             architecturespecific=architecturespecific)
 
     def createBuildQueueEntry(self):
@@ -384,6 +385,7 @@ class Build(SQLBase):
             subject = "[Build #%d] %s (%s)" % (
                 self.id, self.title, archive_tag)
             source_url = 'not available'
+            extra_headers['X-Launchpad-PPA'] = self.archive.owner.name
 
         # XXX cprov 2006-08-02: pending security recipients for SECURITY
         # pocket build. We don't build SECURITY yet :(

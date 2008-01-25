@@ -216,7 +216,7 @@ member.
     >>> print_distinct_messages_and_recipients()
     From: Ubuntu Team <noreply@launchpad.net>
     To: marilize@hbd.com
-    Subject: marilize joined
+    Subject: marilize joined ubuntu-team
     <BLANKLINE>
     Celso Providelo (cprov) added you as a member of Ubuntu Team (ubuntu-
     team).
@@ -227,7 +227,7 @@ member.
     From: Ubuntu Team <noreply@launchpad.net>
     To: colin.watson@ubuntulinux.com, foo.bar@canonical.com,
         jeff.waugh@ubuntulinux.com, mark@hbd.com
-    Subject: marilize joined
+    Subject: marilize joined ubuntu-team
     <BLANKLINE>
     Marilize Coetzee (marilize) has been added as a member of Ubuntu Team
     (ubuntu-team) by Celso Providelo (cprov). Follow the link below for more
@@ -335,7 +335,7 @@ passing force_team_add=True to the addMember() method.
     >>> print_distinct_messages_and_recipients()
     From: Ubuntu Team <noreply@launchpad.net>
     To: foo.bar@canonical.com
-    Subject: launchpad joined
+    Subject: launchpad joined ubuntu-team
     <BLANKLINE>
     Celso Providelo (cprov) added Launchpad Developers (launchpad) (which
     you are a member of) as a member of Ubuntu Team (ubuntu-team).
@@ -345,7 +345,7 @@ passing force_team_add=True to the addMember() method.
     ----------------------------------------
     From: Ubuntu Team <noreply@launchpad.net>
     To: colin.watson@ubuntulinux.com, jeff.waugh@ubuntulinux.com, mark@hbd.com
-    Subject: launchpad joined
+    Subject: launchpad joined ubuntu-team
     <BLANKLINE>
     Launchpad Developers (launchpad) has been added as a member of Ubuntu
     Team (ubuntu-team) by Celso Providelo (cprov). Follow the link below for

@@ -117,7 +117,7 @@ class IPOTemplate(IRosettaStats):
             "translations based on the name."),
         required=True)
 
-    translation_domain = Text(
+    translation_domain = TextLine(
         title=_("Translation domain"),
         description=_("The translation domain for a translation template. "
             "Used with PO file format when generating MO files for inclusion "
@@ -436,14 +436,15 @@ class IPOTemplate(IRosettaStats):
         Returns the newly created message set.
         """
 
-    def getNextToImport():
-        """Return the next entry on the import queue to be imported."""
+    def importFromQueue(entry_to_import, logger=None):
+        """Import given queue entry.
 
-    def importFromQueue(logger=None):
-        """Execute the import of the next entry on the queue, if needed.
+        :param entry_to_import: `TranslationImportQueueEntry` specifying an
+            approved import for this `POTemplate`
+        :param logger: optional logger to report problems to.
 
-        If a logger argument is given, any problem found with the
-        import will be logged there.
+        :return: a tuple of the subject line and body for a notification email
+            to be sent to the uploader.
         """
 
 

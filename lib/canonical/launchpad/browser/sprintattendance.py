@@ -9,21 +9,32 @@ __all__ = [
     ]
 
 import datetime
+import pytz
 
 from canonical.launchpad import _
 from canonical.launchpad.interfaces import ISprintAttendance
 from canonical.launchpad.webapp import (
     LaunchpadFormView, action, canonical_url, custom_widget)
-from canonical.widgets.textwidgets import LocalDateTimeWidget
+from canonical.widgets.date import DateTimeWidget
 
 
 class BaseSprintAttendanceAddView(LaunchpadFormView):
 
+    schema = ISprintAttendance
+    custom_widget('time_starts', DateTimeWidget)
+    custom_widget('time_ends', DateTimeWidget)
+
     def setUpWidgets(self):
         LaunchpadFormView.setUpWidgets(self)
-        tz = self.context.time_zone
-        self.widgets['time_starts'].timeZoneName = tz
-        self.widgets['time_ends'].timeZoneName = tz
+        tz = pytz.timezone(self.context.time_zone)
+        self.starts_widget = self.widgets['time_starts']
+        self.ends_widget = self.widgets['time_ends']
+        self.starts_widget.required_timezone = tz
+        self.ends_widget.required_timezone = tz
+        self.starts_widget.from_date = self.context.time_starts.date()
+        self.starts_widget.to_date = self.context.time_ends.date()
+        self.ends_widget.from_date = self.context.time_starts.date()
+        self.ends_widget.to_date = self.context.time_ends.date()
 
     def validate(self, data):
         """Verify that the entered times are valid.
@@ -81,14 +92,26 @@ class BaseSprintAttendanceAddView(LaunchpadFormView):
     def next_url(self):
         return canonical_url(self.context)
 
+    _local_timeformat = '%H:%M on %A, %Y-%m-%d'
+    @property
+    def local_start(self):
+        """The sprint start time, in the local time zone, as text."""
+        tz = pytz.timezone(self.context.time_zone)
+        return self.context.time_starts.astimezone(tz).strftime(
+                    self._local_timeformat)
+
+    @property
+    def local_end(self):
+        """The sprint end time, in the local time zone, as text."""
+        tz = pytz.timezone(self.context.time_zone)
+        return self.context.time_ends.astimezone(tz).strftime(
+                    self._local_timeformat)
+
 
 class SprintAttendanceAttendView(BaseSprintAttendanceAddView):
     """A view used to register your attendance at a sprint."""
 
-    schema = ISprintAttendance
     field_names = ['time_starts', 'time_ends']
-    custom_widget('time_starts', LocalDateTimeWidget)
-    custom_widget('time_ends', LocalDateTimeWidget)
 
     @property
     def initial_values(self):
@@ -107,10 +130,7 @@ class SprintAttendanceAttendView(BaseSprintAttendanceAddView):
 class SprintAttendanceRegisterView(BaseSprintAttendanceAddView):
     """A view used to register someone else's attendance at a sprint."""
 
-    schema = ISprintAttendance
     field_names = ['attendee', 'time_starts', 'time_ends']
-    custom_widget('time_starts', LocalDateTimeWidget)
-    custom_widget('time_ends', LocalDateTimeWidget)
 
     @action(_('Register'), name='register')
     def register_action(self, action, data):

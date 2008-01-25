@@ -22,24 +22,28 @@ for a particular bugtracker.
     >>> from canonical.launchpad.scripts import log
     >>> from canonical.launchpad.interfaces import BugTrackerType
 
-get_external_bugtracker supports four external bug tracker types:
+get_external_bugtracker supports five external bug tracker types:
 
     >>> bugtracker_types = [
     ...     BugTrackerType.BUGZILLA,
     ...     BugTrackerType.DEBBUGS,
     ...     BugTrackerType.MANTIS,
     ...     BugTrackerType.ROUNDUP,
+    ...     BugTrackerType.RT,
+    ...     BugTrackerType.SOURCEFORGE,
     ...     BugTrackerType.TRAC]
 
     >>> from canonical.launchpad.ftests.externalbugtracker import (
     ...     new_bugtracker)
+    >>> from canonical.testing import LaunchpadZopelessLayer
+    >>> txn = LaunchpadZopelessLayer.txn
     >>> for bugtracker_type in bugtracker_types:
     ...     bugtracker = new_bugtracker(bugtracker_type)
     ...     try:
     ...         # Suppress log messages in DebBugs
     ...         log.setLevel(log.level + 100)
     ...         external_bugtracker = get_external_bugtracker(
-    ...             bugtracker)
+    ...             txn, bugtracker)
     ...     finally:
     ...         log.setLevel(log.level - 100)
     ...     print "%s --> %s" % (bugtracker_type.title,
@@ -48,4 +52,6 @@ get_external_bugtracker supports four external bug tracker types:
     Debbugs --> <...externalbugtracker.DebBugs object at ...>
     Mantis --> <...externalbugtracker.Mantis object at ...>
     Roundup --> <...externalbugtracker.Roundup object at ...>
+    Request Tracker (RT) --> <...externalbugtracker.RequestTracker ...>
+    SourceForge --> <...externalbugtracker.SourceForge object at ...>
     Trac --> <...externalbugtracker.Trac object at ...>

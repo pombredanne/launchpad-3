@@ -7,6 +7,7 @@ import os
 import re
 import sys
 import errno
+import shutil
 import doctest
 import optparse
 import unittest
@@ -34,12 +35,21 @@ DOCTEST_FLAGS = (doctest.ELLIPSIS |
 
 
 def integrationTestCleanUp(test):
-    """Common set up for the integration tests."""
+    """Common tear down for the integration tests."""
     cursor().execute("""
     CREATE TEMP VIEW DeathRow AS SELECT id FROM Person WHERE name IN (
     'itest-one', 'itest-two', 'itest-three',
     'anne', 'bart', 'cris', 'dirk'
     );
+
+    DELETE FROM AnswerContact
+    WHERE person in (SELECT id FROM DeathRow);
+
+    DELETE FROM PersonLanguage
+    WHERE person in (SELECT id FROM DeathRow);
+
+    DELETE FROM SpecificationSubscription
+    WHERE person in (SELECT id FROM DeathRow);
 
     DELETE FROM MailingListSubscription
     WHERE person in (SELECT id FROM DeathRow);
@@ -50,8 +60,14 @@ def integrationTestCleanUp(test):
     DELETE FROM TeamMembership
     WHERE team IN (SELECT id FROM DeathRow);
 
+    DELETE FROM TeamMembership
+    WHERE person IN (SELECT id FROM DeathRow);
+
     DELETE FROM TeamParticipation
     WHERE team IN (SELECT id FROM DeathRow);
+
+    DELETE FROM TeamParticipation
+    WHERE person IN (SELECT id FROM DeathRow);
 
     DELETE FROM MailingList
     WHERE team IN (SELECT id FROM DeathRow);
@@ -59,10 +75,19 @@ def integrationTestCleanUp(test):
     DELETE FROM WikiName
     WHERE person IN (SELECT id FROM DeathRow);
 
+    DELETE FROM BugSubscription
+    WHERE person IN (SELECT id FROM DeathRow);
+
     DELETE FROM Person
     WHERE id IN (SELECT id FROM DeathRow);
     """)
     commit()
+    # Clear out any qfiles hanging around from a previous run.  Do this first
+    # to prevent stale list references.
+    for dirpath, dirnames, filenames in os.walk(QUEUE_DIR):
+        for filename in filenames:
+            if os.path.splitext(filename)[1] == '.pck':
+                os.remove(os.path.join(dirpath, filename))
     # Now delete any mailing lists still hanging around.  We don't care if
     # this fails because it means the list doesn't exist.  While we're at it,
     # remove any related archived backup files.
@@ -71,18 +96,20 @@ def integrationTestCleanUp(test):
             itest_helper.run_mailman('./rmlist', '-a', team_name)
         except itest_helper.IntegrationTestFailure:
             pass
-        backup_file = os.path.join(VAR_PREFIX, 'backups', '%s.tgz' % team_name)
+        backup_file = os.path.join(
+            VAR_PREFIX, 'backups', '%s.tgz' % team_name)
         try:
             os.remove(backup_file)
         except OSError, error:
             if error.errno != errno.ENOENT:
                 raise
-    # Clear out any qfiles hanging around from a previous run.
-    for dirpath, dirnames, filenames in os.walk(QUEUE_DIR):
-        for filename in filenames:
-            if os.path.splitext(filename)[1] == '.pck':
-                os.remove(os.path.join(dirpath, filename))
-
+        # Delete the MHonArc archives if they exist.
+        path = os.path.join(VAR_PREFIX, 'mhonarc')
+        try:
+            shutil.rmtree(path)
+        except OSError, error:
+            if error.errno != errno.ENOENT:
+                raise
 
 
 def find_tests(match_regexps):

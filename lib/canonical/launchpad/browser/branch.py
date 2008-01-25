@@ -12,6 +12,7 @@ __all__ = [
     'BranchContextMenu',
     'BranchDeletionView',
     'BranchEditView',
+    'BranchEditWhiteboardView',
     'BranchReassignmentView',
     'BranchMirrorStatusView',
     'BranchNavigation',
@@ -29,6 +30,7 @@ import pytz
 from zope.event import notify
 from zope.component import getUtility
 from zope.interface import Interface
+from zope.publisher.interfaces import NotFound
 
 from canonical.cachedproperty import cachedproperty
 from canonical.config import config
@@ -36,17 +38,17 @@ from canonical.database.constants import UTC_NOW
 
 from canonical.lp import decorates
 from canonical.launchpad.browser.branchref import BranchRef
+from canonical.launchpad.browser.feeds import BranchFeedLink, FeedsMixin
 from canonical.launchpad.browser.launchpad import StructuralObjectPresentation
 from canonical.launchpad.browser.objectreassignment import (
     ObjectReassignmentView)
 from canonical.launchpad.event import SQLObjectCreatedEvent
 from canonical.launchpad.helpers import truncate_text
 from canonical.launchpad.interfaces import (
-    BranchCreationForbidden, BranchType, BranchVisibilityRule, IBranch,
-    IBranchMergeProposal, InvalidBranchMergeProposal,
-    IBranchSet, IBranchSubscription, IBugSet,
-    ICodeImportSet, ILaunchpadCelebrities, IPersonSet, MIRROR_TIME_INCREMENT,
-    UICreatableBranchType)
+    BranchCreationForbidden, BranchType, BranchVisibilityRule,
+    IBranch, IBranchMergeProposal, IBranchSet, IBranchSubscription, IBugSet,
+    ICodeImportSet, ILaunchpadCelebrities,
+    InvalidBranchMergeProposal, IPersonSet, UICreatableBranchType)
 from canonical.launchpad.webapp import (
     canonical_url, ContextMenu, Link, enabled_with_permission,
     LaunchpadView, Navigation, stepto, stepthrough, LaunchpadFormView,
@@ -56,6 +58,8 @@ from canonical.launchpad.webapp.badge import Badge, HasBadgeBase
 from canonical.launchpad.webapp.uri import URI
 
 from canonical.widgets import SinglePopupWidget
+from canonical.widgets.branch import TargetBranchWidget
+from canonical.widgets.itemswidgets import LaunchpadRadioWidgetWithDescription
 
 
 def quote(text):
@@ -158,9 +162,14 @@ class BranchContextMenu(ContextMenu):
 
     usedfor = IBranch
     facet = 'branches'
-    links = ['edit', 'delete_branch', 'browse_code', 'browse_revisions',
+    links = ['whiteboard', 'edit', 'delete_branch', 'browse_code',
+             'browse_revisions',
              'reassign', 'subscription', 'addsubscriber', 'associations',
              'registermerge', 'landingcandidates', 'linkbug']
+
+    def whiteboard(self):
+        text = 'Edit whiteboard'
+        return Link('+whiteboard', text, icon='edit')
 
     @enabled_with_permission('launchpad.Edit')
     def edit(self):
@@ -220,7 +229,9 @@ class BranchContextMenu(ContextMenu):
     @enabled_with_permission('launchpad.AnyPerson')
     def registermerge(self):
         text = 'Propose for merging'
-        return Link('+register-merge', text, icon='edit')
+        # It is not valid to propose a junk branch for merging.
+        enabled = self.context.product is not None
+        return Link('+register-merge', text, icon='edit', enabled=enabled)
 
     def landingcandidates(self):
         text = 'View landing candidates'
@@ -232,9 +243,13 @@ class BranchContextMenu(ContextMenu):
         return Link('+linkbug', text, icon='edit')
 
 
-class BranchView(LaunchpadView):
+class BranchView(LaunchpadView, FeedsMixin):
 
     __used_for__ = IBranch
+
+    feed_types = (
+        BranchFeedLink,
+        )
 
     def initialize(self):
         self.notices = []
@@ -358,7 +373,7 @@ class BranchView(LaunchpadView):
 
 
 class DecoratedMergeProposal:
-    """Provide some additional functionality to a normal branch merge proposal.
+    """Provide some additional attributes to a normal branch merge proposal.
     """
     decorates(IBranchMergeProposal)
 
@@ -395,19 +410,6 @@ class DecoratedMergeProposal:
         """Return a decorated list of landing candidates."""
         candidates = self.context.landing_candidates
         return [DecoratedMergeProposal(proposal) for proposal in candidates]
-
-
-class DecoratedMergeProposal:
-    """Provide some additional functionality to a normal branch merge proposal.
-    """
-    decorates(IBranchMergeProposal)
-
-    def __init__(self, context):
-        self.context = context
-
-    def show_registrant(self):
-        """Show the registrant if it was not the branch owner."""
-        return self.context.registrant != self.source_branch.owner
 
 
 class BranchInPersonView(BranchView):
@@ -463,9 +465,19 @@ class BranchEditFormView(LaunchpadEditFormView):
             # was in fact a change.
             self.context.date_last_modified = UTC_NOW
 
+    @action('Cancel', name='cancel', validator='validate_cancel')
+    def cancel_action(self, action, data):
+        """Do nothing and go back to the branch page."""
+
     @property
     def next_url(self):
         return canonical_url(self.context)
+
+
+class BranchEditWhiteboardView(BranchEditFormView):
+    """A view for editing the whiteboard only."""
+
+    field_names = ['whiteboard']
 
 
 class BranchMirrorStatusView(LaunchpadFormView):
@@ -485,11 +497,11 @@ class BranchMirrorStatusView(LaunchpadFormView):
         """Is it likely that the branch is being mirrored in the next run of
         the puller?
         """
-        return self.context.mirror_request_time < datetime.now(pytz.UTC)
+        return self.context.next_mirror_time < datetime.now(pytz.UTC)
 
     def mirror_disabled(self):
         """Has mirroring this branch been disabled?"""
-        return self.context.mirror_request_time is None
+        return self.context.next_mirror_time is None
 
     def mirror_failed_once(self):
         """Has there been exactly one failed attempt to mirror this branch?"""
@@ -550,10 +562,12 @@ class BranchDeletionView(LaunchpadFormView):
 
 
 class BranchEditView(BranchEditFormView, BranchNameValidationMixin):
+    """The main branch view for editing the branch attributes."""
 
-    schema = IBranch
     field_names = ['product', 'private', 'url', 'name', 'title', 'summary',
                    'lifecycle_status', 'whiteboard', 'home_page', 'author']
+
+    custom_widget('lifecycle_status', LaunchpadRadioWidgetWithDescription)
 
     def setUpFields(self):
         LaunchpadFormView.setUpFields(self)
@@ -624,14 +638,18 @@ class BranchEditView(BranchEditFormView, BranchNameValidationMixin):
 class BranchAddView(LaunchpadFormView, BranchNameValidationMixin):
 
     schema = IBranch
-    field_names = ['branch_type', 'product', 'url', 'name', 'title', 'summary',
-                   'lifecycle_status', 'whiteboard', 'home_page', 'author']
+    field_names = ['product', 'branch_type', 'url', 'name', 'title',
+                   'summary', 'lifecycle_status', 'whiteboard', 'home_page',
+                   'author']
 
     branch = None
+    custom_widget('branch_type', LaunchpadRadioWidgetWithDescription)
+    custom_widget('lifecycle_status', LaunchpadRadioWidgetWithDescription)
 
     @property
     def initial_values(self):
-        return {'branch_type': UICreatableBranchType.MIRRORED}
+        return {'author': self.user,
+                'branch_type': UICreatableBranchType.MIRRORED}
 
     @action('Add Branch', name='add')
     def add_action(self, action, data):
@@ -735,13 +753,9 @@ class PersonBranchAddView(BranchAddView):
     """See `BranchAddView`."""
 
     @property
-    def field_names(self):
-        fields = list(BranchAddView.field_names)
-        fields.remove('author')
-        return fields
-
-    def getAuthor(self, data):
-        return self.context
+    def initial_values(self):
+        return {'author': self.context,
+                'branch_type': UICreatableBranchType.MIRRORED}
 
 
 class ProductBranchAddView(BranchAddView):
@@ -758,11 +772,6 @@ class ProductBranchAddView(BranchAddView):
 
     def getProduct(self, data):
         return self.context
-
-    @property
-    def initial_values(self):
-        return {'author': self.user,
-                'branch_type': UICreatableBranchType.MIRRORED}
 
     def setForbiddenError(self, product):
         """There is no product widget, so set a form wide error."""
@@ -864,12 +873,18 @@ class BranchSubscriptionsView(LaunchpadView):
 class RegisterBranchMergeProposalView(LaunchpadFormView):
     """The view to register new branch merge proposals."""
     schema = IBranchMergeProposal
-    for_input=True
+    for_input = True
 
     field_names = ['target_branch', 'dependent_branch', 'whiteboard']
 
-    custom_widget('target_branch', SinglePopupWidget, displayWidth=35)
+    custom_widget('target_branch', TargetBranchWidget)
     custom_widget('dependent_branch', SinglePopupWidget, displayWidth=35)
+
+    def initialize(self):
+        """Show a 404 if the source branch is junk."""
+        if self.context.product is None:
+            raise NotFound(self.context, '+register-merge')
+        LaunchpadFormView.initialize(self)
 
     @action('Register', name='register')
     def register_action(self, action, data):
@@ -924,7 +939,8 @@ class RegisterBranchMergeProposalView(LaunchpadFormView):
         elif dependent_branch == source_branch:
             self.setFieldError(
                 'dependent_branch',
-                "The dependent branch cannot be the same as the source branch.")
+                "The dependent branch cannot be the same as the source "
+                "branch.")
         else:
             # Make sure that the dependent_branch is in the project.
             if dependent_branch.product != source_branch.product:

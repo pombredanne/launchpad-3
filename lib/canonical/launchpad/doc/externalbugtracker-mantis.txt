@@ -14,7 +14,9 @@ export from.
     >>> from canonical.launchpad.ftests.externalbugtracker import (
     ...     new_bugtracker)
     >>> from canonical.launchpad.interfaces import BugTrackerType
-    >>> alsa_mantis = Mantis(new_bugtracker(BugTrackerType.MANTIS))
+    >>> from canonical.testing import LaunchpadZopelessLayer
+    >>> txn = LaunchpadZopelessLayer.txn
+    >>> alsa_mantis = Mantis(txn, new_bugtracker(BugTrackerType.MANTIS))
 
 As with all ExternalBugTrackers, Mantis contains a function for converting one
 of its own status to a Malone status. Mantis' function takes a string
@@ -68,7 +70,7 @@ Tracker:
 We use a specially hacked Mantis instance that doesn't do network
 calls to verify here:
 
-    >>> example_ext_bug_tracker = TestMantis(example_bug_tracker)
+    >>> example_ext_bug_tracker = TestMantis(txn, example_bug_tracker)
 
 Collect the Example.com watches:
 

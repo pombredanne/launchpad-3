@@ -2,7 +2,21 @@
 
 == Adding a series ==
 
-Test to add a product series
+Only product owners can add a series to product. This means that only
+Sample Person can add series in the Firefox product. No Privileges
+Person won't even see the link nor can access the page directly.
+
+    >>> user_browser.open('http://launchpad.dev/firefox')
+    >>> user_browser.getLink('Register a series').click()
+    Traceback (most recent call last):
+      ...
+    LinkNotFoundError
+    >>> user_browser.open('http://launchpad.dev/firefox/+addseries')
+    Traceback (most recent call last):
+      ...
+    Unauthorized: ...
+
+But Sample Person will and be able to add a series.
 
     >>> browser.addHeader('Authorization', 'Basic test@canonical.com:test')
     >>> browser.open('http://launchpad.dev/firefox')

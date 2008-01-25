@@ -14,7 +14,7 @@ Our new user 'Foo' will now add a couple email addresses to his account.
 
     >>> browser = setupBrowser(auth='Basic foo@baz.com:f')
     >>> browser.open('http://launchpad.dev/~foo')
-    >>> browser.getLink('Update e-mail addresses').click()
+    >>> browser.getLink('Change e-mail settings').click()
     >>> browser.url
     'http://launchpad.dev/~foo/+editemails'
 
@@ -72,7 +72,7 @@ Follow the token link, to confirm the new email address.
 Now that the address is confirmed he sees it in the list of his confirmed
 addresses.
 
-    >>> browser.getLink('Update e-mail addresses').click()
+    >>> browser.getLink('Change e-mail settings').click()
     >>> confirmed = browser.getControl(name="field.VALIDATED_SELECTED")
     >>> confirmed.displayOptions
     ['\xa0foo@baz.com', '\xa0bar.foo@canonical.com']

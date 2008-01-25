@@ -34,6 +34,7 @@ __all__ = [
     'ProductSetNavigation',
     'ProductSetContextMenu',
     'ProductSetView',
+    'ProductBranchOverviewView',
     'ProductBranchesView',
     'PillarSearchItem',
     ]
@@ -53,18 +54,21 @@ from canonical.cachedproperty import cachedproperty
 from canonical.config import config
 from canonical.launchpad import _
 from canonical.launchpad.interfaces import (
-    BranchListingSort, IBranchSet, ICountry, IDistribution, IHasIcon,
-    ILaunchBag, ILaunchpadCelebrities, IPillarNameSet, IProduct,
+    BranchListingSort, IBranchSet, IBugTracker, ICountry, IDistribution,
+    IHasIcon, ILaunchBag, ILaunchpadCelebrities, IPillarNameSet, IProduct,
     IProductSeries, IProductSet, IProject, ITranslationImportQueue,
     License, NotFoundError, RESOLVED_BUGTASK_STATUSES,
     UnsafeFormGetSubmissionError)
 from canonical.launchpad import helpers
+from canonical.launchpad.browser.announcement import HasAnnouncementsView
 from canonical.launchpad.browser.branding import BrandingChangeView
 from canonical.launchpad.browser.branchlisting import BranchListingView
 from canonical.launchpad.browser.branchref import BranchRef
 from canonical.launchpad.browser.bugtask import (
     BugTargetTraversalMixin, get_buglisting_search_filter_url)
 from canonical.launchpad.browser.faqtarget import FAQTargetNavigationMixin
+from canonical.launchpad.browser.feeds import (
+    FeedsMixin, ProductBranchesFeedLink)
 from canonical.launchpad.browser.launchpad import (
     StructuralObjectPresentation, DefaultShortLink)
 from canonical.launchpad.browser.objectreassignment import (
@@ -115,6 +119,10 @@ class ProductNavigation(
     @stepthrough('+release')
     def traverse_release(self, name):
         return self.context.getRelease(name)
+
+    @stepthrough('+announcement')
+    def traverse_announcement(self, name):
+        return self.context.getAnnouncement(name)
 
     def traverse(self, name):
         return self.context.getSeries(name)
@@ -183,7 +191,8 @@ class ProductLicenseMixin:
         if (License.OTHER_PROPRIETARY in self.product.licenses
                 or License.OTHER_OPEN_SOURCE in self.product.licenses):
             user = getUtility(ILaunchBag).user
-            subject = 'Project License Submitted'
+            subject = "Project License Submitted for %s by %s" % (
+                    self.product.name, user.name)
             fromaddress = format_address("Launchpad",
                                          config.noreply_from_address)
             license_titles = '\n'.join(
@@ -280,7 +289,8 @@ class ProductOverviewMenu(ApplicationMenu):
     links = [
         'edit', 'branding', 'driver', 'reassign', 'top_contributors',
         'mentorship', 'distributions', 'packages', 'files', 'branch_add',
-        'series_add', 'administer', 'branch_visibility', 'rdf']
+        'series_add', 'announce', 'announcements', 'administer',
+        'branch_visibility', 'rdf']
 
     @enabled_with_permission('launchpad.Edit')
     def edit(self):
@@ -323,9 +333,21 @@ class ProductOverviewMenu(ApplicationMenu):
         text = 'Download project files'
         return Link('+download', text, icon='info')
 
+    @enabled_with_permission('launchpad.Edit')
     def series_add(self):
         text = 'Register a series'
         return Link('+addseries', text, icon='add')
+
+    @enabled_with_permission('launchpad.Edit')
+    def announce(self):
+        text = 'Make announcement'
+        summary = 'Publish an item of news for this project'
+        return Link('+announce', text, summary, icon='add')
+
+    def announcements(self):
+        text = 'Show announcements'
+        enabled = bool(self.context.announcements().count())
+        return Link('+announcements', text, enabled=enabled)
 
     def branch_add(self):
         text = 'Register branch'
@@ -372,12 +394,17 @@ class ProductBranchesMenu(ApplicationMenu):
 
     usedfor = IProduct
     facet = 'branches'
-    links = ['branch_add', ]
+    links = ['branch_add', 'list_branches']
 
     def branch_add(self):
         text = 'Register branch'
         summary = 'Register a new Bazaar branch for this project'
         return Link('+addbranch', text, summary, icon='add')
+
+    def list_branches(self):
+        text = 'List branches'
+        summary = 'List the branches for this project'
+        return Link('+branches', text, summary, icon='add')
 
 
 class ProductSpecificationsMenu(ApplicationMenu):
@@ -537,12 +564,12 @@ class SortSeriesMixin:
         return series_list
 
 
-class ProductView(LaunchpadView, SortSeriesMixin):
+class ProductView(HasAnnouncementsView, SortSeriesMixin, FeedsMixin):
 
     __used_for__ = IProduct
 
     def __init__(self, context, request):
-        LaunchpadView.__init__(self, context, request)
+        HasAnnouncementsView.__init__(self, context, request)
         self.form = request.form_ng
 
     def initialize(self):
@@ -686,11 +713,18 @@ class ProductDownloadFileMixin:
         raise NotImplementedError
 
     def fileURL(self, file_, release=None):
-        """Create a download URL for the file."""
+        """Create a download URL for the `LibraryFileAlias`."""
         if release is None:
             release = self.context
         return "%s/+download/%s" % (canonical_url(release),
-                                    file_.libraryfile.filename)
+                                    file_.filename)
+
+    def md5URL(self, file_, release=None):
+        """Create a URL for the MD5 digest."""
+        if release is None:
+            release = self.context
+        return "%s/+download/%s/+md5" % (canonical_url(release),
+                                         file_.filename)
 
     def processDeleteFiles(self):
         """If the 'delete_files' button was pressed, process the deletions."""
@@ -747,6 +781,17 @@ class ProductDownloadFilesView(LaunchpadView,
         return False
 
     @cachedproperty
+    def any_download_files_with_signatures(self):
+        """Across series and releases do any download files have signatures?
+        """
+        for series in self.product.serieses:
+            for release in series.releases:
+                for file in release.files:
+                    if file.signature:
+                        return True
+        return False
+
+    @cachedproperty
     def milestones(self):
         """A mapping between series and releases that are milestones."""
         result = dict()
@@ -775,11 +820,12 @@ class ProductEditView(ProductLicenseMixin, LaunchpadEditFormView):
     schema = IProduct
     label = "Change project details"
     field_names = [
-        "displayname", "title", "summary", "description", "project",
-        "bugtracker", "official_rosetta", "official_answers",
-        "homepageurl", "sourceforgeproject",
-        "freshmeatproject", "wikiurl", "screenshotsurl", "downloadurl",
-        "programminglang", "development_focus", "licenses", "license_info"]
+        "displayname", "title", "summary", "description",
+        "bug_reporting_guidelines", "project", "bugtracker",
+        "enable_bug_expiration", "official_rosetta", "official_answers",
+        "homepageurl", "sourceforgeproject", "freshmeatproject", "wikiurl",
+        "screenshotsurl", "downloadurl", "programminglang",
+        "development_focus", "licenses", "license_info"]
     custom_widget(
         'licenses', LicenseWidget, column_count=3, orientation='vertical')
     custom_widget('bugtracker', ProductBugTrackerWidget)
@@ -792,6 +838,18 @@ class ProductEditView(ProductLicenseMixin, LaunchpadEditFormView):
         if (len(self.context.licenses) == 0 and
             self.widgets.get('licenses') is not None):
             self.widgets['licenses'].allow_pending_license = True
+
+    def validate(self, data):
+        """Constrain bug expiration to Launchpad Bugs tracker."""
+        # enable_bug_expiration is disabled by JavaScript when bugtracker
+        # is not 'In Launchpad'. The contraint is enforced here in case the
+        # JavaScript fails to activate or run. Note that the bugtracker
+        # name : values are {'In Launchpad' : object, 'Somewhere else' : None
+        # 'In a registered bug tracker' : IBugTracker}.
+        bugtracker = data.get('bugtracker', None)
+        if bugtracker is None or IBugTracker.providedBy(bugtracker):
+            data['enable_bug_expiration'] = False
+        ProductLicenseMixin.validate(self, data)
 
     @action("Change", name='change')
     def change_action(self, action, data):
@@ -1212,15 +1270,59 @@ class ProductShortLink(DefaultShortLink):
         return self.context.displayname
 
 
+class ProductBranchOverviewView(LaunchpadView, SortSeriesMixin, FeedsMixin):
+    """View for the product code overview."""
+
+    __used_for__ = IProduct
+
+    feed_types = (
+        ProductBranchesFeedLink,
+        )
+
+    @cachedproperty
+    def recent_revision_branches(self):
+        """Branches that have the most recent revisions."""
+        branch_set = getUtility(IBranchSet)
+        return branch_set.getBranchesWithRecentRevisionsForProduct(
+            self.context, 5, self.user)
+
+    @property
+    def codebrowse_root(self):
+        """Return the link to codebrowse for this branch."""
+        return config.codehosting.codebrowse_root
+
+    @cachedproperty
+    def recent_revisions(self):
+        """The tip revision for each of the recent revision branches."""
+        return [branch.getBranchRevision(branch.revision_count)
+                for branch in self.recent_revision_branches]
+
+    @cachedproperty
+    def latest_branches(self):
+        """The lastest branches registered for the product."""
+        return self.context.getLatestBranches(visible_by_user=self.user)
+
+
 class ProductBranchesView(BranchListingView):
     """View for branch listing for a product."""
 
     extra_columns = ('author',)
     no_sort_by = (BranchListingSort.PRODUCT,)
 
-    def _branches(self, lifecycle_status):
+    @cachedproperty
+    def hide_dormant_initial_value(self):
+        """If there are more than one page of branches, hide dormant ones."""
+        page_size = config.launchpad.branchlisting_batch_size
+        return self.context.branches.count() > page_size
+
+    @cachedproperty
+    def development_focus_branch(self):
+        return self.context.development_focus.series_branch
+
+    def _branches(self, lifecycle_status, show_dormant):
         return getUtility(IBranchSet).getBranchesForProduct(
-            self.context, lifecycle_status, self.user, self.sort_by)
+            self.context, lifecycle_status, self.user, self.sort_by,
+            show_dormant)
 
     @property
     def no_branch_message(self):

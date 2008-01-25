@@ -18,6 +18,7 @@ from canonical.launchpad.interfaces import (
     IProduct,
     IProductSeries,
     IProject,
+    IProjectSeries,
     ISprint,
     ISpecificationTarget,
     SpecificationFilter,
@@ -25,6 +26,7 @@ from canonical.launchpad.interfaces import (
     )
 
 from canonical.config import config
+from canonical.database.sqlbase import cursor, sqlvalues
 from canonical.launchpad import _
 from canonical.launchpad.webapp import LaunchpadView
 from canonical.launchpad.webapp.batching import BatchNavigator
@@ -68,7 +70,9 @@ class HasSpecificationsView(LaunchpadView):
     is_sprint = False
     has_drivers = False
 
-    # XXX jsk 2007-07-12: This method is in need of simplication.
+    # XXX: jsk: 2007-07-12: This method might be improved by
+    # replacing the conditional execution with polymorphism.
+    # See https://bugs.launchpad.net/blueprint/+bug/173972.
     def initialize(self):
         mapping = {'name': self.context.displayname}
         if self.is_person:
@@ -85,6 +89,10 @@ class HasSpecificationsView(LaunchpadView):
         elif IProject.providedBy(self.context):
             self.is_project = True
             self.is_pillar = True
+            self.show_target = True
+            self.show_series = True
+        elif IProjectSeries.providedBy(self.context):
+            self.show_milestone = True
             self.show_target = True
             self.show_series = True
         elif (IProductSeries.providedBy(self.context) or
@@ -329,25 +337,57 @@ class HasSpecificationsView(LaunchpadView):
             SpecificationFilter.INCOMPLETE,
             SpecificationFilter.ACCEPTED]
         specs = set(self.context.specifications(filter=filter))
+
+        # In order to optimize this for targets with a large
+        # set of blueprints, we first fetch all the dependencies
+        # in one go (rather than ask SQLObject to get a related
+        # join for every iteration).
+        if len(specs):
+            cur = cursor()
+            cur.execute("""
+            SELECT specification, dependency
+            FROM SpecificationDependency
+            WHERE specification IN %s
+            """ % sqlvalues([spec.id for spec in specs]))
+            dependencies = cur.fetchall()
+            cur.close()
+        else:
+            dependencies = []
+
+        # We loop over all the blueprints, adding them only
+        # after their dependencies have been added.
         found_spec = True
         while found_spec:
             found_spec = False
             for spec in specs:
                 if spec in plan:
                     continue
-                if not spec.dependencies:
+                # Check whether the spec has
+                # any dependencies by looking
+                # at the cached dependencies list
+                spec_has_dependencies = False
+                for spec_id, dep_id in dependencies:
+                    if spec_id == spec.id:
+                        spec_has_dependencies = True
+                        break
+                if not spec_has_dependencies:
                     found_spec = True
                     plan.append(spec)
                     continue
                 all_clear = True
-                for depspec in spec.dependencies:
-                    if depspec not in plan:
+                spec_dependencies = [
+                    dep_id for (spec_id, dep_id)
+                    in dependencies
+                    if spec_id == spec.id]
+                planned_spec_dependencies = [p_spec.id for p_spec in plan]
+                for depspec_id in spec_dependencies:
+                    if depspec_id not in planned_spec_dependencies:
                         all_clear = False
                         break
                 if all_clear:
                     found_spec = True
                     plan.append(spec)
-        # ok. at this point, plan contains the ones that can move
+        # At this point, plan contains the ones that can move
         # immediately. we need to find the dangling ones
         dangling = []
         for spec in specs:

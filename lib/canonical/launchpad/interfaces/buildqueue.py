@@ -167,10 +167,13 @@ class IBuildQueueSet(Interface):
         is empty, but the result isn't might to be used in call site.
         """
 
-    def calculateCandidates(archserieses, state):
-        """Return the candidates for building
+    def calculateCandidates(archseries):
+        """Return the BuildQueue records for the given archseries.
 
-        The result is a unsorted list of BuildQueue items in a given state
-        within a given DistroArchSeries group.
+        Returns a selectRelease of BuildQueue items sorted by descending
+        'lastscore' within the given archseries.
+
+        'archseries' argument should be a list of DistroArchSeries and it is
+        asserted to not be None/empty.
         """
 

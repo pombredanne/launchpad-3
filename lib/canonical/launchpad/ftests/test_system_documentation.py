@@ -527,6 +527,12 @@ special = {
             tearDown=uploaderTearDown,
             optionflags=default_optionflags, layer=LaunchpadZopelessLayer
             ),
+    'bugmessage.txt-checkwatches': LayeredDocFileSuite(
+            '../doc/bugmessage.txt',
+            setUp=checkwatchesSetUp,
+            tearDown=uploaderTearDown,
+            optionflags=default_optionflags, layer=LaunchpadZopelessLayer
+            ),
     'bug-private-by-default.txt': LayeredDocFileSuite(
             '../doc/bug-private-by-default.txt',
             setUp=setUp,
@@ -622,6 +628,13 @@ special = {
                 tearDown=tearDown,
                 optionflags=default_optionflags, layer=LaunchpadZopelessLayer
                 ),
+    'externalbugtracker-rt.txt':
+            LayeredDocFileSuite(
+                '../doc/externalbugtracker-rt.txt',
+                setUp=checkwatchesSetUp,
+                tearDown=tearDown,
+                optionflags=default_optionflags, layer=LaunchpadZopelessLayer
+                ),
     'externalbugtracker-sourceforge.txt':
             LayeredDocFileSuite(
                 '../doc/externalbugtracker-sourceforge.txt',
@@ -670,6 +683,21 @@ special = {
             stdout_logging=False,
             layer=LaunchpadFunctionalLayer
             ),
+    'branch-merge-proposals.txt': LayeredDocFileSuite(
+            '../doc/branch-merge-proposals.txt',
+            setUp=zopelessLaunchpadSecuritySetUp,
+            tearDown=zopelessLaunchpadSecurityTearDown,
+            optionflags=default_optionflags, layer=LaunchpadZopelessLayer,
+            ),
+    'soyuz-set-of-uploads.txt': LayeredDocFileSuite(
+            '../doc/soyuz-set-of-uploads.txt',
+            layer=LaunchpadZopelessLayer, optionflags=default_optionflags
+            ),
+    'publishing.txt': LayeredDocFileSuite(
+            '../doc/publishing.txt',
+            layer=LaunchpadZopelessLayer, optionflags=default_optionflags
+            ),
+
     }
 
 

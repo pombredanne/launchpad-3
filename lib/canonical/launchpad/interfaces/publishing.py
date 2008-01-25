@@ -129,25 +129,36 @@ class IPublishing(Interface):
     def supersede():
         """Supersede this publication.
 
-        Return the superseded publishing records, either a
-        `ISourcePackagePublishingHistory` or `IBinaryPackagePublishingHistory`.
+        :return: The superseded publishing records, either a
+            `ISourcePackagePublishingHistory` or
+            `IBinaryPackagePublishingHistory`.
         """
 
     def requestDeletion(removed_by, removal_comment=None):
         """Delete this publication.
 
-        param removed_by: `IPerson` responsible for the removal.
-        param removal_comment: optional text describing the removal reason.
+        :param removed_by: `IPerson` responsible for the removal.
+        :param removal_comment: optional text describing the removal reason.
 
-        Return the deleted publishing records, either a
-        `ISourcePackagePublishingHistory` or `IBinaryPackagePublishingHistory`.
+        :return: The deleted publishing record, either:
+            `ISourcePackagePublishingHistory` or
+            `IBinaryPackagePublishingHistory`.
+        """
+
+    def requestObsolescence():
+        """Make this publication obsolete.
+
+        :return: The obsoleted publishing record, either:
+            `ISourcePackagePublishingHistory` or
+            `IBinaryPackagePublishingHistory`.
         """
 
     def copyTo(distroseries, pocket, archive):
         """Copy this publication to another location.
 
-        Return the publishing in the targeted location, either a
-        `ISourcePackagePublishingHistory` or `IBinaryPackagePublishingHistory`.
+        :return: The publishing in the targeted location, either:
+            `ISourcePackagePublishingHistory` or
+            `IBinaryPackagePublishingHistory`.
         """
 
 
@@ -310,12 +321,17 @@ class ISourcePackagePublishingHistory(ISecureSourcePackagePublishingHistory):
         "correspondent to the sourcepackagerelease attribute inside "
         "a specific distroseries")
 
+    suite_name = Attribute(
+        "Return the suite name for this publishing record.  Suite "
+        "name is built from distroseries<-pocket> where -pocket is "
+        "empty if it's the release pocket.")
+
     def getPublishedBinaries():
         """Return all resulted IBinaryPackagePublishingHistory.
 
         Follow the build record and return every PUBLISHED binary publishing
-        record for DistroArchSeries in this DistroSeries, ordered by
-        architecturetag.
+        record for DistroArchSeries in this DistroSeries and in the same
+        Pocket, ordered by architecturetag.
         """
 
     def changeOverride(new_component=None, new_section=None):

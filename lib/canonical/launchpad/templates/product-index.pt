@@ -99,6 +99,10 @@
           class="section"
           tal:content="structure context/@@+portlet-coming-sprints"
         />
+        <div
+          class="section"
+          tal:content="structure context/@@+portlet-latestannouncements"
+        />
         <div class="portlet">
           <h2>Timeline</h2>
 
@@ -127,7 +131,7 @@
       <div class="right">
         <div
           class="two column section"
-          tal:content="structure context/@@+portlet-details"
+          tal:content="structure context/@@+details"
         />
         <div
           class="section"

@@ -81,15 +81,20 @@ To change the branch status, the +edit page is also used:
 
 The form displays the branch current status.
 
-    >>> browser.getControl('Status').displayValue
-    ['Experimental']
+    >>> print_radio_button_field(browser.contents, 'lifecycle_status')
+    ( ) Mature
+    ( ) Development
+    (*) Experimental
+    ( ) Merged
+    ( ) Abandoned
+    ( ) New
     >>> browser.getControl('Whiteboard').value
     ''
 
 The user selects the new status value and enters a more complete status message
 in the 'Whiteboard':
 
-    >>> browser.getControl('Status').displayValue = ['Merged'];
+    >>> browser.getControl('Merged').click()
     >>> browser.getControl('Whiteboard').value = \
     ...     "The brave shall prevail. Ka'plah!"
     >>> browser.getControl('Change Branch').click()
@@ -110,7 +115,7 @@ Set the branch status back to its initial state.
 
     >>> browser.open('http://launchpad.dev'
     ...     '/~name12/gnome-terminal/klingon/+edit')
-    >>> browser.getControl('Status').displayValue = ['Experimental'];
+    >>> browser.getControl('Experimental').click()
     >>> browser.getControl('Whiteboard').value = ''
     >>> browser.getControl('Change Branch').click()
 
@@ -284,3 +289,57 @@ Check that when editing a hosted branch the URL field is not shown.
     ...
     LookupError: label 'Branch URL'
 
+
+== Editing the whiteboard ==
+
+The whiteboard is now editable by any logged in user.
+
+    >>> nopriv_browser = setupBrowser(auth='Basic no-priv@canonical.com:test')
+    >>> nopriv_browser.open('http://launchpad.dev'
+    ...     '/~name12/gnome-terminal/main')
+    >>> whiteboard_tag = find_tag_by_id(
+    ...     nopriv_browser.contents, 'branch-whiteboard-value')
+
+There is no whiteboard section shown if there is no whiteboard value
+set.
+
+    >>> print whiteboard_tag
+    None
+
+    >>> # Reset the stub emails.
+    >>> stub.test_emails = []
+    >>> nopriv_browser.getLink('Edit whiteboard').click()
+
+    >>> nopriv_browser.getControl('Whiteboard').value = (
+    ...     'New whiteboard value')
+    >>> nopriv_browser.getControl('Change Branch').click()
+
+    >>> whiteboard_tag = find_tag_by_id(
+    ...     nopriv_browser.contents, 'branch-whiteboard-value')
+    >>> print extract_text(whiteboard_tag)
+    New whiteboard value
+
+Even though there are no subscribers, the owner of the branch is notified
+that someone else has modified the details of the branch.
+
+    >>> len(stub.test_emails)
+    1
+    >>> print stub.test_emails[0][2]
+    Content-Type: ...
+    ...
+    X-Launchpad-Branch: ~name12/gnome-terminal/main
+    X-Launchpad-Message-Rationale: Owner
+    To: test@canonical.com
+    From: No Privileges Person <no-priv@canonical.com>
+    Subject: [Branch ~name12/gnome-terminal/main] GNOME Terminal Mainline
+    ...
+    Whiteboard changed to:
+    <BLANKLINE>
+    New whiteboard value
+    <BLANKLINE>
+    --
+    GNOME Terminal Mainline
+    http://code.launchpad.dev/~name12/gnome-terminal/main
+    <BLANKLINE>
+    You are getting this email as you are the owner of the branch and someone h=
+    as edited the details.

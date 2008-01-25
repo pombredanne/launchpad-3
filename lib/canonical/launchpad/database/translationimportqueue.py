@@ -22,6 +22,7 @@ from canonical.database.sqlbase import quote_like, SQLBase, sqlvalues
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.constants import UTC_NOW, DEFAULT
 from canonical.database.enumcol import EnumCol
+from canonical.launchpad.helpers import shortlist
 from canonical.launchpad.interfaces import (
     IDistribution, IDistroSeries, IHasTranslationImports, ILanguageSet,
     IPerson, IPOFileSet, IPOTemplateSet, IProduct, IProductSeries,
@@ -29,8 +30,6 @@ from canonical.launchpad.interfaces import (
     ITranslationImportQueueEntry, NotFoundError, RosettaImportStatus,
     TranslationFileFormat)
 from canonical.librarian.interfaces import ILibrarianClient
-
-from canonical.launchpad.database.pillar import pillar_sort_key
 
 
 # Number of days when the DELETED and IMPORTED entries are removed from the
@@ -249,13 +248,13 @@ class TranslationImportQueueEntry(SQLBase):
             pofile = potemplate.newPOFile(
                 language.code, variant=variant, requester=self.importer)
 
-        if self.is_published and pofile.path != self.path:
+        if self.is_published:
             # This entry comes from upstream, which means that the path we got
             # is exactly the right one. If it's different from what pofile
             # has, that would mean that either the entry changed its path
             # since previous upload or that we had to guess it and now that we
             # got the right path, we should fix it.
-            pofile.path = self.path
+            pofile.setPathIfUnique(self.path)
 
         if (sourcepackagename is None and
             potemplate.sourcepackagename is not None):
@@ -774,39 +773,41 @@ class TranslationImportQueue:
         from canonical.launchpad.database.distroseries import DistroSeries
         from canonical.launchpad.database.product import Product
 
+        if status is None:
+            status_clause = "TRUE"
+        else:
+            status_clause = "status = %s" % sqlvalues(status)
+
+        def product_sort_key(product):
+            return product.name
+
+        def distroseries_sort_key(distroseries):
+            return (distroseries.distribution.name, distroseries.name)
+
         query = [
             'ProductSeries.product = Product.id',
             'TranslationImportQueueEntry.productseries = ProductSeries.id'
             ]
         if status is not None:
-            query.append('TranslationImportQueueEntry.status=%s' % sqlvalues(
-                status))
+            query.append(status_clause)
 
-        products = Product.select(
+        products = shortlist(Product.select(
             ' AND '.join(query),
             clauseTables=['ProductSeries', 'TranslationImportQueueEntry'],
-            distinct=True)
+            distinct=True))
+        products.sort(key=product_sort_key)
 
-        query = [
-            'TranslationImportQueueEntry.distroseries = DistroSeries.id',
-            'DistroSeries.defer_translation_imports IS FALSE'
-            ]
-        if status is not None:
-            query.append('TranslationImportQueueEntry.status=%s' % sqlvalues(
-                status))
+        distroseriess = shortlist(DistroSeries.select("""
+            defer_translation_imports IS FALSE AND
+            id IN (
+                SELECT DISTINCT distroseries
+                FROM TranslationImportQueueEntry
+                WHERE %s
+                )
+            """ % status_clause))
+        distroseriess.sort(key=distroseries_sort_key)
 
-        distroseriess = DistroSeries.select(
-            ' AND '.join(query),
-            clauseTables=['TranslationImportQueueEntry'], distinct=True)
-
-        results = set()
-        for product in products:
-            if IHasTranslationImports.providedBy(product):
-                results.add(product)
-        for distroseries in distroseriess:
-            if IHasTranslationImports.providedBy(distroseries):
-                results.add(distroseries)
-        return sorted(results, key=pillar_sort_key)
+        return distroseriess + products
 
     def executeOptimisticApprovals(self, ztm):
         """See ITranslationImportQueue."""

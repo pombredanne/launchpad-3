@@ -9,11 +9,12 @@ __all__ = [
     'ArchivePurpose',
     'IArchive',
     'IPPAActivateForm',
+    'IArchivePackageDeletionForm',
     'IArchiveSet',
     ]
 
 from zope.interface import Interface, Attribute
-from zope.schema import Bool, Choice, Int, Text
+from zope.schema import Bool, Choice, Int, Text, TextLine
 
 from canonical.launchpad import _
 from canonical.launchpad.interfaces import IHasOwner
@@ -39,7 +40,8 @@ class IArchive(IHasOwner):
 
     authorized_size = Int(
         title=_("Authorized PPA size "), required=False,
-        description=_("Maximum size, in bytes, allowed for this PPA."))
+        max=(2**30)-1,
+        description=_("Maximum size, in MiB, allowed for this PPA."))
 
     whiteboard = Text(
         title=_("Whiteboard"), required=False,
@@ -77,7 +79,8 @@ class IArchive(IHasOwner):
         """
 
     def getPublishedSources(name=None, version=None, status=None,
-                            distroseries=None, exact_match=False):
+                            distroseries=None, pocket=None,
+                            exact_match=False):
         """All `ISourcePackagePublishingHistory` target to this archive.
 
         :param: name: source name filter (exact match or SQL LIKE controlled
@@ -85,6 +88,7 @@ class IArchive(IHasOwner):
         :param: version: source version filter (always exact match).
         :param: status: `PackagePublishingStatus` filter, can be a list.
         :param: distroseries: `IDistroSeries` filter.
+        :param: pocket: `PackagePublishingPocket` filter.
         :param: exact_match: either or not filter source names by exact
                              matching.
 
@@ -106,6 +110,7 @@ class IArchive(IHasOwner):
         :param: version: binary version filter (always exact match).
         :param: status: `PackagePublishingStatus` filter, can be a list.
         :param: distroarchseries: `IDistroArchSeries` filter, can be a list.
+        :param: pocket: `PackagePublishingPocket` filter.
         :param: exact_match: either or not filter source names by exact
                              matching.
 
@@ -123,6 +128,7 @@ class IArchive(IHasOwner):
         :param: version: binary version filter (always exact match).
         :param: status: `PackagePublishingStatus` filter, can be a list.
         :param: distroarchseries: `IDistroArchSeries` filter, can be a list.
+        :param: pocket: `PackagePublishingPocket` filter.
         :param: exact_match: either or not filter source names by exact
                              matching.
 
@@ -150,6 +156,19 @@ class IPPAActivateForm(Interface):
     accepted = Bool(
         title=_("I have read and accepted the PPA Terms of Service."),
         required=True, default=False)
+
+
+class IArchivePackageDeletionForm(Interface):
+    """Schema used to delete packages within a archive."""
+
+    name_filter = TextLine(
+        title=_("Package name"), required=False, default=None,
+        description=_("Display packages only with name matching the given "
+                      "filter."))
+
+    deletion_comment = TextLine(
+        title=_("Deletion comment"), required=False,
+        description=_("The reason why the package is being deleted."))
 
 
 class IArchiveSet(Interface):

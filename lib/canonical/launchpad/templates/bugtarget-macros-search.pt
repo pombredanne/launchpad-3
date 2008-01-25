@@ -42,6 +42,14 @@
       value="-date_last_updated"
       tal:attributes="selected python:orderby == '-date_last_updated'"
     >recently changed</option>
+    <option
+      value="-number_of_duplicates"
+      tal:attributes="selected python:orderby == '-number_of_duplicates'"
+    >by number of duplicates</option>
+    <option
+      value="-message_count"
+      tal:attributes="selected python:orderby == '-message_count'"
+    >by number of comments</option>
   </select>
 
 </metal:block>

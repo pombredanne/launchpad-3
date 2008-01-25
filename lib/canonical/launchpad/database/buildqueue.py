@@ -269,20 +269,21 @@ class BuildQueueSet(object):
             "buildqueue.build IN %s" % ','.join(sqlvalues(build_ids)),
             prejoins=['builder'])
 
-    def calculateCandidates(self, archserieses, state):
+    def calculateCandidates(self, archseries):
         """See `IBuildQueueSet`."""
-        if not archserieses:
-            # return an empty SQLResult instance to make the callsites happy.
-            return BuildQueue.select("1=2")
-        if not isinstance(archserieses, list):
-            archseries = [archserieses]
-        arch_ids = [d.id for d in archserieses]
+        if not archseries:
+            raise AssertionError("Given 'archseries' cannot be None/empty.")
 
-        candidates = BuildQueue.select("""
-        build.distroarchseries IN %s AND
-        build.buildstate = %s AND
-        buildqueue.build = build.id AND
-        buildqueue.builder IS NULL
-        """ % sqlvalues(arch_ids, state), clauseTables=['Build'])
+        arch_ids = [d.id for d in archseries]
+
+        query = """
+           Build.distroarchseries IN %s AND
+           Build.buildstate = %s AND
+           BuildQueue.build = build.id AND
+           BuildQueue.builder IS NULL
+        """ % sqlvalues(arch_ids, BuildStatus.NEEDSBUILD)
+
+        candidates = BuildQueue.select(
+            query, clauseTables=['Build'], orderBy=['-BuildQueue.lastscore'])
 
         return candidates

@@ -325,7 +325,7 @@ Retrive the just-inserted SourcePackageRelease correspondent to 'ed'
 Check if we have rebuid the change's author line properly (as
 mentioned in bug # 30621)
 
-  >>> print ed_spr.changelog
+  >>> print ed_spr.changelog_entry
   ed (0.2-20) unstable; urgency=low
   ...
    -- James Troup <james@nocrew.org>  Wed,  2 Apr 2003 17:19:47 +0100
@@ -354,6 +354,20 @@ separated by space:
 
   >>> ed_spr.dsc_binaries
   u'ed'
+
+Other DSC fields are also stored in the SourcePackageRelease record.
+
+  >>> ed_spr.builddepends
+  u'dpatch'
+
+  >>> ed_spr.builddependsindep
+  u''
+
+  >>> ed_spr.build_conflicts
+  u'foo-bar'
+
+  >>> ed_spr.build_conflicts_indep
+  u'biscuit'
 
 The content of 'debian/copyright' is stored as the 'copyright'
 attribute of SourcePackageRelease (note that its content is filtered
@@ -397,6 +411,8 @@ processing log messages, then it can be further checked in Soyuz
 production mailbox.
 
   >>> print nocopyright_src.warning_message
+  <BLANKLINE>
+  Upload Warnings:
   No copyright file found.
 
 Nothing is stored in the SPR.copyright field.
@@ -444,7 +460,9 @@ The upload will be rejected.
 
   >>> success = ed_src_dup.do_accept()
   ERROR: Exception while accepting:
-  This sourcepackagerelease is already accepted in hoary.
+  The source ed - 0.2-20 is already accepted in ubuntu/hoary and you
+  cannot upload the same version within the same distribution. You
+  have to modify the source version and re-upload.
   <BLANKLINE>
   Traceback...
   ...
@@ -454,7 +472,9 @@ The upload will be rejected.
   True
 
   >>> print ed_src_dup.rejection_message
-  This sourcepackagerelease is already accepted in hoary.
+  The source ed - 0.2-20 is already accepted in ubuntu/hoary and you
+  cannot upload the same version within the same distribution. You
+  have to modify the source version and re-upload.
 
 We rely on process-upload transaction rollback to not store bogus
 queue entry in the database.
@@ -509,6 +529,38 @@ A build was created to represent the relationship between ed_src
 
   >>> ed_build.buildstate.name
   'FULLYBUILT'
+
+Binary control file attributes are stored as text in the
+BinaryPackageRelease record.
+
+  >>> ed_bpr = ed_build.binarypackages[0]
+
+  >>> ed_bpr.depends
+  u'libc6 (>= 2.6-1)'
+
+  >>> ed_bpr.suggests
+  u'emacs'
+
+  >>> ed_bpr.conflicts
+  u'vi'
+
+  >>> ed_bpr.replaces
+  u'vim'
+
+  >>> ed_bpr.provides
+  u'ed'
+
+  >>> ed_bpr.essential
+  False
+
+  >>> ed_bpr.pre_depends
+  u'dpkg'
+
+  >>> ed_bpr.enhances
+  u'bash'
+
+  >>> ed_bpr.breaks
+  u'emacs'
 
 
 === Staged Source and Binary upload with multiple binaries ===

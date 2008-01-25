@@ -144,7 +144,8 @@ class IBug(IMessageTarget, ICanBeMentored):
     description = Text(
         title=_('Description'), required=True,
         description=_("""A detailed description of the problem,
-        including the steps required to reproduce it."""))
+        including the steps required to reproduce it."""), 
+        max_length=50000)
     ownerID = Int(title=_('Owner'), required=True, readonly=True)
     owner = Attribute("The owner's IPerson")
     duplicateof = DuplicateBug(title=_('Duplicate Of'), required=False)
@@ -196,21 +197,32 @@ class IBug(IMessageTarget, ICanBeMentored):
         title=_("Does the bug's state permit expiration? "
         "Expiration is permitted when the bug is not valid anywhere, "
         "a message was sent to the bug reporter, and the bug is associated "
-        "with pillars that use the Launchpad bug tracker."))
+        "with pillars that have enabled bug expiration."))
     can_expire = Bool(
         title=_("Can the Incomplete bug expire if it becomes inactive? "
         "Expiration may happen when the bug permits expiration, and a "
         "bugtask cannot be confirmed."))
     date_last_message = Datetime(
         title=_('Date of last bug message'), required=False, readonly=True)
+    number_of_duplicates = Int(
+        title=_('The number of bugs marked as duplicates of this bug'),
+        required=True, readonly=True)
+    message_count = Int(
+        title=_('The number of comments on this bug'),
+        required=True, readonly=True)
 
 
     def followup_subject():
         """Return a candidate subject for a followup message."""
 
     # subscription-related methods
-    def subscribe(person):
-        """Subscribe person to the bug. Returns an IBugSubscription."""
+    def subscribe(person, subscribed_by):
+        """Subscribe `person` to the bug.
+
+        :param person: the subscriber.
+        :param subscribed_by: the person who created the subscription.
+        :return: an `IBugSubscription`.
+        """
 
     def unsubscribe(person):
         """Remove this person's subscription to this bug."""
@@ -234,6 +246,9 @@ class IBug(IMessageTarget, ICanBeMentored):
         duplicate of this bug, otherwise False.
         """
 
+    def getDirectSubscriptions():
+        """A sequence of IBugSubscriptions directly linked to this bug."""
+
     def getDirectSubscribers():
         """A list of IPersons that are directly subscribed to this bug.
 
@@ -255,9 +270,11 @@ class IBug(IMessageTarget, ICanBeMentored):
         from duplicates.
         """
 
+    def getSubscriptionsFromDuplicates():
+        """Return IBugSubscriptions subscribed from dupes of this bug."""
+
     def getSubscribersFromDuplicates():
-        """Return IPersons subscribed from dupes of this bug.
-        """
+        """Return IPersons subscribed from dupes of this bug."""
 
     def getBugNotificationRecipients(duplicateof=None):
         """Return a complete INotificationRecipientSet instance.

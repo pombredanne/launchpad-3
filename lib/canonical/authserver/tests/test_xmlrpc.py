@@ -87,8 +87,8 @@ class XMLRPCv1TestCase(XMLRPCAuthServerTestCase, SSHKeysTestMixin):
         self.assert_(mark_dict.has_key('salt'))
 
         # Check that the salt is base64 encoded
-        # FIXME: This is a pretty weak test, because this particular salt is ''
-        #        (the sample data specifies no pw for Mark)
+        # FIXME: This is a pretty weak test, because this particular salt is
+        #        '' (the sample data specifies no pw for Mark)
         mark_dict['salt'].decode('base64')  # Should raise no errors
 
         # Check that the failure case (no such user) returns {}
@@ -189,8 +189,12 @@ class XMLRPCHostedBranchStorage(XMLRPCAuthServerTestCase):
         # XXX Andrew Bennetts, 2007-01-24:
         # Only checks that requestMirror doesn't error. Should instead
         # check the result.
+
+        # This is a user who has launchpad.View permissions on the hosted
+        # branch.
+        user_id = 1
         hosted_branch_id = 25
-        self.server.requestMirror(hosted_branch_id)
+        self.server.requestMirror(user_id, hosted_branch_id)
 
     def test_getBranchInformation(self):
         # Don't test the full range of values for getBranchInformation, as we

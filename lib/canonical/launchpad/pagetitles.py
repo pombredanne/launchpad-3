@@ -118,6 +118,8 @@ archive_edit = ContextTitle('Edit %s')
 
 archive_index = ContextTitle('%s')
 
+archive_delete_packages = ContextTitle('Delete packages from %s')
+
 bazaar_all_branches = 'All branches in the Launchpad Bazaar'
 
 bazaar_index = 'Launchpad Code'
@@ -254,6 +256,8 @@ def buglisting_embedded_advanced_search(context, view):
     """Return the view's page heading."""
     return view.getSearchPageHeading()
 
+bug_listing_expirable = ContextTitle("Bugs that can expire in %s")
+
 def bugnomination_edit(context, view):
     """Return the title for the page to manage bug nominations."""
     return 'Manage nomination for bug #%d in %s' % (
@@ -262,6 +266,11 @@ def bugnomination_edit(context, view):
 def bugwatch_editform(context, view):
     """Return the title for the page to edit an external bug watch."""
     return 'Bug #%d - Edit external bug watch (%s in %s)' % (
+        context.bug.id, context.remotebug, context.bugtracker.title)
+
+def bugwatch_comments(context, view):
+    """Return the title for a page of imported comments for a bug watch."""
+    return "Bug #%d - Comments imported from bug watch %s on %s" % (
         context.bug.id, context.remotebug, context.bugtracker.title)
 
 # bugpackageinfestations_index is a redirect
@@ -412,9 +421,9 @@ distributionmirror_edit = ContextTitle('Edit mirror %s')
 
 distributionmirror_index = ContextTitle('Mirror %s')
 
-distributionmirror_mark_official = ContextTitle('Mark mirror %s as official')
-
 distributionmirror_prober_logs = ContextTitle('%s mirror prober logs')
+
+distributionmirror_review = ContextTitle('Review mirror %s')
 
 distribution_add = 'Register a new distribution'
 
@@ -556,6 +565,8 @@ def hasmentoringoffers_mentoring(context, view):
                     context.displayname)
     else:
         return 'Mentoring available in %s' % context.displayname
+
+hasannouncements_index = ContextDisplayName('%s news and announcements')
 
 def hasspecifications_specs(context, view):
     """Return the secifications title for the context."""
@@ -737,6 +748,23 @@ milestone_index = ContextTitle('%s')
 
 milestone_edit = ContextTitle('Edit %s')
 
+announcement_add = 'Make an announcement'
+
+announcement_delete = 'Permanently delete this announcement'
+
+announcement_edit = 'Modify this announcement'
+
+def announcement_index(context, view):
+    return '%s announcement' % context.target.displayname
+
+announcement_publish = 'Publish this announcement'
+
+announcement_retarget = 'Move this announcement to a different project'
+
+announcement_retract = 'Retract this announcement'
+
+announcements_all = 'Announcements from all projects hosted in Launchpad'
+
 notification_test = 'Notification test'
 
 object_branding = ContextDisplayName('Change the images used to represent '
@@ -763,6 +791,13 @@ openid_index = 'Launchpad OpenID Server'
 def openid_invalid_identity(context, view):
     """Return the page title to the invalid identity page."""
     return 'Invalid OpenID identity %s' % view.openid_request.identity
+
+openidrpconfig_add = 'Add an OpenID Relying Party Configuration'
+
+openidrpconfig_edit = ContextDisplayName(
+    'Edit Relying Party Configuration for %s')
+
+openidrpconfigset_index = 'OpenID Relying Party Configurations'
 
 def package_bugs(context, view):
     """Return the page title bug in a package."""
@@ -923,6 +958,8 @@ product_bugs = ContextDisplayName('Bugs in %s')
 product_branches = ContextDisplayName(
     smartquote("%s's Bazaar branches registered in Launchpad"))
 
+product_branch_overview = ContextDisplayName("Code overview for %s")
+
 product_distros = ContextDisplayName(
     '%s packages: Comparison of distributions')
 
@@ -960,6 +997,8 @@ productrelease_index = ContextDisplayName('%s in Launchpad')
 products_index = 'Projects registered in Launchpad'
 
 productseries_export = ContextTitle('Download translations for "%s"')
+
+productseries_linkbranch = ContextTitle('Link an existing branch to %s')
 
 productseries_index = ContextTitle('Overview of %s')
 
@@ -1026,6 +1065,8 @@ registry_review = 'Review Launchpad items'
 related_bounties = ContextDisplayName('Bounties for %s')
 
 remotebug_index = ContextTitle('%s')
+
+root_featuredprojects = 'Manage featured projects in Launchpad'
 
 root_index = 'Launchpad'
 

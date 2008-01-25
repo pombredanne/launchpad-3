@@ -11,6 +11,7 @@ __all__ = [
     'IAdminTeamMergeSchema',
     'INACTIVE_ACCOUNT_STATUSES',
     'INewPerson',
+    'INewPersonForm',
     'IObjectReassignment',
     'IPerson',
     'IPersonChangePassword',
@@ -23,6 +24,7 @@ __all__ = [
     'ITeamReassignment',
     'JoinNotAllowed',
     'PersonCreationRationale',
+    'PersonVisibility',
     'TeamContactMethod',
     'TeamMembershipRenewalPolicy',
     'TeamMembershipStatus',
@@ -202,6 +204,13 @@ class PersonCreationRationale(DBEnumeratedType):
         hardware database.
         """)
 
+    BUGWATCH = DBItem(15, """
+        Created by the updating of a bug watch.
+
+        A watch was made against a remote bug that the user submitted or
+        commented on.
+        """)
+
 class TeamMembershipRenewalPolicy(DBEnumeratedType):
     """TeamMembership Renewal Policy.
 
@@ -320,6 +329,34 @@ class TeamSubscriptionPolicy(DBEnumeratedType):
         """)
 
 
+class PersonVisibility(DBEnumeratedType):
+    """The visibility level of person or team objects.
+
+    Currently, only teams can have their visibility set to something
+    besides PUBLIC.
+    """
+
+    PUBLIC = DBItem(1, """
+        Public
+
+        Everyone can view all the attributes of this person.
+        """)
+
+    PRIVATE_MEMBERSHIP = DBItem(20, """
+        Private Membership
+
+        Only launchpad admins and team members can view the
+        membership list for this team.
+        """)
+
+    PRIVATE = DBItem(30, """
+        Private
+
+        Only launchpad admins and team members can see that
+        this team even exists in launchpad.
+        """)
+
+
 class PersonNameField(BlacklistableContentNameField):
     """A Person's name, which is unique."""
 
@@ -339,14 +376,10 @@ class IPersonChangePassword(Interface):
     """The schema used by Person +changepassword form."""
 
     currentpassword = PasswordField(
-            title=_('Current password'), required=True, readonly=False,
-            description=_("The password you use to log into Launchpad.")
-            )
+        title=_('Current password'), required=True, readonly=False)
 
     password = PasswordField(
-            title=_('New Password'), required=True, readonly=False,
-            description=_("Enter the same password in each field.")
-            )
+        title=_('New password'), required=True, readonly=False)
 
 
 class IPersonClaim(Interface):
@@ -389,7 +422,7 @@ class IPerson(IHasSpecifications, IHasMentoringOffers, IQuestionCollection,
             "here.")
             )
     password = PasswordField(
-            title=_('Password'), required=True, readonly=False)
+        title=_('Password'), required=True, readonly=False)
     karma = Int(
             title=_('Karma'), readonly=False,
             description=_('The cached total karma for this person.')
@@ -648,6 +681,10 @@ class IPerson(IHasSpecifications, IHasMentoringOffers, IQuestionCollection,
                       "used as a key by FOAF RDF spec"),
         readonly=True)
 
+    verbose_bugnotifications = Bool(
+        title=_("Include bug descriptions when sending me bug notifications"),
+        required=False, default=True)
+
     defaultmembershipperiod = Int(
         title=_('Subscription period'), required=False,
         description=_(
@@ -682,8 +719,9 @@ class IPerson(IHasSpecifications, IHasMentoringOffers, IQuestionCollection,
             "new members can be added only by a team administrator."))
 
     renewal_policy = Choice(
-        title=_("When someone's membership is about to expire, Launchpad "
-                "should notify them and"),
+        title=_(
+            "When someone's membership is about to expire, "
+            "notify them and"),
         required=True, vocabulary=TeamMembershipRenewalPolicy,
         default=TeamMembershipRenewalPolicy.NONE)
 
@@ -716,6 +754,14 @@ class IPerson(IHasSpecifications, IHasMentoringOffers, IQuestionCollection,
         "The Archive owned by this person, his PPA.")
 
     entitlements = Attribute("List of Entitlements for this person or team.")
+
+    visibility = Choice(
+        title=_("Teams may be Public, Private Membership, or Private."),
+        required=True, vocabulary=PersonVisibility,
+        default=PersonVisibility.PUBLIC)
+
+    structural_subscriptions = Attribute(
+        "The structural subscriptions for this person.")
 
     @invariant
     def personCannotHaveIcon(person):
@@ -847,6 +893,13 @@ class IPerson(IHasSpecifications, IHasMentoringOffers, IQuestionCollection,
     def isTeam():
         """True if this Person is actually a Team, otherwise False."""
 
+    # XXX BarryWarsaw 29-Nov-2007 I'd prefer for this to be an Object() with a
+    # schema of IMailingList, but setting that up correctly causes a circular
+    # import error with interfaces.mailinglists that is too difficult to
+    # unfunge for this one attribute.
+    mailing_list = Attribute(
+        _("The team's mailing list, if it has one, otherwise None."))
+
     def getProjectsAndCategoriesContributedTo(limit=10):
         """Return a list of dicts with projects and the contributions made
         by this person on that project.
@@ -894,13 +947,17 @@ class IPerson(IHasSpecifications, IHasMentoringOffers, IQuestionCollection,
         This method is meant to be called by objects which implement either
         IPerson or ITeam, and it will return True when you ask if a Person is
         a member of himself (i.e. person1.inTeam(person1)).
+
+        <team> can be the id of a team, an SQLObject representing the
+        ITeam, or the name of the team.
         """
 
     def clearInTeamCache():
         """Clears the person's inTeam cache.
 
         To be used when membership changes are enacted. Only meant to be
-        used between TeamMembership and Person objects."""
+        used between TeamMembership and Person objects.
+        """
 
     def lastShippedRequest():
         """Return this person's last shipped request, or None."""
@@ -1192,6 +1249,16 @@ class IPerson(IHasSpecifications, IHasMentoringOffers, IQuestionCollection,
 
         :target: An object providing `IBugTarget` to search within.
         """
+
+
+class INewPersonForm(IPerson):
+    """Interface used to create new Launchpad accounts.
+
+    The only change with `IPerson` is a customised Password field.
+    """
+
+    password = PasswordField(
+        title=_('Create password'), required=True, readonly=False)
 
 
 class ITeam(IPerson, IHasIcon):

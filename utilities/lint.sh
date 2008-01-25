@@ -164,6 +164,7 @@ sed_deletes="$sed_deletes /Redefining built-in .id/d; "
 sed_deletes="$sed_deletes /Redefining built-in 'filter'/d; "
 sed_deletes="$sed_deletes /<lambda>] Using variable .* before assignment/d; "
 sed_deletes="$sed_deletes /Comma not followed by a space/{N;N};/,[])}]/d; "
+sed_deletes="$sed_deletes /Undefined variable.*valida/d; "
 sed_deletes="$sed_deletes s,^/.*lib/canonical/,lib/canonical,; "
 
 # Note that you can disable specific tests by placing pylint

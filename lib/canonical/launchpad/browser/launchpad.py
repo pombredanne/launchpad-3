@@ -12,7 +12,6 @@ __all__ = [
     'LaunchpadRootNavigation',
     'MaloneApplicationNavigation',
     'SoftTimeoutView',
-    'LaunchpadRootIndexView',
     'OneZeroTemplateStatus',
     'IcingFolder',
     'StructuralHeaderPresentationView',
@@ -24,8 +23,8 @@ __all__ = [
     ]
 
 import cgi
-import errno
 import urllib
+import operator
 import os
 import re
 import time
@@ -36,19 +35,16 @@ from zope.component import getUtility
 from zope.interface import implements
 from zope.publisher.interfaces.xmlrpc import IXMLRPCRequest
 from zope.security.interfaces import Unauthorized
-from zope.app.content_types import guess_content_type
 from zope.app.traversing.interfaces import ITraversable
-from zope.app.publisher.browser.fileresource import setCacheControl
-from zope.app.datetimeutils import rfc1123_date
-from zope.publisher.interfaces.browser import IBrowserPublisher
-from zope.publisher.interfaces import NotFound
 
 from BeautifulSoup import BeautifulStoneSoup, Comment
 
 import canonical.launchpad.layers
 from canonical.config import config
+from canonical.lazr import ExportedFolder
 from canonical.launchpad.helpers import intOrZero
 from canonical.launchpad.interfaces import (
+    IAnnouncementSet,
     IAppFrontPageSearchForm,
     IBazaarApplication,
     IBinaryPackageNameSet,
@@ -86,9 +82,9 @@ from canonical.launchpad.interfaces import (
     ITranslationImportQueue,
     )
 from canonical.launchpad.webapp import (
-    StandardLaunchpadFacets, ContextMenu, Link, LaunchpadView,
-    LaunchpadFormView, Navigation, stepto, canonical_name, canonical_url,
-    custom_widget)
+    StandardLaunchpadFacets, ContextMenu, Link,
+    LaunchpadView, LaunchpadFormView, Navigation, stepto, canonical_name,
+    canonical_url, custom_widget)
 from canonical.launchpad.webapp.interfaces import POSTToNonCanonicalURL
 from canonical.launchpad.webapp.publisher import RedirectionView
 from canonical.launchpad.webapp.authorization import check_permission
@@ -159,10 +155,13 @@ class MenuBox(LaunchpadView):
 
     def initialize(self):
         menuapi = MenuAPI(self.context)
-        self.contextmenuitems = [
-            link for link in menuapi.context() if link.enabled]
-        self.applicationmenuitems = [
-            link for link in menuapi.application() if link.enabled]
+        context_menu_links = menuapi.context
+        self.contextmenuitems = sorted([
+            link for link in context_menu_links.values() if link.enabled],
+            key=operator.attrgetter('text'))
+        self.applicationmenuitems = sorted([
+            link for link in menuapi.application() if link.enabled],
+            key=operator.attrgetter('text'))
 
     def render(self):
         if not self.contextmenuitems and not self.applicationmenuitems:
@@ -417,6 +416,7 @@ class LaunchpadRootNavigation(Navigation):
             'https://help.launchpad.net/Feedback', status=301)
 
     stepto_utilities = {
+        '+announcements': IAnnouncementSet,
         'binarypackagenames': IBinaryPackageNameSet,
         'bounties': IBountySet,
         'bugs': IMaloneApplication,
@@ -574,22 +574,6 @@ class SoftTimeoutView(LaunchpadView):
             ' %s ms to render.' % (soft_timeout, time_to_generate_page))
 
 
-class LaunchpadRootIndexView(LaunchpadView):
-    """An view for the default view of the LaunchpadRoot."""
-
-    def isRedirectInhibited(self):
-        """Returns True if redirection has been inhibited."""
-        return self.request.cookies.get('inhibit_beta_redirect', '0') == '1'
-
-    def isBetaUser(self):
-        """Return True if the user is in the beta testers team."""
-        if config.launchpad.beta_testers_redirection_host is None:
-            return False
-
-        return self.user is not None and self.user.inTeam(
-            getUtility(ILaunchpadCelebrities).launchpad_beta_testers)
-
-
 class ObjectForTemplate:
 
     def __init__(self, **kw):
@@ -683,96 +667,11 @@ class OneZeroTemplateStatus(LaunchpadView):
         self.excluded_from_run = sorted(excluded)
 
 
-class File:
-    # Copied from zope.app.publisher.fileresource, which
-    # unbelievably throws away the file data, and isn't
-    # useful extensible.
-    #
-    def __init__(self, path, name):
-        self.path = path
+class IcingFolder(ExportedFolder):
+    """Export the Launchpad icing."""
 
-        f = open(path, 'rb')
-        self.data = f.read()
-        f.close()
-        self.content_type, enc = guess_content_type(path, self.data)
-        self.__name__ = name
-        self.lmt = float(os.path.getmtime(path)) or time()
-        self.lmh = rfc1123_date(self.lmt)
-
-here = os.path.dirname(os.path.realpath(__file__))
-
-class IcingFolder:
-    """View that gives access to the files in a folder.
-
-    The URL to the folder can start with an optional path step like
-    /revNNN/ where NNN is one or more digits.  This path step will
-    be ignored.  It is useful for having a different path for
-    all resources being served, to ensure that we don't use cached
-    files in browsers.
-    """
-
-    implements(IBrowserPublisher)
-
-    folder = '../icing/'
-    rev_part_re = re.compile('rev\d+$')
-
-    def __init__(self, context, request):
-        """Initialize with context and request."""
-        self.context = context
-        self.request = request
-        self.names = []
-
-    def __call__(self):
-        names = list(self.names)
-        if names and self.rev_part_re.match(names[0]):
-            # We have a /revNNN/ path step, so remove it.
-            names = names[1:]
-
-        if not names:
-            # Just the icing directory, so make this a 404.
-            raise NotFound(self, '')
-        elif len(names) > 1:
-            # Too many path elements, so make this a 404.
-            raise NotFound(self, self.names[-1])
-        else:
-            # Actually serve up the resource.
-            [name] = names
-            return self.prepareDataForServing(name)
-
-    def prepareDataForServing(self, name):
-        """Set the response headers and return the data for this resource."""
-        if os.path.sep in name:
-            raise ValueError(
-                'os.path.sep appeared in the resource name: %s' % name)
-        filename = os.path.join(here, self.folder, name)
-        try:
-            fileobj = File(filename, name)
-        except IOError, ioerror:
-            if ioerror.errno == errno.ENOENT: # No such file or directory
-                raise NotFound(self, name)
-            else:
-                # Some other IOError that we're not expecting.
-                raise
-
-        # TODO: Set an appropriate charset too.  There may be zope code we
-        #       can reuse for this.
-        response = self.request.response
-        response.setHeader('Content-Type', fileobj.content_type)
-        response.setHeader('Last-Modified', fileobj.lmh)
-        setCacheControl(response)
-        return fileobj.data
-
-    # The following two zope methods publishTraverse and browserDefault
-    # allow this view class to take control of traversal from this point
-    # onwards.  Traversed names just end up in self.names.
-
-    def publishTraverse(self, request, name):
-        """Traverse to the given name."""
-        self.names.append(name)
-        return self
-
-    def browserDefault(self, request):
-        return self, ()
+    folder = os.path.join(
+        os.path.dirname(os.path.realpath(__file__)), '../icing/')
 
 
 class StructuralHeaderPresentationView(LaunchpadView):

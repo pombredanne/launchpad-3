@@ -148,18 +148,18 @@ given build record entry.
     >>> essential = False
     >>> installedsize = 0
     >>> architecturespecific = False
+    >>> pre_depends = None
+    >>> enhances = None
+    >>> breaks = None
 
 Invoke createBinaryPackageRelease with all required arguments.
 
     >>> bin = pmount_build.createBinaryPackageRelease(
-    ...                                 binarypackagename, version,
-    ...                                 summary, description,
-    ...                                 binpackageformat, component,
-    ...                                 section, priority, shlibdeps,
-    ...                                 depends, recommends, suggests,
-    ...                                 conflicts, replaces, provides,
-    ...                                 essential, installedsize,
-    ...                                 architecturespecific)
+    ...     binarypackagename, version, summary, description,
+    ...     binpackageformat, component, section, priority, shlibdeps,
+    ...     depends, recommends, suggests, conflicts, replaces, provides,
+    ...     pre_depends, enhances, breaks, essential, installedsize,
+    ...     architecturespecific)
 
     >>> from canonical.launchpad.interfaces import IBinaryPackageRelease
     >>> verifyObject(IBinaryPackageRelease, bin)
@@ -185,16 +185,13 @@ Emulate a huge list of binaries for 'pmount':
     >>> bpnameset = getUtility(IBinaryPackageNameSet)
     >>> for i in range(15):
     ...     version = "%d" % i
-    ...     bpname = bpnameset.ensure("test-%d" % i).id
+    ...     binarypackagename = bpnameset.ensure("test-%d" % i).id
     ...     b = pmount_build.createBinaryPackageRelease(
-    ...                                 bpname, version,
-    ...                                 summary, description,
-    ...                                 binpackageformat, component,
-    ...                                 section, priority, shlibdeps,
-    ...                                 depends, recommends, suggests,
-    ...                                 conflicts, replaces, provides,
-    ...                                 essential, installedsize,
-    ...                                 architecturespecific)
+    ...         binarypackagename, version, summary, description,
+    ...         binpackageformat, component, section, priority, shlibdeps,
+    ...         depends, recommends, suggests, conflicts, replaces, provides,
+    ...         pre_depends, enhances, breaks, essential, installedsize,
+    ...         architecturespecific)
 
 
 Check if the property still working:

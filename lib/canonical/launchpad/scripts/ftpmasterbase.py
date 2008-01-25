@@ -121,7 +121,12 @@ class PackageLocation:
         return False
 
     def __str__(self):
-        return '%s: %s-%s' % (self.archive.title,
+        # Use ASCII-only for PPA titles, owner names can contain unicode.
+        if self.archive.purpose == ArchivePurpose.PPA:
+            title = self.archive.owner.name
+        else:
+            title = self.archive.title
+        return '%s: %s-%s' % (title,
                              self.distroseries.name, self.pocket.name)
 
 
@@ -214,11 +219,6 @@ class SoyuzScript(LaunchpadScript):
 
         Check if it matches the desired 'pocket' and 'component'.
         """
-        if currently_published.pocket != self.location.pocket:
-            raise SoyuzScriptError(
-                "%s was skipped because it is not in %s pocket." % (
-                currently_published.displayname, self.location.pocket.name))
-
         if not self.options.component:
             return
 
@@ -242,6 +242,7 @@ class SoyuzScript(LaunchpadScript):
             name=name, version=self.options.version,
             status=PackagePublishingStatus.PUBLISHED,
             distroseries=self.location.distroseries,
+            pocket=self.location.pocket,
             exact_match=True)
 
         if not published_sources:
@@ -277,6 +278,7 @@ class SoyuzScript(LaunchpadScript):
                     name=name, version=self.options.version,
                     status=PackagePublishingStatus.PUBLISHED,
                     distroarchseries=architecture,
+                    pocket=self.location.pocket,
                     exact_match=True)
             if not binaries:
                 continue
