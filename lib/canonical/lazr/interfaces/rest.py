@@ -43,9 +43,6 @@ class IJSONPublishable(Interface):
 class IServiceRootResource(IHTTPResource):
     """A service root object that also acts as a resource."""
 
-    def getTopLevelCollectionResource(name):
-        """Look up a top-level collection resource by URL fragment."""
-
 
 class IEntryResource(IHTTPResource):
     """A resource that represents an individual Launchpad object."""
@@ -84,12 +81,6 @@ class IEntry(IJSONPublishable):
         This might be the entry's unique ID or some other unique identifier.
         It must be possible to use this fragment to find the entry again
         in a collection of all such entries.
-        """
-
-    def lookupEntry(self, name):
-        """Look up an entry associated with this entry.
-
-        :param name: The name of the relationship, eg. "owner"
         """
 
 

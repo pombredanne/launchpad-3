@@ -25,12 +25,6 @@ class PersonEntry(Entry):
 
     parent_collection_name = 'people'
 
-    @property
-    def teamowner(self):
-        """See `IPersonEntry`."""
-        if self.context.isTeam():
-            return self.context.teamowner
-
     def fragment(self):
         """See `IEntry`."""
         return self.context.name
@@ -53,7 +47,9 @@ class PersonCollection(Collection):
             return person
 
     def find(self, scope, relationship):
-        """Return all the people on the site."""
+        """Return all the people and teams on the site."""
+        # Pass an empty query into find() to get all people
+        # and teams.
         if scope is None:
             return self.context.find("")
         elif scope.context.isTeam() and relationship == 'members':

@@ -25,7 +25,7 @@ application, with no special knowledge of web services.
     >>> class IRecipe(Interface):
     ...     id = Int(title=u"Unique ID", required=True)
     ...     name = TextLine(title=u"Name", required=True)
-    ...     authorName = TextLine(title=u"The name of the recipe's author")
+    ...     author = Object(schema=IAuthor)
 
 Here's the interface for the 'set' objects that manage the recipes and
 authors. The inconsistent naming is intentional.
@@ -60,7 +60,7 @@ Here are simple implementations of IAuthor and IRecipe.
     ...     def __init__(self, id, name, author):
     ...         self.id = id
     ...         self.name = name
-    ...         self.authorName = author.name
+    ...         self.author = author
 
 Here are the "model objects" themselves:
 
@@ -140,14 +140,14 @@ collection at all.
     ...     favorites = CollectionField(schema=IRecipe)
 
 Here, we're exposing an IRecipe that exposes the underlying Recipe's
-name but not its ID. Note that we expose the author as an object, not
-the author's name: this makes it possible to serve a link from a
-recipe to its author.
+name but not its ID. References to associated objects (like the
+recipe's author) are represented with the zope.schema.Object type:
+this makes it possible to serve a link from a recipe to its author.
 
     >>> class IRecipeEntry(IEntry):
     ...     "The part of a recipe that we expose through the web service."
     ...     name = IRecipe.get('name')
-    ...     author = Object(schema=IAuthor)
+    ...     author = IRecipe.get('author')
 
 Here's the implementation of IAuthorEntry: a simple decorator on the
 original model object. It subclasses Entry, a simple base class that
@@ -174,8 +174,9 @@ defines a constructor.
     ...             return RecipeSet()
 
 The "schema" attribute points to the interface class that defines the
-attributes exposed through the web service. Here, "schema" is
-IRecipeEntry, which exposes only 'name'.
+attributes exposed through the web service. Above, "schema" is
+IAuthorEntry, which exposes only "name". Below, "schema" is
+IRecipeEntry, which exposes both "name" and "author".
 
     >>> class RecipeEntry(Entry):
     ...     """A recipe, as exposed through the web service."""
@@ -189,12 +190,6 @@ IRecipeEntry, which exposes only 'name'.
     ...         """Use the recipe's ID as its URI fragment."""
     ...         return str(self.context.id)
     ...
-    ...     @property
-    ...     def author(self):
-    ...         "See `IRecipeEntry`."
-    ...         return AuthorSet().getAuthor(self.context.authorName)
-
-Here, "schema" is IRecipeEntry, which exposes both "name" and "author".
 
 We need to register these entries as an adapter from IRecipe/IAuthor
 to IRecipeEntry/IAuthorEntry. In ZCML a registration would look like
@@ -286,9 +281,10 @@ root of the object tree.
     >>> from canonical.launchpad.interfaces import IWebServiceApplication
     >>> class MyServiceRootResource(ServiceRootResource):
     ...    implements(IWebServiceApplication)
-    ...    top_level_collections = { 'authors': AuthorSet,
-    ...                              'recipes': RecipeSet }
-    ...    rootsite = 'api'
+    ...    @property
+    ...    def top_level_collections(self):
+    ...        return { 'authors' : AuthorSet,
+    ...                 'recipes' : RecipeSet }
 
 If you call the service root resource, and pass in an HTTP request, it
 will act as though you had performed a GET on the URL
@@ -306,6 +302,16 @@ will act as though you had performed a GET on the URL
     >>> app(request)
     'This is a web service.'
 
+The canonical_url function generates the URL to a resource. It works
+on any object that provides ICanonicalUrlData.
+
+    >>> from canonical.launchpad.webapp import canonical_url
+    >>> from canonical.launchpad.webapp.interfaces import ICanonicalUrlData
+    >>> ICanonicalUrlData.providedBy(app)
+    True
+    >>> canonical_url(app, request=request)
+    u'http://api.launchpad.dev/'
+
 The ServiceRoot has a list of top-level collections and implements
 IPublishTraverse, so that a request to a registered collection is
 delegated to the appropriate CollectionResource. The
@@ -322,18 +328,30 @@ in a CollectionResource.
     >>> collection = app.publishTraverse(request, "recipes")
     >>> collection
     <canonical.lazr.rest.resource.CollectionResource object ...>
-    >>> from canonical.launchpad.webapp import canonical_url
+    >>> ICanonicalUrlData.providedBy(collection)
+    True
     >>> canonical_url(collection, request=request)
     u'http://api.launchpad.dev/recipes'
 
+Calling the collection resource yields a JSON document, which can be
+parsed with standard tools.
+
     >>> import simplejson
     >>> representation = simplejson.loads(collection())
+
+The collection resource is a list of entries. Each entry has some
+associated information (like 'name'), a 'self_link' (the URL to the
+entry's resource), and possibly links to associated resources.
+
     >>> len(representation)
     3
-    >>> representation[0]['self_link']
-    u'http://api.launchpad.dev/recipes/1'
     >>> representation[0]['name']
     u'Green eggs and ham'
+    >>> representation[0]['self_link']
+    u'http://api.launchpad.dev/recipes/1'
+
+Each recipe, for instance, has a link to its author.
+
     >>> representation[0]['author_link']
     u'http://api.launchpad.dev/authors/Jacob%20Berendes'
 
