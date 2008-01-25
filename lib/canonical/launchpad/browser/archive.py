@@ -464,6 +464,6 @@ class ArchiveEditView(BaseArchiveEditView):
 
 class ArchiveAdminView(BaseArchiveEditView):
 
-    field_names = ['enabled', 'authorized_size', 'whiteboard']
+    field_names = ['enabled', 'private', 'authorized_size', 'whiteboard']
     custom_widget(
         'whiteboard', TextAreaWidget, height=10, width=30)
