@@ -933,7 +933,7 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
         return Archive.selectBy(
             purpose=ArchivePurpose.PPA, distribution=self, orderBy=['id'])
 
-    def searchPPAs(self, text=None, show_inactive=False):
+    def searchPPAs(self, text=None, show_inactive=False, user=None):
         """See `IDistribution`."""
         clauses = ["""
         Archive.purpose = %s AND
@@ -958,6 +958,21 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
             ((Person.fti @@ ftq(%s) OR
             Archive.description LIKE '%%' || %s || '%%'))
             """ % (quote(text), quote_like(text)))
+
+        if user:
+            if not user.inTeam(getUtility(ILaunchpadCelebrities).admin):
+                clauses.append("""
+                (Archive.private = FALSE OR
+                 Archive.owner = %s OR
+                 %s IN (SELECT TeamParticipation.person
+                        FROM TeamParticipation
+                        WHERE TeamParticipation.person = %s AND
+                              TeamParticipation.team = Archive.owner)
+                )
+                """ % sqlvalues(user, user, user))
+        else:
+            clauses.append("Archive.private = FALSE")
+
 
         query = ' AND '.join(clauses)
         return Archive.select(
