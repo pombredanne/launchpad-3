@@ -67,6 +67,8 @@ class Branch(SQLBase):
 
     private = BoolCol(default=False, notNull=True)
 
+    registrant = ForeignKey(
+        dbName='registrant', foreignKey='Person', notNull=True)
     owner = ForeignKey(dbName='owner', foreignKey='Person', notNull=True)
     author = ForeignKey(dbName='author', foreignKey='Person', default=None)
     reviewer = ForeignKey(
@@ -687,7 +689,8 @@ class BranchSet:
         else:
             return PRIVATE_BRANCH
 
-    def new(self, branch_type, name, creator, owner, product, url, title=None,
+    def new(self, branch_type, name, registrant, owner, product,
+            url, title=None,
             lifecycle_status=BranchLifecycleStatus.NEW, author=None,
             summary=None, home_page=None, whiteboard=None, date_created=None):
         """See `IBranchSet`."""
@@ -698,7 +701,7 @@ class BranchSet:
 
         # Check the policy for the person creating the branch.
         private, implicit_subscription = self._checkVisibilityPolicy(
-            creator, owner, product)
+            registrant, owner, product)
 
         # Not all code paths that lead to branch creation go via a
         # schema-validated form (e.g. the register_branch XML-RPC call or
@@ -708,6 +711,7 @@ class BranchSet:
         IBranch['name'].validate(unicode(name))
 
         branch = Branch(
+            registrant=registrant,
             name=name, owner=owner, author=author, product=product, url=url,
             title=title, lifecycle_status=lifecycle_status, summary=summary,
             home_page=home_page, whiteboard=whiteboard, private=private,
