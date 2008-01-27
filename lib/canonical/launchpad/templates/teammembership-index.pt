@@ -64,8 +64,8 @@
       On&nbsp;
     </label>
     <script language="JavaScript" type="text/javascript">
-      function datePickerCallback(y,m,d,e) {
-        alert('here')
+      function dateSelected(y,m,d,e) {
+        document.getElementById('date').click();
       };
     </script>
     <span tal:replace="structure view/expiration_widget" />

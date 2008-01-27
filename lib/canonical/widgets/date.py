@@ -21,10 +21,11 @@ import pytz
 from zope.app.datetimeutils import parse, DateTimeError
 from zope.app.form.browser.textwidgets import escape, TextWidget
 from zope.app.form.browser.widget import DisplayWidget
-from zope.app.form.interfaces import InputErrors
+from zope.app.form.interfaces import InputErrors, WidgetInputError
 from zope.app.form.interfaces import ConversionError
 from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 from zope.component import getUtility
+from zope.schema.interfaces import ValidationError
 
 from canonical.launchpad.interfaces import ILaunchBag
 from canonical.lazr import ExportedFolder
@@ -40,10 +41,10 @@ class PopCalXPFolder(ExportedFolder):
 class DateTimeWidget(TextWidget):
     """A date and time selection widget with popup selector.
 
-      >>> from zope.publisher.browser import TestRequest
+      >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
       >>> from zope.schema import Field
       >>> field = Field(__name__='foo', title=u'Foo')
-      >>> widget = DateTimeWidget(field, TestRequest())
+      >>> widget = DateTimeWidget(field, LaunchpadTestRequest())
 
     The datetime popup widget shows the time zone in which it will return
     the time:
@@ -80,6 +81,34 @@ class DateTimeWidget(TextWidget):
       >>> 'login to set time zone' not in widget()
       True
 
+    If there is a from_date then the date provided must be later than that.
+    If an earlier date is provided, then getInputValue will raise
+    WidgetInputError
+
+      >>> widget.request.form[widget.name] = '2005-07-03'
+      >>> widget.from_date = datetime(2006, 5, 23,
+      ...                             tzinfo=pytz.timezone('UTC'))
+      >>> print widget.getInputValue()  #doctest: +ELLIPSIS
+      Traceback (most recent call last):
+      ...
+      WidgetInputError: (... Please pick a date after 2006-05-23 00:00:00)
+
+
+    If the date provided is greater than from_date then the widget works as
+    expected.
+
+      >>> widget.request.form[widget.name] = '2009-09-14'
+      >>> print widget.getInputValue()  #doctest: +ELLIPSIS
+      2009-09-14 00:00:00-07:00
+
+    If to_date is provided then getInputValue() will enforce this too.
+
+      >>> widget.to_date = datetime(2008, 1, 26,
+      ...                           tzinfo=pytz.timezone('UTC'))
+      >>> print widget.getInputValue()  #doctest: +ELLIPSIS
+      Traceback (most recent call last):
+      ...
+      WidgetInputError: (... Please pick a date before 2008-01-26 00:00:00)
 
     """
 
@@ -170,8 +199,8 @@ class DateTimeWidget(TextWidget):
           >>> from datetime import date
           >>> field = Field(__name__='foo', title=u'Foo')
           >>> widget = DateTimeWidget(field, TestRequest())
-          >>> from_date = datetime(2004, 4, 5).date()
-          >>> to_date = datetime(2004, 4, 10).date()
+          >>> from_date = datetime(2004, 4, 5)
+          >>> to_date = datetime(2004, 4, 10)
 
         The default date range is unlimited:
 
@@ -223,6 +252,24 @@ class DateTimeWidget(TextWidget):
             daterange += self.to_date.strftime('[%Y,%m,%d]]')
         return daterange
     daterange = property(daterange, doc=daterange.__doc__)
+
+    def getInputValue(self):
+        """Return the date, if it is in the allowed date range."""
+        value = super(DateTimeWidget, self).getInputValue()
+        if value is None:
+            return value
+        # Establish if the value is within the date range. 
+        if self.from_date is not None and value < self.from_date:
+            from_date = self.from_date.strftime(self.timeformat)
+            raise WidgetInputError(
+                self.name, self.label,
+                ValidationError('Please pick a date after %s' % from_date))
+        if self.to_date is not None and value > self.to_date:
+            to_date = self.to_date.strftime(self.timeformat)
+            raise WidgetInputError(
+                self.name, self.label,
+                ValidationError('Please pick a date before %s' % to_date))
+        return value
 
     def _toFieldValue(self, input):
         """Return parsed input (datetime) as a date."""
@@ -320,7 +367,7 @@ class DateTimeWidget(TextWidget):
                 try:
                     value = self.getInputValue()
                 except InputErrors:
-                    return self._getRequestValue()
+                    return self._getFormInput()
             else:
                 value = self._getDefault()
         else:
@@ -421,7 +468,7 @@ class DateWidget(DateTimeWidget):
         """
         parsed = self._parseInput(input)
         if parsed is None:
-            return parsed
+            return None
         return parsed.date()
 
     def _toFormValue(self, value):

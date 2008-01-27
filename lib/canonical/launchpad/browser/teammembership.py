@@ -7,10 +7,11 @@ __all__ = [
     'TeamMembershipSHP',
     ]
 
-import pytz
+import sys, pytz
 from datetime import datetime, date, timedelta
 
 from zope.app.form import CustomWidgetFactory
+from zope.app.form.interfaces import WidgetInputError
 from zope.component import getUtility
 from zope.formlib import form
 from zope.schema import Date
@@ -42,7 +43,6 @@ class TeamMembershipEditView:
         self.context = context
         self.request = request
         self.user = getUtility(ILaunchBag).user
-        self.errors = []
         self.errormessage = ""
         self.prefix = 'membership'
         self.max_year = 2050
@@ -64,7 +64,7 @@ class TeamMembershipEditView:
                 expires < datetime.now(UTC)):
                 expires = self.context.team.defaultrenewedexpirationdate
         if expires is not None:
-            # We get a datetime from the database, but we want to use a
+           # We get a datetime from the database, but we want to use a
             # datepicker so we must feed it a plain date without time.
             expires = expires.date()
         data = {'expirationdate': expires}
@@ -73,23 +73,7 @@ class TeamMembershipEditView:
             data=data)
         self.expiration_widget = self.widgets['expirationdate']
         # Set the acceptable date range for expiration.
-        # If there is no default membership period or renewal period, then
-        # there is no maximum date of membership. However, if 
-        renewal_limit = self.context.team.defaultrenewedexpirationdate
-        initial_limit = None
-        if self.context.team.defaultmembershipperiod is not None:
-            initial_limit = self.context.datejoined + timedelta(
-                self.context.team.defaultmembershipperiod)
-        team_max = None
-        if initial_limit is not None and renewal_limit is not None:
-            team_max = max(initial_limit, renewal_limit)
-        elif initial_limit is not None:
-            team_max = initial_limit
-        elif renewal_limit is not None:
-            team_max = renewal_limit
-        self.expiration_widget.to_date = team_max
         self.expiration_widget.from_date = datetime.now(UTC).date()
-        import pdb; pdb.set_trace()
 
     # Boolean helpers
     def userIsTeamOwnerOrLPAdmin(self):
@@ -279,8 +263,7 @@ class TeamMembershipEditView:
                     expires = self._getExpirationDate()
                 except ValueError, err:
                     self.errormessage = (
-                        'Invalid expiration: %s. '
-                        'Please fix this and resubmit your changes.' % err)
+                        'Invalid expiration: %s' % err)
                     return False
         else:
             expires = self.context.dateexpires
@@ -298,20 +281,16 @@ class TeamMembershipEditView:
         API to the caller, who needs to check only for that specific
         exception.
         """
-        data = {}
-        for error in form.getWidgetsData(self.widgets, self.prefix, data):
-            self.errors.append(error)
-        assert not self.errors, 'Errors processing expiration date XXX'
-        expires = data['expirationdate']
+        try:
+            expires = self.expiration_widget.getInputValue()
+        except WidgetInputError, value:
+            raise ValueError(value[2])
+        if expires is None:
+            return None
+
         # We used a date picker, so we have a date. What we want is a
         # datetime in UTC
-        if expires is not None:
-            UTC = pytz.timezone('UTC')
-            expires = datetime(expires.year, expires.month, expires.day,
-                               tzinfo=UTC)
-            now = datetime.now(UTC)
-            if expires <= now:
-                raise ValueError('date provided is in the past')
-
-        return expires
+        UTC = pytz.timezone('UTC')
+        return datetime(expires.year, expires.month, expires.day,
+                        tzinfo=UTC)
 
