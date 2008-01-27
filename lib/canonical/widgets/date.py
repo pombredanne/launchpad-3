@@ -15,7 +15,7 @@ __all__ = [
     ]
 
 import os
-from datetime import datetime
+from datetime import date, datetime
 import pytz
 
 from zope.app.datetimeutils import parse, DateTimeError
@@ -178,8 +178,7 @@ class DateTimeWidget(TextWidget):
         """
         if self.required_timezone is not None:
             return self.required_timezone
-        assert (
-            self.system_timezone is not None,
+        assert self.system_timezone is not None, (
             'DateTime widget needs a time zone.')
         return self.system_timezone
     timezone = property(timezone, doc=timezone.__doc__)
@@ -196,7 +195,7 @@ class DateTimeWidget(TextWidget):
 
           >>> from zope.publisher.browser import TestRequest
           >>> from zope.schema import Field
-          >>> from datetime import date
+          >>> from datetime import datetime
           >>> field = Field(__name__='foo', title=u'Foo')
           >>> widget = DateTimeWidget(field, TestRequest())
           >>> from_date = datetime(2004, 4, 5)
@@ -390,8 +389,8 @@ class DateWidget(DateTimeWidget):
       >>> from zope.schema import Field
       >>> from datetime import date
       >>> field = Field(__name__='foo', title=u'Foo')
-      >>> from_date = datetime(2004, 4, 5).date()
-      >>> to_date = datetime(2004, 4, 10).date()
+      >>> from_date = date(2004, 4, 5)
+      >>> to_date = date(2004, 4, 10)
       >>> widget = DateWidget(field, TestRequest())
       >>> widget.from_date = from_date
       >>> widget.to_date = to_date
@@ -472,7 +471,7 @@ class DateWidget(DateTimeWidget):
         return parsed.date()
 
     def _toFormValue(self, value):
-        """Convert a date or datetime to its string representation.
+        """Convert a datetime to its string representation.
 
           >>> from zope.publisher.browser import TestRequest
           >>> from zope.schema import Field
@@ -484,14 +483,17 @@ class DateWidget(DateTimeWidget):
           >>> widget._toFormValue(field.missing_value)
           u''
 
-        Dates are displayed without the corresponding time or time
-        zone information:
+        The widget ignores time and time zone information, returning only
+        the date:
 
-          >>> dt = datetime(2006, 1, 1, 12, 0, 0,
-          ...                        tzinfo=pytz.timezone('UTC'))
+          >>> dt = datetime(
+          ...     2006, 1, 1, 12, 0, 0, tzinfo=pytz.timezone('UTC'))
           >>> widget._toFormValue(dt)
           '2006-01-01'
 
+          >>> date = date(2006, 1, 1)
+          >>> widget._toFormValue(date)
+          '2006-01-01'
         """
         if value == self.context.missing_value:
             return self._missing

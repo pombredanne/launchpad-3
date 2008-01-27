@@ -7,6 +7,7 @@ import os
 import re
 import sys
 import errno
+import shutil
 import doctest
 import optparse
 import unittest
@@ -99,6 +100,13 @@ def integrationTestCleanUp(test):
             VAR_PREFIX, 'backups', '%s.tgz' % team_name)
         try:
             os.remove(backup_file)
+        except OSError, error:
+            if error.errno != errno.ENOENT:
+                raise
+        # Delete the MHonArc archives if they exist.
+        path = os.path.join(VAR_PREFIX, 'mhonarc')
+        try:
+            shutil.rmtree(path)
         except OSError, error:
             if error.errno != errno.ENOENT:
                 raise

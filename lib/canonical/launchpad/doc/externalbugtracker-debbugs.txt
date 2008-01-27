@@ -354,7 +354,8 @@ gets notified about it.
     >>> from canonical.launchpad.ftests.externalbugtracker import (
     ...     TestDebBugs, TestDebianBug)
     >>> external_debbugs = TestDebBugs(
-    ...     txn, debbugs, {'1234': TestDebianBug(package='no-such-package')})
+    ...     txn, debbugs, {'1234': TestDebianBug(
+    ...         package='no-such-package', id=1234)})
     >>> print debian.getSourcePackage('no-such-package')
     None
     >>> bug = external_debbugs.importBug(debian, '1234')
@@ -374,7 +375,7 @@ After the bug watch has been created for the imported bug, the status is
 synced immediately.
 
     >>> external_debbugs = TestDebBugs(
-    ...     txn, debbugs, {'1234': TestDebianBug(status='done')})
+    ...     txn, debbugs, {'1234': TestDebianBug(status='done', id=1234)})
     >>> expected_status = external_debbugs.convertRemoteStatus(
     ...     external_debbugs.getRemoteStatus('1234'))
     >>> expected_status.name
@@ -396,7 +397,7 @@ valid e-mail address), he still won't be subscribed to the imported bug.
     >>> no_priv.preferredemail is not None
     True
     >>> no_priv_bug = TestDebianBug(
-    ...     reporter_email=no_priv.preferredemail.email)
+    ...     reporter_email=no_priv.preferredemail.email, id=1234)
     >>> external_debbugs = TestDebBugs(txn, debbugs, {'1234': no_priv_bug})
     >>> bug = external_debbugs.importBug(debian, '1234')
     INFO:...:Updating 1 watches on http://bugs.debian.org
@@ -419,6 +420,7 @@ implementation), so we need to pass a bug watch to the function.
     >>> bug_watch = bug.addWatch(debbugs, '1234', no_priv)
     >>> external_debbugs.importBugComments(bug_watch)
     INFO:...:Imported 1 comments for remote bug 1234...
+    into Launchpad bug 4.
 
 These comments will have been added to the bug. If we look at the
 message chunks for the bug we will see the comments that have been
@@ -499,6 +501,7 @@ message - the comment will be linked to the bug.
     ...     'debbugs-existing-comment.txt')
     >>> external_debbugs.importBugComments(bug_watch)
     INFO:...:Imported 1 comments for remote bug 1234...
+    into Launchpad bug 4.
 
     >>> chunks = bug.getMessageChunks()
     >>> len(chunks)
@@ -524,7 +527,16 @@ by forcing importBugComments to fail on our Test DebBugs bugtracker.
     >>> external_debbugs.debbugs_db.fail_on_load_log = True
     >>> external_debbugs.importBugComments(bug_watch)
     WARNING:...:Unable to import comments for DebBugs bug #1234.
-    Could not parse comment log.
+    Could not parse comment log...No such file or directory...
+
+Comments for bugs in the archive can also be imported:
+
+    >>> archive_bug_watch = bug.addWatch(debbugs, '563', no_priv)
+    >>> external_debbugs = DebBugs(txn, debbugs)
+    >>> external_debbugs.importBugComments(archive_bug_watch)
+    INFO:...:Imported 3 comments for remote bug 563 on
+    http://bugs.debian.org into Launchpad bug 4.
+
 
 === Script for importing Debian bugs, linking them to Ubutu ===
 
