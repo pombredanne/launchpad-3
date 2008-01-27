@@ -983,9 +983,11 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
         Archive.purpose = %s AND
         Archive.distribution = %s AND
         SourcePackagePublishingHistory.archive = archive.id AND
-        SourcePackagePublishingHistory.status = %s
+        SourcePackagePublishingHistory.scheduleddeletiondate is null AND
+        SourcePackagePublishingHistory.status IN (%s, %s)
          """ % sqlvalues(ArchivePurpose.PPA, self,
-                         PackagePublishingStatus.PENDING)
+                         PackagePublishingStatus.PENDING,
+                         PackagePublishingStatus.DELETED)
 
         src_archives = Archive.select(
             src_query, clauseTables=['SourcePackagePublishingHistory'],
@@ -995,9 +997,11 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
         Archive.purpose = %s AND
         Archive.distribution = %s AND
         BinaryPackagePublishingHistory.archive = archive.id AND
-        BinaryPackagePublishingHistory.status = %s
+        BinaryPackagePublishingHistory.scheduleddeletiondate is null AND
+        BinaryPackagePublishingHistory.status IN (%s, %s)
         """ % sqlvalues(ArchivePurpose.PPA, self,
-                        PackagePublishingStatus.PENDING)
+                        PackagePublishingStatus.PENDING,
+                        PackagePublishingStatus.DELETED)
 
         bin_archives = Archive.select(
             bin_query, clauseTables=['BinaryPackagePublishingHistory'],

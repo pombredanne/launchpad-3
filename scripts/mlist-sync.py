@@ -3,6 +3,7 @@
 
 import os
 import sys
+import shutil
 import logging
 import textwrap
 import subprocess
@@ -45,6 +46,7 @@ Show the lists that would be deleted, but do not delete them.""")
         # Set up access to the Mailman package and import the defaults.
         mailman_path = config.mailman.build.prefix
         mailman_bin = os.path.join(mailman_path, 'bin')
+        mhonarc_path = os.path.join(config.mailman.build.var_dir, 'mhonarc')
         sys.path.append(mailman_path)
         from Mailman import mm_cfg
         from Mailman import Utils
@@ -74,6 +76,9 @@ Show the lists that would be deleted, but do not delete them.""")
                 print >> sys.stderr, 'Could not delete list:', list_name
                 # For now, keep going.
                 errors += 1
+            # We also need to delete the mhonarc archives for this list, which
+            # isn't done by rmlist.
+            shutil.rmtree(os.path.join(mhonarc_path, list_name))
         return errors
 
 
