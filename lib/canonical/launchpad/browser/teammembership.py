@@ -7,8 +7,8 @@ __all__ = [
     'TeamMembershipSHP',
     ]
 
-import sys, pytz
-from datetime import datetime, date, timedelta
+import pytz
+from datetime import datetime
 
 from zope.app.form import CustomWidgetFactory
 from zope.app.form.interfaces import WidgetInputError
@@ -17,7 +17,7 @@ from zope.formlib import form
 from zope.schema import Date
 
 from canonical.launchpad import _
-from canonical.launchpad.webapp import canonical_url, custom_widget
+from canonical.launchpad.webapp import canonical_url
 
 from canonical.launchpad.interfaces import (
     ILaunchBag, ILaunchpadCelebrities, TeamMembershipStatus,

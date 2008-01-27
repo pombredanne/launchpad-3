@@ -15,7 +15,7 @@ __all__ = [
     ]
 
 import os
-from datetime import date, datetime
+from datetime import datetime
 import pytz
 
 from zope.app.datetimeutils import parse, DateTimeError
