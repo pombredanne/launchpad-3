@@ -231,6 +231,12 @@ Here's the copy sent to Anne...
     <BLANKLINE>
     <BLANKLINE>
 
+In addition, the in-house MHonArc archiver has archived this message.
+
+    >>> from itest_helper import collect_archive_message_ids
+    >>> collect_archive_message_ids('itest-one')
+    ['fifth&#45;injection']
+
 Anne cannot post from her alternative email address because it has not been
 validated yet.
 

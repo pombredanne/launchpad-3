@@ -5,6 +5,9 @@
 __metaclass__ = type
 __all__ = [
     'IThing',
+    'parse_entries',
+    'parse_ids',
+    'parse_links',
     'Thing',
     'ThingFeedView',
     'validate_feed',
@@ -16,6 +19,8 @@ import socket
 from textwrap import wrap
 
 from zope.interface import implements, Interface, Attribute
+from BeautifulSoup import BeautifulStoneSoup as BSS
+from BeautifulSoup import SoupStrainer
 
 from canonical.launchpad.webapp.publisher import LaunchpadView
 
@@ -49,9 +54,33 @@ class ThingFeedView(LaunchpadView):
         return "a feed view on an IThing"
 
 
+def parse_entries(contents):
+    """Define a helper function for parsing feed entries."""
+    strainer = SoupStrainer('entry')
+    entries = [tag for tag in BSS(contents,
+                                  parseOnlyThese=strainer)]
+    return entries
+
+
+def parse_links(contents, rel):
+    """Define a helper function for parsing feed links."""
+    strainer = SoupStrainer('link', rel=rel)
+    entries = [tag for tag in BSS(contents,
+                                  parseOnlyThese=strainer,
+                                  selfClosingTags=['link'])]
+    return entries
+
+
+def parse_ids(contents):
+    """Define a helper function for parsing ids."""
+    strainer = SoupStrainer('id')
+    ids = [tag for tag in BSS(contents,
+                              parseOnlyThese=strainer)]
+    return ids
+
+
 def validate_feed(content, content_type, base_uri):
     """Validate the content of an Atom, RSS, or KML feed.
-
     :param content: string containing xml feed
     :param content_type: Content-Type HTTP header
     :param base_uri: Feed URI for comparison with <link rel="self">
