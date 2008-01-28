@@ -36,7 +36,7 @@ from canonical.config import config
 # working prototype.  Bug 153795.
 from canonical.launchpad.interfaces import ILaunchpadRoot
 from canonical.launchpad.webapp import (
-    LaunchpadFormView, canonical_url, urlparse)
+    LaunchpadView, canonical_url, urlparse)
 from canonical.launchpad.webapp.vhosts import allvhosts
 from canonical.lazr.interfaces import (
     IFeed, IFeedEntry, IFeedPerson, IFeedTypedData, UnsupportedFeedFormat)
@@ -45,7 +45,7 @@ SUPPORTED_FEEDS = ('.atom', '.html')
 MINUTES = 60 # Seconds in a minute.
 
 
-class FeedBase(LaunchpadFormView):
+class FeedBase(LaunchpadView):
     """See `IFeed`.
 
     Base class for feeds.
@@ -66,14 +66,6 @@ class FeedBase(LaunchpadFormView):
         self.format = self.feed_format
         self.root_url = canonical_url(getUtility(ILaunchpadRoot),
                                       rootsite=self.rootsite)
-
-    def initialize(self):
-        """See `IFeed`."""
-        # This method must not delegate to the superclass method as it does
-        # things that are inappropriate (e.g. set up widgets) for a Feed
-        # class.  Therefore this implementation must not be removed and
-        # invoking the super class version must not happen.
-        pass
 
     @property
     def title(self):
@@ -124,14 +116,6 @@ class FeedBase(LaunchpadFormView):
         return id_
 
     def getItems(self):
-        """See `IFeed`."""
-        raise NotImplementedError
-
-    def getPublicRawItems(self):
-        """See `IFeed`."""
-        raise NotImplementedError
-
-    def itemToFeedEntry(self, item):
         """See `IFeed`."""
         raise NotImplementedError
 
