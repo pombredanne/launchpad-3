@@ -23,7 +23,8 @@ from canonical.cachedproperty import cachedproperty
 from canonical.launchpad import _
 from canonical.launchpad.interfaces import (
     DuplicateBugContactError, IDistributionSourcePackage,
-    IDistributionSourcePackageManageBugcontacts, IPackagingUtil)
+    IDistributionSourcePackageManageBugcontacts, IPackagingUtil,
+    pocketsuffix)
 from canonical.launchpad.browser.bugtask import BugTargetTraversalMixin
 from canonical.launchpad.browser.launchpad import StructuralObjectPresentation
 from canonical.launchpad.browser.questiontarget import (
@@ -307,6 +308,27 @@ class DistributionSourcePackageView(LaunchpadFormView):
     def can_delete_packaging(self):
         """Whether the user can delete existing packaging links."""
         return self.user is not None
+
+    @property
+    def all_published_in_active_distroseries(self):
+        """Return a list of publishings in each active distroseries.
+
+        The list contains dictionaries each with a key of "suite" and
+        "description" where suite is "distroseries-pocket" and
+        description is "(version): component/section".
+        """
+        results = []
+        for pub in self.context.current_publishing_records:
+            if pub.distroseries.active:
+                entry = {
+                    "suite" : (pub.distroseries.name.capitalize() +
+                               pocketsuffix[pub.pocket]),
+                    "description" : "(%s): %s/%s" % (
+                        pub.sourcepackagerelease.version,
+                        pub.component.name, pub.section.name)
+                    }
+                results.append(entry)
+        return results
 
     def _createPackagingField(self):
         """Create a field to specify a Packaging association.

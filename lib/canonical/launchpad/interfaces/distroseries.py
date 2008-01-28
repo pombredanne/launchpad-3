@@ -271,13 +271,6 @@ class IDistroSeries(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
         development moves on to the other pockets.
         """
 
-    def suite_name(pocket):
-        """Return the suite name for this distroseries and the given pocket.
-
-        Suite name is built from distroseries<-pocket> where -pocket is
-        omitted for the release pocket.
-        """
-
     def canUploadToPocket(pocket):
         """Decides whether or not allow uploads for a given pocket.
 

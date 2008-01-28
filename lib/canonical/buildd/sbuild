@@ -516,8 +516,6 @@ $SIG{'HUP'} = 'IGNORE';
 $main::distribution = "";
 $main::distribution = $conf::default_distribution if $conf::default_distribution;
 
-$ENV{$_} = $conf::ENV_OVERRIDES{$_} for keys %conf::ENV_OVERRIDES;
-
 chomp( $main::arch = `$conf::dpkg --print-installation-architecture` );
 $main::username = (getpwuid($<))[0] || $ENV{'LOGNAME'} || $ENV{'USER'};
 $main::debug = 0;
@@ -1299,7 +1297,11 @@ EOF
 			while( <F> ) {
 				my $f = (split( /\s+/, $_ ))[0];
 				push( @files, "$main::chroot_build_dir$f" );
-				next if $f !~ /$main::arch\.[\w\d.-]*$/;
+				if ($main::build_arch_all) {
+					next if ($f !~ /$main::arch\.[\w\d.-]*$/ && $f !~ /all\.[\w\d.-]*$/);
+				} else {
+					next if ($f !~ /$main::arch\.[\w\d.-]*$/);
+				}
 				push( @debs, "$main::chroot_build_dir$f" );
 				push( @space_files, $f );
 			}
@@ -2173,7 +2175,8 @@ sub get_dpkg_status {
 		if ($provides) {
 			foreach (split( /\s*,\s*/, $provides )) {
 				$result{$_} = { Installed => 1, Version => '=*=PROVIDED=*=' }
-					if isin( $_, @interest );
+					if (isin( $_, @interest ) &&
+						$result{$_}->{'Installed'} != 1);
 			}
 		}
 	}
@@ -2185,6 +2188,9 @@ sub version_cmp {
 	my $v1 = shift;
 	my $rel = shift;
 	my $v2 = shift;
+	if ($v1 eq "=*=PROVIDED=*=") {
+		return 0;
+	}
 	
 	system "$conf::dpkg", "--compare-versions", $v1, $rel, $v2;
 	return $? == 0;

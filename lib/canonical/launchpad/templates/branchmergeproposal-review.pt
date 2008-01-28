@@ -1,0 +1,48 @@
+<html
+  xmlns="http://www.w3.org/1999/xhtml"
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  xml:lang="en"
+  lang="en"
+  dir="ltr"
+  metal:use-macro="context/@@main_template/master"
+  i18n:domain="launchpad"
+>
+
+<body>
+
+<metal:portlets fill-slot="portlets">
+</metal:portlets>
+
+<div metal:fill-slot="main">
+
+  <tal:summary replace="structure context/@@+pagelet-summary" />
+
+  <div metal:use-macro="context/@@launchpad_form/form">
+    <div metal:fill-slot="extra_info" style="clear: both">
+      <tal:comment condition="nothing">
+        Here is where we'd like to walk the users through the code
+        review process once it is in place.
+      </tal:comment>
+    </div>
+  </div>
+
+  <div id="source-revisions">
+  <h2 style="clear: both">Unmerged revisions</h2>
+
+    <tal:history-available condition="context/source_branch/revision_count"
+                           define="branch context/source_branch;
+                                   revisions view/unlanded_revisions">
+      <metal:landing-target use-macro="branch/@@+macros/branch-revisions"/>
+    </tal:history-available>
+
+    <tal:remote-branch condition="context/source_branch/branch_type/enumvalue:REMOTE">
+      <p>Recent revisions are not available due to the source branch being remote.</p>
+    </tal:remote-branch>
+  </div>
+
+</div>
+
+</body>
+</html>
