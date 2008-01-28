@@ -22,3 +22,19 @@ But Launchpad administrators can see the mailing list approval page.
     >>> admin_browser.open('http://launchpad.dev/+mailinglists')
     >>> admin_browser.title
     'Pending mailing lists requests'
+
+
+== When there's nothing to do ==
+
+When there are no pending mailing list requests, the page does not contain a
+form with a submit button.
+
+    >>> admin_browser.getControl('Submit')
+    Traceback (most recent call last):
+    ...
+    LookupError: label 'Submit'
+
+But there's a message explaining that there's nothing to do.
+
+    >>> find_main_content(admin_browser.contents).p.renderContents()
+    'There is nothing to do.'

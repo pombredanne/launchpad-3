@@ -16,6 +16,8 @@
 
 <div metal:fill-slot="main">
 
+<p>There is nothing to do.
+
 </div>
 
 <metal:help fill-slot="help"/>
