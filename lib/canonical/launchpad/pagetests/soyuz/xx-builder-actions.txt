@@ -27,11 +27,11 @@ Already in the builder page the available actions are presented in the
     >>> cprov_browser.getLink('bob').click()
     >>> print str(extract_text(find_portlet(cprov_browser.contents, "Actions")))
     Actions
-    Show build history
+    Administer builder
+    Cancel current job
     Change details
     Change mode
-    Cancel current job
-    Administer builder
+    Show build history
 
 Via the 'edit' form the user can modify the location and the visible
 details of the builder
