@@ -103,7 +103,7 @@ treat all empty-equivalent values equally.
 
     >>> print http(r"""
     ... POST /firefox/+filebug-advanced HTTP/1.1
-    ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
+    ... Authorization: Basic test@canonical.com:test
     ... Content-Type: multipart/form-data; boundary=---------------------------2051078912280543729816242321
     ... -----------------------------2051078912280543729816242321
     ... Content-Disposition: form-data; name="field.title"
