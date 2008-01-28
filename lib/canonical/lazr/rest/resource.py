@@ -22,7 +22,7 @@ from zope.publisher.interfaces import NotFound
 from zope.schema.interfaces import IField, IObject
 
 # XXX leonardr 2008-01-25 bug=185958:
-# canonica_url code should be moved into lazr.
+# canonical_url code should be moved into lazr.
 from canonical.launchpad.webapp import canonical_url
 from canonical.lazr.interfaces import (
     ICollection, ICollectionResource, IEntry, IEntryResource, IHTTPResource,
@@ -183,7 +183,7 @@ class ServiceRootResource:
     def publishTraverse(self, request, name):
         if name in self.top_level_collections:
             return CollectionResource(
-                self.top_level_collections[name](), request, name)
+                self.top_level_collections[name], request, name)
         else:
             raise NotFound(self, name)
 
