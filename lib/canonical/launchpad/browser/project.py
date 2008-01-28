@@ -48,8 +48,7 @@ from canonical.launchpad.browser.announcement import HasAnnouncementsView
 from canonical.launchpad.browser.product import ProductAddViewBase
 from canonical.launchpad.browser.branchlisting import BranchListingView
 from canonical.launchpad.browser.branding import BrandingChangeView
-from canonical.launchpad.browser.feeds import (
-    BugTargetLatestBugsFeedLink, FeedsMixin)
+from canonical.launchpad.browser.feeds import FeedsMixin
 from canonical.launchpad.browser.launchpad import StructuralObjectPresentation
 from canonical.launchpad.browser.question import QuestionAddView
 from canonical.launchpad.browser.questiontarget import (
@@ -363,14 +362,6 @@ class ProjectTranslationsMenu(ApplicationMenu):
 
 class ProjectView(HasAnnouncementsView, FeedsMixin):
     pass
-
-
-class ProjectBugView(ProjectView):
-    """Project view for bugs.launchpad.net.
-
-    Do not include announcement feed <link> tags on this page.
-    """
-    feed_types = (BugTargetLatestBugsFeedLink,)
 
 
 class ProjectEditView(LaunchpadEditFormView):

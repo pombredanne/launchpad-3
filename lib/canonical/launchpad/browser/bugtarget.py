@@ -163,7 +163,8 @@ class FileBugViewBase(LaunchpadFormView):
         """Return the list of field names to display."""
         context = self.context
         field_names = ['title', 'comment', 'tags', 'security_related',
-                       'bug_already_reported_as']
+                       'bug_already_reported_as', 'filecontent', 'patch',
+                       'attachment_description']
         if (IDistribution.providedBy(context) or
             IDistributionSourcePackage.providedBy(context)):
             field_names.append('packagename')
@@ -393,10 +394,38 @@ class FileBugViewBase(LaunchpadFormView):
                 'A comment with additional information was added to the'
                 ' bug report.')
 
-        if extra_data.attachments:
+        # XXX 2007-01-19 gmb:
+        #     We need to have a proper FileUpload widget rather than
+        #     this rather hackish solution.
+        attachment = self.request.form.get(self.widgets['filecontent'].name)
+        if attachment or extra_data.attachments:
             # Attach all the comments to a single empty comment.
             attachment_comment = bug.newMessage(
                 owner=self.user, subject=bug.followup_subject(), content=None)
+
+            # Deal with attachments added in the filebug form.
+            if attachment:
+                # We convert slashes in filenames to hyphens to avoid
+                # problems.
+                filename = attachment.filename.replace('/', '-')
+
+                # If the user hasn't entered a description for the
+                # attachment we use its name.
+                file_description = None
+                if 'attachment_description' in data:
+                    file_description = data['attachment_description']
+                if file_description is None:
+                    file_description = filename
+
+                bug.addAttachment(
+                    owner=self.user, file_=StringIO(data['filecontent']),
+                    filename=filename, description=file_description,
+                    comment=attachment_comment, is_patch=data['patch'])
+
+                notifications.append(
+                    'The file "%s" was attached to the bug report.' %
+                        cgi.escape(filename))
+
             for attachment in extra_data.attachments:
                 bug.addAttachment(
                     owner=self.user, file_=attachment['content'],
@@ -636,7 +665,6 @@ class FileBugGuidedView(FileBugViewBase):
     @cachedproperty
     def similar_bugs(self):
         """Return the similar bugs based on the user search."""
-        matching_bugs = []
         title = self.getSearchText()
         if not title:
             return []
@@ -672,10 +700,16 @@ class FileBugGuidedView(FileBugViewBase):
         # affects more than one source package, it will be returned more
         # than one time. 4 is an arbitrary number that should be large
         # enough.
-        for bugtask in matching_bugtasks[:4*self._MATCHING_BUGS_LIMIT]:
-            if not bugtask.bug in matching_bugs:
-                matching_bugs.append(bugtask.bug)
-                if len(matching_bugs) >= self._MATCHING_BUGS_LIMIT:
+        matching_bugs = []
+        matching_bugs_limit = self._MATCHING_BUGS_LIMIT
+        for bugtask in matching_bugtasks[:4*matching_bugs_limit]:
+            bug = bugtask.bug
+            duplicateof = bug.duplicateof
+            if duplicateof is not None:
+                bug = duplicateof
+            if bug not in matching_bugs:
+                matching_bugs.append(bug)
+                if len(matching_bugs) >= matching_bugs_limit:
                     break
 
         return matching_bugs

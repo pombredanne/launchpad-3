@@ -141,6 +141,18 @@ containing the person name and an icon.
     >>> test_tales("person/fmt:link", person=ubuntu_team)
     u'<a ...><img ... src="/@@/team" />&nbsp;Ubuntu Team</a>'
 
+The person's displayname is escaped to prevent markup from being
+interpreted by the browser. For example, a script added to Sample
+Person's displayname will be escaped; averting a XSS vulnerability.
+
+    >>> login('test@canonical.com')
+    >>> sample_person = getUtility(IPersonSet).getByName('name12')
+    >>> sample_person.displayname = (
+    ...     "Sample Person<br/><script>alert('XSS')</script>")
+    >>> test_tales("person/fmt:link", person=sample_person)
+    u'<a ...><img ... />&nbsp;Sample
+      Person&lt;br/&gt;&lt;script&gt;alert(\'XSS\')&lt;/script&gt;</a>'
+
 The fmt:link formatter uses additional path components to extend the
 link:
 
@@ -166,15 +178,30 @@ For branches, fmt:link links to the branch page.
 For bugs, fmt:link takes to the bug redirect page.
 
     >>> from canonical.launchpad.interfaces import IBugSet
-    >>> test_tales("bug/fmt:link", bug=getUtility(IBugSet).get(1))
+    >>> bug = getUtility(IBugSet).get(1)
+    >>> test_tales("bug/fmt:link", bug=bug)
     u'<a href=".../bugs/1"><img src="/@@/bug"...>&nbsp;Bug #1: Firefox does not support SVG</a>'
 
 For bugtasks, fmt:link shows the severity bug icon, and links to the
 appropriate project's bug.
 
-    >>> bugtask = getUtility(IBugSet).get(1).bugtasks[0]
+    >>> bugtask = bug.bugtasks[0]
     >>> test_tales("bugtask/fmt:link", bugtask=bugtask)
     u'<a href=".../firefox/+bug/1"><img ...src="/@@/bug-low" />&nbsp;Bug #1: Firefox does not support SVG</a>'
+
+Bug titles may contain markup (when describing issue regarding markup).
+Their titles are escaped so that they display correctly. This also
+prevents a XSS vulnerability where malicious code injected into the
+title might be interpreted by the browser.
+
+    >>> bug.title = "Opps<br/><script>alert('XSS')</script>"
+    >>> test_tales("bug/fmt:link", bug=getUtility(IBugSet).get(1))
+    u'<a href=".../bugs/1"><img src="/@@/bug"...>&nbsp;Bug #1:
+      Opps&lt;br/&gt;&lt;script&gt;alert(\'XSS\')&lt;/script&gt;</a>'
+
+    >>> test_tales("bugtask/fmt:link", bugtask=bugtask)
+    u'<a href=".../firefox/+bug/1"><img ...src="/@@/bug-low" />&nbsp;Bug #1:
+      Opps&lt;br/&gt;&lt;script&gt;alert(\'XSS\')&lt;/script&gt;</a>'
 
 
 == The fmt: namespace to get strings (hiding) ==

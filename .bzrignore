@@ -7,6 +7,7 @@ configs/+config-overrides.zcml
 +*
 sourcecode/buildbot
 sourcecode/bzr
+sourcecode/bzr-loom
 sourcecode/bzrtools
 sourcecode/cscvs
 sourcecode/gnarly
@@ -40,3 +41,4 @@ thread*.request
 lib/mailman
 TAGS
 sourcecode/bzr-loom
+sourcecode/feedvalidator
