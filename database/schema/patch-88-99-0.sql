@@ -1,5 +1,21 @@
 SET client_min_messages=ERROR;
 
+-- Adding a summary field to Archive.
+
+ALTER TABLE Archive ADD COLUMN summary text;
+
+
+-- Indexing Archive summary and description. It will require us to update
+-- the indexes for the pre-existing records.
+
+ALTER TABLE Archive ADD COLUMN fti ts2.tsvector;
+CREATE INDEX archive_fti ON archive USING gist (fti ts2.gist_tsvector_ops);
+CREATE TRIGGER tsvectorupdate
+    BEFORE INSERT OR UPDATE ON archive
+    FOR EACH ROW
+    EXECUTE PROCEDURE ts2.ftiupdate('summary', 'a', 'description', 'b');
+
+
 -- Add 'archive' column to the DistributionSourcePackageCache and
 -- DistroSeriesPackageCache. The can become NOT NULL after the first run
 -- update-pkgcache script since it will fill this column appropriately.

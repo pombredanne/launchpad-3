@@ -31,6 +31,10 @@ A, B, C, D = 'ABCD' # tsearch2 ranking constants
 # A is most important, and D is least important. This affects result ordering
 # when you are ordering by rank.
 ALL_FTI = [
+    ('archive', [
+            ('summary', A),
+            ('description', B),
+            ]),
     ('bug', [
             ('name', A),
             ('title', B),
