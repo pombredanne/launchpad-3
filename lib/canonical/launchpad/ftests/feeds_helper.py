@@ -14,6 +14,7 @@ __all__ = [
     ]
 
 
+import feedvalidator
 from cStringIO import StringIO
 import socket
 from textwrap import wrap
@@ -23,14 +24,6 @@ from BeautifulSoup import BeautifulStoneSoup as BSS
 from BeautifulSoup import SoupStrainer
 
 from canonical.launchpad.webapp.publisher import LaunchpadView
-
-# Importing the feedvalidator changes the default socket timeout,
-# so we have to reset it to prevent this error.
-# canonical.testing.layers.LayerIsolationError:
-#   Test didn't reset the socket default timeout.
-default = socket.getdefaulttimeout()
-import feedvalidator
-socket.setdefaulttimeout(default)
 
 
 class IThing(Interface):
