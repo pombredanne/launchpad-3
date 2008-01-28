@@ -11,7 +11,6 @@ __all__ = [
     'ProjectBranchFeed',
     ]
 
-from BeautifulSoup import BeautifulSoup
 from zope.app.pagetemplate import ViewPageTemplateFile
 from zope.interface import implements
 from zope.security.interfaces import Unauthorized
@@ -21,7 +20,7 @@ from canonical.launchpad.browser import (
 from canonical.config import config
 from canonical.launchpad.webapp import canonical_url, urlappend, urlparse
 from canonical.launchpad.interfaces import (
-    IBranch, ILaunchpadRoot, IPerson, IProduct, IProject)
+    IBranch, IPerson, IProduct, IProject)
 from canonical.lazr.feed import (
     FeedBase, FeedEntry, FeedPerson, FeedTypedData, MINUTES)
 from canonical.lazr.interfaces import (
@@ -57,12 +56,6 @@ class BranchFeedBase(FeedBase):
     max_age = config.launchpad.max_branch_feed_cache_minutes * MINUTES
 
     rootsite = "code"
-
-    @property
-    def link_self(self):
-        """See `IFeed`."""
-        return "%s/%s.%s" % (
-            canonical_url(self.context), self.feedname, self.format)
 
     @property
     def logo(self):
