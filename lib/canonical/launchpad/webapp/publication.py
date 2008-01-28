@@ -100,9 +100,11 @@ class LaunchpadBrowserPublication(
             return LoginRoot()
         else:
             bag = getUtility(IOpenLaunchBag)
-            assert bag.site is None, 'Argh! Steve was wrong!'
-            root_object = getUtility(self.root_object_interface)
-            bag.add(root_object)
+            if bag.site is None:
+                root_object = getUtility(self.root_object_interface)
+                bag.add(root_object)
+            else:
+                root_object = bag.site
             return root_object
 
     # the below ovverrides to zopepublication (callTraversalHooks,
