@@ -39,13 +39,13 @@ ALTER TABLE DistroSeriesPackageCache ADD CONSTRAINT
 ALTER TABLE DistributionSourcePackageCache DROP CONSTRAINT
     distributionsourcepackagecache_distribution_sourcepackagename_u;
 ALTER TABLE DistributionSourcePackageCache ADD CONSTRAINT
-    distributionsourcepackagecache_distribution_sourcepackagename_archive_u
+    distributionsourcepackagecache_distribution_sourcepackagename_archive_unique
     UNIQUE(distribution, sourcepackagename, archive);
 
 ALTER TABLE DistroSeriesPackageCache DROP CONSTRAINT
     distroseriespackagecache__binarypackagename_distroseries__key;
 ALTER TABLE DistroSeriesPackageCache ADD CONSTRAINT
-    distroseriespackagecache_distroseries_binarypackagename_archive_u
+    distroseriespackagecache_distroseries_binarypackagename_archive_unique
     UNIQUE(distroseries, binarypackagename, archive);
 
 
