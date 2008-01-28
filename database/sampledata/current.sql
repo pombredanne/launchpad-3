@@ -672,18 +672,18 @@ ALTER TABLE answercontact ENABLE TRIGGER ALL;
 
 ALTER TABLE archive DISABLE TRIGGER ALL;
 
-INSERT INTO archive (id, "owner", description, enabled, authorized_size, whiteboard, distribution, purpose, private) VALUES (1, NULL, NULL, true, NULL, NULL, 1, 1, false);
-INSERT INTO archive (id, "owner", description, enabled, authorized_size, whiteboard, distribution, purpose, private) VALUES (2, NULL, NULL, true, NULL, NULL, 2, 1, false);
-INSERT INTO archive (id, "owner", description, enabled, authorized_size, whiteboard, distribution, purpose, private) VALUES (3, NULL, NULL, true, NULL, NULL, 3, 1, false);
-INSERT INTO archive (id, "owner", description, enabled, authorized_size, whiteboard, distribution, purpose, private) VALUES (4, NULL, NULL, true, NULL, NULL, 4, 1, false);
-INSERT INTO archive (id, "owner", description, enabled, authorized_size, whiteboard, distribution, purpose, private) VALUES (5, NULL, NULL, true, NULL, NULL, 5, 1, false);
-INSERT INTO archive (id, "owner", description, enabled, authorized_size, whiteboard, distribution, purpose, private) VALUES (7, NULL, NULL, true, NULL, NULL, 7, 1, false);
-INSERT INTO archive (id, "owner", description, enabled, authorized_size, whiteboard, distribution, purpose, private) VALUES (8, NULL, NULL, true, NULL, NULL, 8, 1, false);
-INSERT INTO archive (id, "owner", description, enabled, authorized_size, whiteboard, distribution, purpose, private) VALUES (9, 28, 'packages to help my friends.', true, 1024, 'It is not my fault.', 1, 2, false);
-INSERT INTO archive (id, "owner", description, enabled, authorized_size, whiteboard, distribution, purpose, private) VALUES (10, 1, 'packages to help the humanity (you know, ubuntu)', true, 1024, NULL, 1, 2, false);
-INSERT INTO archive (id, "owner", description, enabled, authorized_size, whiteboard, distribution, purpose, private) VALUES (11, 52, 'I am not allowed to say, I have no privs.', true, 1024, NULL, 1, 2, false);
-INSERT INTO archive (id, "owner", description, enabled, authorized_size, whiteboard, distribution, purpose, private) VALUES (12, NULL, 'Partner archive', true, NULL, NULL, 1, 4, false);
-INSERT INTO archive (id, "owner", description, enabled, authorized_size, whiteboard, distribution, purpose, private) VALUES (13, NULL, 'Partner archive', true, NULL, NULL, 8, 4, false);
+INSERT INTO archive (id, "owner", description, enabled, authorized_size, whiteboard, distribution, purpose, private, summary, fti) VALUES (1, NULL, NULL, true, NULL, NULL, 1, 1, false, NULL, NULL);
+INSERT INTO archive (id, "owner", description, enabled, authorized_size, whiteboard, distribution, purpose, private, summary, fti) VALUES (2, NULL, NULL, true, NULL, NULL, 2, 1, false, NULL, NULL);
+INSERT INTO archive (id, "owner", description, enabled, authorized_size, whiteboard, distribution, purpose, private, summary, fti) VALUES (3, NULL, NULL, true, NULL, NULL, 3, 1, false, NULL, NULL);
+INSERT INTO archive (id, "owner", description, enabled, authorized_size, whiteboard, distribution, purpose, private, summary, fti) VALUES (4, NULL, NULL, true, NULL, NULL, 4, 1, false, NULL, NULL);
+INSERT INTO archive (id, "owner", description, enabled, authorized_size, whiteboard, distribution, purpose, private, summary, fti) VALUES (5, NULL, NULL, true, NULL, NULL, 5, 1, false, NULL, NULL);
+INSERT INTO archive (id, "owner", description, enabled, authorized_size, whiteboard, distribution, purpose, private, summary, fti) VALUES (7, NULL, NULL, true, NULL, NULL, 7, 1, false, NULL, NULL);
+INSERT INTO archive (id, "owner", description, enabled, authorized_size, whiteboard, distribution, purpose, private, summary, fti) VALUES (8, NULL, NULL, true, NULL, NULL, 8, 1, false, NULL, NULL);
+INSERT INTO archive (id, "owner", description, enabled, authorized_size, whiteboard, distribution, purpose, private, summary, fti) VALUES (9, 28, 'packages to help my friends.', true, 1024, 'It is not my fault.', 1, 2, false, 'I like my friends.', NULL);
+INSERT INTO archive (id, "owner", description, enabled, authorized_size, whiteboard, distribution, purpose, private, summary, fti) VALUES (10, 1, 'packages to help the humanity (you know, ubuntu)', true, 1024, NULL, 1, 2, false, 'I like people, in general.', NULL);
+INSERT INTO archive (id, "owner", description, enabled, authorized_size, whiteboard, distribution, purpose, private, summary, fti) VALUES (11, 52, 'I am not allowed to say, I have no privs.', true, 1024, NULL, 1, 2, false, 'I cannot like you, sorry.', NULL);
+INSERT INTO archive (id, "owner", description, enabled, authorized_size, whiteboard, distribution, purpose, private, summary, fti) VALUES (12, NULL, 'Partner archive', true, NULL, NULL, 1, 4, false, NULL, NULL);
+INSERT INTO archive (id, "owner", description, enabled, authorized_size, whiteboard, distribution, purpose, private, summary, fti) VALUES (13, NULL, 'Partner archive', true, NULL, NULL, 8, 4, false, NULL, NULL);
 
 
 ALTER TABLE archive ENABLE TRIGGER ALL;
@@ -1749,27 +1749,27 @@ ALTER TABLE distributionmirror ENABLE TRIGGER ALL;
 
 ALTER TABLE distributionsourcepackagecache DISABLE TRIGGER ALL;
 
-INSERT INTO distributionsourcepackagecache (id, distribution, sourcepackagename, name, binpkgnames, binpkgsummaries, binpkgdescriptions, fti, changelog) VALUES (1, 3, 19, 'alsa-utils', '', '', '', NULL, NULL);
-INSERT INTO distributionsourcepackagecache (id, distribution, sourcepackagename, name, binpkgnames, binpkgsummaries, binpkgdescriptions, fti, changelog) VALUES (2, 1, 1, 'mozilla-firefox', 'mozilla-firefox', 'Mozilla Firefox Web Browser', 'Mozilla Firefox Web Browser is .....', NULL, NULL);
-INSERT INTO distributionsourcepackagecache (id, distribution, sourcepackagename, name, binpkgnames, binpkgsummaries, binpkgdescriptions, fti, changelog) VALUES (3, 1, 9, 'evolution', '', '', '', NULL, NULL);
-INSERT INTO distributionsourcepackagecache (id, distribution, sourcepackagename, name, binpkgnames, binpkgsummaries, binpkgdescriptions, fti, changelog) VALUES (4, 1, 10, 'netapplet', '', '', '', NULL, NULL);
-INSERT INTO distributionsourcepackagecache (id, distribution, sourcepackagename, name, binpkgnames, binpkgsummaries, binpkgdescriptions, fti, changelog) VALUES (5, 1, 14, 'pmount', 'pmount', 'pmount shortdesc', 'pmount description', NULL, 'This is a placeholder changelog for pmount 0.1-2 pmount (0.1-1) hoary; urgency=low
+INSERT INTO distributionsourcepackagecache (id, distribution, sourcepackagename, name, binpkgnames, binpkgsummaries, binpkgdescriptions, fti, changelog, archive) VALUES (1, 3, 19, 'alsa-utils', '', '', '', NULL, NULL, 1);
+INSERT INTO distributionsourcepackagecache (id, distribution, sourcepackagename, name, binpkgnames, binpkgsummaries, binpkgdescriptions, fti, changelog, archive) VALUES (2, 1, 1, 'mozilla-firefox', 'mozilla-firefox', 'Mozilla Firefox Web Browser', 'Mozilla Firefox Web Browser is .....', NULL, NULL, 1);
+INSERT INTO distributionsourcepackagecache (id, distribution, sourcepackagename, name, binpkgnames, binpkgsummaries, binpkgdescriptions, fti, changelog, archive) VALUES (3, 1, 9, 'evolution', '', '', '', NULL, NULL, 1);
+INSERT INTO distributionsourcepackagecache (id, distribution, sourcepackagename, name, binpkgnames, binpkgsummaries, binpkgdescriptions, fti, changelog, archive) VALUES (4, 1, 10, 'netapplet', '', '', '', NULL, NULL, 1);
+INSERT INTO distributionsourcepackagecache (id, distribution, sourcepackagename, name, binpkgnames, binpkgsummaries, binpkgdescriptions, fti, changelog, archive) VALUES (5, 1, 14, 'pmount', 'pmount', 'pmount shortdesc', 'pmount description', NULL, 'This is a placeholder changelog for pmount 0.1-2 pmount (0.1-1) hoary; urgency=low
 
  * Fix description (Malone #1)
  * Fix debian (Debian #2000)
  * Fix warty (Warty Ubuntu #1)
 
- -- Sample Person <test@canonical.com> Tue, 7 Feb 2006 12:10:08 +0300');
-INSERT INTO distributionsourcepackagecache (id, distribution, sourcepackagename, name, binpkgnames, binpkgsummaries, binpkgdescriptions, fti, changelog) VALUES (6, 1, 19, 'alsa-utils', '', '', '', NULL, NULL);
-INSERT INTO distributionsourcepackagecache (id, distribution, sourcepackagename, name, binpkgnames, binpkgsummaries, binpkgdescriptions, fti, changelog) VALUES (7, 1, 20, 'cnews', '', '', '', NULL, NULL);
-INSERT INTO distributionsourcepackagecache (id, distribution, sourcepackagename, name, binpkgnames, binpkgsummaries, binpkgdescriptions, fti, changelog) VALUES (8, 1, 21, 'libstdc++', '', '', '', NULL, 'libstdc++ (9.9-1) hoary; urgency=high
+ -- Sample Person <test@canonical.com> Tue, 7 Feb 2006 12:10:08 +0300', 1);
+INSERT INTO distributionsourcepackagecache (id, distribution, sourcepackagename, name, binpkgnames, binpkgsummaries, binpkgdescriptions, fti, changelog, archive) VALUES (6, 1, 19, 'alsa-utils', '', '', '', NULL, NULL, 1);
+INSERT INTO distributionsourcepackagecache (id, distribution, sourcepackagename, name, binpkgnames, binpkgsummaries, binpkgdescriptions, fti, changelog, archive) VALUES (7, 1, 20, 'cnews', '', '', '', NULL, NULL, 1);
+INSERT INTO distributionsourcepackagecache (id, distribution, sourcepackagename, name, binpkgnames, binpkgsummaries, binpkgdescriptions, fti, changelog, archive) VALUES (8, 1, 21, 'libstdc++', '', '', '', NULL, 'libstdc++ (9.9-1) hoary; urgency=high
 
  * Placeholder
 
- -- Sample Person <test@canonical.com> Tue, 10 Feb 2006 10:10:08 +0300');
-INSERT INTO distributionsourcepackagecache (id, distribution, sourcepackagename, name, binpkgnames, binpkgsummaries, binpkgdescriptions, fti, changelog) VALUES (9, 1, 22, 'linux-source-2.6.15', '', '', '', NULL, NULL);
-INSERT INTO distributionsourcepackagecache (id, distribution, sourcepackagename, name, binpkgnames, binpkgsummaries, binpkgdescriptions, fti, changelog) VALUES (10, 1, 23, 'foobar', '', '', '', NULL, NULL);
-INSERT INTO distributionsourcepackagecache (id, distribution, sourcepackagename, name, binpkgnames, binpkgsummaries, binpkgdescriptions, fti, changelog) VALUES (11, 1, 27, 'commercialpackage', '', '', '', NULL, NULL);
+ -- Sample Person <test@canonical.com> Tue, 10 Feb 2006 10:10:08 +0300', 1);
+INSERT INTO distributionsourcepackagecache (id, distribution, sourcepackagename, name, binpkgnames, binpkgsummaries, binpkgdescriptions, fti, changelog, archive) VALUES (9, 1, 22, 'linux-source-2.6.15', '', '', '', NULL, NULL, 1);
+INSERT INTO distributionsourcepackagecache (id, distribution, sourcepackagename, name, binpkgnames, binpkgsummaries, binpkgdescriptions, fti, changelog, archive) VALUES (10, 1, 23, 'foobar', '', '', '', NULL, NULL, 1);
+INSERT INTO distributionsourcepackagecache (id, distribution, sourcepackagename, name, binpkgnames, binpkgsummaries, binpkgdescriptions, fti, changelog, archive) VALUES (11, 1, 27, 'commercialpackage', '', '', '', NULL, NULL, 1);
 
 
 ALTER TABLE distributionsourcepackagecache ENABLE TRIGGER ALL;
@@ -1856,12 +1856,12 @@ ALTER TABLE distroserieslanguage ENABLE TRIGGER ALL;
 
 ALTER TABLE distroseriespackagecache DISABLE TRIGGER ALL;
 
-INSERT INTO distroseriespackagecache (id, distroseries, binarypackagename, name, summary, description, summaries, descriptions, fti) VALUES (1, 3, 13, 'pmount', 'pmount shortdesc', 'pmount description', 'pmount shortdesc', 'pmount description', NULL);
-INSERT INTO distroseriespackagecache (id, distroseries, binarypackagename, name, summary, description, summaries, descriptions, fti) VALUES (2, 1, 8, 'mozilla-firefox', 'Mozilla Firefox Web Browser', 'Mozilla Firefox Web Browser is .....', 'Mozilla Firefox Web Browser', 'Mozilla Firefox Web Browser is .....', NULL);
-INSERT INTO distroseriespackagecache (id, distroseries, binarypackagename, name, summary, description, summaries, descriptions, fti) VALUES (5, 1, 13, 'pmount', 'pmount shortdesc', 'pmount description', 'pmount shortdesc', 'pmount description', NULL);
-INSERT INTO distroseriespackagecache (id, distroseries, binarypackagename, name, summary, description, summaries, descriptions, fti) VALUES (6, 1, 14, 'linux-2.6.12', 'the kernel of boom', 'this kernel is like the crystal method: a temple of boom', 'the kernel of boom', 'this kernel is like the crystal method: a temple of boom', NULL);
-INSERT INTO distroseriespackagecache (id, distroseries, binarypackagename, name, summary, description, summaries, descriptions, fti) VALUES (7, 1, 15, 'at', 'at the mountains of madness', 'lovecraft long before enunciated that the mountains were not safe, but you did not believe him', 'at the mountains of madness', 'lovecraft long before enunciated that the mountains were not safe, but you did not believe him', NULL);
-INSERT INTO distroseriespackagecache (id, distroseries, binarypackagename, name, summary, description, summaries, descriptions, fti) VALUES (8, 1, 6, 'foobar', 'foobar is bad', 'foobar should be removed', 'foobar is bad', 'foobar should be removed', NULL);
+INSERT INTO distroseriespackagecache (id, distroseries, binarypackagename, name, summary, description, summaries, descriptions, fti, archive) VALUES (1, 3, 13, 'pmount', 'pmount shortdesc', 'pmount description', 'pmount shortdesc', 'pmount description', NULL, 1);
+INSERT INTO distroseriespackagecache (id, distroseries, binarypackagename, name, summary, description, summaries, descriptions, fti, archive) VALUES (2, 1, 8, 'mozilla-firefox', 'Mozilla Firefox Web Browser', 'Mozilla Firefox Web Browser is .....', 'Mozilla Firefox Web Browser', 'Mozilla Firefox Web Browser is .....', NULL, 1);
+INSERT INTO distroseriespackagecache (id, distroseries, binarypackagename, name, summary, description, summaries, descriptions, fti, archive) VALUES (5, 1, 13, 'pmount', 'pmount shortdesc', 'pmount description', 'pmount shortdesc', 'pmount description', NULL, 1);
+INSERT INTO distroseriespackagecache (id, distroseries, binarypackagename, name, summary, description, summaries, descriptions, fti, archive) VALUES (6, 1, 14, 'linux-2.6.12', 'the kernel of boom', 'this kernel is like the crystal method: a temple of boom', 'the kernel of boom', 'this kernel is like the crystal method: a temple of boom', NULL, 1);
+INSERT INTO distroseriespackagecache (id, distroseries, binarypackagename, name, summary, description, summaries, descriptions, fti, archive) VALUES (7, 1, 15, 'at', 'at the mountains of madness', 'lovecraft long before enunciated that the mountains were not safe, but you did not believe him', 'at the mountains of madness', 'lovecraft long before enunciated that the mountains were not safe, but you did not believe him', NULL, 1);
+INSERT INTO distroseriespackagecache (id, distroseries, binarypackagename, name, summary, description, summaries, descriptions, fti, archive) VALUES (8, 1, 6, 'foobar', 'foobar is bad', 'foobar should be removed', 'foobar is bad', 'foobar should be removed', NULL, 1);
 
 
 ALTER TABLE distroseriespackagecache ENABLE TRIGGER ALL;
@@ -3946,7 +3946,6 @@ ALTER TABLE packaging ENABLE TRIGGER ALL;
 
 ALTER TABLE person DISABLE TRIGGER ALL;
 
-
 INSERT INTO person (id, displayname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, icon, mugshot, hide_email_addresses, creation_rationale, creation_comment, registrant, logo, renewal_policy, openid_identifier, account_status_comment, account_status, personal_standing, personal_standing_reason_text, mail_resumption_date, mailing_list_auto_subscribe_policy, mailing_list_receive_duplicates, visibility, verbose_bugnotifications) VALUES (1, 'Mark Shuttleworth', 'K7Qmeansl6RbuPfulfcmyDQOzp70OxVh5Fcf', NULL, NULL, 'sabdfl', NULL, NULL, NULL, NULL, 1, NULL, '2005-06-06 08:59:51.591618', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, 8, NULL, NULL, NULL, 10, 'sabdfl_oid', NULL, 20, 0, NULL, NULL, 1, true, 1, false);
 INSERT INTO person (id, displayname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, icon, mugshot, hide_email_addresses, creation_rationale, creation_comment, registrant, logo, renewal_policy, openid_identifier, account_status_comment, account_status, personal_standing, personal_standing_reason_text, mail_resumption_date, mailing_list_auto_subscribe_policy, mailing_list_receive_duplicates, visibility, verbose_bugnotifications) VALUES (2, 'Robert Collins', 'ID1adsprLaTBox18F6dpSdtSdqCiOdpgUXBo4oG17qhg73jSDTVe3g==', NULL, NULL, 'lifeless', NULL, NULL, NULL, NULL, 1, NULL, '2005-06-06 08:59:51.598107', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, 8, NULL, NULL, NULL, 10, 'lifeless_oid', NULL, 20, 0, NULL, NULL, 1, true, 1, false);
 INSERT INTO person (id, displayname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, icon, mugshot, hide_email_addresses, creation_rationale, creation_comment, registrant, logo, renewal_policy, openid_identifier, account_status_comment, account_status, personal_standing, personal_standing_reason_text, mail_resumption_date, mailing_list_auto_subscribe_policy, mailing_list_receive_duplicates, visibility, verbose_bugnotifications) VALUES (3, 'Dave Miller', NULL, NULL, NULL, 'justdave', NULL, NULL, NULL, NULL, 1, NULL, '2005-06-06 08:59:51.610048', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, 1, NULL, NULL, NULL, 10, 'justdave_oid', NULL, 10, 0, NULL, NULL, 1, true, 1, false);
@@ -4029,6 +4028,7 @@ INSERT INTO person (id, displayname, "password", teamowner, teamdescription, nam
 INSERT INTO person (id, displayname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, icon, mugshot, hide_email_addresses, creation_rationale, creation_comment, registrant, logo, renewal_policy, openid_identifier, account_status_comment, account_status, personal_standing, personal_standing_reason_text, mail_resumption_date, mailing_list_auto_subscribe_policy, mailing_list_receive_duplicates, visibility, verbose_bugnotifications) VALUES (243614, 'josh', NULL, NULL, NULL, 'jbuhl-nospam', NULL, NULL, NULL, NULL, 1, NULL, '2007-12-18 16:31:34.790641', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, 15, 'when the comments for debbugs #308994 were imported into Launchpad.', 62, NULL, 10, '6KHNEe3', NULL, 10, 0, NULL, NULL, 1, true, 1, false);
 INSERT INTO person (id, displayname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, icon, mugshot, hide_email_addresses, creation_rationale, creation_comment, registrant, logo, renewal_policy, openid_identifier, account_status_comment, account_status, personal_standing, personal_standing_reason_text, mail_resumption_date, mailing_list_auto_subscribe_policy, mailing_list_receive_duplicates, visibility, verbose_bugnotifications) VALUES (243615, 'Sjoerd Simons', NULL, NULL, NULL, 'sjoerd', NULL, NULL, NULL, NULL, 1, NULL, '2007-12-18 16:31:34.790641', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, 15, 'when the comments for debbugs #308994 were imported into Launchpad.', 62, NULL, 10, 'yEzBPbd', NULL, 10, 0, NULL, NULL, 1, true, 1, false);
 INSERT INTO person (id, displayname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, icon, mugshot, hide_email_addresses, creation_rationale, creation_comment, registrant, logo, renewal_policy, openid_identifier, account_status_comment, account_status, personal_standing, personal_standing_reason_text, mail_resumption_date, mailing_list_auto_subscribe_policy, mailing_list_receive_duplicates, visibility, verbose_bugnotifications) VALUES (243616, 'Martin Pitt', NULL, NULL, NULL, 'mpitt', NULL, NULL, NULL, NULL, 1, NULL, '2007-12-18 16:31:34.790641', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, 15, 'when the comments for debbugs #308994 were imported into Launchpad.', 62, NULL, 10, 'R8FpwXd', NULL, 10, 0, NULL, NULL, 1, true, 1, false);
+
 
 ALTER TABLE person ENABLE TRIGGER ALL;
 
@@ -8324,7 +8324,6 @@ INSERT INTO teammembership (id, person, team, status, datejoined, dateexpires, r
 INSERT INTO teammembership (id, person, team, status, datejoined, dateexpires, reviewer, reviewercomment) VALUES (77, 19, 17, 2, '2008-01-16 23:56:17.986769', NULL, 1, 'Yeah, we want in!');
 
 
-
 ALTER TABLE teammembership ENABLE TRIGGER ALL;
 
 
@@ -8485,7 +8484,6 @@ INSERT INTO teamparticipation (id, team, person) VALUES (169, 17, 19);
 INSERT INTO teamparticipation (id, team, person) VALUES (170, 32, 4);
 INSERT INTO teamparticipation (id, team, person) VALUES (171, 32, 33);
 INSERT INTO teamparticipation (id, team, person) VALUES (172, 17, 33);
-
 
 
 ALTER TABLE teamparticipation ENABLE TRIGGER ALL;
