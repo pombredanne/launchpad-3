@@ -11,16 +11,6 @@
 >
 <body>
 
-<style metal:fill-slot="head_epilogue">
-div.revision {
-  padding-bottom: 1em;
-}
-
-div.revision p {
-  margin-left: 2.5em;
-}
-</style>
-
 <metal:leftportlets fill-slot="portlets">
   <div tal:replace="structure context/@@+portlet-details" />
   <div tal:replace="structure context/@@+portlet-subscribers" />
@@ -233,7 +223,9 @@ div.revision p {
         <metal:landing-target use-macro="context/@@+macros/merge-proposal"/>
       </tal:landing-candidate>
     </tal:proposals>
-    <a href="+landing-candidates">more&#8230;</a>
+    <tal:show-link condition="view/show_candidate_more_link">
+      <a href="+landing-candidates">more&#8230;</a>
+    </tal:show-link>
   </div>
 
   <div id="recent-revisions">
@@ -258,15 +250,12 @@ div.revision p {
     </tal:mirrored>
   </p>
 
-  <tal:history-available condition="context/revision_count">
-    <div class="revision"
-         tal:repeat="rev_no context/latest_revisions"
-         tal:define="codebrowse view/codebrowse_url"
-         tal:attributes="id string:rev${rev_no/sequence}">
-
-      <metal:landing-target use-macro="context/@@+macros/revision-text"/>
-    </div>
+  <tal:history-available condition="context/revision_count"
+                         define="branch context;
+                                 revisions branch/latest_revisions">
+    <metal:landing-target use-macro="branch/@@+macros/branch-revisions"/>
   </tal:history-available>
+
   </div>
 
   <tal:has-related-bugs condition="context/related_bugs">

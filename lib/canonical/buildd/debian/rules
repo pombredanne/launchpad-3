@@ -75,7 +75,7 @@ binary-indep: install
 	dh_installdeb
 	dh_gencontrol
 	dh_md5sums
-	dh_builddeb --destdir=.
+	dh_builddeb
 
 binary: binary-indep
 

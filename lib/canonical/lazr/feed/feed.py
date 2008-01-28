@@ -35,7 +35,8 @@ from canonical.config import config
 # canonical.launchpad, but we're doing it here as an expediency to get a
 # working prototype.  Bug 153795.
 from canonical.launchpad.interfaces import ILaunchpadRoot
-from canonical.launchpad.webapp import canonical_url, LaunchpadFormView, urlparse
+from canonical.launchpad.webapp import (
+    LaunchpadFormView, canonical_url, urlparse)
 from canonical.launchpad.webapp.vhosts import allvhosts
 from canonical.lazr.interfaces import (
     IFeed, IFeedEntry, IFeedPerson, IFeedTypedData, UnsupportedFeedFormat)
@@ -82,7 +83,8 @@ class FeedBase(LaunchpadFormView):
     @property
     def link_self(self):
         """See `IFeed`."""
-        raise NotImplementedError
+        return "%s/%s.%s" % (canonical_url(self.context, rootsite="feeds"),
+                             self.feedname, self.format)
 
     @property
     def site_url(self):
