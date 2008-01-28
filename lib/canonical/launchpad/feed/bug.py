@@ -22,7 +22,7 @@ from canonical.launchpad.browser import (
     BugsBugTaskSearchListingView, BugTargetView,
     PersonRelatedBugsView)
 from canonical.launchpad.interfaces import (
-    IBug, IBugTarget, IBugTaskSet, IDistribution, IMaloneApplication, IPerson)
+    IBug, IBugTarget, IBugTaskSet, IMaloneApplication, IPerson)
 from canonical.lazr.feed import (
     FeedBase, FeedEntry, FeedPerson, FeedTypedData, MINUTES)
 
@@ -80,12 +80,6 @@ class BugsFeedBase(FeedBase):
             bugtargetdisplayname = True,
             importance = True,
             status = True)
-
-    @property
-    def link_self(self):
-        """See `IFeed`."""
-        return "%s/%s.%s" % (
-            canonical_url(self.context), self.feedname, self.format)
 
     @property
     def logo(self):

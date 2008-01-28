@@ -921,6 +921,37 @@ exports it as UTF-8
     "Content-Type: text/plain; charset=UTF-8\n"
     ...
 
+Given that pofile's export time is newer than potemplate's date last
+updated, cached export is valid.
+
+    # Since all of the changes in this test are in the same transaction we
+    # must first commit the current transaction so we can do a POFile
+    # export in another. This is important so we are sure we get different
+    # time stamps for POFile.date_updated and POFile.exporttime.
+    >>> transaction.commit()
+    >>> discarded = pofile.export()
+    >>> transaction.commit()
+    >>> pofile = POFile.get(1)
+    >>> pofile.exporttime >= pofile.potemplate.date_last_updated
+    True
+    >>> pofile.is_cached_export_valid
+    True
+
+But if potemplate's date last updated is newer, cached export is not valid
+anymore.
+
+    >>> pofile.date_changed >= pofile.potemplate.date_last_updated
+    True
+    >>> pofile.is_cached_export_valid
+    True
+    >>> from datetime import timedelta
+    >>> pofile.potemplate.date_last_updated = (
+    ...     pofile.date_changed + timedelta(seconds=60))
+    >>> pofile.date_changed >= pofile.potemplate.date_last_updated
+    False
+    >>> pofile.is_cached_export_valid
+    False
+
 
 == getPOTMsgSetChangedInLaunchpad ==
 

@@ -49,7 +49,7 @@ def construct_email_notifications(bug_notifications):
 
     if comment is not None:
         if comment == bug.initial_message:
-            dummy, text = generate_bug_add_email(bug)
+            subject, text = generate_bug_add_email(bug)
         else:
             text = comment.text_contents
         text_notifications.append(text)
