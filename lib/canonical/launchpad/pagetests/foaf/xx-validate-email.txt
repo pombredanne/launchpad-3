@@ -75,3 +75,23 @@ added by gina.
     >>> for msg in get_feedback_messages(browser.contents):
     ...     print msg
     An e-mail message was sent to 'salgado@example.com'...
+
+
+== XSS precautions ==
+
+Markup in new addresses is escaped in error messages so that it cannot
+be interpreted by the browser. Scripts that are embedded in the address
+will not run. A malicious hacker cannot use a XSS vulnerability to gain
+information about Launchpad users.
+
+    >>> browser.title
+    "Guilherme Salgado's e-mail addresses"
+
+    >>> browser.getControl('Add a new address').value = (
+    ...     "salgado@example.com<br/><script>window.alert('XSS')</script>")
+    >>> browser.getControl('Add', index=1).click()
+    >>> for msg in get_feedback_messages(browser.contents):
+    ...     print msg
+    There is 1 error.
+    'salgado...com&lt;br/&gt;&lt;script&gt;window.alert('XSS')&lt;/script&gt;'
+    doesn't seem to be a valid email address.

@@ -794,7 +794,7 @@ class PersonFormatterAPI(ObjectFormatterExtendedAPI):
             url = '%s/%s' % (url, extra_path)
         image_html = ObjectImageDisplayAPI(person).icon(rootsite=rootsite)
         return '<a href="%s">%s&nbsp;%s</a>' % (
-            url, image_html, person.browsername)
+            url, image_html, cgi.escape(person.browsername))
 
 
 class PillarFormatterAPI(ObjectFormatterExtendedAPI):
@@ -885,7 +885,8 @@ class BugFormatterAPI(ObjectFormatterExtendedAPI):
         if extra_path:
             url = '%s/%s' % (url, extra_path)
         return ('<a href="%s"><img src="/@@/bug" alt=""/>'
-                '&nbsp;Bug #%d: %s</a>' % (url, bug.id, bug.title))
+                '&nbsp;Bug #%d: %s</a>' % (
+                    url, bug.id, cgi.escape(bug.title)))
 
 
 class BugTaskFormatterAPI(ObjectFormatterExtendedAPI):
@@ -901,7 +902,7 @@ class BugTaskFormatterAPI(ObjectFormatterExtendedAPI):
             url = '%s/%s' % (url, extra_path)
         image_html = BugTaskImageDisplayAPI(bugtask).icon()
         return '<a href="%s">%s&nbsp;Bug #%d: %s</a>' % (
-            url, image_html, bugtask.bug.id, bugtask.bug.title)
+            url, image_html, bugtask.bug.id, cgi.escape(bugtask.bug.title))
 
 
 class NumberFormatterAPI:

@@ -15,7 +15,8 @@ from canonical.launchpad.ftests import login
 from canonical.launchpad.ftests.externalbugtracker import new_bugtracker
 from canonical.launchpad.ftests.harness import LaunchpadZopelessTestCase
 from canonical.launchpad.interfaces import (BugTaskStatus, BugTrackerType,
-    IBugSet, IBugTaskSet, IPersonSet, IProductSet, IQuestionSet)
+    IBugSet, IBugTaskSet, ILaunchpadCelebrities, IPersonSet,
+    IProductSet, IQuestionSet)
 
 class TestCheckwatches(LaunchpadZopelessTestCase):
     """Tests for the bugwatch updating system."""
@@ -36,6 +37,13 @@ class TestCheckwatches(LaunchpadZopelessTestCase):
         #     currently logged in user, we get an exception if we don't.
         login('test@canonical.com')
         question.linkBug(bug_with_question)
+
+        # We subscribe launchpad_developers to the question since this
+        # indirectly subscribes foo.bar@canonical.com to it, too. We can
+        # then use this to test the updating of a question with indirect
+        # subscribers from a bug watch.
+        question.subscribe(
+            getUtility(ILaunchpadCelebrities).launchpad_developers)
         commit()
 
         # We now need to switch to the checkwatches DB user so that
@@ -56,14 +64,19 @@ class TestCheckwatches(LaunchpadZopelessTestCase):
         commit()
 
     def test_can_update_bug_with_questions(self):
-        """Test whether bugs with linked questions can be updated."""
+        """Test whether bugs with linked questions can be updated.
+
+        This will also test whether indirect subscribers of linked
+        questions will be notified of the changes made when the bugwatch
+        is updated.
+        """
         # We need to check that the bug task we created in setUp() is
         # still being referenced by our bug watch.
         self.assertEqual(self.bugwatch_with_question.bugtasks[0].id,
             self.bugtask_with_question.id)
 
         # We can now update the bug watch, which will in turn update the
-        # bug task.
+        # bug task and the linked question.
         self.bugwatch_with_question.updateStatus('some status',
             BugTaskStatus.INPROGRESS)
         self.assertEqual(self.bugwatch_with_question.bugtasks[0].status,
