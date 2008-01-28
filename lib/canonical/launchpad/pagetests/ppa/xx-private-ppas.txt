@@ -73,7 +73,6 @@ the landscape-developers PPA:
     No Privileges Person...
     Mark Shuttleworth...
 
-
 Administrators will see all private PPAs in the listing:
 
     >>> admin_browser.open("http://launchpad.dev/ubuntu/+ppas")
@@ -105,9 +104,22 @@ A non-privileged user cannot access the private PPA pages.
 "cprov" can access his own PPA page, but not the landscape-developers
 one because he is not a member of that team, nor an admin.
 
-    >>> cprov_browser.open("http://launchpad.dev/~cprov/+archive")
+    >>> cprov_browser.open("http://launchpad.dev/~cprov/")
+    >>> cprov_browser.getLink("Personal Package Archive").click()
     >>> cprov_browser.url
     'http://launchpad.dev/~cprov/+archive'
+
+When cprov browses to a profile page for a person or team that has a
+private PPA for which he is not authorised to see, the
+"Personal Package Archive" link is not presented.
+
+    >>> cprov_browser.open("http://launchpad.dev/~landscape-developers")
+    >>> cprov_browser.getLink("Personal Package Archive")
+    Traceback (most recent call last):
+    ...
+    LinkNotFoundError
+
+Trying to shortcut straight to the +archive URL also fails authorisation:
 
     >>> cprov_browser.open(
     ...     "http://launchpad.dev/~landscape-developers/+archive")
