@@ -93,3 +93,56 @@ attachments portlet.
 
     >>> user_browser.getLink('Another attachment').url
     'http://localhost:58000/.../example-2.txt'
+
+
+== Empty Attachment Fields ==
+
+Sometimes browsers submit values empty fields, leading them to being
+treated as non-empty by the receiving view. The attachment form will
+treat all empty-equivalent values equally.
+
+    >>> print http(r"""
+    ... POST /firefox/+filebug-advanced HTTP/1.1
+    ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
+    ... Content-Type: multipart/form-data; boundary=---------------------------2051078912280543729816242321
+    ... -----------------------------2051078912280543729816242321
+    ... Content-Disposition: form-data; name="field.title"
+    ... 
+    ... A title of some description
+    ... -----------------------------2051078912280543729816242321
+    ... Content-Disposition: form-data; name="field.tags"
+    ... 
+    ... 
+    ... -----------------------------2051078912280543729816242321
+    ... Content-Disposition: form-data; name="field.comment"
+    ... 
+    ... A description, which explains things.
+    ... -----------------------------2051078912280543729816242321
+    ... Content-Disposition: form-data; name="field.filecontent.used"
+    ... 
+    ... 
+    ... -----------------------------2051078912280543729816242321
+    ... Content-Disposition: form-data; name="field.filecontent"; filename=""
+    ... Content-Type: application/octet-stream
+    ... 
+    ... 
+    ... -----------------------------2051078912280543729816242321
+    ... Content-Disposition: form-data; name="field.patch.used"
+    ... 
+    ... 
+    ... -----------------------------2051078912280543729816242321
+    ... Content-Disposition: form-data; name="field.attachment_description"
+    ... 
+    ... 
+    ... -----------------------------2051078912280543729816242321
+    ... Content-Disposition: form-data; name="field.security_related.used"
+    ... 
+    ... 
+    ... -----------------------------2051078912280543729816242321
+    ... Content-Disposition: form-data; name="field.actions.submit_bug"
+    ... 
+    ... Submit Bug Report
+    ... -----------------------------2051078912280543729816242321--
+    ... """)
+    HTTP/1.1 303 See Other...
+    Location: http://bugs.launchpad.dev/firefox/+bug/...
