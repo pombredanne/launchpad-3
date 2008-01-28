@@ -1,0 +1,24 @@
+= Launchpad administrator approval =
+
+When a team requests a mailing list, this request must be approved by a
+Launchpad administrator before the mailing list will be created.
+
+Anonymous users cannot view the mailing list approval page.
+
+    >>> anon_browser.open('http://launchpad.dev/+mailinglists')
+    Traceback (most recent call last):
+    ...
+    Unauthorized: ...
+
+Ordinary users also cannot view this page.
+
+    >>> user_browser.open('http://launchpad.dev/+mailinglists')
+    Traceback (most recent call last):
+    ...
+    Unauthorized: ...
+
+But Launchpad administrators can see the mailing list approval page.
+
+    >>> admin_browser.open('http://launchpad.dev/+mailinglists')
+    >>> admin_browser.title
+    'Pending mailing lists requests'
