@@ -350,7 +350,7 @@ class ArchivePackageDeletionView(ArchiveViewBase, LaunchpadFormView):
         """
         form.getWidgetsData(self.widgets, 'field', data)
 
-        if len(data.get('selected_sources')) == 0:
+        if len(data.get('selected_sources', [])) == 0:
             self.setFieldError('selected_sources', 'No sources selected.')
 
         if data.get('deletion_comment') is None:
@@ -464,6 +464,6 @@ class ArchiveEditView(BaseArchiveEditView):
 
 class ArchiveAdminView(BaseArchiveEditView):
 
-    field_names = ['enabled', 'authorized_size', 'whiteboard']
+    field_names = ['enabled', 'private', 'authorized_size', 'whiteboard']
     custom_widget(
         'whiteboard', TextAreaWidget, height=10, width=30)
