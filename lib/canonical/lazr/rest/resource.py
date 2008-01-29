@@ -124,7 +124,6 @@ class EntryResource(ReadOnlyResource):
         # This is neccessary because we can't pass the interface itself
         # into getMultiAdapter.
         example_entry = CollectionEntryDummy(field)
-        from zope.component.interfaces import ComponentLookupError
         scoped_collection = getMultiAdapter((self.context, example_entry),
                                              IScopedCollection)
 
@@ -150,7 +149,8 @@ class EntryResource(ReadOnlyResource):
             element = schema.get(name)
             if ICollectionField.providedBy(element):
                 try:
-                    related_resource = self.publishTraverse(self.request, name)
+                    related_resource = self.publishTraverse(
+                        self.request, name)
                     key = name + '_collection_link'
                     dict[key] = canonical_url(related_resource,
                                               request=self.request)
