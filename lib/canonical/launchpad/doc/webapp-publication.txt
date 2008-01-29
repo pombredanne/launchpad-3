@@ -342,11 +342,13 @@ the registered factories.)
     # IRequest and IPublication.
     >>> def get_request_and_publication(host='localhost', port=None,
     ...                                 method='GET', mime_type='text/html',
-    ...                                 in_stream=''):
+    ...                                 in_stream='', extra_environment=None):
     ...     environment = {'HTTP_HOST': host,
     ...                    'REQUEST_METHOD': method,
     ...                    'SERVER_PORT': port,
     ...                    'CONTENT_TYPE': mime_type}
+    ...     if extra_environment is not None:
+    ...         environment.update(extra_environment)
     ...     launchpad_factory = factoryRegistry.lookup(
     ...         method, mime_type, environment)
     ...     request_factory, publication_factory = launchpad_factory()
@@ -985,3 +987,52 @@ In other cases, like a GET, the body would be unchanged.
     >>> publication.afterCall(request, None)
     >>> print request.response.consumeBody()
     Some boring content.
+
+
+== Authentication of requests ==
+
+In LaunchpadBrowserPublication, authentication happens in the
+beforeTraversal() hook. Our publication will set the principal to
+the value of the getPrincipal().
+
+For example, this publication subclass returns a marker object that
+will get associated with the request after the beforeTraversal() hook.
+
+    >>> marker = object()
+    >>> class MyPublication(LaunchpadBrowserPublication):
+    ...	      def getPrincipal(self, request):
+    ...	      	  return marker
+    
+    >>> publication = MyPublication(None)
+    >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
+    >>> request = LaunchpadTestRequest()
+
+    # We need close the previous interaction.
+    >>> from zope.security.management import endInteraction
+    >>> endInteraction()
+    >>> publication.beforeTraversal(request)
+    >>> request.principal is marker
+    True
+
+The default implementation will use the IPlacelessAuthentication
+utility to setup the request.
+
+    >>> foo_bar_auth = 'Basic %s' % (
+    ...	    'foo.bar@canonical.com:test'.encode('base64'))
+    >>> request, publication = get_request_and_publication(
+    ...	    extra_environment=dict(HTTP_AUTHORIZATION=foo_bar_auth))
+    >>> principal = publication.getPrincipal(request)
+    >>> print principal.title
+    Foo Bar
+
+The feeds implementation always returns the anonymous user.
+
+    >>> request, publication = get_request_and_publication(
+    ...	    'feeds.launchpad.dev',
+    ...	    extra_environment=dict(HTTP_AUTHORIZATION=foo_bar_auth))
+    >>> principal = publication.getPrincipal(request)
+
+    >>> from zope.app.security.interfaces import IUnauthenticatedPrincipal
+    >>> IUnauthenticatedPrincipal.providedBy(principal)
+    True
+

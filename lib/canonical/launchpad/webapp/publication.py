@@ -167,17 +167,19 @@ class LaunchpadBrowserPublication(
         if layer is not None:
             layers.setAdditionalLayer(request, layer)
 
-        # Try to authenticate against our registry
-        prin_reg = getUtility(IPlacelessAuthUtility)
-        p = prin_reg.authenticate(request)
-        if p is None:
-            p = prin_reg.unauthenticatedPrincipal()
-            if p is None:
-                raise Unauthorized # If there's no default principal
-
-        request.setPrincipal(p)
+        principal = self.getPrincipal(request)
+        request.setPrincipal(principal)
         self.maybeRestrictToTeam(request)
         self.maybeBlockOffsiteFormPost(request)
+
+    def getPrincipal(self, request):
+        """Return the authenticated principal for this request."""
+        auth_utility = getUtility(IPlacelessAuthUtility)
+        principal = auth_utility.authenticate(request)
+        if principal is None:
+            principal = auth_utility.unauthenticatedPrincipal()
+            assert principal is not None, "Missing unauthenticated principal."
+        return principal
 
     def maybeRestrictToTeam(self, request):
 
@@ -306,7 +308,7 @@ class LaunchpadBrowserPublication(
         request.setInWSGIEnvironment(
             'launchpad.userid', request.principal.id)
 
-        # launchpad.pageid contains an identifier of the form 
+        # launchpad.pageid contains an identifier of the form
         # ContextName:ViewName. It will end up in the page log.
         unrestricted_ob = removeSecurityProxy(ob)
         context = removeSecurityProxy(
@@ -471,5 +473,3 @@ class LaunchpadBrowserPublication(
 
             # Increment counters for status code groups.
             OpStats.stats[str(status)[0] + 'XXs'] += 1
-
-
