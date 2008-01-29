@@ -1,0 +1,101 @@
+= Upstream Bug reports =
+
+For a distribution's bug tracking process to be successful, it's vital
+that it is able to communicate upstream bugs to the relevant upstream
+project and monitor them as they change. Launchpad offers functionality
+to allow a distribution to focus on and improve this process.
+
+    >>> from canonical.launchpad.ftests import login
+    >>> from canonical.database.sqlbase import flush_database_updates
+    >>> from canonical.launchpad.interfaces import (
+    ...     IDistributionSet, IBugTaskSet, IPersonSet, IProductSet,
+    ...     ISourcePackageNameSet, IBugSet, IBugWatchSet,
+    ...     CreateBugParams, IPackagingUtil, PackagingType)
+    >>> distroset = getUtility(IDistributionSet)
+    >>> personset = getUtility(IPersonSet)
+    >>> bugset = getUtility(IBugSet)
+    >>> bugtaskset = getUtility(IBugTaskSet)
+    >>> bugwatchset = getUtility(IBugWatchSet)
+    >>> productset = getUtility(IProductSet)
+    >>> spnset = getUtility(ISourcePackageNameSet)
+    >>> packagingutil = getUtility(IPackagingUtil)
+    >>> ubuntu = distroset.get(1)
+    >>> pmount_spn = spnset.queryByName('pmount')
+    >>> name12 = personset.getByName('name12')
+    >>> pmount = productset.createProduct(name12, 'pmount', 'pmount',
+    ...                                   'pmount', 'pmount')
+
+XXX: would be really great if spnset consistently offered getByName.
+
+
+== The API ==
+
+IDistribution has a special API that allows you to assemble data for a
+bug report that associates packages with upstream information linked to
+them.
+
+    >>> def print_report(data):
+    ...     for package_data in data:
+    ...         sourcepackagename = package_data['sourcepackagename']
+    ...         product = package_data['product']
+    ...         print sourcepackagename.name, product and product.name or None
+    ...         print package_data['open_bugs']
+    ...         print package_data['upstream_bugs']
+    ...         print package_data['watch_bugs']
+
+A first report, entirely based on sampledata:
+
+    >>> print_report(ubuntu.getPackagesAndPublicUpstreamBugCounts())
+    linux-source-2.6.15 None    1 0 0
+    mozilla-firefox     firefox 1 1 0
+    thunderbird         None    1 1 1
+
+We add two new bugs to pmount in Ubuntu. From now on we'll limit the
+results to 3 packages (as a demonstration of the API) so thunderbird will be
+popped off the list:
+
+    >>> params = CreateBugParams(name12, "pmount used to work",
+    ...     "fix it")
+    >>> params.setBugTarget(distribution=ubuntu,
+    ...     sourcepackagename=pmount_spn)
+    >>> bug = bugset.createBug(params)
+    >>> params = CreateBugParams(name12, "pmount has issues", "I need #3",
+    ...     "fix it")
+    >>> params.setBugTarget(distribution=ubuntu,
+    ...     sourcepackagename=pmount_spn)
+    >>> bug = bugset.createBug(params)
+    >>> print_report(ubuntu.getPackagesAndPublicUpstreamBugCounts(limit=3))
+    pmount              None    2 0 0
+    linux-source-2.6.15 None    1 0 0
+    mozilla-firefox     firefox 1 1 0
+
+As you can see, there is no packaging data for pmount in Ubuntu, so no
+upstream is reported for it. Let's fix that:
+
+    >>> packagingutil.createPackaging(pmount.getSeries('trunk'), pmount_spn,
+    ...     ubuntu.currentseries, PackagingType.PRIME, name12)
+    >>> print_report(ubuntu.getPackagesAndPublicUpstreamBugCounts(limit=3))
+    pmount              pmount  2 0 0
+    linux-source-2.6.15 None    1 0 0
+    mozilla-firefox     firefox 1 1 0
+
+Much better. We then add an upstream task to the second pmount bug:
+
+    >>> task = bugtaskset.createTask(bug, name12, product=pmount)
+    >>> print_report(ubuntu.getPackagesAndPublicUpstreamBugCounts(limit=3))
+    pmount              pmount  2 1 0
+    linux-source-2.6.15 None    1 0 0
+    mozilla-firefox     firefox 1 1 0
+
+Linking that task to a bugwatch makes the watch counts update:
+
+    >>> url = "http://bugs.debian.org/cgi-bin/bugreport.cgi?bug=666"
+    >>> login('foo.bar@canonical.com')
+    >>> [watch] = bugwatchset.fromText(url, bug, name12)
+    >>> task.bugwatch = watch
+    >>> flush_database_updates()
+    >>> print_report(ubuntu.getPackagesAndPublicUpstreamBugCounts(limit=3))
+    pmount              pmount  2 1 1
+    linux-source-2.6.15 None    1 0 0
+    mozilla-firefox     firefox 1 1 0
+

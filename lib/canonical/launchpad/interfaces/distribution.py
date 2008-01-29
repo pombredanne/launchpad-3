@@ -337,6 +337,17 @@ class IDistribution(IBugTarget, IHasAppointedDriver, IHasDrivers,
         If the component_name supplied is unknown, None is returned.
         """
 
+    def getPackagesAndPublicUpstreamBugCounts(limit=50):
+        """Return list of tuples of packages, upstreams and public bug counts.
+
+        Returns: [(ISourcePackageName, IProduct, int, int, int), ...]
+
+        This API is quite specialized; it returns a list of up to limit
+        tuples containing IProducts and three different bug counts: open
+        bugs, open bugs with an upstream task, and open bugs with
+        upstream tasks linked to bug watches.
+        """
+
 
 class IDistributionSet(Interface):
     """Interface for DistrosSet"""

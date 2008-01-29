@@ -15,7 +15,9 @@ from sqlobject.sqlbuilder import SQLConstant
 
 from canonical.cachedproperty import cachedproperty
 
-from canonical.database.sqlbase import quote, quote_like, SQLBase, sqlvalues
+from canonical.database.sqlbase import (
+    quote, quote_like, SQLBase, sqlvalues, cursor)
+
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
 from canonical.database.constants import UTC_NOW
@@ -71,7 +73,7 @@ from canonical.launchpad.interfaces import (
     PackageUploadStatus, NotFoundError, QUESTION_STATUS_DEFAULT_SEARCH,
     SpecificationDefinitionStatus, SpecificationFilter,
     SpecificationImplementationStatus, SpecificationSort,
-    TranslationPermission)
+    TranslationPermission, PackagingType, UNRESOLVED_BUGTASK_STATUSES)
 
 from canonical.archivepublisher.debversion import Version
 
@@ -1028,6 +1030,102 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
         except KeyError:
             # Otherwise we defer to the caller.
             return None
+
+    def getPackagesAndPublicUpstreamBugCounts(self, limit=50):
+        """See `IDistribution`."""
+        from canonical.launchpad.database.product import Product
+        # This method collects three open bug counts for
+        # sourcepackagenames in this distribution first, and then caches
+        # product information before rendering everything into a list of
+        # tuples.
+        cur = cursor()
+        cur.execute("""
+            SELECT SPN.name, SPN.id,
+            COUNT(DISTINCT Bugtask.bug) AS total_bugs,
+            COUNT(DISTINCT RelatedBugTask.bug) AS bugs_affecting_upstream,
+            COUNT(DISTINCT CASE WHEN RelatedBugTask.bugwatch IS NOT NULL
+                  THEN RelatedBugTask.bug END) AS bugs_with_upstream_bugwatch
+            FROM
+                SourcePackageName AS SPN
+                JOIN Bugtask ON SPN.id = Bugtask.sourcepackagename
+                JOIN Bug ON Bug.id = Bugtask.bug
+                LEFT OUTER JOIN Bugtask AS RelatedBugtask ON (
+                    RelatedBugtask.bug = Bugtask.bug
+                    AND RelatedBugtask.id != Bugtask.id
+                    AND RelatedBugtask.product IS NOT NULL
+                    AND RelatedBugtask.status != %(invalid)s
+                    )
+            WHERE
+                Bugtask.distribution = %(distro)s
+                AND Bugtask.sourcepackagename = spn.id
+                AND Bugtask.distroseries IS NULL
+                AND Bugtask.status IN %(unresolved)s
+                AND Bug.private = 'F'
+                AND Bug.duplicateof IS NULL
+            GROUP BY SPN.name, SPN.id
+            ORDER BY total_bugs DESC, SPN.name LIMIT %(limit)s
+        """ % {'invalid': quote(BugTaskStatus.INVALID),
+               'limit': limit,
+               'distro': self.id,
+               'unresolved': quote(UNRESOLVED_BUGTASK_STATUSES)})
+        counts = cur.fetchall()
+        cur.close()
+        if not counts:
+            # If no counts are returned it means that there are no
+            # source package names in the database -- because the counts
+            # would just return zero if no bugs existed. And if there
+            # are no packages are in the database, all bets are off.
+            return None
+        # Filter out packages for which there are no counts.
+        counts = [data for data in counts if data[2] > 0]
+        # Next step is to extract which IDs actually show up in the
+        # output we generate, and cache them.
+        spn_ids = [item[1] for item in counts]
+        list(SourcePackageName.select("SourcePackageName.id IN %s"
+             % sqlvalues(spn_ids)))
+        # Finally find out what products are attached to these source
+        # packages (if any) and cache them too. The ordering of the
+        # query by Packaging.id ensures that the dictionary holds the
+        # latest entries for situations where we have multiple entries.
+        cur = cursor()
+        cur.execute("""
+            SELECT Packaging.sourcepackagename, Product.id
+              FROM Product, Packaging, ProductSeries, DistroSeries
+             WHERE ProductSeries.product = Product.id AND
+                   DistroSeries.distribution = %s AND
+                   Packaging.distroseries = DistroSeries.id AND
+                   Packaging.productseries = ProductSeries.id AND
+                   Packaging.sourcepackagename IN %s AND
+                   Packaging.packaging = %s
+                   ORDER BY Packaging.id
+        """ % sqlvalues(self.id, spn_ids, PackagingType.PRIME))
+        sources_to_products = dict(cur.fetchall())
+        cur.close()
+        if sources_to_products:
+            # Cache some more information to avoid us having to hit the
+            # database hard for each product rendered.
+            list(Product.select("Product.id IN %s" % 
+                 sqlvalues(sources_to_products.values()),
+                 prejoins=["bugcontact", "bugtracker"]))
+        # Okay, we have all the information good to go, so assemble it
+        # in a reasonable data structure.
+        results = []
+        for spn_name, spn_id, open_bugs, upstream_bugs, watch_bugs in counts:
+            sourcepackagename = SourcePackageName.get(spn_id)
+            if spn_id in sources_to_products:
+                product_id = sources_to_products[spn_id]
+                product = Product.get(product_id)
+            else:
+                product = None
+            result = {
+                'sourcepackagename': sourcepackagename,
+                'product': product,
+                'open_bugs': open_bugs,
+                'upstream_bugs': upstream_bugs,
+                'watch_bugs': watch_bugs
+            }
+            results.append(result)
+        return results
 
 
 class DistributionSet:
