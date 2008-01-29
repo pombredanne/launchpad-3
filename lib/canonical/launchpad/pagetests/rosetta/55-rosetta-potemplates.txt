@@ -112,7 +112,7 @@ Looking at the POTemplate overview page, we can see that there are
     >>> print extract_text(spanish_line)
     Spanish
     ...
-    15 15 1 1 1 1
+    15 1 1
     ...
 
 Language title points to the general translate page:
