@@ -1517,9 +1517,6 @@ COMMENT ON COLUMN Language.pluralexpression IS 'The plural expression for this l
 COMMENT ON COLUMN Language.visible IS 'Whether this language should usually be visible or not';
 COMMENT ON COLUMN Language.direction IS 'The direction that text is written in this language';
 
--- PackageBugContact
-COMMENT ON TABLE PackageBugContact IS 'Defines the bug contact for a given sourcepackage in a given distribution. The bug contact will be automatically subscribed to every bug filed on this sourcepackage in this distribution.';
-
 -- ShipItReport
 COMMENT ON TABLE ShipItReport IS 'A report generated with the ShipIt data.';
 COMMENT ON COLUMN ShipItReport.datecreated IS 'The date this report run was created.';
