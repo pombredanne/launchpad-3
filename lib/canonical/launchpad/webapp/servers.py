@@ -734,9 +734,11 @@ class LaunchpadAccessLogger(CommonAccessLogger):
         referer = request_headers.get('REFERER', '')
         user_agent = request_headers.get('USER_AGENT', '')
 
+        log_template = (' - "%s" "%s" [%s] "%s" %s %d %d %s %s '
+                        '%s "%s" "%s" "%s" "%s"\n')
         self.output.logRequest(
             task.channel.addr[0],
-            ' - "%s" "%s" [%s] "%s" %s %d %d %s %s %s "%s" "%s" "%s" "%s"\n' % (
+            log_template % (
                 x_forwarded_for,
                 host,
                 start_time,
