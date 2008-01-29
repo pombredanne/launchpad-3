@@ -202,34 +202,6 @@ class IBreadcrumb(Interface):
 
 
 #
-# Traversal bits
-#
-
-
-class IAfterTraverseEvent(Interface):
-    """An event which gets sent after publication traverse."""
-
-
-class AfterTraverseEvent:
-    """An event which gets sent after publication traverse."""
-
-    implements(IAfterTraverseEvent)
-
-    def __init__(self, ob, request):
-        self.object = ob
-        self.request = request
-
-
-class IBeforeTraverseEvent(
-    zope.app.publication.interfaces.IBeforeTraverseEvent):
-    pass
-
-
-class BeforeTraverseEvent(zope.app.publication.interfaces.BeforeTraverseEvent):
-    pass
-
-
-#
 # Canonical URLs
 #
 

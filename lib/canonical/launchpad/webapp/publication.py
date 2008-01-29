@@ -15,6 +15,7 @@ import transaction
 
 from zope.app import zapi  # used to get at the adapters service
 import zope.app.publication.browser
+from zope.app.publication.interfaces import BeforeTraverseEvent
 from zope.app.security.interfaces import IUnauthenticatedPrincipal
 from zope.component import getUtility, queryView
 from zope.event import notify
@@ -30,8 +31,7 @@ from zope.security.management import newInteraction
 
 from canonical.config import config
 from canonical.launchpad.webapp.interfaces import (
-    IOpenLaunchBag, ILaunchpadRoot, AfterTraverseEvent,
-    BeforeTraverseEvent, OffsiteFormPostError)
+    ILaunchpadRoot, IOpenLaunchBag, OffsiteFormPostError)
 import canonical.launchpad.layers as layers
 from canonical.launchpad.webapp.interfaces import IPlacelessAuthUtility
 import canonical.launchpad.webapp.adapter as da
@@ -370,14 +370,13 @@ class LaunchpadBrowserPublication(
 
     def afterTraversal(self, request, ob):
         """ We don't want to call _maybePlacefullyAuthenticate as does
-        zopepublication but we do want to send an AfterTraverseEvent """
+        zopepublication."""
         assert hasattr(request, '_traversalticks_start'), (
             'request._traversalticks_start, which should have been set by '
             'beforeTraversal(), was not found.')
         ticks = tickcount.difference(
             request._traversalticks_start, tickcount.tickcount())
         request.setInWSGIEnvironment('launchpad.traversalticks', ticks)
-        notify(AfterTraverseEvent(ob, request))
 
         # Debugging code. Please leave. -- StuartBishop 20050622
         # Set 'threads 1' in launchpad.conf if you are using this.
