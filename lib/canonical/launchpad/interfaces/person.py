@@ -1207,6 +1207,8 @@ class IPersonPublic(IHasSpecifications, IHasMentoringOffers,
         """
 
 class IPersonViewRestricted(Interface):
+    """IPerson attributes that require launchpad.View permission."""
+
     active_member_count = Attribute(
         "The number of real people who are members of this team.")
     activemembers = Attribute("List of members with ADMIN or APPROVED status")
@@ -1250,6 +1252,8 @@ class IPersonViewRestricted(Interface):
 
 
 class IPersonEditRestricted(Interface):
+    """IPerson attributes that require launchpad.Edit permission."""
+
     def addMember(person, reviewer, status=TeamMembershipStatus.APPROVED,
                   comment=None, force_team_add=False):
         """Add the given person as a member of this team.
