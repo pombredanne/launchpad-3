@@ -139,6 +139,20 @@ collection at all.
     ...     name = IAuthor.get('name')
     ...     favorites = CollectionField(schema=IRecipe)
 
+    >>> from canonical.lazr.interfaces import (
+    ...     IScopedCollection)
+    >>> from canonical.lazr.rest import ScopedCollection
+    >>> class AuthorRecipeCollection(ScopedCollection):
+    ...
+    ...     def lookupEntry(self, name):
+    ...         recipe = RecipeSet().get(name)
+    ...         if recipe in self.collection:
+    ...             return recipe
+    ...         return None
+    ...
+    ...     def find(self):
+    ...         return self.collection
+
 Here, we're exposing an IRecipe that exposes the underlying Recipe's
 name but not its ID. References to associated objects (like the
 recipe's author) are represented with the zope.schema.Object type:
@@ -168,10 +182,6 @@ defines a constructor.
     ...     def fragment(self):
     ...         """Use the author's name as its URI fragment."""
     ...         return self.context.name
-    ...
-    ...     def lookupCollection(self, name):
-    ...         if name == 'favorites':
-    ...             return RecipeSet()
 
 The "schema" attribute points to the interface class that defines the
 attributes exposed through the web service. Above, "schema" is
@@ -207,6 +217,8 @@ in Python code:
     >>> from zope.component import provideAdapter
     >>> provideAdapter(AuthorEntry, [IAuthor], IAuthorEntry)
     >>> provideAdapter(RecipeEntry, [IRecipe], IRecipeEntry)
+    >>> provideAdapter(AuthorRecipeCollection, [IAuthorEntry, IRecipe],
+    ...                IScopedCollection)
 
 LAZR also defines an interface and a base class for collections of
 objects. I'll use it to expose the RecipeSet collection through the
@@ -232,13 +244,9 @@ returns the model objects in the collection.
     >>> class RecipeCollection(Collection):
     ...     """A collection of recipes, as exposed through the web service."""
     ...
-    ...     def find(self, scope, relationship):
+    ...     def find(self):
     ...        """Find all the recipes."""
-    ...        if scope is None:
-    ...            return self.context.getAll()
-    ...        elif (IAuthorEntry.providedBy(scope) and
-    ...            relationship == 'favorites'):
-    ...            return scope.favorites
+    ...        return self.context.getAll()
     ...
     ...     def lookupEntry(self, id):
     ...        """Find a single recipe by ID."""

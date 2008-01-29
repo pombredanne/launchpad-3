@@ -10,6 +10,7 @@ __all__ = [
     'EntryResource',
     'HTTPResource',
     'ReadOnlyResource',
+    'ScopedCollection',
     'ServiceRootResource'
     ]
 
@@ -17,7 +18,8 @@ __all__ = [
 import simplejson
 import urllib
 
-from zope.interface import implements
+from zope.component import getMultiAdapter
+from zope.interface import implements, directlyProvides
 from zope.publisher.interfaces import NotFound
 from zope.schema.interfaces import IField, IObject
 
@@ -26,7 +28,8 @@ from zope.schema.interfaces import IField, IObject
 from canonical.launchpad.webapp import canonical_url
 from canonical.lazr.interfaces import (
     ICollection, ICollectionField, ICollectionResource, IEntry,
-    IEntryResource, IHTTPResource, IJSONPublishable, IServiceRootResource)
+    IEntryResource, IHTTPResource, IJSONPublishable, IScopedCollection,
+    IServiceRootResource)
 
 
 class ResourceJSONEncoder(simplejson.JSONEncoder):
@@ -76,6 +79,17 @@ class ReadOnlyResource(HTTPResource):
             self.request.response.setHeader("Allow", "GET")
 
 
+class CollectionEntryDummy:
+    """An empty object providing the interface of the items in the collection.
+
+    This is to work around the fact that getMultiAdapter() and other
+    zope.component lookup methods don't accept a bare interface and only
+    works with objects.
+    """
+    def __init__(self, collection_field):
+        directlyProvides(self, collection_field.schema)
+
+
 class EntryResource(ReadOnlyResource):
     """An individual object, published to the web."""
     implements(IEntryResource, IJSONPublishable)
@@ -99,12 +113,18 @@ class EntryResource(ReadOnlyResource):
 
     def publishTraverse(self, request, name):
         """Fetch a scoped collection resource by name."""
-        collection = self.context.lookupCollection(name)
+        field = self.context.schema.get(name)
+        if not ICollectionField.providedBy(field):
+            raise NotFound(self, name)
+        collection = getattr(self.context, name, None)
         if collection is None:
             raise NotFound(self, name)
-        else:
-            return CollectionResource(collection, self.request, self.context,
-                                      name)
+        example_entry = CollectionEntryDummy(field)
+        scoped_collection = getMultiAdapter((self.context, example_entry),
+                                            IScopedCollection)
+        scoped_collection.collection = collection
+        scoped_collection.relationship = name
+        return ScopedCollectionResource(scoped_collection, self.request, name)
 
     def toDataForJSON(self):
         """Turn the object into a simple data structure.
@@ -118,13 +138,13 @@ class EntryResource(ReadOnlyResource):
         for name in schema.names():
             element = schema.get(name)
             if ICollectionField.providedBy(element):
-                related_collection = self.context.lookupCollection(name)
-                if related_collection is not None:
-                    related_resource = CollectionResource(
-                        related_collection, self.request, self.context, name)
+                try:
+                    related_resource = self.publishTraverse(self.request, name)
                     key = name + '_collection_link'
                     dict[key] = canonical_url(related_resource,
                                               request=self.request)
+                except NotFound:
+                    pass
             elif IObject.providedBy(element):
                 related_entry = getattr(self.context, name)
                 if related_entry is not None:
@@ -148,20 +168,14 @@ class CollectionResource(ReadOnlyResource):
     """A resource that serves a list of entry resources."""
     implements(ICollectionResource)
 
-    def __init__(self, context, request, scope, collection_name):
+    def __init__(self, context, request, collection_name):
         super(CollectionResource, self).__init__(
             ICollection(context), request)
-        self.scope = scope
         self.collection_name = collection_name
 
+    # A top-level collection resource is inside the root resource.
+    inside = None
     rootsite = None
-
-    @property
-    def inside(self):
-        """The collection is inside its scope."""
-        if self.scope is None:
-            return None
-        return EntryResource(self.scope, self.request)
 
     @property
     def path(self):
@@ -178,11 +192,19 @@ class CollectionResource(ReadOnlyResource):
 
     def do_GET(self):
         """Fetch a collection and render it as JSON."""
-        entries = self.context.find(self.scope, self.collection_name) or []
+        entries = self.context.find() or []
         entry_resources = [EntryResource(entry, self.request)
                            for entry in entries]
         self.request.response.setHeader('Content-type', 'application/json')
         return ResourceJSONEncoder().encode(entry_resources)
+
+
+class ScopedCollectionResource(CollectionResource):
+
+    @property
+    def inside(self):
+        """The collection is inside its scope."""
+        return EntryResource(self.context.context, self.request)
 
 
 class ServiceRootResource:
@@ -208,7 +230,7 @@ class ServiceRootResource:
     def publishTraverse(self, request, name):
         if name in self.top_level_collections:
             return CollectionResource(
-                self.top_level_collections[name](), request, None, name)
+                self.top_level_collections[name](), request, name)
         else:
             raise NotFound(self, name)
 
@@ -229,3 +251,16 @@ class Collection:
     def __init__(self, context):
         """Associate the entry with some database model object."""
         self.context = context
+
+class ScopedCollection:
+    implements(ICollection)
+
+    def __init__(self, context, collection):
+        self.context = context
+        self.collection = collection
+
+    def lookupEntry(self, name):
+        pass
+
+    def find(self):
+        return self.collection

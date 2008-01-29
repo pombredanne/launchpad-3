@@ -11,6 +11,7 @@ __all__ = [
     'IEntryResource',
     'IHTTPResource',
     'IJSONPublishable',
+    'IScopedCollection',
     'IServiceRootResource'
     ]
 
@@ -93,8 +94,15 @@ class ICollection(Interface):
         :return: An IEntry object.
         """
 
-    def find(self, scope, relationship):
+    def find(self):
         """Retrieve all entries in the collection under the given scope.
 
         :return: A list of IEntry objects.
         """
+
+
+class IScopedCollection(ICollection):
+
+    relationship = Attribute("The relationship between an entry and a"
+                             "collection.")
+    collection = Attribute("The collection scoped to an entry.")
