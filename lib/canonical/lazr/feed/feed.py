@@ -18,6 +18,7 @@ __all__ = [
 
 from BeautifulSoup import BeautifulSoup
 from datetime import datetime
+import pytz
 import operator
 import os
 import time
@@ -75,8 +76,12 @@ class FeedBase(LaunchpadView):
     @property
     def link_self(self):
         """See `IFeed`."""
-        return "%s/%s.%s" % (canonical_url(self.context, rootsite="feeds"),
-                             self.feedname, self.format)
+
+        # The self link is the URL for this particular feed.  For example:
+        # http://feeds.launchpad.net/ubuntu/announcments.atom
+        path = "%s.%s" % (self.feedname, self.format)
+        return urlappend(canonical_url(self.context, rootsite="feeds"),
+                         path)
 
     @property
     def site_url(self):
@@ -146,7 +151,10 @@ class FeedBase(LaunchpadView):
                               key=operator.attrgetter('last_modified'),
                               reverse=True)
         if len(sorted_items) == 0:
-            return datetime.utcnow()
+            # datetime.isoformat() doesn't place the necessary "+00:00"
+            # for the feedvalidator's check of the iso8601 date format
+            # unless a timezone is specified with tzinfo.
+            return datetime.utcnow().replace(tzinfo=pytz.utc)
         last_modified = sorted_items[0].last_modified
         if last_modified is None:
             raise AssertionError, 'All feed entries require a date updated.'
