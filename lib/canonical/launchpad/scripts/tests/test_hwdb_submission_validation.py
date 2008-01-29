@@ -4,6 +4,7 @@
 from datetime import datetime
 import logging
 import os
+import re
 from unittest import TestCase, TestLoader
 
 from zope.testing.loghandler import Handler
@@ -217,7 +218,7 @@ class TestHWDBSubmissionRelaxNGValidation(TestCase):
         """
         self.assertEqual(
             result, None,
-            'The test %s failed: The mparsing result is not None.' % test)
+            'The test %s failed: The parsing result is not None.' % test)
         last_log_messages = []
         for r in self.handler.records:
             if r.levelno != logging.ERROR:
@@ -225,27 +226,36 @@ class TestHWDBSubmissionRelaxNGValidation(TestCase):
             candidate = r.getMessage()
             if candidate.startswith('Parsing submission %s:'
                                     % submission_key):
-                if candidate.find(message) > 0:
+                # It seems that lxml currently (version 1.3.3) interprets
+                # error codes from the Relax NG validator as xmlParserErrors
+                # and inserts corresponding texts into the message.
+                # Thus we search for
+                # <string>:(line):ERROR:RELAXNGV:(wrong text):(message)
+                if re.search('^<string>:\d+:ERROR:RELAXNGV:[^\n]+: %s$'
+                                 % re.escape(message),
+                             candidate, re.MULTILINE):
                     return
                 else:
                     last_log_messages.append(candidate)
-        failmsg = ("No error log message for submission %s "
-                   "(testing %s) contained %s")
-        failmsg = failmsg % (submission_key, test, message)
+        failmsg = [
+            "No error log message for submission %s (testing %s) contained %s"
+                % (submission_key, test, message)]
         if last_log_messages:
-            failmsg = failmsg + '\nLog messages for the submission:\n'
-            failmsg = failmsg + '\n'.join(last_log_messages)
+            failmsg.append('Log messages for the submission:')
+            failmsg.extend(last_log_messages)
         else:
-            failmsg = failmsg + '\nNo messages logged for this submission'
+            failmsg.append('No messages logged for this submission')
 
-        self.fail(failmsg)
+        self.fail('\n'.join(failmsg))
 
     def testAssertErrorMessage(self):
         """Test the assertErrorMessage method."""
-        self.log.error('Parsing submission assert_test_1: log message 1')
-        self.log.error('Parsing submission assert_test_1: log message 2')
-        self.log.error('Parsing submission assert_test_2: log message 2')
-        self.log.error('Parsing submission assert_test_2: log message 3')
+        log_template = ('Parsing submission %s:\n'
+                        '<string>:%i:ERROR:RELAXNGV:NONSENSE: %s')
+        self.log.error(log_template % ('assert_test_1', 123, 'log message 1'))
+        self.log.error(log_template % ('assert_test_1', 234, 'log message 2'))
+        self.log.error(log_template % ('assert_test_2', 345, 'log message 2'))
+        self.log.error(log_template % ('assert_test_2', 456, 'log message 3'))
 
         # assertErrorMessage requires that
         # (a) a log message starts with "Parsing submisson <submission-key>:"
@@ -254,7 +264,7 @@ class TestHWDBSubmissionRelaxNGValidation(TestCase):
         # (c) result, which is supposed to contain an object representing
         #     the result of parsing a submission, is None.
 
-        # If all three criteria match, assertErrormessage does not raise any
+        # If all three criteria match, assertErrorMessage does not raise any
         # exception
         self.assertErrorMessage('assert_test_1', None, 'log message 1',
                                 'assertErrorMessage test 1')
@@ -297,8 +307,7 @@ class TestHWDBSubmissionRelaxNGValidation(TestCase):
             result, submission_id = self.runValidator(sample_data)
             self.assertErrorMessage(
                 submission_id, result,
-                'ERROR:RELAXNGV:ERR_ENTITYREF_NO_NAME: '
-                    'Expecting an element %s, got nothing' % tag,
+                'Expecting an element %s, got nothing' % tag,
                 'missing sub-tag <%s> of <system>' % tag)
 
         # Adding any other tag as a subnode of <system> makes the
@@ -310,8 +319,7 @@ class TestHWDBSubmissionRelaxNGValidation(TestCase):
         result, submission_id = self.runValidator(sample_data)
         self.assertErrorMessage(
             submission_id, result,
-            'RELAXNGV:ERR_UNDECLARED_ENTITY: '
-                'Element system has extra content: nonsense',
+            'Element system has extra content: nonsense',
             'invalid sub-tag of <system>')
 
         # Repeating one of the allowed sub-tags of <system> makes the
@@ -324,8 +332,7 @@ class TestHWDBSubmissionRelaxNGValidation(TestCase):
             result, submission_id = self.runValidator(sample_data)
             self.assertErrorMessage(
                 submission_id, result,
-                ':ERROR:RELAXNGV:ERR_CHARREF_IN_EPILOG: '
-                    'Extra element %s in interleave' % tag,
+                'Extra element %s in interleave' % tag,
                 'duplicate sub-tag <%s> of <system>' % tag)
 
     def testSummaryRequiredTags(self):
@@ -343,8 +350,7 @@ class TestHWDBSubmissionRelaxNGValidation(TestCase):
             result, submission_id = self.runValidator(sample_data)
             self.assertErrorMessage(
                 submission_id, result,
-                'ERROR:RELAXNGV:ERR_ENTITYREF_NO_NAME: '
-                    'Expecting an element %s, got nothing' % tag,
+                'Expecting an element %s, got nothing' % tag,
                 'missing sub-tag <%s> of <summary>' % tag)
 
         sample_data = self.replaceSampledata(
@@ -355,8 +361,7 @@ class TestHWDBSubmissionRelaxNGValidation(TestCase):
         result, submission_id = self.runValidator(sample_data)
         self.assertErrorMessage(
             submission_id, result,
-            'ERROR:RELAXNGV:ERR_ENTITYREF_NO_NAME: '
-                'Expecting an element client, got nothing',
+            'Expecting an element client, got nothing',
             'missing sub-tag <client> of <summary>')
 
     def testAdditionalSummaryTags(self):
@@ -373,8 +378,7 @@ class TestHWDBSubmissionRelaxNGValidation(TestCase):
         result, submission_id = self.runValidator(sample_data)
         self.assertErrorMessage(
             submission_id, result,
-            'ERROR:RELAXNGV:ERR_UNDECLARED_ENTITY: '
-                'Element summary has extra content: nonsense',
+            'Element summary has extra content: nonsense',
             'invalid sub-tag <nonsense/> of <summary>')
 
     def testSummaryValidationOfBooleanSubtags(self):
@@ -405,8 +409,7 @@ class TestHWDBSubmissionRelaxNGValidation(TestCase):
             result, submission_id = self.runValidator(sample_data)
             self.assertErrorMessage(
                 submission_id, result,
-                ':ERROR:RELAXNGV:ERR_PEREF_NO_NAME: '
-                    'Element %s failed to validate attributes' % tag,
+                'Element %s failed to validate attributes' % tag,
                 'boolean sub-tags of <summary>: invalid attribute '
                     'value of <%s>' % tag)
 
@@ -517,8 +520,7 @@ class TestHWDBSubmissionRelaxNGValidation(TestCase):
         result, submission_id = self.runValidator(sample_data)
         self.assertErrorMessage(
             submission_id, result,
-            "ERROR:RELAXNGV:ERR_DOCUMENT_START: "
-                "Type dateTime doesn't allow value '%s'" % invalid_datetime,
+            "Type dateTime doesn't allow value '%s'" % invalid_datetime,
             'invalid datetime %s' % invalid_datetime)
 
     def assertValidDateTime(self, datetime_as_string, datetime_expected):
@@ -545,8 +547,7 @@ class TestHWDBSubmissionRelaxNGValidation(TestCase):
             result, submission_id = self.runValidator(sample_data)
             self.assertErrorMessage(
                 submission_id, result,
-                'ERROR:RELAXNGV:ERR_PEREF_NO_NAME: '
-                    'Element client failed to validate attributes',
+                'Element client failed to validate attributes',
                 'missing required attribute in <client>')
 
         # Other attributes are rejected by the Relax NG validation.
@@ -556,8 +557,7 @@ class TestHWDBSubmissionRelaxNGValidation(TestCase):
         result, submission_id = self.runValidator(sample_data)
         self.assertErrorMessage(
             submission_id, result,
-            'ERROR:RELAXNGV:WAR_UNDECLARED_ENTITY: '
-                'Invalid attribute foo for element client',
+            'Invalid attribute foo for element client',
             'testing invalid attribute in <client>')
 
     def testSubTagsOfClient(self):
@@ -568,8 +568,7 @@ class TestHWDBSubmissionRelaxNGValidation(TestCase):
         result, submission_id = self.runValidator(sample_data)
         self.assertErrorMessage(
             submission_id, result,
-            'ERROR:RELAXNGV:ERR_UNDECLARED_ENTITY: '
-                'Element client has extra content: nonsense',
+            'Element client has extra content: nonsense',
             'invalid sub-tag of <client>')
 
     def testClientPluginAttributes(self):
@@ -587,8 +586,7 @@ class TestHWDBSubmissionRelaxNGValidation(TestCase):
             result, submission_id = self.runValidator(sample_data)
             self.assertErrorMessage(
                 submission_id, result,
-                'ERROR:RELAXNGV:ERR_PEREF_NO_NAME: '
-                    'Element plugin failed to validate attributes',
+                'Element plugin failed to validate attributes',
                 'missing client plugin attributes: %s' % tag)
 
         # Other attributes are rejected by the Relax NG validation.
@@ -598,8 +596,7 @@ class TestHWDBSubmissionRelaxNGValidation(TestCase):
         result, submission_id = self.runValidator(sample_data)
         self.assertErrorMessage(
             submission_id, result,
-            'ERROR:RELAXNGV:WAR_UNDECLARED_ENTITY: '
-                'Invalid attribute foo for element plugin',
+            'Invalid attribute foo for element plugin',
             'invalid attribute in client plugin')
 
     def testHardwareSubTags(self):
@@ -618,8 +615,7 @@ class TestHWDBSubmissionRelaxNGValidation(TestCase):
             result, submission_id = self.runValidator(sample_data)
             self.assertErrorMessage(
                 submission_id, result,
-                'ERROR:RELAXNGV:ERR_ENTITYREF_NO_NAME: '
-                    'Expecting an element %s, got nothing' % tag,
+                'Expecting an element %s, got nothing' % tag,
                 'missing tag <%s> in <hardware>' % tag)
 
         # The <aliases> tag may be omitted.
@@ -640,8 +636,7 @@ class TestHWDBSubmissionRelaxNGValidation(TestCase):
         result, submission_id = self.runValidator(sample_data)
         self.assertErrorMessage(
             submission_id, result,
-            'ERROR:RELAXNGV:ERR_UNDECLARED_ENTITY: '
-                'Element hardware has extra content: nonsense',
+            'Element hardware has extra content: nonsense',
             'invalid subtag of <hardware>')
 
     def testHalAttributes(self):
@@ -655,8 +650,7 @@ class TestHWDBSubmissionRelaxNGValidation(TestCase):
         result, submission_id = self.runValidator(sample_data)
         self.assertErrorMessage(
             submission_id, result,
-            'RELAXNGV:ERR_PEREF_NO_NAME: '
-                'Element hal failed to validate attributes',
+            'Element hal failed to validate attributes',
             'missing version attribute of <hal>')
 
         sample_data = self.sample_data.replace(
@@ -665,8 +659,7 @@ class TestHWDBSubmissionRelaxNGValidation(TestCase):
         result, submission_id = self.runValidator(sample_data)
         self.assertErrorMessage(
             submission_id, result,
-            'RELAXNGV:WAR_UNDECLARED_ENTITY: '
-                'Invalid attribute foo for element hal',
+            'Invalid attribute foo for element hal',
             'invalid attribute in <hal>')
 
     def testHalSubtags(self):
@@ -687,8 +680,7 @@ class TestHWDBSubmissionRelaxNGValidation(TestCase):
         result, submission_id = self.runValidator(sample_data)
         self.assertErrorMessage(
             submission_id, result,
-            'ERROR:RELAXNGV:ERR_ENTITYREF_NO_NAME: '
-                'Expecting an element device, got nothing',
+            'Expecting an element device, got nothing',
             'missing <device> sub-tag in <hal>')
 
         # Any other tag than <device> within <hal> is not allowed.
@@ -701,8 +693,7 @@ class TestHWDBSubmissionRelaxNGValidation(TestCase):
         result, submission_id = self.runValidator(sample_data)
         self.assertErrorMessage(
             submission_id, result,
-            'ERROR:RELAXNGV:ERR_CHARREF_IN_DTD: '
-                'Expecting element device, got nonsense',
+            'Expecting element device, got nonsense',
             'invalid sub-tag in <hal>')
 
     def testDeviceAttributes(self):
@@ -726,8 +717,7 @@ class TestHWDBSubmissionRelaxNGValidation(TestCase):
             result, submission_id = self.runValidator(sample_data)
             self.assertErrorMessage(
                 submission_id, result,
-                'ERROR:RELAXNGV:ERR_PEREF_NO_NAME: '
-                    'Element device failed to validate attributes',
+                'Element device failed to validate attributes',
                 'missing attribute in <device>')
 
         sample_data = self.replaceSampledata(
@@ -738,8 +728,7 @@ class TestHWDBSubmissionRelaxNGValidation(TestCase):
         result, submission_id = self.runValidator(sample_data)
         self.assertErrorMessage(
             submission_id, result,
-            "ERROR:RELAXNGV:ERR_DOCUMENT_START: "
-                "Type integer doesn't allow value 'NoInteger'",
+            "Type integer doesn't allow value 'NoInteger'",
             "invalid content of the 'id' attribute of <device>")
 
         sample_data = self.replaceSampledata(
@@ -750,8 +739,7 @@ class TestHWDBSubmissionRelaxNGValidation(TestCase):
         result, submission_id = self.runValidator(sample_data)
         self.assertErrorMessage(
             submission_id, result,
-            'ERROR:RELAXNGV:WAR_UNDECLARED_ENTITY: '
-                'Invalid attribute parent for element device',
+            'Invalid attribute parent for element device',
             "invalid content of the 'parent' attribute of <device>")
 
     def testDeviceContent(self):
@@ -763,13 +751,12 @@ class TestHWDBSubmissionRelaxNGValidation(TestCase):
         result, submission_id = self.runValidator(sample_data)
         self.assertErrorMessage(
             submission_id, result,
-            'RELAXNGV:ERR_CHARREF_IN_DTD: '
-                'Expecting element property, got nonsense',
+            'Expecting element property, got nonsense',
             'invalid subtag of <device>')
 
     # Tests for the <property> and the <value> tag.
     #
-    # Both tags are very similar: They they have an attribute 'type'
+    # Both tags are very similar: They have an attribute 'type'
     # and they have a "value", where "value" is, depending on the type
     # attribute, either represented by CDATA content or by a <value>
     # sub-tag.
@@ -800,8 +787,7 @@ class TestHWDBSubmissionRelaxNGValidation(TestCase):
         result, submission_id = self.runValidator(sample_data)
         self.assertErrorMessage(
             submission_id, result,
-            'ERROR:RELAXNGV:ERR_UNDECLARED_ENTITY: '
-                'Element device has extra content: property',
+            'Element device has extra content: property',
             'testing missing name attribute in %s' % property)
 
     def _testBooleanProperty(self, content_type):
@@ -827,8 +813,7 @@ class TestHWDBSubmissionRelaxNGValidation(TestCase):
         result, submission_id = self.runValidator(sample_data)
         self.assertErrorMessage(
             submission_id, result,
-            'ERROR:RELAXNGV:ERR_PEREF_SEMICOL_MISSING: '
-                'Element property failed to validate content',
+            'Element property failed to validate content',
             'invalid boolean property: %s' % tag)
 
         tag = '<property type="%s">False</property>' % content_type
@@ -843,8 +828,7 @@ class TestHWDBSubmissionRelaxNGValidation(TestCase):
         result, submission_id = self.runValidator(sample_data)
         self.assertErrorMessage(
             submission_id, result,
-            ':ERROR:RELAXNGV:ERR_PEREF_SEMICOL_MISSING: '
-                'Element property failed to validate content',
+            'Element property failed to validate content',
             'sub-tag in boolean property: %s' % tag)
 
     def testBooleanProperties(self):
@@ -865,8 +849,7 @@ class TestHWDBSubmissionRelaxNGValidation(TestCase):
         result, submission_id = self.runValidator(sample_data)
         self.assertErrorMessage(
             submission_id, result,
-            'ERROR:RELAXNGV:ERR_PEREF_SEMICOL_MISSING: '
-                'Element property failed to validate content',
+            'Element property failed to validate content',
             'sub-tags of string-like <property type="%s">' % property_type)
 
     def testStringProperties(self):
@@ -884,9 +867,7 @@ class TestHWDBSubmissionRelaxNGValidation(TestCase):
         result, submission_id = self.runValidator(sample_data)
         self.assertErrorMessage(
             submission_id, result,
-            'ERROR:RELAXNGV:ERR_UNKNOWN_ENCODING: '
-                'Error validating datatype %s\n'
-                % relax_ng_type,
+            'Error validating datatype %s' % relax_ng_type,
             'empty content of <property type="%s">' % relax_ng_type)
 
     def _testInvalidIntegerContent(self,  property_type, relax_ng_type):
@@ -899,9 +880,7 @@ class TestHWDBSubmissionRelaxNGValidation(TestCase):
         result, submission_id = self.runValidator(sample_data)
         self.assertErrorMessage(
             submission_id, result,
-            "ERROR:RELAXNGV:ERR_DOCUMENT_START: "
-                "Type %s doesn't allow value 'X'"
-                % relax_ng_type,
+            "Type %s doesn't allow value 'X'" % relax_ng_type,
             'invalid content of <property type="%s">' % relax_ng_type)
 
     def _testMinMaxIntegerValue(self, property_type, relax_ng_type,
@@ -925,8 +904,7 @@ class TestHWDBSubmissionRelaxNGValidation(TestCase):
         result, submission_id = self.runValidator(sample_data)
         self.assertErrorMessage(
             submission_id, result,
-            "ERROR:RELAXNGV:ERR_DOCUMENT_START: "
-                "Type %s doesn't allow value '%i'\n"
+                "Type %s doesn't allow value '%i'"
                 % (relax_ng_type, invalid_value),
             'min or max values of <property type="%s"> (%s, %s)'
                 % (relax_ng_type, valid_value, invalid_value))
@@ -980,8 +958,7 @@ class TestHWDBSubmissionRelaxNGValidation(TestCase):
         result, submission_id = self.runValidator(sample_data)
         self.assertErrorMessage(
             submission_id, result,
-            "ERROR:RELAXNGV:ERR_DOCUMENT_START: "
-                "Type decimal doesn't allow value ''\n",
+            "Type decimal doesn't allow value ''",
             'empty decimal type property %s' % property_type)
 
     def _testInvalidDecimalContent(self,  property_type):
@@ -994,8 +971,7 @@ class TestHWDBSubmissionRelaxNGValidation(TestCase):
         result, submission_id = self.runValidator(sample_data)
         self.assertErrorMessage(
             submission_id, result,
-            "ERROR:RELAXNGV:ERR_DOCUMENT_START: "
-                "Type decimal doesn't allow value 'X'",
+            "Type decimal doesn't allow value 'X'",
             'invalid content in decimal type prperty %s' % property_type)
 
     def _testDecimalProperty(self, property_type):
@@ -1024,11 +1000,10 @@ class TestHWDBSubmissionRelaxNGValidation(TestCase):
         result, submission_id = self.runValidator(sample_data)
         self.assertErrorMessage(
             submission_id, result,
-            'ERROR:RELAXNGV:ERR_UNDECLARED_ENTITY: '
-                'Element property has extra content: text',
+            'Element property has extra content: text',
             'testing CDATA content of <property type="%s">' % property_type)
 
-    def _testEmptyListAndDictProperty(self, property_type):
+    def assertAcceptsEmptyProperty(self, property_type):
         """Validation of empty list properties."""
         tag = '<property name="foo" type="%s"></property>' % property_type
         sample_data = self.insertSampledata(
@@ -1041,7 +1016,7 @@ class TestHWDBSubmissionRelaxNGValidation(TestCase):
             'Valid submission with empty <property type="%s"> rejected'
                 % property_type)
 
-    def _testInvalidSubtagOfListAndDictProperty(self, property_type):
+    def assertRejectsNonValueSubtag(self, property_type):
         """Other sub-tags than <value> are not allowed in lists and dicts."""
         tag = '<property name="foo" type="%s"><nonsense/></property>'
         tag = tag % property_type
@@ -1052,8 +1027,7 @@ class TestHWDBSubmissionRelaxNGValidation(TestCase):
         result, submission_id = self.runValidator(sample_data)
         self.assertErrorMessage(
             submission_id, result,
-            'ERROR:RELAXNGV:ERR_CHARREF_IN_DTD: '
-                'Expecting element value, got nonsense\n',
+            'Expecting element value, got nonsense',
             'invalid subtag of <property type="%s">' % property_type)
 
     def _wrapValue(self, value_tag, property_type):
@@ -1101,13 +1075,11 @@ class TestHWDBSubmissionRelaxNGValidation(TestCase):
 
     def _setupValueTagTemplates(self, value_type):
         """Return templates for value tags with/without a name attribute."""
-        tag_with_name = '<value name="foo" type="%s">' % value_type
-        tag_with_name = tag_with_name + '%s</value>'
-        tag_without_name = '<value type="%s">' % value_type
-        tag_without_name = tag_without_name + '%s</value>'
+        tag_with_name = '<value name="foo" type="%s">%%s</value>' % value_type
+        tag_without_name = '<value type="%s">%%s</value>' % value_type
         return tag_with_name, tag_without_name
 
-    def _testValueTagWithCData(self, value_type, needs_name_attribute,
+    def assertValidatesTextValue(self, value_type, needs_name_attribute,
                                valid_content, invalid_content,
                                property_template):
         """Validation of tags with CData values"""
@@ -1123,8 +1095,7 @@ class TestHWDBSubmissionRelaxNGValidation(TestCase):
             result, submission_id = self.runValidator(sample_data)
             self.assertErrorMessage(
                 submission_id, result,
-                'ERROR:RELAXNGV:ERR_UNDECLARED_ENTITY: '
-                    'Element device has extra content: property',
+                'Element device has extra content: property',
                 'missing name attribute in value tag %s' % tag)
         else:
             tag = tag_with_name % valid_content[0]
@@ -1136,8 +1107,7 @@ class TestHWDBSubmissionRelaxNGValidation(TestCase):
             result, submission_id = self.runValidator(sample_data)
             self.assertErrorMessage(
                 submission_id, result,
-                'ERROR:RELAXNGV:ERR_UNDECLARED_ENTITY: '
-                    'Element device has extra content: property',
+                'Element device has extra content: property',
                 'invalid name attribute in value tag %s' % tag)
 
         if needs_name_attribute:
@@ -1202,16 +1172,13 @@ class TestHWDBSubmissionRelaxNGValidation(TestCase):
             self._setupContainerTag('property', 'foor', property_type))
         valid_content = ('True', 'False')
         invalid_content = (
-            ('nonsense', 'ERROR:RELAXNGV:ERR_UNDECLARED_ENTITY: '
-                         'Element property has extra content: value'),
-            ('', 'ERROR:RELAXNGV:ERR_UNDECLARED_ENTITY: '
-                 'Element property has extra content: value'),
-            ('<nonsense/>', 'ERROR:RELAXNGV:ERR_ENTITY_IS_EXTERNAL: '
-                            'Value element value has child elements'))
+            ('nonsense', 'Element property has extra content: value'),
+            ('', 'Element property has extra content: value'),
+            ('<nonsense/>', 'Value element value has child elements'))
         for value_type in ('dbus.Boolean', 'bool'):
-            self._testValueTagWithCData(value_type, needs_name_attribute,
-                                        valid_content, invalid_content,
-                                        property_template)
+            self.assertValidatesTextValue(value_type, needs_name_attribute,
+                                          valid_content, invalid_content,
+                                          property_template)
 
     def _testStringValueTags(self, property_type):
         """Validation of string-like <value> tags."""
@@ -1219,12 +1186,11 @@ class TestHWDBSubmissionRelaxNGValidation(TestCase):
             self._setupContainerTag('property', 'foo', property_type))
         valid_content = ('any text', '')
         invalid_content = (
-            ('<nonsense/>', 'ERROR:RELAXNGV:ERR_UNDECLARED_ENTITY: '
-                            'Element value has extra content: nonsense'),)
+            ('<nonsense/>', 'Element value has extra content: nonsense'),)
         for value_type in ('dbus.String', 'str'):
-            self._testValueTagWithCData(value_type, needs_name_attribute,
-                                        valid_content, invalid_content,
-                                        property_template)
+            self.assertValidatesTextValue(value_type, needs_name_attribute,
+                                          valid_content, invalid_content,
+                                          property_template)
 
     def _makeSampleDataForValueTag(self, property_type, value_type, value):
         property_template, needs_name_attribute = (
@@ -1258,9 +1224,7 @@ class TestHWDBSubmissionRelaxNGValidation(TestCase):
         result, submission_id = self.runValidator(sample_data)
         self.assertErrorMessage(
             submission_id, result,
-            "ERROR:RELAXNGV:ERR_DOCUMENT_START: "
-                "Type %s doesn't allow value '%s'" % (relax_ng_type,
-                                                      disallowed),
+            "Type %s doesn't allow value '%s'" % (relax_ng_type, disallowed),
             'invalid value %s of value type %s in property type %s'
                 % (disallowed, value_type, property_type))
 
@@ -1270,23 +1234,19 @@ class TestHWDBSubmissionRelaxNGValidation(TestCase):
         property_template, needs_name_attribute = (
             self._setupContainerTag('property', 'foo', property_type))
         valid_content = ('0', '1')
-        invalid_content = (('', 'ERROR:RELAXNGV:ERR_UNKNOWN_ENCODING: '
-                                    'Error validating datatype %s'
+        invalid_content = (('', 'Error validating datatype %s'
                                     % relax_ng_type),
-                           ('1.1', "ERROR:RELAXNGV:ERR_DOCUMENT_START: "
-                                       "Type %s doesn't allow "
+                           ('1.1', "Type %s doesn't allow "
                                        "value '1.1'"
                                        % relax_ng_type),
-                           ('nonsense', "ERROR:RELAXNGV:ERR_DOCUMENT_START: "
-                                            "Type %s doesn't allow "
+                           ('nonsense', "Type %s doesn't allow "
                                             "value 'nonsense'"
                                             % relax_ng_type),
                            ('<nonsense/>',
-                            'ERROR:RELAXNGV:ERR_UNPARSED_ENTITY: '
                             'Datatype element value has child elements'))
-        self._testValueTagWithCData(value_type, needs_name_attribute,
-                                    valid_content, invalid_content,
-                                    property_template)
+        self.assertValidatesTextValue(value_type, needs_name_attribute,
+                                      valid_content, invalid_content,
+                                      property_template)
         if min_allowed is not None:
             self._testIntegerLimit(property_type, value_type, relax_ng_type,
                                    min_allowed, min_allowed - 1)
@@ -1315,17 +1275,14 @@ class TestHWDBSubmissionRelaxNGValidation(TestCase):
         property_template, needs_name_attribute = (
             self._setupContainerTag('property', 'foo', property_type))
         valid_content = ('0', '1', '1.1', '-2.34')
-        invalid_content = (('', "ERROR:RELAXNGV:ERR_DOCUMENT_START: "
-                                    "Type decimal doesn't allow value ''"),
-                           ('nonsense', "ERROR:RELAXNGV:ERR_DOCUMENT_START: "
-                                            "Type decimal doesn't allow "
+        invalid_content = (('', "Type decimal doesn't allow value ''"),
+                           ('nonsense', "Type decimal doesn't allow "
                                             "value 'nonsense'"),
                            ('<nonsense/>',
-                            'ERROR:RELAXNGV:ERR_UNPARSED_ENTITY: '
-                                'Datatype element value has child elements'))
-        self._testValueTagWithCData(value_type, needs_name_attribute,
-                                    valid_content, invalid_content,
-                                    property_template)
+                            'Datatype element value has child elements'))
+        self.assertValidatesTextValue(value_type, needs_name_attribute,
+                                      valid_content, invalid_content,
+                                      property_template)
 
     def _testFloatValueTags(self, property_type):
         """Validation of <value> tags with float-number content."""
@@ -1354,8 +1311,7 @@ class TestHWDBSubmissionRelaxNGValidation(TestCase):
         result, submission_id = self.runValidator(sample_data)
         self.assertErrorMessage(
             submission_id, result,
-            'ERROR:RELAXNGV:ERR_UNDECLARED_ENTITY: '
-                'Element value has extra content: text',
+            'Element value has extra content: text',
             'CDATA in <value type="%s">' % value_type)
 
         # Lists and dicts may be empty.
@@ -1377,8 +1333,7 @@ class TestHWDBSubmissionRelaxNGValidation(TestCase):
         result, submission_id = self.runValidator(sample_data)
         self.assertErrorMessage(
             submission_id, result,
-            'ERROR:RELAXNGV:ERR_UNDECLARED_ENTITY: '
-                'Element value has extra content: nonsense',
+            'Element value has extra content: nonsense',
             'CDATA in <value type="%s">' % value_type)
 
         if needs_name_attribute:
@@ -1402,8 +1357,7 @@ class TestHWDBSubmissionRelaxNGValidation(TestCase):
             result, submission_id = self.runValidator(sample_data)
             self.assertErrorMessage(
                 submission_id, result,
-                'ERROR:RELAXNGV:ERR_UNDECLARED_ENTITY: '
-                    'Element value has extra content: value',
+                'Element value has extra content: value',
                 'invalid <value> tag inside <value type="%s">' % value_type)
         else:
             # List-like <value> tags need nested <value> tags without the
@@ -1426,8 +1380,7 @@ class TestHWDBSubmissionRelaxNGValidation(TestCase):
             result, submission_id = self.runValidator(sample_data)
             self.assertErrorMessage(
                 submission_id, result,
-                'ERROR:RELAXNGV:ERR_UNDECLARED_ENTITY: '
-                    'Element value has extra content: value',
+                'Element value has extra content: value',
                 'invalid <value> tag inside <value type="%s">' % value_type)
 
     def _testListAndDictValueTags(self, property_type):
@@ -1446,8 +1399,8 @@ class TestHWDBSubmissionRelaxNGValidation(TestCase):
     def _testListOrDictProperty(self, property_type):
         """Validation of a list property."""
         self._testListAndDictPropertyCDataContent(property_type)
-        self._testEmptyListAndDictProperty(property_type)
-        self._testInvalidSubtagOfListAndDictProperty(property_type)
+        self.assertAcceptsEmptyProperty(property_type)
+        self.assertRejectsNonValueSubtag(property_type)
         self._testValueTags(property_type)
 
     def testListAndDictProperties(self):
@@ -1467,8 +1420,7 @@ class TestHWDBSubmissionRelaxNGValidation(TestCase):
         result, submission_id = self.runValidator(sample_data)
         self.assertErrorMessage(
             submission_id, result,
-            'ERROR:RELAXNGV:WAR_UNDECLARED_ENTITY: '
-                'Invalid attribute foo for element processors',
+            'Invalid attribute foo for element processors',
             'invalid attribute of <processors>')
 
         sample_data = self.insertSampledata(
@@ -1478,8 +1430,7 @@ class TestHWDBSubmissionRelaxNGValidation(TestCase):
         result, submission_id = self.runValidator(sample_data)
         self.assertErrorMessage(
             submission_id, result,
-            'ERROR:RELAXNGV:ERR_CHARREF_IN_DTD: '
-                'Expecting element processor, got nonsense',
+            'Expecting element processor, got nonsense',
             'invalid sub-tag of <processors>')
 
         sample_data = self.replaceSampledata(
@@ -1490,8 +1441,7 @@ class TestHWDBSubmissionRelaxNGValidation(TestCase):
         result, submission_id = self.runValidator(sample_data)
         self.assertErrorMessage(
             submission_id, result,
-            'ERROR:RELAXNGV:ERR_ENTITYREF_NO_NAME: '
-                'Expecting an element processor, got nothing',
+            'Expecting an element processor, got nothing',
             'missing sub-tags of <processors>')
 
     def testProcessorTag(self):
@@ -1502,8 +1452,7 @@ class TestHWDBSubmissionRelaxNGValidation(TestCase):
         result, submission_id = self.runValidator(sample_data)
         self.assertErrorMessage(
             submission_id, result,
-            'ERROR:RELAXNGV:ERR_PEREF_NO_NAME: '
-                'Element processor failed to validate attributes',
+            'Element processor failed to validate attributes',
             'missing attribute "name" of <processors>')
 
         sample_data = self.sample_data.replace(
@@ -1511,8 +1460,7 @@ class TestHWDBSubmissionRelaxNGValidation(TestCase):
         result, submission_id = self.runValidator(sample_data)
         self.assertErrorMessage(
             submission_id, result,
-            'ERROR:RELAXNGV:ERR_PEREF_NO_NAME: '
-                'Element processor failed to validate attributes',
+            'Element processor failed to validate attributes',
             'missing attribute "id" attribute of <processors>')
 
         # other attributes are invalid.
@@ -1522,8 +1470,7 @@ class TestHWDBSubmissionRelaxNGValidation(TestCase):
         result, submission_id = self.runValidator(sample_data)
         self.assertErrorMessage(
             submission_id, result,
-            'ERROR:RELAXNGV:WAR_UNDECLARED_ENTITY: '
-                'Invalid attribute foo for element processor',
+            'Invalid attribute foo for element processor',
             'missing attribute "id" attribute of <processors>')
 
         # Other sub-tags than <property> are invalid.
@@ -1534,8 +1481,7 @@ class TestHWDBSubmissionRelaxNGValidation(TestCase):
         result, submission_id = self.runValidator(sample_data)
         self.assertErrorMessage(
             submission_id, result,
-            'ERROR:RELAXNGV:ERR_CHARREF_IN_DTD: '
-                'Expecting element property, got nonsense',
+            'Expecting element property, got nonsense',
             'invalid sub-tag of <processor>')
 
         # At least one <property> tag must be present
@@ -1547,8 +1493,7 @@ class TestHWDBSubmissionRelaxNGValidation(TestCase):
         result, submission_id = self.runValidator(sample_data)
         self.assertErrorMessage(
             submission_id, result,
-            'ERROR:RELAXNGV:ERR_ENTITYREF_NO_NAME: '
-                'Expecting an element property, got nothing',
+            'Expecting an element property, got nothing',
             'missing sub-tags of <processor>')
 
     def testAliasesTag(self):
@@ -1559,8 +1504,7 @@ class TestHWDBSubmissionRelaxNGValidation(TestCase):
         result, submission_id = self.runValidator(sample_data)
         self.assertErrorMessage(
             submission_id, result,
-            'ERROR:RELAXNGV:ERR_CHARREF_IN_EPILOG: '
-                'Extra element aliases in interleave',
+            'Extra element aliases in interleave',
             'invalid attribute of <aliases>')
 
         # The <aliases> tag may be omittied.
@@ -1589,8 +1533,7 @@ class TestHWDBSubmissionRelaxNGValidation(TestCase):
         result, submission_id = self.runValidator(sample_data)
         self.assertErrorMessage(
             submission_id, result,
-            'ERROR:RELAXNGV:ERR_CHARREF_IN_EPILOG: '
-                'Extra element aliases in interleave',
+            'Extra element aliases in interleave',
             'invalid sub-tag of <aliases>')
 
     def testAliasTag(self):
@@ -1605,8 +1548,7 @@ class TestHWDBSubmissionRelaxNGValidation(TestCase):
         result, submission_id = self.runValidator(sample_data)
         self.assertErrorMessage(
             submission_id, result,
-            'ERROR:RELAXNGV:ERR_CHARREF_IN_EPILOG: '
-                'Extra element aliases in interleave',
+            'Extra element aliases in interleave',
             'missing attribute of <alias>')
 
         # Other attributes are not allowed. We get again the same
@@ -1616,8 +1558,7 @@ class TestHWDBSubmissionRelaxNGValidation(TestCase):
         result, submission_id = self.runValidator(sample_data)
         self.assertErrorMessage(
             submission_id, result,
-            'ERROR:RELAXNGV:ERR_CHARREF_IN_EPILOG: '
-                'Extra element aliases in interleave',
+            'Extra element aliases in interleave',
             'invalid attribute of <alias>')
 
         # The <alias> tag requires exactly two sub-tags: <vendor> and
@@ -1631,8 +1572,7 @@ class TestHWDBSubmissionRelaxNGValidation(TestCase):
         result, submission_id = self.runValidator(sample_data)
         self.assertErrorMessage(
             submission_id, result,
-            'ERROR:RELAXNGV:ERR_CHARREF_IN_EPILOG: '
-                'Extra element aliases in interleave',
+            'Extra element aliases in interleave',
             'missing sub-tag <vendor> of <alias>')
         sample_data = self.replaceSampledata(
             data=self.sample_data,
@@ -1642,8 +1582,7 @@ class TestHWDBSubmissionRelaxNGValidation(TestCase):
         result, submission_id = self.runValidator(sample_data)
         self.assertErrorMessage(
             submission_id, result,
-            'ERROR:RELAXNGV:ERR_CHARREF_IN_EPILOG: '
-                'Extra element aliases in interleave',
+            'Extra element aliases in interleave',
             'missing sub-tag <model> of <alias>')
 
         # Other sub-tags are not allowed.
@@ -1654,8 +1593,7 @@ class TestHWDBSubmissionRelaxNGValidation(TestCase):
         result, submission_id = self.runValidator(sample_data)
         self.assertErrorMessage(
             submission_id, result,
-            'ERROR:RELAXNGV:ERR_CHARREF_IN_EPILOG: '
-                'Extra element aliases in interleave',
+            'Extra element aliases in interleave',
             'invalid sub-tag of <alias>')
 
     def testAliasVendorTag(self):
@@ -1667,8 +1605,7 @@ class TestHWDBSubmissionRelaxNGValidation(TestCase):
         result, submission_id = self.runValidator(sample_data)
         self.assertErrorMessage(
             submission_id, result,
-            'ERROR:RELAXNGV:ERR_CHARREF_IN_EPILOG: '
-                'Extra element aliases in interleave',
+            'Extra element aliases in interleave',
             'invalid attribute of <vendor>')
 
         # <vendor> may not have any sub-tags.
@@ -1679,8 +1616,7 @@ class TestHWDBSubmissionRelaxNGValidation(TestCase):
         result, submission_id = self.runValidator(sample_data)
         self.assertErrorMessage(
             submission_id, result,
-            'ERROR:RELAXNGV:ERR_CHARREF_IN_EPILOG: '
-                'Extra element aliases in interleave',
+            'Extra element aliases in interleave',
             'invalid sub-tag of <alias>')
 
     def testAliasModelTag(self):
@@ -1692,8 +1628,7 @@ class TestHWDBSubmissionRelaxNGValidation(TestCase):
         result, submission_id = self.runValidator(sample_data)
         self.assertErrorMessage(
             submission_id, result,
-            'ERROR:RELAXNGV:ERR_CHARREF_IN_EPILOG: '
-                'Extra element aliases in interleave',
+            'Extra element aliases in interleave',
             'invalid attribute of <model>')
 
         # <model> may not have any sub-tags.
@@ -1704,8 +1639,7 @@ class TestHWDBSubmissionRelaxNGValidation(TestCase):
         result, submission_id = self.runValidator(sample_data)
         self.assertErrorMessage(
             submission_id, result,
-            'ERROR:RELAXNGV:ERR_CHARREF_IN_EPILOG: '
-                'Extra element aliases in interleave',
+            'Extra element aliases in interleave',
             'invalid sub-tag of <alias>')
 
     def testSoftwareTagAttributes(self):
@@ -1716,8 +1650,7 @@ class TestHWDBSubmissionRelaxNGValidation(TestCase):
         result, submission_id = self.runValidator(sample_data)
         self.assertErrorMessage(
             submission_id, result,
-            'ERROR:RELAXNGV:WAR_UNDECLARED_ENTITY: '
-                'Invalid attribute foo for element software',
+            'Invalid attribute foo for element software',
             'detection of invalid attribute of <software>')
 
     def testAllowedSubtagsOfSoftware(self):
@@ -1733,8 +1666,7 @@ class TestHWDBSubmissionRelaxNGValidation(TestCase):
         result, submission_id = self.runValidator(sample_data)
         self.assertErrorMessage(
             submission_id, result,
-            'ERROR:RELAXNGV:ERR_ENTITYREF_NO_NAME: '
-                'Expecting an element lsbrelease, got nothing',
+            'Expecting an element lsbrelease, got nothing',
             'omission of required tag <lsbrelease> not detected')
 
         # <packages> is optional.
@@ -1770,8 +1702,7 @@ class TestHWDBSubmissionRelaxNGValidation(TestCase):
         result, submission_id = self.runValidator(sample_data)
         self.assertErrorMessage(
             submission_id, result,
-            'ERROR:RELAXNGV:ERR_UNDECLARED_ENTITY: '
-                'Element software has extra content: nonsense',
+            'Element software has extra content: nonsense',
             'detection invalid sub-tag of <software>')
 
         # CDATA content is not allowed
@@ -1782,8 +1713,7 @@ class TestHWDBSubmissionRelaxNGValidation(TestCase):
         result, submission_id = self.runValidator(sample_data)
         self.assertErrorMessage(
             submission_id, result,
-            'ERROR:RELAXNGV:ERR_UNDECLARED_ENTITY: '
-                'Element software has extra content: text',
+            'Element software has extra content: text',
             'invalid CDATA content of <software>')
 
     def testLsbreleaseTagAttributes(self):
@@ -1794,8 +1724,7 @@ class TestHWDBSubmissionRelaxNGValidation(TestCase):
         result, submission_id = self.runValidator(sample_data)
         self.assertErrorMessage(
             submission_id, result,
-            'ERROR:RELAXNGV:WAR_UNDECLARED_ENTITY: '
-                'Invalid attribute foo for element lsbrelease',
+            'Invalid attribute foo for element lsbrelease',
             'detection of invalid attribute of <lsbrelease>')
 
     def testLsbreleaseTagValidSubtag(self):
@@ -1809,8 +1738,7 @@ class TestHWDBSubmissionRelaxNGValidation(TestCase):
         result, submission_id = self.runValidator(sample_data)
         self.assertErrorMessage(
             submission_id, result,
-            'ERROR:RELAXNGV:ERR_ENTITYREF_NO_NAME: '
-                'Expecting an element property, got nothing',
+            'Expecting an element property, got nothing',
             'omission of required sub-tag <property> of <lsbrelease> '
                 'not detected')
 
@@ -1824,8 +1752,7 @@ class TestHWDBSubmissionRelaxNGValidation(TestCase):
         result, submission_id = self.runValidator(sample_data)
         self.assertErrorMessage(
             submission_id, result,
-            'ERROR:RELAXNGV:ERR_CHARREF_IN_DTD: '
-                'Expecting element property, got nonsense',
+            'Expecting element property, got nonsense',
             'detection of invalid sub-tag of <lsbrelease>')
 
         # CDATA content is not allowed.
@@ -1836,8 +1763,7 @@ class TestHWDBSubmissionRelaxNGValidation(TestCase):
         result, submission_id = self.runValidator(sample_data)
         self.assertErrorMessage(
             submission_id, result,
-            'ERROR:RELAXNGV:ERR_ENTITYREF_SEMICOL_MISSING: '
-                'Expecting an element got text',
+            'Expecting an element got text',
             'detection of invalid CDATA content of <lsbrelease>')
 
     def testPackagesTagAttributes(self):
@@ -1848,8 +1774,7 @@ class TestHWDBSubmissionRelaxNGValidation(TestCase):
         result, submission_id = self.runValidator(sample_data)
         self.assertErrorMessage(
             submission_id, result,
-            'ERROR:RELAXNGV:ERR_CHARREF_IN_EPILOG: '
-                'Extra element packages in interleave',
+            'Extra element packages in interleave',
             'detection of invalid attribute of <packages>')
 
     def testEmptyPackagesTag(self):
@@ -1874,8 +1799,7 @@ class TestHWDBSubmissionRelaxNGValidation(TestCase):
         result, submission_id = self.runValidator(sample_data)
         self.assertErrorMessage(
             submission_id, result,
-            'ERROR:RELAXNGV:ERR_CHARREF_IN_EPILOG: '
-                'Extra element packages in interleave',
+            'Extra element packages in interleave',
             'detection of invalid sub-tag of <packages>')
 
         # CDATA content is invalid.
@@ -1886,8 +1810,7 @@ class TestHWDBSubmissionRelaxNGValidation(TestCase):
         result, submission_id = self.runValidator(sample_data)
         self.assertErrorMessage(
             submission_id, result,
-            'ERROR:RELAXNGV:ERR_CHARREF_IN_EPILOG: '
-                'Extra element packages in interleave',
+            'Extra element packages in interleave',
             'detection of invalid CDATA in <packages>')
 
     def testPackageTagAttributes(self):
@@ -1898,8 +1821,7 @@ class TestHWDBSubmissionRelaxNGValidation(TestCase):
         result, submission_id = self.runValidator(sample_data)
         self.assertErrorMessage(
             submission_id, result,
-            'ERROR:RELAXNGV:ERR_CHARREF_IN_EPILOG: '
-                'Extra element packages in interleave',
+            'Extra element packages in interleave',
             'detection missing required attribute name in <package>')
 
         # Other attributes are not allowed.
@@ -1909,8 +1831,7 @@ class TestHWDBSubmissionRelaxNGValidation(TestCase):
         result, submission_id = self.runValidator(sample_data)
         self.assertErrorMessage(
             submission_id, result,
-            'ERROR:RELAXNGV:ERR_CHARREF_IN_EPILOG: '
-                'Extra element packages in interleave',
+            'Extra element packages in interleave',
             'detection of invalid attributes in <package>')
 
     def testPackageTagSubtags(self):
@@ -1923,8 +1844,7 @@ class TestHWDBSubmissionRelaxNGValidation(TestCase):
         result, submission_id = self.runValidator(sample_data)
         self.assertErrorMessage(
             submission_id, result,
-            'ERROR:RELAXNGV:ERR_CHARREF_IN_EPILOG: '
-                'Extra element packages in interleave',
+            'Extra element packages in interleave',
             'detection of invalid sub-tags of <package>')
 
         # At least one <property> tag is required
@@ -1936,8 +1856,7 @@ class TestHWDBSubmissionRelaxNGValidation(TestCase):
         result, submission_id = self.runValidator(sample_data)
         self.assertErrorMessage(
             submission_id, result,
-            'ERROR:RELAXNGV:ERR_CHARREF_IN_EPILOG: '
-                'Extra element packages in interleave',
+            'Extra element packages in interleave',
             'detection of invalid empty <package> tag')
 
     def testPackageTagCData(self):
@@ -1950,8 +1869,7 @@ class TestHWDBSubmissionRelaxNGValidation(TestCase):
         result, submission_id = self.runValidator(sample_data)
         self.assertErrorMessage(
             submission_id, result,
-            'ERROR:RELAXNGV:ERR_CHARREF_IN_EPILOG: '
-                'Extra element packages in interleave',
+            'Extra element packages in interleave',
             'detection of invalid CDATA in <package>')
 
     def testXorgTagAttributes(self):
@@ -1962,8 +1880,7 @@ class TestHWDBSubmissionRelaxNGValidation(TestCase):
         result, submission_id = self.runValidator(sample_data)
         self.assertErrorMessage(
             submission_id, result,
-            'ERROR:RELAXNGV:ERR_CHARREF_IN_EPILOG: '
-                'Extra element xorg in interleave',
+            'Extra element xorg in interleave',
             'detection of missing attribute version of <xorg>')
 
         # other attributes are invalid.
@@ -1972,8 +1889,7 @@ class TestHWDBSubmissionRelaxNGValidation(TestCase):
         result, submission_id = self.runValidator(sample_data)
         self.assertErrorMessage(
             submission_id, result,
-            'ERROR:RELAXNGV:ERR_CHARREF_IN_EPILOG: '
-                'Extra element xorg in interleave',
+            'Extra element xorg in interleave',
             'detection of invalid attribute of <xorg>')
         
     def testXorgTagSubTags(self):
@@ -1986,8 +1902,7 @@ class TestHWDBSubmissionRelaxNGValidation(TestCase):
         result, submission_id = self.runValidator(sample_data)
         self.assertErrorMessage(
             submission_id, result,
-            'ERROR:RELAXNGV:ERR_CHARREF_IN_EPILOG: '
-                'Extra element xorg in interleave',
+            'Extra element xorg in interleave',
             'detection of invalid sub-tag of <xorg>')
         
         # <xorg> may be empty
@@ -2010,8 +1925,7 @@ class TestHWDBSubmissionRelaxNGValidation(TestCase):
         result, submission_id = self.runValidator(sample_data)
         self.assertErrorMessage(
             submission_id, result,
-            'ERROR:RELAXNGV:ERR_CHARREF_IN_EPILOG: '
-                'Extra element xorg in interleave',
+            'Extra element xorg in interleave',
             'detection of invalid CDATA content of <xorg>')
 
     def _getXorgDriverTag(self, attributes):
@@ -2047,8 +1961,7 @@ class TestHWDBSubmissionRelaxNGValidation(TestCase):
             result, submission_id = self.runValidator(sample_data)
             self.assertErrorMessage(
                 submission_id, result,
-                'ERROR:RELAXNGV:ERR_CHARREF_IN_EPILOG: '
-                    'Extra element xorg in interleave',
+                'Extra element xorg in interleave',
                 'detection of missing required attribute %s of <driver> '
                     'in <xorg>' % omit)
 
@@ -2092,8 +2005,7 @@ class TestHWDBSubmissionRelaxNGValidation(TestCase):
         result, submission_id = self.runValidator(sample_data)
         self.assertErrorMessage(
             submission_id, result,
-            'ERROR:RELAXNGV:ERR_CHARREF_IN_EPILOG: '
-                'Extra element xorg in interleave',
+            'Extra element xorg in interleave',
             'detection of invalid attribute for <driver> in <xorg>')
 
     def testXorgDriverTagSubtags(self):
@@ -2109,8 +2021,7 @@ class TestHWDBSubmissionRelaxNGValidation(TestCase):
         result, submission_id = self.runValidator(sample_data)
         self.assertErrorMessage(
             submission_id, result,
-            'ERROR:RELAXNGV:ERR_CHARREF_IN_EPILOG: '
-                'Extra element xorg in interleave',
+            'Extra element xorg in interleave',
             'detection of invalid sub-tag of <driver> in <xorg>')
 
     def testXorgDriverTagCData(self):
@@ -2126,8 +2037,7 @@ class TestHWDBSubmissionRelaxNGValidation(TestCase):
         result, submission_id = self.runValidator(sample_data)
         self.assertErrorMessage(
             submission_id, result,
-            'ERROR:RELAXNGV:ERR_CHARREF_IN_EPILOG: '
-                'Extra element xorg in interleave',
+            'Extra element xorg in interleave',
             'detection of invalid CDATA content of <driver> in <xorg>')
 
     def testQuestionsTagAttributes(self):
@@ -2138,8 +2048,7 @@ class TestHWDBSubmissionRelaxNGValidation(TestCase):
         result, submission_id = self.runValidator(sample_data)
         self.assertErrorMessage(
             submission_id, result,
-            'ERROR:RELAXNGV:WAR_UNDECLARED_ENTITY: '
-                'Invalid attribute foo for element questions',
+            'Invalid attribute foo for element questions',
             'detection of invalid attributes of <questions>')
 
     def testQuestionsTagAttributesSubTags(self):
@@ -2152,8 +2061,7 @@ class TestHWDBSubmissionRelaxNGValidation(TestCase):
         result, submission_id = self.runValidator(sample_data)
         self.assertErrorMessage(
             submission_id, result,
-            'ERROR:RELAXNGV:ERR_CHARREF_IN_DTD: '
-                'Expecting element question, got nonsense',
+            'Expecting element question, got nonsense',
             'invalid sub-tag of <questions>')
 
         # <questions> may be empty
@@ -2176,8 +2084,7 @@ class TestHWDBSubmissionRelaxNGValidation(TestCase):
         result, submission_id = self.runValidator(sample_data)
         self.assertErrorMessage(
             submission_id, result,
-            'ERROR:RELAXNGV:ERR_ENTITYREF_SEMICOL_MISSING: '
-                'Expecting an element got text',
+            'Expecting an element got text',
              'detection of invalid CDATA content of <questions>')
 
     def testQuestionTagValidAttributes(self):
@@ -2191,8 +2098,7 @@ class TestHWDBSubmissionRelaxNGValidation(TestCase):
         result, submission_id = self.runValidator(sample_data)
         self.assertErrorMessage(
             submission_id, result,
-            'ERROR:RELAXNGV:ERR_UNDECLARED_ENTITY: '
-                'Element questions has extra content: question',
+            'Element questions has extra content: question',
             'detection of missing attribute "name" in <question>')
 
         # The attribute "plugin" is optional.
@@ -2218,8 +2124,7 @@ class TestHWDBSubmissionRelaxNGValidation(TestCase):
         result, submission_id = self.runValidator(sample_data)
         self.assertErrorMessage(
             submission_id, result,
-            'ERROR:RELAXNGV:WAR_UNDECLARED_ENTITY: '
-                'Invalid attribute bar for element question',
+            'Invalid attribute bar for element question',
             'detection of invalid attribute in <question>.')
 
     def testQuestionTagValidSubtags(self):
@@ -2246,8 +2151,7 @@ class TestHWDBSubmissionRelaxNGValidation(TestCase):
         result, submission_id = self.runValidator(sample_data)
         self.assertErrorMessage(
             submission_id, result,
-            'ERROR:RELAXNGV:ERR_CHARREF_IN_DTD: '
-                'Expecting element answer, got answer_choices',
+            'Expecting element answer, got answer_choices',
             'detection of omitted sub-tag <answer> of <question> (1)')
 
         # Omitting both <answer> and <answer_choice> is invalid too, but
@@ -2260,8 +2164,7 @@ class TestHWDBSubmissionRelaxNGValidation(TestCase):
         result, submission_id = self.runValidator(sample_data)
         self.assertErrorMessage(
             submission_id, result,
-            'ERROR:RELAXNGV:ERR_ENTITYREF_NO_NAME: '
-                'Expecting an element answer, got nothing',
+            'Expecting an element answer, got nothing',
             'detection of omitted sub-tag <answer> of <question> (2)')
 
         # A tag <answer type="multiple_choice"> must have an accompanying
@@ -2274,8 +2177,7 @@ class TestHWDBSubmissionRelaxNGValidation(TestCase):
         result, submission_id = self.runValidator(sample_data)
         self.assertErrorMessage(
             submission_id, result,
-            'ERROR:RELAXNGV:ERR_ENTITYREF_NO_NAME: '
-                'Expecting an element answer_choices, got nothing',
+            'Expecting an element answer_choices, got nothing',
             'detection of omitted sub-tag <answer_choices> of <question>')
 
         # The sub-tag <target> is optional; it may appear more than once.
@@ -2315,8 +2217,7 @@ class TestHWDBSubmissionRelaxNGValidation(TestCase):
         result, submission_id = self.runValidator(sample_data)
         self.assertErrorMessage(
             submission_id, result,
-            'ERROR:RELAXNGV:ERR_UNDECLARED_ENTITY: '
-                'Element question has extra content: nonsense',
+            'Element question has extra content: nonsense',
             'detection of omitted sub-tag <answer_choices> of <question>')
 
     def testAnswerCommandTag(self):
@@ -2327,8 +2228,7 @@ class TestHWDBSubmissionRelaxNGValidation(TestCase):
         result, submission_id = self.runValidator(sample_data)
         self.assertErrorMessage(
             submission_id, result,
-            'ERROR:RELAXNGV:ERR_CHARREF_IN_EPILOG: '
-                'Extra element command in interleave',
+            'Extra element command in interleave',
             'detection of invalid attributes of <command>')
 
         # No sub-tags are allowed.
@@ -2337,8 +2237,7 @@ class TestHWDBSubmissionRelaxNGValidation(TestCase):
         result, submission_id = self.runValidator(sample_data)
         self.assertErrorMessage(
             submission_id, result,
-            'ERROR:RELAXNGV:ERR_CHARREF_IN_EPILOG: '
-                'Extra element command in interleave',
+            'Extra element command in interleave',
              'detection of invalid sub-tags of <command>')
 
     def testAnswerTagAttributes(self):
@@ -2352,8 +2251,7 @@ class TestHWDBSubmissionRelaxNGValidation(TestCase):
         result, submission_id = self.runValidator(sample_data)
         self.assertErrorMessage(
             submission_id, result,
-            'ERROR:RELAXNGV:ERR_PEREF_SEMICOL_MISSING: '
-                'Element answer failed to validate content',
+            'Element answer failed to validate content',
              'detection of <answer> element without required attribute')
 
         # The only allowed values for the attribute type are:
@@ -2366,8 +2264,7 @@ class TestHWDBSubmissionRelaxNGValidation(TestCase):
         result, submission_id = self.runValidator(sample_data)
         self.assertErrorMessage(
             submission_id, result,
-            'ERROR:RELAXNGV:ERR_PEREF_SEMICOL_MISSING: '
-                'Element answer failed to validate content',
+            'Element answer failed to validate content',
             'detection of <answer> with wrong value of attribute type')
 
         # Tags of type measurement have the optional attribute unit.
@@ -2392,8 +2289,7 @@ class TestHWDBSubmissionRelaxNGValidation(TestCase):
         result, submission_id = self.runValidator(sample_data)
         self.assertErrorMessage(
             submission_id, result,
-            'ERROR:RELAXNGV:ERR_PEREF_NO_NAME: '
-                'Element answer failed to validate attributes',
+            'Element answer failed to validate attributes',
             'detection of <answer> with invalid attribute "foo"')
 
     def testAnswerTagContent(self):
@@ -2420,8 +2316,7 @@ class TestHWDBSubmissionRelaxNGValidation(TestCase):
         result, submission_id = self.runValidator(sample_data)
         self.assertErrorMessage(
             submission_id, result,
-            "ERROR:RELAXNGV:ERR_DOCUMENT_START: "
-                "Type decimal doesn't allow value 'nonsense'",
+            "Type decimal doesn't allow value 'nonsense'",
             'detection of <answer> with invalid attribute')
 
         # Sub-tags are not allowed.
@@ -2434,8 +2329,7 @@ class TestHWDBSubmissionRelaxNGValidation(TestCase):
         result, submission_id = self.runValidator(sample_data)
         self.assertErrorMessage(
             submission_id, result,
-            'ERROR:RELAXNGV:ERR_UNPARSED_ENTITY: '
-                'Datatype element answer has child elements',
+            'Datatype element answer has child elements',
             'detection of <answer> with invalid attribute')
 
     def testAnswerChoicesTagAttributes(self):
@@ -2449,8 +2343,7 @@ class TestHWDBSubmissionRelaxNGValidation(TestCase):
         result, submission_id = self.runValidator(sample_data)
         self.assertErrorMessage(
             submission_id, result,
-            'RELAXNGV:WAR_UNDECLARED_ENTITY: '
-                'Invalid attribute foo for element answer_choices',
+            'Invalid attribute foo for element answer_choices',
             'detection of invalid <answer_choices> attributes')
 
     def testAnswerChoicesTagCData(self):
@@ -2463,8 +2356,7 @@ class TestHWDBSubmissionRelaxNGValidation(TestCase):
         result, submission_id = self.runValidator(sample_data)
         self.assertErrorMessage(
             submission_id, result,
-            'ERROR:RELAXNGV:ERR_ENTITYREF_SEMICOL_MISSING: '
-                'Expecting an element got text',
+            'Expecting an element got text',
             'detection of invalid CDATA in <answer_choices>')
 
     def testAnswerChoicesTagSubTags(self):
@@ -2477,8 +2369,7 @@ class TestHWDBSubmissionRelaxNGValidation(TestCase):
         result, submission_id = self.runValidator(sample_data)
         self.assertErrorMessage(
             submission_id, result,
-            'ERROR:RELAXNGV:ERR_CHARREF_IN_DTD: '
-                'Expecting element value, got nonsense',
+            'Expecting element value, got nonsense',
             'detection of invalid sub-tag of <answer_choices>')
         
 
@@ -2493,8 +2384,7 @@ class TestHWDBSubmissionRelaxNGValidation(TestCase):
         result, submission_id = self.runValidator(sample_data)
         self.assertErrorMessage(
             submission_id, result,
-            'ERROR:RELAXNGV:WAR_UNDECLARED_ENTITY: '
-                'Invalid attribute foo for element target',
+            'Invalid attribute foo for element target',
              'detection of invalid <target> attribute')
 
     def testTargetTagCData(self):
@@ -2538,8 +2428,7 @@ class TestHWDBSubmissionRelaxNGValidation(TestCase):
         result, submission_id = self.runValidator(sample_data)
         self.assertErrorMessage(
             submission_id, result,
-            'ERROR:RELAXNGV:ERR_UNDECLARED_ENTITY: '
-                'Element target has extra content: nonsense',
+            'Element target has extra content: nonsense',
             'detection of invalid sub-tag <nonsense> of <target>')
 
     def testTargetDriverTag(self):
@@ -2553,8 +2442,7 @@ class TestHWDBSubmissionRelaxNGValidation(TestCase):
         result, submission_id = self.runValidator(sample_data)
         self.assertErrorMessage(
             submission_id, result,
-            'ERROR:RELAXNGV:WAR_UNDECLARED_ENTITY: '
-                'Invalid attribute bar for element driver',
+            'Invalid attribute bar for element driver',
             'detection of invalid attribute of <driver> in <target>')
 
         # Sub-tags are not allowed.
@@ -2566,8 +2454,7 @@ class TestHWDBSubmissionRelaxNGValidation(TestCase):
         result, submission_id = self.runValidator(sample_data)
         self.assertErrorMessage(
             submission_id, result,
-            'ERROR:RELAXNGV:ERR_UNDECLARED_ENTITY: '
-                'Element driver has extra content: nonsense',
+            'Element driver has extra content: nonsense',
             'detection of invalid sub-tag <nonsense> of <driver> in <target>')
 
     def testCommentTag(self):
@@ -2578,8 +2465,7 @@ class TestHWDBSubmissionRelaxNGValidation(TestCase):
         result, submission_id = self.runValidator(sample_data)
         self.assertErrorMessage(
             submission_id, result,
-            'ERROR:RELAXNGV:WAR_UNDECLARED_ENTITY: '
-                'Invalid attribute foo for element comment',
+            'Invalid attribute foo for element comment',
             'detection of invalid attribute of <comment>')
 
         # Sub-tags are not allowed.
@@ -2588,8 +2474,7 @@ class TestHWDBSubmissionRelaxNGValidation(TestCase):
         result, submission_id = self.runValidator(sample_data)
         self.assertErrorMessage(
             submission_id, result,
-            'ERROR:RELAXNGV:ERR_UNDECLARED_ENTITY: '
-                'Element comment has extra content: nonsense',
+            'Element comment has extra content: nonsense',
             'detection of invalid sub-tag <nonsense> of <comment>')
 
 
