@@ -14,7 +14,7 @@ from zope.component import adapts, getUtility
 
 from canonical.lazr.rest import Collection, Entry, ScopedCollection
 from canonical.launchpad.interfaces import (
-    IPerson, IPersonEntry, IPersonSet, ITeam)
+    IPerson, IPersonEntry, IPersonSet)
 from canonical.lp import decorates
 
 
@@ -64,6 +64,6 @@ class PersonPersonCollection(ScopedCollection):
 
     def lookupEntry(self, name):
         person = getUtility(IPersonSet).getByName(name)
-        if recipe in self.collection:
+        if person in self.collection:
             return person
         return None
