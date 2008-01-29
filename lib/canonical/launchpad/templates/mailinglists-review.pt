@@ -11,14 +11,68 @@
   >
 
 <body>
+    <metal:portlets fill-slot="portlets"/>
 
-<metal:portlets fill-slot="portlets"/>
+    <div metal:fill-slot="main">
 
-<div metal:fill-slot="main">
+        <h1>Creation requests</h1>
+        <div tal:condition="view/registered_lists">
+            <form name="pending" action="" method="POST">
+            <p>These team administrators have requested mailing lists for
+               their teams.  Your approval is required before Launchpad will
+               create the mailing list.  For each mailing list request, you
+               can choose whether to <em>Approve</em> or <em>Decline</em> the
+               request.  Or you may <em>Hold</em> the request to defer your
+               decision until later.</p>
+            <table class="listing sortable" id="mailing-lists">
+                <thead><tr>
+                    <th>Approve</th><th>Decline</th><th>Hold</th>
+                    <th>Team</th><th>Requester</th>
+                </tr></thead>
+                <tr tal:repeat="mailing_list view/registered_lists"
+                    style="text-align: center">
+                    <tal:block tal:define="team mailing_list/team;
+                                           name team/name;
+                                           registrant mailing_list/registrant;
+                                           action_name string:action_${name};
+                                           approve_id string:approve_${name};
+                                           decline_id string:decline_${name};
+                                           hold_id string:hold_${name}">
+                    <td>
+                        <label tal:attributes="for approve_id">
+                        <input type="radio" value="approve"
+                               tal:attributes="name action_name; id approve_id"
+                               /></label>
+                    </td>
+                    <td>
+                        <label tal:attributes="for decline_id">
+                        <input type="radio" value="decline"
+                               tal:attributes="name action_name; id decline_id"
+                               /></label>
+                    </td>
+                    <td>
+                        <label tal:attributes="for hold_id">
+                        <input type="radio" value="hold" checked
+                               tal:attributes="name action_name; id hold_id"
+                               /></label>
+                    </td>
+                    <td>
+                        <a tal:attributes="href team/fmt:url">
+                        <div tal:content="team/displayname"/></a></td>
+                    <td>
+                        <a tal:attributes="href registrant/fmt:url">
+                        <div tal:content="registrant/displayname"/></a></td>
+                    </tal:block>
+                </tr>
+            </table>
+            <input tal:replace="structure view/submit_action/render" />
+            </form>
 
-<p>There is nothing to do.
+        </div>
+        <p tal:condition="not: view/registered_lists" id="status"
+            >There is nothing to do.</p>
 
-</div>
+    </div>
 
 <metal:help fill-slot="help"/>
 

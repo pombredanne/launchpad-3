@@ -21,7 +21,7 @@ __all__ = [
     ]
 
 
-from zope.interface import Interface
+from zope.interface import Attribute, Interface
 from zope.schema import Choice, Datetime, Object, Set, Text, TextLine
 
 from canonical.launchpad import _
@@ -446,6 +446,11 @@ class IMailingList(Interface):
 
 class IMailingListSet(Interface):
     """A set of mailing lists."""
+
+    title = TextLine(
+        title=_('Title'),
+        description=_('The hard coded title.'),
+        readonly=True)
 
     def new(team, registrant=None):
         """Register a new team mailing list.

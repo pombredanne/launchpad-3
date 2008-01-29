@@ -43,6 +43,7 @@
 
     <browser:page
         for="canonical.launchpad.interfaces.IMailingListSet"
+        class="canonical.launchpad.browser.MailingListsReviewView"
         name="+review"
         template="../templates/mailinglists-review.pt"
         permission="launchpad.Admin"

@@ -22,6 +22,8 @@ But Launchpad administrators can see the mailing list approval page.
     >>> admin_browser.open('http://launchpad.dev/+mailinglists')
     >>> admin_browser.title
     'Pending mailing lists requests'
+    >>> extract_text(first_tag_by_class(admin_browser.contents, 'main'))
+    u'Team mailing lists'
 
 
 == When there's nothing to do ==
@@ -36,5 +38,36 @@ form with a submit button.
 
 But there's a message explaining that there's nothing to do.
 
-    >>> find_main_content(admin_browser.contents).p.renderContents()
-    'There is nothing to do.'
+    >>> extract_text(find_tag_by_id(admin_browser.contents, 'status'))
+    u'There is nothing to do.'
+
+
+== When there is something to do ==
+
+Now the No Privileges Person creates a team, and then requests a mailing list
+for that team.  This mailing list will not be created until a Launchpad
+administrator approves it.
+
+    >>> user_browser.open('http://launchpad.dev/people/+newteam')
+    >>> user_browser.getControl(name='field.name').value = 'itest-one'
+    >>> user_browser.getControl('Display Name').value = 'ITest One'
+    >>> user_browser.getControl(
+    ...     name='field.subscriptionpolicy').displayValue = ['Open Team']
+    >>> user_browser.getControl('Create').click()
+
+XXX BarryWarsaw 28-Jan-2008 Remove this when the beta testing program is
+complete.
+
+    >>> from canonical.launchpad.ftests import mailinglists_helper
+    >>> mailinglists_helper.beta_program_enable('itest-one')
+
+    >>> user_browser.open('http://launchpad.dev/~itest-one')
+    >>> user_browser.getLink('Configure mailing list').click()
+    >>> user_browser.getControl('Apply for Mailing List').click()
+
+Now when the Launchpad administrator views the pending requests page, she sees
+that there is a request by No Privileges Person to create the ITest One
+mailing list.
+
+    >>> admin_browser.reload()
+    >>> admin_browser.getControl('Submit')
