@@ -72,7 +72,7 @@ We can see its placeholder in development mode:
     >>> config.devmode
     True
     >>> for tag in find_tags_by_class(
-    ...     anon_browser.contents, 'menu-link-translationdownload'):
+    ...     anon_browser.contents, 'menu-link-translationdownload-disabled'):
     ...     print tag.renderContents()
     Download translations (disabled)
 
