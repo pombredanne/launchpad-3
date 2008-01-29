@@ -135,13 +135,6 @@ class IFeed(Interface):
         be converted to a feed entry using itemToFeedEntry.
         """
 
-    def getPublicRawItems():
-        """Get the public items for the feed in their raw format.
-
-        Feeds do not show private items, so this method will screen out the
-        private items.
-        """
-
     def itemToFeedEntry(item):
         """Convert a single item to a formatted feed entry.
 
@@ -197,10 +190,12 @@ class IFeedEntry(Interface):
     date_created = Datetime(
         title=u"Date Created",
         description=u"Date the entry was originally created in Launchpad.")
+
     # Date any aspect of the entry was changed.
     date_updated = Datetime(
         title=u"Date Updated",
         description=u"Date the entry was last updated.")
+
     # Date the entry became published.
     date_published = Datetime(
         title=u"Date Published",
@@ -209,9 +204,11 @@ class IFeedEntry(Interface):
                      "as the creation date.  For others, like an "
                      "announcement, it will be the date the announcement "
                      "became public.")
+
     # The primary authors for the entry.
     authors= Attribute(
         "A list of IFeedPerson representing the authors for the entry.")
+
     # People who contributed to the entry.  The line between authors and
     # contributors is fuzzy.  For a bug, all comment writers could be
     # considered authors.  Another interpretation would have the original
@@ -219,18 +216,21 @@ class IFeedEntry(Interface):
     # approach and be consistent.
     contributors = Attribute(
         "A list of IFeedPerson representing the contributors for the entry.")
+
     # The logo representing the entry.
     # Not used and ignored.
     logo  = TextLine(
         title=u"Logo URL",
         description=u"The URL for the entry logo."
                      "Currently not used.")
+
     # The icon representing the entry.
     # Not used and ignored.
     icon  = TextLine(
         title=u"Icon URL",
         description=u"The URL for the entry icon."
                      "Currently not used.")
+
     # The description of the program that generated the feed.  May include
     # versioning information.  Useful for debugging purposes only.
     # Not used and ignored.
