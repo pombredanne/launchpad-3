@@ -1269,7 +1269,7 @@ class IPersonEntry(IEntry):
 
     name = make_person_name_field()
     teamowner = Object(schema=IPerson)
-    members = CollectionField(schema=IPerson)
+    members = CollectionField(value_type=Object(schema=IPerson))
 
 
 class INewPersonForm(IPerson):

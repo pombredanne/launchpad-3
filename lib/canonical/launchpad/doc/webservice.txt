@@ -137,21 +137,7 @@ collection at all.
     >>> class IAuthorEntry(IEntry):
     ...     "The part of an author that we expose through the web service."
     ...     name = IAuthor.get('name')
-    ...     favorites = CollectionField(schema=IRecipe)
-
-    >>> from canonical.lazr.interfaces import (
-    ...     IScopedCollection)
-    >>> from canonical.lazr.rest import ScopedCollection
-    >>> class AuthorRecipeCollection(ScopedCollection):
-    ...
-    ...     def lookupEntry(self, name):
-    ...         recipe = RecipeSet().get(name)
-    ...         if recipe in self.collection:
-    ...             return recipe
-    ...         return None
-    ...
-    ...     def find(self):
-    ...         return self.collection
+    ...     favorites = CollectionField(value_type=Object(schema=IRecipe))
 
 Here, we're exposing an IRecipe that exposes the underlying Recipe's
 name but not its ID. References to associated objects (like the
@@ -217,8 +203,6 @@ in Python code:
     >>> from zope.component import provideAdapter
     >>> provideAdapter(AuthorEntry, [IAuthor], IAuthorEntry)
     >>> provideAdapter(RecipeEntry, [IRecipe], IRecipeEntry)
-    >>> provideAdapter(AuthorRecipeCollection, [IAuthorEntry, IRecipe],
-    ...                IScopedCollection)
 
 LAZR also defines an interface and a base class for collections of
 objects. I'll use it to expose the RecipeSet collection through the
@@ -256,6 +240,22 @@ returns the model objects in the collection.
 
 Like Entry, Collection is a simple base class that defines a
 constructor.
+
+Finally, we need to define a collection of recipes that's scoped to an
+author. This class manages the list of an author's favorite recipes.
+
+    >>> from canonical.lazr.rest import ScopedCollection
+    >>> class AuthorRecipeCollection(ScopedCollection):
+    ...
+    ...     def lookupEntry(self, name):
+    ...         recipe = RecipeSet().get(name)
+    ...         if recipe in self.collection:
+    ...             return recipe
+    ...         return None
+
+    >>> from canonical.lazr.interfaces import IScopedCollection
+    >>> provideAdapter(AuthorRecipeCollection, [IAuthorEntry, IRecipe],
+    ...                IScopedCollection)
 
 
 == Resource objects ==

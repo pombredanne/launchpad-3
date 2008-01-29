@@ -6,12 +6,13 @@ __metaclass__ = type
 __all__ = [
     'PersonEntry',
     'PersonCollection',
+    'PersonPersonCollection'
     ]
 
 
 from zope.component import adapts, getUtility
 
-from canonical.lazr.rest import Collection, Entry
+from canonical.lazr.rest import Collection, Entry, ScopedCollection
 from canonical.launchpad.interfaces import (
     IPerson, IPersonEntry, IPersonSet, ITeam)
 from canonical.lp import decorates
@@ -29,11 +30,6 @@ class PersonEntry(Entry):
         """See `IEntry`."""
         return self.context.name
 
-    def lookupCollection(self, name):
-        """See `IEntry`."""
-        if name == 'members' and self.context.isTeam():
-            return getUtility(IPersonSet)
-
 
 class PersonCollection(Collection):
     """A collection of people."""
@@ -46,11 +42,21 @@ class PersonCollection(Collection):
         else:
             return person
 
-    def find(self, scope, relationship):
+    def find(self):
         """Return all the people and teams on the site."""
         # Pass an empty query into find() to get all people
         # and teams.
-        if scope is None:
-            return self.context.find("")
-        elif scope.context.isTeam() and relationship == 'members':
-            return scope.context.allmembers
+        return self.context.find("")
+
+
+class PersonPersonCollection(ScopedCollection):
+    """A collection of people associated with some other person.
+
+    For instance, the members of a team.
+    """
+
+    def lookupEntry(self, name):
+        person = getUtility(IPersonSet).getByName(name)
+        if recipe in self.collection:
+            return person
+        return None

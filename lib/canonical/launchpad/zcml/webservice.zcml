@@ -32,4 +32,11 @@
         provides="canonical.lazr.interfaces.ICollection"
         factory="canonical.launchpad.rest.PersonCollection"
         />
+
+    <adapter
+        for="canonical.launchpad.interfaces.IPerson
+             canonical.launchpad.interfaces.IPerson"
+        provides="canonical.lazr.interfaces.IScopedCollection"
+        factory="canonical.launchpad.rest.PersonPersonCollection"
+        />
 </configure>

@@ -87,7 +87,7 @@ class CollectionEntryDummy:
     works with objects.
     """
     def __init__(self, collection_field):
-        directlyProvides(self, collection_field.schema)
+        directlyProvides(self, collection_field.value_type.schema)
 
 
 class EntryResource(ReadOnlyResource):
@@ -113,17 +113,26 @@ class EntryResource(ReadOnlyResource):
 
     def publishTraverse(self, request, name):
         """Fetch a scoped collection resource by name."""
+        import pdb; pdb.set_trace()
         field = self.context.schema.get(name)
         if not ICollectionField.providedBy(field):
             raise NotFound(self, name)
         collection = getattr(self.context, name, None)
         if collection is None:
             raise NotFound(self, name)
+        # Create a dummy object that implements the field's interface.
+        # This is neccessary because we can't pass the interface itself
+        # into getMultiAdapter.
         example_entry = CollectionEntryDummy(field)
         scoped_collection = getMultiAdapter((self.context, example_entry),
                                             IScopedCollection)
+
+        # Tell the IScopedCollection object what collection it's managing,
+        # and what the collection's relationship is to the entry it's
+        # scoped to.
         scoped_collection.collection = collection
         scoped_collection.relationship = name
+
         return ScopedCollectionResource(scoped_collection, self.request, name)
 
     def toDataForJSON(self):
@@ -251,6 +260,7 @@ class Collection:
     def __init__(self, context):
         """Associate the entry with some database model object."""
         self.context = context
+
 
 class ScopedCollection:
     implements(ICollection)
