@@ -275,11 +275,13 @@ lp-buildd-admins) have access for retrying PPA build.
     >>> admin_browser.open(
     ...     "http://launchpad.dev/ubuntu/+source/cdrkit/1.0/+build/24")
     >>> print_action_links(admin_browser.contents)
+    Rescore build (disabled)
     Retry build: http://launchpad.dev/~no-priv/+archive/+build/24/+retry
 
     >>> user_browser.open(
     ...     "http://launchpad.dev/ubuntu/+source/cdrkit/1.0/+build/24")
     >>> print_action_links(user_browser.contents)
+    Rescore build (disabled)
     Retry build: http://launchpad.dev/~no-priv/+archive/+build/24/+retry
 
 PPA build pages also have some text telling the viewer that they can retry
