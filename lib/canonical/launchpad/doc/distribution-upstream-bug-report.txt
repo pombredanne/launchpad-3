@@ -19,7 +19,9 @@ to allow a distribution to focus on and improve this process.
     >>> productset = getUtility(IProductSet)
     >>> spnset = getUtility(ISourcePackageNameSet)
     >>> packagingutil = getUtility(IPackagingUtil)
-    >>> ubuntu = distroset.get(1)
+    >>> ubuntu = distroset.getByName('ubuntu')
+    >>> debian = distroset.getByName('debian')
+    >>> kubuntu = distroset.getByName('kubuntu')
     >>> pmount_spn = spnset.queryByName('pmount')
     >>> name12 = personset.getByName('name12')
     >>> pmount = productset.createProduct(name12, 'pmount', 'pmount',
@@ -35,20 +37,21 @@ bug report that associates packages with upstream information linked to
 them.
 
     >>> def print_report(data):
-    ...     for package_data in data:
-    ...         sourcepackagename = package_data['sourcepackagename']
-    ...         product = package_data['product']
-    ...         print sourcepackagename.name, product and product.name or None
-    ...         print package_data['open_bugs']
-    ...         print package_data['upstream_bugs']
-    ...         print package_data['watch_bugs']
+    ...     for dsp, product, open, upstream, watch in data:
+    ...         print dsp.name, product and product.name or None
+    ...         print open, upstream, watch
 
-A first report, entirely based on sampledata:
+A first set of reports, entirely based on sampledata:
 
     >>> print_report(ubuntu.getPackagesAndPublicUpstreamBugCounts())
     linux-source-2.6.15 None    1 0 0
     mozilla-firefox     firefox 1 1 0
     thunderbird         None    1 1 1
+
+    >>> print_report(debian.getPackagesAndPublicUpstreamBugCounts())
+    mozilla-firefox     None    3 2 0
+
+    >>> print_report(kubuntu.getPackagesAndPublicUpstreamBugCounts())
 
 We add two new bugs to pmount in Ubuntu. From now on we'll limit the
 results to 3 packages (as a demonstration of the API) so thunderbird will be

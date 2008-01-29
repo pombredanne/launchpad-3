@@ -1068,21 +1068,23 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
                'limit': limit,
                'distro': self.id,
                'unresolved': quote(UNRESOLVED_BUGTASK_STATUSES)})
-        counts = cur.fetchall()
+        counts = cur.dictfetchall()
         cur.close()
+        # Filter out packages for which there are no counts.
+        counts = [data for data in counts if data['total_bugs'] > 0]
         if not counts:
             # If no counts are returned it means that there are no
             # source package names in the database -- because the counts
             # would just return zero if no bugs existed. And if there
             # are no packages are in the database, all bets are off.
-            return None
-        # Filter out packages for which there are no counts.
-        counts = [data for data in counts if data[2] > 0]
+            return []
+
         # Next step is to extract which IDs actually show up in the
         # output we generate, and cache them.
-        spn_ids = [item[1] for item in counts]
+        spn_ids = [item['id'] for item in counts]
         list(SourcePackageName.select("SourcePackageName.id IN %s"
              % sqlvalues(spn_ids)))
+
         # Finally find out what products are attached to these source
         # packages (if any) and cache them too. The ordering of the
         # query by Packaging.id ensures that the dictionary holds the
@@ -1107,24 +1109,22 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
             list(Product.select("Product.id IN %s" % 
                  sqlvalues(sources_to_products.values()),
                  prejoins=["bugcontact", "bugtracker"]))
+
         # Okay, we have all the information good to go, so assemble it
         # in a reasonable data structure.
         results = []
-        for spn_name, spn_id, open_bugs, upstream_bugs, watch_bugs in counts:
+        for count in counts:
+            spn_id = count['id']
             sourcepackagename = SourcePackageName.get(spn_id)
+            dsp = self.getSourcePackage(sourcepackagename)
             if spn_id in sources_to_products:
                 product_id = sources_to_products[spn_id]
                 product = Product.get(product_id)
             else:
                 product = None
-            result = {
-                'sourcepackagename': sourcepackagename,
-                'product': product,
-                'open_bugs': open_bugs,
-                'upstream_bugs': upstream_bugs,
-                'watch_bugs': watch_bugs
-            }
-            results.append(result)
+            results.append((dsp, product, count['total_bugs'],
+                            count['bugs_affecting_upstream'],
+                            count['bugs_with_upstream_bugwatch']))
         return results
 
 

@@ -340,7 +340,7 @@ class IDistribution(IBugTarget, IHasAppointedDriver, IHasDrivers,
     def getPackagesAndPublicUpstreamBugCounts(limit=50):
         """Return list of tuples of packages, upstreams and public bug counts.
 
-        Returns: [(ISourcePackageName, IProduct, int, int, int), ...]
+        Returns: [(IDistroSourcePackage, IProduct, int, int, int), ...]
 
         This API is quite specialized; it returns a list of up to limit
         tuples containing IProducts and three different bug counts: open
