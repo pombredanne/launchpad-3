@@ -60,7 +60,6 @@ from canonical.launchpad.webapp.uri import URI
 from canonical.widgets import SinglePopupWidget
 from canonical.widgets.branch import TargetBranchWidget
 from canonical.widgets.itemswidgets import LaunchpadRadioWidgetWithDescription
-from canonical.widgets.link import LinkWidget
 
 
 def quote(text):
@@ -701,7 +700,7 @@ class BranchAddView(LaunchpadFormView, BranchNameValidationMixin):
         if not self.user.inTeam(owner):
             self.setFieldError(
                 'owner',
-                'You are not a member of %s' % data['owner'].displayname)
+                'You are not a member of %s' % owner.displayname)
 
         if owner.isTeam() and data.get('product') is None:
             error = self.getFieldError('product')
