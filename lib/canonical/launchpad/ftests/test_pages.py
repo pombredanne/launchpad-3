@@ -204,6 +204,9 @@ def extract_text(content):
             result.append(unicode(node))
         else:
             if isinstance(node, Tag):
+                # If the node has the class "sortkey" then it is invisible.
+                if node.get('class') == 'sortkey':
+                    continue
                 if node.name.lower() in ELEMENTS_INTRODUCING_NEWLINE:
                     result.append(u'\n')
             # Process this node's children next.
@@ -258,12 +261,29 @@ def print_tab_links(content):
 def print_action_links(content):
     """Print action menu urls."""
     actions = find_portlet(content, 'Actions')
+    if actions is None:
+        print "No actions portlet"
+        return
     entries = actions.findAll('li')
     for entry in entries:
         if entry.a:
             print '%s: %s' % (entry.a.string, entry.a['href'])
         elif entry.strong:
             print entry.strong.string
+
+
+def print_submit_buttons(content):
+    """Print the submit button values found in the main content.
+
+    Use this to check that the buttons on a page match your expectations.
+    """
+    buttons = find_main_content(content).findAll(
+        'input', attrs={'class': 'button', 'type': 'submit'})
+    if buttons is None:
+        print "No buttons found"
+    else:
+        for button in buttons:
+            print button['value']
 
 
 def print_comments(page):
@@ -321,6 +341,7 @@ def setUpGlobs(test):
     test.globs['print_tab_links'] = print_tab_links
     test.globs['print_action_links'] = print_action_links
     test.globs['print_comments'] = print_comments
+    test.globs['print_submit_buttons'] = print_submit_buttons
     test.globs['print_radio_button_field'] = print_radio_button_field
     test.globs['print_batch_header'] = print_batch_header
 

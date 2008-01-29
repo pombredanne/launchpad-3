@@ -230,7 +230,7 @@ class ServiceRootResource:
     def publishTraverse(self, request, name):
         if name in self.top_level_collections:
             return CollectionResource(
-                self.top_level_collections[name](), request, name)
+                self.top_level_collections[name], request, name)
         else:
             raise NotFound(self, name)
 

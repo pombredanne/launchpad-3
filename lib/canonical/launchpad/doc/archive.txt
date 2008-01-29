@@ -24,6 +24,8 @@ records to disk, including configuration and indexes.
     1024
     >>> cprov_archive.whiteboard
     u'It is not my fault.'
+    >>> cprov_archive.private
+    False
 
 Useful properties:
 

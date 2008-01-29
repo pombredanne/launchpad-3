@@ -2,6 +2,7 @@
 bzr-version-info.py
 launchpad.log
 launchpad-access.log
+pagetests-access.log
 configs/+config-overrides.zcml
 +*
 sourcecode/buildbot

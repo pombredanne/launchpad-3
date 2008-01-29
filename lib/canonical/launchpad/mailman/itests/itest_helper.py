@@ -3,6 +3,7 @@
 """Various helper functions and constants for use in test scripts."""
 
 import os
+import re
 import sys
 import time
 import errno
@@ -259,3 +260,40 @@ def beta_program_enable(team_name):
     from canonical.launchpad.ftests import mailinglists_helper
     mailinglists_helper.beta_program_enable(team_name)
     commit()
+
+
+def collect_archive_message_ids(team_name):
+    """Collect all the X-Message-Id values in the team's archived messages."""
+    from Mailman.mm_cfg import VAR_PREFIX
+    mhonarc_path = os.path.join(VAR_PREFIX, 'mhonarc', 'itest-one')
+    message_ids = []
+    # Unfortunately, there's nothing we can wait on to know whether the
+    # archiver has run yet or not, because the archive runner does not log
+    # messages when it completes.
+    archived_files = []
+    for count in range(3):
+        try:
+            archived_files = [file_name
+                              for file_name in os.listdir(mhonarc_path)
+                              if file_name.endswith('.html')]
+        except OSError, error:
+            if error.errno != errno.ENOENT:
+                raise
+            # Sleep and try again.
+        if len(archived_files) > 0:
+            break
+        time.sleep(0.5)
+    for html_file in archived_files:
+        file = open(os.path.join(mhonarc_path, html_file))
+        try:
+            data = file.read()
+        finally:
+            file.close()
+        for line in data.splitlines():
+            if line.startswith('<!DOCTYPE'):
+                break
+            mo = re.match('<!--X-Message-Id:\s*(?P<id>[\S]+)', line, re.I)
+            if mo:
+                message_ids.append(mo.group('id'))
+                break
+    return message_ids

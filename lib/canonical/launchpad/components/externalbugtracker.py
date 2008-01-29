@@ -781,7 +781,7 @@ class DebBugs(ExternalBugTracker):
         will be raised.
         """
         if self.debbugs_db is None:
-            raise BugNotFound(bug_id)
+            raise BugNotFound(debian_bug.id)
 
         # If we can't find the log in the main database we try the
         # archive.
@@ -858,9 +858,10 @@ class DebBugs(ExternalBugTracker):
 
         try:
             self._loadLog(debian_bug)
-        except debbugs.LogParseFailed:
-            log.warn("Unable to import comments for DebBugs bug #%s. "
-                "Could not parse comment log." %  bug_watch.remotebug)
+        except debbugs.LogParseFailed, error:
+            log.warn("Unable to import comments for DebBugs bug #%(bug_id)s. "
+                "Could not parse comment log. %(error)s" %
+                {'bug_id': bug_watch.remotebug, 'error': error})
             return
 
         imported_comments = []
@@ -871,8 +872,13 @@ class DebBugs(ExternalBugTracker):
                 imported_comments.append(bug_message)
 
         if len(imported_comments) > 0:
-            log.info("Imported %i comments for remote bug %s on %s." %
-                (len(imported_comments), bug_watch.remotebug, self.baseurl))
+            log.info("Imported %(count)i comments for remote bug "
+                "%(remotebug)s on %(bugtracker_url)s into Launchpad bug "
+                "%(bug_id)s." %
+                {'count': len(imported_comments),
+                 'remotebug': bug_watch.remotebug,
+                 'bugtracker_url': self.baseurl,
+                 'bug_id': bug_watch.bug.id})
 
     def _importDebBugsComment(self, comment, bug_watch):
         """Import a debbugs comment and link it to a bug watch.
