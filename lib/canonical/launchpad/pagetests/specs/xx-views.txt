@@ -261,12 +261,11 @@ blueprint targets:
     >>> specs = find_tag_by_id(browser.contents, 'speclisting')
     >>> print extract_text(specs)
     Priority Blueprint Design Delivery Assignee Project Series
-    ...High svg-support ... Approved ... Beta Available Carlos ... firefox
-    ...Medium canvas ... New ... Unknown firefox
-    ...Medium extension-manager-upgrades ... New ... Informational Carlos ... 
-       firefox
-    ...Medium mergewin ... New ... Unknown firefox
-    ...Not e4x ... Review ... Unknown Dafydd Harries firefox
+    High     svg-support Approved Beta Available Carlos ... firefox
+    Medium   canvas      New Unknown firefox
+    Medium   extension-manager-upgrades New Informational Carlos ... firefox
+    Medium   mergewin    New Unknown firefox
+    Not      e4x Review  Unknown Dafydd Harries firefox
 
 * project series:
 
@@ -283,5 +282,5 @@ blueprint targets:
     >>> browser.open('http://blueprints.launchpad.dev/mozilla/+series/1.0')
     >>> specs = find_tag_by_id(browser.contents, 'speclisting')
     >>> print extract_text(specs)
-    Priority Blueprint Design Delivery Assignee Project Series
-    ...High svg-support ... Approved ... Beta Available Carlos ... firefox 1.0
+    Priority Blueprint Design Delivery Assignee Project Series Milestone
+    High svg-support Approved Beta Available Carlos ... firefox 1.0
