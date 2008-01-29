@@ -4,7 +4,7 @@ BEGIN TRANSACTION;
 
 ALTER TABLE BranchMergeProposal ADD COLUMN conversation INTEGER;
 
-CREATE TABLE BranchMergeProposalSubscription (
+CREATE TABLE CodeReviewSubscription (
     id SERIAL PRIMARY KEY,
     branch_merge_proposal INTEGER NOT NULL REFERENCES BranchMergeProposal(id),
     person integer NOT NULL REFERENCES Person(id),
@@ -13,7 +13,7 @@ CREATE TABLE BranchMergeProposalSubscription (
     registrant INTEGER REFERENCES Person(id)
     );
 
-CREATE TABLE BranchMergeProposalMessage (
+CREATE TABLE CodeReviewMessage (
     id SERIAL PRIMARY KEY,
     branch_merge_proposal INTEGER NOT NULL REFERENCES BranchMergeProposal(id),
     message INTEGER NOT NULL UNIQUE REFERENCES Message(id),
