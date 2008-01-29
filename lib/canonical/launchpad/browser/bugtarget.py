@@ -45,8 +45,9 @@ from canonical.launchpad.interfaces import (
     IFrontPageBugAddForm, IProjectBugAddForm, UNRESOLVED_BUGTASK_STATUSES,
     BugTaskStatus)
 from canonical.launchpad.webapp import (
-    canonical_url, LaunchpadView, LaunchpadFormView, action, custom_widget,
+    LaunchpadFormView, LaunchpadView, action, canonical_url, custom_widget,
     safe_action, urlappend)
+from canonical.launchpad.webapp.authorization import check_permission
 from canonical.widgets.bug import BugTagsWidget
 from canonical.widgets.launchpadtarget import LaunchpadTargetWidget
 from canonical.launchpad.vocabularies import ValidPersonOrTeamVocabulary
@@ -707,6 +708,8 @@ class FileBugGuidedView(FileBugViewBase):
             duplicateof = bug.duplicateof
             if duplicateof is not None:
                 bug = duplicateof
+            if not check_permission('launchpad.View', bug):
+                continue
             if bug not in matching_bugs:
                 matching_bugs.append(bug)
                 if len(matching_bugs) >= matching_bugs_limit:
