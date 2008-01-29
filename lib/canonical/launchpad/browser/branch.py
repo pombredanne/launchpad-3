@@ -358,18 +358,22 @@ class BranchView(LaunchpadView, FeedsMixin):
             targets_added.add(target_id)
         return targets
 
-    @cachedproperty
+    @property
     def latest_landing_candidates(self):
         """Return a decorated filtered list of landing candidates."""
         # Only show the most recent 5 landing_candidates
-        candidates = self.context.landing_candidates[:5]
-        return [DecoratedMergeProposal(proposal) for proposal in candidates]
+        return self.landing_candidates[:5]
 
     @cachedproperty
     def landing_candidates(self):
         """Return a decorated list of landing candidates."""
         candidates = self.context.landing_candidates
         return [DecoratedMergeProposal(proposal) for proposal in candidates]
+
+    @property
+    def show_candidate_more_link(self):
+        """Only show the link if there are more than five."""
+        return len(self.landing_candidates) > 5
 
 
 class DecoratedMergeProposal:
@@ -880,6 +884,10 @@ class RegisterBranchMergeProposalView(LaunchpadFormView):
     custom_widget('target_branch', TargetBranchWidget)
     custom_widget('dependent_branch', SinglePopupWidget, displayWidth=35)
 
+    @property
+    def next_url(self):
+        return canonical_url(self.context)
+
     def initialize(self):
         """Show a 404 if the source branch is junk."""
         if self.context.product is None:
@@ -907,8 +915,10 @@ class RegisterBranchMergeProposalView(LaunchpadFormView):
                 dependent_branch=dependent_branch, whiteboard=whiteboard)
         except InvalidBranchMergeProposal, error:
             self.addError(str(error))
-        else:
-            self.next_url = canonical_url(source_branch)
+
+    @action('Cancel', name='cancel', validator='validate_cancel')
+    def cancel_action(self, action, data):
+        """Do nothing and go back to the branch page."""
 
     def validate(self, data):
         source_branch = self.context

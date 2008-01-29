@@ -2,11 +2,11 @@
 
 __metaclass__ = type
 
-from zope.publisher.publish import mapply
-
 import thread
 import traceback
 import urllib
+
+import tickcount
 
 import sqlos.connection
 from sqlos.interfaces import IConnectionName
@@ -22,6 +22,7 @@ from zope.interface import implements, providedBy
 
 from zope.publisher.interfaces import IPublishTraverse, Retry
 from zope.publisher.interfaces.browser import IDefaultSkin, IBrowserRequest
+from zope.publisher.publish import mapply
 
 from zope.security.interfaces import Unauthorized
 from zope.security.proxy import removeSecurityProxy
@@ -135,6 +136,7 @@ class LaunchpadBrowserPublication(
         #t.join(con._dm)
 
     def beforeTraversal(self, request):
+        request._traversalticks_start = tickcount.tickcount()
         threadid = thread.get_ident()
         threadrequestfile = open('thread-%s.request' % threadid, 'w')
         try:
@@ -295,6 +297,7 @@ class LaunchpadBrowserPublication(
         It also sets the launchpad.userid and launchpad.pageid WSGI
         environment variables.
         """
+        request._publicationticks_start = tickcount.tickcount()
         if request.response.getStatus() in [301, 302, 303, 307]:
             return ''
 
@@ -318,7 +321,11 @@ class LaunchpadBrowserPublication(
             else:
                 view_name = unrestricted_ob.__class__.__name__
             pageid = '%s:%s' % (context.__class__.__name__, view_name)
-        request.setInWSGIEnvironment('launchpad.pageid', pageid)
+        # The view name used in the pageid usually comes from ZCML and so
+        # it will be a unicode string although it shouldn't.  To avoid
+        # problems we encode it into ASCII.
+        request.setInWSGIEnvironment(
+            'launchpad.pageid', pageid.encode('ASCII'))
 
         return mapply(ob, request.getPositionalArguments(), request)
 
@@ -329,7 +336,13 @@ class LaunchpadBrowserPublication(
         Because of this we cannot chain to the superclass and implement
         the whole behaviour here.
         """
-
+        orig_env = request._orig_env
+        assert hasattr(request, '_publicationticks_start'), (
+            'request._publicationticks_start, which should have been set by '
+            'callObject(), was not found.')
+        ticks = tickcount.difference(
+            request._publicationticks_start, tickcount.tickcount())
+        request.setInWSGIEnvironment('launchpad.publicationticks', ticks)
         # Annotate the transaction with user data. That was done by
         # zope.app.publication.zopepublication.ZopePublication.
         txn = transaction.get()
@@ -354,6 +367,12 @@ class LaunchpadBrowserPublication(
     def afterTraversal(self, request, ob):
         """ We don't want to call _maybePlacefullyAuthenticate as does
         zopepublication but we do want to send an AfterTraverseEvent """
+        assert hasattr(request, '_traversalticks_start'), (
+            'request._traversalticks_start, which should have been set by '
+            'beforeTraversal(), was not found.')
+        ticks = tickcount.difference(
+            request._traversalticks_start, tickcount.tickcount())
+        request.setInWSGIEnvironment('launchpad.traversalticks', ticks)
         notify(AfterTraverseEvent(ob, request))
 
         # Debugging code. Please leave. -- StuartBishop 20050622
@@ -380,13 +399,39 @@ class LaunchpadBrowserPublication(
         raise NotImplementedError
 
     def handleException(self, object, request, exc_info, retry_allowed=True):
+        orig_env = request._orig_env
+        ticks = tickcount.tickcount()
+        if (hasattr(request, '_publicationticks_start') and
+            not orig_env.has_key('launchpad.publicationticks')):
+            # The traversal process has been started but hasn't completed.
+            assert orig_env.has_key('launchpad.traversalticks'), (
+                'We reached the publication process so we must have finished '
+                'the traversal.')
+            ticks = tickcount.difference(
+                request._publicationticks_start, ticks)
+            request.setInWSGIEnvironment('launchpad.publicationticks', ticks)
+        elif (hasattr(request, '_traversalticks_start') and
+              not orig_env.has_key('launchpad.traversalticks')):
+            # The traversal process has been started but hasn't completed.
+            ticks = tickcount.difference(
+                request._traversalticks_start, ticks)
+            request.setInWSGIEnvironment('launchpad.traversalticks', ticks)
+        else:
+            # The exception wasn't raised in the middle of the traversal nor
+            # the publication, so there's nothing we need to do here.
+            pass
+
         # Reraise Retry exceptions rather than log.
         # XXX stub 20070317: Remove this when the standard
         # handleException method we call does this (bug to be fixed upstream)
-        if retry_allowed and isinstance(exc_info[1], Retry):
-            raise
-        # Retry the request if we get a database disconnection.
-        if retry_allowed and isinstance(exc_info[1], da.DisconnectionError):
+        if (retry_allowed
+            and isinstance(exc_info[1], (Retry, da.DisconnectionError))):
+            # Remove variables used for counting ticks as this request is
+            # going to be retried.
+            orig_env.pop('launchpad.traversalticks', None)
+            orig_env.pop('launchpad.publicationticks', None)
+            if isinstance(exc_info[1], Retry):
+                raise
             raise Retry(exc_info)
         superclass = zope.app.publication.browser.BrowserPublication
         superclass.handleException(self, object, request, exc_info,

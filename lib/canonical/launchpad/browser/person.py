@@ -94,7 +94,6 @@ import pytz
 import urllib
 
 from zope.app.form.browser import SelectWidget, TextAreaWidget
-from zope.app.form.browser.itemswidgets import RadioWidget
 from zope.app.session.interfaces import ISession
 from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 from zope.event import notify
@@ -3029,7 +3028,8 @@ class PersonEditEmailsView(LaunchpadFormView):
         newemail = data['newemail']
         if not valid_email(newemail):
             self.addError(
-                "'%s' doesn't seem to be a valid email address." % newemail)
+                "'%s' doesn't seem to be a valid email address." %
+                cgi.escape(newemail))
             return self.errors
 
         email = getUtility(IEmailAddressSet).getByEmail(newemail)

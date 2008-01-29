@@ -36,3 +36,12 @@ DEFAULT_DIGESTABLE = No
 DEFAULT_BOUNCE_NOTIFY_OWNER_ON_DISABLE = No
 DEFAULT_BOUNCE_NOTIFY_OWNER_ON_REMOVAL = No
 VERP_PERSONALIZED_DELIVERIES = Yes
+
+# Modify the global pipeline to add some handlers for Launchpad specific
+# functionality.
+# - ensure posters are Launchpad members.
+GLOBAL_PIPELINE.insert(0, 'LaunchpadMember')
+# - insert our own RFC 2369 and RFC 5064 headers; this must appear after
+#   CookHeaders
+index = GLOBAL_PIPELINE.index('CookHeaders')
+GLOBAL_PIPELINE.insert(index + 1, 'LaunchpadHeaders')
