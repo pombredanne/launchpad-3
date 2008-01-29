@@ -54,6 +54,15 @@ class BranchMergeProposal(SQLBase):
         default=None)
     reviewed_revision_id = StringCol(default=None)
 
+    commit_message = StringCol(default=None)
+
+    queue_position = IntCol(default=None)
+
+    queuer = ForeignKey(
+        dbName='queuer', foreignKey='Person', notNull=False,
+        default=None)
+    queued_revision_id = StringCol(default=None)
+
     date_merged = UtcDateTimeCol(default=None)
     merged_revno = IntCol(default=None)
 
@@ -64,6 +73,7 @@ class BranchMergeProposal(SQLBase):
     date_created = UtcDateTimeCol(notNull=True, default=DEFAULT)
     date_review_requested = UtcDateTimeCol(notNull=False, default=None)
     date_reviewed = UtcDateTimeCol(notNull=False, default=None)
+    date_queued = UtcDateTimeCol(notNull=False, default=None)
 
     def setAsWorkInProgress(self):
         """See `IBranchMergeProposal`."""

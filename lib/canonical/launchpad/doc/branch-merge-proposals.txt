@@ -100,6 +100,7 @@ A branch merge proposal can be in one of several states:
     Rejected
     Merged
     Code failed to merge
+    Queued
 
 When a merge proposal is initially created, it is in the "Work in
 progress" state.  The only state that is a final state is "Merged".

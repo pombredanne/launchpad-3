@@ -16,7 +16,7 @@ from zope.interface import Attribute, Interface
 from zope.schema import Choice, Datetime, Int
 
 from canonical.launchpad import _
-from canonical.launchpad.fields import Whiteboard
+from canonical.launchpad.fields import Summary, Whiteboard
 from canonical.lazr import DBEnumeratedType, DBItem
 
 
@@ -85,6 +85,13 @@ class BranchMergeProposalStatus(DBEnumeratedType):
         target branch for some reason.
         """)
 
+    QUEUED = DBItem(7, """
+        Queued
+
+        The changes from the source branch are queued to be merged into the
+        target branch.
+        """)
+
 
 class IBranchMergeProposal(Interface):
     """Branch merge proposals show intent of landing one branch on another."""
@@ -127,6 +134,18 @@ class IBranchMergeProposal(Interface):
     reviewed_revision_id = Attribute(
         _("The revision id that has been approved by the reviewer."))
 
+
+    commit_message = Summary(
+        title=_("Commit Message"), required=False,
+        description=_("The commit message that should be used when merging"
+                      "the source branch."))
+
+    queue_position = Attribute(_("The position in the queue."))
+
+    queuer = Attribute(_("The person that queued up the branch."))
+    queued_revision_id = Attribute(
+        _("The revision id that has been queued for landing."))
+
     merged_revno = Int(
         title=_("Merged Revision Number"), required=False,
         description=_("The revision number on the target branch which "
@@ -146,6 +165,8 @@ class IBranchMergeProposal(Interface):
         title=_('Date Review Requested'), required=False, readonly=True)
     date_reviewed = Datetime(
         title=_('Date Reviewed'), required=False, readonly=True)
+    date_queued = Datetime(
+        title=_('Date Queued'), required=False, readonly=True)
 
     def setAsWorkInProgress():
         """Set the state of the merge proposal to 'Work in progress'.
