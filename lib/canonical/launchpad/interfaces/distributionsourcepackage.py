@@ -35,11 +35,6 @@ class IDistributionSourcePackage(IBugTarget):
     displayname = Attribute("Display name for this package.")
     title = Attribute("Title for this package.")
 
-    # XXX sabdfl 2005-10-16:
-    distro = Attribute("The distribution.")
-
-    subscribers = Attribute("The subscribers to this package.")
-
     currentrelease = Attribute(
         "The latest published SourcePackageRelease of a source package with "
         "this name in the distribution or distroseries, or None if no source "
@@ -63,6 +58,9 @@ class IDistributionSourcePackage(IBugTarget):
     bugcontacts = Attribute(
         "The list of people or teams that is explicitly Cc'd to all public "
         "bugs filed on this package.")
+
+    def __init__(distribution, sourcepackagename):
+        """Create a new DistributionSourcePackage."""
 
     def isBugContact(person):
         """Is person a bug contact for this package?
@@ -123,11 +121,6 @@ class IDistributionSourcePackage(IBugTarget):
         :person: An IPerson or ITeam.
         """
 
-    def subscribe(person):
-        """Subscribe a person to this package.
-
-        :person: The person to subscribe. An IPerson.
-        """
 
 class IDistributionSourcePackageManageBugcontacts(Interface):
     """Schema for the manage bug contacts form."""
