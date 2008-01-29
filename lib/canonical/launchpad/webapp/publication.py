@@ -25,7 +25,6 @@ from zope.publisher.interfaces import IPublishTraverse, Retry
 from zope.publisher.interfaces.browser import IDefaultSkin, IBrowserRequest
 from zope.publisher.publish import mapply
 
-from zope.security.interfaces import Unauthorized
 from zope.security.proxy import removeSecurityProxy
 from zope.security.management import newInteraction
 

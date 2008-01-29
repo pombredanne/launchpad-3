@@ -1,4 +1,5 @@
 # Copyright 2004 Canonical Ltd.  All rights reserved.
+# pylint: disable-msg=E0211,E0213
 
 __metaclass__ = type
 
@@ -209,7 +210,8 @@ class ICanonicalUrlData(Interface):
     """Tells you how to work out a canonical url for an object."""
 
     rootsite = Attribute(
-        'The root id to use.  None means to use the base of the current request.')
+        'The root id to use.  None means to use the base of the current '
+        'request.')
 
     inside = Attribute('The object this path is relative to.  None for root.')
 
@@ -381,8 +383,7 @@ class IBrowserFormNG(Interface):
 class ILaunchpadBrowserApplicationRequest(
     IBasicLaunchpadRequest,
     zope.publisher.interfaces.browser.IBrowserApplicationRequest):
-    """The request interface to the application for launchpad browser requests.
-    """
+    """The request interface to the application for LP browser requests."""
 
     form_ng = Object(
         title=u'IBrowserFormNG object containing the submitted form data',
