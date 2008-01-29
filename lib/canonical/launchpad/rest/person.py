@@ -30,6 +30,13 @@ class PersonEntry(Entry):
         """See `IEntry`."""
         return self.context.name
 
+    @property
+    def members(self):
+        """See `IPersonEntry`."""
+        if not self.context.isTeam():
+            return None
+        return self.context.activemembers
+
 
 class PersonCollection(Collection):
     """A collection of people."""
@@ -45,7 +52,7 @@ class PersonCollection(Collection):
     def find(self):
         """Return all the people and teams on the site."""
         # Pass an empty query into find() to get all people
-        # and teams.
+        # =and teams.
         return self.context.find("")
 
 

@@ -21,6 +21,10 @@
         <allow interface='canonical.lazr.interfaces.IEntryResource' />
     </class>
 
+    <class class="canonical.lazr.rest.ScopedCollectionResource">
+        <allow interface='canonical.lazr.interfaces.ICollectionResource' />
+    </class>
+
     <adapter
         for="canonical.launchpad.interfaces.IPerson"
         provides="canonical.launchpad.interfaces.IPersonEntry"
@@ -34,8 +38,7 @@
         />
 
     <adapter
-        for="canonical.launchpad.interfaces.IPerson
-             canonical.launchpad.interfaces.IPerson"
+        for="canonical.launchpad.interfaces.IPersonEntry canonical.launchpad.interfaces.IPerson"
         provides="canonical.lazr.interfaces.IScopedCollection"
         factory="canonical.launchpad.rest.PersonPersonCollection"
         />

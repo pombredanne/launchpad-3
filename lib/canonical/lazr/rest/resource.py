@@ -11,6 +11,7 @@ __all__ = [
     'HTTPResource',
     'ReadOnlyResource',
     'ScopedCollection',
+    'ScopedCollectionResource',
     'ServiceRootResource'
     ]
 
@@ -113,7 +114,6 @@ class EntryResource(ReadOnlyResource):
 
     def publishTraverse(self, request, name):
         """Fetch a scoped collection resource by name."""
-        import pdb; pdb.set_trace()
         field = self.context.schema.get(name)
         if not ICollectionField.providedBy(field):
             raise NotFound(self, name)
@@ -124,16 +124,21 @@ class EntryResource(ReadOnlyResource):
         # This is neccessary because we can't pass the interface itself
         # into getMultiAdapter.
         example_entry = CollectionEntryDummy(field)
-        scoped_collection = getMultiAdapter((self.context, example_entry),
-                                            IScopedCollection)
+        from zope.component.interfaces import ComponentLookupError
+        try:
+            scoped_collection = getMultiAdapter((self.context, example_entry),
+                                                 IScopedCollection)
 
-        # Tell the IScopedCollection object what collection it's managing,
-        # and what the collection's relationship is to the entry it's
-        # scoped to.
-        scoped_collection.collection = collection
-        scoped_collection.relationship = name
+            # Tell the IScopedCollection object what collection it's managing,
+            # and what the collection's relationship is to the entry it's
+            # scoped to.
+            scoped_collection.collection = collection
+            scoped_collection.relationship = name
 
-        return ScopedCollectionResource(scoped_collection, self.request, name)
+            return ScopedCollectionResource(scoped_collection, self.request, name)
+        except ComponentLookupError, e:
+            import pdb; pdb.set_trace()
+
 
     def toDataForJSON(self):
         """Turn the object into a simple data structure.
