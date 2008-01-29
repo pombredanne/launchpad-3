@@ -7,7 +7,7 @@
   <h2>Bug contacts</h2>
 
   <div class="portletBody portletContent"
-       tal:define="pkg_bug_contacts context/bugcontacts;
+       tal:define="pkg_bug_contacts context/subscriptions;
                    distribution context/distribution">
     <b>For this package:</b>
     <br />
@@ -15,8 +15,8 @@
       <ul class="person">
         <li tal:repeat="pkg_bug_contact pkg_bug_contacts">
           <a href="#"
-             tal:content="pkg_bug_contact/bugcontact/browsername"
-             tal:attributes="href pkg_bug_contact/bugcontact/fmt:url">Ubuntu Team</a>
+             tal:content="pkg_bug_contact/subscriber/browsername"
+             tal:attributes="href pkg_bug_contact/subscriber/fmt:url">Ubuntu Team</a>
         </li>
       </ul>
       <br />

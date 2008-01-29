@@ -21,14 +21,14 @@
 </metal:rightportlets>
 
 <metal:heading fill-slot="pageheading">
-  <h1>Change package bug contacts</h1>
+  <h1>Change subscriptions</h1>
 </metal:heading>
 
 <div metal:fill-slot="main">
  
   <p>
-    A <dfn>bug contact</dfn> automatically receives e-mail notifications
-    of all public bugs filed on a package.
+    Subscribers automatically receives e-mail notifications
+    on new public items and changes to existing items.
     You can change these bugmail settings at any time.
   </p>
   <div metal:use-macro="context/@@launchpad_form/form" />

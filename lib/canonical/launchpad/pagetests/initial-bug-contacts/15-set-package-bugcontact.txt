@@ -8,7 +8,7 @@ settings of teams to which they belong.
     ... 'http://bugs.launchpad.dev/ubuntu/+source/mozilla-firefox')
     >>> browser.getLink('Subscribe to bug mail').click()
     >>> subscribe_myself = browser.getControl(
-    ...    'I want to receive all bugmail for this source package')
+    ...    'I want to subscribe to notifications')
     >>> subscribe_myself.selected
     False
     >>> subscribe_myself.selected = True
@@ -40,7 +40,7 @@ Sample Person and the Landscape team are now subscribed.
 Sample Person can also unsubscribe himself and the Landscape team.
 
     >>> subscribe_myself = browser.getControl(
-    ...    'I want to receive all bugmail for this source package')
+    ...    'I want to subscribe to notifications')
     >>> subscribe_myself.selected = False
     >>> subscribe_team = browser.getControl('Landscape')
     >>> subscribe_team.selected = False
@@ -72,7 +72,7 @@ to add any user to the bug contacts.
 
     >>> browser.open(
     ... 'http://bugs.launchpad.dev/ubuntu/+source/mozilla-firefox/+subscribe')
-    >>> subscribe_other = browser.getControl('Add other bug contact:')
+    >>> subscribe_other = browser.getControl('Subscribe someone else:')
     >>> subscribe_other.value = 'no-priv'
     >>> browser.getControl('Save these changes').click()
 
@@ -80,8 +80,7 @@ No Privileges Person is now subscribed...
 
     >>> for message in find_tags_by_class(browser.contents, 'message'):
     ...     print message.renderContents()
-    "No Privileges Person" was successfully subscribed to all bugmail in 
-    mozilla-firefox in ubuntu
+    "No Privileges Person" was successfully subscribed to mozilla-firefox in ubuntu.
 
     >>> print extract_text(find_portlet(browser.contents, 'Bug contacts'))
     Bug contacts
@@ -101,8 +100,7 @@ No Privileges Person is now subscribed...
     >>> browser.getControl('Save these changes').click()
     >>> print find_tags_by_class(
     ...    browser.contents, 'informational message')[0].contents[0]
-    "No Privileges Person" was successfully unsubscribed from all bugmail in 
-    mozilla-firefox in ubuntu
+    "No Privileges Person" was successfully unsubscribed from mozilla-firefox in ubuntu.
     >>> print extract_text(find_portlet(browser.contents, 'Bug contacts'))
     Bug contacts
     For this package:
@@ -138,7 +136,7 @@ purges the submitted form data from now unexpected values.
 
     >>> remove_other = browser.getControl('\xa0Foo Bar')
     >>> remove_other.selected = True
-    >>> subscribe_other = browser.getControl('Add other bug contact')
+    >>> subscribe_other = browser.getControl('Subscribe someone else')
     >>> subscribe_other.value = 'nopriv'
     >>> browser.getControl('Save these changes').click()
     >>> print extract_text(find_portlet(browser.contents, 'Bug contacts'))

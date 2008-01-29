@@ -17,7 +17,7 @@ contacts associated with a package, an empty list is returned:
     >>> debian = getUtility(IDistributionSet).getByName("debian")
     >>> debian_firefox = debian.getSourcePackage("mozilla-firefox")
 
-    >>> debian_firefox.bugcontacts
+    >>> debian_firefox.subscriptions
     []
 
 Adding a package bug contact is done with the
@@ -28,7 +28,7 @@ in to call this method:
     >>> personset = getUtility(IPersonSet)
     >>> sample_person = personset.getByName("name12")
 
-    >>> debian_firefox.addBugContact(sample_person)
+    >>> debian_firefox.addSubscription(sample_person, sample_person)
     Traceback (most recent call last):
       ...
     Unauthorized: ...
@@ -38,41 +38,41 @@ Let's login then to add a bugcontact:
     >>> from canonical.launchpad.ftests import login
     >>> login("foo.bar@canonical.com")
 
-    >>> debian_firefox.addBugContact(sample_person)
-    >>> [pbc.bugcontact.name for pbc in debian_firefox.bugcontacts]
+    >>> debian_firefox.addSubscription(sample_person, sample_person)
+    >>> [pbc.subscriber.name for pbc in debian_firefox.subscriptions]
     [u'name12']
 
 Trying to add a bug contact to a package when that person or team is
 already one of the bug contacts on that package will raise a
 DuplicateBugContactError.
 
-    >>> debian_firefox.addBugContact(sample_person)
+    >>> debian_firefox.addSubscription(sample_person, sample_person)
     Traceback (most recent call last):
       ...
-    DuplicateBugContactError: ...
+    DuplicateSubscriptionError: ...
 
 Let's add an ITeam as one of the bug contacts:
 
     >>> ubuntu_team = personset.getByName("ubuntu-team")
-    >>> debian_firefox.addBugContact(ubuntu_team)
+    >>> debian_firefox.addSubscription(ubuntu_team, ubuntu_team)
 
-    >>> sorted([pbc.bugcontact.name for pbc in debian_firefox.bugcontacts])
+    >>> sorted([pbc.subscriber.name for pbc in debian_firefox.subscriptions])
     [u'name12', u'ubuntu-team']
 
 To remove a bug contact, use IDistributionSourcePackage.removeBugContact:
 
-    >>> debian_firefox.removeBugContact(sample_person)
-    >>> sorted([pbc.bugcontact.id for pbc in debian_firefox.bugcontacts])
+    >>> debian_firefox.removeSubscription(sample_person)
+    >>> sorted([pbc.subscriber.id for pbc in debian_firefox.subscriptions])
     [17]
 
 Trying to remove a bug contact that doesn't exist on a source package raises a
 DeleteBugContactError.
 
     >>> foobar = personset.getByName("name16")
-    >>> debian_firefox.removeBugContact(foobar)
+    >>> debian_firefox.removeSubscription(foobar)
     Traceback (most recent call last):
       ...
-    DeleteBugContactError: ...
+    DeleteSubscriptionError: ...
 
 To find out if an IPerson or ITeam is bug contact, use
 IDistributionSourcePackage.isBugContact. For pragmatic reasons (in particular,
@@ -80,9 +80,9 @@ it makes the implementation of some of IDistributionSourcePackage's other
 methods simpler) IDistributionSourcePackage.isBugContact will return either the
 appropriate PackageBugContact record or False:
 
-    >>> debian_firefox.isBugContact(ubuntu_team)
-    <PackageBugContact ...>
-    >>> debian_firefox.isBugContact(foobar)
+    >>> debian_firefox.isSubscribed(ubuntu_team)
+    <StructuralSubscription ...>
+    >>> debian_firefox.isSubscribed(foobar)
     False
 
 
@@ -134,8 +134,9 @@ when a bug contact for the new package is already subscribed to the bug:
     ...     IDistroBugTask, IDistroSeriesBugTask)
     >>> from canonical.launchpad.mail import stub
 
-    >>> ubuntu_pmount.addBugContact(personset.getByName("daf"))
-    >>> ubuntu_pmount.addBugContact(sample_person)
+    >>> daf = personset.getByName("daf")
+    >>> ubuntu_pmount.addSubscription(daf, daf)
+    >>> ubuntu_pmount.addSubscription(sample_person, sample_person)
 
     >>> old_state = Snapshot(
     ...     bug_one_in_ubuntu_firefox, providing=IDistroBugTask)
@@ -281,7 +282,7 @@ add such a team as a bug contact.
     >>> ubuntu_gnome = personset.getByName("name18")
     >>> ubuntu_gnome.preferredemail is None
     True
-    >>> ubuntu_pmount.addBugContact(ubuntu_gnome)
+    >>> ubuntu_pmount.addSubscription(ubuntu_gnome, ubuntu_gnome)
 
     >>> old_state = Snapshot(
     ...     bug_one_in_ubuntu_firefox, providing=IDistroBugTask)
@@ -312,7 +313,7 @@ bug is reassigned to a different package.
 So, if Martin Pitt becomes a bug contact for ubuntu mozilla-firefox:
 
     >>> pitti = personset.getByName("martin-pitt")
-    >>> ubuntu_firefox.addBugContact(pitti)
+    >>> ubuntu_firefox.addSubscription(pitti, pitti)
 
 and then the bug gets reassigned to mozilla firefox:
 

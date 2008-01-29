@@ -484,8 +484,8 @@ distributionsourcepackage_index = ContextTitle('%s')
 distributionsourcepackage_publishinghistory = ContextTitle(
     'Publishing history of %s')
 
-distributionsourcepackage_manage_bugcontacts = ContextTitle(
-    'Bug contacts for %s')
+structural_subscriptions_manage = ContextTitle(
+    'Subscriptions for %s')
 
 distributionsourcepackagerelease_index = ContextTitle('%s')
 

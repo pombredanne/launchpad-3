@@ -14,8 +14,8 @@ from sqlobject.sqlbuilder import SQLConstant
 from zope.interface import implements
 
 from canonical.launchpad.interfaces import (
-    IDistributionSourcePackage, IQuestionTarget, DuplicateBugContactError,
-    DeleteBugContactError, PackagePublishingStatus)
+    DeleteSubscriptionError, DuplicateSubscriptionError,
+    IDistributionSourcePackage, IQuestionTarget, PackagePublishingStatus)
 from canonical.database.sqlbase import sqlvalues
 from canonical.launchpad.database.bug import BugSet, get_bug_tags_open_count
 from canonical.launchpad.database.bugtarget import BugTargetBase
@@ -24,7 +24,8 @@ from canonical.launchpad.database.distributionsourcepackagecache import (
     DistributionSourcePackageCache)
 from canonical.launchpad.database.distributionsourcepackagerelease import (
     DistributionSourcePackageRelease)
-from canonical.launchpad.database.packagebugcontact import PackageBugContact
+from canonical.launchpad.database.structuralsubscription import (
+    StructuralSubscription)
 from canonical.launchpad.database.publishing import (
     SourcePackagePublishingHistory)
 from canonical.launchpad.database.sourcepackagerelease import (
@@ -146,55 +147,57 @@ class DistributionSourcePackage(BugTargetBase,
             limit=quantity)
 
     @property
-    def bugcontacts(self):
-        """See IDistributionSourcePackage."""
+    def subscriptions(self):
+        """See `IDistributionSourcePackage`."""
         # Use "list" here because it's possible that this list will be longer
         # than a "shortlist", though probably uncommon.
         query = """
-            PackageBugContact.distribution=%s
-            AND PackageBugContact.sourcepackagename = %s
-            AND PackageBugContact.bugcontact = Person.id
+            StructuralSubscription.distribution=%s
+            AND StructuralSubscription.sourcepackagename = %s
+            AND StructuralSubscription.subscriber = Person.id
             """ % sqlvalues(self.distribution, self.sourcepackagename)
-        contacts = PackageBugContact.select(
+        contacts = StructuralSubscription.select(
             query,
             orderBy='Person.displayname',
             clauseTables=['Person'])
-        contacts.prejoin(["bugcontact"])
+        contacts.prejoin(["subscriber"])
         return list(contacts)
 
-    def addBugContact(self, person):
-        """See IDistributionSourcePackage."""
-        contact_already_exists = self.isBugContact(person)
+    def addSubscription(self, subscriber, subscribed_by):
+        """See `IDistributionSourcePackage`."""
+        subscription_already_exists = self.isSubscribed(subscriber)
 
-        if contact_already_exists:
-            raise DuplicateBugContactError(
-                "%s is already one of the bug contacts for %s." %
-                (person.name, self.displayname))
+        if subscription_already_exists:
+            raise DuplicateSubscriptionError(
+                "%s is already subscribed to %s." %
+                (subscriber.name, self.displayname))
         else:
-            PackageBugContact(
+            StructuralSubscription(
                 distribution=self.distribution,
                 sourcepackagename=self.sourcepackagename,
-                bugcontact=person)
+                subscriber=subscriber,
+                subscribed_by=subscribed_by)
 
-    def removeBugContact(self, person):
-        """See IDistributionSourcePackage."""
-        contact_to_remove = self.isBugContact(person)
+    def removeSubscription(self, person):
+        """See `IDistributionSourcePackage`."""
+        subscription_to_remove = self.isSubscribed(person)
 
-        if not contact_to_remove:
-            raise DeleteBugContactError(
-                "%s is not a bug contact for this package.")
+        if not subscription_to_remove:
+            raise DeleteSubscriptionError(
+                "%s is not subscribed to %s." % (
+                person.name, self.displayname))
         else:
-            contact_to_remove.destroySelf()
+            subscription_to_remove.destroySelf()
 
-    def isBugContact(self, person):
-        """See IDistributionSourcePackage."""
-        package_bug_contact = PackageBugContact.selectOneBy(
+    def isSubscribed(self, person):
+        """See `IDistributionSourcePackage`."""
+        subscription = StructuralSubscription.selectOneBy(
             distribution=self.distribution,
             sourcepackagename=self.sourcepackagename,
-            bugcontact=person)
+            subscriber=person)
 
-        if package_bug_contact:
-            return package_bug_contact
+        if subscription is not None:
+            return subscription
         else:
             return False
 

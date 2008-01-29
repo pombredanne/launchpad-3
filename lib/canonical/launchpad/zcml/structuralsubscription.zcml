@@ -13,4 +13,12 @@
         />
     </content>
 
+    <browser:page
+	for="canonical.launchpad.interfaces.IStructuralSubscriptionTarget"
+	name="+subscribe"
+	permission="launchpad.AnyPerson"
+	facet="bugs"
+	class="canonical.launchpad.browser.structuralsubscription.StructuralSubscriptionView"
+	template="../templates/structural-subscriptions-manage.pt" />
+
 </configure>

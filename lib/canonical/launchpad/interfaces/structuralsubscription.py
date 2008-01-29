@@ -7,11 +7,15 @@ __metaclass__ = type
 __all__ = [
     'BlueprintNotificationLevel',
     'BugNotificationLevel',
-    'IStructuralSubscription'
+    'DeleteSubscriptionError',
+    'DuplicateSubscriptionError',
+    'IStructuralSubscription',
+    'IStructuralSubscriptionForm',
+    'IStructuralSubscriptionTarget'
     ]
 
 from zope.interface import Attribute, Interface
-from zope.schema import Int, Choice, Datetime
+from zope.schema import Bool, Choice, Datetime, Int
 
 from canonical.launchpad import _
 
@@ -114,3 +118,40 @@ class IStructuralSubscription(Interface):
         required=False)
 
     target = Attribute("The structure to which this subscription belongs.")
+
+
+class IStructuralSubscriptionTarget(Interface):
+    """A Launchpad Structure allowing users to subscribe to it."""
+
+    def addSubscription(subscriber, subscribed_by):
+        """Add a subscription for this structure.
+
+        :person: An IPerson or ITeam.
+        """
+
+    def removeSubscription(subscriber):
+        """Remove a subscription from this structure.
+
+        :person: An IPerson or ITeam.
+        """
+
+
+class IStructuralSubscriptionForm(Interface):
+    """Schema for the structural subscription form."""
+    subscribe_me = Bool(
+        title=u"I want to subscribe to notifications.",
+        required=False)
+
+
+class DuplicateSubscriptionError(Exception):
+    """Duplicate Subscription Error.
+
+    Raised when trying to add a structural subscription that already exists.
+    """
+
+
+class DeleteSubscriptionError(Exception):
+    """Delete Subscription Error.
+
+    Raised when an error occurred trying to delete a
+    structural subscription."""
