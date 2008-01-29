@@ -246,7 +246,7 @@ class LaunchpadLoginSource:
         principal.__parent__ = self
         return principal
 
-# Fake a containment heirarchy because Zope3 is on crack
+# Fake a containment hierarchy because Zope3 is on crack.
 authService = PlacelessAuthUtility()
 loginSource = LaunchpadLoginSource()
 loginSource.__parent__ = authService
@@ -269,5 +269,3 @@ class LaunchpadPrincipal:
         pw1 = (pw or '').strip()
         pw2 = (self.__pwd or '').strip()
         return encryptor.validate(pw1, pw2)
-
-
