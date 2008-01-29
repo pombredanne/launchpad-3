@@ -8,10 +8,10 @@ __all__ = [
 ]
 
 from zope.interface import implements
-from zope.schema._field import AbstractCollection
+from zope.schema import List
 
 from canonical.lazr.interfaces.rest import ICollectionField
 
-class CollectionField(AbstractCollection):
+class CollectionField(List):
     """A collection associated with an entry."""
     implements(ICollectionField)

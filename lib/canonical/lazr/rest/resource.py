@@ -125,19 +125,16 @@ class EntryResource(ReadOnlyResource):
         # into getMultiAdapter.
         example_entry = CollectionEntryDummy(field)
         from zope.component.interfaces import ComponentLookupError
-        try:
-            scoped_collection = getMultiAdapter((self.context, example_entry),
-                                                 IScopedCollection)
+        scoped_collection = getMultiAdapter((self.context, example_entry),
+                                             IScopedCollection)
 
-            # Tell the IScopedCollection object what collection it's managing,
-            # and what the collection's relationship is to the entry it's
-            # scoped to.
-            scoped_collection.collection = collection
-            scoped_collection.relationship = name
+        # Tell the IScopedCollection object what collection it's managing,
+        # and what the collection's relationship is to the entry it's
+        # scoped to.
+        scoped_collection.collection = collection
+        scoped_collection.relationship = name
 
-            return ScopedCollectionResource(scoped_collection, self.request, name)
-        except ComponentLookupError, e:
-            import pdb; pdb.set_trace()
+        return ScopedCollectionResource(scoped_collection, self.request, name)
 
 
     def toDataForJSON(self):
