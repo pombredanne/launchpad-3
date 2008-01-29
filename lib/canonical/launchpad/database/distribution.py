@@ -262,11 +262,12 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
             return (2, self.name)
         return (3, self.name)
 
+    # XXX: This is used in a number of places and given it's already
+    # listified, why not spare the trouble of regenerating this as a
+    # cachedproperty? Answer: because it breaks tests. -- kiko, 2008-01-29
     @property
     def serieses(self):
         """See `IDistribution`."""
-        # This is used in a number of places and given it's already
-        # listified, why not spare the trouble of regenerating?
         ret = DistroSeries.selectBy(distribution=self)
         return sorted(ret, key=lambda a: Version(a.version), reverse=True)
 
