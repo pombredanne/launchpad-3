@@ -16,13 +16,13 @@ __all__ = [
     ]
 
 
-import cgi
 from zope.component import getUtility
 
-from canonical.launchpad.webapp import canonical_url
+from canonical.launchpad.webapp import canonical_url, urlappend
 from canonical.launchpad.interfaces import (
     IAnnouncementSet, IDistribution, IHasAnnouncements, IProduct, IProject)
 from canonical.launchpad.interfaces import IFeedsApplication
+from canonical.launchpad.webapp.tales import FormattersAPI
 from canonical.lazr.feed import (
     FeedBase, FeedEntry, FeedPerson, FeedTypedData)
 
@@ -41,7 +41,8 @@ class AnnouncementsFeedBase(FeedBase):
         """See `IFeed`."""
         # Return the human-readable alternate URL for this feed.  For example:
         # https://launchpad.net/ubuntu/+announcements
-        return "%s+announcements" % self._normalizedUrl(rootsite="mainsite")
+        return urlappend(canonical_url(self.context, rootsite="mainsite"),
+                         "+announcements")
 
     def itemToFeedEntry(self, announcement):
         """See `IFeed`."""
@@ -62,7 +63,10 @@ class AnnouncementsFeedBase(FeedBase):
         # escaped to account for any special characters the user may have
         # entered, such as '&' and '<' because it will be embedded in the XML
         # document.
-        content = FeedTypedData(cgi.escape(announcement.summary))
+        formatted_summary = FormattersAPI(announcement.summary).text_to_html()
+        content = FeedTypedData(formatted_summary,
+                                content_type="html",
+                                root_url=self.root_url)
         # The entry for an announcement has distinct dates for created,
         # updated, and published.  For some data, the created and published
         # dates will be the same.  The announcements also only have a singe
@@ -78,35 +82,12 @@ class AnnouncementsFeedBase(FeedBase):
                           content=content)
         return entry
 
-    @property
-    def link_self(self):
-        """See `IFeed`."""
-
-        # The self link is the URL for this particular feed.  For example:
-        # http://feeds.launchpad.net/ubuntu/announcments.atom
-        return "%s%s.%s" % (
-            self._normalizedUrl(), self.feedname, self.format)
-
     def _entryTitle(self, announcement):
         """Return the title for the announcement.
 
         Override in each base class.
         """
         raise NotImplementedError
-
-    def _normalizedUrl(self, rootsite=None):
-        """Call 'canonical_url' and ensure the result ends with '/'.
-
-        The results from calling 'canonical_url' are inconsistent as to
-        whether a trailing '/' is present.  Normalize the results by ensuring
-        a trailing '/' is at the end of the URL.
-        """
-        # XXX: Brad Crittenden 2008-01-08 bug=181238: canonical_url needs to
-        # be fixed to never return a trailing '/'.
-        url = canonical_url(self.context, rootsite=rootsite)
-        if not url.endswith('/'):
-            url += '/'
-        return url
 
 
 class LaunchpadAnnouncementsFeed(AnnouncementsFeedBase):

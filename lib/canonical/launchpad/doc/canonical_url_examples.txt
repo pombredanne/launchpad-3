@@ -235,7 +235,8 @@ private.)
 
     >>> from canonical.launchpad.interfaces import ILaunchBag
     >>> current_user = getUtility(ILaunchBag).user
-    >>> subscription = distro_series_task.bug.subscribe(current_user)
+    >>> subscription = distro_series_task.bug.subscribe(
+    ...     current_user, current_user)
 
     >>> distro_series_task.bug.setPrivate(True, getUtility(ILaunchBag).user)
     True

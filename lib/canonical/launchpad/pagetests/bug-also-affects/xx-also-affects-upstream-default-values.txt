@@ -9,17 +9,17 @@ automatically chosen if a packaging link is found.
     >>> user_browser.getControl(name='field.product').value
     'firefox'
 
-If the source package has no upstream link. like thunderbird in Ubuntu,
+If the source package has no upstream link. like pmount in Ubuntu,
 then the product widget will have no initial value.
 
     >>> user_browser.open(
     ...     'http://launchpad.dev/ubuntu/+source/mozilla-firefox/'
     ...     '+bug/8/+distrotask')
     >>> user_browser.getControl('Distribution').value = ['ubuntu']
-    >>> user_browser.getControl('Source Package').value = 'thunderbird'
+    >>> user_browser.getControl('Source Package').value = 'pmount'
     >>> user_browser.getControl('Continue').click()
     >>> user_browser.url
-    'http://bugs.launchpad.dev/ubuntu/+source/thunderbird/+bug/8'
+    'http://bugs.launchpad.dev/ubuntu/+source/pmount/+bug/8'
 
     >>> user_browser.getLink('Project').click()
     >>> user_browser.getControl('Project').value
@@ -39,13 +39,12 @@ Let's follow the link and specify the packaging information.
     ...     'thunderbird/trunk')
     >>> user_browser.getControl('Change').click()
 
-Now the upstream product will be chosen automatically also for
-thunderbird.
+Now the upstream product will be chosen automatically also for pmount.
 
     >>> user_browser.open(
-    ...     'http://launchpad.dev/ubuntu/+source/thunderbird/+bug/8')
+    ...     'http://launchpad.dev/ubuntu/+source/pmount/+bug/8')
     >>> user_browser.getLink('Project').click()
     >>> user_browser.url
-    'http://.../ubuntu/+source/thunderbird/+bug/8/+choose-affected-product'
+    'http://.../ubuntu/+source/pmount/+bug/8/+choose-affected-product'
     >>> user_browser.getControl(name='field.product').value
     'thunderbird'

@@ -228,6 +228,9 @@ class POFileTranslateView(BaseTranslationView):
         # do that.
         self.errors = {}
         self.translationmessage_views = []
+        # The batchnav's start should change when the user mutates a
+        # filtered views of messages.
+        self.start_offset = 0
 
         self._initializeShowOption()
         BaseTranslationView.initialize(self)
@@ -256,8 +259,9 @@ class POFileTranslateView(BaseTranslationView):
             translationmessage = potmsgset.getCurrentTranslationMessage(
                 self.context.language)
             if translationmessage is None:
-                translationmessage = potmsgset.getCurrentDummyTranslationMessage(
-                    self.context.language)
+                translationmessage = (
+                    potmsgset.getCurrentDummyTranslationMessage(
+                        self.context.language))
             view = self._prepareView(
                 CurrentTranslationMessageView, translationmessage,
                 self.errors.get(potmsgset))
@@ -308,8 +312,29 @@ class POFileTranslateView(BaseTranslationView):
             self.request.response.addErrorNotification(message)
             return False
 
+        if self.batchnav.batch.nextBatch() is not None:
+            # Update the start of the next batch by the number of messages
+            # that were removed from the batch.
+            self.batchnav.batch.start -= self.start_offset
         self._redirectToNextPage()
         return True
+
+    def _observeTranslationUpdate(self, potmsgset):
+        """see `BaseTranslationView`.
+
+        Update the start_offset when the filtered batch has mutated.
+        """
+        if self.show == 'untranslated':
+            translationmessage = potmsgset.getCurrentTranslationMessage(
+                self.pofile.language)
+            if translationmessage is not None:
+                self.start_offset += 1
+        elif self.show == 'need_review':
+            if not self.form_posted_needsreview.get(potmsgset, False):
+                self.start_offset += 1
+        else:
+            # This change does not mutate the batch.
+            pass
 
     def _buildRedirectParams(self):
         parameters = BaseTranslationView._buildRedirectParams(self)

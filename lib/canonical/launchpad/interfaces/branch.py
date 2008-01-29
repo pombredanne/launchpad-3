@@ -117,29 +117,28 @@ class BranchType(DBEnumeratedType):
     HOSTED = DBItem(1, """
         Hosted
 
-        Hosted branches have their main repository on the supermirror.
+        Launchpad is the primary location of this branch.
         """)
 
     MIRRORED = DBItem(2, """
         Mirrored
 
-        Mirrored branches are primarily hosted elsewhere and are
-        periodically pulled from the remote site into the supermirror.
+        Primarily hosted elsewhere and is periodically mirrored
+        from the remote location into Launchpad.
         """)
 
     IMPORTED = DBItem(3, """
         Imported
 
-        Imported branches have been converted from some other revision
-        control system into bzr and are made available through the
-        supermirror.
+        Branches that have been converted from some other revision
+        control system into bzr and are made available through Launchpad.
         """)
 
     REMOTE = DBItem(4, """
         Remote
 
-        Remote branches are those that are registered in Launchpad
-        with an external location, but are not to be mirrored.
+        Registered in Launchpad with an external location,
+        but is not to be mirrored, nor available through Launchpad.
         """)
 
 
@@ -307,13 +306,8 @@ class IBranch(IHasOwner):
     # Personally I'd like a LAZR way to do number 2.
     branch_type = Choice(
         title=_("Branch Type"), required=True,
-        vocabulary=UICreatableBranchType,
-        description=_("Hosted branches have Launchpad code hosting as the "
-                      "primary location and can be pushed to.  Mirrored "
-                      "branches are pulled from the remote location "
-                      "specified and cannot be pushed to.  Remote branches "
-                      "are not mirrored by Launchpad, nor can they be "
-                      "pushed to."))
+        vocabulary=UICreatableBranchType)
+
     name = TextLine(
         title=_('Name'), required=True, description=_("Keep very "
         "short, unique, and descriptive, because it will be used in URLs. "
@@ -347,7 +341,7 @@ class IBranch(IHasOwner):
 
     private = Bool(
         title=_("Keep branch confidential"), required=False,
-        description=_("Make this branch visible only to its subscribers"),
+        description=_("Make this branch visible only to its subscribers."),
         default=False)
 
     # People attributes
@@ -357,6 +351,13 @@ class IBranch(IHasOwner):
         title=_('Author'), required=False, vocabulary='ValidPersonOrTeam',
         description=_("The author of the branch. Leave blank if the author "
                       "does not have a Launchpad account."))
+    reviewer = Choice(
+        title=_('Reviewer'), required=False, vocabulary='ValidPersonOrTeam',
+        description=_("The reviewer of a branch is the person or team that "
+                      "is responsible for authorising code to be merged."))
+
+    code_reviewer = Attribute(
+        "The reviewer if set, otherwise the owner of the branch.")
 
     # Product attributes
     product = Choice(
@@ -384,15 +385,7 @@ class IBranch(IHasOwner):
     # Stats and status attributes
     lifecycle_status = Choice(
         title=_('Status'), vocabulary=BranchLifecycleStatus,
-        default=BranchLifecycleStatus.NEW,
-        description=_(
-        "The author's assessment of the branch's maturity. "
-        " Mature: recommend for production use."
-        " Development: useful work that is expected to be merged eventually."
-        " Experimental: not recommended for merging yet, and maybe ever."
-        " Merged: integrated into mainline, of historical interest only."
-        " Abandoned: no longer considered relevant by the author."
-        " New: unspecified maturity."))
+        default=BranchLifecycleStatus.NEW)
 
     # Mirroring attributes
     last_mirrored = Datetime(
@@ -558,16 +551,22 @@ class IBranch(IHasOwner):
         """Remove the person's subscription to this branch."""
 
     def getBranchRevision(sequence):
-        """Gets the BranchRevision for the given sequence number.
+        """Get the `BranchRevision` for the given sequence number.
 
-        If no such BranchRevision exists, None is returned.
+        If no such `BranchRevision` exists, None is returned.
+        """
+
+    def getBranchRevisionByRevisionId(revision_id):
+        """Get the `BranchRevision for the given revision id.
+
+        If no such `BranchRevision` exists, None is returned.
         """
 
     def createBranchRevision(sequence, revision):
-        """Create a new BranchRevision for this branch."""
+        """Create a new `BranchRevision` for this branch."""
 
     def getTipRevision():
-        """Returns the Revision associated with the last_scanned_id.
+        """Return the `Revision` associated with the `last_scanned_id`.
 
         Will return None if last_scanned_id is None, or if the id
         is not found (as in a ghost revision).

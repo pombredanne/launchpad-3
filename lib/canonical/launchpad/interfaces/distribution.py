@@ -322,7 +322,11 @@ class IDistribution(IBugTarget, IHasAppointedDriver, IHasDrivers,
         """Return only pending acceptance PPAs in this distribution."""
 
     def getPendingPublicationPPAs():
-        """Return only pending publication PPAs in this distribution."""
+        """Return all PPAs in this distribution that are pending publication.
+
+        A PPA is said to be pending publication if it has publishing records
+        in the pending state or if it had packages deleted from it.
+        """
 
     def getArchiveByComponent(component_name):
         """Return the archive most appropriate for the component name.

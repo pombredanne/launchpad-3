@@ -187,6 +187,44 @@ Now, we can see how we detect that it's older with an older date.
     True
 
 
+If the revision date of the stored translation file is missing, the new
+one is considered an update.
+
+    >>> from zope.security.proxy import removeSecurityProxy
+    >>> from canonical.launchpad.translationformat.gettext_po_parser import (
+    ...     POHeader)
+
+    >>> old_pofile = removeSecurityProxy(potemplate.newPOFile('tl'))
+    >>> old_pofile.header = """
+    ...     Project-Id-Version: foo
+    ...     MIME-Version: 1.0
+    ...     Content-Type: text/plain; charset=UTF-8
+    ...     Content-Transfer-Encoding: 8bit
+    ...     """
+    >>> new_header = POHeader("""
+    ...     Project-Id-Version: foo
+    ...     PO-Revision-Date: 2007-05-03 14:00+0200
+    ...     MIME-Version: 1.0
+    ...     Content-Type: text/plain; charset=UTF-8
+    ...     Content-Transfer-Encoding: 8bit
+    ...     """)
+
+    >>> old_pofile.isTranslationRevisionDateOlder(new_header)
+    False
+
+
+This even goes if the new file also omits the revision date.
+
+    >>> new_header = POHeader("""
+    ...     Project-Id-Version: foo
+    ...     MIME-Version: 1.0
+    ...     Content-Type: text/plain; charset=UTF-8
+    ...     Content-Transfer-Encoding: 8bit
+    ...     """)
+    >>> old_pofile.isTranslationRevisionDateOlder(new_header)
+    False
+
+
 == canEditTranslations ==
 
 This method determines if someone is allowed to edit translations.
@@ -882,6 +920,37 @@ exports it as UTF-8
     #...
     "Content-Type: text/plain; charset=UTF-8\n"
     ...
+
+Given that pofile's export time is newer than potemplate's date last
+updated, cached export is valid.
+
+    # Since all of the changes in this test are in the same transaction we
+    # must first commit the current transaction so we can do a POFile
+    # export in another. This is important so we are sure we get different
+    # time stamps for POFile.date_updated and POFile.exporttime.
+    >>> transaction.commit()
+    >>> discarded = pofile.export()
+    >>> transaction.commit()
+    >>> pofile = POFile.get(1)
+    >>> pofile.exporttime >= pofile.potemplate.date_last_updated
+    True
+    >>> pofile.is_cached_export_valid
+    True
+
+But if potemplate's date last updated is newer, cached export is not valid
+anymore.
+
+    >>> pofile.date_changed >= pofile.potemplate.date_last_updated
+    True
+    >>> pofile.is_cached_export_valid
+    True
+    >>> from datetime import timedelta
+    >>> pofile.potemplate.date_last_updated = (
+    ...     pofile.date_changed + timedelta(seconds=60))
+    >>> pofile.date_changed >= pofile.potemplate.date_last_updated
+    False
+    >>> pofile.is_cached_export_valid
+    False
 
 
 == getPOTMsgSetChangedInLaunchpad ==

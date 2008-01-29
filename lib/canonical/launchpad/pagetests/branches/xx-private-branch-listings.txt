@@ -142,16 +142,16 @@ listing tab.
     today...
 
     >>> print_landscape_code_listing(no_priv_browser)
-    testing-branch             ... New
+    testing-branch             New
 
     >>> print_landscape_code_listing(landscape_dev_browser)
-    feature-x  Sample Person   ... New
-    trunk      Sample Person   ... New
+    feature-x  Sample Person   New
+    trunk      Sample Person   New
 
     >>> print_landscape_code_listing(admin_browser)
-    feature-x  Sample Person   ... New
-    trunk      Sample Person   ... New
-    testing-branch             ... New
+    feature-x  Sample Person   New
+    trunk      Sample Person   New
+    testing-branch             New
 
 
 == Person code listing pages ==
@@ -312,7 +312,5 @@ But normal people can't.
     >>> anon_browser.open('http://launchpad.dev/landscape/trunk')
     >>> print extract_text(find_tag_by_id(
     ...     anon_browser.contents, 'branch-details'))
-    No revision control details recorded for trunk.
-    If upstream is maintained in CVS or SVN, you can
-    specify the location of the upstream branch to
-    import it as a Bazaar branch.
+    No revision control details recorded for
+    The Landscape Project Series: trunk.

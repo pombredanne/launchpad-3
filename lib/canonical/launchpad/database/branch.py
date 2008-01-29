@@ -69,6 +69,8 @@ class Branch(SQLBase):
 
     owner = ForeignKey(dbName='owner', foreignKey='Person', notNull=True)
     author = ForeignKey(dbName='author', foreignKey='Person', default=None)
+    reviewer = ForeignKey(
+        dbName='reviewer', foreignKey='Person', default=None)
 
     product = ForeignKey(dbName='product', foreignKey='Product', default=None)
 
@@ -256,6 +258,14 @@ class Branch(SQLBase):
             return self.unique_name
 
     @property
+    def code_reviewer(self):
+        """See `IBranch`."""
+        if self.reviewer:
+            return self.reviewer
+        else:
+            return self.owner
+
+    @property
     def sort_key(self):
         """See `IBranch`."""
         if self.product is None:
@@ -352,6 +362,11 @@ class Branch(SQLBase):
         assert sequence is not None, \
                "Only use this to fetch revisions from mainline history."
         return BranchRevision.selectOneBy(branch=self, sequence=sequence)
+
+    def getBranchRevisionByRevisionId(self, revision_id):
+        """See `IBranch`."""
+        revision = Revision.selectOneBy(revision_id=revision_id)
+        return BranchRevision.selectOneBy(branch=self, revision=revision)
 
     def createBranchRevision(self, sequence, revision):
         """See `IBranch`."""

@@ -18,6 +18,7 @@ __all__ = [
     'IPersonClaim',
     'IPersonEditRestricted',
     'IPersonPublic',
+    'IPersonEntry',
     'IPersonSet',
     'IPersonViewRestricted',
     'IRequestPeopleMerge',
@@ -36,7 +37,7 @@ __all__ = [
 
 
 from zope.formlib.form import NoInputData
-from zope.schema import Bool, Choice, Datetime, Int, Text, TextLine
+from zope.schema import Bool, Choice, Datetime, Int, Object, Text, TextLine
 from zope.interface import Attribute, Interface
 from zope.interface.exceptions import Invalid
 from zope.interface.interface import invariant
@@ -44,6 +45,7 @@ from zope.component import getUtility
 
 from canonical.launchpad import _
 from canonical.lazr import DBEnumeratedType, DBItem, EnumeratedType, Item
+from canonical.lazr.interfaces import IEntry
 from canonical.launchpad.fields import (
     BlacklistableContentNameField, IconImageUpload, LogoImageUpload,
     MugshotImageUpload, PasswordField, StrippedTextLine)
@@ -379,14 +381,10 @@ class IPersonChangePassword(Interface):
     """The schema used by Person +changepassword form."""
 
     currentpassword = PasswordField(
-            title=_('Current password'), required=True, readonly=False,
-            description=_("The password you use to log into Launchpad.")
-            )
+        title=_('Current password'), required=True, readonly=False)
 
     password = PasswordField(
-            title=_('New password'), required=True, readonly=False,
-            description=_("Enter the same password in each field.")
-            )
+        title=_('New password'), required=True, readonly=False)
 
 
 class IPersonClaim(Interface):
@@ -406,6 +404,22 @@ class INewPerson(Interface):
         title=_('Creation reason'), required=True,
         description=_("The reason why you're creating this profile."))
 
+def make_person_name_field():
+    """Construct a PersonNameField.
+
+    This is used to define both IPerson and IPersonEntry. This is
+    not a long-term solution.
+
+    XXX leonardr 2008-01-28 bug=186702
+    """
+    return PersonNameField(
+            title=_('Name'), required=True, readonly=False,
+            constraint=name_validator,
+            description=_(
+                "A short unique name, beginning with a lower-case "
+                "letter or number, and containing only letters, "
+                "numbers, dots, hyphens, or plus signs.")
+            )
 
 class IPersonPublic(IHasSpecifications, IHasMentoringOffers,
                     IQuestionCollection, IHasLogo, IHasMugshot, IHasIcon):
@@ -414,14 +428,7 @@ class IPersonPublic(IHasSpecifications, IHasMentoringOffers,
     id = Int(
             title=_('ID'), required=True, readonly=True,
             )
-    name = PersonNameField(
-            title=_('Name'), required=True, readonly=False,
-            constraint=name_validator,
-            description=_(
-                "A short unique name, beginning with a lower-case "
-                "letter or number, and containing only letters, "
-                "numbers, dots, hyphens, or plus signs.")
-            )
+    name = make_person_name_field()
     displayname = StrippedTextLine(
             title=_('Display Name'), required=True, readonly=False,
             description=_("Your name as you would like it displayed "
@@ -429,9 +436,7 @@ class IPersonPublic(IHasSpecifications, IHasMentoringOffers,
             "here.")
             )
     password = PasswordField(
-            title=_('Password'), required=True, readonly=False,
-            description=_("Enter the same password in each field.")
-            )
+        title=_('Password'), required=True, readonly=False)
     karma = Int(
             title=_('Karma'), readonly=False,
             description=_('The cached total karma for this person.')
@@ -664,6 +669,10 @@ class IPersonPublic(IHasSpecifications, IHasMentoringOffers,
                       "used as a key by FOAF RDF spec"),
         readonly=True)
 
+    verbose_bugnotifications = Bool(
+        title=_("Include bug descriptions when sending me bug notifications"),
+        required=False, default=True)
+
     defaultmembershipperiod = Int(
         title=_('Subscription period'), required=False,
         description=_(
@@ -698,8 +707,9 @@ class IPersonPublic(IHasSpecifications, IHasMentoringOffers,
             "new members can be added only by a team administrator."))
 
     renewal_policy = Choice(
-        title=_("When someone's membership is about to expire, Launchpad "
-                "should notify them and"),
+        title=_(
+            "When someone's membership is about to expire, "
+            "notify them and"),
         required=True, vocabulary=TeamMembershipRenewalPolicy,
         default=TeamMembershipRenewalPolicy.NONE)
 
@@ -737,6 +747,9 @@ class IPersonPublic(IHasSpecifications, IHasMentoringOffers,
         title=_("Teams may be Public, Private Membership, or Private."),
         required=True, vocabulary=PersonVisibility,
         default=PersonVisibility.PUBLIC)
+
+    structural_subscriptions = Attribute(
+        "The structural subscriptions for this person.")
 
     @invariant
     def personCannotHaveIcon(person):
@@ -1260,6 +1273,13 @@ class IPerson(IPersonPublic, IPersonViewRestricted, IPersonEditRestricted):
     """A Person."""
 
 
+class IPersonEntry(IEntry):
+    """The part of a person that we expose through the web service."""
+
+    name = make_person_name_field()
+    teamowner = Object(schema=IPerson)
+
+
 class INewPersonForm(IPerson):
     """Interface used to create new Launchpad accounts.
 
@@ -1267,8 +1287,7 @@ class INewPersonForm(IPerson):
     """
 
     password = PasswordField(
-        title=_('Create password'), required=True, readonly=False,
-        description=_("Enter the same password in each field."))
+        title=_('Create password'), required=True, readonly=False)
 
 
 class ITeam(IPerson, IHasIcon):
