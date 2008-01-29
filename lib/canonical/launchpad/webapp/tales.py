@@ -1,4 +1,4 @@
-# Copyright 2004 Canonical Ltd.  All rights reserved.
+# Copyright 2004-2007 Canonical Ltd.  All rights reserved.
 # pylint: disable-msg=C0103,W0613,R0911
 #
 """Implementation of the lp: htmlform: fmt: namespaces in TALES."""
@@ -93,6 +93,27 @@ class MenuAPI:
             self._request = get_current_browser_request()
             self._selectedfacetname = None
 
+        # Populate all dictionaries for retrieval of individual Links of any
+        # given facet (e.g. context/menu:bugs/subscribe).
+        for facet_entry in self.facet():
+            setattr(
+                self, facet_entry.name, self._getFacetLinks(facet_entry.name))
+
+    def _getFacetLinks(self, facet_name):
+        """Return a dictionary with all links available in the given facet.
+
+        If the facet name is not valid, we raise the TraversalError exception
+        that we get from queryAdapter.
+        """
+        menu = queryAdapter(self._context, IApplicationMenu, facet_name)
+        if menu is None:
+            # There aren't menu entries.
+            return {}
+
+        menu.request = self._request
+        links = list(menu.iterlinks(requesturi=self._requesturi()))
+        return dict((link.name, link) for link in links)
+
     def _nearest_menu(self, menutype):
         try:
             return nearest_adapter(self._context, menutype)
@@ -143,13 +164,15 @@ class MenuAPI:
             menu.request = self._request
             return list(menu.iterlinks(requesturi=self._requesturi()))
 
+    @property
     def context(self):
         menu = IContextMenu(self._context, None)
         if menu is None:
-            return  []
+            return  {}
         else:
             menu.request = self._request
-            return list(menu.iterlinks(requesturi=self._requesturi()))
+            links = list(menu.iterlinks(requesturi=self._requesturi()))
+            return dict((link.name, link) for link in links)
 
 
 class CountAPI:
@@ -771,7 +794,7 @@ class PersonFormatterAPI(ObjectFormatterExtendedAPI):
             url = '%s/%s' % (url, extra_path)
         image_html = ObjectImageDisplayAPI(person).icon(rootsite=rootsite)
         return '<a href="%s">%s&nbsp;%s</a>' % (
-            url, image_html, person.browsername)
+            url, image_html, cgi.escape(person.browsername))
 
 
 class PillarFormatterAPI(ObjectFormatterExtendedAPI):
@@ -862,7 +885,8 @@ class BugFormatterAPI(ObjectFormatterExtendedAPI):
         if extra_path:
             url = '%s/%s' % (url, extra_path)
         return ('<a href="%s"><img src="/@@/bug" alt=""/>'
-                '&nbsp;Bug #%d: %s</a>' % (url, bug.id, bug.title))
+                '&nbsp;Bug #%d: %s</a>' % (
+                    url, bug.id, cgi.escape(bug.title)))
 
 
 class BugTaskFormatterAPI(ObjectFormatterExtendedAPI):
@@ -878,7 +902,7 @@ class BugTaskFormatterAPI(ObjectFormatterExtendedAPI):
             url = '%s/%s' % (url, extra_path)
         image_html = BugTaskImageDisplayAPI(bugtask).icon()
         return '<a href="%s">%s&nbsp;Bug #%d: %s</a>' % (
-            url, image_html, bugtask.bug.id, bugtask.bug.title)
+            url, image_html, bugtask.bug.id, cgi.escape(bugtask.bug.title))
 
 
 class NumberFormatterAPI:

@@ -121,6 +121,10 @@ class IBuilder(IHasOwner):
         description=_('The machine hostname hosting the virtual '
                       'buildd-slave, e.g.: foobar-host.ppa'))
 
+    active = Bool(
+        title=_('Active'), required=False,
+        description=_('Whether or not to present the builder publicly.'))
+
     slave = Attribute("xmlrpclib.Server instance corresponding to builder.")
     currentjob = Attribute("Build Job being processed")
     status = Attribute("Generated status information")
@@ -283,7 +287,7 @@ class IBuilderSet(Interface):
         """Return the IBuilder with the given builderid."""
 
     def getBuilders():
-        """Return all configured builders."""
+        """Return all active configured builders."""
 
     def getBuildersByArch(arch):
         """Return all configured builders for a given DistroArchSeries."""

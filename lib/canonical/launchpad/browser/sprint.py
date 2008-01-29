@@ -521,7 +521,7 @@ class SprintAttendeesCsvExportView(LaunchpadView):
 
     def encode_value(self, value):
         """Encode a value for CSV.
-        
+
         Return the string representation of `value` encoded as UTF-8,
         or the empty string if value is None."""
         if value is not None:
@@ -549,7 +549,7 @@ class SprintAttendeesCsvExportView(LaunchpadView):
                  attendance.attendee.phone,
                  attendance.attendee.organization,
                  attendance.attendee.city,
-                 attendance.attendee.country, 
+                 attendance.attendee.country,
                  attendance.attendee.timezone,
                  attendance.time_starts.strftime('%Y-%m-%dT%H:%M:%SZ'),
                  attendance.time_ends.strftime('%Y-%m-%dT%H:%M:%SZ')))

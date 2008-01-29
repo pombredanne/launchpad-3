@@ -303,8 +303,7 @@ class ResetPasswordView(BaseLoginTokenView, LaunchpadFormView):
         naked_person.password = data.get('password')
         self.context.consume()
 
-        if self.request.form.get('logmein'):
-            self.logInPersonByEmail(self.context.email)
+        self.logInPersonByEmail(self.context.email)
 
         self.next_url = canonical_url(self.context.requester)
         self.request.response.addInfoNotification(

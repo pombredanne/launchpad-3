@@ -137,9 +137,9 @@ for a user to hit her email settings page.  The List-Subscribe header is
 similar.
 
     >>> message['list-subscribe']
-    'http://launchpad.dev/people/+me/+editemails'
+    '<http://launchpad.dev/people/+me/+editemails>'
     >>> message['list-unsubscribe']
-    'http://launchpad.dev/people/+me/+editemails'
+    '<http://launchpad.dev/people/+me/+editemails>'
 
 
 === List-Archive ===

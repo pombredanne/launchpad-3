@@ -13,12 +13,27 @@ similar bug reports, etc.
     >>> bug_data = dict(
     ...     title='Test Title', comment='Test description.')
 
+We define a helper method here so that we can instantiate
+FileBugViewBase and use it without any errors occuring, since we're
+bypassing most of the view machinery. We also define a mock widget class
+for the same purpose.
+
+    >>> class MockWidget:
+    ...     def __init__(self, name):
+    ...         self.name = name
+
+    >>> def create_view(context, request):
+    ...     view = FileBugViewBase(context, request)
+    ...     view.widgets = {
+    ...         'filecontent': MockWidget(name='filecontent')}
+    ...     return view
+
 The validate and action don't use the request when filing the bug, so we
 can pass an empty request and pass the data dict to the methods
 directly.
 
     >>> login('no-priv@canonical.com')
-    >>> filebug_view = FileBugViewBase(ubuntu_firefox, LaunchpadTestRequest())
+    >>> filebug_view = create_view(ubuntu_firefox, LaunchpadTestRequest())
     >>> filebug_view.validate(bug_data) is None
     True
     >>> filebug_view.submit_bug_action.success(bug_data)
@@ -69,7 +84,7 @@ Now, if we pass the token to the filebug view, the extra_data
 attribute will be set with the actual data.
 
     >>> request = LaunchpadTestRequest()
-    >>> filebug_view = FileBugViewBase(ubuntu_firefox, request)
+    >>> filebug_view = create_view(ubuntu_firefox, request)
     >>> filebug_view.publishTraverse(request, token) is filebug_view
     True
     >>> filebug_view.extra_data.extra_description
@@ -124,7 +139,7 @@ to the bug.
     >>> transaction.commit()
 
     >>> request = LaunchpadTestRequest()
-    >>> filebug_view = FileBugViewBase(ubuntu_firefox, request)
+    >>> filebug_view = create_view(ubuntu_firefox, request)
     >>> filebug_view.publishTraverse(request, token) is filebug_view
     True
     >>> filebug_view.validate(bug_data) is None
@@ -181,7 +196,7 @@ be specified using a Content-description header, but it's not required.
     >>> transaction.commit()
 
     >>> request = LaunchpadTestRequest()
-    >>> filebug_view = FileBugViewBase(ubuntu_firefox, request)
+    >>> filebug_view = create_view(ubuntu_firefox, request)
     >>> filebug_view.publishTraverse(request, token) is filebug_view
     True
     >>> filebug_view.validate(bug_data) is None
@@ -256,7 +271,7 @@ message.
     >>> transaction.commit()
 
     >>> request = LaunchpadTestRequest()
-    >>> filebug_view = FileBugViewBase(ubuntu_firefox, request)
+    >>> filebug_view = create_view(ubuntu_firefox, request)
     >>> filebug_view.publishTraverse(request, token) is filebug_view
     True
     >>> filebug_view.extra_data.extra_description
@@ -311,7 +326,7 @@ We can also specify that a bug is public via the same field.
     >>> transaction.commit()
 
     >>> request = LaunchpadTestRequest()
-    >>> filebug_view = FileBugViewBase(ubuntu_firefox, request)
+    >>> filebug_view = create_view(ubuntu_firefox, request)
     >>> filebug_view.publishTraverse(request, token) is filebug_view
     True
     >>> filebug_view.extra_data.extra_description
@@ -364,7 +379,7 @@ identified by their Launchpad name or their e-mail address.
     >>> transaction.commit()
 
     >>> request = LaunchpadTestRequest()
-    >>> filebug_view = FileBugViewBase(ubuntu_firefox, request)
+    >>> filebug_view = create_view(ubuntu_firefox, request)
     >>> filebug_view.publishTraverse(request, token) is filebug_view
     True
 
@@ -427,7 +442,7 @@ certain people and teams to bugs when they are filed.
     >>> transaction.commit()
 
     >>> request = LaunchpadTestRequest()
-    >>> filebug_view = FileBugViewBase(ubuntu_firefox, request)
+    >>> filebug_view = create_view(ubuntu_firefox, request)
     >>> filebug_view.publishTraverse(request, token) is filebug_view
     True
 
@@ -487,7 +502,7 @@ As already seen above, it's the FileBugViewBase's publishTraverse that
 finds the right blob to use.
 
     >>> request = LaunchpadTestRequest()
-    >>> filebug_view = FileBugViewBase(ubuntu_firefox, request)
+    >>> filebug_view = create_view(ubuntu_firefox, request)
     >>> filebug_view.publishTraverse(request, token) is filebug_view
     True
     >>> filebug_view.extra_data_token == token
@@ -510,7 +525,7 @@ If publishTraverse is called with a token that can't be found, a
 NotFound error is raised.
 
     >>> request = LaunchpadTestRequest()
-    >>> filebug_view = FileBugViewBase(ubuntu_firefox, request)
+    >>> filebug_view = create_view(ubuntu_firefox, request)
     >>> filebug_view.publishTraverse(request, 'no-such-token')
     Traceback (most recent call last):
     ...
@@ -527,7 +542,7 @@ can pass an empty request and pass the data dict to the methods
 directly.
 
     >>> login('no-priv@canonical.com')
-    >>> filebug_view = FileBugViewBase(ubuntu_firefox, LaunchpadTestRequest())
+    >>> filebug_view = create_view(ubuntu_firefox, LaunchpadTestRequest())
     >>> filebug_view.validate(bug_data) is None
     True
     >>> filebug_view.submit_bug_action.success(bug_data)
@@ -548,7 +563,7 @@ The base class allows security bugs to be filed.
     ...     title=u'Security bug', comment=u'Test description.',
     ...     security_related=True)
 
-    >>> filebug_view = FileBugViewBase(ubuntu_firefox, LaunchpadTestRequest())
+    >>> filebug_view = create_view(ubuntu_firefox, LaunchpadTestRequest())
     >>> filebug_view.validate(bug_data) is None
     True
     >>> filebug_view.submit_bug_action.success(bug_data)

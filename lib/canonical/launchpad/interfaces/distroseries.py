@@ -284,8 +284,9 @@ class IDistroSeries(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
                 warty-updates -> ALLOW
                 edgy-security -> DENY
 
-        Note that FROZEN is not considered either 'stable' or 'unstable' state.
-        Uploads to a FROZEN distroseries will end up in UNAPPROVED queue.
+        Note that FROZEN is not considered either 'stable' or 'unstable'
+        state.  Uploads to a FROZEN distroseries will end up in the
+        UNAPPROVED queue.
 
         Return True if the upload is allowed and False if denied.
         """

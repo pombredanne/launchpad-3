@@ -16,15 +16,18 @@ __all__ = [
     'MINUTES',
     ]
 
+from BeautifulSoup import BeautifulSoup
+from datetime import datetime
+import pytz
 import operator
 import os
 import time
+from urlparse import urljoin
 from xml.sax.saxutils import escape as xml_escape
-from BeautifulSoup import BeautifulStoneSoup
-from datetime import datetime
 
 from zope.app.datetimeutils import rfc1123_date
 from zope.app.pagetemplate import ViewPageTemplateFile
+from zope.component import getUtility
 from zope.interface import implements
 
 from canonical.cachedproperty import cachedproperty
@@ -32,7 +35,9 @@ from canonical.config import config
 # XXX - bac - 2007-09-20, modules in canonical.lazr should not import from
 # canonical.launchpad, but we're doing it here as an expediency to get a
 # working prototype.  Bug 153795.
-from canonical.launchpad.webapp import canonical_url, LaunchpadFormView, urlparse
+from canonical.launchpad.interfaces import ILaunchpadRoot
+from canonical.launchpad.webapp import (
+    LaunchpadView, canonical_url, urlappend, urlparse)
 from canonical.launchpad.webapp.vhosts import allvhosts
 from canonical.lazr.interfaces import (
     IFeed, IFeedEntry, IFeedPerson, IFeedTypedData, UnsupportedFeedFormat)
@@ -41,7 +46,7 @@ SUPPORTED_FEEDS = ('.atom', '.html')
 MINUTES = 60 # Seconds in a minute.
 
 
-class FeedBase(LaunchpadFormView):
+class FeedBase(LaunchpadView):
     """See `IFeed`.
 
     Base class for feeds.
@@ -60,14 +65,8 @@ class FeedBase(LaunchpadFormView):
     def __init__(self, context, request):
         super(FeedBase, self).__init__(context, request)
         self.format = self.feed_format
-
-    def initialize(self):
-        """See `IFeed`."""
-        # This method must not delegate to the superclass method as it does
-        # things that are inappropriate (e.g. set up widgets) for a Feed
-        # class.  Therefore this implementation must not be removed and
-        # invoking the super class version must not happen.
-        pass
+        self.root_url = canonical_url(getUtility(ILaunchpadRoot),
+                                      rootsite=self.rootsite)
 
     @property
     def title(self):
@@ -77,7 +76,12 @@ class FeedBase(LaunchpadFormView):
     @property
     def link_self(self):
         """See `IFeed`."""
-        raise NotImplementedError
+
+        # The self link is the URL for this particular feed.  For example:
+        # http://feeds.launchpad.net/ubuntu/announcments.atom
+        path = "%s.%s" % (self.feedname, self.format)
+        return urlappend(canonical_url(self.context, rootsite="feeds"),
+                         path)
 
     @property
     def site_url(self):
@@ -120,14 +124,6 @@ class FeedBase(LaunchpadFormView):
         """See `IFeed`."""
         raise NotImplementedError
 
-    def getPublicRawItems(self):
-        """See `IFeed`."""
-        raise NotImplementedError
-
-    def itemToFeedEntry(self, item):
-        """See `IFeed`."""
-        raise NotImplementedError
-
     @property
     def feed_format(self):
         """See `IFeed`."""
@@ -155,7 +151,10 @@ class FeedBase(LaunchpadFormView):
                               key=operator.attrgetter('last_modified'),
                               reverse=True)
         if len(sorted_items) == 0:
-            return datetime.utcnow()
+            # datetime.isoformat() doesn't place the necessary "+00:00"
+            # for the feedvalidator's check of the iso8601 date format
+            # unless a timezone is specified with tzinfo.
+            return datetime.utcnow().replace(tzinfo=pytz.utc)
         last_modified = sorted_items[0].last_modified
         if last_modified is None:
             raise AssertionError, 'All feed entries require a date updated.'
@@ -216,12 +215,14 @@ class FeedEntry:
                  authors=None,
                  contributors=None,
                  content=None,
+                 id_=None,
                  generator=None,
                  logo=None,
                  icon=None):
         self.title = title
         self.link_alternate = link_alternate
         self.content = content
+        self.date_created = date_created
         self.date_updated = date_updated
         self.date_published = date_published
         if date_updated is None:
@@ -232,7 +233,16 @@ class FeedEntry:
         if contributors is None:
             contribuors = []
         self.contributors = contributors
-        url_path = urlparse(link_alternate)[2]
+        self.id = self.construct_id()
+
+    @property
+    def last_modified(self):
+        if self.date_published is not None:
+            return max(self.date_published, self.date_updated)
+        return self.date_updated
+
+    def construct_id(self):
+        url_path = urlparse(self.link_alternate)[2]
         # Strip the first portion of the path, which will be the
         # project/product identifier but is not wanted in the <id> as it may
         # change if the entry is re-assigned which would break the permanence
@@ -244,15 +254,9 @@ class FeedEntry:
             # raises a ValueError because '/' was not in the path, then fall
             # back to using the entire path.
             unique_url_path = url_path
-        self.id = 'tag:launchpad.net,%s:%s' % (
-            date_created.date().isoformat(),
+        return 'tag:launchpad.net,%s:%s' % (
+            self.date_created.date().isoformat(),
             unique_url_path)
-
-    @property
-    def last_modified(self):
-        if self.date_published is not None:
-            return max(self.date_published, self.date_updated)
-        return self.date_updated
 
 
 class FeedTypedData:
@@ -262,25 +266,40 @@ class FeedTypedData:
 
     content_types = ['text', 'html', 'xhtml']
 
-    def __init__(self, content, content_type='text'):
+    def __init__(self, content, content_type='text', root_url=None):
         self._content = content
         if content_type not in self.content_types:
             raise UnsupportedFeedFormat("%s: is not valid" % content_type)
         self.content_type = content_type
+        self.root_url = root_url
 
     @property
     def content(self):
-        if self.content_type in ('text', 'html'):
-            return xml_escape(self._content)
-        elif self.content_type == 'xhtml':
-            soup = BeautifulStoneSoup(
-                self._content,
-                convertEntities=BeautifulStoneSoup.HTML_ENTITIES)
-            return unicode(soup)
+        if (self.content_type in ('html', 'xhtml') and
+            self.root_url is not None):
+            # Unqualified hrefs must be qualified using the original subdomain
+            # or they will try be served from http://feeds.launchpad.net,
+            # which will not work.
+            soup = BeautifulSoup(self._content)
+            a_tags = soup.findAll('a')
+            for a_tag in a_tags:
+                if a_tag['href'].startswith('/'):
+                    a_tag['href'] = urljoin(self.root_url, a_tag['href'])
+            altered_content = unicode(soup)
+        else:
+            altered_content = self._content
 
+        if self.content_type in ('text', 'html'):
+            altered_content = xml_escape(altered_content)
+        elif self.content_type == 'xhtml':
+            soup = BeautifulSoup(
+                altered_content,
+                convertEntities=BeautifulSoup.HTML_ENTITIES)
+            altered_content = unicode(soup)
+        return altered_content
 
 class FeedPerson:
-    """Data for person in a feed.
+    """See `IFeedPerson`.
 
     If this class is consistently used we will not accidentally leak email
     addresses.
