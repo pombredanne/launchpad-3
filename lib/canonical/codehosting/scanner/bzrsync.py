@@ -25,7 +25,7 @@ from bzrlib.revision import NULL_REVISION
 from canonical.config import config
 from canonical.launchpad.interfaces import (
     BranchSubscriptionNotificationLevel, BugBranchStatus,
-    ILaunchpadCelebrities, IBranchRevisionSet, IBugBranchSet, IBugSet,
+    IBranchRevisionSet, IBugBranchSet, IBugSet,
     IRevisionSet, NotFoundError)
 from canonical.launchpad.mailnotification import (
     send_branch_revision_notifications)

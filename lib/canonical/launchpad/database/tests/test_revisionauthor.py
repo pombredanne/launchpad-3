@@ -21,8 +21,9 @@ class TestRevisionEmailExtraction(TestCase):
     """When a RevisionAuthor is created, the email address is extracted.
 
     This email address is stored in another field in order to be easily
-    matched to user's email addresses, especially when a user newly
-    validates an email.
+    matched to user's email addresses.  This is primarily used when a user
+    has newly validated an email address, and we want to see if any of
+    the existing revision author's have the matching email address.
     """
 
     layer = LaunchpadZopelessLayer
@@ -70,7 +71,7 @@ class MakeHarryTestCase(TestCase):
 
 
 class TestRevisionAuthorMatching(MakeHarryTestCase):
-    """Only validated email address cause a link to be made.
+    """Only a validated email address will make a link to a person.
 
     Email addresses that are NEW are not validated, and so do not cause
     the link to be formed between the RevisionAuthor and the Person.
@@ -97,7 +98,7 @@ class TestRevisionAuthorMatching(MakeHarryTestCase):
         harry = self._makeHarry(EmailAddressStatus.VALIDATED)
         author = self._createRevisionAuthor()
         # Reget harry as the SQLObject cache has been flushed on
-        # tractionaction boundary.
+        # transaction boundary.
         harry = getUtility(IPersonSet).getByName('harry')
         self.assertEqual('harry@canonical.com', author.email)
         self.assertEqual(harry, author.person)
@@ -107,7 +108,7 @@ class TestRevisionAuthorMatching(MakeHarryTestCase):
         harry = self._makeHarry(EmailAddressStatus.OLD)
         author = self._createRevisionAuthor()
         # Reget harry as the SQLObject cache has been flushed on
-        # tractionaction boundary.
+        # transaction boundary.
         harry = getUtility(IPersonSet).getByName('harry')
         self.assertEqual('harry@canonical.com', author.email)
         self.assertEqual(harry, author.person)
@@ -117,7 +118,7 @@ class TestRevisionAuthorMatching(MakeHarryTestCase):
         harry = self._makeHarry(EmailAddressStatus.PREFERRED)
         author = self._createRevisionAuthor()
         # Reget harry as the SQLObject cache has been flushed on
-        # tractionaction boundary.
+        # transaction boundary.
         harry = getUtility(IPersonSet).getByName('harry')
         self.assertEqual('harry@canonical.com', author.email)
         self.assertEqual(harry, author.person)
@@ -136,7 +137,7 @@ class TestNewlyValidatedEmailsLinkRevisionAuthors(MakeHarryTestCase):
         self.author = RevisionAuthor.byName(self.author.name)
 
     def test_validated_email_updates(self):
-        # A newly validated email for a user
+        # A newly validated email for a user.
         self.assertEqual(None, self.author.person,
                          'No author should be initially set.')
         harry = self._makeHarry()
