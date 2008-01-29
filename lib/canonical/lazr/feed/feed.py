@@ -37,7 +37,7 @@ from canonical.config import config
 # working prototype.  Bug 153795.
 from canonical.launchpad.interfaces import ILaunchpadRoot
 from canonical.launchpad.webapp import (
-    LaunchpadView, canonical_url, urlparse)
+    LaunchpadView, canonical_url, urlappend, urlparse)
 from canonical.launchpad.webapp.vhosts import allvhosts
 from canonical.lazr.interfaces import (
     IFeed, IFeedEntry, IFeedPerson, IFeedTypedData, UnsupportedFeedFormat)
