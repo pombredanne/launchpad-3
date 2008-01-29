@@ -1,0 +1,23 @@
+= Authentication for feeds =
+
+Requests made to feeds.launchpad.dev are not challenged for
+authentication, so most access is done anonymously.  In the event a
+request provides basic authentication, even though not requested by
+the server, the web application will nonetheless use the
+unauthenticated anonymous user for all interaction.
+
+    >>> foo_bar_auth = 'Basic %s' % (
+    ...	    'foo.bar@canonical.com:test'.encode('base64'))
+
+    # Setup a Foo Bar user and let Zope handle the errors.
+    >>> browser = setupBrowser(auth='Basic foo.bar@canonical.com:test')
+    >>> browser.handleErrors = True
+
+    # Traversing to the private bug will trigger an Unauthorized error
+    # and the user will be redirected to +login. Since that page isn't
+    # available on feeds, we get a NotFound error.
+    >>> browser.open('http://feeds.launchpad.dev/bugs/14/bug.atom')
+    Traceback (most recent call last):
+      ...
+    HTTPError: HTTP Error 404: Not Found
+
