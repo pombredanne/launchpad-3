@@ -159,6 +159,13 @@ td.error {
   background-color: #fafca9; border: 1px solid #999;
   margin: 0; padding: 0 1em;
 }
+.whiteboard {
+  color: #666;
+}
+/* When shown as in a definition description, indent slightly. */
+dd .whiteboard {
+  padding-left: 1em;
+}
 
 /* --- Form controls --- */
 

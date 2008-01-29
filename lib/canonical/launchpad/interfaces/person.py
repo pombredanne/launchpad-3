@@ -16,6 +16,7 @@ __all__ = [
     'IPerson',
     'IPersonChangePassword',
     'IPersonClaim',
+    'IPersonEntry',
     'IPersonSet',
     'IRequestPeopleMerge',
     'ITeam',
@@ -33,7 +34,7 @@ __all__ = [
 
 
 from zope.formlib.form import NoInputData
-from zope.schema import Bool, Choice, Datetime, Int, Text, TextLine
+from zope.schema import Bool, Choice, Datetime, Int, Object, Text, TextLine
 from zope.interface import Attribute, Interface
 from zope.interface.exceptions import Invalid
 from zope.interface.interface import invariant
@@ -41,6 +42,7 @@ from zope.component import getUtility
 
 from canonical.launchpad import _
 from canonical.lazr import DBEnumeratedType, DBItem, EnumeratedType, Item
+from canonical.lazr.interfaces import IEntry
 from canonical.launchpad.fields import (
     BlacklistableContentNameField, IconImageUpload, LogoImageUpload,
     MugshotImageUpload, PasswordField, StrippedTextLine)
@@ -399,6 +401,22 @@ class INewPerson(Interface):
         title=_('Creation reason'), required=True,
         description=_("The reason why you're creating this profile."))
 
+def make_person_name_field():
+    """Construct a PersonNameField.
+
+    This is used to define both IPerson and IPersonEntry. This is
+    not a long-term solution.
+
+    XXX leonardr 2008-01-28 bug=186702
+    """
+    return PersonNameField(
+            title=_('Name'), required=True, readonly=False,
+            constraint=name_validator,
+            description=_(
+                "A short unique name, beginning with a lower-case "
+                "letter or number, and containing only letters, "
+                "numbers, dots, hyphens, or plus signs.")
+            )
 
 class IPerson(IHasSpecifications, IHasMentoringOffers, IQuestionCollection,
               IHasLogo, IHasMugshot, IHasIcon):
@@ -407,14 +425,7 @@ class IPerson(IHasSpecifications, IHasMentoringOffers, IQuestionCollection,
     id = Int(
             title=_('ID'), required=True, readonly=True,
             )
-    name = PersonNameField(
-            title=_('Name'), required=True, readonly=False,
-            constraint=name_validator,
-            description=_(
-                "A short unique name, beginning with a lower-case "
-                "letter or number, and containing only letters, "
-                "numbers, dots, hyphens, or plus signs.")
-            )
+    name = make_person_name_field()
     displayname = StrippedTextLine(
             title=_('Display Name'), required=True, readonly=False,
             description=_("Your name as you would like it displayed "
@@ -1249,6 +1260,13 @@ class IPerson(IHasSpecifications, IHasMentoringOffers, IQuestionCollection,
 
         :target: An object providing `IBugTarget` to search within.
         """
+
+
+class IPersonEntry(IEntry):
+    """The part of a person that we expose through the web service."""
+
+    name = make_person_name_field()
+    teamowner = Object(schema=IPerson)
 
 
 class INewPersonForm(IPerson):

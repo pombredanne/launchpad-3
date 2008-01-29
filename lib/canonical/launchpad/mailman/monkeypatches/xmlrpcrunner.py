@@ -291,6 +291,9 @@ class XMLRPCRunner(Runner):
                 mlist.include_rfc2369_headers = False
                 mlist.use_dollar_strings = True
                 mlist.Save()
+                # Now create the archive directory for MHonArc.
+                path = os.path.join(mm_cfg.VAR_PREFIX, 'mhonarc', team_name)
+                os.makedirs(path)
             # We have to use a bare except here because of the legacy string
             # exceptions that Mailman can raise.
             except:

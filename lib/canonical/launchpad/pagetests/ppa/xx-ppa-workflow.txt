@@ -233,19 +233,37 @@ LP-admins can also 'edit' PPAs of other people:
     >>> admin_browser.getLink("Change details") is not None
     True
 
-But more importantly, only LP-admin can 'administer' Personal Package Archives.
+But more importantly, only LP administrators can 'administer' Personal
+Package Archives.
+
+    >>> sample_browser.open("http://launchpad.dev/~carlos/+archive")
+    >>> print sample_browser.getLink("Administer archive")
+    Traceback (most recent call last):
+    ...
+    LinkNotFoundError
 
     >>> admin_browser.getLink("Administer archive").click()
+    >>> admin_browser.url
+    'http://launchpad.dev/~carlos/+archive/+admin'
 
-The administration procedure allow us to:
+Trying to shortcut the URL as a non-privileged user does not work:
+
+    >>> sample_browser.open("http://launchpad.dev/~carlos/+archive/+admin")
+    Traceback (most recent call last):
+    ...
+    Unauthorized...
+
+The administration procedure allows us to:
 
  * Enable/Disable: disabled PPA that won't accept uploads (not
    implemented yet)
+ * Make the PPA private or public.
  * Set a maximum disk size: uploads will be rejected if the resulting
    PPA size is exceeding the authorized size. (not implemented yet)
  * Edit the whiteboard: to communicate & record administration decisions.
 
     >>> admin_browser.getControl(name="field.enabled").value = False
+    >>> admin_browser.getControl(name="field.private").value = True
     >>> admin_browser.getControl(name="field.authorized_size").value = '1'
     >>> admin_browser.getControl(name="field.whiteboard").value = (
     ...    'Here lives a lazy community.')
