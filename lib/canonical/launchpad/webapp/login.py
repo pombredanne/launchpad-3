@@ -15,13 +15,15 @@ from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 
 from canonical.launchpad import _
 from canonical.launchpad.validators.email import valid_email
-from canonical.launchpad.webapp.interfaces import IPlacelessLoginSource
+from canonical.launchpad.webapp.interfaces import (
+    IPlacelessAuthUtility, IPlacelessLoginSource)
 from canonical.launchpad.webapp.interfaces import CookieAuthLoggedInEvent
 from canonical.launchpad.webapp.interfaces import LoggedOutEvent
 from canonical.launchpad.webapp.error import SystemErrorView
 from canonical.launchpad.webapp.url import urlappend
 from canonical.launchpad.interfaces import (
-    ILoginTokenSet, IPersonSet, LoginTokenType, UBUNTU_WIKI_URL, ShipItConstants)
+    ILoginTokenSet, IPersonSet, LoginTokenType, ShipItConstants,
+    UBUNTU_WIKI_URL)
 from canonical.launchpad.interfaces.validation import valid_password
 from canonical.config import config
 
@@ -154,7 +156,8 @@ class LoginOrRegister:
         if config.launchpad.restrict_to_team:
             self.process_form()
         else:
-            self.request.response.redirect('/+login', temporary_if_possible=True)
+            self.request.response.redirect('/+login',
+                                           temporary_if_possible=True)
 
     def process_form(self):
         """Determines whether this is the login form or the register
@@ -226,13 +229,14 @@ class LoginOrRegister:
             if person.preferredemail is None:
                 self.login_error = _(
                     "The email address '%s', which you're trying to use to "
-                    "login has not yet been validated to use in Launchpad. We "
-                    "sent an email to that address with instructions on how "
-                    "to confirm that it belongs to you. As soon as we have "
-                    "that confirmation you'll be able to log into Launchpad."
+                    "login has not yet been validated to use in Launchpad. "
+                    "We sent an email to that address with instructions on "
+                    "how to confirm that it belongs to you. As soon as we "
+                    "have that confirmation you'll be able to log into "
+                    "Launchpad."
                     ) % email
                 token = getUtility(ILoginTokenSet).new(
-                            person, email, email, LoginTokenType.VALIDATEEMAIL)
+                    person, email, email, LoginTokenType.VALIDATEEMAIL)
                 token.sendEmailValidationRequest(appurl)
                 return
             if person.is_valid_person:
@@ -339,7 +343,7 @@ class LoginOrRegister:
                 yield (name, value_list_item)
 
     def preserve_query(self):
-        """Returns zero or more hidden inputs that preserve the URL's query."""
+        """Return zero or more hidden inputs that preserve the URL's query."""
         L = []
         for name, value in self.iter_form_items():
             L.append('<input type="hidden" name="%s" value="%s" />' % (
@@ -354,10 +358,25 @@ def logInPerson(request, principal, email):
     session = ISession(request)
     authdata = session['launchpad.authenticateduser']
     assert principal.id is not None, 'principal.id is None!'
+    request.setPrincipal(principal)
     authdata['personid'] = principal.id
     authdata['logintime'] = datetime.utcnow()
     authdata['login'] = email
     notify(CookieAuthLoggedInEvent(request, email))
+
+
+def logoutPerson(request):
+    """Log the user out."""
+    session = ISession(request)
+    authdata = session['launchpad.authenticateduser']
+    previous_login = authdata.get('personid')
+    if previous_login is not None:
+        authdata['personid'] = None
+        authdata['logintime'] = datetime.utcnow()
+        auth_utility = getUtility(IPlacelessAuthUtility)
+        principal = auth_utility.unauthenticatedPrincipal()
+        request.setPrincipal(principal)
+        notify(LoggedOutEvent(request))
 
 
 class CookieLogoutPage:
@@ -415,4 +434,3 @@ class ForgottenPasswordPage:
 
     def success(self):
         return self.submitted and not self.errortext
-
