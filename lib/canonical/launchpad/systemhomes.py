@@ -195,4 +195,4 @@ class WebServiceApplication(ServiceRootResource):
     # See ServiceRootResource for more on top_level_collections
     @property
     def top_level_collections(self):
-        return { 'people' : lambda : getUtility(IPersonSet) }
+        return { 'people' : getUtility(IPersonSet) }

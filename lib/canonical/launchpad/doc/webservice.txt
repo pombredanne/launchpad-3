@@ -137,7 +137,7 @@ collection at all.
     >>> class IAuthorEntry(IEntry):
     ...     "The part of an author that we expose through the web service."
     ...     name = IAuthor.get('name')
-    ...     favorites = CollectionField(schema=IRecipe)
+    ...     favorites = CollectionField(value_type=Object(schema=IRecipe))
 
 Here, we're exposing an IRecipe that exposes the underlying Recipe's
 name but not its ID. References to associated objects (like the
@@ -168,10 +168,6 @@ defines a constructor.
     ...     def fragment(self):
     ...         """Use the author's name as its URI fragment."""
     ...         return self.context.name
-    ...
-    ...     def lookupCollection(self, name):
-    ...         if name == 'favorites':
-    ...             return RecipeSet()
 
 The "schema" attribute points to the interface class that defines the
 attributes exposed through the web service. Above, "schema" is
@@ -232,13 +228,9 @@ returns the model objects in the collection.
     >>> class RecipeCollection(Collection):
     ...     """A collection of recipes, as exposed through the web service."""
     ...
-    ...     def find(self, scope, relationship):
+    ...     def find(self):
     ...        """Find all the recipes."""
-    ...        if scope is None:
-    ...            return self.context.getAll()
-    ...        elif (IAuthorEntry.providedBy(scope) and
-    ...            relationship == 'favorites'):
-    ...            return scope.favorites
+    ...        return self.context.getAll()
     ...
     ...     def lookupEntry(self, id):
     ...        """Find a single recipe by ID."""
@@ -248,6 +240,22 @@ returns the model objects in the collection.
 
 Like Entry, Collection is a simple base class that defines a
 constructor.
+
+Finally, we need to define a collection of recipes that's scoped to an
+author. This class manages the list of an author's favorite recipes.
+
+    >>> from canonical.lazr.rest import ScopedCollection
+    >>> class AuthorRecipeCollection(ScopedCollection):
+    ...
+    ...     def lookupEntry(self, name):
+    ...         recipe = RecipeSet().get(name)
+    ...         if recipe in self.collection:
+    ...             return recipe
+    ...         return None
+
+    >>> from canonical.lazr.interfaces import IScopedCollection
+    >>> provideAdapter(AuthorRecipeCollection, [IAuthorEntry, IRecipe],
+    ...                IScopedCollection)
 
 
 == Resource objects ==
@@ -283,8 +291,8 @@ root of the object tree.
     ...    implements(IWebServiceApplication)
     ...    @property
     ...    def top_level_collections(self):
-    ...        return { 'authors' : AuthorSet,
-    ...                 'recipes' : RecipeSet }
+    ...        return { 'authors' : AuthorSet(),
+    ...                 'recipes' : RecipeSet() }
 
 If you call the service root resource, and pass in an HTTP request, it
 will act as though you had performed a GET on the URL
