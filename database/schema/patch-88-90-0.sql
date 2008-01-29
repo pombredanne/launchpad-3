@@ -2,8 +2,6 @@ SET client_min_messages=ERROR;
 
 BEGIN TRANSACTION;
 
-ALTER TABLE BranchMergeProposal ADD COLUMN conversation INTEGER;
-
 CREATE TABLE CodeReviewSubscription (
     id SERIAL PRIMARY KEY,
     branch_merge_proposal INTEGER NOT NULL REFERENCES BranchMergeProposal(id),
@@ -19,6 +17,9 @@ CREATE TABLE CodeReviewMessage (
     message INTEGER NOT NULL UNIQUE REFERENCES Message(id),
     vote INTEGER NOT NULL
     );
+
+ALTER TABLE BranchMergeProposal
+    ADD COLUMN conversation INTEGER REFERENCES CodeReviewMessage;
 
 INSERT INTO LaunchpadDatabaseRevision VALUES (88, 90, 0);
 
