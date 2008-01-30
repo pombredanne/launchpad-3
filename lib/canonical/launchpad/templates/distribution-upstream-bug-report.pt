@@ -16,6 +16,7 @@
       td.good { background: lightgreen; }
       td.bad { background: #ffaaaa; }
       th.numeric { text-align: right }
+      a.numeric { display: block }
     -->
     </style>
 </metal:heading>
@@ -141,17 +142,20 @@
                 </td>
             </tal:has-no-product>
             <td align="right">
-              <a tal:attributes="href item/open_bugs_url"
+              <a class="numeric"
+                 tal:attributes="href item/open_bugs_url"
                  tal:content="item/open_bugs"></a>
             </td>
             <td align="right" tal:attributes="class item/upstream_bugs_class">
-              <a tal:attributes="href item/upstream_bugs_url"
+              <a class="numeric"
+                 tal:attributes="href item/upstream_bugs_url"
                  tal:content="item/upstream_bugs"></a>
             </td>
             <td align="right" tal:attributes="class item/upstream_bugs_class"
                 tal:content="item/upstream_bugs_percentage" />
             <td align="right" tal:attributes="class item/upstream_bugs_class">
-              <a tal:attributes="href item/upstream_bugs_delta_url"
+              <a class="numeric"
+                 tal:attributes="href item/upstream_bugs_delta_url"
                  tal:content="item/upstream_bugs_delta"></a>
             </td>
             <tal:upstream-in-launchpad 
@@ -165,7 +169,8 @@
               <td align="right" tal:attributes="class item/watched_bugs_class"
                   tal:content="item/watched_bugs_percentage" />
               <td align="right" tal:attributes="class item/watched_bugs_class">
-                <a tal:attributes="href item/watched_bugs_delta_url"
+                <a class="numeric"
+                   tal:attributes="href item/watched_bugs_delta_url"
                    tal:content="item/watched_bugs_delta"></a>
               </td>
             </tal:upstream-not-in-launchpad>
