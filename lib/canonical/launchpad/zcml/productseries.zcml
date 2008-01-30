@@ -217,6 +217,7 @@
 
     <browser:page
       name="+addmilestone"
+      facet="overview"
       for="canonical.launchpad.interfaces.IProductSeries"
       class="canonical.launchpad.browser.milestone.MilestoneAddView"
       permission="launchpad.Edit"

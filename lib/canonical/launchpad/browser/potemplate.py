@@ -220,6 +220,7 @@ class POTemplateSubsetView:
 class POTemplateView(LaunchpadView, TranslationsMixin):
 
     def initialize(self):
+        """Get the requested languages and submit the form."""
         self.description = self.context.description
         self.submitForm()
 

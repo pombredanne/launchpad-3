@@ -655,6 +655,7 @@ Newline="
 url="http://www.ubuntu.com" (The text-to-html formatter should make this an <a> tag)
 ', NULL, true, NULL);
 
+
 ALTER TABLE announcement ENABLE TRIGGER ALL;
 
 
