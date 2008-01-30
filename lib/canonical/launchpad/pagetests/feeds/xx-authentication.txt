@@ -7,11 +7,17 @@ the server, the web application will nonetheless use the
 unauthenticated anonymous user for all interaction.
 
     >>> foo_bar_auth = 'Basic %s' % (
-    ...	    'foo.bar@canonical.com:test'.encode('base64'))
+    ...     'foo.bar@canonical.com:test'.encode('base64'))
 
     # Setup a Foo Bar user and let Zope handle the errors.
     >>> browser = setupBrowser(auth='Basic foo.bar@canonical.com:test')
     >>> browser.handleErrors = True
+
+    # First, get the bug through the web site, to ensure the
+    # bug exists and is private.
+    >>> browser.open('http://launchpad.dev/bugs/14')
+    >>> print browser.url
+    http://launchpad.dev/bugs/14
 
     # Traversing to the private bug will trigger an Unauthorized error
     # and the user will be redirected to +login. Since that page isn't
@@ -20,4 +26,3 @@ unauthenticated anonymous user for all interaction.
     Traceback (most recent call last):
       ...
     HTTPError: HTTP Error 404: Not Found
-
