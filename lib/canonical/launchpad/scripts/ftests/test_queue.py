@@ -647,6 +647,14 @@ class TestQueueTool(TestQueueBase):
         self.assertEmail(
             ['Daniel Silverstone <daniel.silverstone@canonical.com>'])
 
+    def testRejectLangpackSendsNoEmail(self):
+        """Check that rejecting a language pack sends no email."""
+        queue_action = self.execute_command(
+            'reject language-pack-de', queue_name='unapproved',
+            suite_name='breezy-autotest-proposed')
+        self.assertEqual(1, queue_action.items_size)
+        self.assertEqual(0, len(stub.test_emails))
+
     def testRejectWithMultipleIDs(self):
         """Check if rejecting multiple items at once works.
 
