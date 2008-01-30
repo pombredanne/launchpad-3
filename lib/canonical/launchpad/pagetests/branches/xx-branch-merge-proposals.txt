@@ -171,17 +171,28 @@ target branches or the registrant of the merge proposal.
     Mark as merged: .../+merge/.../+merged
     Request review: .../+merge/.../+request-review
     Review proposal: .../+merge/.../+review
+    Work in progress (disabled)
 
 Someone who is not logged in, or not the one of those that can alter the
 proposal to merge get no actions.
 
     >>> browser.open(firefox_merge_url)
     >>> print_action_links(browser.contents)
-    No actions portlet
+    Delete proposal to merge (disabled)
+    Edit details (disabled)
+    Mark as merged (disabled)
+    Request review (disabled)
+    Review proposal (disabled)
+    Work in progress (disabled)
 
     >>> anon_browser.open(firefox_merge_url)
     >>> print_action_links(anon_browser.contents)
-    No actions portlet
+    Delete proposal to merge (disabled)
+    Edit details (disabled)
+    Mark as merged (disabled)
+    Request review (disabled)
+    Review proposal (disabled)
+    Work in progress (disabled)
 
 When editing the proposal, the whiteboard can be altered, and the
 button options are:
