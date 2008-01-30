@@ -4,7 +4,6 @@ __metaclass__ = type
 __all__ = ['emailcommands', 'get_error_message']
 
 import os.path
-import re
 
 from zope.component import getUtility
 from zope.event import notify
