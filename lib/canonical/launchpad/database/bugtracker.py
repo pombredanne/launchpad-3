@@ -188,7 +188,7 @@ class BugTrackerSet:
     table = BugTracker
 
     def __init__(self):
-        self.title = 'Bug trackers registered in Malone'
+        self.title = 'Bug trackers registered in Launchpad'
 
     def get(self, bugtracker_id, default=None):
         """See `IBugTrackerSet`."""
