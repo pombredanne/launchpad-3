@@ -39,7 +39,7 @@ from canonical.database.enumcol import EnumCol
 
 from canonical.lazr.enum import DBItem
 
-from canonical.launchpad.searchbuilder import any, NULL, not_equals
+from canonical.launchpad.searchbuilder import all, any, NULL, not_equals
 from canonical.launchpad.database.pillar import pillar_sort_key
 from canonical.launchpad.interfaces import (
     BUG_CONTACT_BUGTASK_STATUSES,
@@ -973,7 +973,9 @@ class BugTaskSet:
         "datecreated": "BugTask.datecreated",
         "date_last_updated": "Bug.date_last_updated",
         "date_closed": "BugTask.date_closed",
-        "number_of_duplicates": "Bug.number_of_duplicates"}
+        "number_of_duplicates": "Bug.number_of_duplicates",
+        "message_count": "Bug.message_count"
+        }
 
     _open_resolved_upstream = """
                 EXISTS (
@@ -1237,10 +1239,27 @@ class BugTaskSet:
             extra_clauses.append(upstream_clause)
 
         if params.tag:
-            tags_clause = "BugTag.bug = BugTask.bug AND BugTag.tag %s" % (
+            if zope_isinstance(params.tag, all):
+                # If the user chose to search for
+                # the presence of all specified bugs,
+                # we must handle the search differently.
+                tags_clauses = []
+                for tag in params.tag.query_values:
+                    tags_clauses.append("""
+                    EXISTS(
+                      SELECT *
+                      FROM BugTag
+                      WHERE BugTag.bug = BugTask.bug
+                      AND BugTag.tag = %s)
+                      """ % sqlvalues(tag))
+                extra_clauses.append(' AND '.join(tags_clauses))
+            else:
+                # Otherwise, we just pass the value (which is either
+                # naked or wrapped in `any` for SQL construction).
+                tags_clause = "BugTag.bug = BugTask.bug AND BugTag.tag %s" % (
                     search_value_to_where_condition(params.tag))
-            extra_clauses.append(tags_clause)
-            clauseTables.append('BugTag')
+                extra_clauses.append(tags_clause)
+                clauseTables.append('BugTag')
 
         if params.bug_contact:
             bug_contact_clause = """BugTask.id IN (

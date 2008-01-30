@@ -462,7 +462,7 @@ class TestDebianBug:
 
     def __init__(self, reporter_email='foo@example.com', package='evolution',
                  summary='Test Summary', description='Test description.',
-                 status='open', severity=None, tags =None):
+                 status='open', severity=None, tags=None, id=None):
         if tags is None:
             tags = []
         self.originator = reporter_email
@@ -472,6 +472,7 @@ class TestDebianBug:
         self.status = status
         self.severity = severity
         self.tags = tags
+        self.id = id
 
 
 class TestDebBugsDB:

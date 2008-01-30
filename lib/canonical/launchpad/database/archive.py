@@ -43,7 +43,9 @@ class Archive(SQLBase):
     purpose = EnumCol(dbName='purpose', unique=False, notNull=True,
         schema=ArchivePurpose)
 
-    enabled = BoolCol(dbName='enabled', notNull=False, default=True)
+    enabled = BoolCol(dbName='enabled', notNull=True, default=True)
+
+    private = BoolCol(dbName='private', notNull=True, default=False)
 
     authorized_size = IntCol(
         dbName='authorized_size', notNull=False, default=1024)
@@ -369,8 +371,10 @@ class Archive(SQLBase):
         result = LibraryFileContent.select(query, clauseTables=clauseTables,
             distinct=True)
 
-        # Unfortunately SQLObject has got a bug where it ignores DISTINCT
-        # on a .sum() operation, so resort to Python addition.
+        # XXX 2008-01-16 Julian.  Unfortunately SQLObject has got a bug
+        # where it ignores DISTINCT on a .sum() operation, so resort to
+        # Python addition.  Revert to using result.sum('filesize') when
+        # SQLObject gets dropped.
         size = sum([lfc.filesize for lfc in result])
         return size
 
