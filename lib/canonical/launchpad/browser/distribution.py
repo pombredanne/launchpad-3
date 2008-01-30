@@ -18,7 +18,6 @@ __all__ = [
     'DistributionSetView',
     'DistributionAddView',
     'DistributionBugContactEditView',
-    'DistributionUpstreamBugReport',
     'DistributionArchiveMirrorsView',
     'DistributionCountryArchiveMirrorsView',
     'DistributionSeriesMirrorsView',
@@ -613,103 +612,6 @@ class DistributionBugContactEditView(LaunchpadEditFormView):
     def next_url(self):
         """Redirect to the distribution page."""
         return canonical_url(self.context)
-
-
-class BugReportData:
-    """XXX"""
-    def __init__(self):
-        self.open_bugs = 0
-        self.upstream_bugs = 0
-        self.watched_bugs = 0
-
-    @property
-    def upstream_bugs_percentage(self):
-        if self.open_bugs:
-            v = self.upstream_bugs / float(self.open_bugs) * 100
-        else:
-            v = 0
-        return "%.2f" % v
-
-    @property
-    def watched_bugs_percentage(self):
-        if self.upstream_bugs:
-            v = self.watched_bugs / float(self.upstream_bugs) * 100
-        else:
-            v = 0
-        return "%.2f" % v
-
-    @property
-    def upstream_bugs_class(self):
-        if float(self.upstream_bugs_percentage) > self.UPSTREAM_THRESHOLD:
-            return "good"
-        return ""
-
-    @property
-    def watched_bugs_class(self):
-        if float(self.watched_bugs_percentage) > self.WATCH_THRESHOLD:
-            return "good"
-        return ""
-
-    @property
-    def upstream_bugs_delta(self):
-        return self.open_bugs - self.upstream_bugs
-
-    @property
-    def watched_bugs_delta(self):
-        return self.upstream_bugs - self.watched_bugs
-
-
-class PackageBugReportData(BugReportData):
-    """XXX"""
-    UPSTREAM_THRESHOLD = 80
-    WATCH_THRESHOLD = 95
-
-    def __init__(self, dsp, product, open_bugs, upstream_bugs, watched_bugs):
-        BugReportData.__init__(self)
-        self.dsp = dsp
-        self.product = product
-        self.open_bugs = open_bugs
-        self.upstream_bugs = upstream_bugs
-        self.watched_bugs = watched_bugs
-
-        self.official_malone = bool(product and product.official_malone)
-        self.open_bugs_url = canonical_url(dsp)
-
-        dssps = dsp.get_distroseries_packages()
-        if dssps:
-            self.dssp = dssps[0]
-            self.packaging_url = canonical_url(self.dssp) + "/+edit-packaging"
-        else:
-            self.dssp = None
-
-        self.upstream_bugs_url = (
-            canonical_url(dsp) + "?field.status_upstream=open_upstream")
-        self.upstream_bugs_delta_url = (
-            canonical_url(dsp) + "?field.status_upstream=hide_upstream")
-        self.watched_bugs_delta_url = (
-            canonical_url(dsp) + "?field.status_upstream=pending_bugwatch")
-
-        if self.product:
-            self.bugcontact_url = canonical_url(self.product) + "/+bugcontact"
-            self.product_edit_url = canonical_url(self.product) + "/+edit"
-
-
-class DistributionUpstreamBugReport(LaunchpadView):
-    """XXX"""
-
-    def initialize(self):
-        """Assemble self.data and self.total based on upstream count report."""
-        self.data = []
-        self.total = BugReportData()
-        counts = self.context.getPackagesAndPublicUpstreamBugCounts()
-        for dsp, product, open_bugs, upstream, watched in counts:
-            self.total.open_bugs += open_bugs
-            self.total.upstream_bugs += upstream
-            self.total.watched_bugs += watched
-
-            item = PackageBugReportData(
-                dsp, product, open_bugs, upstream, watched)
-            self.data.append(item)
 
 
 class DistributionLanguagePackAdminView(LaunchpadEditFormView):

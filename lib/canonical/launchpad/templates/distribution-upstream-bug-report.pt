@@ -15,6 +15,7 @@
     <!--
       td.good { background: lightgreen; }
       td.bad { background: #ffaaaa; }
+      th.numeric { text-align: right }
     -->
     </style>
 </metal:heading>
@@ -23,11 +24,40 @@
     <metal:portlets fill-slot="portlets">
     </metal:portlets>
 
-    <p metal:fill-slot="help">
+    <div metal:fill-slot="help">
+      <p>
       This report gives an overview of how good the bug communication is
       between a distribution and the upstream projects it produces
       packages from.
-    </p>
+      </p>
+
+      <p>
+      Note that many of the counts in the table are linked to
+      corresponding bug listings. The counts may disagree in certain
+      corner cases and those should be verified through <a
+      href="/ubuntu/+addquestion">a Launchpad question</a>. Details on
+      the counts follow.
+      </p>
+
+      <dl>
+        <dt>Open</dt><dd>Counts unfixed bugs open on that package.</dd>
+        <dt>Upstream</dt><dd>Of those bugs open, how many indicate they
+        also affect an upstream project. Note that not all bugs filed
+        against a distribution apply to an upstream project, so this
+        percentage will rarely reach 100%.</dd>
+        <dt>Watch</dt><dd>Of the bugs affecting an upstream project, how
+        many have bug watches pointing to remote bug trackers. It is a
+        measure of how well we can monitor progress in the upstream
+        project.  The watch column is blank for projects which use
+        Launchpad for bug tracking since it implies that there is
+        already direct communication between distribution and
+        upstream.</dd>
+        <dt>&Delta;</dt><dd>Deltas and percentages are relative to
+        numbers in the previous category; for instance, the delta for
+        watches is the number of upstreamed bugs minus the number of
+        bugs with watches linked.</dd>
+      </dl>
+    </div>
 
     <div metal:fill-slot="main">
       <h1>Upstream Bug Report for
@@ -38,21 +68,28 @@
         against it.
       </tal:no-bugs>
 
-      <table class="listing sortable" id="upstream-report"
+      <p class="warning message">
+        This report is an alpha release and has limitations in its
+        accounting. You can use it to guide your work, but do not read
+        great significance into the literal percentages. See the Help
+        tab for information on the counts.
+      </p>
+
+      <table class="listing" id="upstream-report"
              tal:condition="view/data">
         <thead>
           <tr>
             <th>Package</th>
             <th>Project</th>
-            <th>Tracker</th>
+            <th>Bug Tracker</th>
             <th>Bug Contact</th>
-            <th>Open</th>
-            <th>Upstream</th>
-            <th>%</th>
-            <th>&Delta;</th>
-            <th>Watch</th>
-            <th>%</th>
-            <th>&Delta;</th>
+            <th class="numeric">Open</th>
+            <th class="numeric">Upstream</th>
+            <th class="numeric">%</th>
+            <th class="numeric">&Delta;</th>
+            <th class="numeric">Watch</th>
+            <th class="numeric">%</th>
+            <th class="numeric">&Delta;</th>
           </tr>
         </thead>
         <tbody>
