@@ -825,6 +825,8 @@ border. */
   position: relative;
 }
 * html #container {margin-top: 0; position: static;} /* fixes in IE6 */
+/* The one-column layout doesn't need the main column pushed to the right: */
+body.onecolumn #container {padding-left: 20px;}
 
 /* Something private for a public project has a cordon inside the tabs: */
 #container.private {background: url(/@@/private-bg) left 28px repeat-x;}

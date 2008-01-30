@@ -9,12 +9,8 @@
   metal:use-macro="view/macro:page/onecolumn"
 >
   <body>
-    <metal:heading fill-slot="pageheading">
+    <div metal:fill-slot="main">
       <h1>Bug trackers registered in Launchpad</h1>
-    </metal:heading>
-
-<div metal:fill-slot="main">
-
       <p>
         Bug reports in Launchpad can be linked to the equivalent reports in
         other bug trackers.

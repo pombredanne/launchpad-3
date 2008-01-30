@@ -228,7 +228,21 @@
                         id="container"
                         tal:attributes="class python:path('view/isPrivate | CONTEXTS/lp:immediate_object_is_private') and 'private' or None"
                       >
-                        <div id="maincontent">
+                        <tal:noportlets
+                          condition="not: view/macro:pagehas/portlets"
+                        >
+                          <tal:notifications
+                            define="notifications request/notifications"
+                            condition="notifications"
+                          ><metal:notifications
+                              use-macro="context/@@+main-template-macros/notifications" />
+                          </tal:notifications>
+                          <metal:block define-slot="main" />
+                        </tal:noportlets>
+                        <div
+                          id="maincontent"
+                          tal:condition="view/macro:pagehas/portlets"
+                        >
                            <div class="pageheading"
                                 tal:condition="view/macro:pagehas/pageheading">
                             <metal:block define-slot="pageheading">
