@@ -44,6 +44,13 @@ class TestCodeReviewMessage(unittest.TestCase):
         self.assertEqual('Reply subject', reply.message.subject)
         self.assertEqual('Reply content', reply.message.chunks[0].content)
 
+    def test_create_root_message_as_reply(self):
+        message = self.bmp.createMessage(
+            Person.get(1), 1, 'Message subject', 'Message content')
+        self.bmp.conversation = None
+        self.assertRaises(AssertionError, self.bmp.createMessage,
+            Person.get(1), 1, 'Reply subject', 'Reply content', message)
+
     def test_create_no_parent_message(self):
         message = self.bmp.createMessage(
             Person.get(1), 1, 'Message subject', 'Message content')
