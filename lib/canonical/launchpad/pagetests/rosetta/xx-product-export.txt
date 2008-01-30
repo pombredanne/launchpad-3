@@ -60,32 +60,11 @@ Translations.
 
 Only logged-in users get the option to request downloads.
 
-    >>> anon_browser.open('http://translations.launchpad.dev/evolution/')
+    >>> anon_browser.open('http://translations.launchpad.dev/mozilla/')
     >>> anon_browser.getLink('Download translations').click()
     Traceback (most recent call last):
     ...
     LinkNotFoundError
-
-We can see its placeholder in development mode:
-
-    >>> from canonical.config import config
-    >>> config.devmode
-    True
-    >>> for tag in find_tags_by_class(
-    ...     anon_browser.contents, 'menu-link-translationdownload-disabled'):
-    ...     print tag.renderContents()
-    Download translations (disabled)
-
-But not when it's non-development mode:
-
-    >>> config.devmode = False
-    >>> anon_browser.open('http://translations.launchpad.dev/evolution/')
-    >>> for tag in find_tags_by_class(
-    ...     anon_browser.contents, 'menu-link-translationdownload'):
-    ...     print tag.renderContents()
-
-    # Reset global configuration...
-    >>> config.devmode = True
 
 Even "hacking the URL" to the download option will fail.
 
@@ -93,3 +72,4 @@ Even "hacking the URL" to the download option will fail.
     Traceback (most recent call last):
     ...
     Unauthorized: ...
+
