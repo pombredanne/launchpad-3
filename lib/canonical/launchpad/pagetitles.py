@@ -357,19 +357,19 @@ build_retry = ContextTitle('Retry %s')
 
 build_rescore = ContextTitle('Rescore %s')
 
+builder_admin = ContextTitle('Administer %s builder')
+
+builder_cancel = ContextTitle('Cancel job for %s')
+
+builder_edit = ContextTitle('Edit build machine %s')
+
+builder_history = ContextTitle('Build history for %s')
+
+builder_index = ContextTitle('Build machine %s')
+
+builder_mode = ContextTitle('Change mode for %s')
+
 builders_index = 'Launchpad build farm'
-
-builder_edit = ContextTitle(smartquote('Edit build machine "%s"'))
-
-builder_index = ContextTitle(smartquote('Build machine "%s"'))
-
-builder_cancel = ContextTitle(smartquote('Cancel job for "%s"'))
-
-builder_mode = ContextTitle(smartquote('Change mode for "%s"'))
-
-builder_admin = ContextTitle(smartquote('Administer "%s" builder'))
-
-builder_history = ContextTitle(smartquote('Build History for "%s"'))
 
 calendar_index = ContextTitle('%s')
 

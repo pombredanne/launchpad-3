@@ -15,7 +15,7 @@ from twisted.internet.protocol import ProcessProtocol
 from canonical.codehosting.sshserver import LaunchpadAvatar
 from canonical.codehosting.tests.helpers import AvatarTestCase
 
-from canonical.codehosting import smartserver, plugins
+from canonical.codehosting import get_bzr_plugins_path, smartserver
 
 
 class MockReactor:
@@ -88,8 +88,8 @@ class TestExecOnlySession(AvatarTestCase):
         self.assertEqual(protocol.log[-1], ('loseConnection',))
 
     def test_windowChangedNotImplemented(self):
-        # windowChanged raises a NotImplementedError. It doesn't matter what we
-        # pass it.
+        # windowChanged raises a NotImplementedError. It doesn't matter what
+        # we pass it.
         self.assertRaises(NotImplementedError,
                           self.session.windowChanged, None)
 
@@ -172,8 +172,9 @@ class TestExecOnlySession(AvatarTestCase):
         self.assertEqual([('closeStdin',)], self.session._transport.log)
 
     def test_getAvatarAdapter(self):
-        # getAvatarAdapter is a convenience classmethod so that ExecOnlySession
-        # can be easily registered as an adapter for Conch avatars.
+        # getAvatarAdapter is a convenience classmethod so that
+        # ExecOnlySession can be easily registered as an adapter for Conch
+        # avatars.
         from twisted.internet import reactor
         adapter = smartserver.ExecOnlySession.getAvatarAdapter()
         session = adapter(self.avatar)
@@ -243,8 +244,8 @@ class TestRestrictedExecOnlySession(AvatarTestCase):
         # the constructor and closes the connection.
 
         # Note that Conch doesn't have a well-defined way of rejecting
-        # commands: raising any exception from execCommand will do. Here we use
-        # an exception type defined in smartserver.py.
+        # commands: raising any exception from execCommand will do. Here we
+        # use an exception type defined in smartserver.py.
         protocol = MockProcessTransport('cat')
         self.assertRaises(smartserver.ForbiddenCommand,
                           self.session.execCommand, protocol, 'cat')
@@ -256,7 +257,8 @@ class TestRestrictedExecOnlySession(AvatarTestCase):
         # command template.
         executable, arguments = self.session.getCommandToRun('foo')
         self.assertEqual('bar', executable)
-        self.assertEqual(['bar', 'baz', self.avatar.avatarId], list(arguments))
+        self.assertEqual(
+            ['bar', 'baz', self.avatar.avatarId], list(arguments))
 
     def test_getAvatarAdapter(self):
         # getAvatarAdapter is a convenience classmethod so that
@@ -296,7 +298,7 @@ class TestSessionIntegration(AvatarTestCase):
             "ISession(avatar) doesn't adapt to ExecOnlySession. "
             "Got %r instead." % (session,))
         self.assertEqual(
-            os.path.abspath(os.path.dirname(plugins.__file__)),
+            os.path.abspath(get_bzr_plugins_path()),
             session.environment['BZR_PLUGIN_PATH'])
         self.assertEqual(
             '%s@bazaar.launchpad.dev' % self.avatar.lpname,
