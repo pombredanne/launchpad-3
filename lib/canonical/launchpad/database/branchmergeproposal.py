@@ -8,6 +8,8 @@ __all__ = [
     'BranchMergeProposal',
     ]
 
+from email.Utils import make_msgid
+
 from zope.interface import implements
 
 from sqlobject import ForeignKey, IntCol, StringCol
@@ -18,6 +20,8 @@ from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import SQLBase, sqlvalues
 
 from canonical.launchpad.database.branchrevision import BranchRevision
+from canonical.launchpad.database.codereviewmessage import CodeReviewMessage
+from canonical.launchpad.database.message import Message, MessageChunk
 from canonical.launchpad.interfaces import (
     BadStateTransition, BranchMergeProposalStatus, IBranchMergeProposal,
     UserNotBranchReviewer)
@@ -64,6 +68,10 @@ class BranchMergeProposal(SQLBase):
     date_created = UtcDateTimeCol(notNull=True, default=DEFAULT)
     date_review_requested = UtcDateTimeCol(notNull=False, default=None)
     date_reviewed = UtcDateTimeCol(notNull=False, default=None)
+
+    conversation = ForeignKey(
+        dbName='conversation', foreignKey='CodeReviewMessage', notNull=False,
+        default=None)
 
     def setAsWorkInProgress(self):
         """See `IBranchMergeProposal`."""
@@ -150,3 +158,21 @@ class BranchMergeProposal(SQLBase):
               WHERE branch = %s)
             ''' % sqlvalues(self.source_branch, self.target_branch),
             prejoins=['revision'], orderBy='-sequence')
+
+    def createMessage(self, owner, vote, subject, content=None, parent=None):
+        """See IBranchMergeProposal.createMessage"""
+        if parent is None:
+            if self.conversation is not None:
+                parent=self.conversation.message
+        else:
+            parent = parent.message
+        msgid = make_msgid('codereview')
+        msg = Message(parent=parent, owner=owner,
+                      rfc822msgid=msgid, subject=subject)
+        chunk = MessageChunk(message=msg, content=content, sequence=1)
+        crmsg = CodeReviewMessage(
+            branch_merge_proposal=self, message=msg, vote=vote)
+        if self.conversation is None:
+            assert parent is None
+            self.conversation = crmsg
+        return crmsg

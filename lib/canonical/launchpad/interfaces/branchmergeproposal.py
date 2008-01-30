@@ -240,3 +240,14 @@ class IBranchMergeProposal(Interface):
         branch.  These are the revisions that have been committed to the
         source branch since it branched off the target branch.
         """
+
+    def createMessage(owner, subject, content=None, parent=None):
+        """Create an ICodeReviewMessage associated with this merge proposal
+
+        :param owner: The person who the message is from.
+        :param subject: The subject line to use for the message.
+        :param content: The text to use for the message content.  If
+            unspecified, the text of the merge proposal is used.
+        :param parent: The previous CodeReviewMessage in the thread.  If
+            unspecified, the root message is used.
+        """
