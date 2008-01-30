@@ -2309,6 +2309,10 @@ INSERT INTO karmaaction (id, category, points, name, title, summary) VALUES (46,
 INSERT INTO karmaaction (id, category, points, name, title, summary) VALUES (47, 7, 1, 'questionasked', 'Asked question', 'User asked a question in the Answer Tracker.');
 INSERT INTO karmaaction (id, category, points, name, title, summary) VALUES (48, 7, 5, 'faqcreated', 'FAQ created', 'User create a new FAQ in Launchpad.');
 INSERT INTO karmaaction (id, category, points, name, title, summary) VALUES (49, 7, 1, 'faqedited', 'FAQ edited', 'User updated the details of a FAQ in Launchpad.');
+INSERT INTO karmaaction (id, category, points, name, title, summary) VALUES (50, 8, 1, 'branchcreated', 'New branch registered', 'User registered a new branch.');
+INSERT INTO karmaaction (id, category, points, name, title, summary) VALUES (51, 8, 5, 'bugbranchcreated', 'Branch linked to a bug', 'User linked a branch to a bug.');
+INSERT INTO karmaaction (id, category, points, name, title, summary) VALUES (52, 8, 5, 'specbranchcreated', 'Branch linked to a blueprint', 'User linked a branch to a blueprint.');
+INSERT INTO karmaaction (id, category, points, name, title, summary) VALUES (53, 8, 1, 'revisionadded', 'Revision added', 'A new revision by the user is available through Launchpad.');
 
 
 ALTER TABLE karmaaction ENABLE TRIGGER ALL;
@@ -2385,6 +2389,7 @@ INSERT INTO karmacategory (id, name, title, summary) VALUES (2, 'bugs', 'Bug Man
 INSERT INTO karmacategory (id, name, title, summary) VALUES (3, 'translations', 'Translations in Rosetta', 'This categor covers all actions related to translation using the Rosetta web translation portal. Creating new translation projects, submitting new translations and editing existing translations will all earn karma.');
 INSERT INTO karmacategory (id, name, title, summary) VALUES (6, 'specs', 'Specification Tracking', 'This category includes all karma associated with the Launchpad specification tracking system.');
 INSERT INTO karmacategory (id, name, title, summary) VALUES (7, 'answers', 'Answer Tracker', 'This is the category for all karma associated with helping with users questions in the Launchpad Answer Tracker. Help solve users problems to earn this karma.');
+INSERT INTO karmacategory (id, name, title, summary) VALUES (8, 'code', 'Bazaar Branches', 'This category for all karma associated with branches and the links between branches and other Launchpad entities.');
 
 
 ALTER TABLE karmacategory ENABLE TRIGGER ALL;
