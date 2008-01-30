@@ -161,10 +161,12 @@ class BranchMergeProposal(SQLBase):
 
     def createMessage(self, owner, vote, subject, content=None, parent=None):
         """See IBranchMergeProposal.createMessage"""
+        assert owner is not None, 'Merge proposal messages need a sender'
         if parent is None:
             if self.conversation is not None:
                 parent=self.conversation.message
         else:
+            assert (parent.branch_merge_proposal == self, 'Replies must use')
             parent = parent.message
         msgid = make_msgid('codereview')
         msg = Message(parent=parent, owner=owner,
