@@ -112,7 +112,7 @@ class PackageBugReportData(BugReportData):
         else:
             self.dssp = None
 
-        self.upstream_bugs_url = 
+        self.upstream_bugs_url = (
             dsp_url + "?field.status_upstream=open_upstream")
         self.upstream_bugs_delta_url = (
             dsp_url + "?field.status_upstream=hide_upstream")
