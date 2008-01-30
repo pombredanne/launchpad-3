@@ -14,6 +14,7 @@ from zope.testing.testrunner import dont_retry, RetryTest
 
 from canonical.testing import mockdb
 
+
 class MockDbTestCase(unittest.TestCase):
     def setUp(self):
         self.script_filename = mockdb.script_filename('_mockdb_unittest')
@@ -42,14 +43,13 @@ class MockDbTestCase(unittest.TestCase):
         replayer = mockdb.ScriptPlayer(self.script_filename)
 
         self.assertRaises(
-                RetryTest, replayer.handleInvalidScript, 'Reason'
-                )
+                RetryTest, replayer.handleInvalidScript, 'Reason')
         self.failIf(os.path.exists(self.script_filename))
 
     @dont_retry
     def testShortScript(self):
-        # Ensure a RetryTest exception is raised if an attempt to pull
-        # results from an exhausted script.
+        # Ensure a RetryTest exception is raised if an attempt is made
+        # to pull results from an exhausted script.
         recorder = mockdb.ScriptRecorder(self.script_filename)
         recorder.store()
         replayer = mockdb.ScriptPlayer(self.script_filename)
@@ -58,32 +58,43 @@ class MockDbTestCase(unittest.TestCase):
     @dont_retry
     def testScriptFilename(self):
         # Ensure evil characters in the key don't mess up the script_filename
-        # results. Only '/' is really evil - others chars should all work
+        # results. Only '/' is really evil - other chars should all work
         # fine but we might as well sanitise ones that might be annoying.
         evil_chars = ['/', ' ', '*', '?', '~', '\0']
         for key in evil_chars:
-            path = mockdb.script_filename(key)
+            for pattern in ['%s', 'x%s', '%sy', 'x%sy']:
+                path = mockdb.script_filename(pattern % key)
 
-            # Ensure our initial path is correct
-            self.failUnlessEqual(
-                    os.path.commonprefix([mockdb.SCRIPT_DIR, path]),
-                    mockdb.SCRIPT_DIR
-                    )
+                # Ensure our initial path is correct
+                self.failUnlessEqual(
+                        os.path.commonprefix([mockdb.SCRIPT_DIR, path]),
+                        mockdb.SCRIPT_DIR)
 
-            # And there are no path segments
-            self.failUnlessEqual(os.path.dirname(path), mockdb.SCRIPT_DIR)
+                # And there are no path segments
+                self.failUnlessEqual(os.path.dirname(path), mockdb.SCRIPT_DIR)
 
-            # And that the filename contains no evil or annoying characters
-            filename = os.path.basename(path)
-            for evil_char in evil_chars:
-                self.failIf(evil_char in filename)
+                # And that the filename contains no evil or annoying characters
+                filename = os.path.basename(path)
+                self.failIfEqual(filename, '')
+                for evil_char in evil_chars:
+                    self.failIf(evil_char in filename)
 
     _retry_count = 0
 
-    # This test needs to leak RetryTest exeptions as it tests that the
+    # This test does not use @dont_retry.
+    # It needs to leak RetryTest exeptions as it tests that the
     # test runner is handling them correctly.
-    #@dont_retry
     def testRetryTestRetriesTest(self):
+        # The first time this test is run it raises a RetryTest exception.
+        # The second time it is run it succeeds. This means that this
+        # test will fail if RetryTest handling is not being done correctly
+        # (as the test will have raised an exception), and succeed if
+        # RetryTest handling is working (because it succeeds on retry).
+        # This test should really be upstream in zope.testing but
+        # is here so Launchpad can confirm that the correctly patched
+        # version of zope.testing is in use and to minimize the zope.testing
+        # patch until we decide if RetryTest handling is to be pushed
+        # upstream or not.
         MockDbTestCase._retry_count += 1
         if MockDbTestCase._retry_count % 2 == 1:
             raise RetryTest("Testing RetryTest behavior")
@@ -93,7 +104,10 @@ _doctest_retry_count = 0
 
 def retry_on_odd_numbered_calls():
     """Helper for doctest RetryTest test.
-    
+
+    This helper raises a RetryTest exception on odd numbered calls,
+    and prints 'Retry not raised' on even numbered calls.
+ 
     >>> try:
     ...     retry_on_odd_numbered_calls()
     ... except RetryTest:
@@ -119,13 +133,15 @@ def retry_on_odd_numbered_calls():
 def testRetryTestInDoctest():
     """Test a RetryTest exception in a doctest works as expected.
 
-    The first time this doctest is run, the following call will raise
-    a RetryTest exception. You shouldn't see this though, as the test
-    machinery will silently retry the test and the second time through
-    the method will not raise this exception (well - you might see the test
-    runner report that it is running this test twice because refactoring the
-    testrunner and unittest framework and maintaining the patch to support
-    Retry properly is just way too much work for little gain).
+    This doctest raises a RetryTest exception the first time it is run.
+    On the second run, it succeeds.
+
+    If the testrunner is correctly handling RetryTest exceptions raised
+    by doctests, then the RetryTest exception will not be reported as
+    a failure. This test will then be rerun and succeed.
+
+    If the testrunner is not correctly handling RetryTest exceptions,
+    then the RetryTesst exception will be flagged as an error.
 
     This test confirms that a RetryException raised where no exception
     was expected works.
@@ -137,7 +153,10 @@ def testRetryTestInDoctest():
 
 def retry_on_odd_numbered_calls2():
     """Helper for doctest RetryTest test.
-    
+
+    This helper raises a RetryTest exception on odd numbered calls,
+    and a RuntimeError on even numbered calls.
+
     >>> try:
     ...     retry_on_odd_numbered_calls2()
     ... except RetryTest:
