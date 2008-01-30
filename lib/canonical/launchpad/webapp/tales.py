@@ -1901,6 +1901,7 @@ class PageMacroDispatcher:
     """Selects a macro, while storing information about page layout.
 
         view/macro:page
+        view/macro:page/onecolumn
         view/macro:page/applicationhome
         view/macro:page/pillarindex
         view/macro:page/freeform
@@ -1998,6 +1999,14 @@ class PageMacroDispatcher:
                 applicationtabs=True,
                 globalsearch=True,
                 portlets=True,
+                structuralheaderobject=True),
+        'onecolumn':
+            # XXX 20080130 mpt: Should eventually become the new 'default'.
+            LayoutElements(
+                applicationborder=True,
+                applicationtabs=True,
+                globalsearch=True,
+                portlets=False,
                 structuralheaderobject=True),
         'applicationhome':
             LayoutElements(

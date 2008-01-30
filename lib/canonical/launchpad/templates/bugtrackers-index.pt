@@ -6,8 +6,7 @@
   xml:lang="en"
   lang="en"
   dir="ltr"
-  metal:use-macro="context/@@main_template/master"
-  i18n:domain="malone"
+  metal:use-macro="view/macro:page/onecolumn"
 >
   <body>
     <metal:heading fill-slot="pageheading">
