@@ -23,6 +23,7 @@ from canonical.database.constants import UTC_NOW
 from canonical.launchpad.database.binarypackagename import BinaryPackageName
 from canonical.launchpad.database.binarypackagerelease import (
     BinaryPackageRelease)
+from canonical.launchpad.database.component import Component
 from canonical.launchpad.database.publishing import (
     SourcePackagePublishingHistory, BinaryPackagePublishingHistory)
 from canonical.launchpad.database.sourcepackagename import SourcePackageName
@@ -141,6 +142,15 @@ class TestUploadProcessorBase(unittest.TestCase):
             result = processor.processChangesFile(upload_dir, changes_file)
             results.append(result)
         return results
+
+    def setupBreezyAndGetUploadProcessor(self, policy=None):
+        """Setup Breezy and return an upload processor for it."""
+        self.setupBreezy()
+        self.layer.txn.commit()
+        if policy is not None:
+            self.options.context = policy
+        return UploadProcessor(
+            self.options, self.layer.txn, self.log)
 
     def assertEmail(self, contents=None, recipients=None):
         """Check last email content and recipients.
@@ -273,13 +283,8 @@ class TestUploadProcessor(TestUploadProcessorBase):
 
         See bug 58187.
         """
-        # Extra setup for breezy
-        self.setupBreezy()
-        self.layer.txn.commit()
-
         # Set up the uploadprocessor with appropriate options and logger
-        uploadprocessor = UploadProcessor(
-            self.options, self.layer.txn, self.log)
+        uploadprocessor = self.setupBreezyAndGetUploadProcessor()
 
         # Upload a package for Breezy.
         upload_dir = self.queueUpload("bar_1.0-1")
@@ -343,13 +348,8 @@ class TestUploadProcessor(TestUploadProcessorBase):
         when a partner package is uploaded to it, a sensible rejection
         error email should be generated.
         """
-        # Extra setup for breezy
-        self.setupBreezy()
-
-        # Set up the uploadprocessor with appropriate options and logger.
-        self.options.context = 'anything' # upload policy allows anything
-        uploadprocessor = UploadProcessor(
-            self.options, self.layer.txn, self.log)
+        uploadprocessor = self.setupBreezyAndGetUploadProcessor(
+            policy='anything')
 
         # Fudge the partner archive in the sample data temporarily so that
         # it's now an embargoed archive instead.
@@ -375,16 +375,8 @@ class TestUploadProcessor(TestUploadProcessorBase):
         Test that a package that has partner and non-partner files in it
         is rejected.  Partner uploads should be entirely partner.
         """
-        # Extra setup for breezy.
-        self.setupBreezy()
-        self.layer.txn.commit()
-
-        # Upload policy allows anything.
-        self.options.context = 'anything'
-
-        # Set up the uploadprocessor with appropriate options and logger.
-        uploadprocessor = UploadProcessor(
-            self.options, self.layer.txn, self.log)
+        uploadprocessor = self.setupBreezyAndGetUploadProcessor(
+            policy='anything')
 
         # Upload a package for Breezy.
         upload_dir = self.queueUpload("foocomm_1.0-1-illegal-component-mix")
@@ -406,15 +398,8 @@ class TestUploadProcessor(TestUploadProcessorBase):
         uploaded to a separate IArchive that has a purpose of
         ArchivePurpose.PARTNER.
         """
-
-        # Extra setup for breezy
-        self.setupBreezy()
-        self.layer.txn.commit()
-
-        # Set up the uploadprocessor with appropriate options and logger
-        self.options.context = 'anything' # upload policy allows anything
-        uploadprocessor = UploadProcessor(
-            self.options, self.layer.txn, self.log)
+        uploadprocessor = self.setupBreezyAndGetUploadProcessor(
+            policy='anything')
 
         # Upload a package for Breezy.
         upload_dir = self.queueUpload("foocomm_1.0-1")
@@ -501,14 +486,8 @@ class TestUploadProcessor(TestUploadProcessorBase):
         distro archives.  This can be done by two partner package
         uploads, as partner packages have their archive overridden.
         """
-        # Extra setup for breezy.
-        self.setupBreezy()
-        self.layer.txn.commit()
-
-        # Set up the uploadprocessor with appropriate options and logger.
-        self.options.context = 'absolutely-anything'
-        uploadprocessor = UploadProcessor(
-            self.options, self.layer.txn, self.log)
+        uploadprocessor = self.setupBreezyAndGetUploadProcessor(
+            policy='absolutely-anything')
 
         # Upload a package for Breezy.
         upload_dir = self.queueUpload("foocomm_1.0-1")
@@ -645,11 +624,7 @@ class TestUploadProcessor(TestUploadProcessorBase):
 
     def testUploadWithBadSectionIsOverriddenToMisc(self):
         """Uploads with a bad section are overridden to the 'misc' section."""
-        self.setupBreezy()
-        self.layer.txn.commit()
-        self.options.context = 'insecure'
-        uploadprocessor = UploadProcessor(
-            self.options, self.layer.txn, self.log)
+        uploadprocessor = self.setupBreezyAndGetUploadProcessor()
 
         upload_dir = self.queueUpload("bar_1.0-1_bad_section")
         self.processUpload(uploadprocessor, upload_dir)
@@ -665,6 +640,71 @@ class TestUploadProcessor(TestUploadProcessorBase):
             version="1.0-1", exact_match=True)
         [queue_item] = queue_items
         self.assertEqual(queue_item.sourcepackagerelease.section.name, "misc")
+
+    # Uploads that are new should have the component overridden
+    # such that:
+    #   'contrib' -> 'multiverse'
+    #   'non-free' -> 'multiverse'
+    #   everything else -> 'universe'
+    #
+    # This is to relieve the archive admins of some work where this is
+    # the default action taken anyway.
+    #
+    # The following three tests check this.
+
+    def checkComponentOverride(self, expected_component_name):
+        """Helper function to check overridden component names."""
+        queue_items = self.breezy.getQueueItems(
+            status=PackageUploadStatus.NEW, name="bar",
+            version="1.0-1", exact_match=True)
+        [queue_item] = queue_items
+        self.assertEqual(queue_item.sourcepackagerelease.component.name,
+            expected_component_name)
+
+    def testUploadContribComponentOverride(self):
+        """Test the overriding of the contrib component on uploads."""
+        uploadprocessor = self.setupBreezyAndGetUploadProcessor()
+
+        # The component contrib does not exist in the sample data, so
+        # add it here.
+        Component(name='contrib')
+
+        # Upload a package.
+        upload_dir = self.queueUpload("bar_1.0-1_contrib_component")
+        self.processUpload(uploadprocessor, upload_dir)
+
+        # Test it.
+        self.checkComponentOverride("multiverse")
+
+    def testUploadNonfreeComponentOverride(self):
+        """Test the overriding of the non-free component on uploads."""
+        uploadprocessor = self.setupBreezyAndGetUploadProcessor()
+
+        # The component non-free does not exist in the sample data, so
+        # add it here.
+        Component(name='non-free')
+
+        # Upload a package.
+        upload_dir = self.queueUpload("bar_1.0-1_nonfree_component")
+        self.processUpload(uploadprocessor, upload_dir)
+
+        # Test it.
+        self.checkComponentOverride("multiverse")
+
+    def testUploadDefaultComponentOverride(self):
+        """Test the overriding of the component on uploads.
+
+        Components other than non-free and contrib should override to
+        universe.
+        """
+        uploadprocessor = self.setupBreezyAndGetUploadProcessor()
+
+        # Upload a package.
+        upload_dir = self.queueUpload("bar_1.0-1")
+        self.processUpload(uploadprocessor, upload_dir)
+
+        # Test it.
+        self.checkComponentOverride("universe")
 
 
 def test_suite():

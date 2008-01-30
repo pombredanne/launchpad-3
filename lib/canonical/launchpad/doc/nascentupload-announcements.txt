@@ -397,7 +397,7 @@ AUTO-APPROVED upload to BACKPORTS pocket via 'sync' policy:
   DEBUG:  OK: bar_1.0.orig.tar.gz
   DEBUG:  OK: bar_1.0-4.diff.gz
   DEBUG:  OK: bar_1.0-4.dsc
-  DEBUG:      -> Component: main Section: devel
+  DEBUG:      -> Component: universe Section: devel
   ...
   DEBUG: Announcing to hoary-announce@lists.ubuntu.com
   DEBUG:
@@ -451,7 +451,7 @@ AUTO-APPROVED source upload to SECURITY pocket via 'security' policy:
   DEBUG:  OK: bar_1.0.orig.tar.gz
   DEBUG:  OK: bar_1.0-2.diff.gz
   DEBUG:  OK: bar_1.0-2.dsc
-  DEBUG:      -> Component: main Section: devel
+  DEBUG:      -> Component: universe Section: devel
   ...
   DEBUG: Announcing to hoary-announce@lists.ubuntu.com
   ...

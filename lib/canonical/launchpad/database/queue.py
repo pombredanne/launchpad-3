@@ -193,15 +193,6 @@ class PackageUpload(SQLBase):
 
     def acceptFromQueue(self, announce_list, logger=None, dry_run=False):
         """See `IPackageUpload`."""
-        if (self._isSingleSourceUpload() and
-            self.status == PackageUploadStatus.NEW):
-            # If the queue item is coming from the NEW queue and is a
-            # single source upload, we override its component to
-            # 'universe' to save the archive admins some work, since
-            # they do this with the majority of new packages.
-            self.sources[0].sourcepackagerelease.component = getUtility(
-                IComponentSet)['universe']
-
         self.setAccepted()
         self.notify(announce_list=announce_list, logger=logger,
                     dry_run=dry_run)
