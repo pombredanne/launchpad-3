@@ -1380,6 +1380,4 @@ class ViewArchive(AuthorizationBase):
 
         # Admins and this archive's owner or team members are allowed.
         admins = getUtility(ILaunchpadCelebrities).admin
-        if user.inTeam(admins) or user.inTeam(self.obj.owner):
-            return True
-        return False
+        return user.inTeam(self.obj.owner) or user.inTeam(admins)

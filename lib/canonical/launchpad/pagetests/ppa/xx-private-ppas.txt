@@ -4,6 +4,15 @@ Private PPAs prevent anyone other than the PPA owner, its team members
 or an admin from seeing the PPA.  This page test describes how
 this works in practice in the UI.
 
+== Define a helper function ==
+
+We'll use this function later to print what PPAs are in the +ppas listing.
+
+    >>> def list_ppas_in_browser_page(browser):
+    ...     ppas = [extract_text(ppa_row) for ppa_row in find_tags_by_class(
+    ...         browser.contents, 'ppa_batch_row')]
+    ...     print "\n".join(ppas)
+
 
 == Set Up a Private PPA ==
 
@@ -11,20 +20,6 @@ Let's make "cprov's" PPA private.  To do this we need to be an
 admin, and go to his admin page.
 
     >>> admin_browser.open("http://launchpad.dev/~cprov/+archive")
-    >>> admin_browser.getLink("Administer archive").click()
-    >>> admin_browser.getControl(name="field.private").value = True
-    >>> admin_browser.getControl("Save").click()
-
-Let's also make a new team PPA for "landscape-developers" and make it
-private.  "landscape-developers" has name12 as a member, whom we'll use
-later to access this new team PPA.
-
-    >>> admin_browser.open("http://launchpad.dev/~landscape-developers")
-    >>> admin_browser.getLink("Activate Personal Package Archive").click()
-    >>> admin_browser.getControl(name="field.accepted").value = True
-    >>> admin_browser.getControl("Activate").click()
-    >>> admin_browser.open(
-    ...     "http://launchpad.dev/~landscape-developers/+archive")
     >>> admin_browser.getLink("Administer archive").click()
     >>> admin_browser.getControl(name="field.private").value = True
     >>> admin_browser.getControl("Save").click()
@@ -38,9 +33,7 @@ they are not shown to non-authorised users.
     >>> browser.open("http://launchpad.dev/ubuntu/+ppas")
     >>> browser.getControl(name="show_inactive").value = True
     >>> browser.getControl("Search").click()
-    >>> ppas = [extract_text(ppa_row) for ppa_row in find_tags_by_class(
-    ...     browser.contents, 'ppa_batch_row')]
-    >>> print "\n".join(ppas)
+    >>> list_ppas_in_browser_page(browser)
     No Privileges Person...
     Mark Shuttleworth...
 
@@ -51,12 +44,23 @@ The owner of the archive will see his own archive in the listing:
     >>> cprov_browser.open("http://launchpad.dev/ubuntu/+ppas")
     >>> cprov_browser.getControl(name="show_inactive").value = True
     >>> cprov_browser.getControl("Search").click()
-    >>> ppas = [extract_text(ppa_row) for ppa_row in find_tags_by_class(
-    ...     cprov_browser.contents, 'ppa_batch_row')]
-    >>> print "\n".join(ppas)
+    >>> list_ppas_in_browser_page(cprov_browser)
     Celso Providelo...
     No Privileges Person...
     Mark Shuttleworth...
+
+Let's make a new team PPA for "landscape-developers" and make it
+private.
+
+    >>> admin_browser.open("http://launchpad.dev/~landscape-developers")
+    >>> admin_browser.getLink("Activate Personal Package Archive").click()
+    >>> admin_browser.getControl(name="field.accepted").value = True
+    >>> admin_browser.getControl("Activate").click()
+    >>> admin_browser.open(
+    ...     "http://launchpad.dev/~landscape-developers/+archive")
+    >>> admin_browser.getLink("Administer archive").click()
+    >>> admin_browser.getControl(name="field.private").value = True
+    >>> admin_browser.getControl("Save").click()
 
 A member of a private team PPA will see his team's PPA in the listing.
 "name12" is a member of landscape-developers, so is permitted to see
@@ -66,9 +70,7 @@ the landscape-developers PPA:
     >>> name12_browser.open("http://launchpad.dev/ubuntu/+ppas")
     >>> name12_browser.getControl(name="show_inactive").value = True
     >>> name12_browser.getControl("Search").click()
-    >>> ppas = [extract_text(ppa_row) for ppa_row in find_tags_by_class(
-    ...     name12_browser.contents, 'ppa_batch_row')]
-    >>> print "\n".join(ppas)
+    >>> list_ppas_in_browser_page(name12_browser)
     Landscape Developers...
     No Privileges Person...
     Mark Shuttleworth...
@@ -78,9 +80,7 @@ Administrators will see all private PPAs in the listing:
     >>> admin_browser.open("http://launchpad.dev/ubuntu/+ppas")
     >>> admin_browser.getControl(name="show_inactive").value = True
     >>> admin_browser.getControl("Search").click()
-    >>> ppas = [extract_text(ppa_row) for ppa_row in find_tags_by_class(
-    ...     admin_browser.contents, 'ppa_batch_row')]
-    >>> print "\n".join(ppas)
+    >>> list_ppas_in_browser_page(admin_browser)
     Celso Providelo...
     Landscape Developers...
     No Privileges Person...
@@ -109,40 +109,33 @@ one because he is not a member of that team, nor an admin.
     >>> cprov_browser.url
     'http://launchpad.dev/~cprov/+archive'
 
-When cprov browses to a profile page for a person or team that has a
-private PPA for which he is not authorised to see, the
+When a non-privileged user browses to a profile page for a person or
+team that has a private PPA for which he is not authorised to see, the
 "Personal Package Archive" link is not presented.
 
-    >>> cprov_browser.open("http://launchpad.dev/~landscape-developers")
-    >>> cprov_browser.getLink("Personal Package Archive")
+    >>> browser.open("http://launchpad.dev/~landscape-developers")
+    >>> browser.getLink("Personal Package Archive")
     Traceback (most recent call last):
     ...
     LinkNotFoundError
 
-Trying to shortcut straight to the +archive URL also fails authorisation:
-
-    >>> cprov_browser.open(
-    ...     "http://launchpad.dev/~landscape-developers/+archive")
-    Traceback (most recent call last):
-    ...
-    Unauthorized...
-
 "name12" is a member of landscape-developers, so is permitted to access
 the landscape-developers PPA page:
 
-    >>> name12_browser.open(
-    ...     "http://launchpad.dev/~landscape-developers/+archive")
+    >>> name12_browser.open("http://launchpad.dev/~landscape-developers")
+    >>> name12_browser.getLink("Personal Package Archive").click()
     >>> name12_browser.url
     'http://launchpad.dev/~landscape-developers/+archive'
 
 Administrators can access all private PPAs.
 
-    >>> admin_browser.open("http://launchpad.dev/~cprov/+archive")
+    >>> admin_browser.open("http://launchpad.dev/~cprov")
+    >>> admin_browser.getLink("Personal Package Archive").click()
     >>> admin_browser.url
     'http://launchpad.dev/~cprov/+archive'
 
-    >>> admin_browser.open(
-    ...     "http://launchpad.dev/~landscape-developers/+archive")
+    >>> admin_browser.open("http://launchpad.dev/~landscape-developers")
+    >>> admin_browser.getLink("Personal Package Archive").click()
     >>> admin_browser.url
     'http://launchpad.dev/~landscape-developers/+archive'
 

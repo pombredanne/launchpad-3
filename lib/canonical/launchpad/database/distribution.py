@@ -188,8 +188,8 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
     def milestones(self):
         """See `IDistribution`."""
         return Milestone.selectBy(
-            distribution=self, visible=True, orderBy=['-dateexpected',
-                                                      'name'])
+            distribution=self, visible=True,
+            orderBy=['-dateexpected', 'name'])
 
     @property
     def archive_mirrors(self):
@@ -954,13 +954,13 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
                 WHERE status IN %s)
             """ % sqlvalues(active_statuses))
 
-        if text:
+        if text is not None:
             clauses.append("""
             ((Person.fti @@ ftq(%s) OR
             Archive.description LIKE '%%' || %s || '%%'))
             """ % (quote(text), quote_like(text)))
 
-        if user:
+        if user is not None:
             if not user.inTeam(getUtility(ILaunchpadCelebrities).admin):
                 clauses.append("""
                 (Archive.private = FALSE OR
