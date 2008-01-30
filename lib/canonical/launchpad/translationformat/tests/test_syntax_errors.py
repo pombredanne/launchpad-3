@@ -9,7 +9,7 @@ from canonical.launchpad.interfaces import (
 class TranslationFormatInvalidInputErrorTest(TestCase):
     """Test `TranslationFormatInvalidInputError`."""
 
-    def testRepresentSyntaxError(self):
+    def testRepresentInvalidInputError(self):
         # Test basic string conversion.
         exception = TranslationFormatInvalidInputError()
         self.assertEqual(str(exception), "Invalid input")
@@ -39,8 +39,8 @@ class TranslationFormatInvalidInputErrorTest(TestCase):
             filename="foo", line_number=9, message="message")
         self.assertEqual(str(exception), "foo, line 9: message")
 
-    def testNonAsciiSyntaxError(self):
-        # Test syntax errors that use non-ascii characters.
+    def testNonAsciiInvalidInputError(self):
+        # Test input errors that use non-ascii characters.
 
         # Here's one with a Thai "r" character in its message.
         exception = TranslationFormatInvalidInputError(
@@ -59,7 +59,7 @@ class TranslationFormatInvalidInputErrorTest(TestCase):
 class TranslationFormatSyntaxErrorTest(TestCase):
     """Test `TranslationFormatSyntaxError`."""
 
-    def testRepresentInvalidInputError(self):
+    def testRepresentSyntaxError(self):
         # Test string conversion.  Most code is shared with
         # TranslationFormatInvalidInputError, so no need to test quite as
         # extensively.
@@ -68,6 +68,13 @@ class TranslationFormatSyntaxErrorTest(TestCase):
 
         exception = TranslationFormatSyntaxError(filename="foo", message="x")
         self.assertEqual(str(exception), "foo: x")
+
+    def testNonAsciiSyntaxError(self):
+        # Test against non-ascii characters.
+        exception = TranslationFormatSyntaxError(filename=u"khor-khai-\u0e01",
+            line_number=4, message=u"khor-khai-\u0e02")
+        self.assertEqual(str(exception),
+            "khor-khai-\\u0e01, line 4: khor-khai-\u0e02")
 
 
 def test_suite():
