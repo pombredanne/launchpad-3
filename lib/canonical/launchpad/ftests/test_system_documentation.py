@@ -26,7 +26,7 @@ from canonical.launchpad.ftests.bug import (
     create_old_bug, summarize_bugtasks, sync_bugtasks)
 from canonical.launchpad.interfaces import (
     CreateBugParams, IBugTaskSet, IDistributionSet, ILanguageSet, ILaunchBag,
-    IPersonSet)
+    IPersonSet, IBranchSet)
 from canonical.launchpad.layers import setFirstLayer
 from canonical.launchpad.tests.mail_helpers import pop_notifications
 from canonical.launchpad.webapp.authorization import LaunchpadSecurityPolicy
@@ -234,6 +234,19 @@ def bugtaskExpirationSetUp(test):
     test.globs['sync_bugtasks'] = sync_bugtasks
     test.globs['commit'] = commit
     login('test@canonical.com')
+
+
+def codereviewSetUp(test):
+    branch_set = getUtility(IBranchSet)
+    source_branch = branch_set.getByUniqueName(
+        '~name12/gnome-terminal/klingon')
+    target_branch = branch_set.getByUniqueName(
+        '~name12/gnome-terminal/main')
+    sample_person = getUtility(IPersonSet).getByEmail('test@canonical.com')
+    merge_proposal = source_branch.addLandingTarget(sample_person,
+                                                    target_branch)
+    test.globs['merge_proposal'] = merge_proposal
+    test.globs['sample_person'] = sample_person
 
 
 def uploaderBugLinkedToQuestionSetUp(test):
@@ -696,6 +709,11 @@ special = {
     'publishing.txt': LayeredDocFileSuite(
             '../doc/publishing.txt',
             layer=LaunchpadZopelessLayer, optionflags=default_optionflags
+            ),
+    'codereviewmessage.txt': LayeredDocFileSuite(
+            '../doc/codereviewmessage.txt',
+            setUp=codereviewSetUp,
+            layer=LaunchpadZopelessLayer,
             ),
 
     }
