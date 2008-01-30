@@ -1,20 +1,153 @@
 = Distribution upstream bug report pages =
 
-Upstream bug report pages for distributions contain all sorts of fun information:
+Upstream bug report pages for distributions contain all sorts of fun
+information that describe how well the bugs are forwarded to upstreams:
 
     >>> browser.open("http://bugs.launchpad.dev/ubuntu/+upstreamreport")
-    >>> table = find_tag_by_id(browser.contents, 'upstream-report')
+    >>> table = find_tag_by_id(browser.contents, 'upstream-report-content')
     >>> print extract_text(table)
-    Package                 Project                Tracker      Bug Contact
-             Open   Upstream      %     &Delta; Watch       %   &Delta;
     linux-source-2.6.15     Missing corresponding product.  (find) (link)
-                1          0   0.00           1     0    0.00         0
-    mozilla-firefox         Mozilla Firefox        Launchpad    Unknown
-                1          1 100.00           0 
-    thunderbird             Missing corresponding product. (find)
-                1          1 100.00           0     1  100.00         0
-        Totals: 3          2  66.67           1     1   50.00         1
+                1      0       0.00         1       0    0.00         0
+    mozilla-firefox     Mozilla Firefox        Launchpad    Unspecified
+                1      1     100.00         0 
+    thunderbird         Missing corresponding product. (find)
+                1      1     100.00         0       1  100.00         0
+        Totals: 3      2      66.67         1       1   50.00         1
 
+It also includes convenient links to view bugs for the package listed:
+
+    >>> browser.getLink('linux-source-2.6.15').click()
+    >>> browser.title
+    'Bugs in Source Package "linux-source-2.6.15" in Ubuntu Linux'
+    >>> browser.goBack()
+    >>> browser.getLink('mozilla-firefox').click()
+    >>> browser.title
+    'Bugs in Source Package "mozilla-firefox" in Ubuntu Linux'
+
+The actual bug counts are links too:
+
+    >>> browser.goBack()
+    >>> open_bugs_link = browser.getLink('1')
+    >>> open_bugs_link.url
+    'http://bugs.launchpad.dev/ubuntu/+source/linux-source-2.6.15'
+    >>> open_bugs_link.click()
+    >>> browser.title
+    'Bugs in Source Package "linux-source-2.6.15" in Ubuntu Linux'
+    >>> table = find_tag_by_id(browser.contents, 'buglisting')
+    >>> print extract_text(table)
+    Summary             Importance  Status
+    10 another test bug Medium      New
+
+    >>> browser.goBack()
+    >>> upstream_bugs_link = browser.getLink('0')
+    >>> upstream_bugs_link.url
+    'http://bugs.launchpad.dev/ubuntu/+source/linux-source-2.6.15?field.status_upstream=open_upstream'
+    >>> upstream_bugs_link.click()
+    >>> browser.title
+    'Bugs in Source Package "linux-source-2.6.15" in Ubuntu Linux'
+    >>> print extract_text(find_main_content(browser.contents))
+    Bugs...
+    There are currently no open bugs.
+
+XXX: Here we need to fudge in some data to get unique numbers in the table,
+since getLink() doesn't have index= before Zope 3.4. That's bug 145746. Once
+that's fixed, all this nonsense can go. What I'm doing in the two sections is
+add bugs, bugtasks and bugwatches to make the numbers in the table unique.
+     -- kiko, 2008-01-30
+
+    >>> from zope.component import getUtility
+    >>> from canonical.database.sqlbase import flush_database_updates
+    >>> from canonical.launchpad.interfaces import (
+    ...     IBugSet, IProductSet, IPersonSet, IBugTaskSet, IBugWatchSet,
+    ...     ISourcePackageNameSet, CreateBugParams, IDistributionSet)
+    >>> from canonical.launchpad.ftests import login, logout
+    >>> import transaction
+    >>> login('foo.bar@canonical.com')
+    >>> bugset = getUtility(IBugSet)
+    >>> productset = getUtility(IProductSet)
+    >>> personset = getUtility(IPersonSet)
+    >>> bugtaskset = getUtility(IBugTaskSet)
+    >>> bug = bugset.get(10)
+    >>> name12 = personset.getByName('name12')
+    >>> pmount = productset.createProduct(name12, 'pmount', 'pmount',
+    ...                                   'pmount', 'pmount')
+    >>> task = bugtaskset.createTask(bug, name12, product=pmount)
+    >>> transaction.commit()
+    >>> logout()
+
+    >>> browser.open("http://bugs.launchpad.dev/ubuntu/+upstreamreport")
+    >>> upstream_delta_link = browser.getLink('0')
+    >>> upstream_delta_link.url
+    'http://bugs.launchpad.dev/ubuntu/+source/linux-source-2.6.15?field.status_upstream=hide_upstream'
+    >>> upstream_delta_link.click()
+    >>> browser.title
+    'Bugs in Source Package "linux-source-2.6.15" in Ubuntu Linux'
+    >>> print extract_text(find_main_content(browser.contents))
+    Bugs...
+    There are currently no open bugs.
+
+XXX: More fudging of data, see above for bug 145746.
+
+    >>> login('foo.bar@canonical.com')
+    >>> url = "http://bugs.debian.org/cgi-bin/bugreport.cgi?bug=666"
+    >>> bugwatchset = getUtility(IBugWatchSet)
+    >>> spnset = getUtility(ISourcePackageNameSet)
+    >>> distroset = getUtility(IDistributionSet)
+    >>> spn = spnset.queryByName('linux-source-2.6.15')
+    >>> ubuntu = distroset.getByName('ubuntu')
+    >>> [watch] = bugwatchset.fromText(url, bug, name12)
+    >>> task.bugwatch = watch
+    >>> params = CreateBugParams(name12, "linux used to work",
+    ...     "fix it")
+    >>> params.setBugTarget(distribution=ubuntu,
+    ...     sourcepackagename=spn)
+    >>> bug = bugset.createBug(params)
+    >>> flush_database_updates()
+    >>> transaction.commit()
+    >>> logout()
+
+    >>> browser.open("http://bugs.launchpad.dev/ubuntu/+upstreamreport")
+    >>> watch_delta_link = browser.getLink('0')
+    >>> watch_delta_link.url
+    'http://bugs.launchpad.dev/ubuntu/+source/linux-source-2.6.15?field.status_upstream=pending_bugwatch'
+    >>> watch_delta_link.click()
+    >>> browser.title
+    'Bugs in Source Package "linux-source-2.6.15" in Ubuntu Linux'
+    >>> print extract_text(find_main_content(browser.contents))
+    Bugs...
+    There are currently no open bugs.
+
+We also offer links to find products and connect packages with no
+packaging links (though you need to be logged in to actually link them):
+
+    >>> browser.goBack()
+    >>> browser.getLink('find').click()
+    >>> browser.title
+    'Projects registered in Launchpad'
+    >>> user_browser.open("http://bugs.launchpad.dev/ubuntu/+upstreamreport")
+    >>> user_browser.getLink('link').click()
+    >>> user_browser.title
+    'Define upstream link for linux-source-2.6.15 in Ubuntu Hoary'
+
+If you are logged in and can edit the upstream project, you can also set
+a bug tracker and a bug contact:
+
+    >>> login('foo.bar@canonical.com')
+    >>> firefox = productset.getByName('firefox')
+    >>> firefox.official_malone = False
+    >>> flush_database_updates()
+    >>> transaction.commit()
+    >>> logout()
+
+    >>> admin_browser.open("http://bugs.launchpad.dev/ubuntu/+upstreamreport")
+    >>> admin_browser.getLink('fix').click()
+    >>> admin_browser.title
+    'Change project details'
+
+    >>> admin_browser.goBack()
+    >>> admin_browser.getLink('change').click()
+    >>> admin_browser.title
+    'Edit bug contact for Mozilla Firefox'
 
 == Empty distributions ==
 
@@ -22,9 +155,11 @@ Some distributions aren't as happening as others. The page still works for
 them, though:
 
     >>> browser.open("http://bugs.launchpad.dev/debian/+upstreamreport")
-    >>> table = find_tag_by_id(browser.contents, 'upstream-report')
+    >>> table = find_tag_by_id(browser.contents, 'upstream-report-content')
     >>> print extract_text(table)
-    XXX
+    mozilla-firefox Missing corresponding product.  (find)
+                3   2   66.67   1   0   0.00    2
+        Totals: 3   2   66.67   1   0   0.00    2
 
     >>> browser.open("http://bugs.launchpad.dev/kubuntu/+upstreamreport")
     >>> table = find_tag_by_id(browser.contents, 'upstream-report')

@@ -68,7 +68,7 @@
         against it.
       </tal:no-bugs>
 
-      <p class="warning message">
+      <p class="warning message" tal:condition="view/data">
         This report is an alpha release and has limitations in its
         accounting. You can use it to guide your work, but do not read
         great significance into the literal percentages. See the Help
@@ -92,7 +92,7 @@
             <th class="numeric">&Delta;</th>
           </tr>
         </thead>
-        <tbody>
+        <tbody id="upstream-report-content">
           <tr tal:repeat="item view/data">
             <td>
               <a tal:attributes="href item/dsp/fmt:url"
@@ -128,7 +128,7 @@
                 <td align="center" class="bad">Unspecified
                     <a tal:condition="item/product/required:launchpad.Edit"
                        tal:attributes="href item/bugcontact_url">
-                      <small>(fix)</small></a></td>
+                      <small>(change)</small></a></td>
               </tal:has-no-bugcontact>
             </tal:has-product>
             <tal:has-no-product condition="not: item/product">
