@@ -102,3 +102,112 @@ Linking that task to a bugwatch makes the watch counts update:
     linux-source-2.6.15 None    1 0 0
     mozilla-firefox     firefox 1 1 0
 
+
+== The view ==
+
+We test that the view data is constructed sanely and without any hidden
+defects. Let's set up some helpers to make it easier for us to output
+them:
+
+    >>> from zope.component import getMultiAdapter
+    >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
+
+    >>> def create_view(distro):
+    ...     request = LaunchpadTestRequest()
+    ...     view = getMultiAdapter((distro, request), name='+upstreamreport')
+    ...     return view
+
+    >>> def print_numbers(data):
+    ...     for f in ['open_bugs', 'upstream_bugs', 'watched_bugs',
+    ...               'upstream_bugs_percentage', 'watched_bugs_percentage',
+    ...               'upstream_bugs_class', 'watched_bugs_class',
+    ...               'upstream_bugs_delta', 'watched_bugs_delta']:
+    ...         print getattr(data, f),
+
+    >>> def print_helpers(data):
+    ...     print data.dsp.name, data.dsp.distribution.name
+    ...     if data.dssp:
+    ...         print data.dssp.distroseries.name
+    ...     else:
+    ...         print "NO SERIES"
+    ...     if data.product:
+    ...         print data.product.name
+    ...     else:
+    ...         print "NO PRODUCT"
+    ...     for f in ['bugcontact_url', 'product_edit_url',
+    ...               'upstream_bugs_url', 'upstream_bugs_delta_url',
+    ...               'watched_bugs_delta_url']:
+    ...         text = getattr(data, f, "NO URL")
+    ...         print text.replace("http://launchpad.dev/ubuntu/+source/", "**")
+    ...     print "--"
+
+Get an Ubuntu view:
+
+    >>> view = create_view(ubuntu)
+    >>> view.initialize()
+
+Here are the helper URLs we construct:
+
+    >>> for item in view.data:
+    ...     print_helpers(item)
+    pmount ubuntu hoary
+        pmount http://launchpad.dev/pmount/+bugcontact
+               http://launchpad.dev/pmount/+edit
+    **pmount?field.status_upstream=open_upstream
+    **pmount?field.status_upstream=hide_upstream
+    **pmount?field.status_upstream=pending_bugwatch
+    --
+    linux-source-2.6.15 ubuntu hoary
+        NO PRODUCT NO URL
+                   NO URL
+    **linux-source-2.6.15?field.status_upstream=open_upstream
+    **linux-source-2.6.15?field.status_upstream=hide_upstream
+    **linux-source-2.6.15?field.status_upstream=pending_bugwatch
+    --
+    mozilla-firefox ubuntu warty
+        firefox http://launchpad.dev/firefox/+bugcontact
+                http://launchpad.dev/firefox/+edit
+    **mozilla-firefox?field.status_upstream=open_upstream
+    **mozilla-firefox?field.status_upstream=hide_upstream
+    **mozilla-firefox?field.status_upstream=pending_bugwatch
+    --
+    thunderbird ubuntu NO SERIES
+        NO PRODUCT NO URL
+                   NO URL
+    **thunderbird?field.status_upstream=open_upstream
+    **thunderbird?field.status_upstream=hide_upstream
+    **thunderbird?field.status_upstream=pending_bugwatch
+    --
+
+Let's print out the counts and percentages:
+
+    >>> for item in view.data:
+    ...     print_numbers(item)
+    2   1   1   50.00   100.00  good      1 0
+    1   0   0    0.00     0.00            1 0
+    1   1   0  100.00     0.00  good      0 1 
+    1   1   1  100.00   100.00  good good 0 0
+
+And the total line is an exact sum of those values:
+
+    >>> print_numbers(view.total)
+    5   3   2   60.00    66.67            2 1
+
+A Kubuntu view is not nearly as interesting, though:
+
+    >>> view = create_view(kubuntu)
+    >>> view.initialize()
+    >>> for item in view.data:
+    ...     print_helpers(item)
+
+    >>> for item in view.data:
+    ...     print_numbers(item)
+
+Nada!
+
+    >>> print_numbers(view.total)
+    0   0   0   0.00     0.00             0 0
+
+PS: This page is actually browser-tested in
+pagetests.distribution-upstream-bug-report. Look there for more details.
+

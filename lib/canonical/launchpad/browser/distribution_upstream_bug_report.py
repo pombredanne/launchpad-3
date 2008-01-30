@@ -25,6 +25,12 @@ class BugReportData:
     See the help text in the template for a verbose description of what
     the numbers mean.
     """
+    # These constants control which percentages we consider to be "good"
+    # which with the CSS styling means they go green. They are here
+    # because we can't really say today that there are no corner cases.
+    UPSTREAM_THRESHOLD = 60
+    WATCH_THRESHOLD = 95
+
     def __init__(self):
         self.set_counts(0, 0, 0)
 
@@ -77,9 +83,6 @@ class PackageBugReportData(BugReportData):
     pages which allow inputting missing information related to the
     package.
     """
-    UPSTREAM_THRESHOLD = 80
-    WATCH_THRESHOLD = 95
-
     def __init__(self, dsp, product, open_bugs, upstream_bugs, watched_bugs):
         self.dsp = dsp
         self.product = product
