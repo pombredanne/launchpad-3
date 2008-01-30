@@ -49,7 +49,20 @@
   </table>
 
     <div class="action">
-      <p tal:condition="CONTEXTS/menu:bugs/newbugtracker/enabled">link goes here</p>
+      <p
+        tal:define="link context/menu:context/newbugtracker"
+        tal:condition="link/enabled"
+      >
+        <img alt="" src="/@@/add" />
+        <a
+          class="button"
+          tal:attributes="href link/target"
+          tal:content="link/escapedtext"
+        />
+      </p>
+      <tal:XXX condition="nothing">
+        20080130 mpt: Should be converted to use /@@+link when it's available.
+      </tal:XXX>
     </div>
 
 </div>
