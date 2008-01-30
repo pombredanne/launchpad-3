@@ -146,6 +146,8 @@ class IBranchMergeProposal(Interface):
         title=_('Date Review Requested'), required=False, readonly=True)
     date_reviewed = Datetime(
         title=_('Date Reviewed'), required=False, readonly=True)
+    conversation = Attribute(
+        _("The discussion of this merge proposal"))
 
     def setAsWorkInProgress():
         """Set the state of the merge proposal to 'Work in progress'.
