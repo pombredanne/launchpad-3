@@ -26,7 +26,7 @@ from canonical.launchpad.database import PackageUploadBuild
 from canonical.launchpad.interfaces import (
     ArchivePurpose, DistroSeriesStatus, IArchiveSet, IBugSet, IBugTaskSet,
     IComponentSet, IDistributionSet, IPackageUploadSet, IPersonSet,
-    PackagePublishingStatus, PackagePublishingPocket, PackageUploadStatus)
+    PackagePublishingPocket, PackagePublishingStatus, PackageUploadStatus)
 from canonical.launchpad.mail import stub
 from canonical.launchpad.scripts.queue import (
     CommandRunner, CommandRunnerError, name_queue_map)
