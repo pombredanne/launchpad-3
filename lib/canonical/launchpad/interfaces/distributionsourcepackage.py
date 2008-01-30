@@ -27,6 +27,11 @@ class DeleteBugContactError(Exception):
 
 
 class IDistributionSourcePackage(IBugTarget):
+    """Represents a source package in a distribution.
+
+    Create IDistributionSourcePackages by invoking
+    `IDistribution.getSourcePackage()`.
+    """
 
     distribution = Attribute("The distribution.")
     sourcepackagename = Attribute("The source package name.")
@@ -58,9 +63,6 @@ class IDistributionSourcePackage(IBugTarget):
     bugcontacts = Attribute(
         "The list of people or teams that is explicitly Cc'd to all public "
         "bugs filed on this package.")
-
-    def __init__(distribution, sourcepackagename):
-        """Create a new DistributionSourcePackage."""
 
     def isBugContact(person):
         """Is person a bug contact for this package?
