@@ -470,7 +470,7 @@ class POParser(object):
             if len(self._pending_chars) - exc.start > 10:
                 raise TranslationFormatInvalidInputError(
                     line_number=self._lineno,
-                    message="could not decode input from %s" % charset)
+                    message="Could not decode input from %s" % charset)
             newchars, length = decode(self._pending_chars[:exc.start],
                                       'strict')
         self._pending_unichars += newchars
@@ -640,7 +640,7 @@ class POParser(object):
           >>> parser._parseQuotedString(utf8_string)
           Traceback (most recent call last):
           ...
-          TranslationFormatInvalidInputError: could not decode escaped string: (\302\253)
+          TranslationFormatInvalidInputError: Could not decode escaped string: (\302\253)
 
           Now, we note the original encoding so we get the right Unicode
           string.
@@ -652,15 +652,15 @@ class POParser(object):
           >>> parser._parseQuotedString(utf8_string)
           u'view \xab${version_title}\xbb'
 
-          Let's see that we raise a TranslationFormatInvalidInputError exception when we
-          have an escaped char that is not valid in the declared encoding
-          of the original string:
+          Let's see that we raise a TranslationFormatInvalidInputError
+          exception when we have an escaped char that is not valid in the
+          declared encoding of the original string:
 
           >>> iso8859_1_string = u'"foo \\xf9"'
           >>> parser._parseQuotedString(iso8859_1_string)
           Traceback (most recent call last):
           ...
-          TranslationFormatInvalidInputError: could not decode escaped string as UTF-8: (\xf9)
+          TranslationFormatInvalidInputError: Could not decode escaped string as UTF-8: (\xf9)
 
           An error will be raised if the entire string isn't contained in
           quotes properly:
@@ -668,19 +668,19 @@ class POParser(object):
           >>> parser._parseQuotedString(u'abc')
           Traceback (most recent call last):
             ...
-          TranslationFormatSyntaxError: string is not quoted
+          TranslationFormatSyntaxError: String is not quoted
           >>> parser._parseQuotedString(u'\"ab')
           Traceback (most recent call last):
             ...
-          TranslationFormatSyntaxError: string not terminated
+          TranslationFormatSyntaxError: String not terminated
           >>> parser._parseQuotedString(u'\"ab\"x')
           Traceback (most recent call last):
             ...
-          TranslationFormatSyntaxError: extra content found after string: (x)
+          TranslationFormatSyntaxError: Extra content found after string: (x)
         """
         if string[0] != '"':
             raise TranslationFormatSyntaxError(
-                line_number=self._lineno, message="string is not quoted")
+                line_number=self._lineno, message="String is not quoted")
 
         escape_map = {
             'a': '\a',
@@ -719,11 +719,9 @@ class POParser(object):
                 # if there is any non-string data afterwards, raise an
                 # exception
                 if string and not string.isspace():
-                    message = ("extra content found after string: (%s)" %
-                        string)
                     raise TranslationFormatSyntaxError(
                         line_number=self._lineno,
-                        message=("extra content found after string: (%s)" %
+                        message=("Extra content found after string: (%s)" %
                                  string))
                 break
             elif string[0] == '\\' and string[1] in escape_map:
@@ -760,7 +758,7 @@ class POParser(object):
                 else:
                     raise TranslationFormatSyntaxError(
                         line_number=self._lineno,
-                        message="unknown escape sequence %s" % string[:2])
+                        message="Unknown escape sequence %s" % string[:2])
             if escaped_string:
                 # We found some text escaped that should be recoded to
                 # Unicode.
@@ -778,7 +776,7 @@ class POParser(object):
                         raise TranslationFormatInvalidInputError(
                             line_number=self._lineno,
                             message=(
-                                "could not decode escaped string as %s: (%s)"
+                                "Could not decode escaped string as %s: (%s)"
                                     % (charset, escaped_string)))
                 else:
                     # We don't know the original encoding of the imported file
@@ -790,7 +788,7 @@ class POParser(object):
                         raise TranslationFormatInvalidInputError(
                             line_number=self._lineno,
                             message=(
-                                "could not decode escaped string: (%s)" % (
+                                "Could not decode escaped string: (%s)" % (
                                     escaped_string)))
             else:
                 # It's a normal char, we just store it and jump to next one.
@@ -800,7 +798,7 @@ class POParser(object):
             # We finished parsing the string without finding the ending quote
             # char.
             raise TranslationFormatSyntaxError(
-                line_number=self._lineno, message="string not terminated")
+                line_number=self._lineno, message="String not terminated")
 
         return output
 
@@ -899,7 +897,9 @@ class POParser(object):
         # Now we are in a msgctxt or msgid section, output previous section
         if l.startswith('msgid_plural'):
             if self._section != 'msgid':
-                raise TranslationFormatSyntaxError(line_number=self._lineno)
+                raise TranslationFormatSyntaxError(
+                    line_number=self._lineno,
+                    message="Unexpected keyword: msgid_plural")
             self._dumpCurrentSection()
             self._section = 'msgid_plural'
             l = l[len('msgid_plural'):]
@@ -907,13 +907,17 @@ class POParser(object):
             if (self._section is not None and
                 (self._section == 'msgctxt' or
                  self._section.startswith('msgid'))):
-                raise TranslationFormatSyntaxError(line_number=self._lineno)
+                raise TranslationFormatSyntaxError(
+                    line_number=self._lineno,
+                    message="Unexpected keyword: msgctxt")
             self._section = 'msgctxt'
             l = l[len('msgctxt'):]
         elif l.startswith('msgid'):
             if (self._section is not None and
                 self._section.startswith('msgid')):
-                raise TranslationFormatSyntaxError(line_number=self._lineno)
+                raise TranslationFormatSyntaxError(
+                    line_number=self._lineno,
+                    message="Unexpected keyword: msgid")
             if self._section is not None:
                 self._dumpCurrentSection()
             self._section = 'msgid'
