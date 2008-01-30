@@ -119,7 +119,7 @@ wrong.
 
     >>> print tags_widget._error.doc()
     '!!!!' isn't a valid tag name. Tags must start with a letter or
-    number and be lowercase. The characters +, - and . are also
+    number and be lowercase. The characters "+", "-" and "." are also
     allowed after the first character.
 
 Let's take a closer look at _toFormValue() to ensure that it works

@@ -825,7 +825,8 @@ If we specify an invalid tag to be added, an error message will be sent:
     A tag you specified is invalid: bad_tag
     <BLANKLINE>
     Tags must start with a letter or number and be lowercase. The
-    characters +, - and . are also allowed after the first character.
+    characters "+", "-" and "." are also allowed after the first
+    character.
     ...
 
 We will receive the same message if we specify an invalid tag to be removed:
@@ -842,7 +843,8 @@ We will receive the same message if we specify an invalid tag to be removed:
     A tag you specified is invalid: bad_tag
     <BLANKLINE>
     Tags must start with a letter or number and be lowercase. The
-    characters +, - and . are also allowed after the first character.
+    characters "+", "-" and "." are also allowed after the first
+    character.
     ...
 
 As the message says, tags can contain a few non-alphanumeric character

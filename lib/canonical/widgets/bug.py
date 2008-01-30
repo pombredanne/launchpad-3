@@ -79,8 +79,8 @@ class BugTagsWidget(TextWidget):
                         LaunchpadValidationError(
                             "'%s' isn't a valid tag name. Tags must start "
                             "with a letter or number and be lowercase. The "
-                            "characters +, - and . are also allowed after "
-                            "the first character."
+                            'characters "+", "-" and "." are also allowed '
+                            "after the first character."
                             % validation_error.args[0]))
                 raise self._error
             else:
