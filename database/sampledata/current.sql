@@ -2312,6 +2312,10 @@ INSERT INTO karmaaction (id, category, points, name, title, summary) VALUES (46,
 INSERT INTO karmaaction (id, category, points, name, title, summary) VALUES (47, 7, 1, 'questionasked', 'Asked question', 'User asked a question in the Answer Tracker.');
 INSERT INTO karmaaction (id, category, points, name, title, summary) VALUES (48, 7, 5, 'faqcreated', 'FAQ created', 'User create a new FAQ in Launchpad.');
 INSERT INTO karmaaction (id, category, points, name, title, summary) VALUES (49, 7, 1, 'faqedited', 'FAQ edited', 'User updated the details of a FAQ in Launchpad.');
+INSERT INTO karmaaction (id, category, points, name, title, summary) VALUES (50, 8, 1, 'branchcreated', 'New branch registered', 'User registered a new branch.');
+INSERT INTO karmaaction (id, category, points, name, title, summary) VALUES (51, 8, 5, 'bugbranchcreated', 'Branch linked to a bug', 'User linked a branch to a bug.');
+INSERT INTO karmaaction (id, category, points, name, title, summary) VALUES (52, 8, 5, 'specbranchcreated', 'Branch linked to a blueprint', 'User linked a branch to a blueprint.');
+INSERT INTO karmaaction (id, category, points, name, title, summary) VALUES (53, 8, 1, 'revisionadded', 'Revision added', 'A new revision by the user is available through Launchpad.');
 
 
 ALTER TABLE karmaaction ENABLE TRIGGER ALL;
@@ -2388,6 +2392,7 @@ INSERT INTO karmacategory (id, name, title, summary) VALUES (2, 'bugs', 'Bug Man
 INSERT INTO karmacategory (id, name, title, summary) VALUES (3, 'translations', 'Translations in Rosetta', 'This categor covers all actions related to translation using the Rosetta web translation portal. Creating new translation projects, submitting new translations and editing existing translations will all earn karma.');
 INSERT INTO karmacategory (id, name, title, summary) VALUES (6, 'specs', 'Specification Tracking', 'This category includes all karma associated with the Launchpad specification tracking system.');
 INSERT INTO karmacategory (id, name, title, summary) VALUES (7, 'answers', 'Answer Tracker', 'This is the category for all karma associated with helping with users questions in the Launchpad Answer Tracker. Help solve users problems to earn this karma.');
+INSERT INTO karmacategory (id, name, title, summary) VALUES (8, 'code', 'Bazaar Branches', 'This category for all karma associated with branches and the links between branches and other Launchpad entities.');
 
 
 ALTER TABLE karmacategory ENABLE TRIGGER ALL;
@@ -3946,7 +3951,6 @@ ALTER TABLE packaging ENABLE TRIGGER ALL;
 
 ALTER TABLE person DISABLE TRIGGER ALL;
 
-
 INSERT INTO person (id, displayname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, icon, mugshot, hide_email_addresses, creation_rationale, creation_comment, registrant, logo, renewal_policy, openid_identifier, account_status_comment, account_status, personal_standing, personal_standing_reason_text, mail_resumption_date, mailing_list_auto_subscribe_policy, mailing_list_receive_duplicates, visibility, verbose_bugnotifications) VALUES (1, 'Mark Shuttleworth', 'K7Qmeansl6RbuPfulfcmyDQOzp70OxVh5Fcf', NULL, NULL, 'sabdfl', NULL, NULL, NULL, NULL, 1, NULL, '2005-06-06 08:59:51.591618', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, 8, NULL, NULL, NULL, 10, 'sabdfl_oid', NULL, 20, 0, NULL, NULL, 1, true, 1, false);
 INSERT INTO person (id, displayname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, icon, mugshot, hide_email_addresses, creation_rationale, creation_comment, registrant, logo, renewal_policy, openid_identifier, account_status_comment, account_status, personal_standing, personal_standing_reason_text, mail_resumption_date, mailing_list_auto_subscribe_policy, mailing_list_receive_duplicates, visibility, verbose_bugnotifications) VALUES (2, 'Robert Collins', 'ID1adsprLaTBox18F6dpSdtSdqCiOdpgUXBo4oG17qhg73jSDTVe3g==', NULL, NULL, 'lifeless', NULL, NULL, NULL, NULL, 1, NULL, '2005-06-06 08:59:51.598107', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, 8, NULL, NULL, NULL, 10, 'lifeless_oid', NULL, 20, 0, NULL, NULL, 1, true, 1, false);
 INSERT INTO person (id, displayname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, icon, mugshot, hide_email_addresses, creation_rationale, creation_comment, registrant, logo, renewal_policy, openid_identifier, account_status_comment, account_status, personal_standing, personal_standing_reason_text, mail_resumption_date, mailing_list_auto_subscribe_policy, mailing_list_receive_duplicates, visibility, verbose_bugnotifications) VALUES (3, 'Dave Miller', NULL, NULL, NULL, 'justdave', NULL, NULL, NULL, NULL, 1, NULL, '2005-06-06 08:59:51.610048', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, 1, NULL, NULL, NULL, 10, 'justdave_oid', NULL, 10, 0, NULL, NULL, 1, true, 1, false);
@@ -4029,6 +4033,7 @@ INSERT INTO person (id, displayname, "password", teamowner, teamdescription, nam
 INSERT INTO person (id, displayname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, icon, mugshot, hide_email_addresses, creation_rationale, creation_comment, registrant, logo, renewal_policy, openid_identifier, account_status_comment, account_status, personal_standing, personal_standing_reason_text, mail_resumption_date, mailing_list_auto_subscribe_policy, mailing_list_receive_duplicates, visibility, verbose_bugnotifications) VALUES (243614, 'josh', NULL, NULL, NULL, 'jbuhl-nospam', NULL, NULL, NULL, NULL, 1, NULL, '2007-12-18 16:31:34.790641', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, 15, 'when the comments for debbugs #308994 were imported into Launchpad.', 62, NULL, 10, '6KHNEe3', NULL, 10, 0, NULL, NULL, 1, true, 1, false);
 INSERT INTO person (id, displayname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, icon, mugshot, hide_email_addresses, creation_rationale, creation_comment, registrant, logo, renewal_policy, openid_identifier, account_status_comment, account_status, personal_standing, personal_standing_reason_text, mail_resumption_date, mailing_list_auto_subscribe_policy, mailing_list_receive_duplicates, visibility, verbose_bugnotifications) VALUES (243615, 'Sjoerd Simons', NULL, NULL, NULL, 'sjoerd', NULL, NULL, NULL, NULL, 1, NULL, '2007-12-18 16:31:34.790641', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, 15, 'when the comments for debbugs #308994 were imported into Launchpad.', 62, NULL, 10, 'yEzBPbd', NULL, 10, 0, NULL, NULL, 1, true, 1, false);
 INSERT INTO person (id, displayname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, icon, mugshot, hide_email_addresses, creation_rationale, creation_comment, registrant, logo, renewal_policy, openid_identifier, account_status_comment, account_status, personal_standing, personal_standing_reason_text, mail_resumption_date, mailing_list_auto_subscribe_policy, mailing_list_receive_duplicates, visibility, verbose_bugnotifications) VALUES (243616, 'Martin Pitt', NULL, NULL, NULL, 'mpitt', NULL, NULL, NULL, NULL, 1, NULL, '2007-12-18 16:31:34.790641', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, 15, 'when the comments for debbugs #308994 were imported into Launchpad.', 62, NULL, 10, 'R8FpwXd', NULL, 10, 0, NULL, NULL, 1, true, 1, false);
+
 
 ALTER TABLE person ENABLE TRIGGER ALL;
 
@@ -8324,7 +8329,6 @@ INSERT INTO teammembership (id, person, team, status, datejoined, dateexpires, r
 INSERT INTO teammembership (id, person, team, status, datejoined, dateexpires, reviewer, reviewercomment) VALUES (77, 19, 17, 2, '2008-01-16 23:56:17.986769', NULL, 1, 'Yeah, we want in!');
 
 
-
 ALTER TABLE teammembership ENABLE TRIGGER ALL;
 
 
@@ -8485,7 +8489,6 @@ INSERT INTO teamparticipation (id, team, person) VALUES (169, 17, 19);
 INSERT INTO teamparticipation (id, team, person) VALUES (170, 32, 4);
 INSERT INTO teamparticipation (id, team, person) VALUES (171, 32, 33);
 INSERT INTO teamparticipation (id, team, person) VALUES (172, 17, 33);
-
 
 
 ALTER TABLE teamparticipation ENABLE TRIGGER ALL;
