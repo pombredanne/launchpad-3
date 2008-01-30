@@ -147,6 +147,7 @@ status is returned.
 >>> check("/distros/+add", auth=True)
 
 >>> check("/ubuntu")
+>>> check("/ubuntu/+bounties")
 >>> check("/ubuntu/+bugs")
 >>> check("/ubuntu/+specs")
 >>> check("/ubuntu/+cve")

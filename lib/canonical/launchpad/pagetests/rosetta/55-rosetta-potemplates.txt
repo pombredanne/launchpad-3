@@ -111,8 +111,7 @@ Looking at the POTemplate overview page, we can see that there are
     >>> spanish_line = find_tag_by_id(browser.contents, 'evolution-2.2_es')
     >>> print extract_text(spanish_line)
     Spanish
-    ...
-    15 15 1 1 1 1
+    15 1 1
     ...
 
 Language title points to the general translate page:

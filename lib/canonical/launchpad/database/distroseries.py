@@ -174,7 +174,8 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
     def milestones(self):
         """See IDistroSeries."""
         return Milestone.selectBy(
-            distroseries=self, visible=True, orderBy=['-dateexpected', 'name'])
+            distroseries=self, visible=True,
+            orderBy=['-dateexpected', 'name'])
 
     @property
     def parent(self):

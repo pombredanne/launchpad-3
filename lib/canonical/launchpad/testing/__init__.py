@@ -1,4 +1,4 @@
-# Copyright 2007 Canonical Ltd.  All rights reserved.
+ # Copyright 2007 Canonical Ltd.  All rights reserved.
 
 """Testing infrastructure for the Launchpad application.
 
@@ -49,12 +49,6 @@ def time_counter(origin=None, delta=timedelta(seconds=5)):
 # is by no means complete for Launchpad objects.  If you need to create
 # anonymous objects for your tests then add methods to the factory.
 #
-# All factory methods should be callable with no parameters.  If you
-# add a keyword argument to a method, please be considerate of the other
-# users of the factory and make it behave at least as good as it was
-# before.
-
-
 class LaunchpadObjectFactory:
     """Factory methods for creating Launchpad objects.
 

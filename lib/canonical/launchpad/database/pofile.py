@@ -301,7 +301,8 @@ class POFile(SQLBase, POFileMixIn):
         if self.exportfile is None:
             return False
 
-        return self.exporttime >= self.date_changed
+        return (self.exporttime >= self.date_changed and
+                self.exporttime >= self.potemplate.date_last_updated)
 
     def prepareTranslationCredits(self, potmsgset):
         """See `IPOFile`."""

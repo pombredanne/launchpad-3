@@ -25,15 +25,62 @@
 
   <browser:defaultView
       for="canonical.launchpad.interfaces.IBranchMergeProposal"
-      name="+edit" />
+      name="+index" />
 
   <browser:page
-    name="+edit"
+    name="+index"
     for="canonical.launchpad.interfaces.IBranchMergeProposal"
-    class="canonical.launchpad.browser.BranchMergeProposalEditView"
+    class="canonical.launchpad.browser.BranchMergeProposalView"
+    facet="branches"
+    permission="launchpad.View"
+    template="../templates/branchmergeproposal-index.pt" />
+
+  <browser:pages
+      for="canonical.launchpad.interfaces.IBranchMergeProposal"
+      class="canonical.launchpad.browser.BranchMergeProposalEditView"
+      facet="branches"
+      permission="launchpad.Edit">
+    <browser:page
+        name="+edit"
+        template="../templates/branchmergeproposal-edit.pt"
+        />
+    <browser:page
+        name="+pagelet-summary"
+        template="../templates/branchmergeproposal-pagelet-summary.pt"
+        />
+  </browser:pages>
+
+  <browser:page
+    name="+delete"
+    for="canonical.launchpad.interfaces.IBranchMergeProposal"
+    class="canonical.launchpad.browser.BranchMergeProposalDeleteView"
     facet="branches"
     permission="launchpad.Edit"
-    template="../templates/branchmergeproposal-edit.pt" />
+    template="../templates/branchmergeproposal-delete.pt" />
+
+  <browser:page
+    name="+work-in-progress"
+    for="canonical.launchpad.interfaces.IBranchMergeProposal"
+    class="canonical.launchpad.browser.BranchMergeProposalWorkInProgressView"
+    facet="branches"
+    permission="launchpad.Edit"
+    template="../templates/branchmergeproposal-work-in-progress.pt" />
+
+  <browser:page
+    name="+request-review"
+    for="canonical.launchpad.interfaces.IBranchMergeProposal"
+    class="canonical.launchpad.browser.BranchMergeProposalRequestReviewView"
+    facet="branches"
+    permission="launchpad.Edit"
+    template="../templates/branchmergeproposal-request-review.pt" />
+
+  <browser:page
+    name="+review"
+    for="canonical.launchpad.interfaces.IBranchMergeProposal"
+    class="canonical.launchpad.browser.ReviewBranchMergeProposalView"
+    facet="branches"
+    permission="launchpad.Edit"
+    template="../templates/branchmergeproposal-review.pt" />
 
   <browser:page
     name="+merged"

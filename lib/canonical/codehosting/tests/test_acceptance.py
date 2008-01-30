@@ -1,4 +1,7 @@
 # Copyright 2004-2007 Canonical Ltd.  All rights reserved.
+# XXX: Aaron Bentley 2008-01-21: This is due to the unreachable loom test.
+# Will be removed when looms are enabled.
+# pylint: disable-msg=W0101
 
 """Acceptance tests for Supermirror SFTP server's bzr support."""
 
@@ -6,9 +9,7 @@ __metaclass__ = type
 
 from StringIO import StringIO
 import os
-import shutil
 import sys
-import tempfile
 import thread
 import unittest
 import xmlrpclib
@@ -17,21 +18,19 @@ import bzrlib.branch
 from bzrlib.builtins import cmd_branch, cmd_push
 from bzrlib.errors import (
     BzrCommandError, NotBranchError, TransportNotPossible)
+# XXX: Aaron Bentley 2008-01-21: loom plugin is not yet supported
+# from bzrlib.plugins.loom import branch as loom_branch
 from bzrlib.repofmt.weaverepo import RepositoryFormat7
 from bzrlib.repository import format_registry
 
-# bzr 0.91 uses ReadOnlyError, bzr 0.92 uses LockFailed
-try:
-    from bzrlib.errors import LockFailed as ReadOnlyFailureException
-except ImportError:
-    from bzrlib.errors import ReadOnlyError as ReadOnlyFailureException
+from bzrlib.errors import LockFailed
 
 from bzrlib.urlutils import local_path_from_url
 from bzrlib.tests import default_transport, TestCaseWithTransport
 from bzrlib.workingtree import WorkingTree
 
 from canonical.codehosting.tests.helpers import (
-    adapt_suite, clone_test, deferToThread, ServerTestCase)
+    adapt_suite, deferToThread, ServerTestCase)
 from canonical.codehosting.tests.servers import (
     make_bzr_ssh_server, make_sftp_server)
 from canonical.codehosting import branch_id_to_path
@@ -383,12 +382,14 @@ class AcceptanceTests(SSHTestCase):
 
     @deferToThread
     def test_push_new_branch_creates_branch_in_database(self):
-        remote_url = self.getTransportURL('~testuser/+junk/totally-new-branch')
+        remote_url = self.getTransportURL(
+            '~testuser/+junk/totally-new-branch')
         self.push(self.local_branch_path, remote_url)
 
         # Retrieve the branch from the database.
         LaunchpadZopelessTestSetup().txn.begin()
-        branch = self.getDatabaseBranch('testuser', None, 'totally-new-branch')
+        branch = self.getDatabaseBranch(
+            'testuser', None, 'totally-new-branch')
         LaunchpadZopelessTestSetup().txn.abort()
 
         self.assertEqual(
@@ -508,6 +509,29 @@ class AcceptanceTests(SSHTestCase):
             (BzrCommandError, TransportNotPossible),
             self.push, self.local_branch_path, remote_url)
 
+    @deferToThread
+    def test_can_push_loom_branch(self):
+        # XXX: Aaron Bentley 2008-01-21: loom plugin is not yet supported
+        return
+        from bzrlib.plugins.loom import loom_branch
+        # We can push and pull a loom branch.
+        tree = self.make_branch_and_tree('loom')
+        tree.lock_write()
+        try:
+            tree.branch.nick = 'bottom-thread'
+            loom_branch.loomify(tree.branch)
+        finally:
+            tree.unlock()
+        loomtree = tree.bzrdir.open_workingtree()
+        loomtree.lock_write()
+        loomtree.branch.new_thread('bottom-thread')
+        loomtree.commit('this is a commit', rev_id='commit-1')
+        loomtree.unlock()
+        loomtree.branch.record_loom('sample loom')
+        remote_url = self.getTransportURL('~testuser/+junk/loom')
+        self.push('loom', remote_url)
+        self.assertBranchesMatch('loom', remote_url)
+
 
 class SmartserverTests(SSHTestCase):
     """Acceptance tests for the codehosting smartserver."""
@@ -552,8 +576,7 @@ class SmartserverTests(SSHTestCase):
         # Push the local branch to the remote url
         remote_url = self.getTransportURL('~sabdfl/+junk/ro-branch')
         self.assertRaises(
-            ReadOnlyFailureException,
-            self.push, self.local_branch_path, remote_url)
+            LockFailed, self.push, self.local_branch_path, remote_url)
 
     @deferToThread
     def test_can_read_mirrored_branch(self):

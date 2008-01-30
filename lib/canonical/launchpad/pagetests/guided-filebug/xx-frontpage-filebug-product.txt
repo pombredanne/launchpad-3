@@ -74,6 +74,32 @@ also matches, but is a duplicate of bug 5 so does not appear.
     #1 Firefox does not support SVG
     Open, last updated 2006-05-19
 
+If the current user is not permitted to view the duplicated bug (in
+other words, the main bug) then it, and the duplicate it was found
+from, are omitted from the search results.
+
+First we make bug 5 private:
+
+    >>> admin_browser.open(
+    ...     'http://bugs.launchpad.dev/firefox/+bug/5/+secrecy')
+    >>> admin_browser.getControl(
+    ...     'This bug report should be private').selected = True
+    >>> admin_browser.getControl('Change').click()
+
+Then it no longer appears when we try the same search as before:
+
+    >>> user_browser.open('http://bugs.launchpad.dev/bugs/+filebug/')
+    >>> user_browser.getControl('Project').selected = True
+    >>> user_browser.getControl(
+    ...     name='field.bugtarget.product').value = 'firefox'
+    >>> user_browser.getControl('Summary').value = (
+    ...     'SVG causes Firefox to crash')
+    >>> user_browser.getControl('Continue').click()
+
+    >>> print_bugs_list(user_browser.contents, "similar-bugs")
+    #1 Firefox does not support SVG
+    Open, last updated 2006-05-19
+
 Entering a description and submitting the bug takes the user to the bug
 page.
 
@@ -84,9 +110,10 @@ page.
     >>> user_browser.title
     'Bug #... in Mozilla Firefox: ...SVG causes Firefox to crash...'
 
+
 == Advanced filebug page ==
 
-From the frontpage filebug page it's possible to go to the advanced
+From the front page filebug page it's possible to go to the advanced
 filebug page and file a bug directly.
 
     >>> user_browser.open('http://bugs.launchpad.dev/')
@@ -100,6 +127,7 @@ filebug page and file a bug directly.
     ...     name='field.bugtarget.product').value = 'evolution'
     >>> user_browser.getControl('Summary').value = 'Evolution crashes'
     >>> user_browser.getControl('Further information').value = 'Crash.'
+
     >>> user_browser.getControl('Submit Bug Report').click()
     >>> user_browser.url
     'http://bugs.launchpad.dev/evolution/+bug/...'
@@ -123,3 +151,4 @@ Launchpad Bugs results in an informational page being displayed.
     Mozilla Thunderbird does not use...
     ...
     You can refine and resubmit your bug report.
+
