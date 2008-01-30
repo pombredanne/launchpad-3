@@ -47,6 +47,12 @@
       factory="canonical.launchpad.browser.BranchBadges"
       />
 
+  <subscriber
+      for="canonical.launchpad.interfaces.IBranch
+           canonical.launchpad.event.interfaces.ISQLObjectCreatedEvent"
+      handler="canonical.launchpad.subscribers.karma.branch_created"
+      />
+
     <browser:menus
         module="canonical.launchpad.browser"
         classes="BranchContextMenu" />

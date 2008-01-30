@@ -214,3 +214,23 @@ def faq_edited(faq, event):
     context = get_karma_context_parameters(faq.target)
     if old_faq.content != faq.content or old_faq.title != faq.title:
         user.assignKarma('faqedited', **context)
+
+def branch_created(branch, event):
+    if branch.product is None:
+        # No karma for junk branches.
+        return
+    branch.registrant.assignKarma('branchcreated', product=branch.product)
+
+def bug_branch_created(bug_branch, event):
+    product = bug_branch.branch.product
+    if product is None:
+        # No karma for junk branches.
+        return
+    bug_branch.registrant.assignKarma('bugbranchcreated', product=product)
+
+def spec_branch_created(spec_branch, event):
+    product = spec_branch.branch.product
+    if product is None:
+        # No karma for junk branches.
+        return
+    spec_branch.registrant.assignKarma('specbranchcreated', product=product)
