@@ -1,0 +1,37 @@
+= Distribution upstream bug report pages =
+
+Upstream bug report pages for distributions contain all sorts of fun information:
+
+    >>> browser.open("http://bugs.launchpad.dev/ubuntu/+upstreamreport")
+    >>> table = find_tag_by_id(browser.contents, 'upstream-report')
+    >>> print extract_text(table)
+    Package                 Project                Tracker      Bug Contact
+             Open   Upstream      %     &Delta; Watch       %   &Delta;
+    linux-source-2.6.15     Missing corresponding product.  (find) (link)
+                1          0   0.00           1     0    0.00         0
+    mozilla-firefox         Mozilla Firefox        Launchpad    Unknown
+                1          1 100.00           0 
+    thunderbird             Missing corresponding product. (find)
+                1          1 100.00           0     1  100.00         0
+        Totals: 3          2  66.67           1     1   50.00         1
+
+
+== Empty distributions ==
+
+Some distributions aren't as happening as others. The page still works for
+them, though:
+
+    >>> browser.open("http://bugs.launchpad.dev/debian/+upstreamreport")
+    >>> table = find_tag_by_id(browser.contents, 'upstream-report')
+    >>> print extract_text(table)
+    XXX
+
+    >>> browser.open("http://bugs.launchpad.dev/kubuntu/+upstreamreport")
+    >>> table = find_tag_by_id(browser.contents, 'upstream-report')
+    >>> print table
+    None
+    >>> content = find_tag_by_id(browser.contents, 'maincontent')
+    >>> print extract_text(content)
+    Upstream Bug Report for Kubuntu
+    Kubuntu has no bugs filed against it.
+

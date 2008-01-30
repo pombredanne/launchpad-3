@@ -1,0 +1,163 @@
+<html
+  xmlns="http://www.w3.org/1999/xhtml"
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  xml:lang="en"
+  lang="en"
+  dir="ltr"
+  metal:use-macro="context/@@main_template/master"
+  i18n:domain="launchpad"
+>
+
+<metal:heading fill-slot="head_epilogue">
+    <style type="text/css">
+    <!--
+      td.good { background: lightgreen; }
+      td.bad { background: #ffaaaa; }
+    -->
+    </style>
+</metal:heading>
+
+  <body>
+    <metal:portlets fill-slot="portlets">
+    </metal:portlets>
+
+    <p metal:fill-slot="help">
+      This report gives an overview of how good the bug communication is
+      between a distribution and the upstream projects it produces
+      packages from.
+    </p>
+
+    <div metal:fill-slot="main">
+      <h1>Upstream Bug Report for
+        <tal:distro replace="context/displayname" /></h1>
+
+      <tal:no-bugs tal:condition="not: view/data">
+        <span tal:replace="context/displayname" /> has no bugs filed
+        against it.
+      </tal:no-bugs>
+
+      <table class="listing sortable" id="upstream-report"
+             tal:condition="view/data">
+        <thead>
+          <tr>
+            <th>Package</th>
+            <th>Project</th>
+            <th>Tracker</th>
+            <th>Bug Contact</th>
+            <th>Open</th>
+            <th>Upstream</th>
+            <th>%</th>
+            <th>&Delta;</th>
+            <th>Watch</th>
+            <th>%</th>
+            <th>&Delta;</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr tal:repeat="item view/data">
+            <td>
+              <a tal:attributes="href item/dsp/fmt:url"
+                 tal:content="item/dsp/name"></a>
+            </td>
+            <tal:has-product condition="item/product">
+              <td>
+                <a tal:attributes="href item/product/fmt:url"
+                   tal:content="item/product/title"></a>
+              </td>
+              <tal:has-bugtracker condition="item/product/bugtracker">
+                <td>
+                  <a tal:attributes="href item/product/bugtracker/fmt:url"
+                     tal:content="item/product/bugtracker/title"></a></td>
+              </tal:has-bugtracker>
+              <tal:has-no-bugtracker condition="not: item/product/bugtracker">
+                <td tal:condition="item/product/official_malone" class="good">
+                    Launchpad
+                </td>
+                <td tal:condition="not: item/product/official_malone"
+                    align="center" class="bad">
+                    Unknown
+                    <a tal:condition="item/product/required:launchpad.Edit"
+                       tal:attributes="href item/product_edit_url">
+                       <small>(fix)</small></a></td>
+              </tal:has-no-bugtracker>
+              <tal:has-bugcontact condition="item/product/bugcontact">
+                <td>
+                  <a tal:attributes="href item/product/bugcontact/fmt:url"
+                     tal:content="item/product/bugcontact/displayname"></a></td>
+              </tal:has-bugcontact>
+              <tal:has-no-bugcontact condition="not: item/product/bugcontact">
+                <td align="center" class="bad">Unspecified
+                    <a tal:condition="item/product/required:launchpad.Edit"
+                       tal:attributes="href item/bugcontact_url">
+                      <small>(fix)</small></a></td>
+              </tal:has-no-bugcontact>
+            </tal:has-product>
+            <tal:has-no-product condition="not: item/product">
+                <td align="center" class="bad" colspan="3">
+                    Missing corresponding product.
+                    <a href="/projects"><small>(find)</small></a>
+                    <a tal:condition="item/dssp"
+                       tal:attributes="href item/packaging_url">
+                       <small>(link)</small></a>
+                </td>
+            </tal:has-no-product>
+            <td align="right">
+              <a tal:attributes="href item/open_bugs_url"
+                 tal:content="item/open_bugs"></a>
+            </td>
+            <td align="right" tal:attributes="class item/upstream_bugs_class">
+              <a tal:attributes="href item/upstream_bugs_url"
+                 tal:content="item/upstream_bugs"></a>
+            </td>
+            <td align="right" tal:attributes="class item/upstream_bugs_class"
+                tal:content="item/upstream_bugs_percentage" />
+            <td align="right" tal:attributes="class item/upstream_bugs_class">
+              <a tal:attributes="href item/upstream_bugs_delta_url"
+                 tal:content="item/upstream_bugs_delta"></a>
+            </td>
+            <tal:upstream-in-launchpad 
+                condition="item/official_malone">
+                <td colspan="3" class="good">&nbsp;</td>
+            </tal:upstream-in-launchpad>
+            <tal:upstream-not-in-launchpad
+                condition="not: item/official_malone">
+              <td align="right" tal:attributes="class item/watched_bugs_class"
+                  tal:content="item/watched_bugs" />
+              <td align="right" tal:attributes="class item/watched_bugs_class"
+                  tal:content="item/watched_bugs_percentage" />
+              <td align="right" tal:attributes="class item/watched_bugs_class">
+                <a tal:attributes="href item/watched_bugs_delta_url"
+                   tal:content="item/watched_bugs_delta"></a>
+              </td>
+            </tal:upstream-not-in-launchpad>
+          </tr>
+          <tr>
+            <td colspan="4" align="right"><b>Totals:</b></td>
+            <td align="right"
+                tal:content="view/total/open_bugs" />
+            <td align="right"
+                tal:content="view/total/upstream_bugs" />
+            <td align="right"
+                tal:content="view/total/upstream_bugs_percentage" />
+            <td align="right"
+                tal:content="view/total/upstream_bugs_delta" />
+            <td align="right"
+                tal:content="view/total/watched_bugs" />
+            <td align="right"
+                tal:content="view/total/watched_bugs_percentage" />
+            <td align="right"
+                tal:content="view/total/watched_bugs_delta" />
+          </tr>
+        </tbody>
+      </table>
+
+      <div tal:condition="view/data" 
+           align="right"><small>Top <span tal:content="view/data/count:len" />
+        packages listed.</small></div>
+
+    </div>
+
+  </body>
+</html>
