@@ -159,7 +159,8 @@ class BranchMergeProposal(SQLBase):
             ''' % sqlvalues(self.source_branch, self.target_branch),
             prejoins=['revision'], orderBy='-sequence')
 
-    def createMessage(self, owner, vote, subject, content=None, parent=None):
+    def createMessage(self, owner, subject, content=None, vote=None,
+                      parent=None):
         """See IBranchMergeProposal.createMessage"""
         assert owner is not None, 'Merge proposal messages need a sender'
         parent_message = None

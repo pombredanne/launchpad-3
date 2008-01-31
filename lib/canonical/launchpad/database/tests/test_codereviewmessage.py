@@ -23,7 +23,7 @@ class TestCodeReviewMessage(unittest.TestCase):
 
     def test_create_root_message(self):
         message = self.bmp.createMessage(
-            Person.get(1), 1, 'Message subject', 'Message content')
+            Person.get(1), 'Message subject', 'Message content', 1)
         self.assertEqual(1, message.vote)
         self.assertEqual(Person.get(1), message.message.owner)
         self.assertEqual(message, self.bmp.conversation)
@@ -32,9 +32,9 @@ class TestCodeReviewMessage(unittest.TestCase):
 
     def test_create_reply_message(self):
         message = self.bmp.createMessage(
-            Person.get(1), 1, 'Message subject', 'Message content')
+            Person.get(1), 'Message subject', 'Message content', 1)
         reply = self.bmp.createMessage(
-            Person.get(1), 1, 'Reply subject', 'Reply content', message)
+            Person.get(1), 'Reply subject', 'Reply content', 1, message)
         self.assertEqual(message, self.bmp.conversation)
         self.assertEqual(message.message.id, reply.message.parent.id)
         self.assertEqual(message.message, reply.message.parent)
@@ -43,27 +43,27 @@ class TestCodeReviewMessage(unittest.TestCase):
 
     def test_create_root_message_as_reply(self):
         message = self.bmp.createMessage(
-            Person.get(1), 1, 'Message subject', 'Message content')
+            Person.get(1), 'Message subject', 'Message content', 1)
         self.bmp.conversation = None
         self.assertRaises(AssertionError, self.bmp.createMessage,
-            Person.get(1), 1, 'Reply subject', 'Reply content', message)
+            Person.get(1), 'Reply subject', 'Reply content', 1, message)
 
     def test_create_no_parent_message(self):
         message = self.bmp.createMessage(
-            Person.get(1), 1, 'Message subject', 'Message content')
+            Person.get(1), 'Message subject', 'Message content', 1)
         new_message = self.bmp.createMessage(
-            Person.get(1), 1, 'New subject', 'New content')
+            Person.get(1), 'New subject', 'New content', 1)
         self.assertEqual(
             self.bmp.conversation.message, new_message.message.parent)
 
     def test_reply_with_wrong_merge_proposal(self):
         message = self.bmp.createMessage(
-            Person.get(1), 1, 'Message subject', 'Message content')
+            Person.get(1), 'Message subject', 'Message content', 1)
         self.bmp2 = BranchMergeProposal(source_branchID=5, registrantID=5,
                                         target_branchID=6,
                                         dependent_branchID=None)
         self.assertRaises(AssertionError, self.bmp2.createMessage,
-                          Person.get(1), 1, 'Reply subject', 'Reply content',
+                          Person.get(1), 'Reply subject', 'Reply content', 1,
                           message)
 
 
