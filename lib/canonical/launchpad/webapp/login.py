@@ -434,3 +434,13 @@ class ForgottenPasswordPage:
 
     def success(self):
         return self.submitted and not self.errortext
+
+
+class FeedsUnauthorizedView(UnauthorizedView):
+    """All users of feeds are anonymous, so don't redirect to login."""
+
+    def __call__(self):
+        assert IUnauthenticatedPrincipal.providedBy(self.request.principal), (
+            "Feeds user should always be anonymous.")
+        self.request.response.setStatus(403) # Forbidden
+        return self.forbidden_page()

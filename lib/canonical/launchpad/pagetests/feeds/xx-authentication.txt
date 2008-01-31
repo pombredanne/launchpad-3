@@ -6,9 +6,6 @@ request provides basic authentication, even though not requested by
 the server, the web application will nonetheless use the
 unauthenticated anonymous user for all interaction.
 
-    >>> foo_bar_auth = 'Basic %s' % (
-    ...     'foo.bar@canonical.com:test'.encode('base64'))
-
     # Setup a Foo Bar user and let Zope handle the errors.
     >>> browser = setupBrowser(auth='Basic foo.bar@canonical.com:test')
     >>> browser.handleErrors = True
@@ -17,12 +14,13 @@ unauthenticated anonymous user for all interaction.
     # bug exists and is private.
     >>> browser.open('http://launchpad.dev/bugs/14')
     >>> print browser.url
-    http://launchpad.dev/bugs/14
+    http://bugs.launchpad.dev/jokosher/+bug/14
 
-    # Traversing to the private bug will trigger an Unauthorized error
-    # and the user will be redirected to +login. Since that page isn't
-    # available on feeds, we get a NotFound error.
+    # Traversing to the private bug will trigger an Unauthorized error.
+    # For feeds, this will result in a Forbidden error.  This test
+    # ensures FeedsUnauthorizedError works and that the unauthorized
+    # user is the current user.
     >>> browser.open('http://feeds.launchpad.dev/bugs/14/bug.atom')
     Traceback (most recent call last):
       ...
-    HTTPError: HTTP Error 404: Not Found
+    HTTPError: HTTP Error 403: Forbidden

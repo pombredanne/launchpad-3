@@ -687,7 +687,7 @@ name of the context class and the view class name.
     >>> print request._orig_env['launchpad.pageid']
     TestContext:TestView
 
-When a view is registered using ZCML, the Zope machinery will store 
+When a view is registered using ZCML, the Zope machinery will store
 the name under which the view was registered in the view's '__name__'
 attribute. For these views, that's the name that will be used in
 the pageid.
@@ -1002,7 +1002,7 @@ will get associated with the request after the beforeTraversal() hook.
     >>> class MyPublication(LaunchpadBrowserPublication):
     ...	      def getPrincipal(self, request):
     ...	      	  return marker
-    
+
     >>> publication = MyPublication(None)
     >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
     >>> request = LaunchpadTestRequest()
@@ -1010,6 +1010,9 @@ will get associated with the request after the beforeTraversal() hook.
     # We need close the previous interaction.
     >>> from zope.security.management import endInteraction
     >>> endInteraction()
+
+    # The call to beforeTraversal will start a request that will need
+    # to be manually ended.
     >>> publication.beforeTraversal(request)
     >>> request.principal is marker
     True
@@ -1035,4 +1038,9 @@ The feeds implementation always returns the anonymous user.
     >>> from zope.app.security.interfaces import IUnauthenticatedPrincipal
     >>> IUnauthenticatedPrincipal.providedBy(principal)
     True
+
+Close the bogus request that was started by the call to
+beforeTraversal, in order to ensure we leave our state sane.
+
+    >>> publication.endRequest(request, None)
 
