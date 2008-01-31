@@ -26,6 +26,9 @@ def reset_logging():
     # Remove all handlers from non-root loggers, and remove the loggers too.
     loggerDict = logging.Logger.manager.loggerDict
     for name, logger in list(loggerDict.items()):
+        if name == 'pagetests-access':
+            # Don't reset the hit logger used by the test infrastructure.
+            continue
         if not isinstance(logger, logging.PlaceHolder):
             for handler in list(logger.handlers):
                 logger.removeHandler(handler)

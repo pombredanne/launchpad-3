@@ -1,0 +1,35 @@
+= Introduction =
+
+The Launchpad web service exposes a collection of people and teams,
+which responds to GET.
+
+  >>> print http(r"""
+  ... GET /people HTTP/1.1
+  ... Host: api.launchpad.dev
+  ... """)
+  HTTP/1.1 200 Ok
+  ...
+  Content-Type: application/json
+  <BLANKLINE>
+  [{"self_link": "http:\/\/api.launchpad.dev\/people\/limi", "name": "limi"},
+  ...
+  {"self_link": "http:\/\/api.launchpad.dev\/people\/rosetta-admins",
+  "teamowner_link": "http:\/\/api.launchpad.dev\/people\/admins",
+  "name": "rosetta-admins"},
+  ...
+  {"self_link": "http:\/\/api.launchpad.dev\/people\/skacel",
+   "name": "skacel"}]
+
+The elements of a collection can be looked up by unique identifier:
+
+  >>> print http(r"""
+  ... GET /people/admins HTTP/1.1
+  ... Host: api.launchpad.dev
+  ... """)
+  HTTP/1.1 200 Ok
+  ...
+  Content-Type: application/json
+  <BLANKLINE>
+  {"self_link": "http:\/\/api.launchpad.dev\/people\/admins",
+  "teamowner_link": "http:\/\/api.launchpad.dev\/people\/sabdfl",
+   "name": "admins"}
