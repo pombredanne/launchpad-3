@@ -162,6 +162,7 @@ class BranchMergeProposal(SQLBase):
     def createMessage(self, owner, vote, subject, content=None, parent=None):
         """See IBranchMergeProposal.createMessage"""
         assert owner is not None, 'Merge proposal messages need a sender'
+        parent_message = None
         if parent is None:
             if self.conversation is not None:
                 parent_message = self.conversation.message

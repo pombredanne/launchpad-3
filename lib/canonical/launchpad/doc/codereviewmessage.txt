@@ -1,5 +1,3 @@
-
-
 = Code review messages =
 
 When code is proposed to be merged, it's common to perform a review of
@@ -13,6 +11,7 @@ The ICodeReviewMessage interface represents this kind of conversation.
 It has a IMessage as a member (in a one-to-one relationship), a vote
 (which is an enum), and a reference to the IBranchMergeProposal it is
 about.
+
 
 == Creating CodeReviewMessages ==
 
@@ -41,4 +40,14 @@ Messages can be marked as replies to particular messages.
     ... sample_person, 1, 'Hurt', "That wasn't a nice thing to say.",
     ... parent=message2)
     >>> message3.message.parent == message2.message
+    True
+
+
+== Interfaces ==
+
+The CodeReviewMessage must implement the ICodeReviewMessage interface.
+
+    >>> from canonical.launchpad.webapp.testing import verifyObject
+    >>> from canonical.launchpad.interfaces import ICodeReviewMessage
+    >>> verifyObject(ICodeReviewMessage, message)
     True

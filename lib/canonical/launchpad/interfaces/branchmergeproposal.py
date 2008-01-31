@@ -243,7 +243,7 @@ class IBranchMergeProposal(Interface):
         source branch since it branched off the target branch.
         """
 
-    def createMessage(owner, subject, content=None, parent=None):
+    def createMessage(owner, vote, subject, content=None, parent=None):
         """Create an ICodeReviewMessage associated with this merge proposal
 
         :param owner: The person who the message is from.
