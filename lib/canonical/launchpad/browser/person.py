@@ -3024,7 +3024,11 @@ class PersonEditEmailsView(LaunchpadFormView):
         The email address must be syntactically valid and must not already
         be in use.
         """
-        self.validate_widgets(data, ['newemail'])
+        has_errors = bool(self.validate_widgets(data, ['newemail']))
+        if has_errors:
+            # We know that 'newemail' is empty.
+            return self.errors
+        
         newemail = data['newemail']
         if not valid_email(newemail):
             self.addError(

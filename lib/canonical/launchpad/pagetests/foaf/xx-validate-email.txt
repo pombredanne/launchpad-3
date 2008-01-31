@@ -77,7 +77,38 @@ added by gina.
     An e-mail message was sent to 'salgado@example.com'...
 
 
-== XSS precautions ==
+== Validating the email address string ==
+
+Leaving the email address field blank and hitting the 'Add' button
+should display an error message.
+
+    >>> browser.getControl('Add a new address').value
+    ''
+
+    >>> browser.getControl('Add', index=1).click()
+    >>> browser.title
+    "Guilherme Salgado's e-mail addresses"
+
+    >>> for msg in get_feedback_messages(browser.contents):
+    ...     print msg
+    There is 1 error.
+    Required input is missing.
+
+Entering a string that does not look like an email address causes an
+ error to be displayed.
+
+    >>> browser.title
+    "Guilherme Salgado's e-mail addresses"
+
+    >>> browser.getControl('Add a new address').value = 'foo'
+    >>> browser.getControl('Add', index=1).click()
+    >>> browser.title
+    "Guilherme Salgado's e-mail addresses"
+
+    >>> for msg in get_feedback_messages(browser.contents):
+    ...     print msg
+    There is 1 error.
+    'foo' doesn't seem to be a valid email address.
 
 Markup in new addresses is escaped in error messages so that it cannot
 be interpreted by the browser. Scripts that are embedded in the address
