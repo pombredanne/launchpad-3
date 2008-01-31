@@ -236,11 +236,11 @@ Check if the access to builder actions is forbidden to normal users:
     >>> user_browser.open("http://localhost/+builds/bob")
     >>> print extract_text(find_portlet(user_browser.contents, "Actions"))
     Actions
-    Administer builder (disabled)
-    Cancel current job (disabled)
+    Show build history
     Change details (disabled)
     Change mode (disabled)
-    Show build history
+    Cancel current job (disabled)
+    Administer builder (disabled)
 
     >>> user_browser.open("http://localhost/+builds/bob/+edit")
     Traceback (most recent call last):
@@ -267,11 +267,11 @@ and Unauthorized for anonymous access:
     >>> anon_browser.open("http://localhost/+builds/bob")
     >>> print extract_text(find_portlet(anon_browser.contents, "Actions"))
     Actions
-    Administer builder (disabled)
-    Cancel current job (disabled)
+    Show build history
     Change details (disabled)
     Change mode (disabled)
-    Show build history
+    Cancel current job (disabled)
+    Administer builder (disabled)
 
     >>> anon_browser.open("http://localhost/+builds/bob/+edit")
     Traceback (most recent call last):
