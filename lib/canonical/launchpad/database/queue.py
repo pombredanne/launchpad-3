@@ -69,6 +69,10 @@ class PackageUploadQueue:
         self.status = status
 
 
+class LanguagePackEncountered(Exception):
+    """Thrown when not wanting to email notifications for language packs."""
+
+
 class PackageUpload(SQLBase):
     """A Queue item for Lucille."""
     implements(IPackageUpload)
@@ -194,11 +198,15 @@ class PackageUpload(SQLBase):
     def acceptFromQueue(self, announce_list, logger=None, dry_run=False):
         """See `IPackageUpload`."""
         if (self._isSingleSourceUpload() and
-            self.status == PackageUploadStatus.NEW):
+            self.status == PackageUploadStatus.NEW and
+            self.sources[0].sourcepackagerelease.component.name == 'main'):
             # If the queue item is coming from the NEW queue and is a
             # single source upload, we override its component to
             # 'universe' to save the archive admins some work, since
             # they do this with the majority of new packages.
+
+            # XXX Julian 2008-01-28
+            # This is a temporary hack until bug 120052 is correctly fixed.
             self.sources[0].sourcepackagerelease.component = getUtility(
                 IComponentSet)['universe']
 
@@ -422,6 +430,9 @@ class PackageUpload(SQLBase):
         """Return a list of tuples of (filename, component, section).
 
         Component and section are only set where the file is a source upload.
+        If an empty list is returned, it means there are no files.
+        Raises LanguagePackRejection if a language pack is detected.
+        No emails should be sent for language packs.
         """
         files = []
         if self.contains_source:
@@ -433,7 +444,7 @@ class PackageUpload(SQLBase):
                 debug(self.logger,
                     "Skipping acceptance and announcement, it is a "
                     "language-package upload.")
-                return None
+                raise LanguagePackEncountered
             for sprfile in spr.files:
                 files.append(
                     (sprfile.libraryfile.filename, spr.component.name,
@@ -646,9 +657,14 @@ class PackageUpload(SQLBase):
         changes, changes_lines = self._getChangesDict(changes_file_object)
 
         # "files" will contain a list of tuples of filename,component,section.
-        # If files is None, we don't need to send an email if this is not
+        # If files is empty, we don't need to send an email if this is not
         # a rejection.
-        files = self._buildUploadedFilesList()
+        try:
+            files = self._buildUploadedFilesList()
+        except LanguagePackEncountered:
+            # Don't send emails for language packs.
+            return
+
         if not files and self.status != PackageUploadStatus.REJECTED:
             return
 
