@@ -24,7 +24,7 @@
       <tal:release-management condition="user_is_driver">
           (<a href="#"
               tal:content="view/getApproveDeclineLinkText"
-              tal:attributes="onclick string:return toggleFormVisibility(document.getElementById('${nomination_form_id}'));
+              tal:attributes="onclick string:return toggleFormVisibility('${nomination_form_id}');
                               href view/getNominationEditLink">approve/decline</a>)
         <div tal:attributes="id nomination_form_id"
              tal:condition="user_is_driver"

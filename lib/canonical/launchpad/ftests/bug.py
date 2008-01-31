@@ -42,7 +42,30 @@ def print_subscribers(bug_page, subscriber_portlet_index):
     else:
         for li in portlet.fetch('li'):
             if li.a:
-                print li.a.renderContents()
+                sub_display = li.a.renderContents()
+                if li.a.has_key('title'):
+                    sub_display += (' (%s)' % li.a['title'])
+                print sub_display
+
+
+def print_bug_affects_table(content, highlighted_only=False):
+    """Print information about all the bug tasks in the 'affects' table.
+
+        :param highlighted_only: Only print the highlighted row
+    """
+    main_content = find_main_content(content)
+    affects_table = main_content.first('table', {'class': 'listing'})
+    if highlighted_only:
+        tr_attrs = {'class': 'highlight'}
+    else:
+        tr_attrs = {}
+    tr_tags = affects_table.tbody.findAll(
+        'tr', attrs=tr_attrs, recursive=False)
+    for tr in tr_tags:
+        if tr.td.table:
+            # Don't print the bugtask edit form.
+            continue
+        print extract_text(tr)
 
 
 def print_remote_bugtasks(content):
@@ -54,7 +77,7 @@ def print_remote_bugtasks(content):
     for img in affects_table.findAll('img'):
         for key, value in img.attrs:
             if '@@/bug-remote' in value:
-                target = extract_text(img.findAllPrevious('td')[-1])
+                target = extract_text(img.findAllPrevious('td')[-2])
                 print target, extract_text(img.findPrevious('a'))
 
 

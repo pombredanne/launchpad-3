@@ -96,8 +96,21 @@ Launchpad Developers team such as sabdfl:
     <p>but wanted it in the debian bug database for user and maintainer
     reference.</p>...
 
-But if sabfl leaves the Launchpad Developers team the comment will no
-longer be visible to him:
+The title bar of the comments will contain a link to the profile of the
+author of the comment, a link to the to the remote bug from which the
+comment was imported and a permalink to the comment itself within
+Launchpad.
+
+    >>> header = first_tag_by_class(sabdfl_browser.contents,
+    ...     'boardCommentDetails')
+    >>> for link in header.findAll('a'):
+    ...     print "%s: %s" % (extract_text(link), link.get('href'))
+    josh: http://launchpad.dev/~jbuhl-nospam
+    Debian Bug tracker #308994: http://bugs.debian.org/...?bug=308994
+    gnome-volume-manager... (permalink): /redfish/+bug/15/comments/1
+
+If sabdfl leaves the Launchpad Developers team the comment will no longer
+be visible to him:
 
     >>> login('foo.bar@canonical.com')
     >>> sabdfl.leave(launchpad_developers)

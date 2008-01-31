@@ -17,7 +17,7 @@ Hosted branches use Launchpad as their primary location.
     >>> browser.open('http://code.launchpad.dev/redfish')
     >>> browser.getLink('Register branch').click()
 
-    >>> browser.getControl('Branch Type').displayValue = ['Hosted']
+    >>> browser.getControl('Hosted').click()
     >>> browser.getControl('Name').value = 'hosted-branch'
 
 Branch URLs are not valid for hosted branches.
@@ -53,7 +53,11 @@ mirrors the branch.
     >>> browser.open('http://code.launchpad.dev/redfish')
     >>> browser.getLink('Register branch').click()
 
-    >>> browser.getControl('Branch Type').displayValue = ['Mirrored']
+    >>> # Show that mirrored is selected by default.
+    >>> print_radio_button_field(browser.contents, 'branch_type')
+    ( ) Hosted
+    (*) Mirrored
+    ( ) Remote
     >>> browser.getControl('Name').value = 'mirrored-branch'
 
 Branch URLs are required for mirrored branches.
@@ -81,7 +85,7 @@ The contents of Remote branches are not accessible through Launchpad.
     >>> browser.open('http://code.launchpad.dev/redfish')
     >>> browser.getLink('Register branch').click()
 
-    >>> browser.getControl('Branch Type').displayValue = ['Remote']
+    >>> browser.getControl('Remote').click()
     >>> browser.getControl('Name').value = 'remote-branch'
 
 A remote branch may have a URL, but doesn't have to.
@@ -138,7 +142,7 @@ can test the context links on the new branch page.
 
     >>> user_browser.getControl('Name').value = 'main'
     >>> user_browser.getControl('Title').value = 'Gnome Panel Applets Mainline'
-    >>> user_browser.getControl('Status').displayValue = ['Development']
+    >>> user_browser.getControl('Development').click()
     >>> user_browser.getControl('Summary').value = (
     ...     'Main branch of development for GNOME Panel Applets.')
     >>> user_browser.getControl('Add Branch').click()
@@ -153,6 +157,14 @@ matching for the angle brackets of an enclosing tag.
     >>> print extract_text(find_main_content(user_browser.contents))
     Gnome Panel Applets Mainline
     ...http://example.com/applets/main...
+
+    >>> print extract_text(find_portlet(
+    ...     user_browser.contents, 'Current details'))
+    Current details
+    Type: Mirrored
+    ...
+    Status: Development
+
 
 This page includes a link to other branches associated
 with that product, and a link to other branches maintained by that person.
