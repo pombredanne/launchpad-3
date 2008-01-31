@@ -112,15 +112,18 @@ pocket (UPDATES, SECURITY, PROPOSED or BACKPORTS)
     >>> test_publisher = SoyuzTestPublisher()
     >>> test_publisher.prepareBreezyAutotest()
 
-    >>> pub_updates = test_publisher.getPubSource(
-    ...     sourcename='test-updates', version='665', distroseries=warty,
-    ...     status=PackagePublishingStatus.PUBLISHED,
-    ...     pocket=PackagePublishingPocket.UPDATES)
+Source publication for debian/woody, it won't result in a new build
+because this distroseries lacks 'nominatedarchindep'.
 
-    >>> pub_ignored = test_publisher.getPubSource(
-    ...     sourcename='test-buildd', version='666', distroseries=warty,
+    >>> pub_woody = test_publisher.getPubSource(
+    ...     sourcename='test-buildd-5', version='671', distroseries=woody,
+    ...     architecturehintlist="hppa",
     ...     status=PackagePublishingStatus.PUBLISHED,
     ...     pocket=PackagePublishingPocket.RELEASE)
+
+Several source publications for ubuntu/hoary/RELEASE, which is in
+DEVELOPMENT state, so we expect builds to be created respecting
+architecturehintlist and P-a-s.
 
     >>> pub_all = test_publisher.getPubSource(
     ...     sourcename='test-buildd', version='667', distroseries=hoary,
@@ -145,11 +148,8 @@ pocket (UPDATES, SECURITY, PROPOSED or BACKPORTS)
     ...     status=PackagePublishingStatus.PUBLISHED,
     ...     pocket=PackagePublishingPocket.RELEASE)
 
-    >>> pub_woody = test_publisher.getPubSource(
-    ...     sourcename='test-buildd-5', version='671', distroseries=woody,
-    ...     architecturehintlist="hppa",
-    ...     status=PackagePublishingStatus.PUBLISHED,
-    ...     pocket=PackagePublishingPocket.RELEASE)
+Other sources publications to hoary, they use the extended
+architecturehintlist kernel notation, see below.
 
     >>> pub_any_foo = test_publisher.getPubSource(
     ...     sourcename='test-buildd-6', version='672', distroseries=hoary,
@@ -162,6 +162,48 @@ pocket (UPDATES, SECURITY, PROPOSED or BACKPORTS)
     ...     architecturehintlist="linux-i386",
     ...     status=PackagePublishingStatus.PUBLISHED,
     ...     pocket=PackagePublishingPocket.RELEASE)
+
+A source published in warty/UPDATES, a stable release update, we
+expect it to result in a build.
+
+    >>> pub_updates = test_publisher.getPubSource(
+    ...     sourcename='test-updates', version='665', distroseries=warty,
+    ...     status=PackagePublishingStatus.PUBLISHED,
+    ...     pocket=PackagePublishingPocket.UPDATES)
+
+A source published in warty/RELEASE, it will be ignored.
+
+    >>> pub_ignored = test_publisher.getPubSource(
+    ...     sourcename='test-buildd-not', version='666', distroseries=warty,
+    ...     status=PackagePublishingStatus.PUBLISHED,
+    ...     pocket=PackagePublishingPocket.RELEASE)
+
+A source published in warty/RELEASE which has already failed to build.
+
+    >>> pub_failed = test_publisher.getPubSource(
+    ...     sourcename='test-failed', version='1.0', distroseries=warty,
+    ...     status=PackagePublishingStatus.PUBLISHED,
+    ...     pocket=PackagePublishingPocket.RELEASE)
+
+    >>> from canonical.launchpad.interfaces import BuildStatus
+    >>> failed_build = pub_failed.sourcepackagerelease.createBuild(
+    ...     warty['i386'], PackagePublishingPocket.RELEASE,
+    ...     warty.main_archive, status=BuildStatus.FAILEDTOBUILD)
+
+Exclude the just-created build from the subsequents tests/counters.
+
+    >>> old_build_ids.append(failed_build.id)
+
+A copy of this source to a subsequent distroseries (as if it was
+initialized) will result in a new build record, meaning we want to try
+it again in the new context. See bug 181328.
+
+    >>> copied_pub = pub_failed.copyTo(
+    ...     hoary, PackagePublishingPocket.RELEASE, warty.main_archive)
+
+Finally a publication in Celso's PPA, a build will be created for it
+respecting only 'architecturehintlist' and PPA-supported architecture,
+it won't be submitted to P-a-s.
 
     >>> pub_hoary_ppa = test_publisher.getPubSource(
     ...     sourcename='test-ppa', version='674', distroseries=hoary,
@@ -305,9 +347,17 @@ each of these options:
     ...       determineArchitecturesToBuild(pub_one, legal_archs, hoary)]
     [u'hppa']
 
-== Check any-foo and linux-foo notation in architecture hint list ==
+== Check support for kernel notation in architecture hint list ==
 
-See bug 73761.
+dpkg supports the use of the '<kernel-><arch>' notation in the
+'Architecture' field, where 'kernel-' is one of the kernel platform
+available in debian systems: ['linux-', 'kfreebsd', 'hurd-', 'any-']
+
+See bug 73761 and http://bugs.debian.org/cgi-bin/bugreport.cgi?bug=268709
+for further information about this dpkg feature.
+
+Soyuz will consider only 'any-' and 'linux-' elements as the
+corresponding architecture, since only linux is supported in ubuntu.
 
     >>> [a.architecturetag for a in
     ...       determineArchitecturesToBuild(pub_any_foo, legal_archs, hoary)]
@@ -332,8 +382,9 @@ further information.
 == Create and verify the new builds ==
 
 Create missing builds (packages w/o build entry) for those distroserieses.
-We expect to have a couple of new builds for the sane Hoary and a warning about
-the absence of nominatedarchindep field for Woody:
+
+We expect to have a couple of new builds for the sane hoary/RELEASE,
+one for warty/UPDATES and one for hoary/RELEASE/PPA.
 
     >>> for dr in distroserieses:
     ...      bm.createMissingBuilds(dr)
