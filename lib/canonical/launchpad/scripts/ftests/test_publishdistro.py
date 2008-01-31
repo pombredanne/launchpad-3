@@ -4,6 +4,7 @@
 
 __metaclass__ = type
 
+from optparse import OptionParser
 import os
 import shutil
 import subprocess
@@ -17,16 +18,30 @@ from canonical.config import config
 from canonical.launchpad.interfaces import (
     ArchivePurpose, IArchiveSet, IDistributionSet, IPersonSet,
     PackagePublishingStatus)
+from canonical.launchpad.scripts import publishdistro
 from canonical.launchpad.tests.test_publishing import TestNativePublishingBase
 
 class TestPublishDistro(TestNativePublishingBase):
     """Test the publish-distro.py script works properly."""
 
-    def runPublishDistro(self, extra_args, distribution="ubuntutest"):
+    def runPublishDistro(self, extra_args=None, distribution="ubuntutest"):
+        """Run publish-distro without invoking the script.
+
+        This method hooks into the publishdistro module to run the
+        publish-distro script without the overhead of using Popen.
+        """
+        args = ["-d", distribution]
+        if extra_args is not None:
+            args.extend(extra_args)
+        parser = OptionParser()
+        publishdistro.add_options(parser)
+        options, args = parser.parse_args(args=args)
+        return publishdistro.run_publisher(options, self.layer.txn)
+
+    def runPublishDistroScript(self):
         """Run publish-distro.py, returning the result and output."""
         script = os.path.join(config.root, "scripts", "publish-distro.py")
         args = [sys.executable, script, "-v", "-d", "ubuntutest"]
-        args.extend(extra_args)
         process = subprocess.Popen(
             args, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         stdout, stderr = process.communicate()
@@ -37,11 +52,13 @@ class TestPublishDistro(TestNativePublishingBase):
 
         Expect database publishing record to be updated to PUBLISHED and
         the file to be written in disk.
+
+        This method also ensures the publish-distro.py script is runnable.
         """
         pub_source = self.getPubSource(filecontent='foo')
         self.layer.txn.commit()
 
-        rc, out, err = self.runPublishDistro([])
+        rc, out, err = self.runPublishDistroScript()
 
         pub_source.sync()
         self.assertEqual(0, rc, "Publisher failed with:\n%s\n%s" % (out, err))
@@ -50,21 +67,23 @@ class TestPublishDistro(TestNativePublishingBase):
         foo_path = "%s/main/f/foo/foo.dsc" % self.pool_dir
         self.assertEqual(open(foo_path).read().strip(), 'foo')
 
-        # Let's make the source DELETED to see if the dirty pocket processing
-        # works for deletions.
-        # XXX Julian 2007-12-05
-        # This should really be its own test but I want to avoid additional
-        # calls to runPublishDistro where possible because it is calling a
-        # script, which considerably slows down the test harness.  A separate
-        # test would mean *two* calls to the script; one to set things up and
-        # one one to do the test.  We need to refactor publish-distro so its
-        # internals can be called from this test harness.
+    def testDirtyPocketProcessing(self):
+        """Test dirty pocket processing.
+
+        Make a DELETED source to see if the dirty pocket processing
+        works for deletions.
+        """
+        pub_source = self.getPubSource(filecontent='foo')
+        self.layer.txn.commit()
+        self.runPublishDistro()
+        pub_source.sync()
+
         random_person = getUtility(IPersonSet).getByName('name16')
         pub_source.requestDeletion(random_person)
         self.layer.txn.commit()
         self.assertTrue(pub_source.scheduleddeletiondate is None,
             "pub_source.scheduleddeletiondate should not be set, and it is.")
-        rc, out, err = self.runPublishDistro([])
+        self.runPublishDistro()
         pub_source.sync()
         self.assertTrue(pub_source.scheduleddeletiondate is not None,
             "pub_source.scheduleddeletiondate should be set, and it's not.")
@@ -90,9 +109,7 @@ class TestPublishDistro(TestNativePublishingBase):
             distroseries=self.ubuntutest['hoary-test'])
         self.layer.txn.commit()
 
-        rc, out, err = self.runPublishDistro(['-s', 'hoary-test'])
-
-        self.assertEqual(0, rc, "Publisher failed with:\n%s\n%s" % (out, err))
+        self.runPublishDistro(['-s', 'hoary-test'])
 
         pub_source.sync()
         pub_source2.sync()
@@ -123,7 +140,7 @@ class TestPublishDistro(TestNativePublishingBase):
         myargs = ['-R', tmp_path]
         if archive.purpose == ArchivePurpose.PARTNER:
             myargs.append('--partner')
-        rc, out, err = self.runPublishDistro(myargs)
+        self.runPublishDistro(myargs)
         return tmp_path, pubconf.distsroot
 
     def testDistsrootOverridePrimaryArchive(self):
@@ -187,9 +204,7 @@ class TestPublishDistro(TestNativePublishingBase):
 
         self.layer.txn.commit()
 
-        rc, out, err = self.runPublishDistro(['--ppa'])
-
-        self.assertEqual(0, rc, "Publisher failed with:\n%s\n%s" % (out, err))
+        self.runPublishDistro(['--ppa'])
 
         pub_source.sync()
         pub_source2.sync()
@@ -219,10 +234,8 @@ class TestPublishDistro(TestNativePublishingBase):
         Expect it to create all indexes, including current 'Release' file
         for the empty suites specified.
         """
-        rc, out, err = self.runPublishDistro(
+        self.runPublishDistro(
             ['-A', '-s', 'hoary-test-updates', '-s', 'hoary-test-backports'])
-
-        self.assertEqual(0, rc, "Publisher failed with:\n%s\n%s" % (out, err))
 
         # Check "Release" files
         release_path = "%s/hoary-test-updates/Release" % self.config.distsroot
