@@ -124,6 +124,12 @@ class IStructuralSubscription(Interface):
 class IStructuralSubscriptionTarget(Interface):
     """A Launchpad Structure allowing users to subscribe to it."""
 
+    subscriptions = Attribute(
+        "The list of people or teams that are subscribed to notifications "
+        "about this structure.")
+
+    parent = Attribute("The target's parent, or None if one doesn't exist.")
+
     def addSubscription(subscriber, subscribed_by):
         """Add a subscription for this structure.
 
@@ -144,6 +150,12 @@ class IStructuralSubscriptionTarget(Interface):
         """Remove a subscription from this structure.
 
         :subscriber: The IPerson who will be subscribed.
+        """
+
+    def isSubscribed(person):
+        """Is `person` already subscribed to this structure?
+
+        If yes, the subscription is returned. Otherwise False is returned.
         """
 
 

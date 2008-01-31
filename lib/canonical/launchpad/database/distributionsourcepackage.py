@@ -14,8 +14,8 @@ from sqlobject.sqlbuilder import SQLConstant
 from zope.interface import implements
 
 from canonical.launchpad.interfaces import (
-    BugNotificationLevel, DeleteSubscriptionError, DuplicateSubscriptionError,
-    IDistributionSourcePackage, IQuestionTarget, PackagePublishingStatus)
+    IDistributionSourcePackage, IQuestionTarget,
+    IStructuralSubscriptionTarget, PackagePublishingStatus)
 from canonical.database.sqlbase import sqlvalues
 from canonical.launchpad.database.bug import BugSet, get_bug_tags_open_count
 from canonical.launchpad.database.bugtarget import BugTargetBase
@@ -24,18 +24,19 @@ from canonical.launchpad.database.distributionsourcepackagecache import (
     DistributionSourcePackageCache)
 from canonical.launchpad.database.distributionsourcepackagerelease import (
     DistributionSourcePackageRelease)
-from canonical.launchpad.database.structuralsubscription import (
-    StructuralSubscription)
 from canonical.launchpad.database.publishing import (
     SourcePackagePublishingHistory)
 from canonical.launchpad.database.sourcepackagerelease import (
     SourcePackageRelease)
 from canonical.launchpad.database.sourcepackage import (
     SourcePackage, SourcePackageQuestionTargetMixin)
+from canonical.launchpad.database.structuralsubscription import (
+    StructuralSubscriptionTargetMixin)
 
 
 class DistributionSourcePackage(BugTargetBase,
-                                SourcePackageQuestionTargetMixin):
+                                SourcePackageQuestionTargetMixin,
+                                StructuralSubscriptionTargetMixin):
     """This is a "Magic Distribution Source Package". It is not an
     SQLObject, but instead it represents a source package with a particular
     name in a particular distribution. You can then ask it all sorts of
@@ -43,7 +44,9 @@ class DistributionSourcePackage(BugTargetBase,
     or current release, etc.
     """
 
-    implements(IDistributionSourcePackage, IQuestionTarget)
+    implements(
+        IDistributionSourcePackage, IQuestionTarget,
+        IStructuralSubscriptionTarget)
 
     def __init__(self, distribution, sourcepackagename):
         self.distribution = distribution
@@ -145,73 +148,6 @@ class DistributionSourcePackage(BugTargetBase,
                             self.sourcepackagename.id),
             orderBy='-datecreated',
             limit=quantity)
-
-    @property
-    def subscriptions(self):
-        """See `IDistributionSourcePackage`."""
-        # Use "list" here because it's possible that this list will be longer
-        # than a "shortlist", though probably uncommon.
-        query = """
-            StructuralSubscription.distribution=%s
-            AND StructuralSubscription.sourcepackagename = %s
-            AND StructuralSubscription.subscriber = Person.id
-            """ % sqlvalues(self.distribution, self.sourcepackagename)
-        contacts = StructuralSubscription.select(
-            query,
-            orderBy='Person.displayname',
-            clauseTables=['Person'])
-        contacts.prejoin(["subscriber"])
-        return list(contacts)
-
-    def addSubscription(self, subscriber, subscribed_by):
-        """See `IDistributionSourcePackage`."""
-        subscription_already_exists = self.isSubscribed(subscriber)
-
-        if subscription_already_exists:
-            raise DuplicateSubscriptionError(
-                "%s is already subscribed to %s." %
-                (subscriber.name, self.displayname))
-        else:
-            return StructuralSubscription(
-                distribution=self.distribution,
-                sourcepackagename=self.sourcepackagename,
-                subscriber=subscriber,
-                subscribed_by=subscribed_by)
-
-    def addBugSubscription(self, subscriber, subscribed_by):
-        """See `IDistributionSourcePackage`."""
-        # This is a helper method for creating a structural
-        # subscription and immediately giving it a full
-        # bug notification level. It is useful so long as
-        # subscriptions are mainly used to implement bug contacts.
-        sub = self.addSubscription(subscriber, subscribed_by)
-        sub.bug_notification_level = BugNotificationLevel.COMMENTS
-        return sub
-
-    def removeSubscription(self, person):
-        """See `IDistributionSourcePackage`."""
-        subscription_to_remove = self.isSubscribed(person)
-
-        if not subscription_to_remove:
-            raise DeleteSubscriptionError(
-                "%s is not subscribed to %s." % (
-                person.name, self.displayname))
-        else:
-            subscription_to_remove.destroySelf()
-
-    def isSubscribed(self, person):
-        """See `IDistributionSourcePackage`."""
-        subscriptions = StructuralSubscription.selectBy(
-            distribution=self.distribution,
-            sourcepackagename=self.sourcepackagename,
-            subscriber=person)
-
-        min_bug_notification_level = BugNotificationLevel.METADATA
-
-        for sub in subscriptions:
-            if sub.bug_notification_level > min_bug_notification_level:
-                return sub
-        return False
 
     @property
     def binary_package_names(self):

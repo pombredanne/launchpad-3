@@ -14,8 +14,8 @@ from zope.schema.vocabulary import SimpleTerm, SimpleVocabulary
 
 from canonical.cachedproperty import cachedproperty
 from canonical.launchpad.interfaces import (
-    BugNotificationLevel, DuplicateSubscriptionError,
-    IDistributionSourcePackage, IStructuralSubscriptionForm)
+    DuplicateSubscriptionError, IDistributionSourcePackage,
+    IStructuralSubscriptionForm)
 from canonical.launchpad.webapp import (
     LaunchpadFormView, action, canonical_url, custom_widget)
 from canonical.launchpad.webapp.authorization import check_permission
@@ -225,9 +225,10 @@ class StructuralSubscriptionView(LaunchpadFormView):
         # compatibility with the bug contacts feature. We want
         # to enable this for other targets, but probably only
         # after implementing
-        # https://blueprints.launchpad.net/malone/+spec/subscription-invitation
+        # https://launchpad.net/malone/+spec/subscription-invitation
         if IDistributionSourcePackage.providedBy(self.context):
-            return check_permission("launchpad.Driver", self.context.distribution)
+            return check_permission(
+                "launchpad.Driver", self.context.distribution)
         else:
             return False
 
@@ -236,3 +237,11 @@ class StructuralSubscriptionView(LaunchpadFormView):
         """Return the teams that the current user is an administrator of."""
         return list(self.user.getAdministratedTeams())
 
+    @property
+    def show_details_portlet(self):
+        """Show details portlet?
+
+        Returns `True` if the portlet details is available
+        and should be shown for the context.
+        """
+        return IDistributionSourcePackage.providedBy(self.context)

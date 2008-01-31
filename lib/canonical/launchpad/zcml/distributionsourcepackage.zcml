@@ -16,7 +16,7 @@
                   critical_bugtasks inprogress_bugtasks unassigned_bugtasks
                   new_bugtasks all_bugtasks getUsedBugTags
                   getUsedBugTagsWithOpenCounts bugtargetdisplayname
-                  bugtargetname getMostCommonBugs getBugCounts" />
+                  bugtargetname getMostCommonBugs getBugCounts parent" />
     <require
       permission="launchpad.AnyPerson"
       attributes="addSubscription addBugSubscription
@@ -107,10 +107,6 @@
       facet="overview"
       template="../templates/distributionsourcepackage-portlet-details.pt"
       />
-    <browser:page
-      name="+portlet-bugcontacts"
-      facet="bugs"
-      template="../templates/distributionsourcepackage-portlet-bugcontacts.pt" />
     <browser:page
       name="+portlet-releases"
       template="../templates/distributionsourcepackage-portlet-releases.pt"

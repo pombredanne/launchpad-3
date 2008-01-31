@@ -51,16 +51,6 @@ class IDistributionSourcePackage(IBugTarget, IStructuralSubscriptionTarget):
         "A string of al the binary package names associated with this source "
         "package in this distribution.")
 
-    subscriptions = Attribute(
-        "The list of people or teams that are subscribed to notifications "
-        "about this package.")
-
-    def isSubscribed(person):
-        """Is `person` already subscribed to this package?
-
-        If yes, the subscription is returned. Otherwise False is returned.
-        """
-
     def __getitem__(version):
         """Should map to getVersion."""
 
