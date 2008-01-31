@@ -36,9 +36,6 @@
   <div metal:use-macro="context/@@launchpad_form/form">
     <table class="form" metal:fill-slot="widgets">
 
-      <metal:bug_reporting_guidelines
-          use-macro="context/@@+filebug-macros/bug_reporting_guidelines" />
-
       <tal:product_widget
           tal:define="widget nocall:view/widgets/product|nothing"
           tal:condition="widget">
