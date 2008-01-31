@@ -236,19 +236,6 @@ def bugtaskExpirationSetUp(test):
     login('test@canonical.com')
 
 
-def codereviewSetUp(test):
-    branch_set = getUtility(IBranchSet)
-    source_branch = branch_set.getByUniqueName(
-        '~name12/gnome-terminal/klingon')
-    target_branch = branch_set.getByUniqueName(
-        '~name12/gnome-terminal/main')
-    sample_person = getUtility(IPersonSet).getByEmail('test@canonical.com')
-    merge_proposal = source_branch.addLandingTarget(sample_person,
-                                                    target_branch)
-    test.globs['merge_proposal'] = merge_proposal
-    test.globs['sample_person'] = sample_person
-
-
 def uploaderBugLinkedToQuestionSetUp(test):
     LaunchpadZopelessLayer.switchDbUser('launchpad')
     bugLinkedToQuestionSetUp(test)
@@ -709,11 +696,6 @@ special = {
     'publishing.txt': LayeredDocFileSuite(
             '../doc/publishing.txt',
             layer=LaunchpadZopelessLayer, optionflags=default_optionflags
-            ),
-    'codereviewmessage.txt': LayeredDocFileSuite(
-            '../doc/codereviewmessage.txt',
-            setUp=codereviewSetUp,
-            layer=LaunchpadZopelessLayer,
             ),
 
     }
