@@ -347,8 +347,10 @@
 <metal:bug_reporting_guidelines define-macro="bug_reporting_guidelines">
   <tr tal:condition="context/bug_reporting_guidelines|nothing">
     <td colspan="2" id="bug-reporting-guidelines">
-      <div class="guidelines"
-           tal:content="structure context/bug_reporting_guidelines/fmt:text-to-html" />
+      <p>Please include, if possible:</p>
+      <div tal:content=
+        "structure context/bug_reporting_guidelines/fmt:text-to-html"
+      />
     </td>
   </tr>
 </metal:bug_reporting_guidelines>
