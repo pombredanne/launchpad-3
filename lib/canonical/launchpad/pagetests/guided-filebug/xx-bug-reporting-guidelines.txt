@@ -14,7 +14,8 @@ distributions, product groups and products.
     ...         "Welcome to %s!" % (context_name,))
     ...     admin_browser.getControl('Change').click()
 
-The guidelines are displayed on the first bug reporting page:
+The guidelines are not displayed on the first bug reporting page,
+because that page does not include a bug description field:
 
     >>> def print_guidelines(name, browser):
     ...     print '* ' + name
@@ -38,7 +39,7 @@ The guidelines are displayed on the first bug reporting page:
       - Welcome to Firefox!
 
 Bugs can also be reported directly against distribution source
-packages and distribution serieses, but for both of these the
+packages and distribution series, but for both of these the
 guidelines are taken from their respective distributions.
 
     >>> secondary_contexts = [
