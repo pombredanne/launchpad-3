@@ -497,11 +497,6 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
         return "%s %s in %s" % (name, release.version,
                                 self.distroseries.name)
 
-    @property
-    def suite_name(self):
-        """See `IPublishing`."""
-        return self.distroseries.suite_name(self.pocket)
-
     def buildIndexStanzaFields(self):
         """See `IPublishing`."""
         # Special fields preparation.

@@ -31,12 +31,12 @@ If there are branches, then they are displayed.
    >>> table = find_tag_by_id(browser.contents, 'branchtable')
    >>> for row in table.tbody.fetch('tr'):
    ...     print extract_text(row)
-    main            Sample Person  5 New                                      firefox
-    release--0.9.1                 5 New  2005-03-09 15:45:00  ... weeks ago  firefox
-    release-0.8                    5 New                                      firefox
-    release-0.9                    5 New  2005-03-09 15:50:00  ... weeks ago  firefox
-    release-0.9.2                  5 New  2005-03-09 15:40:00  ... weeks ago  firefox
-    main            Mark Shuttleworth  5 New                              thunderbird
+    main            Sample Person  New                 firefox
+    release--0.9.1                 New  ... weeks ago  firefox
+    release-0.8                    New                 firefox
+    release-0.9                    New  ... weeks ago  firefox
+    release-0.9.2                  New  ... weeks ago  firefox
+    main        Mark Shuttleworth  New                 thunderbird
 
 If there are not any branches, a relevant message is shown.
 
