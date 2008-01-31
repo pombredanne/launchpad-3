@@ -430,7 +430,7 @@ class FileBugViewBase(LaunchpadFormView):
             self.request.response.addNotification(notification)
         if bug.security_related:
             self.request.response.addNotification(
-                'Security-related bugs are by private by default '
+                'Security-related bugs are by default private '
                 '(visible only to their direct subscribers). '
                 'You may choose to <a href="+secrecy">publicly '
                 'disclose</a> this bug.')
