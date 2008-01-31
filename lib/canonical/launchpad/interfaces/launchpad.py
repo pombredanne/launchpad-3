@@ -44,6 +44,7 @@ __all__ = [
     'IHasDateCreated',
     'IHasDrivers',
     'IHasIcon',
+    'IHasLinkTo',
     'IHasLogo',
     'IHasMugshot',
     'IHasOwner',
@@ -369,6 +370,23 @@ class IHasIcon(Interface):
     # Each of the objects that implements this needs a custom schema, so
     # here we can just use Attributes
     icon = Attribute("The 14x14 icon.")
+
+
+class IHasLinkTo(Interface):
+    """An object with the linkTo method for security."""
+
+    def linkTo(obj):
+        """Check permissions on both objects being linked together.
+
+        When team.addMember(person) or bug.subscribe(person) is
+        called, the permission to edit that team or bug is checked,
+        but the permission to link the the person to the team or
+        to the bug is not checked. The permission check belongs
+        in person.linkTo(obj) instead of bug.subscribe(person)
+        since the bug shouldn't have to know that the permission
+        will change from launchpad.View to launchpad.Edit depending
+        on the person.visibility's value.
+        """
 
 
 class IHasLogo(Interface):

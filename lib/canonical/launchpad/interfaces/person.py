@@ -55,7 +55,7 @@ from canonical.launchpad.interfaces.mentoringoffer import (
 from canonical.launchpad.interfaces.specificationtarget import (
     IHasSpecifications)
 from canonical.launchpad.interfaces.launchpad import (
-    IHasLogo, IHasMugshot, IHasIcon)
+    IHasIcon, IHasLinkTo, IHasLogo, IHasMugshot)
 from canonical.launchpad.interfaces.questioncollection import (
     IQuestionCollection, QUESTION_STATUS_DEFAULT_SEARCH)
 from canonical.launchpad.interfaces.validation import (
@@ -1206,7 +1206,7 @@ class IPersonPublic(IHasSpecifications, IHasMentoringOffers,
         :target: An object providing `IBugTarget` to search within.
         """
 
-class IPersonViewRestricted(Interface):
+class IPersonViewRestricted(IHasLinkTo):
     """IPerson attributes that require launchpad.View permission."""
 
     active_member_count = Attribute(

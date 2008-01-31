@@ -710,8 +710,7 @@ class ValidPersonOrTeamVocabulary(
             # necessary until next cycle.
             query = """
                 Person.id = ValidPersonOrTeamCache.id
-                AND (Person.visibility IS NULL OR Person.visibility = %s)
-                """ % quote(PersonVisibility.PUBLIC)
+                """
             query += extra_clause
             return Person.select(
                 query, clauseTables=['ValidPersonOrTeamCache'])
@@ -722,8 +721,7 @@ class ValidPersonOrTeamVocabulary(
         name_match_query = """
             Person.id = ValidPersonOrTeamCache.id
             AND Person.fti @@ ftq(%s)
-            AND (Person.visibility IS NULL OR Person.visibility = %s)
-            """ % (quote(text), quote(PersonVisibility.PUBLIC))
+            """ % quote(text)
         name_match_query += extra_clause
         name_matches = Person.select(
             name_match_query, clauseTables=['ValidPersonOrTeamCache'])
@@ -739,11 +737,9 @@ class ValidPersonOrTeamVocabulary(
             AND EmailAddress.person = ValidPersonOrTeamCache.id
             AND EmailAddress.status IN %s
             AND lower(email) LIKE %s || '%%'
-            AND (Person.visibility IS NULL OR Person.visibility = %s)
             """ % (sqlvalues(EmailAddressStatus.VALIDATED,
                              EmailAddressStatus.PREFERRED),
-                   quote_like(text),
-                   quote(PersonVisibility.PUBLIC))
+                   quote_like(text))
         email_match_query += extra_clause
         email_matches = Person.select(
             email_match_query,
@@ -756,8 +752,7 @@ class ValidPersonOrTeamVocabulary(
             IRCId.person = Person.id
             AND IRCId.person = ValidPersonOrTeamCache.id
             AND lower(IRCId.nickname) = %s
-            AND (Person.visibility IS NULL OR Person.visibility = %s)
-            """ % (quote(text), quote(PersonVisibility.PUBLIC))
+            """ % quote(text)
         ircid_match_query += extra_clause
         ircid_matches = Person.select(
             ircid_match_query,
