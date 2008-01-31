@@ -190,7 +190,8 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
     def milestones(self):
         """See `IDistribution`."""
         return Milestone.selectBy(
-            distribution=self, visible=True, orderBy=['-dateexpected', 'name'])
+            distribution=self, visible=True,
+            orderBy=['-dateexpected', 'name'])
 
     @property
     def archive_mirrors(self):

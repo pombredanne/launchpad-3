@@ -133,7 +133,7 @@ class DistributionUpstreamBugReport(LaunchpadView):
     """
 
     def initialize(self):
-        """Assemble self.data and self.total based on upstream count report."""
+        """Assemble self.data and self.total from upstream count report."""
         self.data = []
         self.total = BugReportData()
         counts = self.context.getPackagesAndPublicUpstreamBugCounts()

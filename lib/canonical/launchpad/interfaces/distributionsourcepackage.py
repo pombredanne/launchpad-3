@@ -46,7 +46,7 @@ class IDistributionSourcePackage(IBugTarget):
         "package with that name is published in this distroseries.")
 
     releases = Attribute(
-        "The list of all releases of this source package in this distribution.")
+        "A list of all releases of this source package in this distribution.")
 
     publishing_history = Attribute(
         "Return a list of publishing records for this source package in this "
