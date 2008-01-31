@@ -16,17 +16,13 @@ the bug and spec as an anonymous user. We should see neither the page link
 nor the menu link to offer mentoring.
 
   >>> anon_browser.open('http://bugs.launchpad.dev/tomcat/+bug/2')
-  >>> for tag in find_tags_by_class(
-  ...     anon_browser.contents, 'menu-link-offermentoring-disabled'):
-  ...     print tag.renderContents()
-  Offer mentorship (disabled)
+  >>> menu_mentoring_offer not in anon_browser.contents
+  True
   >>> page_mentoring_offer not in anon_browser.contents
   True
   >>> anon_browser.open('http://blueprints.launchpad.dev/kubuntu/+spec/cluster-installation')
-  >>> for tag in find_tags_by_class(
-  ...     anon_browser.contents, 'menu-link-offermentoring-disabled'):
-  ...     print tag.renderContents()
-  Offer mentorship (disabled)
+  >>> menu_mentoring_offer not in anon_browser.contents
+  True
   >>> page_mentoring_offer not in anon_browser.contents
   True
 
@@ -36,29 +32,21 @@ to retract it at the same time.
 
   >>> browser = setupBrowser(auth="Basic one-membership@test.com:test")
   >>> browser.open('http://bugs.launchpad.dev/tomcat/+bug/2')
-  >>> for tag in find_tags_by_class(
-  ...     browser.contents, 'menu-link-offermentoring'):
-  ...     print tag.renderContents()
-  Offer mentorship
+  >>> menu_mentoring_offer in browser.contents
+  True
   >>> page_mentoring_offer in browser.contents
   True
-  >>> for tag in find_tags_by_class(
-  ...     anon_browser.contents, 'menu-link-retractmentoring-disabled'):
-  ...     print tag.renderContents()
-  Retract mentorship (disabled)
+  >>> menu_mentoring_retract in browser.contents
+  False
   >>> page_mentoring_retract in browser.contents
   False
   >>> browser.open('http://blueprints.launchpad.dev/kubuntu/+spec/cluster-installation')
-  >>> for tag in find_tags_by_class(
-  ...     browser.contents, 'menu-link-offermentoring'):
-  ...     print tag.renderContents()
-  Offer mentorship
+  >>> menu_mentoring_offer in browser.contents
+  True
   >>> page_mentoring_offer in browser.contents
   True
-  >>> for tag in find_tags_by_class(
-  ...     anon_browser.contents, 'menu-link-retractmentoring-disabled'):
-  ...     print tag.renderContents()
-  Retract mentorship (disabled)
+  >>> menu_mentoring_retract in browser.contents
+  False
   >>> page_mentoring_retract in browser.contents
   False
 
@@ -67,17 +55,13 @@ ability to offer mentorship:
 
   >>> browser = setupBrowser(auth="Basic no-team-memberships@test.com:test")
   >>> browser.open('http://bugs.launchpad.dev/tomcat/+bug/2')
-  >>> for tag in find_tags_by_class(
-  ...     anon_browser.contents, 'menu-link-offermentoring-disabled'):
-  ...     print tag.renderContents()
-  Offer mentorship (disabled)
+  >>> menu_mentoring_offer in browser.contents
+  False
   >>> page_mentoring_offer in browser.contents
   False
   >>> browser.open('http://blueprints.launchpad.dev/kubuntu/+spec/cluster-installation')
-  >>> for tag in find_tags_by_class(
-  ...     anon_browser.contents, 'menu-link-offermentoring-disabled'):
-  ...     print tag.renderContents()
-  Offer mentorship (disabled)
+  >>> menu_mentoring_offer in browser.contents
+  False
   >>> page_mentoring_offer in browser.contents
   False
 
@@ -88,20 +72,16 @@ complete.
 
   >>> browser = setupBrowser(auth="Basic one-membership@test.com:test")
   >>> browser.open('http://bugs.launchpad.dev/tomcat/+bug/8')
-  >>> for tag in find_tags_by_class(
-  ...     browser.contents, 'menu-link-offermentoring-disabled'):
-  ...     print tag.renderContents()
-  Offer mentorship (disabled)
+  >>> menu_mentoring_offer in browser.contents
+  False
   >>> page_mentoring_offer in browser.contents
   False
 
 Now let's look at a spec which is complete:
 
   >>> browser.open('http://blueprints.launchpad.dev/kubuntu/+spec/thinclient-local-devices')
-  >>> for tag in find_tags_by_class(
-  ...     browser.contents, 'menu-link-offermentoring-disabled'):
-  ...     print tag.renderContents()
-  Offer mentorship (disabled)
+  >>> menu_mentoring_offer in browser.contents
+  False
   >>> page_mentoring_offer in browser.contents
   False
 
@@ -110,10 +90,8 @@ In the case of bugs, we should not be able to offer mentorship on a bug
 which is a duplicate:
 
   >>> browser.open('http://bugs.launchpad.dev/tomcat/+bug/6')
-  >>> for tag in find_tags_by_class(
-  ...     browser.contents, 'menu-link-offermentoring-disabled'):
-  ...     print tag.renderContents()
-  Offer mentorship (disabled)
+  >>> menu_mentoring_offer in browser.contents
+  False
   >>> page_mentoring_offer in browser.contents
   False
 
@@ -146,20 +124,16 @@ We should see the listing of mentors, now:
 And most importantly, we should no longer be able to offer mentoring on this
 bug, because we are ALREADY a mentor!
 
-  >>> for tag in find_tags_by_class(
-  ...     browser.contents, 'menu-link-offermentoring-disabled'):
-  ...     print tag.renderContents()
-  Offer mentorship (disabled)
+  >>> menu_mentoring_offer not in browser.contents
+  True
   >>> page_mentoring_offer not in browser.contents
   True
 
 Similarly, because we are now a mentor, we should see a menu and page link
 which allow us to retract this offer of mentorship.
 
-  >>> for tag in find_tags_by_class(
-  ...     browser.contents, 'menu-link-retractmentoring'):
-  ...     print tag.renderContents()
-  Retract mentorship
+  >>> menu_mentoring_retract in browser.contents
+  True
   >>> page_mentoring_retract in browser.contents
   True
 
@@ -168,16 +142,12 @@ offer mentoring:
 
   >>> browser = setupBrowser(auth="Basic test@canonical.com:test")
   >>> browser.open('http://bugs.launchpad.dev/tomcat/+bug/2')
-  >>> for tag in find_tags_by_class(
-  ...     browser.contents, 'menu-link-offermentoring'):
-  ...     print tag.renderContents()
-  Offer mentorship
+  >>> menu_mentoring_offer in browser.contents
+  True
   >>> page_mentoring_offer in browser.contents
   True
-  >>> for tag in find_tags_by_class(
-  ...     anon_browser.contents, 'menu-link-retractmentoring-disabled'):
-  ...     print tag.renderContents()
-  Retract mentorship (disabled)
+  >>> menu_mentoring_retract in browser.contents
+  False
   >>> page_mentoring_retract in browser.contents
   False
 
@@ -200,20 +170,16 @@ We should see the listing of mentors, now:
 And most importantly, we should no longer be able to offer mentoring on this
 bug, because we are ALREADY a mentor!
 
-  >>> for tag in find_tags_by_class(
-  ...     browser.contents, 'menu-link-offermentoring-disabled'):
-  ...     print tag.renderContents()
-  Offer mentorship (disabled)
+  >>> menu_mentoring_offer not in browser.contents
+  True
   >>> page_mentoring_offer not in browser.contents
   True
 
 Similarly, because we are now a mentor, we should see a menu and page link
 which allow us to retract this offer of mentorship.
 
-  >>> for tag in find_tags_by_class(
-  ...     browser.contents, 'menu-link-retractmentoring'):
-  ...     print tag.renderContents()
-  Retract mentorship
+  >>> menu_mentoring_retract in browser.contents
+  True
   >>> page_mentoring_retract in browser.contents
   True
 
@@ -222,16 +188,12 @@ offer mentoring:
 
   >>> browser = setupBrowser(auth="Basic test@canonical.com:test")
   >>> browser.open('http://blueprints.launchpad.dev/kubuntu/+spec/cluster-installation')
-  >>> for tag in find_tags_by_class(
-  ...     browser.contents, 'menu-link-offermentoring'):
-  ...     print tag.renderContents()
-  Offer mentorship
+  >>> menu_mentoring_offer in browser.contents
+  True
   >>> page_mentoring_offer in browser.contents
   True
-  >>> for tag in find_tags_by_class(
-  ...     anon_browser.contents, 'menu-link-retractmentoring-disabled'):
-  ...     print tag.renderContents()
-  Retract mentorship (disabled)
+  >>> menu_mentoring_retract in browser.contents
+  False
   >>> page_mentoring_retract in browser.contents
   False
 
@@ -518,19 +480,15 @@ retract mentoring that you have offered.
   >>> browser.open('http://blueprints.launchpad.dev/kubuntu/+spec/cluster-installation')
   >>> 'Mentors:' in browser.contents
   True
-  >>> for tag in find_tags_by_class(
-  ...     browser.contents, 'menu-link-retractmentoring-disabled'):
-  ...     print tag.renderContents()
-  Retract mentorship (disabled)
+  >>> menu_mentoring_retract in browser.contents
+  False
   >>> page_mentoring_retract in browser.contents
   False
   >>> browser.open('http://bugs.launchpad.dev/tomcat/+bug/2')
   >>> 'Mentors:' in browser.contents
   True
-  >>> for tag in find_tags_by_class(
-  ...     browser.contents, 'menu-link-retractmentoring-disabled'):
-  ...     print tag.renderContents()
-  Retract mentorship (disabled)
+  >>> menu_mentoring_retract in browser.contents
+  False
   >>> page_mentoring_retract in browser.contents
   False
 
@@ -569,10 +527,8 @@ mentoring again.
   >>> browser.getControl('Retract Mentoring').click()
   >>> 'Facilitate mass installs' in browser.title
   True
-  >>> for tag in find_tags_by_class(
-  ...     browser.contents, 'menu-link-offermentoring'):
-  ...     print tag.renderContents()
-  Offer mentorship
+  >>> menu_mentoring_offer in browser.contents
+  True
 
 And finally let's do it on the bug.
 
@@ -583,10 +539,8 @@ And finally let's do it on the bug.
   >>> browser.getControl('Retract Mentoring').click()
   >>> 'Blackhole Trash folder' in browser.title
   True
-  >>> for tag in find_tags_by_class(
-  ...     browser.contents, 'menu-link-offermentoring'):
-  ...     print tag.renderContents()
-  Offer mentorship
+  >>> menu_mentoring_offer in browser.contents
+  True
 
 
 Subscribing when offering mentorship
