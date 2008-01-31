@@ -31,37 +31,44 @@
                 </tr></thead>
                 <tr tal:repeat="mailing_list view/registered_lists"
                     style="text-align: center">
-                    <tal:block tal:define="team mailing_list/team;
-                                           name team/name;
-                                           registrant mailing_list/registrant;
-                                           action_name string:action_${name};
-                                           approve_id string:approve_${name};
-                                           decline_id string:decline_${name};
-                                           hold_id string:hold_${name}">
+                    <tal:block tal:define=
+                     "team mailing_list/team;
+                      team_name team/name;
+                      registrant mailing_list/registrant;
+                      registrant_name registrant/name;
+
+                      action_name string:action:${team_name};
+                      approve_id string:approve:${team_name};
+                      decline_id string:decline:${team_name};
+                      hold_id string:hold:${team_name};
+                      team_id string:team:${team_name};
+                      registrant_id
+                          string:registrant:${team_name}:${registrant_name}"
+                      >
                     <td>
-                        <label tal:attributes="for approve_id">
                         <input type="radio" value="approve"
                                tal:attributes="name action_name; id approve_id"
-                               /></label>
+                               />
                     </td>
                     <td>
-                        <label tal:attributes="for decline_id">
                         <input type="radio" value="decline"
                                tal:attributes="name action_name; id decline_id"
-                               /></label>
+                               />
                     </td>
                     <td>
-                        <label tal:attributes="for hold_id">
                         <input type="radio" value="hold" checked
                                tal:attributes="name action_name; id hold_id"
-                               /></label>
+                               />
                     </td>
                     <td>
-                        <a tal:attributes="href team/fmt:url">
-                        <div tal:content="team/displayname"/></a></td>
+                        <a tal:attributes="href team/fmt:url; id team_id">
+                        <div tal:content="team/displayname"/></a>
+                        </td>
                     <td>
-                        <a tal:attributes="href registrant/fmt:url">
-                        <div tal:content="registrant/displayname"/></a></td>
+                        <a tal:attributes="href registrant/fmt:url;
+                                           id registrant_id">
+                        <div tal:content="registrant/displayname"/></a>
+                        </td>
                     </tal:block>
                 </tr>
             </table>

@@ -48,22 +48,28 @@ class MailingListsReviewView(LaunchpadFormView):
             # mailing list.  If there is no data in the form for this mailing
             # list, just treat it as having been deferred.
             action = self.request.form_ng.getOne(
-                'action_%s' % mailing_list.team.name)
+                'action:%s' % mailing_list.team.name)
             status = None
             if action == 'approve':
                 status = MailingListStatus.APPROVED
             elif action == 'decline':
                 status = MailingListStatus.DECLINED
-            elif action == 'hold':
-                # There's nothing to do.
+            elif action in ('hold', None):
+                # The decision is being deferred or the action for this
+                # mailing list didn't appear in the form, so there's nothing
+                # to do.
                 pass
             else:
-                raise AssertionError('Invalid review action: %s' % action)
+                raise AssertionError(
+                    'Invalid review action for mailing list %s: %s' %
+                    (mailing_list.team.displayname, action))
             if status is not None:
                 mailing_list.review(self.user, status)
                 self.request.response.addInfoNotification(
-                    '%s mailing list was %s' % (
-                        mailing_list.team.displayname, status.title.lower()))
+                    '<a href="%s">%s</a> mailing list was %s' % (
+                        canonical_url(mailing_list.team),
+                        mailing_list.team.displayname,
+                        status.title.lower()))
         # Redirect to prevent double posts (and not require
         # flush_database_updates() :)
         self.next_url = canonical_url(self.context)

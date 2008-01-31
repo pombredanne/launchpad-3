@@ -25,27 +25,29 @@ But Launchpad administrators can see the mailing list approval page.
     >>> extract_text(first_tag_by_class(admin_browser.contents, 'main'))
     u'Team mailing lists'
 
+For convenience, we'll be predominantly using the admin browser from now on.
+
+    >>> browser = admin_browser
+
 
 == When there's nothing to do ==
 
-When there are no pending mailing list requests, the page does not contain a
-form with a submit button.
+When there are no pending mailing list requests, the page contains just a
+helpful message and no form.
 
-    >>> admin_browser.getControl('Submit')
+    >>> extract_text(find_tag_by_id(browser.contents, 'status'))
+    u'There is nothing to do.'
+
+    >>> browser.getControl('Submit')
     Traceback (most recent call last):
     ...
     LookupError: label 'Submit'
-
-But there's a message explaining that there's nothing to do.
-
-    >>> extract_text(find_tag_by_id(admin_browser.contents, 'status'))
-    u'There is nothing to do.'
 
 
 == When there is something to do ==
 
 Now the No Privileges Person creates a team, and then requests a mailing list
-for that team.  This mailing list will not be created until a Launchpad
+for that team.  This mailing list will not be created until the Launchpad
 administrator approves it.
 
     >>> user_browser.open('http://launchpad.dev/people/+newteam')
@@ -55,9 +57,8 @@ administrator approves it.
     ...     name='field.subscriptionpolicy').displayValue = ['Open Team']
     >>> user_browser.getControl('Create').click()
 
-XXX BarryWarsaw 28-Jan-2008 Remove this when the beta testing program is
-complete.
-
+    XXX BarryWarsaw 28-Jan-2008 Remove this when the beta testing program is
+    complete.
     >>> from canonical.launchpad.ftests import mailinglists_helper
     >>> mailinglists_helper.beta_program_enable('itest-one')
 
@@ -65,9 +66,167 @@ complete.
     >>> user_browser.getLink('Configure mailing list').click()
     >>> user_browser.getControl('Apply for Mailing List').click()
 
-Now when the Launchpad administrator views the pending requests page, she sees
-that there is a request by No Privileges Person to create the ITest One
+The Launchpad administrator views the pending requests page, and sees that
+there is a request by No Privileges Person to create the ITest One mailing
+list.
+
+    >>> browser.reload()
+    >>> browser.getControl('Submit')
+    <SubmitControl name='field.actions.submit' type='submit'>
+    >>> extract_text(find_tag_by_id(browser.contents, 'team:itest-one'))
+    u'ITest One'
+    >>> extract_text(find_tag_by_id(browser.contents,
+    ...     'registrant:itest-one:no-priv'))
+    u'No Privileges Person'
+
+The user creates a second team, and makes a request to create this new team's
+mailing list.  The pending requests administration page shows them both.
+
+    >>> user_browser.open('http://launchpad.dev/people/+newteam')
+    >>> user_browser.getControl(name='field.name').value = 'itest-two'
+    >>> user_browser.getControl('Display Name').value = 'ITest Two'
+    >>> user_browser.getControl(
+    ...     name='field.subscriptionpolicy').displayValue = ['Open Team']
+    >>> user_browser.getControl('Create').click()
+
+    XXX BarryWarsaw 28-Jan-2008 Remove this when the beta testing program is
+    complete.
+    >>> mailinglists_helper.beta_program_enable('itest-two')
+
+    >>> user_browser.open('http://launchpad.dev/~itest-two')
+    >>> user_browser.getLink('Configure mailing list').click()
+    >>> user_browser.getControl('Apply for Mailing List').click()
+
+    >>> browser.reload()
+    >>> extract_text(find_tag_by_id(browser.contents, 'team:itest-one'))
+    u'ITest One'
+    >>> extract_text(find_tag_by_id(browser.contents,
+    ...     'registrant:itest-one:no-priv'))
+    u'No Privileges Person'
+    >>> extract_text(find_tag_by_id(browser.contents, 'team:itest-two'))
+    u'ITest Two'
+    >>> extract_text(find_tag_by_id(browser.contents,
+    ...     'registrant:itest-two:no-priv'))
+    u'No Privileges Person'
+
+
+== Links ==
+
+Each line in the pending approval table contains a link to both the team for
+which the mailing list is being requested, and to the person requesting the
 mailing list.
 
-    >>> admin_browser.reload()
-    >>> admin_browser.getControl('Submit')
+    >>> browser.getLink(id='team:itest-one').click()
+    >>> browser.title
+    'ITest One in Launchpad'
+    >>> browser.goBack()
+    >>> browser.getLink(id='registrant:itest-one:no-priv').click()
+    >>> browser.title
+    'No Privileges Person in Launchpad'
+
+    >>> browser.goBack()
+    >>> browser.getLink(id='team:itest-two').click()
+    >>> browser.title
+    'ITest Two in Launchpad'
+    >>> browser.goBack()
+    >>> browser.getLink(id='registrant:itest-two:no-priv').click()
+    >>> browser.title
+    'No Privileges Person in Launchpad'
+
+
+== Deferring decisions ==
+
+The Launchpad administrator defers until later the decisions about whether to
+approve or decline the mailing list requests.  This is called 'holding' the
+request and it is the default action.
+
+    >>> browser.goBack()
+    >>> browser.getControl(name='action:itest-one').value
+    ['hold']
+    >>> browser.getControl(name='action:itest-two').value
+    ['hold']
+
+Deferring the decision until later really means that nothing happens.
+
+    >>> browser.getControl('Submit').click()
+    >>> browser.getControl(name='action:itest-one').value
+    ['hold']
+    >>> browser.getControl(name='action:itest-two').value
+    ['hold']
+
+Because the mailing list doesn't exist, the team's overview page does not
+contain a link to an archive.
+
+    >>> user_browser.open('http://launchpad.dev/~itest-one/+mailinglist')
+    >>> print extract_text(find_main_content(user_browser.contents))
+    Mailing list configuration
+    The application for this team's mailing list is pending approval.
+    ...
+
+    >>> user_browser.open('http://launchpad.dev/~itest-two/+mailinglist')
+    >>> print extract_text(find_main_content(user_browser.contents))
+    Mailing list configuration
+    The application for this team's mailing list is pending approval.
+    ...
+
+
+== Approving lists ==
+
+The Launchpad administrator decides that the ITest One mailing list is a good
+idea, so she goes ahead and approves that list's creation.  She defers the
+decision on the other mailing list until later.
+
+    >>> browser.getControl(name='action:itest-one').value = ['approve']
+    >>> browser.getControl('Submit').click()
+
+The pending requests page no longer displays anything about the ITest One
+mailing list.
+
+    >>> browser.getLink(id='team:itest-one')
+    Traceback (most recent call last):
+    ...
+    LinkNotFoundError
+    >>> get_feedback_messages(browser.contents)
+    [u'ITest One mailing list was approved']
+
+But the ITest Two request is still pending.
+
+    >>> browser.getLink(id='team:itest-two')
+    <Link text='ITest Two' url='http://launchpad.dev/~itest-two'>
+
+The ITest One mailing list has been approved so that Mailman can create it,
+though we won't wait for Mailman to act <wink>
+
+    >>> user_browser.open('http://launchpad.dev/~itest-one/+mailinglist')
+    >>> print extract_text(find_main_content(user_browser.contents))
+    Mailing list configuration
+    This team's mailing list will be available within a few minutes.
+    ...
+
+
+== Declining lists ==
+
+The Launchpad administrator decides that the ITest Two mailing list is a bad
+idea, so she goes ahead and declines that list's creation.
+
+    >>> browser.getControl(name='action:itest-two').value = ['decline']
+    >>> browser.getControl('Submit').click()
+
+The pending requests page no longer displays anything about the ITest Two
+mailing list.
+
+    >>> browser.getLink(id='team:itest-two')
+    Traceback (most recent call last):
+    ...
+    LinkNotFoundError
+    >>> get_feedback_messages(browser.contents)
+    [u'ITest Two mailing list was declined']
+
+The ITest Two mailing list has been declined so Mailman will not create it.
+
+    >>> user_browser.open('http://launchpad.dev/~itest-two/+mailinglist')
+    >>> print extract_text(find_main_content(user_browser.contents))
+    Mailing list configuration
+    The application for this team's mailing list has been declined.
+    Please contact a Launchpad administrator for further assistance.
+    ...
