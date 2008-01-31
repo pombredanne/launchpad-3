@@ -11,10 +11,10 @@ parameters.
 == Setting up ==
 
     >>> import tempfile, os, operator
-    >>> from canonical.buildmaster.master import (BuilddMaster,
-    ...   determineArchitecturesToBuild)
+    >>> from canonical.buildmaster.master import (
+    ...   BuilddMaster, determineArchitecturesToBuild)
 
-import the bunch of required database classes:
+Import the bunch of required database classes:
 
     >>> from canonical.launchpad.database import (
     ...      Build, BuildQueue, DistroArchSeries, DistroSeries,
@@ -33,7 +33,7 @@ test_system_documentation.py for more information.
 
 Now we have satisfied all needs for BuildMaster, let's instantiate it.
 
-    >>> bm = BuilddMaster(logger, transaction)
+    >>> build_master = BuilddMaster(logger, transaction)
 
 Emulates a PocketChroot entry to validate the following
 distroarchseries:
@@ -43,49 +43,58 @@ distroarchseries:
  * Debian/Woody/i386/RELEASE
 
     >>> warty = DistroSeries.selectOneBy(name="warty")
-    >>> chroot = PocketChroot(distroarchseries=warty['i386'], chroot=1)
+    >>> unused = PocketChroot(distroarchseries=warty['i386'], chroot=1)
 
     >>> hoary = DistroSeries.selectOneBy(name='hoary')
-    >>> chroot = PocketChroot(distroarchseries=hoary['i386'], chroot=1)
-    >>> chroot = PocketChroot(distroarchseries=hoary['hppa'], chroot=2)
+    >>> unsused = PocketChroot(distroarchseries=hoary['i386'], chroot=1)
+    >>> unused = PocketChroot(distroarchseries=hoary['hppa'], chroot=2)
 
     >>> woody = DistroSeries.selectOneBy(name='woody')
-    >>> chroot = PocketChroot(distroarchseries=woody['i386'], chroot=3)
+    >>> unused = PocketChroot(distroarchseries=woody['i386'], chroot=3)
 
 Produce a set of available DistroArchSeries, for which the
 build jobs will be created.
 
     >>> distroserieses = set()
-    >>> for dar in DistroArchSeries.select():
-    ...     distroserieses.add(dar.distroseries)
-    ...     bm.addDistroArchSeries(dar)
-    >>> distroserieses = sorted(distroserieses, key=operator.attrgetter('name'))
+
+    >>> for archseries in DistroArchSeries.select():
+    ...     distroserieses.add(archseries.distroseries)
+    ...     build_master.addDistroArchSeries(archseries)
+
+    >>> distroserieses = sorted(
+    ...     distroserieses, key=operator.attrgetter('name'))
 
 Among all the available distroarchseries only the one with chroot will
 be considered.
 
-    >>> sorted((arch.distroseries.name, arch.architecturetag)
-    ...        for arch in bm._archserieses.keys())
-    [(u'hoary', u'hppa'), (u'hoary', u'i386'), (u'warty', u'i386'), (u'woody', u'i386')]
+    >>> valid_archs = sorted(build_master._archserieses.keys(),
+    ...                      key=operator.attrgetter('id'))
+    >>> for arch in valid_archs:
+    ...     print arch.title
+    The Warty Warthog Release for i386 (x86)
+    The Hoary Hedgehog Release for i386 (x86)
+    WOODY for i386 (x86)
+    The Hoary Hedgehog Release for hppa (hppa)
 
 
 == Ensure sampledata is processed ==
 
-Kick off any pending builds we have to avoid any lint in our tests (there are a
-couple that will be created based on our sampledata). This is to allow
-us to study carefully what is being added as we add new series and builds.
+Kick off any pending builds we have to avoid any lint in our tests
+(there are a couple that will be created based on our sampledata).
+This is to allow us to study carefully what is being added as we add
+new series and builds.
 
-    >>> for dr in distroserieses:
-    ...      bm.createMissingBuilds(dr)
+    >>> for series in distroserieses:
+    ...      build_master.createMissingBuilds(series)
 
 Add the missing build queue entries.
 
-    >>> bm.addMissingBuildQueueEntries()
+    >>> build_master.addMissingBuildQueueEntries()
 
 Store current status of the database:
 
-    >>> old_build_ids = [b.id for b in Build.select()]
-    >>> old_job_ids = [bq.id for bq in BuildQueue.select()]
+    >>> old_build_ids = [build.id for build in Build.select()]
+    >>> old_job_ids = [build_queue.id for build_queue in BuildQueue.select()]
 
 
 == Create some series and publications ==
@@ -108,6 +117,9 @@ pocket (UPDATES, SECURITY, PROPOSED or BACKPORTS)
 
     >>> commit()
     >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
+
+We will use SoyuzTestPublisher to create a set of publications used to
+test the 'queue-builder' component.
 
     >>> test_publisher = SoyuzTestPublisher()
     >>> test_publisher.prepareBreezyAutotest()
@@ -147,6 +159,9 @@ architecturehintlist and P-a-s.
     ...     architecturehintlist="hppa",
     ...     status=PackagePublishingStatus.PUBLISHED,
     ...     pocket=PackagePublishingPocket.RELEASE)
+
+Other sources publications to hoary, they use the extended
+architecturehintlist kernel notation, see below.
 
 Other sources publications to hoary, they use the extended
 architecturehintlist kernel notation, see below.
@@ -252,14 +267,14 @@ packages (architecturehintlist).
 
 Write a harness that lets us easily test PAS statements:
 
-    >>> def getPASVerifier(pas_string, dar=hoary):
+    >>> def getPASVerifier(pas_string, series=hoary):
     ...   """Build and return a PAS verifier based on the string provided."""
     ...   temp_dir = tempfile.mkdtemp()
     ...   pas_filename = os.path.join(temp_dir, "Packages-arch-specific")
-    ...   pas = file(pas_filename, "w")
-    ...   pas.write(pas_string)
-    ...   pas.close()
-    ...   pas_verify = BuildDaemonPackagesArchSpecific(temp_dir, dar)
+    ...   pas_file = file(pas_filename, "w")
+    ...   pas_file.write(pas_string)
+    ...   pas_file.close()
+    ...   pas_verify = BuildDaemonPackagesArchSpecific(temp_dir, series)
     ...   os.unlink(pas_filename)
     ...   return pas_verify
 
@@ -268,25 +283,25 @@ Write a harness that lets us easily test PAS statements:
 First check a positive source listing:
 
     >>> pas_verify = getPASVerifier("%test-buildd-3: i386")
-    >>> [a.architecturetag for a in
-    ...       determineArchitecturesToBuild(pub_three, legal_archs, hoary,
-    ...                                     pas_verify)]
+    >>> [arch.architecturetag for arch in
+    ...  determineArchitecturesToBuild(pub_three, legal_archs, hoary,
+    ...                                pas_verify)]
     [u'i386']
 
 And now a negative source listing:
 
     >>> pas_verify = getPASVerifier("%test-buildd-3: !i386")
-    >>> [a.architecturetag for a in
-    ...       determineArchitecturesToBuild(pub_three, legal_archs, hoary,
-    ...                                     pas_verify)]
+    >>> [arch.architecturetag for arch in
+    ...  determineArchitecturesToBuild(pub_three, legal_archs, hoary,
+    ...                                pas_verify)]
     [u'hppa']
 
 And a source listing which causes us to produce no builds:
 
     >>> pas_verify = getPASVerifier("%test-buildd-3: sparc")
-    >>> [a.architecturetag for a in
-    ...       determineArchitecturesToBuild(pub_three, legal_archs, hoary,
-    ...                                     pas_verify)]
+    >>> [arch.architecturetag for arch in
+    ...  determineArchitecturesToBuild(pub_three, legal_archs, hoary,
+    ...                                pas_verify)]
     []
 
 PPA builds are not affected by P-a-s restrictions, i.e., they will
@@ -294,15 +309,15 @@ build for all requested architectures currently supported in the PPA
 subsystem.
 
     >>> pas_verify = getPASVerifier("%test-ppa: hppa")
-    >>> [a.architecturetag for a in
-    ...      determineArchitecturesToBuild(pub_hoary_ppa, legal_archs,
-    ...                                    hoary, pas_verify)]
+    >>> [arch.architecturetag for arch in
+    ...  determineArchitecturesToBuild(pub_hoary_ppa, legal_archs,
+    ...                                hoary, pas_verify)]
     [u'i386']
 
     >>> pas_verify = getPASVerifier("%test-ppa: !i386")
-    >>> [a.architecturetag for a in
-    ...      determineArchitecturesToBuild(pub_hoary_ppa, legal_archs,
-    ...                                    hoary, pas_verify)]
+    >>> [arch.architecturetag for arch in
+    ...  determineArchitecturesToBuild(pub_hoary_ppa, legal_archs,
+    ...                                hoary, pas_verify)]
     [u'i386']
 
 
@@ -317,31 +332,35 @@ has its data set up.
     iceweasel - 1.0
     >>> print firefox_pub.sourcepackagerelease.architecturehintlist
     any
-    >>> iceweasel_binaries = warty.getSourcePackage('iceweasel')['1.0'].binaries
-    >>> [b.title for b in iceweasel_binaries]
+    >>> iceweasel_binaries = warty.getSourcePackage(
+    ...     'iceweasel')['1.0'].binaries
+    >>> [binary.title for binary in iceweasel_binaries]
     [u'mozilla-firefox-1.0']
 
     >>> legal_archs = set(warty.architectures)
-    >>> sorted([a.architecturetag for a in legal_archs], reverse=True)
+    >>> sorted([arch.architecturetag
+    ...         for arch in legal_archs], reverse=True)
     [u'i386', u'hppa']
 
 Restrict iceweasel targets to i386 and sparc, since the latter is not
 present in warty, we will only create a build for i386:
 
-    >>> pas_verify = getPASVerifier("mozilla-firefox: i386 sparc", dar=warty)
+    >>> pas_verify = getPASVerifier(
+    ...     "mozilla-firefox: i386 sparc", series=warty)
     >>> permitted_archs = determineArchitecturesToBuild(
     ...      firefox_pub, legal_archs, warty, pas_verify)
-    >>> [a.architecturetag for a in permitted_archs]
+    >>> [arch.architecturetag for arch in permitted_archs]
     [u'i386']
 
 And a binary PAS listing that tries to exclude i386 and hppa from an
 arch-any build. The exclusion of i386 is ignored; see comment in
 pas.py:_handleBinaryPAS for more information on why.
 
-    >>> pas_verify = getPASVerifier("mozilla-firefox: !i386 !hppa", dar=warty)
+    >>> pas_verify = getPASVerifier(
+    ...     "mozilla-firefox: !i386 !hppa", series=warty)
     >>> permitted_archs = determineArchitecturesToBuild(
     ...      firefox_pub, legal_archs, warty, pas_verify)
-    >>> [a.architecturetag for a in permitted_archs]
+    >>> [arch.architecturetag for arch in permitted_archs]
     [u'i386']
 
 XXX cprov 20071211: we can't properly test PPA binary-PAS right now
@@ -356,17 +375,17 @@ See if the code which determines archs to build does the right thing for
 each of these options:
 
     >>> legal_archs = set(hoary.architectures)
-    >>> [a.architecturetag for a in
-    ...       determineArchitecturesToBuild(pub_all, legal_archs, hoary)]
+    >>> [arch.architecturetag for arch in
+    ...  determineArchitecturesToBuild(pub_all, legal_archs, hoary)]
     [u'i386']
-    >>> [a.architecturetag for a in
-    ...       determineArchitecturesToBuild(pub_any, legal_archs, hoary)]
+    >>> [arch.architecturetag for arch in
+    ...  determineArchitecturesToBuild(pub_any, legal_archs, hoary)]
     [u'hppa', u'i386']
-    >>> [a.architecturetag for a in
-    ...       determineArchitecturesToBuild(pub_three, legal_archs, hoary)]
+    >>> [arch.architecturetag for arch in
+    ...  determineArchitecturesToBuild(pub_three, legal_archs, hoary)]
     [u'hppa', u'i386']
-    >>> [a.architecturetag for a in
-    ...       determineArchitecturesToBuild(pub_one, legal_archs, hoary)]
+    >>> [arch.architecturetag for arch in
+    ...  determineArchitecturesToBuild(pub_one, legal_archs, hoary)]
     [u'hppa']
 
 == Check support for kernel notation in architecture hint list ==
@@ -381,11 +400,11 @@ for further information about this dpkg feature.
 Soyuz will consider only 'any-' and 'linux-' elements as the
 corresponding architecture, since only linux is supported in ubuntu.
 
-    >>> [a.architecturetag for a in
-    ...       determineArchitecturesToBuild(pub_any_foo, legal_archs, hoary)]
+    >>> [arch.architecturetag for arch in
+    ...  determineArchitecturesToBuild(pub_any_foo, legal_archs, hoary)]
     [u'hppa']
-    >>> [a.architecturetag for a in
-    ...       determineArchitecturesToBuild(pub_linux_foo, legal_archs, hoary)]
+    >>> [arch.architecturetag for arch in
+    ...  determineArchitecturesToBuild(pub_linux_foo, legal_archs, hoary)]
     [u'i386']
 
 
@@ -396,8 +415,8 @@ considered when creating PPA builds. See distroarchseries.txt for
 further information.
 
     >>> legal_archs = set(hoary.architectures)
-    >>> [a.architecturetag for a in
-    ...      determineArchitecturesToBuild(pub_hoary_ppa, legal_archs, hoary)]
+    >>> [arch.architecturetag for arch in
+    ...  determineArchitecturesToBuild(pub_hoary_ppa, legal_archs, hoary)]
     [u'i386']
 
 
@@ -408,12 +427,13 @@ Create missing builds (packages w/o build entry) for those distroserieses.
 We expect to have a couple of new builds for the sane hoary/RELEASE,
 one for warty/UPDATES and one for hoary/RELEASE/PPA.
 
-    >>> for dr in distroserieses:
-    ...      bm.createMissingBuilds(dr)
+    >>> for series in distroserieses:
+    ...      build_master.createMissingBuilds(series)
 
 Check that we only created new Build entries for the new hoary releases:
 
-    >>> new_builds = [b for b in Build.select() if b.id not in old_build_ids]
+    >>> new_builds = [build for build in Build.select()
+    ...               if build.id not in old_build_ids]
     >>> for build in sorted(new_builds, key=operator.attrgetter('id')):
     ...   print build.title
     i386 build of test-buildd 667 in ubuntu hoary RELEASE
@@ -428,19 +448,23 @@ Check that we only created new Build entries for the new hoary releases:
     i386 build of test-ppa 674 in ubuntu hoary RELEASE
     i386 build of test-updates 665 in ubuntu warty UPDATES
 
-And have a look at our arch-all series's build:
+And have a look at our architecture-independent-source's build:
 
-    >>> b = Build.selectOneBy(sourcepackagerelease=pub_all.sourcepackagerelease)
-    >>> (b.sourcepackagerelease.name, b.distroarchseries.distroseries.name)
-    (u'test-buildd', u'hoary')
+    >>> arch_indep_build = Build.selectOneBy(
+    ...     sourcepackagerelease=pub_all.sourcepackagerelease)
+
+    >>> print arch_indep_build.title
+    i386 build of test-buildd 667 in ubuntu hoary RELEASE
+
 
 == Create and verify the new queue entries ==
 
 BuildQueue records corresponding to the build records in NEEDSBUILD
 state are immediately created.
 
-    >>> active_jobs = [bq for bq in BuildQueue.select(orderBy='id')
-    ...                if bq.id not in old_job_ids]
+    >>> active_jobs = [
+    ...     build_queue for build_queue in BuildQueue.select(orderBy='id')
+    ...     if build_queue.id not in old_job_ids]
     >>> len(active_jobs)
     11
 
@@ -448,31 +472,31 @@ The BuildQueue entries created are already 'scored', it means that the job
 can be already dispatched once operation is committed, i.e.,
 dispatching can happen in parallel with build creation.
 
-    >>> bq = active_jobs[0]
-    >>> print bq.build.title
+    >>> build_queue = active_jobs[0]
+    >>> print build_queue.build.title
     i386 build of test-buildd 667 in ubuntu hoary RELEASE
-    >>> bq.lastscore
+    >>> build_queue.lastscore
     1005
 
 Check the published component name retriever, they might be different,
 i.e., the published component can be different than the original component.
 
-    >>> print bq.build.current_component.name
+    >>> print build_queue.build.current_component.name
     main
-    >>> print bq.build.sourcepackagerelease.component.name
+    >>> print build_queue.build.sourcepackagerelease.component.name
     main
 
 Missing BuildQueue records, resulted of given-back builds are created
 in the last stage of the queue-builder script
 
-    >>> given_back_build = bq.build
-    >>> bq.destroySelf()
+    >>> given_back_build = build_queue.build
+    >>> build_queue.destroySelf()
     >>> flush_database_updates()
 
     >>> print given_back_build.buildqueue_record
     None
 
-    >>> bm.addMissingBuildQueueEntries()
+    >>> build_master.addMissingBuildQueueEntries()
 
     >>> given_back_build.buildqueue_record is not None
     True
