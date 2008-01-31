@@ -685,6 +685,7 @@ class KarmaCategoryImageDisplayAPI(ObjectImageDisplayAPI):
 
     icons_for_karma_categories = {
         'bugs': '/@@/bug',
+        'code': '/@@/branch',
         'translations': '/@@/translation',
         'specs': '/@@/blueprint',
         'answers': '/@@/question'}

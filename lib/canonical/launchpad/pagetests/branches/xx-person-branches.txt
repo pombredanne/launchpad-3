@@ -59,12 +59,11 @@ the authored branches page.
    >>> table = find_tag_by_id(browser.contents, 'branchtable')
    >>> for row in table.tbody.fetch('tr'):
    ...     print extract_text(row)
-   main         ... New           firefox
-   klingon      ... Experimental  gnome-terminal
-   feature-x    ... New           landscape
-   trunk        ... New           landscape
-   junk.contrib ... New
-      2005-10-31 12:03:57 ... weeks ago
+   main           New           firefox
+   klingon        Experimental  gnome-terminal
+   feature-x      New           landscape
+   trunk          New           landscape
+   junk.contrib   New    ... weeks ago
 
 
 == Registered Branches ==
@@ -78,12 +77,12 @@ There is also a link which points to the registered branches page.
    >>> table = find_tag_by_id(browser.contents, 'branchtable')
    >>> for row in table.tbody.fetch('tr'):
    ...     print extract_text(row)
-   2.6                   ... Mature       gnome-terminal
-   main                  ... Development  gnome-terminal
-   mirrored              ... New          gnome-terminal
-   pushed                ... New          gnome-terminal
-   scanned               ... New          gnome-terminal
-   junk.dev Ubuntu Team  ... Experimental  2005-10-31 12:03:57 ... weeks ago
+   2.6                    Mature       gnome-terminal
+   main                   Development  gnome-terminal
+   mirrored               New          gnome-terminal
+   pushed                 New          gnome-terminal
+   scanned                New          gnome-terminal
+   junk.dev Ubuntu Team   Experimental  ... weeks ago
 
 == Subscribed branches ==
 
@@ -97,6 +96,6 @@ branches.
    >>> table = find_tag_by_id(browser.contents, 'branchtable')
    >>> for row in table.tbody.fetch('tr'):
    ...     print extract_text(row)
-   launchpad   Launchpad Developers ... New gnome-terminal
-   junk.dev    Ubuntu Team          ... Experimental
-      2005-10-31 12:03:57 ... weeks ago
+   launchpad   Launchpad Developers   New           gnome-terminal
+   junk.dev    Ubuntu Team            Experimental
+      ... weeks ago
