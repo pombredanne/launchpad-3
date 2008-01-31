@@ -99,13 +99,8 @@ Store current status of the database:
 
 == Create some series and publications ==
 
-Define a helper function to create series and publications for those
-series.
-
-We need to publish the source in order to get it visible to the
-createMissingBuilds() method. Additionally if the target is an already
-released distroseries it can only be visible if published in special
-pocket (UPDATES, SECURITY, PROPOSED or BACKPORTS)
+We will create a group of source publications that represent the
+exact circumstances we want to test below.
 
     >>> from canonical.launchpad.interfaces import IPersonSet
     >>> cprov = getUtility(IPersonSet).getByName('cprov')
@@ -118,13 +113,13 @@ pocket (UPDATES, SECURITY, PROPOSED or BACKPORTS)
     >>> commit()
     >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
 
-We will use SoyuzTestPublisher to create a set of publications used to
-test the 'queue-builder' component.
+Let's use SoyuzTestPublisher to create a set of publications in the
+exact state to expose the features that we want to test.
 
     >>> test_publisher = SoyuzTestPublisher()
     >>> test_publisher.prepareBreezyAutotest()
 
-Source publication for debian/woody, it won't result in a new build
+Publishing a source in debian/woody, it won't result in a new build
 because this distroseries lacks 'nominatedarchindep'.
 
     >>> pub_woody = test_publisher.getPubSource(
@@ -133,7 +128,7 @@ because this distroseries lacks 'nominatedarchindep'.
     ...     status=PackagePublishingStatus.PUBLISHED,
     ...     pocket=PackagePublishingPocket.RELEASE)
 
-Several source publications for ubuntu/hoary/RELEASE, which is in
+Publishing several sources in ubuntu/hoary/RELEASE, which is in
 DEVELOPMENT state, so we expect builds to be created respecting
 architecturehintlist and P-a-s.
 
@@ -160,11 +155,8 @@ architecturehintlist and P-a-s.
     ...     status=PackagePublishingStatus.PUBLISHED,
     ...     pocket=PackagePublishingPocket.RELEASE)
 
-Other sources publications to hoary, they use the extended
-architecturehintlist kernel notation, see below.
-
-Other sources publications to hoary, they use the extended
-architecturehintlist kernel notation, see below.
+Publishing sources using the extended architecturehintlist kernel
+notation in ubuntu/hoary, see the expected behavior below.
 
     >>> pub_any_foo = test_publisher.getPubSource(
     ...     sourcename='test-buildd-6', version='672', distroseries=hoary,
@@ -178,75 +170,80 @@ architecturehintlist kernel notation, see below.
     ...     status=PackagePublishingStatus.PUBLISHED,
     ...     pocket=PackagePublishingPocket.RELEASE)
 
-A source published in warty/UPDATES, a stable release update, we
-expect it to result in a build.
+Publishing a source in warty/UPDATES, a stable release update (SRU), we
+expect it to result in a build. Once a distroseries is released only
+source publications to post-RELEASE pockets (UPDATES, PROPOSED,
+BACKPORTS, SECURITY) will be considered, preserving the RELEASE pocket
+pristine as it was at the release time.
 
     >>> pub_updates = test_publisher.getPubSource(
     ...     sourcename='test-updates', version='665', distroseries=warty,
     ...     status=PackagePublishingStatus.PUBLISHED,
     ...     pocket=PackagePublishingPocket.UPDATES)
 
-A source published in warty/RELEASE, it will be ignored.
+A source published in warty/RELEASE will be ignored, i.e., it won't
+result in a new build record because we cannot modify the RELEASE
+pocket.
 
     >>> pub_ignored = test_publisher.getPubSource(
     ...     sourcename='test-buildd-not', version='666', distroseries=warty,
     ...     status=PackagePublishingStatus.PUBLISHED,
     ...     pocket=PackagePublishingPocket.RELEASE)
 
-A source published in warty/RELEASE which has already failed to build.
+Publishing the same source in warty and hoary and create a
+corresponding build record that has failed to build in this context,
+then we check that the queue-builder triggers a rebuild in the new
+context for published sources that have failed to build in previous
+distroseries (see bug 181328).
 
     >>> pub_failed = test_publisher.getPubSource(
     ...     sourcename='test-failed', version='1.0', distroseries=warty,
     ...     status=PackagePublishingStatus.PUBLISHED,
     ...     pocket=PackagePublishingPocket.RELEASE)
 
+    >>> copied_pub = pub_failed.copyTo(
+    ...     hoary, PackagePublishingPocket.RELEASE, warty.main_archive)
+
     >>> from canonical.launchpad.interfaces import BuildStatus
     >>> failed_build = pub_failed.sourcepackagerelease.createBuild(
     ...     warty['i386'], PackagePublishingPocket.RELEASE,
     ...     warty.main_archive, status=BuildStatus.FAILEDTOBUILD)
 
-Exclude the just-created build from the subsequents tests/counters.
-
-    >>> old_build_ids.append(failed_build.id)
-
-A copy of this source to a subsequent distroseries (as if it was
-initialized) will result in a new build record, meaning we want to try
-it again in the new context. See bug 181328.
-
-    >>> copied_pub = pub_failed.copyTo(
-    ...     hoary, PackagePublishingPocket.RELEASE, warty.main_archive)
-
-A source published in warty/RELEASE with a successfully built build
-won't be considered for built again.
+In order to tests the antithesis of the previous case, we will publish
+the same source in warty and hoary and attach a successfully built
+build record in the warty context. This way queue-builder won't create
+a new build in the hoary context.
 
     >>> pub_success = test_publisher.getPubSource(
     ...     sourcename='test-success', version='1.0', distroseries=warty,
     ...     status=PackagePublishingStatus.PUBLISHED,
     ...     pocket=PackagePublishingPocket.RELEASE)
 
+    >>> copied_pub = pub_success.copyTo(
+    ...     hoary, PackagePublishingPocket.RELEASE, warty.main_archive)
+
     >>> ok_build = pub_success.sourcepackagerelease.createBuild(
     ...     warty['i386'], PackagePublishingPocket.RELEASE,
     ...     warty.main_archive, status=BuildStatus.FULLYBUILT)
 
-Exclude the just-created build from the subsequents tests/counters.
-
-    >>> old_build_ids.append(ok_build.id)
-
-A copy of this successfully built source to a subsequent distroseries
-will not result in a new build record.
-
-    >>> copied_pub = pub_success.copyTo(
-    ...     hoary, PackagePublishingPocket.RELEASE, warty.main_archive)
-
-Finally a publication in Celso's PPA, a build will be created for it
-respecting only 'architecturehintlist' and PPA-supported architecture,
-it won't be submitted to P-a-s.
+Publishing a source in Celso's PPA, we expect a build to be created
+for it respecting only 'architecturehintlist' and PPA-supported
+architecture, it won't be submitted to P-a-s restrictions. It allows
+PPA user to work on 'broken' ports of a given source, without
+depending on lifting the PRIMARY archive P-a-s restriction.
 
     >>> pub_hoary_ppa = test_publisher.getPubSource(
     ...     sourcename='test-ppa', version='674', distroseries=hoary,
     ...     architecturehintlist="i386 hppa", archive=cprov.archive,
     ...     status=PackagePublishingStatus.PUBLISHED,
     ...     pocket=PackagePublishingPocket.RELEASE)
+
+Before committing the previous changes we have to annotated the
+manually created build IDs, so they can be excluded from subsequents
+checks/counters within this test.
+
+    >>> old_build_ids.append(failed_build.id)
+    >>> old_build_ids.append(ok_build.id)
 
     >>> commit()
     >>> LaunchpadZopelessLayer.switchDbUser(test_dbuser)
