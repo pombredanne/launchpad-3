@@ -1,15 +1,18 @@
+
+
 = Code review messages =
 
-When code is proposed to be merged, it's common to perform a review of that
-code, which is often in the form of a conversation.  The reviewer
-asks questions, makes comments, and offers an opinion (a 'vote') on whether or
-not the code should be merged.  The submitter responds to the reviewer until
-submitter and reviewer and reach an agreement about the status of the code or
-conclude that agreement cannot be reached.
+When code is proposed to be merged, it's common to perform a review of
+that code, which is often in the form of a conversation.  The reviewer
+asks questions, makes comments, and offers an opinion (a 'vote') on
+whether or not the code should be merged.  The submitter responds to the
+reviewer until submitter and reviewer and reach an agreement about the
+status of the code or conclude that agreement cannot be reached.
 
-The ICodeReviewMessage interface represents this kind of conversation.  It has
-a IMessage as a member (in a one-to-one relationship), a vote (which is an
-enum), and a reference to the IBranchMergeProposal it is about.
+The ICodeReviewMessage interface represents this kind of conversation.
+It has a IMessage as a member (in a one-to-one relationship), a vote
+(which is an enum), and a reference to the IBranchMergeProposal it is
+about.
 
 == Creating CodeReviewMessages ==
 
@@ -18,8 +21,8 @@ CodeReviewMessages are created from their BranchMergeProposals:
     >>> message = merge_proposal.createMessage(
     ... sample_person, 1, 'Please merge', 'This patch is very nice.')
 
-The first message to be created is the root of the code review conversation,
-and is assigned to BranchMergeProposal.conversation.
+The first message to be created is the root of the code review
+conversation, and is assigned to BranchMergeProposal.conversation.
 
     >>> merge_proposal.conversation == message
     True

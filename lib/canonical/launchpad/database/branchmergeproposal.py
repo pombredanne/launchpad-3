@@ -164,12 +164,13 @@ class BranchMergeProposal(SQLBase):
         assert owner is not None, 'Merge proposal messages need a sender'
         if parent is None:
             if self.conversation is not None:
-                parent = self.conversation.message
+                parent_message = self.conversation.message
         else:
-            assert (parent.branch_merge_proposal == self, 'Replies must use')
-            parent = parent.message
+            assert (parent.branch_merge_proposal == self,
+                    'Replies must use the same merge proposal as their parent')
+            parent_message = parent.message
         msgid = make_msgid('codereview')
-        msg = Message(parent=parent, owner=owner,
+        msg = Message(parent=parent_message, owner=owner,
                       rfc822msgid=msgid, subject=subject)
         chunk = MessageChunk(message=msg, content=content, sequence=1)
         crmsg = CodeReviewMessage(

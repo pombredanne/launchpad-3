@@ -20,7 +20,6 @@ class CodeReviewMessage(SQLBase):
 
     _table = 'CodeReviewMessage'
 
-    # db fields
     branch_merge_proposal = ForeignKey(
         dbName='branch_merge_proposal', foreignKey='BranchMergeProposal',
         notNull=True)
