@@ -127,13 +127,23 @@ class IStructuralSubscriptionTarget(Interface):
     def addSubscription(subscriber, subscribed_by):
         """Add a subscription for this structure.
 
-        :person: An IPerson or ITeam.
+        :subscriber: The IPerson who will be subscribed.
+        :subscribed_by: The IPerson creating the subscription.
+        :return: The new subscription.
+        """
+
+    def addBugSubscription(subscriber, subscribed_by):
+        """Add a bug subscription for this structure.
+
+        :subscriber: The IPerson who will be subscribed.
+        :subscribed_by: The IPerson creating the subscription.
+        :return: The new bug subscription.
         """
 
     def removeSubscription(subscriber):
         """Remove a subscription from this structure.
 
-        :person: An IPerson or ITeam.
+        :subscriber: The IPerson who will be subscribed.
         """
 
 

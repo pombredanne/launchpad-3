@@ -19,7 +19,8 @@
                   bugtargetname getMostCommonBugs getBugCounts" />
     <require
       permission="launchpad.AnyPerson"
-      attributes="addSubscription removeSubscription createBug" />
+      attributes="addSubscription addBugSubscription
+                  removeSubscription createBug" />
 
     <!-- IQuestionTarget -->
     <allow attributes="getQuestion searchQuestions findSimilarQuestions

@@ -14,7 +14,8 @@ from zope.schema.vocabulary import SimpleTerm, SimpleVocabulary
 
 from canonical.cachedproperty import cachedproperty
 from canonical.launchpad.interfaces import (
-    DuplicateSubscriptionError, IStructuralSubscriptionForm)
+    BugNotificationLevel, DuplicateSubscriptionError,
+    IDistributionSourcePackage, IStructuralSubscriptionForm)
 from canonical.launchpad.webapp import (
     LaunchpadFormView, action, canonical_url, custom_widget)
 from canonical.launchpad.webapp.authorization import check_permission
@@ -35,7 +36,7 @@ class StructuralSubscriptionView(LaunchpadFormView):
         team_subscriptions = self._createTeamSubscriptionsField()
         if team_subscriptions:
             self.form_fields += form.Fields(team_subscriptions)
-        if self.userIsDistributionDriver():
+        if self.userIsDriver():
             add_other = form.Fields(self._createAddOtherSubscriptionsField())
             self.form_fields += add_other
             remove_other = self._createRemoveOtherSubscriptionsField()
@@ -147,7 +148,7 @@ class StructuralSubscriptionView(LaunchpadFormView):
         is_subscribed = self.context.isSubscribed(self.user)
         subscribe = data['subscribe_me']
         if (not is_subscribed) and subscribe:
-            target.addSubscription(self.user, self.user)
+            sub = target.addBugSubscription(self.user, self.user)
             self.request.response.addNotification(
                 "You have been successfully "
                 "subscribed to %s." % target.displayname)
@@ -174,7 +175,7 @@ class StructuralSubscriptionView(LaunchpadFormView):
             team for team in teams if self.context.isSubscribed(team))
 
         for team in form_selected_teams - subscriptions:
-            target.addSubscription(team, self.user)
+            sub = target.addBugSubscription(team, self.user)
             self.request.response.addNotification(
                 'The "%s" team was successfully subscribed to %s.' % (
                 team.displayname, self.context.displayname))
@@ -187,14 +188,14 @@ class StructuralSubscriptionView(LaunchpadFormView):
 
     def _handleDriverChanges(self, data):
         """Process subscriptions for other persons."""
-        if not self.userIsDistributionDriver():
+        if not self.userIsDriver():
             return
 
         target = self.context
         new_subscription = data['new_subscription']
         if new_subscription is not None:
             try:
-                target.addSubscription(new_subscription, self.user)
+                sub = target.addBugSubscription(new_subscription, self.user)
             except DuplicateSubscriptionError:
                 self.request.response.addNotification(
                     '"%s" is already subscribed to %s.' % (
@@ -213,9 +214,22 @@ class StructuralSubscriptionView(LaunchpadFormView):
                 '"%s" was successfully unsubscribed from %s.' % (
                     subscription.displayname, target.displayname))
 
-    def userIsDistributionDriver(self):
+    def userIsDriver(self):
         """Has the current user driver permissions?"""
-        return check_permission("launchpad.Driver", self.context.distribution)
+        # XXX 2008-01-30 Tom Berger (intellectronica):
+        # The semantics of this method are actually a bit vague,
+        # since when we talk about driver permissions, we're talking
+        # about something different for each structure. For now,
+        # we only want to look at this if the target is a
+        # distribution source package, in order to maintain
+        # compatibility with the bug contacts feature. We want
+        # to enable this for other targets, but probably only
+        # after implementing
+        # https://blueprints.launchpad.net/malone/+spec/subscription-invitation
+        if IDistributionSourcePackage.providedBy(self.context):
+            return check_permission("launchpad.Driver", self.context.distribution)
+        else:
+            return False
 
     @cachedproperty
     def user_teams(self):

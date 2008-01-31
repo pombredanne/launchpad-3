@@ -14,7 +14,7 @@ from sqlobject.sqlbuilder import SQLConstant
 from zope.interface import implements
 
 from canonical.launchpad.interfaces import (
-    DeleteSubscriptionError, DuplicateSubscriptionError,
+    BugNotificationLevel, DeleteSubscriptionError, DuplicateSubscriptionError,
     IDistributionSourcePackage, IQuestionTarget, PackagePublishingStatus)
 from canonical.database.sqlbase import sqlvalues
 from canonical.launchpad.database.bug import BugSet, get_bug_tags_open_count
@@ -172,11 +172,21 @@ class DistributionSourcePackage(BugTargetBase,
                 "%s is already subscribed to %s." %
                 (subscriber.name, self.displayname))
         else:
-            StructuralSubscription(
+            return StructuralSubscription(
                 distribution=self.distribution,
                 sourcepackagename=self.sourcepackagename,
                 subscriber=subscriber,
                 subscribed_by=subscribed_by)
+
+    def addBugSubscription(self, subscriber, subscribed_by):
+        """See `IDistributionSourcePackage`."""
+        # This is a helper method for creating a structural
+        # subscription and immediately giving it a full
+        # bug notification level. It is useful so long as
+        # subscriptions are mainly used to implement bug contacts.
+        sub = self.addSubscription(subscriber, subscribed_by)
+        sub.bug_notification_level = BugNotificationLevel.COMMENTS
+        return sub
 
     def removeSubscription(self, person):
         """See `IDistributionSourcePackage`."""
@@ -191,15 +201,17 @@ class DistributionSourcePackage(BugTargetBase,
 
     def isSubscribed(self, person):
         """See `IDistributionSourcePackage`."""
-        subscription = StructuralSubscription.selectOneBy(
+        subscriptions = StructuralSubscription.selectBy(
             distribution=self.distribution,
             sourcepackagename=self.sourcepackagename,
             subscriber=person)
 
-        if subscription is not None:
-            return subscription
-        else:
-            return False
+        min_bug_notification_level = BugNotificationLevel.METADATA
+
+        for sub in subscriptions:
+            if sub.bug_notification_level > min_bug_notification_level:
+                return sub
+        return False
 
     @property
     def binary_package_names(self):
