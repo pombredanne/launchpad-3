@@ -201,6 +201,28 @@ it again in the new context. See bug 181328.
     >>> copied_pub = pub_failed.copyTo(
     ...     hoary, PackagePublishingPocket.RELEASE, warty.main_archive)
 
+A source published in warty/RELEASE with a successfully built build
+won't be considered for built again.
+
+    >>> pub_success = test_publisher.getPubSource(
+    ...     sourcename='test-success', version='1.0', distroseries=warty,
+    ...     status=PackagePublishingStatus.PUBLISHED,
+    ...     pocket=PackagePublishingPocket.RELEASE)
+
+    >>> ok_build = pub_success.sourcepackagerelease.createBuild(
+    ...     warty['i386'], PackagePublishingPocket.RELEASE,
+    ...     warty.main_archive, status=BuildStatus.FULLYBUILT)
+
+Exclude the just-created build from the subsequents tests/counters.
+
+    >>> old_build_ids.append(ok_build.id)
+
+A copy of this successfully built source to a subsequent distroseries
+will not result in a new build record.
+
+    >>> copied_pub = pub_success.copyTo(
+    ...     hoary, PackagePublishingPocket.RELEASE, warty.main_archive)
+
 Finally a publication in Celso's PPA, a build will be created for it
 respecting only 'architecturehintlist' and PPA-supported architecture,
 it won't be submitted to P-a-s.
@@ -402,6 +424,7 @@ Check that we only created new Build entries for the new hoary releases:
     hppa build of test-buildd-4 670 in ubuntu hoary RELEASE
     hppa build of test-buildd-6 672 in ubuntu hoary RELEASE
     i386 build of test-buildd-7 673 in ubuntu hoary RELEASE
+    i386 build of test-failed 1.0 in ubuntu hoary RELEASE
     i386 build of test-ppa 674 in ubuntu hoary RELEASE
     i386 build of test-updates 665 in ubuntu warty UPDATES
 
@@ -419,7 +442,7 @@ state are immediately created.
     >>> active_jobs = [bq for bq in BuildQueue.select(orderBy='id')
     ...                if bq.id not in old_job_ids]
     >>> len(active_jobs)
-    10
+    11
 
 The BuildQueue entries created are already 'scored', it means that the job
 can be already dispatched once operation is committed, i.e.,
