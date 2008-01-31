@@ -12,6 +12,7 @@ news feed.
     ...     parse_ids, parse_links, validate_feed)
 
     >>> NOANNOUNCE = 'no announcements for this project'
+    >>> SHOWLNK = 'Show announcements'
     >>> def latest_news(content):
     ...     """The contents of the latest news portlet."""
     ...     return extract_text(find_portlet(content, 'Latest news'))
@@ -20,8 +21,7 @@ news feed.
     ...     return find_portlet(content, 'Latest news') is not None
     >>> def has_show_link(content):
     ...     """Determine whether the "Show announcements" link is shown."""
-    ...     return len(find_tags_by_class(
-    ...         content, 'menu-link-announcements')) > 0
+    ...     return SHOWLNK in extract_text(find_portlet(content, 'Actions'))
     >>> def no_announcements(content):
     ...     """Verify there are no announcements in page content."""
     ...     return NOANNOUNCE in extract_text(find_main_content(content))

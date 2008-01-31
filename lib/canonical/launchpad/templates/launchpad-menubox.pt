@@ -9,14 +9,19 @@
   <h2>Actions</h2>
   <ul>
     <tal:block repeat="link view/contextmenuitems">
-      <li tal:content="structure link/@@+link">
-        Link
+      <li metal:define-macro="renderlink">
+        <a tal:condition="link/linked"
+          tal:attributes="href link/url; title link/summary"
+          tal:content="structure link/escapedtext"
+        >link text</a>
+        <strong tal:condition="not: link/linked"
+              tal:content="structure link/escapedtext">
+          Unlinked text
+        </strong>
       </li>
     </tal:block>
     <tal:block repeat="link view/applicationmenuitems">
-      <li tal:content="structure link/@@+link">
-        Link
-      </li>
+      <metal:use metal:use-macro="template/macros/renderlink" />
     </tal:block>
   </ul>
 </div>
