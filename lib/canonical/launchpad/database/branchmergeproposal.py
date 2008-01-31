@@ -164,7 +164,7 @@ class BranchMergeProposal(SQLBase):
         assert owner is not None, 'Merge proposal messages need a sender'
         if parent is None:
             if self.conversation is not None:
-                parent=self.conversation.message
+                parent = self.conversation.message
         else:
             assert (parent.branch_merge_proposal == self, 'Replies must use')
             parent = parent.message

@@ -3,8 +3,6 @@
 __metaclass__ = type
 __all__ = ['CodeReviewMessage']
 
-from email.Utils import make_msgid
-
 from zope.interface import implements
 
 from sqlobject import ForeignKey, IntCol
@@ -13,7 +11,6 @@ from canonical.database.sqlbase import SQLBase
 from canonical.launchpad.interfaces import (
     ICodeReviewMessage,
     )
-from canonical.launchpad.database.message import Message, MessageChunk
 
 
 class CodeReviewMessage(SQLBase):

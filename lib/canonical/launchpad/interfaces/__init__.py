@@ -65,7 +65,8 @@ from canonical.launchpad.interfaces.distributionsourcepackagecache import *
 from canonical.launchpad.interfaces.distributionsourcepackagerelease import *
 from canonical.launchpad.interfaces.distroarchseries import *
 from canonical.launchpad.interfaces.distroarchseriesbinarypackage import *
-from canonical.launchpad.interfaces.distroarchseriesbinarypackagerelease import *
+from canonical.launchpad.interfaces.distroarchseriesbinarypackagerelease\
+    import *
 from canonical.launchpad.interfaces.distroseries import *
 from canonical.launchpad.interfaces.distroseriesbinarypackage import *
 from canonical.launchpad.interfaces.distroserieslanguage import *

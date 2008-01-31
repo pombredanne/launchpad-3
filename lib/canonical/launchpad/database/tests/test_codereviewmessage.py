@@ -6,9 +6,6 @@ import unittest
 from canonical.launchpad.database.branchmergeproposal import (
     BranchMergeProposal
     )
-from canonical.launchpad.database.codereviewmessage import (
-    CodeReviewMessage
-    )
 from canonical.launchpad.database.person import Person
 from canonical.testing import LaunchpadFunctionalLayer
 from canonical.launchpad.ftests import login
