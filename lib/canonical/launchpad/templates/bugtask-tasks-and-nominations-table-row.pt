@@ -44,7 +44,7 @@
     </td>
 
     <tal:conjoined-task condition="context/conjoined_master">
-    <td colspan="3" style="vertical-align: middle">
+    <td colspan="4" style="vertical-align: middle">
       <span class="discreet lesser" style="font-size: 100%">
         Status tracked in
         <tal:master tal:replace="view/getConjoinedMasterName">
