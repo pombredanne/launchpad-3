@@ -95,7 +95,7 @@ should display an error message.
     Required input is missing.
 
 Entering a string that does not look like an email address causes an
- error to be displayed.
+error to be displayed.
 
     >>> browser.title
     "Guilherme Salgado's e-mail addresses"

@@ -3028,7 +3028,7 @@ class PersonEditEmailsView(LaunchpadFormView):
         if has_errors:
             # We know that 'newemail' is empty.
             return self.errors
-        
+
         newemail = data['newemail']
         if not valid_email(newemail):
             self.addError(
