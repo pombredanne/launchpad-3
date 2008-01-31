@@ -1622,8 +1622,8 @@ class BugTaskSet:
             bug_privacy_filter = ''
         else:
             bug_privacy_filter = get_bug_privacy_filter(user)
-        if bug_privacy_filter:
-            bug_privacy_filter = "AND " + bug_privacy_filter
+            if bug_privacy_filter != '':
+                bug_privacy_filter = "AND " + bug_privacy_filter
         unconfirmed_bug_join = self._getUnconfirmedBugJoin()
         (target_join, target_clause) = self._getTargetJoinAndClause(target)
         all_bugtasks = BugTask.select("""
