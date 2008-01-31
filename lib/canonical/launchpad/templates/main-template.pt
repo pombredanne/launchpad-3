@@ -58,7 +58,7 @@
         input[type="text"] {width: 95%}
         textarea {width: 95%;}
       </style>
-    <![endif]>
+    <![endif]-->
 
     <!--[if IE 7]>
       <style type="text/css">
