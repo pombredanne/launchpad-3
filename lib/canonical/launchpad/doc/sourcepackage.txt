@@ -105,6 +105,57 @@ component. If there are no PUBLISHED records, None is returned.
     >>> print firefox_warty.latest_published_component
     None
 
+SourcePackage traversing is also provided through the available
+published versions. Note that all versions ever published in the
+SourcePackage context will be reachable.
+
+    >>> pmount_hoary = ubuntu['hoary'].getSourcePackage('pmount')
+
+    >>> for release in pmount_hoary.releases:
+    ...     print release.title, release.publishing_history[0].status.name
+    pmount 0.1-1 (source) in Ubuntu SUPERSEDED
+    pmount 0.1-2 (source) in Ubuntu PUBLISHED
+
+    >>> print pmount_hoary['0.1-1'].title
+    pmount 0.1-1 (source) in ubuntu hoary
+
+    >>> print pmount_hoary['0.1-2'].title
+    pmount 0.1-2 (source) in ubuntu hoary
+
+
+    >>> len(list(pmount_hoary.distinctreleases))
+    2
+
+'pmount_0.1-1' in hoary is SUPERSEDED but not yet 'removed from disk'.
+
+    >>> secure_pub =  SecureSourcePackagePublishingHistory.get(
+    ...     pmount_hoary['0.1-1'].publishing_history[0].id)
+    >>> secure_pub.datesuperseded is not None
+    True
+    >>> secure_pub.dateremoved is None
+    True
+
+We will emulate disk-removal to ensure it will continue to be
+reachable. See bug #179028 for further information.
+
+    >>> from datetime import timedelta
+    >>> secure_pub.dateremoved = secure_pub.datesuperseded + timedelta(days=1)
+    >>> syncUpdate(secure_pub)
+
+    >>> for release in pmount_hoary.releases:
+    ...     print release.title, release.publishing_history[0].status.name
+    pmount 0.1-1 (source) in Ubuntu SUPERSEDED
+    pmount 0.1-2 (source) in Ubuntu PUBLISHED
+
+    >>> print pmount_hoary['0.1-1'].title
+    pmount 0.1-1 (source) in ubuntu hoary
+
+    >>> len(list(pmount_hoary.distinctreleases))
+    2
+
+We will leave the pmount_0.1-1 marked as 'removed from disk' because
+we do want it to affect the next test cases.
+
 
 == Distribution Source Packages ==
 
@@ -313,21 +364,6 @@ Zero or more spaces may appear between the ":" and the "#".
 
     >>> spr_view._linkify_bug_numbers("garbage")
     'garbage'
-
-
-Checking handy Sourcepackage properties:
-
-XXX cprov 20060125: it's still very primitive test but it's better
-than nothing ... bug # 29659
-
-    >>> len(sp.releases)
-    2
-
-SQLObject won't let us use .count on the results set returned from 
-distinctreleases, so we use this ugly hack:
-
-    >>> len(list(sp.distinctreleases))
-    2
 
 
 == Comparing Sourcepackages ==
