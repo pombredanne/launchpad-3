@@ -250,6 +250,64 @@ a user in the reviewer team can approve or reject the branch.
     Code approved
 
 
+== Queueing up a branch that has been approved ==
+
+A branch proposal to merge that has been approved can be added to the
+merge queue for the target branch.  The proposal to merge will be given
+a queue position where the value '1' is the front of the queue.
+
+When a proposal is queued, the person that queues up the branch is
+recorded, along with the revision_id of the tip revision.  This revision_id
+is the revision that will be merged into the target branch.
+
+    >>> proposal.enqueue(sample_person, tip.revision_id)
+    >>> print proposal.queue_status.title
+    Queued
+    >>> print proposal.queuer.displayname
+    Sample Person
+    >>> print proposal.queue_position
+    1
+
+If the proposal to merge was not in the approved state before attempting
+to queue the branch, then an implicit approval is attempted.  If the user
+queuing the branch is not a reviewer, an exception is raised.
+
+    >>> proposal.requestReview()
+    >>> print proposal.queue_status.title
+    Needs review
+
+    >>> proposal.enqueue(sample_person, tip.revision_id)
+    Traceback (most recent call last):
+    UserNotBranchReviewer
+
+    >>> proposal.enqueue(eric_the_reviewer, tip.revision_id)
+    Traceback (most recent call last):
+    UserNotBranchReviewer
+    >>> print proposal.queue_status.title
+    Queued
+    >>> print proposal.queuer.name
+    eric-reviewer
+    >>> print proposal.reviewer.name
+    eric-reviewer
+    >>> print proposal.queue_position
+    1
+
+
+== Removing a branch from the merge queue ==
+
+A branch proposal to merge that has been queued can also be removed
+from the queue.  Doing so moves the state of the proposal back to
+Approved.
+
+    >>> proposal.dequeue()
+    >>> print proposal.queue_status.title
+    Approved
+    >>> print proposal.queue_position
+    None
+    >>> print proposal.queuer
+    None
+
+
 == Marking as failed to merge ==
 
 Anyone that has rights to edit the merge proposal can say that the

@@ -208,6 +208,24 @@ class IBranchMergeProposal(Interface):
                  the branch reviewer for the target branch.
         """
 
+    def enqueue(queuer, revision_id):
+        """Put the proposal into the merge queue for the target branch.
+
+        If the proposal is not in the Approved state before this method
+        is called, approveBranch is called with the reviewer and revision_id
+        specified.
+        """
+
+    def dequeue():
+        """Take the proposal out of the merge queue of the target branch.
+
+        :raises: BadStateTransition if the proposal is not in the queued
+                 state.
+        """
+
+    def moveToFrontOfQueue():
+        """Move the queue proposal to the front of the queue."""
+
     def mergeFailed(merger):
         """Mark the proposal as 'Code failed to merge'."""
 

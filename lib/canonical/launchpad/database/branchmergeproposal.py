@@ -15,7 +15,7 @@ from sqlobject import ForeignKey, IntCol, StringCol
 from canonical.database.constants import DEFAULT, UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
-from canonical.database.sqlbase import SQLBase, sqlvalues
+from canonical.database.sqlbase import cursor, quote, SQLBase, sqlvalues
 
 from canonical.launchpad.database.branchrevision import BranchRevision
 from canonical.launchpad.interfaces import (
@@ -127,6 +127,58 @@ class BranchMergeProposal(SQLBase):
         """See `IBranchMergeProposal`."""
         self._reviewProposal(
             reviewer, BranchMergeProposalStatus.REJECTED, revision_id)
+
+    def enqueue(self, queuer, revision_id):
+        """See `IBranchMergeProposal`."""
+        if self.queue_status != BranchMergeProposalStatus.CODE_APPROVED:
+            self.approveBranch(queuer, revision_id)
+
+        last_entry = BranchMergeProposal.selectOne("""
+            BranchMergeProposal.queue_position = (
+                SELECT coalesce(MAX(queue_position), 0)
+                FROM BranchMergeProposal)
+            """)
+
+        if last_entry is None:
+            position = 1
+        else:
+            position = last_entry.queue_position + 1
+
+        self.queue_status = BranchMergeProposalStatus.QUEUED
+        self.queue_position = position
+        self.queuer = queuer
+        self.queued_revision_id = revision_id
+        self.date_queued = UTC_NOW
+        self.syncUpdate()
+
+    def dequeue(self):
+        """See `IBranchMergeProposal`."""
+        if self.queue_status != BranchMergeProposalStatus.QUEUED:
+            raise BadStateTransition(
+                'Invalid state transition for merge proposal: %s -> %s'
+                % (self.queue_state.title,
+                   BranchMergeProposalStatus.QUEUED.title))
+        self.queue_status = BranchMergeProposalStatus.CODE_APPROVED
+        # Clear out the queued values.
+        self.queuer = None
+        self.queued_revision_id = None
+        self.date_queued = None
+        # Remove from the queue.
+        self.queue_position = None
+        self.syncUpdate()
+
+    def moveToFrontOfQueue(self):
+        """See `IBranchMergeProposal`."""
+        if self.queue_status != BranchMergeProposalStatus.QUEUED:
+            return
+        first_entry = BranchMergeProposal.selectOne("""
+            BranchMergeProposal.queue_position = (
+                SELECT MIN(queue_position)
+                FROM BranchMergeProposal)
+            """)
+
+        self.queue_position = first_entry.queue_position - 1
+        self.syncUpdate()
 
     def mergeFailed(self, merger):
         """See `IBranchMergeProposal`."""

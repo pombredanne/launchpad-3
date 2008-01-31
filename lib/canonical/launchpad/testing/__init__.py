@@ -135,6 +135,14 @@ class LaunchpadObjectFactory:
             branch_type, name, owner, owner, product, url,
             **optional_branch_args)
 
+    def makeProposalToMerge(self, target_branch=None):
+        """Create a proposal to merge based on anonymous branches."""
+        if target_branch is None:
+            target_branch = self.makeBranch()
+        source_branch = self.makeBranch(product=target_branch.product)
+        return source_branch.addLandingTarget(
+            self.makePerson(), target_branch)
+
     def makeRevisionsForBranch(self, branch, count=5, author=None,
                                date_generator=None):
         """Add `count` revisions to the revision history of `branch`.

@@ -34,7 +34,8 @@ from canonical.database.enumcol import EnumCol
 from canonical.launchpad.interfaces import (
     BranchCreationForbidden, BranchCreationNoTeamOwnedJunkBranches,
     BranchCreatorNotMemberOfOwnerTeam, BranchCreatorNotOwner,
-    BranchLifecycleStatus, BranchListingSort, BranchSubscriptionDiffSize,
+    BranchLifecycleStatus, BranchListingSort, BranchMergeProposalStatus,
+    BranchSubscriptionDiffSize,
     BranchSubscriptionNotificationLevel, BranchType, BranchTypeError,
     BranchVisibilityRule, CannotDeleteBranch,
     DEFAULT_BRANCH_STATUS_IN_LISTING, IBranch, IBranchSet,
@@ -185,7 +186,13 @@ class Branch(SQLBase):
             target_branch=target_branch, dependent_branch=dependent_branch,
             whiteboard=whiteboard, date_created=date_created)
 
-    next_mirror_time = UtcDateTimeCol(default=None)
+    def getMergeQueue(self):
+        """See `IBranch`."""
+        return BranchMergeProposal.select("""
+            BranchMergeProposal.target_branch = %s AND
+            BranchMergeProposal.queue_status = %s
+            """ % sqlvalues(self, BranchMergeProposalStatus.QUEUED)
+            , orderBy="queue_position")
 
     @property
     def code_is_browseable(self):
