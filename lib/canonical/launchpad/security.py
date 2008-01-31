@@ -1381,3 +1381,7 @@ class ViewArchive(AuthorizationBase):
         # Admins and this archive's owner or team members are allowed.
         admins = getUtility(ILaunchpadCelebrities).admin
         return user.inTeam(self.obj.owner) or user.inTeam(admins)
+
+    def checkUnauthenticated(self):
+        """Unauthenticated users can see the PPA if it's not private."""
+        return not self.obj.private

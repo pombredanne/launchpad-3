@@ -954,7 +954,7 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
                 WHERE status IN %s)
             """ % sqlvalues(active_statuses))
 
-        if text is not None:
+        if text:
             clauses.append("""
             ((Person.fti @@ ftq(%s) OR
             Archive.description LIKE '%%' || %s || '%%'))
