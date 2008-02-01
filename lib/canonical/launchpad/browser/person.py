@@ -94,9 +94,7 @@ import pytz
 import urllib
 
 from zope.app.form.browser import SelectWidget, TextAreaWidget
-from zope.app.session.interfaces import ISession
 from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
-from zope.event import notify
 from zope.formlib import form
 from zope.interface import implements
 from zope.component import getUtility
@@ -150,8 +148,8 @@ from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.dynmenu import DynMenu, neverempty
 from canonical.launchpad.webapp.publisher import LaunchpadView
 from canonical.launchpad.webapp.batching import BatchNavigator
-from canonical.launchpad.webapp.interfaces import (
-    IPlacelessLoginSource, LoggedOutEvent)
+from canonical.launchpad.webapp.interfaces import IPlacelessLoginSource
+from canonical.launchpad.webapp.login import logoutPerson
 from canonical.launchpad.webapp import (
     ApplicationMenu, ContextMenu, LaunchpadEditFormView, LaunchpadFormView,
     Link, Navigation, StandardLaunchpadFacets, action, canonical_url,
@@ -1192,14 +1190,7 @@ class PersonDeactivateAccountView(LaunchpadFormView):
     @action(_("Deactivate My Account"), name="deactivate")
     def deactivate_action(self, action, data):
         self.context.deactivateAccount(data['account_status_comment'])
-        session = ISession(self.request)
-        authdata = session['launchpad.authenticateduser']
-        previous_login = authdata.get('personid')
-        assert previous_login is not None, (
-            "User is not logged in; he can't be here.")
-        authdata['personid'] = None
-        authdata['logintime'] = datetime.utcnow()
-        notify(LoggedOutEvent(self.request))
+        logoutPerson(self.request)
         self.request.response.addNoticeNotification(
             _(u'Your account has been deactivated.'))
         self.next_url = self.request.getApplicationURL()

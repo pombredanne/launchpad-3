@@ -315,26 +315,6 @@
         />
 
     <subscriber
-        for="canonical.launchpad.webapp.interfaces.IAfterTraverseEvent"
-        handler="canonical.launchpad.webapp.authentication.handle"
-        />
-
-    <subscriber
-        for="zope.app.publication.interfaces.IBeforeTraverseEvent"
-        handler="canonical.launchpad.webapp.authentication.handle"
-        />
-
-    <subscriber
-        for="canonical.launchpad.webapp.interfaces.ILoggedInEvent"
-        handler="canonical.launchpad.webapp.authentication.handle"
-        />
-
-    <subscriber
-        for="canonical.launchpad.webapp.interfaces.ILoggedOutEvent"
-        handler="canonical.launchpad.webapp.authentication.handle"
-        />
-
-    <subscriber
         for="canonical.launchpad.webapp.interfaces.IPrincipalIdentifiedEvent"
         handler="canonical.launchpad.webapp.launchbag.set_login_in_launchbag_when_principal_identified"
         />
