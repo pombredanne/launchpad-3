@@ -25,7 +25,7 @@ from canonical.config import config
 from canonical.uuid import generate_uuid
 from canonical.launchpad.webapp.interfaces import (
         INotificationRequest, INotificationResponse, BrowserNotificationLevel,
-        INotification, INotificationList
+        INotification, INotificationList, IStructuredString
         )
 from canonical.launchpad.webapp.publisher import LaunchpadView
 from canonical.launchpad.webapp.url import urlsplit
@@ -166,21 +166,26 @@ class NotificationResponse:
     # which would be bad.
     _notifications = None
 
-    def addNotification(self, msg, level=BrowserNotificationLevel.NOTICE, **kw):
-        """See canonical.launchpad.webapp.interfaces.INotificationResponse."""
-        # Bug #54987
+    def addNotification(self, msg, level=BrowserNotificationLevel.NOTICE):
+        """See `INotificationResponse`.
+
+	XXXX FIX ME XXXX
+	Add a docstring describing the IStructuredString and
+	i18n.Message parts of the API.
+
+	"""
+        # It is possible that the message is wrapped in an
+        # internationalized object, so we need to translate it
+        # first. See bug #54987.
         if isinstance(msg, (zope.i18n.Message, zope.i18n.MessageID)):
             msg = zope.i18n.translate(msg, context=self._request)
-        if kw:
-            quoted_args = {}
-            for key, value in kw.items():
-                if isinstance(value, (int, float)):
-                    quoted_args[key] = value
-                else:
-                    quoted_args[key] = cgi.escape(unicode(value))
-            msg = msg % quoted_args
 
-        self.notifications.append(Notification(level, msg))
+	if IStructuredString.providedBy(msg):
+	    escaped_msg = msg.escapedtext
+	else:
+	    escaped_msg = cgi.escape(unicode(msg))
+
+        self.notifications.append(Notification(level, escaped_msg))
 
     @property
     def notifications(self):

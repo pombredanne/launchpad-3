@@ -608,6 +608,8 @@ class INotificationResponse(Interface):
     def addNotification(msg, level=BrowserNotificationLevel.NOTICE, **kw):
         """Append the given message to the list of notifications
 
+	XXXX FIX ME!! XXXX
+	
         msg may be an XHTML fragment suitable for inclusion in a block
         tag such as <div>. It may also contain standard Python string
         replacement markers to be filled out by the keyword arguments
