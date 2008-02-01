@@ -61,7 +61,7 @@
     </div>
 
     <div metal:fill-slot="main">
-      <h1>Upstream Bug Report for
+      <h1>Upstream bug report for
         <tal:distro replace="context/displayname" /></h1>
 
       <tal:no-bugs tal:condition="not: view/data">
@@ -70,10 +70,10 @@
       </tal:no-bugs>
 
       <p class="warning message" tal:condition="view/data">
-        This report is an alpha release and has limitations in its
-        accounting. You can use it to guide your work, but do not read
-        great significance into the literal percentages. See the Help
-        tab for information on the counts.
+        This report is an alpha release and has accounting limitations.
+        You can use it to guide your work, but do not take the
+        percentages too literally. See the Help tab for information on
+        the counts.
       </p>
 
       <table class="listing" id="upstream-report"
@@ -175,6 +175,8 @@
               </td>
             </tal:upstream-not-in-launchpad>
           </tr>
+        </tbody>
+        <tfoot id="upstream-report-totals">
           <tr>
             <td colspan="4" align="right"><b>Totals:</b></td>
             <td align="right"
@@ -192,7 +194,7 @@
             <td align="right"
                 tal:content="view/total/watched_bugs_delta" />
           </tr>
-        </tbody>
+        <tfoot>
       </table>
 
       <div tal:condition="view/data" 

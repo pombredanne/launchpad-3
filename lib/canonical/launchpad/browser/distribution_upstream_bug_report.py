@@ -24,18 +24,33 @@ class BugReportData:
 
     This is a base class and is directly used only for the totals row.
     See the help text in the template for a verbose description of what
-    the numbers mean.
+    the numbers mean. Briefly, we hold three counts:
+
+        1. open: bugs with distribution tasks with a status of one of
+           interfaces.bugtask.UNRESOLVED_BUGTASK_STATUSES.
+        2. upstream: bugs that are open and have an upstream task against
+           them.
+        3. watched: bugs that are open, and have an upstream task linked
+           to a watch.
+
+    This class makes the two latter counts available as percentages and
+    deltas to their predecessor. The report gives the impression of a
+    pipeline where bugs trickle into the next count. A fourth potential
+    count could be a count of open distribution bugs that are fixed
+    upstream, which would imply closing the loop of upstream fixes back
+    to the distribution.
+
+    The *_class() methods return "good" or nothing, and are intended for
+    use in a CSS class. They calculate their values based on the
+    UPSTREAM_THRESHOLD and WATCH_THRESHOLD class variables. The reason
+    we calculate them is that until we have a way of tracking whether a
+    bug is actually /not/ upstream we can't assume 100% of distribution
+    bugs need upstream tasks.
     """
-    # These constants control which percentages we consider to be "good"
-    # which with the CSS styling means they go green. They are here
-    # because we can't really say today that there are no corner cases.
     UPSTREAM_THRESHOLD = 60
     WATCH_THRESHOLD = 95
 
-    def __init__(self):
-        self.set_counts(0, 0, 0)
-
-    def set_counts(self, open_bugs, upstream_bugs, watched_bugs):
+    def __init__(self, open_bugs=0, upstream_bugs=0, watched_bugs=0):
         self.open_bugs = open_bugs
         self.upstream_bugs = upstream_bugs
         self.watched_bugs = watched_bugs
@@ -82,15 +97,18 @@ class PackageBugReportData(BugReportData):
 
     Apart from the counts, includes data to make it easy to link to
     pages which allow inputting missing information related to the
-    package.
+    package. Relevant instance variables:
+
+        - dsp: an IDistributionSourcePackage
+        - dssp: an IDistributionSeriesSourcepackage
+        - product: an IProduct
+        - official_malone: convenience boolean for IProduct.official_malone
+        - *_url: convenience URLs
     """
     def __init__(self, dsp, product, open_bugs, upstream_bugs, watched_bugs):
+        BugReportData.__init__(self, open_bugs, upstream_bugs, watched_bugs)
         self.dsp = dsp
         self.product = product
-        BugReportData.__init__(self)
-        # BugReportData sneakily initializes the counts to zero so we
-        # need to do this explicitly here.
-        self.set_counts(open_bugs, upstream_bugs, watched_bugs)
 
         dsp_url = canonical_url(dsp)
         self.open_bugs_url = dsp_url
@@ -105,10 +123,14 @@ class PackageBugReportData(BugReportData):
             self.bugcontact_url = product_url + "/+bugcontact"
             self.product_edit_url = product_url + "/+edit"
 
-        # If the distribution doesn't have series, or if no versions of
-        # this package are currently PUBLISHED in any series, we can't
-        # offer a link to add packaging information. Note that the
-        # +edit-packaging page is publically available.
+        # The +edit-packaging page is only available for
+        # IDistributionSeriesSourcepackages, so deduce one here.  If the
+        # distribution doesn't have series, or if no versions of this
+        # package are currently PUBLISHED in any series, we can't offer
+        # a link to add packaging information.
+        #
+        # Note that the +edit-packaging page allows launchpad.AnyPerson
+        # so no permissions check needs to be done in the template.
         dssps = dsp.get_distroseries_packages()
         if dssps:
             self.dssp = dssps[0]

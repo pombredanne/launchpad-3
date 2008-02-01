@@ -5,29 +5,20 @@ that it is able to communicate upstream bugs to the relevant upstream
 project and monitor them as they change. Launchpad offers functionality
 to allow a distribution to focus on and improve this process.
 
+
     >>> from canonical.launchpad.ftests import login
+    >>> from canonical.launchpad.ftests.bug import (
+    ...     create_bug_from_strings)
     >>> from canonical.database.sqlbase import flush_database_updates
     >>> from canonical.launchpad.interfaces import (
-    ...     IDistributionSet, IBugTaskSet, IPersonSet, IProductSet,
-    ...     ISourcePackageNameSet, IBugSet, IBugWatchSet,
-    ...     CreateBugParams, IPackagingUtil, PackagingType)
+    ...     ISourcePackageNameSet, IDistributionSet, IProductSet,
+    ...     IPackagingUtil, IPersonSet, PackagingType, IBugTaskSet,
+    ...     IBugWatchSet)
+
     >>> distroset = getUtility(IDistributionSet)
-    >>> personset = getUtility(IPersonSet)
-    >>> bugset = getUtility(IBugSet)
-    >>> bugtaskset = getUtility(IBugTaskSet)
-    >>> bugwatchset = getUtility(IBugWatchSet)
-    >>> productset = getUtility(IProductSet)
-    >>> spnset = getUtility(ISourcePackageNameSet)
-    >>> packagingutil = getUtility(IPackagingUtil)
     >>> ubuntu = distroset.getByName('ubuntu')
     >>> debian = distroset.getByName('debian')
     >>> kubuntu = distroset.getByName('kubuntu')
-    >>> pmount_spn = spnset.queryByName('pmount')
-    >>> name12 = personset.getByName('name12')
-    >>> pmount = productset.createProduct(name12, 'pmount', 'pmount',
-    ...                                   'pmount', 'pmount')
-
-XXX: would be really great if spnset consistently offered getByName.
 
 
 == The API ==
@@ -45,11 +36,11 @@ A first set of reports, entirely based on sampledata:
 
     >>> print_report(ubuntu.getPackagesAndPublicUpstreamBugCounts())
     linux-source-2.6.15 None    1 0 0
-    mozilla-firefox     firefox 1 1 0
+    mozilla-firefox     firefox 1 1 1
     thunderbird         None    1 1 1
 
     >>> print_report(debian.getPackagesAndPublicUpstreamBugCounts())
-    mozilla-firefox     None    3 2 0
+    mozilla-firefox     None    3 2 1
 
     >>> print_report(kubuntu.getPackagesAndPublicUpstreamBugCounts())
 
@@ -57,50 +48,51 @@ We add two new bugs to pmount in Ubuntu. From now on we'll limit the
 results to 3 packages (as a demonstration of the API) so thunderbird will be
 popped off the list:
 
-    >>> params = CreateBugParams(name12, "pmount used to work",
-    ...     "fix it")
-    >>> params.setBugTarget(distribution=ubuntu,
-    ...     sourcepackagename=pmount_spn)
-    >>> bug = bugset.createBug(params)
-    >>> params = CreateBugParams(name12, "pmount has issues", "I need #3",
-    ...     "fix it")
-    >>> params.setBugTarget(distribution=ubuntu,
-    ...     sourcepackagename=pmount_spn)
-    >>> bug = bugset.createBug(params)
+    >>> bug = create_bug_from_strings(distribution='ubuntu',
+    ...     sourcepackagename='pmount', owner='name12', 
+    ...     summary='pmount used to work', description='fix it')
+    >>> bug = create_bug_from_strings(distribution='ubuntu',
+    ...     sourcepackagename='pmount', owner='name12',
+    ...     summary='pmount has issues', description='fix it again')
     >>> print_report(ubuntu.getPackagesAndPublicUpstreamBugCounts(limit=3))
     pmount              None    2 0 0
     linux-source-2.6.15 None    1 0 0
-    mozilla-firefox     firefox 1 1 0
+    mozilla-firefox     firefox 1 1 1
 
 As you can see, there is no packaging data for pmount in Ubuntu, so no
 upstream is reported for it. Let's fix that:
 
-    >>> packagingutil.createPackaging(pmount.getSeries('trunk'), pmount_spn,
+    >>> pmount_spn = getUtility(ISourcePackageNameSet).queryByName('pmount')
+    >>> name12 = getUtility(IPersonSet).getByName('name12')
+    >>> pmount = getUtility(IProductSet).createProduct(
+    ...     name12, 'pmount', 'pmount', 'pmount', 'pmount')
+    >>> getUtility(IPackagingUtil).createPackaging(
+    ...     pmount.getSeries('trunk'), pmount_spn,
     ...     ubuntu.currentseries, PackagingType.PRIME, name12)
     >>> print_report(ubuntu.getPackagesAndPublicUpstreamBugCounts(limit=3))
     pmount              pmount  2 0 0
     linux-source-2.6.15 None    1 0 0
-    mozilla-firefox     firefox 1 1 0
+    mozilla-firefox     firefox 1 1 1
 
 Much better. We then add an upstream task to the second pmount bug:
 
-    >>> task = bugtaskset.createTask(bug, name12, product=pmount)
+    >>> task = getUtility(IBugTaskSet).createTask(bug, name12, product=pmount)
     >>> print_report(ubuntu.getPackagesAndPublicUpstreamBugCounts(limit=3))
     pmount              pmount  2 1 0
     linux-source-2.6.15 None    1 0 0
-    mozilla-firefox     firefox 1 1 0
+    mozilla-firefox     firefox 1 1 1
 
 Linking that task to a bugwatch makes the watch counts update:
 
     >>> url = "http://bugs.debian.org/cgi-bin/bugreport.cgi?bug=666"
     >>> login('foo.bar@canonical.com')
-    >>> [watch] = bugwatchset.fromText(url, bug, name12)
+    >>> [watch] = getUtility(IBugWatchSet).fromText(url, bug, name12)
     >>> task.bugwatch = watch
     >>> flush_database_updates()
     >>> print_report(ubuntu.getPackagesAndPublicUpstreamBugCounts(limit=3))
     pmount              pmount  2 1 1
     linux-source-2.6.15 None    1 0 0
-    mozilla-firefox     firefox 1 1 0
+    mozilla-firefox     firefox 1 1 1
 
 
 == The view ==
@@ -125,7 +117,7 @@ them:
     ...         print getattr(data, f),
 
     >>> def print_helpers(data):
-    ...     print data.dsp.name, data.dsp.distribution.name
+    ...     print data.dsp.name, data.dsp.distribution.name,
     ...     if data.dssp:
     ...         print data.dssp.distroseries.name
     ...     else:
@@ -137,8 +129,8 @@ them:
     ...     for f in ['bugcontact_url', 'product_edit_url',
     ...               'upstream_bugs_url', 'upstream_bugs_delta_url',
     ...               'watched_bugs_delta_url']:
-    ...         text = getattr(data, f, "NO URL")
-    ...         print text.replace("http://launchpad.dev/ubuntu/+source/", "**")
+    ...         t = getattr(data, f, "NO URL")
+    ...         print t.replace("http://launchpad.dev/ubuntu/+source/", "**")
     ...     print "--"
 
 Get an Ubuntu view:
@@ -151,29 +143,33 @@ Here are the helper URLs we construct:
     >>> for item in view.data:
     ...     print_helpers(item)
     pmount ubuntu hoary
-        pmount http://launchpad.dev/pmount/+bugcontact
-               http://launchpad.dev/pmount/+edit
+    pmount
+    http://launchpad.dev/pmount/+bugcontact
+    http://launchpad.dev/pmount/+edit
     **pmount?field.status_upstream=open_upstream
     **pmount?field.status_upstream=hide_upstream
     **pmount?field.status_upstream=pending_bugwatch
     --
     linux-source-2.6.15 ubuntu hoary
-        NO PRODUCT NO URL
-                   NO URL
+    NO PRODUCT
+    NO URL
+    NO URL
     **linux-source-2.6.15?field.status_upstream=open_upstream
     **linux-source-2.6.15?field.status_upstream=hide_upstream
     **linux-source-2.6.15?field.status_upstream=pending_bugwatch
     --
     mozilla-firefox ubuntu warty
-        firefox http://launchpad.dev/firefox/+bugcontact
-                http://launchpad.dev/firefox/+edit
+    firefox
+    http://launchpad.dev/firefox/+bugcontact
+    http://launchpad.dev/firefox/+edit
     **mozilla-firefox?field.status_upstream=open_upstream
     **mozilla-firefox?field.status_upstream=hide_upstream
     **mozilla-firefox?field.status_upstream=pending_bugwatch
     --
     thunderbird ubuntu NO SERIES
-        NO PRODUCT NO URL
-                   NO URL
+    NO PRODUCT
+    NO URL
+    NO URL
     **thunderbird?field.status_upstream=open_upstream
     **thunderbird?field.status_upstream=hide_upstream
     **thunderbird?field.status_upstream=pending_bugwatch
@@ -185,13 +181,13 @@ Let's print out the counts and percentages:
     ...     print_numbers(item)
     2   1   1   50.00   100.00  good      1 0
     1   0   0    0.00     0.00            1 0
-    1   1   0  100.00     0.00  good      0 1 
+    1   1   1  100.00   100.00  good good 0 0
     1   1   1  100.00   100.00  good good 0 0
 
-And the total line is an exact sum of those values:
+And the total line:
 
     >>> print_numbers(view.total)
-    5   3   2   60.00    66.67            2 1
+    5   3   3   60.00   100.00  good      2 0
 
 A Kubuntu view is not nearly as interesting, though:
 

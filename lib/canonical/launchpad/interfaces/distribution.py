@@ -343,9 +343,11 @@ class IDistribution(IBugTarget, IHasAppointedDriver, IHasDrivers,
         Returns: [(IDistroSourcePackage, IProduct, int, int, int), ...]
 
         This API is quite specialized; it returns a list of up to limit
-        tuples containing IProducts and three different bug counts: open
-        bugs, open bugs with an upstream task, and open bugs with
-        upstream tasks linked to bug watches.
+        tuples containing IProducts and three different bug counts:
+            - open bugs
+            - open bugs with an upstream task
+            - open bugs with upstream tasks that are either linked to
+              bug watches or to products that use_malone.
         """
 
 

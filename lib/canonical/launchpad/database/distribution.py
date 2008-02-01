@@ -1046,6 +1046,7 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
             COUNT(DISTINCT Bugtask.bug) AS total_bugs,
             COUNT(DISTINCT RelatedBugTask.bug) AS bugs_affecting_upstream,
             COUNT(DISTINCT CASE WHEN RelatedBugTask.bugwatch IS NOT NULL
+                  OR RelatedProduct.official_malone = 'T'
                   THEN RelatedBugTask.bug END) AS bugs_with_upstream_bugwatch
             FROM
                 SourcePackageName AS SPN
@@ -1057,6 +1058,9 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
                     AND RelatedBugtask.product IS NOT NULL
                     AND RelatedBugtask.status != %(invalid)s
                     )
+                LEFT OUTER JOIN Product AS RelatedProduct ON (
+                    RelatedBugtask.product = RelatedProduct.id
+                )
             WHERE
                 Bugtask.distribution = %(distro)s
                 AND Bugtask.sourcepackagename = spn.id

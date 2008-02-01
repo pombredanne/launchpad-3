@@ -14,7 +14,9 @@ from canonical.launchpad.ftests.test_pages import (
     extract_text, find_main_content, find_portlet, find_tag_by_id,
     find_tags_by_class)
 from canonical.launchpad.interfaces import (
-    BugTaskStatus, CreateBugParams, IPersonSet)
+    BugTaskStatus, IDistributionSet, IBugTaskSet, IPersonSet, IProductSet,
+    ISourcePackageNameSet, IBugSet, IBugWatchSet, CreateBugParams)
+
 
 DIRECT_SUBS_PORTLET_INDEX = 0
 INDIRECT_SUBS_PORTLET_INDEX = 1
@@ -104,6 +106,38 @@ def extract_bugtasks(text):
     return [extract_text(tr) for tr in table('tr') if tr.td is not None]
 
 
+def create_task_from_strings(bug, owner, product, watchurl=None):
+    """Create a task, optionally linked to a watch."""
+    bug = getUtility(IBugSet).get(bug)
+    product = getUtility(IProductSet).getByName(product)
+    owner = getUtility(IPersonSet).getByName(owner)
+    task = getUtility(IBugTaskSet).createTask(bug, owner, product=product)
+    if watchurl:
+        [watch] = getUtility(IBugWatchSet).fromText(watchurl, bug, owner)
+        task.bugwatch = watch
+    return task
+
+
+def create_bug_from_strings(
+    distribution, sourcepackagename, owner, summary, description):
+    """Create and return a bug."""
+    distroset = getUtility(IDistributionSet)
+    distribution = distroset.getByName(distribution)
+
+    # XXX: would be really great if spnset consistently offered getByName.
+    spnset = getUtility(ISourcePackageNameSet)
+    sourcepackagename = spnset.queryByName(sourcepackagename)
+
+    personset = getUtility(IPersonSet)
+    owner = personset.getByName(owner)
+
+    bugset = getUtility(IBugSet)
+    params = CreateBugParams(owner, summary, description)
+    params.setBugTarget(distribution=distribution,
+                        sourcepackagename=sourcepackagename)
+    return bugset.createBug(params)
+
+
 def create_old_bug(
     title, days_old, target, status=BugTaskStatus.INCOMPLETE,
     with_message=True):
@@ -158,3 +192,5 @@ def sync_bugtasks(bugtasks):
     for bugtask in bugtasks:
         sync(bugtask)
         sync(bugtask.bug)
+
+
