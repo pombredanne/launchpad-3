@@ -15,11 +15,12 @@ application, with no special knowledge of web services.
     # All classes defined in this test are new-style classes.
     >>> __metaclass__ = type
 
-    >>> from zope.interface import Interface
+    >>> from zope.interface import Interface, Attribute
     >>> from zope.schema import Int, TextLine, Object
 
     >>> class IAuthor(Interface):
     ...     name = TextLine(title=u"Name", required=True)
+    ...     favorites = Attribute("List of this author's favorite recipes.")
 
     >>> class IRecipe(Interface):
     ...     id = Int(title=u"Unique ID", required=True)
@@ -50,8 +51,9 @@ Here are simple implementations of IAuthor and IRecipe.
 
     >>> class Author:
     ...     implements(IAuthor)
-    ...     def __init__(self, name):
+    ...     def __init__(self, name, favorites=[]):
     ...         self.name = name
+    ...         self.favorites = favorites
 
     >>> class Recipe:
     ...     implements(IRecipe)
@@ -68,6 +70,8 @@ Here are the "model objects" themselves:
     >>> R1 = Recipe(1, "Green eggs and ham", P1)
     >>> R2 = Recipe(7, "Steak au poivre", P2)
     >>> R3 = Recipe(10, "Raw celery", P1)
+
+    >>> P1.favorites = [R1, R2]
 
 Here's a simple RecipeSet with a predefined list of recipes.
 
@@ -109,32 +113,45 @@ exposed through a specific resource. Right now it's just a marker
 interface, but it's expected to define a number of data fields: the
 same kind of fields defined by a model interface like IRecipe.
 
-There's not much to our IAuthor model, and we can expose it through
-the web service exactly as it's defined, by defining a class that
-includes both interfaces:
+If there's not much to an interface, you can expose it through the web
+service exactly as it's defined, by defining a class that includes
+both interfaces:
 
     >>> from canonical.lazr.interfaces import IEntry
-    >>> class IAuthorEntry(IEntry, IAuthor):
+    >>> class IAuthorEntry1(IEntry, IAuthor):
     ...     """An IAuthor exposed as an entry."""
 
-But most of the time, we don't want to expose our models directly
-through the web service. There will be fields we don't want to expose,
-synthetic fields we do want to expose, fields we want to expose under
-a different name, and so on. In that case, our IEntry subclass will
-define the interface we _do_ want to expose through the web
-service. Here, we're exposing an IRecipe that exposes the underlying
-Recipe's name and author but not its ID. References to associated
-objects (like the recipe's author) are represented with the
-zope.schema.Object type.
+That doesn't work, though, because there are usually fields we don't
+want to expose, synthetic fields we do want to expose, fields we want
+to expose as a different type under a different name, and so on. This
+is why we have IEntry in the first place: the IEntry subclass defines
+the interface we _do_ want to expose through the web service.
+
+The problem with exposing IAuthor as IAuthorEntry is that IAuthor
+defines the "favorites" collection as an Attribute. Attribute is about
+as generic as "object", and doesn't convey any information about what
+kind of object is in the collection, or even that "favorites" is a
+collection at all.
+
+    >>> from canonical.lazr.rest.schema import CollectionField
+    >>> class IAuthorEntry(IEntry):
+    ...     "The part of an author that we expose through the web service."
+    ...     name = IAuthor.get('name')
+    ...     favorites = CollectionField(value_type=Object(schema=IRecipe))
+
+Here, we're exposing an IRecipe that exposes the underlying Recipe's
+name but not its ID. References to associated objects (like the
+recipe's author) are represented with the zope.schema.Object type:
+this makes it possible to serve a link from a recipe to its author.
 
     >>> class IRecipeEntry(IEntry):
     ...     "The part of a recipe that we expose through the web service."
     ...     name = IRecipe.get('name')
     ...     author = IRecipe.get('author')
 
-Here's the implementation of IRecipeEntry: a simple decorator on the
-original model object. It subclasses Entry, a simple base class
-that defines a constructor.
+Here's the implementation of IAuthorEntry: a simple decorator on the
+original model object. It subclasses Entry, a simple base class that
+defines a constructor.
 
     >>> from zope.component import adapts
     >>> from canonical.lp import decorates
@@ -223,6 +240,22 @@ returns the model objects in the collection.
 
 Like Entry, Collection is a simple base class that defines a
 constructor.
+
+Finally, we need to define a collection of recipes that's scoped to an
+author. This class manages the list of an author's favorite recipes.
+
+    >>> from canonical.lazr.rest import ScopedCollection
+    >>> class AuthorRecipeCollection(ScopedCollection):
+    ...
+    ...     def lookupEntry(self, name):
+    ...         recipe = RecipeSet().get(name)
+    ...         if recipe in self.collection:
+    ...             return recipe
+    ...         return None
+
+    >>> from canonical.lazr.interfaces import IScopedCollection
+    >>> provideAdapter(AuthorRecipeCollection, [IAuthorEntry, IRecipe],
+    ...                IScopedCollection)
 
 
 == Resource objects ==
@@ -352,6 +385,21 @@ that (for instance) /recipes/10 is mapped to the "Raw celery" Entry.
     {u'self_link': u'http://api.launchpad.dev/recipes/10',
      u'name': u'Raw celery',
      u'author_link': u'http://api.launchpad.dev/authors/Jacob%20Berendes'}
+
+You can also traverse from an entry to an associated collection:
+
+    >>> authors = app.publishTraverse(request, "authors")
+    >>> jacob = authors.publishTraverse(request, "Jacob Berendes")
+    >>> simplejson.loads(jacob())
+    {u'self_link': u'http://api.launchpad.dev/authors/Jacob%20Berendes',
+     u'favorites_collection_link':
+         u'http://api.launchpad.dev/authors/Jacob%20Berendes/favorites',
+     u'name': u'Jacob Berendes'}
+    >>> jacob_favorites = jacob.publishTraverse(request, "favorites")
+    >>> simplejson.loads(jacob_favorites())
+    [{u'self_link': u'http://api.launchpad.dev/recipes/1',
+    ...
+    {u'self_link': u'http://api.launchpad.dev/recipes/7', ...]
 
 If the user tries to traverse to a nonexistent object, the result is a
 NotFound exception:

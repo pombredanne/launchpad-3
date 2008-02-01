@@ -18,7 +18,6 @@ __all__ = [
     'IPersonClaim',
     'IPersonEditRestricted',
     'IPersonPublic',
-    'IPersonEntry',
     'IPersonSet',
     'IPersonViewRestricted',
     'IRequestPeopleMerge',
@@ -33,19 +32,20 @@ __all__ = [
     'TeamMembershipRenewalPolicy',
     'TeamMembershipStatus',
     'TeamSubscriptionPolicy',
+    'make_person_name_field',
     ]
 
 
 from zope.formlib.form import NoInputData
-from zope.schema import Bool, Choice, Datetime, Int, Object, Text, TextLine
+from zope.schema import Bool, Choice, Datetime, Int, Text, TextLine
 from zope.interface import Attribute, Interface
 from zope.interface.exceptions import Invalid
 from zope.interface.interface import invariant
 from zope.component import getUtility
 
-from canonical.launchpad import _
 from canonical.lazr import DBEnumeratedType, DBItem, EnumeratedType, Item
-from canonical.lazr.interfaces import IEntry
+
+from canonical.launchpad import _
 from canonical.launchpad.fields import (
     BlacklistableContentNameField, IconImageUpload, LogoImageUpload,
     MugshotImageUpload, PasswordField, StrippedTextLine)
@@ -403,6 +403,7 @@ class INewPerson(Interface):
     creation_comment = Text(
         title=_('Creation reason'), required=True,
         description=_("The reason why you're creating this profile."))
+
 
 def make_person_name_field():
     """Construct a PersonNameField.
@@ -1275,13 +1276,6 @@ class IPersonEditRestricted(Interface):
 
 class IPerson(IPersonPublic, IPersonViewRestricted, IPersonEditRestricted):
     """A Person."""
-
-
-class IPersonEntry(IEntry):
-    """The part of a person that we expose through the web service."""
-
-    name = make_person_name_field()
-    teamowner = Object(schema=IPerson)
 
 
 class INewPersonForm(IPerson):

@@ -21,9 +21,13 @@
         <allow interface='canonical.lazr.interfaces.IEntryResource' />
     </class>
 
+    <class class="canonical.lazr.rest.ScopedCollectionResource">
+        <allow interface='canonical.lazr.interfaces.ICollectionResource' />
+    </class>
+
     <adapter
         for="canonical.launchpad.interfaces.IPerson"
-        provides="canonical.launchpad.interfaces.IPersonEntry"
+        provides="canonical.launchpad.rest.IPersonEntry"
         factory="canonical.launchpad.rest.PersonEntry"
         />
 
@@ -32,4 +36,32 @@
         provides="canonical.lazr.interfaces.ICollection"
         factory="canonical.launchpad.rest.PersonCollection"
         />
+
+    <adapter
+        for="canonical.launchpad.rest.IPersonEntry
+             canonical.launchpad.interfaces.IPerson"
+        provides="canonical.lazr.interfaces.IScopedCollection"
+        factory="canonical.launchpad.rest.PersonPersonCollection"
+        />
+
+    <adapter
+        for="canonical.launchpad.interfaces.IEmailAddress"
+        provides="canonical.launchpad.rest.IEmailAddressEntry"
+        factory="canonical.launchpad.rest.EmailAddressEntry"
+        />
+
+    <adapter
+        for="canonical.launchpad.interfaces.IEmailAddressSet"
+        provides="canonical.lazr.interfaces.ICollection"
+        factory="canonical.launchpad.rest.EmailAddressCollection"
+        />
+
+    <adapter
+        for="canonical.launchpad.rest.IPersonEntry
+             canonical.launchpad.interfaces.IEmailAddress"
+        provides="canonical.lazr.interfaces.IScopedCollection"
+        factory="canonical.lazr.rest.ScopedCollection"
+        />
+
+
 </configure>
