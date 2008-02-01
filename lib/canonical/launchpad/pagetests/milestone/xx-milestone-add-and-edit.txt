@@ -180,3 +180,11 @@ Then we try to change milestone2's name to milestone3.
     milestone1
     milestone3
 
+Now lets mark milestone3 as inactive
+
+    >>> test_browser.open(
+    ...     'http://launchpad.dev/alsa-utils/+milestone/milestone3/+edit')
+    >>> test_browser.getControl('Active').click()
+    >>> test_browser.getControl('Update').click()
+    >>> print milestones_in_portlet(test_browser)
+    milestone1

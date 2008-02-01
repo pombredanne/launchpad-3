@@ -156,10 +156,21 @@ class MilestoneAddView(LaunchpadFormView):
 class MilestoneEditView(LaunchpadEditFormView):
 
     schema = IMilestone
-    field_names = ['name', 'dateexpected', 'description']
+    field_names = ['name', 'visible', 'dateexpected', 'description']
     label = "Modify milestone details"
 
     custom_widget('dateexpected', DateWidget)
+
+    @action(_('Update'), name='update')
+    def update_action(self, action, data):
+        self.updateContextFromData(data)
+        self.next_url = canonical_url(self.context)
+
+class MilestoneAdminEditView(LaunchpadEditFormView):
+
+    schema = IMilestone
+    field_names = ['productseries', 'distroseries']
+    label = "Modify milestone details"
 
     @action(_('Update'), name='update')
     def update_action(self, action, data):
