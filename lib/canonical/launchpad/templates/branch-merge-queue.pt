@@ -1,0 +1,66 @@
+<html
+  xmlns="http://www.w3.org/1999/xhtml"
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  xml:lang="en"
+  lang="en"
+  dir="ltr"
+  metal:use-macro="context/@@main_template/master"
+  i18n:domain="launchpad"
+>
+
+<body>
+
+<metal:portlets fill-slot="portlets">
+</metal:portlets>
+
+<p metal:fill-slot="help-XXXX">
+  HELP TEXT HERE
+</p>
+
+<div metal:fill-slot="main">
+
+  <tal:branch-link define="branch context">
+    <metal:branch-link use-macro="context/@@+macros/branch-heading-link"/>
+  </tal:branch-link>
+  <h1>Branch merge queue</h1>
+
+  <table tal:condition="view/merge_queue" class="listing">
+    <thead>
+      <tr>
+        <th>Position</th>
+        <th>Branch details</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr tal:repeat="queue_entry view/merge_queue">
+        <td>
+          <tal:position replace="queue_entry/position"/>
+        </td>
+        <td>
+          <tal:proposal
+              condition="queue_entry/proposal"
+              define="mergeproposal queue_entry/proposal;
+                      branch mergeproposal/source_branch;
+                      show_commit_message python:True;
+                      show_associations python:True;
+                      ">
+            <metal:landing-target use-macro="context/@@+macros/merge-proposal"/>
+          </tal:proposal>
+          <tal:cant-see-proposal condition="not: queue_entry/proposal">
+            You can't see this :-)
+          </tal:cant-see-proposal>
+        </td>
+      </tr>
+    </tbody>
+  </table>
+
+  <p tal:condition="not: view/merge_queue">
+    The queue is empty.
+  </p>
+
+</div>
+
+</body>
+</html>

@@ -83,6 +83,14 @@
     template="../templates/branchmergeproposal-review.pt" />
 
   <browser:page
+    name="+enqueue"
+    for="canonical.launchpad.interfaces.IBranchMergeProposal"
+    class="canonical.launchpad.browser.BranchMergeProposalEnqueueView"
+    facet="branches"
+    permission="launchpad.Edit"
+    template="../templates/branchmergeproposal-enqueue.pt" />
+
+  <browser:page
     name="+merged"
     for="canonical.launchpad.interfaces.IBranchMergeProposal"
     class="canonical.launchpad.browser.BranchMergeProposalMergedView"

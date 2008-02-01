@@ -173,9 +173,13 @@ def branch_listing_cross_product(context, view):
 branch_landing_candidates = ContextDisplayName(smartquote(
     'Landing candidates for "%s"'))
 
+branch_merge_queue = ContextDisplayName(smartquote('Merge queue for "%s"'))
+
 branchmergeproposal_delete = 'Delete proposal to merge branch'
 
 branchmergeproposal_edit = 'Edit proposal to merge branch'
+
+branchmergeproposal_enqueue = 'Queue branch for merging'
 
 branchmergeproposal_index = 'Proposal to merge branch'
 

@@ -14,6 +14,7 @@ __all__ = [
     'BranchEditView',
     'BranchEditWhiteboardView',
     'BranchReassignmentView',
+    'BranchMergeQueueView',
     'BranchMirrorStatusView',
     'BranchNavigation',
     'BranchInPersonView',
@@ -165,7 +166,9 @@ class BranchContextMenu(ContextMenu):
     links = ['whiteboard', 'edit', 'delete_branch', 'browse_code',
              'browse_revisions',
              'reassign', 'subscription', 'addsubscriber', 'associations',
-             'registermerge', 'landingcandidates', 'linkbug']
+             'registermerge', 'landingcandidates', 'linkbug',
+             'mergequeue'
+             ]
 
     def whiteboard(self):
         text = 'Edit whiteboard'
@@ -241,6 +244,10 @@ class BranchContextMenu(ContextMenu):
     def linkbug(self):
         text = 'Link to bug report'
         return Link('+linkbug', text, icon='edit')
+
+    def mergequeue(self):
+        text = 'View merge queue'
+        return Link('+merge-queue', text)
 
 
 class BranchView(LaunchpadView, FeedsMixin):
@@ -872,6 +879,29 @@ class BranchSubscriptionsView(LaunchpadView):
         return [DecoratedSubscription(
                     subscription, self.isEditable(subscription))
                 for subscription in sorted_subscriptions]
+
+
+class QueueEntry:
+    def __init__(self, position, proposal):
+        self.position = position
+        self.proposal = proposal
+
+
+class BranchMergeQueueView(LaunchpadView):
+
+    __used_for__ = IBranch
+
+    @cachedproperty
+    def merge_queue(self):
+        """Get the merge queue and check visibility."""
+        result = []
+        for position, proposal in enumerate(self.context.getMergeQueue()):
+            # Check for visibility.
+            if check_permission('launchpad.View', proposal):
+                result.append(QueueEntry(position+1, proposal))
+            else:
+                result.append(QueueEntry(position+1, None))
+        return result
 
 
 class RegisterBranchMergeProposalView(LaunchpadFormView):

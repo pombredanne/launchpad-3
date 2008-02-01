@@ -7,7 +7,9 @@ __all__ = [
     'BranchMergeProposalSOP',
     'BranchMergeProposalContextMenu',
     'BranchMergeProposalDeleteView',
+    'BranchMergeProposalDequeueView',
     'BranchMergeProposalEditView',
+    'BranchMergeProposalEnqueueView',
     'BranchMergeProposalMergedView',
     'BranchMergeProposalRequestReviewView',
     'BranchMergeProposalView',
@@ -24,7 +26,7 @@ from canonical.config import config
 
 from canonical.launchpad import _
 from canonical.launchpad.browser.launchpad import StructuralObjectPresentation
-from canonical.launchpad.fields import Whiteboard
+from canonical.launchpad.fields import Summary, Whiteboard
 from canonical.launchpad.interfaces import (
     BranchMergeProposalStatus, BranchType, IBranchMergeProposal,
     ILaunchpadCelebrities, IStructuralObjectPresentation)
@@ -57,7 +59,7 @@ class BranchMergeProposalContextMenu(ContextMenu):
 
     usedfor = IBranchMergeProposal
     links = ['edit', 'delete', 'set_work_in_progress', 'request_review',
-             'review', 'merge']
+             'review', 'merge', 'enqueue']
 
     @enabled_with_permission('launchpad.Edit')
     def edit(self):
@@ -113,6 +115,27 @@ class BranchMergeProposalContextMenu(ContextMenu):
         enabled = (
             self.context.queue_status != BranchMergeProposalStatus.MERGED)
         return Link('+merged', text, icon='edit', enabled=enabled)
+
+    @enabled_with_permission('launchpad.Edit')
+    def enqueue(self):
+        text = 'Queue for merging'
+        # Disable the link if the branch is already merged,
+        # or if the person is not able to transition the branch
+        # to queued.
+        if self.user is None:
+            enabled = False
+        elif self.context.queue_status == BranchMergeProposalStatus.MERGED:
+            enabled = False
+        else:
+            lp_admins = getUtility(ILaunchpadCelebrities).admin
+            valid_reviewer = (self.context.isPersonValidReviewer(self.user) or
+                              self.user.inTeam(lp_admins))
+            enabled = (
+                (self.context.queue_status ==
+                 BranchMergeProposalStatus.CODE_APPROVED)
+                or valid_reviewer)
+
+        return Link('+enqueue', text, icon='edit', enabled=enabled)
 
 
 class UnmergedRevisionsMixin:
@@ -198,7 +221,7 @@ class ReviewForm(Interface):
 
     revision_number = Int(
         title=_("Reviewed Revision"), required=True,
-        description=_("The revision number on the target branch which "
+        description=_("The revision number on the source branch which "
                       "has been reviewed."))
 
     whiteboard = Whiteboard(
@@ -208,38 +231,6 @@ class ReviewForm(Interface):
 
 class MergeProposalEditView(LaunchpadEditFormView):
     """A base class for merge proposal edit views."""
-
-    @cachedproperty
-    def reviewed_revision_number(self):
-        """Return the number of the last reviewed revision.
-
-        If there was no last reviewed revision, None is returned.
-
-        If the reviewed revision is no longer in the revision history of
-        the source branch, then a message is returned.
-        """
-        # If the source branch is REMOTE, then there won't be any ids.
-        source_branch = self.context.source_branch
-        if source_branch.branch_type == BranchType.REMOTE:
-            return self.context.reviewed_revision_id
-        else:
-            branch_revision = source_branch.getBranchRevisionByRevisionId(
-                self.context.reviewed_revision_id)
-            if branch_revision is None:
-                return "no longer in the source branch."
-            elif branch_revision.sequence is None:
-                return (
-                    "no longer in the revision history of the source branch.")
-            else:
-                return branch_revision.sequence
-
-
-class ReviewBranchMergeProposalView(MergeProposalEditView,
-                                    UnmergedRevisionsMixin):
-    """The view to approve or reject a merge proposal."""
-
-    schema = ReviewForm
-    label = "Review proposal to merge"
 
     @property
     def initial_values(self):
@@ -253,6 +244,43 @@ class ReviewBranchMergeProposalView(MergeProposalEditView,
     @property
     def next_url(self):
         return canonical_url(self.context)
+
+    def _getRevisionNumberForRevisionId(self, revision_id):
+        """Find the revision number that corresponds to the revision id.
+
+        If there was no last reviewed revision, None is returned.
+
+        If the reviewed revision is no longer in the revision history of
+        the source branch, then a message is returned.
+        """
+        if revision_id is None:
+            return None
+        # If the source branch is REMOTE, then there won't be any ids.
+        source_branch = self.context.source_branch
+        if source_branch.branch_type == BranchType.REMOTE:
+            return revision_id
+        else:
+            branch_revision = source_branch.getBranchRevisionByRevisionId(
+                revision_id)
+            if branch_revision is None:
+                return "no longer in the source branch."
+            elif branch_revision.sequence is None:
+                return (
+                    "no longer in the revision history of the source branch.")
+            else:
+                return branch_revision.sequence
+
+    @cachedproperty
+    def reviewed_revision_number(self):
+        """Return the number of the reviewed revision."""
+        return self._getRevisionNumberForRevisionId(
+            self.context.reviewed_revision_id)
+
+    @cachedproperty
+    def queued_revision_number(self):
+        """Return the number of the queued revision."""
+        return self._getRevisionNumberForRevisionId(
+            self.context.queued_revision_id)
 
     def _getRevisionId(self, data):
         """Translate the revision number that was entered into a revision id.
@@ -268,6 +296,41 @@ class ReviewBranchMergeProposalView(MergeProposalEditView,
             branch_revision = source_branch.getBranchRevision(
                 data.pop('revision_number'))
             return branch_revision.revision.revision_id
+
+    def _validateRevisionNumber(self, data, revision_name):
+        """Check to make sure that the revision number entered is valid."""
+        rev_no = data.get('revision_number')
+        if rev_no is not None:
+            try:
+                rev_no = int(rev_no)
+            except ValueError:
+                self.setFieldError(
+                    'revision_number',
+                    'The %s revision must be a positive number.'
+                    % revision_name)
+            else:
+                if rev_no < 1:
+                    self.setFieldError(
+                        'revision_number',
+                        'The %s revision must be a positive number.'
+                        % revision_name)
+                # Accept any positive integer for a REMOTE branch.
+                source_branch = self.context.source_branch
+                if (source_branch.branch_type != BranchType.REMOTE and
+                    rev_no > source_branch.revision_count):
+                    self.setFieldError(
+                        'revision_number',
+                        'The %s revision cannot be larger than the '
+                        'tip revision of the source branch.'
+                        % revision_name)
+
+
+class ReviewBranchMergeProposalView(MergeProposalEditView,
+                                    UnmergedRevisionsMixin):
+    """The view to approve or reject a merge proposal."""
+
+    schema = ReviewForm
+    label = "Review proposal to merge"
 
     @action('Approve', name='approve')
     def approve_action(self, action, data):
@@ -290,28 +353,7 @@ class ReviewBranchMergeProposalView(MergeProposalEditView,
         if self.context.queue_status == BranchMergeProposalStatus.MERGED:
             self.addError("The merge proposal is not an a valid state to "
                           "review.")
-        # Check to make sure that the revision number entered is valid.
-        rev_no = data.get('revision_number')
-        if rev_no is not None:
-            try:
-                rev_no = int(rev_no)
-            except ValueError:
-                self.setFieldError(
-                    'revision_number',
-                    'The reviewed revision must be a positive number.')
-            else:
-                if rev_no < 1:
-                    self.setFieldError(
-                        'revision_number',
-                        'The reviewed revision must be a positive number.')
-                # Accept any positive integer for a REMOTE branch.
-                source_branch = self.context.source_branch
-                if (source_branch.branch_type != BranchType.REMOTE and
-                    rev_no > source_branch.revision_count):
-                    self.setFieldError(
-                        'revision_number',
-                        'The reviewed revision cannot be larger than the '
-                        'tip revision of the source branch.')
+        self._validateRevisionNumber(data, 'reviewed')
 
 
 class BranchMergeProposalEditView(MergeProposalEditView):
@@ -319,10 +361,6 @@ class BranchMergeProposalEditView(MergeProposalEditView):
     schema = IBranchMergeProposal
     label = "Edit branch merge proposal"
     field_names = ["whiteboard"]
-
-    @property
-    def next_url(self):
-        return canonical_url(self.context)
 
     @action('Update', name='update')
     def update_action(self, action, data):
@@ -393,3 +431,83 @@ class BranchMergeProposalMergedView(LaunchpadEditFormView):
                 self.setFieldError(
                     'merged_revno',
                     'Revision numbers must be positive integers.')
+
+
+class EnqueueForm(Interface):
+    """A simple interface to populate the form to enqueue a proposal."""
+
+    revision_number = Int(
+        title=_("Queue Revision"), required=True,
+        description=_("The revision number on the source branch which "
+                      "which is to be merged into the target branch."))
+
+    commit_message = Summary(
+        title=_("Commit Message"), required=True,
+        description=_("The commit message to be used when merging "
+                      "the source branch."))
+
+    whiteboard = Whiteboard(
+        title=_('Whiteboard'), required=False,
+        description=_('Notes about the merge.'))
+
+
+class BranchMergeProposalEnqueueView(MergeProposalEditView,
+                                     UnmergedRevisionsMixin):
+    """The view to mark a merge proposal as QUEUED."""
+    schema = EnqueueForm
+    label = "Queue branch for merging"
+
+    @property
+    def adapters(self):
+        return {EnqueueForm: self.context}
+
+    @action('Enqueue', name='enqueue')
+    def enqueue_action(self, action, data):
+        """Update the whiteboard and go back to the source branch."""
+        self.context.enqueue(self.user, self._getRevisionId(data))
+        self.updateContextFromData(data)
+
+    @action('Cancel', name='cancel', validator='validate_cancel')
+    def cancel_action(self, action, data):
+        """Do nothing and go back to the merge proposal."""
+
+    def validate(self, data):
+        """Ensure that the proposal is in an appropriate state."""
+        if self.context.queue_status == BranchMergeProposalStatus.MERGED:
+            self.addError("The merge proposal is not an a valid state to "
+                          "review.")
+        elif (self.context.queue_status ==
+              BranchMergeProposalStatus.CODE_APPROVED):
+            # This is a good transition.
+            pass
+        elif self.context.isPersonValidReviewer(self.user):
+            # This person can transition the code appropriately.
+            pass
+        else:
+            self.addError("The merge proposal needs to be approved before "
+                          "it can be queued for landing.")
+
+        self._validateRevisionNumber(data, 'enqueued')
+
+
+class BranchMergeProposalDequeueView(LaunchpadEditFormView):
+    """The view to remove a merge proposal from the merge queue."""
+
+    schema = IBranchMergeProposal
+    label = "Edit branch merge proposal"
+
+
+    @property
+    def next_url(self):
+        return canonical_url(self.context)
+
+    @action('Enqueue', name='enqueue')
+    def enqueue_action(self, action, data):
+        """Update the whiteboard and go back to the source branch."""
+        revno = data['merged_revno']
+        self.context.markAsMerged(revno, merge_reporter=self.user)
+
+    @action('Cancel', name='cancel', validator='validate_cancel')
+    def cancel_action(self, action, data):
+        """Do nothing and go back to the merge proposal."""
+
