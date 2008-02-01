@@ -169,7 +169,7 @@ class NotificationResponse:
     def addNotification(self, msg, level=BrowserNotificationLevel.NOTICE):
         """See `INotificationResponse`.
 
-	XXXX FIX ME XXXX
+	XXX FIX ME XXX
 	Add a docstring describing the IStructuredString and
 	i18n.Message parts of the API.
 

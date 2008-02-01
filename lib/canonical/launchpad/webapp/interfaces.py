@@ -605,19 +605,17 @@ class INotificationResponse(Interface):
     have been set when redirect() is called.
     """
 
-    def addNotification(msg, level=BrowserNotificationLevel.NOTICE, **kw):
-        """Append the given message to the list of notifications
+    def addNotification(msg, level=BrowserNotificationLevel.NOTICE):
+        """Append the given message to the list of notifications.
 
-	XXXX FIX ME!! XXXX
+	XXX FIX ME!! XXX
 	
-        msg may be an XHTML fragment suitable for inclusion in a block
-        tag such as <div>. It may also contain standard Python string
-        replacement markers to be filled out by the keyword arguments
-        (ie. %(foo)s). The keyword arguments inserted this way are
-        automatically HTML quoted.
+        :param msg: This may be a string, `zope.i18n.Message`,
+        `zope.i18n.MessageID`, or an instance of `IStructuredString`.
+        A plain string...
 
-        level is one of the BrowserNotificationLevels: DEBUG, INFO, NOTICE,
-        WARNING, ERROR.
+        :param level: One of the `BrowserNotificationLevels`: DEBUG,
+        INFO, NOTICE, WARNING, ERROR.
         """
 
     def removeAllNotifications():
