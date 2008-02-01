@@ -25,7 +25,7 @@ from canonical.launchpad.interfaces import (
     ISprintSpecification, IStandardShipItRequest, IStandardShipItRequestSet,
     ITeam, ITeamMembership, ITranslationGroup, ITranslationGroupSet,
     ITranslationImportQueue, ITranslationImportQueueEntry, ITranslator,
-    PackageUploadStatus, IPackaging, IProductReleaseFile, PersonVisibility)
+    IPackaging, IProductReleaseFile, PersonVisibility)
 
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.interfaces import IAuthorization
@@ -1022,31 +1022,8 @@ class EditPackageUploadQueue(AdminByAdminsTeam):
         return user.inTeam(self.obj.distroseries.distribution.upload_admin)
 
 
-class ViewPackageUploadQueue(EditPackageUploadQueue):
-    permission = 'launchpad.View'
-    usedfor = IPackageUploadQueue
-
-    def checkAuthenticated(self, user):
-        """Allow only members of the admin team to view unapproved entries.
-
-        Any logged in user can view entries in other state.
-        """
-        if EditPackageUploadQueue.checkAuthenticated(self, user):
-            return True
-        # deny access to non-admin on unapproved records
-        if self.obj.status == PackageUploadStatus.UNAPPROVED:
-            return False
-
-        return True
-
-
 class EditPackageUpload(EditPackageUploadQueue):
     permission = 'launchpad.Edit'
-    usedfor = IPackageUpload
-
-
-class ViewPackageUpload(ViewPackageUploadQueue):
-    permission = 'launchpad.View'
     usedfor = IPackageUpload
 
 

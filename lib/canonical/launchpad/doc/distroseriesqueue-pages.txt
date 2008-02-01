@@ -54,15 +54,45 @@ Let's instantiate the view for a specific queue:
   >>> len(queue_view.batchnav.currentBatch())
   1
 
-Normal user doesn't have access to UNAPPROVED queue:
+Unexpected values for queue_state results in a proper error, anything
+that can't be can't fit as an integer is automatically assume as the
+default value (NEW queue).
+
+  >>> request = TestRequest(
+  ...     form={'queue_state': 'foo'})
+  >>> warty = ubuntu['warty']
+  >>> queue_view = queryView(warty, "+queue", request)
+  >>> queue_view.setupQueueList()
+  >>> queue_view.state.name
+  'NEW'
+  >>> len(queue_view.batchnav.currentBatch())
+  0
+
+If a invalid integer is posted it raises.
+
+  >>> request = TestRequest(
+  ...     form={'queue_state': '10'})
+  >>> warty = ubuntu['warty']
+  >>> queue_view = queryView(warty, "+queue", request)
+  >>> queue_view.setupQueueList()
+  Traceback (most recent call last):
+  ...
+  UnexpectedFormData: No suitable status found for value "10"
+
+Normal users also have access to all queues, including UNAPPROVED but
+they are not allowed to perform any action.
 
   >>> request = TestRequest(
   ...     form={'queue_state': PackageUploadStatus.UNAPPROVED.value})
   >>> queue_view = queryView(breezy_autotest, "+queue", request)
   >>> queue_view.setupQueueList()
-  Traceback (most recent call last):
-  ...
-  Unauthorized: User don't have permission to see this queue.
+  >>> queue_view.state.name
+  'UNAPPROVED'
+  >>> len(queue_view.batchnav.currentBatch())
+  5
+
+  >>> queue_view.availableActions()
+  []
 
 Now, let's instantiate the view for +queue as a privileged user:
 
@@ -73,8 +103,7 @@ Now, let's instantiate the view for +queue as a privileged user:
   >>> queue_view.availableActions()
   ['Accept', 'Reject']
 
-
-Attempt to view UNAPPROVED queue works now:
+Attempt to view and act on UNAPPROVED queue works for administrators.
 
   >>> request = TestRequest(
   ...     form={'queue_state': PackageUploadStatus.UNAPPROVED.value})
@@ -85,13 +114,13 @@ Attempt to view UNAPPROVED queue works now:
   >>> queue_view.availableActions()
   ['Accept', 'Reject']
 
-
 Action on presented queue are controlled and performed by the
 'performAction' method, which return a HTML-formatted report text
 about the actions performed.
+
 It accepts the 'Accept'/'Reject' and 'QUEUE_ID' arguments via POST.
 
-'accepting' an item from NEW
+Accepting an item from NEW queue.
 
   >>> from canonical.launchpad.interfaces import IPackageUploadSet
   >>> getUtility(IPackageUploadSet).get(1).status.name
@@ -121,8 +150,7 @@ Add fake librarian files so that email notifications work:
   >>> getUtility(IPackageUploadSet).get(3).status.name
   'DONE'
 
-
-'rejecting' an item from NEW:
+Rejection an item from NEW queue:
 
   >>> target = getUtility(IPackageUploadSet).get(2)
   >>> target.status.name
@@ -142,8 +170,7 @@ Add fake librarian files so that email notifications work:
   >>> target.status.name
   'REJECTED'
 
-
-We created librarian files that need cleaining up:
+We created librarian files that need cleaining up before leaving the test.
 
   >>> from canonical.librarian.ftests.harness import cleanupLibrarianFiles
   >>> cleanupLibrarianFiles()

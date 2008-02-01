@@ -198,6 +198,7 @@ class DistroSeriesOverviewMenu(ApplicationMenu):
         text = 'Show builds'
         return Link('+builds', text, icon='info')
 
+    @enabled_with_permission('launchpad.AnyPerson')
     def queue(self):
         text = 'Show uploads'
         return Link('+queue', text, icon='info')
