@@ -24,7 +24,7 @@ class TestCodeReviewMessage(unittest.TestCase):
     def test_create_root_message(self):
         message = self.bmp.createMessage(self.submitter, 'Message subject',
             'Message content')
-        self.assertEqual(CodeReviewVote.TWEAK, message.vote)
+        self.assertEqual(None, message.vote)
         self.assertEqual(self.submitter, message.message.owner)
         self.assertEqual(message, self.bmp.conversation)
         self.assertEqual('Message subject', message.message.subject)
@@ -40,6 +40,7 @@ class TestCodeReviewMessage(unittest.TestCase):
         self.assertEqual(message.message, reply.message.parent)
         self.assertEqual('Reply subject', reply.message.subject)
         self.assertEqual('Reply content', reply.message.chunks[0].content)
+        self.assertEqual(CodeReviewVote.TWEAK, reply.vote)
 
     def test_create_no_parent_message(self):
         message = self.bmp.createMessage(self.submitter, 'Message subject',
