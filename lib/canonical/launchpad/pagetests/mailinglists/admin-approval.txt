@@ -141,17 +141,17 @@ approve or decline the mailing list requests.  This is called 'holding' the
 request and it is the default action.
 
     >>> browser.goBack()
-    >>> browser.getControl(name='action:itest-one').value
+    >>> browser.getControl(name='action.itest-one').value
     ['hold']
-    >>> browser.getControl(name='action:itest-two').value
+    >>> browser.getControl(name='action.itest-two').value
     ['hold']
 
 Deferring the decision until later really means that nothing happens.
 
     >>> browser.getControl('Submit').click()
-    >>> browser.getControl(name='action:itest-one').value
+    >>> browser.getControl(name='action.itest-one').value
     ['hold']
-    >>> browser.getControl(name='action:itest-two').value
+    >>> browser.getControl(name='action.itest-two').value
     ['hold']
 
 Because the mailing list doesn't exist, the team's overview page does not
@@ -176,7 +176,7 @@ The Launchpad administrator decides that the ITest One mailing list is a good
 idea, so she goes ahead and approves that list's creation.  She defers the
 decision on the other mailing list until later.
 
-    >>> browser.getControl(name='action:itest-one').value = ['approve']
+    >>> browser.getControl(name='action.itest-one').value = ['approve']
     >>> browser.getControl('Submit').click()
 
 The pending requests page no longer displays anything about the ITest One
@@ -209,7 +209,7 @@ though we won't wait for Mailman to act <wink>
 The Launchpad administrator decides that the ITest Two mailing list is a bad
 idea, so she goes ahead and declines that list's creation.
 
-    >>> browser.getControl(name='action:itest-two').value = ['decline']
+    >>> browser.getControl(name='action.itest-two').value = ['decline']
     >>> browser.getControl('Submit').click()
 
 The pending requests page no longer displays anything about the ITest Two
@@ -230,3 +230,61 @@ The ITest Two mailing list has been declined so Mailman will not create it.
     The application for this team's mailing list has been declined.
     Please contact a Launchpad administrator for further assistance.
     ...
+
+
+== Multiple actions ==
+
+The Launchpad administrator neglects to check for pending requests for a
+little while, and in the meantime, three new requests have appeared.
+
+    >>> user_browser.open('http://launchpad.dev/people/+newteam')
+    >>> user_browser.getControl(name='field.name').value = 'itest-three'
+    >>> user_browser.getControl('Display Name').value = 'ITest Three'
+    >>> user_browser.getControl(
+    ...     name='field.subscriptionpolicy').displayValue = ['Open Team']
+    >>> user_browser.getControl('Create').click()
+
+    >>> user_browser.open('http://launchpad.dev/people/+newteam')
+    >>> user_browser.getControl(name='field.name').value = 'itest-four'
+    >>> user_browser.getControl('Display Name').value = 'ITest Four'
+    >>> user_browser.getControl(
+    ...     name='field.subscriptionpolicy').displayValue = ['Open Team']
+    >>> user_browser.getControl('Create').click()
+
+    >>> user_browser.open('http://launchpad.dev/people/+newteam')
+    >>> user_browser.getControl(name='field.name').value = 'itest-five'
+    >>> user_browser.getControl('Display Name').value = 'ITest Five'
+    >>> user_browser.getControl(
+    ...     name='field.subscriptionpolicy').displayValue = ['Open Team']
+    >>> user_browser.getControl('Create').click()
+
+    XXX BarryWarsaw 28-Jan-2008 Remove this when the beta testing program is
+    complete.
+    >>> mailinglists_helper.beta_program_enable('itest-three')
+    >>> mailinglists_helper.beta_program_enable('itest-four')
+    >>> mailinglists_helper.beta_program_enable('itest-five')
+
+    >>> user_browser.open('http://launchpad.dev/~itest-three')
+    >>> user_browser.getLink('Configure mailing list').click()
+    >>> user_browser.getControl('Apply for Mailing List').click()
+
+    >>> user_browser.open('http://launchpad.dev/~itest-four')
+    >>> user_browser.getLink('Configure mailing list').click()
+    >>> user_browser.getControl('Apply for Mailing List').click()
+
+    >>> user_browser.open('http://launchpad.dev/~itest-five')
+    >>> user_browser.getLink('Configure mailing list').click()
+    >>> user_browser.getControl('Apply for Mailing List').click()
+
+The Launchpad administrator can approve them all at once.
+
+    >>> browser.open('http://launchpad.dev/+mailinglists')
+    >>> browser.getControl(name='action.itest-three').value = ['approve']
+    >>> browser.getControl(name='action.itest-four').value = ['approve']
+    >>> browser.getControl(name='action.itest-five').value = ['approve']
+    >>> browser.getControl('Submit').click()
+
+    >>> sorted(get_feedback_messages(browser.contents), reversed=True)
+    [u'ITest Three mailing list was approved',
+     u'ITest Four mailing list was approved',
+     u'ITest Five mailing list was approved']

@@ -48,7 +48,7 @@ class MailingListsReviewView(LaunchpadFormView):
             # mailing list.  If there is no data in the form for this mailing
             # list, just treat it as having been deferred.
             action = self.request.form_ng.getOne(
-                'action:%s' % mailing_list.team.name)
+                'action.%s' % mailing_list.team.name)
             status = None
             if action == 'approve':
                 status = MailingListStatus.APPROVED

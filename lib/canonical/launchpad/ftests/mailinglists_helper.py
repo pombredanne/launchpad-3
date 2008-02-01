@@ -2,10 +2,12 @@
 
 """Helper functions for testing XML-RPC services."""
 
+__metaclass__ = type
 __all__ = [
     'beta_program_enable',
     'fault_catcher',
     'get_alternative_email',
+    'mailman',
     'new_person',
     'new_team',
     'print_actions',
@@ -17,6 +19,7 @@ import xmlrpclib
 
 from zope.component import getUtility
 
+from canonical.database.sqlbase import flush_database_updates
 from canonical.config import config
 from canonical.launchpad.database import MailingListSet
 from canonical.launchpad.ftests import login, logout
@@ -157,36 +160,6 @@ def new_person(first_name):
     return person
 
 
-def new_list_for_team(team_name, make_contact_address=False):
-    """Create a mailing list for the named team.
-
-    :param team_name: The name of the team for which to create a list.
-    :param make_contact_address: If True, the newly created list will be
-           made the team's contact address.
-
-    DO NOT use this in a non-pagetest.
-    """
-    login('foo.bar@canonical.com')
-    list_set = MailingListSet()
-    team = getUtility(IPersonSet).getByName(team_name)
-    mailing_list = list_set.new(team)
-
-    experts = getUtility(ILaunchpadCelebrities).mailing_list_experts
-    admin = list(experts.allmembers)[0]
-    mailing_list = list_set.get(team_name)
-    mailing_list.review(admin, MailingListStatus.APPROVED)
-    mailing_list.syncUpdate()
-    mailing_list.startConstructing()
-    mailing_list.syncUpdate()
-    mailing_list.transitionToStatus(MailingListStatus.ACTIVE)
-    mailing_list.syncUpdate()
-
-    if make_contact_address:
-        team.setContactAddress(
-            getUtility(IEmailAddressSet).getByEmail(mailing_list.address))
-    logout()
-
-
 def get_alternative_email(person):
     """Return a non-preferred IEmailAddress for a person.
 
@@ -235,3 +208,21 @@ def beta_program_enable(team_name):
     reviewer = testers_team.teamowner
     testers_team.addMember(target_team, reviewer, force_team_add=True)
     logout()
+
+
+class MailmanStub:
+    """A stand-in for Mailman's XMLRPC client for page tests."""
+
+    def act(self):
+        """Perform the effects of the Mailman XMLRPC client."""
+        # This doesn't have to be complete.
+        login('foo.bar@canonical.com')
+        mailing_list_set = getUtility(IMailingListSet)
+        for mailing_list in mailing_list_set.approved_lists:
+            mailing_list.startConstructing()
+            mailing_list.transitionToStatus(MailingListStatus.ACTIVE)
+        logout()
+        flush_database_updates()
+
+
+mailman = MailmanStub()
