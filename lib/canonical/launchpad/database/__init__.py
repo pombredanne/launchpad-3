@@ -130,3 +130,4 @@ from canonical.launchpad.database.entitlement import *
 from canonical.launchpad.database.mailinglist import *
 from canonical.launchpad.database.hwdb import *
 from canonical.launchpad.database.codereviewmessage import *
+from canonical.launchpad.database.codereviewsubscription import *

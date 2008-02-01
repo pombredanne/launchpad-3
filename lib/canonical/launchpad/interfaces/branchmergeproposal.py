@@ -253,3 +253,6 @@ class IBranchMergeProposal(Interface):
         :param parent: The previous CodeReviewMessage in the thread.  If
             unspecified, the root message is used.
         """
+
+    def createSubscription(subscriber, registrant=None):
+        """Create a subscription associated with this BranchMergeProposal"""
