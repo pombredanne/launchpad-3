@@ -102,6 +102,7 @@ class PackageBugReportData(BugReportData):
         - dsp: an IDistributionSourcePackage
         - dssp: an IDistributionSeriesSourcepackage
         - product: an IProduct
+        - bugtracker: convenience holder for the product's bugtracker
         - official_malone: convenience boolean for IProduct.official_malone
         - *_url: convenience URLs
     """
@@ -120,6 +121,7 @@ class PackageBugReportData(BugReportData):
         # actually change the product.
         if self.product:
             product_url = canonical_url(product)
+            self.bugtracker = self.product.getExternalBugTracker()
             self.bugcontact_url = product_url + "/+bugcontact"
             self.product_edit_url = product_url + "/+edit"
 

@@ -104,12 +104,12 @@
                 <a tal:attributes="href item/product/fmt:url"
                    tal:content="item/product/title"></a>
               </td>
-              <tal:has-bugtracker condition="item/product/bugtracker">
+              <tal:has-bugtracker condition="item/bugtracker">
                 <td>
-                  <a tal:attributes="href item/product/bugtracker/fmt:url"
-                     tal:content="item/product/bugtracker/title"></a></td>
+                  <a tal:attributes="href item/bugtracker/fmt:url"
+                     tal:content="item/bugtracker/title"></a></td>
               </tal:has-bugtracker>
-              <tal:has-no-bugtracker condition="not: item/product/bugtracker">
+              <tal:has-no-bugtracker condition="not: item/bugtracker">
                 <td tal:condition="item/product/official_malone" class="good">
                     Launchpad
                 </td>
