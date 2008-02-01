@@ -119,7 +119,7 @@ exact state to expose the features that we want to test.
     >>> test_publisher = SoyuzTestPublisher()
     >>> test_publisher.prepareBreezyAutotest()
 
-Publishing a source in debian/woody, it won't result in a new build
+Publishing a source in debian/woody won't result in a new build
 because this distroseries lacks 'nominatedarchindep'.
 
     >>> pub_woody = test_publisher.getPubSource(
@@ -129,7 +129,7 @@ because this distroseries lacks 'nominatedarchindep'.
     ...     pocket=PackagePublishingPocket.RELEASE)
 
 Publishing several sources in ubuntu/hoary/RELEASE, which is in
-DEVELOPMENT state, so we expect builds to be created respecting
+DEVELOPMENT state, will result in builds being created respecting
 architecturehintlist and P-a-s.
 
     >>> pub_all = test_publisher.getPubSource(
@@ -170,11 +170,11 @@ notation in ubuntu/hoary, see the expected behavior below.
     ...     status=PackagePublishingStatus.PUBLISHED,
     ...     pocket=PackagePublishingPocket.RELEASE)
 
-Publishing a source in warty/UPDATES, a stable release update (SRU), we
-expect it to result in a build. Once a distroseries is released only
+Publishing a source in warty/UPDATES, a stable release update (SRU),
+will result in a build. Once a distroseries is released only
 source publications to post-RELEASE pockets (UPDATES, PROPOSED,
 BACKPORTS, SECURITY) will be considered, preserving the RELEASE pocket
-pristine as it was at the release time.
+as it was at the release time.
 
     >>> pub_updates = test_publisher.getPubSource(
     ...     sourcename='test-updates', version='665', distroseries=warty,
@@ -190,10 +190,10 @@ pocket.
     ...     status=PackagePublishingStatus.PUBLISHED,
     ...     pocket=PackagePublishingPocket.RELEASE)
 
-Publishing the same source in warty and hoary and create a
+If we publish the same source in warty and hoary and create a
 corresponding build record that has failed to build in this context,
-then we check that the queue-builder triggers a rebuild in the new
-context for published sources that have failed to build in previous
+we see that the queue-builder triggers a rebuild in the new context
+for published sources that have failed to build in previous
 distroseries (see bug 181328).
 
     >>> pub_failed = test_publisher.getPubSource(
@@ -209,10 +209,10 @@ distroseries (see bug 181328).
     ...     warty['i386'], PackagePublishingPocket.RELEASE,
     ...     warty.main_archive, status=BuildStatus.FAILEDTOBUILD)
 
-In order to tests the antithesis of the previous case, we will publish
-the same source in warty and hoary and attach a successfully built
-build record in the warty context. This way queue-builder won't create
-a new build in the hoary context.
+In contrast with the previous case, if we publish the same source in
+warty and hoary and attach a successfully built build record in the
+warty context we will see that the queue-builder won't create a new
+build in the hoary context.
 
     >>> pub_success = test_publisher.getPubSource(
     ...     sourcename='test-success', version='1.0', distroseries=warty,
@@ -226,7 +226,7 @@ a new build in the hoary context.
     ...     warty['i386'], PackagePublishingPocket.RELEASE,
     ...     warty.main_archive, status=BuildStatus.FULLYBUILT)
 
-Publishing a source in Celso's PPA, we expect a build to be created
+If a source is published in Celso's PPA, a build will be created
 for it respecting only 'architecturehintlist' and PPA-supported
 architecture, it won't be submitted to P-a-s restrictions. It allows
 PPA user to work on 'broken' ports of a given source, without
