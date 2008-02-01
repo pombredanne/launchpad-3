@@ -7,14 +7,18 @@ TODO: Consider folding this back into Zope3 -- StuartBishop 20050520
 
 __metaclass__ = type
 
-from zope.component import getUtility
-from zope.schema.interfaces import ValidationError
-from zope.app.form.interfaces import WidgetInputError
 from zope.app.form.browser import PasswordWidget
+from zope.app.form.browser.interfaces import ITextBrowserWidget
+from zope.app.form.interfaces import WidgetInputError
 from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
+from zope.component import getUtility
+from zope.interface import implements
+from zope.schema.interfaces import ValidationError
 
 from canonical.launchpad import _
 from canonical.launchpad.interfaces import IPasswordEncryptor
+from canonical.launchpad.webapp.interfaces import IMultiLineWidgetLayout
+
 
 class PasswordMismatch(ValidationError):
     __doc__ = _("Passwords do not match.")
@@ -36,8 +40,9 @@ class PasswordChangeWidget(PasswordWidget):
     Text is not echoed to the user, and two text boxes are used to ensure
     the password is entered correctly.
     """
-
+    implements(ITextBrowserWidget, IMultiLineWidgetLayout)
     type = 'password change'
+    display_label = False
 
     __call__ = ViewPageTemplateFile('templates/passwordchange.pt')
 

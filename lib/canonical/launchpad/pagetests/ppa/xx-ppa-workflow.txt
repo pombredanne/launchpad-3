@@ -74,10 +74,17 @@ architectures supported for PPA.
     >>> print extract_text(
     ...    find_portlet(sample_browser.contents, 'PPA supported series'))
     PPA supported series
-    5.04 "Hoary" - development
-    hoary i386 (official, ppa)
-    4.10 "Warty" - current
-    warty i386 (official, ppa)
+    5.04
+    "Hoary"
+    - development
+    i386
+    (official)
+    4.10
+    "Warty"
+    - current
+    i386
+    (official)
+
 
 The 'accepted' checkbox is unchecked by default:
 
@@ -226,19 +233,37 @@ LP-admins can also 'edit' PPAs of other people:
     >>> admin_browser.getLink("Change details") is not None
     True
 
-But more importantly, only LP-admin can 'administer' Personal Package Archives.
+But more importantly, only LP administrators can 'administer' Personal
+Package Archives.
+
+    >>> sample_browser.open("http://launchpad.dev/~carlos/+archive")
+    >>> print sample_browser.getLink("Administer archive")
+    Traceback (most recent call last):
+    ...
+    LinkNotFoundError
 
     >>> admin_browser.getLink("Administer archive").click()
+    >>> admin_browser.url
+    'http://launchpad.dev/~carlos/+archive/+admin'
 
-The administration procedure allow us to:
+Trying to shortcut the URL as a non-privileged user does not work:
+
+    >>> sample_browser.open("http://launchpad.dev/~carlos/+archive/+admin")
+    Traceback (most recent call last):
+    ...
+    Unauthorized...
+
+The administration procedure allows us to:
 
  * Enable/Disable: disabled PPA that won't accept uploads (not
    implemented yet)
+ * Make the PPA private or public.
  * Set a maximum disk size: uploads will be rejected if the resulting
    PPA size is exceeding the authorized size. (not implemented yet)
  * Edit the whiteboard: to communicate & record administration decisions.
 
     >>> admin_browser.getControl(name="field.enabled").value = False
+    >>> admin_browser.getControl(name="field.private").value = True
     >>> admin_browser.getControl(name="field.authorized_size").value = '1'
     >>> admin_browser.getControl(name="field.whiteboard").value = (
     ...    'Here lives a lazy community.')
@@ -251,6 +276,20 @@ The administration procedure allow us to:
     ...     find_tag_by_id(admin_browser.contents, 'whiteboard'))
     PPA whiteboard:
     Here lives a lazy community.
+
+There is a maximum size allowed for authorized_size that is set by
+Postgres, and is currently (2**30)-1 bytes.  Submitting the form with an
+authorized_size that is too large will result in an error:
+
+    >>> admin_browser.open("http://launchpad.dev/~carlos/+archive/+admin")
+    >>> admin_browser.getControl(
+    ...     name="field.authorized_size").value = '2147483649'
+    >>> admin_browser.getControl("Save").click()
+    >>> tags = find_tags_by_class(admin_browser.contents,'message')
+    >>> for tag in tags:
+    ...     print extract_text(tag)
+    There is 1 error.
+    Value is too big
 
 The whiteboard section can be viewed by the PPA owner:
 

@@ -182,13 +182,14 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
     def all_milestones(self):
         """See `IDistribution`."""
         return Milestone.selectBy(
-            distribution=self, orderBy=['dateexpected', 'name'])
+            distribution=self, orderBy=['-dateexpected', 'name'])
 
     @property
     def milestones(self):
         """See `IDistribution`."""
         return Milestone.selectBy(
-            distribution=self, visible=True, orderBy=['dateexpected', 'name'])
+            distribution=self, visible=True,
+            orderBy=['-dateexpected', 'name'])
 
     @property
     def archive_mirrors(self):
@@ -781,8 +782,8 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
             log.debug("Considering source version %s" % spr.version)
             # changelog may be empty, in which case we don't want to add it
             # to the set as the join would fail below.
-            if spr.changelog is not None:
-                sprchangelog.add(spr.changelog)
+            if spr.changelog_entry is not None:
+                sprchangelog.add(spr.changelog_entry)
             binpkgs = BinaryPackageRelease.select("""
                 BinaryPackageRelease.build = Build.id AND
                 Build.sourcepackagerelease = %s
@@ -933,7 +934,7 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
         return Archive.selectBy(
             purpose=ArchivePurpose.PPA, distribution=self, orderBy=['id'])
 
-    def searchPPAs(self, text=None, show_inactive=False):
+    def searchPPAs(self, text=None, show_inactive=False, user=None):
         """See `IDistribution`."""
         clauses = ["""
         Archive.purpose = %s AND
@@ -959,6 +960,21 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
             Archive.description LIKE '%%' || %s || '%%'))
             """ % (quote(text), quote_like(text)))
 
+        if user is not None:
+            if not user.inTeam(getUtility(ILaunchpadCelebrities).admin):
+                clauses.append("""
+                (Archive.private = FALSE OR
+                 Archive.owner = %s OR
+                 %s IN (SELECT TeamParticipation.person
+                        FROM TeamParticipation
+                        WHERE TeamParticipation.person = %s AND
+                              TeamParticipation.team = Archive.owner)
+                )
+                """ % sqlvalues(user, user, user))
+        else:
+            clauses.append("Archive.private = FALSE")
+
+
         query = ' AND '.join(clauses)
         return Archive.select(
             query, orderBy=orderBy, clauseTables=clauseTables)
@@ -983,9 +999,11 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
         Archive.purpose = %s AND
         Archive.distribution = %s AND
         SourcePackagePublishingHistory.archive = archive.id AND
-        SourcePackagePublishingHistory.status = %s
+        SourcePackagePublishingHistory.scheduleddeletiondate is null AND
+        SourcePackagePublishingHistory.status IN (%s, %s)
          """ % sqlvalues(ArchivePurpose.PPA, self,
-                         PackagePublishingStatus.PENDING)
+                         PackagePublishingStatus.PENDING,
+                         PackagePublishingStatus.DELETED)
 
         src_archives = Archive.select(
             src_query, clauseTables=['SourcePackagePublishingHistory'],
@@ -995,9 +1013,11 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
         Archive.purpose = %s AND
         Archive.distribution = %s AND
         BinaryPackagePublishingHistory.archive = archive.id AND
-        BinaryPackagePublishingHistory.status = %s
+        BinaryPackagePublishingHistory.scheduleddeletiondate is null AND
+        BinaryPackagePublishingHistory.status IN (%s, %s)
         """ % sqlvalues(ArchivePurpose.PPA, self,
-                        PackagePublishingStatus.PENDING)
+                        PackagePublishingStatus.PENDING,
+                        PackagePublishingStatus.DELETED)
 
         bin_archives = Archive.select(
             bin_query, clauseTables=['BinaryPackagePublishingHistory'],

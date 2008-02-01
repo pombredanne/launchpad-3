@@ -5,6 +5,15 @@ There are several views of the branches related to a person.
 Branch lists for people also include branches that are owned by
 teams that the person is participating in.
 
+Branch listing pages now hide dormant branches by default.  Dormant
+branches are branches that have not been updated or committed to for
+some time.  Since this is a time based change all the branches
+are reset here to be recently updated.
+
+    >>> from canonical.launchpad.ftests.branch_helper import (
+    ...     reset_all_branch_last_modified)
+    >>> reset_all_branch_last_modified()
+
 
 == Related Branches ==
 
@@ -50,12 +59,11 @@ the authored branches page.
    >>> table = find_tag_by_id(browser.contents, 'branchtable')
    >>> for row in table.tbody.fetch('tr'):
    ...     print extract_text(row)
-   main         ... New           firefox
-   klingon      ... Experimental  gnome-terminal
-   feature-x    ... New           landscape
-   trunk        ... New           landscape
-   junk.contrib ... New
-      2005-10-31 12:03:57 ... weeks ago
+   main           New           firefox
+   klingon        Experimental  gnome-terminal
+   feature-x      New           landscape
+   trunk          New           landscape
+   junk.contrib   New    ... weeks ago
 
 
 == Registered Branches ==
@@ -69,12 +77,12 @@ There is also a link which points to the registered branches page.
    >>> table = find_tag_by_id(browser.contents, 'branchtable')
    >>> for row in table.tbody.fetch('tr'):
    ...     print extract_text(row)
-   2.6                   ... Mature       gnome-terminal
-   main                  ... Development  gnome-terminal
-   mirrored              ... New          gnome-terminal
-   pushed                ... New          gnome-terminal
-   scanned               ... New          gnome-terminal
-   junk.dev Ubuntu Team  ... Experimental  2005-10-31 12:03:57 ... weeks ago
+   2.6                    Mature       gnome-terminal
+   main                   Development  gnome-terminal
+   mirrored               New          gnome-terminal
+   pushed                 New          gnome-terminal
+   scanned                New          gnome-terminal
+   junk.dev Ubuntu Team   Experimental  ... weeks ago
 
 == Subscribed branches ==
 
@@ -88,6 +96,6 @@ branches.
    >>> table = find_tag_by_id(browser.contents, 'branchtable')
    >>> for row in table.tbody.fetch('tr'):
    ...     print extract_text(row)
-   launchpad   Launchpad Developers ... New gnome-terminal
-   junk.dev    Ubuntu Team          ... Experimental
-      2005-10-31 12:03:57 ... weeks ago
+   launchpad   Launchpad Developers   New           gnome-terminal
+   junk.dev    Ubuntu Team            Experimental
+      ... weeks ago

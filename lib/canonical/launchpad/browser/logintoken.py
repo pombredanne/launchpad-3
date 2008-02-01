@@ -17,16 +17,14 @@ __all__ = [
 import urllib
 import pytz
 
-from zope.component import getUtility
-from zope.event import notify
 from zope.app.event.objectevent import ObjectCreatedEvent
 from zope.app.form.browser import TextAreaWidget
+from zope.component import getUtility
+from zope.event import notify
 from zope.interface import alsoProvides, directlyProvides, Interface
 
 from canonical.database.sqlbase import flush_database_updates
-
 from canonical.widgets import LaunchpadRadioWidget, PasswordChangeWidget
-
 from canonical.launchpad import _
 from canonical.launchpad.webapp.interfaces import (
     IAlwaysSubmittedWidget, IPlacelessLoginSource)
@@ -41,9 +39,10 @@ from canonical.launchpad.browser.team import HasRenewalPolicyMixin
 from canonical.launchpad.interfaces import (
     EmailAddressStatus, GPGKeyAlgorithm, GPGKeyNotFoundError,
     GPGVerificationError, IEmailAddressSet, IGPGHandler, IGPGKeySet,
-    IGPGKeyValidationForm, ILoginToken, ILoginTokenSet, IOpenIDRPConfigSet,
-    IPerson, IPersonSet, ITeam, LoginTokenType, PersonCreationRationale,
-    ShipItConstants, UBUNTU_WIKI_URL, UnexpectedFormData)
+    IGPGKeyValidationForm, ILoginToken, ILoginTokenSet, INewPersonForm,
+    IOpenIDRPConfigSet, IPerson, IPersonSet, ITeam, LoginTokenType,
+    PersonCreationRationale, ShipItConstants, UBUNTU_WIKI_URL,
+    UnexpectedFormData)
 
 UTC = pytz.timezone('UTC')
 
@@ -304,8 +303,7 @@ class ResetPasswordView(BaseLoginTokenView, LaunchpadFormView):
         naked_person.password = data.get('password')
         self.context.consume()
 
-        if self.request.form.get('logmein'):
-            self.logInPersonByEmail(self.context.email)
+        self.logInPersonByEmail(self.context.email)
 
         self.next_url = canonical_url(self.context.requester)
         self.request.response.addInfoNotification(
@@ -630,7 +628,7 @@ class NewAccountView(BaseLoginTokenView, LaunchpadFormView):
 
     created_person = None
 
-    schema = IPerson
+    schema = INewPersonForm
     field_names = ['displayname', 'hide_email_addresses', 'password']
     custom_widget('password', PasswordChangeWidget)
     label = 'Complete your registration'

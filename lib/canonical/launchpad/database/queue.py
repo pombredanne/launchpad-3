@@ -35,14 +35,17 @@ from canonical.launchpad.database.publishing import (
     SecureBinaryPackagePublishingHistory)
 from canonical.launchpad.helpers import get_email_template
 from canonical.launchpad.interfaces import (
-    ArchivePurpose, ILaunchpadCelebrities, IPackageUpload,
+    ArchivePurpose, IComponentSet, ILaunchpadCelebrities, IPackageUpload,
     IPackageUploadBuild, IPackageUploadSource, IPackageUploadCustom,
     IPackageUploadQueue, IPackageUploadSet, IPersonSet, NotFoundError,
     PackagePublishingPocket, PackagePublishingStatus, PackageUploadStatus,
     PackageUploadCustomFormat, pocketsuffix, QueueBuildAcceptError,
     QueueInconsistentStateError, QueueStateWriteProtectedError,
     QueueSourceAcceptError, SourcePackageFileType)
-from canonical.launchpad.mail import format_address, simple_sendmail
+from canonical.launchpad.mail import (
+    format_address, signed_message_from_string, simple_sendmail)
+from canonical.launchpad.scripts.processaccepted import (
+    close_bugs_for_queue_item)
 from canonical.librarian.interfaces import DownloadFailed
 from canonical.librarian.utils import copy_and_close
 
@@ -64,6 +67,10 @@ class PackageUploadQueue:
     def __init__(self, distroseries, status):
         self.distroseries = distroseries
         self.status = status
+
+
+class LanguagePackEncountered(Exception):
+    """Thrown when not wanting to email notifications for language packs."""
 
 
 class PackageUpload(SQLBase):
@@ -190,16 +197,46 @@ class PackageUpload(SQLBase):
 
     def acceptFromQueue(self, announce_list, logger=None, dry_run=False):
         """See `IPackageUpload`."""
+        if (self._isSingleSourceUpload() and
+            self.status == PackageUploadStatus.NEW and
+            self.sources[0].sourcepackagerelease.component.name == 'main'):
+            # If the queue item is coming from the NEW queue and is a
+            # single source upload, we override its component to
+            # 'universe' to save the archive admins some work, since
+            # they do this with the majority of new packages.
+
+            # XXX Julian 2008-01-28
+            # This is a temporary hack until bug 120052 is correctly fixed.
+            self.sources[0].sourcepackagerelease.component = getUtility(
+                IComponentSet)['universe']
+
         self.setAccepted()
         self.notify(announce_list=announce_list, logger=logger,
                     dry_run=dry_run)
         self.syncUpdate()
+
+        # If this is a single source upload we can create the
+        # publishing records now so that the user doesn't have to
+        # wait for a publisher cycle (which calls process-accepted
+        # to do this).
+        if self._isSingleSourceUpload():
+            self.realiseUpload()
+
+        # When accepting packages, we must also check the changes file
+        # for bugs to close automatically.
+        close_bugs_for_queue_item(self)
 
     def rejectFromQueue(self, logger=None, dry_run=False):
         """See `IPackageUpload`."""
         self.setRejected()
         self.notify(logger=logger, dry_run=dry_run)
         self.syncUpdate()
+
+    def _isSingleSourceUpload(self):
+        """Return True if this upload contains only a single source."""
+        return ((self.sources.count() == 1) and
+                (self.builds.count() == 0) and
+                (self.customfiles.count() == 0))
 
     # XXX cprov 2006-03-14: Following properties should be redesigned to
     # reduce the duplicated code.
@@ -363,6 +400,12 @@ class PackageUpload(SQLBase):
         """See `IPackageUpload`."""
         return self.archive.purpose == ArchivePurpose.PPA
 
+    def _stripPgpSignature(self, changes_lines):
+        """Strip any PGP signature from the supplied changes lines."""
+        text = "".join(changes_lines)
+        signed_message = signed_message_from_string(text)
+        return signed_message.signedContent.splitlines(True)
+
     def _getChangesDict(self, changes_file_object=None):
         """Return a dictionary with changes file tags in it."""
         changes_lines = None
@@ -374,12 +417,22 @@ class PackageUpload(SQLBase):
 
         unsigned = not self.signing_key
         changes = parse_tagfile_lines(changes_lines, allow_unsigned=unsigned)
+
+        if self.isPPA():
+            # Leaving the PGP signature on a package uploaded to a PPA
+            # leaves the possibility of someone hijacking the notification
+            # and uploading to the Ubuntu archive as the signer.
+            changes_lines = self._stripPgpSignature(changes_lines)
+
         return changes, changes_lines
 
     def _buildUploadedFilesList(self):
         """Return a list of tuples of (filename, component, section).
 
         Component and section are only set where the file is a source upload.
+        If an empty list is returned, it means there are no files.
+        Raises LanguagePackRejection if a language pack is detected.
+        No emails should be sent for language packs.
         """
         files = []
         if self.contains_source:
@@ -391,7 +444,7 @@ class PackageUpload(SQLBase):
                 debug(self.logger,
                     "Skipping acceptance and announcement, it is a "
                     "language-package upload.")
-                return None
+                raise LanguagePackEncountered
             for sprfile in spr.files:
                 files.append(
                     (sprfile.libraryfile.filename, spr.component.name,
@@ -604,9 +657,14 @@ class PackageUpload(SQLBase):
         changes, changes_lines = self._getChangesDict(changes_file_object)
 
         # "files" will contain a list of tuples of filename,component,section.
-        # If files is None, we don't need to send an email if this is not
+        # If files is empty, we don't need to send an email if this is not
         # a rejection.
-        files = self._buildUploadedFilesList()
+        try:
+            files = self._buildUploadedFilesList()
+        except LanguagePackEncountered:
+            # Don't send emails for language packs.
+            return
+
         if not files and self.status != PackageUploadStatus.REJECTED:
             return
 

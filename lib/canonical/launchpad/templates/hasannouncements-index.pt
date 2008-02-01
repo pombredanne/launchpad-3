@@ -15,6 +15,12 @@
 <metal:portlets fill-slot="portlets">
 </metal:portlets>
 
+<metal:atom fill-slot="head_epilogue">
+  <link rel="alternate" type="application/atom+xml" tal:attributes="
+             href view/feed_url;
+             title string:Announcements for ${context/displayname}" />
+</metal:atom>
+
 <p metal:fill-slot="help">
   Project administrators can publish additional announcements, edit these
   announcements or retract them.
@@ -24,10 +30,11 @@
 
   <h1>News and announcements</h1>
 
-  <link rel="alternate" type="application/atom+xml" 
-        tal:attributes="href view/feed_url;
-                        title string:Announcements for ${context/displayname}"
-        />
+  <p tal:condition="view/announcement_nav/batch/listlength">
+    These announcements are available as an 
+    <a tal:attributes="href view/feed_url">
+      <img src="/@@/rss" alt="" /> Atom/RSS feed</a>.
+  </p>
 
   <p tal:condition="not: view/announcement_nav/batch/listlength">
     There are no announcements for this project.
@@ -40,7 +47,8 @@
   </div>
 
   <div class="lesser"
-       tal:content="structure view/announcement_nav/@@+navigation-links-lower" />
+       tal:content="structure view/announcement_nav/@@+navigation-links-lower"
+       />
 
 </div>
 </body>

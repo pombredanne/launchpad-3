@@ -283,7 +283,7 @@ class PullerMasterProtocol(ProcessProtocol, NetstringReceiver, TimeoutMixin):
                 error = str(reason.value)
             self.mirror_failed_deferred = defer.maybeDeferred(
                 self.listener.mirrorFailed, error, None)
-            self.mirror_failed_deferred.addCallback(
+            self.mirror_failed_deferred.addBoth(
                 lambda ignored: self._processTerminated(reason))
 
 

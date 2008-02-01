@@ -7,6 +7,7 @@ __metaclass__ = type
 
 __all__ = [
     'BUG_CONTACT_BUGTASK_STATUSES',
+    'BugTagsSearchCombinator',
     'BugTaskImportance',
     'BugTaskSearchParams',
     'BugTaskStatus',
@@ -53,7 +54,7 @@ from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.validators.name import name_validator
 from canonical.launchpad.webapp.interfaces import ITableBatchNavigator
 from canonical.lazr import (
-    DBEnumeratedType, DBItem, use_template)
+    DBEnumeratedType, DBItem, EnumeratedType, Item, use_template)
 
 
 class BugTaskImportance(DBEnumeratedType):
@@ -225,6 +226,26 @@ class BugTaskStatusSearch(DBEnumeratedType):
         details were supplied yet..
         """)
 
+
+class BugTagsSearchCombinator(EnumeratedType):
+    """Bug Tags Search Combinator
+
+    The possible values for combining the list of tags in a bug search.
+    """
+
+    ANY = Item("""
+        Any
+
+        Search for bugs tagged with any of the specified tags.
+        """)
+
+    ALL = Item("""
+        All
+
+        Search for bugs tagged with all of the specified tags.
+        """)
+
+
 class BugTaskStatusSearchDisplay(DBEnumeratedType):
     """Bug Task Status
 
@@ -373,7 +394,7 @@ class IBugTask(IHasDateCreated, IHasBug, ICanBeMentored):
         "True or False depending on whether or not there is more work "
         "required on this bug task.")
 
-    def subscribe(person):
+    def subscribe(person, subscribed_by):
         """Subscribe this person to the underlying bug.
 
         This method is required here so that MentorshipOffers can happen on
@@ -579,6 +600,11 @@ class IBugTaskSearch(IBugTaskSearchBase):
     tag = List(
         title=_("Tags"), description=_("Separated by whitespace."),
         value_type=Tag(), required=False)
+    tags_combinator = Choice(
+        title=_("Tags combination"),
+        description=_("Search for any or all of the tags specified."),
+        vocabulary=BugTagsSearchCombinator, required=False,
+        default=BugTagsSearchCombinator.ANY)
 
 
 class IPersonBugTaskSearch(IBugTaskSearchBase):
@@ -834,6 +860,22 @@ class IBugTaskSet(Interface):
         Raise a NotFoundError if there is no IBugTask
         matching the given id. Raise a zope.security.interfaces.Unauthorized
         if the user doesn't have the permission to view this bug.
+        """
+
+    def getMultiple(task_ids):
+        """Retrieve a dictionary of bug tasks for the given sequence of IDs.
+
+        :param task_ids: a sequence of bug task IDs.
+
+        :return: a dictionary mapping task IDs to tasks. The
+            dictionary contains an entry for every bug task ID in
+            the given sequence that also matches a bug task in the
+            database. The dictionary does not contain entries for
+            bug task IDs not present in the database.
+
+        :return: an empty dictionary if the given sequence of IDs
+            is empty, or if none of the specified IDs matches a bug
+            task in the database.
         """
 
     def findSimilar(user, summary, product=None, distribution=None,

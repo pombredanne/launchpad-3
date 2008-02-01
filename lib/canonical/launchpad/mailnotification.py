@@ -62,8 +62,12 @@ class MailWrapper:
             width=width, subsequent_indent=indent,
             replace_whitespace=False, break_long_words=False)
 
-    def format(self, text):
-        """Format the text to be included in an email."""
+    def format(self, text, force_wrap=False):
+        """Format the text to be included in an email.
+
+        If force_wrap is False, only paragraphs containing a single line
+        will be wrapped.
+        """
         wrapped_lines = []
 
         if self.indent_first_line:
@@ -87,6 +91,10 @@ class MailWrapper:
                 # manually.
                 self._text_wrapper.initial_indent = indentation
                 wrapped_lines += self._text_wrapper.wrap(paragraph)
+            elif force_wrap:
+                self._text_wrapper.initial_indent = indentation
+                for line in lines:
+                    wrapped_lines += self._text_wrapper.wrap(line)
             else:
                 # If the user has gone through the trouble of wrapping
                 # the lines, we shouldn't re-wrap them for him.
@@ -432,7 +440,7 @@ def update_security_contact_subscriptions(modified_bugtask, event):
         new_product = bugtask_after_modification.product
         if new_product.security_contact:
             bugtask_after_modification.bug.subscribe(
-                new_product.security_contact)
+                new_product.security_contact, event.user)
 
 
 def get_bugmail_from_address(person, bug):
@@ -541,7 +549,7 @@ def generate_bug_add_email(bug, new_recipients=False, reason=None):
     that the new recipients have been subscribed to the bug. Otherwise
     it's just a notification of a new bug report.
     """
-    subject = u"[Bug %d] %s" % (bug.id, bug.title)
+    subject = u"[Bug %d] [NEW] %s" % (bug.id, bug.title)
 
     if bug.private:
         # This is a confidential bug.
@@ -1071,12 +1079,13 @@ def notify_invitation_to_join_team(event):
         'reviewer': '%s (%s)' % (reviewer.browsername, reviewer.name),
         'member': '%s (%s)' % (member.browsername, member.name),
         'team': '%s (%s)' % (team.browsername, team.name),
+        'team_url': canonical_url(team),
         'membership_invitations_url':
             "%s/+invitation/%s" % (canonical_url(member), team.name)}
     for address in admin_addrs:
         recipient = getUtility(IPersonSet).getByEmail(address)
         replacements['recipient_name'] = recipient.displayname
-        msg = MailWrapper().format(template % replacements)
+        msg = MailWrapper().format(template % replacements, force_wrap=True)
         simple_sendmail(from_addr, address, subject, msg)
 
 
@@ -1105,20 +1114,23 @@ def notify_team_join(event):
         # notification to the person too.
         member_addrs = contactEmailAddresses(person)
 
-        subject = '%s joined %s' % (person.name, team.name)
+        subject = 'You have been added to %s' % team.name
         templatename = 'new-member-notification.txt'
         if person.isTeam():
             templatename = 'new-member-notification-for-teams.txt'
+            subject = '%s joined %s' % (person.name, team.name)
 
         template = get_email_template(templatename)
         replacements = {
             'reviewer': '%s (%s)' % (reviewer.browsername, reviewer.name),
+            'team_url': canonical_url(team),
             'member': '%s (%s)' % (person.browsername, person.name),
             'team': '%s (%s)' % (team.browsername, team.name)}
         for address in member_addrs:
             recipient = getUtility(IPersonSet).getByEmail(address)
             replacements['recipient_name'] = recipient.displayname
-            msg = MailWrapper().format(template % replacements)
+            msg = MailWrapper().format(
+                template % replacements, force_wrap=True)
             simple_sendmail(from_addr, address, subject, msg)
 
         # The member's email address may be in admin_addrs too; let's remove
@@ -1151,7 +1163,8 @@ def notify_team_join(event):
     for address in admin_addrs:
         recipient = getUtility(IPersonSet).getByEmail(address)
         replacements['recipient_name'] = recipient.displayname
-        msg = MailWrapper().format(template % replacements)
+        msg = MailWrapper().format(
+            template % replacements, force_wrap=True)
         simple_sendmail(from_addr, address, subject, msg, headers=headers)
 
 

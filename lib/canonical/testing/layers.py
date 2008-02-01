@@ -24,6 +24,7 @@ __all__ = [
     'ExperimentalLaunchpadZopelessLayer',
     ]
 
+import logging
 import  os
 import socket
 import time
@@ -31,10 +32,13 @@ from urllib import urlopen
 
 import psycopg
 import transaction
+
+import zope.app.testing.functional
 from zope.component import getUtility, getGlobalSiteManager
 from zope.component.interfaces import ComponentLookupError
 from zope.security.management import getSecurityPolicy
 from zope.security.simplepolicies import PermissiveSecurityPolicy
+from zope.server.logger.pythonlogger import PythonLogger
 from zope.testing.testrunner import RetryTest
 
 from canonical.config import config
@@ -45,11 +49,14 @@ import canonical.launchpad.mail.stub
 from canonical.launchpad.mail.mailbox import TestMailBox
 from canonical.launchpad.scripts import execute_zcml_for_scripts
 from canonical.launchpad.webapp.servers import (
-    register_launchpad_request_publication_factories)
+    LaunchpadAccessLogger, register_launchpad_request_publication_factories)
 from canonical.lp import initZopeless
 from canonical.librarian.ftests.harness import LibrarianTestSetup
 from canonical.testing import reset_logging
 from canonical.testing.profiled import profiled
+
+
+orig__call__ = zope.app.testing.functional.HTTPCaller.__call__
 
 
 class LayerError(Exception):
@@ -766,6 +773,34 @@ class LaunchpadScriptLayer(ZopelessLayer, LaunchpadLayer):
         _reconnect_sqlos(database_config_section=database_config_section)
 
 
+class MockHTTPTask:
+
+    class MockHTTPRequestParser:
+        headers = None
+        first_line = None
+
+    class MockHTTPServerChannel:
+        # This is not important to us, so we can hardcode it here.
+        addr = ['127.0.0.88', 80]
+
+    request_data = MockHTTPRequestParser()
+    channel = MockHTTPServerChannel()
+
+    def __init__(self, response, first_line):
+        self.request = response._request
+        # We have no way of knowing when the task started, so we use
+        # the current time here. That shouldn't be a problem since we don't
+        # care about that for our tests anyway.
+        self.start_time = time.time()
+        self.status = response.getStatus()
+        self.bytes_written = int(response.getHeader('Content-length'))
+        self.request_data.headers = self.request.headers
+        self.request_data.first_line = first_line
+
+    def getCGIEnvironment(self):
+        return self.request._orig_env
+
+
 class PageTestLayer(LaunchpadFunctionalLayer):
     """Environment for page tests.
     """
@@ -778,12 +813,29 @@ class PageTestLayer(LaunchpadFunctionalLayer):
     @classmethod
     @profiled
     def setUp(cls):
+        file_handler = logging.FileHandler('pagetests-access.log', 'w')
+        file_handler.setFormatter(logging.Formatter())
+        logger = PythonLogger('pagetests-access')
+        logger.logger.addHandler(file_handler)
+        logger.logger.setLevel(logging.INFO)
+        access_logger = LaunchpadAccessLogger(logger)
+        def my__call__(obj, request_string, handle_errors=True, form=None):
+            """Call HTTPCaller.__call__ and log the page hit."""
+            response = orig__call__(
+                obj, request_string, handle_errors=handle_errors, form=form)
+            first_line = request_string.strip().splitlines()[0]
+            access_logger.log(MockHTTPTask(response._response, first_line))
+            return response
+
+        cls.orig__call__ = zope.app.testing.functional.HTTPCaller.__call__
+        zope.app.testing.functional.HTTPCaller.__call__ = my__call__
         cls.resetBetweenTests(True)
 
     @classmethod
     @profiled
     def tearDown(cls):
         cls.resetBetweenTests(True)
+        zope.app.testing.functional.HTTPCaller.__call__ = cls.orig__call__
 
     @classmethod
     @profiled

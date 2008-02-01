@@ -12,9 +12,9 @@
 
 <body>
 
-<metal:leftportlets fill-slot="portlets_one">
+<metal:portlets fill-slot="portlets">
   <div tal:replace="structure context/person/@@+portlet-details" />
-</metal:leftportlets>
+</metal:portlets>
 
 <div metal:fill-slot="main">
 

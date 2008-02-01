@@ -5,13 +5,21 @@
           tasklink view/taskLink;
           form_row_id string:task${context/id}">
   <tr tal:attributes="class view/getTaskRowCSSClass">
-    <td width="14" tal:condition="nothing"><a tal:condition="expandable"
+    <td align="right">
+      <metal:expander
+          metal:define-macro="expander"
+          tal:define="expander_link_text expander_link_text|nothing">
+        <a tal:condition="expandable"
            tal:attributes="
-              href tasklink;
-              onclick string:return toggleFormVisibility('${form_row_id}')"
-          ><img tal:attributes="id string:${form_row_id}-edit"
-               width="14" height="14"
-               src="/@@/treeCollapsed" alt="edit" /></a></td>
+            href tasklink;
+            onclick string:return toggleFormVisibility('${form_row_id}')">
+          <img src="/@@/bug-status-expand" alt="[edit]" />
+          <tal:link_text tal:replace="expander_link_text" />
+        </a>
+        <tal:no_expander tal:condition="not: expandable"
+                         tal:replace="expander_link_text" />
+      </metal:expander>
+    </td>
     <td style="padding: 0.3em 0em 0.3em 1.5em"
         tal:condition="indent_task"
         tal:define="series_targetname view/getSeriesTargetName">
@@ -36,7 +44,7 @@
     </td>
 
     <tal:conjoined-task condition="context/conjoined_master">
-    <td colspan="3" style="vertical-align: middle">
+    <td colspan="4" style="vertical-align: middle">
       <span class="discreet lesser" style="font-size: 100%">
         Status tracked in
         <tal:master tal:replace="view/getConjoinedMasterName">
@@ -47,41 +55,18 @@
     </tal:conjoined-task>
 
     <tal:not-conjoined-task condition="not:context/conjoined_master">
-    <td tal:attributes="class string:status${context/status/name}">
-      <a
-        tal:condition="expandable"
-        tal:attributes="
-          href tasklink;
-          onclick string:return toggleFormVisibility('${form_row_id}')
-        "
-      >
-        <img
-          src="/@@/bug-status-expand"
-          alt=""
-        />
-        <tal:status replace="context/status/title" />
-      </a>
-      <tal:status condition="not:expandable" replace="context/status/title" />
+    <td tal:attributes="class string:status${context/status/name}"
+        tal:define="expander_link_text context/status/title">
+      <metal:expander metal:use-macro="template/macros/expander" />
     </td>
 
-    <td tal:attributes="class string:importance${context/importance/name}">
-      <a
-        tal:condition="expandable"
-        tal:attributes="
-          href tasklink;
-          onclick string:return toggleFormVisibility('${form_row_id}')
-        "
-      >
-        <img
-          src="/@@/bug-status-expand"
-          alt=""
-        />
-        <tal:importance replace="context/importance/title" />
-      </a>
-      <tal:importance
-        condition="not:expandable"
-        replace="context/importance/title"
-      />
+    <td tal:attributes="class string:importance${context/importance/name}"
+        tal:define="expander_link_text context/importance/title">
+      <metal:expander metal:use-macro="template/macros/expander" />
+    </td>
+
+    <td style="padding-right: 0em" align="right">
+      <metal:expander metal:use-macro="template/macros/expander" />
     </td>
 
     <td style="margin: 0; padding: 0; vertical-align: middle">
@@ -114,24 +99,9 @@
             </span>
           </a>
         </tal:has_assignee>
-        <tal:no_assignee condition="not: context/assignee">
-          &mdash;
-        </tal:no_assignee>
       </tal:has_no_watch>
     </td>
     </tal:not-conjoined-task>
-    <td class="icon right">
-      <a
-        tal:condition="expandable"
-        tal:attributes="
-          href tasklink;
-          onclick string:return toggleFormVisibility('${form_row_id}')
-        "
-      ><img
-        src="/@@/bug-status-expand"
-        alt="[edit]"
-      /></a>
-    </td>
   </tr>
   <tal:form condition="view/displayEditForm">
     <tr
@@ -139,7 +109,7 @@
       tal:condition="expandable"
       style="display: none"
     >
-     <td colspan="5" tal:content="structure context/@@+edit-form" />
+     <td colspan="6" tal:content="structure context/@@+edit-form" />
     </tr>
   </tal:form>
 </tal:bugtask>

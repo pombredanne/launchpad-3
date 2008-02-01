@@ -37,20 +37,35 @@
       </thead>
 
       <tbody>
-        <tr tal:repeat="watch watches">
-          <td>
-            <img alt="" src="/@@/bug" />
-            <a href="#" tal:attributes="href watch/bug/fmt:url">
-              #<span tal:replace="watch/bug/id">34</span>:
-               <span tal:replace="watch/bug/title">Launchpad Bug Title</span>
-            </a>
-          </td>
-          <td><a tal:content="watch/remotebug"
-                 tal:attributes="href watch/url">53656
-              </a>
-          </td>
-          <td tal:content="watch/remotestatus" />
-        </tr>
+        <tal:watches repeat="watch watches">
+          <tr tal:define="hide not:watch/bug/required:launchpad.View">
+            <tal:hide-watch-details condition="hide">
+              <td>
+                <img alt="" src="/@@/bug" />
+                #<span tal:replace="watch/bug/id">34</span>:
+                <em>(Private)</em>
+              </td>
+              <td><em>-</em></td>
+              <td></td>
+            </tal:hide-watch-details>
+            <tal:show-watch-details condition="not:hide">
+              <td>
+                <img alt="" src="/@@/bug" />
+                <a href="#" tal:attributes="href watch/bug/fmt:url">
+                  #<span tal:replace="watch/bug/id">34</span>:
+                  <span tal:replace="watch/bug/title">
+                    Launchpad Bug Title
+                  </span>
+                </a>
+              </td>
+              <td>
+                <a tal:content="watch/remotebug"
+                   tal:attributes="href watch/url">53656</a>
+              </td>
+              <td tal:content="watch/remotestatus" />
+            </tal:show-watch-details>
+          </tr>
+        </tal:watches>
       </tbody>
     </table>
   </metal:macro>
@@ -63,6 +78,17 @@
     just a single paragraph of text really, giving the BugTracker
     highlights.
   </p>
+
+  <h2>
+    URLs
+  </h2>
+
+  <ul id="bugtracker-urls">
+    <li><strong tal:content="context/baseurl" /> (Base URL)</li>
+    <li tal:repeat="alias context/aliases">
+      <strong tal:content="alias" /> (Alias)
+    </li>
+  </ul>
 
   <h2 tal:condition="context/contactdetails">
     Contact details
