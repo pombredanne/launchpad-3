@@ -51,10 +51,12 @@ bug query pags match what is listed in the table.
 
 XXX: This 3 in the watched column is related to the above; if you do a
 literal count it would be 2, of course. Since firefox uses malone
-officially, tasks against it are also counted as if they were watched.
+officially, tasks against it are not rendered, but totalized as if they
+were watched, and the total line doesn't add up.
 This should be clearer; perhaps by separating the watched column into
 natively watched and remote watched, but I don't know how to fix this
-right now. -- kiko, 2008-02-01
+right now. See https://bugs.edge.launchpad.net/malone/+bug/188020 
+    -- kiko, 2008-02-01
 
 The table includes a number of convenience links:
 
