@@ -25,8 +25,8 @@ from canonical.database.sqlbase import READ_COMMITTED_ISOLATION
 from canonical.launchpad.database import PackageUploadBuild
 from canonical.launchpad.interfaces import (
     ArchivePurpose, DistroSeriesStatus, IArchiveSet, IBugSet, IBugTaskSet,
-    IComponentSet, IDistributionSet, IPackageUploadSet, IPersonSet,
-    PackagePublishingPocket, PackagePublishingStatus, PackageUploadStatus)
+    IDistributionSet, IPackageUploadSet, IPersonSet, PackagePublishingPocket,
+    PackagePublishingStatus, PackageUploadStatus)
 from canonical.launchpad.mail import stub
 from canonical.launchpad.scripts.queue import (
     CommandRunner, CommandRunnerError, name_queue_map)

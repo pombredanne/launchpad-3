@@ -35,7 +35,7 @@ from canonical.launchpad.database.publishing import (
     SecureBinaryPackagePublishingHistory)
 from canonical.launchpad.helpers import get_email_template
 from canonical.launchpad.interfaces import (
-    ArchivePurpose, IComponentSet, ILaunchpadCelebrities, IPackageUpload,
+    ArchivePurpose, ILaunchpadCelebrities, IPackageUpload,
     IPackageUploadBuild, IPackageUploadSource, IPackageUploadCustom,
     IPackageUploadQueue, IPackageUploadSet, IPersonSet, NotFoundError,
     PackagePublishingPocket, PackagePublishingStatus, PackageUploadStatus,

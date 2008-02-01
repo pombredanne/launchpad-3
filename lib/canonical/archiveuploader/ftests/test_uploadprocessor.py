@@ -486,6 +486,8 @@ class TestUploadProcessor(TestUploadProcessorBase):
         distro archives.  This can be done by two partner package
         uploads, as partner packages have their archive overridden.
         """
+        # Use the 'absolutely-anything' policy which allows unsigned
+        # DSC and changes files.
         uploadprocessor = self.setupBreezyAndGetUploadProcessor(
             policy='absolutely-anything')
 
@@ -652,44 +654,48 @@ class TestUploadProcessor(TestUploadProcessorBase):
     #
     # The following three tests check this.
 
-    def checkComponentOverride(self, expected_component_name):
-        """Helper function to check overridden component names."""
+    def checkComponentOverride(self, upload_dir_name,
+                               expected_component_name):
+        """Helper function to check overridden component names.
+
+        Upload a 'bar" package from upload_dir_name, then
+        inspect the package 'bar' in the NEW queue and ensure its
+        overridden component matches expected_component_name.
+
+        The original component comes from the source package contained
+        in upload_dir_name.
+        """
+        uploadprocessor = self.setupBreezyAndGetUploadProcessor()
+        upload_dir = self.queueUpload(upload_dir_name)
+        self.processUpload(uploadprocessor, upload_dir)
+
         queue_items = self.breezy.getQueueItems(
             status=PackageUploadStatus.NEW, name="bar",
             version="1.0-1", exact_match=True)
         [queue_item] = queue_items
-        self.assertEqual(queue_item.sourcepackagerelease.component.name,
+        self.assertEqual(
+            queue_item.sourcepackagerelease.component.name,
             expected_component_name)
 
     def testUploadContribComponentOverride(self):
         """Test the overriding of the contrib component on uploads."""
-        uploadprocessor = self.setupBreezyAndGetUploadProcessor()
-
         # The component contrib does not exist in the sample data, so
         # add it here.
         Component(name='contrib')
 
-        # Upload a package.
-        upload_dir = self.queueUpload("bar_1.0-1_contrib_component")
-        self.processUpload(uploadprocessor, upload_dir)
-
         # Test it.
-        self.checkComponentOverride("multiverse")
+        self.checkComponentOverride(
+            "bar_1.0-1_contrib_component", "multiverse")
 
     def testUploadNonfreeComponentOverride(self):
         """Test the overriding of the non-free component on uploads."""
-        uploadprocessor = self.setupBreezyAndGetUploadProcessor()
-
         # The component non-free does not exist in the sample data, so
         # add it here.
         Component(name='non-free')
 
-        # Upload a package.
-        upload_dir = self.queueUpload("bar_1.0-1_nonfree_component")
-        self.processUpload(uploadprocessor, upload_dir)
-
         # Test it.
-        self.checkComponentOverride("multiverse")
+        self.checkComponentOverride(
+            "bar_1.0-1_nonfree_component", "multiverse")
 
     def testUploadDefaultComponentOverride(self):
         """Test the overriding of the component on uploads.
@@ -697,14 +703,7 @@ class TestUploadProcessor(TestUploadProcessorBase):
         Components other than non-free and contrib should override to
         universe.
         """
-        uploadprocessor = self.setupBreezyAndGetUploadProcessor()
-
-        # Upload a package.
-        upload_dir = self.queueUpload("bar_1.0-1")
-        self.processUpload(uploadprocessor, upload_dir)
-
-        # Test it.
-        self.checkComponentOverride("universe")
+        self.checkComponentOverride("bar_1.0-1", "universe")
 
 
 def test_suite():

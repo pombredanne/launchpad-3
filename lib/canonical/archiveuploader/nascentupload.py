@@ -419,7 +419,7 @@ class NascentUpload:
         return self.policy.archive.purpose == ArchivePurpose.PPA
 
     def getComponentsSet(self):
-        """Return a set of components present in the upload files."""
+        """Return a set of components present in the uploaded files."""
         return set(file.component_name for file in self.changes.files)
 
     @property
@@ -735,6 +735,9 @@ class NascentUpload:
             uploaded_file.component_name = 'main'
             return
 
+        # All newly-uploaded, non-PPA files must be marked as new so that
+        # the upload goes to the correct queue.  PPA uploads are always
+        # auto-accepted so they are never new.
         uploaded_file.new = True
 
         if self.is_partner:
@@ -750,9 +753,9 @@ class NascentUpload:
             override = component_override_map[uploaded_file.component_name]
         except KeyError:
             # The override defaults to 'universe'.
-            uploaded_file.component_name = 'universe'
-        else:
-            uploaded_file.component_name = override
+            override = 'universe'
+
+        uploaded_file.component_name = override
 
     def find_and_apply_overrides(self):
         """Look for ancestry and overrides information.

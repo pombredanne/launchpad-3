@@ -584,9 +584,10 @@ Check the generation of a correct Sources tag file for the main
 component of ubuntutest/breezy-autotest, containing the only the
 required entry for 'etherwake':
 
-  >>> print open(
+  >>> sources = open(
   ...    "/var/tmp/archive/ubuntutest/dists/breezy-autotest/universe/source"
-  ...    "/Sources").read().replace('Section: net\n', '') + '\nEND'
+  ...    "/Sources").read()
+  >>> print sources.replace('Section: net\n', '') + '\nEND'
   Package: etherwake
   Binary: etherwake
   Version: 1.08-1
@@ -681,9 +682,9 @@ Check if the package was moved properly to the component 'multiverse':
   <BLANKLINE>
   END
 
-  >>> multiverse_sources = open("/var/tmp/archive/ubuntutest/dists/"
-  ...                         "breezy-autotest/multiverse/source/"
-  ...                         "Sources").read()
+  >>> multiverse_sources = open(
+  ...     "/var/tmp/archive/ubuntutest/dists/breezy-autotest"
+  ...     "/multiverse/source/Sources").read()
   >>> print multiverse_sources + '\nEND'
   Package: drdsl
   ...
