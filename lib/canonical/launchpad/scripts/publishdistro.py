@@ -17,6 +17,7 @@ from canonical.launchpad.interfaces import (
     ArchivePurpose, IDistributionSet, NotFoundError)
 from canonical.launchpad.scripts import (
     logger, logger_options)
+from canonical.launchpad.scripts.base import LaunchpadScriptFailure
 
 
 def add_options(parser):
@@ -101,8 +102,8 @@ def run_publisher(options, txn):
     exclusive_options = (options.partner, options.ppa, options.private_ppa)
     num_exclusive = [flag for flag in exclusive_options if flag]
     if len(num_exclusive) > 1:
-        log.error("Can only specify one of partner, ppa and private-ppa")
-        return
+        raise LaunchpadScriptFailure(
+            "Can only specify one of partner, ppa and private-ppa")
 
     log.debug("Finding distribution object.")
 
@@ -131,13 +132,17 @@ def run_publisher(options, txn):
         else:
             archives = distribution.getPendingPublicationPPAs()
 
-        # Filter out non-private if we're publishing private PPAs only.
+        # Filter out non-private if we're publishing private PPAs only,
+        # or filter out private if we're doing non-private.
         if options.private_ppa:
             archives = [archive for archive in archives if archive.private]
+        else:
+            archives = [
+                archive for archive in archives if not archive.private]
 
         if options.distsroot is not None:
-            log.error("We should not define 'distsroot' in PPA mode !")
-            return
+            raise LaunchpadScriptFailure(
+                "We should not define 'distsroot' in PPA mode !")
     else:
         archives = [distribution.main_archive]
 

@@ -19,6 +19,7 @@ from canonical.launchpad.interfaces import (
     ArchivePurpose, IArchiveSet, IDistributionSet, IPersonSet,
     PackagePublishingStatus)
 from canonical.launchpad.scripts import publishdistro
+from canonical.launchpad.scripts.base import LaunchpadScriptFailure
 from canonical.launchpad.tests.test_publishing import TestNativePublishingBase
 
 class TestPublishDistro(TestNativePublishingBase):
@@ -36,7 +37,9 @@ class TestPublishDistro(TestNativePublishingBase):
         parser = OptionParser()
         publishdistro.add_options(parser)
         options, args = parser.parse_args(args=args)
-        return publishdistro.run_publisher(options, self.layer.txn)
+        self.layer.switchDbUser(config.archivepublisher.dbuser)
+        result = publishdistro.run_publisher(options, self.layer.txn)
+        self.layer.switchDbUser('launchpad')
 
     def runPublishDistroScript(self):
         """Run publish-distro.py, returning the result and output."""
@@ -228,6 +231,36 @@ class TestPublishDistro(TestNativePublishingBase):
             'ubuntutest/pool/main/b/bar/bar.dsc')
         self.assertEqual('bar', open(bar_path).read().strip())
 
+    def testForPrivatePPA(self):
+        """Run publish-distro in private PPA mode.
+
+        It should only publish private PPAs.
+        """
+        # First, we'll make cprov's archive private.
+        ubuntutest = getUtility(IDistributionSet)['ubuntutest']
+        cprov = getUtility(IPersonSet).getByName('cprov')
+        cprov_ppa = removeSecurityProxy(cprov.archive)
+        cprov_ppa.private = True
+        cprov_ppa.distribution = self.ubuntutest
+
+        # Publish something to cprov's PPA:
+        pub_source =  self.getPubSource(
+            sourcename='baz', filecontent='baz', archive=cprov.archive)
+        self.layer.txn.commit()
+
+        # Try a plain PPA run, to ensure the private one is not published.
+        self.runPublishDistro(['--ppa'])
+
+        pub_source.sync()
+        self.assertEqual(pub_source.status, PackagePublishingStatus.PENDING)
+
+        # Now publish the private PPAs and make sure they are really
+        # published.
+        self.runPublishDistro(['--private-ppa'])
+
+        pub_source.sync()
+        self.assertEqual(pub_source.status, PackagePublishingStatus.PUBLISHED)
+
     def testRunWithEmptySuites(self):
         """Try a publish-distro run on empty suites in careful_apt mode
 
@@ -262,6 +295,18 @@ class TestPublishDistro(TestNativePublishingBase):
         index_path = (
             "%s/hoary-test/main/binary-i386/Packages" % self.config.distsroot)
         self.assertNotExists(index_path)
+
+    def testExclusiveOptions(self):
+        """Test that some command line options are mutually exclusive."""
+        self.assertRaises(
+            LaunchpadScriptFailure,
+            self.runPublishDistro, ['--ppa', '--partner'])
+        self.assertRaises(
+            LaunchpadScriptFailure,
+            self.runPublishDistro, ['--ppa', '--private-ppa'])
+        self.assertRaises(
+            LaunchpadScriptFailure,
+            self.runPublishDistro, ['--partner', '--private-ppa'])
 
 
 def test_suite():
