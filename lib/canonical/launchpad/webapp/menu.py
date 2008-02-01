@@ -241,8 +241,7 @@ class MenuBase(UserAttributeCache):
                 "Links in 'enable_only' not found in 'links': %s" %
                 (', '.join([name for name in enable_only - set(self.links)])))
 
-        sort_key = 0
-        for linkname in self.links:
+        for idx, linkname in enumerate(self.links):
             link = self._get_link(linkname)
             link.name = linkname
 
@@ -271,9 +270,7 @@ class MenuBase(UserAttributeCache):
                 if requesturi.ensureSlash() == link.url.ensureSlash():
                     link.linked = False
 
-            # Store its order key.
-            link.sort_key = sort_key
-            sort_key += 1
+            link.sort_key = idx
             yield link
 
 
