@@ -4,18 +4,33 @@
 
 __metaclass__ = type
 __all__ = [
+    'IPersonEntry',
     'PersonEntry',
     'PersonCollection',
-    'PersonPersonCollection'
+    'PersonPersonCollection',
     ]
 
 
 from zope.component import adapts, getUtility
+from zope.schema import Object
 
 from canonical.lazr.rest import Collection, Entry, ScopedCollection
-from canonical.launchpad.interfaces import (
-    IPerson, IPersonEntry, IPersonSet)
+from canonical.lazr.interfaces import IEntry
+from canonical.lazr.rest.schema import CollectionField
+from canonical.launchpad.interfaces import (IEmailAddress, IPerson,
+     IPersonSet, make_person_name_field)
 from canonical.lp import decorates
+
+class IPersonEntry(IEntry):
+    """The part of a person that we expose through the web service."""
+
+    # XXX leonardr 2008-01-28 bug=186702 A much better solution would
+    # let us reuse or copy fields from IPerson.
+    name = make_person_name_field()
+    teamowner = Object(schema=IPerson)
+    members = CollectionField(value_type=Object(schema=IPerson))
+    validated_emails = CollectionField(
+        value_type=Object(schema=IEmailAddress))
 
 
 class PersonEntry(Entry):
@@ -36,6 +51,11 @@ class PersonEntry(Entry):
         if not self.context.isTeam():
             return None
         return self.context.activemembers
+
+    @property
+    def validated_emails(self):
+        """See `IPersonEntry`."""
+        return self.context.validatedemails
 
 
 class PersonCollection(Collection):

@@ -11,9 +11,15 @@ which responds to GET.
   ...
   Content-Type: application/json
   <BLANKLINE>
-  [{"self_link": "http:\/\/api.launchpad.dev\/people\/limi", "name": "limi"},
+  [{"self_link": "http:\/\/api.launchpad.dev\/people\/limi",
+    "validated_emails_collection_link":
+      "http:\/\/api.launchpad.dev\/people\/limi\/validated_emails",
+    "name": "limi"},
   ...
-  {"self_link": "http:\/\/api.launchpad.dev\/people\/skacel", "name": "skacel"}]
+  {"self_link": "http:\/\/api.launchpad.dev\/people\/skacel",
+    "validated_emails_collection_link":
+      "http:\/\/api.launchpad.dev\/people\/skacel\/validated_emails",
+    "name": "skacel"}]
 
 The elements of a collection can be looked up by unique identifier:
 
@@ -25,7 +31,7 @@ The elements of a collection can be looked up by unique identifier:
   ...
   Content-Type: application/json
   <BLANKLINE>
-  {"self_link": "http:\/\/api.launchpad.dev\/people\/admins", "members_collection_link": "http:\/\/api.launchpad.dev\/people\/admins\/members", "teamowner_link": "http:\/\/api.launchpad.dev\/people\/sabdfl", "name": "admins"}
+  {"self_link": "http:\/\/api.launchpad.dev\/people\/admins", "members_collection_link": "http:\/\/api.launchpad.dev\/people\/admins\/members", "validated_emails_collection_link": "http:\/\/api.launchpad.dev\/people\/admins\/validated_emails", "name": "admins", "teamowner_link": "http:\/\/api.launchpad.dev\/people\/sabdfl"}
 
 A collection may be scoped to an element:
 
@@ -37,9 +43,15 @@ A collection may be scoped to an element:
   ...
   Content-Type: application/json
   <BLANKLINE>
-  [{"self_link": "http:\/\/api.launchpad.dev\/people\/spiv", "name": "spiv"},
+  [{"self_link": "http:\/\/api.launchpad.dev\/people\/spiv",
+    "validated_emails_collection_link":
+      "http:\/\/api.launchpad.dev\/people\/spiv\/validated_emails",
+    "name": "spiv"},
   ...
-  {"self_link": "http:\/\/api.launchpad.dev\/people\/stub", "name": "stub"}]
+  {"self_link": "http:\/\/api.launchpad.dev\/people\/stub",
+   "validated_emails_collection_link":
+      "http:\/\/api.launchpad.dev\/people\/stub\/validated_emails",
+   "name": "stub"}]
 
 But not every element may have that collection scoped to it:
 
@@ -49,3 +61,40 @@ But not every element may have that collection scoped to it:
   ... """)
   HTTP/1.1 404 Not Found
   ...
+
+Not every collection needs to be exposed in full. The collection of
+email addresses is not directly searchable.
+
+  >>> print http(r"""
+  ... GET /emailaddresses HTTP/1.1
+  ... Host: api.launchpad.dev
+  ... """)
+  HTTP/1.1 404 Not Found
+  ...
+
+That is, the top-level collection of email addresses serves only as a place to
+hang the individual email addresses:
+
+  >>> print http(r"""
+  ... GET /emailaddresses/mark%40hbd.com HTTP/1.1
+  ... Host: api.launchpad.dev
+  ... """)
+  HTTP/1.1 200 Ok
+  ...
+  {... "owner_link": "http:\/\/api.launchpad.dev\/people\/sabdfl",
+    "email": "mark@hbd.com"}
+
+There are, however, scoped collections of email addresses: for
+instance the list of validated email addresses associated with a
+person.
+
+  >>> print http(r"""
+  ... GET /people/stub/validated_emails HTTP/1.1
+  ... Host: api.launchpad.dev
+  ... """)
+  HTTP/1.1 200 Ok
+  ...
+  [{"self_link":
+      "http:\/\/api.launchpad.dev\/emailaddresses\/stuart%40stuartbishop.net",
+    "owner_link": "http:\/\/api.launchpad.dev\/people\/stub",
+    "email": "stuart@stuartbishop.net"}]

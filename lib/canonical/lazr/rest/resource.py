@@ -198,12 +198,13 @@ class CollectionResource(ReadOnlyResource):
         entry = self.context.lookupEntry(name)
         if entry is None:
             raise NotFound(self, name)
-        else:
-            return EntryResource(entry, self.request)
+        return EntryResource(entry, self.request)
 
     def do_GET(self):
         """Fetch a collection and render it as JSON."""
-        entries = self.context.find() or []
+        entries = self.context.find()
+        if entries is None:
+            raise NotFound(self, self.collection_name)
         entry_resources = [EntryResource(entry, self.request)
                            for entry in entries]
         self.request.response.setHeader('Content-type', 'application/json')
