@@ -1,0 +1,209 @@
+= Upstream Bug reports =
+
+For a distribution's bug tracking process to be successful, it's vital
+that it is able to communicate upstream bugs to the relevant upstream
+project and monitor them as they change. Launchpad offers functionality
+to allow a distribution to focus on and improve this process.
+
+
+    >>> from canonical.launchpad.ftests import login
+    >>> from canonical.launchpad.ftests.bug import (
+    ...     create_bug_from_strings)
+    >>> from canonical.database.sqlbase import flush_database_updates
+    >>> from canonical.launchpad.interfaces import (
+    ...     ISourcePackageNameSet, IDistributionSet, IProductSet,
+    ...     IPackagingUtil, IPersonSet, PackagingType, IBugTaskSet,
+    ...     IBugWatchSet)
+
+    >>> distroset = getUtility(IDistributionSet)
+    >>> ubuntu = distroset.getByName('ubuntu')
+    >>> debian = distroset.getByName('debian')
+    >>> kubuntu = distroset.getByName('kubuntu')
+
+
+== The API ==
+
+IDistribution has a special API that allows you to assemble data for a
+bug report that associates packages with upstream information linked to
+them.
+
+    >>> def print_report(data):
+    ...     for dsp, product, open, upstream, watch in data:
+    ...         print dsp.name, product and product.name or None
+    ...         print open, upstream, watch
+
+A first set of reports, entirely based on sampledata:
+
+    >>> print_report(ubuntu.getPackagesAndPublicUpstreamBugCounts())
+    linux-source-2.6.15 None    1 0 0
+    mozilla-firefox     firefox 1 1 1
+    thunderbird         None    1 1 1
+
+    >>> print_report(debian.getPackagesAndPublicUpstreamBugCounts())
+    mozilla-firefox     None    3 2 1
+
+    >>> print_report(kubuntu.getPackagesAndPublicUpstreamBugCounts())
+
+We add two new bugs to pmount in Ubuntu. From now on we'll limit the
+results to 3 packages (as a demonstration of the API) so thunderbird will be
+popped off the list:
+
+    >>> bug = create_bug_from_strings(distribution='ubuntu',
+    ...     sourcepackagename='pmount', owner='name12', 
+    ...     summary='pmount used to work', description='fix it')
+    >>> bug = create_bug_from_strings(distribution='ubuntu',
+    ...     sourcepackagename='pmount', owner='name12',
+    ...     summary='pmount has issues', description='fix it again')
+    >>> print_report(ubuntu.getPackagesAndPublicUpstreamBugCounts(limit=3))
+    pmount              None    2 0 0
+    linux-source-2.6.15 None    1 0 0
+    mozilla-firefox     firefox 1 1 1
+
+As you can see, there is no packaging data for pmount in Ubuntu, so no
+upstream is reported for it. Let's fix that:
+
+    >>> pmount_spn = getUtility(ISourcePackageNameSet).queryByName('pmount')
+    >>> name12 = getUtility(IPersonSet).getByName('name12')
+    >>> pmount = getUtility(IProductSet).createProduct(
+    ...     name12, 'pmount', 'pmount', 'pmount', 'pmount')
+    >>> getUtility(IPackagingUtil).createPackaging(
+    ...     pmount.getSeries('trunk'), pmount_spn,
+    ...     ubuntu.currentseries, PackagingType.PRIME, name12)
+    >>> print_report(ubuntu.getPackagesAndPublicUpstreamBugCounts(limit=3))
+    pmount              pmount  2 0 0
+    linux-source-2.6.15 None    1 0 0
+    mozilla-firefox     firefox 1 1 1
+
+Much better. We then add an upstream task to the second pmount bug:
+
+    >>> task = getUtility(IBugTaskSet).createTask(bug, name12, product=pmount)
+    >>> print_report(ubuntu.getPackagesAndPublicUpstreamBugCounts(limit=3))
+    pmount              pmount  2 1 0
+    linux-source-2.6.15 None    1 0 0
+    mozilla-firefox     firefox 1 1 1
+
+Linking that task to a bugwatch makes the watch counts update:
+
+    >>> url = "http://bugs.debian.org/cgi-bin/bugreport.cgi?bug=666"
+    >>> login('foo.bar@canonical.com')
+    >>> [watch] = getUtility(IBugWatchSet).fromText(url, bug, name12)
+    >>> task.bugwatch = watch
+    >>> flush_database_updates()
+    >>> print_report(ubuntu.getPackagesAndPublicUpstreamBugCounts(limit=3))
+    pmount              pmount  2 1 1
+    linux-source-2.6.15 None    1 0 0
+    mozilla-firefox     firefox 1 1 1
+
+
+== The view ==
+
+We test that the view data is constructed sanely and without any hidden
+defects. Let's set up some helpers to make it easier for us to output
+them:
+
+    >>> from zope.component import getMultiAdapter
+    >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
+
+    >>> def create_view(distro):
+    ...     request = LaunchpadTestRequest()
+    ...     view = getMultiAdapter((distro, request), name='+upstreamreport')
+    ...     return view
+
+    >>> def print_numbers(data):
+    ...     for f in ['open_bugs', 'upstream_bugs', 'watched_bugs',
+    ...               'upstream_bugs_percentage', 'watched_bugs_percentage',
+    ...               'upstream_bugs_class', 'watched_bugs_class',
+    ...               'upstream_bugs_delta', 'watched_bugs_delta']:
+    ...         print getattr(data, f),
+
+    >>> def print_helpers(data):
+    ...     print data.dsp.name, data.dsp.distribution.name,
+    ...     if data.dssp:
+    ...         print data.dssp.distroseries.name
+    ...     else:
+    ...         print "NO SERIES"
+    ...     if data.product:
+    ...         print data.product.name
+    ...     else:
+    ...         print "NO PRODUCT"
+    ...     for f in ['bugcontact_url', 'product_edit_url',
+    ...               'upstream_bugs_url', 'upstream_bugs_delta_url',
+    ...               'watched_bugs_delta_url']:
+    ...         t = getattr(data, f, "NO URL")
+    ...         print t.replace("http://launchpad.dev/ubuntu/+source/", "**")
+    ...     print "--"
+
+Get an Ubuntu view:
+
+    >>> view = create_view(ubuntu)
+    >>> view.initialize()
+
+Here are the helper URLs we construct:
+
+    >>> for item in view.data:
+    ...     print_helpers(item)
+    pmount ubuntu hoary
+    pmount
+    http://launchpad.dev/pmount/+bugcontact
+    http://launchpad.dev/pmount/+edit
+    **pmount?field.status_upstream=open_upstream
+    **pmount?field.status_upstream=hide_upstream
+    **pmount?field.status_upstream=pending_bugwatch
+    --
+    linux-source-2.6.15 ubuntu hoary
+    NO PRODUCT
+    NO URL
+    NO URL
+    **linux-source-2.6.15?field.status_upstream=open_upstream
+    **linux-source-2.6.15?field.status_upstream=hide_upstream
+    **linux-source-2.6.15?field.status_upstream=pending_bugwatch
+    --
+    mozilla-firefox ubuntu warty
+    firefox
+    http://launchpad.dev/firefox/+bugcontact
+    http://launchpad.dev/firefox/+edit
+    **mozilla-firefox?field.status_upstream=open_upstream
+    **mozilla-firefox?field.status_upstream=hide_upstream
+    **mozilla-firefox?field.status_upstream=pending_bugwatch
+    --
+    thunderbird ubuntu NO SERIES
+    NO PRODUCT
+    NO URL
+    NO URL
+    **thunderbird?field.status_upstream=open_upstream
+    **thunderbird?field.status_upstream=hide_upstream
+    **thunderbird?field.status_upstream=pending_bugwatch
+    --
+
+Let's print out the counts and percentages:
+
+    >>> for item in view.data:
+    ...     print_numbers(item)
+    2   1   1   50.00   100.00  good      1 0
+    1   0   0    0.00     0.00            1 0
+    1   1   1  100.00   100.00  good good 0 0
+    1   1   1  100.00   100.00  good good 0 0
+
+And the total line:
+
+    >>> print_numbers(view.total)
+    5   3   3   60.00   100.00  good      2 0
+
+A Kubuntu view is not nearly as interesting, though:
+
+    >>> view = create_view(kubuntu)
+    >>> view.initialize()
+    >>> for item in view.data:
+    ...     print_helpers(item)
+
+    >>> for item in view.data:
+    ...     print_numbers(item)
+
+Nada!
+
+    >>> print_numbers(view.total)
+    0   0   0   0.00     0.00             0 0
+
+PS: This page is actually browser-tested in
+pagetests.distribution-upstream-bug-report. Look there for more details.
+
