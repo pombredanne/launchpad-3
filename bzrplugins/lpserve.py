@@ -21,7 +21,6 @@ from bzrlib.smart import medium, server
 from bzrlib.transport import chroot, get_transport, remote
 
 from canonical.config import config
-from canonical.codehosting import transport
 
 
 class cmd_launchpad_server(Command):
@@ -36,9 +35,9 @@ class cmd_launchpad_server(Command):
                help='serve on stdin/out for use from inetd or sshd'),
         Option('port',
                help='listen for connections on nominated port of the form '
-                    '[hostname:]portnumber. Passing 0 as the port number will '
-                    'result in a dynamically allocated port. Default port is '
-                    '4155.',
+                    '[hostname:]portnumber. Passing 0 as the port number will'
+                    ' result in a dynamically allocated port. Default port is'
+                    ' 4155.',
                type=str),
         Option('upload-directory',
                help='upload branches to this directory. Defaults to '
@@ -72,6 +71,7 @@ class cmd_launchpad_server(Command):
         :return: A `LaunchpadTransport`.
         """
         # XXX: JonathanLange 2007-05-29: The 'chroot' lines lack unit tests.
+        from canonical.codehosting import transport
         hosted_transport = self._get_chrooted_transport(hosted_url)
         mirror_transport = self._get_chrooted_transport(mirror_url)
         lp_server = transport.LaunchpadServer(
@@ -101,8 +101,8 @@ class cmd_launchpad_server(Command):
         """Run the given smart server."""
         # for the duration of this server, no UI output is permitted.
         # note that this may cause problems with blackbox tests. This should
-        # be changed with care though, as we dont want to use bandwidth sending
-        # progress over stderr to smart server clients!
+        # be changed with care though, as we dont want to use bandwidth
+        # sending progress over stderr to smart server clients!
         old_factory = ui.ui_factory
         try:
             ui.ui_factory = ui.SilentUIFactory()
@@ -112,6 +112,7 @@ class cmd_launchpad_server(Command):
 
     def run(self, user_id, port=None, upload_directory=None,
             mirror_directory=None, authserver_url=None, inet=False):
+        from canonical.codehosting import transport
         if upload_directory is None:
             upload_directory = config.codehosting.branches_root
         if mirror_directory is None:

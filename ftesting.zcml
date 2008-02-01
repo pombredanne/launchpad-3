@@ -23,4 +23,5 @@
 
     <include file="securitypolicy.zcml" />
 
+    <include file="summarizerequests.zcml" />
 </configure>
