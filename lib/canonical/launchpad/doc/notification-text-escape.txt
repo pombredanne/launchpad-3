@@ -36,7 +36,7 @@ be CGI escaped.
     >>> for notification in response.notifications:
     ...     notification.message
     u'&lt;br/&gt;dirty'
-    >>>
+
 
 If the object passed to addNotification() publishes the
 IStructuredString interface, then a string will be returned with the
@@ -50,12 +50,12 @@ appropriate sections escaped and unescaped.
     True
     >>> structured_text.escapedtext
     u'<b>&lt;br/&gt;foo</b>'
+
     >>> response = new_response()
     >>> response.addNotification(structured_text)
     >>> for notification in response.notifications:
     ...     notification.message
     u'<b>&lt;br/&gt;foo</b>'
-    >>>
 
 Passing an object to addNotification() that is an instance of
 zope.i18n.Message or zope.i18n.MessageID will be escaped in the same
