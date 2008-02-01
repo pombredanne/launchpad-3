@@ -15,7 +15,7 @@ definitely doesn't seem to be a team.
 
     >>> browser.open('http://launchpad.dev/~limi')
     >>> browser.getLink(url='+claim')
-    <Link text="Hey, I'm Alexander Limi."...
+    <Link text='Are you Alexander Limi?'...
 
 If a profile does look like a team and there is a logged in user, the link
 is different...
@@ -33,13 +33,13 @@ Non-logged-in users see only a link to claim the profile..
     ...
     LinkNotFoundError
     >>> browser.getLink(url='+claim')
-    <Link text="Hey, I'm Ubuntu Doc Team."...
+    <Link text='Are you Ubuntu Doc Team?'...
 
 While logged-in users get a link to claim that profile and turn it into a
 team.
 
     >>> user_browser.open('http://launchpad.dev/~doc')
-    >>> user_browser.getLink('Hey, this is a team I run').click()
+    >>> user_browser.getLink('Is this a team you run?').click()
     >>> user_browser.title
     'Claim team'
 

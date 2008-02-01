@@ -2,10 +2,12 @@
 bzr-version-info.py
 launchpad.log
 launchpad-access.log
+pagetests-access.log
 configs/+config-overrides.zcml
 +*
 sourcecode/buildbot
 sourcecode/bzr
+sourcecode/bzr-loom
 sourcecode/bzrtools
 sourcecode/cscvs
 sourcecode/feedvalidator
@@ -40,3 +42,4 @@ thread*.request
 lib/mailman
 TAGS
 sourcecode/bzr-loom
+sourcecode/feedvalidator

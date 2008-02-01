@@ -705,6 +705,10 @@ class LaunchpadAccessLogger(CommonAccessLogger):
         request string  (1st line of request)
         response status
         response bytes written
+        number of sql statements
+        request duration
+        number of ticks during traversal
+        number of ticks during publication
         launchpad user id
         launchpad page id
         REFERER
@@ -722,18 +726,26 @@ class LaunchpadAccessLogger(CommonAccessLogger):
         bytes_written = task.bytes_written
         userid = cgi_env.get('launchpad.userid', '')
         pageid = cgi_env.get('launchpad.pageid', '')
+        sql_statements = cgi_env.get('launchpad.sqlstatements', 0)
+        request_duration = cgi_env.get('launchpad.requestduration', 0)
+        traversal_ticks = cgi_env.get('launchpad.traversalticks', 0)
+        publication_ticks = cgi_env.get('launchpad.publicationticks', 0)
         referer = request_headers.get('REFERER', '')
         user_agent = request_headers.get('USER_AGENT', '')
 
         self.output.logRequest(
             task.channel.addr[0],
-            ' - "%s" "%s" [%s] "%s" %s %d "%s" "%s" "%s" "%s"\n' % (
+            ' - "%s" "%s" [%s] "%s" %s %d %d %s %s %s "%s" "%s" "%s" "%s"\n' % (
                 x_forwarded_for,
                 host,
                 start_time,
                 first_line,
                 status,
                 bytes_written,
+                sql_statements,
+                request_duration,
+                traversal_ticks,
+                publication_ticks,
                 userid,
                 pageid,
                 referer,
@@ -855,7 +867,7 @@ class FeedsPublication(LaunchpadBrowserPublication):
                 getattr(naked_result, 'status', None) == 301):
                 return result
             else:
-                return None
+                raise NotFound(self, '', request)
         else:
             # There are still url segments to traverse.
             return result

@@ -20,7 +20,7 @@ __all__ = [
 from zope.component import getUtility
 from zope.interface import Interface, Attribute
 from zope.schema import (
-    Bool, Choice, Datetime, Int, List, Object, Text, TextLine)
+    Bool, Bytes, Choice, Datetime, Int, List, Object, Text, TextLine)
 
 from canonical.launchpad import _
 from canonical.launchpad.fields import (
@@ -30,6 +30,8 @@ from canonical.launchpad.interfaces.launchpad import NotFoundError
 from canonical.launchpad.interfaces.messagetarget import IMessageTarget
 from canonical.launchpad.interfaces.mentoringoffer import ICanBeMentored
 from canonical.launchpad.validators.name import name_validator
+from canonical.launchpad.validators.bugattachment import (
+    bug_attachment_size_constraint)
 
 
 class CreateBugParams:
@@ -206,6 +208,9 @@ class IBug(IMessageTarget, ICanBeMentored):
         title=_('Date of last bug message'), required=False, readonly=True)
     number_of_duplicates = Int(
         title=_('The number of bugs marked as duplicates of this bug'),
+        required=True, readonly=True)
+    message_count = Int(
+        title=_('The number of comments on this bug'),
         required=True, readonly=True)
 
 
@@ -521,6 +526,12 @@ class IBugAddForm(IBug):
     bug_already_reported_as = Choice(
         title=_("This bug has already been reported as ..."), required=False,
         vocabulary="Bug")
+    filecontent = Bytes(
+        title=u"Attachment", required=False,
+        constraint=bug_attachment_size_constraint)
+    patch = Bool(title=u"This attachment is a patch", required=False,
+        default=False)
+    attachment_description = Title(title=u'Description', required=False)
 
 
 class IProjectBugAddForm(IBugAddForm):

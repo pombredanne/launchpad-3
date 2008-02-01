@@ -16,12 +16,9 @@
        tal:define="cr context/currentrelease">
 
     <div tal:condition="context/current_publishing_records">
-      <tal:block repeat="pub context/current_publishing_records">
-        <b><tal:name replace="pub/distroseries/name/capitalize"/></b>
-        (<tal:version replace="pub/sourcepackagerelease/version"/>):
-        <tal:component replace="pub/component/name"/>
-        /
-        <tal:section replace="pub/section/name"/>
+      <tal:block repeat="item view/all_published_in_active_distroseries">
+        <b><tal:suite replace="item/suite"/></b>
+        <tal:description replace="item/description"/>
         <br/>
       </tal:block>
     </div>

@@ -482,7 +482,8 @@ class DistributionPPASearchView(LaunchpadView):
         show_inactive = (self.show_inactive == 'on')
 
         ppas = self.context.searchPPAs(
-            text=self.name_filter, show_inactive=show_inactive)
+            text=self.name_filter, show_inactive=show_inactive,
+            user=self.user)
 
         self.batchnav = BatchNavigator(ppas, self.request)
         self.search_results = self.batchnav.currentBatch()

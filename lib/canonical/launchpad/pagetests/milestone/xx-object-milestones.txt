@@ -116,14 +116,14 @@ associated with that milestone for products of this project:
     >>> specs = find_tag_by_id(anon_browser.contents, 'milestone_specs')
     >>> print extract_text(specs)
     Specification Product Priority Assignee Delivery
-    Title evolution specification Evolution Evolution ... High ...  Unknown
-    Title gnomebaker specification gnomebaker gnomebaker ... High ... Unknown
+    Title evolution specification   Evolution  High  Unknown
+    Title gnomebaker specification  gnomebaker High  Unknown
 
     >>> bugtasks = find_tag_by_id(anon_browser.contents, 'milestone_bugtasks')
     >>> print extract_text(bugtasks)
     Report Product Importance Assignee Status ...
-    Milestone test bug for evolution Evolution ... Undecided ... Confirmed ...
-    Milestone test bug for gnomebaker gnomebaker ... Undecided ... Confirmed
+    Milestone test bug for evolution  Evolution  Undecided Confirmed ...
+    Milestone test bug for gnomebaker gnomebaker Undecided Confirmed
 
 
 === Duplicate bugs ===
@@ -137,7 +137,7 @@ Firefox product:
     >>> browser = setupBrowser(auth='Basic test@canonical.com:test')
     >>> browser.open('http://bugs.launchpad.dev/firefox/')
     >>> browser.getLink('Report a bug').click()
-    >>> browser.getLink('complicated bug filing form').click()
+    >>> browser.getLink('Advanced reporting options').click()
     >>> print extract_text(find_main_content(browser.contents))
     Report a bug...
     >>> report_bug_url = browser.url
@@ -359,8 +359,8 @@ Observe that both bug tasks are now listed in the test milestone listing:
     >>> print extract_text(find_tag_by_id(browser.contents,
     ...                                   'milestone_bugtasks'))
     Report         Importance ...
-    Test Bug 1 ... Critical   ...
-    Test Bug 1 ... High       ...
+    Test Bug 1     Critical   ...
+    Test Bug 1     High       ...
 
 
 === Bugs targeted to development focus series ===

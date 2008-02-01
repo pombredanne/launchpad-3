@@ -153,9 +153,7 @@ class ILoginToken(Interface):
 
     # Quick fix for Bug #2481
     password = PasswordField(
-            title=_('Password'), required=True, readonly=False,
-            description=_("Enter the same password in each field.")
-            )
+        title=_('Password'), required=True, readonly=False)
 
     def consume():
         """Mark this token as consumed by setting date_consumed.

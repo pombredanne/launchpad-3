@@ -148,8 +148,8 @@ Here is the message to Anne, a member of the mailing list.
     Reply-To: question...@answers.launchpad.net
     List-Id: <itest-one.lists.launchpad.dev>
     List-Help: <http://help.launchpad.dev/ListHelp>
-    List-Subscribe: http://launchpad.dev/people/+me/+editemails
-    List-Unsubscribe: http://launchpad.dev/people/+me/+editemails
+    List-Subscribe: <http://launchpad.dev/people/+me/+editemails>
+    List-Unsubscribe: <http://launchpad.dev/people/+me/+editemails>
     List-Post: <mailto:itest-one@lists.launchpad.dev>
     List-Archive: <http://lists.launchpad.dev/itest-one>
     List-Owner: <http://launchpad.dev/~itest-one>

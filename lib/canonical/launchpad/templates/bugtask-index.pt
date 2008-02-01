@@ -131,7 +131,7 @@
         />
     </tal:loggedin>
     <tal:notloggedin condition="not:request/lp:person">
-      If you wish report it in <tal:block
+      If you want to report it in <tal:block
       content="context/bugtargetdisplayname" />,
       you must <a href="+login">log in</a> first.
     </tal:notloggedin>
@@ -231,9 +231,10 @@
       </p>
     </tal:block>
   </tal:mentors>
-
-  <p tal:condition="view/userCanMentor">
-    &raquo; <a href="+mentor">Offer to mentor someone fixing this bug</a>
+  <p tal:define="link context/menu:context/offermentoring"
+     tal:condition="link/enabled">
+    &raquo; <a tal:attributes="href link/url">
+      Offer to mentor someone fixing this bug</a>
   </p>
 
   <tal:comment repeat="comment view/getBugCommentsForDisplay">

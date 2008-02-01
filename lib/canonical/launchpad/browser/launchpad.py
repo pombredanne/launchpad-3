@@ -24,6 +24,7 @@ __all__ = [
 
 import cgi
 import urllib
+import operator
 import os
 import re
 import time
@@ -154,10 +155,13 @@ class MenuBox(LaunchpadView):
 
     def initialize(self):
         menuapi = MenuAPI(self.context)
-        self.contextmenuitems = [
-            link for link in menuapi.context() if link.enabled]
-        self.applicationmenuitems = [
-            link for link in menuapi.application() if link.enabled]
+        context_menu_links = menuapi.context
+        self.contextmenuitems = sorted([
+            link for link in context_menu_links.values() if link.enabled],
+            key=operator.attrgetter('sort_key'))
+        self.applicationmenuitems = sorted([
+            link for link in menuapi.application() if link.enabled],
+            key=operator.attrgetter('sort_key'))
 
     def render(self):
         if not self.contextmenuitems and not self.applicationmenuitems:

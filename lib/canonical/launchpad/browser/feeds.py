@@ -6,29 +6,35 @@ __metaclass__ = type
 
 __all__ = [
     'AnnouncementsFeedLink',
+    'BranchFeedLink',
     'BugFeedLink',
     'BugTargetLatestBugsFeedLink',
     'FeedLinkBase',
     'FeedsMixin',
     'FeedsNavigation',
     'FeedsRootUrlData',
+    'PersonBranchesFeedLink',
     'PersonLatestBugsFeedLink',
+    'ProductBranchesFeedLink',
+    'ProjectBranchesFeedLink',
     'RootAnnouncementsFeedLink',
     ]
 
 from zope.component import getUtility
 from zope.interface import implements
+from zope.publisher.interfaces import NotFound
 from zope.security.interfaces import Unauthorized
 
 from canonical.config import config
 from canonical.launchpad.interfaces import (
-    IAnnouncementSet, IBugSet, IBugTaskSet, IFeedsApplication,
+    IAnnouncementSet, IBranch, IBugSet, IBugTaskSet, IFeedsApplication,
     IPersonSet, IPillarNameSet, NotFoundError)
 from canonical.launchpad.interfaces import (
-    IBugTask, IBugTarget, IHasAnnouncements, ILaunchpadRoot, IPerson)
+    IBugTarget, IBugTask, IHasAnnouncements, ILaunchpadRoot, IPerson,
+    IProduct, IProject)
 from canonical.launchpad.layers import FeedsLayer
 from canonical.launchpad.webapp import (
-    canonical_name, canonical_url, Navigation, stepto)
+    Navigation, canonical_name, canonical_url, stepto)
 from canonical.launchpad.webapp.publisher import RedirectionView
 from canonical.launchpad.webapp.interfaces import ICanonicalUrlData
 from canonical.launchpad.webapp.vhosts import allvhosts
@@ -83,10 +89,9 @@ class FeedsNavigation(Navigation):
         fields = sorted(query_string.split('&'))
         normalized_query_string = '&'.join(fields)
         if query_string != normalized_query_string:
-            # We must consume the stepstogo to prevent an error
-            # trying to call RedirectionView.publishTraverse().
-            while self.request.stepstogo.consume():
-                pass
+            # We must empty the traversal stack to prevent an error
+            # when calling RedirectionView.publishTraverse().
+            self.request.setTraversalStack([])
             target = "%s%s?%s" % (self.request.getApplicationURL(),
                                   self.request['PATH_INFO'],
                                   normalized_query_string)
@@ -98,6 +103,8 @@ class FeedsNavigation(Navigation):
         # http://feeds.launchpad.net/bugs/1/bug.atom
         if name == 'bugs':
             stack = self.request.getTraversalStack()
+            if len(stack) == 0:
+                raise NotFound(self, '', self.request)
             bug_id = stack.pop()
             if bug_id.startswith('+'):
                 if config.launchpad.is_bug_search_feed_active:
@@ -108,29 +115,23 @@ class FeedsNavigation(Navigation):
                 self.request.stepstogo.consume()
                 return getUtility(IBugSet).getByNameOrID(bug_id)
 
-        # Handle persons and teams.
-        # http://feeds.launchpad.net/~salgado/latest-bugs.html
-        if name.startswith('~'):
-            # Redirect to the canonical name before doing the lookup.
-            if canonical_name(name) != name:
-                return self.redirectSubTree(
-                    canonical_url(self.context) + canonical_name(name),
-                    status=301)
-            else:
-                person = getUtility(IPersonSet).getByName(name[1:])
-                return person
+        # Redirect to the canonical name before doing the lookup.
+        if canonical_name(name) != name:
+            return self.redirectSubTree(
+                canonical_url(self.context) + canonical_name(name),
+                status=301)
 
         try:
-            # Redirect to the canonical name before doing the lookup.
-            if canonical_name(name) != name:
-                return self.redirectSubTree(
-                    canonical_url(self.context) + canonical_name(name),
-                    status=301)
+            if name.startswith('~'):
+                # Handle persons and teams.
+                # http://feeds.launchpad.net/~salgado/latest-bugs.html
+                person = getUtility(IPersonSet).getByName(name[1:])
+                return person
             else:
+                # Otherwise, handle products, projects, and distros
                 return getUtility(IPillarNameSet)[name]
-
         except NotFoundError:
-            return None
+            raise NotFound(self, name, self.request)
 
 
 class FeedLinkBase:
@@ -218,6 +219,47 @@ class RootAnnouncementsFeedLink(AnnouncementsFeedLink):
         return urlappend(self.rooturl, 'announcements.atom')
 
 
+class BranchesFeedLinkBase(FeedLinkBase):
+    """Base class for objects with branches."""
+
+    @property
+    def title(self):
+        return 'Latest Branches for %s' % self.context.displayname
+
+    @property
+    def href(self):
+        return urlappend(canonical_url(self.context, rootsite='feeds'),
+                         'branches.atom')
+
+
+class ProjectBranchesFeedLink(BranchesFeedLinkBase):
+    """Feed links for branches on a project."""
+    usedfor = IProject
+
+
+class ProductBranchesFeedLink(BranchesFeedLinkBase):
+    """Feed links for branches on a product."""
+    usedfor = IProduct
+
+
+class PersonBranchesFeedLink(BranchesFeedLinkBase):
+    """Feed links for branches on a person."""
+    usedfor = IPerson
+
+
+class BranchFeedLink(FeedLinkBase):
+    """Feed links for revisions on a branch."""
+    usedfor = IBranch
+
+    @property
+    def title(self):
+        return 'Latest Revisions for Branch %s' % self.context.displayname
+    @property
+    def href(self):
+        return urlappend(canonical_url(self.context, rootsite="feeds"),
+                         'branch.atom')
+
+
 class FeedsMixin:
     """Mixin which adds the feed_links attribute to a view object.
 
@@ -232,6 +274,10 @@ class FeedsMixin:
         BugFeedLink,
         BugTargetLatestBugsFeedLink,
         PersonLatestBugsFeedLink,
+        ProjectBranchesFeedLink,
+        ProductBranchesFeedLink,
+        PersonBranchesFeedLink,
+        BranchFeedLink,
         )
 
     @property
@@ -239,4 +285,3 @@ class FeedsMixin:
         return [feed_type(self.context)
                 for feed_type in self.feed_types
                 if feed_type.usedfor.providedBy(self.context)]
-
