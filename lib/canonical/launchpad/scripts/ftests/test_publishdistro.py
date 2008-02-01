@@ -248,7 +248,7 @@ class TestPublishDistro(TestNativePublishingBase):
             sourcename='baz', filecontent='baz', archive=cprov.archive)
         self.layer.txn.commit()
 
-        # Try a plain PPA run, to ensure the private one is not published.
+        # Try a plain PPA run, to ensure the private one is NOT published.
         self.runPublishDistro(['--ppa'])
 
         pub_source.sync()

@@ -111,8 +111,7 @@ def run_publisher(options, txn):
         distribution = getUtility(IDistributionSet).getByName(
             options.distribution)
     except NotFoundError, info:
-        log.error(info)
-        raise
+        raise LaunchpadScriptFailure(info)
 
     allowed_suites = set()
     for suite in options.suite:
@@ -120,8 +119,7 @@ def run_publisher(options, txn):
             distroseries, pocket = distribution.getDistroSeriesAndPocket(
                 suite)
         except NotFoundError, info:
-            log.error(info)
-            raise
+            raise LaunchpadScriptFailure(info)
         allowed_suites.add((distroseries.name, pocket))
 
     if options.partner:
