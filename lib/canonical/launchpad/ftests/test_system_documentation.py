@@ -26,7 +26,7 @@ from canonical.launchpad.ftests.bug import (
     create_old_bug, summarize_bugtasks, sync_bugtasks)
 from canonical.launchpad.interfaces import (
     CreateBugParams, IBugTaskSet, IDistributionSet, ILanguageSet, ILaunchBag,
-    IPersonSet, IBranchSet)
+    IPersonSet)
 from canonical.launchpad.layers import setFirstLayer
 from canonical.launchpad.tests.mail_helpers import pop_notifications
 from canonical.launchpad.webapp.authorization import LaunchpadSecurityPolicy
