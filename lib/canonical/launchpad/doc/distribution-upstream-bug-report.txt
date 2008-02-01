@@ -179,15 +179,15 @@ Let's print out the counts and percentages:
 
     >>> for item in view.data:
     ...     print_numbers(item)
-    2   1   1   50.00   100.00  good      1 0
-    1   0   0    0.00     0.00            1 0
-    1   1   1  100.00   100.00  good good 0 0
-    1   1   1  100.00   100.00  good good 0 0
+    2   1   1   50.0   100.0  good      1 0
+    1   0   0    0.0     0.0            1 0
+    1   1   1  100.0   100.0  good good 0 0
+    1   1   1  100.0   100.0  good good 0 0
 
 And the total line:
 
     >>> print_numbers(view.total)
-    5   3   3   60.00   100.00  good      2 0
+    5   3   3   60.0   100.0  good      2 0
 
 A Kubuntu view is not nearly as interesting, though:
 
@@ -202,7 +202,7 @@ A Kubuntu view is not nearly as interesting, though:
 Nada!
 
     >>> print_numbers(view.total)
-    0   0   0   0.00     0.00             0 0
+    0   0   0    0.0     0.0            0 0
 
 PS: This page is actually browser-tested in
 pagetests.distribution-upstream-bug-report. Look there for more details.

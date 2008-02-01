@@ -83,7 +83,7 @@
             <th>Package</th>
             <th>Project</th>
             <th>Bug Tracker</th>
-            <th>Bug Contact</th>
+            <th>Upstream Contact</th>
             <th class="numeric">Open</th>
             <th class="numeric">Upstream</th>
             <th class="numeric">%</th>
@@ -152,7 +152,7 @@
                  tal:content="item/upstream_bugs"></a>
             </td>
             <td align="right" tal:attributes="class item/upstream_bugs_class"
-                tal:content="item/upstream_bugs_percentage" />
+                tal:content="item/upstream_bugs_percentage/fmt:float/.2" />
             <td align="right" tal:attributes="class item/upstream_bugs_class">
               <a class="numeric"
                  tal:attributes="href item/upstream_bugs_delta_url"
@@ -167,7 +167,7 @@
               <td align="right" tal:attributes="class item/watched_bugs_class"
                   tal:content="item/watched_bugs" />
               <td align="right" tal:attributes="class item/watched_bugs_class"
-                  tal:content="item/watched_bugs_percentage" />
+                  tal:content="item/watched_bugs_percentage/fmt:float/.2" />
               <td align="right" tal:attributes="class item/watched_bugs_class">
                 <a class="numeric"
                    tal:attributes="href item/watched_bugs_delta_url"
@@ -184,13 +184,13 @@
             <td align="right"
                 tal:content="view/total/upstream_bugs" />
             <td align="right"
-                tal:content="view/total/upstream_bugs_percentage" />
+                tal:content="view/total/upstream_bugs_percentage/fmt:float/.2" />
             <td align="right"
                 tal:content="view/total/upstream_bugs_delta" />
             <td align="right"
                 tal:content="view/total/watched_bugs" />
             <td align="right"
-                tal:content="view/total/watched_bugs_percentage" />
+                tal:content="view/total/watched_bugs_percentage/fmt:float/.2" />
             <td align="right"
                 tal:content="view/total/watched_bugs_delta" />
           </tr>

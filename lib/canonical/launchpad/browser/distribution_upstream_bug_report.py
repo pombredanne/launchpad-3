@@ -11,8 +11,6 @@ __all__ = [
 from canonical.launchpad.webapp import (
     canonical_url, LaunchpadView)
 
-# TODO: get a tales formatter for floats and remove the float() calls in
-#       the _bugs_class properties. Blocked on tales adapter.
 # TODO: make the page one-column. Blocked on a proper template to use.
 # TODO: fix column sorting to work for the different colspans, or
 #       alternatively implement a sort option box.
@@ -58,28 +56,26 @@ class BugReportData:
     @property
     def upstream_bugs_percentage(self):
         if self.open_bugs:
-            v = self.upstream_bugs / float(self.open_bugs) * 100
+            return 100.0 * self.upstream_bugs / self.open_bugs
         else:
-            v = 0
-        return "%.2f" % v
+            return 0.0
 
     @property
     def watched_bugs_percentage(self):
         if self.upstream_bugs:
-            v = self.watched_bugs / float(self.upstream_bugs) * 100
+            return 100.0 * self.watched_bugs / self.upstream_bugs
         else:
-            v = 0
-        return "%.2f" % v
+            return 0.0
 
     @property
     def upstream_bugs_class(self):
-        if float(self.upstream_bugs_percentage) > self.UPSTREAM_THRESHOLD:
+        if self.upstream_bugs_percentage > self.UPSTREAM_THRESHOLD:
             return "good"
         return ""
 
     @property
     def watched_bugs_class(self):
-        if float(self.watched_bugs_percentage) > self.WATCH_THRESHOLD:
+        if self.watched_bugs_percentage > self.WATCH_THRESHOLD:
             return "good"
         return ""
 
