@@ -25,7 +25,7 @@ __all__ = [
     ]
 
 import logging
-import  os
+import os
 import socket
 import time
 from urllib import urlopen
@@ -39,7 +39,6 @@ from zope.component.interfaces import ComponentLookupError
 from zope.security.management import getSecurityPolicy
 from zope.security.simplepolicies import PermissiveSecurityPolicy
 from zope.server.logger.pythonlogger import PythonLogger
-from zope.testing.testrunner import RetryTest
 
 from canonical.config import config
 from canonical.database.sqlbase import ZopelessTransactionManager
@@ -369,7 +368,7 @@ class DatabaseLayer(BaseLayer):
                 script_filename, ScriptRecorder, ScriptPlayer,
                 )
 
-        # We need a unique key for each test to store the mock db cache.
+        # We need a unique key for each test to store the mock db script.
         # Lets use the same thing that the test runner displays. Its tricky
         # to get to, but should be good enough for our needs. If this is
         # considered generally useful, we could make the upstream testrunner
@@ -384,20 +383,20 @@ class DatabaseLayer(BaseLayer):
             del frame # As per no-leak stack inspection in Python reference.
 
         # Determine if we are in replay or record mode and setup our
-        # mock db cache.
+        # mock db script.
         filename = script_filename(test_key)
         if os.path.exists(filename):
             cls.mockdb_mode = 'replay'
-            cls.cache = ScriptPlayer(test_key)
+            cls.script = ScriptPlayer(test_key)
         else:
             cls.mockdb_mode = 'record'
-            cls.cache = ScriptRecorder(test_key)
+            cls.script = ScriptRecorder(test_key)
 
         global _org_connect
         _org_connect = psycopg.connect
         # Proxy real connections with our mockdb.
         def fake_connect(*args, **kw):
-            return cls.cache.connect(_org_connect, *args, **kw)
+            return cls.script.connect(_org_connect, *args, **kw)
         psycopg.connect = fake_connect
 
     @classmethod
@@ -408,8 +407,9 @@ class DatabaseLayer(BaseLayer):
 
         # Store results if we are recording
         if cls.mockdb_mode == 'record':
-            cls.cache.store()
-            assert os.path.exists(cls.cache.cache_filename)
+            cls.script.store()
+            assert os.path.exists(cls.script.script_filename), (
+                    "Stored results but no script on disk.")
 
         cls.mockdb_mode = None
         global _org_connect
@@ -538,8 +538,8 @@ class ZopelessLayer(BaseLayer):
         # Assert that execute_zcml_for_scripts did what it says it does.
         if not is_ca_available():
             raise LayerInvariantError(
-                "Component architecture not loaded by execute_zcml_for_scripts"
-                )
+                "Component architecture not loaded by "
+                "execute_zcml_for_scripts")
 
         # If our request publication factories were defined using
         # ZCML, they'd be set up by execute_zcml_for_scripts(). Since

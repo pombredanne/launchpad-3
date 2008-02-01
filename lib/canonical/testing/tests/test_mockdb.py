@@ -73,7 +73,8 @@ class MockDbTestCase(unittest.TestCase):
                 # And there are no path segments
                 self.failUnlessEqual(os.path.dirname(path), mockdb.SCRIPT_DIR)
 
-                # And that the filename contains no evil or annoying characters
+                # And that the filename contains no evil or annoying
+                # characters.
                 filename = os.path.basename(path)
                 self.failIfEqual(filename, '')
                 for evil_char in evil_chars:

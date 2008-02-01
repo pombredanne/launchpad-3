@@ -130,6 +130,7 @@ class ScriptRecorder:
         self.log.append(entry)
         if exception:
             entry.exception = exception
+            #pylint: disable-msg=W0706
             raise exception
         return connection
 

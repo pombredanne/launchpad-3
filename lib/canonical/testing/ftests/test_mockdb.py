@@ -13,9 +13,7 @@ from zope.testing.testrunner import dont_retry, RetryTest
 
 from canonical.config import config
 from canonical.testing import mockdb, DatabaseLayer
-from canonical.testing.mockdb import (
-        MockDbConnection, ScriptPlayer, ScriptRecorder,
-        )
+from canonical.testing.mockdb import ScriptPlayer, ScriptRecorder
 
 
 class MockDbTestCase(unittest.TestCase):
@@ -163,9 +161,9 @@ class MockDbTestCase(unittest.TestCase):
     def testFailedConnection(self):
         # Ensure failed database connection are reproducable.
         for mode in self.modes():
-            connection_string = "dbname=not_a_sausage host=%s user=yourmom" % (
-                    config.dbhost
-                    )
+            connection_string = (
+                    "dbname=not_a_sausage host=%s user=yourmom"
+                    % (config.dbhost))
             self.assertRaises(
                     psycopg.OperationalError, self.connect, connection_string
                     )
@@ -375,7 +373,8 @@ class MockDbTestCase(unittest.TestCase):
             try:
                 con.close()
             except psycopg.Error:
-                self.fail("Connection.close() now DB-API compliant. Fix test.")
+                self.fail(
+                        "Connection.close() now DB-API compliant. Fix test.")
 
     @dont_retry
     def testCursorDescription(self):
@@ -495,7 +494,8 @@ class MockDbTestCase(unittest.TestCase):
         for mode in self.modes():
             con = self.connect()
             cur = con.cursor()
-            self.failIf(hasattr(cur, '__iter__'), "Cursor supports __iter__()")
+            self.failIf(
+                    hasattr(cur, '__iter__'), "Cursor supports __iter__()")
             self.failIf(hasattr(cur, 'next'), "Cursor supports next()")
         ##  con = self.connect()
         ##  cur = con.cursor()

@@ -6,7 +6,6 @@ Test harness for tests needing a PostgreSQL backend.
 __metaclass__ = type
 
 import unittest
-import sys
 import time
 
 import psycopg
