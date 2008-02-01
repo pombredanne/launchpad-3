@@ -428,7 +428,6 @@ class IPerson(IHasSpecifications, IHasMentoringOffers, IQuestionCollection,
             title=_('ID'), required=True, readonly=True,
             )
     name = make_person_name_field()
-
     displayname = StrippedTextLine(
             title=_('Display Name'), required=True, readonly=False,
             description=_("Your name as you would like it displayed "

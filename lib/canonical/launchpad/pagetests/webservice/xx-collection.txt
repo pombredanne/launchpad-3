@@ -31,7 +31,13 @@ The elements of a collection can be looked up by unique identifier:
   ...
   Content-Type: application/json
   <BLANKLINE>
-  {"self_link": "http:\/\/api.launchpad.dev\/people\/admins", "members_collection_link": "http:\/\/api.launchpad.dev\/people\/admins\/members", "validated_emails_collection_link": "http:\/\/api.launchpad.dev\/people\/admins\/validated_emails", "name": "admins", "teamowner_link": "http:\/\/api.launchpad.dev\/people\/sabdfl"}
+  {"self_link": "http:\/\/api.launchpad.dev\/people\/admins",
+   "members_collection_link":
+     "http:\/\/api.launchpad.dev\/people\/admins\/members",
+   "validated_emails_collection_link":
+     "http:\/\/api.launchpad.dev\/people\/admins\/validated_emails",
+   "name": "admins",
+   "teamowner_link": "http:\/\/api.launchpad.dev\/people\/sabdfl"}
 
 A collection may be scoped to an element:
 
