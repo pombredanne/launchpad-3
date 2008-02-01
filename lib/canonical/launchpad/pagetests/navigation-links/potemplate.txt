@@ -22,11 +22,10 @@ The Application tabs should point to IProductSeries URLs.
 But the actions should point to IPOTemplate urls.
 
   >>> print_action_links(browser.contents)
-  Administer (disabled)
-  Change details: http://translations.launchpad.dev/evolution/trunk/+pots/evolution-2.2/+edit
-  Download translations: http://translations.launchpad.dev/evolution/trunk/+pots/evolution-2.2/+export
   Show translation status
   Upload a file: http://translations.launchpad.dev/evolution/trunk/+pots/evolution-2.2/+upload
+  Download translations: http://translations.launchpad.dev/evolution/trunk/+pots/evolution-2.2/+export
+  Change details: http://translations.launchpad.dev/evolution/trunk/+pots/evolution-2.2/+edit
 
 
 Taking an IPOTemplate for ISourcePackage context:
@@ -50,8 +49,7 @@ The Application tabs should point to ISourcePackage URLs.
 But the actions should point to IPOTemplate urls.
 
   >>> print_action_links(browser.contents)
-  Administer (disabled)
-  Change details: http://translations.launchpad.dev/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/+edit
-  Download translations: http://translations.launchpad.dev/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/+export
   Show translation status
   Upload a file: http://translations.launchpad.dev/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/+upload
+  Download translations: http://translations.launchpad.dev/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/+export
+  Change details: http://translations.launchpad.dev/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/+edit

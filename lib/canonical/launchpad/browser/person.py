@@ -827,7 +827,9 @@ class CommonMenuLinks:
         target = '+archive'
         text = 'Personal Package Archive'
         summary = 'Browse Personal Package Archive packages.'
-        enable_link = (self.context.archive is not None)
+        enable_link = (self.context.archive is not None and
+                       check_permission('launchpad.View',
+                                        self.context.archive))
         return Link(target, text, summary, icon='info', enabled=enable_link)
 
 

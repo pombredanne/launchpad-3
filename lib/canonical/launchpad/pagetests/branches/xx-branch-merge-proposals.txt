@@ -166,33 +166,22 @@ The branch merge poposal can be edited by the owner of the source or
 target branches or the registrant of the merge proposal.
 
     >>> print_action_links(sample_browser.contents)
-    Delete proposal to merge: .../+merge/.../+delete
     Edit details: .../+merge/.../+edit
-    Mark as merged: .../+merge/.../+merged
+    Delete proposal to merge: .../+merge/.../+delete
     Request review: .../+merge/.../+request-review
     Review proposal: .../+merge/.../+review
-    Work in progress (disabled)
+    Mark as merged: .../+merge/.../+merged
 
 Someone who is not logged in, or not the one of those that can alter the
 proposal to merge get no actions.
 
     >>> browser.open(firefox_merge_url)
     >>> print_action_links(browser.contents)
-    Delete proposal to merge (disabled)
-    Edit details (disabled)
-    Mark as merged (disabled)
-    Request review (disabled)
-    Review proposal (disabled)
-    Work in progress (disabled)
+    No actions portlet
 
     >>> anon_browser.open(firefox_merge_url)
     >>> print_action_links(anon_browser.contents)
-    Delete proposal to merge (disabled)
-    Edit details (disabled)
-    Mark as merged (disabled)
-    Request review (disabled)
-    Review proposal (disabled)
-    Work in progress (disabled)
+    No actions portlet
 
 When editing the proposal, the whiteboard can be altered, and the
 button options are:

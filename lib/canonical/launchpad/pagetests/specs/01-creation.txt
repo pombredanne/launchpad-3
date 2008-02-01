@@ -60,11 +60,9 @@ Users can press the graphical "Register a blueprint" button:
 
 Users can also follow the textual "Register a blueprint" link:
 
-    >>> for tag in find_tags_by_class(
-    ...     user_browser.contents, 'menu-link-new'):
-    ...     print tag
-    <a href="http://blueprints.launchpad.dev/ubuntu/+addspec"
-       class="menu-link-new" ...>Register a blueprint</a>
+    >>> print find_tag_by_id(user_browser.contents, 'actions')
+    <...<a href="http://blueprints.launchpad.dev/ubuntu/+addspec"
+    title="Register a new blueprint...">Register a blueprint...
 
 
 === From a distribution series ===
@@ -81,11 +79,9 @@ Users can press the graphical "Register a blueprint" button:
 
 Users can also follow the textual "Register a blueprint" link:
 
-    >>> for tag in find_tags_by_class(
-    ...     user_browser.contents, 'menu-link-new'):
-    ...     print tag
-    <a href="http://blueprints.launchpad.dev/ubuntu/hoary/+addspec"
-       class="menu-link-new" ...>Register a blueprint</a>
+    >>> print find_tag_by_id(user_browser.contents, 'actions')
+    <...<a href="http://blueprints.launchpad.dev/ubuntu/hoary/+addspec"
+    title="Register a new blueprint...">Register a blueprint...
 
 
 === From a product ===
@@ -102,11 +98,9 @@ Users can press the graphical "Register a blueprint" button:
 
 Users can also follow the textual "Register a blueprint" link:
 
-    >>> for tag in find_tags_by_class(
-    ...     user_browser.contents, 'menu-link-new'):
-    ...     print tag
-    <a href="http://blueprints.launchpad.dev/bzr/+addspec"
-       class="menu-link-new" ...>Register a blueprint</a>
+    >>> print find_tag_by_id(user_browser.contents, 'actions')
+    <...<a href="http://blueprints.launchpad.dev/bzr/+addspec"
+    title="Register a new blueprint...">Register a blueprint...
 
 For products without any blueprints, users can follow the special "register
 it here as a blueprint" link:
@@ -132,11 +126,9 @@ Users can press the graphical "Register a blueprint" button:
 
 Users can also follow the textual "Register a blueprint" link:
 
-    >>> for tag in find_tags_by_class(
-    ...     user_browser.contents, 'menu-link-new'):
-    ...     print tag
-    <a href="http://blueprints.launchpad.dev/firefox/1.0/+addspec"
-       class="menu-link-new" ...>Register a blueprint</a>
+    >>> print find_tag_by_id(user_browser.contents, 'actions')
+    <...<a href="http://blueprints.launchpad.dev/firefox/1.0/+addspec"
+    title="Register a new blueprint...">Register a blueprint...
 
 
 === From a project ===
@@ -153,11 +145,9 @@ Users can press the graphical "Register a blueprint" button:
 
 Users can follow the textual "Register a blueprint" link:
 
-    >>> for tag in find_tags_by_class(
-    ...     user_browser.contents, 'menu-link-new'):
-    ...     print tag
-    <a href="http://blueprints.launchpad.dev/mozilla/+addspec"
-       class="menu-link-new" ...>Register a blueprint</a>
+    >>> print find_tag_by_id(user_browser.contents, 'actions')
+    <...<a href="http://blueprints.launchpad.dev/mozilla/+addspec"
+    title="Register a new blueprint...">Register a blueprint...
 
 
 === From a sprint ===
@@ -174,11 +164,9 @@ Users can press the graphical "Register a blueprint" button:
 
 Users can also follow the textual "Register a blueprint" link:
 
-    >>> for tag in find_tags_by_class(
-    ...     user_browser.contents, 'menu-link-addspec'):
-    ...     print tag
-    <a href="http://blueprints.launchpad.dev/sprints/futurista/+addspec"
-       class="menu-link-addspec" ...>Register a blueprint</a>
+    >>> print find_tag_by_id(user_browser.contents, 'actions')
+    <...<a href="http://blueprints.launchpad.dev/sprints/futurista/+addspec"
+    title="Register a new blueprint...">Register a blueprint...
 
 
 == Registering a blueprint ==
