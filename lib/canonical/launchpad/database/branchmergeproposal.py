@@ -168,8 +168,8 @@ class BranchMergeProposal(SQLBase):
             if self.conversation is not None:
                 parent_message = self.conversation.message
         else:
-            assert (parent.branch_merge_proposal == self,
-                    'Replies must use the same merge proposal as their parent')
+            assert parent.branch_merge_proposal == self,\
+                    'Replies must use the same merge proposal as their parent'
             parent_message = parent.message
         msgid = make_msgid('codereview')
         msg = Message(parent=parent_message, owner=owner,
@@ -178,6 +178,5 @@ class BranchMergeProposal(SQLBase):
         crmsg = CodeReviewMessage(
             branch_merge_proposal=self, message=msg, vote=vote)
         if self.conversation is None:
-            assert parent is None
             self.conversation = crmsg
         return crmsg
