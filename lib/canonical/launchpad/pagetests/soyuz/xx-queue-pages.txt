@@ -33,24 +33,15 @@ Let's setup a browser with the defined upload-admin for future use.
 
 == Accessing the queues ==
 
-The link "View Uploads" is not presented for anonymous requests in
-Distrorelease page, authentication is required to access queue page
-itself:
+The link "View Uploads" is presented in Distrorelease page.
 
-  >>> anon_browser.open("http://launchpad.dev/ubuntu/breezy-autotest")
-  >>> anon_browser.getLink("Show uploads")
-  Traceback (most recent call last):
-  ...
-  LinkNotFoundError
+Viewing the current queue, by default the NEW queue.
 
-Viewing the current queue, by default the NEW queue, only requires
-unprivileged authorisation:
-
-  >>> user_browser.open(
+  >>> anon_browser.open(
   ...     "http://launchpad.dev/ubuntu/breezy-autotest/")
-  >>> user_browser.getLink("Show uploads").click()
+  >>> anon_browser.getLink("Show uploads").click()
 
-  >>> user_browser.getControl(name="queue_state").displayValue
+  >>> anon_browser.getControl(name="queue_state").displayValue
   ['New']
 
   >>> def print_queue(contents):
@@ -58,7 +49,7 @@ unprivileged authorisation:
   ...     for row in queue_rows:
   ...         print extract_text(row)
 
-  >>> print_queue(user_browser.contents)
+  >>> print_queue(anon_browser.contents)
   Package                         Version         Pocket  When       Changes
   netapplet... (raw-ddtp-tarball) -               Release 2005-04-07 [view]
   netapplet...(raw-dist-upgrader) -               Release 2005-04-07 [view]
@@ -67,12 +58,13 @@ unprivileged authorisation:
   pmount (i386)                   0.1-1           Release 2005-04-07 [view]
   mozilla-firefox (i386)          0.9             Release 2006-05-24 [view]
 
-Any user can access all available queues, including the UNAPPROVED one.
+We grant public access to all available queues, including the
+UNAPPROVED one.
 
-  >>> user_browser.getControl(
+  >>> anon_browser.getControl(
   ...     name="queue_state").displayValue = ['Unapproved']
-  >>> user_browser.getControl("Update").click()
-  >>> print_queue(user_browser.contents)
+  >>> anon_browser.getControl("Update").click()
+  >>> print_queue(anon_browser.contents)
   Package                         Version       Pocket    When       Changes
   language-pack-de (source)       1.0           Proposed  2005-04-07 [view]
   netapplet... (raw-ddtp-tarball) -             Backports 2005-04-07 [view]
@@ -80,27 +72,27 @@ Any user can access all available queues, including the UNAPPROVED one.
   cnews (source)                  1.0           Release   2005-04-07 [view]
   netapplet... (raw-translations) -             Updates   2005-04-07 [view]
 
-The user can filter the results matching source name, binary name or
+The results can be filtered matching source name, binary name or
 custom-upload filename.
 
-  >>> user_browser.getControl(name="queue_text").value = 'language'
-  >>> user_browser.getControl("Update").click()
-  >>> print_queue(user_browser.contents)
+  >>> anon_browser.getControl(name="queue_text").value = 'language'
+  >>> anon_browser.getControl("Update").click()
+  >>> print_queue(anon_browser.contents)
   Package                         Version       Pocket    When       Changes
   language-pack-de (source)       1.0           Proposed  2005-04-07 [view]
 
-  >>> user_browser.getControl(name="queue_text").value = 'netapplet'
-  >>> user_browser.getControl("Update").click()
-  >>> print_queue(user_browser.contents)
+  >>> anon_browser.getControl(name="queue_text").value = 'netapplet'
+  >>> anon_browser.getControl("Update").click()
+  >>> print_queue(anon_browser.contents)
   Package                         Version       Pocket    When       Changes
   netapplet... (raw-translations) -             Updates   2005-04-07 [view]
   netapplet... (raw-ddtp-tarball) -             Backports 2005-04-07 [view]
 
-  >>> user_browser.getControl(
+  >>> anon_browser.getControl(
   ...     name="queue_state").displayValue = ['New']
-  >>> user_browser.getControl(name="queue_text").value = 'pmount'
-  >>> user_browser.getControl("Update").click()
-  >>> print_queue(user_browser.contents)
+  >>> anon_browser.getControl(name="queue_text").value = 'pmount'
+  >>> anon_browser.getControl("Update").click()
+  >>> print_queue(anon_browser.contents)
   Package                         Version       Pocket    When       Changes
   pmount (i386)                   0.1-1         Release   2005-04-07 [view]
 
@@ -111,18 +103,18 @@ Each queue item has a hidden 'filelist' section which is
 toggled via javascript by clicking in the 'expand' arrow
 image:
 
-  >>> user_browser.getControl(
+  >>> anon_browser.getControl(
   ...     name="queue_state").displayValue = ['New']
-  >>> user_browser.getControl(name="queue_text").value = ''
-  >>> user_browser.getControl("Update").click()
+  >>> anon_browser.getControl(name="queue_text").value = ''
+  >>> anon_browser.getControl("Update").click()
 
-  >>> print find_tag_by_id(user_browser.contents, 'queue4-filelist-arrow')
+  >>> print find_tag_by_id(anon_browser.contents, 'queue4-filelist-arrow')
   <img width="14" height="14" src="/@@/treeCollapsed" alt="view files" id="queue4-filelist-arrow" />
 
 The 'filelist' is a expanded as another table row, right below the
 clicked item:
 
-  >>> filelist = find_tag_by_id(user_browser.contents, 'queue4-filelist')
+  >>> filelist = find_tag_by_id(anon_browser.contents, 'queue4-filelist')
 
 It contains a list of files related to the queue item clicked, followed
 by its size, one file per line:
@@ -139,7 +131,7 @@ On binary queue items we also present the stamp 'NEW' for files never
 published in the archive (it helps archive admins when reviewing
 candidates):
 
-  >>> filelist = find_tag_by_id(user_browser.contents, 'queue2-filelist')
+  >>> filelist = find_tag_by_id(anon_browser.contents, 'queue2-filelist')
   >>> print extract_text(filelist)
   pmount_1.9-1_all.deb (3 bytes) NEW
 
@@ -151,9 +143,9 @@ probe javascripts events.
 
 Inspect the ACCEPTED queue:
 
-  >>> user_browser.getControl(name="queue_state").displayValue=['Accepted']
-  >>> user_browser.getControl("Update").click()
-  >>> for message in get_feedback_messages(user_browser.contents):
+  >>> anon_browser.getControl(name="queue_state").displayValue=['Accepted']
+  >>> anon_browser.getControl("Update").click()
+  >>> for message in get_feedback_messages(anon_browser.contents):
   ...     print message
   The Accepted queue is empty.
 

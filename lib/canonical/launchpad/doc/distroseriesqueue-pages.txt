@@ -3,9 +3,7 @@
 The QueueItemsView (browser/queue.py) is extended by the default view
 for IDistroSeries context (IDistroSeriesView)
 
-  >>> login('test@canonical.com')
-
-Let's instantiate the view for +queue as normal user:
+Let's instantiate the view for +queue for anonymous access:
 
   >>> from zope.component import queryView
   >>> from zope.publisher.browser import TestRequest
@@ -79,8 +77,8 @@ If a invalid integer is posted it raises.
   ...
   UnexpectedFormData: No suitable status found for value "10"
 
-Normal users also have access to all queues, including UNAPPROVED but
-they are not allowed to perform any action.
+Anonymous users also have access to all queues, including UNAPPROVED
+but they are not allowed to perform any action.
 
   >>> request = TestRequest(
   ...     form={'queue_state': PackageUploadStatus.UNAPPROVED.value})
@@ -133,14 +131,33 @@ Accepting an item from NEW queue.
   ...           'Accept': 'Accept',
   ...           'QUEUE_ID': ['1', '3']})
   >>> request.method = 'POST'
-  >>> queue_view = queryView(breezy_autotest, "+queue", request)
-  >>> queue_view.setupQueueList()
 
 Add fake librarian files so that email notifications work:
 
   >>> from canonical.archiveuploader.tests import (
   ...     insertFakeChangesFileForAllPackageUploads)
   >>> insertFakeChangesFileForAllPackageUploads()
+
+Anonymous attempts to accept queue items are ignored and an error
+message is presented.
+
+  >>> login(ANONYMOUS)
+  >>> queue_view = queryView(breezy_autotest, "+queue", request)
+  >>> queue_view.setupQueueList()
+  >>> queue_view.performQueueAction()
+  >>> print queue_view.error
+  You do not have permission to act on queue items.
+
+  >>> getUtility(IPackageUploadSet).get(1).status.name
+  'NEW'
+  >>> getUtility(IPackageUploadSet).get(3).status.name
+  'NEW'
+
+Privileged user can accept queue items.
+
+  >>> login('foo.bar@canonical.com')
+  >>> queue_view = queryView(breezy_autotest, "+queue", request)
+  >>> queue_view.setupQueueList()
 
   >>> queue_view.performQueueAction()
   u'Accepting Results:<br><br>OK: mozilla-firefox, OK: netapplet'
@@ -161,6 +178,23 @@ Rejection an item from NEW queue:
   ...           'Reject': 'Reject',
   ...           'QUEUE_ID': '2'})
   >>> request.method = 'POST'
+
+Anonymous attempts to reject queue items are ignored and an error
+message is presented.
+
+  >>> login(ANONYMOUS)
+  >>> queue_view = queryView(breezy_autotest, "+queue", request)
+  >>> queue_view.setupQueueList()
+  >>> queue_view.performQueueAction()
+  >>> print queue_view.error
+  You do not have permission to act on queue items.
+
+  >>> target.status.name
+  'NEW'
+
+Privileged user can reject queue items.
+
+  >>> login('foo.bar@canonical.com')
   >>> queue_view = queryView(breezy_autotest, "+queue", request)
   >>> queue_view.setupQueueList()
 
@@ -170,7 +204,7 @@ Rejection an item from NEW queue:
   >>> target.status.name
   'REJECTED'
 
-We created librarian files that need cleaining up before leaving the test.
+We created librarian files that need cleaning up before leaving the test.
 
   >>> from canonical.librarian.ftests.harness import cleanupLibrarianFiles
   >>> cleanupLibrarianFiles()
