@@ -73,10 +73,10 @@ list.
     >>> browser.reload()
     >>> browser.getControl('Submit')
     <SubmitControl name='field.actions.submit' type='submit'>
-    >>> extract_text(find_tag_by_id(browser.contents, 'team:itest-one'))
+    >>> extract_text(find_tag_by_id(browser.contents, 'team.itest-one'))
     u'ITest One'
     >>> extract_text(find_tag_by_id(browser.contents,
-    ...     'registrant:itest-one:no-priv'))
+    ...     'registrant.itest-one.no-priv'))
     u'No Privileges Person'
 
 The user creates a second team, and makes a request to create this new team's
@@ -98,15 +98,15 @@ mailing list.  The pending requests administration page shows them both.
     >>> user_browser.getControl('Apply for Mailing List').click()
 
     >>> browser.reload()
-    >>> extract_text(find_tag_by_id(browser.contents, 'team:itest-one'))
+    >>> extract_text(find_tag_by_id(browser.contents, 'team.itest-one'))
     u'ITest One'
     >>> extract_text(find_tag_by_id(browser.contents,
-    ...     'registrant:itest-one:no-priv'))
+    ...     'registrant.itest-one.no-priv'))
     u'No Privileges Person'
-    >>> extract_text(find_tag_by_id(browser.contents, 'team:itest-two'))
+    >>> extract_text(find_tag_by_id(browser.contents, 'team.itest-two'))
     u'ITest Two'
     >>> extract_text(find_tag_by_id(browser.contents,
-    ...     'registrant:itest-two:no-priv'))
+    ...     'registrant.itest-two.no-priv'))
     u'No Privileges Person'
 
 
@@ -116,20 +116,20 @@ Each line in the pending approval table contains a link to both the team for
 which the mailing list is being requested, and to the person requesting the
 mailing list.
 
-    >>> browser.getLink(id='team:itest-one').click()
+    >>> browser.getLink(id='team.itest-one').click()
     >>> browser.title
     'ITest One in Launchpad'
     >>> browser.goBack()
-    >>> browser.getLink(id='registrant:itest-one:no-priv').click()
+    >>> browser.getLink(id='registrant.itest-one.no-priv').click()
     >>> browser.title
     'No Privileges Person in Launchpad'
 
     >>> browser.goBack()
-    >>> browser.getLink(id='team:itest-two').click()
+    >>> browser.getLink(id='team.itest-two').click()
     >>> browser.title
     'ITest Two in Launchpad'
     >>> browser.goBack()
-    >>> browser.getLink(id='registrant:itest-two:no-priv').click()
+    >>> browser.getLink(id='registrant.itest-two.no-priv').click()
     >>> browser.title
     'No Privileges Person in Launchpad'
 
@@ -182,7 +182,7 @@ decision on the other mailing list until later.
 The pending requests page no longer displays anything about the ITest One
 mailing list.
 
-    >>> browser.getLink(id='team:itest-one')
+    >>> browser.getLink(id='team.itest-one')
     Traceback (most recent call last):
     ...
     LinkNotFoundError
@@ -191,7 +191,7 @@ mailing list.
 
 But the ITest Two request is still pending.
 
-    >>> browser.getLink(id='team:itest-two')
+    >>> browser.getLink(id='team.itest-two')
     <Link text='ITest Two' url='http://launchpad.dev/~itest-two'>
 
 The ITest One mailing list has been approved so that Mailman can create it,
@@ -215,7 +215,7 @@ idea, so she goes ahead and declines that list's creation.
 The pending requests page no longer displays anything about the ITest Two
 mailing list.
 
-    >>> browser.getLink(id='team:itest-two')
+    >>> browser.getLink(id='team.itest-two')
     Traceback (most recent call last):
     ...
     LinkNotFoundError
@@ -284,7 +284,7 @@ The Launchpad administrator can approve them all at once.
     >>> browser.getControl(name='action.itest-five').value = ['approve']
     >>> browser.getControl('Submit').click()
 
-    >>> sorted(get_feedback_messages(browser.contents), reversed=True)
+    >>> sorted(get_feedback_messages(browser.contents), reverse=True)
     [u'ITest Three mailing list was approved',
      u'ITest Four mailing list was approved',
      u'ITest Five mailing list was approved']
