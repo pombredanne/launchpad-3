@@ -44,3 +44,8 @@ and lists of featured projects and marketing material.
   What is Launchpad?
   ...
 
+and the Copyright notice
+
+  >>> print extract_text(find_tag_by_id(browser.contents, 'copyright'))
+  Copyright 2004-2008 Canonical Ltd.
+  ...
