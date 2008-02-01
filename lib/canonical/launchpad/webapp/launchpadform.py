@@ -232,7 +232,7 @@ class LaunchpadFormView(LaunchpadView):
                     widgets.append((input, widget))
         widgets = form.Widgets(widgets, len(self.prefix)+1)
         for error in form.getWidgetsData(widgets, self.prefix, data):
-            self.errors.append(error)
+            self.setFieldError(error[0][len(self.prefix)+1:], error[2])
         for error in form.checkInvariants(self.form_fields, data):
             self.addError(error)
         return self.errors

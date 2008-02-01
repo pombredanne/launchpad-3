@@ -1,2 +1,6 @@
 # Put your TODOs for this branch here, then make sure it is empty before
 # landing. There is a test to ensure it is empty in trunk.
+
+ * trigger the onchange of the date when the date is set, rather than calling
+   the dateSelected method
+

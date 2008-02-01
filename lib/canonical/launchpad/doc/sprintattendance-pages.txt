@@ -37,7 +37,7 @@ This sprint doesn't have any attendees.
 
 Choosing a starting date after the ending date returns a nice error message.
 
-  >>> dates = ['2005-11-17', '2005-10-07']
+  >>> dates = ['2005-11-15', '2005-10-09']
   >>> sprint_attendance_view = create_sprint_attendence_view(ubz, dates)
   >>> sprint_attendance_view.initialize()
   >>> print sprint_attendance_view.getFieldError('time_ends')
@@ -49,7 +49,7 @@ Choosing a starting date after the meeting's end returns an error message.
   >>> sprint_attendance_view = create_sprint_attendence_view(ubz, dates)
   >>> sprint_attendance_view.initialize()
   >>> print sprint_attendance_view.getFieldError('time_starts')
-  Choose an arrival time before the end of the meeting.
+  Please pick a date before 2005-11-17 00:11:00
 
 Choosing a ending date before the meeting's start returns an error message.
 
@@ -57,7 +57,7 @@ Choosing a ending date before the meeting's start returns an error message.
   >>> sprint_attendance_view = create_sprint_attendence_view(ubz, dates)
   >>> sprint_attendance_view.initialize()
   >>> print sprint_attendance_view.getFieldError('time_ends')
-  Choose a departure time after the start of the meeting.
+  Please pick a date after 2005-10-07 23:30:00
 
 Entering a starting date before the meeting's start date and a finishing
 date after the meeting's end date works because we assume you wanted the
