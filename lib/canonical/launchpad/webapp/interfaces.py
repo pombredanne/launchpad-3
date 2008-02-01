@@ -607,12 +607,13 @@ class INotificationResponse(Interface):
 
     def addNotification(msg, level=BrowserNotificationLevel.NOTICE):
         """Append the given message to the list of notifications.
+	A plain string will be CGI escaped.
 
 	XXX FIX ME!! XXX
 	
         :param msg: This may be a string, `zope.i18n.Message`,
         `zope.i18n.MessageID`, or an instance of `IStructuredString`.
-        A plain string...
+        
 
         :param level: One of the `BrowserNotificationLevels`: DEBUG,
         INFO, NOTICE, WARNING, ERROR.
