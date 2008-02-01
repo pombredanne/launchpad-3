@@ -1796,3 +1796,29 @@ COMMENT ON COLUMN StructuralSubscription.bug_notification_level IS 'The volume a
 COMMENT ON COLUMN StructuralSubscription.blueprint_notification_level IS 'The volume and type of blueprint notifications this subscription will generate. The value is an item of the enumeration `BugNotificationLevel`.';
 COMMENT ON COLUMN StructuralSubscription.date_created IS 'The date on which this subscription was created.';
 COMMENT ON COLUMN StructuralSubscription.date_last_updated IS 'The date on which this subscription was last updated.';
+
+-- OAuth
+COMMENT ON TABLE OAuthConsumer IS 'A third part application that will access Launchpad on behalf of one of our users.';
+COMMENT ON COLUMN OAuthConsumer.key IS 'The unique key for this consumer.';
+COMMENT ON COLUMN OAuthConsumer.secret IS 'The secret used by this consumer (together with its key) to identify itself with Launchpad.';
+COMMENT ON COLUMN OAuthConsumer.name IS 'The consumer\'s name.';
+COMMENT ON COLUMN OAuthConsumer.displayname IS 'The consumer\'s display name.';
+
+COMMENT ON TABLE OAuthRequestToken IS 'A request token which, once authorized by the user, is exchanged for an access token.';
+COMMENT ON COLUMN OAuthRequestToken.consumer IS 'The consumer which is going to access the protected resources.';
+COMMENT ON COLUMN OAuthRequestToken.person IS 'The person who authorized this token.';
+COMMENT ON COLUMN OAuthRequestToken.permission IS 'The permission given by the person to the consumer.';
+COMMENT ON COLUMN OAuthRequestToken.key IS 'This token\'s unique key.';
+COMMENT ON COLUMN OAuthRequestToken.secret IS 'The secret used by the consumer (together with the token\'s key) to get an access token once the user has authorized its use.';
+COMMENT ON COLUMN OAuthRequestToken.authorized IS 'Has this token been authorized already?  A value of NULL means the user has not yet gone through the authorization/rejection process.';
+COMMENT ON COLUMN OAuthRequestToken.date_created IS 'The date/time in which the token was created.';
+
+COMMENT ON TABLE OAuthAccessToken IS 'An access token used by the consumer to act on behalf of one of our users.';
+COMMENT ON COLUMN OAuthAccessToken.consumer IS 'The consumer which is going to access the protected resources.';
+COMMENT ON COLUMN OAuthAccessToken.person IS 'The person on whose behalf the
+consumer will access Launchpad.';
+COMMENT ON COLUMN OAuthAccessToken.permission IS 'The permission given by that person to the consumer.';
+COMMENT ON COLUMN OAuthAccessToken.key IS 'This token\'s unique key.';
+COMMENT ON COLUMN OAuthAccessToken.secret IS 'The secret used by the consumer (together with the token\'s key) to access Launchpad on behalf of the person.';
+COMMENT ON COLUMN OAuthAccessToken.date_created IS 'The date/time in which the token was created.';
+COMMENT ON COLUMN OAuthAccessToken.expiration_date IS 'The date/time in which this token will stop being accepted by Launchpad.';
