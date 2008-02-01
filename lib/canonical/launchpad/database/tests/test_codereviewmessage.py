@@ -3,9 +3,7 @@
 """Unit tests for CodeReviewMessage"""
 
 import unittest
-from canonical.launchpad.database.branchmergeproposal import (
-    BranchMergeProposal
-    )
+from canonical.launchpad.interfaces import CodeReviewVote
 from canonical.testing import LaunchpadFunctionalLayer
 from canonical.launchpad.ftests import login
 from canonical.launchpad.testing import LaunchpadObjectFactory
@@ -24,19 +22,19 @@ class TestCodeReviewMessage(unittest.TestCase):
         self.bmp2 = self.factory.makeProposalToMerge()
 
     def test_create_root_message(self):
-        message = self.bmp.createMessage(
-            self.submitter, 'Message subject', 'Message content', 1)
-        self.assertEqual(1, message.vote)
+        message = self.bmp.createMessage(self.submitter, 'Message subject',
+            'Message content')
+        self.assertEqual(CodeReviewVote.TWEAK, message.vote)
         self.assertEqual(self.submitter, message.message.owner)
         self.assertEqual(message, self.bmp.conversation)
         self.assertEqual('Message subject', message.message.subject)
         self.assertEqual('Message content', message.message.chunks[0].content)
 
     def test_create_reply_message(self):
-        message = self.bmp.createMessage(
-            self.submitter, 'Message subject', 'Message content', 1)
-        reply = self.bmp.createMessage(
-            self.reviewer, 'Reply subject', 'Reply content', 1, message)
+        message = self.bmp.createMessage(self.submitter, 'Message subject',
+            'Message content')
+        reply = self.bmp.createMessage(self.reviewer, 'Reply subject',
+            'Reply content', CodeReviewVote.TWEAK, message)
         self.assertEqual(message, self.bmp.conversation)
         self.assertEqual(message.message.id, reply.message.parent.id)
         self.assertEqual(message.message, reply.message.parent)
@@ -44,19 +42,19 @@ class TestCodeReviewMessage(unittest.TestCase):
         self.assertEqual('Reply content', reply.message.chunks[0].content)
 
     def test_create_no_parent_message(self):
-        message = self.bmp.createMessage(
-            self.submitter, 'Message subject', 'Message content', 1)
-        new_message = self.bmp.createMessage(
-            self.reviewer, 'New subject', 'New content', 1)
+        message = self.bmp.createMessage(self.submitter, 'Message subject',
+            'Message content')
+        new_message = self.bmp.createMessage( self.reviewer, 'New subject',
+            'New content', CodeReviewVote.TWEAK)
         self.assertEqual(
             self.bmp.conversation.message, new_message.message.parent)
 
     def test_reply_with_wrong_merge_proposal(self):
-        message = self.bmp.createMessage(
-            self.submitter, 'Message subject', 'Message content', 1)
+        message = self.bmp.createMessage(self.submitter, 'Message subject',
+            'Message content')
         self.assertRaises(AssertionError, self.bmp2.createMessage,
-                          self.reviewer, 'Reply subject', 'Reply content', 1,
-                          message)
+                          self.reviewer, 'Reply subject', 'Reply content',
+                          CodeReviewVote.TWEAK, message)
 
 
 def test_suite():

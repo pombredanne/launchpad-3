@@ -5,10 +5,12 @@ __all__ = ['CodeReviewMessage']
 
 from zope.interface import implements
 
-from sqlobject import ForeignKey, IntCol
+from sqlobject import ForeignKey
 
+from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import SQLBase
 from canonical.launchpad.interfaces import (
+    CodeReviewVote,
     ICodeReviewMessage,
     )
 
@@ -24,4 +26,4 @@ class CodeReviewMessage(SQLBase):
         dbName='branch_merge_proposal', foreignKey='BranchMergeProposal',
         notNull=True)
     message = ForeignKey(dbName='message', foreignKey='Message', notNull=True)
-    vote = IntCol(dbName='vote', notNull=True)
+    vote = EnumCol(dbName='vote', notNull=True, schema=CodeReviewVote)

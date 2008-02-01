@@ -34,8 +34,9 @@ conversation, and is assigned to BranchMergeProposal.conversation.
 Subsequent messages are marked as replies to the conversation root, by
 default.
 
+    >>> from canonical.launchpad.interfaces import CodeReviewVote
     >>> message2 = merge_proposal.createMessage(
-    ... person, 'No!', 'You are ugly and stupid')
+    ... person, 'No!', 'You are ugly and stupid', CodeReviewVote.VETO)
     >>> message2.message.parent == merge_proposal.conversation.message
     True
 
