@@ -65,9 +65,6 @@ Retrieve any SourcePackagePublishingHistory entry.
     >>> print spph.displayname
     alsa-utils 1.0.8-1ubuntu1 in warty
 
-    >>> print spph.suite_name
-    warty
-
 A 'stanza' is the name given to a group of attributes related to one
 source or binary package in the archive index file, it provides
 information to APT, things like, package name, pool path, DSC format,

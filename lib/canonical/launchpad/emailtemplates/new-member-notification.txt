@@ -1,6 +1,7 @@
 Hello %(recipient_name)s,
 
 %(reviewer)s added you as a member of %(team)s.
+<%(team_url)s>
 
 Regards,
 The Launchpad team

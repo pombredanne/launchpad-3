@@ -5,4 +5,4 @@
    the dateSelected method
  * show the start and end sprint times in date widget by default
  * allow registration from start date less one day,
- * figure out why the date shows seconds sometimes 
+ * figure out why the date shows seconds sometimes

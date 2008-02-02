@@ -71,9 +71,8 @@ from canonical.launchpad.interfaces import (
     IPublishedPackageSet, ICanPublishPackages, ISourcePackage,
     ISourcePackageName, ISourcePackageNameSet, LanguagePackType,
     NotFoundError, PackagePublishingPocket, PackagePublishingStatus,
-    PackageUploadStatus, pocketsuffix, SpecificationFilter,
-    SpecificationGoalStatus, SpecificationSort,
-    SpecificationImplementationStatus)
+    PackageUploadStatus, SpecificationFilter, SpecificationGoalStatus,
+    SpecificationSort, SpecificationImplementationStatus)
 
 
 class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
@@ -280,10 +279,6 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
     def bug_reporting_guidelines(self):
         """See `IBugTarget`."""
         return self.distribution.bug_reporting_guidelines
-
-    def suite_name(self, pocket):
-        """See `IDistroSeries`."""
-        return self.name + pocketsuffix[pocket]
 
     def canUploadToPocket(self, pocket):
         """See IDistroSeries."""
