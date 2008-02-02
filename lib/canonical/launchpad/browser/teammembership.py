@@ -74,6 +74,10 @@ class TeamMembershipEditView:
         self.expiration_widget = self.widgets['expirationdate']
         # Set the acceptable date range for expiration.
         self.expiration_widget.from_date = datetime.now(UTC).date()
+        # Disable the date widget if there is no current or required
+        # expiration
+        if not expires:
+            self.expiration_widget.disabled = True
 
     # Boolean helpers
     def userIsTeamOwnerOrLPAdmin(self):

@@ -110,6 +110,14 @@ class DateTimeWidget(TextWidget):
       ...
       WidgetInputError: (... Please pick a date before 2008-01-26 00:00:00)
 
+    A datetime picker can be disabled initially:
+
+      >>> 'disabled' in widget()
+      False
+      >>> widget.disabled = True
+      >>> 'disabled' in widget()
+      True
+
     """
 
     timeformat = '%Y-%m-%d %H:%M:%S'
@@ -117,6 +125,7 @@ class DateTimeWidget(TextWidget):
     display_zone = True
     from_date = None
     to_date = None
+    disabled = False
 
     # ZPT that renders our widget
     __call__ = ViewPageTemplateFile('templates/datetime.pt')
@@ -187,6 +196,14 @@ class DateTimeWidget(TextWidget):
     def timezone_name(self):
         """The name of the widget time zone for display in the widget."""
         return self.timezone.zone
+
+    @property
+    def disabled_flag(self):
+        """Return a string to make the form input disabled if necessary."""
+        if self.disabled:
+            return "disabled"
+        else:
+            return ""
 
     #@property  XXX: do as a property when we have python2.5 for tests of
     #properties
@@ -413,6 +430,14 @@ class DateWidget(DateTimeWidget):
       >>> widget.timezone
       <UTC>
 
+    A date picker can be disabled initially:
+
+      >>> 'disabled' in widget()
+      False
+      >>> widget.disabled = True
+      >>> 'disabled' in widget()
+      True
+
     """
 
     timeformat = '%Y-%m-%d'
@@ -491,9 +516,12 @@ class DateWidget(DateTimeWidget):
           >>> widget._toFormValue(dt)
           '2006-01-01'
 
-          >>> date = date(2006, 1, 1)
-          >>> widget._toFormValue(date)
+        The widget can handle a date just as well as a datetime, of course.
+
+          >>> a_date = dt.date()
+          >>> widget._toFormValue(a_date)
           '2006-01-01'
+
         """
         if value == self.context.missing_value:
             return self._missing
