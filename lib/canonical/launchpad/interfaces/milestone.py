@@ -65,14 +65,14 @@ class IMilestone(Interface):
         description=_("The distribution to which this milestone belongs."),
         vocabulary="Distribution")
     productseries = Choice(
-        title=_("Series"),
-        description=_("The series for which this is a milestone."),
+        title=_("Product Series"),
+        description=_("The product series for which this is a milestone."),
         vocabulary="FilteredProductSeries",
         required=False) # for now
     distroseries = Choice(
-        title=_("Series"),
+        title=_("Distro Series"),
         description=_(
-            "The series for which this is a milestone."),
+            "The distribution series for which this is a milestone."),
         vocabulary="FilteredDistroSeries",
         required=False) # for now
     dateexpected = Date(title=_("Date Targeted"), required=False,

@@ -187,7 +187,7 @@ def extract_text(content):
 
     All runs of tabs and spaces are replaced by a single space and runs of
     newlines are replaced by a single newline. Leading and trailing white
-    spaces is stripped.
+    spaces are stripped.
     """
     if not isinstance(content, PageElement):
         soup = BeautifulSoup(content)
@@ -272,6 +272,32 @@ def print_action_links(content):
             print entry.strong.string
 
 
+def print_portlet_links(content, name, base=None):
+    """Print generic portlet urls.
+    This function expects the browser.content as well as the h2 name of the
+    portlet. base is optional. It will locate the portlet and print out the links. It will 
+    report if the portlet cannot be found and will also report if there are
+    no links to be found. Unlike the other functions on this page, this looks
+    for "a" instead of "li"
+    example usage:
+    --------------
+    >>> print_portlet_links(admin_browser.contents,'Milestone milestone3 for Ubuntu details')
+    Ubuntu: /ubuntu
+    Warty: /ubuntu/warty
+    --------------
+    """
+    portlet_contents = find_portlet(content, name)
+    if portlet_contents is None:
+        print "No portlet found which matches the name you provided."
+        return            
+    portlet_links = portlet_contents.findAll('a')
+    if len(portlet_links) == 0:
+        print "No links were found in the portlet."
+        return
+    for portlet_link in portlet_links:
+        print '%s: %s' % (portlet_link.string, extract_link_from_tag(portlet_link, base))
+
+
 def print_submit_buttons(content):
     """Print the submit button values found in the main content.
 
@@ -340,6 +366,7 @@ def setUpGlobs(test):
     test.globs['parse_relationship_section'] = parse_relationship_section
     test.globs['print_tab_links'] = print_tab_links
     test.globs['print_action_links'] = print_action_links
+    test.globs['print_portlet_links'] = print_portlet_links
     test.globs['print_comments'] = print_comments
     test.globs['print_submit_buttons'] = print_submit_buttons
     test.globs['print_radio_button_field'] = print_radio_button_field
