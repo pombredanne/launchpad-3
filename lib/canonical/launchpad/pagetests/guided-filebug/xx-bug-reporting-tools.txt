@@ -116,7 +116,7 @@ choose to follow the link to the advanced +filebug page.
 
     >>> user_browser.open(
     ...     'http://launchpad.dev/firefox/+filebug/%s' % blob_token)
-    >>> user_browser.getLink('complicated bug filing form').click()
+    >>> user_browser.getLink('Advanced reporting options').click()
 
 The token is still present in the URL.
 

@@ -161,11 +161,11 @@ class MenuBox(LaunchpadView):
         self.contextmenuitems = sorted([
             link for link in context_menu_links.values() if (link.enabled or
                                                              config.devmode)],
-            key=operator.attrgetter('text'))
+            key=operator.attrgetter('sort_key'))
         self.applicationmenuitems = sorted([
             link for link in menuapi.application() if (link.enabled or
                                                        config.devmode)],
-            key=operator.attrgetter('text'))
+            key=operator.attrgetter('sort_key'))
 
     def render(self):
         if not self.contextmenuitems and not self.applicationmenuitems:
