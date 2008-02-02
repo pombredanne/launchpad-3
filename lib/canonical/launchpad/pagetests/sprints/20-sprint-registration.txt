@@ -26,7 +26,7 @@ lib/canonical/launchpad/doc/sprintattendance-pages.txt)
     >>> for tag in find_tags_by_class(browser.contents, 'message'):
     ...     print tag.renderContents()
     There is 1 error.
-    Please pick a date after 2006-01-10 08:30:00
+    Please pick a date after 2006-01-10 08:30
 
 An attendance that starts after the end of the sprint is also an error:
 
@@ -39,8 +39,8 @@ An attendance that starts after the end of the sprint is also an error:
     >>> for tag in find_tags_by_class(browser.contents, 'message'):
     ...     print tag.renderContents()
     There are 2 errors.
-    Please pick a date before 2006-02-12 17:00:00
-    Please pick a date before 2006-02-13 17:00:00
+    Please pick a date before 2006-02-12 17:00
+    Please pick a date before 2006-02-13 17:00
 
 
 Similarly, an attendance that ends before the start of a sprint is an
@@ -55,8 +55,8 @@ error:
     >>> for tag in find_tags_by_class(browser.contents, 'message'):
     ...     print tag.renderContents()
     There are 2 errors.
-    Please pick a date after 2006-01-09 08:30:00
-    Please pick a date after 2006-01-10 08:30:00
+    Please pick a date after 2006-01-09 08:30
+    Please pick a date after 2006-01-10 08:30
 
 With the dates fixed, Sample person can attend the sprint.  The user
 is staying an extra week past the end of the sprint, which is fine
@@ -84,9 +84,9 @@ dates are prefilled (they have been clamped to the sprint duration):
 
     >>> browser.getLink('Register yourself').click()
     >>> print browser.getControl('From').value
-    2006-01-10 10:30:00
+    2006-01-10 10:30
     >>> print browser.getControl('To').value
-    2006-02-12 17:00:00
+    2006-02-12 17:00
 
 Also, it is possible to register someone else. Let's register Carlos.
 

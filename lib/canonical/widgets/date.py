@@ -25,7 +25,6 @@ from zope.app.form.interfaces import InputErrors, WidgetInputError
 from zope.app.form.interfaces import ConversionError
 from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 from zope.component import getUtility
-from zope.schema.interfaces import ValidationError
 
 from canonical.launchpad.interfaces import ILaunchBag
 from canonical.launchpad.validators import LaunchpadValidationError

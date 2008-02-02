@@ -50,7 +50,7 @@ error message.
   >>> sprint_attendance_view = create_sprint_attendence_view(ubz, dates)
   >>> sprint_attendance_view.initialize()
   >>> print sprint_attendance_view.getFieldError('time_starts')
-  Please pick a date before 2005-11-16 19:11:00
+  Please pick a date before 2005-11-16 19:11
 
 Choosing a ending date more than a day before the meeting's start returns
 an error message.
@@ -59,7 +59,7 @@ an error message.
   >>> sprint_attendance_view = create_sprint_attendence_view(ubz, dates)
   >>> sprint_attendance_view.initialize()
   >>> print sprint_attendance_view.getFieldError('time_ends')
-  Please pick a date after 2005-10-07 19:30:00
+  Please pick a date after 2005-10-07 19:30
 
 Entering a starting date just before the meeting's start date or a
 finishing date just after the meeting's end date works because we assume

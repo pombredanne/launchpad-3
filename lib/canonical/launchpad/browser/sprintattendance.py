@@ -31,6 +31,10 @@ class BaseSprintAttendanceAddView(LaunchpadFormView):
         self.ends_widget = self.widgets['time_ends']
         self.starts_widget.required_timezone = tz
         self.ends_widget.required_timezone = tz
+        # We don't need to display seconds
+        timeformat = '%Y-%m-%d %H:%M'
+        self.starts_widget.timeformat = timeformat
+        self.ends_widget.timeformat = timeformat
         # Constrain the widget to dates from the day before to the day
         # after the sprint. We will accept a time just before or just after
         # and map those to the beginning and end times, respectively, in
@@ -41,6 +45,11 @@ class BaseSprintAttendanceAddView(LaunchpadFormView):
         self.starts_widget.to_date = to_date
         self.ends_widget.from_date = from_date
         self.ends_widget.to_date = to_date + timedelta(1)
+
+    @property
+    def initial_values(self):
+        return {'time_starts': self.context.time_starts,
+                'time_ends': self.context.time_ends}
 
     def validate(self, data):
         """Verify that the entered times are valid.
@@ -125,7 +134,8 @@ class SprintAttendanceAttendView(BaseSprintAttendanceAddView):
             if attendance.attendee == self.user:
                 return dict(time_starts=attendance.time_starts,
                             time_ends=attendance.time_ends)
-        return {}
+        return {'time_starts': self.context.time_starts,
+                'time_ends': self.context.time_ends}
 
     @action(_('Register'), name='register')
     def register_action(self, action, data):
