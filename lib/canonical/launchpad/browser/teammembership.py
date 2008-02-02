@@ -11,7 +11,7 @@ import pytz
 from datetime import datetime
 
 from zope.app.form import CustomWidgetFactory
-from zope.app.form.interfaces import WidgetInputError
+from zope.app.form.interfaces import InputErrors
 from zope.component import getUtility
 from zope.formlib import form
 from zope.schema import Date
@@ -285,16 +285,19 @@ class TeamMembershipEditView:
         API to the caller, who needs to check only for that specific
         exception.
         """
+        expires = None
         try:
             expires = self.expiration_widget.getInputValue()
-        except WidgetInputError, value:
-            raise ValueError(value[2])
+        except InputErrors, value:
+            # Handle conversion errors
+            raise ValueError(value.doc())
         if expires is None:
             return None
 
         # We used a date picker, so we have a date. What we want is a
         # datetime in UTC
         UTC = pytz.timezone('UTC')
-        return datetime(expires.year, expires.month, expires.day,
-                        tzinfo=UTC)
+        expires = datetime(expires.year, expires.month, expires.day,
+                           tzinfo=UTC)
+        return expires
 

@@ -1,4 +1,4 @@
-<input size="17" type="text"
+<input size="19" type="text"
    tal:attributes="name view/name; id view/name; value view/formvalue;
                    disabled view/disabled_flag;" />
 <a href="javascript:void(0)"

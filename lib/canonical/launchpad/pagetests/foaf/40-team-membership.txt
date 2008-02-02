@@ -22,20 +22,20 @@ administrator and his subscription never expires.
   ['yes']
 
   >>> browser.getControl(name='expires').value
-  ['never'] 
+  ['never']
 
 Post an incomplete date and remove his administrator status.
 
   >>> browser.getControl(name='admin').value = ['no']
   >>> browser.getControl(name='expires').value = ['date']
-  >>> browser.getControl(name='day').value = ['16']
-  >>> browser.getControl(name='month').value = ['0']
-  >>> browser.getControl(name='year').value = ['0']
+  >>> expiry = browser.getControl(name='membership.expirationdate')
+  >>> expiry.mech_control.disabled = False # control may have been disabled
+  >>> expiry.value = 'ssdf'
   >>> browser.getControl('Change').click()
 
 We get a nice error message
 
-  >>> 'incomplete date provided.' in browser.contents
+  >>> 'Invalid date value' in browser.contents
   True
 
 Give up on change, nothing should have changed with Colin:
@@ -61,14 +61,14 @@ Give up on change, nothing should have changed with Colin:
 Now revoke Colin's administrator status and make him expire in November
 next year -- successfully.
 
-  >>> from datetime import datetime
-  >>> next_year = datetime.utcnow().year + 1
+  >>> from datetime import datetime, timedelta
+  >>> expire_date = datetime.utcnow()+timedelta(365)
 
   >>> browser.getControl(name='admin').value = ['no']
   >>> browser.getControl(name='expires').value = ['date']
-  >>> browser.getControl(name='day').value = ['14']
-  >>> browser.getControl(name='month').value = ['11']
-  >>> browser.getControl(name='year').value = [str(next_year)]
+  >>> expiry = browser.getControl(name='membership.expirationdate')
+  >>> expiry.mech_control.disabled = False # control may have been disabled
+  >>> expiry.value = expire_date.strftime('%Y-%m-%d')
   >>> browser.getControl(name='comment').value = 'Arfie'
   >>> browser.getControl('Change').click()
 
@@ -82,7 +82,6 @@ We're redirected to the +members page
   ...     kamion, ubuntu_team)
   >>> kamion_membership.statusname
   'Approved'
-  >>> expire_date = datetime(next_year, 11, 14)
   >>> kamion_membership.dateexpires.date() == expire_date.date()
   True
   >>> logout()

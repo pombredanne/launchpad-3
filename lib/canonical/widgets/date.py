@@ -28,6 +28,7 @@ from zope.component import getUtility
 from zope.schema.interfaces import ValidationError
 
 from canonical.launchpad.interfaces import ILaunchBag
+from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.lazr import ExportedFolder
 
 
@@ -83,7 +84,8 @@ class DateTimeWidget(TextWidget):
 
     If there is a from_date then the date provided must be later than that.
     If an earlier date is provided, then getInputValue will raise
-    WidgetInputError
+    WidgetInputError. The message gives the required date/time in the widget
+    timezone even if the date provided was in a different timezone.
 
       >>> widget.request.form[widget.name] = '2005-07-03'
       >>> widget.from_date = datetime(2006, 5, 23,
@@ -91,7 +93,7 @@ class DateTimeWidget(TextWidget):
       >>> print widget.getInputValue()  #doctest: +ELLIPSIS
       Traceback (most recent call last):
       ...
-      WidgetInputError: (... Please pick a date after 2006-05-23 00:00:00)
+      WidgetInputError: (... Please pick a date after 2006-05-22 17:00:00)
 
 
     If the date provided is greater than from_date then the widget works as
@@ -108,7 +110,7 @@ class DateTimeWidget(TextWidget):
       >>> print widget.getInputValue()  #doctest: +ELLIPSIS
       Traceback (most recent call last):
       ...
-      WidgetInputError: (... Please pick a date before 2008-01-26 00:00:00)
+      WidgetInputError: (... Please pick a date before 2008-01-25 16:00:00)
 
     A datetime picker can be disabled initially:
 
@@ -197,6 +199,23 @@ class DateTimeWidget(TextWidget):
         """The name of the widget time zone for display in the widget."""
         return self.timezone.zone
 
+    def _align_date_constraints_with_timezone(self):
+        """Ensure that from_date and to_date use the widget timezone."""
+        if isinstance(self.from_date, datetime):
+            if self.from_date.tzinfo is None:
+                # Timezone-naive constraint is interpreted as being in the
+                # widget time zone.
+                self.from_date = self.timezone.localize(self.from_date)
+            else:
+                self.from_date = self.from_date.astimezone(self.timezone)
+        if isinstance(self.to_date, datetime):
+            if self.to_date.tzinfo is None:
+                # Timezone-naive constraint is interpreted as being in the
+                # widget time zone.
+                self.to_date = self.timezone.localize(self.to_date)
+            else:
+                self.to_date = self.to_date.astimezone(self.timezone)
+
     @property
     def disabled_flag(self):
         """Return a string to make the form input disabled if necessary."""
@@ -255,6 +274,7 @@ class DateTimeWidget(TextWidget):
           True
 
         """
+        self._align_date_constraints_with_timezone()
         if not (self.from_date or self.to_date):
             return 'null'
         daterange = '['
@@ -275,16 +295,21 @@ class DateTimeWidget(TextWidget):
         if value is None:
             return value
         # Establish if the value is within the date range. 
+        self._align_date_constraints_with_timezone()
         if self.from_date is not None and value < self.from_date:
-            from_date = self.from_date.strftime(self.timeformat)
-            raise WidgetInputError(
+            limit = self.from_date.strftime(self.timeformat)
+            self._error = WidgetInputError(
                 self.name, self.label,
-                ValidationError('Please pick a date after %s' % from_date))
+                LaunchpadValidationError(
+                  'Please pick a date after %s' % limit))
+            raise self._error
         if self.to_date is not None and value > self.to_date:
-            to_date = self.to_date.strftime(self.timeformat)
-            raise WidgetInputError(
+            limit = self.to_date.strftime(self.timeformat)
+            self._error = WidgetInputError(
                 self.name, self.label,
-                ValidationError('Please pick a date before %s' % to_date))
+                LaunchpadValidationError(
+                    'Please pick a date before %s' % limit))
+            raise self._error
         return value
 
     def _toFieldValue(self, input):

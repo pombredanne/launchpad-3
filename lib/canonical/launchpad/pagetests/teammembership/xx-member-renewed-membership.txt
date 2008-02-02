@@ -84,9 +84,10 @@ able to renew it himself.
     >>> team_admin_browser.open(
     ...     'http://launchpad.dev/~ubuntu-mirror-admins/+member/karl')
     >>> team_admin_browser.getControl(name='expires').value = ['date']
-    >>> team_admin_browser.getControl(
-    ...     name='membership.expirationdate').value = \
-    ...     day_after_tomorrow.date().strftime('%Y-%m-%d')
+    >>> expiry = team_admin_browser.getControl(
+    ...     name='membership.expirationdate')
+    >>> expiry.mech_control.disabled = False # control may be disabled in JS
+    >>> expiry.value = day_after_tomorrow.date().strftime('%Y-%m-%d')
     >>> team_admin_browser.getControl(name='change').click()
 
     >>> team_admin_browser.url

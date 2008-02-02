@@ -26,8 +26,7 @@ lib/canonical/launchpad/doc/sprintattendance-pages.txt)
     >>> for tag in find_tags_by_class(browser.contents, 'message'):
     ...     print tag.renderContents()
     There is 1 error.
-    <BLANKLINE>
-    The end time must be after the start time.
+    Please pick a date after 2006-01-10 08:30:00
 
 An attendance that starts after the end of the sprint is also an error:
 
@@ -39,8 +38,10 @@ An attendance that starts after the end of the sprint is also an error:
     http://launchpad.dev/sprints/ubz/+attend
     >>> for tag in find_tags_by_class(browser.contents, 'message'):
     ...     print tag.renderContents()
-    There is 1 error.
-    Choose an arrival time before the end of the meeting.
+    There are 2 errors.
+    Please pick a date before 2006-02-12 17:00:00
+    Please pick a date before 2006-02-13 17:00:00
+
 
 Similarly, an attendance that ends before the start of a sprint is an
 error:
@@ -53,15 +54,16 @@ error:
     http://launchpad.dev/sprints/ubz/+attend
     >>> for tag in find_tags_by_class(browser.contents, 'message'):
     ...     print tag.renderContents()
-    There is 1 error.
-    Choose a departure time after the start of the meeting.
+    There are 2 errors.
+    Please pick a date after 2006-01-09 08:30:00
+    Please pick a date after 2006-01-10 08:30:00
 
 With the dates fixed, Sample person can attend the sprint.  The user
 is staying an extra week past the end of the sprint, which is fine
 since the date range overlaps that of the sprint.
 
     >>> browser.getControl('From').value = '2006-01-10 10:30:00'
-    >>> browser.getControl('To').value = '2006-02-19 20:11:00'
+    >>> browser.getControl('To').value = '2006-02-12 20:11:00'
     >>> browser.getControl('Register').click()
     >>> browser.url
     'http://launchpad.dev/sprints/ubz'

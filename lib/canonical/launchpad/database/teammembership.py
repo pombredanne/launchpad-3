@@ -150,7 +150,8 @@ class TeamMembership(SQLBase):
 
         assert self.canChangeExpirationDate(user), (
             "This user can't change this membership's expiration date.")
-        assert date is None or date > datetime.now(pytz.timezone('UTC')), (
+        UTC = pytz.timezone('UTC')
+        assert date is None or date.date() >= datetime.now(UTC).date(), (
             "The given expiration date must be None or be in the future: %s"
             % date.strftime('%Y-%m-%d'))
         self.dateexpires = date
