@@ -46,11 +46,6 @@ class BaseSprintAttendanceAddView(LaunchpadFormView):
         self.ends_widget.from_date = from_date
         self.ends_widget.to_date = to_date + timedelta(1)
 
-    @property
-    def initial_values(self):
-        return {'time_starts': self.context.time_starts,
-                'time_ends': self.context.time_ends}
-
     def validate(self, data):
         """Verify that the entered times are valid.
 
@@ -130,10 +125,13 @@ class SprintAttendanceAttendView(BaseSprintAttendanceAddView):
 
     @property
     def initial_values(self):
+        """Show committed attendance, or default to the sprint times."""
         for attendance in self.context.attendances:
             if attendance.attendee == self.user:
                 return dict(time_starts=attendance.time_starts,
                             time_ends=attendance.time_ends)
+        # If this person is not yet registered, then default to showing the
+        # full sprint dates.
         return {'time_starts': self.context.time_starts,
                 'time_ends': self.context.time_ends}
 
@@ -147,6 +145,12 @@ class SprintAttendanceRegisterView(BaseSprintAttendanceAddView):
     """A view used to register someone else's attendance at a sprint."""
 
     field_names = ['attendee', 'time_starts', 'time_ends']
+
+    @property
+    def initial_values(self):
+        """Default to displaying the full span of the sprint."""
+        return {'time_starts': self.context.time_starts,
+                'time_ends': self.context.time_ends}
 
     @action(_('Register'), name='register')
     def register_action(self, action, data):
