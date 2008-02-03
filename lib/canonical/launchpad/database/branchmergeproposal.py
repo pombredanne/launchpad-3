@@ -8,6 +8,7 @@ __all__ = [
     'BranchMergeProposal',
     ]
 
+from zope.component import getUtility
 from zope.interface import implements
 
 from sqlobject import ForeignKey, IntCol, StringCol
@@ -19,7 +20,10 @@ from canonical.database.sqlbase import SQLBase, sqlvalues
 
 from canonical.launchpad.database.branchrevision import BranchRevision
 from canonical.launchpad.interfaces import (
-    BadStateTransition, BranchMergeProposalStatus, IBranchMergeProposal,
+    BadStateTransition,
+    BRANCH_MERGE_PROPOSAL_STATUS_FINAL_STATES,
+    BranchMergeProposalStatus, IBranchMergeProposal,
+    ILaunchpadCelebrities,
     UserNotBranchReviewer)
 
 
@@ -61,35 +65,56 @@ class BranchMergeProposal(SQLBase):
         dbName='merge_reporter', foreignKey='Person', notNull=False,
         default=None)
 
+    superceded_proposal = ForeignKey(
+        dbName='superceded_proposal', foreignKey='BranchMergeProposal',
+        notNull=False, default=None)
+
     date_created = UtcDateTimeCol(notNull=True, default=DEFAULT)
     date_review_requested = UtcDateTimeCol(notNull=False, default=None)
     date_reviewed = UtcDateTimeCol(notNull=False, default=None)
 
+    def _transitionState(self, next_state, invalid_states=None):
+        """Update the queue_status of the proposal.
+
+        Raise an error if the proposal is in a final state.
+        """
+        if invalid_states is None:
+            invalid_states = BRANCH_MERGE_PROPOSAL_STATUS_FINAL_STATES
+        if self.queue_status in invalid_states:
+            raise BadStateTransition(
+                'Invalid state transition for merge proposal: %s -> %s'
+                % (self.queue_status.title, next_state.title))
+        if next_state == self.queue_status:
+            raise BadStateTransition(
+                'Invalid state transition to same_state: %s -> %s'
+                % (self.queue_status.title, next_state.title))
+        self.queue_status = next_state
+
     def setAsWorkInProgress(self):
         """See `IBranchMergeProposal`."""
-        if self.queue_status == BranchMergeProposalStatus.MERGED:
-            raise BadStateTransition('Merged proposals cannot change state.')
-        self.queue_status = BranchMergeProposalStatus.WORK_IN_PROGRESS
+        self._transitionState(BranchMergeProposalStatus.WORK_IN_PROGRESS)
         self.date_review_requested = None
 
     def requestReview(self):
         """See `IBranchMergeProposal`."""
-        if self.queue_status == BranchMergeProposalStatus.MERGED:
-            raise BadStateTransition('Merged proposals cannot change state.')
-        self.queue_status = BranchMergeProposalStatus.NEEDS_REVIEW
+        self._transitionState(BranchMergeProposalStatus.NEEDS_REVIEW)
         self.date_review_requested = UTC_NOW
 
     def isPersonValidReviewer(self, reviewer):
         """See `IBranchMergeProposal`."""
         if reviewer is None:
             return False
-        return reviewer.inTeam(self.target_branch.code_reviewer)
+        # We trust Launchpad admins.
+        lp_admins = getUtility(ILaunchpadCelebrities).admin
+        return (reviewer.inTeam(self.target_branch.code_reviewer) or
+                reviewer.inTeam(lp_admins))
 
-    def isReviewable(self):
+    def isMergable(self):
         """See `IBranchMergeProposal`."""
-        # As long as the source branch has not been merged, it is valid
-        # to review it.
-        return self.queue_status != BranchMergeProposalStatus.MERGED
+        # As long as the source branch has not been merged, rejected
+        # or superceded, then it is valid to be merged.
+        return (self.queue_status not in
+                BRANCH_MERGE_PROPOSAL_STATUS_FINAL_STATES)
 
     def _reviewProposal(self, reviewer, next_state, revision_id):
         """Set the proposal to one of the two review statuses."""
@@ -97,11 +122,7 @@ class BranchMergeProposal(SQLBase):
         if not self.isPersonValidReviewer(reviewer):
             raise UserNotBranchReviewer
         # Check the current state of the proposal.
-        if not self.isReviewable():
-            raise BadStateTransition(
-                'Invalid state transition for merge proposal: %s -> %s'
-                % (self.queue_state.title, next_state.title))
-        self.queue_status = next_state
+        self._transitionState(next_state)
         # Record the reviewer
         self.reviewer = reviewer
         self.date_reviewed = UTC_NOW
@@ -120,13 +141,13 @@ class BranchMergeProposal(SQLBase):
 
     def mergeFailed(self, merger):
         """See `IBranchMergeProposal`."""
-        self.queue_status = BranchMergeProposalStatus.MERGE_FAILED
+        self._transitionState(BranchMergeProposalStatus.MERGE_FAILED)
         self.merger = merger
 
     def markAsMerged(self, merged_revno=None, date_merged=None,
                      merge_reporter=None):
         """See `IBranchMergeProposal`."""
-        self.queue_status = BranchMergeProposalStatus.MERGED
+        self._transitionState(BranchMergeProposalStatus.MERGED)
         self.merged_revno = merged_revno
         self.merge_reporter = merge_reporter
 
@@ -139,6 +160,23 @@ class BranchMergeProposal(SQLBase):
         if date_merged is None:
             date_merged = UTC_NOW
         self.date_merged = date_merged
+
+    def resubmit(self, registrant):
+        """See `IBranchMergeProposal`."""
+        # You can transition from REJECTED to SUPERCEDED, but
+        # not from MERGED or SUPERCEDED.
+        self._transitionState(
+            BranchMergeProposalStatus.SUPERCEDED,
+            invalid_states=[BranchMergeProposalStatus.MERGED,
+                            BranchMergeProposalStatus.SUPERCEDED])
+        self.syncUpdate()
+        proposal = self.source_branch.addLandingTarget(
+            registrant=registrant,
+            target_branch=self.target_branch,
+            dependent_branch=self.dependent_branch,
+            whiteboard=self.whiteboard)
+        proposal.superceded_proposal = self
+        return proposal
 
     def getUnlandedSourceBranchRevisions(self):
         """See `IBranchMergeProposal`."""

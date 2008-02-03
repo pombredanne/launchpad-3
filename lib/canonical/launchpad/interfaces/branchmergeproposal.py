@@ -7,6 +7,7 @@ __metaclass__ = type
 __all__ = [
     'BadStateTransition',
     'BranchMergeProposalStatus',
+    'BRANCH_MERGE_PROPOSAL_STATUS_FINAL_STATES',
     'InvalidBranchMergeProposal',
     'IBranchMergeProposal',
     'UserNotBranchReviewer',
@@ -85,6 +86,19 @@ class BranchMergeProposalStatus(DBEnumeratedType):
         target branch for some reason.
         """)
 
+    SUPERCEDED = DBItem(10, """
+        Superceded
+
+        This proposal has been superceded by anther proposal to merge.
+        """)
+
+
+BRANCH_MERGE_PROPOSAL_STATUS_FINAL_STATES = (
+    BranchMergeProposalStatus.REJECTED,
+    BranchMergeProposalStatus.MERGED,
+    BranchMergeProposalStatus.SUPERCEDED,
+    )
+
 
 class IBranchMergeProposal(Interface):
     """Branch merge proposals show intent of landing one branch on another."""
@@ -139,6 +153,9 @@ class IBranchMergeProposal(Interface):
 
     merge_reporter = Attribute(
         "The user that marked the branch as merged.")
+
+    superceded_proposal = Attribute(
+        "The branch merge propoposal that this one supercedes.")
 
     date_created = Datetime(
         title=_('Date Created'), required=True, readonly=True)
@@ -215,6 +232,13 @@ class IBranchMergeProposal(Interface):
         :type merge_reporter: ``Person``
         """
 
+    def resubmit(registrant):
+        """Mark the branch merge proposal as superceded and return a new one.
+
+        The new proposal is created as work-in-progress, and copies across
+        user entered data like the whiteboard.
+        """
+
     def isPersonValidReviewer(reviewer):
         """Return true if the `reviewer` is able to review the proposal.
 
@@ -225,11 +249,11 @@ class IBranchMergeProposal(Interface):
         as the authorised user.
         """
 
-    def isReviewable():
-        """Is the proposal is in a state condusive to being reviewed?
+    def isMergable():
+        """Is the proposal is in a state condusive to being merged?
 
-        As long as the source branch hasn't been merged into the target
-        the proposal is able to be reviewed.
+        As long as the proposal isn't in one of the end states, it is valid
+        to be merged.
         """
 
     def getUnlandedSourceBranchRevisions():
