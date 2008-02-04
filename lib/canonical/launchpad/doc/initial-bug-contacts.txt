@@ -83,7 +83,7 @@ methods simpler) IDistributionSourcePackage.isSubscribed will return either the
 appropriate StructuralSubscription record or False:
 
     >>> debian_firefox.isSubscribed(ubuntu_team)
-    <StructuralSubscription ...>
+    True
     >>> debian_firefox.isSubscribed(foobar)
     False
 

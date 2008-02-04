@@ -1,7 +1,8 @@
 # Copyright 2008 Canonical Ltd.  All rights reserved.
 
 __metaclass__ = type
-__all__ = ['StructuralSubscription']
+__all__ = ['StructuralSubscription',
+           'StructuralSubscriptionTargetMixin']
 
 from zope.interface import implements
 
