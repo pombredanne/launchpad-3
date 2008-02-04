@@ -192,13 +192,11 @@ class ErrorReportingUtility:
     implements(IErrorReportingUtility)
 
     _ignored_exceptions = set(['Unauthorized', 'TranslationUnavailable'])
-    copy_to_zlog = False
 
     lasterrordate = None
     lastid = 0
 
     def __init__(self):
-        self.copy_to_zlog = config.launchpad.errorreports.copy_to_zlog
         self.lastid_lock = threading.Lock()
 
     def _findLastOopsId(self, directory):
@@ -382,7 +380,7 @@ class ErrorReportingUtility:
             if request:
                 request.oopsid = oopsid
 
-            if self.copy_to_zlog:
+            if config.launchpad.errorreports.copy_to_zlog:
                 self._do_copy_to_zlog(now, strtype, strurl, info, oopsid)
         finally:
             info = None

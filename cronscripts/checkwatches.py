@@ -34,7 +34,7 @@ class CheckWatches(LaunchpadCronScript):
         run_time = time.time() - start_time
         self.logger.info("Time for this run: %.3f seconds." % run_time)
 
+
 if __name__ == '__main__':
     script = CheckWatches("checkwatches", dbuser=config.checkwatches.dbuser)
     script.lock_and_run()
-
