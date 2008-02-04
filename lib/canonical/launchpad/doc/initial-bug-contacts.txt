@@ -77,10 +77,7 @@ DeleteSubscriptionError.
     DeleteSubscriptionError: ...
 
 To find out if an IPerson or ITeam is a subscriber, use
-IDistributionSourcePackage.isSubscribed. For pragmatic reasons (in particular,
-it makes the implementation of some of IDistributionSourcePackage's other
-methods simpler) IDistributionSourcePackage.isSubscribed will return either the
-appropriate StructuralSubscription record or False:
+IDistributionSourcePackage.isSubscribed.
 
     >>> debian_firefox.isSubscribed(ubuntu_team)
     True
