@@ -20,14 +20,22 @@ class CheckWatches(LaunchpadCronScript):
 
         errorreports_config = config.launchpad.errorreports
 
+        # Save current OOPS configuration settings.
         current_oops_prefix = errorreports_config.oops_prefix
         current_copy_to_zlog = errorreports_config.copy_to_zlog
         try:
+            # checkwatches has been assigned the prefix 'CW.
             errorreports_config.oops_prefix += '-CW'
+            # Don't copy OOPSes to the zlog; we will do that
+            # explicitely. See `externalbugtracker.report_oops` and
+            # `report_warning`.
             errorreports_config.copy_to_zlog = False
+
             updater = BugWatchUpdater(self.txn, self.logger)
             updater.updateBugTrackers()
+
         finally:
+            # Restore previous configuration settings.
             errorreports_config.oops_prefix = current_oops_prefix
             errorreports_config.copy_to_zlog = current_copy_to_zlog
 

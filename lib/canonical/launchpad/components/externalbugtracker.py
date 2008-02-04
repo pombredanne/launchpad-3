@@ -138,22 +138,30 @@ def report_oops(message=None, properties=None, info=None):
     # Get the current exception info first of all.
     if info is None:
         info = sys.exc_info()
+
     # Collect properties to report.
     if properties is None:
         properties = []
     else:
         properties = list(properties)
+
     if message is not None:
         properties.append(
             ('error-explanation', '%s' % message))
+
     # Create the dummy request object.
     request = errorlog.ScriptRequest(properties)
     errorlog.globalErrorUtility.raising(info, request)
+
     return request
 
 
 def report_warning(message=None, properties=None, info=None):
     """Create and report a warning as an OOPS.
+
+    If no exception info is passed in this will create a generic
+    `BugWatchUpdateWarning` to record. The reason is that the stack
+    trace may be useful for later diagnosis.
 
     :param message: See `report_oops`.
     :param properties: See `report_oops`.
@@ -345,32 +353,30 @@ class ExternalBugTracker:
 
     def warning(self, message, properties=None, info=None):
         """Record a warning related to this bug tracker."""
-        # Record an OOPS.
-        if info is True:
-            # info might be the return from a sys.exc_info call, so
-            # test for identity.
+        # info might be a tuple (returned from sys.exc_info()), so
+        # explicitly test that it's *equals* to True.
+        if info == True:
             info = sys.exc_info()
         if properties is None:
             properties = self._oops_properties
         else:
             properties = chain(properties, self._oops_properties)
         report_warning(message, properties, info)
-        # And put it in the log.
+        # Also put it in the log.
         log.warning(message)
 
     def error(self, message, properties=None, info=None):
         """Record an error related to this external bug tracker."""
-        # Record an OOPS.
-        if info is True:
-            # info might be the return from a sys.exc_info call, so
-            # test for identity.
+        # info might be a tuple (returned from sys.exc_info()), so
+        # explicitly test that it's *equals* to True.
+        if info == True:
             info = sys.exc_info()
         if properties is None:
             properties = self._oops_properties
         else:
             properties = chain(properties, self._oops_properties)
         report_oops(message, properties, info)
-        # And put it in the log.
+        # Also put it in the log.
         log.error(message, exc_info=info)
 
     def updateBugWatches(self, bug_watches):
