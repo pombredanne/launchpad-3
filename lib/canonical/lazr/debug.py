@@ -25,12 +25,12 @@ def typename(obj):
 
 
 def default_proxy_formatter(proxy):
-    """Formatter that simply returns the proxy's type name"""
+    """Formatter that simply returns the proxy's type name."""
     return typename(proxy)
 
 
 def get_permission_mapping(checker):
-    """Return a list of permission, names protected by a checker.
+    """Return a list of (permission, list of protected names) for the checker.
 
     Permission used to check for attribute setting have (set) appended.
     """
@@ -44,11 +44,12 @@ def get_permission_mapping(checker):
             permission = 'public'
         set_permission = "%s (set)" % permission
         permission_to_names.setdefault(set_permission, []).append(name)
-    return sorted(permission_to_names.items())
+    return sorted((permission, sorted(names))
+                   for permission, names in permission_to_names.items())
 
 
 def security_proxy_formatter(proxy):
-    """Also includes information about the checker used by the proxy."""
+    """Return informative text about the checker used by the proxy."""
     checker = getChecker(proxy)
     output = ["%s (using %s)" % (typename(proxy), typename(checker))]
     if type(checker) is Checker:
@@ -57,7 +58,7 @@ def security_proxy_formatter(proxy):
     return "\n    ".join(output)
 
 
-proxy_formatters= {Proxy: security_proxy_formatter}
+proxy_formatters = {Proxy: security_proxy_formatter}
 
 
 def debug_proxy(obj):
