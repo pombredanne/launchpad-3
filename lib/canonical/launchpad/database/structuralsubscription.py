@@ -162,6 +162,30 @@ class StructuralSubscriptionTargetMixin:
         else:
             subscription_to_remove.destroySelf()
 
+    def removeBugSubscription(self, person):
+        """See `IStructuralSubscriptionTarget`."""
+        subscription_to_remove = None
+        for subscription in self.getSubscriptions(
+            min_bug_notification_level=BugNotificationLevel.METADATA):
+            # Only search for bug subscriptions
+            if subscription.subscriber == person:
+                subscription_to_remove = subscription
+                break
+
+        if subscription_to_remove is None:
+            raise DeleteSubscriptionError(
+                "%s is not subscribed to %s." % (
+                person.name, self.displayname))
+        else:
+            if (subscription_to_remove.blueprint_notification_level >
+                BlueprintNotificationLevel.NOTHING):
+                # This is a subscription to other application too
+                # so only set the bug notification level
+                subscription_to_remove.bug_notification_level = (
+                    BugNotificationLevel.NOTHING)
+            else:
+                subscription_to_remove.destroySelf()
+
     def isSubscribed(self, person):
         """See `IStructuralSubscriptionTarget`."""
         all_subscriptions = self.getSubscriptions()

@@ -65,7 +65,8 @@
                        parent_subscription_target isSubscribed" />
     <require
         permission="launchpad.AnyPerson"
-        attributes="addSubscription addBugSubscription removeSubscription" />
+        attributes="addSubscription addBugSubscription
+                    removeSubscription removeBugSubscription" />
   </content>
 
   <browser:defaultView
