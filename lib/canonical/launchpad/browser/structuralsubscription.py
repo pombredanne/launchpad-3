@@ -142,7 +142,7 @@ class StructuralSubscriptionView(LaunchpadFormView):
         """Process the subscription for the user."""
         target = self.context
         # addSubscription raises an exception if called for an already
-        # subscribed person, and removeSubscription raises an exception
+        # subscribed person, and removeBugSubscription raises an exception
         # for a non-subscriber, hence call these methods only, if the
         # subscription status changed.
         is_subscribed = self.context.isSubscribed(self.user)
