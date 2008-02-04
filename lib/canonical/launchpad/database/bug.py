@@ -477,7 +477,7 @@ class Bug(SQLBase):
                 for sub in target.bug_subscriptions:
                     also_notified_subscribers.add(sub.subscriber)
                     if recipients is not None:
-                        recipients.addStructuralSubscriber(
+                        recipients.addPackageBugContact(
                             sub.subscriber, target)
                             
             # Bug contacts are indirect subscribers.
