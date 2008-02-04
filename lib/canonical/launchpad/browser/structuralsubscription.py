@@ -236,3 +236,11 @@ class StructuralSubscriptionView(LaunchpadFormView):
         """Return the teams that the current user is an administrator of."""
         return list(self.user.getAdministratedTeams())
 
+    @property
+    def show_details_portlet(self):
+        """Show details portlet?
+
+        Returns `True` if the portlet details is available
+        and should be shown for the context.
+        """
+        return IDistributionSourcePackage.providedBy(self.context)

@@ -109,10 +109,6 @@
       template="../templates/distributionsourcepackage-portlet-details.pt"
       />
     <browser:page
-      name="+portlet-bugcontacts"
-      facet="bugs"
-      template="../templates/distributionsourcepackage-portlet-bugcontacts.pt" />
-    <browser:page
       name="+portlet-releases"
       template="../templates/distributionsourcepackage-portlet-releases.pt"
       />
