@@ -4,26 +4,13 @@ __metaclass__ = type
 
 import re
 
-from zope.app.form import CustomWidgetFactory, InputWidget
 from zope.app.form.browser.textwidgets import IntWidget, TextWidget
-from zope.app.form.browser.widget import BrowserWidget, renderElement
-from zope.app.form.interfaces import (
-    ConversionError, IInputWidget, InputErrors, MissingInputError,
-    WidgetInputError)
-from zope.app.form.utility import setUpWidget
-from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
+from zope.app.form.interfaces import ConversionError, WidgetInputError
 from zope.component import getUtility
-from zope.interface import implements
-from zope.schema import Choice
 from zope.schema.interfaces import ConstraintNotSatisfied
 
-from canonical.launchpad.interfaces import (
-    IBugSet, IDistribution, IDistributionSourcePackage, IProduct,
-    NotFoundError, UnexpectedFormData)
+from canonical.launchpad.interfaces import IBugSet, NotFoundError
 from canonical.launchpad.validators import LaunchpadValidationError
-from canonical.launchpad.webapp.interfaces import (
-    IMultiLineWidgetLayout, IAlwaysSubmittedWidget)
-from canonical.widgets.itemswidgets import LaunchpadDropdownWidget
 
 
 class BugWidget(IntWidget):
@@ -59,7 +46,7 @@ class BugTagsWidget(TextWidget):
         TextWidget.__init__(self, field, request)
 
     def _toFormValue(self, value):
-        """Convert the list of strings to a single, space separated, string."""
+        """Convert a list of strings to a single, space separated, string."""
         if value:
             return u' '.join(value)
         else:
@@ -90,9 +77,11 @@ class BugTagsWidget(TextWidget):
                     self._error = WidgetInputError(
                         input_error.field_name, input_error.widget_title,
                         LaunchpadValidationError(
-                            "'%s' isn't a valid tag name. Only alphanumeric"
-                            " characters may be used.",
-                            validation_error.args[0]))
+                            "'%s' isn't a valid tag name. Tags must start "
+                            "with a letter or number and be lowercase. The "
+                            'characters "+", "-" and "." are also allowed '
+                            "after the first character."
+                            % validation_error.args[0]))
                 raise self._error
             else:
                 raise

@@ -246,6 +246,15 @@
 
   <browser:page
     for="canonical.launchpad.interfaces.IDistribution"
+    name="+upstreamreport"
+    class="canonical.launchpad.browser.DistributionUpstreamBugReport"
+    permission="zope.Public"
+    facet="bugs"
+    template="../templates/distribution-upstream-bug-report.pt"
+    />
+
+  <browser:page
+    for="canonical.launchpad.interfaces.IDistribution"
     name="+bugs-index"
     class="canonical.launchpad.browser.BugTargetBugsView"
     permission="zope.Public"
