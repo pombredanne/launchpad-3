@@ -124,6 +124,22 @@ class IStructuralSubscription(Interface):
 class IStructuralSubscriptionTarget(Interface):
     """A Launchpad Structure allowing users to subscribe to it."""
 
+    bug_subscriptions = Attribute(
+        "A sequence of people or teams that are subscribed to bug "
+        "notifications about this target.")
+
+    def getSubscriptions(min_bug_notification_level,
+                         min_blueprint_notification_level):
+        """Return all the subscriptions with the specified levels.
+
+        :min_bug_notification_level: The lowest bug notification level
+          for which subscriptions should be returned.
+        :min_blueprint_notification_level: The lowest bleuprint
+          notification level for which subscriptions should
+          be returned.
+        :return: A sequence of `IStructuralSubscription`.
+        """
+
     def addSubscription(subscriber, subscribed_by):
         """Add a subscription for this structure.
 
@@ -142,6 +158,16 @@ class IStructuralSubscriptionTarget(Interface):
 
     def removeSubscription(subscriber):
         """Remove a subscription from this structure.
+
+        :subscriber: The IPerson who will be subscribed.
+        """
+
+    def removeBugSubscription(subscriber):
+        """Remove a subscription to bugs from this structure.
+
+        If subscription levels for other applications are set,
+        set the subscription's `bug_notification_level` to
+        `NOTHING`, otherwise, destroy the subscription.
 
         :subscriber: The IPerson who will be subscribed.
         """

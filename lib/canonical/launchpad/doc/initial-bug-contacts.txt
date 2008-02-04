@@ -6,9 +6,9 @@ explicitly Cc'd to all public bugs filed on a package.
 The package bug subscriptions are obtained from looking at the
 StructuralSubscription table.
 
-The list of package subscriptions are accessed through the
-IDistributionSourcePackage.subscriptions attribute. When there are no
-subscriptions associated with a package, an empty list is returned:
+The list of package bug subscriptions are accessed through the
+IDistributionSourcePackage.bug_subscriptions attribute. When there are
+no subscriptions associated with a package, an empty list is returned:
 
     >>> from zope.component import getUtility
     >>> from canonical.launchpad.interfaces import (
@@ -18,7 +18,7 @@ subscriptions associated with a package, an empty list is returned:
     >>> debian = getUtility(IDistributionSet).getByName("debian")
     >>> debian_firefox = debian.getSourcePackage("mozilla-firefox")
 
-    >>> debian_firefox.subscriptions
+    >>> debian_firefox.bug_subscriptions
     []
 
 Adding a package subscription is done with the
@@ -41,7 +41,7 @@ Let's login then to add a subscription:
 
     >>> debian_firefox.addBugSubscription(sample_person, sample_person)
     <StructuralSubscription ...>
-    >>> [pbc.subscriber.name for pbc in debian_firefox.subscriptions]
+    >>> [pbc.subscriber.name for pbc in debian_firefox.bug_subscriptions]
     [u'name12']
 
 Trying to add a subscription to a package when that person
@@ -59,13 +59,13 @@ Let's add an ITeam as one of the subscribers:
     >>> debian_firefox.addBugSubscription(ubuntu_team, ubuntu_team)
     <StructuralSubscription ...>
 
-    >>> sorted([sub.subscriber.name for sub in debian_firefox.subscriptions])
+    >>> sorted([sub.subscriber.name for sub in debian_firefox.bug_subscriptions])
     [u'name12', u'ubuntu-team']
 
 To remove a subscription, use IDistributionSourcePackage.removeSubscription:
 
     >>> debian_firefox.removeSubscription(sample_person)
-    >>> sorted([sub.subscriber.id for sub in debian_firefox.subscriptions])
+    >>> sorted([sub.subscriber.id for sub in debian_firefox.bug_subscriptions])
     [17]
 
 Trying to remove a subscription that doesn't exist on a source package raises a

@@ -14,8 +14,9 @@ from sqlobject.sqlbuilder import SQLConstant
 from zope.interface import implements
 
 from canonical.launchpad.interfaces import (
-    BugNotificationLevel, DeleteSubscriptionError, DuplicateSubscriptionError,
-    IDistributionSourcePackage, IQuestionTarget, PackagePublishingStatus)
+    BlueprintNotificationLevel, BugNotificationLevel, DeleteSubscriptionError,
+    DuplicateSubscriptionError, IDistributionSourcePackage, IQuestionTarget,
+    PackagePublishingStatus)
 from canonical.database.sqlbase import sqlvalues
 from canonical.launchpad.database.bug import BugSet, get_bug_tags_open_count
 from canonical.launchpad.database.bugtarget import BugTargetBase
@@ -146,23 +147,6 @@ class DistributionSourcePackage(BugTargetBase,
             orderBy='-datecreated',
             limit=quantity)
 
-    @property
-    def subscriptions(self):
-        """See `IDistributionSourcePackage`."""
-        # Use "list" here because it's possible that this list will be longer
-        # than a "shortlist", though probably uncommon.
-        query = """
-            StructuralSubscription.distribution=%s
-            AND StructuralSubscription.sourcepackagename = %s
-            AND StructuralSubscription.subscriber = Person.id
-            """ % sqlvalues(self.distribution, self.sourcepackagename)
-        contacts = StructuralSubscription.select(
-            query,
-            orderBy='Person.displayname',
-            clauseTables=['Person'])
-        contacts.prejoin(["subscriber"])
-        return list(contacts)
-
     def addSubscription(self, subscriber, subscribed_by):
         """See `IDistributionSourcePackage`."""
         subscription_already_exists = self.isSubscribed(subscriber)
@@ -198,6 +182,24 @@ class DistributionSourcePackage(BugTargetBase,
                 person.name, self.displayname))
         else:
             subscription_to_remove.destroySelf()
+
+    def removeBugSubscription(self, person):
+        """See `IDistributionSourcePackage`."""
+        subscription_to_remove = self.isSubscribed(person)
+
+        if not subscription_to_remove:
+            raise DeleteSubscriptionError(
+                "%s is not subscribed to %s." % (
+                person.name, self.displayname))
+        else:
+            if (subscription_to_remove.blueprint_notification_level >
+                BlueprintNotificationLevel.NOTHING):
+                # This is a subscription to other application too
+                # so only set the bug notification level
+                subscription_to_remove.bug_notification_level = (
+                    BugNotificationLeve.NOTHING)
+            else:
+                subscription_to_remove.destroySelf()
 
     def isSubscribed(self, person):
         """See `IDistributionSourcePackage`."""
@@ -343,3 +345,33 @@ class DistributionSourcePackage(BugTargetBase,
         return (
             'BugTask.distribution = %s AND BugTask.sourcepackagename = %s' %
                 sqlvalues(self.distribution, self.sourcepackagename))
+
+    def getSubscriptions(self,
+                         min_bug_notification_level=
+                         BugNotificationLevel.NOTHING,
+                         min_blueprint_notification_level=
+                         BlueprintNotificationLevel.NOTHING):
+        """See `IStructuralSubscriptionTarget`."""
+        query = """
+            StructuralSubscription.distribution=%s
+            AND StructuralSubscription.sourcepackagename = %s
+            AND StructuralSubscription.subscriber = Person.id
+            """ % sqlvalues(self.distribution, self.sourcepackagename)
+        all_subscriptions = StructuralSubscription.select(
+            query,
+            orderBy='Person.displayname',
+            clauseTables=['Person'])
+        # TODO : this can be done more efficiently by SQL
+        subscriptions = [sub for sub
+                         in all_subscriptions
+                         if ((sub.bug_notification_level >=
+                             min_bug_notification_level) and
+                             (sub.blueprint_notification_level >=
+                              min_blueprint_notification_level))]
+        return subscriptions
+
+    @property
+    def bug_subscriptions(self):
+        """See `IStructuralSubscriptionTarget`."""
+        return self.getSubscriptions(
+            min_bug_notification_level=BugNotificationLevel.METADATA)

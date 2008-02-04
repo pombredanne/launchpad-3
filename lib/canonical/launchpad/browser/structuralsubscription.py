@@ -78,7 +78,7 @@ class StructuralSubscriptionView(LaunchpadFormView):
         other_subscriptions = set(
             subscription.subscriber
             for subscription
-            in self.context.subscriptions)
+            in self.context.bug_subscriptions)
 
         # Teams and the current user have their own UI elements. Remove
         # them to avoid duplicates.

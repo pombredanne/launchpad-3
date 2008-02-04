@@ -9,6 +9,6 @@ SELECT distribution, sourcepackagename,
        40, 10
 FROM PackageBugContact;
 
-DROP TABLE PackageBugContact;
+DELETE FROM PackageBugContact WHERE TRUE;
 
 INSERT INTO LaunchpadDatabaseRevision VALUES (88, 99, 0);

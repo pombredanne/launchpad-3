@@ -11,12 +11,13 @@
                   distro get_distroseries_packages subscribers currentrelease
                   releases publishing_history binary_package_names
                   current_publishing_records bug_reporting_guidelines
-                  subscriptions __getitem__ getVersion bugtasks __eq__ __ne__
+                  __getitem__ getVersion bugtasks __eq__ __ne__
                   searchTasks isSubscribed open_bugtasks closed_bugtasks
                   critical_bugtasks inprogress_bugtasks unassigned_bugtasks
                   new_bugtasks all_bugtasks getUsedBugTags
                   getUsedBugTagsWithOpenCounts bugtargetdisplayname
-                  bugtargetname getMostCommonBugs getBugCounts" />
+                  bugtargetname getMostCommonBugs getBugCounts
+                  bug_subscriptions getSubscriptions" />
     <require
       permission="launchpad.AnyPerson"
       attributes="addSubscription addBugSubscription

@@ -482,7 +482,7 @@ class Bug(SQLBase):
                 if bugtask.sourcepackagename:
                     sourcepackage = distribution.getSourcePackage(
                         bugtask.sourcepackagename)
-                    for sub in sourcepackage.subscriptions:
+                    for sub in sourcepackage.bug_subscriptions:
                         also_notified_subscribers.add(sub.subscriber)
                         if recipients is not None:
                             recipients.addPackageBugContact(
