@@ -1,0 +1,225 @@
+= Distribution upstream bug report pages =
+
+Upstream bug report pages for distributions contain all sorts of fun
+information that describe how well the bugs are forwarded to upstreams.
+
+We start this test off by creating some bugs and tasks to ensure we have
+rich enough information to display. We create one bug against
+linux-source with a tomcat task, and we add a firefox task with watch
+against bug 10.
+
+    >>> from canonical.launchpad.ftests import login, logout
+    >>> from canonical.database.sqlbase import flush_database_updates
+    >>> from canonical.launchpad.ftests.bug import (
+    ...     create_bug_from_strings, create_task_from_strings)
+    >>> login('foo.bar@canonical.com')
+
+    >>> watchurl = "http://bugs.debian.org/cgi-bin/bugreport.cgi?bug=%s"
+    >>> bug = create_bug_from_strings(distribution='ubuntu', 
+    ...     sourcepackagename='linux-source-2.6.15', owner='name12',
+    ...     summary='take one', description='funk philosophy')
+    >>> task = create_task_from_strings(bug.id, 'name12', 'firefox')
+    >>> task = create_task_from_strings(10, 'name12', 'tomcat')
+
+    >>> flush_database_updates()
+    >>> import transaction
+    >>> transaction.commit()
+    >>> logout()
+
+So let's check out the actual table:
+
+    >>> browser.open("http://bugs.launchpad.dev/ubuntu/+upstreamreport")
+    >>> table = find_tag_by_id(browser.contents, 'upstream-report-content')
+    >>> print extract_text(table)
+    linux-source-2.6.15     Missing corresponding product.  (find) (link)
+                2      2      100.00        0       1   50.00         1
+    mozilla-firefox     Mozilla Firefox        Launchpad    Unspecified
+                1      1      100.00        0
+    thunderbird         Missing corresponding product. (find)
+                1      1      100.00        0       1  100.00         0
+
+One thing to note from the counts above is that while the tomcat watch
+is counted as pending a bugwatch, the firefox one is not -- and the
+reason for that is that firefox officially uses malone. We count it as
+"watched" even though it's really native. This is something of a corner
+case but it's done this way to ensure the bug counts in the resulting
+bug query pags match what is listed in the table.
+
+    >>> table = find_tag_by_id(browser.contents, 'upstream-report-totals')
+    >>> print extract_text(table)
+        Totals: 4      4     100.00         0       3   75.00         1
+
+XXX: This 3 in the watched column is related to the above; if you do a
+literal count it would be 2, of course. Since firefox uses malone
+officially, tasks against it are not rendered, but totalized as if they
+were watched, and the total line doesn't add up.
+This should be clearer; perhaps by separating the watched column into
+natively watched and remote watched, but I don't know how to fix this
+right now. See https://bugs.edge.launchpad.net/malone/+bug/188020 
+    -- kiko, 2008-02-01
+
+The table includes a number of convenience links:
+
+    >>> table = find_tag_by_id(browser.contents, 'upstream-report-content')
+    >>> all_anchors = table.findAll('a')
+    >>> base_href = browser.url
+    >>> for anchor in all_anchors:
+    ...     url = extract_link_from_tag(anchor, base_href)
+    ...     print extract_text(anchor), url.replace(
+    ...         "http://bugs.launchpad.dev/ubuntu", "**")
+    linux-source-2.6.15 **/+source/linux-source-2.6.15
+    (find) http://bugs.launchpad.dev/projects
+    (link) **/hoary/+source/linux-source-2.6.15/+edit-packaging
+    2 **/+source/linux-source-2.6.15
+    2 **/+source/linux-source-2.6.15?field.status_upstream=open_upstream
+    0 **/+source/linux-source-2.6.15?field.status_upstream=hide_upstream
+    1 **/+source/linux-source-2.6.15?field.status_upstream=pending_bugwatch
+    ...
+
+Let's look more carefully at the above four links associated with counts.
+
+    >>> count_anchors = all_anchors[3:7]
+    >>> (open_url, upstream_url, upstream_delta_url, watch_delta_url) = \
+    ...     [str(extract_link_from_tag(x, base_href)) for x in count_anchors]
+
+The first lets you check out the 2 open bugs:
+
+    >>> browser.open(open_url)
+    >>> browser.title
+    'Bugs in Source Package "linux-source-2.6.15" in Ubuntu Linux'
+    >>> table = find_tag_by_id(browser.contents, 'buglisting')
+    >>> print extract_text(table)
+    Summary             Importance  Status
+    10 another test bug Medium      New
+    16 take one         Undecided   New
+
+The 2 bugs with an upstream task:
+
+    >>> browser.open(upstream_url)
+    >>> browser.title
+    'Bugs in Source Package "linux-source-2.6.15" in Ubuntu Linux'
+    >>> table = find_tag_by_id(browser.contents, 'buglisting')
+    >>> print extract_text(table)
+    Summary             Importance  Status
+    10 another test bug Medium      New
+    16 take one         Undecided   New
+
+The bugs that have no upstream task, which in this case are none:
+
+    >>> browser.open(upstream_delta_url)
+    >>> browser.title
+    'Bugs in Source Package "linux-source-2.6.15" in Ubuntu Linux'
+    >>> table = find_tag_by_id(browser.contents, 'buglisting')
+    >>> print table
+    None
+
+And finally the bug marked upstream but lacking a watch:
+
+    >>> browser.open(watch_delta_url)
+    >>> browser.title
+    'Bugs in Source Package "linux-source-2.6.15" in Ubuntu Linux'
+    >>> table = find_tag_by_id(browser.contents, 'buglisting')
+    >>> print extract_text(table)
+    Summary             Importance  Status
+    10 another test bug Medium      New
+
+As you saw before, we also offer links to find products and connect packages
+with no packaging links (though you need to be logged in to actually see or
+link them):
+
+    >>> browser.open("http://bugs.launchpad.dev/ubuntu/+upstreamreport")
+    >>> browser.getLink('find').click()
+    >>> browser.title
+    'Projects registered in Launchpad'
+    >>> user_browser.open("http://bugs.launchpad.dev/ubuntu/+upstreamreport")
+    >>> user_browser.getLink('link').click()
+    >>> user_browser.title
+    'Define upstream link for linux-source-2.6.15 in Ubuntu Hoary'
+
+If you are logged in and can edit the upstream project, you can also set
+a bug tracker and a bug contact. Let's first fix Firefox to stop using
+Malone officially for the sake of this test:
+
+    >>> login('foo.bar@canonical.com')
+    >>> from zope.component import getUtility
+    >>> from canonical.launchpad.interfaces import IProductSet
+    >>> firefox = getUtility(IProductSet).getByName('firefox')
+    >>> firefox.official_malone = False
+    >>> flush_database_updates()
+    >>> transaction.commit()
+    >>> logout()
+
+And check out the report:
+
+    >>> admin_browser.open("http://bugs.launchpad.dev/ubuntu/+upstreamreport")
+    >>> admin_browser.getLink('fix').click()
+    >>> admin_browser.title
+    'Change project details'
+
+    >>> admin_browser.goBack()
+    >>> admin_browser.getLink('change').click()
+    >>> admin_browser.title
+    'Edit bug contact for Mozilla Firefox'
+
+If you're not allowed to edit the product, no love for you, though:
+
+    >>> user_browser.open("http://bugs.launchpad.dev/ubuntu/+upstreamreport")
+    >>> user_browser.getLink('fix')
+    Traceback (most recent call last):
+    ...
+    LinkNotFoundError
+    >>> user_browser.goBack()
+    >>> user_browser.getLink('change')
+    Traceback (most recent call last):
+    ...
+    LinkNotFoundError
+
+Note that we also cope correctly with the case in which a project's
+bugtracker is inherited from it's project group:
+
+    >>> login('foo.bar@canonical.com')
+    >>> from canonical.launchpad.interfaces import IBugTrackerSet
+    >>> mozilla_org = getUtility(IBugTrackerSet).getByName("mozilla.org")
+    >>> firefox.project.bugtracker = mozilla_org
+    >>> flush_database_updates()
+    >>> transaction.commit()
+    >>> logout()
+
+See how we nicely display the bugtracker in the table's second row now.
+Note also that the watch counts for linux-source and mozilla-firefox
+change to account for the fact that firefox no longer uses_malone.
+
+    >>> browser.open("http://bugs.launchpad.dev/ubuntu/+upstreamreport")
+    >>> table = find_tag_by_id(browser.contents, 'upstream-report-content')
+    >>> print extract_text(table)
+    linux-source-2.6.15     Missing corresponding product.  (find) (link)
+                2      2      100.00        0       0    0.00         2
+    mozilla-firefox  Mozilla Firefox  The Mozilla.org Bug Tracker  Unspecified
+                1      1      100.00        0       0    0.00         1
+    thunderbird         Missing corresponding product. (find)
+                1      1      100.00        0       1  100.00         0
+
+== Empty distributions ==
+
+Some distributions aren't as happening as others. The page still works for
+them, though:
+
+    >>> browser.open("http://bugs.launchpad.dev/debian/+upstreamreport")
+    >>> table = find_tag_by_id(browser.contents, 'upstream-report-content')
+    >>> print extract_text(table)
+    mozilla-firefox Missing corresponding product.  (find)
+                3   2   66.67   1   0   0.00    2
+
+    >>> table = find_tag_by_id(browser.contents, 'upstream-report-totals')
+    >>> print extract_text(table)
+        Totals: 3   2   66.67   1   0   0.00    2
+
+    >>> browser.open("http://bugs.launchpad.dev/kubuntu/+upstreamreport")
+    >>> table = find_tag_by_id(browser.contents, 'upstream-report')
+    >>> print table
+    None
+    >>> content = find_tag_by_id(browser.contents, 'maincontent')
+    >>> print extract_text(content)
+    Upstream bug report for Kubuntu
+    Kubuntu has no bugs filed against it.
+

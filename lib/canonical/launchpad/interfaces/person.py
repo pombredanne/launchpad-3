@@ -16,7 +16,10 @@ __all__ = [
     'IPerson',
     'IPersonChangePassword',
     'IPersonClaim',
+    'IPersonEditRestricted',
+    'IPersonPublic',
     'IPersonSet',
+    'IPersonViewRestricted',
     'IRequestPeopleMerge',
     'ITeam',
     'ITeamContactAddressForm',
@@ -419,10 +422,9 @@ def make_person_name_field():
                 "numbers, dots, hyphens, or plus signs.")
             )
 
-
-class IPerson(IHasSpecifications, IHasMentoringOffers, IQuestionCollection,
-              IHasLogo, IHasMugshot, IHasIcon):
-    """A Person."""
+class IPersonPublic(IHasSpecifications, IHasMentoringOffers,
+                    IQuestionCollection, IHasLogo, IHasMugshot, IHasIcon):
+    """Public attributes for a Person."""
 
     id = Int(
             title=_('ID'), required=True, readonly=True,
@@ -617,32 +619,6 @@ class IPerson(IHasSpecifications, IHasMentoringOffers, IQuestionCollection,
     validatedemails = Attribute("Emails with status VALIDATED")
     unvalidatedemails = Attribute(
         "Emails this person added in Launchpad but are not yet validated.")
-    allmembers = Attribute(
-        "List of all direct and indirect people and teams who, one way or "
-        "another, are a part of this team. If you want a method to check if "
-        "a given person is a member of a team, you should probably look at "
-        "IPerson.inTeam().")
-    activemembers = Attribute("List of members with ADMIN or APPROVED status")
-    active_member_count = Attribute(
-        "The number of real people who are members of this team.")
-    all_member_count = Attribute(
-        "The total number of real people who are members of this team, "
-        "including subteams.")
-    adminmembers = Attribute("List of members with ADMIN status")
-    expiredmembers = Attribute("List of members with EXPIRED status")
-    expired_member_count = Attribute("Number of EXPIRED members.")
-    approvedmembers = Attribute("List of members with APPROVED status")
-    proposedmembers = Attribute("List of members with PROPOSED status")
-    proposed_member_count = Attribute("Number of PROPOSED members")
-    inactivemembers = Attribute(
-        "List of members with EXPIRED or DEACTIVATED status")
-    inactive_member_count = Attribute("Number of inactive members")
-    deactivatedmembers = Attribute("List of members with DEACTIVATED status")
-    deactivated_member_count = Attribute("Number of deactivated members")
-    invited_members = Attribute("List of members with INVITED status")
-    invited_member_count = Attribute("Number of members with INVITED status")
-    pendingmembers = Attribute(
-        "List of members with INVITED or PROPOSED status")
     specifications = Attribute(
         "Any specifications related to this person, either because the are "
         "a subscriber, or an assignee, or a drafter, or the creator. "
@@ -1091,24 +1067,6 @@ class IPerson(IHasSpecifications, IHasMentoringOffers, IQuestionCollection,
         a team administrator.
         """
 
-    def addMember(person, reviewer, status=TeamMembershipStatus.APPROVED,
-                  comment=None, force_team_add=False):
-        """Add the given person as a member of this team.
-
-        If the given person is already a member of this team we'll simply
-        change its membership status. Otherwise a new TeamMembership is
-        created with the given status.
-
-        If the person is actually a team and force_team_add is False, the
-        team will actually be invited to join this one. Otherwise the team
-        is added as if it were a person.
-
-        The given status must be either Approved, Proposed or Admin.
-
-        The reviewer is the user who made the given person a member of this
-        team.
-        """
-
     def setMembershipData(person, status, reviewer, expires=None,
                           comment=None):
         """Set the attributes of the person's membership on this team.
@@ -1123,26 +1081,12 @@ class IPerson(IHasSpecifications, IHasMentoringOffers, IQuestionCollection,
         requires it.
         """
 
-    def getMembersByStatus(status, orderby=None):
-        """Return the people whose membership on this team match :status:.
-
-        If no orderby is provided, Person.sortingColumns is used.
-        """
-
     def getAdministratedTeams():
         """Return the teams that this person/team is an administrator of.
 
         This includes teams for which the person is the owner, a direct
         member with admin privilege, or member of a team with such
         privileges.
-        """
-
-    def getDirectAdministrators():
-        """Return this team's administrators.
-
-         This includes all direct members with admin rights and also
-         the team owner. Note that some other persons/teams might have admin
-         privilege by virtue of being a member of a team with admin rights.
         """
 
     def getTeamAdminsEmailAddresses():
@@ -1262,6 +1206,76 @@ class IPerson(IHasSpecifications, IHasMentoringOffers, IQuestionCollection,
 
         :target: An object providing `IBugTarget` to search within.
         """
+
+class IPersonViewRestricted(Interface):
+    """IPerson attributes that require launchpad.View permission."""
+
+    active_member_count = Attribute(
+        "The number of real people who are members of this team.")
+    activemembers = Attribute("List of members with ADMIN or APPROVED status")
+    adminmembers = Attribute("List of members with ADMIN status")
+    all_member_count = Attribute(
+        "The total number of real people who are members of this team, "
+        "including subteams.")
+    allmembers = Attribute(
+        "List of all direct and indirect people and teams who, one way or "
+        "another, are a part of this team. If you want a method to check if "
+        "a given person is a member of a team, you should probably look at "
+        "IPerson.inTeam().")
+    approvedmembers = Attribute("List of members with APPROVED status")
+    deactivated_member_count = Attribute("Number of deactivated members")
+    deactivatedmembers = Attribute("List of members with DEACTIVATED status")
+    expired_member_count = Attribute("Number of EXPIRED members.")
+    expiredmembers = Attribute("List of members with EXPIRED status")
+    inactivemembers = Attribute(
+        "List of members with EXPIRED or DEACTIVATED status")
+    inactive_member_count = Attribute("Number of inactive members")
+    invited_members = Attribute("List of members with INVITED status")
+    invited_member_count = Attribute("Number of members with INVITED status")
+    pendingmembers = Attribute(
+        "List of members with INVITED or PROPOSED status")
+    proposedmembers = Attribute("List of members with PROPOSED status")
+    proposed_member_count = Attribute("Number of PROPOSED members")
+
+    def getDirectAdministrators():
+        """Return this team's administrators.
+
+         This includes all direct members with admin rights and also
+         the team owner. Note that some other persons/teams might have admin
+         privilege by virtue of being a member of a team with admin rights.
+        """
+
+    def getMembersByStatus(status, orderby=None):
+        """Return the people whose membership on this team match :status:.
+
+        If no orderby is provided, Person.sortingColumns is used.
+        """
+
+
+class IPersonEditRestricted(Interface):
+    """IPerson attributes that require launchpad.Edit permission."""
+
+    def addMember(person, reviewer, status=TeamMembershipStatus.APPROVED,
+                  comment=None, force_team_add=False):
+        """Add the given person as a member of this team.
+
+        If the given person is already a member of this team we'll simply
+        change its membership status. Otherwise a new TeamMembership is
+        created with the given status.
+
+        If the person is actually a team and force_team_add is False, the
+        team will actually be invited to join this one. Otherwise the team
+        is added as if it were a person.
+
+        The given status must be either Approved, Proposed or Admin.
+
+        The reviewer is the user who made the given person a member of this
+        team.
+        """
+
+
+class IPerson(IPersonPublic, IPersonViewRestricted, IPersonEditRestricted):
+    """A Person."""
 
 
 class INewPersonForm(IPerson):
