@@ -17,6 +17,11 @@ from canonical.launchpad.interfaces.structuralsubscription import (
 
 
 class IDistributionSourcePackage(IBugTarget, IStructuralSubscriptionTarget):
+    """Represents a source package in a distribution.
+
+    Create IDistributionSourcePackages by invoking
+    `IDistribution.getSourcePackage()`.
+    """
 
     distribution = Attribute("The distribution.")
     sourcepackagename = Attribute("The source package name.")
@@ -24,11 +29,6 @@ class IDistributionSourcePackage(IBugTarget, IStructuralSubscriptionTarget):
     name = Attribute("The source package name as text")
     displayname = Attribute("Display name for this package.")
     title = Attribute("Title for this package.")
-
-    # XXX sabdfl 2005-10-16:
-    distro = Attribute("The distribution.")
-
-    subscribers = Attribute("The subscribers to this package.")
 
     currentrelease = Attribute(
         "The latest published SourcePackageRelease of a source package with "
