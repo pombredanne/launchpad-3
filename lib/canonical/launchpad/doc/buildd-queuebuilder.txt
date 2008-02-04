@@ -1,11 +1,15 @@
 = The Queue Builder =
 
-QueueBuilder is a script to sanely initialize new build jobs, it
-verifies the available DistroArchSeriess, for which we are able to
-build packages, repairs broken Builds entries that makes sense,
-verifies the packages pending to build, install the jobs in
-BuildQueue table and scores the build according a bunch of
-parameters.
+QueueBuilder is a script to sanely initialize new build jobs. It
+verifies each DistroArchSeries that is available for which we are
+able to:
+
+ * Build packages,
+ * Repair broken Build entries, if it makes sense to do so,
+ * Verify the packages pending to build,
+ * Install the jobs in the BuildQueue table, and
+ * Score the build according to a set of parameters, which will be
+   discussed later.
 
 
 == Setting up ==
@@ -31,11 +35,12 @@ test_system_documentation.py for more information.
     >>> import logging
     >>> logger = logging.getLogger()
 
-Now we have satisfied all needs for BuildMaster, let's instantiate it.
+Now that we have satisfied all of the needs for BuildMaster, let's
+instantiate it.
 
     >>> build_master = BuilddMaster(logger, transaction)
 
-Emulates a PocketChroot entry to validate the following
+Emulate a PocketChroot entry to validate the following
 distroarchseries:
 
  * Ubuntu/Warty/i386/RELEASE
@@ -79,8 +84,10 @@ be considered.
 
 == Ensure sampledata is processed ==
 
-Kick off any pending builds we have to avoid any lint in our tests
-(there are a couple that will be created based on our sampledata).
+Kick off any pending builds we have to avoid any misleading result in
+our tests (there are a couple that will be created based on our
+sampledata).
+
 This is to allow us to study carefully what is being added as we add
 new series and builds.
 
@@ -128,9 +135,9 @@ because this distroseries lacks 'nominatedarchindep'.
     ...     status=PackagePublishingStatus.PUBLISHED,
     ...     pocket=PackagePublishingPocket.RELEASE)
 
-Publishing several sources in ubuntu/hoary/RELEASE, which is in
-DEVELOPMENT state, will result in builds being created respecting
-architecturehintlist and P-a-s.
+Several source publications for ubuntu/hoary/RELEASE, which is in
+DEVELOPMENT state, so we expect builds to be created respecting
+architecturehintlist and PAS.
 
     >>> pub_all = test_publisher.getPubSource(
     ...     sourcename='test-buildd', version='667', distroseries=hoary,
@@ -230,7 +237,7 @@ If a source is published in Celso's PPA, a build will be created
 for it respecting only 'architecturehintlist' and PPA-supported
 architecture, it won't be submitted to P-a-s restrictions. It allows
 PPA user to work on 'broken' ports of a given source, without
-depending on lifting the PRIMARY archive P-a-s restriction.
+depending on lifting the PRIMARY archive PAS restriction.
 
     >>> pub_hoary_ppa = test_publisher.getPubSource(
     ...     sourcename='test-ppa', version='674', distroseries=hoary,
@@ -251,7 +258,7 @@ checks/counters within this test.
 
 == Package Architecture Specific ==
 
-The Package-Architecture-Specific (P-a-s) module is a parser to a set
+The Package-Architecture-Specific (PAS) module is a parser to a set
 of restrictions to build packages based on archive-admin experiences.
 
 Those restrictions overlap the metadata information from the source
@@ -301,7 +308,7 @@ And a source listing which causes us to produce no builds:
     ...                                pas_verify)]
     []
 
-PPA builds are not affected by P-a-s restrictions, i.e., they will
+PPA builds are not affected by PAS restrictions, i.e., they will
 build for all requested architectures currently supported in the PPA
 subsystem.
 
@@ -361,10 +368,10 @@ pas.py:_handleBinaryPAS for more information on why.
     [u'i386']
 
 XXX cprov 20071211: we can't properly test PPA binary-PAS right now
-because there is no binary package published in PPA. The way the P-a-s
+because there is no binary package published in PPA. The way the PAS
 component is completely ignored for PPAs indicates that we are safe,
 however, for now, we have to rely on the previous primary-archive tests.
-
+See bug 189025.
 
 == Check the architectures ==
 
@@ -465,9 +472,9 @@ state are immediately created.
     >>> len(active_jobs)
     11
 
-The BuildQueue entries created are already 'scored', it means that the job
-can be already dispatched once operation is committed, i.e.,
-dispatching can happen in parallel with build creation.
+The BuildQueue entries created are already 'scored', meaning the job
+can be dispatched once operation is committed, i.e. dispatching can
+happen in parallel with build creation.
 
     >>> build_queue = active_jobs[0]
     >>> print build_queue.build.title
@@ -483,8 +490,8 @@ i.e., the published component can be different than the original component.
     >>> print build_queue.build.sourcepackagerelease.component.name
     main
 
-Missing BuildQueue records, resulted of given-back builds are created
-in the last stage of the queue-builder script
+Missing BuildQueue records, resulting from given-back builds, are
+created in the last stage of the queue-builder script.
 
     >>> given_back_build = build_queue.build
     >>> build_queue.destroySelf()
