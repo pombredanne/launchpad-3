@@ -25,13 +25,21 @@ We will log in as Sample Person and edit the ubz sprint.
   >>> browser.url
   'http://launchpad.dev/sprints/ubz/+edit'
 
-If we alter the date to an ending date that precedes the starting date we 
+The sprint start and end times are expressed to the nearest minute, and
+not the second:
+
+  >>> start_control = browser.getControl('Starting Date and Time')
+  >>> start_control.value
+  '2005-10-07 19:30'
+  >>> end_control = browser.getControl('Finishing Date and Time')
+  >>> end_control.value
+  '2005-11-16 19:11'
+
+If we alter the date to an ending date that precedes the starting date we
 should receive a nice error message.
 
-  >>> browser.getControl(
-  ...     'Starting Date and Time').value = '2006-01-10 23:30'
-  >>> browser.getControl(
-  ...     'Finishing Date and Time').value = '2005-02-12 00:11'
+  >>> start_control.value = '2006-01-10 23:30'
+  >>> end_control.value = '2005-02-12 00:11'
   >>> browser.getControl('Change').click()
 
   >>> "This event can't start after it ends" in browser.contents

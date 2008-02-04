@@ -17,6 +17,19 @@ Invalid dates, for instance entering a starting date after the ending date,
 are reported as errors to the users. (See also the tests in
 lib/canonical/launchpad/doc/sprintattendance-pages.txt)
 
+By default, the form will be pre-filled out with arrival and departure dates
+that correspond to the full length of the conference and imply the user will
+be available to participate in any session.
+
+    >>> browser.getControl('From').value
+    '2006-01-10 08:30'
+    >>> browser.getControl('To').value
+    '2006-02-12 17:00'
+
+We accept a starting date up to one day before the sprint starts (which we
+will map to starting at the start of the sprint), and a departure date up to
+one day after the sprint ends.
+
     >>> browser.getControl('From').value = '2006-01-10 10:30:00'
     >>> browser.getControl('To').value = '2005-02-04 20:11:00'
     >>> browser.getControl('Register').click()
@@ -94,6 +107,17 @@ Also, it is possible to register someone else. Let's register Carlos.
     >>> browser.getLink('Register someone else').click()
     >>> browser.url
     'http://launchpad.dev/sprints/ubz/+register'
+
+By default, the form is pre-filled with attendance times that match the
+start and end of the conference.
+
+    >>> browser.getControl('From').value
+    '2006-01-10 08:30'
+    >>> browser.getControl('To').value
+    '2006-02-12 17:00'
+
+We can set a specific start and end time for participation, and specify that
+it is Carlos we are registering.
 
     >>> browser.getControl('Attendee').value = 'carlos@canonical.com'
     >>> browser.getControl('From').value = '2006-01-10 18:30:00'

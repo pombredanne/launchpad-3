@@ -62,7 +62,7 @@ Now revoke Colin's administrator status and make him expire in November
 next year -- successfully.
 
   >>> from datetime import datetime, timedelta
-  >>> expire_date = datetime.utcnow()+timedelta(365)
+  >>> expire_date = datetime.utcnow()+timedelta(days=365)
 
   >>> browser.getControl(name='admin').value = ['no']
   >>> browser.getControl(name='expires').value = ['date']

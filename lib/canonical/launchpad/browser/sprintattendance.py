@@ -41,10 +41,10 @@ class BaseSprintAttendanceAddView(LaunchpadFormView):
         # self.getDates().
         from_date = self.context.time_starts.astimezone(tz)
         to_date = self.context.time_ends.astimezone(tz)
-        self.starts_widget.from_date = from_date - timedelta(1)
+        self.starts_widget.from_date = from_date - timedelta(days=1)
         self.starts_widget.to_date = to_date
         self.ends_widget.from_date = from_date
-        self.ends_widget.to_date = to_date + timedelta(1)
+        self.ends_widget.to_date = to_date + timedelta(days=1)
 
     def validate(self, data):
         """Verify that the entered times are valid.
