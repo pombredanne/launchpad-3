@@ -12,6 +12,7 @@ from zope.component import getUtility
 
 from canonical.config import config
 from canonical.database.sqlbase import commit, ZopelessTransactionManager
+from canonical.launchpad.components import externalbugtracker
 from canonical.launchpad.components.externalbugtracker import (
     Bugzilla, BugNotFound, BugTrackerConnectError, ExternalBugTracker,
     DebBugs, Mantis, Trac, Roundup, RequestTracker, SourceForge)
@@ -118,6 +119,34 @@ def set_bugwatch_error_type(bug_watch, error_type):
     bug_watch.last_error_type = error_type
     bug_watch.updateStatus(UNKNOWN_REMOTE_STATUS, BugTaskStatus.UNKNOWN)
     logout()
+
+
+class OOPSHook:
+    def install(self):
+        self.original_report_oops = externalbugtracker.report_oops
+        externalbugtracker.report_oops = self.reportOOPS
+
+    def uninstall(self):
+        externalbugtracker.report_oops = self.original_report_oops
+        del self.original_report_oops
+
+    def reportOOPS(self, message=None, properties=None, info=None):
+        self.oops_info = self.original_report_oops(
+            message=message, properties=properties, info=info)
+        return self.oops_info
+
+    @property
+    def oopsed(self):
+        return hasattr(self, 'oops_info')
+
+    @property
+    def formatted_oops_info(self):
+        properties_string = '\n'.join(
+            '%s=%r' % (name, value) for name, value
+            in sorted(self.oops_info._data))
+        return '%s\n%s' % (self.oops_info.oopsid, properties_string)
+
+oops_hook = OOPSHook()
 
 
 class TestExternalBugTracker(ExternalBugTracker):
