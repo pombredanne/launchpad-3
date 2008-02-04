@@ -137,7 +137,8 @@ because this distroseries lacks 'nominatedarchindep'.
 
 Several source publications for ubuntu/hoary/RELEASE, which is in
 DEVELOPMENT state, so we expect builds to be created respecting
-architecturehintlist and PAS.
+architecturehintlist and PAS restrictions. See details about the PAS
+system below.
 
     >>> pub_all = test_publisher.getPubSource(
     ...     sourcename='test-buildd', version='667', distroseries=hoary,
@@ -162,8 +163,9 @@ architecturehintlist and PAS.
     ...     status=PackagePublishingStatus.PUBLISHED,
     ...     pocket=PackagePublishingPocket.RELEASE)
 
-Publishing sources using the extended architecturehintlist kernel
-notation in ubuntu/hoary, see the expected behavior below.
+The two publishing sources that are created in this block are only used
+in the 'Check support for kernel notation in architecture hint list'
+section.
 
     >>> pub_any_foo = test_publisher.getPubSource(
     ...     sourcename='test-buildd-6', version='672', distroseries=hoary,
@@ -178,7 +180,7 @@ notation in ubuntu/hoary, see the expected behavior below.
     ...     pocket=PackagePublishingPocket.RELEASE)
 
 Publishing a source in warty/UPDATES, a stable release update (SRU),
-will result in a build. Once a distroseries is released only
+will result in a build. Once a distroseries is released, only
 source publications to post-RELEASE pockets (UPDATES, PROPOSED,
 BACKPORTS, SECURITY) will be considered, preserving the RELEASE pocket
 as it was at the release time.
@@ -197,7 +199,7 @@ pocket.
     ...     status=PackagePublishingStatus.PUBLISHED,
     ...     pocket=PackagePublishingPocket.RELEASE)
 
-If we publish the same source in warty and hoary and create a
+If we publish the same source in warty and hoary, and create a
 corresponding build record that has failed to build in this context,
 we see that the queue-builder triggers a rebuild in the new context
 for published sources that have failed to build in previous
@@ -217,7 +219,7 @@ distroseries (see bug 181328).
     ...     warty.main_archive, status=BuildStatus.FAILEDTOBUILD)
 
 In contrast with the previous case, if we publish the same source in
-warty and hoary and attach a successfully built build record in the
+warty and hoary, and attach a successfully built build record in the
 warty context we will see that the queue-builder won't create a new
 build in the hoary context.
 
@@ -237,7 +239,7 @@ If a source is published in Celso's PPA, a build will be created
 for it respecting only 'architecturehintlist' and PPA-supported
 architecture, it won't be submitted to P-a-s restrictions. It allows
 PPA user to work on 'broken' ports of a given source, without
-depending on lifting the PRIMARY archive PAS restriction.
+depending on lifting the PRIMARY archive PAS restrictions.
 
     >>> pub_hoary_ppa = test_publisher.getPubSource(
     ...     sourcename='test-ppa', version='674', distroseries=hoary,
@@ -245,8 +247,8 @@ depending on lifting the PRIMARY archive PAS restriction.
     ...     status=PackagePublishingStatus.PUBLISHED,
     ...     pocket=PackagePublishingPocket.RELEASE)
 
-Before committing the previous changes we have to annotated the
-manually created build IDs, so they can be excluded from subsequents
+Before committing the previous changes, we have to annotated the
+manually created build IDs so they can be excluded from subsequents
 checks/counters within this test.
 
     >>> old_build_ids.append(failed_build.id)
@@ -373,6 +375,7 @@ component is completely ignored for PPAs indicates that we are safe,
 however, for now, we have to rely on the previous primary-archive tests.
 See bug 189025.
 
+
 == Check the architectures ==
 
 See if the code which determines archs to build does the right thing for
@@ -391,6 +394,7 @@ each of these options:
     >>> [arch.architecturetag for arch in
     ...  determineArchitecturesToBuild(pub_one, legal_archs, hoary)]
     [u'hppa']
+
 
 == Check support for kernel notation in architecture hint list ==
 
