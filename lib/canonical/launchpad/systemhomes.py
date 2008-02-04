@@ -25,9 +25,9 @@ from canonical.launchpad.interfaces import (
     ICodeImportSchedulerApplication, IDistroSeriesSet, IEmailAddressSet,
     IFeedsApplication, IHWDBApplication, ILanguageSet, ILaunchBag,
     ILaunchpadStatisticSet, IMailingListApplication, IMaloneApplication,
-    IOpenIdApplication, IPersonSet, IProductSet, IRegistryApplication,
-    IRosettaApplication, IShipItApplication, ITranslationGroupSet,
-    IWebServiceApplication)
+    IMessageSet, IOpenIdApplication, IPersonSet, IProductSet,
+    IRegistryApplication, IRosettaApplication, IShipItApplication,
+    ITranslationGroupSet, IWebServiceApplication)
 from canonical.lazr.rest import ServiceRootResource
 
 class AuthServerApplication:
@@ -198,4 +198,5 @@ class WebServiceApplication(ServiceRootResource):
     def top_level_collections(self):
         return { 'bugs' : getUtility(IBugSet),
                  'people' : getUtility(IPersonSet),
+                 'messages' : getUtility(IMessageSet),
                  'emailaddresses' : getUtility(IEmailAddressSet) }

@@ -1,24 +1,75 @@
+= Introduction =
+
+Bugs are some of the more complex objects in Launchpad. They have a
+lot of state and many relationships to other objects.
+
+
+== Bugs themselves ==
+
+At the top level we provide a collection of bugs.
+
   >>> print http(r"""
   ... GET /bugs HTTP/1.1
   ... Host: api.launchpad.dev
   ... """)
   HTTP/1.1 200 Ok
+  ...
+  [{..."id": 15...}...{..."id": 12...}]
 
+Bugs are indexed by number beneath the top-level collection.
 
   >>> print http(r"""
   ... GET /bugs/1 HTTP/1.1
   ... Host: api.launchpad.dev
   ... """)
   HTTP/1.1 200 Ok
+  ...
+  {..."description": "Firefox needs to support embedded SVG images...
+      "id": 1,...}
+
+Bugs have relationships to other bugs, like "duplicate_of".
 
   >>> print http(r"""
   ... GET /bugs/5/duplicates HTTP/1.1
   ... Host: api.launchpad.dev
   ... """)
   HTTP/1.1 200 Ok
+  ...
+  [{..."id": 6...}]
+
+  >>> print http(r"""
+  ... GET /bugs/6 HTTP/1.1
+  ... Host: api.launchpad.dev
+  ... """)
+  HTTP/1.1 200 Ok
+  ...
+  {..."duplicate_of_link": "http:\/\/api.launchpad.dev\/bugs\/5"...}
+
+
+== Bugs as message targets ==
+
+Each bug has a collection of messages.
 
   >>> print http(r"""
   ... GET /bugs/5/messages HTTP/1.1
   ... Host: api.launchpad.dev
   ... """)
   HTTP/1.1 200 Ok
+  ...
+  [{"self_link":
+      "http:\/\/api.launchpad.dev\/messages\/%3C20050114172703.6687...",
+    "content": "All ways of downloading firefox should provide complete...",
+    "owner_link": "http:\/\/api.launchpad.dev\/people\/name12",
+    "subject": "Firefox install instructions should be complete",
+    "datecreated": "2005-01-14T17:27:03.702622+00:00"}]
+
+The messages are stored in a top-level collection. Eventually they'll
+be stored beneath the bug-specific collection.
+
+  >>> print http(r"""
+  ... GET /messages/%3C20050114172703.6687.71983.malonedeb%40localhost.localdomain%3E HTTP/1.1
+  ... Host: api.launchpad.dev
+  ... """)
+  HTTP/1.1 200 Ok
+  ...
+  {..."subject": "Firefox install instructions should be complete"...}
