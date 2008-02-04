@@ -99,6 +99,7 @@ class Builder(SQLBase):
     speedindex = IntCol(dbName='speedindex', default=0)
     manual = BoolCol(dbName='manual', default=False)
     vm_host = StringCol(dbName='vm_host', default=None)
+    active = BoolCol(dbName='active', default=True)
 
     def cacheFileOnSlave(self, logger, libraryfilealias):
         """See IBuilder."""
@@ -644,7 +645,7 @@ class BuilderSet(object):
 
     def getBuilders(self):
         """See IBuilderSet."""
-        return Builder.select()
+        return Builder.selectBy(active=True)
 
     def getBuildersByArch(self, arch):
         """See IBuilderSet."""

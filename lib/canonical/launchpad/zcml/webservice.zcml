@@ -10,7 +10,26 @@
         <allow
             interface="canonical.launchpad.interfaces.IWebServiceApplication" />
         <allow interface='zope.publisher.interfaces.IPublishTraverse' />
-        <allow interface='canonical.lazr.interfaces.IHTTPResource' />
+        <allow interface='canonical.lazr.interfaces.IServiceRootResource' />
     </securedutility>
 
+    <class class="canonical.lazr.rest.CollectionResource">
+        <allow interface='canonical.lazr.interfaces.ICollectionResource' />
+    </class>
+
+    <class class="canonical.lazr.rest.EntryResource">
+        <allow interface='canonical.lazr.interfaces.IEntryResource' />
+    </class>
+
+    <adapter
+        for="canonical.launchpad.interfaces.IPerson"
+        provides="canonical.launchpad.interfaces.IPersonEntry"
+        factory="canonical.launchpad.rest.PersonEntry"
+        />
+
+    <adapter
+        for="canonical.launchpad.interfaces.IPersonSet"
+        provides="canonical.lazr.interfaces.ICollection"
+        factory="canonical.launchpad.rest.PersonCollection"
+        />
 </configure>

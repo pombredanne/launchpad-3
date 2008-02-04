@@ -142,16 +142,16 @@ listing tab.
     today...
 
     >>> print_landscape_code_listing(no_priv_browser)
-    testing-branch             ... New
+    testing-branch             New
 
     >>> print_landscape_code_listing(landscape_dev_browser)
-    feature-x  Sample Person   ... New
-    trunk      Sample Person   ... New
+    feature-x  Sample Person   New
+    trunk      Sample Person   New
 
     >>> print_landscape_code_listing(admin_browser)
-    feature-x  Sample Person   ... New
-    trunk      Sample Person   ... New
-    testing-branch             ... New
+    feature-x  Sample Person   New
+    trunk      Sample Person   New
+    testing-branch             New
 
 
 == Person code listing pages ==
