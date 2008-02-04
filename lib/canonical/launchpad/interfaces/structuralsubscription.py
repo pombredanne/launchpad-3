@@ -162,11 +162,8 @@ class IStructuralSubscriptionTarget(Interface):
         :subscriber: The IPerson who will be subscribed.
         """
 
-    def isSubscribed(person):
-        """Is `person` already subscribed to this structure?
-
-        If yes, the subscription is returned. Otherwise False is returned.
-        """
+    def getSubscription(person):
+        """Return the subscription for `person`, if it exists."""
 
 
 class IStructuralSubscriptionForm(Interface):

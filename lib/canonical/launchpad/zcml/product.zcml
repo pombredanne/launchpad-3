@@ -61,7 +61,7 @@
       attributes="newFAQ"
       />
     <!-- IStructuralSubscriptionTarget -->
-    <allow attributes="bug_subscriptions getSubscriptions isSubscribed" />
+    <allow attributes="bug_subscriptions getSubscriptions getSubscription" />
     <require
         permission="launchpad.AnyPerson"
         attributes="addSubscription addBugSubscription removeBugSubscription" />

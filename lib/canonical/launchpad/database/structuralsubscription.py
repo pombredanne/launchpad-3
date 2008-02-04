@@ -125,7 +125,8 @@ class StructuralSubscriptionTargetMixin:
 
     def addSubscription(self, subscriber, subscribed_by):
         """See `IStructuralSubscriptionTarget`."""
-        subscription_already_exists = self.isSubscribed(subscriber)
+        subscription_already_exists = (
+            self.getSubscription(subscriber) is not None)
 
         if subscription_already_exists:
             raise DuplicateSubscriptionError(
@@ -171,13 +172,13 @@ class StructuralSubscriptionTargetMixin:
             else:
                 subscription_to_remove.destroySelf()
 
-    def isSubscribed(self, person):
+    def getSubscription(self, person):
         """See `IStructuralSubscriptionTarget`."""
         all_subscriptions = self.getSubscriptions()
         for subscription in all_subscriptions:
             if subscription.subscriber == person:
-                return True
-        return False
+                return subscription
+        return None
 
     def getSubscriptions(self,
                          min_bug_notification_level=

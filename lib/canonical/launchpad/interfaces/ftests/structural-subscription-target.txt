@@ -100,13 +100,13 @@ notification level for bugs is set to NOTHING.
     name16 NOTHING LIFECYCLE
     ubuntu-team COMMENTS NOTHING
 
-To find out if an IPerson or ITeam is a subscriber, use
-IStructuralSubscriptionTargetIDistributionSourcePackage.isSubscribed.
+To get a user's subscription to the target, use
+IStructuralSubscriptionTarget.getSubscription.
 
-    >>> target.isSubscribed(ubuntu_team)
-    True
-    >>> target.isSubscribed(sample_person)
-    False
+    >>> target.getSubscription(ubuntu_team)
+    <StructuralSubscription ...>
+    >>> print target.getSubscription(sample_person)
+    None
 
 To search for subscriptions with certain level settings on a structure
 we use getSubscriptions.
