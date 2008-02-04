@@ -14,8 +14,6 @@ from zope.component import getUtility
 from canonical.database.constants import UTC_NOW
 from canonical.database.sqlbase import commit
 from canonical.launchpad.components import externalbugtracker
-from canonical.launchpad.components.externalbugtracker import (
-    report_oops, report_warning)
 from canonical.launchpad.interfaces import (
     ILaunchpadCelebrities, IBugTrackerSet)
 from canonical.launchpad.webapp.interfaces import IPlacelessAuthUtility
@@ -87,7 +85,7 @@ class BugWatchUpdater(object):
                 # continue: a failure shouldn't break the updating of
                 # the other bug trackers.
                 info = sys.exc_info()
-                report_oops(
+                externalbugtracker.report_oops(
                     info=info, properties=[
                         ('bugtracker', bug_tracker.name),
                         ('baseurl', bug_tracker_url)])
@@ -131,14 +129,15 @@ class BugWatchUpdater(object):
             message = (
                 "ExternalBugtracker for BugTrackerType '%s' is not known." % (
                     error.bugtrackertypename))
-            report_warning(message)
+            externalbugtracker.report_warning(message)
             self.log.warning(message)
         else:
             if bug_watches_to_update.count() > 0:
                 try:
                     remotesystem.updateBugWatches(bug_watches_to_update)
                 except externalbugtracker.BugWatchUpdateError, error:
-                    report_oops(properties=[
+                    externalbugtracker.report_oops(
+                        properties=[
                             ('bugtracker', bug_tracker.name),
                             ('baseurl', bug_tracker.baseurl)])
                     self.log.error(str(error))
@@ -147,7 +146,8 @@ class BugWatchUpdater(object):
                     # We don't want to die on a timeout, since most likely
                     # it's just a problem for this iteration. Nevertheless
                     # we log the problem.
-                    report_oops(properties=[
+                    externalbugtracker.report_oops(
+                        properties=[
                             ('bugtracker', bug_tracker.name),
                             ('baseurl', bug_tracker.baseurl)])
                     self.log.error(
