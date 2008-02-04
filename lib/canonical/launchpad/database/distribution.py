@@ -663,15 +663,20 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
 
         raise NotFoundError(filename)
 
-    def getBuildRecords(self, build_state=None, name=None, pocket=None):
+    def getBuildRecords(self, build_state=None, name=None, pocket=None,
+                        user=None):
         """See `IHasBuildRecords`"""
-        # Find out the distroarchseriess in question.
+        # Ignore "user", since it would not make any difference to the
+        # records returned here (private builds are only in PPA right
+        # now).
+
+        # Find out the distroarchseries in question.
         arch_ids = []
-        # concatenate architectures list since they are distinct.
+        # Concatenate architectures list since they are distinct.
         for series in self.serieses:
             arch_ids += [arch.id for arch in series.architectures]
 
-        # use facility provided by IBuildSet to retrieve the records
+        # Use the facility provided by IBuildSet to retrieve the records.
         return getUtility(IBuildSet).getBuildsByArchIds(
             arch_ids, build_state, name, pocket)
 

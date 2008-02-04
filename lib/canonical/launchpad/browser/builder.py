@@ -32,6 +32,7 @@ from canonical.launchpad.webapp import (
     ApplicationMenu, GetitemNavigation, Link, Navigation,
     StandardLaunchpadFacets, canonical_url, enabled_with_permission,
     stepthrough)
+from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.tales import DateTimeFormatterAPI
 
 
@@ -149,7 +150,7 @@ class BuilderSetView(CommonBuilderView):
 class BuilderView(CommonBuilderView, BuildRecordsView):
     """Default Builder view class
 
-    Implements useful actions and colect useful set for the pagetemplate.
+    Implements useful actions for the page template.
     """
     __used_for__ = IBuilder
 
@@ -182,8 +183,8 @@ class BuilderView(CommonBuilderView, BuildRecordsView):
         else:
             mode = 'AUTO'
 
-        if not self.context.builderok:
-            return 'NOT OK : %s (%s)' % (self.context.failnotes, mode)
+        if not self.builderok:
+            return 'NOT OK : %s (%s)' % (self.failnotes, mode)
 
         if self.context.currentjob:
             current_build = self.context.currentjob.build
@@ -195,11 +196,65 @@ class BuilderView(CommonBuilderView, BuildRecordsView):
 
         return 'IDLE (%s)' % mode
 
+    @property
+    def permitted_to_view(self):
+        """Return True if the user is permitted to view this builder.
+
+        Permission can dynamically change depending on whether the builder
+        is currently building a private build.
+        """
+        if self.context.currentjob:
+            archive = self.context.currentjob.build.archive
+            if archive.private:
+                if not check_permission('launchpad.View', archive):
+                    return False
+
+        return True
+
+    @property
+    def builderok(self):
+        """Wrap IBuilder.builderok to hide private build details.
+
+        Whatever the builder is doing, we'll tell the user it's
+        not available if they are not permissioned to see the
+        private build.
+        """
+        if not self.permitted_to_view:
+            return False
+        else:
+            return self.context.builderok
+
+    @property
+    def failnotes(self):
+        """Wrap IBuilder.failnotes to provide fake data for private builds.
+
+        If the builder is building a private build and the user is not
+        permissioned to see that, then we remove any failnotes that might
+        give away the build details.
+        """
+        if not self.permitted_to_view:
+            return ""
+        else:
+            return self.context.failnotes
+
+    @property
+    def currentjob(self):
+        """Wrap IBuilder.currentjob to hide private jobs.
+
+        If the builder is currently building a private job, we mask
+        this by saying that we're not building anything at all.
+        """
+        if not self.permitted_to_view:
+            return None
+        else:
+            return self.context.currentjob
+
 
 class BuilderSetAddView(AddView):
     """Builder add view
 
-    Extends zope AddView and uses IBuilderSet utitlity to create a new IBuilder
+    Extends zope AddView and uses IBuilderSet utitlity to create a new
+    IBuilder.
     """
     __used_for__ = IBuilderSet
 
