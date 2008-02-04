@@ -57,20 +57,16 @@ updated field in all of the entries.
     >>> assert feed_updated == entry_dates[0], (
     ...     "Feed <update> value is not the same as latest entry.")
 
-# XXX: BradCrittenden 2008-01-14 bug=182869: Authenticated users
-# should be treated as anonymous for the purpose of feeds content.
-# When this bug is fixed all email addresses will be hidden for all
-# users and the following test will need to be updated.
-
-Since we are logged in the owner's email is displayed in the entry content:
-
+Even though we are logged in, all access via feeds.launchpad.dev are
+forced to be anonymous, so the owner's email is hidden:
 
     >>> 'foo@localhost' in browser.contents
-    True
-    >>> 'email address hidden' in browser.contents
     False
+    >>> 'email address hidden' in browser.contents
+    True
 
-If an anonymous user fetches the same feed the email addresses will be hidden:
+If an anonymous user fetches the same feed the email addresses will
+still be hidden:
 
     >>> anon_browser.open('http://feeds.launchpad.dev/~name12/branches.atom')
     >>> validate_feed(anon_browser.contents,
