@@ -239,7 +239,7 @@ class StructuralSubscriptionTargetMixin:
             min_bug_notification_level=BugNotificationLevel.METADATA)
 
     @property
-    def parent(self):
+    def parent_subscription_target(self):
         """See `IStructuralSubscriptionTarget`."""
         # Some structures have a related structure which can be thought
         # of as their parent. A package is related to a distribution,
@@ -255,19 +255,6 @@ class StructuralSubscriptionTargetMixin:
             parent = self.product
         elif IDistroSeries.providedBy(self):
             parent = self.distribution
-        elif IMilestone.providedBy(self):
-            if self.product is not None:
-                parent = self.product
-            elif self.distribution is not None:
-                parent = self.distribution
-            elif self.distribution is not None:
-                parent = self.distribution
-            elif self.productseries is not None:
-                parent = self.productseries
-            elif self.distroseries is not None:
-                parent = self.distroseries
-            else:
-                parent = None
         else:
             parent = None
         # We only want to return the parent it's

@@ -140,7 +140,8 @@ class IStructuralSubscriptionTarget(Interface):
         :return: A sequence of `IStructuralSubscription`.
         """
 
-    parent = Attribute("The target's parent, or None if one doesn't exist.")
+    parent_subscription_target = Attribute(
+        "The target's parent, or None if one doesn't exist.")
 
     def addSubscription(subscriber, subscribed_by):
         """Add a subscription for this structure.

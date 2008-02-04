@@ -8,7 +8,7 @@
 
   <div class="portletBody portletContent"
        tal:define="subscriptions context/bug_subscriptions;
-                   parent_target context/parent">
+                   parent_target context/parent_subscription_target">
     <b>For <tal:target-title replace="context/title" />:</b>
     <br />
     <div tal:condition="subscriptions">
