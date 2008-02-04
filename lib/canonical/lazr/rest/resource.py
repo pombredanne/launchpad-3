@@ -15,13 +15,15 @@ __all__ = [
     'ServiceRootResource'
     ]
 
-
+from datetime import datetime
 import simplejson
 import urllib
 
 from zope.component import getMultiAdapter
 from zope.interface import implements, directlyProvides
+from zope.proxy import isProxy
 from zope.publisher.interfaces import NotFound
+from zope.security.proxy import removeSecurityProxy
 from zope.schema.interfaces import IField, IObject
 
 # XXX leonardr 2008-01-25 bug=185958:
@@ -43,9 +45,15 @@ class ResourceJSONEncoder(simplejson.JSONEncoder):
 
     def default(self, obj):
         """Convert the given object to a simple data structure."""
+        if isinstance(obj, datetime):
+            return obj.isoformat()
         if IJSONPublishable.providedBy(obj):
             return obj.toDataForJSON()
-        return simplejson.JSONEncoder.default(self, obj)
+        if isProxy(obj):
+            underlying_object = removeSecurityProxy(obj)
+            if isinstance(underlying_object, (list, tuple, dict)):
+                return underlying_object
+        return simplejson.JSONEncoder.default(self, obj) # Error out
 
 
 class HTTPResource:
@@ -172,7 +180,7 @@ class EntryResource(ReadOnlyResource):
     def do_GET(self):
         """Render the entry as JSON."""
         self.request.response.setHeader('Content-type', 'application/json')
-        return ResourceJSONEncoder().encode(self)
+        return simplejson.dumps(self, cls=ResourceJSONEncoder)
 
 
 class CollectionResource(ReadOnlyResource):
@@ -208,7 +216,7 @@ class CollectionResource(ReadOnlyResource):
         entry_resources = [EntryResource(entry, self.request)
                            for entry in entries]
         self.request.response.setHeader('Content-type', 'application/json')
-        return ResourceJSONEncoder().encode(entry_resources)
+        return simplejson.dumps(entry_resources, cls=ResourceJSONEncoder)
 
 
 class ScopedCollectionResource(CollectionResource):

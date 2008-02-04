@@ -1,0 +1,24 @@
+  >>> print http(r"""
+  ... GET /bugs HTTP/1.1
+  ... Host: api.launchpad.dev
+  ... """)
+  HTTP/1.1 200 Ok
+
+
+  >>> print http(r"""
+  ... GET /bugs/1 HTTP/1.1
+  ... Host: api.launchpad.dev
+  ... """)
+  HTTP/1.1 200 Ok
+
+  >>> print http(r"""
+  ... GET /bugs/5/duplicates HTTP/1.1
+  ... Host: api.launchpad.dev
+  ... """)
+  HTTP/1.1 200 Ok
+
+  >>> print http(r"""
+  ... GET /bugs/5/messages HTTP/1.1
+  ... Host: api.launchpad.dev
+  ... """)
+  HTTP/1.1 200 Ok

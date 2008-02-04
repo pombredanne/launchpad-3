@@ -196,5 +196,6 @@ class WebServiceApplication(ServiceRootResource):
     # See ServiceRootResource for more on top_level_collections
     @property
     def top_level_collections(self):
-        return { 'people' : getUtility(IPersonSet),
+        return { 'bugs' : getUtility(IBugSet),
+                 'people' : getUtility(IPersonSet),
                  'emailaddresses' : getUtility(IEmailAddressSet) }
