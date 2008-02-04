@@ -257,8 +257,8 @@ class IBranchMergeProposal(Interface):
     def createSubscription(subscriber, registrant=None):
         """Create a subscription associated with this `BranchMergeProposal`.
 
-        :param subscriber: The `Person` who is being subscribed to this
+        :param subscriber: The person who is being subscribed to this
             `BranchMergeProposal`
-        :param registrant: The `Person` who is subscribing the subscriber to
+        :param registrant: The person who is subscribing the subscriber to
             this `BranchMergeProposal`.  Defaults to subscriber.
         """
