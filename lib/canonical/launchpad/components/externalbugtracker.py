@@ -354,7 +354,7 @@ class ExternalBugTracker:
             properties = self._oops_properties
         else:
             properties = chain(properties, self._oops_properties)
-        report_warning(message, properties)
+        report_warning(message, properties, info)
         # And put it in the log.
         log.warning(message)
 
