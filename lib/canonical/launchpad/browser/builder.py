@@ -174,6 +174,28 @@ class BuilderView(CommonBuilderView, BuildRecordsView):
         """Hide Builder info, see BuildRecordsView for further details"""
         return False
 
+    @property
+    def status(self):
+        """See IBuilder"""
+        if self.context.manual:
+            mode = 'MANUAL'
+        else:
+            mode = 'AUTO'
+
+        if not self.context.builderok:
+            return 'NOT OK : %s (%s)' % (self.context.failnotes, mode)
+
+        if self.context.currentjob:
+            current_build = self.context.currentjob.build
+            msg = 'BUILDING %s' % current_build.title
+            if not current_build.is_trusted:
+                archive_name = current_build.archive.owner.name
+                return '%s [%s] (%s)' % (msg, archive_name, mode)
+            return '%s (%s)' % (msg, mode)
+
+        return 'IDLE (%s)' % mode
+
+
 class BuilderSetAddView(AddView):
     """Builder add view
 
