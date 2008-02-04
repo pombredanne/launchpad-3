@@ -61,9 +61,10 @@ Let's add an ITeam as one of the subscribers:
     >>> sorted([sub.subscriber.name for sub in debian_firefox.bug_subscriptions])
     [u'name12', u'ubuntu-team']
 
-To remove a subscription, use IDistributionSourcePackage.removeSubscription:
+To remove a subscription, use
+IStructuralSubscriptionTarget.removeBugSubscription:
 
-    >>> debian_firefox.removeSubscription(sample_person)
+    >>> debian_firefox.removeBugSubscription(sample_person)
     >>> sorted([sub.subscriber.id for sub in debian_firefox.bug_subscriptions])
     [17]
 
@@ -71,7 +72,7 @@ Trying to remove a subscription that doesn't exist on a source package raises a
 DeleteSubscriptionError.
 
     >>> foobar = personset.getByName("name16")
-    >>> debian_firefox.removeSubscription(foobar)
+    >>> debian_firefox.removeBugSubscription(foobar)
     Traceback (most recent call last):
       ...
     DeleteSubscriptionError: ...
@@ -248,33 +249,6 @@ The package subscribers, Daf and Foo Bar, are implicitly unsubscribed:
 
     >>> subscriber_names(bug_one_in_ubuntu_firefox.bug)
     [u'Mark Shuttleworth', u'Sample Person', u'Steve Alexander', u'Ubuntu Team']
-
-This also works with distroseries tasks. For example, bug #5 in Ubuntu
-warty current has no subscribers:
-
-    >>> bug_five_in_warty_firefox = getUtility(IBugTaskSet).get(16)
-    >>> print bug_five_in_warty_firefox.distroseries.name
-    warty
-    >>> list(bug_five_in_warty_firefox.bug.subscriptions)
-    []
-
-Reassigning this task to pmount will subscribe pmount's subscribers:
-Sample Person and daf.
-
-    >>> old_state = Snapshot(
-    ...     bug_five_in_warty_firefox, providing=IDistroSeriesBugTask)
-
-    >>> bug_five_in_warty_firefox.sourcepackagename = (
-    ...     ubuntu_pmount.sourcepackagename)
-
-    >>> source_package_changed = SQLObjectModifiedEvent(
-    ...     bug_five_in_warty_firefox, old_state, ["sourcepackagename"])
-
-    >>> notify(source_package_changed)
-    >>> transaction.commit()
-
-    >>> subscriber_names(bug_five_in_warty_firefox.bug)
-    [u'Dafydd Harries', u'Foo Bar', u'Sample Person']
 
 Subscriptions are not limited to persons; teams are also allowed to subscribe.
 Teams are a bit different, since they might not have a contact address. Let's

@@ -22,7 +22,7 @@
     <require
       permission="launchpad.AnyPerson"
       attributes="addSubscription addBugSubscription
-                  removeSubscription removeBugSubscription createBug" />
+                  removeBugSubscription createBug" />
 
     <!-- IQuestionTarget -->
     <allow attributes="getQuestion searchQuestions findSimilarQuestions
