@@ -1,6 +1,6 @@
 = Code review subscriptions =
 
-When code is proposed to be merged, people can subscribe to that proces,
+When code is proposed to be merged, people can subscribe to that process,
 which means that they will receive copies of all the discussion.
 
 The ICodeReviewSubscription class represents this subscription.
@@ -33,6 +33,7 @@ However, a separate registrant can also be supplied
     True
     >>> subscription.registrant == registrant
     True
+
 
 == Interfaces ==
 

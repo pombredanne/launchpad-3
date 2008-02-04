@@ -17,6 +17,7 @@ from canonical.launchpad.interfaces.branchmergeproposal import (
 from canonical.launchpad.interfaces.message import IMessage
 from canonical.lazr import DBEnumeratedType, DBItem
 
+
 class CodeReviewVote(DBEnumeratedType):
     """Code Review Votes
 
@@ -51,8 +52,8 @@ class CodeReviewVote(DBEnumeratedType):
 class ICodeReviewMessage(Interface):
     """A link between a merge proposal and a message."""
 
-    branch_merge_proposal = Object(schema=IBranchMergeProposal,
-                                   title=_(u'The branch merge proposal'))
-    message = Object(schema=IMessage, title=_(u'The message.'))
+    branch_merge_proposal = Object(
+        schema=IBranchMergeProposal, title=_('The branch merge proposal'))
+    message = Object(schema=IMessage, title=_('The message.'))
     vote = Choice(
-        title=_("Reviewer says"), required=False, vocabulary=CodeReviewVote)
+        title=_('Reviewer says'), required=False, vocabulary=CodeReviewVote)

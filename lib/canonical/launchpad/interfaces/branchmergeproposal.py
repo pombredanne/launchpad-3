@@ -244,7 +244,7 @@ class IBranchMergeProposal(Interface):
         """
 
     def createMessage(owner, subject, content=None, vote=None, parent=None):
-        """Create an ICodeReviewMessage associated with this merge proposal
+        """Create an ICodeReviewMessage associated with this merge proposal.
 
         :param owner: The person who the message is from.
         :param subject: The subject line to use for the message.
@@ -255,4 +255,10 @@ class IBranchMergeProposal(Interface):
         """
 
     def createSubscription(subscriber, registrant=None):
-        """Create a subscription associated with this BranchMergeProposal"""
+        """Create a subscription associated with this `BranchMergeProposal`.
+
+        :param subscriber: The `Person` who is being subscribed to this
+            `BranchMergeProposal`
+        :param registrant: The `Person` who is subscribing the subscriber to
+            this `BranchMergeProposal`.  Defaults to subscriber.
+        """

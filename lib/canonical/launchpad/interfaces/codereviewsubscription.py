@@ -16,12 +16,13 @@ from canonical.launchpad.interfaces.branchmergeproposal import (
 from canonical.launchpad.interfaces.person import (
     IPerson)
 
+
 class ICodeReviewSubscription(Interface):
     """A link between a merge proposal and an interested person."""
 
     branch_merge_proposal = Object(schema=IBranchMergeProposal,
-                                   title=_(u'Branch merge proposal'))
-    person = Object(schema=IPerson, title=_(u'Person subscribed.'))
-    date_created = Datetime(title=_(u'Date created'))
+                                   title=_('Branch merge proposal'))
+    person = Object(schema=IPerson, title=_('Person subscribed.'))
+    date_created = Datetime(title=_('Date created'))
     registrant = Object(
-        schema=IPerson, title=_(u'Person who created the subscription.'))
+        schema=IPerson, title=_('Person who created the subscription.'))
