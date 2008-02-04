@@ -148,6 +148,11 @@ class ILinkData(Interface):
     site = Attribute(
         "The name of the site this link is to, or None for the current site.")
 
+    # CarlosPerelloMarin 20080131 bugs=187837: This should be removed once
+    # action menu is not used anymore and we move to use inline navigation.
+    sort_key = Attribute(
+        "The sort key to use when rendering it with a group of links.")
+
 
 class ILink(ILinkData):
     """An object that represents a link in a menu.

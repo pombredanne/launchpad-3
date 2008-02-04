@@ -253,6 +253,7 @@ are as we expect.
     name: foo
     selected: False
     site: None
+    sort_key: 0
     summary: None
     target: +foo
     text: Foo
@@ -265,6 +266,7 @@ are as we expect.
     name: bar
     selected: False
     site: None
+    sort_key: 1
     summary: More explanation about Bar of sesamestreet
     target: +bar
     text: Bar
@@ -684,6 +686,7 @@ are as we expect.
     linked: True
     name: first
     site: None
+    sort_key: 0
     summary: None
     target: +first
     text: First menu
@@ -745,6 +748,7 @@ are as we expect.
     linked: True
     name: first
     site: None
+    sort_key: 0
     summary: None
     target: +firstcontext
     text: First context menu item
