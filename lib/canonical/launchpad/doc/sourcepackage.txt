@@ -122,7 +122,6 @@ SourcePackage context will be reachable.
     >>> print pmount_hoary['0.1-2'].title
     pmount 0.1-2 (source) in ubuntu hoary
 
-
     >>> len(list(pmount_hoary.distinctreleases))
     2
 
