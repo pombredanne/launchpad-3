@@ -152,6 +152,7 @@ class TestErrorReportingUtility(unittest.TestCase):
                       ignore_errors=True)
         self.current_copy_to_zlog = (
             config.launchpad.errorreports.copy_to_zlog)
+        config.launchpad.errorreports.copy_to_zlog = True
 
     def tearDown(self):
         shutil.rmtree(config.launchpad.errorreports.errordir,
