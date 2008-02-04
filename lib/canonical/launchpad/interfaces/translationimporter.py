@@ -45,6 +45,7 @@ class TranslationFormatBaseError(TranslationImportExportBaseException):
         :param message: The concrete syntax error found. If we get a not None
             value here, filename and line_number are ignored.
         """
+        TranslationImportExportBaseException.__init__(self, message)
         assert filename is not None, 'filename cannot be None'
 
         self.filename = filename

@@ -40,7 +40,7 @@ from canonical.launchpad.interfaces import (
     ITranslationFileData, ITranslationImporter, IVPOExportSet,
     NotExportedFromLaunchpad, NotFoundError, OutdatedTranslationError,
     RosettaImportStatus, TooManyPluralFormsError,
-    TranslationFormatSyntaxError, TranslationFormatInvalidInputError,
+    TranslationFormatInvalidInputError, TranslationFormatSyntaxError,
     TranslationPermission, TranslationValidationStatus,
     ZeroLengthPOExportError)
 from canonical.launchpad.translationformat import TranslationMessageData
