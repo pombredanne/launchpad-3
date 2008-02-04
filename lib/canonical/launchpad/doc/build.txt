@@ -50,16 +50,25 @@ The currently published component is provided via the 'current_component'
 property.  It looks over the publishing records and finds the current
 publication of the source in question.
 
-    >>> firefox_build.current_component.name
-    u'main'
+    >>> print firefox_build.current_component.name
+    main
 
 It is not necessarily the same as:
 
-    >>> firefox_build.sourcepackagerelease.component.name
-    u'main'
+    >>> print firefox_build.sourcepackagerelease.component.name
+    main
 
 which is the component the source was originally uploaded to, before
 any overriding action.
+
+There is also another property on IBuild context which returns the
+allowed components while building this source respecting the
+ubuntu-ogre-model.
+
+    >>> print firefox_build.ogre_components
+    main
+
+See further information about 'Ogre Components' in a section below.
 
 The build can report any corresponding uploads using the package_upload
 property:
@@ -79,7 +88,6 @@ If the build does not have any uploads, None is returned:
     >>> at_build = getUtility(IBuildSet).getByBuildID(15)
     >>> print at_build.package_upload
     None
-
 
 Test "retry" functionality:
 
@@ -118,7 +126,6 @@ retried.
     >>> login('foo.bar@canonical.com')
     >>> warty.status = DistroSeriesStatus.DEVELOPMENT
     >>> flush_database_updates()
-    >>> logout()
     >>> login(ANONYMOUS)
 
     >>> active_build.can_be_retried
@@ -146,7 +153,6 @@ it won't interfere in the next tests.
     >>> login('foo.bar@canonical.com')
     >>> warty.status = DistroSeriesStatus.SUPPORTED
     >>> flush_database_updates()
-    >>> logout()
     >>> login(ANONYMOUS)
 
 Initialize all the required arguments to create a binary package for a
@@ -560,6 +566,60 @@ they will happen in another archive.
     True
 
 
+== 'Ogre' components ==
+
+The ubuntu 'ogre-model' ensures that build dependencies are
+consistently spread according the source target component, i.e. a
+source published in 'main' component is only allowed to depend on
+binaries also published in 'main', on the other hand a source
+published in 'universe' is allowed to depend on binaries published in
+'main', 'restricted' and 'universe' components.
+
+    >>> from canonical.launchpad.interfaces import IComponentSet
+    >>> from canonical.launchpad.ftests import syncUpdate
+    >>> from canonical.database.sqlbase import flush_database_caches
+
+    >>> login('foo.bar@canonical.com')
+
+    >>> build = getUtility(IBuildSet).getByBuildID(12)
+
+    >>> source_pub = hoary.getSourcePackage(
+    ...     'libstdc++').currentrelease.current_published
+
+    >>> ubuntu_components = [
+    ...     'main', 'restricted', 'universe', 'multiverse', 'partner']
+
+    >>> def testOgreComponents():
+    ...     print " Component | Ogre-Model"
+    ...     print "-----------+---------------"
+    ...     for component in ubuntu_components:
+    ...         component = getUtility(IComponentSet)[component]
+    ...         source_pub.secure_record.component = component
+    ...         syncUpdate(source_pub.secure_record)
+    ...         flush_database_caches()
+    ...         print '%10s | %s' % (build.current_component.name,
+    ...                              build.ogre_components)
+
+    >>> testOgreComponents()
+     Component | Ogre-Model
+    -----------+---------------
+          main | main
+    restricted | main restricted
+      universe | main restricted universe
+    multiverse | main restricted universe multiverse
+       partner | partner
+
+Restoring the original target component to the source used in this
+section, so there won't be any unexpected effects in subsequent
+tests.
+
+    >>> main_component = getUtility(IComponentSet)['main']
+    >>> source_pub.secure_record.component = main_component
+    >>> syncUpdate(source_pub.secure_record)
+    >>> flush_database_caches()
+    >>> login(ANONYMOUS)
+
+
 == Updating build-dependencies line ==
 
 The IBuild.dependencies field is only filled when a build job is
@@ -583,13 +643,59 @@ depwait_build, the 'dependencies' field remains the same.
     >>> depwait_build.dependencies == old_dep
     True
 
-But if the dependencies mentioned can be satisfied, they will be
-removed from the field.
+If we use a dependency available in the sampledata but currently
+published in a unreachable component, we can emulate the circumstances
+mentioned in bug #177827, verifying that the system is able to
+identify that the dependency in question cannot be satisfied because
+it is not published in the components allowed in the build context.
+
+    >>> depwait_build.dependencies = 'pmount'
+    >>> flush_database_updates()
+
+As we can see bellow, 'pmount' in hoary/i386 is published in the
+'universe' component and the build is only allowed to depend on
+packages published in 'main'
+
+    >>> hoary_i386 = depwait_build.distroarchseries
+    >>> pmount_pub = hoary_i386[
+    ...     'pmount'].currentrelease.current_publishing_record
+    >>> print pmount_pub.component.name
+    universe
+
+    >>> print depwait_build.current_component.name
+    main
+
+    >>> print depwait_build.ogre_components
+    main
+
+Thus the 'pmount' dependency remains unsatisfied.
+
+    >>> depwait_build.updateDependencies()
+    >>> print depwait_build.dependencies
+    pmount
+
+If we make pmount in hoary/i386 reachable, by moving it to the 'main'
+component, we can see that it will be excluded from the dependencies
+list.
+
+    >>> login('foo.bar@canonical.com')
+    >>> pmount_pub.secure_record.component = main_component
+    >>> from canonical.database.sqlbase import flush_database_caches
+    >>> flush_database_caches()
+    >>> login(ANONYMOUS)
 
     >>> depwait_build.dependencies = 'mozilla-firefox, pmount'
+    >>> flush_database_updates()
+
+Note that only the satisfied dependencies are removed the build
+dependency list, even when one or more of them were satisfied.
+
     >>> depwait_build.updateDependencies()
     >>> print depwait_build.dependencies
     mozilla-firefox
+
+
+=== Retrying DEPWAIT builds ===
 
 It depends on the callsite to decide whether or not to 'retry' a
 build after calling updateDependencies, to encapsulate such decision
@@ -602,7 +708,7 @@ in IBuildSet called retryDepWaiting().
     The Hoary Hedgehog Release for i386 (x86)
 
 In order to allow depwait_build to be retried we will forge a
-'satisfiable' dependencies field.
+'fully-satisfiable' dependencies field.
 
     >>> depwait_build.dependencies = 'pmount'
     >>> flush_database_updates()

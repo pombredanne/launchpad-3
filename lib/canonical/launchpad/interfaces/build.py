@@ -62,12 +62,18 @@ class IBuild(Interface):
     calculated_buildstart = Attribute(
         "Emulates a buildstart timestamp by calculating it from "
         "datebuilt - buildduration.")
+
     is_trusted = Attribute(
         "whether or not the record corresponds to a source targeted to "
         "the distribution main_archive (archive == distro.main_archive).")
+
     package_upload = Attribute(
         "The PackageUpload for this build, or None if there is "
         "no build.")
+
+    ogre_components = Attribute(
+        "The components this build is allowed to use. It returns a string "
+        "that can be used directly at the end of sources.list lines.")
 
     def retry():
         """Restore the build record to its initial state.

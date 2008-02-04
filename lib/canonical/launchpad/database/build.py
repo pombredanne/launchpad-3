@@ -218,6 +218,24 @@ class Build(SQLBase):
         self.dependencies = None
         self.createBuildQueueEntry()
 
+    @property
+    def ogre_components(self):
+        """See `IBuild`."""
+        # XXX cprov 20080204: if a new component is opened/selected for
+        # ubuntu this dictionary will have to be updated. Ideally we
+        # should model ogre in the database, but since a new component
+        # will also require other changes in code, we will simple let this
+        # marked for future reference.
+        component_dependencies = {
+            'main': 'main',
+            'restricted': 'main restricted',
+            'universe': 'main restricted universe',
+            'multiverse': 'main restricted universe multiverse',
+            'partner' : 'partner',
+            }
+        component_name = self.current_component.name
+        return component_dependencies[component_name]
+
     def updateDependencies(self):
         """See `IBuild`."""
         # This dict maps the package version relationship syntax in lambda
@@ -269,15 +287,23 @@ class Build(SQLBase):
 
             dep_candidate = self.distroarchseries.findDepCandidateByName(name)
             if dep_candidate:
+                # Check if the dependency candidate found is in the allowed
+                # build components domain (ogre_components).
+                dep_component_name = dep_candidate.component
+                allowed_component_names = self.ogre_components.split()
+                is_in_ogre_domain = (
+                    dep_component_name in allowed_component_names)
                 # Use apt_pkg function to compare versions
                 # it behaves similar to cmp, i.e. returns negative
                 # if first < second, zero if first == second and
                 # positive if first > second.
                 dep_result = apt_pkg.VersionCompare(
                     dep_candidate.binarypackageversion, version)
-                # Use the previously mapped result to identify whether
-                # or not the dependency was satisfied.
-                if version_relation_map[relation](dep_result):
+                # Use the previously mapped result and the presence in
+                # ogre_domain to identify whether or not the dependency
+                # was satisfied
+                if (is_in_ogre_domain and
+                    version_relation_map[relation](dep_result)):
                     # Continue for satisfied dependency.
                     continue
 
