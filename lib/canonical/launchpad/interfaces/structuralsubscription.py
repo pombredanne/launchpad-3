@@ -124,10 +124,6 @@ class IStructuralSubscription(Interface):
 class IStructuralSubscriptionTarget(Interface):
     """A Launchpad Structure allowing users to subscribe to it."""
 
-    bug_subscriptions = Attribute(
-        "A sequence of people or teams that are subscribed to bug "
-        "notifications about this target.")
-
     def getSubscriptions(min_bug_notification_level,
                          min_blueprint_notification_level):
         """Return all the subscriptions with the specified levels.

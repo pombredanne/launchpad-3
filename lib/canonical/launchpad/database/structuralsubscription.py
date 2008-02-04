@@ -10,7 +10,7 @@ from sqlobject import ForeignKey
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
-from canonical.database.sqlbase import quote, SQLBase, sqlvalues
+from canonical.database.sqlbase import quote, SQLBase
 
 from canonical.launchpad.interfaces import (
     BlueprintNotificationLevel, BugNotificationLevel, DeleteSubscriptionError,
@@ -94,44 +94,6 @@ class StructuralSubscription(SQLBase):
 
 class StructuralSubscriptionTargetMixin:
     """Mixin class for implementing `IStructuralSubscriptionTarget`."""
-    @property
-    def subscriptions(self):
-        """See `IStructuralSubscriptionTarget`."""
-        if IDistributionSourcePackage.providedBy(self):
-            target_clause = """
-                StructuralSubscription.distribution = %s
-                AND StructuralSubscription.sourcepackagename = %s
-                """ % sqlvalues(self.distribution, self.sourcepackagename)
-        else:
-            if IProduct.providedBy(self):
-                target_column = 'product'
-            elif IProductSeries.providedBy(self):
-                target_column = 'productseries'
-            elif IProject.providedBy(self):
-                target_column = 'project'
-            elif IMilestone.providedBy(self):
-                target_column = 'milestone'
-            elif IDistribution.providedBy(self):
-                target_column = 'distribution'
-            elif IDistroSeries.providedBy(self):
-                target_column = 'distroseries'
-            else:
-                raise AssertionError(
-                    '%s is not a valid structural subscription target.')
-            target_clause = (
-                "StructuralSubscription." +
-                target_column + " = %s" % sqlvalues(self))
-        query = "%s AND StructuralSubscription.subscriber = Person.id" % (
-            target_clause)
-        contacts = StructuralSubscription.select(
-            query,
-            orderBy='Person.displayname',
-            clauseTables=['Person'])
-        contacts.prejoin(["subscriber"])
-        # Use "list" here because it's possible that this list will be longer
-        # than a "shortlist", though probably uncommon.
-        return list(contacts)
-
     @property
     def _target_args(self):
         """Target Arguments.
