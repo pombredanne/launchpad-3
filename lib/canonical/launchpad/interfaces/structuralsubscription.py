@@ -140,6 +140,8 @@ class IStructuralSubscriptionTarget(Interface):
         :return: A sequence of `IStructuralSubscription`.
         """
 
+    parent = Attribute("The target's parent, or None if one doesn't exist.")
+
     def addSubscription(subscriber, subscribed_by):
         """Add a subscription for this structure.
 
@@ -170,6 +172,12 @@ class IStructuralSubscriptionTarget(Interface):
         `NOTHING`, otherwise, destroy the subscription.
 
         :subscriber: The IPerson who will be subscribed.
+        """
+
+    def isSubscribed(person):
+        """Is `person` already subscribed to this structure?
+
+        If yes, the subscription is returned. Otherwise False is returned.
         """
 
 

@@ -8,7 +8,6 @@ __all__ = [
     ]
 
 import cgi
-from datetime import datetime
 from time import time
 
 from BeautifulSoup import BeautifulSoup
@@ -16,7 +15,6 @@ from BeautifulSoup import BeautifulSoup
 from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 from zope.app.session.interfaces import ISession, IClientIdManager
 from zope.component import getUtility
-from zope.event import notify
 from zope.security.proxy import isinstance as zisinstance
 
 from openid.message import registerNamespaceAlias
@@ -36,8 +34,8 @@ from canonical.launchpad.validators.email import valid_email
 from canonical.launchpad.webapp import (
     action, custom_widget, LaunchpadFormView, LaunchpadView)
 from canonical.launchpad.webapp.interfaces import (
-    IPlacelessLoginSource, LoggedOutEvent)
-from canonical.launchpad.webapp.login import logInPerson
+    IPlacelessLoginSource)
+from canonical.launchpad.webapp.login import logInPerson, logoutPerson
 from canonical.launchpad.webapp.vhosts import allvhosts
 from canonical.uuid import generate_uuid
 from canonical.widgets.itemswidgets import LaunchpadRadioWidget
@@ -504,13 +502,7 @@ class LoginServiceAuthorizeView(LoginServiceBaseView):
     # person's name.
     def logout_action(self, action, data):
         # Log the user out and render the login page again.
-        session = ISession(self.request)
-        authdata = session['launchpad.authenticateduser']
-        previous_login = authdata.get('personid')
-        if previous_login is not None:
-            authdata['personid'] = None
-            authdata['logintime'] = datetime.utcnow()
-            notify(LoggedOutEvent(self.request))
+        logoutPerson(self.request)
         # Display the unauthenticated form
         return LoginServiceLoginView(
             self.context, self.request, self.nonce)()

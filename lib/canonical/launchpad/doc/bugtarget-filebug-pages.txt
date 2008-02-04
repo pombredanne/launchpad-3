@@ -306,7 +306,7 @@ been subscribed to the bug and there should be no indirect subscribers.
 The user will be notified that the bug has been marked as private.
 
     >>> print filebug_view.request.response.notifications[2].message
-    This bug report has been marked as <span title="Private bugs...
+    This bug report has been marked private...
 
 We can also specify that a bug is public via the same field.
 
@@ -494,7 +494,7 @@ bug and that the bug has been marked as private.
     Thank you for your bug report.
     Additional information was added to the bug description.
     Mark Shuttleworth has been subscribed to this bug.
-    This bug report has been marked as <span title="Private bugs...
+    This bug report has been marked private...
 
 == publishTraverse() ==
 
