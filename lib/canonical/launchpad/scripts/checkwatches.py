@@ -7,12 +7,15 @@ __metaclass__ = type
 
 from logging import getLogger
 import socket
+import sys
 
 from zope.component import getUtility
 
 from canonical.database.constants import UTC_NOW
 from canonical.database.sqlbase import commit
 from canonical.launchpad.components import externalbugtracker
+from canonical.launchpad.components.externalbugtracker import (
+    report_oops, report_warning)
 from canonical.launchpad.interfaces import (
     ILaunchpadCelebrities, IBugTrackerSet)
 from canonical.launchpad.webapp.interfaces import IPlacelessAuthUtility
@@ -83,10 +86,14 @@ class BugWatchUpdater(object):
                 # If something unexpected goes wrong, we log it and
                 # continue: a failure shouldn't break the updating of
                 # the other bug trackers.
+                info = sys.exc_info()
+                report_oops(
+                    info=info, properties=[
+                        ('bugtracker', bug_tracker.name),
+                        ('baseurl', bug_tracker_url)])
                 self.log.error(
                     "An exception was raised when updating %s" %
-                    bug_tracker_url,
-                    exc_info=True)
+                    bug_tracker_url, exc_info=info)
                 self.txn.abort()
         self._logout()
 
@@ -121,22 +128,31 @@ class BugWatchUpdater(object):
                 bug_watch.last_error_type = error_type
                 bug_watch.lastchecked = UTC_NOW
 
-            self.log.info(
-                "ExternalBugtracker for BugTrackerType '%s' is not "
-                "known." % (error.bugtrackertypename))
+            message = (
+                "ExternalBugtracker for BugTrackerType '%s' is not known." % (
+                    error.bugtrackertypename))
+            report_warning(message)
+            self.log.warning(message)
         else:
             if bug_watches_to_update.count() > 0:
                 try:
                     remotesystem.updateBugWatches(bug_watches_to_update)
                 except externalbugtracker.BugWatchUpdateError, error:
+                    report_oops(properties=[
+                            ('bugtracker', bug_tracker.name),
+                            ('baseurl', bug_tracker.baseurl)])
                     self.log.error(str(error))
+                    self.txn.abort()
                 except socket.timeout:
                     # We don't want to die on a timeout, since most likely
                     # it's just a problem for this iteration. Nevertheless
                     # we log the problem.
+                    report_oops(properties=[
+                            ('bugtracker', bug_tracker.name),
+                            ('baseurl', bug_tracker.baseurl)])
                     self.log.error(
-                        "Connection timed out when updating %s" %
-                        bug_tracker.baseurl)
+                        "Connection timed out when updating %s" % (
+                            bug_tracker.baseurl))
                     self.txn.abort()
             else:
                 self.log.info(
