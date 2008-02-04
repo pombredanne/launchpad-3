@@ -252,6 +252,7 @@ First, we create some bug watches to test with:
 Next, we monkey-patch urllib2.urlopen so that it always times out.
 
     >>> import socket
+    >>> import transactionmgr
     >>> import urllib2
     >>> urlopen = urllib2.urlopen
 
@@ -259,7 +260,7 @@ Next, we monkey-patch urllib2.urlopen so that it always times out.
     ...     raise socket.timeout("Connection timed out.")
     >>> try:
     ...     urllib2.urlopen = do_not_urlopen
-    ...     updater = BugWatchUpdater(transaction)
+    ...     updater = BugWatchUpdater(transactionmgr)
     ...     updater._login()
     ...     updater.updateBugTracker(example_bug_tracker)
     ... finally:
@@ -311,7 +312,7 @@ reset.
     >>> try:
     ...     externalbugtracker.get_external_bugtracker = (
     ...         broken_get_external_bugtracker)
-    ...     updater = BugWatchUpdater(transaction)
+    ...     updater = BugWatchUpdater(transactionmgr)
     ...     updater._login()
     ...     updater.updateBugTracker(example_bug_tracker)
     ... finally:
@@ -357,7 +358,7 @@ requests are actually made.
     >>> original_log = externalbugtracker.log
     >>> batch_size = externalbugtracker.Roundup.batch_size
     >>> try:
-    ...     updater = BugWatchUpdater(transaction)
+    ...     updater = BugWatchUpdater(transactionmgr)
     ...     updater._login()
     ...     urllib2.urlopen = do_not_urlopen
     ...     externalbugtracker.Roundup.batch_size = 5
@@ -378,11 +379,11 @@ bugtrackers. This is acheived by passing a list of bug tracker names to
 the updateBugTrackers() method. No watches will actually be updated
 because all the watches had their lastchecked time set to UTC_NOW above.
 
-    >>> updater = BugWatchUpdater(transaction, log=FakeLogger())
+    >>> updater = BugWatchUpdater(transactionmgr, log=FakeLogger())
     >>> updater._login()
     >>> updater.updateBugTrackers(['debbugs', 'gnome-bugzilla'])
-    INFO No watches to update on http://bugzilla.gnome.org/bugs
     INFO No watches to update on http://bugs.debian.org
+    INFO No watches to update on http://bugzilla.gnome.org/bugs
 
 This functionality can also be used with the checkwatches cronscript,
 allowing a user to pass a list of bugtrackers to check at the command
@@ -400,8 +401,8 @@ line.
 
     >>> print err
     INFO    creating lockfile
-    INFO    No watches to update on https://bugzilla.mozilla.org/
     INFO    No watches to update on http://bugs.debian.org
+    INFO    No watches to update on https://bugzilla.mozilla.org/
     INFO    Time for this run: ... seconds.
     <BLANKLINE>
 

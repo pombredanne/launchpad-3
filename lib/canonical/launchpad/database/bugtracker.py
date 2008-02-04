@@ -201,11 +201,6 @@ class BugTrackerSet:
         """See `IBugTrackerSet`."""
         return self.table.selectOne(self.table.q.name == name)
 
-    def getBugTrackersByName(self, bug_trackers):
-        """See `IBugTrackerSet`."""
-        return self.table.select("name IN %s " % sqlvalues(bug_trackers),
-            orderBy="id")
-
     def __getitem__(self, name):
         item = self.table.selectOne(self.table.q.name == name)
         if item is None:

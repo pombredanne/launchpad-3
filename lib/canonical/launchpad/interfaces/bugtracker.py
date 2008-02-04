@@ -194,13 +194,6 @@ class IBugTrackerSet(Interface):
         If no tracker with the given name exists, return default.
         """
 
-    def getBugTrackersByName(bug_trackers=[]):
-        """Return all the bug trackers for the names specified.
-
-        :param bug_trackers: A list of the bug tracker names to
-            retrieve
-        """
-
     def __getitem__(name):
         """Get a BugTracker by its name in the database.
 

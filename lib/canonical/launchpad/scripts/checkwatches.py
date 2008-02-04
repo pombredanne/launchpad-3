@@ -28,6 +28,7 @@ class BugWatchUpdater(object):
             self.log = getLogger()
         else:
             self.log = log
+
         self.txn = txn
 
     def _login(self):
@@ -41,11 +42,11 @@ class BugWatchUpdater(object):
         """Tear down the Bug Watch Updater Interaction."""
         endInteraction()
 
-    def updateBugTrackers(self, bug_trackers=[]):
+    def updateBugTrackers(self, bug_tracker_names=None):
         """Update all the bug trackers that have watches pending.
 
-        If bug tracker names are specified in bug_trackers only those
-        bug trackers will be checked.
+        If bug tracker names are specified in bug_tracker_names only
+        those bug trackers will be checked.
         """
         ubuntu_bugzilla = getUtility(ILaunchpadCelebrities).ubuntu_bugzilla
 
@@ -54,11 +55,14 @@ class BugWatchUpdater(object):
         self._login()
 
         bug_tracker_set = getUtility(IBugTrackerSet)
-        if bug_trackers:
-            bug_tracker_set = bug_tracker_set.getBugTrackersByName(
-                bug_trackers)
-
         for bug_tracker in bug_tracker_set:
+            # If a set of bug tracker names to check has been specified
+            # we discard those bug trackers whose names don't appear in
+            # that set.
+            if (bug_tracker_names is not None and
+                bug_tracker.name not in bug_tracker_names):
+                continue
+
             self.txn.begin()
             # Save the url for later, since we might need it to report an
             # error after a transaction has been aborted.
