@@ -156,12 +156,6 @@ class IStructuralSubscriptionTarget(Interface):
         :return: The new bug subscription.
         """
 
-    def removeSubscription(subscriber):
-        """Remove a subscription from this structure.
-
-        :subscriber: The IPerson who will be subscribed.
-        """
-
     def removeBugSubscription(subscriber):
         """Remove a subscription to bugs from this structure.
 

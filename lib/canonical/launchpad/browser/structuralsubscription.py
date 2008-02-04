@@ -142,7 +142,7 @@ class StructuralSubscriptionView(LaunchpadFormView):
         """Process the subscription for the user."""
         target = self.context
         # addSubscription raises an exception if called for an already
-        # subscribed person, and removeSubscription raises an exception
+        # subscribed person, and removeBugSubscription raises an exception
         # for a non-subscriber, hence call these methods only, if the
         # subscription status changed.
         is_subscribed = self.context.isSubscribed(self.user)
@@ -153,7 +153,7 @@ class StructuralSubscriptionView(LaunchpadFormView):
                 "You have been successfully "
                 "subscribed to %s." % target.displayname)
         elif is_subscribed and not subscribe:
-            target.removeSubscription(self.user)
+            target.removeBugSubscription(self.user)
             self.request.response.addNotification(
                 "You have been unsubscribed from %s. You "
                 "will no longer automatically "
@@ -181,7 +181,7 @@ class StructuralSubscriptionView(LaunchpadFormView):
                 team.displayname, self.context.displayname))
 
         for team in subscriptions - form_selected_teams:
-            target.removeSubscription(team)
+            target.removeBugSubscription(team)
             self.request.response.addNotification(
                 'The "%s" team was successfully unsubscribed from %s.' % (
                     team.displayname, self.context.displayname))
@@ -209,7 +209,7 @@ class StructuralSubscriptionView(LaunchpadFormView):
 
         subscriptions_to_remove = data.get('remove_other_subscriptions', [])
         for subscription in subscriptions_to_remove:
-            target.removeSubscription(subscription)
+            target.removeBugSubscription(subscription)
             self.request.response.addNotification(
                 '"%s" was successfully unsubscribed from %s.' % (
                     subscription.displayname, target.displayname))

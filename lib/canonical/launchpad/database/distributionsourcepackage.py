@@ -172,17 +172,6 @@ class DistributionSourcePackage(BugTargetBase,
         sub.bug_notification_level = BugNotificationLevel.COMMENTS
         return sub
 
-    def removeSubscription(self, person):
-        """See `IDistributionSourcePackage`."""
-        subscription_to_remove = self.isSubscribed(person)
-
-        if not subscription_to_remove:
-            raise DeleteSubscriptionError(
-                "%s is not subscribed to %s." % (
-                person.name, self.displayname))
-        else:
-            subscription_to_remove.destroySelf()
-
     def removeBugSubscription(self, person):
         """See `IDistributionSourcePackage`."""
         subscription_to_remove = self.isSubscribed(person)
