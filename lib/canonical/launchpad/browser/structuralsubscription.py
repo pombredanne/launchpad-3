@@ -14,8 +14,8 @@ from zope.schema.vocabulary import SimpleTerm, SimpleVocabulary
 
 from canonical.cachedproperty import cachedproperty
 from canonical.launchpad.interfaces import (
-    DuplicateSubscriptionError, IDistributionSourcePackage,
-    IStructuralSubscriptionForm)
+    BugNotificationLevel, DuplicateSubscriptionError,
+    IDistributionSourcePackage, IStructuralSubscriptionForm)
 from canonical.launchpad.webapp import (
     LaunchpadFormView, action, canonical_url, custom_widget)
 from canonical.launchpad.webapp.authorization import check_permission
@@ -120,16 +120,28 @@ class StructuralSubscriptionView(LaunchpadFormView):
         teams = set(self.user_teams)
         subscribed_teams = set(team
                                for team in teams
-                               if (self.context.getSubscription(team)
-                                   is not None))
+                               if self.isSubscribed(team))
         return {
             'subscribe_me': self.currentUserIsSubscribed(),
             'subscriptions_team': subscribed_teams
             }
 
+    def isSubscribed(self, person):
+        """Is `person` subscribed to the context target?
+
+        Returns True is the user is subscribed to bug notifications
+        for the context target.
+        """
+        subscription = self.context.getSubscription(person)
+        if subscription is not None:
+            return (subscription.bug_notification_level >
+                    BugNotificationLevel.NOTHING)
+        else:
+            return False
+
     def currentUserIsSubscribed(self):
         """Return True, if the current user is subscribed."""
-        return self.context.getSubscription(self.user) is not None
+        return self.isSubscribed(self.user)
 
     @action(u'Save these changes', name='save')
     def save_action(self, action, data):
@@ -146,7 +158,7 @@ class StructuralSubscriptionView(LaunchpadFormView):
         # subscribed person, and removeBugSubscription raises an exception
         # for a non-subscriber, hence call these methods only, if the
         # subscription status changed.
-        is_subscribed = self.context.getSubscription(self.user) is not None
+        is_subscribed = self.isSubscribed(self.user)
         subscribe = data['subscribe_me']
         if (not is_subscribed) and subscribe:
             sub = target.addBugSubscription(self.user, self.user)
@@ -173,8 +185,7 @@ class StructuralSubscriptionView(LaunchpadFormView):
         teams = set(self.user_teams)
         form_selected_teams = teams & set(form_selected_teams)
         subscriptions = set(
-            team for team in teams if (self.context.getSubscription(team)
-                                       is not None))
+            team for team in teams if self.isSubscribed(team))
 
         for team in form_selected_teams - subscriptions:
             sub = target.addBugSubscription(team, self.user)
