@@ -934,6 +934,13 @@ class Bug(SQLBase):
 
     def getBugWatch(self, bugtracker, remote_bug):
         """See `IBug`."""
+        # If the bug tracker is of BugTrackerType.EMAILADDRESS we can
+        # never tell if a bug is already being watched upstream, since
+        # the remotebug field for such bug watches contains either '' or
+        # an RFC822 message ID. In these cases, then, we always return
+        # None for the sake of sanity.
+        return None
+
         # XXX: BjornT 2006-10-11:
         # This matching is a bit fragile, since bugwatch.remotebug
         # is a user editable text string. We should improve the
