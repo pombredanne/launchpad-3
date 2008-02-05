@@ -5,7 +5,7 @@
           tasklink view/taskLink;
           form_row_id string:task${context/id}">
   <tr tal:attributes="class view/getTaskRowCSSClass">
-    <td align="right">
+    <td class="icon left right">
       <metal:expander
           metal:define-macro="expander"
           tal:define="expander_link_text expander_link_text|nothing">
@@ -65,7 +65,7 @@
       <metal:expander metal:use-macro="template/macros/expander" />
     </td>
 
-    <td style="padding-right: 0em" align="right">
+    <td class="icon left right">
       <metal:expander metal:use-macro="template/macros/expander" />
     </td>
 

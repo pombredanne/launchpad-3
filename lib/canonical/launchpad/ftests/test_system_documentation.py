@@ -113,9 +113,10 @@ def uploaderTearDown(test):
 
 def builddmasterSetUp(test):
     """Setup the connection for the build master tests."""
+    test_dbuser = config.builddmaster.dbuser
+    test.globs['test_dbuser'] = test_dbuser
     LaunchpadZopelessLayer.alterConnection(
-        dbuser=config.builddmaster.dbuser,
-        isolation=READ_COMMITTED_ISOLATION)
+        dbuser=test_dbuser, isolation=READ_COMMITTED_ISOLATION)
     setGlobs(test)
 
 def branchscannerSetUp(test):
@@ -417,6 +418,12 @@ special = {
             setUp=builddmasterSetUp,
             layer=LaunchpadZopelessLayer, optionflags=default_optionflags,
             stdout_logging_level=logging.DEBUG
+            ),
+    'buildd-queuebuilder.txt': LayeredDocFileSuite(
+            '../doc/buildd-queuebuilder.txt',
+            setUp=builddmasterSetUp,
+            layer=LaunchpadZopelessLayer, optionflags=default_optionflags,
+            stdout_logging_level=logging.WARNING
             ),
     'revision.txt': LayeredDocFileSuite(
             '../doc/revision.txt',
