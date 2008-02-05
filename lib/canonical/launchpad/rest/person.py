@@ -17,8 +17,10 @@ from zope.schema import Object
 from canonical.lazr.rest import Collection, Entry, ScopedCollection
 from canonical.lazr.interfaces import IEntry
 from canonical.lazr.rest.schema import CollectionField
-from canonical.launchpad.interfaces import (IPerson, IPersonSet,
-    make_person_name_field)
+
+from canonical.launchpad.interfaces import (
+    IPerson, IPersonSet, make_person_name_field)
+
 from canonical.lp import decorates
 
 class IPersonEntry(IEntry):
@@ -72,10 +74,12 @@ class PersonCollection(Collection):
 class PersonPersonCollection(ScopedCollection):
     """A collection of people associated with some other person.
 
-    For instance, the members of a team.
+    For instance, the members of a team are a collection of people
+    associated with another person.
     """
 
     def lookupEntry(self, name):
+        """Find a person in the collection by name."""
         person = getUtility(IPersonSet).getByName(name)
         if person in self.collection:
             return person

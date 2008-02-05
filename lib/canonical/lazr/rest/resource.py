@@ -156,6 +156,8 @@ class EntryResource(ReadOnlyResource):
         for name in schema.names():
             element = schema.get(name)
             if ICollectionField.providedBy(element):
+                # The field is a collection; include a link to the
+                # collection resource.
                 try:
                     related_resource = self.publishTraverse(
                         self.request, name)
@@ -165,6 +167,8 @@ class EntryResource(ReadOnlyResource):
                 except NotFound:
                     pass
             elif IObject.providedBy(element):
+                # The field is an entry; include a link to the
+                # entry resource.
                 related_entry = getattr(self.context, name)
                 if related_entry is not None:
                     related_resource = EntryResource(related_entry,
@@ -173,7 +177,12 @@ class EntryResource(ReadOnlyResource):
                     dict[key] = canonical_url(related_resource,
                                               request=self.request)
             elif IField.providedBy(element):
+                # It's a data field; display it as part of the
+                # representation.
                 dict[name] = getattr(self.context, name)
+            else:
+                # It's not a field at all.
+                raise AssertionError("Non-field object found in schema.")
 
         return dict
 
@@ -187,14 +196,14 @@ class CollectionResource(ReadOnlyResource):
     """A resource that serves a list of entry resources."""
     implements(ICollectionResource)
 
+    # A top-level collection resource is inside the root resource.
+    inside = None
+    rootsite = None
+
     def __init__(self, context, request, collection_name):
         super(CollectionResource, self).__init__(
             ICollection(context), request)
         self.collection_name = collection_name
-
-    # A top-level collection resource is inside the root resource.
-    inside = None
-    rootsite = None
 
     @property
     def path(self):
@@ -212,9 +221,10 @@ class CollectionResource(ReadOnlyResource):
         """Fetch a collection and render it as JSON."""
         entries = self.context.find()
         if entries is None:
-            raise NotFound(self, self.collection_name)
-        entry_resources = [EntryResource(entry, self.request)
-                           for entry in entries]
+            entry_resources = []
+        else:
+            entry_resources = [EntryResource(entry, self.request)
+                               for entry in entries]
         self.request.response.setHeader('Content-type', 'application/json')
         return simplejson.dumps(entry_resources, cls=ResourceJSONEncoder)
 
@@ -224,6 +234,18 @@ class ScopedCollectionResource(CollectionResource):
     @property
     def inside(self):
         """The collection is inside its scope."""
+        return EntryResource(self.context.context, self.request)
+
+
+class ScopedCollectionResource(CollectionResource):
+    """A resource for a collection scoped to some entry."""
+
+    @property
+    def inside(self):
+        """See `ICanonicalUrlData`.
+
+        The object to which the collection is scoped.
+        """
         return EntryResource(self.context.context, self.request)
 
 
@@ -275,13 +297,23 @@ class Collection:
 
 class ScopedCollection:
     implements(ICollection)
+    """A collection associated with some parent object."""
 
     def __init__(self, context, collection):
+        """Initialize the scoped collection.
+
+        :param context: The object to which the collection is scoped.
+        :param collection: The scoped collection.
+        """
         self.context = context
         self.collection = collection
 
+
     def lookupEntry(self, name):
-        pass
+        """See `ICollection`"""
+        raise KeyError(name)
 
     def find(self):
+        """See `ICollection`."""
         return self.collection
+

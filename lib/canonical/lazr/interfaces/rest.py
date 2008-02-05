@@ -21,7 +21,10 @@ from zope.schema.interfaces import IObject
 from canonical.launchpad.webapp.interfaces import ICanonicalUrlData
 
 class ICollectionField(IObject):
-    """A collection associated with an entry."""
+    """A collection associated with an entry.
+
+    This is a marker interface.
+    """
 
 
 class IHTTPResource(IPublishTraverse, ICanonicalUrlData):
