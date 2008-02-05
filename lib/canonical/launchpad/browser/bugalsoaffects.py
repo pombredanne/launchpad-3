@@ -216,11 +216,13 @@ class ChooseProductStep(AlsoAffectsStep):
                     "series.")
                 sourcepackage = series.getSourcePackage(
                     bugtask.sourcepackagename)
-                self.request.response.addWarningNotification(_(dedent("""
+                self.request.response.addWarningNotification(
+                    structured(
+                    _(dedent("""
                     This package is linked to an inactive upstream.  You
                     can <a href="%(package_url)s/+edit-packaging">fix it</a>
                     to avoid this step in the future.""")),
-                    package_url=canonical_url(sourcepackage))
+                    package_url=canonical_url(sourcepackage)))
                 return
 
             try:

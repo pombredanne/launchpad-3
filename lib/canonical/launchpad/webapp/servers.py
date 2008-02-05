@@ -661,7 +661,7 @@ class LaunchpadTestResponse(LaunchpadBrowserResponse):
     >>> INotificationResponse.providedBy(response)
     True
 
-    >>> response.addWarningNotification('%(val)s Notification', val='Warning')
+    >>> response.addWarningNotification('Warning Notification')
     >>> request.notifications[0].message
     u'Warning Notification'
     """

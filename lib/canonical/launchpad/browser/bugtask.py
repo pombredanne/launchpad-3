@@ -96,6 +96,7 @@ from canonical.launchpad.browser.launchpad import StructuralObjectPresentation
 
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.batching import TableBatchNavigator
+from canonical.launchpad.webapp.menu import structured
 from canonical.launchpad.webapp.snapshot import Snapshot
 from canonical.launchpad.webapp.tales import PersonFormatterAPI
 from canonical.launchpad.webapp.vocabulary import vocab_factory
@@ -1146,6 +1147,7 @@ class BugTaskEditView(LaunchpadEditFormView):
                     # contributor in this pillar, we display a warning
                     # to the user, in case they made a mistake.
                     self.request.response.addWarningNotification(
+                        structured(
                         """<a href="%s">%s</a>
                         did not previously have any assigned bugs in
                         <a href="%s">%s</a>.
@@ -1157,7 +1159,7 @@ class BugTaskEditView(LaunchpadEditFormView):
                         new_assignee.displayname,
                         canonical_url(bugtask.pillar),
                         bugtask.pillar.title,
-                        canonical_url(bugtask)))
+                        canonical_url(bugtask))))
 
         if bugtask_before_modification.bugwatch != bugtask.bugwatch:
             if bugtask.bugwatch is None:
