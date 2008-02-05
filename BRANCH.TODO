@@ -11,4 +11,6 @@
    non-logged-in users.
  * +index page for email trackers should not have (Base URL) after the
    email address.
+ * It shouldn't call the list of URLs "URLs" either.
+ * Also should be true for the table of bug watches.
  * The +edit page shouldn't call the BaseURL field Base URL either.
