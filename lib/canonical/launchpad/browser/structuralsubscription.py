@@ -120,7 +120,8 @@ class StructuralSubscriptionView(LaunchpadFormView):
         teams = set(self.user_teams)
         subscribed_teams = set(team
                                for team in teams
-                               if self.context.isSubscribed(team))
+                               if (self.context.getSubscription(team)
+                                   is not None))
         return {
             'subscribe_me': self.currentUserIsSubscribed(),
             'subscriptions_team': subscribed_teams
@@ -128,7 +129,7 @@ class StructuralSubscriptionView(LaunchpadFormView):
 
     def currentUserIsSubscribed(self):
         """Return True, if the current user is subscribed."""
-        return self.context.isSubscribed(self.user)
+        return self.context.getSubscription(self.user) is not None
 
     @action(u'Save these changes', name='save')
     def save_action(self, action, data):
@@ -145,7 +146,7 @@ class StructuralSubscriptionView(LaunchpadFormView):
         # subscribed person, and removeBugSubscription raises an exception
         # for a non-subscriber, hence call these methods only, if the
         # subscription status changed.
-        is_subscribed = self.context.isSubscribed(self.user)
+        is_subscribed = self.context.getSubscription(self.user) is not None
         subscribe = data['subscribe_me']
         if (not is_subscribed) and subscribe:
             sub = target.addBugSubscription(self.user, self.user)
@@ -172,7 +173,8 @@ class StructuralSubscriptionView(LaunchpadFormView):
         teams = set(self.user_teams)
         form_selected_teams = teams & set(form_selected_teams)
         subscriptions = set(
-            team for team in teams if self.context.isSubscribed(team))
+            team for team in teams if (self.context.getSubscription(team)
+                                       is not None))
 
         for team in form_selected_teams - subscriptions:
             sub = target.addBugSubscription(team, self.user)

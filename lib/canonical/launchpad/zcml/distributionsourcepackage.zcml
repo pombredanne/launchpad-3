@@ -18,7 +18,7 @@
                   getUsedBugTagsWithOpenCounts bugtargetdisplayname
                   bugtargetname getMostCommonBugs getBugCounts
                   bug_subscriptions getSubscriptions
-                  getSubscription" />
+                  getSubscription parent_subscription_target" />
     <require
       permission="launchpad.AnyPerson"
       attributes="addSubscription addBugSubscription
