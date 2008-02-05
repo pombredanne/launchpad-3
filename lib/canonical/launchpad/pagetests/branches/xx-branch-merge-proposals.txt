@@ -172,6 +172,7 @@ target branches or the registrant of the merge proposal.
     Request review: .../+merge/.../+request-review
     Review proposal: .../+merge/.../+review
     Mark as merged: .../+merge/.../+merged
+    Resubmit proposal: .../+merge/.../+resubmit
 
 Someone who is not logged in, or not the one of those that can alter the
 proposal to merge get no actions.
@@ -184,6 +185,7 @@ proposal to merge get no actions.
     Request review (disabled)
     Review proposal (disabled)
     Mark as merged (disabled)
+    Resubmit proposal (disabled)
 
     >>> anon_browser.open(firefox_merge_url)
     >>> print_action_links(anon_browser.contents)
@@ -193,6 +195,7 @@ proposal to merge get no actions.
     Request review (disabled)
     Review proposal (disabled)
     Mark as merged (disabled)
+    Resubmit proposal (disabled)
 
 When editing the proposal, the whiteboard can be altered, and the
 button options are:
@@ -313,6 +316,69 @@ Gone from the target branch.
     ~name12/gnome-terminal/scanned (New) - view proposal details
       This is the whiteboard
       Work in progress
+
+
+== Resubmitting proposals ==
+
+If a proposal ends up getting rejected, the proposal can be resubmitted.
+Actually it is valid to resubmit a proposal at any time (as long as it
+is not already superceded or merged), but upon rejection is the most
+likely use case.  When a proposal is resubmitted, a new proposal is
+registered with the same source and target branches but restarting the
+workflow around the state.
+
+    >>> sample_browser.open(
+    ...     'http://code.launchpad.dev/~name12/gnome-terminal/scanned')
+    >>> sample_browser.getLink('view proposal details').click()
+    >>> sample_browser.getLink('Resubmit proposal').click()
+    >>> print sample_browser.title
+    Resubmit proposal to merge
+
+    >>> sample_browser.getControl('Whiteboard').value = (
+    ...     'Resubmitting due to extensive changes.')
+    >>> sample_browser.getControl('Resubmit').click()
+
+    >>> for message in get_feedback_messages(sample_browser.contents):
+    ...     print extract_text(message)
+    Please update the whiteboard for the new proposal.
+
+    >>> sample_browser.getControl('Whiteboard').value = (
+    ...     'Updated work')
+    >>> sample_browser.getControl('Update').click()
+
+The new merge proposal is created as work in progress, and there is
+a link back to the superceded proposal.
+
+    >>> print_summary(sample_browser)
+    Source branch: ~name12/gnome-terminal/scanned
+    Target branch: ~name12/gnome-terminal/main
+           Status: Work in progress
+
+    >>> print extract_text(find_tag_by_id(
+    ...     sample_browser.contents, 'superceded-proposal'))
+    This proposal supercedes an earlier proposal.
+
+    >>> sample_browser.getLink('earlier proposal').click()
+    >>> print_summary(sample_browser)
+    Source branch: ~name12/gnome-terminal/scanned
+    Target branch: ~name12/gnome-terminal/main
+           Status: Superceded
+
+    >>> print extract_text(find_tag_by_id(
+    ...      sample_browser.contents, 'branch-whiteboard-value'))
+    Resubmitting due to extensive changes.
+
+The earlier superceded proposal also has a link back to the
+new proposal that supercedes it.
+
+    >>> print extract_text(find_tag_by_id(
+    ...     sample_browser.contents, 'superceded-by'))
+    This proposal has been superceded by a later proposal.
+    >>> sample_browser.getLink('later proposal').click()
+
+    >>> print extract_text(find_tag_by_id(
+    ...      sample_browser.contents, 'branch-whiteboard-value'))
+    Updated work
 
 
 == Default target branches ==

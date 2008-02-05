@@ -67,7 +67,9 @@ class BranchMergeProposalContextMenu(ContextMenu):
     @enabled_with_permission('launchpad.Edit')
     def edit(self):
         text = 'Edit details'
-        return Link('+edit', text, icon='edit')
+        status = self.context.queue_status
+        enabled = status not in BRANCH_MERGE_PROPOSAL_FINAL_STATES
+        return Link('+edit', text, icon='edit', enabled=enabled)
 
     @enabled_with_permission('launchpad.Edit')
     def delete(self):
@@ -386,7 +388,7 @@ class BranchMergeProposalDeleteView(MergeProposalEditView):
     @action('Delete proposal', name='delete')
     def delete_action(self, action, data):
         """Delete the merge proposal and go back to the source branch."""
-        self.context.destroySelf()
+        self.context.deleteProposal()
         # Override the next url to be the source branch.
         self.next_url = canonical_url(self.source_branch)
 
