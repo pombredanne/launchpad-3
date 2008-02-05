@@ -167,23 +167,17 @@ class NotificationResponse:
     _notifications = None
 
     def addNotification(self, msg, level=BrowserNotificationLevel.NOTICE):
-        """See `INotificationResponse`.
-
-	XXX FIX ME XXX
-	Add a docstring describing the IStructuredString and
-	i18n.Message parts of the API.
-
-	"""
+        """See `INotificationResponse`."""
         # It is possible that the message is wrapped in an
         # internationalized object, so we need to translate it
         # first. See bug #54987.
         if isinstance(msg, (zope.i18n.Message, zope.i18n.MessageID)):
             msg = zope.i18n.translate(msg, context=self._request)
 
-	if IStructuredString.providedBy(msg):
-	    escaped_msg = msg.escapedtext
-	else:
-	    escaped_msg = cgi.escape(unicode(msg))
+        if IStructuredString.providedBy(msg):
+            escaped_msg = msg.escapedtext
+        else:
+            escaped_msg = cgi.escape(unicode(msg))
 
         self.notifications.append(Notification(level, escaped_msg))
 
