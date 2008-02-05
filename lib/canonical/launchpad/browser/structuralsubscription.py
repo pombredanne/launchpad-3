@@ -14,8 +14,8 @@ from zope.schema.vocabulary import SimpleTerm, SimpleVocabulary
 
 from canonical.cachedproperty import cachedproperty
 from canonical.launchpad.interfaces import (
-    DuplicateSubscriptionError, IDistributionSourcePackage,
-    IStructuralSubscriptionForm)
+    BugNotificationLevel, DuplicateSubscriptionError,
+    IDistributionSourcePackage, IStructuralSubscriptionForm)
 from canonical.launchpad.webapp import (
     LaunchpadFormView, action, canonical_url, custom_widget)
 from canonical.launchpad.webapp.authorization import check_permission
