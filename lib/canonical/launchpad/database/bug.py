@@ -473,7 +473,7 @@ class Bug(SQLBase):
                     recipients.addAssignee(bugtask.assignee)
 
             if IStructuralSubscriptionTarget.providedBy(bugtask.target):
-                also_notified_subscribers.add(
+                also_notified_subscribers.update(
                     bugtask.target.getBugNotificationsRecipients(recipients))
                             
             # Bug contacts are indirect subscribers.
