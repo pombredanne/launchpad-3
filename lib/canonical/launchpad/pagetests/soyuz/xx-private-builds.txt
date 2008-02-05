@@ -1,0 +1,194 @@
+= Private Builds =
+
+A build is considered private if it is a build being done in an IArchive that
+is marked as private.  Private builds will not be apparent anywhere in the
+UI.  There are several places where information is can be presented
+differently depending on whether the user is permitted to see the build
+or not.  A permitted user is one who is the archive's owner, a member of
+its team or an administrator.
+
+
+== Builder portlet details ==
+
+The builder-portlet-details portlet appears on the builder +index page
+and usually shows some status information (see 20-builder-index.txt).
+This status information is changed to not reveal build details if a
+private build is taking place.  Instead the builder is reported as NOT OK
+(meaning it's unavailable).
+
+We'll make a private archive and add a build to it to demonstrate this.
+"cprov" has got some builds in the sample data already, we'll add one to
+the "frog" builder.
+
+    >>> from zope.component import getUtility
+    >>> from canonical.launchpad.interfaces import (
+    ...     IBuilderSet, IBuildSet, IPersonSet)
+    >>> from canonical.launchpad.database.buildqueue import BuildQueue
+    >>> from canonical.launchpad.ftests import login, logout
+    >>> from canonical.database.sqlbase import flush_database_updates
+    >>> login("foo.bar@canonical.com")
+    >>> cprov = getUtility(IPersonSet).getByName("cprov")
+    >>> cprov.archive.private = True
+    >>> cprov_builds = getUtility(
+    ...     IBuildSet).getBuildsForArchive(cprov.archive)
+    >>> frog = getUtility(IBuilderSet)['frog']
+    >>> frog.builderok = True
+    >>> throw_away = BuildQueue(build=cprov_builds[2], builder=frog)
+    >>> flush_database_updates()
+    >>> logout()
+
+So now we can go to frog's builder page and see what the portlet shows us.
+The status shown to an anonymous user hides the fact that it's building a
+private build:
+
+    >>> anon_browser.open("http://launchpad.dev/+builds/frog")
+    >>> print extract_text(
+    ...     find_tag_by_id(anon_browser.contents, 'portlet-details'))
+    The frog builder details
+    ...
+    Status NOT OK : (AUTO)
+    ...
+
+Administrators are allowed to see the build:
+
+    >>> admin_browser.open("http://launchpad.dev/+builds/frog")
+    >>> print extract_text(
+    ...     find_tag_by_id(admin_browser.contents, 'portlet-details'))
+    The frog builder details
+    ...
+    Status BUILDING i386 build of ... RELEASE [cprov] (AUTO)
+    ...
+
+cprov is also allowed to see his own build:
+
+    >>> cprov_browser = setupBrowser(
+    ...     auth="Basic celso.providelo@canonical.com:cprov")
+    >>> cprov_browser.open("http://launchpad.dev/+builds/frog")
+    >>> print extract_text(
+    ...     find_tag_by_id(cprov_browser.contents, 'portlet-details'))
+    The frog builder details
+    ...
+    Status BUILDING i386 build of ... RELEASE [cprov] (AUTO)
+    ...
+
+
+== Builder index page ==
+
+The builder index page (+builds/<builder>) shows what that builder is
+currently doing.  It either says it's idle, or gives a description
+of the package it's currently building with a snippet of the build log.
+
+If the build is private, the page will say that it's idle even though it's
+not, for a non-privileged user:
+
+    >>> print anon_browser.url
+    http://launchpad.dev/+builds/frog
+
+    >>> print extract_text(anon_browser.contents)
+    Build machine The frog builder
+    ...
+    Current status
+    The frog builder is idle.
+    ...
+
+For admins, the page will show the build:
+
+    >>> print admin_browser.url
+    http://launchpad.dev/+builds/frog
+
+    >>> print extract_text(admin_browser.contents)
+    Build machine The frog builder
+    ...
+    Current status
+    i386 build of iceweasel 1.0 in ubuntu warty RELEASE
+    ...
+
+And of course cprov can see his own build:
+
+    >>> print cprov_browser.url
+    http://launchpad.dev/+builds/frog
+
+    >>> print extract_text(cprov_browser.contents)
+    Build machine The frog builder
+    ...
+    Current status
+    i386 build of iceweasel 1.0 in ubuntu warty RELEASE
+    ...
+
+
+== Builder history page ==
+
+The builder history page (+builds/<builder>/+history) shows all the builds
+that the builder has done, with filtering on a user-selected build state
+(see 20-builder-index.txt).
+
+This list does not include builds that are private if a non-privileged
+user is viewing it.
+
+The builder "bob" has lots of builds in the sample data, including some
+for cprov's private archive.  We can visit bob's history page and see
+what it shows a non-privileged user:
+
+    >>> anon_browser.open("http://launchpad.dev/+builds/bob/+history")
+    >>> [builds_list] = find_tags_by_class(
+    ...     anon_browser.contents, 'builds_list')
+    >>> print extract_text(builds_list)
+    Package:
+    ...
+    hppa build of mozilla-firefox 0.9 in ubuntu warty RELEASE
+    ...
+    i386 build of cdrkit 1.0 in ubuntu warty RELEASE
+    ...
+    i386 build of cdrkit 1.0 in ubuntu breezy-autotest RELEASE
+    ...
+    i386 build of foobar 1.0 in ubuntu warty RELEASE
+    ...
+    i386 build of at 0.00 in ubuntu warty RELEASE
+    ...
+    5 of 14 results
+    ...
+
+Now visit the same page as an admin we can see that there are four more
+results in the total set of results with an extra "mozilla-firefox"
+build at the top of the first batch.
+
+    >>> admin_browser.open("http://launchpad.dev/+builds/bob/+history")
+    >>> [builds_list] = find_tags_by_class(
+    ...     admin_browser.contents, 'builds_list')
+    >>> print extract_text(builds_list)
+    Package:
+    ...
+    hppa build of mozilla-firefox 0.9 in ubuntu warty RELEASE
+    ...
+    hppa build of mozilla-firefox 0.9 in ubuntu warty RELEASE
+    ...
+    i386 build of pmount 0.1-1 in ubuntu warty RELEASE
+    ...
+    i386 build of cdrkit 1.0 in ubuntu warty RELEASE
+    ...
+    i386 build of cdrkit 1.0 in ubuntu warty RELEASE
+    ...
+    5 of 17 results
+    ...
+
+If cprov browses the list he will also see his own builds in the list.
+
+    >>> cprov_browser.open("http://launchpad.dev/+builds/bob/+history")
+    >>> [builds_list] = find_tags_by_class(
+    ...     cprov_browser.contents, 'builds_list')
+    >>> print extract_text(builds_list)
+    Package:
+    ...
+    hppa build of mozilla-firefox 0.9 in ubuntu warty RELEASE
+    ...
+    hppa build of mozilla-firefox 0.9 in ubuntu warty RELEASE
+    ...
+    i386 build of pmount 0.1-1 in ubuntu warty RELEASE
+    ...
+    i386 build of cdrkit 1.0 in ubuntu warty RELEASE
+    ...
+    i386 build of cdrkit 1.0 in ubuntu warty RELEASE
+    ...
+    5 of 17 results
+    ...
+
