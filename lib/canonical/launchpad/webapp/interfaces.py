@@ -608,11 +608,11 @@ class INotificationResponse(Interface):
     def addNotification(msg, level=BrowserNotificationLevel.NOTICE):
         """Append the given message to the list of notifications.
 
-        A plain string will be CGI escaped.  Passing a value that
-        provides `IStructuredString` will return a unicode string has
-        been properly escaped and structured.  Passing an instance of
-        a Zope internationalized message will cause the message to be
-        translated, then CGI escaped.
+        A plain string message will be CGI escaped.  Passing a message
+        that provides the `IStructuredString` interface will return a
+        unicode string that has been properly escaped.
+        Passing an instance of a Zope internationalized message will
+        cause the message to be translated, then CGI escaped.
 
         :param msg: This may be a string, `zope.i18n.Message`,
         `zope.i18n.MessageID`, or an instance of `IStructuredString`.
@@ -632,20 +632,20 @@ class INotificationResponse(Interface):
             schema=INotificationList
             )
 
-    def addDebugNotification(msg, **kw):
-        """Shortcut to addNotification(msg, DEBUG, **kw)"""
+    def addDebugNotification(msg):
+        """Shortcut to addNotification(msg, DEBUG)"""
 
-    def addInfoNotification(msg, **kw):
-        """Shortcut to addNotification(msg, INFO, **kw)"""
+    def addInfoNotification(msg):
+        """Shortcut to addNotification(msg, INFO)"""
 
-    def addNoticeNotification(msg, **kw):
-        """Shortcut to addNotification(msg, NOTICE, **kw)"""
+    def addNoticeNotification(msg):
+        """Shortcut to addNotification(msg, NOTICE)"""
 
-    def addWarningNotification(msg, **kw):
-        """Shortcut to addNotification(msg, WARNING, **kw)"""
+    def addWarningNotification(msg):
+        """Shortcut to addNotification(msg, WARNING)"""
 
-    def addErrorNotification(msg, **kw):
-        """Shortcut to addNotification(msg, ERROR, **kw)"""
+    def addErrorNotification(msg):
+        """Shortcut to addNotification(msg, ERROR)"""
 
     def redirect(location, status=None):
         """As per IHTTPApplicationResponse.redirect, except notifications

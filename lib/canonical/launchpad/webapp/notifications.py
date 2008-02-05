@@ -237,25 +237,25 @@ class NotificationResponse:
             session['notifications'] = self._notifications
         return super(NotificationResponse, self).redirect(location, status)
 
-    def addDebugNotification(self, msg, **kw):
-        """See canonical.launchpad.webapp.interfaces.INotificationResponse"""
-        self.addNotification(msg, BrowserNotificationLevel.DEBUG, **kw)
+    def addDebugNotification(self, msg):
+        """See `INotificationResponse`."""
+        self.addNotification(msg, BrowserNotificationLevel.DEBUG)
 
-    def addInfoNotification(self, msg, **kw):
-        """See canonical.launchpad.webapp.interfaces.INotificationResponse"""
-        self.addNotification(msg, BrowserNotificationLevel.INFO, **kw)
+    def addInfoNotification(self, msg):
+        """See `INotificationResponse`."""
+        self.addNotification(msg, BrowserNotificationLevel.INFO)
 
-    def addNoticeNotification(self, msg, **kw):
-        """See canonical.launchpad.webapp.interfaces.INotificationResponse"""
-        self.addNotification(msg, BrowserNotificationLevel.NOTICE, **kw)
+    def addNoticeNotification(self, msg):
+        """See `INotificationResponse`."""
+        self.addNotification(msg, BrowserNotificationLevel.NOTICE)
 
-    def addWarningNotification(self, msg, **kw):
-        """See canonical.launchpad.webapp.interfaces.INotificationResponse"""
-        self.addNotification(msg, BrowserNotificationLevel.WARNING, **kw)
+    def addWarningNotification(self, msg):
+        """See `INotificationResponse`."""
+        self.addNotification(msg, BrowserNotificationLevel.WARNING)
 
-    def addErrorNotification(self, msg, **kw):
-        """See canonical.launchpad.webapp.interfaces.INotificationResponse"""
-        self.addNotification(msg, BrowserNotificationLevel.ERROR, **kw)
+    def addErrorNotification(self, msg):
+        """See `INotificationResponse`."""
+        self.addNotification(msg, BrowserNotificationLevel.ERROR)
 
 
 class NotificationList(list):
