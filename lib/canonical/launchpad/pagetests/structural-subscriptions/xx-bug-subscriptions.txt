@@ -1,9 +1,26 @@
-= Bugmail settings =
+= Subscriptions to bug notifications =
 
-Any logged in user can change their bugmail settings and the bugmail
-settings of teams to which they belong.
+Any logged in user can subscribe themselves to bug notifications for any
+Launchpad structure, as well as subscriber any of the teams to which
+they belong.
 
     >>> browser.addHeader('Authorization', 'Basic test@canonical.com:test')
+
+We subscribe the Landscape team to Ubuntu.
+
+    >>> browser.open(
+    ... 'http://bugs.launchpad.dev/ubuntu/+subscribe')
+    >>> subscribe_team = browser.getControl('Landscape')
+    >>> subscribe_team.selected = True
+    >>> browser.getControl('Save these changes').click()
+
+    >>> print extract_text(find_portlet(browser.contents, 'Bug subscriptions'))
+    Bug subscriptions
+    For Ubuntu Linux:
+    Landscape Developers
+
+And subscribe some people to the Firefox source package in Ubuntu.
+
     >>> browser.open(
     ... 'http://bugs.launchpad.dev/ubuntu/+source/mozilla-firefox')
     >>> browser.getLink('Subscribe to bug mail').click()
@@ -28,13 +45,13 @@ Sample Person and the Landscape team are now subscribed.
     >>> ubuntu_mozilla_firefox = ubuntu.getSourcePackage("mozilla-firefox")
     >>> logout()
 
-    >>> print extract_text(find_portlet(browser.contents, 'Bug contacts'))
-    Bug contacts
-    For this package:
+    >>> print extract_text(find_portlet(browser.contents, 'Bug subscriptions'))
+    Bug subscriptions
+    For Source Package "mozilla-firefox" in Ubuntu Linux:
     Foo Bar
     Landscape Developers
     Sample Person
-    For all Ubuntu packages:
+    For Ubuntu Linux:
     Landscape Developers
 
 Sample Person can also unsubscribe himself and the Landscape team.
@@ -45,17 +62,18 @@ Sample Person can also unsubscribe himself and the Landscape team.
     >>> subscribe_team = browser.getControl('Landscape')
     >>> subscribe_team.selected = False
     >>> browser.getControl('Save these changes').click()
-    >>> print extract_text(find_portlet(browser.contents, 'Bug contacts'))
-    Bug contacts
-    For this package:
+    >>> print extract_text(find_portlet(browser.contents, 'Bug subscriptions'))
+    Bug subscriptions
+    For Source Package "mozilla-firefox" in Ubuntu Linux:
     Foo Bar
-    For all Ubuntu packages:
+    For Ubuntu Linux:
     Landscape Developers
 
 
 == Additional options for distribuion drivers ==
 
-A distribution driver can add and remove anybody to the bug contacts.
+When editting the subscriptions for a package, a distribution drive
+can subscribe any Launchpad user.
 
 Firstly, we appoint Sample Person as the driver for the distribution.
 
@@ -68,7 +86,7 @@ Firstly, we appoint Sample Person as the driver for the distribution.
     >>> logout()
 
 The driver sees an extended form in the +subscribe view, which allows him
-to add any user to the bug contacts.
+to subscribe other people.
 
     >>> browser.open(
     ... 'http://bugs.launchpad.dev/ubuntu/+source/mozilla-firefox/+subscribe')
@@ -82,15 +100,15 @@ No Privileges Person is now subscribed...
     ...     print message.renderContents()
     "No Privileges Person" was successfully subscribed to mozilla-firefox in ubuntu.
 
-    >>> print extract_text(find_portlet(browser.contents, 'Bug contacts'))
-    Bug contacts
-    For this package:
+    >>> print extract_text(find_portlet(browser.contents, 'Bug subscriptions'))
+    Bug subscriptions
+    For Source Package "mozilla-firefox" in Ubuntu Linux:
     Foo Bar
     No Privileges Person
-    For all Ubuntu packages:
+    For Ubuntu Linux:
     Landscape Developers
 
-...has an entry in the "Remove bug contacts" list...
+...has an entry in the "Remove subscriptions" list...
 
     >>> remove_other = browser.getControl('\xa0No Privileges Person')
 
@@ -101,11 +119,11 @@ No Privileges Person is now subscribed...
     >>> print find_tags_by_class(
     ...    browser.contents, 'informational message')[0].contents[0]
     "No Privileges Person" was successfully unsubscribed from mozilla-firefox in ubuntu.
-    >>> print extract_text(find_portlet(browser.contents, 'Bug contacts'))
-    Bug contacts
-    For this package:
+    >>> print extract_text(find_portlet(browser.contents, 'Bug subscriptions'))
+    Bug subscriptions
+    For Source Package "mozilla-firefox" in Ubuntu Linux:
     Foo Bar
-    For all Ubuntu packages:
+    For Ubuntu Linux:
     Landscape Developers
  
 The checkbox to unsubscribe No Privileges Person is no longer present on
@@ -127,23 +145,23 @@ An attempt by Sample Person to remove Foo Bar from the subscription list
 and to add Sample Person is now silently ignored, because LaunchpadFormView
 purges the submitted form data from now unexpected values.
 
-    >>> print extract_text(find_portlet(browser.contents, 'Bug contacts'))
-    Bug contacts
-    For this package:
+    >>> print extract_text(find_portlet(browser.contents, 'Bug subscriptions'))
+    Bug subscriptions
+    For Source Package "mozilla-firefox" in Ubuntu Linux:
     Foo Bar
-    For all Ubuntu packages:
+    For Ubuntu Linux:
     Landscape Developers
 
     >>> remove_other = browser.getControl('\xa0Foo Bar')
     >>> remove_other.selected = True
-    >>> subscribe_other = browser.getControl('Subscribe someone else')
+    >>> subscribe_other = browser.getControl('Subscribe someone else:')
     >>> subscribe_other.value = 'nopriv'
     >>> browser.getControl('Save these changes').click()
-    >>> print extract_text(find_portlet(browser.contents, 'Bug contacts'))
-    Bug contacts
-    For this package:
+    >>> print extract_text(find_portlet(browser.contents, 'Bug subscriptions'))
+    Bug subscriptions
+    For Source Package "mozilla-firefox" in Ubuntu Linux:
     Foo Bar
-    For all Ubuntu packages:
+    For Ubuntu Linux:
     Landscape Developers
     
 When Sample Person now visits the bug subscription page, he sees no longer
@@ -151,10 +169,10 @@ the UI elements for the subscription/unsubscription of arbitrary persons.
 
     >>> browser.open(
     ... 'http://bugs.launchpad.dev/ubuntu/+source/mozilla-firefox/+subscribe')
-    >>> browser.getControl('Add other bug contact:')
+    >>> browser.getControl('Subscribe someone else:')
     Traceback (most recent call last):
     ...
-    LookupError: label 'Add other bug contact:'
+    LookupError: label 'Subscribe someone else:'
 
     >>> print browser.getControl('\xa0Foo Bar')
     Traceback (most recent call last):
