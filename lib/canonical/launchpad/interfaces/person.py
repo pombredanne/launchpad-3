@@ -18,6 +18,7 @@ __all__ = [
     'IPersonClaim',
     'IPersonEditRestricted',
     'IPersonPublic',
+    'IPersonEntry',
     'IPersonSet',
     'IPersonViewRestricted',
     'IRequestPeopleMerge',
@@ -37,13 +38,15 @@ __all__ = [
 
 
 from zope.formlib.form import NoInputData
-from zope.schema import Bool, Choice, Datetime, Int, Text, TextLine
+from zope.schema import Bool, Choice, Datetime, Int, Object, Text, TextLine
 from zope.interface import Attribute, Interface
 from zope.interface.exceptions import Invalid
 from zope.interface.interface import invariant
 from zope.component import getUtility
 
 from canonical.lazr import DBEnumeratedType, DBItem, EnumeratedType, Item
+from canonical.lazr.interfaces import IEntry
+from canonical.lazr.rest.schema import CollectionField
 
 from canonical.launchpad import _
 from canonical.launchpad.fields import (
@@ -1276,6 +1279,14 @@ class IPersonEditRestricted(Interface):
 
 class IPerson(IPersonPublic, IPersonViewRestricted, IPersonEditRestricted):
     """A Person."""
+
+
+class IPersonEntry(IEntry):
+    """The part of a person that we expose through the web service."""
+
+    name = make_person_name_field()
+    teamowner = Object(schema=IPerson)
+    members = CollectionField(value_type=Object(schema=IPerson))
 
 
 class INewPersonForm(IPerson):

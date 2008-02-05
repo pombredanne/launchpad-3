@@ -5,11 +5,10 @@
 __metaclass__ = type
 __all__ = [
     'IPersonEntry',
-    'PersonEntry',
     'PersonCollection',
+    'PersonEntry',
     'PersonPersonCollection',
     ]
-
 
 from zope.component import adapts, getUtility
 from zope.schema import Object
@@ -72,11 +71,14 @@ class PersonCollection(Collection):
 class PersonPersonCollection(ScopedCollection):
     """A collection of people associated with some other person.
 
-    For instance, the members of a team.
+    For instance, the members of a team are a collection of people
+    associated with another person.
     """
 
     def lookupEntry(self, name):
+        """Find a person in the collection by name."""
         person = getUtility(IPersonSet).getByName(name)
         if person in self.collection:
             return person
         return None
+
