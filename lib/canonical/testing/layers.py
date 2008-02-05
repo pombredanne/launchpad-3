@@ -106,6 +106,10 @@ class BaseLayer:
     # Set to True when we are running tests in this layer.
     isSetUp = False
 
+    # The name of this test - this is the same output that the testrunner
+    # displays. It is probably unique, but not guaranteed to be so.
+    test_name = None
+
     @classmethod
     @profiled
     def setUp(cls):
@@ -132,11 +136,24 @@ class BaseLayer:
     def testSetUp(cls):
         cls.check()
 
+        # Tests and test infrastruture sometimes needs to know the test
+        # name.  The testrunner doesn't provide this, so we have to do
+        # some snooping.
+        import inspect
+        frame = inspect.currentframe()
+        try:
+            while frame.f_code.co_name != 'startTest':
+                frame = frame.f_back
+            BaseLayer.test_name = str(frame.f_locals['test'])
+        finally:
+            del frame # As per no-leak stack inspection in Python reference.
+
     @classmethod
     @profiled
     def testTearDown(cls):
         reset_logging()
         del canonical.launchpad.mail.stub.test_emails[:]
+        BaseLayer.test_name = None
         cls.check()
 
     @classmethod
@@ -369,18 +386,8 @@ class DatabaseLayer(BaseLayer):
                 )
 
         # We need a unique key for each test to store the mock db script.
-        # Lets use the same thing that the test runner displays. Its tricky
-        # to get to, but should be good enough for our needs. If this is
-        # considered generally useful, we could make the upstream testrunner
-        # provide this information.
-        import inspect
-        frame = inspect.currentframe()
-        try:
-            while frame.f_code.co_name != 'startTest':
-                frame = frame.f_back
-            test_key = str(frame.f_locals['test'])
-        finally:
-            del frame # As per no-leak stack inspection in Python reference.
+        test_key = BaseLayer.test_name
+        assert test_key, "Invalid test_key %r" % (test_key,)
 
         # Determine if we are in replay or record mode and setup our
         # mock db script.

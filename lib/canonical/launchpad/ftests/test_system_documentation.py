@@ -683,7 +683,8 @@ special = {
             '../doc/pillar.txt',
             setUp=setUp, tearDown=tearDown,
             optionflags=default_optionflags,
-            layer=ExperimentalLaunchpadZopelessLayer
+            #layer=ExperimentalLaunchpadZopelessLayer
+            layer=LaunchpadZopelessLayer
             ),
     'openid-fetcher.txt': FunctionalDocFileSuite(
             '../doc/openid-fetcher.txt',
