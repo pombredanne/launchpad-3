@@ -153,7 +153,7 @@ class EntryResource(ReadOnlyResource):
         dict = {}
         dict['self_link'] = canonical_url(self, request=self.request)
         schema = self.context.schema
-        for name in schema.names():
+        for name in schema.names(True):
             element = schema.get(name)
             if ICollectionField.providedBy(element):
                 # The field is a collection; include a link to the
@@ -181,8 +181,9 @@ class EntryResource(ReadOnlyResource):
                 # representation.
                 dict[name] = getattr(self.context, name)
             else:
-                # It's not a field at all.
-                raise AssertionError("Non-field object found in schema.")
+                # It's a method or some other part of an interface.
+                # Ignore it.
+                pass
 
         return dict
 
@@ -226,14 +227,6 @@ class CollectionResource(ReadOnlyResource):
                            for entry in entries]
         self.request.response.setHeader('Content-type', 'application/json')
         return simplejson.dumps(entry_resources, cls=ResourceJSONEncoder)
-
-
-class ScopedCollectionResource(CollectionResource):
-
-    @property
-    def inside(self):
-        """The collection is inside its scope."""
-        return EntryResource(self.context.context, self.request)
 
 
 class ScopedCollectionResource(CollectionResource):

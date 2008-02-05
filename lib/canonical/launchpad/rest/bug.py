@@ -80,12 +80,6 @@ class IBugEntry(IMessageTargetEntry):
     date_last_message = Datetime(
         title=_(u'Date of last bug message'), required=False, readonly=True)
 
-    # Comment this out to demonstrate that inherited fields don't show
-    # up.
-    followup_subject = TextLine(
-        title=_(u"The likely subject of the next message."))
-    messages = CollectionField(value_type=Object(schema=IMessage))
-
     #initial_message = Object(schema=IMessage)
     # implement and include IMessageTargetEntry
     #activity = CollectionField(value_type=Object(schema=IActivity))

@@ -38,7 +38,7 @@ __all__ = [
 
 
 from zope.formlib.form import NoInputData
-from zope.schema import Bool, Choice, Datetime, Int, Text, TextLine
+from zope.schema import Bool, Choice, Datetime, Int, Object, Text, TextLine
 from zope.interface import Attribute, Interface
 from zope.interface.exceptions import Invalid
 from zope.interface.interface import invariant
