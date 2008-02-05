@@ -32,6 +32,7 @@ from canonical.launchpad.database.bugwatch import BugWatch
 from canonical.launchpad.interfaces import (
     BugTrackerType, IBugTracker, IBugTrackerAlias, IBugTrackerAliasSet,
     IBugTrackerSet, NotFoundError)
+from canonical.launchpad.webapp.uri import URI
 
 
 def normalise_leading_slashes(rest):
@@ -82,6 +83,24 @@ def base_url_permutations(base_url):
         else:
             alternative_urls.append(url + '/')
     return alternative_urls
+
+def make_bugtracker_name(url):
+    """Return a name string for a bug tracker based on its hostname.
+
+    This will also work with bug trackers of type EMAILADDRESS, using
+    the host name from the @<host> part of the email address.
+    """
+    uri = URI(url)
+    if uri.scheme == 'mailto':
+        if '@' in uri.path:
+            host = uri.path.split('@', 1)[1]
+        else:
+            raise ValueError(
+                'Not a valid email address: %s' % uri.path)
+    else:
+        host = uri.host
+
+    return 'auto-%s' % host
 
 
 class BugTracker(SQLBase):
@@ -262,9 +281,7 @@ class BugTrackerSet:
         # create the bugtracker, we don't know about it. we'll use the
         # normalised base url
         if name is None:
-            scheme, host = splittype(baseurl)
-            host, path = splithost(host)
-            name = 'auto-%s' % host
+            name = make_bugtracker_name(baseurl)
         if title is None:
             title = quote('Bug tracker at %s' % baseurl)
         bugtracker = BugTracker(name=name,

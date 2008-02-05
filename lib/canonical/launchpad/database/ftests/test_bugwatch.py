@@ -187,6 +187,17 @@ class CpanExtractBugTrackerAndBugTest(ExtractBugTrackerAndBugTestBase):
     bug_id = '2379'
 
 
+class EmailAddressExtractBugTrackerAndBugTest(
+    ExtractBugTrackerAndBugTestBase):
+    """Make sure BugWatchSet.extractBugTrackerAndBug works with Email address.
+    """
+
+    bugtracker_type = BugTrackerType.EMAILADDRESS
+    bug_url = 'mailto:foo.bar@example.com'
+    base_url = 'mailto:foo.bar@example.com'
+    bug_id = ''
+
+
 def test_suite():
     suite = unittest.TestSuite()
     suite.addTest(unittest.makeSuite(BugzillaExtractBugTrackerAndBugTest))
@@ -199,6 +210,7 @@ def test_suite():
     suite.addTest(unittest.makeSuite(MantisExtractBugTrackerAndBugTest))
     suite.addTest(unittest.makeSuite(RTExtractBugTrackerAndBugTest))
     suite.addTest(unittest.makeSuite(CpanExtractBugTrackerAndBugTest))
+    suite.addTest(unittest.makeSuite(EmailAddressExtractBugTrackerAndBugTest))
     return suite
 
 

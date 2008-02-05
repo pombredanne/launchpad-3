@@ -193,12 +193,12 @@ class BugWatchSet(BugSetBase):
         self.bugtracker_parse_functions = {
             BugTrackerType.BUGZILLA: self.parseBugzillaURL,
             BugTrackerType.DEBBUGS:  self.parseDebbugsURL,
+            BugTrackerType.EMAILADDRESS: self.parseEmailAddressURL,
+            BugTrackerType.MANTIS: self.parseMantisURL,
             BugTrackerType.ROUNDUP: self.parseRoundupURL,
             BugTrackerType.RT: self.parseRTURL,
             BugTrackerType.SOURCEFORGE: self.parseSourceForgeURL,
-            BugTrackerType.TRAC: self.parseTracURL,
-            BugTrackerType.MANTIS: self.parseMantisURL,
-        }
+            BugTrackerType.TRAC: self.parseTracURL,}
 
     def get(self, watch_id):
         """See canonical.launchpad.interfaces.IBugWatchSet."""
@@ -381,6 +381,20 @@ class BugWatchSet(BugSetBase):
         sf_tracker = getUtility(ILaunchpadCelebrities).sourceforge_tracker
 
         return sf_tracker.baseurl, remote_bug
+
+    def parseEmailAddressURL(self, scheme, host, path, query):
+        """Extract an email address from a bug URL.
+
+        This method will return (mailto:<email_address>, '') since email
+        address bug trackers cannot have bug numbers. We return an empty
+        string for the remote bug since BugWatch.remotebug cannot be
+        None.
+        """
+        # We ignore anything that isn't a mailto URL.
+        if scheme != 'mailto':
+            return None
+
+        return '%s:%s' % (scheme, path), ''
 
     def extractBugTrackerAndBug(self, url):
         """See IBugWatchSet."""
