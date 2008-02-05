@@ -475,6 +475,11 @@ class Bug(SQLBase):
             if IStructuralSubscriptionTarget.providedBy(bugtask.target):
                 also_notified_subscribers.update(
                     bugtask.target.getBugNotificationsRecipients(recipients))
+
+            if bugtask.milestone is not None:
+                also_notified_subscribers.update(
+                    bugtask.milestone.getBugNotificationsRecipients(
+                    recipients))
                             
             # Bug contacts are indirect subscribers.
             if (IDistroBugTask.providedBy(bugtask) or

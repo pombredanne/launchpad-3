@@ -34,6 +34,17 @@ def distributionSetUp(test):
     test.globs['target'] = getUtility(IDistributionSet).getByName('ubuntu')
     test.globs['filebug'] = bugtarget_filebug
 
+def milestone_filebug(milestone, summary, status=None):
+    bug = bugtarget_filebug(milestone.target, summary, status=status)
+    bug.bugtasks[0].milestone = milestone
+    return bug
+
+def milestoneSetUp(test):
+    setUp(test)
+    firefox = getUtility(IProductSet).getByName('firefox')
+    test.globs['target'] = firefox.getMilestone('1.0')
+    test.globs['filebug'] = milestone_filebug
+
 def test_suite():
     """Return the `IStructuralSubscriptionTarget` TestSuite."""
     suite = unittest.TestSuite()
@@ -42,6 +53,7 @@ def test_suite():
         distributionSourcePackageSetUp,
         productSetUp,
         distributionSetUp,
+        milestoneSetUp,
         ]
 
     for setUpMethod in setUpMethods:

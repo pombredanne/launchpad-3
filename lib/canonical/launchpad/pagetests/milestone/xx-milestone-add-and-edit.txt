@@ -180,3 +180,11 @@ Then we try to change milestone2's name to milestone3.
     milestone1
     milestone3
 
+
+== Milestone bug subscriptions ==
+
+    >>> user_browser.open('http://launchpad.dev/firefox/+milestone/1.0')
+    >>> user_browser.getLink('Subscribe to bug mail').click()
+    >>> print user_browser.url
+    http://launchpad.dev/firefox/+milestone/1.0/+subscribe
+    
