@@ -14,6 +14,7 @@ from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 from zope.component import getUtility
 from zope.event import notify
 from zope.formlib import form
+from zope.i18n import translate
 from zope.schema import Choice
 from zope.schema.vocabulary import SimpleVocabulary, SimpleTerm
 
@@ -242,13 +243,25 @@ class ChooseProductStep(AlsoAffectsStep):
         if distroseries is not None:
             sourcepackage = distroseries.getSourcePackage(
                 bugtask.sourcepackagename)
-            self.request.response.addInfoNotification(_(dedent("""
+
+            self.request.response.addInfoNotification(
+                self._needProjectNotice(bugtask, sourcepackage))
+
+    def _needProjectNotice(self, bugtask, sourcepackage):
+        # We need to jump through some hoops to ensure that the i18n
+        # message is properly translated in-context, that it's HTML
+        # will survive the addNotification() mangling process, and
+        # that its fields will be CGI escaped.
+        msgid = _(dedent("""
                 Please select the appropriate upstream project. This step can
                 be avoided by <a href="%(package_url)s/+edit-packaging"
                 >updating the packaging information for
-                %(full_package_name)s</a>.""")),
-                full_package_name=bugtask.bugtargetdisplayname,
-                package_url=canonical_url(sourcepackage))
+                %(full_package_name)s</a>."""))
+        translated = translate(msgid, context=self.request)
+        message = structured(translated,
+                          full_package_name=bugtask.bugtargetdisplayname,
+                          package_url=canonical_url(sourcepackage))
+        return message
 
     def validateStep(self, data):
         if data.get('product'):
