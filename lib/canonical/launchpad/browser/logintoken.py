@@ -407,7 +407,8 @@ class ValidateGPGKeyView(BaseLoginTokenView, LaunchpadFormView):
 
         self.context.consume()
         self.request.response.addInfoNotification(_(
-            "The key %s was successfully validated. " % (lpkey.displayname)))
+            "The key ${lpkey} was successfully validated. ",
+            mapping=dict(lpkey=lpkey.displayname)))
         guessed, hijacked = self._guessGPGEmails(key.emails)
 
         if len(guessed):
@@ -416,21 +417,21 @@ class ValidateGPGKeyView(BaseLoginTokenView, LaunchpadFormView):
 
             self.request.response.addInfoNotification(_(
                 '<p>Some email addresses were found in your key but are '
-                'not registered with Launchpad:<code>%s</code>. If you '
+                'not registered with Launchpad:<code>${emails}</code>. If you '
                 'want to use these addressess with Launchpad, you need to '
-                '<a href="%s/+editemails\">confirm them</a>.</p>'
-                % (emails, person_url)))
+                '<a href="${url}/+editemails\">confirm them</a>.</p>',
+                mapping=dict(emails=emails, url=person_url)))
 
         if len(hijacked):
             # build email list
             emails = ' '.join([email.email for email in hijacked])
             self.request.response.addInfoNotification(_(
                 "<p>Also some of them were registered into another "
-                "account(s):<code>%s</code>. Those accounts, probably "
+                "account(s):<code>${emails}</code>. Those accounts, probably "
                 "already belong to you, in this case you should be able to "
                 "<a href=\"/people/+requestmerge\">merge them</a> into your "
-                "current account.</p>"
-                % emails))
+                "current account.</p>",
+                mapping=dict(emails=emails)))
 
     def _guessGPGEmails(self, uids):
         """Figure out which emails from the GPG UIDs are unknown in LP

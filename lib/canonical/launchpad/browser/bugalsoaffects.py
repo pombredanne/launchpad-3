@@ -26,9 +26,9 @@ from canonical.launchpad.interfaces import (
     UnrecognizedBugTrackerURL, validate_new_distrotask, valid_upstreamtask)
 from canonical.launchpad.event import SQLObjectCreatedEvent
 from canonical.launchpad.validators import LaunchpadValidationError
-
 from canonical.launchpad.webapp import (
     custom_widget, action, canonical_url, LaunchpadFormView, LaunchpadView)
+from canonical.launchpad.webapp.menu import structured
 
 from canonical.widgets.itemswidgets import LaunchpadRadioWidget
 from canonical.widgets import SearchForUpstreamPopupWidget, StrippedTextWidget
@@ -393,13 +393,13 @@ class BugTaskCreationStep(AlsoAffectsStep):
             # Simply add one notification per bug to simplify the
             # implementation; most of the time it will be only one bug.
             for other_bug in other_bugs_already_watching:
-                self.request.response.addInfoNotification(
+                self.request.response.addInfoNotification(structured(
                     '<a href="%(bug_url)s">Bug #%(bug_id)s</a> also links'
                     ' to the added bug watch'
                     ' (%(bugtracker_name)s #%(remote_bug)s).',
                     bug_url=canonical_url(other_bug), bug_id=other_bug.id,
                     bugtracker_name=extracted_bugtracker.name,
-                    remote_bug=extracted_bug)
+                    remote_bug=extracted_bug))
 
             # Make sure that we don't add duplicate bug watches.
             bug_watch = task_added.bug.getBugWatch(

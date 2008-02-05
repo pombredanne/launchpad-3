@@ -391,8 +391,8 @@ class TeamMembershipSelfRenewalView(LaunchpadFormView):
         member = self.context.person
         member.renewTeamMembership(self.context.team)
         self.request.response.addInfoNotification(
-            _("Membership renewed until %(date)s."),
-            date=self.context.dateexpires.strftime('%Y-%m-%d'))
+            _("Membership renewed until ${date}.", mapping=dict(
+                    date=self.context.dateexpires.strftime('%Y-%m-%d'))))
 
     @action(_("Let it Expire"), name="nothing")
     def do_nothing_action(self, action, data):
@@ -437,8 +437,8 @@ class TeamInvitationView(LaunchpadFormView):
         member.acceptInvitationToBeMemberOf(
             self.context.team, data['reviewercomment'])
         self.request.response.addInfoNotification(
-            _("This team is now a member of %(team)s"),
-            team=self.context.team.browsername)
+            _("This team is now a member of ${team}", mapping=dict(
+                  team=self.context.team.browsername)))
 
     @action(_("Decline"), name="decline")
     def decline_action(self, action, data):
@@ -450,8 +450,8 @@ class TeamInvitationView(LaunchpadFormView):
         member.declineInvitationToBeMemberOf(
             self.context.team, data['reviewercomment'])
         self.request.response.addInfoNotification(
-            _("Declined the invitation to join %(team)s"),
-            team=self.context.team.browsername)
+            _("Declined the invitation to join ${team}", mapping=dict(
+                  team=self.context.team.browsername)))
 
     @action(_("Cancel"), name="cancel")
     def cancel_action(self, action, data):
@@ -1265,12 +1265,12 @@ class PersonClaimView(LaunchpadFormView):
             tokentype=LoginTokenType.PROFILECLAIM)
         token.sendClaimProfileEmail()
         self.request.response.addInfoNotification(_(
-            "A confirmation  message has been sent to '%(email)s'. "
+            "A confirmation  message has been sent to '${email}'. "
             "Follow the instructions in that message to finish claiming this "
             "profile. "
             "(If the message doesn't arrive in a few minutes, your mail "
             "provider might use 'greylisting', which could delay the message "
-            "for up to an hour or two.)"), email=email)
+            "for up to an hour or two.)", mapping=dict(email=email)))
 
 
 class BeginTeamClaimView(PersonClaimView):
@@ -1288,13 +1288,13 @@ class BeginTeamClaimView(PersonClaimView):
             tokentype=LoginTokenType.TEAMCLAIM)
         token.sendClaimTeamEmail()
         self.request.response.addInfoNotification(_(
-            "A confirmation message has been sent to '%(email)s'. "
+            "A confirmation message has been sent to '${email}'. "
             "Follow the instructions in that message to finish claiming this "
             "team. "
             "(If the above address is from a mailing list, it may be "
             "necessary to talk with one of its admins to accept the message "
-            "from Launchpad so that you can finish the process.)"),
-            email=email)
+            "from Launchpad so that you can finish the process.)",
+            mapping=dict(email=email)))
 
 
 class RedirectToEditLanguagesView(LaunchpadView):

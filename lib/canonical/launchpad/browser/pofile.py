@@ -32,6 +32,7 @@ from canonical.launchpad.interfaces import (
 from canonical.launchpad.webapp import (
     ApplicationMenu, Link, canonical_url, LaunchpadView, Navigation)
 from canonical.launchpad.webapp.batching import BatchNavigator
+from canonical.launchpad.webapp.menu import structured
 
 
 class CustomDropdownWidget(DropdownWidget):
@@ -195,10 +196,10 @@ class POFileUploadView(POFileView):
             productseries=self.context.potemplate.productseries,
             potemplate=self.context.potemplate, pofile=self.context)
 
-        self.request.response.addInfoNotification(
+        self.request.response.addInfoNotification(structured(
             'Thank you for your upload. The translation content will be'
             ' imported soon into Launchpad. You can track its status from the'
-            ' <a href="%s/+imports">Translation Import Queue</a>' %
+            ' <a href="%s/+imports">Translation Import Queue</a>' % \
                 canonical_url(self.context.potemplate.translationtarget))
 
 
