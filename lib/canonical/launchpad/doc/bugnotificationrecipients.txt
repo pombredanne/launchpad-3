@@ -38,8 +38,8 @@ appropriate for an email footer.
 
   >>> print_rationales(recipients)
   foo.bar@canonical.com
-      Bug Contact (mozilla-firefox in ubuntu)
-      You received this bug notification because you are a bug contact for mozilla-firefox in ubuntu.
+      Subscriber (mozilla-firefox in ubuntu)
+      You received this bug notification because you are subscribed to mozilla-firefox in ubuntu.
   mark@hbd.com
       Assignee
       You received this bug notification because you are a bug assignee.
@@ -86,7 +86,7 @@ Then, subscribers of various types are added:
   >>> recipients.addDistroBugContact(daf, debian)
 
   >>> carlos = personset.getByEmail("carlos@canonical.com")
-  >>> recipients.addPackageBugContact(carlos, pmount)
+  >>> recipients.addStructuralSubscriber(carlos, pmount)
 
   >>> marilize = personset.getByEmail("marilize@hbd.com")
   >>> recipients.addUpstreamBugContact(marilize, alsa_utils)
@@ -98,8 +98,8 @@ If we print out the recipients and rationales, here's what we get:
 
   >>> print_rationales(recipients)
   carlos@canonical.com
-      Bug Contact (pmount in debian)
-      You received this bug notification because you are a bug contact for pmount in debian.
+      Subscriber (pmount in debian)
+      You received this bug notification because you are subscribed to pmount in debian.
   daf@canonical.com
       Bug Contact (Debian)
       You received this bug notification because you are the bug contact for Debian.
@@ -142,7 +142,7 @@ duplicate of).
   >>> recipients.addDistroBugContact(daf, debian)
 
   >>> carlos = personset.getByEmail("carlos@canonical.com")
-  >>> recipients.addPackageBugContact(carlos, pmount)
+  >>> recipients.addStructuralSubscriber(carlos, pmount)
 
   >>> marilize = personset.getByEmail("marilize@hbd.com")
   >>> recipients.addUpstreamBugContact(marilize, alsa_utils)
@@ -157,8 +157,8 @@ themselves why the hell they are getting email for bug 1.
 
   >>> print_rationales(recipients)
   carlos@canonical.com
-      Bug Contact (pmount in debian) via Bug 2
-      You received this bug notification because you are a bug contact for pmount in debian (via bug 2).
+      Subscriber (pmount in debian) via Bug 2
+      You received this bug notification because you are subscribed to pmount in debian (via bug 2).
   daf@canonical.com
       Bug Contact (Debian) via Bug 2
       You received this bug notification because you are the bug contact for Debian (via bug 2).
@@ -193,7 +193,7 @@ Here's an example of this situation:
   >>> recipients.addAssignee(guadamen)
 
   >>> name20 = personset.getByName("name20")
-  >>> recipients.addPackageBugContact(name20, pmount)
+  >>> recipients.addStructuralSubscriber(name20, pmount)
 
   >>> name18 = personset.getByName("name18")
   >>> recipients.addUpstreamBugContact(name18, alsa_utils)
@@ -242,8 +242,8 @@ membership is causing us to send mail.
         Assignee @guadamen
         You received this bug notification because you are a member of GuadaMen, which is a bug assignee.
     test@canonical.com
-        Bug Contact (pmount in debian) @name20
-        You received this bug notification because you are a member of Warty Security Team, which is a bug contact for pmount in debian.
+        Subscriber (pmount in debian) @name20
+        You received this bug notification because you are a member of Warty Security Team, which is subscribed to pmount in debian.
     tsukimi@quaqua.net
         Subscriber of Duplicate @testing-spanish-team
         You received this bug notification because you are a member of testing Spanish team, which is a subscriber of a duplicate bug.
