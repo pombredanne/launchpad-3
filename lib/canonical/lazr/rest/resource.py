@@ -221,10 +221,14 @@ class CollectionResource(ReadOnlyResource):
 
 
 class ScopedCollectionResource(CollectionResource):
+    """A resource for a collection scoped to some entry."""
 
     @property
     def inside(self):
-        """The collection is inside its scope."""
+        """See `ICanonicalUrlData`.
+
+        The object to which the collection is scoped.
+        """
         return EntryResource(self.context.context, self.request)
 
 
