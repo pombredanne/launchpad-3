@@ -376,8 +376,8 @@ proposal is used.
 
 == Deleting merge proposals ==
 
-Deleting merge proposals is done through the destroySelf method on the
-merge proposal itself.  The destroySelf method is protected by
+Deleting merge proposals is done through the `deleteProposal` method on
+the merge proposal itself.  The `deleteProposal` method is protected by
 launchpad.Edit, which restricts access to the owner of the source
 branch, the owner of the target branch, or the registrant (and LP
 admins).
@@ -386,16 +386,16 @@ admins).
     1
     >>> merge_proposal = source_branch.landing_targets[0]
     >>> login('no-priv@canonical.com')
-    >>> merge_proposal.destroySelf()
+    >>> merge_proposal.deleteProposal()
     Traceback (most recent call last):
     ...
     Unauthorized: (<BranchMergeProposal ...>,
-    'destroySelf', 'launchpad.Edit')
+    'deleteProposal', 'launchpad.Edit')
 
-Sample Person is the registrant, so they can destroy it.
+Sample Person is the registrant, so they can delete it.
 
     >>> login('test@canonical.com')
-    >>> merge_proposal.destroySelf()
+    >>> merge_proposal.deleteProposal()
     >>> source_branch.landing_targets.count()
     0
 
@@ -431,4 +431,45 @@ it.
 If the new proposal is deleted, the old proposal stays in the
 superceded state, but no longer has a `superceded_by` proposal.
 
-    >>> new_proposal.destroySelf()
+    >>> new_proposal.deleteProposal()
+    >>> print proposal.queue_status.title
+    Superceded
+    >>> print proposal.superceded_by
+    None
+
+If the old proposal is deleted, the new proposal no longer shows
+the superceded_proposal.
+
+    >>> proposal = factory.makeBranchMergeProposal(registrant=sample_person)
+    >>> new_proposal = proposal.resubmit(sample_person)
+    >>> new_proposal.superceded_proposal == proposal
+    True
+
+    >>> flush_database_updates()
+    >>> proposal.deleteProposal()
+    >>> print new_proposal.superceded_proposal
+    None
+
+If there is a chain of superceded proposals, and the one in the middle
+is deleted, then the chain is just shorter.
+
+    >>> original = factory.makeBranchMergeProposal(registrant=sample_person)
+    >>> middle = original.resubmit(sample_person)
+    >>> last = middle.resubmit(sample_person)
+    >>> flush_database_updates()
+
+    >>> original.superceded_by == middle
+    True
+    >>> middle.superceded_proposal == original
+    True
+    >>> middle.superceded_by == last
+    True
+    >>> last.superceded_proposal == middle
+    True
+
+    >>> middle.deleteProposal()
+
+    >>> original.superceded_by == last
+    True
+    >>> last.superceded_proposal == original
+    True

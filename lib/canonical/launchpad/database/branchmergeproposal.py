@@ -185,6 +185,14 @@ class BranchMergeProposal(SQLBase):
         proposal.superceded_proposal = self
         return proposal
 
+    def deleteProposal(self):
+        """See `IBranchMergeProposal`."""
+        # Delete this proposal, but keep the superceded chain linked.
+        if self.superceded_by is not None:
+            self.superceded_by.superceded_proposal = self.superceded_proposal
+            self.superceded_by.syncUpdate()
+        self.destroySelf()
+
     def getUnlandedSourceBranchRevisions(self):
         """See `IBranchMergeProposal`."""
         return BranchRevision.select('''
