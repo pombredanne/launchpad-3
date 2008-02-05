@@ -157,7 +157,9 @@ The submission is rejected with a syntax error.
     Hello Mark Shuttleworth,
     ...
     <BLANKLINE>
-    We were unable to import the file because of errors in its format.
+    We were unable to import the file because of errors in its format:
+    <BLANKLINE>
+    Invalid nplurals declaration in header: 'n' (should be a number).
     <BLANKLINE>
     ...
 
@@ -195,7 +197,9 @@ forms.  He receives an email notifying him of a syntax error.
     Hello Mark Shuttleworth,
     ...
     <BLANKLINE>
-    We were unable to import the file because of errors in its format.
+    We were unable to import the file because of errors in its format:
+    <BLANKLINE>
+    Number of plural forms is impossibly low.
     <BLANKLINE>
     ...
 
@@ -230,7 +234,10 @@ forms.  The same error is given.
     >>> print message
     Hello Mark Shuttleworth,
     ...
-    We were unable to import the file because of errors in its format.
+    We were unable to import the file because of errors in its format:
+    <BLANKLINE>
+    Number of plural forms is impossibly low.
+    <BLANKLINE>
     ...
 
 

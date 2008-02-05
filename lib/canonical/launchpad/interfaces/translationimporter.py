@@ -46,7 +46,6 @@ class TranslationFormatBaseError(TranslationImportExportBaseException):
             value here, filename and line_number are ignored.
         """
         TranslationImportExportBaseException.__init__(self, message)
-        assert filename is not None, 'filename cannot be None'
 
         self.filename = filename
         self.line_number = line_number
