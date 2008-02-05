@@ -465,7 +465,7 @@ class MockDbTestCase(unittest.TestCase):
 
             # This should raise an exception because no query has
             # been issued yet.
-            # Dappers psycopg1 doesn't do this, so we only test the
+            # Dapper's psycopg1 doesn't do this, so we only test the
             # wrapper's behavior.
             if mode != 'direct':
                 self.failUnlessRaises(psycopg.Error, cur.fetchone)
