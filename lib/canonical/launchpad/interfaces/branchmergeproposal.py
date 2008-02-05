@@ -7,7 +7,7 @@ __metaclass__ = type
 __all__ = [
     'BadStateTransition',
     'BranchMergeProposalStatus',
-    'BRANCH_MERGE_PROPOSAL_STATUS_FINAL_STATES',
+    'BRANCH_MERGE_PROPOSAL_FINAL_STATES',
     'InvalidBranchMergeProposal',
     'IBranchMergeProposal',
     'UserNotBranchReviewer',
@@ -93,7 +93,7 @@ class BranchMergeProposalStatus(DBEnumeratedType):
         """)
 
 
-BRANCH_MERGE_PROPOSAL_STATUS_FINAL_STATES = (
+BRANCH_MERGE_PROPOSAL_FINAL_STATES = (
     BranchMergeProposalStatus.REJECTED,
     BranchMergeProposalStatus.MERGED,
     BranchMergeProposalStatus.SUPERCEDED,

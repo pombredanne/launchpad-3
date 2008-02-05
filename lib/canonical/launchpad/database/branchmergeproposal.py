@@ -21,7 +21,7 @@ from canonical.database.sqlbase import SQLBase, sqlvalues
 from canonical.launchpad.database.branchrevision import BranchRevision
 from canonical.launchpad.interfaces import (
     BadStateTransition,
-    BRANCH_MERGE_PROPOSAL_STATUS_FINAL_STATES,
+    BRANCH_MERGE_PROPOSAL_FINAL_STATES,
     BranchMergeProposalStatus, IBranchMergeProposal,
     ILaunchpadCelebrities,
     UserNotBranchReviewer)
@@ -79,15 +79,17 @@ class BranchMergeProposal(SQLBase):
         Raise an error if the proposal is in a final state.
         """
         if invalid_states is None:
-            invalid_states = BRANCH_MERGE_PROPOSAL_STATUS_FINAL_STATES
+            invalid_states = BRANCH_MERGE_PROPOSAL_FINAL_STATES
         if self.queue_status in invalid_states:
             raise BadStateTransition(
                 'Invalid state transition for merge proposal: %s -> %s'
                 % (self.queue_status.title, next_state.title))
-        if next_state == self.queue_status:
-            raise BadStateTransition(
-                'Invalid state transition to same_state: %s -> %s'
-                % (self.queue_status.title, next_state.title))
+        # Transition to the same state occur in two particular
+        # situations:
+        #  * stale posts
+        #  * approving a later revision
+        # In both these cases, there is no real reason to disallow
+        # transitioning to the same state.
         self.queue_status = next_state
 
     def setAsWorkInProgress(self):
@@ -114,7 +116,7 @@ class BranchMergeProposal(SQLBase):
         # As long as the source branch has not been merged, rejected
         # or superceded, then it is valid to be merged.
         return (self.queue_status not in
-                BRANCH_MERGE_PROPOSAL_STATUS_FINAL_STATES)
+                BRANCH_MERGE_PROPOSAL_FINAL_STATES)
 
     def _reviewProposal(self, reviewer, next_state, revision_id):
         """Set the proposal to one of the two review statuses."""

@@ -75,9 +75,17 @@
     template="../templates/branchmergeproposal-request-review.pt" />
 
   <browser:page
+    name="+resubmit"
+    for="canonical.launchpad.interfaces.IBranchMergeProposal"
+    class="canonical.launchpad.browser.BranchMergeProposalResubmitView"
+    facet="branches"
+    permission="launchpad.Edit"
+    template="../templates/branchmergeproposal-resubmit.pt" />
+
+  <browser:page
     name="+review"
     for="canonical.launchpad.interfaces.IBranchMergeProposal"
-    class="canonical.launchpad.browser.ReviewBranchMergeProposalView"
+    class="canonical.launchpad.browser.BranchMergeProposalReviewView"
     facet="branches"
     permission="launchpad.Edit"
     template="../templates/branchmergeproposal-review.pt" />
