@@ -127,8 +127,17 @@ class StructuralSubscriptionView(LaunchpadFormView):
             }
 
     def isSubscribed(self, person):
-        """Is `person` subscribed to the context target?"""
-        return self.context.getSubscription(person) is not None
+        """Is `person` subscribed to the context target?
+
+        Returns True is the user is subscribed to bug notifications
+        for the context target.
+        """
+        subscription = self.context.getSubscription(person)
+        if subscription is not None:
+            return (subscription.bug_notification_level >
+                    BugNotificationLevel.NOTHING)
+        else:
+            return False
 
     def currentUserIsSubscribed(self):
         """Return True, if the current user is subscribed."""
