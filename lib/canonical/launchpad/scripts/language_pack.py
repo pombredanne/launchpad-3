@@ -78,6 +78,8 @@ def export(distroseries, component, update, force_utf8, logger):
     filehandle = tempfile.TemporaryFile()
     archive = LaunchpadWriteTarFile(filehandle)
 
+    # XXX JeroenVermeulen 2008-02-06: Is there anything here that we can unify
+    # with the export-queue code?
     index = 0
     for pofile in export_set.get_distroseries_pofiles(
         distroseries, date, component, languagepack=True):
