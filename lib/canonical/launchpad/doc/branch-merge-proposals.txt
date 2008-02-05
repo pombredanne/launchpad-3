@@ -100,6 +100,7 @@ A branch merge proposal can be in one of several states:
     Rejected
     Merged
     Code failed to merge
+    Superceded
 
 When a merge proposal is initially created, it is in the "Work in
 progress" state.  The only state that is a final state is "Merged".
@@ -203,26 +204,26 @@ branches also record the revision that was rejected.
     >>> proposal.reviewed_revision_id == tip.revision_id
     True
 
-Rejected proposals can also be updated to be approved.
+Rejected proposals cannot be approved again.  They must be resubmitted
+(see below).
 
+    >>> proposal.approveBranch(sample_person, tip.revision_id)
+    Traceback (most recent call last):
+    BadStateTransition: Invalid state transition for merge proposal:
+      Rejected -> Code approved
+
+Proposals that are `Code approved` can be moved back into the
+`Needs review` state.
+
+    >>> proposal = proposal.resubmit(sample_person)
     >>> proposal.approveBranch(sample_person, tip.revision_id)
     >>> print proposal.queue_status.title
     Code approved
-
-Proposals with either rejected or accepted reviews can request another
-review.
-
-    >>> proposal.requestReview()
-    >>> print proposal.queue_status.title
-    Needs review
-    >>> proposal.rejectBranch(sample_person, tip.revision_id)
-    >>> print proposal.queue_status.title
-    Rejected
     >>> proposal.requestReview()
     >>> print proposal.queue_status.title
     Needs review
 
-Branches that had been rejected or approved that have subsequently been
+Branches that had been approved that have subsequently been
 set back into the needs review state still retain their old reviewed
 revision id.
 
@@ -397,3 +398,37 @@ Sample Person is the registrant, so they can destroy it.
     >>> merge_proposal.destroySelf()
     >>> source_branch.landing_targets.count()
     0
+
+
+== Resubmitting merge proposals ==
+
+If a proposal has ended up in the REJECTED state, the proposal
+can be resubmitted (normally after the branch author has fixed
+the problems).  When a proposal is resubmitted the original
+proposal is marked as SUPERCEDED and a new proposal is created
+which has the same details as the original.  The new proposal
+has an attribute called `superceded_proposal` which is the proposal
+that has been superceded by it.  The original proposal also has
+an attribute `superceded_by` which is the proposal that superceded
+it.
+
+    >>> proposal = factory.makeBranchMergeProposal(registrant=sample_person)
+    >>> proposal.rejectBranch(proposal.target_branch.owner, 'some-revision')
+    >>> print proposal.queue_status.title
+    Rejected
+
+    >>> new_proposal = proposal.resubmit(sample_person)
+    >>> print new_proposal.queue_status.title
+    Work in progress
+    >>> new_proposal == proposal
+    False
+    >>> new_proposal.superceded_proposal == proposal
+    True
+    >>> flush_database_updates()
+    >>> proposal.superceded_by == new_proposal
+    True
+
+If the new proposal is deleted, the old proposal stays in the
+superceded state, but no longer has a `superceded_by` proposal.
+
+    >>> new_proposal.destroySelf()

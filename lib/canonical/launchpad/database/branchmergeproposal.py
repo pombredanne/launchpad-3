@@ -69,6 +69,11 @@ class BranchMergeProposal(SQLBase):
         dbName='superceded_proposal', foreignKey='BranchMergeProposal',
         notNull=False, default=None)
 
+    @property
+    def superceded_by(self):
+        return BranchMergeProposal.selectOneBy(
+            superceded_proposal=self)
+
     date_created = UtcDateTimeCol(notNull=True, default=DEFAULT)
     date_review_requested = UtcDateTimeCol(notNull=False, default=None)
     date_reviewed = UtcDateTimeCol(notNull=False, default=None)

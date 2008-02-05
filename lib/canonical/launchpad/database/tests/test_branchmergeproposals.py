@@ -96,7 +96,7 @@ class TestBranchMergeProposalTransitions(TestCase):
     def test_transitions_from_wip(self):
         # Test the transitions from work in progress.
         def make_wip_proposal():
-            return self.factory.makeProposalToMerge()
+            return self.factory.makeBranchMergeProposal()
 
         self.assertAllTransitionsGood(
             BranchMergeProposalStatus.WORK_IN_PROGRESS, make_wip_proposal)
@@ -104,7 +104,7 @@ class TestBranchMergeProposalTransitions(TestCase):
     def test_transitions_from_needs_review(self):
         # Test the transitions from needs review.
         def make_needs_review_proposal():
-            proposal = self.factory.makeProposalToMerge()
+            proposal = self.factory.makeBranchMergeProposal()
             proposal.requestReview()
             return proposal
 
@@ -115,7 +115,7 @@ class TestBranchMergeProposalTransitions(TestCase):
     def test_transitions_from_code_approved(self):
         # Test the transitions from code approved.
         def make_approved_proposal():
-            proposal = self.factory.makeProposalToMerge()
+            proposal = self.factory.makeBranchMergeProposal()
             proposal.approveBranch(
                 proposal.target_branch.owner, 'some_revision')
             return proposal
@@ -129,7 +129,7 @@ class TestBranchMergeProposalTransitions(TestCase):
          merged, merge_failed, superceded] = BranchMergeProposalStatus.items
 
         def make_rejected_proposal():
-            proposal = self.factory.makeProposalToMerge()
+            proposal = self.factory.makeBranchMergeProposal()
             proposal.rejectBranch(
                 proposal.target_branch.owner, 'some_revision')
             return proposal
@@ -147,7 +147,7 @@ class TestBranchMergeProposalTransitions(TestCase):
         # Test the transitions from merged.
 
         def make_merged_proposal():
-            proposal = self.factory.makeProposalToMerge()
+            proposal = self.factory.makeBranchMergeProposal()
             proposal.markAsMerged()
             return proposal
 
@@ -157,7 +157,7 @@ class TestBranchMergeProposalTransitions(TestCase):
     def test_transitions_from_merge_failed(self):
         # Test the transitions from merge failed.
         def make_merge_failed_proposal():
-            proposal = self.factory.makeProposalToMerge()
+            proposal = self.factory.makeBranchMergeProposal()
             proposal.mergeFailed(proposal.target_branch.owner)
             return proposal
 
@@ -168,7 +168,7 @@ class TestBranchMergeProposalTransitions(TestCase):
     def test_transitions_from_superceded(self):
         # Test the transitions from superceded.
         def make_superceded_proposal():
-            proposal = self.factory.makeProposalToMerge()
+            proposal = self.factory.makeBranchMergeProposal()
             proposal.resubmit(proposal.registrant)
             return proposal
 

@@ -156,6 +156,8 @@ class IBranchMergeProposal(Interface):
 
     superceded_proposal = Attribute(
         "The branch merge propoposal that this one supercedes.")
+    superceded_by = Attribute(
+        "The branch merge propoposal that supercedes this one.")
 
     date_created = Datetime(
         title=_('Date Created'), required=True, readonly=True)
