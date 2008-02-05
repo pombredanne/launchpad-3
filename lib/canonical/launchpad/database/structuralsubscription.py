@@ -15,9 +15,8 @@ from canonical.database.sqlbase import quote, SQLBase
 
 from canonical.launchpad.interfaces import (
     BlueprintNotificationLevel, BugNotificationLevel, DeleteSubscriptionError,
-    DuplicateSubscriptionError, IDistribution, IDistributionSourcePackage,
-    IDistroSeries, IMilestone, IProduct, IProductSeries, IProject,
-    IStructuralSubscription, IStructuralSubscriptionTarget)
+    DuplicateSubscriptionError, IDistributionSourcePackage, IProduct,
+    IStructuralSubscription)
 
 
 class StructuralSubscription(SQLBase):
