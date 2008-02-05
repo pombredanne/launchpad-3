@@ -2627,8 +2627,9 @@ class BugTaskRemoveQuestionView(LaunchpadFormView):
                 content=comment)
 
     def _removedQuestionText(self, question):
-        return 'Removed Question #%s: <a href="%s">%s<a>.'
-     		% (question.id, canonical_url(question),
+        return 'Removed Question #%s: <a href="%s">%s<a>.' % (
+            question.id,
+            canonical_url(question),
             cgi.escape(question.title))
 
 
