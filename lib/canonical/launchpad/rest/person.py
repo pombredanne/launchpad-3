@@ -4,8 +4,8 @@
 
 __metaclass__ = type
 __all__ = [
-    'PersonEntry',
     'PersonCollection',
+    'PersonEntry',
     'PersonPersonCollection'
     ]
 
@@ -52,17 +52,19 @@ class PersonCollection(Collection):
     def find(self):
         """Return all the people and teams on the site."""
         # Pass an empty query into find() to get all people
-        # =and teams.
+        # and teams.
         return self.context.find("")
 
 
 class PersonPersonCollection(ScopedCollection):
     """A collection of people associated with some other person.
 
-    For instance, the members of a team.
+    For instance, the members of a team are a collection of people
+    associated with another person.
     """
 
     def lookupEntry(self, name):
+        """Find a person in the collection by name."""
         person = getUtility(IPersonSet).getByName(name)
         if person in self.collection:
             return person
