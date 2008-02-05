@@ -1,10 +1,6 @@
 # Put your TODOs for this branch here, then make sure it is empty before
 # landing. There is a test to ensure it is empty in trunk.
 
- * Alter BugWatchSet.extractBugTrackerAndBug() to recognise email
-   trackers (returning the tracker and '' for the bug id).
- * Alter BugTracker.getBugsWatching(remotebug) to always return [] when
-   operating on an Email bug tracker.
  * Alter Bug.getBugWatch(tracker, remotebug) to always return something
    when a bug has been forwarded to an upstream email address.
  * Add a view and template for sending the email to the remote email address.

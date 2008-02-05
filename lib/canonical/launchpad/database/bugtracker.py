@@ -137,6 +137,12 @@ class BugTracker(SQLBase):
 
     def getBugsWatching(self, remotebug):
         """See IBugTracker"""
+        # We special-case email address bug trackers. Since we don't
+        # record a remote bug id for them we can never know which bugs
+        # are already watching a remote bug.
+        if self.bugtrackertype == BugTrackerType.EMAILADDRESS:
+            return []
+
         return shortlist(Bug.select(AND(BugWatch.q.bugID == Bug.q.id,
                                         BugWatch.q.bugtrackerID == self.id,
                                         BugWatch.q.remotebug == remotebug),
