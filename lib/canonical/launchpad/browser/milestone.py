@@ -154,6 +154,9 @@ class MilestoneAddView(LaunchpadFormView):
 
 
 class MilestoneEditView(LaunchpadEditFormView):
+    """A view for editing milestone properties such as the name, the date
+    it is expected to complete, the milestone description, and whether or not
+    it is visible (i.e. active)."""
 
     schema = IMilestone
     field_names = ['name', 'visible', 'dateexpected', 'description']
@@ -166,7 +169,10 @@ class MilestoneEditView(LaunchpadEditFormView):
         self.updateContextFromData(data)
         self.next_url = canonical_url(self.context)
 
+
 class MilestoneAdminEditView(LaunchpadEditFormView):
+    """A view for administering the milestone. This view allows an
+    administrator to change the productseries and distroseries."""
 
     schema = IMilestone
     field_names = ['productseries', 'distroseries']

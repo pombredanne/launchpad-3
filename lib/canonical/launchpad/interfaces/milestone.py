@@ -40,9 +40,9 @@ class MilestoneNameField(ContentNameField):
         else:
             raise AssertionError, 'Editing a milestone from a weird place.'
         if milestone is not None:
-              self.errormessage = _(
-                  "The name %%s is already used by a milestone in %s."
-                  % milestone.target.displayname)
+            self.errormessage = _(
+                "The name %%s is already used by a milestone in %s."
+                % milestone.target.displayname)
         return milestone
 
 
