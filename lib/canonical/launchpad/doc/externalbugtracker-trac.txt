@@ -16,7 +16,9 @@ IExternalBugTracker.
     >>> from canonical.launchpad.interfaces import (
     ...     BugTrackerType, IExternalBugTracker)
     >>> from canonical.launchpad.webapp.testing import verifyObject
-    >>> trac = Trac(new_bugtracker(BugTrackerType.TRAC))
+    >>> from canonical.testing import LaunchpadZopelessLayer
+    >>> txn = LaunchpadZopelessLayer.txn
+    >>> trac = Trac(txn, new_bugtracker(BugTrackerType.TRAC))
     >>> verifyObject(IExternalBugTracker, trac)
     True
 
@@ -32,6 +34,8 @@ Trac.convertRemoteStatus() handles the conversion.
     'New'
     >>> trac.convertRemoteStatus('reopened').title
     'New'
+    >>> trac.convertRemoteStatus('accepted').title
+    'Confirmed'
     >>> trac.convertRemoteStatus('assigned').title
     'Confirmed'
     >>> trac.convertRemoteStatus('fixed').title
@@ -75,6 +79,7 @@ working network connection.
 
     >>> from canonical.launchpad.ftests.externalbugtracker import TestTrac
     >>> trac = TestTrac(
+    ...     txn,
     ...     new_bugtracker(BugTrackerType.TRAC, base_url='http://test.trac/'))
     >>> trac.initializeRemoteBugDB([1])
     >>> sorted(trac.bugs.keys())
@@ -158,7 +163,7 @@ Collect the Example.com watches:
 
 And have a Trac instance process them:
 
-    >>> trac = TestTrac(example_bug_tracker)
+    >>> trac = TestTrac(txn, example_bug_tracker)
     >>> trac.updateBugWatches(example_bug_tracker.watches)
     INFO:...:Updating 1 watches on http://bugs.some.where
 

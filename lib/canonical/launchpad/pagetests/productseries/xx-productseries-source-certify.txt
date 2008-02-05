@@ -34,7 +34,7 @@ This button does not appear for normal users:
 If we remove the RCS details, we will get an error when trying to
 certify the import:
 
-  >>> browser.getControl('No revision control system, or Bazaar').click()
+  >>> browser.getControl('No revision control system or not specifed here').click()
   >>> browser.getControl(
   ...     'Approve import for production and publication').click()
   >>> print browser.url
@@ -42,7 +42,7 @@ certify the import:
   >>> for tag in find_tags_by_class(browser.contents, 'error'):
   ...     print tag
   <p class="error message">There is 1 error.</p>
-  <p class="error message">Can not certify import without CVS or Subversion details.</p>
+  <p class="error message">Cannot certify import without CVS or Subversion details.</p>
 
 
 If we have correct details, we can approve the build for production:
@@ -101,9 +101,9 @@ upstream project moves from CVS to Subversion.
   >>> browser.getControl('Delete Import').click()
   >>> browser.url
   'http://launchpad.dev/a52dec/trunk'
-  >>> extract_text(
+  >>> print extract_text(
   ...     find_tag_by_id(browser.contents, 'no-rcs-details'))
-  u'No revision control details recorded for trunk.'
+  No revision control details recorded for a52dec Series: trunk.
 
 These operations are only permitted for VCS operators and Launchpad
 admins, so a user will not see these buttons:

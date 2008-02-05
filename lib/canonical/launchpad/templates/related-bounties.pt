@@ -18,9 +18,7 @@ project, products *and* distributions. Make sure that your changes will work
 with all of these context objects.-->
 </tal:x>
 
-<metal:leftportlets fill-slot="portlets_one">
-  <div tal:replace="structure context/@@+portlet-details" />
-</metal:leftportlets>
+<metal:leftportlets fill-slot="portlets" />
 
 <div metal:fill-slot="main">
 

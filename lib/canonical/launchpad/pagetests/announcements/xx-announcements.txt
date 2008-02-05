@@ -5,26 +5,32 @@ list is available as a portlet on the project home page, as well as on a
 dedicated batched page showing all announcements, and as an RSS/Atom
 news feed.
 
-   >>> NOANNOUNCE = 'no announcements for this project'
-   >>> SHOWLNK = 'Show announcements'
-   >>> def latest_news(content):
-   ...     """The contents of the latest news portlet."""
-   ...     return extract_text(find_portlet(content, 'Latest news'))
-   >>> def has_latest_news(content):
-   ...     """Determine if the latest-news portlet is visible"""
-   ...     return find_portlet(content, 'Latest news') is not None
-   >>> def has_show_link(content):
-   ...     """Determine whether the "Show announcements" link is shown."""
-   ...     return SHOWLNK in extract_text(find_portlet(content, 'Actions'))
-   >>> def no_announcements(content):
-   ...     """Verify there are no announcements in page content."""
-   ...     return NOANNOUNCE in extract_text(find_main_content(content))
-   >>> def announcements(content):
-   ...     """Return the text of the announcement listings."""
-   ...     announcements = find_tag_by_id(content, 'announcements')
-   ...     if announcements is None:
-   ...         return ''
-   ...     return extract_text(announcements)
+    >>> from BeautifulSoup import BeautifulStoneSoup as BSS
+    >>> from BeautifulSoup import BeautifulSoup
+    >>> from BeautifulSoup import SoupStrainer
+    >>> from canonical.launchpad.ftests.feeds_helper import (
+    ...     parse_ids, parse_links, validate_feed)
+
+    >>> NOANNOUNCE = 'no announcements for this project'
+    >>> def latest_news(content):
+    ...     """The contents of the latest news portlet."""
+    ...     return extract_text(find_portlet(content, 'Latest news'))
+    >>> def has_latest_news(content):
+    ...     """Determine if the latest-news portlet is visible"""
+    ...     return find_portlet(content, 'Latest news') is not None
+    >>> def has_show_link(content):
+    ...     """Determine whether the "Show announcements" link is shown."""
+    ...     return len(find_tags_by_class(
+    ...         content, 'menu-link-announcements')) > 0
+    >>> def no_announcements(content):
+    ...     """Verify there are no announcements in page content."""
+    ...     return NOANNOUNCE in extract_text(find_main_content(content))
+    >>> def announcements(content):
+    ...     """Return the text of the announcement listings."""
+    ...     announcements = find_tag_by_id(content, 'announcements')
+    ...     if announcements is None:
+    ...         return ''
+    ...     return extract_text(announcements)
 
 == Making an announcement ==
 
@@ -560,14 +566,34 @@ The feeds are published even when there are no announcements.
 
     >>> nopriv_browser.open(
     ...     'http://feeds.launchpad.dev/netapplet/announcements.atom')
+    >>> validate_feed(nopriv_browser.contents,
+    ...              nopriv_browser.headers['content-type'],
+    ...              nopriv_browser.url)
+    No Errors
     >>> 'NetApplet Announcements' in nopriv_browser.contents
     True
+
+The "self" link should point to the original URL, in the feeds.launchpad.dev domain.
+
+    >>> strainer = SoupStrainer('link', rel='self')
+    >>> links = parse_links(nopriv_browser.contents, rel='self')
+    >>> for link in links:
+    ...     print link
+    <link rel="self" href="http://feeds.launchpad.dev/netapplet/announcements.atom" />
+
+    >>> for id_ in parse_ids(nopriv_browser.contents):
+    ...     print extract_text(id_)
+    tag:launchpad.net,2005-03-10:/netapplet/+announcements
 
 The feeds include only published announcements. The Jokosher
 announcement, which is due in the future, does not show up:
 
     >>> nopriv_browser.open(
     ...     'http://feeds.launchpad.dev/jokosher/announcements.atom')
+    >>> validate_feed(nopriv_browser.contents,
+    ...              nopriv_browser.headers['content-type'],
+    ...              nopriv_browser.url)
+    No Errors
     >>> 'Jokosher announcement headline' in nopriv_browser.contents
     False
 
@@ -575,11 +601,21 @@ Retracted items do not show up either.
 
     >>> nopriv_browser.open(
     ...     'http://feeds.launchpad.dev/guadalinex/announcements.atom')
+    >>> validate_feed(nopriv_browser.contents,
+    ...              nopriv_browser.headers['content-type'],
+    ...              nopriv_browser.url)
+    No Errors
     >>> 'Kubuntu announcement headline' in nopriv_browser.contents
     True
+    >>> for id_ in parse_ids(nopriv_browser.contents):
+    ...     print extract_text(id_)
+    tag:launchpad.net,2006-10-16:/guadalinex/+announcements
+    tag:launchpad.net,...:/+announcement/28
+
     >>> priv_browser.open('http://launchpad.dev/guadalinex/+announcements')
     >>> 'Kubuntu announcement headline' in announcements(priv_browser.contents)
     True
+
     >>> priv_browser.getLink('Retract').click()
     >>> priv_browser.url
     'http://launchpad.dev/guadalinex/+announcement/.../+retract'
@@ -593,18 +629,38 @@ products.
 
     >>> nopriv_browser.open(
     ...     'http://feeds.launchpad.dev/apache/announcements.atom')
+    >>> validate_feed(nopriv_browser.contents,
+    ...              nopriv_browser.headers['content-type'],
+    ...              nopriv_browser.url)
+    No Errors
     >>> 'Tomcat announcement headline' in nopriv_browser.contents
     True
     >>> 'Modified headline' in nopriv_browser.contents # apache itself
     True
     >>> 'Derby announcement headline' in nopriv_browser.contents
     True
+    >>> for id_ in parse_ids(nopriv_browser.contents):
+    ...     print extract_text(id_)
+    tag:launchpad.net,2004-09-24:/apache/+announcements
+    tag:launchpad.net,...:/+announcement/26
+    tag:launchpad.net,...:/+announcement/24
+    tag:launchpad.net,...:/+announcement/25
+
+    >>> strainer = SoupStrainer('link', rel='self')
+    >>> links = parse_links(nopriv_browser.contents, rel='self')
+    >>> for link in links:
+    ...     print link
+    <link rel="self" href="http://feeds.launchpad.dev/apache/announcements.atom" />
 
 Finally, there is a feed for all announcements across all projects
 hosted in Launchpad:
 
     >>> nopriv_browser.open(
     ...     'http://feeds.launchpad.dev/announcements.atom')
+    >>> validate_feed(nopriv_browser.contents,
+    ...              nopriv_browser.headers['content-type'],
+    ...              nopriv_browser.url)
+    No Errors
     >>> 'Announcements published via Launchpad' in nopriv_browser.contents
     True
     >>> '[tomcat] Tomcat announcement headline' in nopriv_browser.contents
@@ -619,6 +675,29 @@ It excludes retracted and future announcements too:
     >>> '[jokosher] Jokosher announcement headline' in nopriv_browser.contents
     False
 
+The announcements are stored as plain text, but the text-to-html formatter
+is used to convert urls into links. The FeedTypedData class must escape
+all the html to make it a valid payload for the xml document. IE7 won't
+let us use a DTD to define the html entities that standard xml is missing.
+
+    >>> nopriv_browser.open(
+    ...     'http://feeds.launchpad.dev/ubuntu/announcements.atom')
+    >>> validate_feed(nopriv_browser.contents,
+    ...              nopriv_browser.headers['content-type'],
+    ...              nopriv_browser.url)
+    No Errors
+    >>> soup = BeautifulSoup(nopriv_browser.contents)
+    >>> soup.find('feed').entry.title
+    <...>Ampersand="&amp;" LessThan="&lt;" GreaterThan="&gt;"</title>
+    >>> soup.find('feed').entry.content
+    <...
+    Ampersand="&amp;amp;"&lt;br /&gt;
+    LessThan="&amp;lt;"&lt;br /&gt;
+    GreaterThan="&amp;gt;"&lt;br /&gt;
+    Newline="&lt;br /&gt;
+    "&lt;br /&gt;
+    url="&lt;a rel="nofollow"
+    href="http://www.ubuntu.com"&gt;http://&lt;wbr&gt;&lt;/wbr&gt;www.ubuntu.&lt;wbr&gt;&lt;/wbr&gt;com&lt;/a&gt;"...
 
 == Deletion ==
 
@@ -635,4 +714,3 @@ You can permanently delete an announcement.
     http://launchpad.dev/guadalinex/+announcements
     >>> no_announcements(kamion_browser.contents)
     True
-

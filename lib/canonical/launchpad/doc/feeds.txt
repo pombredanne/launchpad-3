@@ -124,8 +124,131 @@ by browsers and the reverse-proxy in front of the feeds servers.
     ...  == BugsFeedBase.max_age)
     True
 
-The is_bug_search_feed_active is false by default since it is useful for
-testing, but it is still a performance concern for production.
 
-    >>> config.launchpad.is_bug_search_feed_active
-    False
+== FeedTypedData class ==
+
+The FeedTypedData class performs the appropriate escaping for data
+with a type of "text", "html", or "xhtml". The template is responsible
+for setting the "type" attribute in the <title> or <content> element. If
+no content type is specified, then "text" is assumed.
+
+Since plain text and html are not valid xml, "<", ">", and "&" must
+be escaped using xml entities such as "&lt;".
+
+    >>> from canonical.lazr.feed.feed import FeedTypedData
+    >>> text = FeedTypedData("<b> and &nbsp; and &amp;")
+    >>> text.content
+    '&lt;b&gt; and &amp;nbsp; and &amp;amp;'
+    >>> text2 = FeedTypedData("<b> and &nbsp; and &amp;", content_type="text")
+    >>> text2.content
+    '&lt;b&gt; and &amp;nbsp; and &amp;amp;'
+    >>> html = FeedTypedData("<b> and &nbsp; and &amp;", content_type="html")
+    >>> html.content
+    '&lt;b&gt; and &amp;nbsp; and &amp;amp;'
+
+Since xhtml is valid xml, the "<" and ">" characters do not need to be
+escaped. However, xhtml supports many more entities than xml, and Internet
+Explorer 7 does not allow a DTD to be specified in feeds which prevents the
+xhtml entities from easily being registered in the xml document. Therefore,
+the xhtml entities will be converted to valid UTF-8. Since some simplistic
+feed readers may expect ascii, we prefer using "html" over "xhtml", however,
+we are testing xhtml encoding here in case we need it in the future.
+
+    >>> xhtml = FeedTypedData("<b> and &nbsp; and &amp;</b><hr/>",
+    ...               content_type="xhtml")
+    >>> xhtml.content
+    u'<b> and \xa0 and &amp;</b><hr />'
+
+
+== validate_feed() helper function ==
+
+Pagetests can use the validate_feed() function to perform all the
+checks available at http://feedvalidator.org
+
+Occasionally, there will be suggestions from feedvalidator that we will
+ignore. For example, when the <title type="text"> element contains html,
+we want to view the html as opposed to having the title text formatted.
+Therefore, we won't set type="html" for the title element.
+
+    >>> feed = """<?xml version="1.0" encoding="UTF-8"?>
+    ... <feed xmlns="http://www.w3.org/2005/Atom" xml:lang="en">
+    ... <id>one</id>
+    ... <title>Bugs in Launchpad itself</title>
+    ... <link rel="self" href="http://foo.bar" />
+    ... <updated>2006-05-19T06:37:40.344941+00:00</updated>
+    ... <entry>
+    ...     <id>http://launchpad.dev/entry</id>
+    ...     <author></author>
+    ...     <updated>2007-05-19T06:37:40.344941+00:00</updated>
+    ...     <title type="text">&lt;b&gt;hello&lt;/b&gt;</title>
+    ...     <content type="html">&lt;b&gt;hello&lt;/b&gt;</content>
+    ... </entry>
+    ... </feed>"""
+    >>> from canonical.launchpad.ftests.feeds_helper import validate_feed
+    >>> validate_feed(feed, '/atom+xml', 'http://ubuntu.com')
+    -------- Error: InvalidFullLink --------
+    Backupcolumn: 7
+    Backupline: 3
+    Column: 7
+    Element: id
+    Line: 3
+    Parent: feed
+    Value: one
+    =
+      1: <?xml version="1.0" encoding="UTF-8"?>
+      2: <feed xmlns="http://www.w3.org/2005/Atom" xml:lang="en">
+      3: <id>one</id>
+       : ~~~~~~~^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+      4: <title>Bugs in Launchpad itself</title>
+      5: <link rel="self" href="http://foo.bar" />
+    =
+    -------- Error: MissingElement --------
+    Backupcolumn: 12
+    Backupline: 9
+    Column: 12
+    Element: name
+    Line: 9
+    Parent: author
+    =
+      7: <entry>
+      8:     <id>http://launchpad.dev/entry</id>
+      9:     <author></author>
+       : ~~~~~~~~~~~~^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+     10:     <updated>2007-05-19T06:37:40.344941+00:00</updated>
+     11:     <title type="text">&lt;b&gt;hello&lt;/b&gt;</title>
+    =
+    -------- Warning: UnexpectedContentType --------
+    Contenttype: /atom+xml
+    Type: Feeds
+    -------- Warning: SelfDoesntMatchLocation --------
+    Backupcolumn: 41
+    Backupline: 5
+    Column: 41
+    Element: href
+    Line: 5
+    Parent: feed
+    Location: http://ubuntu.com
+    =
+      3: <id>one</id>
+      4: <title>Bugs in Launchpad itself</title>
+      5: <link rel="self" href="http://foo.bar" />
+       : ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^~~~~~~~~~~~~~~~~~~~~~~~~
+      6: <updated>2006-05-19T06:37:40.344941+00:00</updated>
+      7: <entry>
+    =
+    -------- Warning: ContainsUndeclaredHTML --------
+    Backupcolumn: 47
+    Backupline: 11
+    Column: 47
+    Element: title
+    Line: 11
+    Parent: entry
+    Value: b
+    =
+      9:     <author></author>
+     10:     <updated>2007-05-19T06:37:40.344941+00:00</updated>
+     11:     <title type="text">&lt;b&gt;hello&lt;/b&gt;</title>
+       : ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^~~~~~~~~~~~~~~~~~~
+     12:     <content type="html">&lt;b&gt;hello&lt;/b&gt;</content>
+     13: </entry>
+    =

@@ -18,10 +18,6 @@
        tal:replace="structure context/distribution/@@+portlet-answercontacts" />
 </metal:leftportlets>
 
-<metal:rightportlets fill-slot="portlets_two">
-  <div tal:replace="structure context/@@+portlet-details" />
-</metal:rightportlets>
-
 <div metal:fill-slot="main">
 
   <div metal:use-macro="context/@@launchpad_form/form">
@@ -58,7 +54,8 @@
           <label>Let the following teams be an answer contact for
           <span tal:replace="context/displayname">Mozilla
           Firefox</span>:</label>
-          <div tal:content="structure view/widgets/answer_contact_teams" />
+          <div id="answer-contact-teams"
+               tal:content="structure view/widgets/answer_contact_teams" />
         </div>
 
       </div>

@@ -354,6 +354,16 @@ regular space.)
     Another paragraph.
     A final one
 
+The function also knows about the sortkey class used in many tables.
+The sortkey is not displayed but is used for the javascript table
+sorting.
+
+    >>> print extract_text(
+    ...    '<table><tr><td><span class="sortkey">1</span>First</td></tr>'
+    ...    '<tr><td><span class="sortkey">2</span>Second</td></tr>'
+    ...    '<tr><td><span class="sortkey">3</span>Third</td></tr></table>')
+    First Second Third
+
 The extract_text method is often used in conjunction with the other
 find_xxx helper methods to identify the text to display.  Because of
 this the function also accepts BeautifulSoup instance as a parameter
@@ -436,3 +446,64 @@ if the messages contain html elements.
   >>> get_feedback_messages(browser.contents)
   [u'1 file has been deleted.', u'Red Alert!  There are more details.']
 
+
+== print_radio_button_field ==
+
+Prints out the radio buttons in an easy to understand way.
+The checked radio button is indicated with (*), and unchecked
+with ( ).
+
+  >>> print_radio_button_field = test.globs['print_radio_button_field']
+  >>> contents = '''
+  ... <label>
+  ...   <input type="radio" name="field.foo" id="field.foo.1" value="ONE">
+  ...   One
+  ... </label>
+  ... <label>
+  ...   <input type="radio" name="field.foo" id="field.foo.1"
+  ...          value="TWO" checked="checked">
+  ...   Two
+  ... </label>
+  ... <label>
+  ...   <input type="radio" name="field.foo" id="field.foo.1" value="THREE">
+  ...   Three
+  ... </label>
+  ... '''
+  >>> print_radio_button_field(contents, 'foo')
+  ( ) One
+  (*) Two
+  ( ) Three
+
+Sometimes the label isn't directly above the radio button.
+
+  >>> contents = '''
+  ... <table>
+  ...   <tr>
+  ...     <td rowspan="2"><input class="radioType" id="field.branch_type.0" name="field.branch_type" type="radio" value="HOSTED" /></td>
+  ...     <td><label for="field.branch_type.0">Hosted</label></td>
+  ...   </tr>
+  ...   <tr>
+  ...     <td>Launchpad is the primary location of this branch.</td>
+  ...   </tr>
+  ...   <tr>
+  ...     <td rowspan="2"><input class="radioType" checked="checked" id="field.branch_type.1" name="field.branch_type" type="radio" value="MIRRORED" /></td>
+  ...     <td><label for="field.branch_type.1">Mirrored</label></td>
+  ...   </tr>
+  ...   <tr>
+  ...     <td>Primarily hosted elsewhere and is periodically mirrored
+  ...      from the remote location into Launchpad.</td>
+  ...   </tr>
+  ...   <tr>
+  ...     <td rowspan="2"><input class="radioType" id="field.branch_type.2" name="field.branch_type" type="radio" value="REMOTE" /></td>
+  ...     <td><label for="field.branch_type.2">Remote</label></td>
+  ...   </tr>
+  ...   <tr>
+  ...     <td>Registered in Launchpad with an external location,
+  ...     but is not to be mirrored, nor available through Launchpad.</td>
+  ...   </tr>
+  ... </table>
+  ... '''
+  >>> print_radio_button_field(contents, 'branch_type')
+  ( ) Hosted
+  (*) Mirrored
+  ( ) Remote

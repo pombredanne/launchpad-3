@@ -25,9 +25,9 @@ from canonical.launchpad.interfaces import (
     ICodeImportSchedulerApplication, IDistroSeriesSet, IFeedsApplication,
     IHWDBApplication, ILanguageSet, ILaunchBag, ILaunchpadStatisticSet,
     IMailingListApplication, IMaloneApplication, IOpenIdApplication,
-    IProductSet, IRegistryApplication, IRosettaApplication,
-    IShipItApplication, ITranslationGroupSet)
-
+    IPersonSet, IProductSet, IRegistryApplication, IRosettaApplication,
+    IShipItApplication, ITranslationGroupSet, IWebServiceApplication)
+from canonical.lazr.rest import ServiceRootResource
 
 class AuthServerApplication:
     """AuthServer End-Point."""
@@ -186,3 +186,13 @@ class RosettaApplication:
 
 class HWDBApplication:
     implements(IHWDBApplication)
+
+
+class WebServiceApplication(ServiceRootResource):
+    """See IWebServiceApplication."""
+    implements(IWebServiceApplication)
+
+    # See ServiceRootResource for more on top_level_collections
+    @property
+    def top_level_collections(self):
+        return { 'people' : getUtility(IPersonSet) }

@@ -14,14 +14,9 @@
       <h1>Binary package search results</h1>
     </metal:heading>
 
-<metal:leftportlets fill-slot="portlets_one">
-  <div tal:replace="structure context/@@+portlet-details" /> 
-  <div tal:replace="structure context/distroseries/distribution/@@+portlet-details" /> <br />
-</metal:leftportlets>
-
-<metal:rightportlets fill-slot="portlets_two">
-  <div tal:replace="structure context/distroseries/@@+portlet-details" /> 
-</metal:rightportlets>
+    <metal:portlets fill-slot="portlets">
+      <div tal:replace="structure context/@@+portlet-details" /> 
+    </metal:portlets>
 
 <div metal:fill-slot="main">
 
@@ -46,6 +41,8 @@
       </div>
     </div>
   </form>
+
+  <div id="search-results">
 
   <tal:searching condition="view/searchrequested">
 
@@ -76,7 +73,7 @@
 
     </tal:no_matches>
   </tal:searching>
-
+  </div>
 
   <tal:disabled condition="nothing">
     <!-- sabdfl 2005-10-24 this is the old searching, largely disabled in

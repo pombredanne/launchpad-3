@@ -617,11 +617,6 @@ class ManageAnswerContactView(UserSupportLanguagesMixin, LaunchpadFormView):
                 required=False),
             custom_widget=self.custom_widgets['answer_contact_teams'])
 
-    @cachedproperty
-    def administrated_teams(self):
-        """Return the list of teams for which the user is an administrator."""
-        return self.user.getAdministratedTeams()
-
     @property
     def initial_values(self):
         """Return a dictionary of the default values for the form_fields."""
@@ -668,6 +663,14 @@ class ManageAnswerContactView(UserSupportLanguagesMixin, LaunchpadFormView):
                           'for $context.', mapping=replacements))
 
         self.next_url = canonical_url(self.context, rootsite='answers')
+
+    @property
+    def administrated_teams(self):
+        from canonical.launchpad.browser.person import (
+            RestrictedMembershipsPersonView)
+        restricted_view = RestrictedMembershipsPersonView(self.user,
+                                                          self.request)
+        return restricted_view.administrated_teams
 
     def _updatePreferredLanguages(self, person_or_team):
         """Check or update the Person's preferred languages as needed.

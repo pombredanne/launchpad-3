@@ -4,7 +4,6 @@ __metaclass__ = type
 __all__ = ['emailcommands', 'get_error_message']
 
 import os.path
-import re
 
 from zope.component import getUtility
 from zope.event import notify
@@ -26,6 +25,7 @@ from canonical.launchpad.event import (
 from canonical.launchpad.event.interfaces import (
     ISQLObjectCreatedEvent, ISQLObjectModifiedEvent)
 
+from canonical.launchpad.validators.name import valid_name
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.snapshot import Snapshot
 
@@ -309,6 +309,8 @@ class SubscribeEmailCommand(EmailCommand):
         if len(string_args) == 2:
             subscription_name = string_args.pop()
 
+        user = getUtility(ILaunchBag).user
+
         if len(string_args) == 1:
             person_name_or_email = string_args.pop()
             valid_person_vocabulary = ValidPersonOrTeamVocabulary()
@@ -323,7 +325,7 @@ class SubscribeEmailCommand(EmailCommand):
             person = person_term.value
         elif len(string_args) == 0:
             # Subscribe the sender of the email.
-            person = getUtility(ILaunchBag).user
+            person = user
         else:
             raise EmailProcessingError(
                 get_error_message('subscribe-too-many-arguments.txt'))
@@ -335,7 +337,7 @@ class SubscribeEmailCommand(EmailCommand):
                     break
 
         else:
-            bugsubscription = bug.subscribe(person)
+            bugsubscription = bug.subscribe(person, user)
             notify(SQLObjectCreatedEvent(bugsubscription))
 
         return bug, current_event
@@ -828,7 +830,8 @@ class TagEmailCommand(EmailCommand):
 
     def execute(self, bug, current_event):
         """See `IEmailCommand`."""
-        string_args = list(self.string_args)
+        # Tags are always lowercase.
+        string_args = [arg.lower() for arg in self.string_args]
         # Bug.tags returns a Zope List, which does not support Python list
         # operations so we need to convert it.
         tags = list(bug.tags)
@@ -847,8 +850,8 @@ class TagEmailCommand(EmailCommand):
             else:
                 remove = False
                 tag = arg
-            # Tag must contain only alphanumeric characters
-            if re.search('[^a-zA-Z0-9]', tag):
+            # Tag must be a valid name.
+            if not valid_name(tag):
                 raise EmailProcessingError(
                     get_error_message('invalid-tag.txt', tag=tag))
             if remove:

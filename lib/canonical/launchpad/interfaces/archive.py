@@ -9,11 +9,12 @@ __all__ = [
     'ArchivePurpose',
     'IArchive',
     'IPPAActivateForm',
+    'IArchivePackageDeletionForm',
     'IArchiveSet',
     ]
 
 from zope.interface import Interface, Attribute
-from zope.schema import Bool, Choice, Int, Text
+from zope.schema import Bool, Choice, Int, Text, TextLine
 
 from canonical.launchpad import _
 from canonical.launchpad.interfaces import IHasOwner
@@ -37,9 +38,14 @@ class IArchive(IHasOwner):
         title=_("Enabled"), required=False,
         description=_("Whether the PPA is enabled or not."))
 
+    private = Bool(
+        title=_("Private"), required=False,
+        description=_("Whether the PPA is private to the owner or not."))
+
     authorized_size = Int(
         title=_("Authorized PPA size "), required=False,
-        description=_("Maximum size, in bytes, allowed for this PPA."))
+        max=(2**30)-1,
+        description=_("Maximum size, in MiB, allowed for this PPA."))
 
     whiteboard = Text(
         title=_("Whiteboard"), required=False,
@@ -154,6 +160,19 @@ class IPPAActivateForm(Interface):
     accepted = Bool(
         title=_("I have read and accepted the PPA Terms of Service."),
         required=True, default=False)
+
+
+class IArchivePackageDeletionForm(Interface):
+    """Schema used to delete packages within a archive."""
+
+    name_filter = TextLine(
+        title=_("Package name"), required=False, default=None,
+        description=_("Display packages only with name matching the given "
+                      "filter."))
+
+    deletion_comment = TextLine(
+        title=_("Deletion comment"), required=False,
+        description=_("The reason why the package is being deleted."))
 
 
 class IArchiveSet(Interface):

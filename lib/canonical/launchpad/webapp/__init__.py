@@ -8,48 +8,48 @@ This module also has an API for use by the application.
 __metaclass__ = type
 
 __all__ = [
-    'Link',
-    'FacetMenu',
+    'action',
     'ApplicationMenu',
-    'ContextMenu',
-    'nearest_context_with_adapter',
-    'nearest_adapter',
     'canonical_name',
     'canonical_url',
-    'nearest',
-    'structured',
-    'StandardLaunchpadFacets',
+    'ContextMenu',
+    'custom_widget',
     'enabled_with_permission',
+    'expand_numbers',
+    'ExportedFolder',
+    'FacetMenu',
+    'GeneralFormView',
+    'GeneralFormViewFactory',
+    'GetitemNavigation',
+    'LaunchpadEditFormView',
+    'LaunchpadFormView',
     'LaunchpadView',
     'LaunchpadXMLRPCView',
+    'Link',
     'Navigation',
-    'stepthrough',
+    'nearest',
+    'nearest_adapter',
+    'nearest_context_with_adapter',
     'redirection',
-    'stepto',
-    'GetitemNavigation',
+    'safe_action',
     'smartquote',
+    'sorted_dotted_numbers',
+    'sorted_version_numbers',
+    'StandardLaunchpadFacets',
+    'stepthrough',
+    'stepto',
+    'structured',
+    'UnsafeFormGetSubmissionError',
     'urlappend',
     'urlparse',
     'urlsplit',
-    'GeneralFormView',
-    'GeneralFormViewFactory',
     'Utf8PreferredCharsets',
-    'LaunchpadFormView',
-    'LaunchpadEditFormView',
-    'action',
-    'custom_widget',
-    'safe_action',
-    'expand_numbers',
-    'sorted_version_numbers',
-    'sorted_dotted_numbers',
-    'UnsafeFormGetSubmissionError',
     ]
 
 import re
 
 from zope.component import getUtility
 
-from canonical.launchpad.webapp.url import urlappend, urlparse, urlsplit
 from canonical.launchpad.webapp.generalform import (
     GeneralFormView, GeneralFormViewFactory
     )
@@ -66,6 +66,7 @@ from canonical.launchpad.webapp.publisher import (
     stepthrough, redirection, stepto, LaunchpadXMLRPCView)
 from canonical.launchpad.webapp.sorting import (
     expand_numbers, sorted_version_numbers, sorted_dotted_numbers)
+from canonical.launchpad.webapp.url import urlappend, urlparse, urlsplit
 
 def smartquote(str):
     """Return a copy of the string provided, with smartquoting applied.
@@ -108,10 +109,9 @@ class StandardLaunchpadFacets(FacetMenu):
     #   usedfor = IWhatever
 
     links = ['overview', 'branches', 'bugs', 'specifications', 'translations',
-        'answers']
+             'answers']
 
-    enable_only = ['overview', 'bugs', 'specifications',
-                   'translations', 'calendar']
+    enable_only = ['overview', 'bugs', 'specifications', 'translations']
 
     defaultlink = 'overview'
 
@@ -160,12 +160,6 @@ class StandardLaunchpadFacets(FacetMenu):
         text = 'Bounties'
         summary = 'View related bounty offers'
         return Link(target, text, summary)
-
-    def calendar(self):
-        """Disabled calendar link."""
-        target = '+branches'
-        text = 'Calendar'
-        return Link(target, text, enabled=False)
 
     def branches(self):
         # this is disabled by default, because relatively few objects have
