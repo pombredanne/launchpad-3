@@ -607,6 +607,13 @@ special = {
                 tearDown=tearDown,
                 optionflags=default_optionflags, layer=LaunchpadZopelessLayer
                 ),
+    'externalbugtracker-emailaddress.txt':
+            LayeredDocFileSuite(
+                '../doc/externalbugtracker-emailaddress.txt',
+                setUp=checkwatchesSetUp,
+                tearDown=tearDown,
+                optionflags=default_optionflags, layer=LaunchpadZopelessLayer
+                ),
     'externalbugtracker-mantis-csv.txt':
             LayeredDocFileSuite(
                 '../doc/externalbugtracker-mantis-csv.txt',
