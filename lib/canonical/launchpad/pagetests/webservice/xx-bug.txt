@@ -8,68 +8,89 @@ lot of state and many relationships to other objects.
 
 At the top level we provide a collection of bugs.
 
-  >>> print http(r"""
+  >>> bugs = webservice(r"""
   ... GET /bugs HTTP/1.1
   ... Host: api.launchpad.dev
-  ... """)
-  HTTP/1.1 200 Ok
-  ...
-  [{..."id": 15...}...{..."id": 12...}]
+  ... """).jsonBody()
+  >>> len(bugs)
+  14
+  >>> sorted(bugs[0].items())
+  [(u'can_expire', False),
+   (u'date_last_message', None),
+   (u'date_last_updated', u'2006-05-19T06:37:40.344941+00:00'),
+   (u'date_made_private', None),
+   (u'datecreated', u'2004-01-01T20:58:04.553583+00:00'),
+   (u'description', u'Firefox needs to support embedded SVG images...'),
+   (u'displayname', u'Bug #1'),
+   (u'duplicates_collection_link',
+      u'http://api.launchpad.dev/bugs/1/duplicates'),
+   (u'followup_subject', u'Re: Firefox does not support SVG'),
+   (u'id', 1),
+   (u'is_complete', False),
+   (u'messages_collection_link', u'http://api.launchpad.dev/bugs/1/messages'),
+   (u'name', None),
+   (u'owner_link', u'http://api.launchpad.dev/people/name12'),
+   (u'permits_expiration', False),
+   (u'private', False),
+   (u'security_related', False),
+   (u'self_link', u'http://api.launchpad.dev/bugs/1'),
+   (u'tags', []),
+   (u'title', u'Firefox does not support SVG')]
 
 Bugs are indexed by number beneath the top-level collection.
 
-  >>> print http(r"""
+  >>> bug_one = webservice(r"""
   ... GET /bugs/1 HTTP/1.1
   ... Host: api.launchpad.dev
-  ... """)
-  HTTP/1.1 200 Ok
-  ...
-  {..."description": "Firefox needs to support embedded SVG images...
-      "id": 1,...}
+  ... """).jsonBody()
+  >>> bug_one['id']
+  1
+  >>> bug_one['description']
+  u'Firefox needs to support embedded SVG images...'
 
 Bugs have relationships to other bugs, like "duplicate_of".
 
-  >>> print http(r"""
+  >>> duplicates_of_five = webservice(r"""
   ... GET /bugs/5/duplicates HTTP/1.1
   ... Host: api.launchpad.dev
-  ... """)
-  HTTP/1.1 200 Ok
-  ...
-  [{..."id": 6...}]
+  ... """).jsonBody()
+  >>> len(duplicates_of_five)
+  1
+  >>> duplicates_of_five[0]['id']
+  6
 
-  >>> print http(r"""
+  >>> bug_six = webservice(r"""
   ... GET /bugs/6 HTTP/1.1
   ... Host: api.launchpad.dev
-  ... """)
-  HTTP/1.1 200 Ok
-  ...
-  {..."duplicate_of_link": "http:\/\/api.launchpad.dev\/bugs\/5"...}
+  ... """).jsonBody()
+  >>> bug_six['duplicate_of_link']
+  u'http://api.launchpad.dev/bugs/5'
 
 
 == Bugs as message targets ==
 
 Each bug has a collection of messages.
 
-  >>> print http(r"""
+  >>> messages = webservice(r"""
   ... GET /bugs/5/messages HTTP/1.1
   ... Host: api.launchpad.dev
-  ... """)
-  HTTP/1.1 200 Ok
-  ...
-  [{"self_link":
-      "http:\/\/api.launchpad.dev\/messages\/%3C20050114172703.6687...",
-    "content": "All ways of downloading firefox should provide complete...",
-    "owner_link": "http:\/\/api.launchpad.dev\/people\/name12",
-    "subject": "Firefox install instructions should be complete",
-    "datecreated": "2005-01-14T17:27:03.702622+00:00"}]
+  ... """).jsonBody()
+  >>> sorted(messages[0].items())
+  [(u'content',
+      u'All ways of downloading firefox should provide...'),
+   (u'datecreated', u'2005-01-14T17:27:03.702622+00:00'),
+   (u'owner_link', u'http://api.launchpad.dev/people/name12'),
+   (u'self_link', u'http://api.launchpad.dev/messages/...'),
+   (u'subject', u'Firefox install instructions should be complete')]
 
 The messages are stored in a top-level collection. Eventually they'll
 be stored beneath the bug-specific collection.
 
-  >>> print http(r"""
-  ... GET /messages/%3C20050114172703.6687.71983.malonedeb%40localhost.localdomain%3E HTTP/1.1
+  >>> from urlparse import urlsplit
+  >>> message_path = urlsplit(messages[0]['self_link'])[2]
+  >>> message = webservice(r"""
+  ... GET /%s HTTP/1.1
   ... Host: api.launchpad.dev
-  ... """)
-  HTTP/1.1 200 Ok
-  ...
-  {..."subject": "Firefox install instructions should be complete"...}
+  ... """ % message_path).jsonBody()
+  >>> message['subject']
+  u'Firefox install instructions should be complete'
