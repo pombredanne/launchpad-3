@@ -62,6 +62,10 @@ property.
    >>> print firefox.parent_subscription_target
    None
 
+   >>> ff_milestone = firefox.getMilestone('1.0')
+   >>> print ff_milestone.parent_subscription_target.displayname
+   Mozilla Firefox
+
 When notifying subscribers of bug activity, both subscribers to the
 target and to the target's parent are notified.
 
