@@ -13,13 +13,16 @@ __metaclass__ = type
 import doctest
 import os
 import re
+import simplejson
 import unittest
 
-from BeautifulSoup import (BeautifulSoup, Comment, Declaration,
-    NavigableString, PageElement, ProcessingInstruction, SoupStrainer, Tag)
+from BeautifulSoup import (
+    BeautifulSoup, Comment, Declaration, NavigableString, PageElement,
+    ProcessingInstruction, SoupStrainer, Tag)
 from urlparse import urljoin
 
 from zope.app.testing.functional import HTTPCaller, SimpleCookie
+from zope.proxy import ProxyBase
 from zope.testbrowser.testing import Browser
 
 from canonical.functional import PageTestDocFileSuite, SpecialOutputChecker
@@ -55,6 +58,25 @@ class UnstickyCookieHTTPCaller(HTTPCaller):
 
     def resetCookies(self):
         self.cookies = SimpleCookie()
+
+
+class WebServiceCaller(UnstickyCookieHTTPCaller):
+    """A class for making calls to Launchpad web services."""
+
+    def __call__(self, *args, **kw):
+        caller = super(WebServiceCaller, self).__call__(*args, **kw)
+        return WebServiceResponseWrapper(caller)
+
+
+class WebServiceResponseWrapper(ProxyBase):
+    """A response from the web service with easy access to the JSON body."""
+
+    def jsonBody(self):
+        """Return the body of the web service request as a JSON document."""
+        json = simplejson.loads(self.getBody())
+        if isinstance(json, list):
+            json = sorted(json)
+        return json
 
 
 class DuplicateIdError(Exception):
@@ -321,6 +343,7 @@ def setupBrowser(auth=None):
 def setUpGlobs(test):
     # Our tests report being on a different port.
     test.globs['http'] = UnstickyCookieHTTPCaller(port=9000)
+    test.globs['webservice'] = WebServiceCaller(port=9000)
     test.globs['setupBrowser'] = setupBrowser
     test.globs['browser'] = setupBrowser()
     test.globs['anon_browser'] = setupBrowser()
