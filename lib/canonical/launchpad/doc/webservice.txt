@@ -405,21 +405,6 @@ You can also traverse from an entry to an associated collection:
     >>> sorted(f['name'] for f in favorites)
     [u'Green eggs and ham', u'Steak au poivre']
 
-You can also traverse from an entry to an associated collection:
-
-    >>> authors = app.publishTraverse(request, "authors")
-    >>> jacob = authors.publishTraverse(request, "Jacob Berendes")
-    >>> simplejson.loads(jacob())
-    {u'self_link': u'http://api.launchpad.dev/authors/Jacob%20Berendes',
-     u'favorites_collection_link':
-         u'http://api.launchpad.dev/authors/Jacob%20Berendes/favorites',
-     u'name': u'Jacob Berendes'}
-    >>> jacob_favorites = jacob.publishTraverse(request, "favorites")
-    >>> simplejson.loads(jacob_favorites())
-    [{u'self_link': u'http://api.launchpad.dev/recipes/1',
-    ...
-    {u'self_link': u'http://api.launchpad.dev/recipes/7', ...]
-
 If the user tries to traverse to a nonexistent object, the result is a
 NotFound exception:
 

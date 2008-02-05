@@ -21,13 +21,11 @@ from BeautifulSoup import (
     ProcessingInstruction, SoupStrainer, Tag)
 from urlparse import urljoin
 
-from zope.app.testing.functional import (
-    HTTPCaller, ResponseWrapper, SimpleCookie)
+from zope.app.testing.functional import HTTPCaller, SimpleCookie
 from zope.proxy import ProxyBase
 from zope.testbrowser.testing import Browser
 
 from canonical.functional import PageTestDocFileSuite, SpecialOutputChecker
-from canonical.lp import decorates
 from canonical.testing import PageTestLayer
 
 
@@ -66,7 +64,7 @@ class WebServiceCaller(UnstickyCookieHTTPCaller):
     """A class for making calls to Launchpad web services."""
 
     def __call__(self, *args, **kw):
-        caller = super(UnstickyCookieHTTPCaller, self).__call__(*args, **kw)
+        caller = super(WebServiceCaller, self).__call__(*args, **kw)
         return WebServiceResponseWrapper(caller)
 
 

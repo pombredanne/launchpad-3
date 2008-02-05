@@ -66,7 +66,7 @@ class PersonCollection(Collection):
     def find(self):
         """Return all the people and teams on the site."""
         # Pass an empty query into find() to get all people
-        # =and teams.
+        # and teams.
         return self.context.find("")
 
 
