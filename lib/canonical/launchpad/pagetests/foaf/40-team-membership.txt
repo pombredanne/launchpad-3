@@ -26,6 +26,20 @@ administrator and his subscription never expires.
 
 Post an incomplete date and remove his administrator status.
 
+There is some TestBrowser voodoo at work here. The datepicker widget now
+allows you to render it disabled, which is neat because in the compound
+widget that we have made it shows more clearly when the date is relevant and
+when it is not if we disable it when it is not relevant (when the expiration
+is set to "Never" with the radio button).
+
+The Zope TestBrowser is smart enough to detect that the widget was rendered
+with the input disabled, but not smart enough to play out the JavaScript
+which would enable the input when the radio button was clicked to indicate
+that a specific expiration date was desired. There is also no TestBrowser
+way to "enable" the input. So, we have to reach into the guts of the
+TestBrowser to manually re-enable the input. That's what the
+control.mech_control.disabled=False stuff is.
+
   >>> browser.getControl(name='admin').value = ['no']
   >>> browser.getControl(name='expires').value = ['date']
   >>> expiry = browser.getControl(name='membership.expirationdate')
@@ -35,8 +49,9 @@ Post an incomplete date and remove his administrator status.
 
 We get a nice error message
 
-  >>> 'Invalid date value' in browser.contents
-  True
+  >>> for tag in find_tags_by_class(browser.contents, 'message'):
+  ...     print tag.renderContents()
+  Invalid expiration: Invalid date value
 
 Give up on change, nothing should have changed with Colin:
 
@@ -62,7 +77,7 @@ Now revoke Colin's administrator status and make him expire in November
 next year -- successfully.
 
   >>> from datetime import datetime, timedelta
-  >>> expire_date = datetime.utcnow()+timedelta(days=365)
+  >>> expire_date = datetime.utcnow() + timedelta(days=365)
 
   >>> browser.getControl(name='admin').value = ['no']
   >>> browser.getControl(name='expires').value = ['date']

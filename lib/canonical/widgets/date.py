@@ -50,6 +50,7 @@ class DateTimeWidget(TextWidget):
     the time:
 
       >>> print widget()  #doctest: +ELLIPSIS
+      <BLANKLINE>
       <...in time zone: UTC...
 
     The datetime popup widget links to the page which allows the user to
@@ -75,6 +76,7 @@ class DateTimeWidget(TextWidget):
 
       >>> widget.required_timezone = pytz.timezone('America/Los_Angeles')
       >>> print widget()  #doctest: +ELLIPSIS
+      <BLANKLINE>
       <...in time zone: America/Los_Angeles...
       >>> 'change time zone' not in widget()
       True
@@ -93,7 +95,6 @@ class DateTimeWidget(TextWidget):
       Traceback (most recent call last):
       ...
       WidgetInputError: (... Please pick a date after 2006-05-22 17:00:00)
-
 
     If the date provided is greater than from_date then the widget works as
     expected.
@@ -292,7 +293,7 @@ class DateTimeWidget(TextWidget):
         """Return the date, if it is in the allowed date range."""
         value = super(DateTimeWidget, self).getInputValue()
         if value is None:
-            return value
+            return None
         # Establish if the value is within the date range. 
         self._align_date_constraints_with_timezone()
         if self.from_date is not None and value < self.from_date:
@@ -471,8 +472,9 @@ class DateWidget(DateTimeWidget):
     __call__ = ViewPageTemplateFile('templates/date.pt')
 
     def __init__(self, context, request):
+        super(DateWidget, self).__init__(context, request)
         request.needs_datepicker_iframe = True
-        super(DateTimeWidget, self).__init__(context, request)
+        request.needs_datetimepicker_iframe = False
 
     def _toFieldValue(self, input):
         """Return parsed input (datetime) as a date.

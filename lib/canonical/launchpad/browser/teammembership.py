@@ -59,12 +59,11 @@ class TeamMembershipEditView:
         if self.isDeactivated():
             # For members who were deactivated, we present by default
             # their original expiration date, or, if that has passed, or
-            # never set, the team's default renewal date
-            if (expires is None) or (
-                expires < datetime.now(UTC)):
+            # never set, the team's default renewal date.
+            if expires is None or expires < datetime.now(UTC):
                 expires = self.context.team.defaultrenewedexpirationdate
         if expires is not None:
-           # We get a datetime from the database, but we want to use a
+            # We get a datetime from the database, but we want to use a
             # datepicker so we must feed it a plain date without time.
             expires = expires.date()
         data = {'expirationdate': expires}
@@ -111,33 +110,45 @@ class TeamMembershipEditView:
         return self.context.status == TeamMembershipStatus.DEACTIVATED
 
     def adminIsSelected(self):
-        """Whether the admin radiobutton should be selected or not"""
+        """Whether the admin radiobutton should be selected."""
         request_admin = self.request.get('admin')
-        if request_admin:
-            return request_admin == 'yes'
-        return self.isAdmin()
+        if request_admin == 'yes':
+            return 'checked'
+        if self.isAdmin():
+            return 'checked'
+        return ''
+
+    def adminIsNotSelected(self):
+        """Whether the not-admin radiobutton should be selected."""
+        if self.adminIsSelected() != 'checked':
+            return 'checked'
+        return ''
 
     def expiresIsSelected(self):
-        """Whether the expires radiobutton should be selected or not"""
+        """Whether the expiration date radiobutton should be selected."""
         request_expires = self.request.get('expires')
-        if request_expires:
-            return request_expires == 'date'
+        if request_expires == 'date':
+            return 'checked'
         if self.isExpired():
-            # Always return false when expired, because there's another
+            # Never checked when expired, because there's another
             # radiobutton in that situation.
-            return False
-        return self.membershipExpires()
+            return ''
+        if self.membershipExpires():
+            return 'checked'
+        return ''
 
     def neverExpiresIsSelected(self):
-        """Whether the expires radiobutton should be selected or not"""
+        """Whether the never-expires radiobutton should be selected."""
         request_expires = self.request.get('expires')
-        if request_expires:
-            return request_expires == 'never'
+        if request_expires == 'never':
+            return 'checked'
         if self.isExpired():
-            # Always return false when expired, because there's another
+            # Never checked when expired, because there's another
             # radiobutton in that situation.
-            return False
-        return not self.membershipExpires()
+            return ''
+        if not self.membershipExpires():
+            return 'checked'
+        return ''
 
     def canChangeExpirationDate(self):
         """Return True if the logged in user can change the expiration date of
@@ -244,8 +255,9 @@ class TeamMembershipEditView:
             self.request.response.redirect(
                 '%s/+members' % canonical_url(self.context.team))
 
+    @property
     def date_picker_trigger(self):
-        """Function call to trigger the date picker."""
+        """JavaScript function call to trigger the date picker."""
         return """pickDate('membership.expirationdate', %s);
          document.getElementById('membership.expirationdate').disabled=false;
          """ % (self.expiration_widget.daterange)
@@ -289,7 +301,11 @@ class TeamMembershipEditView:
         try:
             expires = self.expiration_widget.getInputValue()
         except InputErrors, value:
-            # Handle conversion errors
+            # Handle conversion errors. We have to do this explicitly here
+            # because we are not using the full form machinery which would
+            # put the relevant error message into the field error. We are
+            # mixing the zope3 widget stuff with a hand-crafted form
+            # processor, so we need to trap this manually.
             raise ValueError(value.doc())
         if expires is None:
             return None

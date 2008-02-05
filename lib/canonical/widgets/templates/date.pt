@@ -1,3 +1,8 @@
+<tal:root
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  omit-tag="">
 <input size="10" type="text"
        tal:attributes="name view/name; id view/name; value view/formvalue;
                        disabled view/disabled_flag;" />
@@ -7,4 +12,5 @@
    ><span class="PopcalTrigger"
     ><img name="popcal" align="absmiddle"
           src="/+popcalxp/calbtn.gif"
-          width="34" height="22" border="0" alt="(choose)"></span></a>
+          width="34" height="22" border="0" alt="(choose)" /></span></a>
+</tal:root>

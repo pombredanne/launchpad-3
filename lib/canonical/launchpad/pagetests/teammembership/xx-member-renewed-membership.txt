@@ -76,6 +76,9 @@ the user to renew that membership because it's not about to expire.
 If we now change Karl's membership to expire in a couple days, he'll be
 able to renew it himself.
 
+See pagetests/foaf/40-team-membership.txt for an explanation of the
+mech_control TestBrowser voodoo.
+
     >>> from datetime import datetime, timedelta
     >>> import pytz
     >>> now = datetime.now(pytz.timezone('UTC'))
