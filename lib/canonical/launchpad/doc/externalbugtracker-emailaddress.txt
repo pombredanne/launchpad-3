@@ -40,8 +40,8 @@ mailto:<email-address>.
     >>> sample_person = getUtility(IPersonSet).getByEmail(
     ...     'test@canonical.com')
     >>> email_tracker = getUtility(IBugTrackerSet).ensureBugTracker(
-    ...     baseurl='mailto:bugs@example.com', owner=sample_person,
-    ...     bugtrackertype=BugTrackerType.EMAILADDRESS, 
+    ...     baseurl='mailto:somebugaddress@example.com', owner=sample_person,
+    ...     bugtrackertype=BugTrackerType.EMAILADDRESS,
     ...     title="Sample email address tracker", summary="Nothing",
     ...     contactdetails="None", name='email-tracker')
     >>> verifyObject(IBugTracker, email_tracker)
@@ -83,7 +83,7 @@ email address bug tracker Launchpad can never know a remote bug ID,
 calling getBugsWatching() on an email address bug tracker will always
 return an empty list.
 
-    >>> [watch.remotebug for watch in email_tracker.latestwatches]
+    >>> sorted(watch.remotebug for watch in email_tracker.latestwatches)
     [u'', u'...launchpad@...']
 
     >>> email_tracker.getBugsWatching('')
