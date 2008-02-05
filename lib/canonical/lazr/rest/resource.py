@@ -280,8 +280,8 @@ class Collection:
 
 
 class ScopedCollection:
-    implements(ICollection)
     """A collection associated with some parent object."""
+    implements(ICollection)
 
     def __init__(self, context, collection):
         """Initialize the scoped collection.
