@@ -2617,8 +2617,8 @@ class BugTaskRemoveQuestionView(LaunchpadFormView):
         # was unlinked. We resubscribe the owner if he was subscribed.
         if owner_is_subscribed is True:
             self.context.bug.subscribe(question.owner, self.user)
-        self.request.response.addNotification(structured(
-                self._removedQuestionText(question))
+        self.request.response.addNotification(
+                structured(self._removedQuestionText(question))
         comment = data.get('comment', None)
         if comment is not None:
             self.context.bug.newMessage(

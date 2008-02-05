@@ -334,7 +334,8 @@ class POTemplateView(LaunchpadView, TranslationsMixin):
                 productseries=self.context.productseries,
                 potemplate=self.context)
 
-            self.request.response.addInfoNotification(structured(
+            self.request.response.addInfoNotification(
+                structured(
                 'Thank you for your upload. The file content will be imported'
                 ' soon into Launchpad. You can track its status from the'
                 ' <a href="%s/+imports">Translation Import Queue</a>' %
@@ -350,7 +351,8 @@ class POTemplateView(LaunchpadView, TranslationsMixin):
                 potemplate=self.context)
 
             if num > 0:
-                self.request.response.addInfoNotification(structured(
+                self.request.response.addInfoNotification(
+                    structured(
                     'Thank you for your upload. %d files from the tarball'
                     ' will be imported soon into Launchpad. You can track its'
                     ' status from the <a href="%s/+imports">Translation'

@@ -402,7 +402,8 @@ class BaseTranslationView(LaunchpadView):
             # This POFile needs administrator setup.
             # XXX: kiko 2006-10-18:
             # This should refer people to +addticket, right?
-            self.request.response.addErrorNotification(structured("""
+            self.request.response.addErrorNotification(
+                structured("""
             <p>
             Launchpad can&#8217;t handle the plural items in this file,
             because it doesn&#8217;t yet know how plural forms work for %s.

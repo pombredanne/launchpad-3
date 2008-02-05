@@ -451,7 +451,8 @@ class ProductSeriesView(LaunchpadView, TranslationsMixin):
                 filename, content, True, self.user,
                 productseries=self.context)
 
-            self.request.response.addInfoNotification(structured(
+            self.request.response.addInfoNotification(
+                structured(
                 'Thank you for your upload. The file content will be'
                 ' reviewed soon by an admin and then imported into Launchpad.'
                 ' You can track its status from the <a href="%s/+imports">'
@@ -464,7 +465,8 @@ class ProductSeriesView(LaunchpadView, TranslationsMixin):
                 productseries=self.context)
 
             if num > 0:
-                self.request.response.addInfoNotification(structured(
+                self.request.response.addInfoNotification(
+                    structured(
                     'Thank you for your upload. %d files from the tarball'
                     ' will be reviewed soon by an admin and then imported'
                     ' into Launchpad. You can track its status from the'

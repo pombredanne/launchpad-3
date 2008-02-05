@@ -104,7 +104,8 @@ class BugWatchEditView(LaunchpadFormView):
     @action('Delete Bug Watch', name='delete', condition=bugWatchIsUnlinked)
     def delete_action(self, action, data):
         bugwatch = self.context
-        self.request.response.addInfoNotification(structured(
+        self.request.response.addInfoNotification(
+            structured(
             'The <a href="%(url)s">%(bugtracker)s #%(remote_bug)s</a>'
             ' bug watch has been deleted.',
             url=bugwatch.url, bugtracker=bugwatch.bugtracker.name,

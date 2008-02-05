@@ -395,7 +395,8 @@ class BugTaskCreationStep(AlsoAffectsStep):
             # Simply add one notification per bug to simplify the
             # implementation; most of the time it will be only one bug.
             for other_bug in other_bugs_already_watching:
-                self.request.response.addInfoNotification(structured(
+                self.request.response.addInfoNotification(
+                    structured(
                     '<a href="%(bug_url)s">Bug #%(bug_id)s</a> also links'
                     ' to the added bug watch'
                     ' (%(bugtracker_name)s #%(remote_bug)s).',

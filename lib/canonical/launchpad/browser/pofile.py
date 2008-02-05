@@ -196,7 +196,8 @@ class POFileUploadView(POFileView):
             productseries=self.context.potemplate.productseries,
             potemplate=self.context.potemplate, pofile=self.context)
 
-        self.request.response.addInfoNotification(structured(
+        self.request.response.addInfoNotification(
+            structured(
             'Thank you for your upload. The translation content will be'
             ' imported soon into Launchpad. You can track its status from the'
             ' <a href="%s/+imports">Translation Import Queue</a>' % \
