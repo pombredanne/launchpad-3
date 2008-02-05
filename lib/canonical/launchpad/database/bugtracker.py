@@ -11,10 +11,10 @@ __all__ = [
 import re
 
 from itertools import chain
-# splithost and splittype are not formally documented, but are in
-# urllib.__all__, are simple, and are heavily used by the rest of
-# urllib, hence are unlikely to change or go away.
-from urllib import splithost, splittype
+# splittype is not formally documented, but is in urllib.__all__, is
+# simple, and is heavily used by the rest of urllib, hence is unlikely
+# to change or go away.
+from urllib import splittype
 
 from zope.interface import implements
 
