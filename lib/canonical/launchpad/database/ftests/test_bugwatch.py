@@ -197,6 +197,13 @@ class EmailAddressExtractBugTrackerAndBugTest(
     base_url = 'mailto:foo.bar@example.com'
     bug_id = ''
 
+    def test_extract_bug_tracker_and_bug_rejects_invalid_email_address(self):
+        # BugWatch.extractBugTrackerAndBug() will reject invalid email
+        # addresses.
+        self.assertRaises(UnrecognizedBugTrackerURL,
+            self.bugwatch_set.extractBugTrackerAndBug,
+            url='this\.is@@a.bad.email.address')
+
 
 def test_suite():
     suite = unittest.TestSuite()

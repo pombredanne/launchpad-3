@@ -21,17 +21,16 @@ from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
 
+from canonical.launchpad.database.bugset import BugSetBase
 from canonical.launchpad.event import SQLObjectModifiedEvent
-
-from canonical.launchpad.webapp import urlappend, urlsplit
-from canonical.launchpad.webapp.snapshot import Snapshot
-from canonical.launchpad.webapp.uri import find_uris_in_text
-
 from canonical.launchpad.interfaces import (
     BugTrackerType, BugWatchErrorType, IBugTrackerSet, IBugWatch,
     IBugWatchSet, ILaunchpadCelebrities, NoBugTrackerFound,
     NotFoundError, UnrecognizedBugTrackerURL)
-from canonical.launchpad.database.bugset import BugSetBase
+from canonical.launchpad.validators.email import valid_email
+from canonical.launchpad.webapp import urlappend, urlsplit
+from canonical.launchpad.webapp.snapshot import Snapshot
+from canonical.launchpad.webapp.uri import find_uris_in_text
 
 
 class BugWatch(SQLBase):
@@ -392,6 +391,10 @@ class BugWatchSet(BugSetBase):
         """
         # We ignore anything that isn't a mailto URL.
         if scheme != 'mailto':
+            return None
+
+        # We also reject invalid email addresses.
+        if not valid_email(path):
             return None
 
         return '%s:%s' % (scheme, path), ''
