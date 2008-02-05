@@ -257,10 +257,15 @@ class POHeader:
         for key, value in self._header_dictionary.iteritems():
             if key == 'plural-forms':
                 parts = parse_assignments(value)
-                if parts.get('nplurals') != 'INTEGER':
+                nplurals = parts.get('nplurals')
+                if nplurals is None:
+                    # Number of plurals not specified.  Default to single
+                    # form.
+                    self.number_plural_forms = 1
+                    self.plural_form_expression = '0'
+                elif nplurals != 'INTEGER':
                     # We found something different than gettext's default
                     # value.
-                    nplurals = parts.get('nplurals')
                     try:
                         self.number_plural_forms = int(nplurals)
                     except (TypeError, ValueError):
@@ -279,6 +284,10 @@ class POHeader:
                         raise TooManyPluralFormsError()
 
                     self.plural_form_expression = parts.get('plural', '0')
+                else:
+                    # Plurals declaration contains default text.  This is
+                    # probably a template, so leave the text as it is.
+                    pass
 
             elif key == 'pot-creation-date':
                 try:
