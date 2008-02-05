@@ -610,9 +610,9 @@ class INotificationResponse(Interface):
 
         A plain string message will be CGI escaped.  Passing a message
         that provides the `IStructuredString` interface will return a
-        unicode string that has been properly escaped.
-        Passing an instance of a Zope internationalized message will
-        cause the message to be translated, then CGI escaped.
+        unicode string that has been properly escaped.  Passing an
+        instance of a Zope internationalized message will cause the
+        message to be translated, then CGI escaped.
 
         :param msg: This may be a string, `zope.i18n.Message`,
         `zope.i18n.MessageID`, or an instance of `IStructuredString`.
@@ -633,19 +633,19 @@ class INotificationResponse(Interface):
             )
 
     def addDebugNotification(msg):
-        """Shortcut to addNotification(msg, DEBUG)"""
+        """Shortcut to addNotification(msg, DEBUG)."""
 
     def addInfoNotification(msg):
-        """Shortcut to addNotification(msg, INFO)"""
+        """Shortcut to addNotification(msg, INFO)."""
 
     def addNoticeNotification(msg):
-        """Shortcut to addNotification(msg, NOTICE)"""
+        """Shortcut to addNotification(msg, NOTICE)."""
 
     def addWarningNotification(msg):
-        """Shortcut to addNotification(msg, WARNING)"""
+        """Shortcut to addNotification(msg, WARNING)."""
 
     def addErrorNotification(msg):
-        """Shortcut to addNotification(msg, ERROR)"""
+        """Shortcut to addNotification(msg, ERROR)."""
 
     def redirect(location, status=None):
         """As per IHTTPApplicationResponse.redirect, except notifications

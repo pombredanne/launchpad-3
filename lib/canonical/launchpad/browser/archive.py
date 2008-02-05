@@ -41,6 +41,7 @@ from canonical.launchpad.webapp import (
 from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.widgets import LabeledMultiCheckBoxWidget
 from canonical.widgets.textwidgets import StrippedTextWidget
+from canonical.launchpad.webapp.menu import structured
 
 
 class ArchiveNavigation(Navigation):
@@ -394,7 +395,7 @@ class ArchivePackageDeletionView(ArchiveViewBase, LaunchpadFormView):
         messages.append("<p>Deletion comment: %s</p>" % comment)
 
         notification = "\n".join(messages)
-        self.request.response.addNotification(notification)
+        self.request.response.addNotification(structured(notification))
 
 
 class ArchiveActivateView(LaunchpadFormView):

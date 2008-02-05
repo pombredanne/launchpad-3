@@ -535,7 +535,8 @@ class BugTaskView(LaunchpadView, CanBeMentoredView, FeedsMixin):
         self.context.bug.unsubscribe(self.user)
 
         self.request.response.addNotification(
-            self._getUnsubscribeNotification(self.user, unsubed_dupes))
+            structured(
+                self._getUnsubscribeNotification(self.user, unsubed_dupes)))
 
         if not check_permission("launchpad.View", self.context.bug):
             # Redirect the user to the bug listing, because they can no
@@ -554,7 +555,8 @@ class BugTaskView(LaunchpadView, CanBeMentoredView, FeedsMixin):
         self.context.bug.unsubscribe(user)
         unsubed_dupes = self.context.bug.unsubscribeFromDupes(user)
         self.request.response.addNotification(
-            self._getUnsubscribeNotification(user, unsubed_dupes))
+            structured(
+                self._getUnsubscribeNotification(user, unsubed_dupes)))
 
     def _getUnsubscribeNotification(self, user, unsubed_dupes):
         """Construct and return the unsubscribe-from-bug feedback message.
@@ -2613,16 +2615,19 @@ class BugTaskRemoveQuestionView(LaunchpadFormView):
         # was unlinked. We resubscribe the owner if he was subscribed.
         if owner_is_subscribed is True:
             self.context.bug.subscribe(question.owner, self.user)
-        self.request.response.addNotification(
-            'Removed Question #%s: <a href="%s">%s<a>.'
-            % (question.id, canonical_url(question),
-               cgi.escape(question.title)))
+        self.request.response.addNotification(structured(
+                self._removedQuestionText(question))
         comment = data.get('comment', None)
         if comment is not None:
             self.context.bug.newMessage(
                 owner=getUtility(ILaunchBag).user,
                 subject=self.context.bug.followup_subject(),
                 content=comment)
+
+    def _removedQuestionText(self, question):
+        return 'Removed Question #%s: <a href="%s">%s<a>.'
+     		% (question.id, canonical_url(question),
+            cgi.escape(question.title))
 
 
 class BugTaskExpirableListingView(LaunchpadView):
