@@ -173,8 +173,9 @@ class EntryResource(ReadOnlyResource):
                 # representation.
                 dict[name] = getattr(self.context, name)
             else:
-                # It's not a field at all.
-                raise AssertionError("Non-field object found in schema.")
+                # It's a method or some other part of an interface.
+                # Ignore it.
+                pass
 
         return dict
 
