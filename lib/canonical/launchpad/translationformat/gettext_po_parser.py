@@ -23,14 +23,16 @@ from zope.interface import implements
 from zope.app import datetimeutils
 
 from canonical.launchpad.interfaces import (
-    ITranslationHeaderData, TranslationConstants,
+    ITranslationHeaderData, TooManyPluralFormsError, TranslationConstants,
     TranslationFormatInvalidInputError, TranslationFormatSyntaxError)
 from canonical.launchpad.translationformat.translation_common_format import (
     TranslationFileData, TranslationMessageData)
 from canonical.launchpad.versioninfo import revno
 
+
 class BadPluralExpression(Exception):
-    pass
+    """Local "escape hatch" exception for unusable plural expressions."""
+
 
 def make_plural_function(expression):
     """Create a lambda function for C-like plural expression."""
@@ -56,6 +58,7 @@ def make_plural_function(expression):
         raise BadPluralExpression
 
     return function
+
 
 def plural_form_mapper(first_expression, second_expression):
     """Maps plural forms from one plural formula to the other.
@@ -98,6 +101,7 @@ def plural_form_mapper(first_expression, second_expression):
     result = identity_map.copy()
     result.update(mapping)
     return result
+
 
 class POSyntaxWarning(Warning):
     """ Syntax warning in a po file """
@@ -253,22 +257,38 @@ class POHeader:
         for key, value in self._header_dictionary.iteritems():
             if key == 'plural-forms':
                 parts = parse_assignments(value)
-                if parts.get('nplurals') != 'INTEGER':
+                nplurals = parts.get('nplurals')
+                if nplurals is None:
+                    # Number of plurals not specified.  Default to single
+                    # form.
+                    self.number_plural_forms = 1
+                    self.plural_form_expression = '0'
+                elif nplurals != 'INTEGER':
                     # We found something different than gettext's default
                     # value.
-                    nplurals = parts.get('nplurals')
                     try:
                         self.number_plural_forms = int(nplurals)
-                    except TypeError:
+                    except (TypeError, ValueError):
                         # There are some po files with bad headers that have a
                         # non numeric value here and sometimes an empty value.
                         # In that case, set the default value.
-                        logging.info(
-                            POSyntaxWarning(
-                                msg=("The plural form header has an unknown"
-                                    " error. Using the default value...")))
-                        self.number_plural_forms = 1
+                        raise TranslationFormatSyntaxError(
+                            message="Invalid nplurals declaration in header: "
+                                    "'%s' (should be a number)." % nplurals)
+
+                    if self.number_plural_forms <= 0:
+                        text = "Number of plural forms is impossibly low."
+                        raise TranslationFormatSyntaxError(message=text)
+
+                    if self.number_plural_forms > 4:
+                        raise TooManyPluralFormsError()
+
                     self.plural_form_expression = parts.get('plural', '0')
+                else:
+                    # Plurals declaration contains default text.  This is
+                    # probably a template, so leave the text as it is.
+                    pass
+
             elif key == 'pot-creation-date':
                 try:
                     self.template_creation_date = (

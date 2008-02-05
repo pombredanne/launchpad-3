@@ -82,8 +82,8 @@ We do the import.
 
 The status is now FAILED:
 
-    >>> entry.status == RosettaImportStatus.FAILED
-    True
+    >>> print entry.status.name
+    FAILED
 
 And the code composed an email with the notification of the error.
 
@@ -112,3 +112,190 @@ And the code composed an email with the notification of the error.
     <BLANKLINE>
     The Launchpad team
     <BLANKLINE>
+
+
+== Invalid numbers of plural forms ==
+
+Some uploads declare impossible numbers of plural forms.  Those uploads
+are rejected.
+
+
+=== Non-numeric plural forms ===
+
+In his rush to be the first Sumerian translator for Firefox, Mark
+submits a translation with a nonsensical plurals definition.
+
+    >>> pofile = potemplate.newPOFile('sux')
+    >>> pofile_contents = r'''
+    ... msgid ""
+    ... msgstr ""
+    ... "PO-Revision-Date: 2005-06-29 11:44+0100\n"
+    ... "Last-Translator: Foo <no-priv@canonical.com>\n"
+    ... "Content-Type: text/plain; charset=UTF-8\n"
+    ... "Plural-Forms: nplurals=n; plural=0\n"
+    ... "X-Rosetta-Export-Date: %s\n"
+    ...
+    ... msgid "foo"
+    ... msgstr "bar"
+    ... ''' % datetime.datetime.now(UTC).isoformat()
+    >>> entry = translation_import_queue.addOrUpdateEntry(
+    ...     pofile.path, pofile_contents, False, person,
+    ...     productseries=series, potemplate=potemplate, pofile=pofile)
+    >>> transaction.commit()
+    >>> entry.status = RosettaImportStatus.APPROVED
+    >>> (subject, message) = pofile.importFromQueue(entry)
+
+
+The submission is rejected with a syntax error.
+
+    >>> print entry.status.name
+    FAILED
+
+    >>> subject
+    u'Import problem - Sumerian (sux) - firefox in Mozilla Firefox trunk'
+    >>> print message
+    Hello Mark Shuttleworth,
+    ...
+    <BLANKLINE>
+    We were unable to import the file because of errors in its format.
+    <BLANKLINE>
+    ...
+
+
+=== Not enough forms ===
+
+Mark mistakenly attempts to import a translation with "zero" plural
+forms.  He receives an email notifying him of a syntax error.
+
+    >>> pofile_contents = r'''
+    ... msgid ""
+    ... msgstr ""
+    ... "PO-Revision-Date: 2005-06-14 18:33+0100\n"
+    ... "Last-Translator: Foo <no-priv@canonical.com>\n"
+    ... "Content-Type: text/plain; charset=UTF-8\n"
+    ... "Plural-Forms: nplurals=0; plural=0\n"
+    ... "X-Rosetta-Export-Date: %s\n"
+    ...
+    ... msgid "foo"
+    ... msgstr "bar"
+    ... ''' % datetime.datetime.now(UTC).isoformat()
+    >>> entry = translation_import_queue.addOrUpdateEntry(
+    ...     pofile.path, pofile_contents, False, person,
+    ...     productseries=series, potemplate=potemplate, pofile=pofile)
+    >>> transaction.commit()
+    >>> entry.status = RosettaImportStatus.APPROVED
+    >>> (subject, message) = pofile.importFromQueue(entry)
+
+    >>> print entry.status.name
+    FAILED
+
+    >>> subject
+    u'Import problem - Sumerian (sux) - firefox in Mozilla Firefox trunk'
+    >>> print message
+    Hello Mark Shuttleworth,
+    ...
+    <BLANKLINE>
+    We were unable to import the file because of errors in its format.
+    <BLANKLINE>
+    ...
+
+
+On his next attempt, Mark accidentally types a negative number of plural
+forms.  The same error is given.
+
+    >>> pofile_contents = r'''
+    ... msgid ""
+    ... msgstr ""
+    ... "PO-Revision-Date: 2005-06-15 19:04+0100\n"
+    ... "Last-Translator: Foo <no-priv@canonical.com>\n"
+    ... "Content-Type: text/plain; charset=UTF-8\n"
+    ... "Plural-Forms: nplurals=-1; plural=0\n"
+    ... "X-Rosetta-Export-Date: %s\n"
+    ...
+    ... msgid "foo"
+    ... msgstr "bar"
+    ... ''' % datetime.datetime.now(UTC).isoformat()
+    >>> entry = translation_import_queue.addOrUpdateEntry(
+    ...     pofile.path, pofile_contents, False, person,
+    ...     productseries=series, potemplate=potemplate, pofile=pofile)
+    >>> transaction.commit()
+    >>> entry.status = RosettaImportStatus.APPROVED
+    >>> (subject, message) = pofile.importFromQueue(entry)
+
+    >>> print entry.status.name
+    FAILED
+
+    >>> subject
+    u'Import problem - Sumerian (sux) - firefox in Mozilla Firefox trunk'
+    >>> print message
+    Hello Mark Shuttleworth,
+    ...
+    We were unable to import the file because of errors in its format.
+    ...
+
+
+== Too many plural forms ==
+
+Next Mark, eclectic polyglot that he is, uploads an Arabic translation
+defining six plural forms.  Unfortunately only up to 4 forms are
+supported in Launchpad.  He receives a message about this.
+
+Since it's painful to find out that Launchpad doesn't support your
+language, the email points to Launchpad's information about Arabic and
+shows how to get that information corrected if need be.  Hopefully it
+will show Mark how other Arabic translators have worked around the
+problem.
+
+    >>> pofile = potemplate.newPOFile('ar')
+    >>> pofile_contents = r'''
+    ... msgid ""
+    ... msgstr ""
+    ... "PO-Revision-Date: 2005-07-01 08:35+0100\n"
+    ... "Last-Translator: Foo <no-priv@canonical.com>\n"
+    ... "Content-Type: text/plain; charset=UTF-8\n"
+    ... "Plural-Forms: nplurals=6; plural=0\n"
+    ... "X-Rosetta-Export-Date: %s\n"
+    ...
+    ... msgid "foo"
+    ... msgstr "bar"
+    ... ''' % datetime.datetime.now(UTC).isoformat()
+    >>> entry = translation_import_queue.addOrUpdateEntry(
+    ...     pofile.path, pofile_contents, False, person,
+    ...     productseries=series, potemplate=potemplate, pofile=pofile)
+    >>> transaction.commit()
+    >>> entry.status = RosettaImportStatus.APPROVED
+    >>> (subject, message) = pofile.importFromQueue(entry)
+
+    >>> print entry.status.name
+    FAILED
+
+    >>> subject
+    u'Import problem - Arabic (ar) - firefox in Mozilla Firefox trunk'
+    >>> print message
+    Hello Mark Shuttleworth,
+    <BLANKLINE>
+    On ..., you uploaded a file with Arabic (ar) translations for firefox in
+    Mozilla Firefox trunk to Launchpad.
+    <BLANKLINE>
+    We were unable to import it because it declares more plural forms than
+    Launchpad can currently handle.  The maximum supported is 4.
+    <BLANKLINE>
+    Please see if you can get by with fewer plural forms.  You can find
+    Launchpad's default plural-forms information for Arabic (ar) here:
+    <BLANKLINE>
+    https://translations.launchpad.net/+languages/ar
+    <BLANKLINE>
+    If you believe the information listed there is incorrect, please file a
+    question here:
+    <BLANKLINE>
+    https://answers.launchpad.net/rosetta/+addquestion
+    <BLANKLINE>
+    For your convenience, you can get the file you uploaded at:
+    http://.../firefox-ar.po
+    <BLANKLINE>
+    <BLANKLINE>
+    Thank you,
+    <BLANKLINE>
+    The Launchpad team
+    <BLANKLINE>
+

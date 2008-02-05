@@ -39,9 +39,10 @@ from canonical.launchpad.interfaces import (
     IPOFileSet, IPOFileTranslator, ITranslationExporter,
     ITranslationFileData, ITranslationImporter, IVPOExportSet,
     NotExportedFromLaunchpad, NotFoundError, OutdatedTranslationError,
-    RosettaImportStatus, TranslationFormatSyntaxError,
-    TranslationFormatInvalidInputError, TranslationPermission,
-    TranslationValidationStatus, ZeroLengthPOExportError)
+    RosettaImportStatus, TooManyPluralFormsError,
+    TranslationFormatInvalidInputError, TranslationFormatSyntaxError,
+    TranslationPermission, TranslationValidationStatus,
+    ZeroLengthPOExportError)
 from canonical.launchpad.translationformat import TranslationMessageData
 from canonical.launchpad.webapp import canonical_url
 from canonical.librarian.interfaces import (
@@ -758,6 +759,11 @@ class POFile(SQLBase, POFileMixIn):
                 logger.info('Got an old version for %s' % self.title)
             template_mail = 'poimport-got-old-version.txt'
             import_rejected = True
+        except TooManyPluralFormsError:
+            if logger:
+                logger.warning("Too many plural forms.")
+            template_mail = 'poimport-too-many-plural-forms.txt'
+            import_rejected = True
 
         # Prepare the mail notification.
         msgsets_imported = TranslationMessage.select(
@@ -772,6 +778,7 @@ class POFile(SQLBase, POFileMixIn):
                 self.language.displayname, self.potemplate.displayname),
             'importer': entry_to_import.importer.displayname,
             'language': self.language.displayname,
+            'language_code': self.language.code,
             'numberofmessages': msgsets_imported,
             'template': self.potemplate.displayname,
             }
