@@ -29,6 +29,11 @@ def productSetUp(test):
     test.globs['target'] = getUtility(IProductSet).getByName('firefox')
     test.globs['filebug'] = bugtarget_filebug
 
+def distributionSetUp(test):
+    setUp(test)
+    test.globs['target'] = getUtility(IDistributionSet).getByName('ubuntu')
+    test.globs['filebug'] = bugtarget_filebug
+
 def test_suite():
     """Return the `IStructuralSubscriptionTarget` TestSuite."""
     suite = unittest.TestSuite()
@@ -36,6 +41,7 @@ def test_suite():
     setUpMethods = [
         distributionSourcePackageSetUp,
         productSetUp,
+        distributionSetUp,
         ]
 
     for setUpMethod in setUpMethods:

@@ -168,6 +168,13 @@ class IStructuralSubscriptionTarget(Interface):
     def getSubscription(person):
         """Return the subscription for `person`, if it exists."""
 
+    def getBugNotificationsRecipients(recipients=None):
+        """Return the set of bug subscribers to this target.
+
+        If recipients is not None, a rationale is added for
+        each subscriber.
+        """
+
 
 class IStructuralSubscriptionForm(Interface):
     """Schema for the structural subscription form."""
