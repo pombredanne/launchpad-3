@@ -32,6 +32,7 @@ from canonical.launchpad.tests.mail_helpers import pop_notifications
 from canonical.launchpad.webapp.authorization import LaunchpadSecurityPolicy
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 from canonical.testing import (
+    ExperimentalLaunchpadZopelessLayer,
     LaunchpadZopelessLayer, LaunchpadFunctionalLayer,DatabaseLayer,
     FunctionalLayer)
 
@@ -682,6 +683,7 @@ special = {
             '../doc/pillar.txt',
             setUp=setUp, tearDown=tearDown,
             optionflags=default_optionflags,
+            #layer=ExperimentalLaunchpadZopelessLayer
             layer=LaunchpadZopelessLayer
             ),
     'openid-fetcher.txt': FunctionalDocFileSuite(
