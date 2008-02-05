@@ -2618,7 +2618,7 @@ class BugTaskRemoveQuestionView(LaunchpadFormView):
         if owner_is_subscribed is True:
             self.context.bug.subscribe(question.owner, self.user)
         self.request.response.addNotification(
-                structured(self._removedQuestionText(question))
+                structured(self._removedQuestionText(question)))
         comment = data.get('comment', None)
         if comment is not None:
             self.context.bug.newMessage(
