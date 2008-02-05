@@ -7,3 +7,8 @@
  * Alter the +edit view for BugTrackers so that the baseurl field for
    email address trackers isn't editable.
  * Ditto for bug watches on email address trackers.
+ * Ensure that email addresses for bug trackers are obfuscated for
+   non-logged-in users.
+ * +index page for email trackers should not have (Base URL) after the
+   email address.
+ * The +edit page shouldn't call the BaseURL field Base URL either.
