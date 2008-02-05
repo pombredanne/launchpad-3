@@ -81,4 +81,5 @@
         provides="canonical.lazr.interfaces.IScopedCollection"
         factory="canonical.lazr.rest.ScopedCollection"
         />
+
 </configure>

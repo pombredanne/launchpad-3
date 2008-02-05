@@ -106,6 +106,6 @@ class ICollection(Interface):
 
 class IScopedCollection(ICollection):
 
-    relationship = Attribute("The relationship between an entry and a"
+    relationship = Attribute("The relationship between an entry and a "
                              "collection.")
     collection = Attribute("The collection scoped to an entry.")

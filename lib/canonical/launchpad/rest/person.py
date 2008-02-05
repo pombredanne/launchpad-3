@@ -5,11 +5,10 @@
 __metaclass__ = type
 __all__ = [
     'IPersonEntry',
-    'PersonEntry',
     'PersonCollection',
+    'PersonEntry',
     'PersonPersonCollection',
     ]
-
 
 from zope.component import adapts, getUtility
 from zope.schema import Object

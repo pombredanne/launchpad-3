@@ -51,7 +51,7 @@ Here are simple implementations of IAuthor and IRecipe.
 
     >>> class Author:
     ...     implements(IAuthor)
-    ...     def __init__(self, name, favorites=[]):
+    ...     def __init__(self, name):
     ...         self.name = name
     ...         self.favorites = []
 
@@ -136,7 +136,7 @@ to the web service we use CollectionField.
     >>> from canonical.lazr.rest.schema import CollectionField
     >>> class IAuthorEntry(IEntry):
     ...     "The part of an author that we expose through the web service."
-    ...     name = IAuthor.get('name')
+    ...     name = TextLine(title=u"Name", required=True)
     ...     favorites = CollectionField(value_type=Object(schema=IRecipe))
 
 In the following code block we define an interface that exposes the

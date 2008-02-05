@@ -19,3 +19,4 @@ class CollectionField(AbstractCollection):
     # has a _type of List, and we don't want to have to implement list
     # semantics for this class.
     implements(ICollectionField)
+

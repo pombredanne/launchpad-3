@@ -3,7 +3,6 @@
 The Launchpad web service exposes a collection of people and teams,
 which responds to GET.
 
-  >>> import simplejson
   >>> people_collection = webservice(r"""
   ... GET /people HTTP/1.1
   ... Host: api.launchpad.dev

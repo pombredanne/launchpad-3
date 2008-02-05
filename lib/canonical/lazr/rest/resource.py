@@ -221,10 +221,9 @@ class CollectionResource(ReadOnlyResource):
         """Fetch a collection and render it as JSON."""
         entries = self.context.find()
         if entries is None:
-            entry_resources = []
-        else:
-            entry_resources = [EntryResource(entry, self.request)
-                               for entry in entries]
+            raise NotFound(self, self.collection_name)
+        entry_resources = [EntryResource(entry, self.request)
+                           for entry in entries]
         self.request.response.setHeader('Content-type', 'application/json')
         return simplejson.dumps(entry_resources, cls=ResourceJSONEncoder)
 
