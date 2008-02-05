@@ -465,7 +465,10 @@ class MockDbTestCase(unittest.TestCase):
 
             # This should raise an exception because no query has
             # been issued yet.
-            self.failUnlessRaises(psycopg.Error, cur.fetchone)
+            # Dappers psycopg1 doesn't do this, so we only test the
+            # wrapper's behavior.
+            if mode != 'direct':
+                self.failUnlessRaises(psycopg.Error, cur.fetchone)
 
             cur.execute("""
                 UPDATE Person SET displayname='Foo' WHERE name='stub'
