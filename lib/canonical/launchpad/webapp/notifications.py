@@ -61,7 +61,7 @@ class NotificationRequest:
     >>> response = INotificationResponse(request)
     >>> response.addNotification('Aargh')
     >>> [notification.message for notification in request.notifications]
-    ['Fnord', 'Aargh']
+    ['Fnord', u'Aargh']
     """
     implements(INotificationRequest)
 
@@ -99,11 +99,10 @@ class NotificationResponse:
     >>> len(response.notifications)
     0
 
-    >>> response.addNotification("<b>%(escaped)s</b>", escaped="<Fnord>")
+    >>> msg = structured("<b>%(escaped)s</b>", escaped="<Fnord>")
+    >>> response.addNotification(msg)
 
     >>> response.addNotification("Whatever", BrowserNotificationLevel.DEBUG)
-    >>> response.addNotification("%(percentage)0.2f%%", percentage=99.0)
-    >>> response.addNotification("%(num)d thingies", num=10)
     >>> response.addDebugNotification('Debug')
     >>> response.addInfoNotification('Info')
     >>> response.addNoticeNotification('Notice')
@@ -121,8 +120,6 @@ class NotificationResponse:
     ...     print "%d -- %s" % (notification.level, notification.message)
     25 -- <b>&lt;Fnord&gt;</b>
     10 -- Whatever
-    25 -- 99.00%
-    25 -- 10 thingies
     10 -- Debug
     20 -- Info
     25 -- Notice
