@@ -57,25 +57,6 @@
         />
 
     <adapter
-        for="canonical.launchpad.interfaces.IEmailAddress"
-        provides="canonical.launchpad.rest.IEmailAddressEntry"
-        factory="canonical.launchpad.rest.EmailAddressEntry"
-        />
-
-    <adapter
-        for="canonical.launchpad.interfaces.IEmailAddressSet"
-        provides="canonical.lazr.interfaces.ICollection"
-        factory="canonical.launchpad.rest.EmailAddressCollection"
-        />
-
-    <adapter
-        for="canonical.launchpad.rest.IPersonEntry
-             canonical.launchpad.interfaces.IEmailAddress"
-        provides="canonical.lazr.interfaces.IScopedCollection"
-        factory="canonical.lazr.rest.ScopedCollection"
-        />
-
-    <adapter
         for="canonical.launchpad.rest.IBugEntry
              canonical.launchpad.interfaces.IBug"
         provides="canonical.lazr.interfaces.IScopedCollection"

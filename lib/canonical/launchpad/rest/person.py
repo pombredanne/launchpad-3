@@ -17,8 +17,8 @@ from zope.schema import Object
 from canonical.lazr.rest import Collection, Entry, ScopedCollection
 from canonical.lazr.interfaces import IEntry
 from canonical.lazr.rest.schema import CollectionField
-from canonical.launchpad.interfaces import (IEmailAddress, IPerson,
-     IPersonSet, make_person_name_field)
+from canonical.launchpad.interfaces import (IPerson, IPersonSet,
+    make_person_name_field)
 from canonical.lp import decorates
 
 class IPersonEntry(IEntry):
@@ -29,8 +29,6 @@ class IPersonEntry(IEntry):
     name = make_person_name_field()
     teamowner = Object(schema=IPerson)
     members = CollectionField(value_type=Object(schema=IPerson))
-    validated_emails = CollectionField(
-        value_type=Object(schema=IEmailAddress))
 
 
 class PersonEntry(Entry):
@@ -51,11 +49,6 @@ class PersonEntry(Entry):
         if not self.context.isTeam():
             return None
         return self.context.activemembers
-
-    @property
-    def validated_emails(self):
-        """See `IPersonEntry`."""
-        return self.context.validatedemails
 
 
 class PersonCollection(Collection):
