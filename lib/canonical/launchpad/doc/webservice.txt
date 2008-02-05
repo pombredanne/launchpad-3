@@ -384,7 +384,7 @@ that (for instance) /recipes/10 is mapped to the "Raw celery" Entry.
     u'http://api.launchpad.dev/recipes/10'
 
     >>> recipe_ten = simplejson.loads(entry())
-    >>> [(key, recipe_ten[key]) for key in sorted(recipe_ten.keys())]
+    >>> sorted(recipe_ten.items())
     [(u'author_link', u'http://api.launchpad.dev/authors/Jacob%20Berendes'),
      (u'name', u'Raw celery'),
      (u'self_link', u'http://api.launchpad.dev/recipes/10')]
@@ -394,7 +394,7 @@ You can also traverse from an entry to an associated collection:
     >>> authors = app.publishTraverse(request, "authors")
     >>> jacob_resource = authors.publishTraverse(request, "Jacob Berendes")
     >>> jacob = simplejson.loads(jacob_resource())
-    >>> [(key, jacob[key]) for key in sorted(jacob.keys())]
+    >>> sorted(jacob.items())
     [(u'favorites_collection_link',
         u'http://api.launchpad.dev/authors/Jacob%20Berendes/favorites'),
      (u'name', u'Jacob Berendes'),
@@ -402,7 +402,7 @@ You can also traverse from an entry to an associated collection:
 
     >>> jacob_favorites = jacob_resource.publishTraverse(request, "favorites")
     >>> favorites = simplejson.loads(jacob_favorites())
-    >>> sorted([f['name'] for f in favorites])
+    >>> sorted(f['name'] for f in favorites)
     [u'Green eggs and ham', u'Steak au poivre']
 
 If the user tries to traverse to a nonexistent object, the result is a

@@ -16,12 +16,13 @@ import re
 import simplejson
 import unittest
 
-from BeautifulSoup import (BeautifulSoup, Comment, Declaration,
-    NavigableString, PageElement, ProcessingInstruction, SoupStrainer, Tag)
+from BeautifulSoup import (
+    BeautifulSoup, Comment, Declaration, NavigableString, PageElement,
+    ProcessingInstruction, SoupStrainer, Tag)
 from urlparse import urljoin
 
-from zope.app.testing.functional import (HTTPCaller, ResponseWrapper,
-    SimpleCookie)
+from zope.app.testing.functional import (
+    HTTPCaller, ResponseWrapper, SimpleCookie)
 from zope.proxy import ProxyBase
 from zope.testbrowser.testing import Browser
 

@@ -173,10 +173,8 @@ class EntryResource(ReadOnlyResource):
                 # representation.
                 dict[name] = getattr(self.context, name)
             else:
-                # This should never happen, but if it does we can
-                # ignore the non-field object that somehow got into the
-                # schema.
-                pass
+                # It's not a field at all.
+                raise AssertionError("Non-field object found in schema.")
 
         return dict
 
@@ -229,16 +227,9 @@ class ScopedCollectionResource(CollectionResource):
 
     @property
     def inside(self):
-        """The collection is inside the object it's scoped to.
+        """See `ICanonicalUrlData`.
 
-        The collection's URL will be based on the scope entry's URL.
-
-        An example: for purposes of URL generation, the list of
-        members in a team is inside the team. If the team is at
-        '/team', the list of members will be at '/team/(something)'.
-
-        :return: The resource this object is 'inside' for purposes
-        of URL generation.
+        The object to which the collection is scoped.
         """
         return EntryResource(self.context.context, self.request)
 
@@ -294,7 +285,7 @@ class ScopedCollection:
     """A collection associated with some parent object."""
 
     def __init__(self, context, collection):
-        """Initialize the scoped collection/
+        """Initialize the scoped collection.
 
         :param context: The object to which the collection is scoped.
         :param collection: The scoped collection.
@@ -305,7 +296,7 @@ class ScopedCollection:
 
     def lookupEntry(self, name):
         """See `ICollection`"""
-        raise NotImplementedError()
+        raise KeyError(name)
 
     def find(self):
         """See `ICollection`."""
