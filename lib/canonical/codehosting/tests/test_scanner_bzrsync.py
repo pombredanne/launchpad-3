@@ -53,7 +53,7 @@ class BzrSyncTestCase(TestCaseWithTransport):
         self.bzr_branch = self.bzr_tree.branch
         LaunchpadZopelessLayer.switchDbUser(config.branchscanner.dbuser)
         self.txn = LaunchpadZopelessLayer.txn
-        self.setUpAuthor()
+        self._setUpAuthor()
 
     def tearDown(self):
         config.supermirror.warehouse_root_url = self._warehouse_root_url
@@ -65,17 +65,19 @@ class BzrSyncTestCase(TestCaseWithTransport):
         syncer.syncBranchAndClose(bzr_branch)
 
     def makeBzrBranchAndTree(self, db_branch):
+        """Make a Bazaar branch at the warehouse location of `db_branch`."""
         path = relpath(os.getcwd(),
                        local_path_from_url(db_branch.warehouse_url))
         return self.make_branch_and_tree(path)
 
     def makeDatabaseBranch(self):
+        """Make an arbitrary branch in the database."""
         LaunchpadZopelessLayer.txn.begin()
         new_branch = self.factory.makeBranch()
         LaunchpadZopelessLayer.txn.commit()
         return new_branch
 
-    def setUpAuthor(self):
+    def _setUpAuthor(self):
         self.db_author = RevisionAuthor.selectOneBy(name=self.AUTHOR)
         if not self.db_author:
             self.txn.begin()
@@ -83,6 +85,11 @@ class BzrSyncTestCase(TestCaseWithTransport):
             self.txn.commit()
 
     def getCounts(self):
+        """Return the number of rows in core revision-related tables.
+
+        :return: (num_revisions, num_branch_revisions, num_revision_parents,
+            num_revision_authors)
+        """
         return (Revision.select().count(),
                 BranchRevision.select().count(),
                 RevisionParent.select().count(),
@@ -156,6 +163,35 @@ class BzrSyncTestCase(TestCaseWithTransport):
 
     def makeBranchWithMerge(self, base_rev_id, trunk_rev_id, branch_rev_id,
                             merge_rev_id):
+        """Make a branch that has had another branch merged into it.
+
+        Creates two Bazaar branches and two database branches associated with
+        them. The first branch has three commits: the base revision, the
+        'trunk' revision and the 'merged' revision.
+
+        The second branch is branched from the base revision, has the 'branch'
+        revision committed to it and is then merged into the first branch.
+
+        Or, in other words::
+
+               merge
+                 |  \
+                 |   \
+                 |    \
+               trunk   branch
+                 |    /
+                 |   /
+                 |  /
+                base
+
+        :param base_rev_id: The revision ID of the initial commit.
+        :param trunk_rev_id: The revision ID of the mainline commit.
+        :param branch_rev_id: The revision ID of the revision committed to
+            the branch that is merged into the mainline.
+        :param merge_rev_id: The revision ID of the revision that merges the
+            branch into the mainline branch.
+        :return: (db_trunk, trunk_tree), (db_branch, branch_tree).
+        """
         # Make the base revision.
         db_branch = self.makeDatabaseBranch()
         trunk_tree = self.makeBzrBranchAndTree(db_branch)
@@ -209,6 +245,25 @@ class BzrSyncTestCase(TestCaseWithTransport):
 
 
 class TestBzrSync(BzrSyncTestCase):
+
+    def isMainline(self, db_branch, revision_id):
+        """Is `revision_id` in the mainline history of `db_branch`?"""
+        for branch_revision in db_branch.revision_history:
+            if branch_revision.revision.revision_id == revision_id:
+                return True
+        return False
+
+    def assertInMainline(self, revision_id, db_branch):
+        """Assert that `revision_id` is in the mainline of `db_branch`."""
+        self.failUnless(
+            self.isMainline(db_branch, revision_id),
+            "%r not in mainline of %r" % (revision_id, db_branch))
+
+    def assertNotInMainline(self, revision_id, db_branch):
+        """Assert that `revision_id` is not in the mainline of `db_branch`."""
+        self.failIf(
+            self.isMainline(db_branch, revision_id),
+            "%r in mainline of %r" % (revision_id, db_branch))
 
     def test_empty_branch(self):
         # Importing an empty branch does nothing.
@@ -360,63 +415,20 @@ class TestBzrSync(BzrSyncTestCase):
             [(1, 'r1'), (2, 'r2'), (3, 'r3'), (None, 'r1.1.1')])
         self.assertEqual(self.getBranchRevisions(db_branch), expected)
 
-    def isMainline(self, db_branch, revision_id):
-        for branch_revision in db_branch.revision_history:
-            if branch_revision.revision.revision_id == revision_id:
-                return True
-        return False
-
-    def assertInMainline(self, revision_id, db_branch):
-        self.failUnless(
-            self.isMainline(db_branch, revision_id),
-            "%r not in mainline of %r" % (revision_id, db_branch))
-
-    def assertNotInMainline(self, revision_id, db_branch):
-        self.failIf(
-            self.isMainline(db_branch, revision_id),
-            "%r in mainline of %r" % (revision_id, db_branch))
-
     def test_sync_merged_to_merging(self):
         # A revision's sequence in the BranchRevision table will change from
         # not NULL to NULL if that revision changes from mainline to not
         # mainline when synced.
 
-        db_branch = self.makeDatabaseBranch()
-        bzr_tree = self.makeBzrBranchAndTree(db_branch)
+        (db_trunk, trunk_tree), (db_branch, branch_tree) = (
+            self.makeBranchWithMerge('base', 'trunk', 'branch', 'merge'))
 
-        # Build the initial branch.
-        base_revision_id = 'base'
-        bzr_tree.commit(
-            message=self.factory.getUniqueString(),
-            rev_id=base_revision_id)
-        original_tip_revision_id = 'original'
-        bzr_tree.commit(
-            message=self.factory.getUniqueString(),
-            rev_id=original_tip_revision_id)
+        self.syncBazaarBranchToDatabase(trunk_tree.branch, db_branch)
+        self.assertInMainline('trunk', db_branch)
 
-        self.makeBzrSync(db_branch).syncBranchAndClose()
-        self.assertInMainline(original_tip_revision_id, db_branch)
-
-        # bzr pull --overwrite -r <base_revision_id>
-        bzr_tree.pull(
-            bzr_tree.branch, overwrite=True, stop_revision=base_revision_id)
-
-        # Make a commit that diverges the branches.
-        bzr_tree.commit(
-            message=self.factory.getUniqueString(),
-            rev_id=self.factory.getUniqueString())
-
-        # Merge
-        bzr_tree.merge_from_branch(
-            bzr_tree.branch, from_revision=original_tip_revision_id)
-        new_tip_revision_id = 'new'
-        bzr_tree.commit(
-            message=self.factory.getUniqueString(),
-            rev_id=new_tip_revision_id)
-
-        self.makeBzrSync(db_branch).syncBranchAndClose()
-        self.assertNotInMainline(original_tip_revision_id, db_branch)
-        self.assertInMainline(new_tip_revision_id, db_branch)
+        self.syncBazaarBranchToDatabase(branch_tree.branch, db_branch)
+        self.assertNotInMainline('trunk', db_branch)
+        self.assertInMainline('branch', db_branch)
 
     def test_sync_merging_to_merged(self):
         # When replacing a branch by one of the branches it merged, the
@@ -664,26 +676,6 @@ class TestBzrSyncEmail(BzrSyncTestCase):
         """
         self.failUnless(expected in text, '%r not in %r' % (expected, text))
 
-
-    def assertTextEqual(self, text1, text2):
-        """Assert that text1 == text2.
-
-        Report the first difference between the two texts in case of failure.
-        """
-        if text1 == text2:
-            return
-        # find the first point of difference
-        error_pos = 0
-        for pos in xrange(len(text1)):
-            if text1[pos] != text2[pos]:
-                error_pos = pos
-                break
-        raise AssertionError(
-            "Text differs at position %d" '\n'
-            "  text1[%d:]: %s" '\n' "  text2[%d:]: %s" '\n'
-            % (error_pos, error_pos, repr(text1[error_pos:]),
-               error_pos, repr(text2[error_pos:])))
-
     def test_empty_branch(self):
         self.makeBzrSync(self.db_branch).syncBranchAndClose()
         self.assertEqual(len(stub.test_emails), 1)
@@ -778,7 +770,7 @@ class TestBzrSyncEmail(BzrSyncTestCase):
             "@@ -0,0 +1,1 @@" '\n'
             "+Hello World" '\n'
             '\n')
-        self.assertTextEqual(diff, expected)
+        self.assertEqualDiff(diff, expected)
         expected = (
             u"-"*60 + '\n'
             "revno: 1" '\n'
@@ -789,7 +781,7 @@ class TestBzrSyncEmail(BzrSyncTestCase):
             "  Log message" '\n'
             "added:" '\n'
             "  hello.txt" '\n' % self.bzr_branch.nick)
-        self.assertTextEqual(
+        self.assertEqualDiff(
             get_revision_message(self.bzr_branch, revision), expected)
 
         expected_diff = (
@@ -815,9 +807,9 @@ class TestBzrSyncEmail(BzrSyncTestCase):
         self.bzr_branch.lock_read()
         diff = get_diff(self.bzr_branch, revision)
         self.bzr_branch.unlock()
-        self.assertTextEqual(diff, expected_diff)
+        self.assertEqualDiff(diff, expected_diff)
         message = get_revision_message(self.bzr_branch, revision)
-        self.assertTextEqual(message, expected_message)
+        self.assertEqualDiff(message, expected_message)
 
     def test_message_encoding(self):
         """Test handling of non-ASCII commit messages."""
@@ -838,7 +830,7 @@ class TestBzrSyncEmail(BzrSyncTestCase):
             u"timestamp: Sun 2001-09-09 01:46:40 +0000" '\n'
             u"message:" '\n'
             u"  Non ASCII: \xe9" '\n' % self.bzr_branch.nick)
-        self.assertTextEqual(message, expected)
+        self.assertEqualDiff(message, expected)
 
     def test_diff_encoding(self):
         """Test handling of diff of files which are not utf-8."""
@@ -853,7 +845,7 @@ class TestBzrSyncEmail(BzrSyncTestCase):
         # value of sys.getfilesystemencoding().
         self.writeToFile(filename='un elephant',
                          contents='\xc7a trompe \xc3\xa9norm\xc3\xa9ment.\n')
-        # XXX DavidAllouche 2007-04-26: 
+        # XXX DavidAllouche 2007-04-26:
         # The binary file is not really needed here, but it triggers a
         # crasher bug with bzr-0.15 and earlier.
         self.writeToFile(filename='binary', contents=chr(0))
@@ -873,7 +865,7 @@ class TestBzrSyncEmail(BzrSyncTestCase):
             u"@@ -0,0 +1,1 @@" '\n'
             # \ufffd is the substitution character.
             u"+\ufffd trompe \xe9norm\xe9ment." '\n' '\n')
-        self.assertTextEqual(diff, expected)
+        self.assertEqualDiff(diff, expected)
 
 
 class TestBzrSyncNoEmail(BzrSyncTestCase):

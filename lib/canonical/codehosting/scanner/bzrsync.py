@@ -112,10 +112,6 @@ class BzrSync:
         self.logger = logger
 
         self.db_branch = branch
-        # We want to generate the email contents as close to the source
-        # of the email as possible, but we don't want to send them until
-        # the information has been committed.
-        self.initializeEmailQueue()
 
     def initializeEmailQueue(self):
         """Create an email queue and determine whether to create diffs.
@@ -238,6 +234,10 @@ class BzrSync:
         * Branch: the branch-scanner status information must be updated when
           the sync is complete.
         """
+        # We want to generate the email contents as close to the source
+        # of the email as possible, but we don't want to send them until
+        # the information has been committed.
+        self.initializeEmailQueue()
         self.logger.info("Scanning branch: %s", self.db_branch.unique_name)
         self.logger.info("    from %s", bzr_branch.base)
         # Get the history and ancestry from the branch first, to fail early
