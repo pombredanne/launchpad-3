@@ -390,12 +390,12 @@ class ValidateGPGKeyView(BaseLoginTokenView, LaunchpadFormView):
         if lpkey:
             lpkey.active = True
             lpkey.can_encrypt = can_encrypt
-            msg = _(
+            msgid = _(
                 'Key ${lpkey} successfully reactivated. '
                 '<a href="${url}/+editpgpkeys">See more Information</a>',
                 mapping=dict(lpkey=lpkey.displayname, url=person_url))
             self.request.response.addInfoNotification(
-                structured(translate(msg, context=self.request)))
+                structured(translate(msgid, context=self.request)))
             self.context.consume()
             return
 
@@ -418,19 +418,19 @@ class ValidateGPGKeyView(BaseLoginTokenView, LaunchpadFormView):
         if len(guessed):
             # build email list
             emails = ' '.join([email.email for email in guessed])
-            msg = _(
+            msgid = _(
                 '<p>Some email addresses were found in your key but are '
                 'not registered with Launchpad:<code>${emails}</code>. If you '
                 'want to use these addressess with Launchpad, you need to '
                 '<a href="${url}/+editemails\">confirm them</a>.</p>',
                 mapping=dict(emails=emails, url=person_url))
             self.request.response.addInfoNotification(
-                structured(translate(msg, context=self.request)))
+                structured(translate(msgid, context=self.request)))
 
         if len(hijacked):
             # build email list
             emails = ' '.join([email.email for email in hijacked])
-            msg = _(
+            msgid = _(
                 "<p>Also some of them were registered into another "
                 "account(s):<code>${emails}</code>. Those accounts, probably "
                 "already belong to you, in this case you should be able to "
@@ -438,7 +438,7 @@ class ValidateGPGKeyView(BaseLoginTokenView, LaunchpadFormView):
                 "current account.</p>",
                 mapping=dict(emails=emails))
             self.request.response.addInfoNotification(
-                structured(translate(msg, context=self.request)))
+                structured(translate(msgid, context=self.request)))
 
     def _guessGPGEmails(self, uids):
         """Figure out which emails from the GPG UIDs are unknown in LP

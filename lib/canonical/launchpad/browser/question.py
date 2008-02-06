@@ -716,11 +716,11 @@ class QuestionWorkflowView(LaunchpadFormView):
         # that can be confirmed, suggest to the owner that he use the
         # confirmation button.
         if self.context.can_confirm_answer:
-            msg = _("Your question is solved. If a particular message helped "
-                  "you solve the problem, use the <em>'This solved "
-                  "my problem'</em> button.")
+            msgid = _("Your question is solved. If a particular message "
+                      "helped you solve the problem, use the <em>'This "
+                      "solved my problem'</em> button.")
             self._addNotificationAndHandlePossibleSubscription(
-                structured(translate(msg, context=self.context)), data)
+                structured(translate(msgid, context=self.context)), data)
 
     def canRequestInfo(self, action):
         """Return if the requestinfo action should be displayed."""
