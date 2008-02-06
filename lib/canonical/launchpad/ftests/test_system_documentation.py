@@ -33,6 +33,7 @@ from canonical.launchpad.webapp.authorization import LaunchpadSecurityPolicy
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 from canonical.launchpad.webapp.tests import test_notifications
 from canonical.testing import (
+    ExperimentalLaunchpadZopelessLayer,
     LaunchpadZopelessLayer, LaunchpadFunctionalLayer,DatabaseLayer,
     FunctionalLayer)
 
@@ -113,9 +114,10 @@ def uploaderTearDown(test):
 
 def builddmasterSetUp(test):
     """Setup the connection for the build master tests."""
+    test_dbuser = config.builddmaster.dbuser
+    test.globs['test_dbuser'] = test_dbuser
     LaunchpadZopelessLayer.alterConnection(
-        dbuser=config.builddmaster.dbuser,
-        isolation=READ_COMMITTED_ISOLATION)
+        dbuser=test_dbuser, isolation=READ_COMMITTED_ISOLATION)
     setGlobs(test)
 
 def branchscannerSetUp(test):
@@ -418,6 +420,12 @@ special = {
             layer=LaunchpadZopelessLayer, optionflags=default_optionflags,
             stdout_logging_level=logging.DEBUG
             ),
+    'buildd-queuebuilder.txt': LayeredDocFileSuite(
+            '../doc/buildd-queuebuilder.txt',
+            setUp=builddmasterSetUp,
+            layer=LaunchpadZopelessLayer, optionflags=default_optionflags,
+            stdout_logging_level=logging.WARNING
+            ),
     'revision.txt': LayeredDocFileSuite(
             '../doc/revision.txt',
             setUp=branchscannerSetUp, tearDown=branchscannerTearDown,
@@ -676,6 +684,7 @@ special = {
             '../doc/pillar.txt',
             setUp=setUp, tearDown=tearDown,
             optionflags=default_optionflags,
+            #layer=ExperimentalLaunchpadZopelessLayer
             layer=LaunchpadZopelessLayer
             ),
     'openid-fetcher.txt': FunctionalDocFileSuite(

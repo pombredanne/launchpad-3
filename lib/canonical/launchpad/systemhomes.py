@@ -22,11 +22,12 @@ from zope.interface import implements
 from canonical.launchpad.interfaces import (
     BugTaskSearchParams, IAuthServerApplication, IBazaarApplication, IBugSet,
     IBugTaskSet, IBugTrackerSet, IBugWatchSet,
-    ICodeImportSchedulerApplication, IDistroSeriesSet, IFeedsApplication,
-    IHWDBApplication, ILanguageSet, ILaunchBag, ILaunchpadStatisticSet,
-    IMailingListApplication, IMaloneApplication, IOpenIdApplication,
-    IPersonSet, IProductSet, IRegistryApplication, IRosettaApplication,
-    IShipItApplication, ITranslationGroupSet, IWebServiceApplication)
+    ICodeImportSchedulerApplication, IDistroSeriesSet, IEmailAddressSet,
+    IFeedsApplication, IHWDBApplication, ILanguageSet, ILaunchBag,
+    ILaunchpadStatisticSet, IMailingListApplication, IMaloneApplication,
+    IOpenIdApplication, IPersonSet, IProductSet, IRegistryApplication,
+    IRosettaApplication, IShipItApplication, ITranslationGroupSet,
+    IWebServiceApplication)
 from canonical.lazr.rest import ServiceRootResource
 
 class AuthServerApplication:

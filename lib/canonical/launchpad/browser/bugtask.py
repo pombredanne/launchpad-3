@@ -2197,7 +2197,7 @@ class BugTaskSearchListingView(LaunchpadFormView, FeedsMixin):
             return None
         bugtaskset = getUtility(IBugTaskSet)
         expirable_bugtasks = bugtaskset.findExpirableBugTasks(
-            0, target=self.context)
+            0, user=self.user, target=self.context)
         count = len(expirable_bugtasks)
         label = self._bugOrBugs(count)
         url = "%s/+expirable-bugs" % canonical_url(self.context)
@@ -2658,7 +2658,8 @@ class BugTaskExpirableListingView(LaunchpadView):
     def search(self):
         """Return an `ITableBatchNavigator` for the expirable bugtasks."""
         bugtaskset = getUtility(IBugTaskSet)
-        bugtasks = bugtaskset.findExpirableBugTasks(0, target=self.context)
+        bugtasks = bugtaskset.findExpirableBugTasks(
+            0, user=self.user, target=self.context)
         return BugListingBatchNavigator(
             bugtasks, self.request, columns_to_show=self.columns_to_show,
             size=config.malone.buglist_batch_size)
