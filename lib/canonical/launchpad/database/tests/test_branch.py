@@ -28,6 +28,9 @@ from canonical.launchpad.database.bugbranch import BugBranch
 from canonical.launchpad.database.codeimport import CodeImportSet
 from canonical.launchpad.database.product import ProductSet
 from canonical.launchpad.database.revision import RevisionSet
+from canonical.launchpad.database.specificationbranch import (
+    SpecificationBranch,
+    )
 from canonical.launchpad.testing import LaunchpadObjectFactory
 
 from canonical.testing import LaunchpadFunctionalLayer, LaunchpadZopelessLayer
@@ -274,6 +277,20 @@ class TestBranchDeletionConsequences(TestCase):
         bug_branch_id = bug_branch.id
         self.branch_set.delete(self.branch, break_references=True)
         self.assertRaises(SQLObjectNotFound, BugBranch.get, bug_branch_id)
+
+    def test_branchWithSpecRequirements(self):
+        spec = self.factory.makeSpec(branch=self.branch)
+        self.assertEqual({self.branch.spec_links[0]:
+            ('delete', _(
+                'This associates this branch with a specification.'))},
+             self.branch.deletionRequirements())
+
+    def test_branchWithSpecDeletion(self):
+        spec = self.factory.makeSpec(branch=self.branch)
+        spec_branch_id = self.branch.spec_links[0].id
+        self.branch_set.delete(self.branch, break_references=True)
+        self.assertRaises(SQLObjectNotFound, SpecificationBranch.get,
+                          spec_branch_id)
 
 
 class BranchAddLandingTarget(TestCase):

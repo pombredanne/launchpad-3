@@ -25,9 +25,12 @@ from canonical.launchpad.interfaces import (
     IPersonSet,
     IProductSet,
     IRevisionSet,
+    ISpecificationSet,
     License,
     PersonCreationRationale,
     UnknownBranchTypeError,
+    SpecificationDefinitionStatus,
+    SpecificationPriority,
     )
 
 
@@ -206,3 +209,17 @@ class LaunchpadObjectFactory:
         if branch is not None:
             bug.addBranch(branch, branch.owner)
         return bug
+
+    def makeSpec(self, branch=None):
+        spec = getUtility(ISpecificationSet).new(
+            self.getUniqueString(),
+            self.getUniqueString(),
+            self.getUniqueURL(),
+            self.getUniqueString(),
+            SpecificationDefinitionStatus.APPROVED,
+            self.makePerson(),
+            product=self.makeProduct(),
+            )
+        if branch is not None:
+            spec.linkBranch(branch, branch.owner)
+        return spec

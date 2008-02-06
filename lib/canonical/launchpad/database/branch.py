@@ -341,6 +341,9 @@ class Branch(SQLBase):
                 'This is a subscription to this branch.')
         for bugbranch in self.bug_branches:
             deletions[bugbranch] = _('This branch is associated with a bug.')
+        for spec_link in self.spec_links:
+            deletions[spec_link] = _(
+                'This associates this branch with a specification.')
         return alterations, deletions, alteration_operations
 
     def deletionRequirements(self):
