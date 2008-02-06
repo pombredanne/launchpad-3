@@ -94,3 +94,11 @@ be stored beneath the bug-specific collection.
   ... """ % message_path).jsonBody()
   >>> message['subject']
   u'Firefox install instructions should be complete'
+
+The collection of messages is not directly accessible:
+
+  >>> webservice(r"""
+  ... GET /messages HTTP/1.1
+  ... Host: api.launchpad.dev
+  ... """).getStatus()
+  404
