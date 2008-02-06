@@ -33,7 +33,8 @@ the "frog" builder.
     ...     IBuildSet).getBuildsForArchive(cprov.archive)
     >>> frog = getUtility(IBuilderSet)['frog']
     >>> frog.builderok = True
-    >>> throw_away = BuildQueue(build=cprov_builds[2], builder=frog)
+    >>> random_build = 2
+    >>> trash = BuildQueue(build=cprov_builds[random_build], builder=frog)
     >>> flush_database_updates()
     >>> logout()
 
