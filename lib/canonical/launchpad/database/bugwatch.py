@@ -221,11 +221,22 @@ class BugWatchSet(BugSetBase):
             try:
                 bugtracker, remotebug = self.extractBugTrackerAndBug(str(url))
             except NoBugTrackerFound, error:
+                # We don't want to auto-create EMAILADDRESS bug trackers
+                # based on mailto: URIs in comments.
+                if error.bugtracker_type == BugTrackerType.EMAILADDRESS:
+                    continue
+
                 bugtracker = getUtility(IBugTrackerSet).ensureBugTracker(
                     error.base_url, owner, error.bugtracker_type)
                 remotebug = error.remote_bug
             except UnrecognizedBugTrackerURL:
                 # It doesn't look like a bug URL, so simply ignore it.
+                continue
+
+            # We don't create bug watches for EMAILADDRESS bug trackers
+            # from mailto: URIs in comments, so in those cases we give
+            # up.
+            if bugtracker.bugtrackertype == BugTrackerType.EMAILADDRESS:
                 continue
 
             if bug.getBugWatch(bugtracker, remotebug) is None:
