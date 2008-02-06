@@ -288,7 +288,16 @@ class BugTrackerSet:
         # create the bugtracker, we don't know about it. we'll use the
         # normalised base url
         if name is None:
-            name = make_bugtracker_name(baseurl)
+            base_name = make_bugtracker_name(baseurl)
+
+            # If we detect that this name exists already we mutate it
+            # until it doesn't.
+            name = base_name
+            name_increment = 1
+            while self.getByName(name) is not None:
+                name = "%s-%d" % (base_name, name_increment)
+                name_increment += 1
+
         if title is None:
             title = quote('Bug tracker at %s' % baseurl)
         bugtracker = BugTracker(name=name,
