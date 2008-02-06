@@ -29,9 +29,9 @@ to check the HTTPError directly.
     >>> user_browser.mech_browser.set_handle_redirect(False)
     >>> beta_browser.mech_browser.set_handle_redirect(False)
     >>> from urllib2 import HTTPError
-    >>> def check(function, *args):
+    >>> def check(function, *args, **kwargs):
     ...     try:
-    ...         function(*args)
+    ...         function(*args, **kwargs)
     ...     except HTTPError, exc:
     ...         print str(exc)
     ...         location = exc.headers.getheader('Location')
@@ -76,7 +76,17 @@ parameters:
     Location: http://beta.launchpad.dev/ubuntu/+search?text=foo
 
 
-The redirection also works for other Launchpad subdomains:
+However, HTTP POST requests to the beta site are not redirected.
+
+    >>> from urllib import urlencode
+    >>> check(beta_browser.open,
+    ...     'http://launchpad.dev/ubuntu/+search',
+    ...     data=urlencode({'text': 'foo'}))
+    >>> print beta_browser.url
+    Location: http://launchpad.dev/ubuntu/+search?text=foo
+
+
+The redirection works for other Launchpad subdomains:
 
     >>> check(beta_browser.open,
     ...     'http://bugs.launchpad.dev/launchpad/+bugs?orderby=-datecreated')
