@@ -84,6 +84,10 @@ ALL_FTI = [
             ('subject', B),
             ]),
 
+    ('messageapproval', [
+            ('status_reason_text', D),
+            ]),
+
     ('messagechunk', [
             ('content', C),
             ]),
