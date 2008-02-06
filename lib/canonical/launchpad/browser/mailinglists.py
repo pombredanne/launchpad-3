@@ -1,35 +1,37 @@
 # Copyright 2008 Canonical Ltd.  All rights reserved.
 
-"""Module docstring goes here."""
+"""Browser views for handling mailing lists."""
 
 __metaclass__ = type
 __all__ = ['MailingListsReviewView']
+
 
 from zope.interface import Interface
 
 from canonical.cachedproperty import cachedproperty
 from canonical.launchpad import _
+from canonical.launchpad.interfaces import MailingListStatus
 from canonical.launchpad.webapp import (
     LaunchpadFormView, action, canonical_url)
-from canonical.launchpad.interfaces import MailingListStatus
+from canonical.launchpad.webapp.interfaces import UnexpectedFormData
 
 
-class ReviewSchema(Interface):
+class ReviewForm(Interface):
     """An empty marker schema for the review form."""
 
 
 class MailingListsReviewView(LaunchpadFormView):
     """Present review page for mailing list creation requests."""
 
-    schema = ReviewSchema
+    schema = ReviewForm
 
     @cachedproperty
     def registered_lists(self):
         """Return a concrete list of mailing lists pending approval.
 
         The context's property of the same name returns a query, which for
-        purposes of rendering in the view needs to be turned into a concrete
-        list object.
+        purposes of rendering in the view needs to be turned into a concrete,
+        sorted list object.
 
         :return: list of IMailingList objects pending review.
         """
@@ -48,19 +50,18 @@ class MailingListsReviewView(LaunchpadFormView):
             # mailing list.  If there is no data in the form for this mailing
             # list, just treat it as having been deferred.
             action = self.request.form_ng.getOne(
-                'action.%s' % mailing_list.team.name)
-            status = None
-            if action == 'approve':
-                status = MailingListStatus.APPROVED
-            elif action == 'decline':
-                status = MailingListStatus.DECLINED
-            elif action in ('hold', None):
-                # The decision is being deferred or the action for this
-                # mailing list didn't appear in the form, so there's nothing
-                # to do.
-                pass
-            else:
-                raise AssertionError(
+                'field.%s' % mailing_list.team.name)
+            # This essentially acts like a switch statement or if/elifs.  It
+            # looks the action up in a map of allowed actions, watching out
+            # for bogus input.
+            try:
+                status = dict(
+                    approve=MailingListStatus.APPROVED,
+                    decline=MailingListStatus.DECLINED,
+                    hold=None,
+                    )[action]
+            except KeyError:
+                raise UnexpectedFormData(
                     'Invalid review action for mailing list %s: %s' %
                     (mailing_list.team.displayname, action))
             if status is not None:

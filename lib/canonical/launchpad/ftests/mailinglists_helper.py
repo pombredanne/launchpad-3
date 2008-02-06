@@ -4,6 +4,7 @@
 
 __metaclass__ = type
 __all__ = [
+    'apply_for_list',
     'beta_program_enable',
     'fault_catcher',
     'get_alternative_email',
@@ -12,11 +13,13 @@ __all__ = [
     'new_team',
     'print_actions',
     'print_info',
+    'print_table',
     'review_list',
     ]
 
 import xmlrpclib
 
+from BeautifulSoup import BeautifulSoup
 from zope.component import getUtility
 
 from canonical.database.sqlbase import flush_database_updates
@@ -108,6 +111,31 @@ def print_info(info):
                 print '    %-23s' % address, realname, flags, status
 
 
+def print_table(content):
+    """Print a +mailinglists table in a nice format."""
+    main = BeautifulSoup(content)
+    table = main.find(id='mailing-lists')
+    for tr in table.findAll('tr'):
+        for thtd in tr.findAll(['th', 'td']):
+            if thtd.name == 'th':
+                # This is a heading.
+                print thtd.string,
+            else:
+                assert thtd.name == 'td', 'Expected <td>'
+                # Either there's a radio button here, or a team name, or a
+                # person name.  In the former two cases, print a
+                # representation of whether the button is checked or not.  In
+                # the latter two cases, just print the text.
+                if thtd.input is None:
+                    print thtd.a.get('href'),
+                else:
+                    if thtd.input.get('checked', None):
+                        print '(*)',
+                    else:
+                        print '( )',
+        print
+
+
 def new_team(team_name, with_list=False):
     """A helper function for the mailinglist doctests.
 
@@ -133,7 +161,30 @@ def new_team(team_name, with_list=False):
     team_list.review(reviewer, MailingListStatus.APPROVED)
     team_list.startConstructing()
     team_list.transitionToStatus(MailingListStatus.ACTIVE)
+    flush_database_updates()
     return team, team_list
+
+
+def apply_for_list(browser, team_name):
+    """Create a team and apply for its mailing list.
+
+    This should only be used in page tests.
+    """
+    displayname = ' '.join(word.capitalize() for word in team_name.split('-'))
+    browser.open('http://launchpad.dev/people/+newteam')
+    browser.getControl(name='field.name').value = team_name
+    browser.getControl('Display Name').value = displayname
+    # Use an open team for simplicity.
+    browser.getControl(
+        name='field.subscriptionpolicy').displayValue = ['Open Team']
+    browser.getControl('Create').click()
+    # XXX BarryWarsaw 28-Jan-2008 Remove this when the beta testing program is
+    # complete.
+    beta_program_enable(team_name)
+    # Apply for the team's mailing list'
+    browser.open('http://launchpad.dev/~%s' % team_name)
+    browser.getLink('Configure mailing list').click()
+    browser.getControl('Apply for Mailing List').click()
 
 
 def new_person(first_name):
