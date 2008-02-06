@@ -15,7 +15,7 @@ person:
 
 Normally, we run the development system (launchpad.dev) with no beta
 redirection host. For the purposes of this test, however, we will set it to
-beta.launchpad.net
+beta.launchpad.dev:
 
     >>> from canonical.config import config
     >>> config.launchpad.beta_testers_redirection_host = "beta.launchpad.dev"
