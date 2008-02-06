@@ -47,7 +47,7 @@ private build:
     ...     find_tag_by_id(anon_browser.contents, 'portlet-details'))
     The frog builder details
     ...
-    Status NOT OK : (AUTO)
+    Status IDLE (AUTO)
     ...
 
 Administrators are allowed to see the build:

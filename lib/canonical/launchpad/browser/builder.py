@@ -183,10 +183,10 @@ class BuilderView(CommonBuilderView, BuildRecordsView):
         else:
             mode = 'AUTO'
 
-        if not self.builderok:
+        if not self.context.builderok:
             return 'NOT OK : %s (%s)' % (self.failnotes, mode)
 
-        if self.context.currentjob:
+        if self.currentjob:
             current_build = self.context.currentjob.build
             msg = 'BUILDING %s' % current_build.title
             if not current_build.is_trusted:
@@ -210,19 +210,6 @@ class BuilderView(CommonBuilderView, BuildRecordsView):
                     return False
 
         return True
-
-    @property
-    def builderok(self):
-        """Wrap IBuilder.builderok to hide private build details.
-
-        Whatever the builder is doing, we'll tell the user it's
-        not available if they are not permissioned to see the
-        private build.
-        """
-        if not self.permitted_to_view:
-            return False
-        else:
-            return self.context.builderok
 
     @property
     def failnotes(self):
