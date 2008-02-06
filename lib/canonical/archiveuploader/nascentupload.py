@@ -418,14 +418,14 @@ class NascentUpload:
             return False
         return self.policy.archive.purpose == ArchivePurpose.PPA
 
-    def getComponentsSet(self):
+    def getComponents(self):
         """Return a set of components present in the uploaded files."""
         return set(file.component_name for file in self.changes.files)
 
     @property
     def is_partner(self):
         """Return true if this is an upload to the partner archive."""
-        return PARTNER_COMPONENT_NAME in self.getComponentsSet()
+        return PARTNER_COMPONENT_NAME in self.getComponents()
 
     def reject(self, msg):
         """Add the provided message to the rejection message."""
@@ -716,8 +716,8 @@ class NascentUpload:
         # That's why we need this conversion here.
         uploaded_file.priority_name = override.priority.name.lower()
 
-    def newFileComponentOverride(self, uploaded_file):
-        """Override the component for newly-uploaded files.
+    def processUnknownFile(self, uploaded_file):
+        """Apply a set of actions for newly-uploaded (unknown) files.
 
         Newly-uploaded files have a default set of overrides to be applied.
         This reduces the amount of work that archive admins have to do
@@ -730,6 +730,9 @@ class NascentUpload:
         is 'main' but should not be in main for Ubuntu.
 
         In the case of a PPA, files are always overridden to 'main'.
+
+        All files are also marked as new unless it's a PPA file, which are
+        never considered new as they are auto-accepted.
         """
         if self.is_ppa:
             uploaded_file.component_name = 'main'
@@ -749,13 +752,9 @@ class NascentUpload:
             'non-free' : 'multiverse',
             }
 
-        try:
-            override = component_override_map[uploaded_file.component_name]
-        except KeyError:
-            # The override defaults to 'universe'.
-            override = 'universe'
-
-        uploaded_file.component_name = override
+        # Apply the component override and default to universe.
+        uploaded_file.component_name = component_override_map.get(
+            uploaded_file.component_name, 'universe')
 
     def find_and_apply_overrides(self):
         """Look for ancestry and overrides information.
@@ -784,7 +783,7 @@ class NascentUpload:
                     # If the source is new, then apply default overrides.
                     self.logger.debug(
                         "%s: (source) NEW" % (uploaded_file.package))
-                    self.newFileComponentOverride(uploaded_file)
+                    self.processUnknownFile(uploaded_file)
 
             elif isinstance(uploaded_file, BaseBinaryUploadFile):
                 self.logger.debug(
@@ -814,7 +813,7 @@ class NascentUpload:
                 else:
                     self.logger.debug(
                         "%s: (binary) NEW" % (uploaded_file.package))
-                    self.newFileComponentOverride(uploaded_file)
+                    self.processUnknownFile(uploaded_file)
 
     #
     # Actually processing accepted or rejected uploads -- and mailing people
@@ -1024,7 +1023,7 @@ class NascentUpload:
         """
 
         # Get a set of the components used in this upload:
-        components = self.getComponentsSet()
+        components = self.getComponents()
 
         if PARTNER_COMPONENT_NAME in components:
             # Reject partner uploads to PPAs.
