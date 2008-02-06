@@ -16,9 +16,19 @@ import pytz
 
 from zope.component import getUtility
 from canonical.launchpad.interfaces import (
-    BranchType, CreateBugParams, IBranchSet, IBugSet, ILaunchpadCelebrities,
-    IPersonSet, IProductSet, IRevisionSet, License, PersonCreationRationale,
-    UnknownBranchTypeError)
+    BranchSubscriptionNotificationLevel,
+    BranchType,
+    CreateBugParams,
+    IBranchSet,
+    IBugSet,
+    ILaunchpadCelebrities,
+    IPersonSet,
+    IProductSet,
+    IRevisionSet,
+    License,
+    PersonCreationRationale,
+    UnknownBranchTypeError,
+    )
 
 
 def time_counter(origin=None, delta=timedelta(seconds=5)):
@@ -135,6 +145,11 @@ class LaunchpadObjectFactory:
             branch_type, name, owner, owner, product, url,
             **optional_branch_args)
 
+    def makeBranchSubscription(self):
+        branch = self.makeBranch()
+        return branch.subscribe(self.makePerson(),
+            BranchSubscriptionNotificationLevel.NOEMAIL, None)
+
     def makeRevisionsForBranch(self, branch, count=5, author=None,
                                date_generator=None):
         """Add `count` revisions to the revision history of `branch`.
@@ -176,7 +191,7 @@ class LaunchpadObjectFactory:
             parent_ids = [parent.revision_id]
         branch.updateScannedDetails(parent.revision_id, sequence)
 
-    def makeBug(self):
+    def makeBug(self, branch=None):
         """Create and return a new, arbitrary Bug.
 
         The bug returned uses default values where possible. See
@@ -187,4 +202,7 @@ class LaunchpadObjectFactory:
         create_bug_params = CreateBugParams(
             owner, title, comment=self.getUniqueString())
         create_bug_params.setBugTarget(product=self.makeProduct())
-        return getUtility(IBugSet).createBug(create_bug_params)
+        bug = getUtility(IBugSet).createBug(create_bug_params)
+        if branch is not None:
+            bug.addBranch(branch, branch.owner)
+        return bug

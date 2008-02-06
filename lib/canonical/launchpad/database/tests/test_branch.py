@@ -20,7 +20,7 @@ from canonical.launchpad.interfaces import (
     ILaunchpadCelebrities, IPersonSet, IProductSet, ISpecificationSet,
     InvalidBranchMergeProposal, PersonCreationRationale,
     RevisionControlSystems, SpecificationDefinitionStatus)
-from canonical.launchpad.database.branch import BranchSet
+from canonical.launchpad.database.branch import BranchSet, BranchSubscription
 from canonical.launchpad.database.branchmergeproposal import (
     BranchMergeProposal,
     )
@@ -196,6 +196,7 @@ class TestBranchDeletionConsequences(TestCase):
         # of worrying about the security contexts.
         self.factory = LaunchpadObjectFactory()
         self.branch = self.factory.makeBranch()
+        self.branch_set = getUtility(IBranchSet)
 
     def test_plainBranch(self):
         self.assertEqual({}, self.branch.deletionRequirements())
@@ -212,42 +213,63 @@ class TestBranchDeletionConsequences(TestCase):
         merge_proposal = self.makeMergeProposal()
         self.assertEqual({merge_proposal:
             ('delete', _('This branch is the source branch of this merge'
-             ' proposal'))},
+             ' proposal.'))},
                          self.branch.deletionRequirements())
         self.assertEqual({merge_proposal:
             ('delete', _('This branch is the target branch of this merge'
-             ' proposal'))},
+             ' proposal.'))},
              merge_proposal.target_branch.deletionRequirements())
         self.assertEqual({merge_proposal:
             ('alter', _('This branch is the dependent branch of this merge'
-             ' proposal'))},
+             ' proposal.'))},
              merge_proposal.dependent_branch.deletionRequirements())
 
     def test_deleteMergeProposalSource(self):
         merge_proposal = self.makeMergeProposal()
         merge_proposal_id = merge_proposal.id
-        branch_set = getUtility(IBranchSet)
         BranchMergeProposal.get(merge_proposal_id)
-        branch_set.delete(self.branch, break_references=True)
+        self.branch_set.delete(self.branch, break_references=True)
         self.assertRaises(SQLObjectNotFound,
             BranchMergeProposal.get, merge_proposal_id)
 
     def test_deleteMergeProposalTarget(self):
         merge_proposal = self.makeMergeProposal()
         merge_proposal_id = merge_proposal.id
-        branch_set = getUtility(IBranchSet)
         BranchMergeProposal.get(merge_proposal_id)
-        branch_set.delete(merge_proposal.target_branch, break_references=True)
+        self.branch_set.delete(merge_proposal.target_branch,
+                               break_references=True)
         self.assertRaises(SQLObjectNotFound,
             BranchMergeProposal.get, merge_proposal_id)
 
     def test_deleteMergeProposalDependent(self):
         merge_proposal = self.makeMergeProposal()
         merge_proposal_id = merge_proposal.id
-        branch_set = getUtility(IBranchSet)
-        branch_set.delete(merge_proposal.dependent_branch,
-                          break_references=True)
+        self.branch_set.delete(merge_proposal.dependent_branch,
+                               break_references=True)
         self.assertEqual(None, merge_proposal.dependent_branch)
+
+    def test_branchWithSubscriptionReqirements(self):
+        subscription = self.factory.makeBranchSubscription()
+        self.assertEqual({subscription:
+            ('delete', _('This is a subscription to this branch.'))},
+                         subscription.branch.deletionRequirements())
+
+    def test_branchWithSubscriptionDeletion(self):
+        subscription = self.factory.makeBranchSubscription()
+        subscription_id = subscription.id
+        self.branch_set.delete(subscription.branch, break_references=True)
+        self.assertRaises(SQLObjectNotFound,
+            BranchSubscription.get, subscription_id)
+
+    def test_branchWithBugRequirements(self):
+        bug = self.factory.makeBug(self.branch)
+        self.assertEqual({bug.bug_branches[0]:
+            ('delete', _('This branch is associated with a bug.'))},
+            self.branch.deletionRequirements())
+
+    def test_branchWithBugDeletion(self):
+        bug = self.factory.makeBug(self.branch)
+        self.branch_set.delete(self.branch, break_references=True)
 
 
 class BranchAddLandingTarget(TestCase):

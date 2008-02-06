@@ -321,21 +321,26 @@ class Branch(SQLBase):
         # Merge proposals require their source and target branches to exist
         for merge_proposal in self.landing_targets:
             deletions[merge_proposal] = _(
-                'This branch is the source branch of this merge proposal')
+                'This branch is the source branch of this merge proposal.')
         # Cannot use self.landing_candidates, because it ignores merged
         # merge proposals
         for merge_proposal in BranchMergeProposal.selectBy(
             target_branch=self):
             deletions[merge_proposal] = _(
-                'This branch is the target branch of this merge proposal')
+                'This branch is the target branch of this merge proposal.')
         for merge_proposal in BranchMergeProposal.selectBy(
             dependent_branch=self):
             alterations[merge_proposal] = _(
-                'This branch is the dependent branch of this merge proposal')
+                'This branch is the dependent branch of this merge proposal.')
             def break_reference():
                 merge_proposal.dependent_branch = None
                 merge_proposal.syncUpdate()
             alteration_operations.append(break_reference)
+        for subscription in self.subscriptions:
+            deletions[subscription] = _(
+                'This is a subscription to this branch.')
+        for bugbranch in self.bug_branches:
+            deletions[bugbranch] = _('This branch is associated with a bug.')
         return alterations, deletions, alteration_operations
 
     def deletionRequirements(self):
