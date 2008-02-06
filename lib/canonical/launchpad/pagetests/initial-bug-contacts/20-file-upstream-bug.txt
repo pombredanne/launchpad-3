@@ -16,8 +16,9 @@ well.
     >>> print browser.url.replace(bug_id, "BUG-ID")
     http://bugs.launchpad.dev/firefox/+bug/BUG-ID
 
-Now sabdfl, because he's the bug reporter, and guadamen, because they
-are the product bug contact are subscribed to this bug:
+Now sabdfl, because he's the bug reporter, guadamen, because they
+are the product bug contact and lifeless because he is a subscriber to mozilla,
+are subscribed to this bug:
 
     >>> from zope.component import getUtility
     >>> from canonical.launchpad.interfaces import IBugSet
@@ -31,7 +32,7 @@ are the product bug contact are subscribed to this bug:
     >>> login(ANONYMOUS)
     >>> bugset = getUtility(IBugSet)
     >>> subscriber_names(bugset.get(bug_id))
-    [u'GuadaMen', u'Mark Shuttleworth']
+    [u'GuadaMen', u'Mark Shuttleworth', u'Robert Collins']
     >>> logout()
 
 For a security bug, only the reporter and the registrant gets

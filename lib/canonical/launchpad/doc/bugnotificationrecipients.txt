@@ -43,6 +43,9 @@ appropriate for an email footer.
   mark@hbd.com
       Assignee
       You received this bug notification because you are a bug assignee.
+  support@ubuntu.com
+      Registrant (Ubuntu) @ubuntu-team
+      You received this bug notification because you are a member of Ubuntu Team, which is the registrant for Ubuntu.
   test@canonical.com
       Subscriber
       You received this bug notification because you are a direct subscriber of the bug.
@@ -92,7 +95,7 @@ Then, subscribers of various types are added:
   >>> recipients.addUpstreamBugContact(marilize, alsa_utils)
 
   >>> testtest = personset.getByEmail("testtest@canonical.com")
-  >>> recipients.addUpstreamRegistrant(testtest, gnomebaker)
+  >>> recipients.addRegistrant(testtest, gnomebaker)
 
 If we print out the recipients and rationales, here's what we get:
 
@@ -148,7 +151,7 @@ duplicate of).
   >>> recipients.addUpstreamBugContact(marilize, alsa_utils)
 
   >>> testtest = personset.getByEmail("testtest@canonical.com")
-  >>> recipients.addUpstreamRegistrant(testtest, gnomebaker)
+  >>> recipients.addRegistrant(testtest, gnomebaker)
 
 If you print out rationales in this situation, you'll see that the
 message says "via Bug 2". The reason for this is that the people being
@@ -199,7 +202,7 @@ Here's an example of this situation:
   >>> recipients.addUpstreamBugContact(name18, alsa_utils)
 
   >>> vcs_imports = personset.getByName("vcs-imports")
-  >>> recipients.addUpstreamRegistrant(vcs_imports, gnomebaker)
+  >>> recipients.addRegistrant(vcs_imports, gnomebaker)
 
   >>> shipit_admins = personset.getByName("shipit-admins")
   >>> recipients.addDirectSubscriber(shipit_admins)
@@ -264,7 +267,7 @@ a pathological example:
   >>> recipients = BugNotificationRecipients()
   >>> recipients.addDirectSubscriber(test)
   >>> recipients.addAssignee(test)
-  >>> recipients.addUpstreamRegistrant(test, gnomebaker)
+  >>> recipients.addRegistrant(test, gnomebaker)
   >>> recipients.addDirectSubscriber(foo_bar)
 
 This guy is emailed because he's a direct subscriber, an assignee and an

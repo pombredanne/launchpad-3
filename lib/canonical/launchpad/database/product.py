@@ -615,7 +615,7 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
         return None
 
     def setBugContact(self, bugcontact, user):
-        """See `IProduct`."""
+        """See `IHasBugContact`."""
         self.bugcontact = bugcontact
         if bugcontact is not None:
             subscription = self.addBugSubscription(bugcontact, user)

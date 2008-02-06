@@ -21,8 +21,7 @@ class IHasBugContact(IStructuralSubscriptionTarget):
     bugcontact = Choice(
         title=_("Bug Contact"),
         description=_(
-            "The person or team who will receive all bugmail for this "
-            "project"),
+            "The person or team responsible for bug management"),
         required=False, vocabulary='ValidPersonOrTeam')
 
     def setBugContact(self, bugcontact, user):

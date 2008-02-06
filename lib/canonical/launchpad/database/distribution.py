@@ -68,13 +68,13 @@ from canonical.launchpad.webapp.url import urlparse
 
 from canonical.launchpad.interfaces import (
     ArchivePurpose, BugTaskStatus, DistroSeriesStatus, IArchiveSet, IBuildSet,
-    IDistribution, IDistributionSet, IFAQTarget, IHasBuildRecords, IHasIcon,
-    IHasLogo, IHasMugshot, ILaunchpadCelebrities, ILaunchpadUsage,
-    IQuestionTarget, ISourcePackageName, IStructuralSubscriptionTarget,
-    MirrorContent, MirrorStatus, NotFoundError, PackagePublishingStatus,
-    PackageUploadStatus, PackagingType, QUESTION_STATUS_DEFAULT_SEARCH,
-    SpecificationDefinitionStatus, SpecificationFilter,
-    SpecificationImplementationStatus, SpecificationSort,
+    IDistribution, IDistributionSet, IFAQTarget, IHasBugContact,
+    IHasBuildRecords, IHasIcon, IHasLogo, IHasMugshot, ILaunchpadCelebrities,
+    ILaunchpadUsage, IQuestionTarget, ISourcePackageName,
+    IStructuralSubscriptionTarget, MirrorContent, MirrorStatus, NotFoundError,
+    PackagePublishingStatus, PackageUploadStatus, PackagingType,
+    QUESTION_STATUS_DEFAULT_SEARCH, SpecificationDefinitionStatus,
+    SpecificationFilter, SpecificationImplementationStatus, SpecificationSort,
     TranslationPermission, UNRESOLVED_BUGTASK_STATUSES)
 
 from canonical.archivepublisher.debversion import Version
@@ -90,7 +90,8 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
     implements(
         IDistribution, IFAQTarget, IHasBuildRecords,
         IHasIcon, IHasLogo, IHasMugshot, ILaunchpadUsage,
-        IQuestionTarget, IStructuralSubscriptionTarget)
+        IQuestionTarget, IStructuralSubscriptionTarget,
+        IHasBugContact)
 
     _table = 'Distribution'
     _defaultOrder = 'name'
@@ -1149,6 +1150,12 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
                             count['bugs_affecting_upstream'],
                             count['bugs_with_upstream_bugwatch']))
         return results
+
+    def setBugContact(self, bugcontact, user):
+        """See `IHasBugContact`."""
+        self.bugcontact = bugcontact
+        if bugcontact is not None:
+            subscription = self.addBugSubscription(bugcontact, user)
 
 
 class DistributionSet:

@@ -9,8 +9,7 @@
   metal:use-macro="context/@@main_template/master"
   i18n:domain="launchpad"
 >
-  <body>
-  <tal:tag condition="view/update"/>
+<body>
 
 <metal:heading fill-slot="pageheading">
   <h1>Change bug contact</h1>
@@ -21,10 +20,9 @@
   <div metal:use-macro="context/@@launchpad_form/form">
 
     <p metal:fill-slot="extra_info">
-      The bug contact is a person or team that receives notification of all new
-      bugs opened for this project, and any changes to those bug reports.
+      The bug contact is a person or team that is responsible for bug management in
+      <tal:displayname replace="context/displayname" />.
     </p>
-
   </div>
 
 </div>

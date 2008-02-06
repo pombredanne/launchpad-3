@@ -32,7 +32,7 @@ But we can't use it to set the bug contact.
     >>> target.bugcontact = None
     Traceback (most recent call last):
     ...
-    ForbiddenAttribute: ('bugcontact', <Product ...>)
+    ForbiddenAttribute: ('bugcontact', <...>)
 
 After setting no_priv as the bug contact, a bug subscription is created
 for the target.

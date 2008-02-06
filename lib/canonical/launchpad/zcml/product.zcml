@@ -389,15 +389,6 @@
     />
 
   <browser:page
-    name="+bugcontact"
-    for="canonical.launchpad.interfaces.IProduct"
-    facet="bugs"
-    class="canonical.launchpad.browser.ProductBugContactEditView"
-    permission="launchpad.Edit"
-    template="../templates/product-bugcontact.pt"
-    />
-
-  <browser:page
     name="+review"
     for="canonical.launchpad.interfaces.IProduct"
     facet="overview"

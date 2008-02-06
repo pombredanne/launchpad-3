@@ -8,7 +8,7 @@ import unittest
 
 from canonical.functional import FunctionalDocFileSuite
 from canonical.launchpad.interfaces.ftests. \
-    test_structuralsubscriptiontarget import productSetUp
+    test_structuralsubscriptiontarget import distributionSetUp, productSetUp
 from canonical.launchpad.ftests.test_system_documentation import (
     default_optionflags, tearDown)
 from canonical.testing import LaunchpadFunctionalLayer
@@ -20,6 +20,7 @@ def test_suite():
 
     setUpMethods = [
         productSetUp,
+        distributionSetUp,
         ]
 
     for setUpMethod in setUpMethods:
