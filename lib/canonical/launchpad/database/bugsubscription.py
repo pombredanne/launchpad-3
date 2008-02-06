@@ -9,9 +9,9 @@ from zope.interface import implements
 from sqlobject import ForeignKey
 
 from canonical.database.sqlbase import SQLBase
-from canonical.launchpad.database.person import PrivatePersonConstraint
+from canonical.launchpad.database.person import PublicPersonValidator
 
-from canonical.launchpad.interfaces import IBugSubscription, IHasLinkTo
+from canonical.launchpad.interfaces import IBugSubscription
 
 
 class BugSubscription(SQLBase):
@@ -22,21 +22,11 @@ class BugSubscription(SQLBase):
     _table = 'BugSubscription'
 
     person = ForeignKey(dbName='person', foreignKey='Person', notNull=True,
-                        validator=PrivatePersonConstraint())
+                        validator=PublicPersonValidator())
     bug = ForeignKey(dbName='bug', foreignKey='Bug', notNull=True)
     subscribed_by = ForeignKey(
         dbName='subscribed_by', foreignKey='Person', notNull=True,
-        validator=PrivatePersonConstraint())
-
-    def _set_person(self, value):
-        if IHasLinkTo.providedBy(value):
-            value.linkTo(self)
-        self._SO_set_person(value)
-
-    def _set_subscribed_by(self, value):
-        if IHasLinkTo.providedBy(value):
-            value.linkTo(self)
-        self._SO_set_subscribed_by(value)
+        validator=PublicPersonValidator())
 
     @property
     def display_subscribed_by(self):

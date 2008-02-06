@@ -23,7 +23,7 @@ __all__ = [
     'IPersonViewRestricted',
     'IRequestPeopleMerge',
     'is_valid_public_person_link',
-    'is_valid_private_person_link',
+    'is_valid_private_or_public_person_link',
     'ITeam',
     'ITeamContactAddressForm',
     'ITeamCreation',
@@ -32,7 +32,7 @@ __all__ = [
     'PersonCreationRationale',
     'PersonVisibility',
     'PublicPersonChoice',
-    'RestrictedPrivatePersonChoice',
+    'PublicOrPrivatePersonChoice',
     'TeamContactMethod',
     'TeamMembershipRenewalPolicy',
     'TeamMembershipStatus',
@@ -59,7 +59,7 @@ from canonical.launchpad.interfaces.mentoringoffer import (
 from canonical.launchpad.interfaces.specificationtarget import (
     IHasSpecifications)
 from canonical.launchpad.interfaces.launchpad import (
-    IHasIcon, IHasLinkTo, IHasLogo, IHasMugshot)
+    IHasIcon, IHasLogo, IHasMugshot)
 from canonical.launchpad.interfaces.questioncollection import (
     IQuestionCollection, QUESTION_STATUS_DEFAULT_SEARCH)
 from canonical.launchpad.interfaces.validation import (
@@ -1210,7 +1210,7 @@ class IPersonPublic(IHasSpecifications, IHasMentoringOffers,
         :target: An object providing `IBugTarget` to search within.
         """
 
-class IPersonViewRestricted(IHasLinkTo):
+class IPersonViewRestricted(Interface):
     """IPerson attributes that require launchpad.View permission."""
 
     active_member_count = Attribute(
@@ -1289,7 +1289,7 @@ def is_valid_public_person_link(person, other):
     else:
         return True
 
-def is_valid_private_person_link(person, other):
+def is_valid_private_or_public_person_link(person, other):
     assert IPerson.providedBy(person)
     if person.visibility in (PersonVisibility.PRIVATE,
                              PersonVisibility.PRIVATE_MEMBERSHIP):
@@ -1305,15 +1305,17 @@ def is_valid_private_person_link(person, other):
 
 class PublicPersonChoice(Choice):
     def constraint(self, value):
+        import pdb; pdb.set_trace()
         if is_valid_public_person_link(value, self.context):
             return True
         else:
             return False
 
 
-class RestrictedPrivatePersonChoice(Choice):
+class PublicOrPrivatePersonChoice(Choice):
     def constraint(self, value):
-        if is_valid_private_person_link(value, self.context):
+        import pdb; pdb.set_trace()
+        if is_valid_private_or_public_person_link(value, self.context):
             return True
         else:
             return False

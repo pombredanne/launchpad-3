@@ -57,7 +57,6 @@ from canonical.launchpad.interfaces import (
     IDistroBugTask,
     IDistroSeries,
     IDistroSeriesBugTask,
-    IHasLinkTo,
     ILaunchpadCelebrities,
     INullBugTask,
     IProduct,
@@ -524,8 +523,6 @@ class BugTask(SQLBase, BugTaskMixin):
 
     def _set_assignee(self, value):
         """Set assignee, and update conjoined BugTask."""
-        if IHasLinkTo.providedBy(value):
-            value.linkTo(self)
         self._setValueAndUpdateConjoinedBugTask("assignee", value)
 
     def _set_importance(self, value):

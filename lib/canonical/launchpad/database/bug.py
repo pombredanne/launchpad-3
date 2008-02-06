@@ -54,8 +54,7 @@ from canonical.launchpad.database.bugtask import (
 from canonical.launchpad.database.bugwatch import BugWatch
 from canonical.launchpad.database.bugsubscription import BugSubscription
 from canonical.launchpad.database.mentoringoffer import MentoringOffer
-from canonical.launchpad.database.person import (
-    Person, PrivatePersonConstraint)
+from canonical.launchpad.database.person import Person
 from canonical.launchpad.database.pillar import pillar_sort_key
 from canonical.launchpad.event.sqlobjectevent import (
     SQLObjectCreatedEvent, SQLObjectDeletedEvent, SQLObjectModifiedEvent)
@@ -153,8 +152,7 @@ class Bug(SQLBase):
     title = StringCol(notNull=True)
     description = StringCol(notNull=False,
                             default=None)
-    owner = ForeignKey(dbName='owner', foreignKey='Person', notNull=True,
-                       validator=PrivatePersonConstraint())
+    owner = ForeignKey(dbName='owner', foreignKey='Person', notNull=True)
     duplicateof = ForeignKey(
         dbName='duplicateof', foreignKey='Bug', default=None)
     datecreated = UtcDateTimeCol(notNull=True, default=UTC_NOW)

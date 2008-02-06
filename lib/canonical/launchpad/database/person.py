@@ -17,7 +17,6 @@ import sha
 from zope.interface import implements, alsoProvides
 from zope.component import getUtility
 from zope.event import notify
-from zope.security.interfaces import Unauthorized
 from zope.security.proxy import removeSecurityProxy
 
 from sqlobject import (
@@ -57,7 +56,9 @@ from canonical.launchpad.interfaces import (
     ILaunchpadStatisticSet, ILoginTokenSet, IMailingListSet,
     INACTIVE_ACCOUNT_STATUSES, IPasswordEncryptor, IPerson, IPersonSet,
     IPillarNameSet, IProduct, ISSHKey, ISSHKeySet, ISignedCodeOfConductSet,
-    ISourcePackageNameSet, ITeam, ITranslationGroupSet, IWikiName,
+    ISourcePackageNameSet,
+    is_valid_public_person_link, is_valid_private_or_public_person_link,
+    ITeam, ITranslationGroupSet, IWikiName,
     IWikiNameSet, JoinNotAllowed, LoginTokenType,
     PersonCreationRationale, PersonVisibility,
     QUESTION_STATUS_DEFAULT_SEARCH, SSHKeyType, ShipItConstants,
@@ -107,7 +108,10 @@ class ValidPersonOrTeamCache(SQLBase):
     # Look Ma, no columns! (apart from id)
 
 
-class PrivatePersonConstraint(Validator):
+class PersonValidatorBase(Validator):
+    def isValidPersonLink(self, person, state_object):
+        """To be overridden in child classes."""
+        raise NotImplementedError
 
     def toPython(self, value, state=None):
         if value is None:
@@ -123,8 +127,7 @@ class PrivatePersonConstraint(Validator):
             raise InvalidField('Cannot coerce to person object',
                                value,
                                state)
-        if person.visibility in (PersonVisibility.PRIVATE_MEMBERSHIP,
-                                PersonVisibility.PRIVATE):
+        if not self.isValidPersonLink(person, state.soObject):
             raise InvalidField(
                 'Cannot link person (name=%s, visibility=%s) to %s (name=%s)'
                 % (person.name, person.visibility.name,
@@ -132,6 +135,16 @@ class PrivatePersonConstraint(Validator):
                 value,
                 state)
         return value
+
+
+class PublicOrPrivatePersonValidator(PersonValidatorBase):
+    def isValidPersonLink(self, person, state_object):
+        return is_valid_public_or_private_person_link(person, state_object)
+
+
+class PublicPersonValidator(PersonValidatorBase):
+    def isValidPersonLink(self, person, state_object):
+        return is_valid_public_person_link(person, state_object)
 
 
 class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
@@ -195,7 +208,8 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
     organization = StringCol(default=None)
 
     teamowner = ForeignKey(dbName='teamowner', foreignKey='Person',
-                           default=None, validator=PrivatePersonConstraint())
+                           default=None,
+                           validator=PublicPersonValidator())
 
     sshkeys = SQLMultipleJoin('SSHKey', joinColumn='person')
 
@@ -217,7 +231,7 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
     creation_comment = StringCol(default=None)
     registrant = ForeignKey(
         dbName='registrant', foreignKey='Person', default=None,
-        validator=PrivatePersonConstraint())
+        validator=PublicPersonValidator())
     hide_email_addresses = BoolCol(notNull=True, default=False)
     verbose_bugnotifications = BoolCol(notNull=True, default=True)
 
@@ -1202,7 +1216,6 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
                           TeamMembershipStatus.PROPOSED,
                           TeamMembershipStatus.ADMIN], (
             "You can't add a member with this status: %s." % status.name)
-        person.linkTo(self)
 
         event = JoinTeamEvent
         if person.isTeam():
@@ -1970,28 +1983,6 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
         """See `IPerson`."""
         return StructuralSubscription.selectBy(
             subscriber=self, orderBy=['-date_created'])
-
-    def linkTo(self, obj):
-        """See `IPerson`."""
-        if (self.visibility != PersonVisibility.PUBLIC
-            and self.visibility is not None):
-            # Private-membership teams and private teams can only
-            # add members by calling their own addMember() method
-            # which doesn't call linkTo() on itself.
-            if ITeam.providedBy(obj) and obj.visibility in (
-                PersonVisibility.PRIVATE,
-                PersonVisibility.PRIVATE_MEMBERSHIP):
-                # A private or private-membership team can be a member
-                # of other private/private-membership teams.
-                pass
-            else:
-                raise Unauthorized(
-                    'cannot link to person (name=%s visibility=%s)'
-                    % (self.name, self.visibility))
-        else:
-            # person.zcml checks whether the user has permission to
-            # access linkTo()
-            pass
 
 
 class PersonSet:
