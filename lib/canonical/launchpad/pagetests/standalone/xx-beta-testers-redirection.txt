@@ -76,7 +76,7 @@ parameters:
     Location: http://beta.launchpad.dev/ubuntu/+search?text=foo
 
 
-However, HTTP POST requests to the normal site are not redirected.
+However, HTTP POST requests to the normal site are not redirected:
 
     >>> from urllib import urlencode
     >>> check(beta_browser.open,
