@@ -28,9 +28,6 @@ class IMessageEntry(IEntry):
     owner = Object(schema=IPerson)
     parent = Object(schema=IMessage)
     content = Text(title=u'Message content', required=True)
-    #distribution = Int(
-    #        title=u'Distribution', required=False, readonly=True,
-    #        )
 
 
 class MessageEntry(Entry):

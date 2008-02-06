@@ -23,8 +23,8 @@ from zope.component import getMultiAdapter
 from zope.interface import implements, directlyProvides
 from zope.proxy import isProxy
 from zope.publisher.interfaces import NotFound
-from zope.security.proxy import removeSecurityProxy
 from zope.schema.interfaces import IField, IObject
+from zope.security.proxy import removeSecurityProxy
 
 # XXX leonardr 2008-01-25 bug=185958:
 # canonical_url code should be moved into lazr.
@@ -50,10 +50,20 @@ class ResourceJSONEncoder(simplejson.JSONEncoder):
         if IJSONPublishable.providedBy(obj):
             return obj.toDataForJSON()
         if isProxy(obj):
+            # We have a security-proxyied version of a built-in
+            # type. We create a new version of the type by copying the
+            # proxied version's content. That way the container is not
+            # security proxied (and simplejson will now what do do
+            # with it), but the content will still be security
+            # wrapped.
             underlying_object = removeSecurityProxy(obj)
-            if isinstance(underlying_object, (list, tuple, dict)):
-                return underlying_object
-        return simplejson.JSONEncoder.default(self, obj) # Error out
+            if isinstance(underlying_object, list):
+                return list(obj)
+            if isinstance(underlying_object, tuple):
+                return tuple(obj)
+            if isinstance(underlying_object, dict):
+                return dict(obj)
+        return simplejson.JSONEncoder.default(self, obj) # Error out.
 
 
 class HTTPResource:

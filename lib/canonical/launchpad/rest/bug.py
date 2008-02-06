@@ -15,7 +15,7 @@ from zope.schema import Bool, Datetime, Int, List, Object, Text, TextLine
 from canonical.lazr.rest import Collection, Entry
 from canonical.lazr.rest.schema import CollectionField
 
-from canonical.launchpad.rest import IMessageTargetEntry
+from canonical.launchpad.rest.messagetarget import IMessageTargetEntry
 from canonical.launchpad.interfaces import IBug, IPerson
 from canonical.launchpad.fields import (
     ContentNameField, Tag, Title)
@@ -56,9 +56,6 @@ class IBugEntry(IMessageTargetEntry):
     security_related = Bool(
         title=u"This bug is a security vulnerability", required=False,
         default=False)
-    # We might not want to expose displayname
-    displayname = TextLine(title=u"Text of the form 'Bug #X",
-        readonly=True)
     tags = List(
         title=u"Tags", description=u"Separated by whitespace.",
         value_type=Tag(), required=False)
@@ -66,16 +63,19 @@ class IBugEntry(IMessageTargetEntry):
         title=u"This bug is complete.",
         description = u"A bug is Launchpad is completely addressed "
                         "when there are no tasks that are still open "
-                        "for the bug.")
+                        "for the bug.",
+        readonly=True)
     permits_expiration = Bool(
         title=u"Does the bug's state permit expiration? "
         "Expiration is permitted when the bug is not valid anywhere, "
         "a message was sent to the bug reporter, and the bug is associated "
-        "with pillars that have enabled bug expiration.")
+        "with pillars that have enabled bug expiration.",
+        readonly=True)
     can_expire = Bool(
         title=u"Can the Incomplete bug expire if it becomes inactive? "
         "Expiration may happen when the bug permits expiration, and a "
-        "bugtask cannot be confirmed.")
+        "bugtask cannot be confirmed.",
+        readonly=True)
     date_last_message = Datetime(
         title=u'Date of last bug message', required=False, readonly=True)
 
@@ -90,14 +90,10 @@ class IBugEntry(IMessageTargetEntry):
     #    value_type=Object(schema=IBugSubscription))
     duplicates = CollectionField(value_type=Object(schema=IBug))
     #attachments = CollectionField(value_type=Object(schema=IBugAttachment))
-    #questions = CollectionField(value_type=Object(schema=IQuestion))
-    #specifications = CollectionField(
-    #    value_type=Object(schema=ISpecification))
-    #branches = CollectionField(value_type=Object(schema=IBranch))
 
 
 class BugEntry(Entry):
-    """A bug."""
+    """A bug, as exposed through the web service."""
 
     adapts(IBug)
     decorates(IBugEntry)
@@ -119,7 +115,7 @@ class BugEntry(Entry):
 
 
 class BugCollection(Collection):
-    """A collection of bugs."""
+    """A collection of bugs, as exposed through the web service."""
 
     def lookupEntry(self, name_or_id):
         """Find a Bug by name or ID."""
