@@ -24,6 +24,7 @@ from canonical.launchpad.database.branch import BranchSet, BranchSubscription
 from canonical.launchpad.database.branchmergeproposal import (
     BranchMergeProposal,
     )
+from canonical.launchpad.database.bugbranch import BugBranch
 from canonical.launchpad.database.codeimport import CodeImportSet
 from canonical.launchpad.database.product import ProductSet
 from canonical.launchpad.database.revision import RevisionSet
@@ -269,7 +270,10 @@ class TestBranchDeletionConsequences(TestCase):
 
     def test_branchWithBugDeletion(self):
         bug = self.factory.makeBug(self.branch)
+        bug_branch = bug.bug_branches[0]
+        bug_branch_id = bug_branch.id
         self.branch_set.delete(self.branch, break_references=True)
+        self.assertRaises(SQLObjectNotFound, BugBranch.get, bug_branch_id)
 
 
 class BranchAddLandingTarget(TestCase):
