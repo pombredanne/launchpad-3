@@ -15,9 +15,8 @@ from canonical.database.sqlbase import quote, SQLBase
 
 from canonical.launchpad.interfaces import (
     BlueprintNotificationLevel, BugNotificationLevel, DeleteSubscriptionError,
-    DuplicateSubscriptionError, IDistribution, IDistributionSourcePackage,
-    IDistroSeries, IMilestone, IProduct, IProductSeries, IProject,
-    IStructuralSubscription, IStructuralSubscriptionTarget)
+    DuplicateSubscriptionError, IDistributionSourcePackage, IProduct,
+    IStructuralSubscription)
 
 
 class StructuralSubscription(SQLBase):
@@ -186,7 +185,6 @@ class StructuralSubscriptionTargetMixin:
             query,
             orderBy='Person.displayname',
             clauseTables=['Person'])
-        # TODO : this can be done more efficiently by SQL
         subscriptions = [sub for sub
                          in all_subscriptions
                          if ((sub.bug_notification_level >=
