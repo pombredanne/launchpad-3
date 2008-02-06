@@ -233,6 +233,9 @@ class IPOFile(IRosettaStats):
     def getPOTMsgSetWithErrors():
         """Get message sets that have translations imported with errors."""
 
+    def getTranslationsFilteredBy(person):
+        """Get TranslationMessages from this POFile contributed by `person`."""
+
     def updateExportCache(contents):
         """Update this PO file's export cache with a string."""
 

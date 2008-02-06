@@ -918,6 +918,8 @@ pofile_edit = ContextTitle(smartquote('Edit "%s" details'))
 
 pofile_export = ContextTitle(smartquote('Download translation for "%s"'))
 
+pofile_filter = ContextTitle(smartquote('Translations in "%s"'))
+
 pofile_index = ContextTitle(smartquote('Translation overview for "%s"'))
 
 def pofile_translate(context, view):

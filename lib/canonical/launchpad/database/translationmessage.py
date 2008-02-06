@@ -240,6 +240,18 @@ class TranslationMessage(SQLBase, TranslationMessageMixIn):
         # We found no translations in this translation_message
         return True
 
+    @property
+    def is_hidden(self):
+        """See `ITranslationMessage`."""
+        # If this message is currently used, it's not hidden.
+        if self.is_current:
+            return False
+        # Otherwise, we are not showing it as a suggestion if
+        # currently used one was reviewed after this one was created.
+        current = self.potmsgset.getCurrentTranslationMessage(
+            self.pofile.language, self.pofile.variant)
+        return current.date_reviewed > self.date_created
+
 
 class TranslationMessageSet:
     """See `ITranslationMessageSet`."""

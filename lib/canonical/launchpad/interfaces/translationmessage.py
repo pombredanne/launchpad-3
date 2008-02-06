@@ -176,6 +176,10 @@ class ITranslationMessage(Interface):
         title=_("Whether this message has any translation"),
         readonly=True, required=True)
 
+    is_hidden = Bool(
+        title=_("Whether this is an unused, hidden suggestion"),
+        readonly=True, required=True)
+
     plural_forms = Int(
         title=_("Number of plural form translations in this translation."),
         readonly=True, required=True)

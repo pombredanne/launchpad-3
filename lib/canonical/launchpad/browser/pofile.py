@@ -7,6 +7,7 @@ __all__ = [
     'POExportView',
     'POFileAppMenus',
     'POFileFacets',
+    'POFileFilteredView',
     'POFileNavigation',
     'POFileSOP',
     'POFileTranslateView',
@@ -27,7 +28,7 @@ from canonical.launchpad.browser.poexportrequest import BaseExportView
 from canonical.launchpad.browser.potemplate import (
     POTemplateSOP, POTemplateFacets)
 from canonical.launchpad.interfaces import (
-    IPOFile, ITranslationImporter, ITranslationImportQueue,
+    IPersonSet, IPOFile, ITranslationImporter, ITranslationImportQueue,
     UnexpectedFormData, NotFoundError)
 from canonical.launchpad.webapp import (
     ApplicationMenu, Link, canonical_url, LaunchpadView, Navigation)
@@ -119,6 +120,58 @@ class POFileAppMenus(ApplicationMenu):
 
 class POFileView(LaunchpadView):
     """A basic view for a POFile"""
+
+    @cachedproperty
+    def contributors(self):
+        return list(self.context.contributors)
+
+class FilteredPOTMsgSets:
+    def __init__(self, translations):
+        potmsgsets = []
+        current_potmsgset = None
+        if translations is None:
+            self.potmsgsets = None
+        else:
+            for translation in translations:
+                if (current_potmsgset is not None and
+                    current_potmsgset['potmsgset'] == translation.potmsgset):
+                    current_potmsgset['translations'].append(translation)
+                else:
+                    if current_potmsgset is not None:
+                        potmsgsets.append(current_potmsgset)
+                    current_potmsgset = {
+                        'potmsgset' : translation.potmsgset,
+                        'translations' : [translation],
+                        'context' : translation
+                        }
+            if current_potmsgset is not None:
+                potmsgsets.append(current_potmsgset)
+
+            self.potmsgsets = potmsgsets
+
+class POFileFilteredView(LaunchpadView):
+    """A filtered view for a POFile."""
+
+    def initialize(self):
+        self.person = None
+        person = self.request.form.get('person')
+        if person is None:
+            self.request.response.addErrorNotification(
+                "No person to filter by specified.")
+        else:
+            self.person = getUtility(IPersonSet).getByName(person)
+            if self.person is None:
+                self.request.response.addErrorNotification(
+                    "Requested person not found.")
+
+    @property
+    def translations(self):
+        if self.person is None:
+            return None
+        else:
+            all_translations = self.context.getTranslationsFilteredBy(
+                person=self.person)
+            return FilteredPOTMsgSets(all_translations).potmsgsets
 
     @cachedproperty
     def contributors(self):

@@ -1,0 +1,128 @@
+<html
+  xmlns="http://www.w3.org/1999/xhtml"
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  xml:lang="en"
+  lang="en"
+  dir="ltr"
+  metal:use-macro="context/@@main_template/master"
+  i18n:domain="rosetta"
+>
+<metal:heading fill-slot="head_epilogue">
+    <style type="text/css">
+    <!--
+      td.englishstring { background: #eee; }
+      .usedtranslation { font-weight: bold; }
+      .hiddentranslation { color: #777; }
+      dl.inline dt { display:table; margin-left: 1em;}
+      dl.inline dd { display:inline; margin-left: 1em;}
+    -->
+    </style>
+</metal:heading>
+
+<body>
+
+<metal:leftportlets fill-slot="portlets_one">
+
+  <div tal:replace="structure context/@@+portlet-details" />
+  <div tal:replace="structure context/@@+portlet-stats" />
+
+</metal:leftportlets>
+
+    <div metal:fill-slot="help">
+
+      <p>This shows a list of all translations a user has submitted
+        for a certain PO file. It includes both currently used and
+        unused suggestions, including those which are now hidden.</p>
+
+      <dl>
+        <dt class="usedtranslation">Bold:</dt>
+          <dd>Indicates currently used submissions.</dd>
+        <dt>Regular:</dt>
+          <dd>Indicates unused, recent suggestion.</dd>
+        <dt class="hiddentranslation">Gray</dt>
+          <dd>Indicates hidden, unused suggestion (hidden are those
+          which have been reviewed but rejected).</dd>
+      </dl>
+    </div>
+
+<div metal:fill-slot="main">
+
+    <div>
+      <a tal:attributes="href context/fmt:url"
+         tal:content="context/title">
+        evolution 2.10 translation
+      </a>
+    </div>
+
+    <h1 tal:condition="view/person">Contributions by
+      <tal:contributor content="view/person/browsername"/>
+      to
+      <tal:language replace="context/language/englishname">
+        Spanish
+      </tal:language>
+      translation
+    </h1>
+
+    <p tal:condition="not:view/translations" class="informational message">
+      This person has made no contributions to this file.
+    </p>
+
+    <tal:translations condition="view/translations">
+
+      <p tal:condition="view/person">
+        <tal:contributor content="view/person/browsername"/> has
+        submitted following translations.
+      </p>
+
+      <table class="listing">
+      <tal:message repeat="message view/translations">
+        <tr>
+          <td class="englishstring" style="text-align:right;">
+            <tal:obsolete condition="not:message/potmsgset/sequence">
+              ~</tal:obsolete>
+            <tal:nonobsolete condition="message/potmsgset/sequence">
+              <a tal:content="string:${message/potmsgset/sequence}."
+                 tal:attributes="href message/context/fmt:url" />
+            </tal:nonobsolete>
+          </td>
+          <td colspan="2" class="englishstring">
+        <div tal:content="message/potmsgset/singular_text">English string</div>
+        <div tal:condition="message/potmsgset/plural_text"
+             tal:content="message/potmsgset/plural_text" />
+        </td></tr>
+        <tal:translation repeat="translation message/translations">
+            <tr>
+              <td />
+              <td tal:content="translation/date_created/fmt:approximatedate" />
+              <tal:used condition="translation/is_current">
+                <td class="usedtranslation">
+                  <tal:alltranslations repeat="text translation/translations">
+                    <div tal:content="text" />
+                  </tal:alltranslations>
+                </td>
+              </tal:used>
+              <tal:unused condition="not:translation/is_current">
+                <td tal:condition="not:translation/is_hidden">
+                  <tal:alltranslations repeat="text translation/translations">
+                    <div tal:content="text" />
+                  </tal:alltranslations>
+                </td>
+                <td tal:condition="translation/is_hidden"
+                    class="hiddentranslation">
+                  <tal:alltranslations repeat="text translation/translations">
+                    <div tal:content="text" />
+                  </tal:alltranslations>
+                </td>
+              </tal:unused>
+            </tr>
+        </tal:translation>
+      </tal:message>
+      </table>
+
+      </tal:translations>
+
+    </div>
+  </body>
+</html>
