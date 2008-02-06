@@ -32,6 +32,7 @@ from canonical.launchpad.database.bugwatch import BugWatch
 from canonical.launchpad.interfaces import (
     BugTrackerType, IBugTracker, IBugTrackerAlias, IBugTrackerAliasSet,
     IBugTrackerSet, NotFoundError)
+from canonical.launchpad.validators.email import valid_email
 from canonical.launchpad.webapp.uri import URI
 
 
@@ -84,23 +85,23 @@ def base_url_permutations(base_url):
             alternative_urls.append(url + '/')
     return alternative_urls
 
-def make_bugtracker_name(url):
-    """Return a name string for a bug tracker based on its hostname.
+def make_bugtracker_name(uri):
+    """Return a name string for a bug tracker based on a URI.
 
-    This will also work with bug trackers of type EMAILADDRESS, using
-    the host name from the @<host> part of the email address.
+    :param uri: The base URI to be used to identify the bug tracker,
+        e.g. http://bugs.example.com or mailto:bugs@example.com
     """
-    uri = URI(url)
-    if uri.scheme == 'mailto':
-        if '@' in uri.path:
-            host = uri.path.split('@', 1)[1]
+    base_uri = URI(uri)
+    if base_uri.scheme == 'mailto':
+        if valid_email(base_uri.path):
+            base_name = base_uri.path.split('@', 1)[0]
         else:
             raise ValueError(
-                'Not a valid email address: %s' % uri.path)
+                'Not a valid email address: %s' % base_uri.path)
     else:
-        host = uri.host
+        base_name = base_uri.host
 
-    return 'auto-%s' % host
+    return 'auto-%s' % base_name
 
 
 class BugTracker(SQLBase):

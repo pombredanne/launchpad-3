@@ -47,6 +47,21 @@ mailto:<email-address>.
     >>> verifyObject(IBugTracker, email_tracker)
     True
 
+Passing no name parameter to ensureBugTracker() will create a new bug
+tracker with a name in the form auto-<local_name>, where local name is
+the local part of an email address (e.g. <local_name>@foobar.com).
+
+    >>> other_tracker = getUtility(IBugTrackerSet).ensureBugTracker(
+    ...     baseurl='mailto:another.bugtracker@example.com',
+    ...     owner=sample_person, bugtrackertype=BugTrackerType.EMAILADDRESS,
+    ...     title="Sample email address tracker", summary="Nothing",
+    ...     contactdetails="None")
+    >>> verifyObject(IBugTracker, other_tracker)
+    True
+
+    >>> other_tracker.name
+    u'auto-another.bugtracker'
+
 
 == Adding a BugWatch to an upstream email address ==
 
