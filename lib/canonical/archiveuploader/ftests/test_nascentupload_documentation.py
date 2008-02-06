@@ -12,11 +12,12 @@ from zope.testing import doctest
 from canonical.archiveuploader.nascentupload import NascentUpload
 from canonical.archiveuploader.tests import (
     datadir, getPolicy, mock_logger_quiet)
+from canonical.launchpad.database import ComponentSelection
 from canonical.launchpad.ftests import login, logout
 from canonical.launchpad.ftests.test_system_documentation import (
     LayeredDocFileSuite, setUp as standard_setup)
 from canonical.launchpad.interfaces import (
-    DistroSeriesStatus, IDistributionSet)
+    DistroSeriesStatus, IComponentSet, IDistributionSet)
 from canonical.testing import LaunchpadZopelessLayer
 
 
@@ -55,6 +56,10 @@ def prepareHoaryForUploads(test):
     hoary.status = DistroSeriesStatus.DEVELOPMENT
     test.globs['ubuntu'] = ubuntu
     test.globs['hoary'] = hoary
+    # Hoary needs to allow uploads for universe.
+    universe = getUtility(IComponentSet)['universe']
+    ComponentSelection(distroseries=hoary, component=universe)
+    LaunchpadZopelessLayer.txn.commit()
 
 
 def setUp(test):
@@ -64,10 +69,10 @@ def setUp(test):
     Log in as a Launchpad admin (foo.bar@canonical.com).
     Setup test globals and prepare hoary for uploads
     """
-    LaunchpadZopelessLayer.switchDbUser('uploader')
     login('foo.bar@canonical.com')
     testGlobalsSetup(test)
     prepareHoaryForUploads(test)
+    LaunchpadZopelessLayer.switchDbUser('uploader')
 
 
 def tearDown(test):
