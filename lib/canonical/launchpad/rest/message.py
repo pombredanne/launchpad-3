@@ -23,13 +23,13 @@ class IMessageEntry(IEntry):
     """
 
     datecreated = Datetime(
-            title=_(u'Date Created'), required=True, readonly=True)
-    subject = TextLine(title=_(u'Subject'), required=True)
+            title=u'Date Created', required=True, readonly=True)
+    subject = TextLine(title=u'Subject', required=True)
     owner = Object(schema=IPerson)
     parent = Object(schema=IMessage)
-    content = Text(title=_(u'Message content'), required=True)
+    content = Text(title=u'Message content', required=True)
     #distribution = Int(
-    #        title=_(u'Distribution'), required=False, readonly=True,
+    #        title=u'Distribution', required=False, readonly=True,
     #        )
 
 
