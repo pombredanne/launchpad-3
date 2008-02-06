@@ -54,15 +54,15 @@ class TranslationFormatBaseError(TranslationImportExportBaseException):
     def represent(self, default_message):
         """Return human-readable description of error location."""
         if self.filename is not None:
-            file = self.filename.encode("ascii", "backslashreplace")
+            safe_filename = self.filename.encode("ascii", "backslashreplace")
 
         if self.line_number is not None and self.line_number > 0:
             if self.filename is not None:
-                location = "%s, line %d" % (file, self.line_number)
+                location = "%s, line %d" % (safe_filename, self.line_number)
             else:
                 location = "Line %d" % self.line_number
         elif self.filename is not None:
-            location = file
+            location = safe_filename
         else:
             location = None
 
