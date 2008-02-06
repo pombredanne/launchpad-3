@@ -30,7 +30,6 @@ from canonical.launchpad.interfaces import (
     PersonCreationRationale,
     UnknownBranchTypeError,
     SpecificationDefinitionStatus,
-    SpecificationPriority,
     )
 
 
