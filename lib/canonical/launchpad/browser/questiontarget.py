@@ -27,7 +27,6 @@ from zope.app.form.browser import DropdownWidget
 from zope.app.pagetemplate import ViewPageTemplateFile
 from zope.component import getUtility, queryMultiAdapter
 from zope.formlib import form
-from zope.i18n import translate
 from zope.schema import Bool, Choice, List
 from zope.schema.vocabulary import SimpleVocabulary, SimpleTerm
 
@@ -693,9 +692,9 @@ class ManageAnswerContactView(UserSupportLanguagesMixin, LaunchpadFormView):
                             'displayname' : person_or_team.displayname}
             msgid = _("English was added to ${displayname}'s "
                       '<a href="/~${name}/+editlanguages">preferred '
-                      'languages</a>.', mapping=team_mapping)
-            response.addNotification(
-                structured(translate(msgid, context=self.request)))
+                      'languages</a>.',
+                      mapping=team_mapping)
+            response.addNotification(structured(msgid))
         else:
             if len(browserLanguages(self.request)) > 0:
                 languages = browserLanguages(self.request)
@@ -707,9 +706,8 @@ class ManageAnswerContactView(UserSupportLanguagesMixin, LaunchpadFormView):
             msgid = _('<a href="/people/+me/+editlanguages">Your preferred '
                       'languages</a> were updated to include your browser '
                       'languages: $languages.',
-                  mapping={'languages' : language_str})
-            response.addNotification(
-                structured(translate(msgid, context=self.request)))
+                      mapping={'languages' : language_str})
+            response.addNotification(structured(msgid))
 
 
 class QuestionTargetFacetMixin:

@@ -35,7 +35,6 @@ from zope.app.pagetemplate import ViewPageTemplateFile
 from zope.component import getUtility
 from zope.event import notify
 from zope.formlib import form
-from zope.i18n import translate
 from zope.interface import alsoProvides, implements, providedBy
 from zope.schema import Choice
 from zope.schema.interfaces import IContextSourceBinder
@@ -720,7 +719,7 @@ class QuestionWorkflowView(LaunchpadFormView):
                       "helped you solve the problem, use the <em>'This "
                       "solved my problem'</em> button.")
             self._addNotificationAndHandlePossibleSubscription(
-                structured(translate(msgid, context=self.request)), data)
+                structured(msgid), data)
 
     def canRequestInfo(self, action):
         """Return if the requestinfo action should be displayed."""

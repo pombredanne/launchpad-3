@@ -21,7 +21,6 @@ from zope.app.event.objectevent import ObjectCreatedEvent
 from zope.app.form.browser import TextAreaWidget
 from zope.component import getUtility
 from zope.event import notify
-from zope.i18n import translate
 from zope.interface import alsoProvides, directlyProvides, Interface
 
 from canonical.database.sqlbase import flush_database_updates
@@ -392,10 +391,10 @@ class ValidateGPGKeyView(BaseLoginTokenView, LaunchpadFormView):
             lpkey.can_encrypt = can_encrypt
             msgid = _(
                 'Key ${lpkey} successfully reactivated. '
-                '<a href="${url}/+editpgpkeys">See more Information</a>',
+                '<a href="${url}/+editpgpkeys">See more Information'
+                '</a>',
                 mapping=dict(lpkey=lpkey.displayname, url=person_url))
-            self.request.response.addInfoNotification(
-                structured(translate(msgid, context=self.request)))
+            self.request.response.addInfoNotification(structured(msgid))
             self.context.consume()
             return
 
@@ -424,8 +423,7 @@ class ValidateGPGKeyView(BaseLoginTokenView, LaunchpadFormView):
                 'want to use these addressess with Launchpad, you need to '
                 '<a href="${url}/+editemails\">confirm them</a>.</p>',
                 mapping=dict(emails=emails, url=person_url))
-            self.request.response.addInfoNotification(
-                structured(translate(msgid, context=self.request)))
+            self.request.response.addInfoNotification(structured(msgid))
 
         if len(hijacked):
             # build email list
@@ -437,8 +435,7 @@ class ValidateGPGKeyView(BaseLoginTokenView, LaunchpadFormView):
                 "<a href=\"/people/+requestmerge\">merge them</a> into your "
                 "current account.</p>",
                 mapping=dict(emails=emails))
-            self.request.response.addInfoNotification(
-                structured(translate(msgid, context=self.request)))
+            self.request.response.addInfoNotification(structured(msgid))
 
     def _guessGPGEmails(self, uids):
         """Figure out which emails from the GPG UIDs are unknown in LP
