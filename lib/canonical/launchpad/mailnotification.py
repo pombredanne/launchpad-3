@@ -1437,11 +1437,15 @@ class QuestionModifiedDefaultNotification(QuestionNotification):
             # because we don't create a Message instance for the
             # question description, so we don't have a Message-ID.
 
-            # XXX sinzui 2007-11-27 bug=164435:
-            # SQLObject can refetch the question, so we are using the ids.
-            message_ids = list([message.id
-                                for message in self.question.messages])
-            index = message_ids.index(self.new_message.id)
+            # XXX sinzui 2007-02-01 bug=164435:
+            # Added an assert to gather better Opps information about
+            # the state of the messages.
+            messages = list(self.question.messages)
+            assert self.new_message in messages, (
+                "Question %s: message id %s not in %s." % (
+                    self.question.id, self.new_message.id,
+                    [m.id for m in messages]))
+            index = messages.index(self.new_message)
             if index > 0:
                 headers['References'] = (
                     self.question.messages[index-1].rfc822msgid)

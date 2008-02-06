@@ -31,7 +31,7 @@ We then choose to disable them via each project's +review:
     >>> toggleProject('firefox')
     >>> toggleProject('mozilla')
 
-The projects are now no longer publically visible:
+The projects are now no longer publicly visible:
 
     >>> anon_browser.open('http://launchpad.dev/projects/+index?text=mozilla')
     >>> anon_browser.getLink(url='/firefox')

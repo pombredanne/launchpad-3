@@ -37,6 +37,7 @@ __all__ = [
     'TeamMembershipRenewalPolicy',
     'TeamMembershipStatus',
     'TeamSubscriptionPolicy',
+    'make_person_name_field',
     ]
 
 
@@ -47,9 +48,11 @@ from zope.interface.exceptions import Invalid
 from zope.interface.interface import invariant
 from zope.component import getUtility
 
-from canonical.launchpad import _
 from canonical.lazr import DBEnumeratedType, DBItem, EnumeratedType, Item
 from canonical.lazr.interfaces import IEntry
+from canonical.lazr.rest.schema import CollectionField
+
+from canonical.launchpad import _
 from canonical.launchpad.fields import (
     BlacklistableContentNameField, IconImageUpload, LogoImageUpload,
     MugshotImageUpload, PasswordField, StrippedTextLine)
@@ -407,6 +410,7 @@ class INewPerson(Interface):
     creation_comment = Text(
         title=_('Creation reason'), required=True,
         description=_("The reason why you're creating this profile."))
+
 
 def make_person_name_field():
     """Construct a PersonNameField.
@@ -1326,6 +1330,7 @@ class IPersonEntry(IEntry):
 
     name = make_person_name_field()
     teamowner = Object(schema=IPerson)
+    members = CollectionField(value_type=Object(schema=IPerson))
 
 
 class INewPersonForm(IPerson):
