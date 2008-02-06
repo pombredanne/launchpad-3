@@ -211,6 +211,8 @@ contact any external servers.
     >>> print err
     INFO    creating lockfile
     INFO    No watches to update on http://bugs.debian.org
+    INFO    ExternalBugtracker for BugTrackerType 'EMAILADDRESS' is not
+            known.
     INFO    No watches to update on http://bugzilla.gnome.org/bugs
     INFO    No watches to update on http://sourceforge.net/
     INFO    No watches to update on https://bugzilla.mozilla.org/
