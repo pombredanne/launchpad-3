@@ -14,8 +14,7 @@ from sqlobject.sqlbuilder import SQLConstant
 from zope.interface import implements
 
 from canonical.launchpad.interfaces import (
-    BlueprintNotificationLevel, BugNotificationLevel, DeleteSubscriptionError,
-    DuplicateSubscriptionError, IDistributionSourcePackage, IQuestionTarget,
+    IDistributionSourcePackage, IQuestionTarget,
     IStructuralSubscriptionTarget, PackagePublishingStatus)
 from canonical.database.sqlbase import sqlvalues
 from canonical.launchpad.database.bug import BugSet, get_bug_tags_open_count
