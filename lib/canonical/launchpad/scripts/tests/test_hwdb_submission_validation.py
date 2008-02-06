@@ -4,6 +4,7 @@
 from datetime import datetime
 import logging
 import os
+import re
 from unittest import TestCase, TestLoader
 
 from zope.testing.loghandler import Handler
@@ -205,16 +206,34 @@ class TestHWDBSubmissionRelaxNGValidation(TestCase):
     def assertErrorMessage(self, submission, result, message, test):
         """Search for `message` in the log entry for `submission`."""
         self.assertEqual(result, None, 'test %s failed' % test)
+        last_log_messages = []
         for r in self.handler.records:
             if r.levelno != logging.ERROR:
                 continue
             candidate = r.getMessage()
-            if (candidate.startswith('Parsing submission %s:' % submission)
-                and candidate.find(message) > 0):
-                return
-        self.fail(
+            if candidate.startswith('Parsing submission %s:' % submission):
+                # It seems that lxml currently (version 1.3.3) interprets
+                # error codes from the Relax NG validator as xmlParserErrors
+                # and inserts corresponding texts into the message.
+                # Thus we search for
+                # <string>:(line):ERROR:RELAXNGV:(wrong text):(message)
+                if re.search('^<string>:\d+:ERROR:RELAXNGV:[^\n]+: %s$'
+                                 % re.escape(message),
+                             candidate, re.MULTILINE):
+                    return
+                else:
+                    last_log_messages.append(candidate)
+
+        failmsg = [
             "No error log message for submission %s (testing %s) contained %s"
-                % (submission, test, message))
+                % (submission, test, message)]
+        if last_log_messages:
+            failmsg.append('Log messages for the submission:')
+            failmsg.extend(last_log_messages)
+        else:
+            failmsg.append('No messages logged for this submission')
+
+        self.fail('\n'.join(failmsg))
 
     def testSubtagsOfSystem(self):
         """The root node <system> requires a fixed set of sub-tags."""
@@ -230,8 +249,7 @@ class TestHWDBSubmissionRelaxNGValidation(TestCase):
             result, submission_id = self.runValidator(sample_data)
             self.assertErrorMessage(
                 submission_id, result,
-                'ERROR:RELAXNGV:ERR_ENTITYREF_NO_NAME: '
-                    'Expecting an element %s, got nothing' % tag,
+                'Expecting an element %s, got nothing' % tag,
                 'missing sub-tag <%s> of <system>' % tag)
 
         # Adding any other tag as a subnode of <system> makes the
@@ -243,8 +261,7 @@ class TestHWDBSubmissionRelaxNGValidation(TestCase):
         result, submission_id = self.runValidator(sample_data)
         self.assertErrorMessage(
             submission_id, result,
-            'RELAXNGV:ERR_UNDECLARED_ENTITY: '
-                'Element system has extra content: nonsense',
+            'Element system has extra content: nonsense',
             'invalid sub-tag of <system>')
 
         # Repeating one of the allowed sub-tags of <system> makes the
@@ -257,8 +274,7 @@ class TestHWDBSubmissionRelaxNGValidation(TestCase):
             result, submission_id = self.runValidator(sample_data)
             self.assertErrorMessage(
                 submission_id, result,
-                ':ERROR:RELAXNGV:ERR_CHARREF_IN_EPILOG: '
-                    'Extra element %s in interleave' % tag,
+                'Extra element %s in interleave' % tag,
                 'duplicate sub-tag <%s> of <system>' % tag)
 
     def testSummaryRequiredTags(self):
@@ -276,8 +292,7 @@ class TestHWDBSubmissionRelaxNGValidation(TestCase):
             result, submission_id = self.runValidator(sample_data)
             self.assertErrorMessage(
                 submission_id, result,
-                'ERROR:RELAXNGV:ERR_ENTITYREF_NO_NAME: '
-                    'Expecting an element %s, got nothing' % tag,
+                'Expecting an element %s, got nothing' % tag,
                 'missing sub-tag <%s> of <summary>' % tag)
 
         sample_data = self.replaceSampledata(
@@ -288,8 +303,7 @@ class TestHWDBSubmissionRelaxNGValidation(TestCase):
         result, submission_id = self.runValidator(sample_data)
         self.assertErrorMessage(
             submission_id, result,
-            'ERROR:RELAXNGV:ERR_ENTITYREF_NO_NAME: '
-                'Expecting an element client, got nothing',
+            'Expecting an element client, got nothing',
             'missing sub-tag <client> of <summary>')
 
     def testAdditionalSummaryTags(self):
@@ -306,8 +320,7 @@ class TestHWDBSubmissionRelaxNGValidation(TestCase):
         result, submission_id = self.runValidator(sample_data)
         self.assertErrorMessage(
             submission_id, result,
-            'ERROR:RELAXNGV:ERR_UNDECLARED_ENTITY: '
-                'Element summary has extra content: nonsense',
+            'Element summary has extra content: nonsense',
             'invalid sub-tag <nonsense/> of <summary>')
 
     def testSummaryValidationOfBooleanSubtags(self):
@@ -338,8 +351,7 @@ class TestHWDBSubmissionRelaxNGValidation(TestCase):
             result, submission_id = self.runValidator(sample_data)
             self.assertErrorMessage(
                 submission_id, result,
-                ':ERROR:RELAXNGV:ERR_PEREF_NO_NAME: '
-                    'Element %s failed to validate attributes' % tag,
+                'Element %s failed to validate attributes' % tag,
                 'boolean sub-tags of <summary>: invalid attribute '
                     'value of <%s>' % tag)
 
@@ -441,7 +453,6 @@ class TestHWDBSubmissionRelaxNGValidation(TestCase):
 
         # Two leap seconds are rejected by the Relax NG validator.
         self.assertDateErrorIsDetected('2007-09-28T23:59:61')
-        
 
     def assertDateErrorIsDetected(self, invalid_datetime):
         """Run a single test for an invalid datetime."""
@@ -451,8 +462,7 @@ class TestHWDBSubmissionRelaxNGValidation(TestCase):
         result, submission_id = self.runValidator(sample_data)
         self.assertErrorMessage(
             submission_id, result,
-            "ERROR:RELAXNGV:ERR_DOCUMENT_START: "
-                "Type dateTime doesn't allow value '%s'" % invalid_datetime,
+            "Type dateTime doesn't allow value '%s'" % invalid_datetime,
             'invalid datetime %s' % invalid_datetime)
 
     def assertValidDateTime(self, datetime_as_string, datetime_expected):
@@ -479,8 +489,7 @@ class TestHWDBSubmissionRelaxNGValidation(TestCase):
             result, submission_id = self.runValidator(sample_data)
             self.assertErrorMessage(
                 submission_id, result,
-                'ERROR:RELAXNGV:ERR_PEREF_NO_NAME: '
-                    'Element client failed to validate attributes',
+                'Element client failed to validate attributes',
                 'missing required attribute in <client>')
 
         # Other attributes are rejected by the Relax NG validation.
@@ -490,8 +499,7 @@ class TestHWDBSubmissionRelaxNGValidation(TestCase):
         result, submission_id = self.runValidator(sample_data)
         self.assertErrorMessage(
             submission_id, result,
-            'ERROR:RELAXNGV:WAR_UNDECLARED_ENTITY: '
-                'Invalid attribute foo for element client',
+            'Invalid attribute foo for element client',
             'testing invalid attribute in <client>')
 
     def testSubTagsOfClient(self):
@@ -502,8 +510,7 @@ class TestHWDBSubmissionRelaxNGValidation(TestCase):
         result, submission_id = self.runValidator(sample_data)
         self.assertErrorMessage(
             submission_id, result,
-            'ERROR:RELAXNGV:ERR_UNDECLARED_ENTITY: '
-                'Element client has extra content: nonsense',
+            'Element client has extra content: nonsense',
             'invalid sub-tag of <client>')
 
     def testClientPluginAttributes(self):
@@ -521,8 +528,7 @@ class TestHWDBSubmissionRelaxNGValidation(TestCase):
             result, submission_id = self.runValidator(sample_data)
             self.assertErrorMessage(
                 submission_id, result,
-                'ERROR:RELAXNGV:ERR_PEREF_NO_NAME: '
-                    'Element plugin failed to validate attributes',
+                'Element plugin failed to validate attributes',
                 'missing client plugin attributes: %s' % tag)
 
         # Other attributes are rejected by the Relax NG validation.
@@ -532,8 +538,7 @@ class TestHWDBSubmissionRelaxNGValidation(TestCase):
         result, submission_id = self.runValidator(sample_data)
         self.assertErrorMessage(
             submission_id, result,
-            'ERROR:RELAXNGV:WAR_UNDECLARED_ENTITY: '
-                'Invalid attribute foo for element plugin',
+            'Invalid attribute foo for element plugin',
             'invalid attribute in client plugin')
 
     def testHardwareSubTags(self):
@@ -552,8 +557,7 @@ class TestHWDBSubmissionRelaxNGValidation(TestCase):
             result, submission_id = self.runValidator(sample_data)
             self.assertErrorMessage(
                 submission_id, result,
-                'ERROR:RELAXNGV:ERR_ENTITYREF_NO_NAME: '
-                    'Expecting an element %s, got nothing' % tag,
+                'Expecting an element %s, got nothing' % tag,
                 'missing tag <%s> in <hardware>' % tag)
 
         # The <aliases> tag may be omitted.
@@ -574,8 +578,7 @@ class TestHWDBSubmissionRelaxNGValidation(TestCase):
         result, submission_id = self.runValidator(sample_data)
         self.assertErrorMessage(
             submission_id, result,
-            'ERROR:RELAXNGV:ERR_UNDECLARED_ENTITY: '
-                'Element hardware has extra content: nonsense',
+            'Element hardware has extra content: nonsense',
             'invalid subtag of <hardware>')
 
     def testHalAttributes(self):
@@ -589,8 +592,7 @@ class TestHWDBSubmissionRelaxNGValidation(TestCase):
         result, submission_id = self.runValidator(sample_data)
         self.assertErrorMessage(
             submission_id, result,
-            'RELAXNGV:ERR_PEREF_NO_NAME: '
-                'Element hal failed to validate attributes',
+            'Element hal failed to validate attributes',
             'missing version attribute of <hal>')
 
         sample_data = self.sample_data.replace(
@@ -599,8 +601,7 @@ class TestHWDBSubmissionRelaxNGValidation(TestCase):
         result, submission_id = self.runValidator(sample_data)
         self.assertErrorMessage(
             submission_id, result,
-            'RELAXNGV:WAR_UNDECLARED_ENTITY: '
-                'Invalid attribute foo for element hal',
+            'Invalid attribute foo for element hal',
             'invalid attribute in <hal>')
 
     def testHalSubtags(self):
@@ -621,8 +622,7 @@ class TestHWDBSubmissionRelaxNGValidation(TestCase):
         result, submission_id = self.runValidator(sample_data)
         self.assertErrorMessage(
             submission_id, result,
-            'ERROR:RELAXNGV:ERR_ENTITYREF_NO_NAME: '
-                'Expecting an element device, got nothing',
+            'Expecting an element device, got nothing',
             'missing <device> sub-tag in <hal>')
 
         # Any other tag than <device> within <hal> is not allowed.
@@ -635,8 +635,7 @@ class TestHWDBSubmissionRelaxNGValidation(TestCase):
         result, submission_id = self.runValidator(sample_data)
         self.assertErrorMessage(
             submission_id, result,
-            'ERROR:RELAXNGV:ERR_CHARREF_IN_DTD: '
-                'Expecting element device, got nonsense',
+            'Expecting element device, got nonsense',
             'invalid sub-tag in <hal>')
 
     def testDeviceAttributes(self):
@@ -660,8 +659,7 @@ class TestHWDBSubmissionRelaxNGValidation(TestCase):
             result, submission_id = self.runValidator(sample_data)
             self.assertErrorMessage(
                 submission_id, result,
-                'ERROR:RELAXNGV:ERR_PEREF_NO_NAME: '
-                    'Element device failed to validate attributes',
+                'Element device failed to validate attributes',
                 'missing attribute in <device>')
 
         sample_data = self.replaceSampledata(
@@ -672,8 +670,7 @@ class TestHWDBSubmissionRelaxNGValidation(TestCase):
         result, submission_id = self.runValidator(sample_data)
         self.assertErrorMessage(
             submission_id, result,
-            "ERROR:RELAXNGV:ERR_DOCUMENT_START: "
-                "Type integer doesn't allow value 'NoInteger'",
+            "Type integer doesn't allow value 'NoInteger'",
             "invalid content of the 'id' attribute of <device>")
 
         sample_data = self.replaceSampledata(
@@ -684,8 +681,7 @@ class TestHWDBSubmissionRelaxNGValidation(TestCase):
         result, submission_id = self.runValidator(sample_data)
         self.assertErrorMessage(
             submission_id, result,
-            'ERROR:RELAXNGV:WAR_UNDECLARED_ENTITY: '
-                'Invalid attribute parent for element device',
+            'Invalid attribute parent for element device',
             "invalid content of the 'parent' attribute of <device>")
 
     def testDeviceContent(self):
@@ -697,13 +693,12 @@ class TestHWDBSubmissionRelaxNGValidation(TestCase):
         result, submission_id = self.runValidator(sample_data)
         self.assertErrorMessage(
             submission_id, result,
-            'RELAXNGV:ERR_CHARREF_IN_DTD: '
-                'Expecting element property, got nonsense',
+            'Expecting element property, got nonsense',
             'invalid subtag of <device>')
 
     # Tests for the <property> and the <value> tag.
     #
-    # Both tags are very similar: They they have an attribute 'type'
+    # Both tags are very similar: They have an attribute 'type'
     # and they have a "value", where "value" is, depending on the type
     # attribute, either represented by CDATA content or by a <value>
     # sub-tag.
@@ -734,8 +729,7 @@ class TestHWDBSubmissionRelaxNGValidation(TestCase):
         result, submission_id = self.runValidator(sample_data)
         self.assertErrorMessage(
             submission_id, result,
-            'ERROR:RELAXNGV:ERR_UNDECLARED_ENTITY: '
-                'Element device has extra content: property',
+            'Element device has extra content: property',
             'testing missing name attribute in %s' % property)
 
     def _testBooleanProperty(self, content_type):
@@ -761,8 +755,7 @@ class TestHWDBSubmissionRelaxNGValidation(TestCase):
         result, submission_id = self.runValidator(sample_data)
         self.assertErrorMessage(
             submission_id, result,
-            'ERROR:RELAXNGV:ERR_PEREF_SEMICOL_MISSING: '
-                'Element property failed to validate content',
+            'Element property failed to validate content',
             'invalid boolean property: %s' % tag)
 
         tag = '<property type="%s">False</property>' % content_type
@@ -777,8 +770,7 @@ class TestHWDBSubmissionRelaxNGValidation(TestCase):
         result, submission_id = self.runValidator(sample_data)
         self.assertErrorMessage(
             submission_id, result,
-            ':ERROR:RELAXNGV:ERR_PEREF_SEMICOL_MISSING: '
-                'Element property failed to validate content',
+            'Element property failed to validate content',
             'sub-tag in boolean property: %s' % tag)
 
     def testBooleanProperties(self):
@@ -799,8 +791,7 @@ class TestHWDBSubmissionRelaxNGValidation(TestCase):
         result, submission_id = self.runValidator(sample_data)
         self.assertErrorMessage(
             submission_id, result,
-            'ERROR:RELAXNGV:ERR_PEREF_SEMICOL_MISSING: '
-                'Element property failed to validate content',
+            'Element property failed to validate content',
             'sub-tags of string-like <property type="%s">' % property_type)
 
     def testStringProperties(self):
@@ -818,9 +809,7 @@ class TestHWDBSubmissionRelaxNGValidation(TestCase):
         result, submission_id = self.runValidator(sample_data)
         self.assertErrorMessage(
             submission_id, result,
-            'ERROR:RELAXNGV:ERR_UNKNOWN_ENCODING: '
-                'Error validating datatype %s\n'
-                % relax_ng_type,
+            'Error validating datatype %s' % relax_ng_type,
             'empty content of <property type="%s">' % relax_ng_type)
 
     def _testInvalidIntegerContent(self,  property_type, relax_ng_type):
@@ -833,9 +822,7 @@ class TestHWDBSubmissionRelaxNGValidation(TestCase):
         result, submission_id = self.runValidator(sample_data)
         self.assertErrorMessage(
             submission_id, result,
-            "ERROR:RELAXNGV:ERR_DOCUMENT_START: "
-                "Type %s doesn't allow value 'X'"
-                % relax_ng_type,
+            "Type %s doesn't allow value 'X'" % relax_ng_type,
             'invalid content of <property type="%s">' % relax_ng_type)
 
     def _testMinMaxIntegerValue(self, property_type, relax_ng_type,
@@ -859,8 +846,7 @@ class TestHWDBSubmissionRelaxNGValidation(TestCase):
         result, submission_id = self.runValidator(sample_data)
         self.assertErrorMessage(
             submission_id, result,
-            "ERROR:RELAXNGV:ERR_DOCUMENT_START: "
-                "Type %s doesn't allow value '%i'\n"
+                "Type %s doesn't allow value '%i'"
                 % (relax_ng_type, invalid_value),
             'min or max values of <property type="%s"> (%s, %s)'
                 % (relax_ng_type, valid_value, invalid_value))
@@ -914,8 +900,7 @@ class TestHWDBSubmissionRelaxNGValidation(TestCase):
         result, submission_id = self.runValidator(sample_data)
         self.assertErrorMessage(
             submission_id, result,
-            "ERROR:RELAXNGV:ERR_DOCUMENT_START: "
-                "Type decimal doesn't allow value ''\n",
+            "Type decimal doesn't allow value ''",
             'empty decimal type property %s' % property_type)
 
     def _testInvalidDecimalContent(self,  property_type):
@@ -928,8 +913,7 @@ class TestHWDBSubmissionRelaxNGValidation(TestCase):
         result, submission_id = self.runValidator(sample_data)
         self.assertErrorMessage(
             submission_id, result,
-            "ERROR:RELAXNGV:ERR_DOCUMENT_START: "
-                "Type decimal doesn't allow value 'X'",
+            "Type decimal doesn't allow value 'X'",
             'invalid content in decimal type prperty %s' % property_type)
 
     def _testDecimalProperty(self, property_type):
@@ -947,6 +931,657 @@ class TestHWDBSubmissionRelaxNGValidation(TestCase):
         """Validation of dbus.Double and float properties."""
         for property_type in ('dbus.Double', 'float'):
             self._testDecimalProperty(property_type)
+
+    def _testListAndDictPropertyCDataContent(self, property_type):
+        """List and dict properties may not have CDATA content."""
+        tag = '<property name="foo" type="%s">X</property>' % property_type
+        sample_data = self.insertSampledata(
+            data=self.sample_data,
+            insert_text=tag,
+            where='</device>')
+        result, submission_id = self.runValidator(sample_data)
+        self.assertErrorMessage(
+            submission_id, result,
+            'Element property has extra content: text',
+            'testing CDATA content of <property type="%s">' % property_type)
+
+    def assertAcceptsEmptyProperty(self, property_type):
+        """Validation of empty list properties."""
+        tag = '<property name="foo" type="%s"></property>' % property_type
+        sample_data = self.insertSampledata(
+            data=self.sample_data,
+            insert_text=tag,
+            where='</device>')
+        result, submission_id = self.runValidator(sample_data)
+        self.assertNotEqual(
+            result, None,
+            'Valid submission with empty <property type="%s"> rejected'
+                % property_type)
+
+    def assertRejectsNonValueSubtag(self, property_type):
+        """Other sub-tags than <value> are not allowed in lists and dicts."""
+        tag = '<property name="foo" type="%s"><nonsense/></property>'
+        tag = tag % property_type
+        sample_data = self.insertSampledata(
+            data=self.sample_data,
+            insert_text=tag,
+            where='</device>')
+        result, submission_id = self.runValidator(sample_data)
+        self.assertErrorMessage(
+            submission_id, result,
+            'Expecting element value, got nonsense',
+            'invalid subtag of <property type="%s">' % property_type)
+
+    def _wrapValue(self, value_tag, property_type):
+        """Wrap a <value> tag into a <property> tag."""
+        return ('<property name="bar" type="%s">%s</property>'
+                % (property_type, value_tag))
+
+    def _testBooleanValueTagValues(self, property_type, tag_template):
+        """Validation of the CDATA values of a <value> tag."""
+        # The only allowed values are True and False.
+        for cdata_value in ('True', 'False'):
+            tag = tag_template % cdata_value
+            tag = self._wrapValue(tag, property_type)
+            sample_data = self.insertSampledata(
+                data=self.sample_data,
+                insert_text=tag,
+                where='</device>')
+            result, submission_id = self.runValidator(sample_data)
+            self.assertNotEqual(result, None)
+        # Any other text in the <value> tag is invalid.
+        tag = tag_template % 'nonsense'
+        tag = self._wrapValue(tag, property_type)
+        sample_data = self.insertSampledata(
+            data=self.sample_data,
+            insert_text=tag,
+            where='</device>')
+        result, submission_id = self.runValidator(sample_data)
+        self.assertEqual(result, None)
+        self.assertErrorMessage(
+            submission_id,
+            'Error validating value ')
+        # An empty <value> tag is invalid.
+        tag = tag_template % ''
+        tag = self._wrapValue(tag, property_type)
+        sample_data = self.insertSampledata(
+            data=self.sample_data,
+            insert_text=tag,
+            where='</device>')
+        result, submission_id = self.runValidator(sample_data)
+        self.assertEqual(result, None)
+        self.assertErrorMessage(
+            submission_id,
+            'ERROR:RELAXNGV:ERR_UNSUPPORTED_ENCODING: '
+                'Error validating value ')
+
+    def _setupValueTagTemplates(self, value_type):
+        """Return templates for value tags with/without a name attribute."""
+        tag_with_name = '<value name="foo" type="%s">%%s</value>' % value_type
+        tag_without_name = '<value type="%s">%%s</value>' % value_type
+        return tag_with_name, tag_without_name
+
+    def assertValidatesTextValue(self, value_type, needs_name_attribute,
+                               valid_content, invalid_content,
+                               property_template):
+        """Validation of tags with CData values"""
+        tag_with_name, tag_without_name = self._setupValueTagTemplates(
+            value_type)
+        if needs_name_attribute:
+            tag = tag_without_name % valid_content[0]
+            tag = property_template % tag
+            sample_data = self.insertSampledata(
+                data=self.sample_data,
+                insert_text=tag,
+                where='</device>')
+            result, submission_id = self.runValidator(sample_data)
+            self.assertErrorMessage(
+                submission_id, result,
+                'Element device has extra content: property',
+                'missing name attribute in value tag %s' % tag)
+        else:
+            tag = tag_with_name % valid_content[0]
+            tag = property_template % tag
+            sample_data = self.insertSampledata(
+                data=self.sample_data,
+                insert_text=tag,
+                where='</device>')
+            result, submission_id = self.runValidator(sample_data)
+            self.assertErrorMessage(
+                submission_id, result,
+                'Element device has extra content: property',
+                'invalid name attribute in value tag %s' % tag)
+
+        if needs_name_attribute:
+            template = tag_with_name
+        else:
+            template = tag_without_name
+        template = property_template % template
+        for value in valid_content:
+            tag = template % value
+            sample_data = self.insertSampledata(
+                data=self.sample_data,
+                insert_text=tag,
+                where='</device>')
+            result, submission_id = self.runValidator(sample_data)
+            self.assertNotEqual(
+                result, None,
+                'Valid submission with tag %s rejected' % tag)
+        for value, expected_error in invalid_content:
+            tag = template % value
+            sample_data = self.insertSampledata(
+                data=self.sample_data,
+                insert_text=tag,
+                where='</device>')
+            result, submission_id = self.runValidator(sample_data)
+            self.assertErrorMessage(
+                submission_id, result, expected_error,
+                'invalid content of value tag %s' % tag)
+
+    def _setupContainerTag(self, tag, name, container_type):
+        """Setup a template for a property or value tag with sub-tags.
+
+        tag must be either 'property' or 'value'
+
+        name is the value of the name attribute of the template, or
+        None, if the template shall not have the attribute name.
+
+        container_type must be one of 'list', 'dbus.List', 'dict',
+        'dbus.Dictionary'.
+
+        Return: A tag template for this property/value type and a flag,
+        if value tags within this tag need a name attribute.
+        """
+        if name is not None:
+            container_template = (
+                '<%s name="%s" type="%s">' % (tag, name, container_type))
+        else:
+            container_template = '<%s type="%s">' % (tag, container_type)
+        container_template = container_template + '%s' + '</%s>' % tag
+        if container_type in ('dbus.Dictionary', 'dict'):
+            needs_name_attribute = True
+        elif container_type in ('dbus.Array', 'list'):
+            needs_name_attribute = False
+        else:
+            raise AssertionError(
+                '_setupPropertyTag called for invalid property type:'
+                % container_type)
+        return container_template, needs_name_attribute
+
+    def _testBooleanValueTags(self, property_type):
+        """Validation of boolean-like <value> tags."""
+        property_template, needs_name_attribute = (
+            self._setupContainerTag('property', 'foor', property_type))
+        valid_content = ('True', 'False')
+        invalid_content = (
+            ('nonsense', 'Element property has extra content: value'),
+            ('', 'Element property has extra content: value'),
+            ('<nonsense/>', 'Value element value has child elements'))
+        for value_type in ('dbus.Boolean', 'bool'):
+            self.assertValidatesTextValue(value_type, needs_name_attribute,
+                                          valid_content, invalid_content,
+                                          property_template)
+
+    def _testStringValueTags(self, property_type):
+        """Validation of string-like <value> tags."""
+        property_template, needs_name_attribute = (
+            self._setupContainerTag('property', 'foo', property_type))
+        valid_content = ('any text', '')
+        invalid_content = (
+            ('<nonsense/>', 'Element value has extra content: nonsense'),)
+        for value_type in ('dbus.String', 'str'):
+            self.assertValidatesTextValue(value_type, needs_name_attribute,
+                                          valid_content, invalid_content,
+                                          property_template)
+
+    def _makeSampleDataForValueTag(self, property_type, value_type, value):
+        property_template, needs_name_attribute = (
+            self._setupContainerTag('property', 'foo', property_type))
+        value_template_with_name, value_template_without_name = (
+            self._setupValueTagTemplates(value_type))
+        if needs_name_attribute:
+            value_tag = value_template_with_name % value
+        else:
+            value_tag = value_template_without_name % value
+        property_tag = property_template % value_tag
+        return self.insertSampledata(
+            data=self.sample_data,
+            insert_text=property_tag,
+            where='</device>')
+
+    def _testIntegerLimit(self, property_type, value_type, relax_ng_type,
+                          allowed, disallowed):
+        """Validation of the smallest or largest value of an int type."""
+        sample_data = self._makeSampleDataForValueTag(
+            property_type, value_type, allowed)
+        result, submission_id = self.runValidator(sample_data)
+        self.assertNotEqual(
+            result, None,
+            'Testing integer limits: Valid submission for property type %s '
+                'value type %s, value %s rejected'
+                % (property_type, value_type, allowed))
+
+        sample_data = self._makeSampleDataForValueTag(
+            property_type, value_type, disallowed)
+        result, submission_id = self.runValidator(sample_data)
+        self.assertErrorMessage(
+            submission_id, result,
+            "Type %s doesn't allow value '%s'" % (relax_ng_type, disallowed),
+            'invalid value %s of value type %s in property type %s'
+                % (disallowed, value_type, property_type))
+
+    def _testIntegerValueTag(self, property_type, value_type, relax_ng_type,
+                             min_allowed, max_allowed):
+        """Valudation of a <value> tag wwith integral content."""
+        property_template, needs_name_attribute = (
+            self._setupContainerTag('property', 'foo', property_type))
+        valid_content = ('0', '1')
+        invalid_content = (('', 'Error validating datatype %s'
+                                    % relax_ng_type),
+                           ('1.1', "Type %s doesn't allow "
+                                       "value '1.1'"
+                                       % relax_ng_type),
+                           ('nonsense', "Type %s doesn't allow "
+                                            "value 'nonsense'"
+                                            % relax_ng_type),
+                           ('<nonsense/>',
+                            'Datatype element value has child elements'))
+        self.assertValidatesTextValue(value_type, needs_name_attribute,
+                                      valid_content, invalid_content,
+                                      property_template)
+        if min_allowed is not None:
+            self._testIntegerLimit(property_type, value_type, relax_ng_type,
+                                   min_allowed, min_allowed - 1)
+        if max_allowed is not None:
+            self._testIntegerLimit(property_type, value_type, relax_ng_type,
+                                   max_allowed, max_allowed + 1)
+
+    def _testIntegerValueTags(self, property_type):
+        """Validation of <value> tags with integral content."""
+        int_types = (
+            ('dbus.Byte', 'unsignedByte', 0, 255),
+            ('dbus.Int16', 'short', -32768, 32767),
+            ('dbus.Int32', 'int', -2**31, 2**31-1),
+            ('dbus.Int64', 'long', -2**63, 2**63-1),
+            ('dbus.UInt16', 'unsignedShort', 0, 2**16-1),
+            ('dbus.UInt32', 'unsignedInt', 0, 2**32-1),
+            ('dbus.UInt64', 'unsignedLong', 0, 2**64-1),
+            ('int', 'int', -2**31, 2**31-1),
+            ('long', 'integer', None, None))
+        for value_type, relax_ng_type, min_allowd, max_allowed in int_types:
+            self._testIntegerValueTag(property_type, value_type, relax_ng_type,
+                                      min_allowd, max_allowed)
+
+    def _testFloatValueTag(self, property_type, value_type):
+        """Validation of a <value> tag with float-number content."""
+        property_template, needs_name_attribute = (
+            self._setupContainerTag('property', 'foo', property_type))
+        valid_content = ('0', '1', '1.1', '-2.34')
+        invalid_content = (('', "Type decimal doesn't allow value ''"),
+                           ('nonsense', "Type decimal doesn't allow "
+                                            "value 'nonsense'"),
+                           ('<nonsense/>',
+                            'Datatype element value has child elements'))
+        self.assertValidatesTextValue(value_type, needs_name_attribute,
+                                      valid_content, invalid_content,
+                                      property_template)
+
+    def _testFloatValueTags(self, property_type):
+        """Validation of <value> tags with float-number content."""
+        float_types = ('dbus.Double', 'float')
+        for value_type in float_types:
+            self._testFloatValueTag(property_type, value_type)
+
+    def _testListOrDictValueTag(self, property_type, value_type):
+        """Validation of a list or dict-like value tag."""
+        property_template, needs_name_attribute = self._setupContainerTag(
+            'property', 'foo', property_type)
+        if needs_name_attribute:
+            value_template, needs_name_attribute = self._setupContainerTag(
+                'value', 'bar', value_type)
+        else:
+            value_template, needs_name_attribute = self._setupContainerTag(
+                'value', None, value_type)
+        template = property_template % value_template
+
+        # CDATA content is not allowed.
+        tag = template % 'nonsense'
+        sample_data = self.insertSampledata(
+            data=self.sample_data,
+            insert_text = tag,
+            where = '</device>')
+        result, submission_id = self.runValidator(sample_data)
+        self.assertErrorMessage(
+            submission_id, result,
+            'Element value has extra content: text',
+            'CDATA in <value type="%s">' % value_type)
+
+        # Lists and dicts may be empty.
+        tag = template % ''
+        sample_data = self.insertSampledata(
+            data=self.sample_data,
+            insert_text = tag,
+            where = '</device>')
+        result, submission_id = self.runValidator(sample_data)
+        self.assertNotEqual(
+            result, None, 'empty tag <value type="%s">' % value_type)
+
+        # Other sub-tags than <value> are invalid.
+        tag = template % '<nonsense/>'
+        sample_data = self.insertSampledata(
+            data=self.sample_data,
+            insert_text = tag,
+            where = '</device>')
+        result, submission_id = self.runValidator(sample_data)
+        self.assertErrorMessage(
+            submission_id, result,
+            'Element value has extra content: nonsense',
+            'CDATA in <value type="%s">' % value_type)
+
+        if needs_name_attribute:
+            # Dict-like <value> tags need nested <value> tags with the
+            # attribute name.
+            tag = template % '<value type="int" name="baz">1</value>'
+            sample_data = self.insertSampledata(
+                data=self.sample_data,
+                insert_text = tag,
+                where = '</device>')
+            result, submission_id = self.runValidator(sample_data)
+            self.assertNotEqual(
+                result, None,
+                'valid <value> tag inside <value type="%s">' % value_type)
+
+            tag = template % '<value type="int">1</value>'
+            sample_data = self.insertSampledata(
+                data=self.sample_data,
+                insert_text = tag,
+                where = '</device>')
+            result, submission_id = self.runValidator(sample_data)
+            self.assertErrorMessage(
+                submission_id, result,
+                'Element value has extra content: value',
+                'invalid <value> tag inside <value type="%s">' % value_type)
+        else:
+            # List-like <value> tags need nested <value> tags without the
+            # attribute name.
+            tag = template % '<value type="int">1</value>'
+            sample_data = self.insertSampledata(
+                data=self.sample_data,
+                insert_text = tag,
+                where = '</device>')
+            result, submission_id = self.runValidator(sample_data)
+            self.assertNotEqual(
+                result, None,
+                'valid <value> tag inside <value type="%s">' % value_type)
+
+            tag = template % '<value type="int" nam="baz">1</value>'
+            sample_data = self.insertSampledata(
+                data=self.sample_data,
+                insert_text = tag,
+                where = '</device>')
+            result, submission_id = self.runValidator(sample_data)
+            self.assertErrorMessage(
+                submission_id, result,
+                'Element value has extra content: value',
+                'invalid <value> tag inside <value type="%s">' % value_type)
+
+    def _testListAndDictValueTags(self, property_type):
+        """Validation of list and dict-like values."""
+        for value_type in ('list', 'dbus.Array', 'dict', 'dbus.Dictionary'):
+            self._testListOrDictValueTag(property_type, value_type)
+
+    def _testValueTags(self, property_type):
+        """Tests of <value> sub-tags of <property type="property_type">."""
+        self._testBooleanValueTags(property_type)
+        self._testStringValueTags(property_type)
+        self._testIntegerValueTags(property_type)
+        self._testFloatValueTags(property_type)
+        self._testListAndDictValueTags(property_type)
+
+    def _testListOrDictProperty(self, property_type):
+        """Validation of a list property."""
+        self._testListAndDictPropertyCDataContent(property_type)
+        self.assertAcceptsEmptyProperty(property_type)
+        self.assertRejectsNonValueSubtag(property_type)
+        self._testValueTags(property_type)
+
+    def testListAndDictProperties(self):
+        """Validation of dbus.Array and list properties."""
+        for property_type in ('dbus.Array', 'list', 'dbus.Dictionary', 'dict'):
+            self._testListOrDictProperty(property_type)
+
+    def testProcessorsTag(self):
+        """Validation of the <processors> tag.
+
+        This tag has no attributes. The only allowed sub-tag is <processor>.
+        At least one <processor> tag must be present.
+        """
+        sample_data = self.sample_data.replace(
+            '<processors>', '<processors foo="bar">')
+        result, submission_id = self.runValidator(sample_data)
+        self.assertErrorMessage(
+            submission_id, result,
+            'Invalid attribute foo for element processors',
+            'invalid attribute of <processors>')
+
+        sample_data = self.insertSampledata(
+            data=self.sample_data,
+            insert_text='<nonsense/>',
+            where = '</processors>')
+        result, submission_id = self.runValidator(sample_data)
+        self.assertErrorMessage(
+            submission_id, result,
+            'Expecting element processor, got nonsense',
+            'invalid sub-tag of <processors>')
+
+        sample_data = self.replaceSampledata(
+            data=self.sample_data,
+            replace_text='',
+            from_text='<processor id',
+            to_text='</processor>')
+        result, submission_id = self.runValidator(sample_data)
+        self.assertErrorMessage(
+            submission_id, result,
+            'Expecting an element processor, got nothing',
+            'missing sub-tags of <processors>')
+
+    def testProcessorTag(self):
+        """Validation of the <processors> tag."""
+        # The attributes "id" and "name" are required.
+        sample_data = self.sample_data.replace(
+            '<processor id="123" name="0">', '<processor id="123">')
+        result, submission_id = self.runValidator(sample_data)
+        self.assertErrorMessage(
+            submission_id, result,
+            'Element processor failed to validate attributes',
+            'missing attribute "name" of <processors>')
+
+        sample_data = self.sample_data.replace(
+            '<processor id="123" name="0">', '<processor name="0">')
+        result, submission_id = self.runValidator(sample_data)
+        self.assertErrorMessage(
+            submission_id, result,
+            'Element processor failed to validate attributes',
+            'missing attribute "id" attribute of <processors>')
+
+        # other attributes are invalid.
+        sample_data = self.sample_data.replace(
+            '<processor id="123" name="0">',
+            '<processor id="123" name="0" foo="bar">')
+        result, submission_id = self.runValidator(sample_data)
+        self.assertErrorMessage(
+            submission_id, result,
+            'Invalid attribute foo for element processor',
+            'missing attribute "id" attribute of <processors>')
+
+        # Other sub-tags than <property> are invalid.
+        sample_data = self.insertSampledata(
+            data=self.sample_data,
+            insert_text='<nonsense/>',
+            where = '</processor>')
+        result, submission_id = self.runValidator(sample_data)
+        self.assertErrorMessage(
+            submission_id, result,
+            'Expecting element property, got nonsense',
+            'invalid sub-tag of <processor>')
+
+        # At least one <property> tag must be present
+        sample_data = self.replaceSampledata(
+            data=self.sample_data,
+            replace_text='<processor id="123" name="0"/>',
+            from_text='<processor id="123" name="0">',
+            to_text='</processor>')
+        result, submission_id = self.runValidator(sample_data)
+        self.assertErrorMessage(
+            submission_id, result,
+            'Expecting an element property, got nothing',
+            'missing sub-tags of <processor>')
+
+    def testAliasesTag(self):
+        """Validation of the <aliases> tag."""
+        # The <aliases> tag has no attributes.
+        sample_data = self.sample_data.replace(
+            '<aliases>', '<aliases foo="bar">')
+        result, submission_id = self.runValidator(sample_data)
+        self.assertErrorMessage(
+            submission_id, result,
+            'Extra element aliases in interleave',
+            'invalid attribute of <aliases>')
+
+        # The <aliases> tag may be omittied.
+        sample_data = self.replaceSampledata(
+            data=self.sample_data,
+            replace_text='',
+            from_text='<aliases>',
+            to_text='</aliases>')
+        result, submission_id = self.runValidator(sample_data)
+        self.assertNotEqual(result, None, 'omitted tag <aliases>')
+
+        # The <aliases> may be empty.
+        sample_data = self.replaceSampledata(
+            data=self.sample_data,
+            replace_text='<aliases/>',
+            from_text='<aliases>',
+            to_text='</aliases>')
+        result, submission_id = self.runValidator(sample_data)
+        self.assertNotEqual(result, None, 'empty tag <aliases>')
+
+        # Other sub-tags than <alias> are invalid.
+        sample_data = self.insertSampledata(
+            data=self.sample_data,
+            insert_text='<nonsense/>',
+            where='</aliases>')
+        result, submission_id = self.runValidator(sample_data)
+        self.assertErrorMessage(
+            submission_id, result,
+            'Extra element aliases in interleave',
+            'invalid sub-tag of <aliases>')
+
+    def testAliasTag(self):
+        """Validation of the <alias> tag."""
+        # The attribute target is required.
+        # Note that the expected error message from the validator
+        # is identical to the last error message expected in
+        # testAliasesTag: lxml's Relax NG validator is sometimes
+        # not as informative as one might wish.
+        sample_data = self.sample_data.replace(
+            '<alias target="65">', '<alias>')
+        result, submission_id = self.runValidator(sample_data)
+        self.assertErrorMessage(
+            submission_id, result,
+            'Extra element aliases in interleave',
+            'missing attribute of <alias>')
+
+        # Other attributes are not allowed. We get again the same
+        # quite unspecific error message as above.
+        sample_data = self.sample_data.replace(
+            '<alias target="65">', '<alias target="65" foo="bar">')
+        result, submission_id = self.runValidator(sample_data)
+        self.assertErrorMessage(
+            submission_id, result,
+            'Extra element aliases in interleave',
+            'invalid attribute of <alias>')
+
+        # The <alias> tag requires exactly two sub-tags: <vendor> and
+        # <model>. Omitting either of them is forbidden. Again, we get
+        # same error message from the validator.
+        sample_data = self.replaceSampledata(
+            data=self.sample_data,
+            replace_text='',
+            from_text='<vendor>',
+            to_text='</vendor>')
+        result, submission_id = self.runValidator(sample_data)
+        self.assertErrorMessage(
+            submission_id, result,
+            'Extra element aliases in interleave',
+            'missing sub-tag <vendor> of <alias>')
+        sample_data = self.replaceSampledata(
+            data=self.sample_data,
+            replace_text='',
+            from_text='<model>',
+            to_text='</model>')
+        result, submission_id = self.runValidator(sample_data)
+        self.assertErrorMessage(
+            submission_id, result,
+            'Extra element aliases in interleave',
+            'missing sub-tag <model> of <alias>')
+
+        # Other sub-tags are not allowed.
+        sample_data = self.insertSampledata(
+            data=self.sample_data,
+            insert_text='<nonsense/>',
+            where='</alias>')
+        result, submission_id = self.runValidator(sample_data)
+        self.assertErrorMessage(
+            submission_id, result,
+            'Extra element aliases in interleave',
+            'invalid sub-tag of <alias>')
+
+    def testAliasVendorTag(self):
+        """Validation of the <vendor> tag in <alias>."""
+        # The tag may not have any attributes. As for the <alias> tag,
+        # we don't get very specific error messages.
+        sample_data = self.sample_data.replace(
+            '<vendor>', '<vendor foo="bar">')
+        result, submission_id = self.runValidator(sample_data)
+        self.assertErrorMessage(
+            submission_id, result,
+            'Extra element aliases in interleave',
+            'invalid attribute of <vendor>')
+
+        # <vendor> may not have any sub-tags.
+        sample_data = self.insertSampledata(
+            data=self.sample_data,
+            insert_text='<nonsense/>',
+            where='</vendor>')
+        result, submission_id = self.runValidator(sample_data)
+        self.assertErrorMessage(
+            submission_id, result,
+            'Extra element aliases in interleave',
+            'invalid sub-tag of <alias>')
+
+    def testAliasModelTag(self):
+        """Validation of the <model> tag in <alias>."""
+        # The tag may not have any attributes. As for the <alias> tag,
+        # we don't get very specific error messages.
+        sample_data = self.sample_data.replace(
+            '<model>', '<model foo="bar">')
+        result, submission_id = self.runValidator(sample_data)
+        self.assertErrorMessage(
+            submission_id, result,
+            'Extra element aliases in interleave',
+            'invalid attribute of <model>')
+
+        # <model> may not have any sub-tags.
+        sample_data = self.insertSampledata(
+            data=self.sample_data,
+            insert_text='<nonsense/>',
+            where='</model>')
+        result, submission_id = self.runValidator(sample_data)
+        self.assertErrorMessage(
+            submission_id, result,
+            'Extra element aliases in interleave',
+            'invalid sub-tag of <alias>')
 
 
 def test_suite():
