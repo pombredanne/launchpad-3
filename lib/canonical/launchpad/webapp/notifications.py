@@ -27,6 +27,7 @@ from canonical.launchpad.webapp.interfaces import (
         INotificationRequest, INotificationResponse, BrowserNotificationLevel,
         INotification, INotificationList, IStructuredString
         )
+from canonical.launchpad.webapp.menu import structured
 from canonical.launchpad.webapp.publisher import LaunchpadView
 from canonical.launchpad.webapp.url import urlsplit
 
@@ -332,20 +333,15 @@ class NotificationTestView1(LaunchpadView):
         # Add some notifications
         for count in range(1, 3):
             response.addDebugNotification(
-                    'Debug notification <b>%(count)d</b>', count=count
-                    )
+                structured('Debug notification <b>%d</b>' % count))
             response.addInfoNotification(
-                    'Info notification <b>%(count)d</b>', count=count
-                    )
+                structured('Info notification <b>%d</b>' % count))
             response.addNoticeNotification(
-                    'Notice notification <b>%(count)d</b>', count=count
-                    )
+                structured('Notice notification <b>%d</b>' % count))
             response.addWarningNotification(
-                    'Warning notification <b>%(count)d</b>', count=count
-                    )
+                structured('Warning notification <b>%d</b>' %count))
             response.addErrorNotification(
-                    'Error notification <b>%(count)d</b>', count=count
-                    )
+                structured('Error notification <b>%d</b>' % count))
 
 
 class NotificationTestView2(NotificationTestView1):
