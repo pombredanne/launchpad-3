@@ -12,12 +12,11 @@ __all__ = [
 from zope.component import adapts, getUtility
 from zope.schema import Bool, Datetime, Int, List, Object, Text, TextLine
 
-from canonical.lazr.interfaces import IEntry
 from canonical.lazr.rest import Collection, Entry
 from canonical.lazr.rest.schema import CollectionField
 
 from canonical.launchpad.rest import IMessageTargetEntry
-from canonical.launchpad.interfaces import IBug, IMessage, IPerson
+from canonical.launchpad.interfaces import IBug, IBugTask, IMessage, IPerson
 from canonical.launchpad.fields import (
     ContentNameField, Tag, Title)
 from canonical.lp import decorates
@@ -83,7 +82,7 @@ class IBugEntry(IMessageTargetEntry):
     #initial_message = Object(schema=IMessage)
     # implement and include IMessageTargetEntry
     #activity = CollectionField(value_type=Object(schema=IActivity))
-    #bugtasks = CollectionField(value_type=Object(schema=IBugTask))
+    bugtasks = CollectionField(value_type=Object(schema=IBugTask))
     #affected_pillars = CollectionField(value_type=Object(schema=IPillar))
     #watches = CollectionField(value_type=Object(schema=IBugWatch))
     #cves = CollectionField(value_type=Object(schema=ICVE))

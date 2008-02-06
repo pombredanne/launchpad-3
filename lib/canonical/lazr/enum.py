@@ -10,6 +10,7 @@ import warnings
 from zope.interface import Attribute, Interface, implements
 from zope.schema.interfaces import ITitledTokenizedTerm, IVocabularyTokenized
 from zope.security.proxy import isinstance as zope_isinstance
+from canonical.lazr.interfaces import IJSONPublishable
 
 __all__ = [
     'BaseItem',
@@ -87,6 +88,7 @@ class BaseItem:
 
     The value is the short text string used to identify the item.
     """
+    implements(IJSONPublishable)
 
     sortkey = 0
     name = None
@@ -143,6 +145,9 @@ class BaseItem:
         return hash(self.title)
 
     def __str__(self):
+        return str(self.title)
+
+    def toDataForJSON(self):
         return str(self.title)
 
 
