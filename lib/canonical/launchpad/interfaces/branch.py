@@ -527,6 +527,16 @@ class IBranch(IHasOwner):
         has no subscribers.
         """
 
+    def deletionRequirements():
+        """What is required in order to delete this branch.
+        """
+
+    def _breakReferences():
+        """Remove all references to a branch.
+
+        This may involve deleting items or setting references to None
+        """
+
     def associatedProductSeries():
         """Return the product series that this branch is associated with.
 

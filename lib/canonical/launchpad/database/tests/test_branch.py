@@ -9,6 +9,8 @@ from pytz import UTC
 import transaction
 from unittest import TestCase, TestLoader
 
+from sqlobject import SQLObjectNotFound
+
 from canonical.codehosting.tests.helpers import BranchTestCase
 from canonical.config import config
 from canonical.launchpad.ftests import ANONYMOUS, login, logout, syncUpdate
@@ -19,9 +21,13 @@ from canonical.launchpad.interfaces import (
     InvalidBranchMergeProposal, PersonCreationRationale,
     RevisionControlSystems, SpecificationDefinitionStatus)
 from canonical.launchpad.database.branch import BranchSet
+from canonical.launchpad.database.branchmergeproposal import (
+    BranchMergeProposal,
+    )
 from canonical.launchpad.database.codeimport import CodeImportSet
 from canonical.launchpad.database.product import ProductSet
 from canonical.launchpad.database.revision import RevisionSet
+from canonical.launchpad.testing import LaunchpadObjectFactory
 
 from canonical.testing import LaunchpadFunctionalLayer, LaunchpadZopelessLayer
 
@@ -178,6 +184,70 @@ class TestBranchDeletion(TestCase):
         self.assertEqual(self.branch.canBeDeleted(), False,
                          "A branch with a dependent target is not deletable.")
         self.assertRaises(CannotDeleteBranch, BranchSet().delete, self.branch)
+
+
+class TestBranchDeletionConsequences(TestCase):
+
+    layer = LaunchpadZopelessLayer
+
+    def setUp(self):
+        login('test@canonical.com')
+        # Getting database classes directly where necessary to avoid the hastle
+        # of worrying about the security contexts.
+        self.factory = LaunchpadObjectFactory()
+        self.branch = self.factory.makeBranch()
+
+    def test_plainBranch(self):
+        self.assertEqual({}, self.branch.deletionRequirements())
+
+    def makeMergeProposal(self):
+        target_branch = self.factory.makeBranch(product=self.branch.product)
+        dependent_branch = self.factory.makeBranch(
+            product=self.branch.product)
+        merge_proposal = self.branch.addLandingTarget(
+            self.branch.owner, target_branch, dependent_branch)
+        return merge_proposal
+
+    def test_branchWithMergeProposal(self):
+        merge_proposal = self.makeMergeProposal()
+        self.assertEqual({merge_proposal:
+            ('delete', _('This branch is the source branch of this merge'
+             ' proposal'))},
+                         self.branch.deletionRequirements())
+        self.assertEqual({merge_proposal:
+            ('delete', _('This branch is the target branch of this merge'
+             ' proposal'))},
+             merge_proposal.target_branch.deletionRequirements())
+        self.assertEqual({merge_proposal:
+            ('alter', _('This branch is the dependent branch of this merge'
+             ' proposal'))},
+             merge_proposal.dependent_branch.deletionRequirements())
+
+    def test_deleteMergeProposalSource(self):
+        merge_proposal = self.makeMergeProposal()
+        merge_proposal_id = merge_proposal.id
+        branch_set = getUtility(IBranchSet)
+        BranchMergeProposal.get(merge_proposal_id)
+        branch_set.delete(self.branch, break_references=True)
+        self.assertRaises(SQLObjectNotFound,
+            BranchMergeProposal.get, merge_proposal_id)
+
+    def test_deleteMergeProposalTarget(self):
+        merge_proposal = self.makeMergeProposal()
+        merge_proposal_id = merge_proposal.id
+        branch_set = getUtility(IBranchSet)
+        BranchMergeProposal.get(merge_proposal_id)
+        branch_set.delete(merge_proposal.target_branch, break_references=True)
+        self.assertRaises(SQLObjectNotFound,
+            BranchMergeProposal.get, merge_proposal_id)
+
+    def test_deleteMergeProposalDependent(self):
+        merge_proposal = self.makeMergeProposal()
+        merge_proposal_id = merge_proposal.id
+        branch_set = getUtility(IBranchSet)
+        branch_set.delete(merge_proposal.dependent_branch,
+                          break_references=True)
+        self.assertEqual(None, merge_proposal.dependent_branch)
 
 
 class BranchAddLandingTarget(TestCase):

@@ -314,6 +314,46 @@ class Branch(SQLBase):
         else:
             return True
 
+    def _deletionRequirements(self):
+        alterations = {}
+        deletions = {}
+        alteration_operations = []
+        # Merge proposals require their source and target branches to exist
+        for merge_proposal in self.landing_targets:
+            deletions[merge_proposal] = _(
+                'This branch is the source branch of this merge proposal')
+        # Cannot use self.landing_candidates, because it ignores merged
+        # merge proposals
+        for merge_proposal in BranchMergeProposal.selectBy(
+            target_branch=self):
+            deletions[merge_proposal] = _(
+                'This branch is the target branch of this merge proposal')
+        for merge_proposal in BranchMergeProposal.selectBy(
+            dependent_branch=self):
+            alterations[merge_proposal] = _(
+                'This branch is the dependent branch of this merge proposal')
+            def break_reference():
+                merge_proposal.dependent_branch = None
+                merge_proposal.syncUpdate()
+            alteration_operations.append(break_reference)
+        return alterations, deletions, alteration_operations
+
+    def deletionRequirements(self):
+        alterations, deletions, alteration_operations = (
+            self._deletionRequirements())
+        result = dict((k, ('alter', v)) for k, v in alterations.iteritems())
+        # deletion entries should overwrite alteration entries
+        result.update((k, ('delete', v)) for k, v in deletions.iteritems())
+        return result
+
+    def _breakReferences(self):
+        alterations, deletions, alteration_operations = (
+            self._deletionRequirements())
+        for item in deletions:
+            item.delete(item.id)
+        for operation in alteration_operations:
+            operation()
+
     def associatedProductSeries(self):
         """See `IBranch`."""
         # Imported here to avoid circular import.
@@ -738,9 +778,11 @@ class BranchSet:
 
         return branch
 
-    def delete(self, branch):
+    def delete(self, branch, break_references=False):
         """See `IBranchSet`."""
-        if branch.canBeDeleted():
+        if break_references:
+            requirements = branch._breakReferences()
+        if break_references or branch.canBeDeleted():
             # Delete any branch revisions.
             branch_ancestry = BranchRevision.selectBy(branch=branch)
             for branch_revision in branch_ancestry:

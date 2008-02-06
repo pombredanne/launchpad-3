@@ -240,3 +240,6 @@ class IBranchMergeProposal(Interface):
         branch.  These are the revisions that have been committed to the
         source branch since it branched off the target branch.
         """
+
+    def delete():
+        """Delete the proposal"""
