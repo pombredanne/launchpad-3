@@ -30,7 +30,7 @@ from canonical.database.datetimecol import UtcDateTimeCol
 
 # this is a hard limit on the size of email we will be willing to store in
 # the database.
-MAX_EMAIL_SIZE = 128*1024
+MAX_EMAIL_SIZE = 10*1024*1024
 
 class Message(SQLBase):
     """A message. This is an RFC822-style message, typically it would be

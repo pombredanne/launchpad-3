@@ -2,6 +2,7 @@
 
 __metaclass__ = type
 
+from cStringIO import StringIO
 import re
 from urlparse import urlunparse
 
@@ -12,12 +13,12 @@ from zope.event import notify
 from canonical.config import config
 from canonical.database.sqlbase import rollback
 from canonical.launchpad.interfaces import (
-    ILaunchBag, IMessageSet, IBugEmailCommand, IBugTaskEmailCommand,
-    IBugEditEmailCommand, IBugTaskEditEmailCommand,
-    IMailHandler, CreatedBugWithNoBugTasksError,
-    EmailProcessingError, IUpstreamBugTask, IDistroBugTask,
-    IDistroSeriesBugTask, IWeaklyAuthenticatedPrincipal, IQuestionSet,
-    ISpecificationSet, QuestionStatus)
+    BugAttachmentType, CreatedBugWithNoBugTasksError, EmailProcessingError,
+    IBugAttachmentSet, IBugEditEmailCommand, IBugEmailCommand,
+    IBugTaskEditEmailCommand, IBugTaskEmailCommand, IDistroBugTask,
+    IDistroSeriesBugTask, ILaunchBag, ILibraryFileAliasSet, IMailHandler,
+    IMessageSet, IQuestionSet, ISpecificationSet, IUpstreamBugTask,
+    IWeaklyAuthenticatedPrincipal, QuestionStatus)
 from canonical.launchpad.mail.commands import emailcommands, get_error_message
 from canonical.launchpad.mail.sendmail import sendmail
 from canonical.launchpad.mail.specexploder import get_spec_url_from_moin_mail
@@ -218,6 +219,9 @@ class MaloneHandler:
                             bugmessage = bug.linkMessage(message)
                             notify(SQLObjectCreatedEvent(bugmessage))
                             add_comment_to_bug = False
+                        else:
+                            message = bug.initial_message
+                        self.processAttachments(bug, message, signed_msg)
                     elif IBugTaskEmailCommand.providedBy(command):
                         if bugtask_event is not None:
                             if not ISQLObjectCreatedEvent.providedBy(
@@ -262,6 +266,51 @@ class MaloneHandler:
 
         return True
 
+    irrelevant_content_types = set((
+        'application/applefile', # the resource fork of a MacOS file
+        'application/pgp-signature',
+        'application/pkcs7-signature',
+        'application/x-pkcs7-signature',
+        'text/x-vcard',))
+
+    def processAttachments(self, bug, message, signed_mail):
+        """Create Bugattachments for "reasonable" mail attachments.
+
+        A mail attachment is stored as a bugattachment if all of the
+        following conditions are met:
+
+            - the content disposition header explicitly says that
+              this is an attachment,
+            - the content type is not "irrelevant". At present,
+              mail signatures, v-cards, and the resource for of MacOS
+              files are considered to be irrelevant.
+        """
+        for part in signed_mail.walk():
+            content_type = part.get_content_type()
+            content_disposition = part.get('Content-disposition', '').lower()
+            if (part.is_multipart()
+                or content_type in self.irrelevant_content_types
+                or not content_disposition.startswith('attachment')):
+                continue
+
+            content = part.get_payload()
+            if len(content) == 0:
+                # storing empty files is pointless.
+                continue
+
+            filename = part.get_filename() or 'unnamed'
+            filealias = getUtility(ILibraryFileAliasSet).create(
+                name=filename, size=len(content), file=StringIO(content),
+                contentType=content_type)
+
+            if content_type in ('text/x-diff', 'text/x-patch'):
+                attach_type = BugAttachmentType.PATCH
+            else:
+                attach_type = BugAttachmentType.UNSPECIFIED
+
+            getUtility(IBugAttachmentSet).create(
+                bug=bug, filealias=filealias, attach_type=attach_type,
+                title=filename, message=message)
 
 class AnswerTrackerHandler:
     """Handles emails sent to the Answer Tracker."""
