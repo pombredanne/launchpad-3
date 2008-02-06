@@ -27,6 +27,7 @@ from zope.app.form.browser import DropdownWidget
 from zope.app.pagetemplate import ViewPageTemplateFile
 from zope.component import getUtility, queryMultiAdapter
 from zope.formlib import form
+from zope.i18n import translate
 from zope.schema import Bool, Choice, List
 from zope.schema.vocabulary import SimpleVocabulary, SimpleTerm
 
@@ -44,6 +45,7 @@ from canonical.launchpad.webapp import (
     action, canonical_url, custom_widget, LaunchpadFormView, Link,
     safe_action, stepto, stepthrough, urlappend)
 from canonical.launchpad.webapp.batching import BatchNavigator
+from canonical.launchpad.webapp.menu import structured
 from canonical.widgets import LabeledMultiCheckBoxWidget
 
 
@@ -689,10 +691,11 @@ class ManageAnswerContactView(UserSupportLanguagesMixin, LaunchpadFormView):
             person_or_team.addLanguage(getUtility(ILanguageSet)['en'])
             team_mapping = {'name' : person_or_team.name,
                             'displayname' : person_or_team.displayname}
+            msgid = _("English was added to ${displayname}'s "
+                      '<a href="/~${name}/+editlanguages">preferred '
+                      'languages</a>.', mapping=team_mapping)
             response.addNotification(
-                _("English was added to ${displayname}'s "
-                  '<a href="/~${name}/+editlanguages">preferred '
-                  'languages</a>.', mapping=team_mapping))
+                structured(translate(msgid, context=self.request)))
         else:
             if len(browserLanguages(self.request)) > 0:
                 languages = browserLanguages(self.request)
@@ -701,11 +704,12 @@ class ManageAnswerContactView(UserSupportLanguagesMixin, LaunchpadFormView):
             for language in languages:
                 person_or_team.addLanguage(language)
             language_str = ', '.join([lang.displayname for lang in languages])
+            msgid = _('<a href="/people/+me/+editlanguages">Your preferred '
+                      'languages</a> were updated to include your browser '
+                      'languages: $languages.',
+                  mapping={'languages' : language_str})
             response.addNotification(
-                _('<a href="/people/+me/+editlanguages">Your preferred '
-                  'languages</a> were updated to include your browser '
-                  'languages: $languages.',
-                  mapping={'languages' : language_str}))
+                structured(translate(msgid, context=self.request)))
 
 
 class QuestionTargetFacetMixin:
