@@ -500,12 +500,7 @@ class Bug(SQLBase):
                 else:
                     assert IProductSeriesBugTask.providedBy(bugtask)
                     product = bugtask.productseries.product
-                if product.bugcontact:
-                    also_notified_subscribers.add(product.bugcontact)
-                    if recipients is not None:
-                        recipients.addUpstreamBugContact(
-                            product.bugcontact, product)
-                else:
+                if product.bugcontact is None:
                     also_notified_subscribers.add(product.owner)
                     if recipients is not None:
                         recipients.addUpstreamRegistrant(

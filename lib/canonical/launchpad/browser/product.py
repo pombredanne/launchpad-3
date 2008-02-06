@@ -55,10 +55,10 @@ from canonical.config import config
 from canonical.launchpad import _
 from canonical.launchpad.interfaces import (
     BranchListingSort, IBranchSet, IBugTracker, ICountry, IDistribution,
-    IHasIcon, ILaunchBag, ILaunchpadCelebrities, IPillarNameSet, IProduct,
-    IProductSeries, IProductSet, IProject, ITranslationImportQueue,
-    License, NotFoundError, RESOLVED_BUGTASK_STATUSES,
-    UnsafeFormGetSubmissionError)
+    IHasBugContact, IHasIcon, ILaunchBag, ILaunchpadCelebrities,
+    IPillarNameSet, IProduct, IProductSeries, IProductSet, IProject,
+    ITranslationImportQueue, License, NotFoundError,
+    RESOLVED_BUGTASK_STATUSES, UnsafeFormGetSubmissionError)
 from canonical.launchpad import helpers
 from canonical.launchpad.browser.announcement import HasAnnouncementsView
 from canonical.launchpad.browser.branding import BrandingChangeView
@@ -1163,39 +1163,36 @@ class ProductAddView(ProductAddViewBase):
 class ProductBugContactEditView(LaunchpadEditFormView):
     """Browser view class for editing the product bug contact."""
 
-    schema = IProduct
+    schema = IHasBugContact
     field_names = ['bugcontact']
 
     @action('Change', name='change')
     def change_action(self, action, data):
         """Redirect to the product page with a success message."""
-        self.updateContextFromData(data)
-
         product = self.context
+        bugcontact = data['bugcontact']
+        product.setBugContact(bugcontact, self.user)
 
-        bugcontact = product.bugcontact
-        if bugcontact:
-            contact_display_value = None
-            if bugcontact.preferredemail:
-                # The bug contact was set to a new person or team.
-                contact_display_value = bugcontact.preferredemail.email
-            else:
-                # The bug contact doesn't have a preferred email address,
-                # so it must be a team.
-                assert bugcontact.isTeam(), (
-                    "Expected bug contact with no email address "
-                    "to be a team.")
-                contact_display_value = bugcontact.browsername
-
+        if bugcontact is not None:
             self.request.response.addNotification(
-                "Successfully changed the bug contact to %s" %
-                contact_display_value)
+                'Successfully changed the bug contact to '
+                '<a href="%(contacturl)s">%(displayname)s</a>.'
+                '<br />'
+                '<a href="%(contacturl)s">%(displayname)s</a> has also been '
+                'subscribed to bug notifications for %(targetname)s. '
+                '<br />'
+                'You can '
+                '<a href="%(producturl)s/+subscribe">'
+                'change the subscriptions</a> for '
+                '%(targetname)s at any time.',
+                contacturl=canonical_url(bugcontact),
+                displayname=bugcontact.displayname,
+                targetname=self.context.displayname,
+                producturl=canonical_url(self.context))
         else:
-            # The bug contact was set to noone.
             self.request.response.addNotification(
-                "Successfully cleared the bug contact. There is no longer a "
-                "contact address that will receive all bugmail for this "
-                "project. You can set the bug contact again at any time.")
+                "Successfully cleared the bug contact. "
+                "You can set the bug contact again at any time.")
 
         self.request.response.redirect(canonical_url(product))
 

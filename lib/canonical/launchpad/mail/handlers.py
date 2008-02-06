@@ -12,12 +12,11 @@ from zope.event import notify
 from canonical.config import config
 from canonical.database.sqlbase import rollback
 from canonical.launchpad.interfaces import (
-    ILaunchBag, IMessageSet, IBugEmailCommand, IBugTaskEmailCommand,
-    IBugEditEmailCommand, IBugTaskEditEmailCommand,
-    IMailHandler, CreatedBugWithNoBugTasksError,
-    EmailProcessingError, IUpstreamBugTask, IDistroBugTask,
-    IDistroSeriesBugTask, IWeaklyAuthenticatedPrincipal, IQuestionSet,
-    ISpecificationSet, QuestionStatus)
+    BugNotificationLevel, CreatedBugWithNoBugTasksError, EmailProcessingError,
+    IBugEditEmailCommand, IBugEmailCommand, IBugTaskEditEmailCommand,
+    IBugTaskEmailCommand, IDistroBugTask, IDistroSeriesBugTask, ILaunchBag,
+    IMailHandler, IMessageSet, IQuestionSet, ISpecificationSet,
+    IUpstreamBugTask, IWeaklyAuthenticatedPrincipal, QuestionStatus)
 from canonical.launchpad.mail.commands import emailcommands, get_error_message
 from canonical.launchpad.mail.sendmail import sendmail
 from canonical.launchpad.mail.specexploder import get_spec_url_from_moin_mail
@@ -108,8 +107,13 @@ def guess_bugtask(bug, person):
                     # Is the person one of the package bug contacts?
                     distro_sourcepackage = bugtask.distribution.getSourcePackage(
                         bugtask.sourcepackagename)
-                    if distro_sourcepackage.isBugContact(person):
-                        return bugtask
+                    bug_sub = distro_sourcepackage.getSubscription(person)
+                    if bug_sub is not None:
+                        if (bug_sub.bug_notification_level >
+                            BugNotificationLevel.NOTHING):
+                            # The user is subscribed to bug notifications
+                            # for this package
+                            return bugtask
 
     return None
 
