@@ -624,8 +624,8 @@ class BugTaskView(LaunchpadView, CanBeMentoredView, FeedsMixin):
         """Nominate the bug for the series and redirect to the bug page."""
         self.context.bug.addNomination(self.user, series)
         self.request.response.addInfoNotification(
-            'This bug has been nominated to be fixed in %(target)s.',
-            target=series.bugtargetdisplayname)
+            'This bug has been nominated to be fixed in %s.' % \
+                series.bugtargetdisplayname)
         self.request.response.redirect(canonical_url(self.context))
 
     def reportBugInContext(self):
