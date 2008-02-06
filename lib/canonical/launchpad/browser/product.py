@@ -290,7 +290,7 @@ class ProductOverviewMenu(ApplicationMenu):
         'edit', 'branding', 'driver', 'reassign', 'top_contributors',
         'mentorship', 'distributions', 'packages', 'files', 'branch_add',
         'series_add', 'announce', 'announcements', 'administer',
-        'branch_visibility', 'rdf']
+        'branch_visibility', 'rdf', 'subscribe']
 
     @enabled_with_permission('launchpad.Edit')
     def edit(self):
@@ -368,6 +368,10 @@ class ProductOverviewMenu(ApplicationMenu):
     def branch_visibility(self):
         text = 'Define branch visibility'
         return Link('+branchvisibility', text, icon='edit')
+
+    def subscribe(self):
+        text = 'Subscribe to bug mail'
+        return Link('+subscribe', text, icon='edit')
 
 
 class ProductBugsMenu(ApplicationMenu):
