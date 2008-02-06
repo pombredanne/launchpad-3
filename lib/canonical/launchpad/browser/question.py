@@ -720,7 +720,7 @@ class QuestionWorkflowView(LaunchpadFormView):
                       "helped you solve the problem, use the <em>'This "
                       "solved my problem'</em> button.")
             self._addNotificationAndHandlePossibleSubscription(
-                structured(translate(msgid, context=self.context)), data)
+                structured(translate(msgid, context=self.request)), data)
 
     def canRequestInfo(self, action):
         """Return if the requestinfo action should be displayed."""
