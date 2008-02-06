@@ -526,6 +526,10 @@ class LaunchpadRootNavigation(Navigation):
         if self.request['PATH_INFO'] == '/':
             return None
 
+        # If this is a HTTP POST, don't redirect:
+        if self.request.method == 'POST':
+            return None
+
         # If no redirection host is set, don't redirect.
         mainsite_host = config.launchpad.vhosts.mainsite.hostname
         redirection_host = config.launchpad.beta_testers_redirection_host

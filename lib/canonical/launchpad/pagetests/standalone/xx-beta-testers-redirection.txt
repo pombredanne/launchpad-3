@@ -76,14 +76,14 @@ parameters:
     Location: http://beta.launchpad.dev/ubuntu/+search?text=foo
 
 
-However, HTTP POST requests to the beta site are not redirected.
+However, HTTP POST requests to the normal site are not redirected.
 
     >>> from urllib import urlencode
     >>> check(beta_browser.open,
     ...     'http://launchpad.dev/ubuntu/+search',
     ...     data=urlencode({'text': 'foo'}))
     >>> print beta_browser.url
-    Location: http://launchpad.dev/ubuntu/+search?text=foo
+    http://launchpad.dev/ubuntu/+search
 
 
 The redirection works for other Launchpad subdomains:
