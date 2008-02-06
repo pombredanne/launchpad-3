@@ -32,7 +32,6 @@ ALTER TABLE DistroSeriesPackageCache ADD CONSTRAINT
     distroseriespackagecache__archive__fk
     FOREIGN KEY (archive) REFERENCES Archive;
 
-
 -- Extend the unique constraint to cover parallel development of the same
 -- source across archives (PPAs).
 
@@ -47,6 +46,18 @@ ALTER TABLE DistroSeriesPackageCache DROP CONSTRAINT
 ALTER TABLE DistroSeriesPackageCache ADD CONSTRAINT
     distroseriespackagecache_distroseries_binarypackagename_archive_unique
     UNIQUE(distroseries, binarypackagename, archive);
+
+-- Update all caches to point to the ubuntu PRIMARY archive.
+-- The pre-existing ones which belongs to the PARTNER archive will be
+-- removed and re-created in the first update-pkgcache.py run.
+
+UPDATE DistributionSourcePackageCache set archive=1;
+ALTER TABLE DistroSeriesPackageCache
+    ALTER COLUMN archive SET NOT NULL;
+
+UPDATE DistroseriesPackageCache set archive=1;
+ALTER TABLE DistroSeriesPackageCache
+    ALTER COLUMN archive SET NOT NULL;
 
 
 INSERT INTO LaunchpadDatabaseRevision VALUES (88, 99, 0);
