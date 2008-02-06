@@ -49,6 +49,8 @@ from canonical.launchpad.fields import (
 from canonical.launchpad.interfaces.component import IComponent
 from canonical.launchpad.interfaces.launchpad import IHasDateCreated, IHasBug
 from canonical.launchpad.interfaces.mentoringoffer import ICanBeMentored
+from canonical.launchpad.interfaces.person import (
+    PublicPersonChoice, RestrictedPrivatePersonChoice)
 from canonical.launchpad.interfaces.sourcepackage import ISourcePackage
 from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.validators.name import name_validator
@@ -323,7 +325,7 @@ class IBugTask(IHasDateCreated, IHasBug, ICanBeMentored):
         default=BugTaskImportance.UNDECIDED)
     statusexplanation = Text(
         title=_("Status notes (optional)"), required=False)
-    assignee = Choice(
+    assignee = RestrictedPrivatePersonChoice(
         title=_('Assigned to'), required=False, vocabulary='ValidAssignee')
     bugtargetdisplayname = Text(
         title=_("The short, descriptive name of the target"), readonly=True)

@@ -23,6 +23,7 @@ from zope.security.proxy import removeSecurityProxy
 from sqlobject import (
     BoolCol, ForeignKey, IntCol, MultipleJoin, SQLMultipleJoin,
     SQLObjectNotFound, SQLRelatedJoin, StringCol)
+from sqlobject.include.validators import Validator, InvalidField
 from sqlobject.sqlbuilder import AND, OR, SQLConstant
 
 from canonical.config import config
@@ -106,6 +107,33 @@ class ValidPersonOrTeamCache(SQLBase):
     # Look Ma, no columns! (apart from id)
 
 
+class PrivatePersonConstraint(Validator):
+
+    def toPython(self, value, state=None):
+        if value is None:
+            return value
+        elif isinstance(value, int):
+            person = getUtility(IPersonSet).get(value)
+            if person is None:
+                raise InvalidField('No person with id=%d' % value,
+                                   value, state)
+        elif IPerson.providedBy(value):
+            person = value
+        else:
+            raise InvalidField('Cannot coerce to person object',
+                               value,
+                               state)
+        if person.visibility in (PersonVisibility.PRIVATE_MEMBERSHIP,
+                                PersonVisibility.PRIVATE):
+            raise InvalidField(
+                'Cannot link person (name=%s, visibility=%s) to %s (name=%s)'
+                % (person.name, person.visibility.name,
+                   state.soObject, getattr(state.soObject, 'name', None)),
+                value,
+                state)
+        return value
+
+
 class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
     """A Person."""
 
@@ -167,7 +195,7 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
     organization = StringCol(default=None)
 
     teamowner = ForeignKey(dbName='teamowner', foreignKey='Person',
-                           default=None)
+                           default=None, validator=PrivatePersonConstraint())
 
     sshkeys = SQLMultipleJoin('SSHKey', joinColumn='person')
 
@@ -188,7 +216,8 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
     creation_rationale = EnumCol(enum=PersonCreationRationale, default=None)
     creation_comment = StringCol(default=None)
     registrant = ForeignKey(
-        dbName='registrant', foreignKey='Person', default=None)
+        dbName='registrant', foreignKey='Person', default=None,
+        validator=PrivatePersonConstraint())
     hide_email_addresses = BoolCol(notNull=True, default=False)
     verbose_bugnotifications = BoolCol(notNull=True, default=True)
 

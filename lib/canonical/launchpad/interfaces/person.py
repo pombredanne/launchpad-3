@@ -22,6 +22,8 @@ __all__ = [
     'IPersonSet',
     'IPersonViewRestricted',
     'IRequestPeopleMerge',
+    'is_valid_public_person_link',
+    'is_valid_private_person_link',
     'ITeam',
     'ITeamContactAddressForm',
     'ITeamCreation',
@@ -29,6 +31,8 @@ __all__ = [
     'JoinNotAllowed',
     'PersonCreationRationale',
     'PersonVisibility',
+    'PublicPersonChoice',
+    'RestrictedPrivatePersonChoice',
     'TeamContactMethod',
     'TeamMembershipRenewalPolicy',
     'TeamMembershipStatus',
@@ -1275,6 +1279,44 @@ class IPersonEditRestricted(Interface):
 
 class IPerson(IPersonPublic, IPersonViewRestricted, IPersonEditRestricted):
     """A Person."""
+
+
+def is_valid_public_person_link(person, other):
+    assert IPerson.providedBy(person)
+    if person.visibility in (PersonVisibility.PRIVATE,
+                             PersonVisibility.PRIVATE_MEMBERSHIP):
+        return False
+    else:
+        return True
+
+def is_valid_private_person_link(person, other):
+    assert IPerson.providedBy(person)
+    if person.visibility in (PersonVisibility.PRIVATE,
+                             PersonVisibility.PRIVATE_MEMBERSHIP):
+        if IPerson.providedBy(other) and other.visibility in (
+            PersonVisibility.PRIVATE, PersonVisibility.PRIVATE_MEMBERSHIP):
+            # private to private person link allowed
+            return True
+        else:
+            return False
+    else:
+        return True
+
+
+class PublicPersonChoice(Choice):
+    def constraint(self, value):
+        if is_valid_public_person_link(value, self.context):
+            return True
+        else:
+            return False
+
+
+class RestrictedPrivatePersonChoice(Choice):
+    def constraint(self, value):
+        if is_valid_private_person_link(value, self.context):
+            return True
+        else:
+            return False
 
 
 class IPersonEntry(IEntry):
