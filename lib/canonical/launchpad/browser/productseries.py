@@ -396,7 +396,7 @@ class ProductSeriesView(LaunchpadView, TranslationsMixin):
             spn = spns[ubuntupkg]
         except NotFoundError:
             self.request.response.addErrorNotification(
-                'Invalid source package name %s' % cgi.escape(ubuntupkg))
+                'Invalid source package name %s' % ubuntupkg)
             self.has_errors = True
             return
         # set the packaging record for this productseries in the current
