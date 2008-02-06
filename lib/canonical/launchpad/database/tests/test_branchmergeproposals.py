@@ -6,11 +6,7 @@ __metaclass__ = type
 
 from unittest import TestCase, TestLoader
 
-from zope.security.proxy import removeSecurityProxy
-
-from canonical.launchpad.ftests import ANONYMOUS, login, logout, syncUpdate
-from canonical.launchpad.database.branchmergeproposal import (
-    BranchMergeProposal)
+from canonical.launchpad.ftests import login, logout
 from canonical.launchpad.interfaces import (
     BadStateTransition, BranchMergeProposalStatus)
 from canonical.launchpad.testing import LaunchpadObjectFactory
@@ -23,157 +19,111 @@ class TestBranchMergeProposalTransitions(TestCase):
 
     layer = LaunchpadFunctionalLayer
 
-    transition_function = {
-        BranchMergeProposalStatus.WORK_IN_PROGRESS:
-            BranchMergeProposal.setAsWorkInProgress,
-        BranchMergeProposalStatus.NEEDS_REVIEW:
-            BranchMergeProposal.requestReview,
-        BranchMergeProposalStatus.CODE_APPROVED:
-            BranchMergeProposal.approveBranch,
-        BranchMergeProposalStatus.REJECTED:
-            BranchMergeProposal.rejectBranch,
-        BranchMergeProposalStatus.MERGED:
-            BranchMergeProposal.markAsMerged,
-        BranchMergeProposalStatus.MERGE_FAILED:
-            BranchMergeProposal.mergeFailed,
-        BranchMergeProposalStatus.SUPERCEDED:
-            BranchMergeProposal.resubmit,
+    # All transitions between states are handled my method calls
+    # on the proposal.
+    transition_functions = {
+        BranchMergeProposalStatus.WORK_IN_PROGRESS: 'setAsWorkInProgress',
+        BranchMergeProposalStatus.NEEDS_REVIEW: 'requestReview',
+        BranchMergeProposalStatus.CODE_APPROVED: 'approveBranch',
+        BranchMergeProposalStatus.REJECTED: 'rejectBranch',
+        BranchMergeProposalStatus.MERGED: 'markAsMerged',
+        BranchMergeProposalStatus.MERGE_FAILED: 'mergeFailed',
+        BranchMergeProposalStatus.SUPERCEDED: 'resubmit',
         }
 
     def setUp(self):
         TestCase.setUp(self)
-        login('test@canonical.com')
-
         self.factory = LaunchpadObjectFactory()
+        self.target_branch = self.factory.makeBranch()
+        login(self.target_branch.owner.preferredemail.email)
 
     def assertProposalState(self, proposal, state):
+        """Assert that the `queue_status` of the `proposal` is `state`."""
         self.assertEqual(state, proposal.queue_status,
                          "Wrong state, expected %s, got %s"
                          % (state.title, proposal.queue_status.title))
 
-    def _transitionArgs(self, to_state, proposal):
-        # Return the appropriate args for a call to the transition state.
-        # The security proxy seems to not work with unbound methods,
-        # so remove the proxy to pass in the proposal as 'self'.
-        naked_proposal = removeSecurityProxy(proposal)
+    def _attemptTransition(self, proposal, to_state):
+        """Try to transition the proposal into the state `to_state`."""
+        method = getattr(proposal, self.transition_functions[to_state])
         if to_state in (BranchMergeProposalStatus.CODE_APPROVED,
                         BranchMergeProposalStatus.REJECTED):
-            return [naked_proposal, proposal.target_branch.owner,
-                    'some_revision_id']
+            args = [proposal.target_branch.owner, 'some_revision_id']
         elif to_state in (BranchMergeProposalStatus.MERGE_FAILED,
                           BranchMergeProposalStatus.SUPERCEDED):
-            return [naked_proposal, proposal.registrant]
+            args = [proposal.registrant]
         else:
-            return [naked_proposal]
+            args = []
+        method(*args)
 
-    def assertGoodTransition(self, from_state, to_state, factory):
-        # Check that the state transition fails.
-        proposal = factory()
+    def assertGoodTransition(self, from_state, to_state):
+        """Assert that we can go from `from_state` to `to_state`."""
+        proposal = self.factory.makeBranchMergeProposal(
+            target_branch=self.target_branch,
+            set_state=from_state)
         self.assertProposalState(proposal, from_state)
-        args = self._transitionArgs(to_state, proposal)
-        self.transition_function[to_state](*args)
+        self._attemptTransition(proposal, to_state)
         self.assertProposalState(proposal, to_state)
 
-    def assertBadTransition(self, from_state, to_state, factory):
-        # Check that the state transition fails.
-        proposal = factory()
+    def assertBadTransition(self, from_state, to_state):
+        """Assert that trying to go from `from_state` to `to_state` fails."""
+        proposal = self.factory.makeBranchMergeProposal(
+            target_branch=self.target_branch,
+            set_state=from_state)
         self.assertProposalState(proposal, from_state)
-        args = self._transitionArgs(to_state, proposal)
         self.assertRaises(BadStateTransition,
-                          self.transition_function[to_state],
-                          *args)
+                          self._attemptTransition,
+                          proposal, to_state)
 
-    def assertAllTransitionsGood(self, from_state, factory):
-        """Transition to any state is allowed."""
+    def assertAllTransitionsGood(self, from_state):
+        """Assert that we can go from `from_state` to any state."""
         for status in BranchMergeProposalStatus.items:
-            self.assertGoodTransition(from_state, status, factory)
+            self.assertGoodTransition(from_state, status)
 
-    def assertAllTransitionsBad(self, from_state, factory):
-        """Transition to any other state is not allowed."""
+    def assertTerminatingState(self, from_state):
+        """Assert that the proposal cannot go to any other state."""
         for status in BranchMergeProposalStatus.items:
-            self.assertBadTransition(from_state, status, factory)
+            self.assertBadTransition(from_state, status)
 
     def test_transitions_from_wip(self):
-        # Test the transitions from work in progress.
-        def make_wip_proposal():
-            return self.factory.makeBranchMergeProposal()
-
+        """We can go from work in progress to any other state."""
         self.assertAllTransitionsGood(
-            BranchMergeProposalStatus.WORK_IN_PROGRESS, make_wip_proposal)
+            BranchMergeProposalStatus.WORK_IN_PROGRESS)
 
     def test_transitions_from_needs_review(self):
-        # Test the transitions from needs review.
-        def make_needs_review_proposal():
-            proposal = self.factory.makeBranchMergeProposal()
-            proposal.requestReview()
-            return proposal
-
+        """We can go from needs review to any other state."""
         self.assertAllTransitionsGood(
-            BranchMergeProposalStatus.NEEDS_REVIEW,
-            make_needs_review_proposal)
+            BranchMergeProposalStatus.NEEDS_REVIEW)
 
     def test_transitions_from_code_approved(self):
-        # Test the transitions from code approved.
-        def make_approved_proposal():
-            proposal = self.factory.makeBranchMergeProposal()
-            proposal.approveBranch(
-                proposal.target_branch.owner, 'some_revision')
-            return proposal
-
+        """We can go from code_approved to any other state."""
         self.assertAllTransitionsGood(
-            BranchMergeProposalStatus.CODE_APPROVED, make_approved_proposal)
+            BranchMergeProposalStatus.CODE_APPROVED)
 
     def test_transitions_from_rejected(self):
+        """Rejected proposals can only be resubmitted."""
         # Test the transitions from rejected.
         [wip, needs_review, code_approved, rejected,
          merged, merge_failed, superceded] = BranchMergeProposalStatus.items
 
-        def make_rejected_proposal():
-            proposal = self.factory.makeBranchMergeProposal()
-            proposal.rejectBranch(
-                proposal.target_branch.owner, 'some_revision')
-            return proposal
-
         for status in (wip, needs_review, code_approved, rejected,
                        merged, merge_failed):
             # All bad, rejected is a final state.
-            self.assertBadTransition(
-                rejected, status, make_rejected_proposal)
+            self.assertBadTransition(rejected, status)
         # Can resubmit (supercede) a rejected proposal.
-        self.assertGoodTransition(
-            rejected, superceded, make_rejected_proposal)
+        self.assertGoodTransition(rejected, superceded)
 
     def test_transitions_from_merged(self):
-        # Test the transitions from merged.
-
-        def make_merged_proposal():
-            proposal = self.factory.makeBranchMergeProposal()
-            proposal.markAsMerged()
-            return proposal
-
-        self.assertAllTransitionsBad(
-            BranchMergeProposalStatus.MERGED, make_merged_proposal)
+        """Merged is a terminal state, so no transitions are valid."""
+        self.assertTerminatingState(BranchMergeProposalStatus.MERGED)
 
     def test_transitions_from_merge_failed(self):
-        # Test the transitions from merge failed.
-        def make_merge_failed_proposal():
-            proposal = self.factory.makeBranchMergeProposal()
-            proposal.mergeFailed(proposal.target_branch.owner)
-            return proposal
-
-        self.assertAllTransitionsGood(
-            BranchMergeProposalStatus.MERGE_FAILED,
-            make_merge_failed_proposal)
+        """We can go from merge failed to any other state."""
+        self.assertAllTransitionsGood(BranchMergeProposalStatus.MERGE_FAILED)
 
     def test_transitions_from_superceded(self):
-        # Test the transitions from superceded.
-        def make_superceded_proposal():
-            proposal = self.factory.makeBranchMergeProposal()
-            proposal.resubmit(proposal.registrant)
-            return proposal
-
-        self.assertAllTransitionsBad(
-            BranchMergeProposalStatus.SUPERCEDED, make_superceded_proposal)
+        """Superceded is a terminal state, so no transitions are valid."""
+        self.assertTerminatingState(BranchMergeProposalStatus.SUPERCEDED)
 
 
 class TestBranchMergeProposalCanReview(TestCase):

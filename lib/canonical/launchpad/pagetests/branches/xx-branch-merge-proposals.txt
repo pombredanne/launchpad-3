@@ -321,11 +321,10 @@ Gone from the target branch.
 == Resubmitting proposals ==
 
 If a proposal ends up getting rejected, the proposal can be resubmitted.
-Actually it is valid to resubmit a proposal at any time (as long as it
-is not already superceded or merged), but upon rejection is the most
-likely use case.  When a proposal is resubmitted, a new proposal is
-registered with the same source and target branches but restarting the
-workflow around the state.
+Actually you can resubmit a proposal that hasn't been superceded or merged
+already, but mostly you resubmit rejected proposals.  When a proposal is
+resubmitted, a new proposal is registered with the same source and target
+branches but with the state set to work-in-progress.
 
     >>> sample_browser.open(
     ...     'http://code.launchpad.dev/~name12/gnome-terminal/scanned')

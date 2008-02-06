@@ -155,9 +155,9 @@ class IBranchMergeProposal(Interface):
         "The user that marked the branch as merged.")
 
     superceded_proposal = Attribute(
-        "The branch merge propoposal that this one supercedes.")
+        "The branch merge proposal that this one supercedes.")
     superceded_by = Attribute(
-        "The branch merge propoposal that supercedes this one.")
+        "The branch merge proposal that supercedes this one.")
 
     date_created = Datetime(
         title=_('Date Created'), required=True, readonly=True)
@@ -238,7 +238,7 @@ class IBranchMergeProposal(Interface):
         """Mark the branch merge proposal as superceded and return a new one.
 
         The new proposal is created as work-in-progress, and copies across
-        user entered data like the whiteboard.
+        user-entered data like the whiteboard.
         """
 
     def isPersonValidReviewer(reviewer):
@@ -252,7 +252,7 @@ class IBranchMergeProposal(Interface):
         """
 
     def isMergable():
-        """Is the proposal is in a state condusive to being merged?
+        """Is the proposal in a state that allows it to being merged?
 
         As long as the proposal isn't in one of the end states, it is valid
         to be merged.

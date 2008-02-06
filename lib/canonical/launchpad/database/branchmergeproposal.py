@@ -33,7 +33,7 @@ class BranchMergeProposal(SQLBase):
     implements(IBranchMergeProposal)
 
     _table = 'BranchMergeProposal'
-    _defaultOrder = ['-date_created']
+    _defaultOrder = ['-date_created', 'id']
 
     registrant = ForeignKey(
         dbName='registrant', foreignKey='Person', notNull=True)

@@ -279,6 +279,18 @@ class BranchAddLandingTarget(TestCase):
             InvalidBranchMergeProposal, self.source.addLandingTarget,
             self.user, self.target, self.dependent)
 
+    def test_existingRejectedMergeProposal(self):
+        """If there is an existing rejected merge proposal for the source and
+        target branch pair, then another landing target specifying the same
+        pair is fine.
+        """
+        proposal = self.source.addLandingTarget(
+            self.user, self.target, self.dependent)
+        proposal.rejectBranch(self.user, 'some_revision')
+
+        new_proposal = self.source.addLandingTarget(
+            self.user, self.target, self.dependent)
+
     def test_attributeAssignment(self):
         """Smoke test to make sure the assignments are there."""
         whiteboard = u"Some whiteboard"
