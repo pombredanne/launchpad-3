@@ -19,9 +19,9 @@
 
 <body>
 
-<metal:leftportlets fill-slot="portlets_one">
+<metal:portlets fill-slot="portlets">
   <div tal:replace="structure context/team/@@+portlet-details" />
-</metal:leftportlets>
+</metal:portlets>
 
 <metal:macros fill-slot="bogus">
   <metal:macro define-macro="person">
@@ -49,17 +49,25 @@
   </metal:macro>
   <metal:macro define-macro="expiry-radios">
     <label for="never">
-      <input tal:attributes="checked python: view.neverExpiresIsSelected()
-                                             and 'checked' or ''"
-             type="radio" id="never" value="never" name="expires" />
+      <input tal:attributes="checked view/neverExpiresIsSelected"
+        onclick="
+          document.getElementById('membership.expirationdate').disabled=true;"
+        type="radio" id="never" value="never" name="expires" />
         Never<br />
     </label>
     <label for="date">
-      <input tal:attributes="checked python: view.expiresIsSelected()
-                                             and 'checked' or ''"
-      type="radio" id="date" value="date" name="expires" />
-      On
+      <input tal:attributes="
+        checked view/expiresIsSelected;
+        onclick view/date_picker_trigger"
+        type="radio" id="date" value="date" name="expires" />
+      On&nbsp;
     </label>
+    <script language="JavaScript" type="text/javascript">
+      function dateSelected(y,m,d,e) {
+        document.getElementById('date').click();
+      };
+    </script>
+    <span tal:replace="structure view/expiration_widget" />
   </metal:macro>
 </metal:macros>
 
@@ -67,7 +75,7 @@
 
       <div tal:condition="view/isActive"> 
 
-        <h1>Active member</h1>
+        <h1>Active member <tal:who replace="context/person/browsername" /></h1>
 
         <p>
           <metal:person use-macro="template/macros/person" />
@@ -93,18 +101,12 @@
             <th>Administrator:</th>
             <td>
               <tal:can-change condition="view/allowChangeAdmin">
-                <label for="admin">
-                  <input tal:attributes="checked python:view.adminIsSelected()
-                                                 and 'checked' or ''"
-                         type="radio" value="yes" name="admin" id="admin"/>
-                  Yes
-                </label>
-                <label for="notadmin">
-                  <input tal:attributes="checked python:not view.adminIsSelected()
-                                                 and 'checked' or ''"
-                         type="radio" value="no" name="admin" id="notadmin"/>
-                  No
-                </label>
+                <input tal:attributes="checked view/adminIsSelected"
+                       type="radio" value="yes" name="admin" id="admin"/>
+                <label for="admin">Yes</label>
+                <input tal:attributes="checked view/adminIsNotSelected"
+                       type="radio" value="no" name="admin" id="notadmin"/>
+                <label for="notadmin">No</label>
               </tal:can-change>
               <tal:cant-change condition="not: view/allowChangeAdmin">
                 <span tal:condition="view/isAdmin">Yes</span>
@@ -119,7 +121,6 @@
             <th>Subscription expires:</th>
             <td tal:condition="view/canChangeExpirationDate" style="white-space: nowrap">
               <metal:radios use-macro="template/macros/expiry-radios" />
-              <span tal:replace="structure view/dateChooserWithCurrentExpirationSelected" />
             </td>
             <td tal:condition="not: view/canChangeExpirationDate">
               <span tal:condition="context/dateexpires"
@@ -144,7 +145,7 @@
 
       <div tal:condition="view/isInactive"> 
 
-        <h1>Inactive member</h1>
+        <h1>Inactive member <tal:who replace="context/person/browsername" /></h1>
         <p tal:condition="view/isExpired">
           <metal:person use-macro="template/macros/person" />
           is an <em>Expired Member</em> of
@@ -189,12 +190,14 @@
               <th>Expiration:</th>
               <td>
                 <label for="leave">
-                  <input checked="checked"
-                         type="radio" id="leave" value="leave" name="expires" />
-                    Don't change<br />
+                  <input
+                    checked="checked"
+                    type="radio" id="leave" value="leave" name="expires"
+                    onclick="
+          document.getElementById('membership.expirationdate').disabled=true;"
+                    /> Don't change<br />
                 </label>
                 <metal:radios use-macro="template/macros/expiry-radios" />
-                <span tal:replace="structure view/dateChooserForExpiredMembers" />
               </td>
             </tr>
           </tal:expired>
@@ -206,7 +209,6 @@
               <th>Subscription expires:</th>
               <td>
                 <metal:radios use-macro="template/macros/expiry-radios" />
-                <span tal:replace="structure view/dateChooserWithCurrentExpirationSelected" />
               </td>
             </tr>
           </tal:not-expired>
@@ -228,7 +230,7 @@
 
       <div tal:condition="view/isProposed"> 
 
-        <h1>Proposed member</h1>
+        <h1>Proposed member <tal:who replace="context/person/browsername" /></h1>
         <p>
           <metal:person use-macro="template/macros/person" />
           wants to join this team.
@@ -256,7 +258,6 @@
               <th>Expires?</th>
               <td>
                 <metal:radios use-macro="template/macros/expiry-radios" />
-                <span tal:replace="structure view/dateChooserForProposedMembers" />
               </td>
             </tr>
 
@@ -277,7 +278,8 @@
 
       <div tal:condition="view/isDeclined"> 
 
-        <h1>Declined member</h1>
+        <h1>Declined member <tal:who replace="context/person/browsername"
+        /></h1>
         <p>
           <metal:person use-macro="template/macros/person" />
           asked to join this team, but the request was declined.

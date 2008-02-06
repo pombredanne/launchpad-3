@@ -17,6 +17,7 @@ import sha
 from zope.interface import implements, alsoProvides
 from zope.component import getUtility
 from zope.event import notify
+from zope.security.proxy import removeSecurityProxy
 
 from sqlobject import (
     BoolCol, ForeignKey, IntCol, MultipleJoin, SQLMultipleJoin,
@@ -38,6 +39,9 @@ from canonical.cachedproperty import cachedproperty
 from canonical.launchpad.database.answercontact import AnswerContact
 from canonical.launchpad.database.karma import KarmaCategory
 from canonical.launchpad.database.language import Language
+from canonical.launchpad.database.personlocation import PersonLocation
+from canonical.launchpad.database.structuralsubscription import (
+    StructuralSubscription)
 from canonical.launchpad.event.karma import KarmaAssignedEvent
 from canonical.launchpad.event.team import JoinTeamEvent, TeamInvitationEvent
 from canonical.launchpad.helpers import contactEmailAddresses, shortlist
@@ -52,10 +56,11 @@ from canonical.launchpad.interfaces import (
     INACTIVE_ACCOUNT_STATUSES, IPasswordEncryptor, IPerson, IPersonSet,
     IPillarNameSet, IProduct, ISSHKey, ISSHKeySet, ISignedCodeOfConductSet,
     ISourcePackageNameSet, ITeam, ITranslationGroupSet, IWikiName,
-    IWikiNameSet, JoinNotAllowed, LoginTokenType, MailingListStatus,
-    PersonCreationRationale, QUESTION_STATUS_DEFAULT_SEARCH, SSHKeyType,
-    ShipItConstants, ShippingRequestStatus, SpecificationDefinitionStatus,
-    SpecificationFilter, SpecificationImplementationStatus, SpecificationSort,
+    IWikiNameSet, JoinNotAllowed, LoginTokenType,
+    PersonCreationRationale, PersonVisibility,
+    QUESTION_STATUS_DEFAULT_SEARCH, SSHKeyType, ShipItConstants,
+    ShippingRequestStatus, SpecificationDefinitionStatus, SpecificationFilter,
+    SpecificationImplementationStatus, SpecificationSort,
     TeamMembershipRenewalPolicy, TeamMembershipStatus, TeamSubscriptionPolicy,
     UBUNTU_WIKI_URL, UNRESOLVED_BUGTASK_STATUSES)
 
@@ -184,6 +189,7 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
     registrant = ForeignKey(
         dbName='registrant', foreignKey='Person', default=None)
     hide_email_addresses = BoolCol(notNull=True, default=False)
+    verbose_bugnotifications = BoolCol(notNull=True, default=True)
 
     # SQLRelatedJoin gives us also an addLanguage and removeLanguage for free
     languages = SQLRelatedJoin('Language', joinColumn='person',
@@ -211,9 +217,11 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
     signedcocs = SQLMultipleJoin('SignedCodeOfConduct', joinColumn='owner')
     ircnicknames = SQLMultipleJoin('IrcID', joinColumn='person')
     jabberids = SQLMultipleJoin('JabberID', joinColumn='person')
-    timezone = StringCol(dbName='timezone', default='UTC')
 
     entitlements = SQLMultipleJoin('Entitlement', joinColumn='person')
+    visibility = EnumCol(
+        enum=PersonVisibility,
+        default=PersonVisibility.PUBLIC)
 
     def _init(self, *args, **kw):
         """Mark the person as a team when created or fetched from database."""
@@ -235,6 +243,29 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
         # doing and we don't want any email notifications to be sent.
         TeamMembershipSet().new(
             team_owner, self, TeamMembershipStatus.ADMIN, reviewer=team_owner)
+
+    @cachedproperty
+    def _location(self):
+        return PersonLocation.selectOneBy(person=self)
+
+    def set_time_zone(self, timezone):
+        location = self._location
+        if location is None:
+            location = PersonLocation(
+                person=self,
+                latitude=None,
+                longitude=None,
+                time_zone=timezone,
+                last_modified_by=self)
+        location.time_zone = timezone
+        self._location = location
+
+    def get_time_zone(self):
+        location = self._location
+        if location is None:
+            return None
+        return location.time_zone
+    timezone = property(get_time_zone, set_time_zone)
 
     # specification-related joins
     @property
@@ -1091,7 +1122,13 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
             raise AssertionError(
                 "Unknown subscription policy: %s" % team.subscriptionpolicy)
 
-        team.addMember(self, reviewer=self, status=status)
+        # XXX Edwin Grubbs 2007-12-14 bug=117980
+        # removeSecurityProxy won't be necessary after addMember()
+        # is configured to call a method on the new member, so the
+        # security configuration will verify that the logged in user
+        # has the right permission to add the specified person to the team.
+        naked_team = removeSecurityProxy(team)
+        naked_team.addMember(self, reviewer=self, status=status)
 
     def clearInTeamCache(self):
         """See `IPerson`."""
@@ -1897,6 +1934,12 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
         bugtask_count = target.searchTasks(search_params).count()
         return bugtask_count > 0
 
+    @property
+    def structural_subscriptions(self):
+        """See `IPerson`."""
+        return StructuralSubscription.selectBy(
+            subscriber=self, orderBy=['-date_created'])
+
 
 class PersonSet:
     """The set of persons."""
@@ -2184,6 +2227,70 @@ class PersonSet:
         return Person.select("Person.teamowner IS NOT NULL",
             orderBy=['-datecreated'], limit=limit)
 
+    def _merge_person_decoration(self, to_person, from_person, skip, cur,
+        decorator_table, person_pointer_column, additional_person_columns):
+        """Merge a table that "decorates" Person.
+
+        Because "person decoration" is becoming more frequent, we create a
+        helper function that can be used for tables that decorate person.
+
+        :to_person:       the IPerson that is "real"
+        :from_person:     the IPerson that is being merged away
+        :skip:            a list of table/column pairs that have been
+                          handled
+        :cur:             a database cursor
+        :decorator_table: the name of the table that decorated Person
+        :person_pointer_column:
+                          the column on decorator_table that UNIQUE'ly
+                          references Person.id
+        :additional_person_columns:
+                          additional columns in the decorator_table that
+                          also reference Person.id but are not UNIQUE
+
+        A Person decorator is a table that uniquely references Person,
+        so that the information in the table "extends" the Person table.
+        Because the reference to Person is unique, there can only be one
+        row in the decorator table for any given Person. This function
+        checks if there is an existing decorator for the to_person, and
+        if so, it just leaves any from_person decorator in place as
+        "noise". Otherwise, it updates any from_person decorator to
+        point to the "to_person". There can also be other columns in the
+        decorator which point to Person, these are assumed to be
+        non-unique and will be updated to point to the to_person
+        regardless.
+        """
+        cur = cursor()
+
+        # First, update the main UNIQUE pointer row which links the
+        # decorator table to Person. We do not update rows if there are
+        # already rows in the table that refer to the to_person
+        cur.execute(
+         """UPDATE %(decorator)s
+            SET %(person_pointer)s=%(to_id)d
+            WHERE %(person_pointer)s=%(from_id)d
+              AND ( SELECT count(*) FROM %(decorator)s
+                    WHERE %(person_pointer)s=%(to_id)d ) = 0
+            """ % {
+                'decorator': decorator_table,
+                'person_pointer': person_pointer_column,
+                'from_id': from_person.id,
+                'to_id': to_person.id})
+
+        # Now, update any additional columns in the table which point to
+        # Person. Since these are assumed to be NOT UNIQUE, we don't
+        # have to worry about multiple rows pointing at the to_person.
+        for additional_column in additional_person_columns:
+            cur.execute(
+             """UPDATE %(decorator)s
+                SET %(column)s=%(to_id)d
+                WHERE %(column)s=%(from_id)d
+                """ % {
+                    'decorator': decorator_table,
+                    'from_id': from_person.id,
+                    'to_id': to_person.id,
+                    'column': additional_column})
+        skip.append(
+            (decorator_table.lower(), person_pointer_column.lower()))
 
     def merge(self, from_person, to_person):
         """See `IPersonSet`."""
@@ -2262,6 +2369,11 @@ class PersonSet:
 
         to_id = to_person.id
         from_id = from_person.id
+
+        # Update PersonLocation, which is a Person-decorator table
+        self._merge_person_decoration(
+            to_person, from_person, skip, cur, 'PersonLocation', 'person',
+            ['last_modified_by', ])
 
         # Update GPGKey. It won't conflict, but our sanity checks don't
         # know that

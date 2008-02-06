@@ -67,11 +67,12 @@ from canonical.launchpad.webapp import (
     redirection, stepthrough)
 from canonical.launchpad.webapp.uri import URI
 from canonical.launchpad.interfaces import (
-    BugAttachmentType, BugNominationStatus, BugTaskImportance,
-    BugTaskSearchParams, BugTaskStatus, BugTaskStatusSearchDisplay, IBug,
-    IBugAttachmentSet, IBugBranchSet, IBugNominationSet, IBugSet, IBugTask,
-    IBugTaskSearch, IBugTaskSet, ICreateQuestionFromBugTaskForm, ICveSet,
-    IDistribution, IDistributionSourcePackage, IDistroBugTask, IDistroSeries,
+    BugAttachmentType, BugNominationStatus, BugTagsSearchCombinator,
+    BugTaskImportance, BugTaskSearchParams, BugTaskStatus,
+    BugTaskStatusSearchDisplay, IBug, IBugAttachmentSet, IBugBranchSet,
+    IBugNominationSet, IBugSet, IBugTask, IBugTaskSearch, IBugTaskSet,
+    ICreateQuestionFromBugTaskForm, ICveSet, IDistribution,
+    IDistributionSourcePackage, IDistroBugTask, IDistroSeries,
     IDistroSeriesBugTask, IFrontPageBugTaskSearch, ILaunchBag,
     INominationsReviewTableBatchNavigator, INullBugTask, IPerson,
     IPersonBugTaskSearch, IProduct, IProductSeries, IProductSeriesBugTask,
@@ -80,7 +81,7 @@ from canonical.launchpad.interfaces import (
     RESOLVED_BUGTASK_STATUSES, UNRESOLVED_BUGTASK_STATUSES,
     UnexpectedFormData, valid_upstreamtask, validate_distrotask)
 
-from canonical.launchpad.searchbuilder import any, NULL
+from canonical.launchpad.searchbuilder import all, any, NULL
 
 from canonical.launchpad import helpers
 
@@ -88,6 +89,8 @@ from canonical.launchpad.event.sqlobjectevent import SQLObjectModifiedEvent
 
 from canonical.launchpad.browser.bug import BugContextMenu, BugTextView
 from canonical.launchpad.browser.bugcomment import build_comments_from_chunks
+from canonical.launchpad.browser.feeds import (
+    BugTargetLatestBugsFeedLink, FeedsMixin, PersonLatestBugsFeedLink)
 from canonical.launchpad.browser.mentoringoffer import CanBeMentoredView
 from canonical.launchpad.browser.launchpad import StructuralObjectPresentation
 
@@ -395,7 +398,7 @@ class BugTaskTextView(LaunchpadView):
         return view.render()
 
 
-class BugTaskView(LaunchpadView, CanBeMentoredView):
+class BugTaskView(LaunchpadView, CanBeMentoredView, FeedsMixin):
     """View class for presenting information about an `IBugTask`."""
 
     def __init__(self, context, request):
@@ -507,7 +510,7 @@ class BugTaskView(LaunchpadView, CanBeMentoredView):
 
     def _handleSubscribe(self):
         """Handle a subscribe request."""
-        self.context.bug.subscribe(self.user)
+        self.context.bug.subscribe(self.user, self.user)
         self.notices.append("You have been subscribed to this bug.")
 
     def _handleUnsubscribe(self, user):
@@ -843,6 +846,14 @@ class BugTaskEditView(LaunchpadEditFormView):
         return editable_field_names
 
     @property
+    def is_question(self):
+        """Return True or False if this bug was converted into a question.
+
+        Bugtasks cannot be edited if the bug was converted into a question.
+        """
+        return self.context.bug.getQuestionCreatedFromBug() is not None
+
+    @property
     def next_url(self):
         """See `LaunchpadFormView`."""
         return canonical_url(self.context)
@@ -1033,7 +1044,7 @@ class BugTaskEditView(LaunchpadEditFormView):
         bugtask = context
 
         if self.request.form.get('subscribe', False):
-            bugtask.bug.subscribe(self.user)
+            bugtask.bug.subscribe(self.user, self.user)
             self.request.response.addNotification(
                 "You have been subscribed to this bug.")
 
@@ -1524,8 +1535,14 @@ class NominatedBugListingBatchNavigator(BugListingBatchNavigator):
         return bugtask_listing_item
 
 
-class BugTaskSearchListingView(LaunchpadFormView):
+class BugTaskSearchListingView(LaunchpadFormView, FeedsMixin):
     """View that renders a list of bugs for a given set of search criteria."""
+
+    # Only include <link> tags for bug feeds when using this view.
+    feed_types = (
+        BugTargetLatestBugsFeedLink,
+        PersonLatestBugsFeedLink,
+        )
 
     # These widgets are customised so as to keep the presentation of this view
     # and its descendants consistent after refactoring to use
@@ -1533,6 +1550,7 @@ class BugTaskSearchListingView(LaunchpadFormView):
     custom_widget('searchtext', NewLineToSpacesWidget)
     custom_widget('status_upstream', LabeledMultiCheckBoxWidget)
     custom_widget('tag', BugTagsWidget)
+    custom_widget('tags_combinator', RadioWidget)
     custom_widget('component', LabeledMultiCheckBoxWidget)
 
     @property
@@ -1544,6 +1562,23 @@ class BugTaskSearchListingView(LaunchpadFormView):
             return IUpstreamProductBugTaskSearch
         else:
             return IBugTaskSearch
+
+    @property
+    def feed_links(self):
+        """Prevent conflicts between the page and the atom feed.
+
+        The latest-bugs atom feed matches the default output of this
+        view, but it does not match this view's bug listing when
+        any search parameters are passed in.
+        """
+        if self.request.get('QUERY_STRING', '') == '':
+            # There is no query in this request, so it's okay for this page to
+            # have its feed links.
+            return super(BugTaskSearchListingView, self).feed_links
+        else:
+            # The query changes the results so that they would not match the
+            # feed.  In this case, suppress the feed links.
+            return []
 
     def initialize(self):
         """Initialize the view with the request.
@@ -1710,11 +1745,34 @@ class BugTaskSearchListingView(LaunchpadFormView):
         # "Normalize" the form data into search arguments.
         form_values = {}
         for key, value in data.items():
+            if key in ('tag'):
+                # Skip tag-related parameters, they
+                # are handled later on.
+                continue
             if zope_isinstance(value, (list, tuple)):
                 if len(value) > 0:
                     form_values[key] = any(*value)
             else:
                 form_values[key] = value
+
+        if 'tag' in data:
+            # Tags require special handling, since they can be used
+            # to search either inclusively or exclusively.
+            # We take a look at the `tags_combinator` field, and wrap
+            # the tag list in the appropriate search directive (either
+            # `any` or `all`). If no value is supplied, we assume `any`,
+            # in order to remain compatible with old saved search URLs.
+            tags = data['tag']
+            tags_combinator_all = (
+                'tags_combinator' in data and
+                data['tags_combinator'] == BugTagsSearchCombinator.ALL)
+            if zope_isinstance(tags, (list, tuple)) and len(tags) > 0:
+                if tags_combinator_all:
+                    form_values['tag'] = all(*tags)
+                else:
+                    form_values['tag'] = any(*tags)
+            else:
+                form_values['tag'] = tags
 
         search_params = self._getDefaultSearchParams()
         for name, value in form_values.items():
@@ -1853,6 +1911,10 @@ class BugTaskSearchListingView(LaunchpadFormView):
 
     def shouldShowReporterWidget(self):
         """Should the reporter widget be shown on the advanced search page?"""
+        return True
+
+    def shouldShowTagsCombinatorWidget(self):
+        """Should the tags combinator widget show on the search page?"""
         return True
 
     def shouldShowReleaseCriticalPortlet(self):
@@ -2131,7 +2193,7 @@ class BugTaskSearchListingView(LaunchpadFormView):
             return None
         bugtaskset = getUtility(IBugTaskSet)
         expirable_bugtasks = bugtaskset.findExpirableBugTasks(
-            0, target=self.context)
+            0, user=self.user, target=self.context)
         count = len(expirable_bugtasks)
         label = self._bugOrBugs(count)
         url = "%s/+expirable-bugs" % canonical_url(self.context)
@@ -2550,7 +2612,7 @@ class BugTaskRemoveQuestionView(LaunchpadFormView):
         # The question.owner was implicitly unsubscribed when the bug
         # was unlinked. We resubscribe the owner if he was subscribed.
         if owner_is_subscribed is True:
-            self.context.bug.subscribe(question.owner)
+            self.context.bug.subscribe(question.owner, self.user)
         self.request.response.addNotification(
             'Removed Question #%s: <a href="%s">%s<a>.'
             % (question.id, canonical_url(question),
@@ -2588,7 +2650,8 @@ class BugTaskExpirableListingView(LaunchpadView):
     def search(self):
         """Return an `ITableBatchNavigator` for the expirable bugtasks."""
         bugtaskset = getUtility(IBugTaskSet)
-        bugtasks = bugtaskset.findExpirableBugTasks(0, target=self.context)
+        bugtasks = bugtaskset.findExpirableBugTasks(
+            0, user=self.user, target=self.context)
         return BugListingBatchNavigator(
             bugtasks, self.request, columns_to_show=self.columns_to_show,
             size=config.malone.buglist_batch_size)

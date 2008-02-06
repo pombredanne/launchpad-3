@@ -24,6 +24,13 @@ from canonical.lazr import DBEnumeratedType, DBItem
 class BugWatchErrorType(DBEnumeratedType):
     """An enumeration of possible BugWatch errors."""
 
+    UNKNOWN = DBItem(999, """
+        Unknown
+
+        Launchpad encountered an unexpected error when trying to
+        retrieve the bug from the remote server.
+        """)
+
     BUG_NOT_FOUND = DBItem(1, """
         Bug Not Found
 
@@ -64,10 +71,10 @@ class BugWatchErrorType(DBEnumeratedType):
         """)
 
     UNSUPPORTED_BUG_TRACKER = DBItem(7, """
-        Unsupported Bugtracker Version
+        Unsupported Bugtracker
 
-        The remote server is using a version of its bug tracker software
-        which Launchpad does not currently support.
+        The remote server is using bug tracker software which Launchpad
+        does not currently support.
         """)
 
 
@@ -108,7 +115,8 @@ class IBugWatch(IHasBug):
     # required for launchpad pages
     title = Text(title=_('Bug watch title'), readonly=True)
 
-    url = Text(title=_('The URL at which to view the remote bug.'), readonly=True)
+    url = Text(title=_('The URL at which to view the remote bug.'),
+        readonly=True)
 
     def updateImportance(remote_importance, malone_importance):
         """Update the importance of the bug watch and any linked bug task.

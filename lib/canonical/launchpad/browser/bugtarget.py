@@ -33,6 +33,9 @@ from zope.publisher.interfaces.browser import IBrowserPublisher
 
 from canonical.cachedproperty import cachedproperty
 from canonical.launchpad.browser.bugtask import BugTaskSearchListingView
+from canonical.launchpad.browser.feeds import (
+    BugFeedLink, BugTargetLatestBugsFeedLink, FeedsMixin,
+    PersonLatestBugsFeedLink)
 from canonical.launchpad.event.sqlobjectevent import SQLObjectCreatedEvent
 from canonical.launchpad.interfaces import (
     IBug, IBugTaskSet, ILaunchBag, IDistribution, IDistroSeries, IProduct,
@@ -42,8 +45,9 @@ from canonical.launchpad.interfaces import (
     IFrontPageBugAddForm, IProjectBugAddForm, UNRESOLVED_BUGTASK_STATUSES,
     BugTaskStatus)
 from canonical.launchpad.webapp import (
-    canonical_url, LaunchpadView, LaunchpadFormView, action, custom_widget,
+    LaunchpadFormView, LaunchpadView, action, canonical_url, custom_widget,
     safe_action, urlappend)
+from canonical.launchpad.webapp.authorization import check_permission
 from canonical.widgets.bug import BugTagsWidget
 from canonical.widgets.launchpadtarget import LaunchpadTargetWidget
 from canonical.launchpad.vocabularies import ValidPersonOrTeamVocabulary
@@ -112,7 +116,8 @@ class FileBugData:
                         content_type=part['Content-type'],
                         content=StringIO(part.get_payload(decode=True)))
                     if part.get('Content-Description'):
-                        attachment['description'] = part['Content-Description']
+                        attachment['description'] = (
+                            part['Content-Description'])
                     else:
                         attachment['description'] = attachment['filename']
                     self.attachments.append(attachment)
@@ -159,7 +164,8 @@ class FileBugViewBase(LaunchpadFormView):
         """Return the list of field names to display."""
         context = self.context
         field_names = ['title', 'comment', 'tags', 'security_related',
-                       'bug_already_reported_as']
+                       'bug_already_reported_as', 'filecontent', 'patch',
+                       'attachment_description']
         if (IDistribution.providedBy(context) or
             IDistributionSourcePackage.providedBy(context)):
             field_names.append('packagename')
@@ -214,7 +220,8 @@ class FileBugViewBase(LaunchpadFormView):
         # subscribe to an existing bug.
         elif self.this_is_my_bug_action.submitted():
             if not data.get('bug_already_reported_as'):
-                self.setFieldError('bug_already_reported_as', "Please choose a bug.")
+                self.setFieldError('bug_already_reported_as',
+                                   "Please choose a bug.")
         else:
             # We only care about those two actions.
             pass
@@ -249,7 +256,8 @@ class FileBugViewBase(LaunchpadFormView):
                                 packagename, distribution.displayname))
                         self.setFieldError("packagename", packagename_error)
             else:
-                self.setFieldError("packagename", "Please enter a package name")
+                self.setFieldError("packagename", 
+                                   "Please enter a package name")
 
         # If we've been called from the frontpage filebug forms we must check
         # that whatever product or distro is having a bug filed against it
@@ -257,9 +265,10 @@ class FileBugViewBase(LaunchpadFormView):
         product_or_distro = self.getProductOrDistroFromContext()
         if (product_or_distro is not None and
             not product_or_distro.official_malone):
-            self.setFieldError('bugtarget',
-                               "%s does not use Launchpad as its bug tracker " %
-                               product_or_distro.displayname)
+            self.setFieldError(
+                'bugtarget',
+                "%s does not use Launchpad as its bug tracker " %
+                product_or_distro.displayname)
 
     def setUpWidgets(self):
         """Customize the onKeyPress event of the package name chooser."""
@@ -386,10 +395,38 @@ class FileBugViewBase(LaunchpadFormView):
                 'A comment with additional information was added to the'
                 ' bug report.')
 
-        if extra_data.attachments:
+        # XXX 2007-01-19 gmb:
+        #     We need to have a proper FileUpload widget rather than
+        #     this rather hackish solution.
+        attachment = self.request.form.get(self.widgets['filecontent'].name)
+        if attachment or extra_data.attachments:
             # Attach all the comments to a single empty comment.
             attachment_comment = bug.newMessage(
                 owner=self.user, subject=bug.followup_subject(), content=None)
+
+            # Deal with attachments added in the filebug form.
+            if attachment:
+                # We convert slashes in filenames to hyphens to avoid
+                # problems.
+                filename = attachment.filename.replace('/', '-')
+
+                # If the user hasn't entered a description for the
+                # attachment we use its name.
+                file_description = None
+                if 'attachment_description' in data:
+                    file_description = data['attachment_description']
+                if file_description is None:
+                    file_description = filename
+
+                bug.addAttachment(
+                    owner=self.user, file_=StringIO(data['filecontent']),
+                    filename=filename, description=file_description,
+                    comment=attachment_comment, is_patch=data['patch'])
+
+                notifications.append(
+                    'The file "%s" was attached to the bug report.' %
+                        cgi.escape(filename))
+
             for attachment in extra_data.attachments:
                 bug.addAttachment(
                     owner=self.user, file_=attachment['content'],
@@ -413,7 +450,7 @@ class FileBugViewBase(LaunchpadFormView):
                     # we'll just ignore it.
                     pass
                 else:
-                    bug.subscribe(person)
+                    bug.subscribe(person, self.user)
                     notifications.append(
                         '%s has been subscribed to this bug.' %
                         person.displayname)
@@ -423,16 +460,15 @@ class FileBugViewBase(LaunchpadFormView):
             self.request.response.addNotification(notification)
         if bug.security_related:
             self.request.response.addNotification(
-                'Security-related bugs are by default <span title="Private '
-                'bugs are visible only to their direct subscribers.">private'
-                '</span>. You may choose to <a href="+secrecy">publically '
+                'Security-related bugs are by default private '
+                '(visible only to their direct subscribers). '
+                'You may choose to <a href="+secrecy">publicly '
                 'disclose</a> this bug.')
         if bug.private and not bug.security_related:
             self.request.response.addNotification(
-                'This bug report has been marked as <span title="Private '
-                'bugs are visible only to their direct subscribers.">private'
-                '</span>. You may choose to <a href="+secrecy">change '
-                'this</a>.')
+                'This bug report has been marked private '
+                '(visible only to its direct subscribers). '
+                'You may choose to <a href="+secrecy">change this</a>.')
 
         self.request.response.redirect(canonical_url(bug.bugtasks[0]))
 
@@ -446,7 +482,7 @@ class FileBugViewBase(LaunchpadFormView):
             self.request.response.addNotification(
                 "You are already subscribed to this bug.")
         else:
-            bug.subscribe(self.user)
+            bug.subscribe(self.user, self.user)
             self.request.response.addNotification(
                 "You have been subscribed to this bug.")
 
@@ -629,7 +665,6 @@ class FileBugGuidedView(FileBugViewBase):
     @cachedproperty
     def similar_bugs(self):
         """Return the similar bugs based on the user search."""
-        matching_bugs = []
         title = self.getSearchText()
         if not title:
             return []
@@ -665,10 +700,18 @@ class FileBugGuidedView(FileBugViewBase):
         # affects more than one source package, it will be returned more
         # than one time. 4 is an arbitrary number that should be large
         # enough.
-        for bugtask in matching_bugtasks[:4*self._MATCHING_BUGS_LIMIT]:
-            if not bugtask.bug in matching_bugs:
-                matching_bugs.append(bugtask.bug)
-                if len(matching_bugs) >= self._MATCHING_BUGS_LIMIT:
+        matching_bugs = []
+        matching_bugs_limit = self._MATCHING_BUGS_LIMIT
+        for bugtask in matching_bugtasks[:4*matching_bugs_limit]:
+            bug = bugtask.bug
+            duplicateof = bug.duplicateof
+            if duplicateof is not None:
+                bug = duplicateof
+            if not check_permission('launchpad.View', bug):
+                continue
+            if bug not in matching_bugs:
+                matching_bugs.append(bug)
+                if len(matching_bugs) >= matching_bugs_limit:
                     break
 
         return matching_bugs
@@ -870,7 +913,8 @@ class FrontPageFileBugGuidedView(FrontPageFileBugMixin, FileBugGuidedView):
             return bugtarget
 
 
-class FrontPageFileBugAdvancedView(FrontPageFileBugMixin, FileBugAdvancedView):
+class FrontPageFileBugAdvancedView(FrontPageFileBugMixin,
+                                   FileBugAdvancedView):
     """Browser view class for the top-level +filebug-advanced page."""
     schema = IFrontPageBugAddForm
     custom_widget('bugtarget', LaunchpadTargetWidget)
@@ -894,9 +938,10 @@ class FrontPageFileBugAdvancedView(FrontPageFileBugMixin, FileBugAdvancedView):
         # If we have a context that we can test for Malone use, we do so.
         if (product_or_distro is not None and
             not product_or_distro.official_malone):
-            self.setFieldError('bugtarget',
-                               "%s does not use Launchpad as its bug tracker" %
-                               product_or_distro.displayname)
+            self.setFieldError(
+                'bugtarget',
+                "%s does not use Launchpad as its bug tracker" %
+                product_or_distro.displayname)
         else:
             return super(FrontPageFileBugAdvancedView, self).validate(data)
 
@@ -948,8 +993,15 @@ class BugCountDataItem:
             self.color = 'MochiKit.Color.Color["%sColor"]()' % color
 
 
-class BugTargetBugsView(BugTaskSearchListingView):
+class BugTargetBugsView(BugTaskSearchListingView, FeedsMixin):
     """View for the Bugs front page."""
+
+    # Only include <link> tags for bug feeds when using this view.
+    feed_types = (
+        BugFeedLink,
+        BugTargetLatestBugsFeedLink,
+        PersonLatestBugsFeedLink,
+        )
 
     # XXX: Bjorn Tillenius 2007-02-13:
     #      These colors should be changed. It's the same colors that are used
@@ -972,8 +1024,8 @@ class BugTargetBugsView(BugTaskSearchListingView):
         bug_statuses_to_show = list(UNRESOLVED_BUGTASK_STATUSES)
         if IDistroSeries.providedBy(self.context):
             bug_statuses_to_show.append(BugTaskStatus.FIXRELEASED)
-        bug_counts = sorted(
-            self.context.getBugCounts(self.user, bug_statuses_to_show).items())
+        bug_counts = sorted(self.context.getBugCounts(
+            self.user, bug_statuses_to_show).items())
         self.bug_count_items = [
             BugCountDataItem(status.title, count, self.status_color[status])
             for status, count in bug_counts]

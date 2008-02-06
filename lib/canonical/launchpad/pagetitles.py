@@ -118,6 +118,8 @@ archive_edit = ContextTitle('Edit %s')
 
 archive_index = ContextTitle('%s')
 
+archive_delete_packages = ContextTitle('Delete packages from %s')
+
 bazaar_all_branches = 'All branches in the Launchpad Bazaar'
 
 bazaar_index = 'Launchpad Code'
@@ -171,7 +173,17 @@ def branch_listing_cross_product(context, view):
 branch_landing_candidates = ContextDisplayName(smartquote(
     'Landing candidates for "%s"'))
 
-branchmergeproposal_edit = 'Edit branch merge proposal'
+branchmergeproposal_delete = 'Delete proposal to merge branch'
+
+branchmergeproposal_edit = 'Edit proposal to merge branch'
+
+branchmergeproposal_index = 'Proposal to merge branch'
+
+branchmergeproposal_request_review = ViewLabel()
+
+branchmergeproposal_review = ViewLabel()
+
+branchmergeproposal_work_in_progress = ViewLabel()
 
 branch_register_merge_proposal = 'Propose branch for merging'
 
@@ -266,6 +278,11 @@ def bugwatch_editform(context, view):
     return 'Bug #%d - Edit external bug watch (%s in %s)' % (
         context.bug.id, context.remotebug, context.bugtracker.title)
 
+def bugwatch_comments(context, view):
+    """Return the title for a page of imported comments for a bug watch."""
+    return "Bug #%d - Comments imported from bug watch %s on %s" % (
+        context.bug.id, context.remotebug, context.bugtracker.title)
+
 # bugpackageinfestations_index is a redirect
 
 # bugproductinfestations_index is a redirect
@@ -340,19 +357,19 @@ build_retry = ContextTitle('Retry %s')
 
 build_rescore = ContextTitle('Rescore %s')
 
+builder_admin = ContextTitle('Administer %s builder')
+
+builder_cancel = ContextTitle('Cancel job for %s')
+
+builder_edit = ContextTitle('Edit build machine %s')
+
+builder_history = ContextTitle('Build history for %s')
+
+builder_index = ContextTitle('Build machine %s')
+
+builder_mode = ContextTitle('Change mode for %s')
+
 builders_index = 'Launchpad build farm'
-
-builder_edit = ContextTitle(smartquote('Edit build machine "%s"'))
-
-builder_index = ContextTitle(smartquote('Build machine "%s"'))
-
-builder_cancel = ContextTitle(smartquote('Cancel job for "%s"'))
-
-builder_mode = ContextTitle(smartquote('Change mode for "%s"'))
-
-builder_admin = ContextTitle(smartquote('Administer "%s" builder'))
-
-builder_history = ContextTitle(smartquote('Build History for "%s"'))
 
 calendar_index = ContextTitle('%s')
 
@@ -421,6 +438,8 @@ distributionmirror_review = ContextTitle('Review mirror %s')
 distribution_add = 'Register a new distribution'
 
 distribution_allpackages = ContextTitle('All packages in %s')
+
+distribution_upstream_bug_report = ContextTitle('Upstream Bug Report for %s')
 
 distribution_bugcontact = ContextTitle('Change bug contact for %s')
 
@@ -951,6 +970,8 @@ product_bugs = ContextDisplayName('Bugs in %s')
 product_branches = ContextDisplayName(
     smartquote("%s's Bazaar branches registered in Launchpad"))
 
+product_branch_overview = ContextDisplayName("Code overview for %s")
+
 product_distros = ContextDisplayName(
     '%s packages: Comparison of distributions')
 
@@ -988,6 +1009,8 @@ productrelease_index = ContextDisplayName('%s in Launchpad')
 products_index = 'Projects registered in Launchpad'
 
 productseries_export = ContextTitle('Download translations for "%s"')
+
+productseries_linkbranch = ContextTitle('Link an existing branch to %s')
 
 productseries_index = ContextTitle('Overview of %s')
 

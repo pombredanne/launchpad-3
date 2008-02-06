@@ -44,7 +44,8 @@ class SoyuzTestPublisher:
         self.breezy_autotest = self.ubuntutest['breezy-autotest']
         self.person = getUtility(IPersonSet).getByName('sabdfl')
         self.breezy_autotest_i386 = self.breezy_autotest.newArch(
-            'i386', ProcessorFamily.get(1), False, self.person)
+            'i386', ProcessorFamily.get(1), False, self.person,
+            ppa_supported=True)
         self.breezy_autotest_hppa = self.breezy_autotest.newArch(
             'hppa', ProcessorFamily.get(4), False, self.person)
         self.breezy_autotest.nominatedarchindep = self.breezy_autotest_i386
@@ -72,7 +73,8 @@ class SoyuzTestPublisher:
                      distroseries=None, archive=None, builddepends=None,
                      builddependsindep=None, architecturehintlist='all',
                      dsc_standards_version='3.6.2', dsc_format='1.0',
-                     dsc_binaries='foo-bin',
+                     dsc_binaries='foo-bin', build_conflicts=None,
+                     build_conflicts_indep=None,
                      dsc_maintainer_rfc822='Foo Bar <foo@bar.com>'):
         """Return a mock source publishing record."""
         spn = getUtility(ISourcePackageNameSet).getOrCreateByName(sourcename)
@@ -94,8 +96,10 @@ class SoyuzTestPublisher:
             version=version,
             builddepends=builddepends,
             builddependsindep=builddependsindep,
+            build_conflicts=build_conflicts,
+            build_conflicts_indep=build_conflicts_indep,
             architecturehintlist=architecturehintlist,
-            changelog=None,
+            changelog_entry=None,
             dsc=None,
             copyright='placeholder ...',
             dscsigningkey=self.signingkey,
@@ -131,25 +135,32 @@ class SoyuzTestPublisher:
                        description='Well ...\nit does nothing, though',
                        shlibdep=None, depends=None, recommends=None,
                        suggests=None, conflicts=None, replaces=None,
-                       provides=None, filecontent='bbbiiinnnaaarrryyy',
+                       provides=None, pre_depends=None, enhances=None,
+                       breaks=None, filecontent='bbbiiinnnaaarrryyy',
                        status=PackagePublishingStatus.PENDING,
                        pocket=PackagePublishingPocket.RELEASE,
                        scheduleddeletiondate=None, dateremoved=None,
+                       distroseries=None,
+                       archive=None,
                        pub_source=None):
         """Return a list of binary publishing records."""
+        if distroseries is None:
+            distroseries = self.breezy_autotest
         sourcename = "%s" % binaryname.split('-')[0]
         if pub_source is None:
             pub_source = self.getPubSource(
-                sourcename=sourcename, status=status, pocket=pocket)
+                sourcename=sourcename, status=status, pocket=pocket,
+                archive=archive)
 
         # Determine architecture to build.
         from canonical.buildmaster.master import determineArchitecturesToBuild
-        legal_archs = [das for das in self.breezy_autotest.architectures]
+        legal_archs = [das for das in distroseries.architectures]
         archs = determineArchitecturesToBuild(
-            pub_source, legal_archs, self.breezy_autotest)
+            pub_source, legal_archs, distroseries)
 
         # Build and publish binaries.
-        archive = pub_source.archive
+        if archive is None:
+            archive = pub_source.archive
         spr = pub_source.sourcepackagerelease
         published_binaries = []
         for arch in archs:
@@ -157,19 +168,17 @@ class SoyuzTestPublisher:
                 arch, archive, spr, status, pocket, scheduleddeletiondate,
                 dateremoved, filecontent, binaryname, summary, description,
                 shlibdep, depends, recommends, suggests, conflicts, replaces,
-                provides)
+                provides, pre_depends, enhances, breaks)
             published_binaries.extend(pub_binaries)
 
         return sorted(
             published_binaries, key=operator.attrgetter('id'), reverse=True)
 
-    def _buildAndPublishBinaryForSource(self, distroarchseries, archive,
-                                        sourcepackagerelease, status,
-                                        pocket, scheduleddeletiondate,
-                                        dateremoved, filecontent, binaryname,
-                                        summary, description, shlibdep,
-                                        depends, recommends, suggests,
-                                        conflicts, replaces, provides):
+    def _buildAndPublishBinaryForSource(
+        self, distroarchseries, archive, sourcepackagerelease, status,
+        pocket, scheduleddeletiondate, dateremoved, filecontent, binaryname,
+        summary, description, shlibdep, depends, recommends, suggests,
+        conflicts, replaces, provides, pre_depends, enhances, breaks):
         """Return the corresponding BinaryPackagePublishingHistory."""
         # Create a Build record.
         build = sourcepackagerelease.createBuild(
@@ -193,6 +202,9 @@ class SoyuzTestPublisher:
             conflicts=conflicts,
             replaces=replaces,
             provides=provides,
+            pre_depends=pre_depends,
+            enhances=enhances,
+            breaks=breaks,
             essential=False,
             installedsize=100,
             architecturespecific=architecturespecific,

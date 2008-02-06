@@ -10,6 +10,8 @@ import socket
 
 from zope.component import getUtility
 
+from canonical.database.constants import UTC_NOW
+from canonical.database.sqlbase import commit
 from canonical.launchpad.components import externalbugtracker
 from canonical.launchpad.interfaces import (
     ILaunchpadCelebrities, IBugTrackerSet)
@@ -65,7 +67,15 @@ class BugWatchUpdater(object):
                         "Skipping updating Ubuntu Bugzilla watches.")
                 else:
                     self.updateBugTracker(bug_tracker)
-                self.txn.commit()
+
+                # XXX 2008-01-22 gmb:
+                #     We should be using self.txn.commit() here, however
+                #     there's a known issue with ztm.commit() in that it
+                #     only works once per Zopeless script run (bug
+                #     3989). Using commit() directly is the best
+                #     available workaround, but we need to change this
+                #     once the bug is resolved.
+                commit()
             except (KeyboardInterrupt, SystemExit):
                 # We should never catch KeyboardInterrupt or SystemExit.
                 raise
@@ -82,10 +92,17 @@ class BugWatchUpdater(object):
 
     def _getExternalBugTracker(self, bug_tracker):
         """Return an `ExternalBugTracker` instance for `bug_tracker`."""
-        return externalbugtracker.get_external_bugtracker(bug_tracker)
+        return externalbugtracker.get_external_bugtracker(
+            self.txn, bug_tracker)
 
     def updateBugTracker(self, bug_tracker):
         """Updates the given bug trackers's bug watches."""
+        # XXX 2007-01-18 gmb:
+        #     Once we start running checkwatches more frequently we need
+        #     to update the comment and the call to
+        #     getBugWatchesNeedingUpdate() below. We'll be checking
+        #     those watches which haven't been checked for 24 hours, not
+        #     23.
         # We want 1 day, but we'll use 23 hours because we can't count
         # on the cron job hitting exactly the same time every day
         bug_watches_to_update = (
@@ -94,6 +111,16 @@ class BugWatchUpdater(object):
         try:
             remotesystem = self._getExternalBugTracker(bug_tracker)
         except externalbugtracker.UnknownBugTrackerTypeError, error:
+            # We update all the bug watches to reflect the fact that
+            # this error occurred. We also update their last checked
+            # date to ensure that they don't get checked for another
+            # 24 hours (see above).
+            error_type = (
+                externalbugtracker.get_bugwatcherrortype_for_error(error))
+            for bug_watch in bug_watches_to_update:
+                bug_watch.last_error_type = error_type
+                bug_watch.lastchecked = UTC_NOW
+
             self.log.info(
                 "ExternalBugtracker for BugTrackerType '%s' is not "
                 "known." % (error.bugtrackertypename))

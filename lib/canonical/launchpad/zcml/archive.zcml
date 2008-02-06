@@ -15,7 +15,7 @@
       />
     <require
       permission="launchpad.Admin"
-      set_attributes="distribution purpose enabled authorized_size"
+      set_attributes="authorized_size distribution enabled private purpose"
       />
   </content>
 
@@ -42,7 +42,7 @@
 
   <browser:pages
     for="canonical.launchpad.interfaces.IArchive"
-    permission="zope.Public"
+    permission="launchpad.View"
     class="canonical.launchpad.browser.ArchiveView">
     <browser:page
       template="../templates/archive-index.pt"
@@ -58,7 +58,7 @@
 
   <browser:pages
     for="canonical.launchpad.interfaces.IArchive"
-    permission="zope.Public"
+    permission="launchpad.View"
     class="canonical.launchpad.browser.ArchiveBuildsView">
     <browser:page
       name="+builds"
@@ -89,6 +89,16 @@
     template="../templates/archive-admin.pt"
     />
 
+  <browser:pages
+    for="canonical.launchpad.interfaces.IArchive"
+    permission="launchpad.Edit"
+    class="canonical.launchpad.browser.ArchivePackageDeletionView">
+    <browser:page
+      template="../templates/archive-delete-packages.pt"
+      facet="overview"
+      name="+delete-packages"
+      />
+  </browser:pages>
 
   <!-- ArchiveSet -->
   <content class="canonical.launchpad.database.ArchiveSet">

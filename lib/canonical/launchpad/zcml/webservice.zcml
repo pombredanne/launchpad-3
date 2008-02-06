@@ -1,0 +1,47 @@
+<configure
+    xmlns="http://namespaces.zope.org/zope"
+    xmlns:browser="http://namespaces.zope.org/browser"
+    xmlns:i18n="http://namespaces.zope.org/i18n"
+    i18n_domain="launchpad">
+
+    <securedutility
+        class="canonical.launchpad.systemhomes.WebServiceApplication"
+        provides="canonical.launchpad.interfaces.IWebServiceApplication">
+        <allow
+            interface="canonical.launchpad.interfaces.IWebServiceApplication" />
+        <allow interface='zope.publisher.interfaces.IPublishTraverse' />
+        <allow interface='canonical.lazr.interfaces.IServiceRootResource' />
+    </securedutility>
+
+    <class class="canonical.lazr.rest.CollectionResource">
+        <allow interface='canonical.lazr.interfaces.ICollectionResource' />
+    </class>
+
+    <class class="canonical.lazr.rest.EntryResource">
+        <allow interface='canonical.lazr.interfaces.IEntryResource' />
+    </class>
+
+    <class class="canonical.lazr.rest.ScopedCollectionResource">
+        <allow interface='canonical.lazr.interfaces.ICollectionResource' />
+    </class>
+
+    <adapter
+        for="canonical.launchpad.interfaces.IPerson"
+        provides="canonical.launchpad.rest.IPersonEntry"
+        factory="canonical.launchpad.rest.PersonEntry"
+        />
+
+    <adapter
+        for="canonical.launchpad.interfaces.IPersonSet"
+        provides="canonical.lazr.interfaces.ICollection"
+        factory="canonical.launchpad.rest.PersonCollection"
+        />
+
+    <adapter
+        for="canonical.launchpad.rest.IPersonEntry
+             canonical.launchpad.interfaces.IPerson"
+        provides="canonical.lazr.interfaces.IScopedCollection"
+        factory="canonical.launchpad.rest.PersonPersonCollection"
+        />
+
+</configure>

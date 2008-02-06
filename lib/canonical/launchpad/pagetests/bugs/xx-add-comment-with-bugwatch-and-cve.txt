@@ -18,10 +18,8 @@ added to the bugwatches resp CVEs related to this bug
   >>> user_browser.url
   'http://bugs.launchpad.dev/debian/+source/mozilla-firefox/+bug/1'
 
-  >>> cve_portlet = find_portlet(user_browser.contents, 
-  ...    '<abbr title="Common Vulnerabilities and Exposures index">CVE</abbr>'
-  ...    ' references')
-  >>> added_cve_link = cve_portlet('a', 
+  >>> cve_portlet = find_portlet(user_browser.contents, 'CVE references')
+  >>> added_cve_link = cve_portlet('a',
   ...     title='This CVEwas automatically created fro...')[0]
   >>> print added_cve_link['href']
   /bugs/cve/1991-9911

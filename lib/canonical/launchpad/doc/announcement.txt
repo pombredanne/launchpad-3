@@ -28,11 +28,14 @@ after publishing, and they can be deleted, permanently.
 
 For the moment, this is only available to beta testers.
 
+    >>> from canonical.launchpad.ftests import login, logout
+    >>> login('foo.bar@canonical.com')
     >>> from canonical.launchpad.interfaces import ILaunchpadCelebrities
     >>> beta = getUtility(ILaunchpadCelebrities).launchpad_beta_testers
     >>> beta.addMember(sabdfl, sabdfl)
     >>> from canonical.database.sqlbase import flush_database_updates
     >>> flush_database_updates()
+    >>> logout()
 
 
 == Creation ==
@@ -186,7 +189,6 @@ announcements, and vice versa.
 You can change the title, summary or URL of an announcement only through the
 modify() method.
 
-    >>> from canonical.launchpad.ftests import login
     >>> login('mark@hbd.com')
     >>> kubuntu_release.title = 'Foo'
     Traceback (most recent call last):

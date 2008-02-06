@@ -7,6 +7,7 @@ __metaclass__ = type
 
 __all__ = [
     'IExternalBugTracker',
+    'ISupportsCommentImport',
     'UNKNOWN_REMOTE_IMPORTANCE',
     'UNKNOWN_REMOTE_STATUS',
     ]
@@ -33,3 +34,10 @@ class IExternalBugTracker(Interface):
 
     def convertRemoteImportance(remote_importance):
         """Convert a remote importance to a BugTaskImportance item."""
+
+
+class ISupportsCommentImport(IExternalBugTracker):
+    """A an external bug tracker that supports comment imports."""
+
+    def importBugComments(bug_watch):
+        """Import the comments for a given bug watch."""

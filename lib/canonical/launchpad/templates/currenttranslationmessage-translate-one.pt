@@ -522,7 +522,6 @@
                 https://bugzilla.mozilla.org/show_bug.cgi?id=299009
               </tal:comment>
               <textarea
-                style="width: 100%;"
                 rows="6"
                 tal:attributes="
                   id string:${translation_dictionary/html_id_translation}_new;
@@ -543,7 +542,6 @@
                 erroneous translations.
               </tal:comment>
               <textarea
-                style="width: 100%;"
                 rows="6"
                 tal:attributes="
                   id string:${translation_dictionary/html_id_translation}_new;

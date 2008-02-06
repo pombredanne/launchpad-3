@@ -46,8 +46,14 @@ The parent gets set to the initial message of the bug:
 == Links and CVEs in bug messages ==
 
 If a bug message contains links to an external bug report or a CVE,
-bugwatches resp. CVE watches are automatically created.
+bugwatches resp. CVE watches are automatically created. We add this
+message as the bug_watch_updater since that Person will not be assigned
+karma, which is not tested here, and since this test is run as the
+checkwatches db user, which does not have permission to alter karma
+scores.
 
+    >>> bug_watch_updater = getUtility(IPersonSet).getByName(
+    ...     'bug-watch-updater')
     >>> for cve in bug_one.cves:
     ...     print cve.displayname
     CVE-1999-8979
@@ -58,7 +64,7 @@ bugwatches resp. CVE watches are automatically created.
     https://bugzilla.mozilla.org/show_bug.cgi?id=42
     http://bugs.debian.org/cgi-bin/bugreport.cgi?bug=304014
     >>> test_message = bug_one.newMessage(
-    ...     owner=sample_person,
+    ...     owner=bug_watch_updater,
     ...     subject="test message subject",
     ...     content="""This is a test comment. This bug is the same as the 
     ...                one described here 
@@ -88,7 +94,7 @@ an external bug tracker.
     ...        http://some.bugzilla/show_bug.cgi?id=1234 and mentions
     ...        CVE-1991-3333
     ...    """,
-    ...    sample_person)
+    ...    bug_watch_updater)
     >>> bug_one.linkMessage(message)
     <BugMessage at...
     >>> for cve in bug_one.cves:
@@ -113,7 +119,7 @@ the sttribute `date_last_message` in order to optimize searches the need
 to compare this value for every bug in a large set.
 
     >>> test_message = bug_one.newMessage(
-    ...     owner=sample_person,
+    ...     owner=bug_watch_updater,
     ...     subject="test message subject",
     ...     content="This is a test comment.")
 

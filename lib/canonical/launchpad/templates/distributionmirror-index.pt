@@ -11,12 +11,6 @@
 >
 <body>
 
-<metal:leftportlets fill-slot="portlets_one">
-</metal:leftportlets>
-
-<metal:rightportlets fill-slot="portlets_two">
-</metal:rightportlets>
-
 <metal:heading fill-slot="pageheading">
   <h1>
     <tal:distro replace="context/distribution/displayname">Ubuntu
@@ -84,7 +78,8 @@
       </li>
     </ul>
 
-    <tal:entries replace="structure view/sources_list_entries" />
+    <tal:entries condition="context/content/enumvalue:ARCHIVE"
+                 replace="structure view/sources_list_entries" />
 
     <div id="last-probe" tal:define="probe context/last_probe_record">
       <h2>Last probe</h2>

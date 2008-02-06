@@ -6,6 +6,7 @@ __metaclass__ = type
 
 __all__ = [
     'LibraryFileAliasView',
+    'LibraryFileAliasMD5View'
     ]
 
 from canonical.launchpad.interfaces import ILibraryFileAlias
@@ -24,3 +25,13 @@ class LibraryFileAliasView(LaunchpadView):
     def initialize(self):
         """Redirect the request to the URL of the file in the Librarian."""
         self.request.response.redirect(self.context.getURL())
+        
+class LibraryFileAliasMD5View(LaunchpadView):
+    """View to show the MD5 digest for a librarian file."""
+    
+    __used_for__ = ILibraryFileAlias
+    
+    def render(self):
+        """Return the plain text MD5 signature"""
+        self.request.response.setHeader('Content-type', 'text/plain')
+        return self.context.content.md5

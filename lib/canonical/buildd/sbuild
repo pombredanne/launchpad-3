@@ -516,8 +516,6 @@ $SIG{'HUP'} = 'IGNORE';
 $main::distribution = "";
 $main::distribution = $conf::default_distribution if $conf::default_distribution;
 
-$ENV{$_} = $conf::ENV_OVERRIDES{$_} for keys %conf::ENV_OVERRIDES;
-
 chomp( $main::arch = `$conf::dpkg --print-installation-architecture` );
 $main::username = (getpwuid($<))[0] || $ENV{'LOGNAME'} || $ENV{'USER'};
 $main::debug = 0;
@@ -568,6 +566,9 @@ while( @ARGV && $ARGV[0] =~ /^-/ ) {
 	}
 	elsif (/^--comp=(.)/) {
 		$main::component=$1.$';
+	}
+        elsif (/^--purpose=(.)/) {
+                $main::purpose=$1.$';
 	}
 	elsif (/^-d/ || /^--dist/) {
 		if (/^-d(.)/ || /^--dist=(.)/) {
@@ -677,8 +678,8 @@ $SIG{'TERM'} = \&shutdown;
 $SIG{'ALRM'} = \&shutdown;
 $SIG{'PIPE'} = \&shutdown;
 read_deps( map { m,(?:.*/)?([^_/]+)[^/]*, } @ARGV );
-if (-d "chroot-$main::distribution") {
-	$main::chroot_dir = "chroot-$main::distribution";
+if (-d "chroot-autobuild") {
+	$main::chroot_dir = "chroot-autobuild";
 	$main::chroot_build_dir = "$main::chroot_dir/build/$main::username/";
 	$conf::srcdep_lock_dir = "$main::chroot_dir/var/debbuild/srcdep-lock";
 	$main::ilock_file = "$conf::srcdep_lock_dir/install";
@@ -1140,6 +1141,8 @@ EOF
 	open CURRENT, ">$main::cwd/$main::chroot_dir/CurrentlyBuilding" or die "$main::cwd/$main::chroot_dir/CurrentlyBuilding open failed";
 	# Package: must be first
 	print CURRENT "Package: $pkg\nComponent: $main::component\n";
+	print CURRENT "Suite: $main::distribution\n" if $main::distribution;
+	print CURRENT "Purpose: $main::purpose\n" if $main::purpose;
 	close CURRENT;
 
 	$main::build_start_time = time;
@@ -1294,7 +1297,11 @@ EOF
 			while( <F> ) {
 				my $f = (split( /\s+/, $_ ))[0];
 				push( @files, "$main::chroot_build_dir$f" );
-				next if $f !~ /$main::arch\.[\w\d.-]*$/;
+				if ($main::build_arch_all) {
+					next if ($f !~ /$main::arch\.[\w\d.-]*$/ && $f !~ /all\.[\w\d.-]*$/);
+				} else {
+					next if ($f !~ /$main::arch\.[\w\d.-]*$/);
+				}
 				push( @debs, "$main::chroot_build_dir$f" );
 				push( @space_files, $f );
 			}
@@ -2168,7 +2175,8 @@ sub get_dpkg_status {
 		if ($provides) {
 			foreach (split( /\s*,\s*/, $provides )) {
 				$result{$_} = { Installed => 1, Version => '=*=PROVIDED=*=' }
-					if isin( $_, @interest );
+					if (isin( $_, @interest ) &&
+						$result{$_}->{'Installed'} != 1);
 			}
 		}
 	}
@@ -2180,6 +2188,9 @@ sub version_cmp {
 	my $v1 = shift;
 	my $rel = shift;
 	my $v2 = shift;
+	if ($v1 eq "=*=PROVIDED=*=") {
+		return 0;
+	}
 	
 	system "$conf::dpkg", "--compare-versions", $v1, $rel, $v2;
 	return $? == 0;
