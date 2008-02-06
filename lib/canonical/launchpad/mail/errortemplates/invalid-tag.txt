@@ -1,3 +1,5 @@
 A tag you specified is invalid: %(tag)s
 
-Tags can only contain alphanumeric characters.
+Tags must start with a letter or number and be lowercase. The
+characters "+", "-" and "." are also allowed after the first
+character.

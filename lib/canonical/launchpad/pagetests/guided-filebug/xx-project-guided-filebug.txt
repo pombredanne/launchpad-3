@@ -44,7 +44,7 @@ filebug page.
 
     >>> user_browser.open('http://launchpad.dev/gnome')
     >>> user_browser.getLink(url='+filebug').click()
-    >>> user_browser.getLink('complicated bug filing form').click()
+    >>> user_browser.getLink('Advanced reporting options').click()
     >>> user_browser.url
     'http://launchpad.dev/gnome/+filebug-advanced'
 

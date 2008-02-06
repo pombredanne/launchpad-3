@@ -1,4 +1,4 @@
-# Copyright 2006 Canonical Ltd.  All rights reserved.
+# Copyright 2006-2008 Canonical Ltd.  All rights reserved.
 
 """Layers used by Canonical tests.
 
@@ -20,10 +20,12 @@ __all__ = [
     'BaseLayer', 'DatabaseLayer', 'LibrarianLayer', 'FunctionalLayer',
     'LaunchpadLayer', 'ZopelessLayer', 'LaunchpadFunctionalLayer',
     'LaunchpadZopelessLayer', 'LaunchpadScriptLayer', 'PageTestLayer',
-    'LayerConsistencyError', 'LayerIsolationError', 'TwistedLayer'
+    'LayerConsistencyError', 'LayerIsolationError', 'TwistedLayer',
+    'ExperimentalLaunchpadZopelessLayer',
     ]
 
 import logging
+import os
 import socket
 import time
 from urllib import urlopen
@@ -98,11 +100,15 @@ class BaseLayer:
     resources in a mess.
 
     XXX: StuartBishop 2006-07-12: Unit tests (tests with no layer) will not
-    get this checks. The Z3 test runner should be updated so that a layer
+    get these checks. The Z3 test runner should be updated so that a layer
     can be specified to use for unit tests.
     """
     # Set to True when we are running tests in this layer.
     isSetUp = False
+
+    # The name of this test - this is the same output that the testrunner
+    # displays. It is probably unique, but not guaranteed to be so.
+    test_name = None
 
     @classmethod
     @profiled
@@ -130,11 +136,24 @@ class BaseLayer:
     def testSetUp(cls):
         cls.check()
 
+        # Tests and test infrastruture sometimes needs to know the test
+        # name.  The testrunner doesn't provide this, so we have to do
+        # some snooping.
+        import inspect
+        frame = inspect.currentframe()
+        try:
+            while frame.f_code.co_name != 'startTest':
+                frame = frame.f_back
+            BaseLayer.test_name = str(frame.f_locals['test'])
+        finally:
+            del frame # As per no-leak stack inspection in Python reference.
+
     @classmethod
     @profiled
     def testTearDown(cls):
         reset_logging()
         del canonical.launchpad.mail.stub.test_emails[:]
+        BaseLayer.test_name = None
         cls.check()
 
     @classmethod
@@ -281,6 +300,11 @@ class LibrarianLayer(BaseLayer):
         config.librarian.upload_port = cls._orig_librarian_port
 
 
+# We store a reference to the DB-API connect method here when we
+# put a proxy in its place.
+_org_connect = None
+
+
 class DatabaseLayer(BaseLayer):
     """Provides tests access to the Launchpad sample database."""
 
@@ -330,9 +354,15 @@ class DatabaseLayer(BaseLayer):
             else:
                 break
 
+        if cls.use_mockdb is True:
+            cls.installMockDb()
+
     @classmethod
     @profiled
     def testTearDown(cls):
+        if cls.use_mockdb is True:
+            cls.uninstallMockDb()
+
         # Ensure that the database is connectable
         cls.connect().close()
 
@@ -342,6 +372,56 @@ class DatabaseLayer(BaseLayer):
         from canonical.launchpad.ftests.harness import LaunchpadTestSetup
         if cls._reset_between_tests:
             LaunchpadTestSetup().tearDown()
+
+    use_mockdb = False
+    mockdb_mode = None
+
+    @classmethod
+    @profiled
+    def installMockDb(cls):
+        assert cls.mockdb_mode is None, 'mock db already installed'
+
+        from canonical.testing.mockdb import (
+                script_filename, ScriptRecorder, ScriptPlayer,
+                )
+
+        # We need a unique key for each test to store the mock db script.
+        test_key = BaseLayer.test_name
+        assert test_key, "Invalid test_key %r" % (test_key,)
+
+        # Determine if we are in replay or record mode and setup our
+        # mock db script.
+        filename = script_filename(test_key)
+        if os.path.exists(filename):
+            cls.mockdb_mode = 'replay'
+            cls.script = ScriptPlayer(test_key)
+        else:
+            cls.mockdb_mode = 'record'
+            cls.script = ScriptRecorder(test_key)
+
+        global _org_connect
+        _org_connect = psycopg.connect
+        # Proxy real connections with our mockdb.
+        def fake_connect(*args, **kw):
+            return cls.script.connect(_org_connect, *args, **kw)
+        psycopg.connect = fake_connect
+
+    @classmethod
+    @profiled
+    def uninstallMockDb(cls):
+        if cls.mockdb_mode is None:
+            return # Already uninstalled
+
+        # Store results if we are recording
+        if cls.mockdb_mode == 'record':
+            cls.script.store()
+            assert os.path.exists(cls.script.script_filename), (
+                    "Stored results but no script on disk.")
+
+        cls.mockdb_mode = None
+        global _org_connect
+        psycopg.connect = _org_connect
+        _org_connect = None
 
     @classmethod
     @profiled
@@ -465,8 +545,8 @@ class ZopelessLayer(BaseLayer):
         # Assert that execute_zcml_for_scripts did what it says it does.
         if not is_ca_available():
             raise LayerInvariantError(
-                "Component architecture not loaded by execute_zcml_for_scripts"
-                )
+                "Component architecture not loaded by "
+                "execute_zcml_for_scripts")
 
         # If our request publication factories were defined using
         # ZCML, they'd be set up by execute_zcml_for_scripts(). Since
@@ -638,6 +718,25 @@ class LaunchpadZopelessLayer(ZopelessLayer, LaunchpadLayer):
         cls.txn.uninstall()
         cls.txn = initZopeless(**kw)
         LaunchpadZopelessTestSetup.txn = cls.txn
+
+class ExperimentalLaunchpadZopelessLayer(LaunchpadZopelessLayer):
+    """LaunchpadZopelessLayer using the mock database."""
+
+    @classmethod
+    def setUp(cls):
+        DatabaseLayer.use_mockdb = True
+
+    @classmethod
+    def tearDown(cls):
+        DatabaseLayer.use_mockdb = False
+
+    @classmethod
+    def testSetUp(cls):
+        pass
+
+    @classmethod
+    def testTearDown(cls):
+        pass
 
 
 class LaunchpadScriptLayer(ZopelessLayer, LaunchpadLayer):

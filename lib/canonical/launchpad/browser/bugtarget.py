@@ -460,16 +460,15 @@ class FileBugViewBase(LaunchpadFormView):
             self.request.response.addNotification(notification)
         if bug.security_related:
             self.request.response.addNotification(
-                'Security-related bugs are by default <span title="Private '
-                'bugs are visible only to their direct subscribers.">private'
-                '</span>. You may choose to <a href="+secrecy">publically '
+                'Security-related bugs are by default private '
+                '(visible only to their direct subscribers). '
+                'You may choose to <a href="+secrecy">publicly '
                 'disclose</a> this bug.')
         if bug.private and not bug.security_related:
             self.request.response.addNotification(
-                'This bug report has been marked as <span title="Private '
-                'bugs are visible only to their direct subscribers.">private'
-                '</span>. You may choose to <a href="+secrecy">change '
-                'this</a>.')
+                'This bug report has been marked private '
+                '(visible only to its direct subscribers). '
+                'You may choose to <a href="+secrecy">change this</a>.')
 
         self.request.response.redirect(canonical_url(bug.bugtasks[0]))
 

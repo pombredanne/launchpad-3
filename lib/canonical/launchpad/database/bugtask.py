@@ -1582,7 +1582,8 @@ class BugTaskSet:
 
         return bugtask
 
-    def findExpirableBugTasks(self, min_days_old, bug=None, target=None):
+    def findExpirableBugTasks(self, min_days_old, user,
+                              bug=None, target=None):
         """See `IBugTaskSet`.
 
         The list of Incomplete bugtasks is selected from products and
@@ -1607,12 +1608,22 @@ class BugTaskSet:
         list because they can only be expired by calling the master bugtask's
         transitionToStatus() method. See 'Conjoined Bug Tasks' in
         c.l.doc/bugtasks.txt.
+
+        Only bugtask the specified user has permission to view are
+        returned. The Janitor celebrity has permission to view all bugs.
         """
         if bug is None:
             bug_clause = ''
         else:
             bug_clause = 'AND Bug.id = %s' % sqlvalues(bug)
 
+        if user == getUtility(ILaunchpadCelebrities).janitor:
+            # The janitor needs access to all bugs.
+            bug_privacy_filter = ''
+        else:
+            bug_privacy_filter = get_bug_privacy_filter(user)
+            if bug_privacy_filter != '':
+                bug_privacy_filter = "AND " + bug_privacy_filter
         unconfirmed_bug_join = self._getUnconfirmedBugJoin()
         (target_join, target_clause) = self._getTargetJoinAndClause(target)
         all_bugtasks = BugTask.select("""
@@ -1626,6 +1637,7 @@ class BugTaskSet:
                 WHERE
                 """ + target_clause + """
                 """ + bug_clause + """
+                """ + bug_privacy_filter + """
                     AND BugTask.assignee IS NULL
                     AND BugTask.bugwatch IS NULL
                     AND BugTask.milestone IS NULL
