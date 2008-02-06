@@ -413,7 +413,8 @@ class BugTaskCreationStep(AlsoAffectsStep):
                     '<a href="%(bug_url)s">Bug #%(bug_id)s</a> also links'
                     ' to the added bug watch'
                     ' (%(bugtracker_name)s #%(remote_bug)s).',
-                    bug_url=canonical_url(other_bug), bug_id=other_bug.id,
+                    bug_url=canonical_url(other_bug),
+                    bug_id=str(other_bug.id),
                     bugtracker_name=extracted_bugtracker.name,
                     remote_bug=extracted_bug))
 
