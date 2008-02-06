@@ -13,7 +13,7 @@ mechanisms.
     ...	     NotificationResponse, NotificationRequest)
     >>> def new_response():
     ...     response = NotificationResponse()
-    ...     request = NotificationRequest()
+    ...     request  = NotificationRequest()
     ...     request.response = response
     ...     response._request = request
     ...	    return response
@@ -62,7 +62,7 @@ zope.i18n.Message or zope.i18n.MessageID will be escaped in the same
 manner as raw text.
 
     >>> import zope.i18n
-    >>> msgtxt = zope.i18n.Message(u'<br/>foo')
+    >>> msgtxt   = zope.i18n.Message(u'<br/>foo')
     >>> msgidtxt = zope.i18n.MessageID(u'<br/>foo')
     >>> response = new_response()
     >>> response.addNotification(msgtxt)
@@ -71,3 +71,21 @@ manner as raw text.
     ...     notification.message
     u'&lt;br/&gt;foo'
     u'&lt;br/&gt;foo'
+
+To pass internationalized text that contains markup, one may call
+structured() directly with an internationalized object.  structured()
+performs the translation and substitution, and the resulting object
+may then be passed to addNotification().
+
+    >>> from canonical.launchpad import _
+    >>> msgid   = _(u'<good/>%(evil)s')
+    >>> escapee = '<evil/>'
+    >>> text    = structured(msgid, evil=escapee)
+    >>> text.escapedtext
+    u'<good/>&lt;evil/&gt;'
+
+    >>> response = new_response()
+    >>> response.addNotification(text)
+    >>> for notification in response.notifications:
+    ...     notification.message
+    u'<good/>&lt;evil/&gt;'
