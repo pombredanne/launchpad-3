@@ -197,7 +197,6 @@ class StructuralSubscriptionTargetMixin:
             query,
             orderBy='Person.displayname',
             clauseTables=['Person'])
-        # TODO : this can be done more efficiently by SQL
         subscriptions = [sub for sub
                          in all_subscriptions
                          if ((sub.bug_notification_level >=

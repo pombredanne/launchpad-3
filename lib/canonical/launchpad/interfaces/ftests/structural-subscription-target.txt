@@ -2,7 +2,7 @@
 
 Structural subscriptions allow users to subscribe to notifications about
 new items and changes to existing items for a Launchpad structure such as
-Product, Project, Distribution, Milesonte and series.
+Product, Project, Distribution, Milestone and series.
 
     >>> from canonical.launchpad.interfaces import (
     ...     IStructuralSubscriptionTarget)
@@ -42,7 +42,7 @@ Let's login then to add a subscription:
     [u'no-priv']
 
 Trying to add a subscription to a target when that person
-or team is already subscribe to that target will raise a
+or team is already subscribed to that target will raise a
 DuplicateSubscriptionError.
 
     >>> target.addBugSubscription(no_priv, no_priv)
