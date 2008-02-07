@@ -16,11 +16,12 @@ from zope.component import getUtility
 from sqlobject import (ForeignKey, StringCol, SQLObjectNotFound,
     SQLMultipleJoin)
 
-from canonical.database.sqlbase import SQLBase
+from canonical.database.sqlbase import SQLBase, sqlvalues
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
 
+from canonical.launchpad.database.bugmessage import BugMessage
 from canonical.launchpad.event import SQLObjectModifiedEvent
 
 from canonical.launchpad.webapp import urlappend, urlsplit
@@ -182,7 +183,15 @@ class BugWatch(SQLBase):
 
     def hasComment(self, comment_id):
         """See `IBugWatch`."""
-        pass
+        query = """
+            BugMessage.message = Message.id
+            AND Message.rfc822msgid = %s
+            AND BugMessage.bugwatch = %s
+        """ % sqlvalues(comment_id, self)
+
+        comment = BugMessage.selectOne(query, clauseTables=['Message'])
+
+        return comment is not None
 
     def addComment(self, comment_id, message):
         """See `IBugWatch`."""
