@@ -528,7 +528,12 @@ class IBranch(IHasOwner):
         """
 
     def deletionRequirements():
-        """What is required in order to delete this branch.
+        """Determine what is required to delete this branch.
+
+        :return: a dict of {object: (operation, reason)}, where object is the
+            object that must be deleted or altered, operation is either
+            "delete" or "alter", and reason is a string explaining why the
+            object needs to be touched.
         """
 
     def _breakReferences():
@@ -680,8 +685,15 @@ class IBranchSet(Interface):
         be a team, except for the special case of the ~vcs-imports celebrity.
         """
 
-    def delete(branch):
-        """Delete the specified branch."""
+    def delete(branch, break_references=False):
+        """Delete the specified branch.
+
+        Revisions associated with this branch will also be deleted.
+        :param break_references: If supplied, break any references to this
+            branch by deleting items with mandatory references and
+            NULLing other references.
+        :raise: CannotDeleteBranch if the branch cannot be deleted.
+        """
 
     def getByUniqueName(unique_name, default=None):
         """Find a branch by its ~owner/product/name unique name.
