@@ -216,13 +216,14 @@ def faq_edited(faq, event):
         user.assignKarma('faqedited', **context)
 
 def branch_created(branch, event):
-    import pdb; pdb.set_trace()
+    """Assign karma to the user who registered the branch."""
     if branch.product is None:
         # No karma for junk branches.
         return
     branch.registrant.assignKarma('branchcreated', product=branch.product)
 
 def bug_branch_created(bug_branch, event):
+    """Assign karma to the user who linked the bug to the branch."""
     product = bug_branch.branch.product
     if product is None:
         # No karma for junk branches.
@@ -230,6 +231,7 @@ def bug_branch_created(bug_branch, event):
     bug_branch.registrant.assignKarma('bugbranchcreated', product=product)
 
 def spec_branch_created(spec_branch, event):
+    """Assign karma to the user who linked the spec to the branch."""
     product = spec_branch.branch.product
     if product is None:
         # No karma for junk branches.

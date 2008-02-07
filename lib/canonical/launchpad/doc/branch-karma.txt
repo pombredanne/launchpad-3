@@ -17,8 +17,44 @@ it.
     >>> karma_helper = KarmaAssignedEventListener(show_person=True)
     >>> karma_helper.register_listener()
 
-    >>> login('test@canonical.com')
+== Registering branches ==
 
+Karma is added for registering a branch.
+
+    >>> login('test@canonical.com')
     >>> from canonical.launchpad.testing import LaunchpadObjectFactory
     >>> factory = LaunchpadObjectFactory()
-    >>> b = factory.makeBranch()
+    >>> fooix = factory.makeProduct(name='fooix')
+    >>> eric = factory.makePerson(name='eric')
+    >>> branch = factory.makeBranch(owner=eric, product=fooix)
+    Karma added: action=branchcreated, product=fooix, person=eric
+
+However, no karam is added for junk branches.
+
+    >>> junk_branch = factory.makeBranch(
+    ...     owner=eric, product=None, explicit_junk=True)
+
+
+== Linking bugs and branches ==
+
+The registrant of a bug branch link gets karma for linking them.
+
+    >>> bug = factory.makeBug(product=fooix)
+    >>> bug_branch = bug.addBranch(branch, eric)
+    Karma added: action=bugbranchcreated, product=fooix, person=eric
+
+As long as it is not a junk branch.
+
+    >>> bug_branch = bug.addBranch(junk_branch, eric)
+
+
+== Linking blueprints and branches ==
+
+The registrant of a blueprint branch link gets karma for linking them.
+
+    >>> blueprint = factory.makeBlueprint(product=fooix)
+    >>> blueprint.linkBranch(branch, eric)
+
+But again, not for junk branches.
+
+    >>> blueprint.linkBranch(junk_branch, eric)

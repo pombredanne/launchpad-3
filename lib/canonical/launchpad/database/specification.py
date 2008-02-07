@@ -626,15 +626,15 @@ class Specification(SQLBase, BugLinkTargetMixin):
             specificationID=self.id, branchID=branch.id)
 
     def linkBranch(self, branch, registrant, summary=None):
-        branchlink = self.getBranchLink(branch)
-        if branchlink is not None:
-            return branchlink
+        branch_link = self.getBranchLink(branch)
+        if branch_link is not None:
+            return branch_link
         branch.date_last_modified = UTC_NOW
-        return SpecificationBranch(specification=self,
-                                   branch=branch,
-                                   summary=summary,
-                                   registrant=registrant)
-
+        branch_link = SpecificationBranch(
+            specification=self, branch=branch, summary=summary,
+            registrant=registrant)
+        notify(SQLObjectCreatedEvent(branch_link))
+        return branch_link
 
 class HasSpecificationsMixin:
     """A mixin class that implements many of the common shortcut properties

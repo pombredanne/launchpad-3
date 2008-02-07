@@ -17,7 +17,9 @@ import pytz
 from zope.component import getUtility
 from canonical.launchpad.interfaces import (
     BranchType, CreateBugParams, IBranchSet, IBugSet, ILaunchpadCelebrities,
-    IPersonSet, IProductSet, IRevisionSet, License, PersonCreationRationale,
+    IPersonSet, IProductSet, IRevisionSet, ISpecificationSet,
+    License, PersonCreationRationale,
+    SpecificationImplementationStatus, SpecificationPriority,
     UnknownBranchTypeError)
 
 
@@ -116,6 +118,7 @@ class LaunchpadObjectFactory:
 
     def makeBranch(self, branch_type=None, owner=None, name=None,
                    product=None, url=None, registrant=None,
+                   explicit_junk=False,
                    **optional_branch_args):
         """Create and return a new, arbitrary Branch of the given type.
 
@@ -130,7 +133,7 @@ class LaunchpadObjectFactory:
             registrant = owner
         if name is None:
             name = self.getUniqueString('branch')
-        if product is None:
+        if product is None and not explicit_junk:
             product = self.makeProduct()
 
         if branch_type in (BranchType.HOSTED, BranchType.IMPORTED):
@@ -186,15 +189,30 @@ class LaunchpadObjectFactory:
             parent_ids = [parent.revision_id]
         branch.updateScannedDetails(parent.revision_id, sequence)
 
-    def makeBug(self):
+    def makeBug(self, product=None):
         """Create and return a new, arbitrary Bug.
 
         The bug returned uses default values where possible. See
         `IBugSet.new` for more information.
         """
+        if product is None:
+            product=self.makeProduct()
         owner = self.makePerson()
         title = self.getUniqueString()
         create_bug_params = CreateBugParams(
             owner, title, comment=self.getUniqueString())
-        create_bug_params.setBugTarget(product=self.makeProduct())
+        create_bug_params.setBugTarget(product=product)
         return getUtility(IBugSet).createBug(create_bug_params)
+
+    def makeBlueprint(self, product=None):
+        """Create and return a new, arbitrary Blueprint."""
+        if product is None:
+            product=self.makeProduct()
+        return getUtility(ISpecificationSet).new(
+            name=self.getUniqueString('name'),
+            title=self.getUniqueString('title'),
+            specurl=None,
+            summary=self.getUniqueString('summary'),
+            priority=SpecificationPriority.UNDEFINED,
+            status=SpecificationImplementationStatus.UNKNOWN,
+            owner=self.makePerson())
