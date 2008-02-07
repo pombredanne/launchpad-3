@@ -338,7 +338,7 @@ Let's check if packages were uploaded correctly.
   >>> spr.version
   u'1.2.0-0ubuntu1'
   >>> spr.component.name
-  u'non-free'
+  u'multiverse'
   >>> spr.section.name
   u'comm'
   >>> spr.maintainer.displayname
@@ -368,7 +368,7 @@ Same thing for etherwake:
   >>> spr.version
   u'1.08-1'
   >>> spr.component.name
-  u'main'
+  u'universe'
   >>> spr.section.name
   u'net'
   >>> spr.maintainer.displayname
@@ -509,7 +509,7 @@ Using getQueueItem to inspect current NEW queue and accept them.
   ...                              'ACCEPTED'))
   >>> L.sort()
   >>> print "\n".join(L)
-  drdsl Component "non-free" is not allowed in breezy-autotest
+  drdsl ACCEPTED
   etherwake ACCEPTED
 
 # XXX cprov 2006-04-12 bug=3989:
@@ -543,7 +543,7 @@ These packages must now be in the publishing history. Let's check it.
   ...         print name, sspph.status.title
   ...     else:
   ...         print name, 'not Published'
-  drdsl not Published
+  drdsl Pending
   etherwake Pending
 
 
@@ -560,9 +560,9 @@ Invoke Publisher script against the 'ubuntutest' distribution:
   >>> print stderr
   INFO      Distribution: ubuntutest
   ...
-  DEBUG   Added /var/tmp/archive/ubuntutest/pool/main/e/etherwake/etherwake_1.08.orig.tar.gz from library
-  DEBUG   Added /var/tmp/archive/ubuntutest/pool/main/e/etherwake/etherwake_1.08-1.diff.gz from library
-  DEBUG   Added /var/tmp/archive/ubuntutest/pool/main/e/etherwake/etherwake_1.08-1.dsc from library
+  DEBUG   Added /var/tmp/archive/ubuntutest/pool/universe/e/etherwake/etherwake_1.08.orig.tar.gz from library
+  DEBUG   Added /var/tmp/archive/ubuntutest/pool/universe/e/etherwake/etherwake_1.08-1.diff.gz from library
+  DEBUG   Added /var/tmp/archive/ubuntutest/pool/universe/e/etherwake/etherwake_1.08-1.dsc from library
   ...
 
 
@@ -577,24 +577,27 @@ Check if the 'etherwake' source package was correctly published and is
 in the filesystem archive, we are looking for the DSC, the gzipped
 original source and the gzipped package diff:
 
-  >>> len(os.listdir("/var/tmp/archive/ubuntutest/pool/main/e/etherwake"))
+  >>> len(os.listdir("/var/tmp/archive/ubuntutest/pool/universe/e/etherwake"))
   3
 
 Check the generation of a correct Sources tag file for the main
 component of ubuntutest/breezy-autotest, containing the only the
 required entry for 'etherwake':
 
-  >>> print open("/var/tmp/archive/ubuntutest/dists/breezy-autotest/main/source"
-  ...            "/Sources").read().replace('Section: net\n', '') + '\nEND'
+  >>> sources = open(
+  ...    "/var/tmp/archive/ubuntutest/dists/breezy-autotest/universe/source"
+  ...    "/Sources").read()
+  >>> print sources.replace('Section: net\n', '') + '\nEND'
   Package: etherwake
   Binary: etherwake
   Version: 1.08-1
+  Section: universe/net
   Maintainer: Alain Schroeder <alain@debian.org>
   Build-Depends: debhelper (>> 2.0)
   Architecture: any
   Standards-Version: 3.5.10.0
   Format: 1.0
-  Directory: pool/main/e/etherwake
+  Directory: pool/universe/e/etherwake
   Files:
    f13711c5b8261fbb77b43ae0e8ba9360 566 etherwake_1.08-1.dsc
    c2dc10f98bac012b900fd0b46721fc80 4455 etherwake_1.08.orig.tar.gz
@@ -610,14 +613,14 @@ required entry for 'etherwake':
 # should be removed.
 
 Now we invoke changeOverride on just published etherwake, moving it to
-component 'universe'.
+component 'multiverse'.
 
   >>> ubuntutest = getUtility(IDistributionSet)['ubuntutest']
   >>> breezy_autotest = ubuntutest['breezy-autotest']
   >>> etherwake = breezy_autotest.getSourcePackage('etherwake')
   >>> etherwake_drspr = etherwake.currentrelease
   >>> override = etherwake_drspr.current_published.changeOverride(
-  ...     new_component=getUtility(IComponentSet)['universe'])
+  ...     new_component=getUtility(IComponentSet)['multiverse'])
 
 Check if we have new pending publishing record as expected
 
@@ -625,8 +628,8 @@ Check if we have new pending publishing record as expected
   ...    sourcepackagereleaseID=etherwake_drspr.sourcepackagerelease.id,
   ...    orderBy=['id']):
   ...    print pub.status.name, pub.component.name, pub.pocket.name
-  PUBLISHED main RELEASE
-  PENDING universe RELEASE
+  PUBLISHED universe RELEASE
+  PENDING multiverse RELEASE
 
 Force database changes, so they can be used by the external script properly.
 
@@ -653,9 +656,9 @@ already on disk, verify the contents are as expected.
   >>> print stderr
   INFO      Distribution: ubuntutest
   ...
-  DEBUG   /var/tmp/archive/ubuntutest/pool/main/e/etherwake/etherwake_1.08.orig.tar.gz is already in pool with the same content.
-  DEBUG   /var/tmp/archive/ubuntutest/pool/main/e/etherwake/etherwake_1.08-1.diff.gz is already in pool with the same content.
-  DEBUG   /var/tmp/archive/ubuntutest/pool/main/e/etherwake/etherwake_1.08-1.dsc is already in pool with the same content.
+  DEBUG   /var/tmp/archive/ubuntutest/pool/universe/e/etherwake/etherwake_1.08.orig.tar.gz is already in pool with the same content.
+  DEBUG   /var/tmp/archive/ubuntutest/pool/universe/e/etherwake/etherwake_1.08-1.diff.gz is already in pool with the same content.
+  DEBUG   /var/tmp/archive/ubuntutest/pool/universe/e/etherwake/etherwake_1.08-1.dsc is already in pool with the same content.
   ...
 
 Invalidates SQLObject cache to cope with publisher.
@@ -668,10 +671,10 @@ Check the publishing history again
   ...    sourcepackagereleaseID=etherwake_drspr.sourcepackagerelease.id,
   ...    orderBy=['id']):
   ...    print pub.status.name, pub.component.name, pub.pocket.name
-  SUPERSEDED main RELEASE
-  PUBLISHED universe RELEASE
+  SUPERSEDED universe RELEASE
+  PUBLISHED multiverse RELEASE
 
-Check if the package was moved properly to the component 'universe':
+Check if the package was moved properly to the component 'multiverse':
 
   >>> main_sources = open("/var/tmp/archive/ubuntutest/dists/breezy-autotest"
   ...                     "/main/source/Sources").read()
@@ -679,10 +682,12 @@ Check if the package was moved properly to the component 'universe':
   <BLANKLINE>
   END
 
-  >>> universe_sources = open("/var/tmp/archive/ubuntutest/dists/"
-  ...                         "breezy-autotest/universe/source/"
-  ...                         "Sources").read()
-  >>> print universe_sources + '\nEND'
+  >>> multiverse_sources = open(
+  ...     "/var/tmp/archive/ubuntutest/dists/breezy-autotest"
+  ...     "/multiverse/source/Sources").read()
+  >>> print multiverse_sources + '\nEND'
+  Package: drdsl
+  ...
   Package: etherwake
   ...
   END

@@ -2,71 +2,56 @@
      xmlns:tal="http://xml.zope.org/namespaces/tal"
      xmlns:metal="http://xml.zope.org/namespaces/metal">
 
-    <style type="text/css">
-        a img {
-            border: none;
-        }
-        table {
-            border: 1px solid black;
-        }
-        th {
-            background: lightgray;
-        }
-        td {
-            padding: 0 1em 0 1em;
-        }
-        .even td {
-            background: #99cc00;
-        }
-    </style>
-    <table tal:define="site_url view/feed/site_url">
-        <tr>
-            <th>Affects</th>
-            <th>Status</th>
-            <th>Importance</th>
-            <th>Assigned to</th>
-            <th>Bug watch</th>
-        </tr>
+  <table tal:define="site_url view/feed/site_url"
+          style="border: 1px solid black">
+    <tr>
+      <th colspan="2" style="background: #dddddd">Affects</th>
+      <th style="background: #dddddd">Status</th>
+      <th style="background: #dddddd">Importance</th>
+      <th style="background: #dddddd">Assigned&nbsp;to</th>
+      <th style="background: #dddddd">Bug watch</th>
+    </tr>
 
-        <tal:comment condition="nothing">
-        Bugtask
-        </tal:comment>
-        <tr tal:repeat="bugtask context/bugtasks">
-            <td style="padding: 0.3em 0em 0.3em 1.5em"
-                tal:condition="bugtask/product">
-                <img alt=""
-                  tal:attributes="src string:${site_url}/@@/product" />
-                <span tal:replace="bugtask/target/name">Fake BugTask Name</span>
-            </td>
+    <tal:comment condition="nothing">
+      Bugtask
+    </tal:comment>
+    <tr tal:repeat="bugtask context/bugtasks">
+      <tal:product condition="bugtask/product">
+        <td>
+          <img alt="" tal:attributes="src string:${site_url}/@@/product" />
+        </td>
+        <td tal:content="bugtask/target/name">Fake BugTask Name</td>
+      </tal:product>
 
-            <td style="padding: 0.3em 0em 0.3em 1.5em"
-                tal:condition="not:bugtask/product">
-                <img alt=""
-                  tal:attributes="src string:${site_url}/@@/milestone" />
-                <span tal:replace="bugtask/target/name">Fake BugTask Name</span>
-            </td>
-            <td tal:content="bugtask/status/title">Won't Fix</td>
-            <td tal:content="bugtask/importance/title">Unknown</td>
-            <td tal:content="bugtask/assignee/displayname|string:-">Person</td>
-            <td style="padding: 0.3em 0em 0.3em 1.5em"
-                tal:condition="bugtask/bugwatch">
-                <a tal:attributes="href bugtask/bugwatch/url"
-                   tal:content="bugtask/bugwatch/title">bugwatch
-                </a>
-            </td>
-        </tr>
+      <tal:milestone condition="not:bugtask/product">
+        <td>
+          <img alt="" tal:attributes="src string:${site_url}/@@/milestone" />
+        </td>
+        <td tal:content="bugtask/target/name">Fake BugTask Name</td>
+      </tal:milestone>
+      <td tal:content="bugtask/status/title">Won't Fix</td>
+      <td tal:content="bugtask/importance/title">Unknown</td>
+      <td tal:content="bugtask/assignee/displayname|string:-">Person</td>
+      <td>
+        <a tal:condition="bugtask/bugwatch"
+            tal:attributes="href bugtask/bugwatch/url"
+            tal:content="bugtask/bugwatch/title">bugwatch
+        </a>
+      </td>
+    </tr>
 
-        <tal:comment condition="nothing">
-        Nomination for series in above bugtask
-        </tal:comment>
-        <tr tal:repeat="nomination context/getNominations">
-            <td colspan="4" style="padding-left: 3em">Nominated for
-                <span tal:replace="nomination/target/title">Trunk</span> by
-                <a tal:replace="structure nomination/owner/fmt:link:bugs">
-                Edwin Grubbs</a>
-            </td>
-        </tr>
+    <tal:comment condition="nothing">
+      Nomination for series in above bugtask
+    </tal:comment>
+    <tr tal:repeat="nomination context/getNominations">
+      <td colspan="6" style="padding-left: 3em">Nominated for
+        <span tal:replace="nomination/target/title">Trunk</span> by
+        <a tal:replace="structure nomination/owner/fmt:link:bugs">
+          Edwin Grubbs
+        </a>
+      </td>
+    </tr>
 
-    </table>
+  </table>
 
 </div>

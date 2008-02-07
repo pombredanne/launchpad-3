@@ -42,14 +42,13 @@
     <tal:do_not_show_portlets_advanced_form
       condition="not: view/shouldShowAdvancedForm">
       <tal:block content="structure context/@@+portlet-bugfilters" />
+      <tal:block 
+          content="structure context/@@+portlet-publishing-details | nothing"/>
       <tal:block content="structure context/@@+portlet-bugtags" />
       <tal:releasecriticalbugs
-         tal:condition="view/shouldShowReleaseCriticalPortlet"
-         tal:content="structure context/@@+portlet-bugtasklist-seriesbugs" />
+          tal:condition="view/shouldShowReleaseCriticalPortlet"
+          tal:content="structure context/@@+portlet-bugtasklist-seriesbugs" />
      </tal:do_not_show_portlets_advanced_form>
-     <tal:show_portlets_advanced condition="view/shouldShowAdvancedForm">
-       <div tal:replace="structure context/@@+portlet-details" />
-     </tal:show_portlets_advanced>
   </metal:leftportlets>
 
   <div metal:fill-slot="main">

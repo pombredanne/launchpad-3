@@ -24,7 +24,7 @@ from canonical.launchpad.database.publishing import (
 from canonical.launchpad.database.librarian import LibraryFileContent
 from canonical.launchpad.interfaces import (
     ArchivePurpose, IArchive, IArchiveSet, IHasOwner, IHasBuildRecords,
-    IBuildSet, ILaunchpadCelebrities)
+    IBuildSet, ILaunchpadCelebrities, PackagePublishingStatus)
 from canonical.launchpad.webapp.url import urlappend
 
 
@@ -43,10 +43,12 @@ class Archive(SQLBase):
     purpose = EnumCol(dbName='purpose', unique=False, notNull=True,
         schema=ArchivePurpose)
 
-    enabled = BoolCol(dbName='enabled', notNull=False, default=True)
+    enabled = BoolCol(dbName='enabled', notNull=True, default=True)
+
+    private = BoolCol(dbName='private', notNull=True, default=False)
 
     authorized_size = IntCol(
-        dbName='authorized_size', notNull=False, default=1073741824)
+        dbName='authorized_size', notNull=False, default=1024)
 
     whiteboard = StringCol(dbName='whiteboard', notNull=False, default=None)
 
@@ -196,7 +198,8 @@ class Archive(SQLBase):
     @property
     def number_of_sources(self):
         """See `IArchive`."""
-        return self.getPublishedSources().count()
+        return self.getPublishedSources(
+            status=PackagePublishingStatus.PUBLISHED).count()
 
     @property
     def sources_size(self):
@@ -349,7 +352,8 @@ class Archive(SQLBase):
     @property
     def number_of_binaries(self):
         """See `IArchive`."""
-        return self.getPublishedOnDiskBinaries().count()
+        return self.getPublishedOnDiskBinaries(
+            status=PackagePublishingStatus.PUBLISHED).count()
 
     @property
     def binaries_size(self):
@@ -362,11 +366,16 @@ class Archive(SQLBase):
         """ % sqlvalues(self)
 
         clauseTables = ['LibraryFileAlias', 'BinaryPackageFilePublishing']
-        result = LibraryFileContent.select(query, clauseTables=clauseTables)
+        # We are careful to use DISTINCT here to eliminate files that
+        # are published in more than one place.
+        result = LibraryFileContent.select(query, clauseTables=clauseTables,
+            distinct=True)
 
-        size = result.sum('filesize')
-        if size is None:
-            return 0
+        # XXX 2008-01-16 Julian.  Unfortunately SQLObject has got a bug
+        # where it ignores DISTINCT on a .sum() operation, so resort to
+        # Python addition.  Revert to using result.sum('filesize') when
+        # SQLObject gets dropped.
+        size = sum([lfc.filesize for lfc in result])
         return size
 
     @property

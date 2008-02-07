@@ -8,6 +8,7 @@ __all__ = [
     'HasSprintsMixin',
     ]
 
+import pytz
 
 from zope.component import getUtility
 from zope.interface import implements

@@ -13,13 +13,11 @@
   <metal:portlets fill-slot="portlets">
     <tal:portlet replace="structure context/@@+portlet-lifecycle" />
     <tal:portlet replace="structure context/@@+portlet-milestones" />
+    <tal:portlet tal:condition="context/currentseries"
+         replace="structure context/currentseries/@@+portlet-architectures" />
   </metal:portlets>
 
 <div metal:fill-slot="main">
-
-   <link rel="alternate" type="application/atom+xml" 
-         tal:attributes="title string:Announcements for ${context/displayname};
-                         href view/feed_url" />
 
       <span tal:replace="structure context/image:mugshot" />
       <h1 tal:content="context/title">Ubuntu Linux</h1>
@@ -63,50 +61,27 @@
   </form>
 
       <div class="left">
-        <div
-          class="section"
-          tal:content="structure context/@@+portlet-coming-sprints"
-        />
-        <div
-          class="section"
-          tal:content="structure context/@@+portlet-latestannouncements"
-        />
-        <div
-          class="portlet section"
-          tal:condition="context/serieses">
-          <h2>Series</h2>
-          <ul class="distroseries">
-            <tal:per_series repeat="series context/serieses">
-              <li tal:condition="series/active">
-                <a tal:attributes="href series/fmt:url">
-                  <tal:version replace="series/version" />
-                  "<tal:codename replace="series/displayname" />"
-                </a>
-                - <tal:status replace="series/status/name/fmt:lower" />
-              </li>
-            </tal:per_series>
-          </ul>
-          <a href="+series">See all versions...</a>
-        </div>
-        <div
-          class="section"
-          tal:condition="context/currentseries"
-          tal:content="structure context/currentseries/@@+pagelet-architectures"
-        />
-        <div
-          class="section"
-          tal:content="structure context/@@+portlet-latestbugs" />
+        <div class="section"
+             tal:content="structure context/@@+portlet-coming-sprints" />
+        <div class="section"
+             tal:content="structure context/@@+portlet-latestannouncements"
+             />
+        <div class="section"
+             tal:content="structure context/@@+portlet-series" />
         <div
           class="section"
           tal:condition="context/currentseries"
           tal:content="structure context/currentseries/@@+portlet-latestuploads"
-        />
+          />
+        <div
+          class="section"
+          tal:content="structure context/@@+portlet-latestbugs" />
       </div>
 
       <div class="right">
         <div
           class="two column section"
-          tal:content="structure context/@@+portlet-details"
+          tal:content="structure context/@@+details"
         />
         <div
           class="two column section"

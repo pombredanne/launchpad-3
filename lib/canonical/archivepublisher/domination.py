@@ -157,7 +157,12 @@ class Dominator:
                     pubrec.supersededby = super_release
 
     def _getOtherBinaryPublications(self, dominated):
-        """Return remaining publications of the same binarypackagerelease."""
+        """Return remaining publications of the same binarypackagerelease.
+
+        Return only binaries published or pending in the same component/
+        section and priority, this way the just-made override will be
+        preserved.
+        """
         dominated_series = dominated.distroarchseries.distroseries
         available_architectures = [
             das.id for das in dominated_series.architectures]
@@ -165,9 +170,14 @@ class Dominator:
             SecureBinaryPackagePublishingHistory.status IN %s AND
             SecureBinaryPackagePublishingHistory.distroarchseries IN %s AND
             SecureBinaryPackagePublishingHistory.binarypackagerelease = %s AND
-            SecureBinaryPackagePublishingHistory.pocket = %s
+            SecureBinaryPackagePublishingHistory.pocket = %s AND
+            SecureBinaryPackagePublishingHistory.component = %s AND
+            SecureBinaryPackagePublishingHistory.section = %s AND
+            SecureBinaryPackagePublishingHistory.priority = %s
         """ % sqlvalues([PUBLISHED, PENDING], available_architectures,
-                        dominated.binarypackagerelease, dominated.pocket)
+                        dominated.binarypackagerelease, dominated.pocket,
+                        dominated.component, dominated.section,
+                        dominated.priority)
         return SecureBinaryPackagePublishingHistory.select(query)
 
     def _dominateBinary(self, dominated, dominant):

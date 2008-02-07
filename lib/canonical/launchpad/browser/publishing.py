@@ -6,6 +6,7 @@ __metaclass__ = type
 
 __all__ = [
     'SourcePublishingRecordView',
+    'SourcePublishingRecordSelectableView',
     'BinaryPublishingRecordView',
     ]
 
@@ -86,6 +87,11 @@ class SourcePublishingRecordView(BasePublishingRecordView):
     __used_for__ = ISourcePackagePublishingHistory
 
     @property
+    def allow_selection(self):
+        """Do not render the checkbox corresponding to this record."""
+        return False
+
+    @property
     def published_source_and_binary_files(self):
         """Return list of dicts describing all files published
            for a certain source publication.
@@ -109,6 +115,15 @@ class SourcePublishingRecordView(BasePublishingRecordView):
             d["filesize"] = f.libraryfilealias.content.filesize
             ret.append(d)
         return ret
+
+
+class SourcePublishingRecordSelectableView(SourcePublishingRecordView):
+    """View class for a selectable `ISourcePackagePublishingHistory`."""
+
+    @property
+    def allow_selection(self):
+        """Allow the checkbox corresponding to this record to be rendered."""
+        return True
 
 
 class BinaryPublishingRecordView(BasePublishingRecordView):

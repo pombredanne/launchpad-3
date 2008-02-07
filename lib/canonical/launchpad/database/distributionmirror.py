@@ -15,7 +15,7 @@ from zope.component import getUtility
 from zope.interface import implements
 
 from sqlobject import ForeignKey, StringCol, BoolCol
-from sqlobject.sqlbuilder import AND
+from sqlobject.sqlbuilder import AND, func
 
 from canonical.config import config
 
@@ -192,16 +192,16 @@ class DistributionMirror(SQLBase):
                 return True
         return False
 
-    def disable(self, notify_owner):
+    def disable(self, notify_owner, log):
         """See IDistributionMirror"""
         assert self.last_probe_record is not None, (
             "This method can't be called on a mirror that has never been "
             "probed.")
         if self.enabled or self.all_probe_records.count() == 1:
-            self._sendFailureNotification(notify_owner)
+            self._sendFailureNotification(notify_owner, log)
         self.enabled = False
 
-    def _sendFailureNotification(self, notify_owner):
+    def _sendFailureNotification(self, notify_owner, log):
         """Send a failure notification to the distribution's mirror admins and
         to the mirror owner, in case notify_owner is True.
         """
@@ -213,14 +213,14 @@ class DistributionMirror(SQLBase):
             'distro': self.distribution.title,
             'mirror_name': self.name,
             'mirror_url': canonical_url(self),
+            'log_snippet': "\n".join(log.split('\n')[:20]),
             'logfile_url': self.last_probe_record.log_file.http_url}
         message = template % replacements
         subject = "Launchpad: Verification of %s failed" % self.name
 
         mirror_admin_address = contactEmailAddresses(
             self.distribution.mirror_admin)
-        simple_sendmail(
-            fromaddress, mirror_admin_address, subject, message)
+        simple_sendmail(fromaddress, mirror_admin_address, subject, message)
 
         if notify_owner:
             owner_address = contactEmailAddresses(self.owner)
@@ -403,8 +403,12 @@ class DistributionMirrorSet:
             DistributionMirror.q.official_candidate == True,
             DistributionMirror.q.status == MirrorStatus.OFFICIAL)
         query = AND(DistributionMirror.q.countryID == country_id, base_query)
+        # The list of mirrors returned by this method is fed to apt through
+        # launchpad.net, so we order the results randomly in a lame attempt to
+        # balance the load on the mirrors.
+        order_by = [func.random()]
         mirrors = shortlist(
-            DistributionMirror.select(query, orderBy=['-speed']),
+            DistributionMirror.select(query, orderBy=order_by),
             longest_expected=50)
 
         if not mirrors and country is not None:
@@ -414,7 +418,7 @@ class DistributionMirrorSet:
                 DistributionMirror.q.countryID == Country.q.id,
                 base_query)
             mirrors.extend(shortlist(
-                DistributionMirror.select(query, orderBy=['-speed']),
+                DistributionMirror.select(query, orderBy=order_by),
                 longest_expected=100))
 
         if mirror_type == MirrorContent.ARCHIVE:

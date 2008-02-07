@@ -3,9 +3,13 @@
 """Launchpad code-hosting system."""
 
 __metaclass__ = type
-__all__ = ['branch_id_to_path', 'ProgressUIFactory']
+__all__ = [
+    'branch_id_to_path', 'get_bzr_path', 'get_bzr_plugins_path',
+    'ProgressUIFactory',]
 
 
+import os.path
+from bzrlib.plugin import set_plugins_path
 from bzrlib.progress import ProgressBarStack
 from bzrlib.ui import SilentUIFactory
 
@@ -41,3 +45,23 @@ def branch_id_to_path(branch_id):
     """
     h = "%08x" % int(branch_id)
     return '%s/%s/%s/%s' % (h[:2], h[2:4], h[4:6], h[6:])
+
+
+def get_rocketfuel_root():
+    """Find the root directory for this rocketfuel instance"""
+    import bzrlib
+    return os.path.dirname(os.path.dirname(os.path.dirname(bzrlib.__file__)))
+
+
+def get_bzr_path():
+    """Find the path to the copy of Bazaar for this rocketfuel instance"""
+    return get_rocketfuel_root() + '/sourcecode/bzr/bzr'
+
+
+def get_bzr_plugins_path():
+    """Find the path to the Bazaar plugins for this rocketfuel instance"""
+    return get_rocketfuel_root() + '/bzrplugins'
+
+
+os.environ['BZR_PLUGIN_PATH'] = get_bzr_plugins_path()
+set_plugins_path()

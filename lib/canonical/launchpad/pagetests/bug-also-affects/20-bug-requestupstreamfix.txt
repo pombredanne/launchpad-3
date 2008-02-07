@@ -51,7 +51,7 @@ bug watch.
 
 Let's confirm adding the task.
 
-    >>> user_browser.getControl('Yes').click()
+    >>> user_browser.getControl('Add Anyway').click()
     >>> user_browser.url
     'http://bugs.launchpad.dev/thunderbird/+bug/6'
 
@@ -154,8 +154,11 @@ new bug watch.
     'http://bugs.launchpad.dev/alsa-utils/+bug/3'
     >>> affects_table = find_tags_by_class(user_browser.contents, 'listing')[0]
     >>> target_cell = affects_table.tbody.tr.td
-    >>> extract_text(target_cell)
-    u'alsa-utils'
+
+    >>> from canonical.launchpad.ftests.bug import print_bug_affects_table
+    >>> print_bug_affects_table(user_browser.contents)
+    alsa-utils
+    ...
 
 And we can check that the remote bug number was stripped.
 

@@ -1,7 +1,7 @@
 #!/usr/bin/python2.4
 # Copyright 2007 Canonical Ltd.  All rights reserved.
 
-"""Remove personal details of a user from the database, leaving just a stub."""
+"""Remove personal details of a user from the database, leaving a stub."""
 
 __metaclass__ = type
 __all__ = []
@@ -18,7 +18,7 @@ from canonical.launchpad.interfaces import (
 
 def close_account(con, log, username):
     """Close a person's account.
-    
+
     Return True on success, or log an error message and return False
     """
     cur = con.cursor()
@@ -54,7 +54,7 @@ def close_account(con, log, username):
     cur.execute("""
         UPDATE Person
         SET displayname='Removed by request', password=NULL,
-            name=%(new_name)s, language=NULL, timezone='UTC',
+            name=%(new_name)s, language=NULL, 
             addressline1=NULL, addressline2=NULL, organization=NULL,
             city=NULL, province=NULL, country=NULL, postcode=NULL,
             phone=NULL, homepage_content=NULL, icon=NULL, mugshot=NULL,
@@ -110,6 +110,7 @@ def close_account(con, log, username):
         ('JabberId', 'person'),
         ('WikiName', 'person'),
         ('PersonLanguage', 'person'),
+        ('PersonLocation', 'person'),
         ('SshKey', 'person'),
         
         # Karma

@@ -30,6 +30,7 @@ import pytz
 from zope.event import notify
 from zope.component import getUtility
 from zope.interface import Interface
+from zope.publisher.interfaces import NotFound
 
 from canonical.cachedproperty import cachedproperty
 from canonical.config import config
@@ -37,6 +38,7 @@ from canonical.database.constants import UTC_NOW
 
 from canonical.lp import decorates
 from canonical.launchpad.browser.branchref import BranchRef
+from canonical.launchpad.browser.feeds import BranchFeedLink, FeedsMixin
 from canonical.launchpad.browser.launchpad import StructuralObjectPresentation
 from canonical.launchpad.browser.objectreassignment import (
     ObjectReassignmentView)
@@ -57,6 +59,7 @@ from canonical.launchpad.webapp.uri import URI
 
 from canonical.widgets import SinglePopupWidget
 from canonical.widgets.branch import TargetBranchWidget
+from canonical.widgets.itemswidgets import LaunchpadRadioWidgetWithDescription
 
 
 def quote(text):
@@ -226,7 +229,9 @@ class BranchContextMenu(ContextMenu):
     @enabled_with_permission('launchpad.AnyPerson')
     def registermerge(self):
         text = 'Propose for merging'
-        return Link('+register-merge', text, icon='edit')
+        # It is not valid to propose a junk branch for merging.
+        enabled = self.context.product is not None
+        return Link('+register-merge', text, icon='edit', enabled=enabled)
 
     def landingcandidates(self):
         text = 'View landing candidates'
@@ -238,9 +243,13 @@ class BranchContextMenu(ContextMenu):
         return Link('+linkbug', text, icon='edit')
 
 
-class BranchView(LaunchpadView):
+class BranchView(LaunchpadView, FeedsMixin):
 
     __used_for__ = IBranch
+
+    feed_types = (
+        BranchFeedLink,
+        )
 
     def initialize(self):
         self.notices = []
@@ -349,18 +358,22 @@ class BranchView(LaunchpadView):
             targets_added.add(target_id)
         return targets
 
-    @cachedproperty
+    @property
     def latest_landing_candidates(self):
         """Return a decorated filtered list of landing candidates."""
         # Only show the most recent 5 landing_candidates
-        candidates = self.context.landing_candidates[:5]
-        return [DecoratedMergeProposal(proposal) for proposal in candidates]
+        return self.landing_candidates[:5]
 
     @cachedproperty
     def landing_candidates(self):
         """Return a decorated list of landing candidates."""
         candidates = self.context.landing_candidates
         return [DecoratedMergeProposal(proposal) for proposal in candidates]
+
+    @property
+    def show_candidate_more_link(self):
+        """Only show the link if there are more than five."""
+        return len(self.landing_candidates) > 5
 
 
 class DecoratedMergeProposal:
@@ -558,6 +571,8 @@ class BranchEditView(BranchEditFormView, BranchNameValidationMixin):
     field_names = ['product', 'private', 'url', 'name', 'title', 'summary',
                    'lifecycle_status', 'whiteboard', 'home_page', 'author']
 
+    custom_widget('lifecycle_status', LaunchpadRadioWidgetWithDescription)
+
     def setUpFields(self):
         LaunchpadFormView.setUpFields(self)
         # This is to prevent users from converting push/import
@@ -627,11 +642,13 @@ class BranchEditView(BranchEditFormView, BranchNameValidationMixin):
 class BranchAddView(LaunchpadFormView, BranchNameValidationMixin):
 
     schema = IBranch
-    field_names = ['branch_type', 'product', 'url', 'name', 'title',
+    field_names = ['product', 'branch_type', 'url', 'name', 'title',
                    'summary', 'lifecycle_status', 'whiteboard', 'home_page',
                    'author']
 
     branch = None
+    custom_widget('branch_type', LaunchpadRadioWidgetWithDescription)
+    custom_widget('lifecycle_status', LaunchpadRadioWidgetWithDescription)
 
     @property
     def initial_values(self):
@@ -867,6 +884,16 @@ class RegisterBranchMergeProposalView(LaunchpadFormView):
     custom_widget('target_branch', TargetBranchWidget)
     custom_widget('dependent_branch', SinglePopupWidget, displayWidth=35)
 
+    @property
+    def next_url(self):
+        return canonical_url(self.context)
+
+    def initialize(self):
+        """Show a 404 if the source branch is junk."""
+        if self.context.product is None:
+            raise NotFound(self.context, '+register-merge')
+        LaunchpadFormView.initialize(self)
+
     @action('Register', name='register')
     def register_action(self, action, data):
         """Register the new branch merge proposal."""
@@ -888,8 +915,10 @@ class RegisterBranchMergeProposalView(LaunchpadFormView):
                 dependent_branch=dependent_branch, whiteboard=whiteboard)
         except InvalidBranchMergeProposal, error:
             self.addError(str(error))
-        else:
-            self.next_url = canonical_url(source_branch)
+
+    @action('Cancel', name='cancel', validator='validate_cancel')
+    def cancel_action(self, action, data):
+        """Do nothing and go back to the branch page."""
 
     def validate(self, data):
         source_branch = self.context

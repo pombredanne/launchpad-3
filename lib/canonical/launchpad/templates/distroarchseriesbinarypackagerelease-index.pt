@@ -16,30 +16,9 @@
 
 <metal:leftportlets fill-slot="portlets_one">
   <div tal:replace="structure context/@@+portlet-details" />
-  <div tal:replace="structure context/distroarchseries/distroseries/@@+portlet-details" />
   <div tal:replace="structure context/distroarchseries/@@+portlet-details" />
 </metal:leftportlets>
 
-<metal:rightportlets fill-slot="portlets_two">
-  <div
-    tal:condition="context/binarypackagerelease/depends"
-    tal:replace="structure context/binarypackagerelease/@@+portlet-depends" />
-  <div
-    tal:condition="context/binarypackagerelease/replaces"
-    tal:replace="structure context/binarypackagerelease/@@+portlet-replaces" />
-  <div
-    tal:condition="context/binarypackagerelease/provides"
-    tal:replace="structure context/binarypackagerelease/@@+portlet-provides" />
-  <div
-    tal:condition="context/binarypackagerelease/recommends"
-    tal:replace="structure context/binarypackagerelease/@@+portlet-recommends" />
-  <div
-    tal:condition="context/binarypackagerelease/suggests"
-    tal:replace="structure context/binarypackagerelease/@@+portlet-suggests" />
-  <div
-    tal:condition="context/binarypackagerelease/conflicts"
-    tal:replace="structure context/binarypackagerelease/@@+portlet-conflicts" />
-</metal:rightportlets>
 
 <div metal:fill-slot="main">
 
@@ -74,6 +53,25 @@
     </p>
   </div>
 
+  <h2>Package relationships</h2>
+
+  <table width="100%" tal:define="bpr context/binarypackagerelease">
+     <tr>
+       <td><div tal:replace="structure bpr/@@+portlet-depends" /></td>
+       <td><div tal:replace="structure bpr/@@+portlet-conflicts" /></td>
+       <td><div tal:replace="structure bpr/@@+portlet-provides" /></td>
+     </tr>
+     <tr>
+       <td><div tal:replace="structure bpr/@@+portlet-replaces" /></td>
+       <td><div tal:replace="structure bpr/@@+portlet-suggests" /></td>
+       <td><div tal:replace="structure bpr/@@+portlet-recommends" /></td>
+     </tr>
+     <tr>
+       <td><div tal:replace="structure bpr/@@+portlet-predepends" /></td>
+       <td><div tal:replace="structure bpr/@@+portlet-enhances" /></td>
+       <td><div tal:replace="structure bpr/@@+portlet-breaks" /></td>
+     </tr>
+  </table>
 </div>
 </body>
 </html>
