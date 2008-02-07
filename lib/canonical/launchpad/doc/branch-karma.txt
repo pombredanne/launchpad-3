@@ -1,0 +1,19 @@
+= Karam for branch related activity =
+
+We want people to register their branches on Launchpad, and also to
+link their branches to bugs and specs, so we give them some karma for
+it.
+
+    >>> from canonical.launchpad.database.karma import KarmaCategory
+    >>> code_category = KarmaCategory.byName('code')
+    >>> code_karma_actions = code_category.karmaactions
+    >>> sorted([action.title for action in code_karma_actions])
+    []
+
+    >>> from canonical.launchpad.ftests.karma import KarmaAssignedEventListener
+    >>> karma_helper = KarmaAssignedEventListener(show_person=True)
+    >>> karma_helper.register_listener()
+
+    >>> from canonical.launchpad.testing import LaunchpadObjectFactory
+    >>> factory = LaunchpadObjectFactory()
+    >>> b = factory.makeBranch()
