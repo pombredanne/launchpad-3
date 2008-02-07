@@ -38,6 +38,10 @@ class IArchive(IHasOwner):
         title=_("Enabled"), required=False,
         description=_("Whether the PPA is enabled or not."))
 
+    private = Bool(
+        title=_("Private"), required=False,
+        description=_("Whether the PPA is private to the owner or not."))
+
     authorized_size = Int(
         title=_("Authorized PPA size "), required=False,
         max=(2**30)-1,

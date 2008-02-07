@@ -100,6 +100,7 @@ already in use.
     >>> test_browser.open(
     ...     'http://launchpad.dev/ubuntu/+milestone/milestone2/+edit')
     >>> test_browser.getControl('Name').value = 'milestone1'
+    >>> test_browser.getControl('Date Targeted').value = "2030-01-01"
     >>> test_browser.getControl('Update').click()
     >>> test_browser.url
     'http://launchpad.dev/ubuntu/+milestone/milestone2/+edit'
@@ -179,3 +180,59 @@ Then we try to change milestone2's name to milestone3.
     milestone1
     milestone3
 
+Now let's mark milestone3 as inactive to ensure it hides the milestone
+
+    >>> test_browser.open(
+    ...     'http://launchpad.dev/alsa-utils/+milestone/milestone3/+edit')
+    >>> test_browser.getControl('Active').click()
+    >>> test_browser.getControl('Update').click()
+    >>> print milestones_in_portlet(test_browser)
+    milestone1
+
+
+== Admin Edit Functionality ==
+
+We're reusing test data that was created above to test the admin edit
+functionality. The admin functionality allows us to modify the distroseries
+and productseries of the milestone.
+
+
+=== Test Distro Series ===
+
+To test distroseries, we'll switch from "ubuntu hoary" to "ubuntu warty" and
+then verify it works correctly by checking the portlet details.
+
+    >>> admin_browser.open(
+    ...     'http://launchpad.dev/ubuntu/+milestone/milestone3/+admin')
+    >>> admin_browser.getControl(name='field.distroseries').displayValue = [
+    ...     'ubuntu warty']
+    >>> admin_browser.getControl('Update').click()
+    >>> print_portlet_links(admin_browser.contents,
+    ...     'Milestone milestone3 for Ubuntu details')
+    Ubuntu: /ubuntu
+    Warty: /ubuntu/warty
+
+
+=== Test Product Series ===
+
+Because we don't have a series to test with yet, we first must create a new
+series called "main" to alsa-utils so we can test switching the series.
+
+    >>> admin_browser.open('http://launchpad.dev/alsa-utils/+addseries')
+    >>> admin_browser.getControl('Name').value = "main"
+    >>> admin_browser.getControl('Summary').value = "This is a test series."
+    >>> admin_browser.getControl('Register Series').click()
+
+Now that we have a sample series, we will access +admin and select the new
+series we just created. For this test, we'll switch from "trunk" to "main"
+and then verify it works correctly by checking the portlet details.
+
+    >>> admin_browser.open(
+    ...     'http://launchpad.dev/alsa-utils/+milestone/milestone1/+admin')
+    >>> admin_browser.getControl(name='field.productseries').displayValue = [
+    ...     'alsa-utils main']
+    >>> admin_browser.getControl('Update').click()
+    >>> print_portlet_links(admin_browser.contents,
+    ...     'Milestone milestone1 for alsa-utils details')
+    alsa-utils: /alsa-utils
+    main: /alsa-utils/main

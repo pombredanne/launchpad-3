@@ -45,8 +45,9 @@ from canonical.launchpad.interfaces import (
     IFrontPageBugAddForm, IProjectBugAddForm, UNRESOLVED_BUGTASK_STATUSES,
     BugTaskStatus)
 from canonical.launchpad.webapp import (
-    canonical_url, LaunchpadView, LaunchpadFormView, action, custom_widget,
+    LaunchpadFormView, LaunchpadView, action, canonical_url, custom_widget,
     safe_action, urlappend)
+from canonical.launchpad.webapp.authorization import check_permission
 from canonical.widgets.bug import BugTagsWidget
 from canonical.widgets.launchpadtarget import LaunchpadTargetWidget
 from canonical.launchpad.vocabularies import ValidPersonOrTeamVocabulary
@@ -163,7 +164,8 @@ class FileBugViewBase(LaunchpadFormView):
         """Return the list of field names to display."""
         context = self.context
         field_names = ['title', 'comment', 'tags', 'security_related',
-                       'bug_already_reported_as']
+                       'bug_already_reported_as', 'filecontent', 'patch',
+                       'attachment_description']
         if (IDistribution.providedBy(context) or
             IDistributionSourcePackage.providedBy(context)):
             field_names.append('packagename')
@@ -393,10 +395,38 @@ class FileBugViewBase(LaunchpadFormView):
                 'A comment with additional information was added to the'
                 ' bug report.')
 
-        if extra_data.attachments:
+        # XXX 2007-01-19 gmb:
+        #     We need to have a proper FileUpload widget rather than
+        #     this rather hackish solution.
+        attachment = self.request.form.get(self.widgets['filecontent'].name)
+        if attachment or extra_data.attachments:
             # Attach all the comments to a single empty comment.
             attachment_comment = bug.newMessage(
                 owner=self.user, subject=bug.followup_subject(), content=None)
+
+            # Deal with attachments added in the filebug form.
+            if attachment:
+                # We convert slashes in filenames to hyphens to avoid
+                # problems.
+                filename = attachment.filename.replace('/', '-')
+
+                # If the user hasn't entered a description for the
+                # attachment we use its name.
+                file_description = None
+                if 'attachment_description' in data:
+                    file_description = data['attachment_description']
+                if file_description is None:
+                    file_description = filename
+
+                bug.addAttachment(
+                    owner=self.user, file_=StringIO(data['filecontent']),
+                    filename=filename, description=file_description,
+                    comment=attachment_comment, is_patch=data['patch'])
+
+                notifications.append(
+                    'The file "%s" was attached to the bug report.' %
+                        cgi.escape(filename))
+
             for attachment in extra_data.attachments:
                 bug.addAttachment(
                     owner=self.user, file_=attachment['content'],
@@ -430,16 +460,15 @@ class FileBugViewBase(LaunchpadFormView):
             self.request.response.addNotification(notification)
         if bug.security_related:
             self.request.response.addNotification(
-                'Security-related bugs are by default <span title="Private '
-                'bugs are visible only to their direct subscribers.">private'
-                '</span>. You may choose to <a href="+secrecy">publically '
+                'Security-related bugs are by default private '
+                '(visible only to their direct subscribers). '
+                'You may choose to <a href="+secrecy">publicly '
                 'disclose</a> this bug.')
         if bug.private and not bug.security_related:
             self.request.response.addNotification(
-                'This bug report has been marked as <span title="Private '
-                'bugs are visible only to their direct subscribers.">private'
-                '</span>. You may choose to <a href="+secrecy">change '
-                'this</a>.')
+                'This bug report has been marked private '
+                '(visible only to its direct subscribers). '
+                'You may choose to <a href="+secrecy">change this</a>.')
 
         self.request.response.redirect(canonical_url(bug.bugtasks[0]))
 
@@ -678,6 +707,8 @@ class FileBugGuidedView(FileBugViewBase):
             duplicateof = bug.duplicateof
             if duplicateof is not None:
                 bug = duplicateof
+            if not check_permission('launchpad.View', bug):
+                continue
             if bug not in matching_bugs:
                 matching_bugs.append(bug)
                 if len(matching_bugs) >= matching_bugs_limit:
