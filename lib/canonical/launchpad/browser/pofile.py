@@ -125,6 +125,21 @@ class POFileView(LaunchpadView):
     def contributors(self):
         return list(self.context.contributors)
 
+class TranslationMessageContainer:
+    def __init__(self, translation):
+        self.data = translation
+
+        # Assign a CSS class to the translation
+        # depending on whether it's used, suggested,
+        # or an obsolete suggestion.
+        if translation.is_current:
+            self.usage_class = 'usedtranslation'
+        else:
+            if translation.is_hidden:
+                self.usage_class = 'hiddentranslation'
+            else:
+                self.usage_class = 'suggestedtranslation'
+
 class FilteredPOTMsgSets:
     def __init__(self, translations):
         potmsgsets = []
@@ -135,13 +150,15 @@ class FilteredPOTMsgSets:
             for translation in translations:
                 if (current_potmsgset is not None and
                     current_potmsgset['potmsgset'] == translation.potmsgset):
-                    current_potmsgset['translations'].append(translation)
+                    current_potmsgset['translations'].append(
+                        TranslationMessageContainer(translation))
                 else:
                     if current_potmsgset is not None:
                         potmsgsets.append(current_potmsgset)
                     current_potmsgset = {
                         'potmsgset' : translation.potmsgset,
-                        'translations' : [translation],
+                        'translations' : [TranslationMessageContainer(
+                        translation)],
                         'context' : translation
                         }
             if current_potmsgset is not None:
@@ -158,24 +175,24 @@ class POFileFilteredView(LaunchpadView):
         if person is None:
             self.request.response.addErrorNotification(
                 "No person to filter by specified.")
+            translations = None
         else:
             self.person = getUtility(IPersonSet).getByName(person)
             if self.person is None:
                 self.request.response.addErrorNotification(
                     "Requested person not found.")
+                translations = None
+            else:
+                translations = self.context.getTranslationsFilteredBy(
+                    person=self.person)
+
+        self.batchnav = BatchNavigator(translations, self.request)
 
     @property
     def translations(self):
-        if self.person is None:
-            return None
-        else:
-            all_translations = self.context.getTranslationsFilteredBy(
-                person=self.person)
-            return FilteredPOTMsgSets(all_translations).potmsgsets
-
-    @cachedproperty
-    def contributors(self):
-        return list(self.context.contributors)
+        # We do batching over TranslationMessage's, but for display,
+        # we group them under POTMsgSets.
+        return FilteredPOTMsgSets(self.batchnav.currentBatch()).potmsgsets
 
 
 class POFileUploadView(POFileView):

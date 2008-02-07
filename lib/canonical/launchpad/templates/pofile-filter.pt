@@ -65,19 +65,26 @@
       translation
     </h1>
 
+    <tal:block define="messages view/translations">
+
     <p tal:condition="not:view/translations" class="informational message">
       This person has made no contributions to this file.
     </p>
-
-    <tal:translations condition="view/translations">
+    <tal:translations condition="messages">
 
       <p tal:condition="view/person">
         <tal:contributor content="view/person/browsername"/> has
         submitted following translations.
       </p>
 
+
+      <div class="lesser">
+        <tal:navigation content="
+          structure view/batchnav/@@+navigation-links-upper" />
+      </div>
+
       <table class="listing">
-      <tal:message repeat="message view/translations">
+      <tal:message repeat="message messages">
         <tr>
           <td class="englishstring" style="text-align:right;">
             <tal:obsolete condition="not:message/potmsgset/sequence">
@@ -88,41 +95,29 @@
             </tal:nonobsolete>
           </td>
           <td colspan="2" class="englishstring">
-        <div tal:content="message/potmsgset/singular_text">English string</div>
-        <div tal:condition="message/potmsgset/plural_text"
-             tal:content="message/potmsgset/plural_text" />
-        </td></tr>
+          <div tal:content="
+            message/potmsgset/singular_text">English string</div>
+          <div tal:condition="message/potmsgset/plural_text"
+               tal:content="message/potmsgset/plural_text" />
+          </td>
+        </tr>
         <tal:translation repeat="translation message/translations">
-            <tr>
-              <td />
-              <td tal:content="translation/date_created/fmt:approximatedate" />
-              <tal:used condition="translation/is_current">
-                <td class="usedtranslation">
-                  <tal:alltranslations repeat="text translation/translations">
-                    <div tal:content="text" />
-                  </tal:alltranslations>
-                </td>
-              </tal:used>
-              <tal:unused condition="not:translation/is_current">
-                <td tal:condition="not:translation/is_hidden">
-                  <tal:alltranslations repeat="text translation/translations">
-                    <div tal:content="text" />
-                  </tal:alltranslations>
-                </td>
-                <td tal:condition="translation/is_hidden"
-                    class="hiddentranslation">
-                  <tal:alltranslations repeat="text translation/translations">
-                    <div tal:content="text" />
-                  </tal:alltranslations>
-                </td>
-              </tal:unused>
-            </tr>
+          <tr>
+            <td />
+            <td tal:content="
+                translation/data/date_created/fmt:approximatedate" />
+            <td tal:attributes="class translation/usage_class">
+              <tal:alltranslations repeat="text translation/data/translations">
+                <div tal:content="text" />
+              </tal:alltranslations>
+            </td>
+          </tr>
         </tal:translation>
       </tal:message>
       </table>
 
       </tal:translations>
-
+    </tal:block>
     </div>
   </body>
 </html>
