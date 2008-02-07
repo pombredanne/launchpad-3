@@ -241,5 +241,5 @@ class IBranchMergeProposal(Interface):
         source branch since it branched off the target branch.
         """
 
-    def delete():
-        """Delete the proposal"""
+    def delete(id):
+        """Delete the proposal with this id"""
