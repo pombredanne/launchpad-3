@@ -63,10 +63,8 @@ and are really just branch metadata without the revisions behind them.
     scanned                    New          gnome-terminal Registrant
     feature-x    Sample Person New          landscape      Author
     trunk        Sample Person New          landscape      Author
-    junk.dev     Ubuntu Team   Experimental
-       2005-10-31 12:03:57 ... weeks ago  Registrant
-    junk.contrib Sample Person New
-       2005-10-31 12:03:57 ... weeks ago  Author
+    junk.dev     Ubuntu Team   Experimental ... weeks ago  Registrant
+    junk.contrib Sample Person New          ... weeks ago  Author
 
 If the branch listing has few enough entries that batching isn't
 needed, then the table is sortable and no batching navigation links are shown.
@@ -156,7 +154,7 @@ will cause only branches with that status to be listed.
     >>> table = find_tag_by_id(browser.contents, 'branchtable')
     >>> for row in table.tbody.fetch('tr'):
     ...     print extract_text(row)
-    2.4 ... Abandoned    gnome-terminal  Registrant
+    2.4   Abandoned    gnome-terminal  Registrant
 
 If anyone tries to hack the URL, and put in an invalid
 status value, it will default to current branches.
@@ -424,12 +422,12 @@ The default listing now doesn't show these two branches.
     >>> table = find_tag_by_id(browser.contents, 'branchtable')
     >>> for row in table.tbody.fetch('tr'):
     ...     print extract_text(row)
-    2.6                            0 Mature
-    main Current development focus 1 Development
-    launchpad Launchpad Developers 5 New
-    import                         5 New
-    pushed                         5 New
-    scanned                        5 New
+    2.6                             Mature
+    main Current development focus  Development
+    launchpad Launchpad Developers  New
+    import                          New
+    pushed                          New
+    scanned                         New
 
 If we specify that the listing should show dormant branches they
 are shown.

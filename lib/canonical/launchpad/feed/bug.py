@@ -64,7 +64,7 @@ class BugsFeedBase(FeedBase):
     rootsite = "bugs"
 
     def initialize(self):
-        """See `IFeed`."""
+        """See `LaunchpadView`."""
         super(BugsFeedBase, self).initialize()
         self.setupColumns()
 
@@ -107,7 +107,7 @@ class BugsFeedBase(FeedBase):
         return items
 
     def itemToFeedEntry(self, bugtask):
-        """See `IFeed`."""
+        """Convert the items to FeedEntries."""
         bug = bugtask.bug
         title = FeedTypedData('[%s] %s' % (bug.id, bug.title))
         url = canonical_url(bugtask, rootsite=self.rootsite)
@@ -203,7 +203,6 @@ class BugTargetBugsFeed(BugsFeedBase):
     def _getRawItems(self):
         """Get the raw set of items for the feed."""
         delegate_view = BugTargetView(self.context, self.request)
-        delegate_view.initialize()
         return delegate_view.latestBugTasks(quantity=self.quantity)
 
 
@@ -221,6 +220,8 @@ class PersonBugsFeed(BugsFeedBase):
     def _getRawItems(self):
         """Perform the search."""
         delegate_view = PersonRelatedBugsView(self.context, self.request)
+        # Since the delegate_view derives from LaunchpadFormView the view must
+        # be initialized to setup the widgets.
         delegate_view.initialize()
         results = delegate_view.search()
         items = results.getBugListingItems()
@@ -243,6 +244,8 @@ class SearchBugsFeed(BugsFeedBase):
         search_context = getUtility(IMaloneApplication)
         delegate_view = BugsBugTaskSearchListingView(self.context,
                                                      self.request)
+        # Since the delegate_view derives from LaunchpadFormView the view must
+        # be initialized to setup the widgets.
         delegate_view.initialize()
         results = delegate_view.search(searchtext=None,
                       context=search_context, extra_params=None)

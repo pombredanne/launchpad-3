@@ -319,6 +319,7 @@ def clear_request_started():
     _local.request_start_time = None
     _local.request_statements = []
 
+
 def summarize_requests():
     """Produce human-readable summary of requests issued so far."""
     secs = get_request_duration()
@@ -326,9 +327,13 @@ def summarize_requests():
     log = "%s queries issued in %.2f seconds" % (len(statements), secs)
     return log
 
-def summarize_requests_to_stderr(*args):
-    """Output summarize_requests in a format suitable to stderr."""
-    sys.stderr.write(" v--- " + summarize_requests() + "\n")
+
+def store_sql_statements_and_request_duration(event):
+    event.request.setInWSGIEnvironment(
+        'launchpad.sqlstatements', len(get_request_statements()))
+    event.request.setInWSGIEnvironment(
+        'launchpad.requestduration', get_request_duration())
+
 
 def get_request_statements():
     """Get the list of executed statements in the request.

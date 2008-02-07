@@ -75,3 +75,54 @@ added by gina.
     >>> for msg in get_feedback_messages(browser.contents):
     ...     print msg
     An e-mail message was sent to 'salgado@example.com'...
+
+
+== Validating the email address string ==
+
+Leaving the email address field blank and hitting the 'Add' button
+should display an error message.
+
+    >>> browser.getControl('Add a new address').value
+    ''
+
+    >>> browser.getControl('Add', index=1).click()
+    >>> browser.title
+    "Guilherme Salgado's e-mail addresses"
+
+    >>> for msg in get_feedback_messages(browser.contents):
+    ...     print msg
+    There is 1 error.
+    Required input is missing.
+
+Entering a string that does not look like an email address causes an
+error to be displayed.
+
+    >>> browser.title
+    "Guilherme Salgado's e-mail addresses"
+
+    >>> browser.getControl('Add a new address').value = 'foo'
+    >>> browser.getControl('Add', index=1).click()
+    >>> browser.title
+    "Guilherme Salgado's e-mail addresses"
+
+    >>> for msg in get_feedback_messages(browser.contents):
+    ...     print msg
+    There is 1 error.
+    'foo' doesn't seem to be a valid email address.
+
+Markup in new addresses is escaped in error messages so that it cannot
+be interpreted by the browser. Scripts that are embedded in the address
+will not run. A malicious hacker cannot use a XSS vulnerability to gain
+information about Launchpad users.
+
+    >>> browser.title
+    "Guilherme Salgado's e-mail addresses"
+
+    >>> browser.getControl('Add a new address').value = (
+    ...     "salgado@example.com<br/><script>window.alert('XSS')</script>")
+    >>> browser.getControl('Add', index=1).click()
+    >>> for msg in get_feedback_messages(browser.contents):
+    ...     print msg
+    There is 1 error.
+    'salgado...com&lt;br/&gt;&lt;script&gt;window.alert('XSS')&lt;/script&gt;'
+    doesn't seem to be a valid email address.
