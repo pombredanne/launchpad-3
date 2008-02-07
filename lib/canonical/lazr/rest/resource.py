@@ -10,6 +10,8 @@ __all__ = [
     'EntryResource',
     'HTTPResource',
     'ReadOnlyResource',
+    'ScopedCollection',
+    'ScopedCollectionResource',
     'ServiceRootResource'
     ]
 
@@ -17,7 +19,8 @@ __all__ = [
 import simplejson
 import urllib
 
-from zope.interface import implements
+from zope.component import getMultiAdapter
+from zope.interface import implements, directlyProvides
 from zope.publisher.interfaces import NotFound
 from zope.schema.interfaces import IField, IObject
 
@@ -25,8 +28,9 @@ from zope.schema.interfaces import IField, IObject
 # canonical_url code should be moved into lazr.
 from canonical.launchpad.webapp import canonical_url
 from canonical.lazr.interfaces import (
-    ICollection, ICollectionResource, IEntry, IEntryResource, IHTTPResource,
-    IJSONPublishable, IServiceRootResource)
+    ICollection, ICollectionField, ICollectionResource, IEntry,
+    IEntryResource, IHTTPResource, IJSONPublishable, IScopedCollection,
+    IServiceRootResource)
 
 
 class ResourceJSONEncoder(simplejson.JSONEncoder):
@@ -76,6 +80,17 @@ class ReadOnlyResource(HTTPResource):
             self.request.response.setHeader("Allow", "GET")
 
 
+class CollectionEntryDummy:
+    """An empty object providing the interface of the items in the collection.
+
+    This is to work around the fact that getMultiAdapter() and other
+    zope.component lookup methods don't accept a bare interface and only
+    works with objects.
+    """
+    def __init__(self, collection_field):
+        directlyProvides(self, collection_field.value_type.schema)
+
+
 class EntryResource(ReadOnlyResource):
     """An individual object, published to the web."""
     implements(IEntryResource, IJSONPublishable)
@@ -97,6 +112,30 @@ class EntryResource(ReadOnlyResource):
         """See `IEntryResource`."""
         return urllib.quote(self.context.fragment())
 
+    def publishTraverse(self, request, name):
+        """Fetch a scoped collection resource by name."""
+        field = self.context.schema.get(name)
+        if not ICollectionField.providedBy(field):
+            raise NotFound(self, name)
+        collection = getattr(self.context, name, None)
+        if collection is None:
+            raise NotFound(self, name)
+        # Create a dummy object that implements the field's interface.
+        # This is neccessary because we can't pass the interface itself
+        # into getMultiAdapter.
+        example_entry = CollectionEntryDummy(field)
+        scoped_collection = getMultiAdapter((self.context, example_entry),
+                                             IScopedCollection)
+
+        # Tell the IScopedCollection object what collection it's managing,
+        # and what the collection's relationship is to the entry it's
+        # scoped to.
+        scoped_collection.collection = collection
+        scoped_collection.relationship = name
+
+        return ScopedCollectionResource(scoped_collection, self.request, name)
+
+
     def toDataForJSON(self):
         """Turn the object into a simple data structure.
 
@@ -108,7 +147,20 @@ class EntryResource(ReadOnlyResource):
         schema = self.context.schema
         for name in schema.names():
             element = schema.get(name)
-            if IObject.providedBy(element):
+            if ICollectionField.providedBy(element):
+                # The field is a collection; include a link to the
+                # collection resource.
+                try:
+                    related_resource = self.publishTraverse(
+                        self.request, name)
+                    key = name + '_collection_link'
+                    dict[key] = canonical_url(related_resource,
+                                              request=self.request)
+                except NotFound:
+                    pass
+            elif IObject.providedBy(element):
+                # The field is an entry; include a link to the
+                # entry resource.
                 related_entry = getattr(self.context, name)
                 if related_entry is not None:
                     related_resource = EntryResource(related_entry,
@@ -117,7 +169,13 @@ class EntryResource(ReadOnlyResource):
                     dict[key] = canonical_url(related_resource,
                                               request=self.request)
             elif IField.providedBy(element):
+                # It's a data field; display it as part of the
+                # representation.
                 dict[name] = getattr(self.context, name)
+            else:
+                # It's a method or some other part of an interface.
+                # Ignore it.
+                pass
 
         return dict
 
@@ -131,13 +189,14 @@ class CollectionResource(ReadOnlyResource):
     """A resource that serves a list of entry resources."""
     implements(ICollectionResource)
 
+    # A top-level collection resource is inside the root resource.
+    inside = None
+    rootsite = None
+
     def __init__(self, context, request, collection_name):
         super(CollectionResource, self).__init__(
             ICollection(context), request)
         self.collection_name = collection_name
-
-    rootsite = None
-    inside = None
 
     @property
     def path(self):
@@ -149,15 +208,29 @@ class CollectionResource(ReadOnlyResource):
         entry = self.context.lookupEntry(name)
         if entry is None:
             raise NotFound(self, name)
-        else:
-            return EntryResource(entry, self.request)
+        return EntryResource(entry, self.request)
 
     def do_GET(self):
         """Fetch a collection and render it as JSON."""
+        entries = self.context.find()
+        if entries is None:
+            raise NotFound(self, self.collection_name)
         entry_resources = [EntryResource(entry, self.request)
-                           for entry in self.context.find()]
+                           for entry in entries]
         self.request.response.setHeader('Content-type', 'application/json')
         return ResourceJSONEncoder().encode(entry_resources)
+
+
+class ScopedCollectionResource(CollectionResource):
+    """A resource for a collection scoped to some entry."""
+
+    @property
+    def inside(self):
+        """See `ICanonicalUrlData`.
+
+        The object to which the collection is scoped.
+        """
+        return EntryResource(self.context.context, self.request)
 
 
 class ServiceRootResource:
@@ -204,3 +277,27 @@ class Collection:
     def __init__(self, context):
         """Associate the entry with some database model object."""
         self.context = context
+
+
+class ScopedCollection:
+    """A collection associated with some parent object."""
+    implements(ICollection)
+
+    def __init__(self, context, collection):
+        """Initialize the scoped collection.
+
+        :param context: The object to which the collection is scoped.
+        :param collection: The scoped collection.
+        """
+        self.context = context
+        self.collection = collection
+
+
+    def lookupEntry(self, name):
+        """See `ICollection`"""
+        raise KeyError(name)
+
+    def find(self):
+        """See `ICollection`."""
+        return self.collection
+

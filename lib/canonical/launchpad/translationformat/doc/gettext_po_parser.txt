@@ -45,21 +45,21 @@ as an error.
     ...              '"foo"  whatever\n')
     Traceback (most recent call last):
     ...
-    TranslationFormatSyntaxError:...extra content found after string...
+    TranslationFormatSyntaxError:...Extra content found after string...
 
 Unrecognized escape sequences are caught as well.
 
     >>> parser.parse('msgid "\!"\nmsgstr ""\n')
     Traceback (most recent call last):
     ...
-    TranslationFormatSyntaxError:...unknown escape sequence...
+    TranslationFormatSyntaxError:...Unknown escape sequence...
 
 Unclosed strings (missing closing quotes) are caught.
 
     >>> parser.parse('msgid ""\nmsgstr "\n')
     Traceback (most recent call last):
     ...
-    TranslationFormatSyntaxError:...string not terminated...
+    TranslationFormatSyntaxError:...String not terminated...
 
 
 == POHeader ==
@@ -303,7 +303,8 @@ errors occur:
     >>> parser.parse(content + chunk2)
     Traceback (most recent call last):
     ...
-    TranslationFormatInvalidInputError: could not decode input from UTF-8
+    TranslationFormatInvalidInputError: Line 13:
+    Could not decode input from UTF-8
 
 
 == Evil Big5 Multibyte Sequences ==

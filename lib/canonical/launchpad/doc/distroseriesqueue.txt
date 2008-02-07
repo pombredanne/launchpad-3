@@ -55,9 +55,13 @@ launchpad.Edit on the records:
   >>> from canonical.launchpad.ftests import login
   >>> login("foo.bar@canonical.com")
 
-  >>> from canonical.launchpad.interfaces import IDistributionSet
+  >>> from canonical.launchpad.interfaces import (
+  ...     IComponentSet, IDistributionSet)
+  >>> from canonical.launchpad.database import ComponentSelection
   >>> ubuntu = getUtility(IDistributionSet)['ubuntu']
   >>> hoary = ubuntu['hoary']
+  >>> universe = getUtility(IComponentSet)['universe']
+  >>> trash = ComponentSelection(distroseries=hoary, component=universe)
 
 Construct an upload.
 
