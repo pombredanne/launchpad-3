@@ -169,6 +169,8 @@ class FilteredPOTMsgSets:
 class POFileFilteredView(LaunchpadView):
     """A filtered view for a POFile."""
 
+    DEFAULT_BATCH_SIZE = 50
+
     def initialize(self):
         self.person = None
         person = self.request.form.get('person')
@@ -186,7 +188,8 @@ class POFileFilteredView(LaunchpadView):
                 translations = self.context.getTranslationsFilteredBy(
                     person=self.person)
 
-        self.batchnav = BatchNavigator(translations, self.request)
+        self.batchnav = BatchNavigator(translations, self.request,
+                                       size=self.DEFAULT_BATCH_SIZE)
 
     @property
     def translations(self):
