@@ -363,16 +363,27 @@ class ExternalBugTracker:
 
     def importBugComments(self, bug_watch):
         """See `ISupportsCommentImport`."""
+        imported_comments = 0
         for comment_id in self.getCommentIds(bug_watch):
-            displayname, email = self.getPosterForComment(comment_id)
+            displayname, email = self.getPosterForComment(bug_watch, comment_id)
 
             poster = getUtility(IPersonSet).ensurePerson(
                 email, displayname, PersonCreationRationale.BUGIMPORT,
                 comment='when importing comments for %s.' % bug_watch.title)
 
-            comment_message = self._getComment(comment_id, poster)
+            comment_message = self._getComment(bug_watch, comment_id, poster)
             if not bug_watch.hasComment(comment_id):
                 bug_watch.addComment(comment_id, comment_message)
+                imported_comments += 1
+
+        if imported_comments > 0:
+            log.info("Imported %(count)i comments for remote bug "
+                "%(remotebug)s on %(bugtracker_url)s into Launchpad bug "
+                "%(bug_id)s." %
+                {'count': imported_comments,
+                 'remotebug': bug_watch.remotebug,
+                 'bugtracker_url': self.baseurl,
+                 'bug_id': bug_watch.bug.id})
 
 
 #
@@ -865,93 +876,41 @@ class DebBugs(ExternalBugTracker):
 
         return bug
 
-    def importBugComments(self, bug_watch):
-        """Import the comments from a DebBugs bug."""
+    def getCommentIds(self, bug_watch):
+        """Return all the comment IDs for a given remote bug."""
         debian_bug = self._findBug(bug_watch.remotebug)
+        self._loadLog(debian_bug)
 
-        try:
-            self._loadLog(debian_bug)
-        except debbugs.LogParseFailed, error:
-            log.warn("Unable to import comments for DebBugs bug #%(bug_id)s. "
-                "Could not parse comment log. %(error)s" %
-                {'bug_id': bug_watch.remotebug, 'error': error})
-            return
-
-        imported_comments = []
+        comment_ids = []
         for comment in debian_bug.comments:
-            bug_message = self._importDebBugsComment(comment, bug_watch)
+            parsed_comment = email.message_from_string(comment)
+            comment_ids.append(parsed_comment['message-id'])
 
-            if bug_message is not None:
-                imported_comments.append(bug_message)
+        return comment_ids
 
-        if len(imported_comments) > 0:
-            log.info("Imported %(count)i comments for remote bug "
-                "%(remotebug)s on %(bugtracker_url)s into Launchpad bug "
-                "%(bug_id)s." %
-                {'count': len(imported_comments),
-                 'remotebug': bug_watch.remotebug,
-                 'bugtracker_url': self.baseurl,
-                 'bug_id': bug_watch.bug.id})
+    def getPosterForComment(self, bug_watch, comment_id):
+        """Return a tuple of (displayname, email_address) for a comment's poster."""
+        debian_bug = self._findBug(bug_watch.remotebug)
+        self._loadLog(debian_bug)
 
-    def _importDebBugsComment(self, comment, bug_watch):
-        """Import a debbugs comment and link it to a bug watch.
+        for comment in debian_bug.comments:
+            parsed_comment = email.message_from_string(comment)
+            if parsed_comment['message-id'] == comment_id:
+                return parseaddr(parsed_comment['from'])
 
-        Return the BugMessage produced by the link or None if a comment
-        wasn't imported.
-        """
-        # Debian comments are all rfc822 compliant, so we can use
-        # the email module to parse them. We do this rather than
-        # simply passing the raw message to MessageSet.fromEmail()
-        # so that we can have finer control over the rationale for
-        # any new Persons that we create.
-        parsed_comment = email.message_from_string(comment)
+    def _getComment(self, bug_watch, comment_id, poster):
+        """Return a Message object for a comment."""
+        debian_bug = self._findBug(bug_watch.remotebug)
+        self._loadLog(debian_bug)
 
-        # We only link those messages which aren't already linked to to
-        # the bug.
-        bug_messages = [bug_message.rfc822msgid for bug_message
-            in bug_watch.bug.messages]
-        if parsed_comment['message-id'] not in bug_messages:
-            # We need to assign this comment to an owner, so we look for
-            # a From header to the email or, failing that, a Reply-to
-            # header.
-            if 'from' in parsed_comment:
-                owner_email = parsed_comment['from']
-            else:
-                # If we can't find an owner for the comment we can't
-                # carry on.
-                log.warn("Unable to parse comment %s on Debian bug %s: "
-                    "No valid sender address found." %
-                    (parsed_comment.get('message-id', ''),
-                    bug_watch.remotebug))
-                return None
+        for comment in debian_bug.comments:
+            parsed_comment = email.message_from_string(comment)
+            if parsed_comment['message-id'] == comment_id:
+                message = getUtility(IMessageSet).fromEmail(comment, poster,
+                    parsed_message=parsed_comment)
 
-            display_name, email_addr = parseaddr(owner_email)
-
-            owner = getUtility(IPersonSet).ensurePerson(email_addr.lower(),
-                display_name, PersonCreationRationale.BUGWATCH,
-                "when the comments for debbugs #%s were imported into "
-                "Launchpad." % bug_watch.remotebug,
-                getUtility(ILaunchpadCelebrities).bug_watch_updater)
-
-            message = getUtility(IMessageSet).fromEmail(comment, owner,
-                parsed_message=parsed_comment)
-
-            bug_message = bug_watch.bug.linkMessage(message, bug_watch)
-
-            # XXX 2008-01-22 gmb:
-            #     We should be using self.txn.commit() here, however,
-            #     bug 3989 (ztm.commit() only works once pers zopeless
-            #     run) prevents us from doing so. Using commit()
-            #     directly is the best available workaround, but we need
-            #     to change this once the bug is resolved.
-            # We deliberately commit here since we don't want a later
-            # error to end up rolling back sucessfully imported
-            # comments.
-            commit()
-        else:
-            bug_message = None
-
-        return bug_message
+                commit()
+                return message
 
 
 #

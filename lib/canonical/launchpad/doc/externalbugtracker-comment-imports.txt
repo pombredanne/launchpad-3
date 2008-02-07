@@ -40,11 +40,11 @@ bug watch with which to work.
     ...     def getCommentIds(self, bug_watch):
     ...         return sorted(self.comment_dict.keys())
     ...
-    ...     def getPosterForComment(self, comment_id):
+    ...     def getPosterForComment(self, bug_watch, comment_id):
     ...         """Return a tuple of (displayname, email)."""
     ...         return "Joe Bloggs", "joe.bloggs@example.com"
     ...
-    ...     def _getComment(self, comment_id, poster):
+    ...     def _getComment(self, bug_watch, comment_id, poster):
     ...         """Return a Message object for a comment."""
     ...         message = getUtility(IMessageSet).fromText(
     ...             "Some subject or other",
@@ -56,6 +56,7 @@ bug watch with which to work.
     ...     None, new_bugtracker(BugTrackerType.BUGZILLA))
 
     >>> external_bugtracker.importBugComments(bug_watch)
+    INFO:...:Imported 3 comments for remote bug 123456 on ...
 
     >>> bug_watch = getUtility(IBugWatchSet).get(bug_watch.id)
     >>> for message in bug.messages[1:]:
@@ -72,6 +73,7 @@ bug watch with which to work.
 
     >>> external_bugtracker.comment_dict['4'] = "Yet another comment."
     >>> external_bugtracker.importBugComments(bug_watch)
+    INFO:...:Imported 1 comments for remote bug 123456 on ...
 
     >>> for message in bug.messages[1:]:
     ...     bug_message = getUtility(IBugMessageSet).getByBugAndMessage(
