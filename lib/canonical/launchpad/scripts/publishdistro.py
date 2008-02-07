@@ -67,8 +67,9 @@ def add_options(parser):
                       help="Run only over the partner archive.")
 
 
-def run_publisher(options, txn):
-    log = logger(options, "publish-distro")
+def run_publisher(options, txn, log=None):
+    if not log:
+        log = logger(options, "publish-distro")
 
     def careful_msg(what):
         """Quick handy util for the below."""
