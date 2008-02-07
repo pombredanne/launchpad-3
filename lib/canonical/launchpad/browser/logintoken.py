@@ -420,7 +420,7 @@ class ValidateGPGKeyView(BaseLoginTokenView, LaunchpadFormView):
             msgid = _(
                 '<p>Some email addresses were found in your key but are '
                 'not registered with Launchpad:<code>${emails}</code>. If you '
-                'want to use these addressess with Launchpad, you need to '
+                'want to use these addresses with Launchpad, you need to '
                 '<a href="${url}/+editemails\">confirm them</a>.</p>',
                 mapping=dict(emails=emails, url=person_url))
             self.request.response.addInfoNotification(structured(msgid))

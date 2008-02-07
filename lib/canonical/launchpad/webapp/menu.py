@@ -27,8 +27,9 @@ from canonical.launchpad.webapp.interfaces import (
     )
 
 from canonical.launchpad.webapp.publisher import (
-    canonical_url, canonical_url_iterator, UserAttributeCache,
-    get_current_browser_request
+    canonical_url, canonical_url_iterator,
+    get_current_browser_request, UserAttributeCache
+    
     )
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.uri import InvalidURIError, URI
@@ -60,12 +61,15 @@ class structured:
         return "<structured-string '%s'>" % self.text
 
     def _translate_if_i18n(self, text_or_msgid):
+        """Return the text that will be displayed.  If the object
+        represents internationalized text, translate it first, then
+        return."""
         if isinstance(text_or_msgid, (Message, MessageID)):
             return translate(
                 text_or_msgid,
                 context=get_current_browser_request())
         else:
-            # just text (or something unknown)
+            # Just text (or something unknown).
             return text_or_msgid
 
 

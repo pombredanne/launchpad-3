@@ -593,10 +593,10 @@ class INotificationResponse(Interface):
         message to be translated, then CGI escaped.
 
         :param msg: This may be a string, `zope.i18n.Message`,
-        `zope.i18n.MessageID`, or an instance of `IStructuredString`.
+        	`zope.i18n.MessageID`, or an instance of `IStructuredString`.
 
         :param level: One of the `BrowserNotificationLevel` values: DEBUG,
-        INFO, NOTICE, WARNING, ERROR.
+        	INFO, NOTICE, WARNING, ERROR.
         """
 
     def removeAllNotifications():

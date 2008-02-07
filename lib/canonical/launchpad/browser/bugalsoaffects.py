@@ -218,10 +218,10 @@ class ChooseProductStep(AlsoAffectsStep):
                     bugtask.sourcepackagename)
                 self.request.response.addWarningNotification(
                     structured(
-                    _(dedent("""
+                    _("""
                     This package is linked to an inactive upstream.  You
                     can <a href="%(package_url)s/+edit-packaging">fix it</a>
-                    to avoid this step in the future.""")),
+                    to avoid this step in the future."""),
                     package_url=canonical_url(sourcepackage)))
                 return
 
@@ -248,11 +248,11 @@ class ChooseProductStep(AlsoAffectsStep):
 
     def _needProjectNotice(self, bugtask, sourcepackage):
         return structured(
-            _(dedent("""
+            _("""
                 Please select the appropriate upstream project. This step can
                 be avoided by <a href="%(package_url)s/+edit-packaging"
                 >updating the packaging information for
-                %(full_package_name)s</a>.""")),
+                %(full_package_name)s</a>."""),
             full_package_name=bugtask.bugtargetdisplayname,
             package_url=canonical_url(sourcepackage))
 

@@ -624,7 +624,7 @@ class BugTaskView(LaunchpadView, CanBeMentoredView, FeedsMixin):
         """Nominate the bug for the series and redirect to the bug page."""
         self.context.bug.addNomination(self.user, series)
         self.request.response.addInfoNotification(
-            'This bug has been nominated to be fixed in %s.' % \
+            'This bug has been nominated to be fixed in %s.' %
                 series.bugtargetdisplayname)
         self.request.response.redirect(canonical_url(self.context))
 
@@ -2618,19 +2618,18 @@ class BugTaskRemoveQuestionView(LaunchpadFormView):
         if owner_is_subscribed is True:
             self.context.bug.subscribe(question.owner, self.user)
         self.request.response.addNotification(
-                structured(self._removedQuestionText(question)))
+            structured(
+                'Removed Question #%(qid)s: <a href="%s">%(title)s<a>.' %
+                canonical_url(question),
+                qid=str(question.id),
+                title=question.title))
+                       
         comment = data.get('comment', None)
         if comment is not None:
             self.context.bug.newMessage(
                 owner=getUtility(ILaunchBag).user,
                 subject=self.context.bug.followup_subject(),
                 content=comment)
-
-    def _removedQuestionText(self, question):
-        return 'Removed Question #%s: <a href="%s">%s<a>.' % (
-            question.id,
-            canonical_url(question),
-            cgi.escape(question.title))
 
 
 class BugTaskExpirableListingView(LaunchpadView):

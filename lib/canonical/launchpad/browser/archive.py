@@ -39,9 +39,9 @@ from canonical.launchpad.webapp import (
     stepthrough, ApplicationMenu, LaunchpadEditFormView, LaunchpadFormView,
     LaunchpadView, Link, Navigation, StandardLaunchpadFacets)
 from canonical.launchpad.webapp.batching import BatchNavigator
+from canonical.launchpad.webapp.menu import structured
 from canonical.widgets import LabeledMultiCheckBoxWidget
 from canonical.widgets.textwidgets import StrippedTextWidget
-from canonical.launchpad.webapp.menu import structured
 
 
 class ArchiveNavigation(Navigation):

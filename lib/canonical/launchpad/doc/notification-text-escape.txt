@@ -19,18 +19,17 @@ mechanisms.
     ...	    return response
     >>>
 
-In the vast majority of cases, raw text that is passed into the
-Notification object's addNotification() methods should
-be CGI escaped.
+Plain text passed into the object's addNotification() method is
+unchanged:
 
-    # check clean, unmarked text
     >>> response = new_response()
     >>> response.addNotification('clean')
     >>> for notification in response.notifications:
     ...   print notification.message
     clean
 
-    # check dirty text containing markup
+But text containing markup is CGI-escaped:
+
     >>> response = new_response()
     >>> response.addNotification(u'<br/>dirty')
     >>> for notification in response.notifications:

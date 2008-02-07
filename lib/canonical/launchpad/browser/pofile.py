@@ -200,7 +200,7 @@ class POFileUploadView(POFileView):
             structured(
             'Thank you for your upload. The translation content will be'
             ' imported soon into Launchpad. You can track its status from the'
-            ' <a href="%s/+imports">Translation Import Queue</a>' % \
+            ' <a href="%s/+imports">Translation Import Queue</a>' %
                 canonical_url(self.context.potemplate.translationtarget)))
 
 

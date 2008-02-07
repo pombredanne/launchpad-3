@@ -20,8 +20,8 @@ from canonical.launchpad.interfaces import (
     IBugWatch, IBugWatchSet, ILaunchBag, ILaunchpadCelebrities,
     NoBugTrackerFound, UnrecognizedBugTrackerURL)
 from canonical.launchpad.webapp import (
-    GetitemNavigation, LaunchpadFormView, LaunchpadView, action,
-    canonical_url, custom_widget)
+    action, canonical_url, custom_widget, GetitemNavigation,
+    LaunchpadFormView, LaunchpadView)
 from canonical.launchpad.webapp.menu import structured
 
 
