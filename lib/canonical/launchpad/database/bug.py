@@ -480,7 +480,7 @@ class Bug(SQLBase):
                 also_notified_subscribers.update(
                     bugtask.milestone.getBugNotificationsRecipients(
                     recipients))
-                            
+
             # Bug contacts are indirect subscribers.
             if (IDistroBugTask.providedBy(bugtask) or
                 IDistroSeriesBugTask.providedBy(bugtask)):
