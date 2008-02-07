@@ -14,11 +14,9 @@ import xmlrpclib
 import bzrlib.branch
 from bzrlib.builtins import cmd_branch, cmd_push
 from bzrlib.errors import (
-    BzrCommandError, NotBranchError, TransportNotPossible)
+    BzrCommandError, LockFailed, NotBranchError, TransportNotPossible)
 from bzrlib.repofmt.weaverepo import RepositoryFormat7
 from bzrlib.repository import format_registry
-
-from bzrlib.errors import ReadOnlyError as ReadOnlyFailureException
 
 from bzrlib.urlutils import local_path_from_url
 from bzrlib.tests import default_transport, TestCaseWithTransport
@@ -552,8 +550,7 @@ class SmartserverTests(SSHTestCase):
         # Push the local branch to the remote url
         remote_url = self.getTransportURL('~sabdfl/+junk/ro-branch')
         self.assertRaises(
-            ReadOnlyFailureException,
-            self.push, self.local_branch_path, remote_url)
+            LockFailed, self.push, self.local_branch_path, remote_url)
 
     @deferToThread
     def test_can_read_mirrored_branch(self):
@@ -589,11 +586,11 @@ class SmartserverTests(SSHTestCase):
         self.assertIn("Project 'no-such-product' does not exist.", str(error))
 
 
-class OOPSReportingSmartserverTests(SmartserverTests):
+class OOPSReportingSmartserverTests(SSHTestCase):
     """Acceptance tests for the ssh server that involve OOPS reporting."""
 
     def setUp(self):
-        SmartserverTests.setUp(self)
+        SSHTestCase.setUp(self)
         self._oops_prefix = config.launchpad.errorreports.oops_prefix
         self._errordir = config.launchpad.errorreports.errordir
         self._copy_to_zlog = config.launchpad.errorreports.copy_to_zlog
@@ -603,7 +600,7 @@ class OOPSReportingSmartserverTests(SmartserverTests):
         config.launchpad.errorreports.copy_to_zlog = errorreports.copy_to_zlog
 
     def tearDown(self):
-        SmartserverTests.tearDown(self)
+        SSHTestCase.tearDown(self)
         config.launchpad.errorreports.oops_prefix = self._oops_prefix
         config.launchpad.errorreports.errordir = self._errordir
         config.launchpad.errorreports.copy_to_zlog = self._copy_to_zlog
