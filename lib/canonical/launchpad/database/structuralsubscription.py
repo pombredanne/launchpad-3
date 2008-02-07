@@ -235,7 +235,6 @@ class StructuralSubscriptionTargetMixin:
         # a product is related to a project, etc'...
         # This method determines whether the target has a parent,
         # returning it if it exists.
-        parent = None
         if IDistributionSourcePackage.providedBy(self):
             parent = self.distribution
         elif IProduct.providedBy(self):
@@ -248,7 +247,7 @@ class StructuralSubscriptionTargetMixin:
             parent = self.target
         else:
             parent = None
-        # We only want to return the parent it's
+        # We only want to return the parent if it's
         # an `IStructuralSubscriptionTarget`.
         if IStructuralSubscriptionTarget.providedBy(parent):
             return parent
