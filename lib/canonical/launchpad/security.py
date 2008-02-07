@@ -10,22 +10,22 @@ from zope.component import getUtility
 from canonical.launchpad.interfaces import (
     IAnnouncement, IBazaarApplication, IBranch, IBranchMergeProposal,
     IBranchSubscription, IBug, IBugAttachment, IBugBranch, IBugNomination,
-    IBugTracker, IBuild, IBuilder, IBuilderSet, ICodeImport,
-    ICodeImportJob, ICodeImportJobSet, ICodeImportJobWorkflow,
-    ICodeImportMachine, ICodeImportMachineSet, ICodeImportSet,
-    IDistribution, IDistributionMirror, IDistroSeries,
-    IDistroSeriesLanguage, IEntitlement, IFAQ, IFAQTarget, IHasBug,
-    IHasDrivers, IHasOwner, IHWSubmission, ILanguage, ILanguagePack,
-    ILanguageSet, ILaunchpadCelebrities, IMilestone, IPackageUpload,
-    IPackageUploadQueue, IPerson, IPOFile, IPoll, IPollSubset, IPollOption,
-    IPOTemplate, IPOTemplateSubset, IProduct, IProductRelease,
-    IProductSeries, IQuestion, IQuestionTarget, IRequestedCDs,
-    IShipItApplication, IShippingRequest, IShippingRequestSet, IShippingRun,
-    ISpecification, ISpecificationSubscription, ISprint,
-    ISprintSpecification, IStandardShipItRequest, IStandardShipItRequestSet,
-    ITeam, ITeamMembership, ITranslationGroup, ITranslationGroupSet,
-    ITranslationImportQueue, ITranslationImportQueueEntry, ITranslator,
-    PackageUploadStatus, IPackaging, IProductReleaseFile, PersonVisibility)
+    IBugTracker, IBuild, IBuilder, IBuilderSet, ICodeImport, ICodeImportJob,
+    ICodeImportJobSet, ICodeImportJobWorkflow, ICodeImportMachine,
+    ICodeImportMachineSet, ICodeImportSet, IDistribution, IDistributionMirror,
+    IDistroSeries, IDistroSeriesLanguage, IEntitlement, IFAQ, IFAQTarget,
+    IHWSubmission, IHasBug, IHasDrivers, IHasOwner, ILanguage, ILanguagePack,
+    ILanguageSet, ILaunchpadCelebrities, IMailingListSet, IMilestone, IPOFile,
+    IPOTemplate, IPOTemplateSubset, IPackageUpload, IPackageUploadQueue,
+    IPackaging, IPerson, IPoll, IPollOption, IPollSubset, IProduct,
+    IProductRelease, IProductReleaseFile, IProductSeries, IQuestion,
+    IQuestionTarget, IRequestedCDs, IShipItApplication, IShippingRequest,
+    IShippingRequestSet, IShippingRun, ISpecification,
+    ISpecificationSubscription, ISprint, ISprintSpecification,
+    IStandardShipItRequest, IStandardShipItRequestSet, ITeam, ITeamMembership,
+    ITranslationGroup, ITranslationGroupSet, ITranslationImportQueue,
+    ITranslationImportQueueEntry, ITranslator, PackageUploadStatus,
+    PersonVisibility)
 
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.interfaces import IAuthorization
@@ -1356,3 +1356,12 @@ class ViewHWSubmission(AuthorizationBase):
 
     def checkUnauthenticated(self):
         return not self.obj.private
+
+
+class MailingListApprovalByExperts(AuthorizationBase):
+    permission = 'launchpad.Admin'
+    usedfor = IMailingListSet
+
+    def checkAuthenticated(self, user):
+        experts = getUtility(ILaunchpadCelebrities).mailing_list_experts
+        return user.inTeam(experts)

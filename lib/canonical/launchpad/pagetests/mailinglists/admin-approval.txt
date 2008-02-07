@@ -25,9 +25,29 @@ But Launchpad administrators can see the mailing list approval page.
     >>> print extract_text(first_tag_by_class(admin_browser.contents, 'main'))
     Team mailing lists
 
-For convenience, we'll be predominantly using the admin browser from now on.
+Additionally, members of the Mailing List Experts team can see the approval
+page.  Sample Person is not a mailing list expert, and cannot view the page.
 
-    >>> browser = admin_browser
+    >>> sample_browser = setupBrowser('Basic test@canonical.com:test')
+    >>> sample_browser.open('http://launchpad.dev/+mailinglists')
+    Traceback (most recent call last):
+    ...
+    Unauthorized: ...
+
+But once Sample Person is made a mailing list expert, he can view the page.
+
+    >>> admin_browser.open(
+    ...     'http://launchpad.dev/~mailing-list-experts/+addmember')
+    >>> admin_browser.getControl('New member').value = 'name12'
+    >>> admin_browser.getControl('Add Member').click()
+
+    >>> sample_browser.open('http://launchpad.dev/+mailinglists')
+    >>> sample_browser.title
+    'Pending mailing lists requests'
+
+For convenience, let's use the mailing list expert's browser.
+
+    >>> browser = sample_browser
 
 
 == When there's nothing to do ==
