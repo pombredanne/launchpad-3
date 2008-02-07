@@ -689,6 +689,7 @@ files that are published in the sample data.
   >>> fillLibrarianFile(70)
 
   >>> run_publish_distro(careful=True)
+  DEBUG   Initialising zopeless.
   INFO      Distribution: ubuntutest
   ...
   DEBUG   Added /var/tmp/archive/ubuntutest/pool/main/b/bar/bar_1.0-2_i386.deb from library
@@ -717,6 +718,7 @@ Check that breezy-autotest is skipped, to ensure that changes to what's
 uploaded in the test above don't break the assumptions of this test.
 
   >>> run_publish_distro(careful_publishing=True)
+  DEBUG   Initialising zopeless.
   INFO      Distribution: ubuntutest
   ...
   DEBUG   /var/tmp/archive/ubuntutest/pool/main/b/bar/bar_1.0-2_i386.deb is already in pool with the same content.
