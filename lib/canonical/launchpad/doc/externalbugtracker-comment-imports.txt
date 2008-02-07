@@ -16,6 +16,13 @@
 
 == BugWatch comment importing functionality ==
 
+The IBugWatch interface provides methods for linking imported comments
+to bug watches and for checking whether an imported comment is already
+linked to a bug watch.
+
+In order to demonstrate this we need to set up a bug, bug tracker and
+bug watch with which to work.
+
     >>> from canonical.config import config
     >>> from canonical.database.sqlbase import commit
     >>> from canonical.launchpad.interfaces import (
@@ -41,6 +48,10 @@
     >>> commit()
     >>> LaunchpadZopelessLayer.switchDbUser(config.checkwatches.dbuser)
 
+The method IBugWatch.hasComment() can be used to check whether a comment
+has been linked to a bug watch. If we create an example comment without
+linking it to the bug watch this method will, of course, return False.
+
     >>> message = getUtility(IMessageSet).fromText(
     ...     "Example Message", "With example content for you to read.")
 
@@ -51,10 +62,23 @@
     >>> bug_watch.hasComment(comment_id)
     False
 
+IBugWatch provides an addComment() method by which comments can be
+linked to a bug watch. This method accepts a Launchpad Message object
+representing the comment itself and a comment_id paramter, which can be
+used to pass the ID of the comment on the remote bug tracker from which
+the comment was imported.
+
     >>> bug_watch.addComment(comment_id, message)
+
+After using addComment() to add a comment, hasComment() will return True
+for that comment.
 
     >>> bug_watch.hasComment(comment_id)
     True
+
+We can also see that the message we passed to addComment() has been
+linked to the bug watch by examining the BugMessage which links the
+message and the bug to which the watch belongs.
 
     >>> bug_message = getUtility(IBugMessageSet).getByBugAndMessage(
     ...     bug, message)
@@ -66,6 +90,14 @@
 
 
 == Importing two messages with the same ID ==
+
+It is possible for two Messages with the same ID to coexist within
+Launchpad, for example if a comment on a bug was sent to both Launchpad
+and to DebBugs and the subsequently imported into Launchpad from the
+DebBugs database.
+
+We can demonstrate this by creating two messages with the same message
+ID.
 
     >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
     >>> message_one = getUtility(IMessageSet).fromText(
@@ -80,16 +112,29 @@
     >>> commit()
     >>> LaunchpadZopelessLayer.switchDbUser(config.checkwatches.dbuser)
 
+We will use message_one to represent a message which was sent directly
+to Launchpad. Since it was a comment on a bug, we link it to that bug.
+
     >>> bug.linkMessage(message_one)
     <BugMessage...>
+
+The bug watch which we created earlier will not be linked to the message
+since it was not imported for that bug watch.
 
     >>> bug_watch = getUtility(IBugWatchSet).get(bug_watch.id)
     >>> bug_watch.hasComment(message_one.rfc822msgid)
     False
 
+Now the comment import process runs and the message is imported from the
+DebBugs database. The message is linked to the bug watch for which it
+was imported.
+
     >>> bug_watch.addComment(message_two.rfc822msgid, message_two)
     >>> bug_watch.hasComment(message_two.rfc822msgid)
     True
+
+We can see that only the second message is linked to the bug watch by
+examining the BugMessages which link the messages to the bug.
 
     >>> bug_message_one = getUtility(IBugMessageSet).getByBugAndMessage(
     ...     bug, message_one)
