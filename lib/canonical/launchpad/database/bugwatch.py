@@ -180,6 +180,14 @@ class BugWatch(SQLBase):
 
         return message % error_data
 
+    def hasComment(self, comment_id):
+        """See `IBugWatch`."""
+        pass
+
+    def addComment(self, comment_id, message):
+        """See `IBugWatch`."""
+        pass
+
 
 class BugWatchSet(BugSetBase):
     """A set for BugWatch"""

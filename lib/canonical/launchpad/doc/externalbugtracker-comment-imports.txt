@@ -12,3 +12,88 @@
     ...
     ...     def _getComment(self, comment_id, poster):
     ...         """Return a Message object for a comment."""
+
+
+== BugWatch comment importing functionality ==
+
+    >>> from canonical.config import config
+    >>> from canonical.database.sqlbase import commit
+    >>> from canonical.launchpad.interfaces import (
+    ...     CreateBugParams, BugTrackerType, IBugMessageSet, IMessageSet,
+    ...     IPersonSet, IProductSet)
+    >>> from canonical.launchpad.ftests.externalbugtracker import (
+    ...     new_bugtracker)
+    >>> from canonical.testing import LaunchpadZopelessLayer
+
+    >>> bug_tracker = new_bugtracker(BugTrackerType.BUGZILLA)
+
+    >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
+    >>> sample_person = getUtility(IPersonSet).getByEmail(
+    ...     'test@canonical.com')
+    >>> firefox = getUtility(IProductSet).getByName('firefox')
+    >>> bug = firefox.createBug(
+    ...     CreateBugParams(sample_person, "Yet another test bug",
+    ...         "Yet another test description.",
+    ...         subscribe_reporter=False))
+
+    >>> bug_watch = bug.addWatch(bug_tracker, '123456', sample_person)
+
+    >>> commit()
+    >>> LaunchpadZopelessLayer.switchDbUser(config.checkwatches.dbuser)
+
+    >>> message = getUtility(IMessageSet).fromText(
+    ...     "Example Message", "With example content for you to read.")
+
+    >>> comment_id = message.rfc822msgid
+    >>> bug_watch.hasComment(comment_id)
+    False
+
+    >>> bug_watch.addComment(comment_id, message)
+
+    >>> bug_watch.hasComment(comment_id)
+    True
+
+    >>> bug_message = getUtility(IBugMessageSet).getByBugAndMessage(
+    ...     bug, message)
+
+    >>> bug_message.bugwatch == bug_watch
+    True
+
+    >>> commit()
+
+
+== Importing two messages with the same ID ==
+
+    >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
+    >>> message_one = getUtility(IMessageSet).fromText(
+    ...     "Example Message", "With example content for you to read.")
+    >>> message_two = getUtility(IMessageSet).fromText(
+    ...     "Example Message", "With example content for you to read.",
+    ...     rfc822msgid=message_one.rfc822msgid)
+
+    >>> message_one.rfc822msgid == message_two.rfc822msgid
+    True
+
+    >>> commit()
+    >>> LaunchpadZopelessLayer.switchDbUser(config.checkwatches.dbuser)
+
+    >>> bug.linkMessage(message_one)
+    <BugMessage...>
+
+    >>> bug_watch.hasComment(message_one.rfc822msgid)
+    False
+
+    >>> bug_watch.addComment(message_two.rfc822msgid, message_two)
+    >>> bug_watch.hasComment(message_two.rfc822msgid)
+    True
+
+    >>> bug_message_one = getUtility(IBugMessageSet).getByBugAndMessage(
+    ...     bug, message_one)
+    >>> bug_message_two = getUtility(IBugMessageSet).getByBugAndMessage(
+    ...     bug, message_two)
+
+    >>> print bug_message_one.bugwatch
+    None
+
+    >>> bug_message_two.bugwatch == bug_watch
+    True
