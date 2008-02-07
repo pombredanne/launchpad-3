@@ -2619,7 +2619,7 @@ class BugTaskRemoveQuestionView(LaunchpadFormView):
             self.context.bug.subscribe(question.owner, self.user)
         self.request.response.addNotification(
             structured(
-                'Removed Question #%(qid)s: <a href="%s">%(title)s<a>.' %
+                'Removed Question #%%(qid)s: <a href="%s">%%(title)s<a>.' %
                 canonical_url(question),
                 qid=str(question.id),
                 title=question.title))
