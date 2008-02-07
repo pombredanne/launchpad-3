@@ -1309,7 +1309,6 @@ def is_valid_private_or_public_person_link(person, other):
 
 class PublicPersonChoice(Choice):
     def constraint(self, value):
-        import pdb; pdb.set_trace()
         if is_valid_public_person_link(value, self.context):
             return True
         else:
@@ -1318,7 +1317,6 @@ class PublicPersonChoice(Choice):
 
 class PublicOrPrivatePersonChoice(Choice):
     def constraint(self, value):
-        import pdb; pdb.set_trace()
         if is_valid_private_or_public_person_link(value, self.context):
             return True
         else:
