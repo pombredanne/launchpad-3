@@ -345,6 +345,16 @@ class Branch(SQLBase):
         for spec_link in self.spec_links:
             deletions[spec_link] = _(
                 'This associates this branch with a specification.')
+        for series in self.associatedProductSeries():
+            alterations[series] = _('This series is linked to this branch.')
+            def clear_user_branch():
+                if series.user_branch == self:
+                    series.user_branch = None
+                if series.import_branch == self:
+                    series.import_branch = None
+                series.syncUpdate()
+            alteration_operations.append(clear_user_branch)
+
         return alterations, deletions, alteration_operations
 
     def deletionRequirements(self):

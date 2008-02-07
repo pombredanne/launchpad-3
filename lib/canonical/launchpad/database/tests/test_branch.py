@@ -294,6 +294,32 @@ class TestBranchDeletionConsequences(TestCase):
         self.assertRaises(SQLObjectNotFound, SpecificationBranch.get,
                           spec_branch_id)
 
+    def test_branchWithSeriesUserRequirements(self):
+        series = self.factory.makeSeries(self.branch)
+        self.assertEqual(
+            {series: ('alter',
+            _('This series is linked to this branch.'))},
+            self.branch.deletionRequirements())
+
+    def test_branchWithSeriesImportRequirements(self):
+        series = self.factory.makeSeries(import_branch=self.branch)
+        self.assertEqual(
+            {series: ('alter',
+            _('This series is linked to this branch.'))},
+            self.branch.deletionRequirements())
+
+    def test_branchWithSeriesUserDeletion(self):
+        series = self.factory.makeSeries(self.branch)
+        series_id = series.id
+        self.branch_set.delete(self.branch, break_references=True)
+        self.assertEqual(None, series.user_branch)
+
+    def test_branchWithSeriesImportDeletion(self):
+        series = self.factory.makeSeries(import_branch=self.branch)
+        series_id = series.id
+        self.branch_set.delete(self.branch, break_references=True)
+        self.assertEqual(None, series.user_branch)
+
 
 class BranchAddLandingTarget(TestCase):
     """Exercise all the code paths for adding a landing target."""

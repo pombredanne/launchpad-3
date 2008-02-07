@@ -31,6 +31,7 @@ from canonical.launchpad.interfaces import (
     UnknownBranchTypeError,
     SpecificationDefinitionStatus,
     )
+from canonical.launchpad.ftests import syncUpdate
 
 
 def time_counter(origin=None, delta=timedelta(seconds=5)):
@@ -222,3 +223,11 @@ class LaunchpadObjectFactory:
         if branch is not None:
             spec.linkBranch(branch, branch.owner)
         return spec
+
+    def makeSeries(self, user_branch=None, import_branch=None):
+        product = self.makeProduct()
+        series = product.newSeries(product.owner, self.getUniqueString(),
+            self.getUniqueString(), user_branch)
+        series.import_branch = import_branch
+        syncUpdate(series)
+        return series
