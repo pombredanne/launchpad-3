@@ -950,12 +950,12 @@ the new series will be available in the script.
 Now, we execute the script that will migrate/copy all current templates and
 translations from testing_series' parent distro series (hoary)
 
-    >>> process = subprocess.Popen([
-    ...     sys.executable, 'scripts/copy-missing-translations-from-parent.py',
-    ...     '--distribution=ubuntu', '--series=testing', '-v'],
-    ...     stdin=subprocess.PIPE, stdout=subprocess.PIPE,
-    ...     stderr=subprocess.STDOUT)
-    >>> (output, empty) = process.communicate()
+    >>> from canonical.launchpad.ftests.script input run_script
+    >>> returnvalue, output, error_output = run_script(
+    ...     'cronscripts/copy-missing-translations-from-parent.py',
+    ...     ['--distribution=ubuntu', '--series=testing', '-v'])
+    >>> returnvalue
+    0
     >>> print output
     INFO    creating lockfile
     INFO    Starting...
