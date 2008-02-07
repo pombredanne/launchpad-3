@@ -678,10 +678,17 @@ class SpecificationSet(HasSpecificationsMixin):
         self.title = 'Specifications registered in Launchpad'
         self.displayname = 'All Specifications'
 
+    @property
+    def all_specifications(self):
+        return Specification.select()
+
     def __iter__(self):
         """See ISpecificationSet."""
-        for row in Specification.select():
-            yield row
+        return iter(self.all_specifications)
+
+    @property
+    def has_any_specifications(self):
+        return self.all_specifications.count() != 0
 
     def specifications(self, sort=None, quantity=None, filter=None):
         """See IHasSpecifications."""
