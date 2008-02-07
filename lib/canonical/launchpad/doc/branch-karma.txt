@@ -8,11 +8,16 @@ it.
     >>> code_category = KarmaCategory.byName('code')
     >>> code_karma_actions = code_category.karmaactions
     >>> sorted([action.title for action in code_karma_actions])
-    []
+    [u'Branch linked to a blueprint',
+     u'Branch linked to a bug',
+     u'New branch registered',
+     u'Revision added']
 
     >>> from canonical.launchpad.ftests.karma import KarmaAssignedEventListener
     >>> karma_helper = KarmaAssignedEventListener(show_person=True)
     >>> karma_helper.register_listener()
+
+    >>> login('test@canonical.com')
 
     >>> from canonical.launchpad.testing import LaunchpadObjectFactory
     >>> factory = LaunchpadObjectFactory()

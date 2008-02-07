@@ -91,8 +91,15 @@ class LaunchpadObjectFactory:
             email = self.getUniqueString('email')
         if name is None:
             name = self.getUniqueString('person-name')
-        return getUtility(IPersonSet).createPersonAndEmail(
-            email, rationale=PersonCreationRationale.UNKNOWN, name=name)[0]
+        # Set the password to test in order to allow people that have
+        # been created this way can be logged in.
+        person, email = getUtility(IPersonSet).createPersonAndEmail(
+            email, rationale=PersonCreationRationale.UNKNOWN, name=name,
+            password='test')
+        # To make the person someone valid in Launchpad, validate the
+        # email.
+        person.validateAndEnsurePreferredEmail(email)
+        return person
 
     def makeProduct(self, name=None):
         """Create and return a new, arbitrary Product."""

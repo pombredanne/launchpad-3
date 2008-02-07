@@ -216,6 +216,7 @@ def faq_edited(faq, event):
         user.assignKarma('faqedited', **context)
 
 def branch_created(branch, event):
+    import pdb; pdb.set_trace()
     if branch.product is None:
         # No karma for junk branches.
         return
