@@ -109,3 +109,13 @@ class IScopedCollection(ICollection):
     relationship = Attribute("The relationship between an entry and a "
                              "collection.")
     collection = Attribute("The collection scoped to an entry.")
+
+    def child_fragment(self, child):
+        """Choose a URL fragment for one of this collection's entries.
+
+        The default behavior is to let the child entry choose its own
+        URL fragment. But sometimes the child doesn't have a top-level
+        collection or unique ID of its own; it only makes sense in
+        relation to its parent collection. In such cases it's the
+        parent collection's job to decide on a URL.
+        """
