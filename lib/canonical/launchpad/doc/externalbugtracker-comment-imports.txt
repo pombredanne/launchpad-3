@@ -1,0 +1,14 @@
+= ExternalBugTracker comment imports =
+
+    >>> from canonical.launchpad.components.externalbugtracker import (
+    ...     ExternalBugTracker)
+    >>> class CommentImportingExternalBugTracker(ExternalBugTracker):
+    ...
+    ...     def getCommentIds(self, bug_watch):
+    ...         pass
+    ...
+    ...     def getPosterForComment(self, comment):
+    ...         """Return a tuple of (displayname, email)."""
+    ...
+    ...     def _getComment(self, comment_id, poster):
+    ...         """Return a Message object for a comment."""
