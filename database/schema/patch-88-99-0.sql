@@ -52,10 +52,10 @@ ALTER TABLE DistroSeriesPackageCache ADD CONSTRAINT
 -- removed and re-created in the first update-pkgcache.py run.
 
 UPDATE DistributionSourcePackageCache set archive=1;
-ALTER TABLE DistroSeriesPackageCache
+ALTER TABLE DistributionSourcePackageCache
     ALTER COLUMN archive SET NOT NULL;
 
-UPDATE DistroseriesPackageCache set archive=1;
+UPDATE DistroSeriesPackageCache set archive=1;
 ALTER TABLE DistroSeriesPackageCache
     ALTER COLUMN archive SET NOT NULL;
 
