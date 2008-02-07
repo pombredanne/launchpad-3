@@ -1,35 +1,15 @@
 = ExternalBugTracker comment imports =
 
-    >>> from canonical.launchpad.components.externalbugtracker import (
-    ...     ExternalBugTracker)
-    >>> class CommentImportingExternalBugTracker(ExternalBugTracker):
-    ...
-    ...     def getCommentIds(self, bug_watch):
-    ...         pass
-    ...
-    ...     def getPosterForComment(self, comment):
-    ...         """Return a tuple of (displayname, email)."""
-    ...
-    ...     def _getComment(self, comment_id, poster):
-    ...         """Return a Message object for a comment."""
-
-
-== BugWatch comment importing functionality ==
-
-The IBugWatch interface provides methods for linking imported comments
-to bug watches and for checking whether an imported comment is already
-linked to a bug watch.
-
 In order to demonstrate this we need to set up a bug, bug tracker and
 bug watch with which to work.
 
     >>> from canonical.config import config
     >>> from canonical.database.sqlbase import commit
-    >>> from canonical.launchpad.interfaces import (
-    ...     CreateBugParams, BugTrackerType, IBugMessageSet,
-    ...     IBugWatchSet, IMessageSet, IPersonSet, IProductSet)
     >>> from canonical.launchpad.ftests.externalbugtracker import (
     ...     new_bugtracker)
+    >>> from canonical.launchpad.interfaces import (
+    ...     BugTrackerType, CreateBugParams, IBugMessageSet,
+    ...     IBugWatchSet, IMessageSet, IPersonSet, IProductSet)
     >>> from canonical.testing import LaunchpadZopelessLayer
 
     >>> bug_tracker = new_bugtracker(BugTrackerType.BUGZILLA)
@@ -47,6 +27,71 @@ bug watch with which to work.
 
     >>> commit()
     >>> LaunchpadZopelessLayer.switchDbUser(config.checkwatches.dbuser)
+
+    >>> from canonical.launchpad.components.externalbugtracker import (
+    ...     ExternalBugTracker)
+    >>> class CommentImportingExternalBugTracker(ExternalBugTracker):
+    ...
+    ...     comment_dict = {
+    ...         '1': "Example comment the first",
+    ...         '2': "Example comment the second",
+    ...         '3': "Example comment the third"}
+    ...
+    ...     def getCommentIds(self, bug_watch):
+    ...         return sorted(self.comment_dict.keys())
+    ...
+    ...     def getPosterForComment(self, comment_id):
+    ...         """Return a tuple of (displayname, email)."""
+    ...         return "Joe Bloggs", "joe.bloggs@example.com"
+    ...
+    ...     def _getComment(self, comment_id, poster):
+    ...         """Return a Message object for a comment."""
+    ...         message = getUtility(IMessageSet).fromText(
+    ...             "Some subject or other",
+    ...             self.comment_dict[comment_id], owner=poster,
+    ...             rfc822msgid=comment_id)
+    ...         return message
+
+    >>> external_bugtracker = CommentImportingExternalBugTracker(
+    ...     None, new_bugtracker(BugTrackerType.BUGZILLA))
+
+    >>> external_bugtracker.importBugComments(bug_watch)
+
+    >>> bug_watch = getUtility(IBugWatchSet).get(bug_watch.id)
+    >>> for message in bug.messages[1:]:
+    ...     bug_message = getUtility(IBugMessageSet).getByBugAndMessage(
+    ...         bug, message)
+    ...     bug_message.bugwatch == bug_watch
+    ...     print bug_message.message.text_contents
+    True
+    Example comment the first
+    True
+    Example comment the second
+    True
+    Example comment the third
+
+    >>> external_bugtracker.comment_dict['4'] = "Yet another comment."
+    >>> external_bugtracker.importBugComments(bug_watch)
+
+    >>> for message in bug.messages[1:]:
+    ...     bug_message = getUtility(IBugMessageSet).getByBugAndMessage(
+    ...         bug, message)
+    ...     bug_message.bugwatch == bug_watch
+    ...     print bug_message.message.text_contents
+    True
+    Example comment the first
+    True
+    Example comment the second
+    True
+    Example comment the third
+    True
+    Yet another comment.
+
+== BugWatch comment importing functionality ==
+
+The IBugWatch interface provides methods for linking imported comments
+to bug watches and for checking whether an imported comment is already
+linked to a bug watch.
 
 The method IBugWatch.hasComment() can be used to check whether a comment
 has been linked to a bug watch. If we create an example comment without

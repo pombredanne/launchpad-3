@@ -361,6 +361,19 @@ class ExternalBugTracker:
                             (bug_id, bug_tracker_url, local_ids),
                           exc_info=True)
 
+    def importBugComments(self, bug_watch):
+        """See `ISupportsCommentImport`."""
+        for comment_id in self.getCommentIds(bug_watch):
+            displayname, email = self.getPosterForComment(comment_id)
+
+            poster = getUtility(IPersonSet).ensurePerson(
+                email, displayname, PersonCreationRationale.BUGIMPORT,
+                comment='when importing comments for %s.' % bug_watch.title)
+
+            comment_message = self._getComment(comment_id, poster)
+            if not bug_watch.hasComment(comment_id):
+                bug_watch.addComment(comment_id, comment_message)
+
 
 #
 # Bugzilla
