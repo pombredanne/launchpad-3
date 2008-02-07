@@ -310,6 +310,24 @@ is the revision that will be merged into the target branch.
     >>> print proposal.queue_position
     1
 
+
+== Removing a branch from the merge queue ==
+
+A branch proposal to merge that has been queued can also be removed
+from the queue.  Doing so moves the state of the proposal back to
+Approved.
+
+    >>> proposal.dequeue()
+    >>> print proposal.queue_status.title
+    Code approved
+    >>> print proposal.queue_position
+    None
+    >>> print proposal.queuer
+    None
+
+
+== Transitioning through code approved when queueing ==
+
 If the proposal to merge was not in the approved state before attempting
 to queue the branch, then an implicit approval is attempted.  If the user
 queuing the branch is not a reviewer, an exception is raised.
@@ -323,8 +341,6 @@ queuing the branch is not a reviewer, an exception is raised.
     UserNotBranchReviewer
 
     >>> proposal.enqueue(eric_the_reviewer, tip.revision_id)
-    Traceback (most recent call last):
-    UserNotBranchReviewer
     >>> print proposal.queue_status.title
     Queued
     >>> print proposal.queuer.name
@@ -333,21 +349,6 @@ queuing the branch is not a reviewer, an exception is raised.
     eric-reviewer
     >>> print proposal.queue_position
     1
-
-
-== Removing a branch from the merge queue ==
-
-A branch proposal to merge that has been queued can also be removed
-from the queue.  Doing so moves the state of the proposal back to
-Approved.
-
-    >>> proposal.dequeue()
-    >>> print proposal.queue_status.title
-    Approved
-    >>> print proposal.queue_position
-    None
-    >>> print proposal.queuer
-    None
 
 
 == Marking as failed to merge ==

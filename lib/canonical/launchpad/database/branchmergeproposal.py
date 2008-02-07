@@ -99,6 +99,14 @@ class BranchMergeProposal(SQLBase):
             raise BadStateTransition(
                 'Invalid state transition for merge proposal: %s -> %s'
                 % (self.queue_status.title, next_state.title))
+        # The only valid transitions for queued proposals are to mark
+        # as either merged, or merge failed.
+        if (self.queue_status == BranchMergeProposalStatus.QUEUED and
+            next_state not in (BranchMergeProposalStatus.MERGED,
+                               BranchMergeProposalStatus.MERGE_FAILED)):
+            raise BadStateTransition(
+                'Invalid state transition for merge proposal: %s -> %s'
+                % (self.queue_status.title, next_state.title))
         # Transition to the same state occur in two particular
         # situations:
         #  * stale posts

@@ -6,7 +6,7 @@ __metaclass__ = type
 
 from unittest import TestCase, TestLoader
 
-from canonical.launchpad.ftests import login, logout
+from canonical.launchpad.ftests import ANONYMOUS, login, logout
 from canonical.launchpad.interfaces import (
     BadStateTransition, BranchMergeProposalStatus)
 from canonical.launchpad.testing import LaunchpadObjectFactory
@@ -28,11 +28,13 @@ class TestBranchMergeProposalTransitions(TestCase):
         BranchMergeProposalStatus.REJECTED: 'rejectBranch',
         BranchMergeProposalStatus.MERGED: 'markAsMerged',
         BranchMergeProposalStatus.MERGE_FAILED: 'mergeFailed',
+        BranchMergeProposalStatus.QUEUED: 'enqueue',
         BranchMergeProposalStatus.SUPERCEDED: 'resubmit',
         }
 
     def setUp(self):
         TestCase.setUp(self)
+        login(ANONYMOUS)
         self.factory = LaunchpadObjectFactory()
         self.target_branch = self.factory.makeBranch()
         login(self.target_branch.owner.preferredemail.email)
@@ -47,7 +49,8 @@ class TestBranchMergeProposalTransitions(TestCase):
         """Try to transition the proposal into the state `to_state`."""
         method = getattr(proposal, self.transition_functions[to_state])
         if to_state in (BranchMergeProposalStatus.CODE_APPROVED,
-                        BranchMergeProposalStatus.REJECTED):
+                        BranchMergeProposalStatus.REJECTED,
+                        BranchMergeProposalStatus.QUEUED):
             args = [proposal.target_branch.owner, 'some_revision_id']
         elif to_state in (BranchMergeProposalStatus.MERGE_FAILED,
                           BranchMergeProposalStatus.SUPERCEDED):
@@ -104,10 +107,11 @@ class TestBranchMergeProposalTransitions(TestCase):
         """Rejected proposals can only be resubmitted."""
         # Test the transitions from rejected.
         [wip, needs_review, code_approved, rejected,
-         merged, merge_failed, superceded] = BranchMergeProposalStatus.items
+         merged, merge_failed, queued, superceded
+         ] = BranchMergeProposalStatus.items
 
         for status in (wip, needs_review, code_approved, rejected,
-                       merged, merge_failed):
+                       merged, queued, merge_failed):
             # All bad, rejected is a final state.
             self.assertBadTransition(rejected, status)
         # Can resubmit (supercede) a rejected proposal.
@@ -120,6 +124,25 @@ class TestBranchMergeProposalTransitions(TestCase):
     def test_transitions_from_merge_failed(self):
         """We can go from merge failed to any other state."""
         self.assertAllTransitionsGood(BranchMergeProposalStatus.MERGE_FAILED)
+
+    def test_transitions_from_queued(self):
+        """Queued proposals can only be marked as merged or merge failed.
+        Queued proposals can be moved out of the queue using the `dequeue`
+        method, and no other transitions are valid.
+        """
+        queued = BranchMergeProposalStatus.QUEUED
+        for status in BranchMergeProposalStatus.items:
+            if status in (BranchMergeProposalStatus.MERGED,
+                          BranchMergeProposalStatus.MERGE_FAILED):
+                self.assertGoodTransition(queued, status)
+            else:
+                self.assertBadTransition(queued, status)
+
+        proposal = self.factory.makeBranchMergeProposal(
+            target_branch=self.target_branch, set_state=queued)
+        proposal.dequeue()
+        self.assertProposalState(
+            proposal, BranchMergeProposalStatus.CODE_APPROVED)
 
     def test_transitions_from_superceded(self):
         """Superceded is a terminal state, so no transitions are valid."""
@@ -162,22 +185,24 @@ class TestBranchMergeProposalQueuing(TestCase):
     layer = LaunchpadFunctionalLayer
 
     def setUp(self):
-        login('test@canonical.com')
-
+        TestCase.setUp(self)
+        login(ANONYMOUS)
         factory = LaunchpadObjectFactory()
         self.target_branch = factory.makeBranch()
+        login(self.target_branch.owner.preferredemail.email)
         self.proposals = [
             factory.makeBranchMergeProposal(self.target_branch)
             for x in range(4)]
 
     def test_empty_target_queue(self):
-        # The merge queue for the target branch will initially be empty.
+        """If there are no proposals targetted to the branch, the queue has
+        nothing in it."""
         queued_proposals = list(self.target_branch.getMergeQueue())
         self.assertEqual(0, len(queued_proposals),
                          "The initial merge queue should be empty.")
 
-    def test_initial_queue_position(self):
-        # Make sure that the first queue position is 1.
+    def test_single_item_in_queue(self):
+        """Enqueing a proposal makes it visible in the target branch queue."""
         proposal = self.proposals[0]
         proposal.enqueue(self.target_branch.owner, 'some-revision-id')
         queued_proposals = list(self.target_branch.getMergeQueue())
@@ -186,7 +211,8 @@ class TestBranchMergeProposalQueuing(TestCase):
                          % len(queued_proposals))
 
     def test_queue_ordering(self):
-        # Make sure the queue is in the order they were added.
+        """Assert that the queue positions are based on the order the
+        proposals were enqueued."""
         enqueued_order = []
         for proposal in self.proposals[:-1]:
             enqueued_order.append(proposal.source_branch.unique_name)
