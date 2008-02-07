@@ -302,14 +302,8 @@ class Branch(SQLBase):
         # CodeImportSet imported here to avoid circular imports.
         from canonical.launchpad.database.codeimport import CodeImportSet
         code_import = CodeImportSet().getByBranch(self)
-        if (code_import is not None or
-            self.subscriptions.count() > 0 or
-            self.bug_branches.count() > 0 or
-            self.spec_links.count() > 0 or
-            self.landing_targets.count() > 0 or
-            self.landing_candidates.count() > 0 or
-            self.dependent_branches.count() > 0 or
-            self.associatedProductSeries().count() > 0):
+        if ((code_import is not None)
+            or len(self.deletionRequirements()) != 0):
             # Can't delete if the branch is associated with anything.
             return False
         else:
@@ -354,7 +348,6 @@ class Branch(SQLBase):
                     series.import_branch = None
                 series.syncUpdate()
             alteration_operations.append(clear_user_branch)
-
         return alterations, deletions, alteration_operations
 
     def deletionRequirements(self):
@@ -800,7 +793,7 @@ class BranchSet:
     def delete(self, branch, break_references=False):
         """See `IBranchSet`."""
         if break_references:
-            requirements = branch._breakReferences()
+            branch._breakReferences()
         if break_references or branch.canBeDeleted():
             # Delete any branch revisions.
             branch_ancestry = BranchRevision.selectBy(branch=branch)
