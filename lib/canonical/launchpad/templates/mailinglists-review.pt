@@ -34,9 +34,8 @@
               style="text-align: center">
               <tal:block tal:define=
                "team mailing_list/team;
-                team_name team/name;
+                team_name mailing_list/team/name;
                 registrant mailing_list/registrant;
-                registrant_name registrant/name;
                 action_name string:field.${team_name}"
                 >
                 <td><input type="radio" value="approve"
@@ -52,15 +51,11 @@
                                      id string:hold.${team_name}"/>
                 </td>
                 <td>
-                  <a tal:attributes="href team/fmt:url;
-                                     id string:team.${team_name}">
-                  <div tal:content="team/displayname"/></a>
-                  </td>
+                  <a tal:replace="structure team/fmt:link"/>
+                </td>
                 <td>
-                  <a tal:attributes="href registrant/fmt:url;
-                   id string:registrant.${team_name}.${registrant_name}">
-                  <div tal:content="registrant/displayname"/></a>
-                  </td>
+                  <a tal:replace="structure registrant/fmt:link"/>
+                </td>
                 </tal:block>
             </tr>
         </table>

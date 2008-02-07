@@ -13,13 +13,15 @@ __all__ = [
     'new_team',
     'print_actions',
     'print_info',
-    'print_table',
+    'print_review_table',
     'review_list',
     ]
 
+
+import re
 import xmlrpclib
 
-from BeautifulSoup import BeautifulSoup
+from BeautifulSoup import BeautifulSoup, SoupStrainer
 from zope.component import getUtility
 
 from canonical.database.sqlbase import flush_database_updates
@@ -111,23 +113,29 @@ def print_info(info):
                 print '    %-23s' % address, realname, flags, status
 
 
-def print_table(content):
+def print_review_table(content):
     """Print a +mailinglists table in a nice format."""
-    main = BeautifulSoup(content)
-    table = main.find(id='mailing-lists')
+    table = BeautifulSoup(
+        content,
+        parseOnlyThese=SoupStrainer(attrs=dict(id='mailing-lists')))
     for tr in table.findAll('tr'):
-        for thtd in tr.findAll(['th', 'td']):
+        for index, thtd in enumerate(tr.findAll(['th', 'td'])):
             if thtd.name == 'th':
-                # This is a heading.
-                print thtd.string,
+                # This is a heading.  To enable the page test to keep
+                # everything on one line with no wrapping, we'll abbreviate
+                # the first three headings.
+                if index < 3:
+                    print thtd.string[:3],
+                else:
+                    print thtd.string,
             else:
-                assert thtd.name == 'td', 'Expected <td>'
                 # Either there's a radio button here, or a team name, or a
                 # person name.  In the former two cases, print a
                 # representation of whether the button is checked or not.  In
                 # the latter two cases, just print the text.
                 if thtd.input is None:
-                    print thtd.a.get('href'),
+                    text = re.sub(u'&nbsp;', ' ', thtd.a.contents[1])
+                    print '%s <%s>' % (text, thtd.a.get('href')),
                 else:
                     if thtd.input.get('checked', None):
                         print '(*)',

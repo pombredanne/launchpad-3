@@ -60,9 +60,9 @@ list.
     >>> browser.reload()
     >>> browser.getControl('Submit')
     <SubmitControl name='field.actions.submit' type='submit'>
-    >>> mailinglists_helper.print_table(browser.contents)
-    Approve Decline Hold Team Requester
-    ( ) ( ) (*) /~test-one /~no-priv
+    >>> mailinglists_helper.print_review_table(browser.contents)
+    App Dec Hol Team                     Requester
+    ( ) ( ) (*) Test One <.../~test-one> No Privileges Person <.../~no-priv>
 
 The user creates a second team, and makes a request to create this new team's
 mailing list.  The pending requests administration page shows them both.
@@ -70,10 +70,10 @@ mailing list.  The pending requests administration page shows them both.
     >>> mailinglists_helper.apply_for_list(user_browser, 'test-two')
 
     >>> browser.reload()
-    >>> mailinglists_helper.print_table(browser.contents)
-    Approve Decline Hold Team Requester
-    ( ) ( ) (*) /~test-one /~no-priv
-    ( ) ( ) (*) /~test-two /~no-priv
+    >>> mailinglists_helper.print_review_table(browser.contents)
+    App Dec Hol Team                     Requester
+    ( ) ( ) (*) Test One <.../~test-one> No Privileges Person <.../~no-priv>
+    ( ) ( ) (*) Test Two <.../~test-two> No Privileges Person <.../~no-priv>
 
 
 == Deferring decisions ==
@@ -84,10 +84,10 @@ request and it is the default action.  Deferring the decision until later
 really means that nothing happens.
 
     >>> browser.getControl('Submit').click()
-    >>> mailinglists_helper.print_table(browser.contents)
-    Approve Decline Hold Team Requester
-    ( ) ( ) (*) /~test-one /~no-priv
-    ( ) ( ) (*) /~test-two /~no-priv
+    >>> mailinglists_helper.print_review_table(browser.contents)
+    App Dec Hol Team                     Requester
+    ( ) ( ) (*) Test One <.../~test-one> No Privileges Person <.../~no-priv>
+    ( ) ( ) (*) Test Two <.../~test-two> No Privileges Person <.../~no-priv>
 
 
 == Approving lists ==
@@ -102,9 +102,9 @@ decision on the other mailing list until later.
 The pending requests page no longer displays anything about the Test One
 mailing list, but the Test Two list is still pending.
 
-    >>> mailinglists_helper.print_table(browser.contents)
-    Approve Decline Hold Team Requester
-    ( ) ( ) (*) /~test-two /~no-priv
+    >>> mailinglists_helper.print_review_table(browser.contents)
+    App Dec Hol Team                     Requester
+    ( ) ( ) (*) Test Two <.../~test-two> No Privileges Person <.../~no-priv>
 
 The Test One mailing list has been approved so that Mailman can create it,
 though we won't wait for Mailman to act <wink>.
@@ -151,11 +151,11 @@ little while, and in the meantime, three new requests have appeared.
 The Launchpad administrator can approve them all at once.
 
     >>> browser.open('http://launchpad.dev/+mailinglists')
-    >>> mailinglists_helper.print_table(browser.contents)
-    Approve Decline Hold Team Requester
-    ( ) ( ) (*) /~test-five /~no-priv
-    ( ) ( ) (*) /~test-four /~no-priv
-    ( ) ( ) (*) /~test-three /~no-priv
+    >>> mailinglists_helper.print_review_table(browser.contents)
+    App Dec Hol Team                         Requester
+    ( ) ( ) (*) Test Five <.../~test-five>   No Priv... <.../~no-priv>
+    ( ) ( ) (*) Test Four <.../~test-four>   No Priv... <.../~no-priv>
+    ( ) ( ) (*) Test Three <.../~test-three> No Priv... <.../~no-priv>
 
     >>> browser.getControl(name='field.test-three').value = ['approve']
     >>> browser.getControl(name='field.test-four').value = ['approve']
