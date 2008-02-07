@@ -19,7 +19,7 @@ from canonical.launchpad.interfaces import (
     BranchType, CreateBugParams, IBranchSet, IBugSet, ILaunchpadCelebrities,
     IPersonSet, IProductSet, IRevisionSet, ISpecificationSet,
     License, PersonCreationRationale,
-    SpecificationImplementationStatus, SpecificationPriority,
+    SpecificationDefinitionStatus,
     UnknownBranchTypeError)
 
 
@@ -213,6 +213,6 @@ class LaunchpadObjectFactory:
             title=self.getUniqueString('title'),
             specurl=None,
             summary=self.getUniqueString('summary'),
-            priority=SpecificationPriority.UNDEFINED,
-            status=SpecificationImplementationStatus.UNKNOWN,
-            owner=self.makePerson())
+            definition_status=SpecificationDefinitionStatus.NEW,
+            owner=self.makePerson(),
+            product=product)
