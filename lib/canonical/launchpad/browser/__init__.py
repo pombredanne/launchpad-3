@@ -46,6 +46,7 @@ from canonical.launchpad.browser.distribution import *
 from canonical.launchpad.browser.distributionmirror import *
 from canonical.launchpad.browser.distributionsourcepackage import *
 from canonical.launchpad.browser.distributionsourcepackagerelease import *
+from canonical.launchpad.browser.distribution_upstream_bug_report import *
 from canonical.launchpad.browser.distroarchseries import *
 from canonical.launchpad.browser.distroarchseriesbinarypackage import *
 from canonical.launchpad.browser.distroarchseriesbinarypackagerelease import *

@@ -7,7 +7,7 @@ himself, even though he has never used Launchpad.
     'http://launchpad.dev/~limi'
 
 He was wondering who created that when he saw a very proeminent link, saying
-'Hey, I'm Alexander Limi'.  He promptly clicked on it.
+'Are you Alexander Limi?'.  He promptly clicked on it.
 
     >>> import re
     >>> soup = find_main_content(browser.contents)
@@ -16,7 +16,7 @@ He was wondering who created that when he saw a very proeminent link, saying
     ...2005-06-06...<strong>when importing bugs from 
     http://bugzilla.ubuntu.com/</strong>.
 
-    >>> browser.getLink("Hey, I'm Alexander Limi").click()
+    >>> browser.getLink("Are you Alexander Limi?").click()
 
 Clicking on that link brought him to a page where he can claim that Launchpad
 profile.
@@ -104,13 +104,13 @@ can be claimed) they /do/ have a preferred email and we need to handle this.
     >>> user_browser.open('http://launchpad.dev/~spiv')
     >>> print user_browser.contents
     <...
-    ...<a...Hey, I'm Andrew Bennetts.</a>...
+    ...<a...Are you Andrew Bennetts?</a>...
     ...Confirmed e-mail addresses...
     ...andrew.bennetts@ubuntulinux.com...
     ...
 
     >>> anon_browser.open('http://launchpad.dev/~spiv')
-    >>> anon_browser.getLink("Hey, I'm Andrew Bennetts").click()
+    >>> anon_browser.getLink("Are you Andrew Bennetts?").click()
     >>> anon_browser.url
     'http://launchpad.dev/%7Espiv/+claim'
 

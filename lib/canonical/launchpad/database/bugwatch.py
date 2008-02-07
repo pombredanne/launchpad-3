@@ -406,3 +406,4 @@ class BugWatchSet(BugSetBase):
                 raise NoBugTrackerFound(base_url, remote_bug, trackertype)
 
         raise UnrecognizedBugTrackerURL(url)
+

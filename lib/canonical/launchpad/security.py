@@ -8,20 +8,20 @@ from zope.interface import implements, Interface
 from zope.component import getUtility
 
 from canonical.launchpad.interfaces import (
-    IAnnouncement, IBazaarApplication, IBranch, IBranchMergeProposal,
-    IBranchSubscription, IBug, IBugAttachment, IBugBranch, IBugNomination,
-    IBugTracker, IBuild, IBuilder, IBuilderSet, ICodeImport, ICodeImportJob,
-    ICodeImportJobSet, ICodeImportJobWorkflow, ICodeImportMachine,
-    ICodeImportMachineSet, ICodeImportSet, IDistribution, IDistributionMirror,
-    IDistroSeries, IDistroSeriesLanguage, IEntitlement, IFAQ, IFAQTarget,
-    IHWSubmission, IHasBug, IHasDrivers, IHasOwner, ILanguage, ILanguagePack,
-    ILanguageSet, ILaunchpadCelebrities, IMailingListSet, IMilestone, IPOFile,
-    IPOTemplate, IPOTemplateSubset, IPackageUpload, IPackageUploadQueue,
-    IPackaging, IPerson, IPoll, IPollOption, IPollSubset, IProduct,
-    IProductRelease, IProductReleaseFile, IProductSeries, IQuestion,
-    IQuestionTarget, IRequestedCDs, IShipItApplication, IShippingRequest,
-    IShippingRequestSet, IShippingRun, ISpecification,
-    ISpecificationSubscription, ISprint, ISprintSpecification,
+    IAnnouncement, IArchive, IBazaarApplication, IBranch,
+    IBranchMergeProposal, IBranchSubscription, IBug, IBugAttachment,
+    IBugBranch, IBugNomination, IBugTracker, IBuild, IBuilder, IBuilderSet,
+    ICodeImport, ICodeImportJob, ICodeImportJobSet, ICodeImportJobWorkflow,
+    ICodeImportMachine, ICodeImportMachineSet, ICodeImportSet, IDistribution,
+    IDistributionMirror, IDistroSeries, IDistroSeriesLanguage, IEntitlement,
+    IFAQ, IFAQTarget, IHWSubmission, IHasBug, IHasDrivers, IHasOwner,
+    ILanguage, ILanguagePack, ILanguageSet, ILaunchpadCelebrities,
+    IMailingListSet, IMilestone, IPOFile, IPOTemplate, IPOTemplateSubset,
+    IPackageUpload, IPackageUploadQueue, IPackaging, IPerson, IPoll,
+    IPollOption, IPollSubset, IProduct, IProductRelease, IProductReleaseFile,
+    IProductSeries, IQuestion, IQuestionTarget, IRequestedCDs,
+    IShipItApplication, IShippingRequest, IShippingRequestSet, IShippingRun,
+    ISpecification, ISpecificationSubscription, ISprint, ISprintSpecification,
     IStandardShipItRequest, IStandardShipItRequestSet, ITeam, ITeamMembership,
     ITranslationGroup, ITranslationGroupSet, ITranslationImportQueue,
     ITranslationImportQueueEntry, ITranslator, PackageUploadStatus,
@@ -1355,6 +1355,36 @@ class ViewHWSubmission(AuthorizationBase):
         return user.inTeam(self.obj.owner) or user.inTeam(admins)
 
     def checkUnauthenticated(self):
+        return not self.obj.private
+
+
+class ViewArchive(AuthorizationBase):
+    """Restrict viewing of private PPAs.
+
+    Only admins or members of a team with a private membership can
+    view the PPA.
+    """
+    permission = 'launchpad.View'
+    usedfor = IArchive
+
+    def checkAuthenticated(self, user):
+        """Verify that the user can view the PPA.
+
+        Anyone can see a public PPA.
+
+        Only a team member or a Launchpad admin can view a
+        private PPA.
+        """
+        # No further checks are required if the archive is not private.
+        if not self.obj.private:
+            return True
+
+        # Admins and this archive's owner or team members are allowed.
+        admins = getUtility(ILaunchpadCelebrities).admin
+        return user.inTeam(self.obj.owner) or user.inTeam(admins)
+
+    def checkUnauthenticated(self):
+        """Unauthenticated users can see the PPA if it's not private."""
         return not self.obj.private
 
 

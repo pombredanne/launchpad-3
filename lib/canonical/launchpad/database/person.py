@@ -2046,7 +2046,7 @@ class PersonSet:
     def getByOpenIdIdentifier(self, openid_identifier):
         """Returns a Person with the given openid_identifier, or None."""
         person = Person.selectOneBy(openid_identifier=openid_identifier)
-        if person.is_valid_person:
+        if person is not None and person.is_valid_person:
             return person
         else:
             return None
