@@ -80,8 +80,8 @@ However, HTTP POST requests to the normal site are not redirected:
 
     >>> from urllib import urlencode
     >>> check(beta_browser.open,
-    ...     'http://launchpad.dev/ubuntu/+search',
-    ...     data=urlencode({'text': 'foo'}))
+    ...       'http://launchpad.dev/ubuntu/+search',
+    ...       data=urlencode({'text': 'foo'}))
     >>> print beta_browser.url
     http://launchpad.dev/ubuntu/+search
 

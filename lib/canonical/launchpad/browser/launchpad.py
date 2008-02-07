@@ -511,22 +511,23 @@ class LaunchpadRootNavigation(Navigation):
         user = getUtility(ILaunchBag).user
         ignore_inactive = True
         if user and user.inTeam(admins):
-            # Admins should be able to access deactivated projects too
+            # Admins should be able to access deactivated projects too.
             ignore_inactive = False
         pillar = getUtility(IPillarNameSet).getByName(
             name, ignore_inactive=ignore_inactive)
         return pillar
 
     def _getBetaRedirectionView(self):
-        # If the inhibit_beta_redirect cookie is set, don't redirect:
+        # If the inhibit_beta_redirect cookie is set, don't redirect.
         if self.request.cookies.get('inhibit_beta_redirect', '0') == '1':
             return None
 
-        # If we are looking at the front page, don't redirect:
+        # If we are looking at the front page, don't redirect.
         if self.request['PATH_INFO'] == '/':
             return None
 
-        # If this is a HTTP POST, don't redirect:
+        # If this is a HTTP POST, we don't want to issue a redirect.
+        # Doing so would go against the HTTP standard.
         if self.request.method == 'POST':
             return None
 
@@ -548,10 +549,10 @@ class LaunchpadRootNavigation(Navigation):
             getUtility(ILaunchpadCelebrities).launchpad_beta_testers):
             return None
 
-        # Alter the host name to point at the redirection target:
+        # Alter the host name to point at the redirection target.
         new_host = uri.host[:-len(mainsite_host)] + redirection_host
         uri = uri.replace(host=new_host)
-        # Complete the URL from the environment:
+        # Complete the URL from the environment.
         uri = uri.replace(path=self.request['PATH_INFO'])
         query_string = self.request.get('QUERY_STRING')
         if query_string:
