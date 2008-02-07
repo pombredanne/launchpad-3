@@ -74,16 +74,10 @@
         />
 
     <adapter
-        for="canonical.launchpad.interfaces.IMessageSet"
-        provides="canonical.lazr.interfaces.ICollection"
-        factory="canonical.launchpad.rest.MessageCollection"
-        />
-
-    <adapter
         for="canonical.launchpad.rest.IBugEntry
              canonical.launchpad.interfaces.IMessage"
         provides="canonical.lazr.interfaces.IScopedCollection"
-        factory="canonical.lazr.rest.ScopedCollection"
+        factory="canonical.lazr.rest.OrderBasedScopedCollection"
         />
 
     <adapter

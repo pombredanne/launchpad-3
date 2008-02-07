@@ -73,10 +73,16 @@ class WebServiceResponseWrapper(ProxyBase):
 
     def jsonBody(self):
         """Return the body of the web service request as a JSON document."""
-        json = simplejson.loads(self.getBody())
-        if isinstance(json, list):
-            json = sorted(json)
-        return json
+        try:
+            json = simplejson.loads(self.getBody())
+            if isinstance(json, list):
+                json = sorted(json)
+            return json
+        except ValueError:
+            # Return a useful ValueError that displays the problematic
+            # string, instead of one that just says the string wasn't
+            # JSON.
+            raise ValueError(self.getBody())
 
 
 class DuplicateIdError(Exception):

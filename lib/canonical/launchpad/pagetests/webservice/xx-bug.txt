@@ -81,13 +81,18 @@ Each bug has a collection of messages.
       u'All ways of downloading firefox should provide...'),
    (u'datecreated', u'2005-01-14T17:27:03.702622+00:00'),
    (u'owner_link', u'http://api.launchpad.dev/people/name12'),
-   (u'self_link', u'http://api.launchpad.dev/messages/...'),
+   (u'self_link', u'http://api.launchpad.dev/bugs/5/messages/1'),
    (u'subject', u'Firefox install instructions should be complete')]
 
-The messages are stored in a top-level collection. Eventually they'll
-be stored beneath the bug-specific collection.
+The messages are stored beneath the bug-specific collection. Their
+URLs are based on their position with respect to the
+bug. /bugs/5/messages/1 is the first bug for message 5, and it's
+different from /bugs/4/messages/1.
 
   >>> message_path = urlsplit(messages[0]['self_link'])[2]
+  >>> message_path
+  u'/bugs/5/messages/1'
+
   >>> message = webservice(r"""
   ... GET /%s HTTP/1.1
   ... Host: api.launchpad.dev
@@ -95,7 +100,8 @@ be stored beneath the bug-specific collection.
   >>> message == messages[0]
   True
 
-The collection of messages is not directly accessible:
+There is no top-level collection of messages; they only exist in
+relation to some bug.
 
   >>> webservice(r"""
   ... GET /messages HTTP/1.1

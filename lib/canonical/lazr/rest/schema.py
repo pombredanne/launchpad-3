@@ -16,7 +16,15 @@ from canonical.lazr.interfaces.rest import ICollectionField
 class CollectionField(AbstractCollection):
     """A collection associated with an entry."""
     # We subclass AbstractCollection instead of List because List
-    # has a _type of List, and we don't want to have to implement list
+    # has a _type of list, and we don't want to have to implement list
     # semantics for this class.
     implements(ICollectionField)
 
+    def __init__(self, *args, **kwargs):
+        container = kwargs.get('is_entry_container')
+        self.is_entry_container = False
+        if container is not None:
+            self.is_entry_container = (container is True)
+            del(kwargs['is_entry_container'])
+
+        super(CollectionField, self).__init__(*args, **kwargs)
