@@ -56,14 +56,17 @@ Import the test keys to use 'insecure' policy.
 
 For the purpose of this test, hoary needs to be an open (development)
 distroseries so that we can upload to it. Also adjust 'changeslist'
-address:
+address and allow uploads to universe:
 
   >>> from canonical.launchpad.interfaces import (
-  ...     DistroSeriesStatus, IDistributionSet)
+  ...     DistroSeriesStatus, IComponentSet, IDistributionSet)
   >>> ubuntu = getUtility(IDistributionSet)['ubuntu']
   >>> hoary = ubuntu['hoary']
   >>> hoary.status = DistroSeriesStatus.DEVELOPMENT
   >>> hoary.changeslist = "hoary-announce@lists.ubuntu.com"
+  >>> from canonical.launchpad.database import ComponentSelection
+  >>> universe = getUtility(IComponentSet)['universe']
+  >>> trash = ComponentSelection(distroseries=hoary, component=universe)
 
 NEW source upload to RELEASE pocket via 'sync' policy (it presents
 the same behaviour than using insecure policy, apart from allowing
@@ -397,7 +400,7 @@ AUTO-APPROVED upload to BACKPORTS pocket via 'sync' policy:
   DEBUG:  OK: bar_1.0.orig.tar.gz
   DEBUG:  OK: bar_1.0-4.diff.gz
   DEBUG:  OK: bar_1.0-4.dsc
-  DEBUG:      -> Component: main Section: devel
+  DEBUG:      -> Component: universe Section: devel
   ...
   DEBUG: Announcing to hoary-announce@lists.ubuntu.com
   DEBUG:
@@ -451,7 +454,7 @@ AUTO-APPROVED source upload to SECURITY pocket via 'security' policy:
   DEBUG:  OK: bar_1.0.orig.tar.gz
   DEBUG:  OK: bar_1.0-2.diff.gz
   DEBUG:  OK: bar_1.0-2.dsc
-  DEBUG:      -> Component: main Section: devel
+  DEBUG:      -> Component: universe Section: devel
   ...
   DEBUG: Announcing to hoary-announce@lists.ubuntu.com
   ...

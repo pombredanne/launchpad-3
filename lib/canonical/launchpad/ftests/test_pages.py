@@ -13,13 +13,16 @@ __metaclass__ = type
 import doctest
 import os
 import re
+import simplejson
 import unittest
 
-from BeautifulSoup import (BeautifulSoup, Comment, Declaration,
-    NavigableString, PageElement, ProcessingInstruction, SoupStrainer, Tag)
+from BeautifulSoup import (
+    BeautifulSoup, Comment, Declaration, NavigableString, PageElement,
+    ProcessingInstruction, SoupStrainer, Tag)
 from urlparse import urljoin
 
 from zope.app.testing.functional import HTTPCaller, SimpleCookie
+from zope.proxy import ProxyBase
 from zope.testbrowser.testing import Browser
 
 from canonical.functional import PageTestDocFileSuite, SpecialOutputChecker
@@ -55,6 +58,25 @@ class UnstickyCookieHTTPCaller(HTTPCaller):
 
     def resetCookies(self):
         self.cookies = SimpleCookie()
+
+
+class WebServiceCaller(UnstickyCookieHTTPCaller):
+    """A class for making calls to Launchpad web services."""
+
+    def __call__(self, *args, **kw):
+        caller = super(WebServiceCaller, self).__call__(*args, **kw)
+        return WebServiceResponseWrapper(caller)
+
+
+class WebServiceResponseWrapper(ProxyBase):
+    """A response from the web service with easy access to the JSON body."""
+
+    def jsonBody(self):
+        """Return the body of the web service request as a JSON document."""
+        json = simplejson.loads(self.getBody())
+        if isinstance(json, list):
+            json = sorted(json)
+        return json
 
 
 class DuplicateIdError(Exception):
@@ -187,7 +209,7 @@ def extract_text(content):
 
     All runs of tabs and spaces are replaced by a single space and runs of
     newlines are replaced by a single newline. Leading and trailing white
-    spaces is stripped.
+    spaces are stripped.
     """
     if not isinstance(content, PageElement):
         soup = BeautifulSoup(content)
@@ -204,6 +226,9 @@ def extract_text(content):
             result.append(unicode(node))
         else:
             if isinstance(node, Tag):
+                # If the node has the class "sortkey" then it is invisible.
+                if node.get('class') == 'sortkey':
+                    continue
                 if node.name.lower() in ELEMENTS_INTRODUCING_NEWLINE:
                     result.append(u'\n')
             # Process this node's children next.
@@ -258,12 +283,58 @@ def print_tab_links(content):
 def print_action_links(content):
     """Print action menu urls."""
     actions = find_portlet(content, 'Actions')
+    if actions is None:
+        print "No actions portlet"
+        return
     entries = actions.findAll('li')
     for entry in entries:
         if entry.a:
             print '%s: %s' % (entry.a.string, entry.a['href'])
         elif entry.strong:
             print entry.strong.string
+
+
+def print_portlet_links(content, name, base=None):
+    """Print portlet urls.
+
+    This function expects the browser.content as well as the h2 name of the
+    portlet. base is optional. It will locate the portlet and print out the
+    links. It will report if the portlet cannot be found and will also report
+    if there are no links to be found. Unlike the other functions on this
+    page, this looks for "a" instead of "li". Example usage:
+    --------------
+    >>> print_portlet_links(admin_browser.contents,'Milestone milestone3 for
+        Ubuntu details')
+    Ubuntu: /ubuntu
+    Warty: /ubuntu/warty
+    --------------
+    """
+
+    portlet_contents = find_portlet(content, name)
+    if portlet_contents is None:
+        print "No portlet found with name:", name
+        return
+    portlet_links = portlet_contents.findAll('a')
+    if len(portlet_links) == 0:
+        print "No links were found in the portlet."
+        return
+    for portlet_link in portlet_links:
+        print '%s: %s' % (portlet_link.string,
+            extract_link_from_tag(portlet_link, base))
+
+
+def print_submit_buttons(content):
+    """Print the submit button values found in the main content.
+
+    Use this to check that the buttons on a page match your expectations.
+    """
+    buttons = find_main_content(content).findAll(
+        'input', attrs={'class': 'button', 'type': 'submit'})
+    if buttons is None:
+        print "No buttons found"
+    else:
+        for button in buttons:
+            print button['value']
 
 
 def print_comments(page):
@@ -301,6 +372,7 @@ def setupBrowser(auth=None):
 def setUpGlobs(test):
     # Our tests report being on a different port.
     test.globs['http'] = UnstickyCookieHTTPCaller(port=9000)
+    test.globs['webservice'] = WebServiceCaller(port=9000)
     test.globs['setupBrowser'] = setupBrowser
     test.globs['browser'] = setupBrowser()
     test.globs['anon_browser'] = setupBrowser()
@@ -320,7 +392,9 @@ def setUpGlobs(test):
     test.globs['parse_relationship_section'] = parse_relationship_section
     test.globs['print_tab_links'] = print_tab_links
     test.globs['print_action_links'] = print_action_links
+    test.globs['print_portlet_links'] = print_portlet_links
     test.globs['print_comments'] = print_comments
+    test.globs['print_submit_buttons'] = print_submit_buttons
     test.globs['print_radio_button_field'] = print_radio_button_field
     test.globs['print_batch_header'] = print_batch_header
 

@@ -14,7 +14,7 @@ from openid.consumer.discover import (
 from openid.message import IDENTIFIER_SELECT
 from openid.store.memstore import MemoryStore
 
-from canonical.launchpad.ftests.openidhelpers import (
+from canonical.launchpad.testing.openidhelpers import (
     complete_from_browser, make_endpoint, make_identifier_select_endpoint,
     maybe_fixup_identifier_select_request)
 from canonical.launchpad.ftests.test_pages import (
@@ -171,7 +171,8 @@ def test_suite():
 
     # Add per-version page tests to the suite, once for each OpenID
     # version.
-    pagetestsdir = os.path.join('..', 'pagetests', 'openid', 'per-version')
+    pagetestsdir = os.path.join('..', '..', 'pagetests', 'openid',
+                                'per-version')
     for PROTOCOL_URI in [OPENID_1_1_TYPE, OPENID_2_0_TYPE]:
         def setUp(test, PROTOCOL_URI=PROTOCOL_URI):
             setUpGlobs(test)

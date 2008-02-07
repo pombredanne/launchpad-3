@@ -18,6 +18,12 @@
         permission="zope.Public"
         template="../templates/bugcomment-macros.pt" />
 
+    <browser:page
+        for="*"
+        name="bug-attachment-macros"
+        permission="zope.Public"
+        template="../templates/bug-attachment-macros.pt" />
+
     <browser:defaultView
         for="canonical.launchpad.interfaces.IBugComment"
         name="+index" />

@@ -357,6 +357,9 @@ class IBranch(IHasOwner):
         description=_("The reviewer of a branch is the person or team that "
                       "is responsible for authorising code to be merged."))
 
+    code_reviewer = Attribute(
+        "The reviewer if set, otherwise the owner of the branch.")
+
     # Product attributes
     product = Choice(
         title=_('Project'), required=False, vocabulary='Product',
@@ -549,16 +552,22 @@ class IBranch(IHasOwner):
         """Remove the person's subscription to this branch."""
 
     def getBranchRevision(sequence):
-        """Gets the BranchRevision for the given sequence number.
+        """Get the `BranchRevision` for the given sequence number.
 
-        If no such BranchRevision exists, None is returned.
+        If no such `BranchRevision` exists, None is returned.
+        """
+
+    def getBranchRevisionByRevisionId(revision_id):
+        """Get the `BranchRevision for the given revision id.
+
+        If no such `BranchRevision` exists, None is returned.
         """
 
     def createBranchRevision(sequence, revision):
-        """Create a new BranchRevision for this branch."""
+        """Create a new `BranchRevision` for this branch."""
 
     def getTipRevision():
-        """Returns the Revision associated with the last_scanned_id.
+        """Return the `Revision` associated with the `last_scanned_id`.
 
         Will return None if last_scanned_id is None, or if the id
         is not found (as in a ghost revision).

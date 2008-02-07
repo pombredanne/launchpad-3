@@ -1243,10 +1243,8 @@ INSERT INTO build (id, datecreated, processor, distroarchseries, buildstate, dat
 INSERT INTO build (id, datecreated, processor, distroarchseries, buildstate, datebuilt, buildduration, buildlog, builder, sourcepackagerelease, pocket, dependencies, archive, estimated_build_duration, build_warnings) VALUES (14, '2006-03-22 00:00:00', 1, 1, 5, '2006-03-21 01:00:00', '00:01:30', 1, 1, 28, 0, NULL, 1, NULL, NULL);
 INSERT INTO build (id, datecreated, processor, distroarchseries, buildstate, datebuilt, buildduration, buildlog, builder, sourcepackagerelease, pocket, dependencies, archive, estimated_build_duration, build_warnings) VALUES (15, '2006-03-22 00:00:00', 1, 1, 5, '2006-03-21 01:00:00', '00:01:30', 1, 1, 29, 0, NULL, 1, NULL, NULL);
 INSERT INTO build (id, datecreated, processor, distroarchseries, buildstate, datebuilt, buildduration, buildlog, builder, sourcepackagerelease, pocket, dependencies, archive, estimated_build_duration, build_warnings) VALUES (16, '2005-03-24 00:00:00', 1, 11, 1, '2005-03-25 00:00:01', '00:01:20', 1, 1, 20, 0, NULL, 1, NULL, NULL);
-INSERT INTO build (id, datecreated, processor, distroarchseries, buildstate, datebuilt, buildduration, buildlog, builder, sourcepackagerelease, pocket, dependencies, archive, estimated_build_duration, build_warnings) VALUES (17, '2005-10-01 00:00:00', 1, 8, 2, '2005-10-02 00:00:01', '00:03:20', 1, 1, 20, 0, NULL, 1, NULL, NULL);
 INSERT INTO build (id, datecreated, processor, distroarchseries, buildstate, datebuilt, buildduration, buildlog, builder, sourcepackagerelease, pocket, dependencies, archive, estimated_build_duration, build_warnings) VALUES (18, '2004-09-27 11:57:14', 1, 8, 1, '2004-09-27 11:57:13', '00:02:01', 1, 1, 14, 0, NULL, 1, NULL, NULL);
 INSERT INTO build (id, datecreated, processor, distroarchseries, buildstate, datebuilt, buildduration, buildlog, builder, sourcepackagerelease, pocket, dependencies, archive, estimated_build_duration, build_warnings) VALUES (19, '2005-03-24 00:00:00', 1, 8, 1, '2005-03-25 00:00:01', '00:01:20', 1, 1, 20, 0, NULL, 1, NULL, NULL);
-INSERT INTO build (id, datecreated, processor, distroarchseries, buildstate, datebuilt, buildduration, buildlog, builder, sourcepackagerelease, pocket, dependencies, archive, estimated_build_duration, build_warnings) VALUES (20, '2006-07-25 00:00:00', 1, 1, 0, NULL, NULL, NULL, NULL, 29, 0, NULL, 1, NULL, NULL);
 INSERT INTO build (id, datecreated, processor, distroarchseries, buildstate, datebuilt, buildduration, buildlog, builder, sourcepackagerelease, pocket, dependencies, archive, estimated_build_duration, build_warnings) VALUES (21, '2006-12-01 00:00:00', 1, 1, 2, NULL, NULL, NULL, NULL, 33, 0, NULL, 1, NULL, NULL);
 INSERT INTO build (id, datecreated, processor, distroarchseries, buildstate, datebuilt, buildduration, buildlog, builder, sourcepackagerelease, pocket, dependencies, archive, estimated_build_duration, build_warnings) VALUES (22, '2007-04-20 00:00:00', 1, 8, 7, '2007-04-20 00:00:01', '00:01:20', 1, 1, 33, 0, NULL, 1, NULL, NULL);
 INSERT INTO build (id, datecreated, processor, distroarchseries, buildstate, datebuilt, buildduration, buildlog, builder, sourcepackagerelease, pocket, dependencies, archive, estimated_build_duration, build_warnings) VALUES (23, '2006-04-11 12:00:00', 1, 1, 1, NULL, NULL, NULL, NULL, 35, 0, NULL, 1, NULL, NULL);
@@ -1796,6 +1794,7 @@ INSERT INTO distrocomponentuploader (id, distribution, component, uploader, date
 INSERT INTO distrocomponentuploader (id, distribution, component, uploader, date_created) VALUES (3, 1, 2, 17, '2006-10-16 18:31:43.46438');
 INSERT INTO distrocomponentuploader (id, distribution, component, uploader, date_created) VALUES (4, 1, 3, 17, '2006-10-16 18:31:43.464753');
 INSERT INTO distrocomponentuploader (id, distribution, component, uploader, date_created) VALUES (5, 8, 1, 17, '2006-10-16 18:31:43.465111');
+INSERT INTO distrocomponentuploader (id, distribution, component, uploader, date_created) VALUES (6, 8, 3, 17, '2006-10-16 18:31:43.464753');
 
 
 ALTER TABLE distrocomponentuploader ENABLE TRIGGER ALL;
@@ -2312,6 +2311,10 @@ INSERT INTO karmaaction (id, category, points, name, title, summary) VALUES (46,
 INSERT INTO karmaaction (id, category, points, name, title, summary) VALUES (47, 7, 1, 'questionasked', 'Asked question', 'User asked a question in the Answer Tracker.');
 INSERT INTO karmaaction (id, category, points, name, title, summary) VALUES (48, 7, 5, 'faqcreated', 'FAQ created', 'User create a new FAQ in Launchpad.');
 INSERT INTO karmaaction (id, category, points, name, title, summary) VALUES (49, 7, 1, 'faqedited', 'FAQ edited', 'User updated the details of a FAQ in Launchpad.');
+INSERT INTO karmaaction (id, category, points, name, title, summary) VALUES (50, 8, 1, 'branchcreated', 'New branch registered', 'User registered a new branch.');
+INSERT INTO karmaaction (id, category, points, name, title, summary) VALUES (51, 8, 5, 'bugbranchcreated', 'Branch linked to a bug', 'User linked a branch to a bug.');
+INSERT INTO karmaaction (id, category, points, name, title, summary) VALUES (52, 8, 5, 'specbranchcreated', 'Branch linked to a blueprint', 'User linked a branch to a blueprint.');
+INSERT INTO karmaaction (id, category, points, name, title, summary) VALUES (53, 8, 1, 'revisionadded', 'Revision added', 'A new revision by the user is available through Launchpad.');
 
 
 ALTER TABLE karmaaction ENABLE TRIGGER ALL;
@@ -2388,6 +2391,7 @@ INSERT INTO karmacategory (id, name, title, summary) VALUES (2, 'bugs', 'Bug Man
 INSERT INTO karmacategory (id, name, title, summary) VALUES (3, 'translations', 'Translations in Rosetta', 'This categor covers all actions related to translation using the Rosetta web translation portal. Creating new translation projects, submitting new translations and editing existing translations will all earn karma.');
 INSERT INTO karmacategory (id, name, title, summary) VALUES (6, 'specs', 'Specification Tracking', 'This category includes all karma associated with the Launchpad specification tracking system.');
 INSERT INTO karmacategory (id, name, title, summary) VALUES (7, 'answers', 'Answer Tracker', 'This is the category for all karma associated with helping with users questions in the Launchpad Answer Tracker. Help solve users problems to earn this karma.');
+INSERT INTO karmacategory (id, name, title, summary) VALUES (8, 'code', 'Bazaar Branches', 'This category for all karma associated with branches and the links between branches and other Launchpad entities.');
 
 
 ALTER TABLE karmacategory ENABLE TRIGGER ALL;

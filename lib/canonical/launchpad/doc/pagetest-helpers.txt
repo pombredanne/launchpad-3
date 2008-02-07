@@ -354,6 +354,16 @@ regular space.)
     Another paragraph.
     A final one
 
+The function also knows about the sortkey class used in many tables.
+The sortkey is not displayed but is used for the javascript table
+sorting.
+
+    >>> print extract_text(
+    ...    '<table><tr><td><span class="sortkey">1</span>First</td></tr>'
+    ...    '<tr><td><span class="sortkey">2</span>Second</td></tr>'
+    ...    '<tr><td><span class="sortkey">3</span>Third</td></tr></table>')
+    First Second Third
+
 The extract_text method is often used in conjunction with the other
 find_xxx helper methods to identify the text to display.  Because of
 this the function also accepts BeautifulSoup instance as a parameter
