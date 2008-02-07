@@ -6,7 +6,7 @@ __metaclass__ = type
 
 from unittest import TestCase, TestLoader
 
-from canonical.launchpad.ftests import login, logout
+from canonical.launchpad.ftests import ANONYMOUS, login, logout
 from canonical.launchpad.interfaces import (
     BadStateTransition, BranchMergeProposalStatus)
 from canonical.launchpad.testing import LaunchpadObjectFactory
@@ -33,6 +33,7 @@ class TestBranchMergeProposalTransitions(TestCase):
 
     def setUp(self):
         TestCase.setUp(self)
+        login(ANONYMOUS)
         self.factory = LaunchpadObjectFactory()
         self.target_branch = self.factory.makeBranch()
         login(self.target_branch.owner.preferredemail.email)
