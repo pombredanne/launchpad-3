@@ -10,8 +10,6 @@ __all__ = [
     'BugsUnlinkView',
     ]
 
-import cgi
-
 from zope.event import notify
 from zope.interface import providedBy
 from zope.security.interfaces import Unauthorized

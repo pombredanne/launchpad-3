@@ -5,8 +5,6 @@
 __metaclass__ = type
 __all__ = ['BugSubscriptionAddView']
 
-import cgi
-
 from zope.component import getUtility
 
 from canonical.launchpad.browser.addview import SQLObjectAddView
@@ -28,7 +26,8 @@ class BugSubscriptionAddView(SQLObjectAddView):
             message = '%s team has been subscribed to this bug.'
         else:
             message = '%s has been subscribed to this bug.'
-        self.request.response.addInfoNotification(message % person.displayname)
+        self.request.response.addInfoNotification(message %
+                                                  person.displayname)
         return subscription
 
     def nextURL(self):

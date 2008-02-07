@@ -12,24 +12,21 @@ browser window the request came from.
 
 __metaclass__ = type
 
-import cgi, urllib
-from urlparse import urlunsplit
-from datetime import datetime, timedelta
+import cgi
+from datetime import datetime
 
 from zope.interface import implements
 from zope.app.session.interfaces import ISession
 import zope.i18n
-from zope.publisher.interfaces.browser import IBrowserRequest
 
 from canonical.config import config
-from canonical.uuid import generate_uuid
 from canonical.launchpad.webapp.interfaces import (
         INotificationRequest, INotificationResponse, BrowserNotificationLevel,
         INotification, INotificationList, IStructuredString
         )
 from canonical.launchpad.webapp.menu import structured
 from canonical.launchpad.webapp.publisher import LaunchpadView
-from canonical.launchpad.webapp.url import urlsplit
+
 
 SESSION_KEY = 'launchpad'
 
@@ -295,7 +292,8 @@ class NotificationList(list):
 
     def __getitem__(self, index_or_levelname):
         if isinstance(index_or_levelname, int):
-            return super(NotificationList, self).__getitem__(index_or_levelname)
+            return super(NotificationList, self).__getitem__(
+                index_or_levelname)
 
         level = getattr(
                 BrowserNotificationLevel, index_or_levelname.upper(), None
