@@ -63,7 +63,7 @@ class structured:
     def _translate_if_i18n(self, text_or_msgid):
         """Return the text that will be displayed.  If the object
         represents internationalized text, translate it first, then
-        return."""
+        return the result."""
         if isinstance(text_or_msgid, (Message, MessageID)):
             return translate(
                 text_or_msgid,
