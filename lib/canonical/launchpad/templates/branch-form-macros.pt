@@ -48,6 +48,7 @@ function hookUpUniqueNameFields()
 {
   connect('field.product', 'onkeyup', update_branch_unique_name);
   connect('field.product', 'onchange', update_branch_unique_name);
+  connect('field.product', 'onfocus', update_branch_unique_name);
   connect('field.owner', 'onkeyup', update_branch_unique_name);
   connect('field.owner', 'onchange', update_branch_unique_name);
   connect('field.name', 'onkeyup', update_branch_unique_name);

@@ -655,6 +655,13 @@ class BranchAddView(LaunchpadFormView, BranchNameValidationMixin):
         return {'author': self.user,
                 'branch_type': UICreatableBranchType.MIRRORED}
 
+    def showOptionalMarker(self, field_name):
+        """Don't show the optional marker for url."""
+        if field_name == 'url':
+            return False
+        else:
+            return LaunchpadFormView.showOptionalMarker(self, field_name)
+
     @action('Add Branch', name='add')
     def add_action(self, action, data):
         """Handle a request to create a new branch for this product."""
