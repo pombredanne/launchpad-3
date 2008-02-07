@@ -9,14 +9,14 @@ __all__ = [
     'IBugEntry',
     ]
 
-from zope.component import adapts, getUtility
+from zope.component import adapts
 from zope.schema import Bool, Datetime, Int, List, Object, Text, TextLine
 
 from canonical.lazr.rest import Collection, Entry
 from canonical.lazr.rest.schema import CollectionField
 
-from canonical.launchpad.rest import IMessageTargetEntry
-from canonical.launchpad.interfaces import IBug, IBugTask, IMessage, IPerson
+from canonical.launchpad.rest.messagetarget import IMessageTargetEntry
+from canonical.launchpad.interfaces import IBug, IBugTask, IPerson
 from canonical.launchpad.fields import (
     ContentNameField, Tag, Title)
 from canonical.lp import decorates
@@ -25,59 +25,59 @@ from canonical.lp import decorates
 class IBugEntry(IMessageTargetEntry):
     """The part of a bug that we expose through the web service."""
 
-    id = Int(title=_(u'Bug ID'), required=True, readonly=True)
+    id = Int(title=u'Bug ID', required=True, readonly=True)
     datecreated = Datetime(
-        title=_(u'Date Created'), required=True, readonly=True)
+        title=u'Date Created', required=True, readonly=True)
     date_last_updated = Datetime(
-        title=_(u'Date Last Updated'), required=True, readonly=True)
+        title=u'Date Last Updated', required=True, readonly=True)
     name = ContentNameField(
-        title=_(u'Nickname'), required=False,
-        description=_(u"""A short and unique name.
+        title=u'Nickname', required=False,
+        description=u"""A short and unique name.
         Add one only if you often need to retype the URL
-        but have trouble remembering the bug number."""))
+        but have trouble remembering the bug number.""")
     title = Title(
-        title=_(u'Summary'), required=True,
-        description=_(u"""A one-line summary of the problem."""))
+        title=u'Summary', required=True,
+        description=u"""A one-line summary of the problem.""")
     description = Text(
-        title=_(u'Description'), required=True,
-        description=_(u"""A detailed description of the problem,
-        including the steps required to reproduce it."""),
+        title=u'Description', required=True,
+        description=u"""A detailed description of the problem,
+        including the steps required to reproduce it.""",
         max_length=50000)
     owner = Object(schema=IPerson)
     duplicate_of = Object(schema=IBug)
     private = Bool(
-        title=_(u"This bug report should be private"), required=False,
-        description=_(
-            u"Private bug reports are visible only to their subscribers."),
+        title=u"This bug report should be private", required=False,
+        description=
+            u"Private bug reports are visible only to their subscribers.",
         default=False)
     date_made_private = Datetime(
-        title=_(u'Date Made Private'), required=False)
+        title=u'Date Made Private', required=False)
     who_made_private = Object(schema=IPerson)
     security_related = Bool(
-        title=_(u"This bug is a security vulnerability"), required=False,
+        title=u"This bug is a security vulnerability", required=False,
         default=False)
-    # We might not want to expose displayname
-    displayname = TextLine(title=_(u"Text of the form 'Bug #X"),
-        readonly=True)
     tags = List(
-        title=_(u"Tags"), description=_(u"Separated by whitespace."),
+        title=u"Tags", description=u"Separated by whitespace.",
         value_type=Tag(), required=False)
     is_complete = Bool(
-        title=_(u"This bug is complete."),
-        description = _(u"A bug is Launchpad is completely addressed "
+        title=u"This bug is complete.",
+        description = u"A bug is Launchpad is completely addressed "
                         "when there are no tasks that are still open "
-                        "for the bug."))
+                        "for the bug.",
+        readonly=True)
     permits_expiration = Bool(
-        title=_(u"Does the bug's state permit expiration? "
+        title=u"Does the bug's state permit expiration? "
         "Expiration is permitted when the bug is not valid anywhere, "
         "a message was sent to the bug reporter, and the bug is associated "
-        "with pillars that have enabled bug expiration."))
+        "with pillars that have enabled bug expiration.",
+        readonly=True)
     can_expire = Bool(
-        title=_(u"Can the Incomplete bug expire if it becomes inactive? "
+        title=u"Can the Incomplete bug expire if it becomes inactive? "
         "Expiration may happen when the bug permits expiration, and a "
-        "bugtask cannot be confirmed."))
+        "bugtask cannot be confirmed.",
+        readonly=True)
     date_last_message = Datetime(
-        title=_(u'Date of last bug message'), required=False, readonly=True)
+        title=u'Date of last bug message', required=False, readonly=True)
 
     #initial_message = Object(schema=IMessage)
     # implement and include IMessageTargetEntry
@@ -87,16 +87,13 @@ class IBugEntry(IMessageTargetEntry):
     #watches = CollectionField(value_type=Object(schema=IBugWatch))
     #cves = CollectionField(value_type=Object(schema=ICVE))
     #subscriptions = CollectionField(type="many_to_many",
-    #                                value_type=Object(schema=IBugSubscription))
+    #    value_type=Object(schema=IBugSubscription))
     duplicates = CollectionField(value_type=Object(schema=IBug))
     #attachments = CollectionField(value_type=Object(schema=IBugAttachment))
-    #questions = CollectionField(value_type=Object(schema=IQuestion))
-    #specifications = CollectionField(value_type=Object(schema=ISpecification))
-    #branches = CollectionField(value_type=Object(schema=IBranch))
 
 
 class BugEntry(Entry):
-    """A bug."""
+    """A bug, as exposed through the web service."""
 
     adapts(IBug)
     decorates(IBugEntry)
@@ -118,7 +115,7 @@ class BugEntry(Entry):
 
 
 class BugCollection(Collection):
-    """A collection of bugs."""
+    """A collection of bugs, as exposed through the web service."""
 
     def lookupEntry(self, name_or_id):
         """Find a Bug by name or ID."""

@@ -21,4 +21,4 @@ class IMessageTargetEntry(IEntry):
 
     messages = CollectionField(value_type=Object(schema=IMessage))
     followup_subject = TextLine(
-        title=_(u"The likely subject of the next message."))
+        title=u"The likely subject of the next message.")
