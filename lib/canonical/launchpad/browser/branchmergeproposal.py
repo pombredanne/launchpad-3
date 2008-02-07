@@ -10,9 +10,10 @@ __all__ = [
     'BranchMergeProposalEditView',
     'BranchMergeProposalMergedView',
     'BranchMergeProposalRequestReviewView',
+    'BranchMergeProposalResubmitView',
+    'BranchMergeProposalReviewView',
     'BranchMergeProposalView',
     'BranchMergeProposalWorkInProgressView',
-    'ReviewBranchMergeProposalView',
     ]
 
 from zope.component import getUtility
@@ -26,8 +27,12 @@ from canonical.launchpad import _
 from canonical.launchpad.browser.launchpad import StructuralObjectPresentation
 from canonical.launchpad.fields import Whiteboard
 from canonical.launchpad.interfaces import (
-    BranchMergeProposalStatus, BranchType, IBranchMergeProposal,
-    ILaunchpadCelebrities, IStructuralObjectPresentation)
+    BRANCH_MERGE_PROPOSAL_FINAL_STATES,
+    BranchMergeProposalStatus,
+    BranchType,
+    IBranchMergeProposal,
+    ILaunchpadCelebrities,
+    IStructuralObjectPresentation)
 from canonical.launchpad.webapp import (
     canonical_url, ContextMenu, Link, enabled_with_permission,
     LaunchpadEditFormView, LaunchpadView, action)
@@ -57,12 +62,14 @@ class BranchMergeProposalContextMenu(ContextMenu):
 
     usedfor = IBranchMergeProposal
     links = ['edit', 'delete', 'set_work_in_progress', 'request_review',
-             'review', 'merge']
+             'review', 'merge', 'resubmit']
 
     @enabled_with_permission('launchpad.Edit')
     def edit(self):
         text = 'Edit details'
-        return Link('+edit', text, icon='edit')
+        status = self.context.queue_status
+        enabled = status not in BRANCH_MERGE_PROPOSAL_FINAL_STATES
+        return Link('+edit', text, icon='edit', enabled=enabled)
 
     @enabled_with_permission('launchpad.Edit')
     def delete(self):
@@ -72,21 +79,25 @@ class BranchMergeProposalContextMenu(ContextMenu):
     @enabled_with_permission('launchpad.Edit')
     def set_work_in_progress(self):
         text = 'Work in progress'
-        # Enable the review option if the proposal is not merged nor already
-        # in the needs review state.
-        enabled = self.context.queue_status not in (
-            BranchMergeProposalStatus.MERGED,
-            BranchMergeProposalStatus.WORK_IN_PROGRESS)
+
+        status = self.context.queue_status
+        if status in BRANCH_MERGE_PROPOSAL_FINAL_STATES:
+            enabled = False
+        else:
+            enabled = status != BranchMergeProposalStatus.WORK_IN_PROGRESS
+
         return Link('+work-in-progress', text, icon='edit', enabled=enabled)
 
     @enabled_with_permission('launchpad.Edit')
     def request_review(self):
         text = 'Request review'
-        # Enable the review option if the proposal is not merged nor already
-        # in the needs review state.
-        enabled = self.context.queue_status not in (
-            BranchMergeProposalStatus.MERGED,
-            BranchMergeProposalStatus.NEEDS_REVIEW)
+
+        status = self.context.queue_status
+        if status in BRANCH_MERGE_PROPOSAL_FINAL_STATES:
+            enabled = False
+        else:
+            enabled = status != BranchMergeProposalStatus.NEEDS_REVIEW
+
         return Link('+request-review', text, icon='edit', enabled=enabled)
 
     @enabled_with_permission('launchpad.Edit')
@@ -100,19 +111,23 @@ class BranchMergeProposalContextMenu(ContextMenu):
             lp_admins = getUtility(ILaunchpadCelebrities).admin
             valid_reviewer = (self.context.isPersonValidReviewer(self.user) or
                               self.user.inTeam(lp_admins))
-            enabled = self.context.isReviewable() and valid_reviewer
-        # Disable the link if the branch is already merged.
-        if self.context.queue_status == BranchMergeProposalStatus.MERGED:
-            enabled = False
+            enabled = self.context.isMergable() and valid_reviewer
         return Link('+review', text, icon='edit', enabled=enabled)
 
     @enabled_with_permission('launchpad.Edit')
     def merge(self):
         text = 'Mark as merged'
-        # Disable the link if the branch is already merged.
-        enabled = (
-            self.context.queue_status != BranchMergeProposalStatus.MERGED)
+        # Disable the link if the proposal is not in a mergable state.
+        enabled = self.context.isMergable()
         return Link('+merged', text, icon='edit', enabled=enabled)
+
+    @enabled_with_permission('launchpad.Edit')
+    def resubmit(self):
+        text = 'Resubmit proposal'
+        enabled = self.context.queue_status not in (
+            BranchMergeProposalStatus.MERGED,
+            BranchMergeProposalStatus.SUPERCEDED)
+        return Link('+resubmit', text, icon='edit', enabled=enabled)
 
 
 class UnmergedRevisionsMixin:
@@ -234,7 +249,30 @@ class MergeProposalEditView(LaunchpadEditFormView):
                 return branch_revision.sequence
 
 
-class ReviewBranchMergeProposalView(MergeProposalEditView,
+class BranchMergeProposalResubmitView(MergeProposalEditView,
+                                      UnmergedRevisionsMixin):
+    """The view to resubmit a proposal to merge."""
+
+    schema = IBranchMergeProposal
+    label = "Resubmit proposal to merge"
+    field_names = ["whiteboard"]
+
+    @action('Resubmit', name='resubmit')
+    def resubmit_action(self, action, data):
+        """Resubmit this proposal."""
+        self.updateContextFromData(data)
+        proposal = self.context.resubmit(self.user)
+        self.request.response.addInfoNotification(_(
+            "Please update the whiteboard for the new proposal."))
+        self.next_url = canonical_url(proposal) + "/+edit"
+
+    @action('Cancel', name='cancel', validator='validate_cancel')
+    def cancel_action(self, action, data):
+        """Do nothing and go back to the source branch."""
+        self.next_url = canonical_url(self.context)
+
+
+class BranchMergeProposalReviewView(MergeProposalEditView,
                                     UnmergedRevisionsMixin):
     """The view to approve or reject a merge proposal."""
 
@@ -350,7 +388,7 @@ class BranchMergeProposalDeleteView(MergeProposalEditView):
     @action('Delete proposal', name='delete')
     def delete_action(self, action, data):
         """Delete the merge proposal and go back to the source branch."""
-        self.context.destroySelf()
+        self.context.deleteProposal()
         # Override the next url to be the source branch.
         self.next_url = canonical_url(self.source_branch)
 

@@ -110,10 +110,6 @@ class BranchListingFeed(BranchFeedBase):
 
     feedname = "branches"
 
-    def initialize(self):
-        """See `IFeed`."""
-        super(BranchListingFeed, self).initialize()
-
     @property
     def title(self):
         """See `IFeed`."""
@@ -135,10 +131,6 @@ class ProductBranchFeed(BranchListingFeed):
     usedfor = IProduct
     delegate_view_class = ProductBranchesView
 
-    def initialize(self):
-        """See `IFeed`."""
-        super(ProductBranchFeed, self).initialize()
-
 
 class ProjectBranchFeed(BranchListingFeed):
     """Feed for all branches on a product."""
@@ -146,20 +138,12 @@ class ProjectBranchFeed(BranchListingFeed):
     usedfor = IProject
     delegate_view_class = ProjectBranchesView
 
-    def initialize(self):
-        """See `IFeed`."""
-        super(ProjectBranchFeed, self).initialize()
-
 
 class PersonBranchFeed(BranchListingFeed):
     """Feed for a person's branches."""
 
     usedfor = IPerson
     delegate_view_class = PersonBranchesView
-
-    def initialize(self):
-        """See `IFeed`."""
-        super(PersonBranchFeed, self).initialize()
 
 
 class RevisionPerson:

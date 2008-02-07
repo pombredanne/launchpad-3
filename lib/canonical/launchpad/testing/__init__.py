@@ -16,6 +16,7 @@ import pytz
 
 from zope.component import getUtility
 from canonical.launchpad.interfaces import (
+    BranchMergeProposalStatus,
     BranchType, CreateBugParams, IBranchSet, IBugSet, ILaunchpadCelebrities,
     IPersonSet, IProductSet, IRevisionSet, License, PersonCreationRationale,
     UnknownBranchTypeError)
@@ -91,8 +92,15 @@ class LaunchpadObjectFactory:
             email = self.getUniqueString('email')
         if name is None:
             name = self.getUniqueString('person-name')
-        return getUtility(IPersonSet).createPersonAndEmail(
-            email, rationale=PersonCreationRationale.UNKNOWN, name=name)[0]
+        # Set the password to test in order to allow people that have
+        # been created this way can be logged in.
+        person, email = getUtility(IPersonSet).createPersonAndEmail(
+            email, rationale=PersonCreationRationale.UNKNOWN, name=name,
+            password='test')
+        # To make the person someone valid in Launchpad, validate the
+        # email.
+        person.validateAndEnsurePreferredEmail(email)
+        return person
 
     def makeProduct(self, name=None):
         """Create and return a new, arbitrary Product."""
@@ -135,13 +143,39 @@ class LaunchpadObjectFactory:
             branch_type, name, owner, owner, product, url,
             **optional_branch_args)
 
-    def makeProposalToMerge(self, target_branch=None):
+    def makeBranchMergeProposal(self, target_branch=None, registrant=None,
+                                set_state=None, dependent_branch=None):
         """Create a proposal to merge based on anonymous branches."""
         if target_branch is None:
             target_branch = self.makeBranch()
+        if registrant is None:
+            registrant = self.makePerson()
         source_branch = self.makeBranch(product=target_branch.product)
-        return source_branch.addLandingTarget(
-            self.makePerson(), target_branch)
+        proposal = source_branch.addLandingTarget(
+            registrant, target_branch, dependent_branch=dependent_branch)
+
+        if (set_state is None or
+            set_state == BranchMergeProposalStatus.WORK_IN_PROGRESS):
+            # The initial state is work in progress, so do nothing.
+            pass
+        elif set_state == BranchMergeProposalStatus.NEEDS_REVIEW:
+            proposal.requestReview()
+        elif set_state == BranchMergeProposalStatus.CODE_APPROVED:
+            proposal.approveBranch(
+                proposal.target_branch.owner, 'some_revision')
+        elif set_state == BranchMergeProposalStatus.REJECTED:
+            proposal.rejectBranch(
+                proposal.target_branch.owner, 'some_revision')
+        elif set_state == BranchMergeProposalStatus.MERGED:
+            proposal.markAsMerged()
+        elif set_state == BranchMergeProposalStatus.MERGE_FAILED:
+            proposal.mergeFailed(proposal.target_branch.owner)
+        elif set_state == BranchMergeProposalStatus.SUPERCEDED:
+            proposal.resubmit(proposal.registrant)
+        else:
+            raise AssertionError('Unknown status: %s' % set_state)
+
+        return proposal
 
     def makeRevisionsForBranch(self, branch, count=5, author=None,
                                date_generator=None):
