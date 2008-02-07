@@ -19,8 +19,8 @@
     >>> from canonical.config import config
     >>> from canonical.database.sqlbase import commit
     >>> from canonical.launchpad.interfaces import (
-    ...     CreateBugParams, BugTrackerType, IBugMessageSet, IMessageSet,
-    ...     IPersonSet, IProductSet)
+    ...     CreateBugParams, BugTrackerType, IBugMessageSet,
+    ...     IBugWatchSet, IMessageSet, IPersonSet, IProductSet)
     >>> from canonical.launchpad.ftests.externalbugtracker import (
     ...     new_bugtracker)
     >>> from canonical.testing import LaunchpadZopelessLayer
@@ -45,6 +45,9 @@
     ...     "Example Message", "With example content for you to read.")
 
     >>> comment_id = message.rfc822msgid
+
+    >>> bug_watch = getUtility(IBugWatchSet).get(bug_watch.id)
+
     >>> bug_watch.hasComment(comment_id)
     False
 
@@ -80,6 +83,7 @@
     >>> bug.linkMessage(message_one)
     <BugMessage...>
 
+    >>> bug_watch = getUtility(IBugWatchSet).get(bug_watch.id)
     >>> bug_watch.hasComment(message_one.rfc822msgid)
     False
 

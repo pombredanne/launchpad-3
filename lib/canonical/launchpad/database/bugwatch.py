@@ -195,7 +195,10 @@ class BugWatch(SQLBase):
 
     def addComment(self, comment_id, message):
         """See `IBugWatch`."""
-        pass
+        assert not self.hasComment(comment_id), ("Comment with ID %s has "
+            "already been imported for %s." % (comment_id, self.title))
+
+        bug_message = self.bug.linkMessage(message, bugwatch=self)
 
 
 class BugWatchSet(BugSetBase):
