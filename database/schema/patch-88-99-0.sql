@@ -54,10 +54,14 @@ ALTER TABLE DistroSeriesPackageCache ADD CONSTRAINT
 UPDATE DistributionSourcePackageCache set archive=1;
 ALTER TABLE DistributionSourcePackageCache
     ALTER COLUMN archive SET NOT NULL;
+CREATE INDEX distributionsourcepackagecache_archive_idx ON
+    DistributionSourcePackageCache(archive);
 
 UPDATE DistroSeriesPackageCache set archive=1;
 ALTER TABLE DistroSeriesPackageCache
     ALTER COLUMN archive SET NOT NULL;
+CREATE INDEX distroseriespackagecache_archive_idx ON
+    DistroSeriesPackageCache(archive);
 
 
 INSERT INTO LaunchpadDatabaseRevision VALUES (88, 99, 0);
