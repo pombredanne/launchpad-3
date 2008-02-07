@@ -15,8 +15,9 @@ from canonical.database.sqlbase import quote, SQLBase
 
 from canonical.launchpad.interfaces import (
     BlueprintNotificationLevel, BugNotificationLevel, DeleteSubscriptionError,
-    DuplicateSubscriptionError, IDistributionSourcePackage, IProduct,
-    IStructuralSubscription)
+    DuplicateSubscriptionError, IDistributionSourcePackage, IDistroSeries,
+    IProduct, IProductSeries, IStructuralSubscription,
+    IStructuralSubscriptionTarget)
 
 
 class StructuralSubscription(SQLBase):
@@ -207,7 +208,6 @@ class StructuralSubscriptionTargetMixin:
         # a product is related to a project, etc'...
         # This method determines whether the target has a parent,
         # returning it if it exists.
-        parent = None
         if IDistributionSourcePackage.providedBy(self):
             parent = self.distribution
         elif IProduct.providedBy(self):
@@ -218,7 +218,7 @@ class StructuralSubscriptionTargetMixin:
             parent = self.distribution
         else:
             parent = None
-        # We only want to return the parent it's
+        # We only want to return the parent if it's
         # an `IStructuralSubscriptionTarget`.
         if IStructuralSubscriptionTarget.providedBy(parent):
             return parent

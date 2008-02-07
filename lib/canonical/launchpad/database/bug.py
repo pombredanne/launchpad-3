@@ -479,7 +479,7 @@ class Bug(SQLBase):
                     if recipients is not None:
                         recipients.addStructuralSubscriber(
                             sub.subscriber, target)
-                            
+
             # Bug contacts are indirect subscribers.
             if (IDistroBugTask.providedBy(bugtask) or
                 IDistroSeriesBugTask.providedBy(bugtask)):
