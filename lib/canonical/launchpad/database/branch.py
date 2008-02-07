@@ -300,16 +300,14 @@ class Branch(SQLBase):
     def canBeDeleted(self):
         """See `IBranch`."""
         # CodeImportSet imported here to avoid circular imports.
-        from canonical.launchpad.database.codeimport import CodeImportSet
-        code_import = CodeImportSet().getByBranch(self)
-        if ((code_import is not None)
-            or len(self.deletionRequirements()) != 0):
+        if (len(self.deletionRequirements()) != 0):
             # Can't delete if the branch is associated with anything.
             return False
         else:
             return True
 
     def _deletionRequirements(self):
+        from canonical.launchpad.database.codeimport import CodeImportSet
         alterations = {}
         deletions = {}
         alteration_operations = []
@@ -348,6 +346,10 @@ class Branch(SQLBase):
                     series.import_branch = None
                 series.syncUpdate()
             alteration_operations.append(clear_user_branch)
+        code_import = CodeImportSet().getByBranch(self)
+        if code_import is not None:
+            deletions[code_import] = _(
+                'This is the import data for this branch.')
         return alterations, deletions, alteration_operations
 
     def deletionRequirements(self):

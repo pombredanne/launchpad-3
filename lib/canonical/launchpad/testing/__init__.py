@@ -21,6 +21,7 @@ from canonical.launchpad.interfaces import (
     CreateBugParams,
     IBranchSet,
     IBugSet,
+    ICodeImportSet,
     ILaunchpadCelebrities,
     IPersonSet,
     IProductSet,
@@ -29,6 +30,7 @@ from canonical.launchpad.interfaces import (
     License,
     PersonCreationRationale,
     UnknownBranchTypeError,
+    RevisionControlSystems,
     SpecificationDefinitionStatus,
     )
 from canonical.launchpad.ftests import syncUpdate
@@ -231,3 +233,11 @@ class LaunchpadObjectFactory:
         series.import_branch = import_branch
         syncUpdate(series)
         return series
+
+    def makeCodeImport(self):
+        vcs_imports = getUtility(ILaunchpadCelebrities).vcs_imports
+        branch = self.makeBranch(owner=vcs_imports)
+        import_set = getUtility(ICodeImportSet)
+        url = self.getUniqueURL()
+        return import_set.new(
+            branch.owner, branch, RevisionControlSystems.SVN, url)

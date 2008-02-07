@@ -26,7 +26,7 @@ from canonical.launchpad.database.branchmergeproposal import (
     BranchMergeProposal,
     )
 from canonical.launchpad.database.bugbranch import BugBranch
-from canonical.launchpad.database.codeimport import CodeImportSet
+from canonical.launchpad.database.codeimport import CodeImport, CodeImportSet
 from canonical.launchpad.database.product import ProductSet
 from canonical.launchpad.database.revision import RevisionSet
 from canonical.launchpad.database.specificationbranch import (
@@ -319,6 +319,19 @@ class TestBranchDeletionConsequences(TestCase):
         series_id = series.id
         self.branch_set.delete(self.branch, break_references=True)
         self.assertEqual(None, series.user_branch)
+
+    def test_branchWithCodeImportRequirements(self):
+        code_import = self.factory.makeCodeImport()
+        self.assertEqual({code_import:
+            ('delete', _('This is the import data for this branch.'))},
+             code_import.branch.deletionRequirements())
+
+    def test_branchWithCodeImportDeletion(self):
+        code_import = self.factory.makeCodeImport()
+        code_import_id = code_import.id
+        self.branch_set.delete(code_import.branch, break_references=True)
+        self.assertRaises(
+            SQLObjectNotFound, CodeImport.get, code_import_id)
 
 
 class BranchAddLandingTarget(TestCase):
