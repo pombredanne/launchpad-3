@@ -80,31 +80,30 @@
       </strong>:
       <tal:description replace="context/subscriptionpolicy/description" />
 
-      <table class="slimpadding" id="membership-summary" style="margin-top: 1em"
-             tal:define="can_view_membership context/@@+restricted-membership/userCanViewMembership"
+      <div class="slimpadding" id="membership-summary" style="margin-top: 1em"
+           tal:define="can_view_membership context/@@+restricted-membership/userCanViewMembership"
         >
+        <strong>Membership:</strong><br />
         <tal:private_membership condition="not: can_view_membership">
-          <tr>
-            <th>Membership:</th>
-            <td>You are not allowed to view this team's membership.</td>
-          </tr>
+          You are not allowed to view this team's membership.
         </tal:private_membership>
         <tal:private_membership condition="can_view_membership">
-          <tr>
-            <th>Membership:</th>
-            <td tal:content="string: ${context/all_member_count} active members" />
-          </tr><tr tal:condition="context/proposed_member_count">
-            <td></td>
-            <td tal:content="string: ${context/proposed_member_count} proposed members" />
-          </tr><tr tal:condition="context/invited_member_count">
-            <td></td>
-            <td tal:content="string: ${context/invited_member_count} invited members" />
-          </tr><tr tal:condition="context/inactive_member_count">
-            <td></td>
-            <td tal:content="string: ${context/inactive_member_count} inactive members" />
-          </tr>
+          <tal:active content="context/all_member_count" />
+            active members<br />
+          <tal:proposed condition="context/proposed_member_count">
+            <tal:proposed_count content="context/proposed_member_count" />
+            proposed members<br />
+          </tal:proposed>
+          <tal:invited condition="context/invited_member_count">
+            <tal:invited_count content="context/invited_member_count" />
+            invited members<br />
+          </tal:invited>
+          <tal:inactive condition="context/inactive_member_count">
+            <tal:inactive_count content="context/inactive_member_count" />
+            inactive members<br />
+          </tal:inactive>
         </tal:private_membership>
-      </table>
+      </div>
 
       <table class="slimpadding" style="margin-top: 1em"
              tal:define="archive_url view/archive_url"
