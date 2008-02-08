@@ -56,6 +56,13 @@ The Answer Tracker
     >>> canonical_url(getUtility(IQuestionSet))
     u'http://answers.launchpad.dev/questions'
 
+The set of mailing lists
+
+    >>> from canonical.launchpad.interfaces import IMailingListSet
+    >>> canonical_url(getUtility(IMailingListSet))
+    u'http://launchpad.dev/+mailinglists'
+
+
 == Persons and Teams ==
 
     >>> from canonical.launchpad.interfaces import (
