@@ -4132,7 +4132,7 @@ ALTER TABLE poexportrequest ENABLE TRIGGER ALL;
 
 ALTER TABLE pofile DISABLE TRIGGER ALL;
 
-INSERT INTO pofile (id, potemplate, "language", description, topcomment, "header", fuzzyheader, lasttranslator, license, currentcount, updatescount, rosettacount, lastparsed, "owner", variant, path, exportfile, exporttime, datecreated, from_sourcepackagename, unreviewed_count, date_changed) VALUES (1, 1, 387, 'Spanish translation for evolution in hoary', ' traducción de es.po al Spanish
+INSERT INTO pofile (id, potemplate, "language", description, topcomment, "header", fuzzyheader, lasttranslator, license, currentcount, updatescount, rosettacount, lastparsed, "owner", variant, path, datecreated, from_sourcepackagename, unreviewed_count, date_changed) VALUES (1, 1, 387, 'Spanish translation for evolution in hoary', ' traducción de es.po al Spanish
  translation of es.po to Spanish
  translation of evolution.HEAD to Spanish
  Copyright © 2000-2002 Free Software Foundation, Inc.
@@ -4156,8 +4156,8 @@ Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
 Report-Msgid-Bugs-To: serrador@hispalinux.es
 Plural-Forms: nplurals=2; plural=(n != 1);
-', true, 13, NULL, 6, 0, 2, NULL, 12, NULL, 'es.po', 60, '2007-01-03 17:26:27.288968', '2005-06-06 08:59:54.24073', NULL, 2, '2007-01-04 11:02:02.844658');
-INSERT INTO pofile (id, potemplate, "language", description, topcomment, "header", fuzzyheader, lasttranslator, license, currentcount, updatescount, rosettacount, lastparsed, "owner", variant, path, exportfile, exporttime, datecreated, from_sourcepackagename, unreviewed_count, date_changed) VALUES (3, 2, 387, NULL, ' Spanish (Spain) translation for mount removable devices as normal user
+', true, 13, NULL, 6, 0, 2, NULL, 12, NULL, 'es.po', '2005-06-06 08:59:54.24073', NULL, 2, '2007-01-04 11:02:02.844658');
+INSERT INTO pofile (id, potemplate, "language", description, topcomment, "header", fuzzyheader, lasttranslator, license, currentcount, updatescount, rosettacount, lastparsed, "owner", variant, path, datecreated, from_sourcepackagename, unreviewed_count, date_changed) VALUES (3, 2, 387, NULL, ' Spanish (Spain) translation for mount removable devices as normal user
  Copyright (c) (c) 2005 Canonical Ltd, and Rosetta Contributors 2005
  This file is distributed under the same license as the mount removable devices as normal user package.
  FIRST AUTHOR <EMAIL@ADDRESS>, 2005.
@@ -4171,8 +4171,8 @@ MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
 Plural-Forms: nplurals=2; plural=n != 1
-', true, 37, NULL, 63, 0, 0, NULL, 31, 'test', 'es.po', NULL, NULL, '2005-06-06 08:59:54.236824', NULL, 0, '2005-05-06 20:11:16.591589');
-INSERT INTO pofile (id, potemplate, "language", description, topcomment, "header", fuzzyheader, lasttranslator, license, currentcount, updatescount, rosettacount, lastparsed, "owner", variant, path, exportfile, exporttime, datecreated, from_sourcepackagename, unreviewed_count, date_changed) VALUES (4, 2, 143, NULL, ' German translations for PACKAGE package
+', true, 37, NULL, 63, 0, 0, NULL, 31, 'test', 'es.po', '2005-06-06 08:59:54.236824', NULL, 0, '2005-05-06 20:11:16.591589');
+INSERT INTO pofile (id, potemplate, "language", description, topcomment, "header", fuzzyheader, lasttranslator, license, currentcount, updatescount, rosettacount, lastparsed, "owner", variant, path, datecreated, from_sourcepackagename, unreviewed_count, date_changed) VALUES (4, 2, 143, NULL, ' German translations for PACKAGE package
  German messages for PACKAGE.
  Copyright (C) 2004 Martin Pitt
  This file is distributed under the same license as the PACKAGE package.
@@ -4188,8 +4188,8 @@ MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
 Plural-Forms: nplurals=2; plural=(n != 1);
-', true, 38, NULL, 63, 0, 0, NULL, 31, NULL, 'de.po', NULL, NULL, '2005-06-06 08:59:54.238198', NULL, 0, '2005-05-06 20:11:41.773683');
-INSERT INTO pofile (id, potemplate, "language", description, topcomment, "header", fuzzyheader, lasttranslator, license, currentcount, updatescount, rosettacount, lastparsed, "owner", variant, path, exportfile, exporttime, datecreated, from_sourcepackagename, unreviewed_count, date_changed) VALUES (5, 2, 68, NULL, ' Catalan translation for mount removable devices as normal user
+', true, 38, NULL, 63, 0, 0, NULL, 31, NULL, 'de.po', '2005-06-06 08:59:54.238198', NULL, 0, '2005-05-06 20:11:41.773683');
+INSERT INTO pofile (id, potemplate, "language", description, topcomment, "header", fuzzyheader, lasttranslator, license, currentcount, updatescount, rosettacount, lastparsed, "owner", variant, path, datecreated, from_sourcepackagename, unreviewed_count, date_changed) VALUES (5, 2, 68, NULL, ' Catalan translation for mount removable devices as normal user
  Copyright (c) (c) 2005 Canonical Ltd, and Rosetta Contributors 2005
  This file is distributed under the same license as the mount removable devices as normal user package.
  FIRST AUTHOR <EMAIL@ADDRESS>, 2005.
@@ -4203,8 +4203,8 @@ MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
 Plural-Forms: nplurals=2; plural=n != 1
-', true, 34, NULL, 62, 0, 0, NULL, 31, NULL, 'ca.po', NULL, NULL, '2005-06-06 08:59:54.254523', NULL, 0, '2005-05-06 20:09:51.386766');
-INSERT INTO pofile (id, potemplate, "language", description, topcomment, "header", fuzzyheader, lasttranslator, license, currentcount, updatescount, rosettacount, lastparsed, "owner", variant, path, exportfile, exporttime, datecreated, from_sourcepackagename, unreviewed_count, date_changed) VALUES (6, 2, 132, NULL, ' French translation for mount removable devices as normal user
+', true, 34, NULL, 62, 0, 0, NULL, 31, NULL, 'ca.po', '2005-06-06 08:59:54.254523', NULL, 0, '2005-05-06 20:09:51.386766');
+INSERT INTO pofile (id, potemplate, "language", description, topcomment, "header", fuzzyheader, lasttranslator, license, currentcount, updatescount, rosettacount, lastparsed, "owner", variant, path, datecreated, from_sourcepackagename, unreviewed_count, date_changed) VALUES (6, 2, 132, NULL, ' French translation for mount removable devices as normal user
  Copyright (c) (c) 2005 Canonical Ltd, and Rosetta Contributors 2005
  This file is distributed under the same license as the mount removable devices as normal user package.
  FIRST AUTHOR <EMAIL@ADDRESS>, 2005.
@@ -4219,8 +4219,8 @@ MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
 Plural-Forms: nplurals=2; plural=n > 1
-', true, 39, NULL, 57, 0, 0, NULL, 31, NULL, 'fr.po', NULL, NULL, '2005-06-06 08:59:54.256914', NULL, 0, '2005-05-06 20:12:08.283113');
-INSERT INTO pofile (id, potemplate, "language", description, topcomment, "header", fuzzyheader, lasttranslator, license, currentcount, updatescount, rosettacount, lastparsed, "owner", variant, path, exportfile, exporttime, datecreated, from_sourcepackagename, unreviewed_count, date_changed) VALUES (7, 2, 360, NULL, ' Croatian translation for pmount
+', true, 39, NULL, 57, 0, 0, NULL, 31, NULL, 'fr.po', '2005-06-06 08:59:54.256914', NULL, 0, '2005-05-06 20:12:08.283113');
+INSERT INTO pofile (id, potemplate, "language", description, topcomment, "header", fuzzyheader, lasttranslator, license, currentcount, updatescount, rosettacount, lastparsed, "owner", variant, path, datecreated, from_sourcepackagename, unreviewed_count, date_changed) VALUES (7, 2, 360, NULL, ' Croatian translation for pmount
  Copyright (c) (c) 2005 Canonical Ltd, and Rosetta Contributors 2005
  This file is distributed under the same license as the pmount package.
  FIRST AUTHOR <EMAIL@ADDRESS>, 2005.
@@ -4235,8 +4235,8 @@ MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
 Plural-Forms: nplurals=3; plural=n%10==1 && n%100!=11 ? 0 : n%10>=2 && n%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2
-', true, 33, NULL, 63, 0, 0, NULL, 31, NULL, 'hr.po', NULL, NULL, '2005-06-06 08:59:54.255734', NULL, 0, '2005-05-06 20:09:31.825695');
-INSERT INTO pofile (id, potemplate, "language", description, topcomment, "header", fuzzyheader, lasttranslator, license, currentcount, updatescount, rosettacount, lastparsed, "owner", variant, path, exportfile, exporttime, datecreated, from_sourcepackagename, unreviewed_count, date_changed) VALUES (8, 2, 527, NULL, ' Italian (Italy) translation for pmount
+', true, 33, NULL, 63, 0, 0, NULL, 31, NULL, 'hr.po', '2005-06-06 08:59:54.255734', NULL, 0, '2005-05-06 20:09:31.825695');
+INSERT INTO pofile (id, potemplate, "language", description, topcomment, "header", fuzzyheader, lasttranslator, license, currentcount, updatescount, rosettacount, lastparsed, "owner", variant, path, datecreated, from_sourcepackagename, unreviewed_count, date_changed) VALUES (8, 2, 527, NULL, ' Italian (Italy) translation for pmount
  Copyright (c) (c) 2005 Canonical Ltd, and Rosetta Contributors 2005
  This file is distributed under the same license as the pmount package.
  FIRST AUTHOR <EMAIL@ADDRESS>, 2005.
@@ -4251,8 +4251,8 @@ MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
 Plural-Forms: nplurals=2; plural=n != 1
-', true, 40, NULL, 49, 0, 0, NULL, 31, NULL, 'it_IT.po', NULL, NULL, '2005-06-06 08:59:54.259358', NULL, 0, '2005-05-06 20:12:35.976807');
-INSERT INTO pofile (id, potemplate, "language", description, topcomment, "header", fuzzyheader, lasttranslator, license, currentcount, updatescount, rosettacount, lastparsed, "owner", variant, path, exportfile, exporttime, datecreated, from_sourcepackagename, unreviewed_count, date_changed) VALUES (9, 2, 98, NULL, ' Czech translation for mount removable devices as normal user
+', true, 40, NULL, 49, 0, 0, NULL, 31, NULL, 'it_IT.po', '2005-06-06 08:59:54.259358', NULL, 0, '2005-05-06 20:12:35.976807');
+INSERT INTO pofile (id, potemplate, "language", description, topcomment, "header", fuzzyheader, lasttranslator, license, currentcount, updatescount, rosettacount, lastparsed, "owner", variant, path, datecreated, from_sourcepackagename, unreviewed_count, date_changed) VALUES (9, 2, 98, NULL, ' Czech translation for mount removable devices as normal user
  Copyright (c) (c) 2005 Canonical Ltd, and Rosetta Contributors 2005
  This file is distributed under the same license as the mount removable devices as normal user package.
  FIRST AUTHOR <EMAIL@ADDRESS>, 2005.
@@ -4267,8 +4267,8 @@ MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
 Plural-Forms: nplurals=3; plural=n%10==1 && n%100!=11 ? 0 : n%10>=2 && n%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2
-', true, 36, NULL, 56, 0, 0, NULL, 31, NULL, 'cs.po', NULL, NULL, '2005-06-06 08:59:54.249601', NULL, 0, '2005-05-06 20:10:41.732277');
-INSERT INTO pofile (id, potemplate, "language", description, topcomment, "header", fuzzyheader, lasttranslator, license, currentcount, updatescount, rosettacount, lastparsed, "owner", variant, path, exportfile, exporttime, datecreated, from_sourcepackagename, unreviewed_count, date_changed) VALUES (10, 2, 302, NULL, ' Bokmål, Norwegian translation for pmount
+', true, 36, NULL, 56, 0, 0, NULL, 31, NULL, 'cs.po', '2005-06-06 08:59:54.249601', NULL, 0, '2005-05-06 20:10:41.732277');
+INSERT INTO pofile (id, potemplate, "language", description, topcomment, "header", fuzzyheader, lasttranslator, license, currentcount, updatescount, rosettacount, lastparsed, "owner", variant, path, datecreated, from_sourcepackagename, unreviewed_count, date_changed) VALUES (10, 2, 302, NULL, ' Bokmål, Norwegian translation for pmount
  Copyright (c) (c) 2005 Canonical Ltd, and Rosetta Contributors 2005
  This file is distributed under the same license as the pmount package.
  FIRST AUTHOR <EMAIL@ADDRESS>, 2005.
@@ -4283,8 +4283,8 @@ MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
 Plural-Forms: nplurals=2; plural=n != 1
-', true, 35, NULL, 63, 0, 0, NULL, 31, NULL, 'nb.po', NULL, NULL, '2005-06-06 08:59:54.248418', NULL, 0, '2005-05-06 20:10:18.431259');
-INSERT INTO pofile (id, potemplate, "language", description, topcomment, "header", fuzzyheader, lasttranslator, license, currentcount, updatescount, rosettacount, lastparsed, "owner", variant, path, exportfile, exporttime, datecreated, from_sourcepackagename, unreviewed_count, date_changed) VALUES (11, 2, 387, NULL, ' Spanish translation for mount removable devices as normal user
+', true, 35, NULL, 63, 0, 0, NULL, 31, NULL, 'nb.po', '2005-06-06 08:59:54.248418', NULL, 0, '2005-05-06 20:10:18.431259');
+INSERT INTO pofile (id, potemplate, "language", description, topcomment, "header", fuzzyheader, lasttranslator, license, currentcount, updatescount, rosettacount, lastparsed, "owner", variant, path, datecreated, from_sourcepackagename, unreviewed_count, date_changed) VALUES (11, 2, 387, NULL, ' Spanish translation for mount removable devices as normal user
  Copyright (c) (c) 2005 Canonical Ltd, and Rosetta Contributors 2005
  This file is distributed under the same license as the mount removable devices as normal user package.
  FIRST AUTHOR <EMAIL@ADDRESS>, 2005.
@@ -4299,8 +4299,8 @@ MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
 Plural-Forms: nplurals=2; plural=n != 1
-', true, 41, NULL, 54, 0, 0, NULL, 31, NULL, 'po/es.po', NULL, NULL, '2005-06-06 08:59:54.229882', NULL, 0, '2005-05-06 20:13:10.405056');
-INSERT INTO pofile (id, potemplate, "language", description, topcomment, "header", fuzzyheader, lasttranslator, license, currentcount, updatescount, rosettacount, lastparsed, "owner", variant, path, exportfile, exporttime, datecreated, from_sourcepackagename, unreviewed_count, date_changed) VALUES (12, 4, 387, NULL, ' traducción de es.po al Spanish
+', true, 41, NULL, 54, 0, 0, NULL, 31, NULL, 'po/es.po', '2005-06-06 08:59:54.229882', NULL, 0, '2005-05-06 20:13:10.405056');
+INSERT INTO pofile (id, potemplate, "language", description, topcomment, "header", fuzzyheader, lasttranslator, license, currentcount, updatescount, rosettacount, lastparsed, "owner", variant, path, datecreated, from_sourcepackagename, unreviewed_count, date_changed) VALUES (12, 4, 387, NULL, ' traducción de es.po al Spanish
  translation of es.po to Spanish
  translation of evolution.HEAD to Spanish
  Copyright © 2000-2002 Free Software Foundation, Inc.
@@ -4324,8 +4324,8 @@ Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
 Report-Msgid-Bugs-To: serrador@hispalinux.es
 Plural-Forms: nplurals=2; plural=(n != 1);
-', true, 50, NULL, 7, 1, 0, NULL, 31, NULL, 'es.po', NULL, NULL, '2005-06-06 08:59:54.235169', NULL, 1, '2005-06-06 20:05:03.244905');
-INSERT INTO pofile (id, potemplate, "language", description, topcomment, "header", fuzzyheader, lasttranslator, license, currentcount, updatescount, rosettacount, lastparsed, "owner", variant, path, exportfile, exporttime, datecreated, from_sourcepackagename, unreviewed_count, date_changed) VALUES (13, 5, 132, NULL, '
+', true, 50, NULL, 7, 1, 0, NULL, 31, NULL, 'es.po', '2005-06-06 08:59:54.235169', NULL, 1, '2005-06-06 20:05:03.244905');
+INSERT INTO pofile (id, potemplate, "language", description, topcomment, "header", fuzzyheader, lasttranslator, license, currentcount, updatescount, rosettacount, lastparsed, "owner", variant, path, datecreated, from_sourcepackagename, unreviewed_count, date_changed) VALUES (13, 5, 132, NULL, '
     Translators, if you are not familiar with the PO format, gettext
     documentation is worth reading, especially sections dedicated to
     this format, e.g. by running:
@@ -4348,8 +4348,8 @@ MIME-Version: 1.0
 Content-Type: text/plain; charset=ISO-8859-15
 Content-Transfer-Encoding: 8bit
 Plural-Forms: nplurals=2; plural=n > 1
-', true, 42, NULL, 9, 0, 0, NULL, 31, NULL, 'fr.po', NULL, NULL, '2005-06-06 08:59:54.243358', NULL, 0, '2005-05-06 21:12:18.833057');
-INSERT INTO pofile (id, potemplate, "language", description, topcomment, "header", fuzzyheader, lasttranslator, license, currentcount, updatescount, rosettacount, lastparsed, "owner", variant, path, exportfile, exporttime, datecreated, from_sourcepackagename, unreviewed_count, date_changed) VALUES (14, 5, 112, NULL, '
+', true, 42, NULL, 9, 0, 0, NULL, 31, NULL, 'fr.po', '2005-06-06 08:59:54.243358', NULL, 0, '2005-05-06 21:12:18.833057');
+INSERT INTO pofile (id, potemplate, "language", description, topcomment, "header", fuzzyheader, lasttranslator, license, currentcount, updatescount, rosettacount, lastparsed, "owner", variant, path, datecreated, from_sourcepackagename, unreviewed_count, date_changed) VALUES (14, 5, 112, NULL, '
     Translators, if you are not familiar with the PO format, gettext
     documentation is worth reading, especially sections dedicated to
     this format, e.g. by running:
@@ -4371,8 +4371,8 @@ MIME-Version: 1.0
 Content-Type: text/plain; charset=iso-8859-1
 Content-Transfer-Encoding: 8bit
 Plural-Forms: nplurals=2; plural=n != 1
-', true, 45, NULL, 9, 0, 0, NULL, 31, NULL, 'nl.po', NULL, NULL, '2005-06-06 08:59:54.260522', NULL, 0, '2005-05-06 21:12:27.602384');
-INSERT INTO pofile (id, potemplate, "language", description, topcomment, "header", fuzzyheader, lasttranslator, license, currentcount, updatescount, rosettacount, lastparsed, "owner", variant, path, exportfile, exporttime, datecreated, from_sourcepackagename, unreviewed_count, date_changed) VALUES (15, 5, 521, NULL, '
+', true, 45, NULL, 9, 0, 0, NULL, 31, NULL, 'nl.po', '2005-06-06 08:59:54.260522', NULL, 0, '2005-05-06 21:12:27.602384');
+INSERT INTO pofile (id, potemplate, "language", description, topcomment, "header", fuzzyheader, lasttranslator, license, currentcount, updatescount, rosettacount, lastparsed, "owner", variant, path, datecreated, from_sourcepackagename, unreviewed_count, date_changed) VALUES (15, 5, 521, NULL, '
     Translators, if you are not familiar with the PO format, gettext
     documentation is worth reading, especially sections dedicated to
     this format, e.g. by running:
@@ -4395,8 +4395,8 @@ MIME-Version: 1.0
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8bit
 Plural-Forms: nplurals=2; plural=n > 1
-', true, 43, NULL, 9, 0, 0, NULL, 31, NULL, 'pt_BR.po', NULL, NULL, '2005-06-06 08:59:54.24721', NULL, 0, '2005-05-06 21:12:20.874654');
-INSERT INTO pofile (id, potemplate, "language", description, topcomment, "header", fuzzyheader, lasttranslator, license, currentcount, updatescount, rosettacount, lastparsed, "owner", variant, path, exportfile, exporttime, datecreated, from_sourcepackagename, unreviewed_count, date_changed) VALUES (16, 5, 143, NULL, '
+', true, 43, NULL, 9, 0, 0, NULL, 31, NULL, 'pt_BR.po', '2005-06-06 08:59:54.24721', NULL, 0, '2005-05-06 21:12:20.874654');
+INSERT INTO pofile (id, potemplate, "language", description, topcomment, "header", fuzzyheader, lasttranslator, license, currentcount, updatescount, rosettacount, lastparsed, "owner", variant, path, datecreated, from_sourcepackagename, unreviewed_count, date_changed) VALUES (16, 5, 143, NULL, '
     Translators, if you are not familiar with the PO format, gettext
     documentation is worth reading, especially sections dedicated to
     this format, e.g. by running:
@@ -4419,8 +4419,8 @@ MIME-Version: 1.0
 Content-Type: text/plain; charset=ISO-8859-15
 Content-Transfer-Encoding: 8bit
 Plural-Forms: nplurals=2; plural=n != 1
-', true, 51, NULL, 9, 0, 0, NULL, 31, NULL, 'de.po', NULL, NULL, '2005-06-06 08:59:54.253299', NULL, 0, '2005-05-06 21:12:42.747648');
-INSERT INTO pofile (id, potemplate, "language", description, topcomment, "header", fuzzyheader, lasttranslator, license, currentcount, updatescount, rosettacount, lastparsed, "owner", variant, path, exportfile, exporttime, datecreated, from_sourcepackagename, unreviewed_count, date_changed) VALUES (17, 5, 427, NULL, ' Turkish translation of mozilla.
+', true, 51, NULL, 9, 0, 0, NULL, 31, NULL, 'de.po', '2005-06-06 08:59:54.253299', NULL, 0, '2005-05-06 21:12:42.747648');
+INSERT INTO pofile (id, potemplate, "language", description, topcomment, "header", fuzzyheader, lasttranslator, license, currentcount, updatescount, rosettacount, lastparsed, "owner", variant, path, datecreated, from_sourcepackagename, unreviewed_count, date_changed) VALUES (17, 5, 427, NULL, ' Turkish translation of mozilla.
  This file is distributed under the same license as the mozilla package.
  Mehmet Türker <mturker@innova.com.tr>, 2004.
 
@@ -4434,8 +4434,8 @@ MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
 Plural-Forms:  nplurals=1; plural=0;
-', true, 30, NULL, 6, 0, 0, NULL, 31, NULL, 'tr.po', NULL, NULL, '2005-06-06 08:59:54.250735', NULL, 0, '2005-05-06 21:12:40.937835');
-INSERT INTO pofile (id, potemplate, "language", description, topcomment, "header", fuzzyheader, lasttranslator, license, currentcount, updatescount, rosettacount, lastparsed, "owner", variant, path, exportfile, exporttime, datecreated, from_sourcepackagename, unreviewed_count, date_changed) VALUES (18, 5, 193, NULL, ' Italian translation of debconf for mozilla.
+', true, 30, NULL, 6, 0, 0, NULL, 31, NULL, 'tr.po', '2005-06-06 08:59:54.250735', NULL, 0, '2005-05-06 21:12:40.937835');
+INSERT INTO pofile (id, potemplate, "language", description, topcomment, "header", fuzzyheader, lasttranslator, license, currentcount, updatescount, rosettacount, lastparsed, "owner", variant, path, datecreated, from_sourcepackagename, unreviewed_count, date_changed) VALUES (18, 5, 193, NULL, ' Italian translation of debconf for mozilla.
  This file is distributed under the same license as the mozilla package.
  Copyright 2004 by Valentina Commissari <ayor@quaqua.net>.
 ', 'Project-Id-Version: mozilla 1.7.3-5
@@ -4449,8 +4449,8 @@ Content-Transfer-Encoding: 8bit
 X-Poedit-Language: Italian
 X-Poedit-Country: ITALY
 Plural-Forms: nplurals=2; plural=n != 1
-', true, 50, NULL, 9, 0, 0, NULL, 31, NULL, 'it.po', NULL, NULL, '2005-06-06 08:59:54.246003', NULL, 0, '2005-05-06 21:12:39.082421');
-INSERT INTO pofile (id, potemplate, "language", description, topcomment, "header", fuzzyheader, lasttranslator, license, currentcount, updatescount, rosettacount, lastparsed, "owner", variant, path, exportfile, exporttime, datecreated, from_sourcepackagename, unreviewed_count, date_changed) VALUES (19, 5, 100, NULL, '
+', true, 50, NULL, 9, 0, 0, NULL, 31, NULL, 'it.po', '2005-06-06 08:59:54.246003', NULL, 0, '2005-05-06 21:12:39.082421');
+INSERT INTO pofile (id, potemplate, "language", description, topcomment, "header", fuzzyheader, lasttranslator, license, currentcount, updatescount, rosettacount, lastparsed, "owner", variant, path, datecreated, from_sourcepackagename, unreviewed_count, date_changed) VALUES (19, 5, 100, NULL, '
     Translators, if you are not familiar with the PO format, gettext
     documentation is worth reading, especially sections dedicated to
     this format, e.g. by running:
@@ -4475,8 +4475,8 @@ Content-Transfer-Encoding: 8bit
 X-Poedit-Language: Italian
 X-Poedit-Country: ITALY
 Plural-Forms: nplurals=2; plural=n != 1
-', true, 47, NULL, 9, 0, 0, NULL, 31, NULL, 'da.po', NULL, NULL, '2005-06-06 08:59:54.24466', NULL, 0, '2005-05-06 21:12:31.382429');
-INSERT INTO pofile (id, potemplate, "language", description, topcomment, "header", fuzzyheader, lasttranslator, license, currentcount, updatescount, rosettacount, lastparsed, "owner", variant, path, exportfile, exporttime, datecreated, from_sourcepackagename, unreviewed_count, date_changed) VALUES (20, 5, 241, NULL, ' Lithuanian translation of mozilla.
+', true, 47, NULL, 9, 0, 0, NULL, 31, NULL, 'da.po', '2005-06-06 08:59:54.24466', NULL, 0, '2005-05-06 21:12:31.382429');
+INSERT INTO pofile (id, potemplate, "language", description, topcomment, "header", fuzzyheader, lasttranslator, license, currentcount, updatescount, rosettacount, lastparsed, "owner", variant, path, datecreated, from_sourcepackagename, unreviewed_count, date_changed) VALUES (20, 5, 241, NULL, ' Lithuanian translation of mozilla.
  This file is distributed under the same license as the mozilla package.
  Kęstutis Biliūnas <kebil@kaunas.init.lt>, 2004.
 
@@ -4491,8 +4491,8 @@ Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
 X-Generator: KBabel 1.3.1
 Plural-Forms: nplurals=3; plural=n%10==1 && n%100!=11 ? 0 : n%10>=2 && (n%100<10 || n%100>=20) ? 1 : 2
-', true, 49, NULL, 9, 0, 0, NULL, 31, NULL, 'lt.po', NULL, NULL, '2005-06-06 08:59:54.232379', NULL, 0, '2005-05-06 21:12:37.221421');
-INSERT INTO pofile (id, potemplate, "language", description, topcomment, "header", fuzzyheader, lasttranslator, license, currentcount, updatescount, rosettacount, lastparsed, "owner", variant, path, exportfile, exporttime, datecreated, from_sourcepackagename, unreviewed_count, date_changed) VALUES (21, 5, 98, NULL, '
+', true, 49, NULL, 9, 0, 0, NULL, 31, NULL, 'lt.po', '2005-06-06 08:59:54.232379', NULL, 0, '2005-05-06 21:12:37.221421');
+INSERT INTO pofile (id, potemplate, "language", description, topcomment, "header", fuzzyheader, lasttranslator, license, currentcount, updatescount, rosettacount, lastparsed, "owner", variant, path, datecreated, from_sourcepackagename, unreviewed_count, date_changed) VALUES (21, 5, 98, NULL, '
     Translators, if you are not familiar with the PO format, gettext
     documentation is worth reading, especially sections dedicated to
     this format, e.g. by running:
@@ -4515,8 +4515,8 @@ MIME-Version: 1.0
 Content-Type: text/plain; charset=ISO-8859-2
 Content-Transfer-Encoding: 8bit
 Plural-Forms: nplurals=3; plural=n%10==1 && n%100!=11 ? 0 : n%10>=2 && n%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2
-', true, 46, NULL, 9, 0, 0, NULL, 31, NULL, 'cs.po', NULL, NULL, '2005-06-06 08:59:54.2394', NULL, 0, '2005-05-06 21:12:29.45271');
-INSERT INTO pofile (id, potemplate, "language", description, topcomment, "header", fuzzyheader, lasttranslator, license, currentcount, updatescount, rosettacount, lastparsed, "owner", variant, path, exportfile, exporttime, datecreated, from_sourcepackagename, unreviewed_count, date_changed) VALUES (22, 5, 129, NULL, '  translation of fi.po to Finnish
+', true, 46, NULL, 9, 0, 0, NULL, 31, NULL, 'cs.po', '2005-06-06 08:59:54.2394', NULL, 0, '2005-05-06 21:12:29.45271');
+INSERT INTO pofile (id, potemplate, "language", description, topcomment, "header", fuzzyheader, lasttranslator, license, currentcount, updatescount, rosettacount, lastparsed, "owner", variant, path, datecreated, from_sourcepackagename, unreviewed_count, date_changed) VALUES (22, 5, 129, NULL, '  translation of fi.po to Finnish
   mozilla translation
 
     Translators, if you are not familiar with the PO format, gettext
@@ -4542,8 +4542,8 @@ MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
 Plural-Forms: nplurals=2; plural=n != 1
-', true, 48, NULL, 9, 0, 0, NULL, 31, NULL, 'fi.po', NULL, NULL, '2005-06-06 08:59:54.242018', NULL, 0, '2005-05-06 21:12:33.238579');
-INSERT INTO pofile (id, potemplate, "language", description, topcomment, "header", fuzzyheader, lasttranslator, license, currentcount, updatescount, rosettacount, lastparsed, "owner", variant, path, exportfile, exporttime, datecreated, from_sourcepackagename, unreviewed_count, date_changed) VALUES (23, 5, 148, NULL, '
+', true, 48, NULL, 9, 0, 0, NULL, 31, NULL, 'fi.po', '2005-06-06 08:59:54.242018', NULL, 0, '2005-05-06 21:12:33.238579');
+INSERT INTO pofile (id, potemplate, "language", description, topcomment, "header", fuzzyheader, lasttranslator, license, currentcount, updatescount, rosettacount, lastparsed, "owner", variant, path, datecreated, from_sourcepackagename, unreviewed_count, date_changed) VALUES (23, 5, 148, NULL, '
     Translators, if you are not familiar with the PO format, gettext
     documentation is worth reading, especially sections dedicated to
     this format, e.g. by running:
@@ -4566,8 +4566,8 @@ MIME-Version: 1.0
 Content-Type: text/plain; charset=ISO-8859-15
 Content-Transfer-Encoding: 8bit
 Plural-Forms: nplurals=1; plural=0
-', true, 30, NULL, 3, 0, 0, NULL, 31, NULL, 'gl.po', NULL, NULL, '2005-06-06 08:59:54.258136', NULL, 0, '2005-05-06 21:12:35.766036');
-INSERT INTO pofile (id, potemplate, "language", description, topcomment, "header", fuzzyheader, lasttranslator, license, currentcount, updatescount, rosettacount, lastparsed, "owner", variant, path, exportfile, exporttime, datecreated, from_sourcepackagename, unreviewed_count, date_changed) VALUES (24, 5, 196, NULL, '
+', true, 30, NULL, 3, 0, 0, NULL, 31, NULL, 'gl.po', '2005-06-06 08:59:54.258136', NULL, 0, '2005-05-06 21:12:35.766036');
+INSERT INTO pofile (id, potemplate, "language", description, topcomment, "header", fuzzyheader, lasttranslator, license, currentcount, updatescount, rosettacount, lastparsed, "owner", variant, path, datecreated, from_sourcepackagename, unreviewed_count, date_changed) VALUES (24, 5, 196, NULL, '
     Translators, if you are not familiar with the PO format, gettext
     documentation is worth reading, especially sections dedicated to
     this format, e.g. by running:
@@ -4590,8 +4590,8 @@ MIME-Version: 1.0
 Content-Type: text/plain; charset=EUC-JP
 Content-Transfer-Encoding: 8bit
 Plural-Forms: nplurals=1; plural=0
-', true, 30, NULL, 9, 0, 0, NULL, 31, NULL, 'ja.po', NULL, NULL, '2005-06-06 08:59:54.233769', NULL, 0, '2005-05-06 21:12:23.441015');
-INSERT INTO pofile (id, potemplate, "language", description, topcomment, "header", fuzzyheader, lasttranslator, license, currentcount, updatescount, rosettacount, lastparsed, "owner", variant, path, exportfile, exporttime, datecreated, from_sourcepackagename, unreviewed_count, date_changed) VALUES (25, 5, 387, NULL, '
+', true, 30, NULL, 9, 0, 0, NULL, 31, NULL, 'ja.po', '2005-06-06 08:59:54.233769', NULL, 0, '2005-05-06 21:12:23.441015');
+INSERT INTO pofile (id, potemplate, "language", description, topcomment, "header", fuzzyheader, lasttranslator, license, currentcount, updatescount, rosettacount, lastparsed, "owner", variant, path, datecreated, from_sourcepackagename, unreviewed_count, date_changed) VALUES (25, 5, 387, NULL, '
     Translators, if you are not familiar with the PO format, gettext
     documentation is worth reading, especially sections dedicated to
     this format, e.g. by running:
@@ -4616,8 +4616,8 @@ MIME-Version: 1.0
 Content-Type: text/plain; charset=ISO-8859-15
 Content-Transfer-Encoding: 8bit
 Plural-Forms: nplurals=2; plural=n != 1
-', true, 44, NULL, 6, 0, 0, NULL, 31, NULL, 'es.po', NULL, NULL, '2005-06-06 08:59:54.251898', NULL, 0, '2005-05-06 21:12:25.930403');
-INSERT INTO pofile (id, potemplate, "language", description, topcomment, "header", fuzzyheader, lasttranslator, license, currentcount, updatescount, rosettacount, lastparsed, "owner", variant, path, exportfile, exporttime, datecreated, from_sourcepackagename, unreviewed_count, date_changed) VALUES (28, 4, 454, NULL, ' Xhosa translation for evolution
+', true, 44, NULL, 6, 0, 0, NULL, 31, NULL, 'es.po', '2005-06-06 08:59:54.251898', NULL, 0, '2005-05-06 21:12:25.930403');
+INSERT INTO pofile (id, potemplate, "language", description, topcomment, "header", fuzzyheader, lasttranslator, license, currentcount, updatescount, rosettacount, lastparsed, "owner", variant, path, datecreated, from_sourcepackagename, unreviewed_count, date_changed) VALUES (28, 4, 454, NULL, ' Xhosa translation for evolution
  Copyright (c) (c) 2005 Canonical Ltd, and Rosetta Contributors 2005
  This file is distributed under the same license as the evolution package.
  FIRST AUTHOR <EMAIL@ADDRESS>, 2005.
@@ -4632,8 +4632,8 @@ MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
 Plural-Forms: nplurals=2; plural=n != 1
-', true, NULL, NULL, 0, 0, 0, NULL, 31, NULL, 'xh.po', NULL, NULL, '2005-06-15 19:26:21.919196', NULL, 0, '2005-06-15 19:26:21.919196');
-INSERT INTO pofile (id, potemplate, "language", description, topcomment, "header", fuzzyheader, lasttranslator, license, currentcount, updatescount, rosettacount, lastparsed, "owner", variant, path, exportfile, exporttime, datecreated, from_sourcepackagename, unreviewed_count, date_changed) VALUES (29, 4, 196, NULL, ' Japanese translation for evolution
+', true, NULL, NULL, 0, 0, 0, NULL, 31, NULL, 'xh.po', '2005-06-15 19:26:21.919196', NULL, 0, '2005-06-15 19:26:21.919196');
+INSERT INTO pofile (id, potemplate, "language", description, topcomment, "header", fuzzyheader, lasttranslator, license, currentcount, updatescount, rosettacount, lastparsed, "owner", variant, path, datecreated, from_sourcepackagename, unreviewed_count, date_changed) VALUES (29, 4, 196, NULL, ' Japanese translation for evolution
  Copyright (c) (c) 2005 Canonical Ltd, and Rosetta Contributors 2005
  This file is distributed under the same license as the evolution package.
  FIRST AUTHOR <EMAIL@ADDRESS>, 2005.
@@ -4648,8 +4648,8 @@ MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
 Plural-Forms: nplurals=1; plural=0
-', true, 13, NULL, 0, 0, 1, NULL, 13, NULL, 'ja.po', NULL, NULL, '2005-10-11 23:08:01.899322', NULL, 0, '2005-10-11 23:08:01.899322');
-INSERT INTO pofile (id, potemplate, "language", description, topcomment, "header", fuzzyheader, lasttranslator, license, currentcount, updatescount, rosettacount, lastparsed, "owner", variant, path, exportfile, exporttime, datecreated, from_sourcepackagename, unreviewed_count, date_changed) VALUES (30, 6, 521, NULL, ' Spanish translation for wammu
+', true, 13, NULL, 0, 0, 1, NULL, 13, NULL, 'ja.po', '2005-10-11 23:08:01.899322', NULL, 0, '2005-10-11 23:08:01.899322');
+INSERT INTO pofile (id, potemplate, "language", description, topcomment, "header", fuzzyheader, lasttranslator, license, currentcount, updatescount, rosettacount, lastparsed, "owner", variant, path, datecreated, from_sourcepackagename, unreviewed_count, date_changed) VALUES (30, 6, 521, NULL, ' Spanish translation for wammu
  Copyright (c) (c) 2006 Canonical Ltd, and Rosetta Contributors 2006
  This file is distributed under the same license as the wammu package.
  FIRST AUTHOR <EMAIL@ADDRESS>, 2006.
@@ -4665,8 +4665,8 @@ Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
 X-Rosetta-Export-Date: 2006-12-04 19:58+0000
 Plural-Forms: nplurals=2; plural=n > 1
-', true, 66, NULL, 5, 0, 0, NULL, 16, NULL, 'po/pt_BR.po', NULL, NULL, '2006-12-13 21:18:28.796588', NULL, 0, '2006-12-13 21:19:06.369142');
-INSERT INTO pofile (id, potemplate, "language", description, topcomment, "header", fuzzyheader, lasttranslator, license, currentcount, updatescount, rosettacount, lastparsed, "owner", variant, path, exportfile, exporttime, datecreated, from_sourcepackagename, unreviewed_count, date_changed) VALUES (31, 9, 387, NULL, ' Spanish translation for evolution
+', true, 66, NULL, 5, 0, 0, NULL, 16, NULL, 'po/pt_BR.po', '2006-12-13 21:18:28.796588', NULL, 0, '2006-12-13 21:19:06.369142');
+INSERT INTO pofile (id, potemplate, "language", description, topcomment, "header", fuzzyheader, lasttranslator, license, currentcount, updatescount, rosettacount, lastparsed, "owner", variant, path, datecreated, from_sourcepackagename, unreviewed_count, date_changed) VALUES (31, 9, 387, NULL, ' Spanish translation for evolution
  Copyright (c) 2007 Rosetta Contributors and Canonical Ltd 2007
  This file is distributed under the same license as the evolution package.
  FIRST AUTHOR <EMAIL@ADDRESS>, 2007.
@@ -4681,8 +4681,8 @@ MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
 Plural-Forms: nplurals=2; plural=n != 1
-', true, 56, NULL, 0, 0, 1, NULL, 56, NULL, 'po-disabled/disabled-template-es.po', NULL, NULL, '2007-01-05 13:04:20.092506', NULL, 0, '2007-01-05 13:04:20.092506');
-INSERT INTO pofile (id, potemplate, "language", description, topcomment, "header", fuzzyheader, lasttranslator, license, currentcount, updatescount, rosettacount, lastparsed, "owner", variant, path, exportfile, exporttime, datecreated, from_sourcepackagename, unreviewed_count, date_changed) VALUES (32, 7, 387, NULL, ' Spanish translation for evolution
+', true, 56, NULL, 0, 0, 1, NULL, 56, NULL, 'po-disabled/disabled-template-es.po', '2007-01-05 13:04:20.092506', NULL, 0, '2007-01-05 13:04:20.092506');
+INSERT INTO pofile (id, potemplate, "language", description, topcomment, "header", fuzzyheader, lasttranslator, license, currentcount, updatescount, rosettacount, lastparsed, "owner", variant, path, datecreated, from_sourcepackagename, unreviewed_count, date_changed) VALUES (32, 7, 387, NULL, ' Spanish translation for evolution
  Copyright (c) 2007 Rosetta Contributors and Canonical Ltd 2007
  This file is distributed under the same license as the evolution package.
  FIRST AUTHOR <EMAIL@ADDRESS>, 2007.
@@ -4697,8 +4697,8 @@ MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
 Plural-Forms: nplurals=2; plural=n != 1
-', true, 12, NULL, 0, 0, 1, NULL, 12, NULL, '/man-es.po', NULL, NULL, '2007-01-19 13:00:41.049464', NULL, 0, '2007-01-24 19:16:06.386519');
-INSERT INTO pofile (id, potemplate, "language", description, topcomment, "header", fuzzyheader, lasttranslator, license, currentcount, updatescount, rosettacount, lastparsed, "owner", variant, path, exportfile, exporttime, datecreated, from_sourcepackagename, unreviewed_count, date_changed) VALUES (33, 10, 387, NULL, ' Spanish translation for alsa-utils
+', true, 12, NULL, 0, 0, 1, NULL, 12, NULL, '/man-es.po', '2007-01-19 13:00:41.049464', NULL, 0, '2007-01-24 19:16:06.386519');
+INSERT INTO pofile (id, potemplate, "language", description, topcomment, "header", fuzzyheader, lasttranslator, license, currentcount, updatescount, rosettacount, lastparsed, "owner", variant, path, datecreated, from_sourcepackagename, unreviewed_count, date_changed) VALUES (33, 10, 387, NULL, ' Spanish translation for alsa-utils
  Copyright (c) 2007 Rosetta Contributors and Canonical Ltd 2007
  This file is distributed under the same license as the alsa-utils package.
  FIRST AUTHOR <EMAIL@ADDRESS>, 2007.
@@ -4713,8 +4713,8 @@ MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
 Plural-Forms: nplurals=2; plural=n != 1
-', true, 13, NULL, 0, 0, 1, NULL, 13, NULL, 'po/alsa-utils-es.po', NULL, NULL, '2007-04-07 10:14:36.267119', NULL, 0, '2007-04-07 10:14:36.267119');
-INSERT INTO pofile (id, potemplate, "language", description, topcomment, "header", fuzzyheader, lasttranslator, license, currentcount, updatescount, rosettacount, lastparsed, "owner", variant, path, exportfile, exporttime, datecreated, from_sourcepackagename, unreviewed_count, date_changed) VALUES (34, 5, 119, NULL, ' English translation for mozilla
+', true, 13, NULL, 0, 0, 1, NULL, 13, NULL, 'po/alsa-utils-es.po', '2007-04-07 10:14:36.267119', NULL, 0, '2007-04-07 10:14:36.267119');
+INSERT INTO pofile (id, potemplate, "language", description, topcomment, "header", fuzzyheader, lasttranslator, license, currentcount, updatescount, rosettacount, lastparsed, "owner", variant, path, datecreated, from_sourcepackagename, unreviewed_count, date_changed) VALUES (34, 5, 119, NULL, ' English translation for mozilla
  Copyright (c) 2007 Rosetta Contributors and Canonical Ltd 2007
  This file is distributed under the same license as the mozilla package.
  FIRST AUTHOR <EMAIL@ADDRESS>, 2007.
@@ -4729,7 +4729,7 @@ MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
 Plural-Forms: nplurals=2; plural=n != 1
-', true, 13, NULL, 0, 0, 3, NULL, 13, NULL, 'debian/po/pkgconf-mozilla-en.po', NULL, NULL, '2007-07-12 03:42:48.848044', NULL, 0, '2007-07-12 03:42:48.848044');
+', true, 13, NULL, 0, 0, 3, NULL, 13, NULL, 'debian/po/pkgconf-mozilla-en.po', '2007-07-12 03:42:48.848044', NULL, 0, '2007-07-12 03:42:48.848044');
 
 
 ALTER TABLE pofile ENABLE TRIGGER ALL;
