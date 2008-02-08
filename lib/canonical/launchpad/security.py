@@ -1097,6 +1097,22 @@ class EditBuildRecord(AdminByBuilddAdmin):
         return False
 
 
+class ViewBuildRecord(EditBuildRecord):
+    permission = 'launchpad.View'
+
+    def checkAuthenticated(self, user):
+        """Private restricts to admins, BuilddAdmins, archive members."""
+        if not self.obj.archive.private:
+            # Anyone can see non-private archives.
+            return True
+
+        return EditBuildRecord.checkAuthenticated(self, user)
+
+    def checkUnauthenticated(self):
+        """Unauthenticated users can see the build if it's not private."""
+        return not self.obj.archive.private
+
+
 class AdminQuestion(AdminByAdminsTeam):
     permission = 'launchpad.Admin'
     usedfor = IQuestion
@@ -1359,21 +1375,21 @@ class ViewHWSubmission(AuthorizationBase):
 
 
 class ViewArchive(AuthorizationBase):
-    """Restrict viewing of private PPAs.
+    """Restrict viewing of private archives.
 
     Only admins or members of a team with a private membership can
-    view the PPA.
+    view the archive.
     """
     permission = 'launchpad.View'
     usedfor = IArchive
 
     def checkAuthenticated(self, user):
-        """Verify that the user can view the PPA.
+        """Verify that the user can view the archive.
 
-        Anyone can see a public PPA.
+        Anyone can see a public archive.
 
         Only a team member or a Launchpad admin can view a
-        private PPA.
+        private archive.
         """
         # No further checks are required if the archive is not private.
         if not self.obj.private:
@@ -1381,7 +1397,13 @@ class ViewArchive(AuthorizationBase):
 
         # Admins and this archive's owner or team members are allowed.
         admins = getUtility(ILaunchpadCelebrities).admin
-        return user.inTeam(self.obj.owner) or user.inTeam(admins)
+        if user.inTeam(admins):
+            return True
+
+        if self.obj.owner and user.inTeam(self.obj.owner):
+            return True
+
+        return False
 
     def checkUnauthenticated(self):
         """Unauthenticated users can see the PPA if it's not private."""

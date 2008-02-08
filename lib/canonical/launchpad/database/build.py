@@ -477,7 +477,8 @@ class BuildSet:
                 IN(Build.q.distroarchseriesID, archseries_ids))
             )
 
-    def getBuildsForBuilder(self, builder_id, status=None, name=None):
+    def getBuildsForBuilder(self, builder_id, status=None, name=None,
+                            user=None):
         """See `IBuildSet`."""
         queries = []
         clauseTables = []
@@ -494,6 +495,23 @@ class BuildSet:
                            % quote_like(name))
             clauseTables.append('Sourcepackagerelease')
             clauseTables.append('Sourcepackagename')
+
+        queries.append("Archive.id = Build.archive")
+        clauseTables.append('Archive')
+        if user is not None:
+            if not (user.inTeam(getUtility(ILaunchpadCelebrities).admin)
+                    or
+                    user.inTeam(
+                        getUtility(ILaunchpadCelebrities).buildd_admin)):
+                queries.append("""
+                (Archive.private = FALSE
+                 OR %s IN (SELECT TeamParticipation.person
+                       FROM TeamParticipation
+                       WHERE TeamParticipation.person = %s
+                           AND TeamParticipation.team = Archive.owner)
+                )""" % sqlvalues(user, user))
+        else:
+            queries.append("Archive.private = FALSE")
 
         # Ordering according status
         # * SUPERSEDED & All by -datecreated

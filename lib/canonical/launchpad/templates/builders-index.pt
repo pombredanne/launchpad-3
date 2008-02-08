@@ -67,13 +67,13 @@
             <td>
               <tal:problem condition="not: builder/builderok">
                 Not available
-                <tal:reason condition="builder/failnotes">
+                <tal:reason condition="builder/@@+index/failnotes">
                   because:<br />
-                  <span tal:replace="builder/failnotes">Live CD</span>
+                  <span tal:replace="builder/@@+index/failnotes">Live CD</span>
                 </tal:reason>
               </tal:problem>
               <tal:ok condition="builder/builderok">
-                <tal:building condition="builder/currentjob">
+                <tal:building condition="builder/@@+index/currentjob">
                 <tal:build define="build builder/currentjob/build">
                   Building
                   <span tal:replace="build/sourcepackagerelease/name" />
@@ -93,7 +93,7 @@
                   </tal:no_ppa>
                 </tal:build>
                 </tal:building>
-                <tal:idle condition="not: builder/currentjob">
+                <tal:idle condition="not: builder/@@+index/currentjob">
                   Idle
                 </tal:idle>
               </tal:ok>

@@ -111,6 +111,7 @@
 
     <browser:pages
         for="canonical.launchpad.interfaces.IBuilder"
+        class="canonical.launchpad.browser.BuilderView"
         permission="zope.Public">
         <browser:page
             template="../templates/builder-portlet-details.pt"
