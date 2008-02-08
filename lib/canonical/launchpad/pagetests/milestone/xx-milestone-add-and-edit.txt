@@ -240,7 +240,12 @@ and then verify it works correctly by checking the portlet details.
 
 == Milestone bug subscriptions ==
 
+To receive email notifications about bugs pretaining to a milestone, we
+can create structural bug subscriptions.
+
     >>> user_browser.open('http://launchpad.dev/firefox/+milestone/1.0')
     >>> user_browser.getLink('Subscribe to bug mail').click()
     >>> print user_browser.url
     http://launchpad.dev/firefox/+milestone/1.0/+subscribe
+    >>> print user_browser.title
+    XXX
