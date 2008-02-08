@@ -46,7 +46,7 @@ distribution.
 
 == Parent subscription targets ==
 
-Some subscription targets relate to other targets hierarchicaly. An
+Some subscription targets relate to other targets hierarchically. An
 IDistribution, for example, can be said to be a parent of all
 IDistributionSourcePackages for that distribution.
 
@@ -103,14 +103,14 @@ the recipients set. Each subscriber is only added once.
    >>> print_bug_recipients(recipients)
    name12 "Subscriber (evolution in ubuntu)"
 
-Foobar subscribes to Ubuntu.
+Foo Bar subscribes to Ubuntu.
 
    >>> login('foo.bar@canonical.com')
    >>> ubuntu.addBugSubscription(foobar, foobar)
    <StructuralSubscription ...>
    >>> recipients = BugNotificationRecipients()
 
-The set of subscribers to the ubuntu package for evolution now includes
+The set of subscribers to the evolution package for ubuntu now includes
 both subscribers to the package, and subscribers to the distribution.
 
    >>> bug_subscribers = evolution_package.getBugNotificationsRecipients(recipients=recipients)
