@@ -837,7 +837,7 @@ class POParser(object):
                 if len(string) == 1:
                     self._escaped_line_break = True
                     string = ''
-                    break;
+                    break
                 elif string[1] in ESCAPE_MAP:
                     # We got one of the special escaped chars we know about.
                     # Unescape it using the mapping table.
@@ -886,9 +886,11 @@ class POParser(object):
 
         self._parsed_content = u''
 
-    def _parseFreshLine(self, line):
+    def _parseFreshLine(self, line, original_line):
         """Parse a new line (not a continuation after escaped newline).
 
+        :param line: Remaining part of input line.
+        :param original_line: Line as it originally was on input.
         :return: If there is one, the first line of a quoted string belonging
             to the line's section.  Otherwise, None.
         """
@@ -1027,7 +1029,7 @@ class POParser(object):
             return
 
         if not self._escaped_line_break:
-            l = self._parseFreshLine(l)
+            l = self._parseFreshLine(l, original_line)
             if not l:
                 return
 
