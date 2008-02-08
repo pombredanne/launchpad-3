@@ -61,8 +61,7 @@ class BranchLifecycleStatus(DBEnumeratedType):
     NEW = DBItem(1, """
         New
 
-        This branch has just been created, and we know nothing else about
-        it.
+        This branch has just been created.
         """)
 
     EXPERIMENTAL = DBItem(10, """
@@ -122,7 +121,7 @@ class BranchType(DBEnumeratedType):
         Mirrored
 
         Primarily hosted elsewhere and is periodically mirrored
-        from the remote location into Launchpad.
+        from the external location into Launchpad.
         """)
 
     IMPORTED = DBItem(3, """
@@ -326,10 +325,8 @@ class IBranch(IHasOwner):
         allow_query=False,
         allow_fragment=False,
         trailing_slash=False,
-        description=_("The URL where the Bazaar branch is hosted. This is "
-            "the URL used to checkout the branch. The only branch format "
-            "supported is that of the Bazaar revision control system, see "
-            "www.bazaar-vcs.org for more information."))
+        description=_("This is the external location where the Bazaar "
+                      "branch is hosted."))
 
     whiteboard = Whiteboard(title=_('Whiteboard'), required=False,
         description=_('Notes on the current status of the branch.'))

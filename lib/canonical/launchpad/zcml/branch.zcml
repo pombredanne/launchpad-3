@@ -132,12 +132,6 @@
 
   <browser:page
       for="*"
-      name="branch-javascript-macros"
-      permission="zope.Public"
-      template="../templates/branch-javascript-macros.pt" />
-
-  <browser:page
-      for="*"
       name="branch-form-macros"
       permission="zope.Public"
       template="../templates/branch-form-macros.pt" />

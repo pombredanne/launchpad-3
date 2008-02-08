@@ -862,21 +862,26 @@ class PersonActiveMembershipVocabulary:
         self.context = context
 
     def _get_teams(self):
+        """The teams that the vocabulary is built from."""
         return [membership.team for membership
                 in self.context.myactivememberships]
 
     def __len__(self):
+        """See `IVocabularyTokenized`."""
         return len(self._get_teams())
 
     def __iter__(self):
+        """See `IVocabularyTokenized`."""
         return iter([self.getTerm(team) for team in self._get_teams()])
 
     def getTerm(self, team):
+        """See `IVocabularyTokenized`."""
         if team not in self:
             raise LookupError(team)
         return SimpleTerm(team, team.name, team.displayname)
 
     def getTermByToken(self, token):
+        """See `IVocabularyTokenized`."""
         for team in self._get_teams():
             if team.name == token:
                 return self.getTerm(team)
@@ -884,11 +889,13 @@ class PersonActiveMembershipVocabulary:
             raise LookupError(token)
 
     def __contains__(self, obj):
+        """See `IVocabularyTokenized`."""
         return obj in self._get_teams()
 
 
 class PersonActiveMembershipPlusSelfVocabulary(
     PersonActiveMembershipVocabulary):
+    """The logged in user, and all the teams they are a member of."""
 
     def __init__(self, context):
         # We are interested in the logged in user, not the actual context.
@@ -896,7 +903,9 @@ class PersonActiveMembershipPlusSelfVocabulary(
         PersonActiveMembershipVocabulary.__init__(self, logged_in_user)
 
     def _get_teams(self):
+        """See `PersonActiveMembershipVocabulary`."""
         teams = PersonActiveMembershipVocabulary._get_teams(self)
+        # Add the logged in user as the first item.
         return [self.context] + teams
 
 

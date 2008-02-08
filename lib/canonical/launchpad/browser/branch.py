@@ -27,7 +27,6 @@ import cgi
 from datetime import datetime, timedelta
 import pytz
 
-from zope.event import notify
 from zope.component import getUtility
 from zope.interface import Interface
 from zope.publisher.interfaces import NotFound
@@ -42,7 +41,6 @@ from canonical.launchpad.browser.feeds import BranchFeedLink, FeedsMixin
 from canonical.launchpad.browser.launchpad import StructuralObjectPresentation
 from canonical.launchpad.browser.objectreassignment import (
     ObjectReassignmentView)
-from canonical.launchpad.event import SQLObjectCreatedEvent
 from canonical.launchpad.helpers import truncate_text
 from canonical.launchpad.interfaces import (
     BranchCreationForbidden, BranchType, BranchVisibilityRule,
@@ -662,7 +660,7 @@ class BranchAddView(LaunchpadFormView, BranchNameValidationMixin):
         else:
             return LaunchpadFormView.showOptionalMarker(self, field_name)
 
-    @action('Add Branch', name='add')
+    @action('Register Branch', name='add')
     def add_action(self, action, data):
         """Handle a request to create a new branch for this product."""
         try:
@@ -685,7 +683,6 @@ class BranchAddView(LaunchpadFormView, BranchNameValidationMixin):
         except BranchCreationForbidden:
             self.setForbiddenError(data['product'])
         else:
-            notify(SQLObjectCreatedEvent(self.branch))
             self.next_url = canonical_url(self.branch)
 
     def setForbiddenError(self, product):
@@ -748,20 +745,6 @@ class BranchAddView(LaunchpadFormView, BranchNameValidationMixin):
             pass
         else:
             raise AssertionError('Unknown branch type')
-
-    def script_hook(self):
-        return '''<script type="text/javascript">
-            function populate_name() {
-                populate_branch_name_from_url('%(name)s', '%(url)s')
-            }
-            var url_field = document.getElementById('%(url)s');
-            // Since it is possible that the form could be submitted without
-            // the onblur getting called, and onblur can be called without
-            // onchange being fired, set them both, and handle it in the function.
-            url_field.onchange = populate_name;
-            url_field.onblur = populate_name;
-            </script>''' % {'name': self.widgets['name'].name,
-                            'url': self.widgets['url'].name}
 
 
 class PersonBranchAddView(BranchAddView):
