@@ -81,12 +81,11 @@ function hookUpBranchFieldFunctions()
   update_branch_unique_name();
   connect('field.url', 'onchange', populate_branch_name_from_url);
   connect('field.url', 'onblur', populate_branch_name_from_url);
+  document.getElementById("branch-unique-name-div").style.display = "block";
 }
 
 registerLaunchpadFunction(hookUpBranchFieldFunctions);
 registerLaunchpadFunction(update_branch_url);
-
-document.getElementById("branch-unique-name-div").style.display = "block";
 
 //]]>
 </script>
