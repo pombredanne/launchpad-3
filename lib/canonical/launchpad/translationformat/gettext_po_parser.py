@@ -479,6 +479,10 @@ class POParser(object):
         self._plural_form_mapping = {0: 0, 1: 1, 2: 2, 3: 3}
         self._expected_plural_formula = plural_formula
 
+        # Marks when we're parsing a continuation of a string after an escaped
+        # newline.
+        self._escaped_line_break = False
+
     def _decode(self):
         # is there anything to convert?
         if not self._pending_chars:
@@ -791,12 +795,17 @@ class POParser(object):
             ...
           TranslationFormatSyntaxError: Extra content found after string: (x)
         """
-        if string[0] != '"':
-            raise TranslationFormatSyntaxError(
-                line_number=self._lineno, message="String is not quoted")
+        if self._escaped_line_break:
+            # Continuing a line after an escaped newline.  Strip indentation.
+            string = string.lstrip()
+            self._escaped_line_break = False
+        else:
+            # Regular string.  Must start with opening quote, which we strip.
+            if string[0] != '"':
+                raise TranslationFormatSyntaxError(
+                    line_number=self._lineno, message="String is not quoted")
+            string = string[1:]
 
-        # Remove initial quote char
-        string = string[1:]
         output = ''
         while string:
             if string[0] == '"':
@@ -826,12 +835,9 @@ class POParser(object):
                 break
             elif string[0] == '\\':
                 if len(string) == 1:
-                    # Escaped newline.  The gettext docs say not to do it,
-                    # msgfmt accepts it, and our parser currently isn't able
-                    # to handle it.
-                    raise TranslationFormatSyntaxError(
-                        line_number=self._lineno,
-                        message="Backslash at end of line.")
+                    self._escaped_line_break = True
+                    string = ''
+                    break;
                 elif string[1] in ESCAPE_MAP:
                     # We got one of the special escaped chars we know about.
                     # Unescape it using the mapping table.
@@ -886,141 +892,143 @@ class POParser(object):
         l = original_line.strip()
 
         is_obsolete = False
-        if l[:2] == '#~':
+        if not self._escaped_line_break and l[:2] == '#~':
             is_obsolete = True
             l = l[2:].lstrip()
 
         if not l:
             return
 
-        # If we get a comment line after a msgstr or a line starting with
-        # msgid or msgctxt, this is a new entry.
-        if ((l.startswith('#') or l.startswith('msgid') or
-             l.startswith('msgctxt')) and self._section == 'msgstr'):
-            if self._message is None:
-                # first entry - do nothing.
-                pass
-            elif self._message.msgid_singular:
-                self._dumpCurrentSection()
-                self._storeCurrentMessage()
-            elif self._translation_file.header is None:
-                # When there is no msgid in the parsed message, it's the
-                # header for this file.
-                self._dumpCurrentSection()
-                self._parseHeader()
-            else:
-                logging.warning(
-                    POSyntaxWarning(self._lineno, 'We got a second header.'))
-
-            # Start a new message.
-            self._message = TranslationMessageData()
-            self._message_lineno = self._lineno
-            self._section = None
-            self._plural_case = None
-            self._parsed_content = u''
-
-        if self._message is not None:
-            # Record whether the message is obsolete.
-            self._message.is_obsolete = is_obsolete
-
-        if l[0] == '#':
-            # Record flags
-            if l[:2] == '#,':
-                new_flags = [flag.strip() for flag in l[2:].split(',')]
-                self._message.flags.update(new_flags)
-                return
-            # Record file references
-            if l[:2] == '#:':
-                if self._message.file_references:
-                    # There is already a file reference, let's split it from
-                    # the new one with a new line char.
-                    self._message.file_references += '\n'
-                self._message.file_references += l[2:].strip()
-                return
-            # Record source comments
-            if l[:2] == '#.':
-                self._message.source_comment += l[2:].strip() + '\n'
-                return
-            # Record comments
-            self._message.comment += l[1:] + '\n'
-            return
-
-        # Now we are in a msgctxt or msgid section, output previous section
-        if l.startswith('msgid_plural'):
-            if self._section != 'msgid':
-                raise TranslationFormatSyntaxError(
-                    line_number=self._lineno,
-                    message="Unexpected keyword: msgid_plural")
-            self._dumpCurrentSection()
-            self._section = 'msgid_plural'
-            l = l[len('msgid_plural'):]
-        elif l.startswith('msgctxt'):
-            if (self._section is not None and
-                (self._section == 'msgctxt' or
-                 self._section.startswith('msgid'))):
-                raise TranslationFormatSyntaxError(
-                    line_number=self._lineno,
-                    message="Unexpected keyword: msgctxt")
-            self._section = 'msgctxt'
-            l = l[len('msgctxt'):]
-        elif l.startswith('msgid'):
-            if (self._section is not None and
-                self._section.startswith('msgid')):
-                raise TranslationFormatSyntaxError(
-                    line_number=self._lineno,
-                    message="Unexpected keyword: msgid")
-            if self._section is not None:
-                self._dumpCurrentSection()
-            self._section = 'msgid'
-            l = l[len('msgid'):]
-            self._plural_case = None
-        # Now we are in a msgstr section
-        elif l.startswith('msgstr'):
-            self._dumpCurrentSection()
-            self._section = 'msgstr'
-            l = l[len('msgstr'):]
-            # XXX kiko 2005-08-19: if l is empty, it means we got an msgstr
-            # followed by a newline; that may be critical, but who knows?
-            if l and l[0] == '[':
-                # plural case
-                new_plural_case, l = l[1:].split(']', 1)
-                new_plural_case = int(new_plural_case)
-                if (self._plural_case is not None) and (
-                        new_plural_case != self._plural_case + 1):
-                    logging.warning(POSyntaxWarning(self._lineno,
-                                                  'bad plural case number'))
-                if new_plural_case != self._plural_case:
-                    self._plural_case = new_plural_case
+        if not self._escaped_line_break:
+            # If we get a comment line after a msgstr or a line starting with
+            # msgid or msgctxt, this is a new entry.
+            if ((l.startswith('#') or l.startswith('msgid') or
+                l.startswith('msgctxt')) and self._section == 'msgstr'):
+                if self._message is None:
+                    # first entry - do nothing.
+                    pass
+                elif self._message.msgid_singular:
+                    self._dumpCurrentSection()
+                    self._storeCurrentMessage()
+                elif self._translation_file.header is None:
+                    # When there is no msgid in the parsed message, it's the
+                    # header for this file.
+                    self._dumpCurrentSection()
+                    self._parseHeader()
                 else:
-                    logging.warning(POSyntaxWarning(
-                        self._lineno, 'msgstr[] but same plural case number'))
-            else:
-                self._plural_case = TranslationConstants.SINGULAR_FORM
-        elif self._section is None:
-            raise TranslationFormatSyntaxError(
-                line_number=self._lineno,
-                message='Invalid content: %r' % original_line)
-        else:
-            # This line could be the continuation of a previous section.
-            pass
+                    logging.warning(
+                        POSyntaxWarning(self._lineno, 'We got a second header.'))
 
-        l = l.strip()
-        if not l:
-            logging.info(
-                POSyntaxWarning(
-                    self._lineno,
-                    'line has no content; this is not supported by'
-                    'some implementations of msgfmt'))
-            return
+                # Start a new message.
+                self._message = TranslationMessageData()
+                self._message_lineno = self._lineno
+                self._section = None
+                self._plural_case = None
+                self._parsed_content = u''
+
+            if self._message is not None:
+                # Record whether the message is obsolete.
+                self._message.is_obsolete = is_obsolete
+
+            if l[0] == '#':
+                # Record flags
+                if l[:2] == '#,':
+                    new_flags = [flag.strip() for flag in l[2:].split(',')]
+                    self._message.flags.update(new_flags)
+                    return
+                # Record file references
+                if l[:2] == '#:':
+                    if self._message.file_references:
+                        # There is already a file reference, let's split it from
+                        # the new one with a new line char.
+                        self._message.file_references += '\n'
+                    self._message.file_references += l[2:].strip()
+                    return
+                # Record source comments
+                if l[:2] == '#.':
+                    self._message.source_comment += l[2:].strip() + '\n'
+                    return
+                # Record comments
+                self._message.comment += l[1:] + '\n'
+                return
+
+            # Now we are in a msgctxt or msgid section, output previous section
+            if l.startswith('msgid_plural'):
+                if self._section != 'msgid':
+                    raise TranslationFormatSyntaxError(
+                        line_number=self._lineno,
+                        message="Unexpected keyword: msgid_plural")
+                self._dumpCurrentSection()
+                self._section = 'msgid_plural'
+                l = l[len('msgid_plural'):]
+            elif l.startswith('msgctxt'):
+                if (self._section is not None and
+                    (self._section == 'msgctxt' or
+                    self._section.startswith('msgid'))):
+                    raise TranslationFormatSyntaxError(
+                        line_number=self._lineno,
+                        message="Unexpected keyword: msgctxt")
+                self._section = 'msgctxt'
+                l = l[len('msgctxt'):]
+            elif l.startswith('msgid'):
+                if (self._section is not None and
+                    self._section.startswith('msgid')):
+                    raise TranslationFormatSyntaxError(
+                        line_number=self._lineno,
+                        message="Unexpected keyword: msgid")
+                if self._section is not None:
+                    self._dumpCurrentSection()
+                self._section = 'msgid'
+                l = l[len('msgid'):]
+                self._plural_case = None
+            # Now we are in a msgstr section
+            elif l.startswith('msgstr'):
+                self._dumpCurrentSection()
+                self._section = 'msgstr'
+                l = l[len('msgstr'):]
+                # XXX kiko 2005-08-19: if l is empty, it means we got an msgstr
+                # followed by a newline; that may be critical, but who knows?
+                if l and l[0] == '[':
+                    # plural case
+                    new_plural_case, l = l[1:].split(']', 1)
+                    new_plural_case = int(new_plural_case)
+                    if (self._plural_case is not None) and (
+                            new_plural_case != self._plural_case + 1):
+                        logging.warning(POSyntaxWarning(self._lineno,
+                                                    'bad plural case number'))
+                    if new_plural_case != self._plural_case:
+                        self._plural_case = new_plural_case
+                    else:
+                        logging.warning(POSyntaxWarning(
+                            self._lineno, 'msgstr[] but same plural case number'))
+                else:
+                    self._plural_case = TranslationConstants.SINGULAR_FORM
+            elif self._section is None:
+                raise TranslationFormatSyntaxError(
+                    line_number=self._lineno,
+                    message='Invalid content: %r' % original_line)
+            else:
+                # This line could be the continuation of a previous section.
+                pass
+
+            l = l.strip()
+            if not l:
+                logging.info(
+                    POSyntaxWarning(
+                        self._lineno,
+                        'line has no content; this is not supported by'
+                        'some implementations of msgfmt'))
+                return
 
         l = self._parseQuotedString(l)
 
-        if self._section in ('msgctxt', 'msgid', 'msgid_plural', 'msgstr'):
-            self._parsed_content += l
-        else:
+        text_section_types = ('msgctxt', 'msgid', 'msgid_plural', 'msgstr')
+        if self._section not in text_section_types:
             raise TranslationFormatSyntaxError(
                 line_number=self._lineno,
                 message='Invalid content: %r' % original_line)
+
+        self._parsed_content += l
 
 
 # convenience function to parse "assignment" expressions like
