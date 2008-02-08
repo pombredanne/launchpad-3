@@ -1,7 +1,8 @@
 Uploading templates
 ===================
 
-An upstream maintainer can use Launchpad to submit their initial template uploads.
+An upstream maintainer can use Launchpad to submit their initial
+template uploads.
 
     >>> ff_owner_browser = setupBrowser(auth='Basic test@canonical.com:test')
     >>> ff_owner_browser.open(
@@ -9,7 +10,8 @@ An upstream maintainer can use Launchpad to submit their initial template upload
     >>> 'Upload either a single file' in ff_owner_browser.contents
     True
 
-The upload consists of a tarball containing templates and/or translations.
+The upload consists of a tarball containing templates and/or
+translations.
 
     >>> import canonical.launchpad
     >>> import os.path
@@ -40,9 +42,9 @@ import status:
     >>> print ff_owner_browser.url
     http://translations.launchpad.dev/firefox/1.0/+imports
 
-Once the upload has completed, its templates and translations show up on the
-translation import queue page.  If we're not logged in, status is shown as
-static HTML.
+Once the upload has completed, its templates and translations show up on
+the translation import queue page.  If we're not logged in, status is
+shown as static HTML.
 
     >>> anon_browser.open(
     ...     'http://translations.launchpad.dev/firefox/1.0/+imports')
@@ -55,10 +57,10 @@ static HTML.
     >>> '<td>Needs Review</td>' in anon_browser.contents
     True
 
-Some tarballs contain files whose names look like PO or POT files, but that are
-really editor backups whose name begin with a dot.  These are ignored, as well
-as empty files, and things whose names end in .po or .pot that aren't regular
-files such as directories or devices.
+Some tarballs contain files whose names look like PO or POT files, but
+that are really editor backups whose name begin with a dot.  These are
+ignored, as well as empty files, and things whose names end in .po or
+.pot that aren't regular files such as directories or devices.
 
     >>> import tarfile
     >>> tarball = tarfile.open(test_file_name)
@@ -89,8 +91,8 @@ files such as directories or devices.
     >>> 'directory.po/.another-dotfile.po' in anon_browser.contents
     False
 
-If we are logged in as an administrator, the same page provides a link to where
-we can edit imports.
+If we are logged in as an administrator, the same page provides a link
+to where we can edit imports.
 
   >>> browser = setupBrowser(auth='Basic jordi@ubuntu.com:test')
   >>> browser.open('http://translations.launchpad.dev/+imports')
@@ -112,7 +114,8 @@ Now, we attach a new file to an already existing translation resource.
   >>> upload
   <Control name='file' type='file'>
   >>> from StringIO import StringIO
-  >>> upload.add_file(StringIO('# foo\n'), 'text/x-gettext-translation-template', 'evolution.pot')
+  >>> upload.add_file(StringIO('# foo\n'),
+  ...   'text/x-gettext-translation-template', 'evolution.pot')
   >>> browser.getControl('Upload').click()
   >>> print browser.url
   http://translations.launchpad.dev/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/+upload
@@ -225,7 +228,8 @@ Foo Bar Person is a launchpad admin and he's allowed to remove an entry.
   ...field.status_2...
   ...selected="selected" value="DELETED"...
   ...Foo Bar...
-  ...Portuguese (Brazil) (pt_BR) translation of evolution-2.2-test in Evolution trunk...
+  ...Portuguese (Brazil) (pt_BR) translation of evolution-2.2-test
+    in Evolution trunk...
 
 And finally, we make sure that the importer is also allowed to remove their
 own imports.
@@ -268,7 +272,8 @@ Let's check tar.bz2 uploads. They work ;-)
   'http://translations.launchpad.dev/evolution/trunk/+translations-upload'
   >>> for tag in find_tags_by_class(evo_owner_browser.contents, 'message'):
   ...     print tag
-  <div...Thank you for your upload. 2 files from the tarball will be reviewed...
+  <div...Thank you for your upload. 2 files from the tarball will be
+  reviewed...
 
 Let's try breaking the form by not supplying a file object. It give us a
 decent error message:
@@ -300,7 +305,8 @@ Let's try now a tarball upload. Should work:
   'http://translations.launchpad.dev/evolution/trunk/+translations-upload'
   >>> for tag in find_tags_by_class(evo_owner_browser.contents, 'message'):
   ...     print tag
-  <div...Thank you for your upload. 1 files from the tarball will be reviewed...
+  <div...Thank you for your upload. 1 files from the tarball will be
+  reviewed...
 
 We can handle an empty file disguised as a bzipped tarfile:
 
