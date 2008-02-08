@@ -419,6 +419,26 @@ class Builder(SQLBase):
         build_queue_item.markAsBuilding(self)
         self._dispatchBuildToSlave(build_queue_item, args, buildid, logger)
 
+    @property
+    def status(self):
+        """See IBuilder"""
+        if self.manual:
+            mode = 'MANUAL'
+        else:
+            mode = 'AUTO'
+
+        if not self.builderok:
+            return 'NOT OK : %s (%s)' % (self.failnotes, mode)
+
+        if self.currentjob:
+            current_build = self.currentjob.build
+            msg = 'BUILDING %s' % current_build.title
+            if not current_build.is_trusted:
+                archive_name = current_build.archive.owner.name
+                return '%s [%s] (%s)' % (msg, archive_name, mode)
+            return '%s (%s)' % (msg, mode)
+        return 'IDLE (%s)' % mode
+
     def failbuilder(self, reason):
         """See IBuilder"""
         self.builderok = False

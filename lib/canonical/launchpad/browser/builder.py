@@ -34,6 +34,7 @@ from canonical.launchpad.webapp import (
     stepthrough)
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.tales import DateTimeFormatterAPI
+from canonical.lp import decorates
 
 
 class BuilderSetNavigation(GetitemNavigation):
@@ -147,12 +148,45 @@ class BuilderSetView(CommonBuilderView):
         return bool(self.buildQueueDepthByArch)
 
 
+class HiddenBuilder:
+    """Overrides a IBuilder building a private job.
+
+    This class modifies IBuilder attributes that should not be exposed
+    while building a job for private job (private PPA or Security).
+    """
+    decorates(IBuilder)
+
+    failnotes = ""
+    currentjob = None
+    builderok = False
+
+    def __init__(self, context):
+        self.context = context
+
+    @property
+    def status(self):
+        if self.context.manual:
+            mode = 'MANUAL'
+        else:
+            mode = 'AUTO'
+
+        return "NOT OK: (%s)" % mode
+
+
 class BuilderView(CommonBuilderView, BuildRecordsView):
     """Default Builder view class
 
     Implements useful actions for the page template.
     """
     __used_for__ = IBuilder
+
+    def __init__(self, context, request):
+        current_job = context.currentjob
+        if current_job and not check_permission(
+            'launchpad.View', current_job.build):
+            # Cloak the builder.
+            context = HiddenBuilder(context)
+        super(BuilderView, self).__init__(context, request)
 
     def cancelBuildJob(self):
         """Cancel curent job in builder."""
@@ -174,65 +208,6 @@ class BuilderView(CommonBuilderView, BuildRecordsView):
     def showBuilderInfo(self):
         """Hide Builder info, see BuildRecordsView for further details"""
         return False
-
-    @property
-    def status(self):
-        """See IBuilder"""
-        if self.context.manual:
-            mode = 'MANUAL'
-        else:
-            mode = 'AUTO'
-
-        if not self.context.builderok:
-            return 'NOT OK : %s (%s)' % (self.failnotes, mode)
-
-        if self.currentjob:
-            current_build = self.context.currentjob.build
-            msg = 'BUILDING %s' % current_build.title
-            if not current_build.is_trusted:
-                archive_name = current_build.archive.owner.name
-                return '%s [%s] (%s)' % (msg, archive_name, mode)
-            return '%s (%s)' % (msg, mode)
-
-        return 'IDLE (%s)' % mode
-
-    @property
-    def permitted_to_view(self):
-        """Return True if the user is permitted to view this builder.
-
-        Permission can dynamically change depending on whether the builder
-        is currently building a private build.
-        """
-        if self.context.currentjob:
-            return check_permission(
-                'launchpad.View', self.context.currentjob.build)
-
-        return True
-
-    @property
-    def failnotes(self):
-        """Wrap IBuilder.failnotes to provide fake data for private builds.
-
-        If the builder is building a private build and the user is not
-        permissioned to see that, then we remove any failnotes that might
-        give away the build details.
-        """
-        if not self.permitted_to_view:
-            return ""
-        else:
-            return self.context.failnotes
-
-    @property
-    def currentjob(self):
-        """Wrap IBuilder.currentjob to hide private jobs.
-
-        If the builder is currently building a private job, we mask
-        this by saying that we're not building anything at all.
-        """
-        if not self.permitted_to_view:
-            return None
-        else:
-            return self.context.currentjob
 
 
 class BuilderSetAddView(AddView):

@@ -59,17 +59,14 @@ private build:
     ...     find_tag_by_id(anon_browser.contents, 'portlet-details'))
     The frog builder details
     ...
-    Status IDLE (AUTO)
+    Status NOT OK: (AUTO)
     ...
 
 and also the main area:
 
-    >>> print extract_text(anon_browser.contents)
-    Build machine The frog builder
-    ...
-    Current status
-    The frog builder is idle.
-    ...
+    >>> for message in get_feedback_messages(anon_browser.contents):
+    ...     print message
+    The frog builder is deactivated.
 
 Launchpad Administrators are allowed to see the build in the portlet:
 
@@ -83,9 +80,8 @@ Launchpad Administrators are allowed to see the build in the portlet:
 
 and also the main area:
 
-    >>> print extract_text(admin_browser.contents)
-    Build machine The frog builder
-    ...
+    >>> print extract_text(find_main_content(admin_browser.contents))
+    The frog builder
     Current status
     i386 build of iceweasel 1.0 in ubuntu warty RELEASE
     ...
@@ -103,9 +99,8 @@ Buildd Administrators are allowed to see the build in the portlet:
 
 and also the main area:
 
-    >>> print extract_text(name12_browser.contents)
-    Build machine The frog builder
-    ...
+    >>> print extract_text(find_main_content(name12_browser.contents))
+    The frog builder
     Current status
     i386 build of iceweasel 1.0 in ubuntu warty RELEASE
     ...
@@ -124,9 +119,8 @@ cprov is also allowed to see his own build in the portlet:
 
 and also the main area:
 
-    >>> print extract_text(cprov_browser.contents)
-    Build machine The frog builder
-    ...
+    >>> print extract_text(find_main_content(cprov_browser.contents))
+    The frog builder
     Current status
     i386 build of iceweasel 1.0 in ubuntu warty RELEASE
     ...
