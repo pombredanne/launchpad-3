@@ -886,138 +886,149 @@ class POParser(object):
 
         self._parsed_content = u''
 
+    def _parseFreshLine(self, line):
+        """Parse a new line (not a continuation after escaped newline).
+
+        :return: If there is one, the first line of a quoted string belonging
+            to the line's section.  Otherwise, None.
+        """
+        is_obsolete = False
+        if line[:2] == '#~':
+            is_obsolete = True
+            line = line[2:].lstrip()
+            if not line:
+                return None
+
+        # If we get a comment line after a msgstr or a line starting with
+        # msgid or msgctxt, this is a new entry.
+        if ((line.startswith('#') or line.startswith('msgid') or
+            line.startswith('msgctxt')) and self._section == 'msgstr'):
+            if self._message is None:
+                # first entry - do nothing.
+                pass
+            elif self._message.msgid_singular:
+                self._dumpCurrentSection()
+                self._storeCurrentMessage()
+            elif self._translation_file.header is None:
+                # When there is no msgid in the parsed message, it's the
+                # header for this file.
+                self._dumpCurrentSection()
+                self._parseHeader()
+            else:
+                logging.warning(
+                    POSyntaxWarning(self._lineno, 'We got a second header.'))
+
+            # Start a new message.
+            self._message = TranslationMessageData()
+            self._message_lineno = self._lineno
+            self._section = None
+            self._plural_case = None
+            self._parsed_content = u''
+
+        if self._message is not None:
+            # Record whether the message is obsolete.
+            self._message.is_obsolete = is_obsolete
+
+        if line[0] == '#':
+            # Record flags
+            if line[:2] == '#,':
+                new_flags = [flag.strip() for flag in line[2:].split(',')]
+                self._message.flags.update(new_flags)
+                return None
+            # Record file references
+            if line[:2] == '#:':
+                if self._message.file_references:
+                    # There is already a file reference, let's split it from
+                    # the new one with a new line char.
+                    self._message.file_references += '\n'
+                self._message.file_references += line[2:].strip()
+                return None
+            # Record source comments
+            if line[:2] == '#.':
+                self._message.source_comment += line[2:].strip() + '\n'
+                return None
+            # Record comments
+            self._message.comment += line[1:] + '\n'
+            return None
+
+        # Now we are in a msgctxt or msgid section, output previous section
+        if line.startswith('msgid_plural'):
+            if self._section != 'msgid':
+                raise TranslationFormatSyntaxError(
+                    line_number=self._lineno,
+                    message="Unexpected keyword: msgid_plural")
+            self._dumpCurrentSection()
+            self._section = 'msgid_plural'
+            line = line[len('msgid_plural'):]
+        elif line.startswith('msgctxt'):
+            if (self._section is not None and
+                (self._section == 'msgctxt' or
+                self._section.startswith('msgid'))):
+                raise TranslationFormatSyntaxError(
+                    line_number=self._lineno,
+                    message="Unexpected keyword: msgctxt")
+            self._section = 'msgctxt'
+            line = line[len('msgctxt'):]
+        elif line.startswith('msgid'):
+            if (self._section is not None and
+                self._section.startswith('msgid')):
+                raise TranslationFormatSyntaxError(
+                    line_number=self._lineno,
+                    message="Unexpected keyword: msgid")
+            if self._section is not None:
+                self._dumpCurrentSection()
+            self._section = 'msgid'
+            line = line[len('msgid'):]
+            self._plural_case = None
+        # Now we are in a msgstr section
+        elif line.startswith('msgstr'):
+            self._dumpCurrentSection()
+            self._section = 'msgstr'
+            line = line[len('msgstr'):]
+            # XXX kiko 2005-08-19: if line is empty, it means we got an msgstr
+            # followed by a newline; that may be critical, but who knows?
+            if line and line[0] == '[':
+                # plural case
+                new_plural_case, line = line[1:].split(']', 1)
+                new_plural_case = int(new_plural_case)
+                if (self._plural_case is not None) and (
+                        new_plural_case != self._plural_case + 1):
+                    logging.warning(POSyntaxWarning(self._lineno,
+                                                'bad plural case number'))
+                if new_plural_case != self._plural_case:
+                    self._plural_case = new_plural_case
+                else:
+                    logging.warning(POSyntaxWarning(
+                        self._lineno, 'msgstr[] but same plural case number'))
+            else:
+                self._plural_case = TranslationConstants.SINGULAR_FORM
+        elif self._section is None:
+            raise TranslationFormatSyntaxError(
+                line_number=self._lineno,
+                message='Invalid content: %r' % original_line)
+        else:
+            # This line could be the continuation of a previous section.
+            pass
+
+        line = line.strip()
+        if not line:
+            logging.info(
+                POSyntaxWarning(
+                    self._lineno,
+                    'line has no content; this is not supported by'
+                    'some implementations of msgfmt'))
+        return line
+
     def _parseLine(self, original_line):
         self._lineno += 1
         # Skip empty lines
         l = original_line.strip()
-
-        is_obsolete = False
-        if not self._escaped_line_break and l[:2] == '#~':
-            is_obsolete = True
-            l = l[2:].lstrip()
-
         if not l:
             return
 
         if not self._escaped_line_break:
-            # If we get a comment line after a msgstr or a line starting with
-            # msgid or msgctxt, this is a new entry.
-            if ((l.startswith('#') or l.startswith('msgid') or
-                l.startswith('msgctxt')) and self._section == 'msgstr'):
-                if self._message is None:
-                    # first entry - do nothing.
-                    pass
-                elif self._message.msgid_singular:
-                    self._dumpCurrentSection()
-                    self._storeCurrentMessage()
-                elif self._translation_file.header is None:
-                    # When there is no msgid in the parsed message, it's the
-                    # header for this file.
-                    self._dumpCurrentSection()
-                    self._parseHeader()
-                else:
-                    logging.warning(
-                        POSyntaxWarning(self._lineno, 'We got a second header.'))
-
-                # Start a new message.
-                self._message = TranslationMessageData()
-                self._message_lineno = self._lineno
-                self._section = None
-                self._plural_case = None
-                self._parsed_content = u''
-
-            if self._message is not None:
-                # Record whether the message is obsolete.
-                self._message.is_obsolete = is_obsolete
-
-            if l[0] == '#':
-                # Record flags
-                if l[:2] == '#,':
-                    new_flags = [flag.strip() for flag in l[2:].split(',')]
-                    self._message.flags.update(new_flags)
-                    return
-                # Record file references
-                if l[:2] == '#:':
-                    if self._message.file_references:
-                        # There is already a file reference, let's split it from
-                        # the new one with a new line char.
-                        self._message.file_references += '\n'
-                    self._message.file_references += l[2:].strip()
-                    return
-                # Record source comments
-                if l[:2] == '#.':
-                    self._message.source_comment += l[2:].strip() + '\n'
-                    return
-                # Record comments
-                self._message.comment += l[1:] + '\n'
-                return
-
-            # Now we are in a msgctxt or msgid section, output previous section
-            if l.startswith('msgid_plural'):
-                if self._section != 'msgid':
-                    raise TranslationFormatSyntaxError(
-                        line_number=self._lineno,
-                        message="Unexpected keyword: msgid_plural")
-                self._dumpCurrentSection()
-                self._section = 'msgid_plural'
-                l = l[len('msgid_plural'):]
-            elif l.startswith('msgctxt'):
-                if (self._section is not None and
-                    (self._section == 'msgctxt' or
-                    self._section.startswith('msgid'))):
-                    raise TranslationFormatSyntaxError(
-                        line_number=self._lineno,
-                        message="Unexpected keyword: msgctxt")
-                self._section = 'msgctxt'
-                l = l[len('msgctxt'):]
-            elif l.startswith('msgid'):
-                if (self._section is not None and
-                    self._section.startswith('msgid')):
-                    raise TranslationFormatSyntaxError(
-                        line_number=self._lineno,
-                        message="Unexpected keyword: msgid")
-                if self._section is not None:
-                    self._dumpCurrentSection()
-                self._section = 'msgid'
-                l = l[len('msgid'):]
-                self._plural_case = None
-            # Now we are in a msgstr section
-            elif l.startswith('msgstr'):
-                self._dumpCurrentSection()
-                self._section = 'msgstr'
-                l = l[len('msgstr'):]
-                # XXX kiko 2005-08-19: if l is empty, it means we got an msgstr
-                # followed by a newline; that may be critical, but who knows?
-                if l and l[0] == '[':
-                    # plural case
-                    new_plural_case, l = l[1:].split(']', 1)
-                    new_plural_case = int(new_plural_case)
-                    if (self._plural_case is not None) and (
-                            new_plural_case != self._plural_case + 1):
-                        logging.warning(POSyntaxWarning(self._lineno,
-                                                    'bad plural case number'))
-                    if new_plural_case != self._plural_case:
-                        self._plural_case = new_plural_case
-                    else:
-                        logging.warning(POSyntaxWarning(
-                            self._lineno, 'msgstr[] but same plural case number'))
-                else:
-                    self._plural_case = TranslationConstants.SINGULAR_FORM
-            elif self._section is None:
-                raise TranslationFormatSyntaxError(
-                    line_number=self._lineno,
-                    message='Invalid content: %r' % original_line)
-            else:
-                # This line could be the continuation of a previous section.
-                pass
-
-            l = l.strip()
+            l = self._parseFreshLine(l)
             if not l:
-                logging.info(
-                    POSyntaxWarning(
-                        self._lineno,
-                        'line has no content; this is not supported by'
-                        'some implementations of msgfmt'))
                 return
 
         l = self._parseQuotedString(l)
