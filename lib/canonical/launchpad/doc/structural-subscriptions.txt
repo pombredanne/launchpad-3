@@ -52,8 +52,8 @@ IDistributionSourcePackages for that distribution.
 
    >>> evolution_package = evolution_sub.target
 
-A target's parent can be retrieved using the `parent_subscription_target`
-property.
+A target's parent can be retrieved using the
+`parent_subscription_target` property.
 
    >>> print evolution_package.parent_subscription_target.displayname
    Ubuntu
@@ -74,6 +74,9 @@ target and to the target's parent are notified.
    ...     BlueprintNotificationLevel, BugNotificationLevel)
    >>> from canonical.launchpad.mailnotification import (
    ...     BugNotificationRecipients)
+
+We define some utility functions for printing out bug subscriptions and
+the recipients for the notifications they generate.
 
    >>> def print_bug_subscribers(bug_subscribers):
    ...     for subscriber in bug_subscribers:
@@ -97,7 +100,8 @@ target and its parent, and adds the rationale for the subscriptions to
 the recipients set. Each subscriber is only added once.
 
    >>> recipients = BugNotificationRecipients()
-   >>> bug_subscribers = evolution_package.getBugNotificationsRecipients(recipients=recipients)
+   >>> bug_subscribers = evolution_package.getBugNotificationsRecipients(
+   ...     recipients=recipients)
    >>> print_bug_subscriptions(ubuntu.bug_subscriptions)
    name12
    >>> print_bug_subscriptions(evolution_package.bug_subscriptions)
@@ -117,7 +121,8 @@ Foo Bar subscribes to Ubuntu.
 The set of subscribers to the evolution package for ubuntu now includes
 both subscribers to the package, and subscribers to the distribution.
 
-   >>> bug_subscribers = evolution_package.getBugNotificationsRecipients(recipients=recipients)
+   >>> bug_subscribers = evolution_package.getBugNotificationsRecipients(
+   ...     recipients=recipients)
    >>> print_bug_recipients(recipients)
    name16 "Subscriber (Ubuntu)"
    name12 "Subscriber (evolution in ubuntu)"
