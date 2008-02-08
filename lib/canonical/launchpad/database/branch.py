@@ -321,12 +321,12 @@ class Branch(SQLBase):
         alterations = {}
         deletions = {}
         alteration_operations = []
-        # Merge proposals require their source and target branches to exist
+        # Merge proposals require their source and target branches to exist.
         for merge_proposal in self.landing_targets:
             deletions[merge_proposal] = _(
                 'This branch is the source branch of this merge proposal.')
         # Cannot use self.landing_candidates, because it ignores merged
-        # merge proposals
+        # merge proposals.
         for merge_proposal in BranchMergeProposal.selectBy(
             target_branch=self):
             deletions[merge_proposal] = _(
@@ -367,7 +367,7 @@ class Branch(SQLBase):
         alterations, deletions, _ignored = (
             self._deletionRequirements())
         result = dict((k, ('alter', v)) for k, v in alterations.iteritems())
-        # deletion entries should overwrite alteration entries
+        # Deletion entries should overwrite alteration entries.
         result.update((k, ('delete', v)) for k, v in deletions.iteritems())
         return result
 

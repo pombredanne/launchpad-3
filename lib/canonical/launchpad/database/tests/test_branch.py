@@ -47,8 +47,6 @@ class TestBranchDeletion(TestCase):
 
     def setUp(self):
         login('test@canonical.com')
-        # Getting database classes directly where necessary to avoid the
-        # hassle of worrying about the security contexts.
         self.product = ProductSet().getByName('firefox')
         self.user = getUtility(IPersonSet).getByEmail('test@canonical.com')
         self.branch_set = BranchSet()
@@ -198,8 +196,6 @@ class TestBranchDeletionConsequences(TestCase):
 
     def setUp(self):
         login('test@canonical.com')
-        # Getting database classes directly where necessary to avoid the
-        # hassle of worrying about the security contexts.
         self.factory = LaunchpadObjectFactory()
         self.branch = self.factory.makeBranch()
         self.branch_set = getUtility(IBranchSet)
