@@ -168,8 +168,10 @@ def report_warning(message, properties=None, info=None):
     :param info: See `report_oops`.
     """
     if info is None:
+        # Raise and catch the exception so that sys.exc_info will
+        # return our warning and stack trace.
         try:
-            raise BugWatchUpdateWarning()
+            raise BugWatchUpdateWarning
         except BugWatchUpdateWarning:
             return report_oops(message, properties)
     else:
@@ -362,10 +364,6 @@ class ExternalBugTracker:
 
     def warning(self, message, properties=None, info=None):
         """Record a warning related to this bug tracker."""
-        # info might be a tuple (returned from sys.exc_info()), so
-        # explicitly test that it's *equals* to True.
-        if info == True:
-            info = sys.exc_info()
         if properties is None:
             properties = self._oops_properties
         else:
@@ -376,10 +374,6 @@ class ExternalBugTracker:
 
     def error(self, message, properties=None, info=None):
         """Record an error related to this external bug tracker."""
-        # info might be a tuple (returned from sys.exc_info()), so
-        # explicitly test that it's *equals* to True.
-        if info == True:
-            info = sys.exc_info()
         if properties is None:
             properties = self._oops_properties
         else:
@@ -469,7 +463,7 @@ class ExternalBugTracker:
                         properties=[
                             ('bug_id', bug_id),
                             ('local_ids', local_ids)],
-                        info=True)
+                        info=sys.exc_info())
                 except BugNotFound:
                     error = BugWatchErrorType.BUG_NOT_FOUND
                     self.warning(
@@ -478,7 +472,7 @@ class ExternalBugTracker:
                         properties=[
                             ('bug_id', bug_id),
                             ('local_ids', local_ids)],
-                        info=True)
+                        info=sys.exc_info())
 
                 for bug_watch in bug_watches:
                     bug_watch.lastchecked = UTC_NOW
@@ -1352,9 +1346,9 @@ class Mantis(ExternalBugTracker):
 
             return bugs
 
-        except csv.Error, e:
+        except csv.Error, error:
             raise UnparseableBugData(
-                "Exception parsing CSV file: %s." % e)
+                "Exception parsing CSV file: %s." % error)
 
     def _processCSVBugLine(self, bug_line):
         """Processes a single line of the CSV.
