@@ -61,12 +61,33 @@ It is not necessarily the same as:
 which is the component the source was originally uploaded to, before
 any overriding action.
 
-There is also another property on IBuild context which returns the
-allowed components while building this source respecting the
-ubuntu-ogre-model.
+`IBuild.component_dependencies` is a dictionary mapping the available
+components and a list of components it can depend of.
+
+    >>> def printComponentDependencies(build):
+    ...     print " Component | Dependency"
+    ...     print "-----------+---------------"
+    ...     components = sorted(build.component_dependencies)
+    ...     for component in components:
+    ...         dependencies = " ".join(
+    ...             build.component_dependencies[component])
+    ...	        print '%10s | %s' % (component, dependencies)
+
+    >>> printComponentDependencies(firefox_build)
+     Component | Dependency
+    -----------+---------------
+          main | main
+    multiverse | main restricted universe multiverse
+       partner | partner
+    restricted | main restricted
+      universe | main restricted universe
+
+`IBuild.ogre_components` is the list of allowed components for
+building this source. It simply submits the `IBuild.current_component`
+to the `IBuild.components_dependencies` table.
 
     >>> print firefox_build.ogre_components
-    main
+    ['main']
 
 See further information about 'Ogre Components' in a section below.
 
@@ -574,6 +595,7 @@ source published in 'main' component is only allowed to depend on
 binaries also published in 'main', on the other hand a source
 published in 'universe' is allowed to depend on binaries published in
 'main', 'restricted' and 'universe' components.
+A proper name for this "model" would be 'cross-component-dependency'.
 
     >>> from canonical.launchpad.interfaces import IComponentSet
     >>> from canonical.launchpad.ftests import syncUpdate
@@ -598,7 +620,7 @@ published in 'universe' is allowed to depend on binaries published in
     ...         syncUpdate(source_pub.secure_record)
     ...         flush_database_caches()
     ...         print '%10s | %s' % (build.current_component.name,
-    ...                              build.ogre_components)
+    ...                              " ".join(build.ogre_components))
 
     >>> testOgreComponents()
      Component | Ogre-Model
@@ -643,18 +665,15 @@ depwait_build, the 'dependencies' field remains the same.
     >>> depwait_build.dependencies == old_dep
     True
 
-If we use a dependency available in the sampledata but currently
-published in a unreachable component, we can emulate the circumstances
-mentioned in bug #177827, verifying that the system is able to
-identify that the dependency in question cannot be satisfied because
-it is not published in the components allowed in the build context.
+A dependency can only be used if it is an a component allowed in our
+context (see above on 'Ogre' components). If we do a build using a
+dependency available in the sample data but published in an unreachable
+component, we will see that the dependency is considered to be unsatisfied.
 
     >>> depwait_build.dependencies = 'pmount'
     >>> flush_database_updates()
 
-As we can see bellow, 'pmount' in hoary/i386 is published in the
-'universe' component and the build is only allowed to depend on
-packages published in 'main'
+'pmount' in hoary/i386 is published in the 'universe' component:
 
     >>> hoary_i386 = depwait_build.distroarchseries
     >>> pmount_pub = hoary_i386[
@@ -662,11 +681,13 @@ packages published in 'main'
     >>> print pmount_pub.component.name
     universe
 
+The build is only allowed to depend on packages published in 'main':
+
     >>> print depwait_build.current_component.name
     main
 
     >>> print depwait_build.ogre_components
-    main
+    ['main']
 
 Thus the 'pmount' dependency remains unsatisfied.
 
@@ -688,7 +709,7 @@ list.
     >>> flush_database_updates()
 
 Note that only the satisfied dependencies are removed the build
-dependency list, even when one or more of them were satisfied.
+dependency list.
 
     >>> depwait_build.updateDependencies()
     >>> print depwait_build.dependencies

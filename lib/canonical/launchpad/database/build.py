@@ -219,46 +219,107 @@ class Build(SQLBase):
         self.createBuildQueueEntry()
 
     @property
-    def ogre_components(self):
+    def component_dependencies(self):
         """See `IBuild`."""
         # XXX cprov 20080204: if a new component is opened/selected for
         # ubuntu this dictionary will have to be updated. Ideally we
         # should model ogre in the database, but since a new component
         # will also require other changes in code, we will simple let this
         # marked for future reference.
-        component_dependencies = {
-            'main': 'main',
-            'restricted': 'main restricted',
-            'universe': 'main restricted universe',
-            'multiverse': 'main restricted universe multiverse',
-            'partner' : 'partner',
+        return {
+            'main': ['main'],
+            'restricted': ['main', 'restricted'],
+            'universe': ['main', 'restricted',  'universe'],
+            'multiverse': ['main', 'restricted', 'universe', 'multiverse'],
+            'partner' : ['partner'],
             }
-        component_name = self.current_component.name
-        return component_dependencies[component_name]
+
+    @property
+    def ogre_components(self):
+        """See `IBuild`."""
+        return self.component_dependencies[self.current_component.name]
 
     def updateDependencies(self):
         """See `IBuild`."""
-        # This dict maps the package version relationship syntax in lambda
-        # functions which returns boolean according the results of
-        # apt_pkg.VersionCompare function (see the order above).
-        # For further information about pkg relationship syntax see:
-        #
-        # http://www.debian.org/doc/debian-policy/ch-relationships.html
-        #
-        version_relation_map = {
-            # any version is acceptable if no relationship is given
-            '': lambda x: True,
-            # stricly later
-            '>>': lambda x: x == 1,
-            # later or equal
-            '>=': lambda x: x >= 0,
-            # stricly equal
-            '=': lambda x: x == 0,
-            # earlier or equal
-            '<=': lambda x: x <= 0,
-            # strictly ealier
-            '<<': lambda x: x == -1
-            }
+        def parse_dep_token(token):
+            """Parse the given token.
+
+            Raises AssertionError if the given token couldn't be parsed.
+
+            Return a triple containing the corresponding (name, version,
+            relation) for the given dependency token.
+            """
+            # XXX cprov 2006-02-27: it may not work for and'd and or'd syntax.
+            try:
+                name, version, relation = token[0]
+            except ValueError:
+                raise AssertionError(
+                    "APT is not dealing correctly with a dependency token "
+                    "'%r' from %s (%s) with the following dependencies: %s\n"
+                    "It is expected to be a tuple containing only another "
+                    "tuple with 3 elements  (name, version, relation)."
+                    % (token, self.title, self.id, self.depedencies))
+            return (name, version, relation)
+
+        def check_dependency_version(available, required, relation):
+            """Return True if the available version satisfies the context."""
+            # This dict maps the package version relationship syntax in lambda
+            # functions which returns boolean according the results of
+            # apt_pkg.VersionCompare function (see the order above).
+            # For further information about pkg relationship syntax see:
+            #
+            # http://www.debian.org/doc/debian-policy/ch-relationships.html
+            #
+            version_relation_map = {
+                # any version is acceptable if no relationship is given
+                '': lambda x: True,
+                # stricly later
+                '>>': lambda x: x == 1,
+                # later or equal
+                '>=': lambda x: x >= 0,
+                # stricly equal
+                '=': lambda x: x == 0,
+                # earlier or equal
+                '<=': lambda x: x <= 0,
+                # strictly earlier
+                '<<': lambda x: x == -1
+                }
+
+            # Use apt_pkg function to compare versions
+            # it behaves similar to cmp, i.e. returns negative
+            # if first < second, zero if first == second and
+            # positive if first > second.
+            dep_result = apt_pkg.VersionCompare(available, required)
+
+            return version_relation_map[relation](dep_result)
+
+        def is_dependency_satisfied(token):
+            """Check if the given dependency token is satisfied.
+
+            Check if the dependency exists, if its version constraint is
+            satisfied and if it is reachable in the build context.
+            """
+            name, version, relation = parse_dep_token(token)
+            dep_candidate = self.distroarchseries.findDepCandidateByName(name)
+
+            if not dep_candidate:
+                return False
+
+            if not check_dependency_version(
+                dep_candidate.binarypackageversion, version, relation):
+                return False
+
+            if dep_candidate.component not in self.ogre_components:
+                return False
+
+            return True
+
+        def to_apt_format(token):
+            """Rebuild dependencies line in apt format."""
+            name, version, relation = parse_dep_token(token)
+            if relation and version:
+                return '%s (%s %s)' % (name, relation, version)
+            return '%s' % name
 
         # apt_pkg requires InitSystem to get VersionCompare working properly.
         apt_pkg.InitSystem()
@@ -272,53 +333,9 @@ class Build(SQLBase):
                 "It indicates that something is wrong in buildd-slaves."
                 % (self.title, self.id, self.depedencies))
 
-        missing_deps = []
-        for token in parsed_deps:
-            # XXX cprov 2006-02-27: it may not work for and'd and or'd syntax.
-            try:
-                name, version, relation = token[0]
-            except ValueError:
-                raise AssertionError(
-                    "APT is not dealing correctly with a dependency token "
-                    "'%r' from %s (%s) with the following dependencies: %s\n"
-                    "It is expected to be a tuple containing only another "
-                    "tuple with 3 elements  (name, version, relation)."
-                    % (token, self.title, self.id, self.depedencies))
-
-            dep_candidate = self.distroarchseries.findDepCandidateByName(name)
-            if dep_candidate:
-                # Check if the dependency candidate found is in the allowed
-                # build components domain (ogre_components).
-                dep_component_name = dep_candidate.component
-                allowed_component_names = self.ogre_components.split()
-                is_in_ogre_domain = (
-                    dep_component_name in allowed_component_names)
-                # Use apt_pkg function to compare versions
-                # it behaves similar to cmp, i.e. returns negative
-                # if first < second, zero if first == second and
-                # positive if first > second.
-                dep_result = apt_pkg.VersionCompare(
-                    dep_candidate.binarypackageversion, version)
-                # Use the previously mapped result and the presence in
-                # ogre_domain to identify whether or not the dependency
-                # was satisfied
-                if (is_in_ogre_domain and
-                    version_relation_map[relation](dep_result)):
-                    # Continue for satisfied dependency.
-                    continue
-
-            # Append missing token.
-            missing_deps.append(token)
-
-        # Rebuild dependencies line in apt format.
-        remaining_deps = []
-        for token in missing_deps:
-            name, version, relation = token[0]
-            if relation and version:
-                token_str = '%s (%s %s)' % (name, relation, version)
-            else:
-                token_str = '%s' % name
-            remaining_deps.append(token_str)
+        remaining_deps = [
+            to_apt_format(token) for token in parsed_deps
+            if not is_dependency_satisfied(token)]
 
         # Update dependencies line
         self.dependencies = ", ".join(remaining_deps)

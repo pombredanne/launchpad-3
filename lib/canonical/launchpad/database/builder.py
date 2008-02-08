@@ -235,7 +235,7 @@ class Builder(SQLBase):
 
     def _determineArchivesForBuild(self, build_queue_item):
         """Work out what sources.list lines should be passed to builder."""
-        ogre_components = build_queue_item.build.ogre_components
+        ogre_components = " ".join(build_queue_item.build.ogre_components)
         dist_name = build_queue_item.archseries.distroseries.name
         archive_url = build_queue_item.build.archive.archive_url
         ubuntu_source_lines = []

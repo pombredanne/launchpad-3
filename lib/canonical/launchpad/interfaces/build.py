@@ -48,7 +48,7 @@ class IBuild(Interface):
         "details for this sourcepackagerelease in this distribution.")
     binarypackages = Attribute(
         "A list of binary packages that resulted from this build, "
-        "not limitted and ordered by name.")
+        "not limited and ordered by name.")
     distroarchseriesbinarypackages = Attribute(
         "A list of distroarchseriesbinarypackages that resulted from this"
         "build, ordered by name.")
@@ -70,6 +70,10 @@ class IBuild(Interface):
     package_upload = Attribute(
         "The PackageUpload for this build, or None if there is "
         "no build.")
+
+    component_dependencies = Attribute(
+        "Return a dictionary which maps a component name to a list of "
+        "component names it could depend of.")
 
     ogre_components = Attribute(
         "The components this build is allowed to use. It returns a string "
