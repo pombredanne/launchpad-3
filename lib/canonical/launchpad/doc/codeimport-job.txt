@@ -223,11 +223,11 @@ The job request is also recorded in the CodeImportEvent audit trail.
     >>> print new_events.summary()
     REQUEST ~vcs-imports/gnome-terminal/import no-priv
 
-Once a job has been requested by a user, it cannot be requested a second
-time until the job runs and terminates.  This means that any Launchpad
-web application code that is going to call requestJob must first check
-the status and present the user with an appropriate message if the
-preconditions are not met.
+Once a job has been requested by a user, it cannot be requested a
+second time until the job runs and terminates.  This means that any
+Launchpad web application code that is going to call requestJob must
+first check the status and if the job has already been requested by
+another user, present a message explaining that this has happened.
 
     >>> workflow.requestJob(pending_job, nopriv)
     Traceback (most recent call last):
