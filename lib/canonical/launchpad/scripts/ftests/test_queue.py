@@ -25,8 +25,8 @@ from canonical.database.sqlbase import READ_COMMITTED_ISOLATION
 from canonical.launchpad.database import PackageUploadBuild
 from canonical.launchpad.interfaces import (
     ArchivePurpose, DistroSeriesStatus, IArchiveSet, IBugSet, IBugTaskSet,
-    IComponentSet, IDistributionSet, IPackageUploadSet, IPersonSet,
-    PackagePublishingPocket, PackagePublishingStatus, PackageUploadStatus)
+    IDistributionSet, IPackageUploadSet, IPersonSet, PackagePublishingPocket,
+    PackagePublishingStatus, PackageUploadStatus)
 from canonical.launchpad.mail import stub
 from canonical.launchpad.scripts.queue import (
     CommandRunner, CommandRunnerError, name_queue_map)
@@ -324,66 +324,6 @@ class TestQueueTool(TestQueueBase):
         self.assertEqual(
             bug_status, 'FIXRELEASED',
             'Bug status is %s, expected FIXRELEASED')
-
-    def testAcceptNewSingleSourceUploadOverridesToUniverse(self):
-        """Ensure new single source uploads are overridden to universe."""
-        # Upload a new package called "bar".
-        self.uploadPackage()
-
-        # bar starts life as "main":
-        queue_action = self.execute_command(
-            'info bar', queue_name='new')
-        [bar_item] = queue_action.items
-        self.assertEqual(
-            'main', bar_item.sources[0].sourcepackagerelease.component.name)
-
-        # Now accept it.
-        queue_action = self.execute_command(
-            'accept bar', queue_name='new')
-
-        # Its publishing record is now overridden to universe.
-        breezy_autotest = getUtility(
-            IDistributionSet)['ubuntu']['breezy-autotest']
-        published = breezy_autotest.getPublishedReleases(
-            'bar', include_pending=True)
-        [published_bar] = published
-        component_name = published_bar.component.name
-        self.assertEqual(
-            component_name, 'universe',
-            "Expected 'universe', got %s" % component_name)
-
-    def testAcceptNewSingleSourceUploadNotMainDoesNotAutoOverride(self):
-        """Ensure new non-main single source uploads are not overridden.
-
-        NEW uploads that are not in the main component should not be
-        overridden to universe.
-        """
-        # Upload a new package called "bar".
-        self.uploadPackage()
-
-        # bar starts life as "main", so change it for the test to
-        # "restricted".
-        queue_action = self.execute_command(
-            'info bar', queue_name='new')
-        [bar_item] = queue_action.items
-        spr = removeSecurityProxy(
-            bar_item.sources[0].sourcepackagerelease)
-        spr.component = getUtility(IComponentSet)['restricted']
-
-        # Now accept it.
-        queue_action = self.execute_command(
-            'accept bar', queue_name='new')
-
-        # Its publishing record is still main:
-        breezy_autotest = getUtility(
-            IDistributionSet)['ubuntu']['breezy-autotest']
-        published = breezy_autotest.getPublishedReleases(
-            'bar', include_pending=True)
-        [published_bar] = published
-        component_name = published_bar.component.name
-        self.assertEqual(
-            component_name, 'restricted',
-            "Expected 'restricted', got %s" % component_name)
 
     def testAcceptActionWithMultipleIDs(self):
         """Check if accepting multiple items at once works.

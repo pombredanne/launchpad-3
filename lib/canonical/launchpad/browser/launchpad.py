@@ -65,6 +65,7 @@ from canonical.launchpad.interfaces import (
     ILaunchpadRoot,
     ILaunchpadStatisticSet,
     ILoginTokenSet,
+    IMailingListSet,
     IMaloneApplication,
     IMentoringOfferSet,
     IPersonSet,
@@ -412,7 +413,7 @@ class LaunchpadRootNavigation(Navigation):
     @stepto('support')
     def redirect_support(self):
         """Redirect /support to Answers root site."""
-        target_url= canonical_url(
+        target_url = canonical_url(
             getUtility(ILaunchpadRoot), rootsite='answers')
         return self.redirectSubTree(target_url + 'questions', status=301)
 
@@ -448,6 +449,7 @@ class LaunchpadRootNavigation(Navigation):
         'karmaaction': IKarmaActionSet,
         '+imports': ITranslationImportQueue,
         '+languages': ILanguageSet,
+        '+mailinglists': IMailingListSet,
         '+mentoring': IMentoringOfferSet,
         'people': IPersonSet,
         'projects': IProductSet,

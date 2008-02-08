@@ -12,7 +12,7 @@ from canonical.functional import setUpMockRootFolder
 from canonical.launchpad.interfaces import (
     IDistributionSet, IProductSet, ISourcePackageNameSet, IPackagingUtil)
 from canonical.launchpad.ftests import login, logout
-from canonical.launchpad.ftests.test_pages import setupBrowser
+from canonical.launchpad.testing.pages import setupBrowser
 from canonical.testing import PageTestLayer
 
 
