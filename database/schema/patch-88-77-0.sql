@@ -2,22 +2,12 @@ SET client_min_messages=ERROR;
 
 CREATE TABLE OAuthConsumer (
     id SERIAL PRIMARY KEY,
-    -- XXX: Do we need to associate this with a person/projuct?
-    -- Maybe we should have the columns but make them optional.
-    -- Also, at the time any user authorizes a given request token, it
-    -- should also be reasonable to associate that token's consumer with the
-    -- user, if the consumer is not yet associated with any project or person.
-    -- That shouldn't be a problem since it's very likely that the application
-    -- author will be the first one to test it against launchpad.
-    -- Or maybe we should require users to register the application they want to
-    -- use to access Launchpad.  That sounds more reasonable.
-    person integer NOT NULL REFERENCES Person,
-    product integer REFERENCES Product,
-    name text NOT NULL UNIQUE,
     key text NOT NULL UNIQUE,
-    secret text,  -- In the first round this won't be used.
+    -- In the first round the secret won't be used as we'll create consumers
+    -- automatically.
+    secret text, 
     date_created timestamp without time zone,
-    displayname text NOT NULL -- Not sure we need a displayname
+    disabled boolean DEFAULT FALSE  -- Misbehaving consumers will be disabled
 );
 
 -- The request token is created when the consumer (third part application)
@@ -37,12 +27,13 @@ CREATE TABLE OAuthRequestToken (
     id SERIAL PRIMARY KEY,
     consumer integer NOT NULL REFERENCES OAuthConsumer,
     person integer REFERENCES Person,
-    permission integer, -- Enumeration (Read/Write, Public/Private)
-    -- This is a tri-state column where NULL means the user hasn't yet
-    -- granted or refused access to the given consumer.  Only request tokens
-    -- with authorized==TRUE can be turned into access tokens when the consumer
-    -- asks for them.
-    authorized boolean,
+    -- 'permission' is an enumeration which can be one of:
+    --   * Not authorized
+    --   * Read public data
+    --   * Read/Write public data
+    --   * Read public and private data
+    --   * Read/Write public and private data
+    permission integer,
     key text UNIQUE,
     date_created timestamp without time zone,
     secret text NOT NULL
@@ -52,7 +43,7 @@ CREATE TABLE OAuthAccessToken (
     id SERIAL PRIMARY KEY,
     consumer integer NOT NULL REFERENCES OAuthConsumer,
     person integer NOT NULL REFERENCES Person,
-    permission integer NOT NULL, -- Enumeration (Read/Write, Public/Private)
+    permission integer NOT NULL,
     key text UNIQUE,
     date_created timestamp without time zone,
     expiration_date timestamp without time zone,
