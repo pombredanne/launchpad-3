@@ -1,8 +1,11 @@
 SET client_min_messages=ERROR;
 
--- Adding a summary field to Archive.
+-- Adding text blob location to represent PPA context on searchs amongst
+-- all other PPAs.
 
-ALTER TABLE Archive ADD COLUMN summary text;
+ALTER TABLE Archive ADD COLUMN packagedescriptioncache text;
+ALTER TABLE Archive ADD COLUMN sources_cached integer;
+ALTER TABLE Archive ADD COLUMN binaries_cached integer;
 
 
 -- Indexing Archive summary and description. It will require us to update
@@ -13,7 +16,8 @@ CREATE INDEX archive_fti ON archive USING gist (fti ts2.gist_tsvector_ops);
 CREATE TRIGGER tsvectorupdate
     BEFORE INSERT OR UPDATE ON archive
     FOR EACH ROW
-    EXECUTE PROCEDURE ts2.ftiupdate('summary', 'a', 'description', 'b');
+    EXECUTE PROCEDURE ts2.ftiupdate(
+        'description', 'a', 'packagedescriptioncache', 'b');
 
 
 -- Add 'archive' column to the DistributionSourcePackageCache and

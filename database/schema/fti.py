@@ -32,8 +32,8 @@ A, B, C, D = 'ABCD' # tsearch2 ranking constants
 # when you are ordering by rank.
 ALL_FTI = [
     ('archive', [
-            ('summary', A),
-            ('description', B),
+            ('description', A),
+            ('packagedescriptioncache', B),
             ]),
     ('bug', [
             ('name', A),

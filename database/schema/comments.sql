@@ -320,6 +320,7 @@ COMMENT ON COLUMN DistributionSourcePackageCache.binpkgnames IS 'The binary pack
 COMMENT ON COLUMN DistributionSourcePackageCache.binpkgsummaries IS 'The aggregated summaries of all the binary packages generated from these source packages in this distribution.';
 COMMENT ON COLUMN DistributionSourcePackageCache.binpkgdescriptions IS 'The aggregated description of all the binary packages generated from these source packages in this distribution.';
 COMMENT ON COLUMN DistributionSourcePackageCache.changelog IS 'A concatenation of the source package release changelogs for this source package, where the status is not REMOVED.';
+COMMENT ON COLUMN DistributionSourcePackageCache.archive IS 'The archive where the source is published.';
 
 
 -- DistroSeriesPackageCache
@@ -331,7 +332,7 @@ COMMENT ON COLUMN DistroSeriesPackageCache.name IS 'The binary package name itse
 COMMENT ON COLUMN DistroSeriesPackageCache.summary IS 'A single summary for one of the binary packages of this name in this distroseries. We could potentially have binary packages in different architectures with the same name and different summaries, so this is a way of collapsing to one arbitrarily-chosen one, for display purposes. The chances of actually having different summaries and descriptions is pretty small. It could happen, though, because of the way package superseding works when a package does not build on a specific architecture.';
 COMMENT ON COLUMN DistroSeriesPackageCache.summaries IS 'The aggregated summaries of all the binary packages with this name in this distroseries.';
 COMMENT ON COLUMN DistroSeriesPackageCache.descriptions IS 'The aggregated description of all the binary packages with this name in this distroseries.';
-
+COMMENT ON COLUMN DistroSeriesPackageCache.archive IS 'The archive where the binary is published.';
 
 -- EmailAddress
 
@@ -1606,6 +1607,9 @@ COMMENT ON COLUMN Archive.whiteboard IS 'Administrator comments about interventi
 COMMENT ON COLUMN Archive.distribution IS 'The distribution that uses this archive.';
 COMMENT ON COLUMN Archive.purpose IS 'The purpose of this archive, e.g. COMMERCIAL.  See the ArchivePurpose DBSchema item.';
 COMMENT ON COLUMN Archive.private IS 'Whether or not the archive is private. This affects the global visibility of the archive.';
+COMMENT ON COLUMN Archive.packagedescriptioncache IS 'Text blob containing all source and binarie names and descriptions concatenated. Used to to build the tsearch indexes on this table.';
+COMMENT ON COLUMN Archive.sources_cached IS 'Number of sources already cached for this archive.';
+COMMENT ON COLUMN Archive.binaries_cached IS 'Number of binaries already cached for this archive.';
 
 -- Component
 COMMENT ON TABLE Component IS 'Known components in Launchpad';
