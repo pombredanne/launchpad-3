@@ -14,17 +14,18 @@ from canonical.launchpad.interfaces import (
     ICodeImport, ICodeImportJob, ICodeImportJobSet, ICodeImportJobWorkflow,
     ICodeImportMachine, ICodeImportMachineSet, ICodeImportSet, IDistribution,
     IDistributionMirror, IDistroSeries, IDistroSeriesLanguage, IEntitlement,
-    IFAQ, IFAQTarget, IHasBug, IHasDrivers, IHasOwner, IHWSubmission,
-    ILanguage, ILanguagePack, ILanguageSet, ILaunchpadCelebrities, IMilestone,
-    IPackageUpload, IPackageUploadQueue, IPerson, IPOFile, IPoll, IPollSubset,
-    IPollOption, IPOTemplate, IPOTemplateSubset, IProduct, IProductRelease,
+    IFAQ, IFAQTarget, IHWSubmission, IHasBug, IHasDrivers, IHasOwner,
+    ILanguage, ILanguagePack, ILanguageSet, ILaunchpadCelebrities,
+    IMailingListSet, IMilestone, IPOFile, IPOTemplate, IPOTemplateSubset,
+    IPackageUpload, IPackageUploadQueue, IPackaging, IPerson, IPoll,
+    IPollOption, IPollSubset, IProduct, IProductRelease, IProductReleaseFile,
     IProductSeries, IQuestion, IQuestionTarget, IRequestedCDs,
     IShipItApplication, IShippingRequest, IShippingRequestSet, IShippingRun,
     ISpecification, ISpecificationSubscription, ISprint, ISprintSpecification,
     IStandardShipItRequest, IStandardShipItRequestSet, ITeam, ITeamMembership,
     ITranslationGroup, ITranslationGroupSet, ITranslationImportQueue,
     ITranslationImportQueueEntry, ITranslator, PackageUploadStatus,
-    IPackaging, IProductReleaseFile, PersonVisibility)
+    PersonVisibility)
 
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.interfaces import IAuthorization
@@ -1385,3 +1386,12 @@ class ViewArchive(AuthorizationBase):
     def checkUnauthenticated(self):
         """Unauthenticated users can see the PPA if it's not private."""
         return not self.obj.private
+
+
+class MailingListApprovalByExperts(AuthorizationBase):
+    permission = 'launchpad.Admin'
+    usedfor = IMailingListSet
+
+    def checkAuthenticated(self, user):
+        experts = getUtility(ILaunchpadCelebrities).mailing_list_experts
+        return user.inTeam(experts)

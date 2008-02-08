@@ -1791,6 +1791,7 @@ INSERT INTO distrocomponentuploader (id, distribution, component, uploader, date
 INSERT INTO distrocomponentuploader (id, distribution, component, uploader, date_created) VALUES (3, 1, 2, 17, '2006-10-16 18:31:43.46438');
 INSERT INTO distrocomponentuploader (id, distribution, component, uploader, date_created) VALUES (4, 1, 3, 17, '2006-10-16 18:31:43.464753');
 INSERT INTO distrocomponentuploader (id, distribution, component, uploader, date_created) VALUES (5, 8, 1, 17, '2006-10-16 18:31:43.465111');
+INSERT INTO distrocomponentuploader (id, distribution, component, uploader, date_created) VALUES (6, 8, 3, 17, '2006-10-16 18:31:43.464753');
 
 
 ALTER TABLE distrocomponentuploader ENABLE TRIGGER ALL;
