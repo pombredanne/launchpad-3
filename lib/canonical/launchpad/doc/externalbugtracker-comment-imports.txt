@@ -1,7 +1,10 @@
 = ExternalBugTracker comment imports =
 
-In order to demonstrate this we need to set up a bug, bug tracker and
-bug watch with which to work.
+Some ExternalBugTrackers support the importing of comments from the
+remote bug tracker into Launchpad.
+
+In order to demonstrate this we need to create example Bug, BugTracker
+and BugWatch instances with which to work.
 
     >>> from canonical.config import config
     >>> from canonical.database.sqlbase import commit
@@ -27,6 +30,18 @@ bug watch with which to work.
 
     >>> commit()
     >>> LaunchpadZopelessLayer.switchDbUser(config.checkwatches.dbuser)
+
+The ISupportsCommentImport interface defines the methods that external
+bug trackers which support comment imports must provide. In fact, the
+ISupportsCommentImport interface only defines one method,
+importBugComments(). This method is implemented in the
+ExternalBugTracker base class and in turn requires that bug trackers
+supporting comment imports provide the methods getCommentIds(),
+getPosterForComment() and _getComment().
+
+In order to test the importing of comments we will create a new
+ExternalBugTracker class which implements the three methods listed
+above.
 
     >>> from canonical.launchpad.components.externalbugtracker import (
     ...     ExternalBugTracker)
@@ -55,8 +70,15 @@ bug watch with which to work.
     >>> external_bugtracker = CommentImportingExternalBugTracker(
     ...     None, new_bugtracker(BugTrackerType.BUGZILLA))
 
+Calling importBugComments() on our new comment-importing
+ExternalBugTracker instance will result in the three comments in the
+comment_dict being imported into Launchpad.
+
     >>> external_bugtracker.importBugComments(bug_watch)
     INFO:...:Imported 3 comments for remote bug 123456 on ...
+
+These three comments will be linked to the bug watch from which they
+were imported.
 
     >>> bug_watch = getUtility(IBugWatchSet).get(bug_watch.id)
     >>> for message in bug.messages[1:]:
@@ -71,9 +93,15 @@ bug watch with which to work.
     True
     Example comment the third
 
+If another comment is added on the remote tracker and the comment import
+process is run again only the new comment will be imported.
+
     >>> external_bugtracker.comment_dict['4'] = "Yet another comment."
     >>> external_bugtracker.importBugComments(bug_watch)
     INFO:...:Imported 1 comments for remote bug 123456 on ...
+
+Once again, the newly-imported comment will be linked to the bug watch
+form which it was imported.
 
     >>> for message in bug.messages[1:]:
     ...     bug_message = getUtility(IBugMessageSet).getByBugAndMessage(
