@@ -307,6 +307,16 @@ class Branch(SQLBase):
             return True
 
     def _deletionRequirements(self):
+        """Determine what operations must be performed to delete this branch.
+
+        Two dictionaries are returned, one for items that must be deleted,
+        one for items that must be altered.  The item in question is the
+        key, and the value is a user-facing string explaining why the item
+        is affected.
+
+        As well as the dictionaries, this method returns a list of callables
+        that may be called to perform the alterations needed.
+        """
         from canonical.launchpad.database.codeimport import CodeImportSet
         alterations = {}
         deletions = {}
@@ -353,7 +363,8 @@ class Branch(SQLBase):
         return alterations, deletions, alteration_operations
 
     def deletionRequirements(self):
-        alterations, deletions, alteration_operations = (
+        """See `IBranch`."""
+        alterations, deletions, _ignored = (
             self._deletionRequirements())
         result = dict((k, ('alter', v)) for k, v in alterations.iteritems())
         # deletion entries should overwrite alteration entries
@@ -361,7 +372,15 @@ class Branch(SQLBase):
         return result
 
     def _breakReferences(self):
-        alterations, deletions, alteration_operations = (
+        """Break all external references to this branch.
+
+        NULLable references will be NULLed.  References which are not NULLable
+        will cause the item holding the reference to be deleted.
+
+        This function is guaranteed to perform the operations predicted by
+        deletionRequirements, because it uses the same backing function.
+        """
+        _alterations, deletions, alteration_operations = (
             self._deletionRequirements())
         for item in deletions:
             item.delete(item.id)

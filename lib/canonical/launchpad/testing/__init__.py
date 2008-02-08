@@ -151,6 +151,7 @@ class LaunchpadObjectFactory:
             **optional_branch_args)
 
     def makeBranchSubscription(self):
+        """Create a BranchSubscription."""
         branch = self.makeBranch()
         return branch.subscribe(self.makePerson(),
             BranchSubscriptionNotificationLevel.NOEMAIL, None)
@@ -201,6 +202,8 @@ class LaunchpadObjectFactory:
 
         The bug returned uses default values where possible. See
         `IBugSet.new` for more information.
+
+        :param branch: if supplied, this branch will be linked to the bug.
         """
         owner = self.makePerson()
         title = self.getUniqueString()
@@ -213,6 +216,10 @@ class LaunchpadObjectFactory:
         return bug
 
     def makeSpec(self, branch=None):
+        """Create a new, arbitrary Specification.
+
+        :param branch: if supplied, this will be linked to the spec.
+        """
         spec = getUtility(ISpecificationSet).new(
             self.getUniqueString(),
             self.getUniqueString(),
@@ -227,6 +234,13 @@ class LaunchpadObjectFactory:
         return spec
 
     def makeSeries(self, user_branch=None, import_branch=None):
+        """Create a new, arbitrary ProductSeries.
+
+        :param user_branch: If supplied, the branch to set as
+            ProductSeries.user_branch.
+        :param import_branch: If supplied, the branch to set as
+            ProductSeries.import_branch.
+        """
         product = self.makeProduct()
         series = product.newSeries(product.owner, self.getUniqueString(),
             self.getUniqueString(), user_branch)
@@ -235,6 +249,7 @@ class LaunchpadObjectFactory:
         return series
 
     def makeCodeImport(self):
+        """Create a new, arbitrary CodeImport."""
         vcs_imports = getUtility(ILaunchpadCelebrities).vcs_imports
         branch = self.makeBranch(owner=vcs_imports)
         import_set = getUtility(ICodeImportSet)
