@@ -282,4 +282,63 @@ decent error message:
   <div...Your upload was ignored because you didn't select a file....
   ...Please select a file and try again.</div>...
 
+Let's try now a tarball upload. Should work:
+
+  >>> evo_owner_browser.open(
+  ...     'http://translations.launchpad.dev/evolution/trunk/'
+  ...     '+translations-upload')
+
+  >>> test_file_name = os.path.join(
+  ...     os.path.dirname(canonical.launchpad.__file__),
+  ...     'pagetests/rosetta/xx-translation-import-queue.tar')
+  >>> tarball = open(test_file_name)
+
+  >>> evo_owner_browser.getControl('File').add_file(
+  ...     tarball, 'application/x-gzip', test_file_name)
+  >>> evo_owner_browser.getControl('Request Upload').click()
+  >>> evo_owner_browser.url
+  'http://translations.launchpad.dev/evolution/trunk/+translations-upload'
+  >>> for tag in find_tags_by_class(evo_owner_browser.contents, 'message'):
+  ...     print tag
+  <div...Thank you for your upload. 1 files from the tarball will be reviewed...
+
+We can handle an empty file disguised as a bzipped tarfile:
+
+  >>> evo_owner_browser.open(
+  ...     'http://translations.launchpad.dev/evolution/trunk/'
+  ...     '+translations-upload')
+
+  >>> test_file_name = os.path.join(
+  ...     os.path.dirname(canonical.launchpad.__file__),
+  ...     'pagetests/rosetta/empty.tar.bz2')
+  >>> tarball = open(test_file_name)
+
+  >>> evo_owner_browser.getControl('File').add_file(
+  ...     tarball, 'application/x-gzip', test_file_name)
+  >>> evo_owner_browser.getControl('Request Upload').click()
+  >>> evo_owner_browser.url
+  'http://translations.launchpad.dev/evolution/trunk/+translations-upload'
+  >>> for tag in find_tags_by_class(evo_owner_browser.contents, 'message'):
+  ...     print tag
+  <div...Nothing has happened...
+
+And also a truncated tarball inside a bzip2 wrapper:
+
+  >>> evo_owner_browser.open(
+  ...     'http://translations.launchpad.dev/evolution/trunk/'
+  ...     '+translations-upload')
+
+  >>> test_file_name = os.path.join(
+  ...     os.path.dirname(canonical.launchpad.__file__),
+  ...     'pagetests/rosetta/truncated.tar.bz2')
+  >>> tarball = open(test_file_name)
+
+  >>> evo_owner_browser.getControl('File').add_file(
+  ...     tarball, 'application/x-gzip', test_file_name)
+  >>> evo_owner_browser.getControl('Request Upload').click()
+  >>> evo_owner_browser.url
+  'http://translations.launchpad.dev/evolution/trunk/+translations-upload'
+  >>> for tag in find_tags_by_class(evo_owner_browser.contents, 'message'):
+  ...     print tag
+  <div...>Nothing has happened...
 
