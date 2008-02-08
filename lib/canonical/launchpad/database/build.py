@@ -499,15 +499,17 @@ class BuildSet:
         queries.append("Archive.id = Build.archive")
         clauseTables.append('Archive')
         if user is not None:
-            if not user.inTeam(getUtility(ILaunchpadCelebrities).admin):
+            if not (user.inTeam(getUtility(ILaunchpadCelebrities).admin)
+                    or
+                    user.inTeam(
+                        getUtility(ILaunchpadCelebrities).buildd_admin)):
                 queries.append("""
-                (Archive.private = FALSE OR
-                %s IN (SELECT TeamParticipation.person
+                (Archive.private = FALSE
+                 OR %s IN (SELECT TeamParticipation.person
                        FROM TeamParticipation
-                       WHERE TeamParticipation.person = %s AND
-                       TeamParticipation.team = Archive.owner)
-                )
-                """ % sqlvalues(user, user))
+                       WHERE TeamParticipation.person = %s
+                           AND TeamParticipation.team = Archive.owner)
+                )""" % sqlvalues(user, user))
         else:
             queries.append("Archive.private = FALSE")
 

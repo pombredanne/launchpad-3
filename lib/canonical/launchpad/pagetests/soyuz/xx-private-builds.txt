@@ -2,13 +2,13 @@
 
 A build is considered private if it is a build being done in an IArchive that
 is marked as private.  Private builds will not be apparent anywhere in the
-UI.  There are several places where information is can be presented
+UI.  There are several places where information can be presented
 differently depending on whether the user is permitted to see the build
 or not.  A permitted user is one who is the archive's owner, a member of
-its team or an administrator.
+its team, a BuilddAdministrator or a Launchpad administrator.
 
 
-== Builder portlet details ==
+== Builder portlet details and builder index page ==
 
 The builder-portlet-details portlet appears on the builder +index page
 and usually shows some status information (see 20-builder-index.txt).
@@ -35,6 +35,18 @@ the "frog" builder.
     >>> frog.builderok = True
     >>> random_build = 2
     >>> trash = BuildQueue(build=cprov_builds[random_build], builder=frog)
+
+We'll also make name12 a member of the launchpad-buildd-admins team, so we
+can use him to see builds from a buildd-admin perspective.
+
+    >>> name12 = getUtility(IPersonSet).getByName("name12")
+    >>> buildd_admins = getUtility(
+    ...     IPersonSet).getByName("launchpad-buildd-admins")
+    >>> from canonical.launchpad.interfaces.person import (
+    ...     TeamMembershipStatus)
+    >>> buildd_admins.addMember(
+    ...     name12, reviewer=name12, status=TeamMembershipStatus.APPROVED)
+
     >>> flush_database_updates()
     >>> logout()
 
@@ -50,7 +62,16 @@ private build:
     Status IDLE (AUTO)
     ...
 
-Administrators are allowed to see the build:
+and also the main area:
+
+    >>> print extract_text(anon_browser.contents)
+    Build machine The frog builder
+    ...
+    Current status
+    The frog builder is idle.
+    ...
+
+Launchpad Administrators are allowed to see the build in the portlet:
 
     >>> admin_browser.open("http://launchpad.dev/+builds/frog")
     >>> print extract_text(
@@ -60,7 +81,36 @@ Administrators are allowed to see the build:
     Status BUILDING i386 build of ... RELEASE [cprov] (AUTO)
     ...
 
-cprov is also allowed to see his own build:
+and also the main area:
+
+    >>> print extract_text(admin_browser.contents)
+    Build machine The frog builder
+    ...
+    Current status
+    i386 build of iceweasel 1.0 in ubuntu warty RELEASE
+    ...
+
+Buildd Administrators are allowed to see the build in the portlet:
+
+    >>> name12_browser = setupBrowser(auth="Basic test@canonical.com:test")
+    >>> name12_browser.open("http://launchpad.dev/+builds/frog")
+    >>> print extract_text(
+    ...     find_tag_by_id(name12_browser.contents, 'portlet-details'))
+    The frog builder details
+    ...
+    Status BUILDING i386 build of ... RELEASE [cprov] (AUTO)
+    ...
+
+and also the main area:
+
+    >>> print extract_text(name12_browser.contents)
+    Build machine The frog builder
+    ...
+    Current status
+    i386 build of iceweasel 1.0 in ubuntu warty RELEASE
+    ...
+
+cprov is also allowed to see his own build in the portlet:
 
     >>> cprov_browser = setupBrowser(
     ...     auth="Basic celso.providelo@canonical.com:cprov")
@@ -72,42 +122,7 @@ cprov is also allowed to see his own build:
     Status BUILDING i386 build of ... RELEASE [cprov] (AUTO)
     ...
 
-
-== Builder index page ==
-
-The builder index page (+builds/<builder>) shows what that builder is
-currently doing.  It either says it's idle, or gives a description
-of the package it's currently building with a snippet of the build log.
-
-If the build is private, the page will say that it's idle even though it's
-not, for a non-privileged user:
-
-    >>> print anon_browser.url
-    http://launchpad.dev/+builds/frog
-
-    >>> print extract_text(anon_browser.contents)
-    Build machine The frog builder
-    ...
-    Current status
-    The frog builder is idle.
-    ...
-
-For admins, the page will show the build:
-
-    >>> print admin_browser.url
-    http://launchpad.dev/+builds/frog
-
-    >>> print extract_text(admin_browser.contents)
-    Build machine The frog builder
-    ...
-    Current status
-    i386 build of iceweasel 1.0 in ubuntu warty RELEASE
-    ...
-
-And of course cprov can see his own build:
-
-    >>> print cprov_browser.url
-    http://launchpad.dev/+builds/frog
+and also the main area:
 
     >>> print extract_text(cprov_browser.contents)
     Build machine The frog builder

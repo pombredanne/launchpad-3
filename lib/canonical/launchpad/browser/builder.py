@@ -204,10 +204,8 @@ class BuilderView(CommonBuilderView, BuildRecordsView):
         is currently building a private build.
         """
         if self.context.currentjob:
-            archive = self.context.currentjob.build.archive
-            if archive.private:
-                if not check_permission('launchpad.View', archive):
-                    return False
+            return check_permission(
+                'launchpad.View', self.context.currentjob.build)
 
         return True
 
