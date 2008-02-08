@@ -482,7 +482,11 @@ class TestHWDBSubmissionRelaxNGValidation(TestCase):
 
         # Other values than 'Z', '+hh:mm' or '-hh:mm' in the timezone part
         # are detected as errors.
-        self.assertDateErrorIsDetected('2007-09-28T16:09 20.1234567x')
+        self.assertDateErrorIsDetected('2007-09-28T16:09:20.1234567x')
+        self.assertDateErrorIsDetected('2007-09-28T16:09:20.1234567+01')
+        self.assertDateErrorIsDetected('2007-09-28T16:09:20.1234567+01:')
+        self.assertDateErrorIsDetected('2007-09-28T16:09:20.1234567+01:2')
+        self.assertDateErrorIsDetected('2007-09-28T16:09:20.1234567+0:30')
 
         # The values for month, day, hour, minute, timzone must be in their
         # respective valid range.
@@ -2184,13 +2188,9 @@ class TestHWDBSubmissionRelaxNGValidation(TestCase):
         sample_data = self.replaceSampledata(
             data=self.sample_data,
             replace_text='',
-            from_text='<target>',
+            from_text='<target',
             to_text='</target>')
-        sample_data = self.replaceSampledata(
-            data=sample_data,
-            replace_text='',
-            from_text='<target>',
-            to_text='</target>')
+        sample_data = sample_data.replace('<target id="43"/>', '')
         result, submission_id = self.runValidator(sample_data)
         self.assertNotEqual(
             result, None,
@@ -2375,10 +2375,22 @@ class TestHWDBSubmissionRelaxNGValidation(TestCase):
 
     def testTargetTagAttributes(self):
         """Test the validation of <target> tag attributes."""
-        # This tag has no attributes.
+        # This tag has the required attribute "id".
         sample_data = self.replaceSampledata(
             data=self.sample_data,
-            replace_text='<target foo="bar">',
+            replace_text='<target>',
+            from_text='<target',
+            to_text='>')
+        result, submission_id = self.runValidator(sample_data)
+        self.assertErrorMessage(
+            submission_id, result,
+            'Element target failed to validate attributes',
+             'missing attribute "id" for <target>')
+
+        # Other attributes are not allowed.
+        sample_data = self.replaceSampledata(
+            data=self.sample_data,
+            replace_text='<target id="1" foo="bar">',
             from_text='<target',
             to_text='>')
         result, submission_id = self.runValidator(sample_data)
@@ -2389,28 +2401,22 @@ class TestHWDBSubmissionRelaxNGValidation(TestCase):
 
     def testTargetTagCData(self):
         """Test the validation of <target> tag CDATA content."""
-        # The consistency of the CDATA content is not validated.
-        # While this tag is supposed to contain IDs assigned to other
-        # tags, it is neither checked, if the content is numeric,
-        # nor if another tag with this ID exists. This check must be
-        # done by the parser.
         sample_data = self.replaceSampledata(
             data=self.sample_data,
-            replace_text='<target>no_id</target>',
+            replace_text='<target id="2">nonsense</target>',
             from_text='<target',
             to_text='</target>')
         result, submission_id = self.runValidator(sample_data)
-        self.assertNotEqual(
+        self.assertEqual(
             result, None,
-            'Inconsistent content of <target> unexpectedly treated as '
-                'invalid')
+            'CDATA content of <target> treated as valid')
 
     def testTargetTagValidSubtag(self):
         """Test the validation of the valid <target> sub-tag <driver>."""
         # The only allowed sub-tag is <driver>.
         sample_data = self.replaceSampledata(
             data=self.sample_data,
-            replace_text='<target>42<driver>foo</driver></target>',
+            replace_text='<target id="42"><driver>foo</driver></target>',
             from_text='<target',
             to_text='</target>')
         result, submission_id = self.runValidator(sample_data)
@@ -2422,7 +2428,7 @@ class TestHWDBSubmissionRelaxNGValidation(TestCase):
         """Test the validation of an invalid <target> sub-tag."""
         sample_data = self.replaceSampledata(
             data=self.sample_data,
-            replace_text='<target>42<nonsense/></target>',
+            replace_text='<target id="42"><nonsense/></target>',
             from_text='<target',
             to_text='</target>')
         result, submission_id = self.runValidator(sample_data)
@@ -2436,7 +2442,8 @@ class TestHWDBSubmissionRelaxNGValidation(TestCase):
         # This tag has no attributes.
         sample_data = self.replaceSampledata(
             data=self.sample_data,
-            replace_text='<target>42<driver bar="baz">foo</driver></target>',
+            replace_text=
+                '<target id="42"><driver bar="baz">foo</driver></target>',
             from_text='<target',
             to_text='</target>')
         result, submission_id = self.runValidator(sample_data)
@@ -2448,7 +2455,8 @@ class TestHWDBSubmissionRelaxNGValidation(TestCase):
         # Sub-tags are not allowed.
         sample_data = self.replaceSampledata(
             data=self.sample_data,
-            replace_text='<target>42<driver>foo<nonsense/></driver></target>',
+            replace_text=
+                '<target id="42"><driver>foo<nonsense/></driver></target>',
             from_text='<target',
             to_text='</target>')
         result, submission_id = self.runValidator(sample_data)
