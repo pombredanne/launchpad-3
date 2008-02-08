@@ -2619,11 +2619,11 @@ class BugTaskRemoveQuestionView(LaunchpadFormView):
             self.context.bug.subscribe(question.owner, self.user)
         self.request.response.addNotification(
             structured(
-                'Removed Question #%%(qid)s: <a href="%s">%%(title)s<a>.' %
+                'Removed Question #%s: <a href="%s">%s<a>.',
+                str(question.id),
                 canonical_url(question),
-                qid=str(question.id),
-                title=question.title))
-                       
+                question.title))
+
         comment = data.get('comment', None)
         if comment is not None:
             self.context.bug.newMessage(
