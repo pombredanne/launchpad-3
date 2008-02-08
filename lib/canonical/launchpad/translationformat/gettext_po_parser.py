@@ -453,6 +453,21 @@ class POHeader:
         self._last_translator = u'%s <%s>' % (name, email)
 
 
+# Special escape sequences.
+ESCAPE_MAP = {
+    'a': '\a',
+    'b': '\b',
+    'f': '\f',
+    'n': '\n',
+    'r': '\r',
+    't': '\t',
+    'v': '\v',
+    '"': '"',
+    '\'': '\'',
+    '\\': '\\',
+    }
+
+
 class POParser(object):
     """Parser class for Gettext files."""
 
@@ -636,6 +651,84 @@ class POParser(object):
         # convert buffered input to the encoding specified in the PO header
         self._decode()
 
+    def _unescapeNumericCharSequence(self, string):
+        """Un-escape leading sequence of escaped numeric character codes.
+
+        This is for characters given in hexadecimal or octal escape notation.
+
+        :return: a tuple: first, any leading part of `string` as an unescaped
+            string (empty if `string` did not start with a numeric escape
+            sequence), and second, the remainder of `string` after the leading
+            numeric escape sequences have been parsed.
+        """
+        escaped_string = ''
+        position = 0
+        length = len(string)
+        while position + 1 < length and string[position] == '\\':
+            # Handle escaped characters given as numeric character codes.
+            # These will still be in the original encoding.  We extract the
+            # whole sequence of escaped chars to recode them later into
+            # Unicode in a single call.
+            lead_char = string[position + 1]
+            if lead_char == 'x':
+                # Hexadecimal escape.
+                position += 4
+            elif lead_char.isdigit():
+                # Octal escape.
+                position += 2
+                # Up to two more octal digits.
+                for i in xrange(2):
+                    if string[position].isdigit():
+                        position += 1
+                    else:
+                        break
+            elif lead_char in ESCAPE_MAP:
+                # It's part of our mapping table, we ignore it here.
+                break
+            else:
+                raise TranslationFormatSyntaxError(
+                    line_number=self._lineno,
+                    message=("Unknown escape sequence %s" %
+                             string[position:position + 2]))
+
+        if position == 0:
+            # No escaping to be done.
+            return '', string
+
+        # We found some text escaped that should be recoded to Unicode.
+        # First, we unescape it.
+        escaped_string, string = string[:position], string[position:]
+        unescaped_string = escaped_string.decode('string-escape')
+
+        if (self._translation_file is not None and
+            self._translation_file.header is not None):
+            # There is a header, so we know the original encoding for
+            # the given string.
+            charset = self._translation_file.header.charset
+            know_charset = True
+        else:
+            # We don't know the original encoding of the imported file so we
+            # cannot get the right values.  We try ASCII.
+            # XXX JeroenVermeulen 2008-02-08: might as well try UTF-8 here.
+            # It's a superset, and anything that's not UTF-8 is very unlikely
+            # to validate as UTF-8.
+            charset = 'ascii'
+            know_charset = False
+
+        try:
+            decoded_text = unescaped_string.decode(charset)
+        except UnicodeDecodeError:
+            if know_charset:
+                message = ("Could not decode escaped string as %s: (%s)"
+                           % (charset, escaped_string))
+            else:
+                message = ("Could not decode escaped string: (%s)"
+                           % escaped_string)
+            raise TranslationFormatInvalidInputError(
+                line_number=self._lineno, message=message)
+
+        return decoded_text, string
+
     def _parseQuotedString(self, string):
         r"""Parse a quoted string, interpreting escape sequences.
 
@@ -702,19 +795,6 @@ class POParser(object):
             raise TranslationFormatSyntaxError(
                 line_number=self._lineno, message="String is not quoted")
 
-        escape_map = {
-            'a': '\a',
-            'b': '\b',
-            'f': '\f',
-            'n': '\n',
-            'r': '\r',
-            't': '\t',
-            'v': '\v',
-            '"': '"',
-            '\'': '\'',
-            '\\': '\\',
-            }
-
         # Remove initial quote char
         string = string[1:]
         output = ''
@@ -744,72 +824,23 @@ class POParser(object):
                         message=("Extra content found after string: (%s)" %
                                  string))
                 break
-            elif string[0] == '\\' and string[1] in escape_map:
-                # We got one of the special escaped chars we know about, we
-                # unescape them using the mapping table we have.
-                output += escape_map[string[1]]
-                string = string[2:]
-                continue
-
-            escaped_string = ''
-            while string[0] == '\\':
-                # Let's handle any normal char escaped. This kind of chars are
-                # still in the original encoding so we need to extract the
-                # whole block of escaped chars to recode them later into
-                # Unicode.
-                if string[1] == 'x':
-                    # hexadecimal escape
-                    escaped_string += string[:4]
-                    string = string[4:]
-                elif string[1].isdigit():
-                    # octal escape
-                    escaped_string += string[:2]
-                    string = string[2:]
-                    # up to two more octal digits
-                    for i in range(2):
-                        if string[0].isdigit():
-                            escaped_string += string[0]
-                            string = string[1:]
-                        else:
-                            break
-                elif string[1] in escape_map:
-                    # It's part of our mapping table, we ignore it here.
-                    break
-                else:
+            elif string[0] == '\\':
+                if len(string) == 1:
+                    # Escaped newline.  The gettext docs say not to do it,
+                    # msgfmt accepts it, and our parser currently isn't able
+                    # to handle it.
                     raise TranslationFormatSyntaxError(
                         line_number=self._lineno,
-                        message="Unknown escape sequence %s" % string[:2])
-            if escaped_string:
-                # We found some text escaped that should be recoded to
-                # Unicode.
-                # First, we unescape it.
-                unescaped_string = escaped_string.decode('string-escape')
-
-                if (self._translation_file is not None and
-                    self._translation_file.header is not None):
-                    # There is a header, so we know the original encoding for
-                    # the given string.
-                    charset = self._translation_file.header.charset
-                    try:
-                        output += unescaped_string.decode(charset)
-                    except UnicodeDecodeError:
-                        raise TranslationFormatInvalidInputError(
-                            line_number=self._lineno,
-                            message=(
-                                "Could not decode escaped string as %s: (%s)"
-                                    % (charset, escaped_string)))
+                        message="Backslash at end of line.")
+                elif string[1] in ESCAPE_MAP:
+                    # We got one of the special escaped chars we know about.
+                    # Unescape it using the mapping table.
+                    output += ESCAPE_MAP[string[1]]
+                    string = string[2:]
                 else:
-                    # We don't know the original encoding of the imported file
-                    # so we cannot get the right values. We store the string
-                    # assuming that is a valid ASCII escape sequence.
-                    try:
-                        output += unescaped_string.decode('ascii')
-                    except UnicodeDecodeError:
-                        raise TranslationFormatInvalidInputError(
-                            line_number=self._lineno,
-                            message=(
-                                "Could not decode escaped string: (%s)" % (
-                                    escaped_string)))
+                    unescaped, string = (
+                        self._unescapeNumericCharSequence(string))
+                    output += unescaped
             else:
                 # It's a normal char, we just store it and jump to next one.
                 output += string[0]
