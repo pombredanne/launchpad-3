@@ -484,7 +484,7 @@ the most common number of plural forms:
     >>> evolution_dv.plural_forms
     2
 
-== uncachedExport ==
+== export ==
 
 This method serializes an IPOFile as a .po file.
 
@@ -499,7 +499,7 @@ Get a concrete POFile we know doesn't have a UTF-8 encoding.
 
 Now, let's export it with its default encoding.
 
-    >>> stream = pofile.uncachedExport()
+    >>> stream = pofile.export()
     >>> stream_list = stream.splitlines()
 
 The header is not changed.
@@ -522,7 +522,7 @@ encoding.
 
 Now, let's force the UTF-8 encoding.
 
-    >>> stream = pofile.uncachedExport(force_utf8=True)
+    >>> stream = pofile.export(force_utf8=True)
     >>> stream_list = stream.splitlines()
 
 We can see that the header has been updated to have UTF-8
@@ -546,7 +546,7 @@ singular remains unchanged.
 
 So for a concrete export, we have a message like:
 
-    >>> print pofile_es.uncachedExport(force_utf8=True).decode('utf8')
+    >>> print pofile_es.export(force_utf8=True).decode('utf8')
     # traducci...
     ...
     #: addressbook/gui/widgets/foo.c:345
@@ -574,7 +574,7 @@ When it changes...
 
 ...the export reflects that change.
 
-    >>> print pofile_es.uncachedExport(force_utf8=True).decode('utf8')
+    >>> print pofile_es.export(force_utf8=True).decode('utf8')
     # traducci...
     ...
     #: addressbook/gui/widgets/foo.c:345
@@ -652,305 +652,6 @@ Also, we created it without translations.
 
     >>> translation_message.translations
     [None, None, None]
-
-
-== export and is_cached_export_valid ==
-
-The export method is used to get a .po file from our database rows. It's
-strongly related with is_cached_export_valid, which drives whether the export
-should be a full export from our database or just return an already
-cached value.
-
-We need this to be able to store dates inside database.
-
-    >>> from canonical.database.sqlbase import flush_database_caches
-
-Get hold of a PO file which has been exported before.
-
-    >>> from canonical.launchpad.database import POFile
-    >>> pofile = POFile.get(1)
-
-The way to know whether there is a previous export is to have a value in
-IPOFile.exportfile. That's a link to a librarian file containing a cached
-export.
-
-    >>> pofile.exportfile is None
-    False
-    >>> old_cached_file_id = pofile.exportfile.id
-
-However, it would be old, so it doesn't have a valid cache.
-
-    >>> pofile.is_cached_export_valid
-    False
-
-Now ask it to export itself.
-
-    >>> export = pofile.export()
-    >>> export.split('\n')[0]
-    '# traducci\xc3\xb3n de es.po al Spanish'
-
-    # Now, because of a SQLObject quirk, we need to call .sync() on the PO file.
-    # This is because calling .export() has set pofile.exporttime to the magic
-    # constant UTC_NOW. This would normally be fine, as the attribute would not
-    # normally be accessed again in the same SQLObject session, and it would
-    # appear as a datetime value the next time around. However, in this case, we
-    # need to access it immediately, so we need to write it to the database and
-    # read it back again.
-    >>> pofile.sync()
-
-Because the PO file has been exported, it will have updated the cache.
-
-    >>> pofile.is_cached_export_valid
-    True
-
-Which is different than previous one:
-
-    >>> old_cached_file_id != pofile.exportfile.id
-    True
-    >>> old_cached_file_id = pofile.exportfile.id
-
-    # In order to have different datetimes for the export time of the pofile,
-    # and for any new stuff we do, lets commit a transaction.
-    >>> transaction.commit()
-
-is_exported_cache_valid attribute detects any translation change done
-in the IPOFile and invalidates the cache.
-
-    # We can see current value before we do a change, so we are completely sure
-    # that the exported file includes the modification.
-    >>> print export.decode('UTF-8')
-    #...
-    #: addressbook/addressbook-errors.xml.h:6
-    msgid "Failed to authenticate with LDAP server."
-    msgstr ""
-    ...
-
-Let's submit a translation to the PO file. This is going to be an empty
-translation submission.
-
-    >>> from canonical.launchpad.database import Person
-    >>> person = Person.get(1)
-    >>> msgid = u"Failed to authenticate with LDAP server."
-
-Right now, there is no translation existing for this message.
-
-    >>> print pofile.getCurrentTranslationMessage(msgid).translations
-    [None]
-
-So adding an empty one produces that...
-
-    >>> potmsgset = pofile.potemplate.getPOTMsgSetByMsgIDText(msgid)
-    >>> new_translation_message = potmsgset.updateTranslation(
-    ...     pofile, person, {0: u''}, is_fuzzy=False,
-    ...     is_imported=True, lock_timestamp=datetime.datetime.now(UTC))
-    >>> flush_database_caches() # Store modification dates in database
-    >>> print new_translation_message.translations
-    [None]
-    >>> print new_translation_message.date_reviewed
-    None
-    >>> new_translation_message.is_empty
-    True
-
-... the cache remains valid.
-
-    >>> pofile.is_cached_export_valid
-    True
-
-When we actually update untranslated pomsgset with a new translation,
-cache is invalidated, but for the new imported translation, date_reviewed is
-not set.
-
-    >>> new_tm = new_translation_message.potmsgset.updateTranslation(
-    ...     new_translation_message.pofile, person, {0: 'Foo.'},
-    ...     is_fuzzy=False, is_imported=True,
-    ...     lock_timestamp=datetime.datetime.now(UTC))
-    >>> flush_database_caches() # Store modification dates in database
-    >>> new_tm == translation_message
-    False
-    >>> print new_tm.translations
-    [u'Foo.']
-    >>> print new_tm.date_reviewed
-    None
-    >>> new_tm.is_empty
-    False
-
-    >>> pofile.is_cached_export_valid
-    False
-
-Exporting a pofile regenerates the cache.
-
-    >>> export = pofile.export()
-    >>> export is not None
-    True
-
-And we can see that it's applied in the exported file.
-
-    >>> print export.decode('UTF-8')
-    #...
-    #: addressbook/addressbook-errors.xml.h:6
-    msgid "Failed to authenticate with LDAP server."
-    msgstr "Foo."
-    ...
-    >>> pofile.is_cached_export_valid
-    True
-
-Setting a new translation directly through Launchpad (not-published)
-updates the date_reviewed value and invalidates the cache.
-
-    >>> new_tm = new_translation_message.potmsgset.updateTranslation(
-    ...     new_translation_message.pofile, person, {0: u'Blah.'},
-    ...     is_fuzzy=False, is_imported=False,
-    ...     lock_timestamp=datetime.datetime.now(UTC))
-    >>> flush_database_caches()
-    >>> new_tm.is_current
-    True
-    >>> print new_tm.translations
-    [u'Blah.']
-    >>> print new_tm.reviewer.name
-    sabdfl
-    >>> new_tm.date_reviewed is None
-    False
-    >>> pofile.date_changed==new_tm.date_reviewed
-    True
-
-Another export run generates a new cached file that contains that new
-translation.
-
-    # First we invalidate the cache manually, because everything is inside
-    # one transaction and we will get the same value with now() being used
-    # in both pofile.exporttime and msgset.date_reviewed.
-    >>> pofile.exportfile = None
-    >>> export = pofile.export()
-    >>> export is not None
-    True
-
-And we can see that it's applied in the exported file.
-
-    >>> print export.decode('UTF-8')
-    #...
-    #: addressbook/addressbook-errors.xml.h:6
-    msgid "Failed to authenticate with LDAP server."
-    msgstr "Blah."
-    ...
-    >>> old_cached_file_id != pofile.exportfile.id
-    True
-    >>> pofile.is_cached_export_valid
-    True
-
-There is a corner case in the way we check that the cached export is valid.
-When the IPOFile has no submissions at all we don't have a way to know
-when was last time that a translation was updated, because there are no
-translations.
-
-This tests two specific things:
-
- - That a PO file with no translations can be exported.
- - The situation where there is a cached export for a file with no
-   translations, and there is no submission which we can use to check the
-   cache's validity.
-
-    >>> empty_pofile = pofile.potemplate.newPOFile('cy')
-    >>> empty_pofile.lasttranslator is None
-    True
-    >>> empty_pofile.is_cached_export_valid
-    False
-
-    # There is something exported.
-    >>> len(empty_pofile.export()) > 0
-    True
-
-    >>> empty_pofile.is_cached_export_valid
-    True
-
-Also, the export is robust enough to handle a situation where Librarian is not
-available.
-
-    # To demonstrate it, we are going to shutdown Librarian.
-    >>> from canonical.testing import LibrarianLayer
-    >>> LibrarianLayer.hide()
-
-At this point, librarian is not available, but the export is still working.
-
-    >>> pofile = POFile.get(1)
-    >>> pofile.is_cached_export_valid
-    True
-    >>> old_cached_file_id = pofile.exportfile.id
-    >>> len(pofile.export()) > 0
-    ERROR:root:Error fetching a cached file from librarian
-    Traceback (most recent call last):
-    ...
-    LookupError: ...
-    WARNING:root:Error uploading a cached file into librarian
-    ...
-    UploadFailed: (111, 'Connection refused')
-    True
-
-Although the cache is still pointing to previous value because it cannot be
-updated.
-
-    >>> pofile.exportfile.id == old_cached_file_id
-    True
-
-Even when we there is no cached file, the export will work and will not be
-stored due the problem with Librarian.
-
-    >>> pofile.date_changed = datetime.datetime.now(UTC)
-    >>> len(pofile.export()) > 0
-    WARNING:root:Error uploading a cached file into librarian
-    ...
-    UploadFailed: (111, 'Connection refused')
-    True
-    >>> pofile.is_cached_export_valid
-    False
-
-    # We restore now Librarian
-    >>> LibrarianLayer.reveal()
-
-When an IPOFile has the wrong encoding defined in its header, the system
-exports it as UTF-8
-
-    >>> pofile.header = 'Content-Type: text/plain; charset=broken\n'
-    >>> pofile.sync()
-    >>> export_content = pofile.export()
-    >>> unicode(export_content)
-    Traceback (most recent call last):
-    ...
-    UnicodeDecodeError: ...
-    >>> print export_content.decode('UTF-8')
-    #...
-    "Content-Type: text/plain; charset=UTF-8\n"
-    ...
-
-Given that pofile's export time is newer than potemplate's date last
-updated, cached export is valid.
-
-    # Since all of the changes in this test are in the same transaction we
-    # must first commit the current transaction so we can do a POFile
-    # export in another. This is important so we are sure we get different
-    # time stamps for POFile.date_updated and POFile.exporttime.
-    >>> transaction.commit()
-    >>> discarded = pofile.export()
-    >>> transaction.commit()
-    >>> pofile = POFile.get(1)
-    >>> pofile.exporttime >= pofile.potemplate.date_last_updated
-    True
-    >>> pofile.is_cached_export_valid
-    True
-
-But if potemplate's date last updated is newer, cached export is not valid
-anymore.
-
-    >>> pofile.date_changed >= pofile.potemplate.date_last_updated
-    True
-    >>> pofile.is_cached_export_valid
-    True
-    >>> from datetime import timedelta
-    >>> pofile.potemplate.date_last_updated = (
-    ...     pofile.date_changed + timedelta(seconds=60))
-    >>> pofile.date_changed >= pofile.potemplate.date_last_updated
-    False
-    >>> pofile.is_cached_export_valid
-    False
 
 
 == getPOTMsgSetChangedInLaunchpad ==
@@ -1045,6 +746,7 @@ Lets re-translate that:
     ...     pofile_changed, pofile_changed.owner, {0: u'new translation'},
     ...     is_fuzzy=False, is_imported=False,
     ...     lock_timestamp=datetime.datetime.now(UTC))
+    >>> from canonical.database.sqlbase import flush_database_caches
     >>> flush_database_caches()
 
 And make sure that the count of messages changed in Launchpad _has_ changed:
@@ -1217,7 +919,6 @@ translated for a given POFile.
     have       0     tiene      False     False
      cards     0      tarjetas  False     False
     evoluti... 0     boohoo     False     False
-    Failed ... 0     Blah.      False     False
     The loc... 0     La ubic... False     False
     %d contact 0     %d cont... False     True
     %d contact 1     %d cont... False     True
@@ -1366,6 +1067,67 @@ Similar happens for email credits as with name credits.
     ...     context=u"EMAIL OF TRANSLATORS")
     >>> alsa_translation.prepareTranslationCredits(new_kde_email_credits)
     u',,carlos@canonical.com'
+
+
+== POFileToTranslationFileDataAdapter ==
+
+POFileToTranslationFileDataAdapter is an adapter to export a POFile
+object. It implements the ITranslationFileData interface which is a
+common file format to convert from one file format to another.
+
+    >>> from canonical.launchpad.interfaces import ITranslationFileData
+    >>> evolution_sourcepackagename = sourcepackagenameset['evolution']
+    >>> ubuntu = distributionset['ubuntu']
+    >>> hoary = ubuntu['hoary']
+    >>> potemplatesubset = potemplateset.getSubset(
+    ...     distroseries=hoary, sourcepackagename=evolution_sourcepackagename)
+    >>> evolution_22 = potemplatesubset['evolution-2.2']
+    >>> evolution_ja = evolution_22.getPOFileByLang('ja')
+
+Getting the translation file data is just a matter of adapt the object
+to the ITranslationFileData interface.
+
+    >>> translation_file_data = ITranslationFileData(evolution_ja)
+
+We get an updated header based on some metadata in our database
+instead of the imported one stored in POFile.header.
+
+    >>> print evolution_ja.header
+    Project-Id-Version: evolution
+    Report-Msgid-Bugs-To: FULL NAME <EMAIL@ADDRESS>
+    POT-Creation-Date: 2005-05-06 20:39:27.778946+00:00
+    PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE
+    Last-Translator: FULL NAME <EMAIL@ADDRESS>
+    Language-Team: Japanese <ja@li.org>
+    MIME-Version: 1.0
+    Content-Type: text/plain; charset=UTF-8
+    Content-Transfer-Encoding: 8bit
+    Plural-Forms: nplurals=1; plural=0
+
+    >>> print translation_file_data.header.getRawContent()
+    Project-Id-Version: evolution
+    Report-Msgid-Bugs-To: FULL NAME <EMAIL@ADDRESS>
+    POT-Creation-Date: 2005-04-07 14:10+0200
+    PO-Revision-Date: 2005-10-11 23:08+0000
+    Last-Translator: Carlos Perell... <carlos@canonical.com>
+    Language-Team: Japanese <ja@li.org>
+    MIME-Version: 1.0
+    Content-Type: text/plain; charset=UTF-8
+    Content-Transfer-Encoding: 8bit
+    Plural-Forms: nplurals=1; plural=0;
+    X-Launchpad-Export-Date: ...-...-... ...:...+...
+    X-Generator: Launchpad (build ...)
+
+We can see that last translator is Rosetta Administrators, just like
+the updated header says:
+
+    >>> evolution_ja.lasttranslator.displayname
+    u'Carlos Perell\xf3 Mar\xedn'
+
+And the PO Revision Date matches when was the PO file last changed.
+
+    >>> print evolution_ja.date_changed
+    2005-10-11 23:08:01.899322+00:00
 
 
 = POFile Security tests =

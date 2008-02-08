@@ -457,11 +457,6 @@ class TranslationImporter:
                 potmsgset.filereferences = message.file_references
                 potmsgset.flagscomment = flags_comment
 
-                # Finally, we need to invalidate the cached translation file
-                # exports so new downloads get the new messages from this
-                # import.
-                self.potemplate.invalidateCache()
-
                 # By default translation template uploads are done only by
                 # editors.
                 is_editor = True
