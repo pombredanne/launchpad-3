@@ -17,10 +17,6 @@
         <allow interface='canonical.lazr.interfaces.ICollectionResource' />
     </class>
 
-    <class class="canonical.lazr.enum.DBItem">
-        <allow interface='canonical.lazr.interfaces.IJSONPublishable' />
-    </class>
-
     <class class="canonical.lazr.rest.EntryResource">
         <allow interface='canonical.lazr.interfaces.IEntryResource' />
     </class>
@@ -28,6 +24,12 @@
     <class class="canonical.lazr.rest.ScopedCollectionResource">
         <allow interface='canonical.lazr.interfaces.ICollectionResource' />
     </class>
+
+    <adapter
+        for="canonical.lazr.enum.BaseItem"
+        provides="canonical.lazr.interfaces.IJSONPublishable"
+        factory="canonical.lazr.rest.JSONItem"
+        />
 
     <adapter
         for="canonical.launchpad.interfaces.IBug"

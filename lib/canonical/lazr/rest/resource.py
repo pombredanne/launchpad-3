@@ -9,6 +9,7 @@ __all__ = [
     'Entry',
     'EntryResource',
     'HTTPResource',
+    'JSONItem',
     'OrderBasedScopedCollection',
     'ReadOnlyResource',
     'ScopedCollection',
@@ -20,12 +21,14 @@ from datetime import datetime
 import simplejson
 import urllib
 
-from zope.component import getMultiAdapter
+from zope.component import adapts, getMultiAdapter
 from zope.interface import implements, directlyProvides
 from zope.proxy import isProxy
 from zope.publisher.interfaces import NotFound
 from zope.schema.interfaces import IField, IObject
 from zope.security.proxy import removeSecurityProxy
+
+from canonical.lazr.enum import BaseItem
 
 # XXX leonardr 2008-01-25 bug=185958:
 # canonical_url code should be moved into lazr.
@@ -48,10 +51,8 @@ class ResourceJSONEncoder(simplejson.JSONEncoder):
         """Convert the given object to a simple data structure."""
         if isinstance(obj, datetime):
             return obj.isoformat()
-        if IJSONPublishable.providedBy(obj):
-            return obj.toDataForJSON()
         if isProxy(obj):
-            # We have a security-proxyied version of a built-in
+            # We have a security-proxied version of a built-in
             # type. We create a new version of the type by copying the
             # proxied version's content. That way the container is not
             # security proxied (and simplejson will now what do do
@@ -64,7 +65,20 @@ class ResourceJSONEncoder(simplejson.JSONEncoder):
                 return tuple(obj)
             if isinstance(underlying_object, dict):
                 return dict(obj)
-        return simplejson.JSONEncoder.default(self, obj) # Error out.
+        return IJSONPublishable(obj).toDataForJSON()
+
+
+class JSONItem:
+    """JSONPublishable adapter for lazr.enum."""
+    adapts(BaseItem)
+    implements(IJSONPublishable)
+
+    def __init__(self, context):
+        self.context = context
+
+    def toDataForJSON(self):
+        """See `ISJONPublishable`"""
+        return str(self.context.title)
 
 
 class HTTPResource:

@@ -11,20 +11,20 @@ __all__ = [
 
 
 from zope.component import adapts
-from zope.schema import Bool, Datetime, Int, Object, Text, TextLine
+from zope.schema import Bool, Choice, Datetime, Int, Object, Text, TextLine
 
 from canonical.lazr.interfaces import IEntry
 from canonical.lazr.rest import Collection, Entry
 from canonical.lazr.rest.schema import CollectionField
 
-from canonical.launchpad.interfaces import IBug, IBugTask, IPerson
+from canonical.launchpad.interfaces import (
+    BugTaskImportance, BugTaskStatus, IBug, IBugTask, IPerson)
 from canonical.lp import decorates
 
 
 class IBugTaskEntry(IEntry):
     """The part of a bugtask that we expose through the web service."""
 
-    id = Int(title=u"Bug Task #", required=True, readonly=True)
     bug = Object(schema=IBug)
     #product = Object(schema=IProject)
     #product_series = Object(schema=IProductSeries)
@@ -32,8 +32,12 @@ class IBugTaskEntry(IEntry):
     #distribution = Object(schema=IDistribution)
     #distro_series = Object(schema=IDistroSeries)
     #milestone = Object(schema=IMilestone)
-    status = TextLine(title=u'Status')
-    importance = TextLine(title=u'Importance')
+    status = Choice(
+        title=u'Status', vocabulary=BugTaskStatus,
+        default=BugTaskStatus.NEW)
+    importance = Choice(
+        title=u'Importance', vocabulary=BugTaskImportance,
+        default=BugTaskImportance.UNDECIDED)
     status_explanation = Text(
         title=u"Status notes (optional)", required=False)
     assignee = Object(schema=IPerson)
@@ -60,9 +64,7 @@ class IBugTaskEntry(IEntry):
         "Committed or Fix Released.")
     owner = Object(schema=IPerson)
 
-    #target = Object(schema=IMilestone)
-    target_uses_malone = Bool(
-        title=u"Whether the bugtask's target uses Launchpad officially")
+    #target = Object(schema=IBugTarget)
     title = Text(title=u"The title of the bug related to this bugtask",
                          readonly=True)
     related_tasks = CollectionField(title=u"Other tasks on the same bug.",
@@ -79,7 +81,6 @@ class IBugTaskEntry(IEntry):
 
     #subscribers
     #package_component
-    #delta_against: would be a good candidate for a custom GET method.
 
 
 class BugTaskEntry(Entry):

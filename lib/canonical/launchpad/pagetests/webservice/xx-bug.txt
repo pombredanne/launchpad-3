@@ -40,11 +40,13 @@ At the top level we provide a collection of bugs.
 Bugs are indexed by number beneath the top-level collection.
 
   >>> from urlparse import urlsplit
-  >>> bug_one_url = urlsplit(bugs[0]['self_link'])[2]
+  >>> bug_one_url = bugs[0]['self_link']
+  >>> bug_one_url
+  u'http://api.launchpad.dev/bugs/1'
   >>> bug_one = webservice(r"""
   ... GET %s HTTP/1.1
   ... Host: api.launchpad.dev
-  ... """ % bug_one_url).jsonBody()
+  ... """ % urlsplit(bug_one_url)[2]).jsonBody()
   >>> bug_one == bugs[0]
   True
 
@@ -132,7 +134,6 @@ data in a bug task is derived from the bug.
    (u'date_confirmed', None),
    (u'date_created', u'2004-01-04T03:49:22.790240+00:00'),
    (u'date_inprogress', None),
-   (u'id', 4),
    (u'importance', u'Low'),
    (u'is_complete', False),
    (u'owner_link', u'http://api.launchpad.dev/people/name12'),
@@ -141,7 +142,6 @@ data in a bug task is derived from the bug.
    (u'self_link', u'http://api.launchpad.dev/bugtasks/4'),
    (u'status', u'Confirmed'),
    (u'status_explanation', u''),
-   (u'target_uses_malone', False),
    (u'title', u'Bug #1 in mozilla-firefox (Debian):...')]
 
   >>> bugtask_path = urlsplit(bug_one_bugtasks[0]['self_link'])[2]
