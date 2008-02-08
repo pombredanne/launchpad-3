@@ -118,10 +118,7 @@ updated. Errors in getRemoteStatus() will produce OOPS reports.
     ...                   Exception]:
     ...         example_bugwatch.lastchecked = None
     ...         external_bugtracker.get_remote_status_error = error
-    ...         try:
-    ...             external_bugtracker.updateBugWatches([example_bugwatch])
-    ...         except:
-    ...             pass
+    ...         external_bugtracker.updateBugWatches([example_bugwatch])
     ...         print "%s: %s (%s)" % (
     ...             example_bugwatch.last_error_type.title,
     ...             example_bugwatch.lastchecked is not None,

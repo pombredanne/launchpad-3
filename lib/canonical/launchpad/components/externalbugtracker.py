@@ -156,7 +156,7 @@ def report_oops(message=None, properties=None, info=None):
     return request
 
 
-def report_warning(message=None, properties=None, info=None):
+def report_warning(message, properties=None, info=None):
     """Create and report a warning as an OOPS.
 
     If no exception info is passed in this will create a generic
@@ -174,6 +174,22 @@ def report_warning(message=None, properties=None, info=None):
             return report_oops(message, properties)
     else:
         return report_oops(message, properties, info)
+
+
+def attempt(expr, **locals):
+    """Attempt to eval an expression, ignoring almost all errors.
+
+    This is useful during error conditions when trying to gather
+    properties for OOPS reporting.
+
+    :param locals: The locals mapping for `eval`.
+    """
+    try:
+        return eval(expr, None, locals)
+    except (SystemExit, KeyboardInterrupt):
+        raise
+    except:
+        return None
 
 
 _exception_to_bugwatcherrortype = [
@@ -331,21 +347,14 @@ class ExternalBugTracker:
         Subclasses should override this, but chain their properties
         after these, perhaps with the use of `itertools.chain`.
         """
-        def value(name, obj=self):
-            try:
-                for name in name.split('.'):
-                    obj = getattr(obj, name)
-            except AttributeError:
-                return None
-            else:
-                return obj
-
-        yield 'batch_size', value('batch_size')
-        yield 'batch_query_threshold', value('batch_query_threshold')
-        yield 'import_comments', value('import_comments')
-        yield 'bugtracker', value('bugtracker.name')
-        yield 'externalbugtracker', value('__class__.__name__')
-        yield 'baseurl', value('baseurl')
+        def _attempt(expr):
+            return attempt(expr, self=self)
+        yield 'batch_size', _attempt('self.batch_size')
+        yield 'batch_query_threshold', _attempt('self.batch_query_threshold')
+        yield 'import_comments', _attempt('self.import_comments')
+        yield 'bugtracker', _attempt('self.bugtracker.name')
+        yield 'externalbugtracker', _attempt('self.__class__.__name__')
+        yield 'baseurl', _attempt('self.baseurl')
 
     def info(self, message):
         """Record an informational message related to this bug tracker."""
@@ -511,8 +520,7 @@ class ExternalBugTracker:
                         bug_id, bug_tracker_url, local_ids),
                     properties=[
                         ('bug_id', bug_id),
-                        ('local_ids', local_ids)],
-                    info=True)
+                        ('local_ids', local_ids)])
 
 
 #
