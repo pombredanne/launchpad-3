@@ -70,7 +70,9 @@ def is_test_module(module_path):
     Otherwise returns False.
     """
     name_splitted = module_path.split('.')
-    return 'tests' in name_splitted or 'ftests' in name_splitted
+    return ('tests' in name_splitted or
+            'ftests' in name_splitted or
+            'testing' in name_splitted)
 
 
 class attrsgetter:

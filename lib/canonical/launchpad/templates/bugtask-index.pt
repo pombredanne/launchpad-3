@@ -76,7 +76,7 @@
      tal:condition="context/bug/can_expire"
     >
     <tal:expiration_message replace="view/expiration_message" />
-    (<a href="https://help.launchpad.net/BugStatuses">find out why</a>)
+    (<a href="https://help.launchpad.net/BugExpiry">find out why</a>)
   </p>
 
   <p class="informational message"
