@@ -1,7 +1,7 @@
 = Subscriptions to bug notifications =
 
 Any logged in user can subscribe themselves to bug notifications for any
-Launchpad structure, as well as subscriber any of the teams to which
+Launchpad structure, as well as subscribe any of the teams to which
 they belong.
 
     >>> browser.addHeader('Authorization', 'Basic test@canonical.com:test')
@@ -16,8 +16,8 @@ We subscribe the Landscape team to Ubuntu.
 
     >>> print extract_text(find_portlet(browser.contents, 'Bug subscriptions'))
     Bug subscriptions
-    For Ubuntu Linux:
-    Landscape Developers
+      For Ubuntu Linux:
+        Landscape Developers
 
 And subscribe some people to the Firefox source package in Ubuntu.
 
@@ -37,22 +37,14 @@ And subscribe some people to the Firefox source package in Ubuntu.
 
 Sample Person and the Landscape team are now subscribed.
 
-    >>> from zope.component import getUtility
-    >>> from canonical.launchpad.interfaces import IDistributionSet
-    >>> from canonical.launchpad.ftests import login, logout, ANONYMOUS
-    >>> login(ANONYMOUS)
-    >>> ubuntu = getUtility(IDistributionSet).get(1)
-    >>> ubuntu_mozilla_firefox = ubuntu.getSourcePackage("mozilla-firefox")
-    >>> logout()
-
     >>> print extract_text(find_portlet(browser.contents, 'Bug subscriptions'))
     Bug subscriptions
-    For Source Package "mozilla-firefox" in Ubuntu Linux:
-    Foo Bar
-    Landscape Developers
-    Sample Person
-    For Ubuntu Linux:
-    Landscape Developers
+      For Source Package "mozilla-firefox" in Ubuntu Linux:
+        Foo Bar
+        Landscape Developers
+        Sample Person
+      For Ubuntu Linux:
+        Landscape Developers
 
 Sample Person can also unsubscribe himself and the Landscape team.
 
@@ -64,23 +56,28 @@ Sample Person can also unsubscribe himself and the Landscape team.
     >>> browser.getControl('Save these changes').click()
     >>> print extract_text(find_portlet(browser.contents, 'Bug subscriptions'))
     Bug subscriptions
-    For Source Package "mozilla-firefox" in Ubuntu Linux:
-    Foo Bar
-    For Ubuntu Linux:
-    Landscape Developers
+      For Source Package "mozilla-firefox" in Ubuntu Linux:
+        Foo Bar
+      For Ubuntu Linux:
+        Landscape Developers
 
 
 == Additional options for distribuion drivers ==
 
-When editting the subscriptions for a package, a distribution drive
+When editing the subscriptions for a package, a distribution driver
 can subscribe any Launchpad user.
 
 Firstly, we appoint Sample Person as the driver for the distribution.
 
     >>> from canonical.database.sqlbase import flush_database_updates
-    >>> from canonical.launchpad.interfaces import IPersonSet
+    >>> from canonical.launchpad.interfaces import (
+    ...     IDistributionSet, IPersonSet)
+    >>> from canonical.launchpad.ftests import login, logout
+    >>> from zope.component import getUtility
     >>> login('foo.bar@canonical.com')
     >>> driver = getUtility(IPersonSet).getByEmail('test@canonical.com')
+    >>> from zope.component import getUtility
+    >>> ubuntu = getUtility(IDistributionSet).get(1)
     >>> ubuntu.driver = driver
     >>> flush_database_updates()
     >>> logout()
@@ -102,11 +99,11 @@ No Privileges Person is now subscribed...
 
     >>> print extract_text(find_portlet(browser.contents, 'Bug subscriptions'))
     Bug subscriptions
-    For Source Package "mozilla-firefox" in Ubuntu Linux:
-    Foo Bar
-    No Privileges Person
-    For Ubuntu Linux:
-    Landscape Developers
+      For Source Package "mozilla-firefox" in Ubuntu Linux:
+        Foo Bar
+        No Privileges Person
+      For Ubuntu Linux:
+        Landscape Developers
 
 ...has an entry in the "Remove subscriptions" list...
 
@@ -121,11 +118,11 @@ No Privileges Person is now subscribed...
     "No Privileges Person" was successfully unsubscribed from mozilla-firefox in ubuntu.
     >>> print extract_text(find_portlet(browser.contents, 'Bug subscriptions'))
     Bug subscriptions
-    For Source Package "mozilla-firefox" in Ubuntu Linux:
-    Foo Bar
-    For Ubuntu Linux:
-    Landscape Developers
- 
+      For Source Package "mozilla-firefox" in Ubuntu Linux:
+        Foo Bar
+      For Ubuntu Linux:
+        Landscape Developers
+
 The checkbox to unsubscribe No Privileges Person is no longer present on
 the page.
 
@@ -134,7 +131,7 @@ the page.
     ...
     LookupError: label '\xa0No Privileges Person'
 
-Sample Person is no longer the distribution driver.
+We clean up by removing Sample Person as the distribution driver.
 
     >>> login('foo.bar@canonical.com')
     >>> ubuntu.driver = None
@@ -147,10 +144,10 @@ purges the submitted form data from now unexpected values.
 
     >>> print extract_text(find_portlet(browser.contents, 'Bug subscriptions'))
     Bug subscriptions
-    For Source Package "mozilla-firefox" in Ubuntu Linux:
-    Foo Bar
-    For Ubuntu Linux:
-    Landscape Developers
+      For Source Package "mozilla-firefox" in Ubuntu Linux:
+        Foo Bar
+      For Ubuntu Linux:
+        Landscape Developers
 
     >>> remove_other = browser.getControl('\xa0Foo Bar')
     >>> remove_other.selected = True
@@ -159,12 +156,12 @@ purges the submitted form data from now unexpected values.
     >>> browser.getControl('Save these changes').click()
     >>> print extract_text(find_portlet(browser.contents, 'Bug subscriptions'))
     Bug subscriptions
-    For Source Package "mozilla-firefox" in Ubuntu Linux:
-    Foo Bar
-    For Ubuntu Linux:
-    Landscape Developers
-    
-When Sample Person now visits the bug subscription page, he sees no longer
+      For Source Package "mozilla-firefox" in Ubuntu Linux:
+        Foo Bar
+      For Ubuntu Linux:
+        Landscape Developers
+
+When Sample Person now visits the bug subscription page, he no longer sees
 the UI elements for the subscription/unsubscription of arbitrary persons.
 
     >>> browser.open(
