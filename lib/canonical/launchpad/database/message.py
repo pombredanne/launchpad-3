@@ -21,8 +21,9 @@ import pytz
 from canonical.encoding import guess as ensure_unicode
 from canonical.launchpad.helpers import get_filename_from_message_id
 from canonical.launchpad.interfaces import (
-    IMessage, IMessageSet, IMessageChunk, IPersonSet, ILibraryFileAliasSet,
-    UnknownSender, InvalidEmailMessage, NotFoundError, PersonCreationRationale)
+    ILibraryFileAliasSet, IMessage, IMessageChunk, IMessageSet, IPersonSet,
+    InvalidEmailMessage, NotFoundError, PersonCreationRationale,
+    UnknownSender)
 
 from canonical.database.sqlbase import SQLBase
 from canonical.database.constants import UTC_NOW
@@ -30,7 +31,7 @@ from canonical.database.datetimecol import UtcDateTimeCol
 
 # this is a hard limit on the size of email we will be willing to store in
 # the database.
-MAX_EMAIL_SIZE = 10*1024*1024
+MAX_EMAIL_SIZE = 10 * 1024 * 1024
 
 class Message(SQLBase):
     """A message. This is an RFC822-style message, typically it would be
@@ -52,7 +53,8 @@ class Message(SQLBase):
     bugs = SQLRelatedJoin('Bug', joinColumn='message', otherColumn='bug',
         intermediateTable='BugMessage')
     chunks = SQLMultipleJoin('MessageChunk', joinColumn='message')
-    raw = ForeignKey(foreignKey='LibraryFileAlias', dbName='raw', default=None)
+    raw = ForeignKey(foreignKey='LibraryFileAlias', dbName='raw',
+                     default=None)
     bugattachments = SQLMultipleJoin('BugAttachment', joinColumn='message')
 
     def __iter__(self):
@@ -215,7 +217,8 @@ class MessageSet:
             raw_email_message = filealias
 
         # Find the message subject
-        subject = self._decode_header(parsed_message.get('subject', '')).strip()
+        subject = self._decode_header(parsed_message.get('subject', ''))
+        subject = subject.strip()
 
         if owner is None:
             # Try and determine the owner. We raise a NotFoundError
@@ -292,10 +295,12 @@ class MessageSet:
         # to give hints to non-MIME aware clients
         #
         # Determine the encoding to use for non-multipart messages, and the
-        # preamble and epilogue of multipart messages. We default to iso-8859-1
-        # as it seems fairly harmless to cope with old, broken email clients
-        # (The RFCs state US-ASCII as the default character set).
-        # default_charset = parsed_message.get_content_charset() or 'iso-8859-1'
+        # preamble and epilogue of multipart messages. We default to
+        # iso-8859-1 as it seems fairly harmless to cope with old, broken
+        # mail clients (The RFCs state US-ASCII as the default character
+        # set).
+        # default_charset = (parsed_message.get_content_charset() or
+        #                    'iso-8859-1')
         #
         # XXX: kiko 2005-09-23: Is default_charset only useful here?
         #
@@ -348,7 +353,8 @@ class MessageSet:
                         file=cStringIO(content),
                         contentType=part['content-type']
                         )
-                    MessageChunk(message=message, sequence=sequence, blob=blob)
+                    MessageChunk(message=message, sequence=sequence,
+                                 blob=blob)
                     sequence += 1
 
         # Don't store the epilogue
