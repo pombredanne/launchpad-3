@@ -119,7 +119,7 @@ class NewEvents(object):
         event_set = getUtility(ICodeImportEventSet)
         self.initial = set(event.id for event in event_set.getAll())
 
-    def __str__(self):
+    def summary(self):
         """Render a summary of the newly created CodeImportEvent objects."""
         lines = []
         for event in self:
@@ -326,7 +326,7 @@ class TestCodeImportJobWorkflowDeletePendingJob(unittest.TestCase,
         INVALID = CodeImportReviewStatus.INVALID
         removeSecurityProxy(reviewed_import).review_status = INVALID
         self.assertNotEqual(reviewed_import.import_job, None)
-        # ICodeImportJob does not allow setting state, so we must
+        # ICodeImportJob does not allow setting 'state', so we must
         # use removeSecurityProxy.
         RUNNING = CodeImportJobState.RUNNING
         removeSecurityProxy(reviewed_import.import_job).state = RUNNING
@@ -357,7 +357,7 @@ class TestCodeImportJobWorkflowRequestJob(unittest.TestCase,
                          '~vcs-imports/gnome-terminal/import')
         # Testing requestJob failure.
         import_job = reviewed_import.import_job
-        # ICodeImportJob does not allow setting state, so we must
+        # ICodeImportJob does not allow setting 'state', so we must
         # use removeSecurityProxy.
         removeSecurityProxy(import_job).state = CodeImportJobState.RUNNING
         self.assertFailure(
@@ -421,15 +421,15 @@ class TestCodeImportJobWorkflowRequestJob(unittest.TestCase,
         self.assertEqual(pending_job.requesting_user, None)
         # Set date_due in the past. ICodeImportJob does not allow setting
         # date_due, so we must use removeSecurityProxy.
-        overdue_date = datetime(1900, 1, 1, tzinfo=UTC)
-        removeSecurityProxy(pending_job).date_due = overdue_date
+        past_date = datetime(1900, 1, 1, tzinfo=UTC)
+        removeSecurityProxy(pending_job).date_due = past_date
         # requestJob only sets requesting_user.
         new_events = NewEvents()
         getUtility(ICodeImportJobWorkflow).requestJob(
             pending_job, no_priv)
         self.assertEqual(pending_job.requesting_user, no_priv)
         self.assertSqlAttributeEqualsDate(
-            pending_job, 'date_due', overdue_date)
+            pending_job, 'date_due', past_date)
         # When requestJob is successful, it creates a REQUEST event.
         [request_event] = list(new_events)
         self.assertEventLike(

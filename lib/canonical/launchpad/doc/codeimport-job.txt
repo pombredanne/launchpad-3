@@ -69,9 +69,9 @@ The other one has review_status set to REVIEWED.
     >>> print reviewed_import.review_status.name
     REVIEWED
 
-Some workflow methods expect the user that is requesting the action. We use
-the No Privileges Person, regardless of what privileges may be required to
-initiate the action.
+Some workflow methods expect the user that is requesting the action. We
+use the No Privileges Person, regardless of what privileges may be
+required to initiate the action.
 
     >>> from canonical.launchpad.interfaces import IPersonSet
     >>> person_set = getUtility(IPersonSet)
@@ -220,11 +220,14 @@ for running as soon as possible.
 
 The job request is also recorded in the CodeImportEvent audit trail.
 
-    >>> print new_events
+    >>> print new_events.summary()
     REQUEST ~vcs-imports/gnome-terminal/import no-priv
 
 Once a job has been requested by a user, it cannot be requested a second
-time until the job runs and terminates.
+time until the job runs and terminates.  This means that any Launchpad
+web application code that is going to call requestJob must first check
+the status and present the user with an appropriate message if the
+preconditions are not met.
 
     >>> workflow.requestJob(pending_job, nopriv)
     Traceback (most recent call last):
