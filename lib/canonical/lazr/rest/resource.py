@@ -50,7 +50,7 @@ class ResourceJSONEncoder(simplejson.JSONEncoder):
         if IJSONPublishable.providedBy(obj):
             return obj.toDataForJSON()
         if isProxy(obj):
-            # We have a security-proxyied version of a built-in
+            # We have a security-proxied version of a built-in
             # type. We create a new version of the type by copying the
             # proxied version's content. That way the container is not
             # security proxied (and simplejson will now what do do
