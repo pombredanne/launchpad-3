@@ -502,6 +502,8 @@ class IBranch(IHasOwner):
     code_is_browseable = Attribute(
         "Is the code in this branch accessable through codebrowse?")
 
+    code_import = Attribute("The associated CodeImport, if any.")
+
     def getBzrUploadURL(person=None):
         """Return the URL for this person to push to the branch.
 
@@ -688,7 +690,7 @@ class IBranchSet(Interface):
     def delete(branch, break_references=False):
         """Delete the specified branch.
 
-        Revisions associated with this branch will also be deleted.
+        BranchRevisions associated with this branch will also be deleted.
         :param break_references: If supplied, break any references to this
             branch by deleting items with mandatory references and
             NULLing other references.

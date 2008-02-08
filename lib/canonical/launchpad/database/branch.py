@@ -299,12 +299,16 @@ class Branch(SQLBase):
 
     def canBeDeleted(self):
         """See `IBranch`."""
-        # CodeImportSet imported here to avoid circular imports.
         if (len(self.deletionRequirements()) != 0):
             # Can't delete if the branch is associated with anything.
             return False
         else:
             return True
+
+    @property
+    def code_import(self):
+        from canonical.launchpad.database.codeimport import CodeImportSet
+        return CodeImportSet().getByBranch(self)
 
     def _deletionRequirements(self):
         """Determine what operations must be performed to delete this branch.
@@ -317,7 +321,6 @@ class Branch(SQLBase):
         As well as the dictionaries, this method returns a list of callables
         that may be called to perform the alterations needed.
         """
-        from canonical.launchpad.database.codeimport import CodeImportSet
         alterations = {}
         deletions = {}
         alteration_operations = []
@@ -356,9 +359,8 @@ class Branch(SQLBase):
                     series.import_branch = None
                 series.syncUpdate()
             alteration_operations.append(clear_user_branch)
-        code_import = CodeImportSet().getByBranch(self)
-        if code_import is not None:
-            deletions[code_import] = _(
+        if self.code_import is not None:
+            deletions[self.code_import] = _(
                 'This is the import data for this branch.')
         return alterations, deletions, alteration_operations
 

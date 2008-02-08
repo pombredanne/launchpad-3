@@ -40,6 +40,23 @@ from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
 
+class TestCodeImport(TestCase):
+
+    layer = LaunchpadZopelessLayer
+
+    def setUp(self):
+        login('test@canonical.com')
+        self.factory = LaunchpadObjectFactory()
+
+    def test_branchCodeImport(self):
+        """Ensure the codeImport property works correctly."""
+        code_import = self.factory.makeCodeImport()
+        branch = code_import.branch
+        self.assertEqual(code_import, branch.code_import)
+        CodeImportSet().delete(code_import.id)
+        self.assertEqual(None, branch.code_import)
+
+
 class TestBranchDeletion(TestCase):
     """Test the different cases that makes a branch deletable or not."""
 
@@ -191,6 +208,7 @@ class TestBranchDeletion(TestCase):
 
 
 class TestBranchDeletionConsequences(TestCase):
+    """Test determination and application of branch deletion consequences."""
 
     layer = LaunchpadZopelessLayer
 
