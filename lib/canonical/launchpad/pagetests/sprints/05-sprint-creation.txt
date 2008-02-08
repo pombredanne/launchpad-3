@@ -61,6 +61,14 @@ a error message.
   <BLANKLINE>
   This event can't start after it ends
 
+Also, the date is now presented in a canonicalised format, with time in
+minutes rather than second-level accuracy:
+
+  >>> user_browser.getControl('Starting Date and Time').value
+  '2006-10-13 09:15'
+  >>> user_browser.getControl('Finishing Date and Time').value
+  '2006-10-10 16:00'
+
 Fix the date and try again. We're redirected to the sprint home page
 for the new sprint.
 
