@@ -88,7 +88,6 @@ class BaseItem:
 
     The value is the short text string used to identify the item.
     """
-    implements(IJSONPublishable)
 
     sortkey = 0
     name = None
@@ -145,9 +144,6 @@ class BaseItem:
         return hash(self.title)
 
     def __str__(self):
-        return str(self.title)
-
-    def toDataForJSON(self):
         return str(self.title)
 
 
