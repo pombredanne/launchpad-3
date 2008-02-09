@@ -18,15 +18,17 @@ from zope.interface import Attribute, Interface
 from zope.schema import Datetime, Choice, Bool
 
 from canonical.launchpad import _
+from canonical.launchpad.fields import PublicPersonChoice
 from canonical.launchpad.interfaces import IHasOwner
 
 
 class IMentoringOffer(IHasOwner):
     """An offer of mentoring help."""
 
-    owner = Choice(title=_('Owner'), required=True, readonly=True,
+    owner = PublicPersonChoice(
+        title=_('Owner'), required=True, readonly=True,
         vocabulary='ValidPerson')
-    team = Choice(title=_('Team'), required=True,
+    team = PublicPersonChoice(title=_('Team'), required=True,
         vocabulary='UserTeamsParticipation')
     date_created = Datetime(
         title=_('Date Created'), required=True, readonly=True)

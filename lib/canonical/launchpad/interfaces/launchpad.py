@@ -12,6 +12,7 @@ from zope.schema import Bool, Choice, Int, TextLine
 from persistent import IPersistent
 
 from canonical.launchpad import _
+from canonical.launchpad.fields import PublicPersonChoice
 from canonical.launchpad.webapp.interfaces import ILaunchpadApplication
 
 # XXX kiko 2007-02-08:
@@ -350,7 +351,7 @@ class IHasProductAndAssignee(IHasProduct, IHasAssignee):
 class IHasSecurityContact(Interface):
     """An object that has a security contact."""
 
-    security_contact = Choice(
+    security_contact = PublicPersonChoice(
         title=_("Security Contact"),
         description=_(
             "The person or team who handles security-related bug reports"),

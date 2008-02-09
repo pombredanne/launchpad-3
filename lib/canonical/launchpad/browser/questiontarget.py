@@ -32,6 +32,7 @@ from zope.schema.vocabulary import SimpleVocabulary, SimpleTerm
 
 from canonical.cachedproperty import cachedproperty
 from canonical.launchpad import _
+from canonical.launchpad.fields import PublicPersonChoice
 from canonical.launchpad.helpers import (
     browserLanguages, is_english_variant, preferred_or_request_languages)
 from canonical.launchpad.browser.faqcollection import FAQCollectionMenu
@@ -607,13 +608,15 @@ class ManageAnswerContactView(UserSupportLanguagesMixin, LaunchpadFormView):
         for team in sorted(self.administrated_teams, key=sort_key):
             terms.append(SimpleTerm(team, team.name, team.displayname))
 
+        public_person_choice = PublicPersonChoice(
+            vocabulary=SimpleVocabulary(terms))
         return form.FormField(
             List(
                 __name__='answer_contact_teams',
                 title=_("Let the following teams be an answer contact for "
                         "$context",
                         mapping=dict(context=self.context.displayname)),
-                value_type=Choice(vocabulary=SimpleVocabulary(terms)),
+                value_type=public_person_choice,
                 required=False),
             custom_widget=self.custom_widgets['answer_contact_teams'])
 

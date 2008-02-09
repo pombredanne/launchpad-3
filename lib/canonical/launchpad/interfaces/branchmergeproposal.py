@@ -16,7 +16,7 @@ from zope.interface import Attribute, Interface
 from zope.schema import Choice, Datetime, Int
 
 from canonical.launchpad import _
-from canonical.launchpad.fields import Whiteboard
+from canonical.launchpad.fields import PublicPersonChoice, Whiteboard
 from canonical.lazr import DBEnumeratedType, DBItem
 
 
@@ -93,7 +93,7 @@ class IBranchMergeProposal(Interface):
         title=_('DB ID'), required=True, readonly=True,
         description=_("The tracking number for this question."))
 
-    registrant = Choice(
+    registrant = PublicPersonChoice(
         title=_('Person'), required=True,
         vocabulary='ValidPersonOrTeam', readonly=True,
         description=_('The person who registered the landing target.'))

@@ -16,6 +16,7 @@ from zope.interface import Interface, Attribute
 from zope.schema import Choice
 
 from canonical.launchpad import _
+from canonical.launchpad.fields import PublicPersonChoice
 from canonical.lazr import DBEnumeratedType, DBItem
 
 
@@ -109,7 +110,7 @@ class IBranchVisibilityTeamPolicy(Interface):
     The team may be null, in which case the rule applies to everyone.
     """
 
-    team = Choice(
+    team = PublicPersonChoice(
         title=_('Team'), required=False, vocabulary='ValidPersonOrTeam',
         description=_("Specifies the team that the policy applies to. "
                       "If None then the policy applies to everyone."))

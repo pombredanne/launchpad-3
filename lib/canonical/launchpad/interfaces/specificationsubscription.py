@@ -12,13 +12,14 @@ __all__ = [
 from zope.interface import Interface
 from zope.schema import Choice, Int, Bool
 from canonical.launchpad import _
+from canonical.launchpad.fields import PublicPersonChoice
 
 class ISpecificationSubscription(Interface):
     """A subscription for a person to a specification."""
 
     id = Int(
         title=_('ID'), required=True, readonly=True)
-    person = Choice(
+    person = PublicPersonChoice(
             title=_('Subscriber'), required=True,
             vocabulary='ValidPersonOrTeam', readonly=True,
             description=_(

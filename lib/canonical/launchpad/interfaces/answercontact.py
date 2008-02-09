@@ -14,6 +14,7 @@ from zope.interface import Interface
 from zope.schema import Choice
 
 from canonical.launchpad import _
+from canonical.launchpad.fields import PublicPersonChoice
 
 
 class IAnswerContact(Interface):
@@ -23,7 +24,7 @@ class IAnswerContact(Interface):
     in a particular context.
     """
 
-    person = Choice(title=_('Answer Contact'), required=False,
+    person = PublicPersonChoice(title=_('Answer Contact'), required=False,
         description=_(
             "The person receiving notifications about all questions."),
         vocabulary='ValidPersonOrTeam')

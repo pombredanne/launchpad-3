@@ -9,7 +9,7 @@ from zope.interface import implements
 from sqlobject import ForeignKey
 
 from canonical.database.sqlbase import SQLBase
-from canonical.launchpad.database.person import PublicPersonValidator
+from canonical.launchpad.validators.person import PublicPersonValidator
 
 from canonical.launchpad.interfaces import IBugSubscription
 

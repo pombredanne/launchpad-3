@@ -14,6 +14,7 @@ from zope.interface import Attribute, Interface
 from zope.schema import Int, Choice, Datetime
 
 from canonical.launchpad import _
+from canonical.launchpad.fields import PublicPersonChoice
 
 from canonical.lazr import DBEnumeratedType, DBItem
 
@@ -87,10 +88,10 @@ class IStructuralSubscription(Interface):
         title=_('Distribution series'), required=False, readonly=True)
     sourcepackagename = Int(
         title=_('Source package name'), required=False, readonly=True)
-    subscriber = Choice(
+    subscriber = PublicPersonChoice(
         title=_('Subscriber'), required=True, vocabulary='ValidPersonOrTeam',
         readonly=True, description=_("The person subscribed."))
-    subscribed_by = Choice(
+    subscribed_by = PublicPersonChoice(
         title=_('Subscribed by'), required=True,
         vocabulary='ValidPersonOrTeam', readonly=True,
         description=_("The person creating the subscription."))

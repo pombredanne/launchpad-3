@@ -12,12 +12,13 @@ __all__ = [
 from zope.interface import Interface
 from zope.schema import Choice, Datetime
 from canonical.launchpad import _
+from canonical.launchpad.fields import PublicPersonChoice
 
 
 class ISprintAttendance(Interface):
     """An attendance of a person at a sprint."""
 
-    attendee = Choice(title=_('Attendee'), required=True,
+    attendee = PublicPersonChoice(title=_('Attendee'), required=True,
         vocabulary='ValidPersonOrTeam')
     sprint = Choice(title=_('The Sprint'), required=True,
         vocabulary='Sprint',

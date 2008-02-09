@@ -12,7 +12,7 @@ __all__ = [
 from zope.interface import Interface, Attribute
 from zope.schema import Choice, Int
 from canonical.launchpad import _
-from canonical.launchpad.interfaces.person import PublicPersonChoice
+from canonical.launchpad.fields import PublicPersonChoice
 
 class IBugSubscription(Interface):
     """The relationship between a person and a bug."""

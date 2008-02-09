@@ -13,6 +13,7 @@ from zope.schema import Datetime, Int, Choice, Text, TextLine
 
 from canonical.launchpad.interfaces import IHasOwner
 from canonical.launchpad import _
+from canonical.launchpad.fields import PublicPersonChoice
 
 
 class IRevision(IHasOwner):
@@ -20,7 +21,8 @@ class IRevision(IHasOwner):
 
     id = Int(title=_('The database revision ID'))
 
-    owner = Choice(title=_('Owner'), required=True, readonly=True,
+    owner = PublicPersonChoice(
+        title=_('Owner'), required=True, readonly=True,
         vocabulary='ValidPersonOrTeam')
     date_created = Datetime(
         title=_("Date Created"), required=True, readonly=True)

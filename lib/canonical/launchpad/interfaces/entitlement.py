@@ -19,7 +19,8 @@ from zope.interface import Attribute, Interface
 from zope.schema import Bool, Choice, Datetime, Int
 
 from canonical.launchpad import _
-from canonical.launchpad.fields import Whiteboard
+from canonical.launchpad.fields import (
+    PublicOrPrivatePersonChoice, PublicPersonChoice, Whiteboard)
 from canonical.lazr import DBEnumeratedType, DBItem
 
 
@@ -98,7 +99,7 @@ class IEntitlement(Interface):
         title=_("Entitlement id"),
         required=True,
         readonly=True)
-    person = Choice(
+    person = PublicOrPrivatePersonChoice(
         title=_('Person'),
         required=True,
         readonly=True,
@@ -134,14 +135,14 @@ class IEntitlement(Interface):
         description=_(
             "The amount used is the number of instances of a feature "
             "the person has used so far."))
-    registrant = Choice(
+    registrant = PublicPersonChoice(
         title=_('Registrant'),
         vocabulary='ValidPersonOrTeam',
         description=_(
             "Person who registered the entitlement.  "
             "May be None if created automatically."),
         readonly=True)
-    approved_by = Choice(
+    approved_by = PublicPersonChoice(
         title=_('Approved By'),
         vocabulary='ValidPersonOrTeam',
         description=_(

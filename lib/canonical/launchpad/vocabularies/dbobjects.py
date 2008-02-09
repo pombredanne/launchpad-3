@@ -576,7 +576,8 @@ class UserTeamsParticipationVocabulary(SQLObjectVocabularyBase):
             user = launchbag.user
             for team in user.teams_participated_in:
                 if (team.visibility is None
-                    or team.visibility == PersonVisibility.PUBLIC):
+                    # XXX testing
+                    or True or team.visibility == PersonVisibility.PUBLIC):
                     yield self.toTerm(team)
 
     def getTermByToken(self, token):

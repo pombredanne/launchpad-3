@@ -7,7 +7,9 @@
 
 __metaclass__ = type
 __all__ = [
-    'Person', 'PersonSet', 'SSHKey', 'SSHKeySet', 'WikiName', 'WikiNameSet',
+    'Person', 'PersonSet', 
+    'SSHKey', 'SSHKeySet',
+    'WikiName', 'WikiNameSet',
     'JabberID', 'JabberIDSet', 'IrcID', 'IrcIDSet']
 
 from datetime import datetime, timedelta
@@ -22,7 +24,6 @@ from zope.security.proxy import removeSecurityProxy
 from sqlobject import (
     BoolCol, ForeignKey, IntCol, MultipleJoin, SQLMultipleJoin,
     SQLObjectNotFound, SQLRelatedJoin, StringCol)
-from sqlobject.include.validators import Validator, InvalidField
 from sqlobject.sqlbuilder import AND, OR, SQLConstant
 
 from canonical.config import config
@@ -57,7 +58,6 @@ from canonical.launchpad.interfaces import (
     INACTIVE_ACCOUNT_STATUSES, IPasswordEncryptor, IPerson, IPersonSet,
     IPillarNameSet, IProduct, ISSHKey, ISSHKeySet, ISignedCodeOfConductSet,
     ISourcePackageNameSet,
-    is_valid_public_person_link, is_valid_private_or_public_person_link,
     ITeam, ITranslationGroupSet, IWikiName,
     IWikiNameSet, JoinNotAllowed, LoginTokenType,
     PersonCreationRationale, PersonVisibility,
@@ -97,6 +97,7 @@ from canonical.launchpad.database.teammembership import (
 from canonical.launchpad.database.question import QuestionPersonSearch
 
 from canonical.launchpad.searchbuilder import any
+from canonical.launchpad.validators.person import PublicPersonValidator
 
 
 class ValidPersonOrTeamCache(SQLBase):
@@ -106,45 +107,6 @@ class ValidPersonOrTeamCache(SQLBase):
     database triggers.
     """
     # Look Ma, no columns! (apart from id)
-
-
-class PersonValidatorBase(Validator):
-    def isValidPersonLink(self, person, state_object):
-        """To be overridden in child classes."""
-        raise NotImplementedError
-
-    def toPython(self, value, state=None):
-        if value is None:
-            return value
-        elif isinstance(value, int):
-            person = getUtility(IPersonSet).get(value)
-            if person is None:
-                raise InvalidField('No person with id=%d' % value,
-                                   value, state)
-        elif IPerson.providedBy(value):
-            person = value
-        else:
-            raise InvalidField('Cannot coerce to person object',
-                               value,
-                               state)
-        if not self.isValidPersonLink(person, state.soObject):
-            raise InvalidField(
-                'Cannot link person (name=%s, visibility=%s) to %s (name=%s)'
-                % (person.name, person.visibility.name,
-                   state.soObject, getattr(state.soObject, 'name', None)),
-                value,
-                state)
-        return value
-
-
-class PublicOrPrivatePersonValidator(PersonValidatorBase):
-    def isValidPersonLink(self, person, state_object):
-        return is_valid_public_or_private_person_link(person, state_object)
-
-
-class PublicPersonValidator(PersonValidatorBase):
-    def isValidPersonLink(self, person, state_object):
-        return is_valid_public_person_link(person, state_object)
 
 
 class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):

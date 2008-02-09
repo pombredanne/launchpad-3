@@ -16,7 +16,9 @@ from zope.interface import Interface, Attribute
 
 from canonical.launchpad import _
 from canonical.launchpad.fields import (
-    Description, ProductBugTracker, Summary, Title, URIField)
+    Description, IconImageUpload, LogoImageUpload, MugshotImageUpload,
+    ProductBugTracker, ProductNameField, PublicPersonChoice,
+    Summary, Title, URIField)
 from canonical.launchpad.interfaces.branchvisibilitypolicy import (
     IHasBranchVisibilityPolicy)
 from canonical.launchpad.interfaces.bugtarget import IBugTarget
@@ -33,8 +35,6 @@ from canonical.launchpad.interfaces.translationgroup import (
     IHasTranslationGroup)
 from canonical.launchpad.validators.name import name_validator
 from canonical.launchpad.interfaces.mentoringoffer import IHasMentoringOffers
-from canonical.launchpad.fields import (
-    IconImageUpload, LogoImageUpload, MugshotImageUpload, ProductNameField)
 from canonical.lazr import DBEnumeratedType, DBItem
 
 
@@ -105,21 +105,21 @@ class IProduct(IBugTarget, IHasAppointedDriver, IHasBranchVisibilityPolicy,
             and decisions around bug tracking, translation and security
             policy will apply to this project."""))
 
-    owner = Choice(
+    owner = PublicPersonChoice(
         title=_('Owner'),
         required=True,
         vocabulary='ValidOwner',
         description=_("""Project owner, it can either a valid Person or Team
             inside Launchpad context."""))
 
-    bugcontact = Choice(
+    bugcontact = PublicPersonChoice(
         title=_("Bug Contact"),
         description=_(
             "The person or team who will receive all bugmail for this "
             "project"),
         required=False, vocabulary='ValidPersonOrTeam')
 
-    driver = Choice(
+    driver = PublicPersonChoice(
         title=_("Driver"),
         description=_(
             "This person or team will be able to set feature goals for "

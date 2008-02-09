@@ -1,6 +1,67 @@
 # Copyright 2004-2006 Canonical Ltd.  All rights reserved.
 # pylint: disable-msg=E0211,W0401
 
+__metaclass__ = type
+__all__ = [
+    'IStrippedTextLine',
+    'ITitle',
+    'ISummary',
+    'IDescription',
+    'IWhiteboard',
+    'ITimeInterval',
+    'IBugField',
+    'IPasswordField',
+    'IAnnouncementDate',
+    'IShipItRecipientDisplayname',
+    'IShipItOrganization',
+    'IShipItCity',
+    'IShipItProvince',
+    'IShipItAddressline1',
+    'IShipItAddressline2',
+    'IShipItPhone',
+    'IShipItReason',
+    'IShipItQuantity',
+    'ITag',
+    'IURIField',
+    'IBaseImageUpload',
+    'StrippedTextLine',
+    'Title',
+    'Summary',
+    'Description',
+    'Whiteboard',
+    'AnnouncementDate',
+    'TimeInterval',
+    'BugField',
+    'DuplicateBug',
+    'Tag',
+    'PasswordField',
+    'UniqueField',
+    'ContentNameField',
+    'BlacklistableContentNameField',
+    'ShipItRecipientDisplayname',
+    'ShipItOrganization',
+    'ShipItCity',
+    'ShipItProvince',
+    'ShipItAddressline1',
+    'ShipItAddressline2',
+    'ShipItPhone',
+    'ShipItReason',
+    'ShipItQuantity',
+    'ProductBugTracker',
+    'URIField',
+    'FieldNotBoundError',
+    'BaseImageUpload',
+    'IconImageUpload',
+    'LogoImageUpload',
+    'MugshotImageUpload',
+    'PillarNameField',
+    'ProductNameField',
+    'is_valid_public_person_link',
+    'is_valid_public_or_private_person_link',
+    'PublicPersonChoice',
+    'PublicOrPrivatePersonChoice',
+    ]
+
 from StringIO import StringIO
 from textwrap import dedent
 
@@ -595,3 +656,42 @@ class ProductNameField(PillarNameField):
         from canonical.launchpad.interfaces.product import IProduct
         return IProduct
 
+
+def is_valid_public_person_link(person, other):
+    from canonical.launchpad.interfaces import IPerson, PersonVisibility
+    assert IPerson.providedBy(person)
+    if person.visibility in (PersonVisibility.PRIVATE,
+                             PersonVisibility.PRIVATE_MEMBERSHIP):
+        return False
+    else:
+        return True
+
+def is_valid_public_or_private_person_link(person, other):
+    from canonical.launchpad.interfaces import IPerson, PersonVisibility
+    assert IPerson.providedBy(person)
+    if person.visibility in (PersonVisibility.PRIVATE,
+                             PersonVisibility.PRIVATE_MEMBERSHIP):
+        if IPerson.providedBy(other) and other.visibility in (
+            PersonVisibility.PRIVATE, PersonVisibility.PRIVATE_MEMBERSHIP):
+            # private to private person link allowed
+            return True
+        else:
+            return False
+    else:
+        return True
+
+
+class PublicPersonChoice(Choice):
+    def constraint(self, value):
+        if is_valid_public_person_link(value, self.context):
+            return True
+        else:
+            return False
+
+
+class PublicOrPrivatePersonChoice(Choice):
+    def constraint(self, value):
+        if is_valid_public_or_private_person_link(value, self.context):
+            return True
+        else:
+            return False

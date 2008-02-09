@@ -22,8 +22,6 @@ __all__ = [
     'IPersonSet',
     'IPersonViewRestricted',
     'IRequestPeopleMerge',
-    'is_valid_public_person_link',
-    'is_valid_private_or_public_person_link',
     'ITeam',
     'ITeamContactAddressForm',
     'ITeamCreation',
@@ -31,8 +29,6 @@ __all__ = [
     'JoinNotAllowed',
     'PersonCreationRationale',
     'PersonVisibility',
-    'PublicPersonChoice',
-    'PublicOrPrivatePersonChoice',
     'TeamContactMethod',
     'TeamMembershipRenewalPolicy',
     'TeamMembershipStatus',
@@ -55,7 +51,7 @@ from canonical.lazr.rest.schema import CollectionField
 from canonical.launchpad import _
 from canonical.launchpad.fields import (
     BlacklistableContentNameField, IconImageUpload, LogoImageUpload,
-    MugshotImageUpload, PasswordField, StrippedTextLine)
+    MugshotImageUpload, PasswordField, PublicPersonChoice, StrippedTextLine)
 from canonical.launchpad.validators.name import name_validator
 from canonical.launchpad.interfaces.mentoringoffer import (
     IHasMentoringOffers)
@@ -649,8 +645,9 @@ class IPersonPublic(IHasSpecifications, IHasMentoringOffers,
         "Specifications this person has subscribed to, sorted newest first.")
     team_mentorships = Attribute(
         "All the offers of mentoring which are relevant to this team.")
-    teamowner = Choice(title=_('Team Owner'), required=False, readonly=False,
-                       vocabulary='ValidTeamOwner')
+    teamowner = PublicPersonChoice(
+        title=_('Team Owner'), required=False, readonly=False,
+        vocabulary='ValidTeamOwner')
     teamownerID = Int(title=_("The Team Owner's ID or None"), required=False,
                       readonly=True)
     teamdescription = Text(
@@ -1285,44 +1282,6 @@ class IPerson(IPersonPublic, IPersonViewRestricted, IPersonEditRestricted):
     """A Person."""
 
 
-def is_valid_public_person_link(person, other):
-    assert IPerson.providedBy(person)
-    if person.visibility in (PersonVisibility.PRIVATE,
-                             PersonVisibility.PRIVATE_MEMBERSHIP):
-        return False
-    else:
-        return True
-
-def is_valid_private_or_public_person_link(person, other):
-    assert IPerson.providedBy(person)
-    if person.visibility in (PersonVisibility.PRIVATE,
-                             PersonVisibility.PRIVATE_MEMBERSHIP):
-        if IPerson.providedBy(other) and other.visibility in (
-            PersonVisibility.PRIVATE, PersonVisibility.PRIVATE_MEMBERSHIP):
-            # private to private person link allowed
-            return True
-        else:
-            return False
-    else:
-        return True
-
-
-class PublicPersonChoice(Choice):
-    def constraint(self, value):
-        if is_valid_public_person_link(value, self.context):
-            return True
-        else:
-            return False
-
-
-class PublicOrPrivatePersonChoice(Choice):
-    def constraint(self, value):
-        if is_valid_private_or_public_person_link(value, self.context):
-            return True
-        else:
-            return False
-
-
 class IPersonEntry(IEntry):
     """The part of a person that we expose through the web service."""
 
@@ -1615,13 +1574,14 @@ class IAdminTeamMergeSchema(Interface):
 class IObjectReassignment(Interface):
     """The schema used by the object reassignment page."""
 
-    owner = Choice(title=_('Owner'), vocabulary='ValidOwner', required=True)
+    owner = PublicPersonChoice(title=_('Owner'), vocabulary='ValidOwner', 
+                               required=True)
 
 
 class ITeamReassignment(Interface):
     """The schema used by the team reassignment page."""
 
-    owner = Choice(
+    owner = PublicPersonChoice(
         title=_('Owner'), vocabulary='ValidTeamOwner', required=True)
 
 

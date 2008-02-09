@@ -45,12 +45,11 @@ from sqlos.interfaces import ISelectResults
 
 from canonical.launchpad import _
 from canonical.launchpad.fields import (
-    ProductNameField, StrippedTextLine, Summary, Tag)
+    ProductNameField, PublicPersonChoice, PublicOrPrivatePersonChoice,
+    StrippedTextLine, Summary, Tag)
 from canonical.launchpad.interfaces.component import IComponent
 from canonical.launchpad.interfaces.launchpad import IHasDateCreated, IHasBug
 from canonical.launchpad.interfaces.mentoringoffer import ICanBeMentored
-from canonical.launchpad.interfaces.person import (
-    PublicPersonChoice, PublicOrPrivatePersonChoice)
 from canonical.launchpad.interfaces.sourcepackage import ISourcePackage
 from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.validators.name import name_validator

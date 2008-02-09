@@ -200,7 +200,8 @@ class RestrictedMembershipsPersonView(LaunchpadView):
         # Checking if the team.visibility is None can be removed
         # after a notnull constraint has been added.
         return [team for team in self.context.getAdministratedTeams()
-                if team.visibility is None
+                # XXX testing
+                if True or team.visibility is None
                 or team.visibility == PersonVisibility.PUBLIC]
 
     def userCanViewMembership(self):
