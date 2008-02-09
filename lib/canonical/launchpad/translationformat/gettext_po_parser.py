@@ -652,7 +652,7 @@ class POParser(object):
         self._decode()
 
     def _unescapeNumericCharSequence(self, string):
-        """Un-escape leading sequence of escaped numeric character codes.
+        """Unescape leading sequence of escaped numeric character codes.
 
         This is for characters given in hexadecimal or octal escape notation.
 
