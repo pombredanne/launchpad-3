@@ -98,6 +98,7 @@ from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 from zope.formlib import form
 from zope.interface import implements
 from zope.component import getUtility
+from zope.publisher.interfaces import NotFound
 from zope.publisher.interfaces.browser import IBrowserPublisher
 from zope.schema import Choice, TextLine
 from zope.schema.vocabulary import SimpleVocabulary, SimpleTerm
@@ -1200,6 +1201,15 @@ class PersonClaimView(LaunchpadFormView):
     """The page where a user can claim an unvalidated profile."""
 
     schema = IPersonClaim
+
+    def initialize(self):
+        if self.context.is_valid_person_or_team:
+            # Valid teams and people aren't claimable. We pull the path
+            # out of PATH_INFO to make sure that the exception looks
+            # good for subclasses. We're that picky!
+            name = self.request['PATH_INFO'].split("/")[-1]
+            raise NotFound(self, name, request=self.request)
+        LaunchpadFormView.initialize(self)
 
     def validate(self, data):
         emailaddress = data.get('emailaddress')
