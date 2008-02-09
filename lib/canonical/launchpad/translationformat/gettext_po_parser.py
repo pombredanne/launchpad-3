@@ -656,7 +656,7 @@ class POParser(object):
         self._decode()
 
     def _unescapeNumericCharSequence(self, string):
-        """Un-escape leading sequence of escaped numeric character codes.
+        """Unescape leading sequence of escaped numeric character codes.
 
         This is for characters given in hexadecimal or octal escape notation.
 
@@ -807,14 +807,14 @@ class POParser(object):
             string = string[1:]
 
         output = ''
-        while string:
+        while len(string) > 0:
             if string[0] == '"':
                 # Reached the end of the quoted string.  It's rare, but there
                 # may be another quoted string on the same line.  It should be
                 # suffixed to what we already have, with any whitespace
                 # between the strings removed.
                 string = string[1:].lstrip()
-                if not string:
+                if len(string) == 0:
                     # End of line, end of string: the normal case
                     break
                 if string[0] == '"':
@@ -827,7 +827,7 @@ class POParser(object):
 
                 # if there is any non-string data afterwards, raise an
                 # exception
-                if string and not string.isspace():
+                if len(string) > 0 and not string.isspace():
                     raise TranslationFormatSyntaxError(
                         line_number=self._lineno,
                         message=("Extra content found after string: (%s)" %
@@ -898,7 +898,7 @@ class POParser(object):
         if line[:2] == '#~':
             is_obsolete = True
             line = line[2:].lstrip()
-            if not line:
+            if len(line) == 0:
                 return None
 
         # If we get a comment line after a msgstr or a line starting with
@@ -965,7 +965,7 @@ class POParser(object):
         elif line.startswith('msgctxt'):
             if (self._section is not None and
                 (self._section == 'msgctxt' or
-                self._section.startswith('msgid'))):
+                 self._section.startswith('msgid'))):
                 raise TranslationFormatSyntaxError(
                     line_number=self._lineno,
                     message="Unexpected keyword: msgctxt")
@@ -989,8 +989,8 @@ class POParser(object):
             line = line[len('msgstr'):]
             # XXX kiko 2005-08-19: if line is empty, it means we got an msgstr
             # followed by a newline; that may be critical, but who knows?
-            if line and line[0] == '[':
-                # plural case
+            if line.startswith('['):
+                # Plural case
                 new_plural_case, line = line[1:].split(']', 1)
                 new_plural_case = int(new_plural_case)
                 if (self._plural_case is not None) and (
@@ -1013,7 +1013,7 @@ class POParser(object):
             pass
 
         line = line.strip()
-        if not line:
+        if len(line) == 0:
             logging.info(
                 POSyntaxWarning(
                     self._lineno,
@@ -1024,16 +1024,16 @@ class POParser(object):
     def _parseLine(self, original_line):
         self._lineno += 1
         # Skip empty lines
-        l = original_line.strip()
-        if not l:
+        line = original_line.strip()
+        if len(line) == 0:
             return
 
         if not self._escaped_line_break:
-            l = self._parseFreshLine(l, original_line)
-            if not l:
+            line = self._parseFreshLine(line, original_line)
+            if len(line) == 0:
                 return
 
-        l = self._parseQuotedString(l)
+        line = self._parseQuotedString(line)
 
         text_section_types = ('msgctxt', 'msgid', 'msgid_plural', 'msgstr')
         if self._section not in text_section_types:
@@ -1041,7 +1041,7 @@ class POParser(object):
                 line_number=self._lineno,
                 message='Invalid content: %r' % original_line)
 
-        self._parsed_content += l
+        self._parsed_content += line
 
 
 # convenience function to parse "assignment" expressions like

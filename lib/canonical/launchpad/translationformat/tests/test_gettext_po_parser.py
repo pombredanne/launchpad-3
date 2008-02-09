@@ -305,12 +305,13 @@ class POBasicTestCase(unittest.TestCase):
             ''' % DEFAULT_HEADER)
         messages = translation_file.messages
         self.assertEqual(len(messages), foos, "incorrect number of messages")
-        for n in range(1,foos):
+        for n in range(1, foos):
             msgidn = "foo%d" % n
             self.assertEqual(
                 messages[n-1].msgid_singular, msgidn, "incorrect msgid")
             self.assertEqual(
-                messages[n-1].translations[TranslationConstants.SINGULAR_FORM],
+                messages[n-1].translations[
+                    TranslationConstants.SINGULAR_FORM],
                 "bar", "incorrect msgstr")
 
     def testGetLastTranslator(self):
