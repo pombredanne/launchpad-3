@@ -26,6 +26,12 @@
     </class>
 
     <adapter
+        for="canonical.lazr.enum.BaseItem"
+        provides="canonical.lazr.interfaces.IJSONPublishable"
+        factory="canonical.lazr.rest.JSONItem"
+        />
+
+    <adapter
         for="canonical.launchpad.interfaces.IBug"
         provides="canonical.launchpad.rest.IBugEntry"
         factory="canonical.launchpad.rest.BugEntry"
@@ -78,6 +84,32 @@
     <adapter
         for="canonical.launchpad.rest.IBugEntry
              canonical.launchpad.interfaces.IMessage"
+        provides="canonical.lazr.interfaces.IScopedCollection"
+        factory="canonical.lazr.rest.ScopedCollection"
+        />
+
+    <adapter
+        for="canonical.launchpad.interfaces.IBugTask"
+        provides="canonical.launchpad.rest.IBugTaskEntry"
+        factory="canonical.launchpad.rest.BugTaskEntry"
+        />
+
+    <adapter
+        for="canonical.launchpad.interfaces.IBugTaskSet"
+        provides="canonical.lazr.interfaces.ICollection"
+        factory="canonical.launchpad.rest.BugTaskCollection"
+        />
+
+    <adapter
+        for="canonical.launchpad.rest.IBugEntry
+             canonical.launchpad.interfaces.IBugTask"
+        provides="canonical.lazr.interfaces.IScopedCollection"
+        factory="canonical.lazr.rest.ScopedCollection"
+        />
+
+    <adapter
+        for="canonical.launchpad.rest.IBugTaskEntry
+             canonical.launchpad.interfaces.IBugTask"
         provides="canonical.lazr.interfaces.IScopedCollection"
         factory="canonical.lazr.rest.ScopedCollection"
         />
