@@ -350,19 +350,23 @@ _linkify_bug_numbers() to do this.
 Zero or more spaces may appear between the ":" and the "#".
 
     >>> spr_view._linkify_bug_numbers("LP: #10")
-    u'<a href="/bugs/10" title="another test bug">LP: #10</a>'
+    u'LP: <a href="/bugs/10" title="another test bug">#10</a>'
 
     >>> spr_view._linkify_bug_numbers("LP:         #10")
-    u'<a href="/bugs/10" title="another test bug">LP:         #10</a>'
+    u'LP:         <a href="/bugs/10" title="another test bug">#10</a>'
 
     >>> spr_view._linkify_bug_numbers("LP:#10")
-    u'<a href="/bugs/10" title="another test bug">LP:#10</a>'
+    u'LP:<a href="/bugs/10" title="another test bug">#10</a>'
 
     >>> spr_view._linkify_bug_numbers("LP: #999")
-    '<a href="/bugs/999" title="No such bug">LP: #999</a>'
+    'LP: <a href="/bugs/999" title="No such bug">#999</a>'
 
     >>> spr_view._linkify_bug_numbers("garbage")
     'garbage'
+
+    >>> spr_view._linkify_bug_numbers("LP: #10, #7")
+    u'LP: <a href="/bugs/10" title="another test bug">#10</a>,
+    <a href="/bugs/7" title="A test bug">#7</a>'
 
 
 == Comparing Sourcepackages ==

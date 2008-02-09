@@ -4,12 +4,11 @@
 __metaclass__ = type
 __all__ = ['SourcePackageRelease']
 
-import sets
-import tarfile
-from StringIO import StringIO
 import datetime
 import pytz
+from StringIO import StringIO
 import re
+import tarfile
 
 from zope.interface import implements
 from zope.component import getUtility
@@ -61,7 +60,7 @@ class SourcePackageRelease(SQLBase):
     dsc = StringCol(dbName='dsc')
     copyright = StringCol(dbName='copyright', notNull=True)
     version = StringCol(dbName='version', notNull=True)
-    changelog_entry = StringCol(dbName='changelog')
+    changelog_entry = StringCol(dbName='changelog_entry')
     builddepends = StringCol(dbName='builddepends')
     builddependsindep = StringCol(dbName='builddependsindep')
     build_conflicts = StringCol(dbName='build_conflicts')
@@ -78,7 +77,7 @@ class SourcePackageRelease(SQLBase):
     # ISourcePackageRelease, however they can't be not NULL in DB since old
     # records doesn't satisfy this condition. We will sort it before using
     # 'NoMoreAptFtparchive' implementation for PRIMARY archive. For PPA
-    # (primary target) we don't need populate old records.
+    # (primary target) we don't need to populate old records.
     dsc_maintainer_rfc822 = StringCol(dbName='dsc_maintainer_rfc822')
     dsc_standards_version = StringCol(dbName='dsc_standards_version')
     dsc_format = StringCol(dbName='dsc_format')

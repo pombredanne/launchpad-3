@@ -15,7 +15,9 @@ from sqlobject.sqlbuilder import SQLConstant
 
 from canonical.cachedproperty import cachedproperty
 
-from canonical.database.sqlbase import quote, quote_like, SQLBase, sqlvalues
+from canonical.database.sqlbase import (
+    quote, quote_like, SQLBase, sqlvalues, cursor)
+
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
 from canonical.database.constants import UTC_NOW
@@ -71,7 +73,7 @@ from canonical.launchpad.interfaces import (
     PackageUploadStatus, NotFoundError, QUESTION_STATUS_DEFAULT_SEARCH,
     SpecificationDefinitionStatus, SpecificationFilter,
     SpecificationImplementationStatus, SpecificationSort,
-    TranslationPermission)
+    TranslationPermission, PackagingType, UNRESOLVED_BUGTASK_STATUSES)
 
 from canonical.archivepublisher.debversion import Version
 
@@ -182,13 +184,14 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
     def all_milestones(self):
         """See `IDistribution`."""
         return Milestone.selectBy(
-            distribution=self, orderBy=['dateexpected', 'name'])
+            distribution=self, orderBy=['-dateexpected', 'name'])
 
     @property
     def milestones(self):
         """See `IDistribution`."""
         return Milestone.selectBy(
-            distribution=self, visible=True, orderBy=['dateexpected', 'name'])
+            distribution=self, visible=True,
+            orderBy=['-dateexpected', 'name'])
 
     @property
     def archive_mirrors(self):
@@ -260,11 +263,12 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
             return (2, self.name)
         return (3, self.name)
 
+    # XXX: This is used in a number of places and given it's already
+    # listified, why not spare the trouble of regenerating this as a
+    # cachedproperty? Answer: because it breaks tests. -- kiko, 2008-01-29
     @property
     def serieses(self):
         """See `IDistribution`."""
-        # This is used in a number of places and given it's already
-        # listified, why not spare the trouble of regenerating?
         ret = DistroSeries.selectBy(distribution=self)
         return sorted(ret, key=lambda a: Version(a.version), reverse=True)
 
@@ -933,7 +937,7 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
         return Archive.selectBy(
             purpose=ArchivePurpose.PPA, distribution=self, orderBy=['id'])
 
-    def searchPPAs(self, text=None, show_inactive=False):
+    def searchPPAs(self, text=None, show_inactive=False, user=None):
         """See `IDistribution`."""
         clauses = ["""
         Archive.purpose = %s AND
@@ -959,6 +963,21 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
             Archive.description LIKE '%%' || %s || '%%'))
             """ % (quote(text), quote_like(text)))
 
+        if user is not None:
+            if not user.inTeam(getUtility(ILaunchpadCelebrities).admin):
+                clauses.append("""
+                (Archive.private = FALSE OR
+                 Archive.owner = %s OR
+                 %s IN (SELECT TeamParticipation.person
+                        FROM TeamParticipation
+                        WHERE TeamParticipation.person = %s AND
+                              TeamParticipation.team = Archive.owner)
+                )
+                """ % sqlvalues(user, user, user))
+        else:
+            clauses.append("Archive.private = FALSE")
+
+
         query = ' AND '.join(clauses)
         return Archive.select(
             query, orderBy=orderBy, clauseTables=clauseTables)
@@ -983,9 +1002,11 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
         Archive.purpose = %s AND
         Archive.distribution = %s AND
         SourcePackagePublishingHistory.archive = archive.id AND
-        SourcePackagePublishingHistory.status = %s
+        SourcePackagePublishingHistory.scheduleddeletiondate is null AND
+        SourcePackagePublishingHistory.status IN (%s, %s)
          """ % sqlvalues(ArchivePurpose.PPA, self,
-                         PackagePublishingStatus.PENDING)
+                         PackagePublishingStatus.PENDING,
+                         PackagePublishingStatus.DELETED)
 
         src_archives = Archive.select(
             src_query, clauseTables=['SourcePackagePublishingHistory'],
@@ -995,9 +1016,11 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
         Archive.purpose = %s AND
         Archive.distribution = %s AND
         BinaryPackagePublishingHistory.archive = archive.id AND
-        BinaryPackagePublishingHistory.status = %s
+        BinaryPackagePublishingHistory.scheduleddeletiondate is null AND
+        BinaryPackagePublishingHistory.status IN (%s, %s)
         """ % sqlvalues(ArchivePurpose.PPA, self,
-                        PackagePublishingStatus.PENDING)
+                        PackagePublishingStatus.PENDING,
+                        PackagePublishingStatus.DELETED)
 
         bin_archives = Archive.select(
             bin_query, clauseTables=['BinaryPackagePublishingHistory'],
@@ -1024,6 +1047,106 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
         except KeyError:
             # Otherwise we defer to the caller.
             return None
+
+    def getPackagesAndPublicUpstreamBugCounts(self, limit=50):
+        """See `IDistribution`."""
+        from canonical.launchpad.database.product import Product
+        # This method collects three open bug counts for
+        # sourcepackagenames in this distribution first, and then caches
+        # product information before rendering everything into a list of
+        # tuples.
+        cur = cursor()
+        cur.execute("""
+            SELECT SPN.name, SPN.id,
+            COUNT(DISTINCT Bugtask.bug) AS total_bugs,
+            COUNT(DISTINCT RelatedBugTask.bug) AS bugs_affecting_upstream,
+            COUNT(DISTINCT CASE WHEN RelatedBugTask.bugwatch IS NOT NULL
+                  OR RelatedProduct.official_malone = 'T'
+                  THEN RelatedBugTask.bug END) AS bugs_with_upstream_bugwatch
+            FROM
+                SourcePackageName AS SPN
+                JOIN Bugtask ON SPN.id = Bugtask.sourcepackagename
+                JOIN Bug ON Bug.id = Bugtask.bug
+                LEFT OUTER JOIN Bugtask AS RelatedBugtask ON (
+                    RelatedBugtask.bug = Bugtask.bug
+                    AND RelatedBugtask.id != Bugtask.id
+                    AND RelatedBugtask.product IS NOT NULL
+                    AND RelatedBugtask.status != %(invalid)s
+                    )
+                LEFT OUTER JOIN Product AS RelatedProduct ON (
+                    RelatedBugtask.product = RelatedProduct.id
+                )
+            WHERE
+                Bugtask.distribution = %(distro)s
+                AND Bugtask.sourcepackagename = spn.id
+                AND Bugtask.distroseries IS NULL
+                AND Bugtask.status IN %(unresolved)s
+                AND Bug.private = 'F'
+                AND Bug.duplicateof IS NULL
+            GROUP BY SPN.name, SPN.id
+            ORDER BY total_bugs DESC, SPN.name LIMIT %(limit)s
+        """ % {'invalid': quote(BugTaskStatus.INVALID),
+               'limit': limit,
+               'distro': self.id,
+               'unresolved': quote(UNRESOLVED_BUGTASK_STATUSES)})
+        counts = cur.dictfetchall()
+        cur.close()
+        # Filter out packages for which there are no counts.
+        counts = [data for data in counts if data['total_bugs'] > 0]
+        if not counts:
+            # If no counts are returned it means that there are no
+            # source package names in the database -- because the counts
+            # would just return zero if no bugs existed. And if there
+            # are no packages are in the database, all bets are off.
+            return []
+
+        # Next step is to extract which IDs actually show up in the
+        # output we generate, and cache them.
+        spn_ids = [item['id'] for item in counts]
+        list(SourcePackageName.select("SourcePackageName.id IN %s"
+             % sqlvalues(spn_ids)))
+
+        # Finally find out what products are attached to these source
+        # packages (if any) and cache them too. The ordering of the
+        # query by Packaging.id ensures that the dictionary holds the
+        # latest entries for situations where we have multiple entries.
+        cur = cursor()
+        cur.execute("""
+            SELECT Packaging.sourcepackagename, Product.id
+              FROM Product, Packaging, ProductSeries, DistroSeries
+             WHERE ProductSeries.product = Product.id AND
+                   DistroSeries.distribution = %s AND
+                   Packaging.distroseries = DistroSeries.id AND
+                   Packaging.productseries = ProductSeries.id AND
+                   Packaging.sourcepackagename IN %s AND
+                   Packaging.packaging = %s
+                   ORDER BY Packaging.id
+        """ % sqlvalues(self.id, spn_ids, PackagingType.PRIME))
+        sources_to_products = dict(cur.fetchall())
+        cur.close()
+        if sources_to_products:
+            # Cache some more information to avoid us having to hit the
+            # database hard for each product rendered.
+            list(Product.select("Product.id IN %s" % 
+                 sqlvalues(sources_to_products.values()),
+                 prejoins=["bugcontact", "bugtracker"]))
+
+        # Okay, we have all the information good to go, so assemble it
+        # in a reasonable data structure.
+        results = []
+        for count in counts:
+            spn_id = count['id']
+            sourcepackagename = SourcePackageName.get(spn_id)
+            dsp = self.getSourcePackage(sourcepackagename)
+            if spn_id in sources_to_products:
+                product_id = sources_to_products[spn_id]
+                product = Product.get(product_id)
+            else:
+                product = None
+            results.append((dsp, product, count['total_bugs'],
+                            count['bugs_affecting_upstream'],
+                            count['bugs_with_upstream_bugwatch']))
+        return results
 
 
 class DistributionSet:

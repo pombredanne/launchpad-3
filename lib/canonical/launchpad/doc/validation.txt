@@ -14,7 +14,8 @@ bugtasks are unique per bug.
     >>> debian = getUtility(IDistributionSet).getByName('debian')
     >>> mozilla_firefox = getUtility(
     ...     ISourcePackageNameSet).queryByName('mozilla-firefox')
-    >>> evolution = getUtility(ISourcePackageNameSet).queryByName('evolution')
+    >>> alsa_utils = getUtility(
+    ...     ISourcePackageNameSet).queryByName('alsa-utils')
 
 We aren't allowed to have two distrotasks with the same sourcepackage.
 
@@ -25,7 +26,7 @@ We aren't allowed to have two distrotasks with the same sourcepackage.
 
 But it's legal to have two bugtasks with different sourcepackages.
 
-    >>> validate_distrotask(bug_two, debian, evolution)
+    >>> validate_distrotask(bug_two, debian, alsa_utils)
 
 If the bug already has a distribution task with no source package, it's
 not possible to add a another one.
@@ -43,9 +44,37 @@ not possible to add a another one.
       ...
     LaunchpadValidationError: ...
 
+It's also not possible to have a bugtask for a sourcepackage that has
+not been published in the target distribution.
+
+    >>> foobar = getUtility(
+    ...     ISourcePackageNameSet).queryByName('foobar')
+    >>> validate_distrotask(ubuntu_bug_no_sourcepackage, ubuntu, foobar)
+    Traceback (most recent call last):
+    ...
+    LaunchpadValidationError: u'Package foobar not published in Ubuntu'
+
+It's not allowed even if the sourcepackage has been published in a
+PPA.
+
+    >>> from canonical.launchpad.ftests.ppa import publishToPPA
+    >>> from canonical.launchpad.interfaces import PackagePublishingStatus
+    >>> publishToPPA(
+    ...     person_name='cprov',
+    ...     sourcepackage_name='foobar',
+    ...     sourcepackage_version='1.0',
+    ...     distribution_name='ubuntu',
+    ...     distroseries_name='hoary',
+    ...     publishing_status=PackagePublishingStatus.PUBLISHED)
+
+    >>> validate_distrotask(ubuntu_bug_no_sourcepackage, ubuntu, foobar)
+    Traceback (most recent call last):
+    ...
+    LaunchpadValidationError: u'Package foobar not published in Ubuntu'
+
 Adding a task with a source package is still possible.
 
-    >>> validate_distrotask(ubuntu_bug_no_sourcepackage, ubuntu, evolution)
+    >>> validate_distrotask(ubuntu_bug_no_sourcepackage, ubuntu, alsa_utils)
 
 
 == validate_new_distrotask() ==
@@ -67,7 +96,8 @@ If the bug already has a distribution with no package, we can't add
 another distribution task with a source package (the task with no
 package should be edited instead).
 
-    >>> validate_new_distrotask(ubuntu_bug_no_sourcepackage, ubuntu, evolution)
+    >>> validate_new_distrotask(
+    ...     ubuntu_bug_no_sourcepackage, ubuntu, alsa_utils)
     Traceback (most recent call last):
       ...
     LaunchpadValidationError: ...

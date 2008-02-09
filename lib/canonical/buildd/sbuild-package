@@ -26,7 +26,7 @@ case $(dpkg --print-installation-architecture) in
   hppa|powerpc|sparc) SBUILD="linux32 $SBUILD" ;;
 esac
 
-LANG=C $SBUILD "$@"
+LANG=C LC_ALL=C $SBUILD "$@"
 RET=$?
 
 [ $RET = 0 ] || exit $RET

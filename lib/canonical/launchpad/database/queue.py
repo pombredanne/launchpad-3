@@ -44,6 +44,8 @@ from canonical.launchpad.interfaces import (
     QueueSourceAcceptError, SourcePackageFileType)
 from canonical.launchpad.mail import (
     format_address, signed_message_from_string, simple_sendmail)
+from canonical.launchpad.scripts.processaccepted import (
+    close_bugs_for_queue_item)
 from canonical.librarian.interfaces import DownloadFailed
 from canonical.librarian.utils import copy_and_close
 
@@ -65,6 +67,10 @@ class PackageUploadQueue:
     def __init__(self, distroseries, status):
         self.distroseries = distroseries
         self.status = status
+
+
+class LanguagePackEncountered(Exception):
+    """Thrown when not wanting to email notifications for language packs."""
 
 
 class PackageUpload(SQLBase):
@@ -196,11 +202,28 @@ class PackageUpload(SQLBase):
                     dry_run=dry_run)
         self.syncUpdate()
 
+        # If this is a single source upload we can create the
+        # publishing records now so that the user doesn't have to
+        # wait for a publisher cycle (which calls process-accepted
+        # to do this).
+        if self._isSingleSourceUpload():
+            self.realiseUpload()
+
+        # When accepting packages, we must also check the changes file
+        # for bugs to close automatically.
+        close_bugs_for_queue_item(self)
+
     def rejectFromQueue(self, logger=None, dry_run=False):
         """See `IPackageUpload`."""
         self.setRejected()
         self.notify(logger=logger, dry_run=dry_run)
         self.syncUpdate()
+
+    def _isSingleSourceUpload(self):
+        """Return True if this upload contains only a single source."""
+        return ((self.sources.count() == 1) and
+                (self.builds.count() == 0) and
+                (self.customfiles.count() == 0))
 
     # XXX cprov 2006-03-14: Following properties should be redesigned to
     # reduce the duplicated code.
@@ -394,6 +417,9 @@ class PackageUpload(SQLBase):
         """Return a list of tuples of (filename, component, section).
 
         Component and section are only set where the file is a source upload.
+        If an empty list is returned, it means there are no files.
+        Raises LanguagePackRejection if a language pack is detected.
+        No emails should be sent for language packs.
         """
         files = []
         if self.contains_source:
@@ -405,7 +431,7 @@ class PackageUpload(SQLBase):
                 debug(self.logger,
                     "Skipping acceptance and announcement, it is a "
                     "language-package upload.")
-                return None
+                raise LanguagePackEncountered
             for sprfile in spr.files:
                 files.append(
                     (sprfile.libraryfile.filename, spr.component.name,
@@ -618,9 +644,14 @@ class PackageUpload(SQLBase):
         changes, changes_lines = self._getChangesDict(changes_file_object)
 
         # "files" will contain a list of tuples of filename,component,section.
-        # If files is None, we don't need to send an email if this is not
+        # If files is empty, we don't need to send an email if this is not
         # a rejection.
-        files = self._buildUploadedFilesList()
+        try:
+            files = self._buildUploadedFilesList()
+        except LanguagePackEncountered:
+            # Don't send emails for language packs.
+            return
+
         if not files and self.status != PackageUploadStatus.REJECTED:
             return
 

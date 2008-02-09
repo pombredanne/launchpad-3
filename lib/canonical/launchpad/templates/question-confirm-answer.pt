@@ -16,7 +16,6 @@
   <div tal:condition="context/reopenings"
        tal:replace="structure context/@@+portlet-reopenings" />
   <div tal:replace="structure context/@@+portlet-subscribers" />
-  <div tal:replace="structure context/target/@@+portlet-details" />
 </metal:leftportlets>
 
 <metal:rightportlets fill-slot="portlets_two">

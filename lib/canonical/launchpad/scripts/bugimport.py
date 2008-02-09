@@ -319,7 +319,7 @@ class BugImporter:
         for subscribernode in get_all(bugnode, 'subscriptions/subscriber'):
             person = self.getPerson(subscribernode)
             if person is not None:
-                bug.subscribe(person)
+                bug.subscribe(person, owner)
 
         # set up bug task
         bugtask.datecreated = datecreated

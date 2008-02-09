@@ -19,6 +19,8 @@ HERE:=$(shell pwd)
 LPCONFIG=default
 CONFFILE=configs/${LPCONFIG}/launchpad.conf
 
+MINS_TO_SHUTDOWN=15
+
 # DO NOT ALTER : this should just build by default
 default: inplace
 
@@ -131,10 +133,10 @@ run: inplace stop bzr_version_info
 	LPCONFIG=${LPCONFIG} PYTHONPATH=$(TWISTEDPATH):$(Z3LIBPATH):$(PYTHONPATH) \
 		 $(PYTHON) -t $(STARTSCRIPT) -r librarian -C $(CONFFILE)
 
-run_all: inplace stop bzr_version_info
+run_all: inplace stop bzr_version_info sourcecode/launchpad-loggerhead/sourcecode/loggerhead
 	rm -f thread*.request
 	LPCONFIG=${LPCONFIG} PYTHONPATH=$(TWISTEDPATH):$(Z3LIBPATH):$(PYTHONPATH) \
-		 $(PYTHON) -t $(STARTSCRIPT) -r librarian,buildsequencer,authserver,sftp,mailman \
+		 $(PYTHON) -t $(STARTSCRIPT) -r librarian,buildsequencer,authserver,sftp,mailman,codebrowse \
 		 -C $(CONFFILE)
 
 pull_branches: bzr_version_info
@@ -175,6 +177,15 @@ stop: build
 	@ LPCONFIG=${LPCONFIG} ${PYTHON} \
 	    utilities/killservice.py librarian buildsequencer launchpad mailman
 
+shutdown: scheduleoutage stop
+	rm -f +maintenancetime.txt
+
+scheduleoutage:
+	echo Scheduling outage in ${MINS_TO_SHUTDOWN} mins
+	date --iso-8601=minutes -u -d +${MINS_TO_SHUTDOWN}mins > +maintenancetime.txt
+	echo Sleeping ${MINS_TO_SHUTDOWN} mins
+	sleep ${MINS_TO_SHUTDOWN}m
+
 harness:
 	PYTHONPATH=lib $(PYTHON) -i lib/canonical/database/harness.py
 
@@ -214,6 +225,20 @@ launchpad.pot:
 	    -d launchpad -p lib/canonical/launchpad \
 	    -o locales
 
+sourcecode/launchpad-loggerhead/sourcecode/loggerhead:
+	ln -s ../../loggerhead sourcecode/launchpad-loggerhead/sourcecode/loggerhead
+
+install: reload-apache
+
+/etc/apache2/sites-available/local-launchpad: configs/default/local-launchpad-apache
+	cp configs/default/local-launchpad-apache $@
+
+/etc/apache2/sites-enabled/local-launchpad: /etc/apache2/sites-available/local-launchpad
+	a2ensite local-launchpad
+
+reload-apache: /etc/apache2/sites-enabled/local-launchpad
+	/etc/init.d/apache2 reload
+
 static:
 	$(PYTHON) scripts/make-static.py
 
@@ -227,5 +252,5 @@ tags:
 		ftest_build ftest_inplace test_build test_inplace pagetests \
 		check importdcheck check_merge schema default launchpad.pot \
 		check_launchpad_on_merge check_merge_ui pull rewritemap scan \
-		sync_branches check_loggerhead_on_merge
+		sync_branches check_loggerhead_on_merge reload-apache
 

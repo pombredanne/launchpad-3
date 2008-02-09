@@ -1,5 +1,5 @@
-Distro Arch Release
-^^^^^^^^^^^^^^^^^^^
+= Distro Arch Release =
+
    >>> from canonical.launchpad.webapp.testing import verifyObject
 
    >>> from canonical.launchpad.interfaces import (
@@ -256,11 +256,18 @@ via the 'architectures' property.
 
     >>> def print_architectures(architectures):
     ...     for arch in architectures:
-    ...         details = create_view(arch, "+details")()
-    ...         if details:
-    ...             print arch.title, details
-    ...         else:
-    ...             print arch.title
+    ...         result = arch.title
+    ...         if arch.official or arch.ppa_supported:
+    ...             result += ' ('
+    ...         if arch.official:
+    ...             result += 'official'
+    ...             if arch.ppa_supported:
+    ...                 result += ', '
+    ...         if arch.ppa_supported:
+    ...             result += 'ppa'
+    ...         if arch.official or arch.ppa_supported:
+    ...             result += ')'
+    ...         print result
 
     >>> print_architectures(warty.architectures)
     The Warty Warthog Release for hppa (hppa)

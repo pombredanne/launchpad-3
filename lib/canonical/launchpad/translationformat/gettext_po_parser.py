@@ -23,14 +23,16 @@ from zope.interface import implements
 from zope.app import datetimeutils
 
 from canonical.launchpad.interfaces import (
-    ITranslationHeaderData, TranslationConstants,
+    ITranslationHeaderData, TooManyPluralFormsError, TranslationConstants,
     TranslationFormatInvalidInputError, TranslationFormatSyntaxError)
 from canonical.launchpad.translationformat.translation_common_format import (
     TranslationFileData, TranslationMessageData)
 from canonical.launchpad.versioninfo import revno
 
+
 class BadPluralExpression(Exception):
-    pass
+    """Local "escape hatch" exception for unusable plural expressions."""
+
 
 def make_plural_function(expression):
     """Create a lambda function for C-like plural expression."""
@@ -57,6 +59,7 @@ def make_plural_function(expression):
 
     return function
 
+
 def plural_form_mapper(first_expression, second_expression):
     """Maps plural forms from one plural formula to the other.
 
@@ -80,7 +83,8 @@ def plural_form_mapper(first_expression, second_expression):
             return identity_map
 
         # Is either result out of range?
-        if first_form not in [0,1,2,3] or second_form not in [0,1,2,3]:
+        valid_forms = range(0, 4)
+        if first_form not in valid_forms or second_form not in valid_forms:
             return identity_map
 
         if first_form in mapping:
@@ -98,10 +102,12 @@ def plural_form_mapper(first_expression, second_expression):
     result.update(mapping)
     return result
 
+
 class POSyntaxWarning(Warning):
     """ Syntax warning in a po file """
 
     def __init__(self, lno=0, msg=None):
+        Warning.__init__(self)
         self.lno = lno
         self.msg = msg
 
@@ -199,12 +205,13 @@ class POHeader:
 
     _strftime_text = '%F %R%z'
 
+    translation_revision_date = None
+
     def __init__(self, header_content, comment=None):
         self._raw_header = header_content
         self.is_fuzzy = False
         UTC = pytz.timezone('UTC')
         self.template_creation_date = datetime.datetime.now(UTC)
-        self.translation_revision_date = datetime.datetime.now(UTC)
         self._last_translator = 'FULL NAME <EMAIL@ADDRESS>'
         self.language_team = 'LANGUAGE <LL@li.org>'
         self.has_plural_forms = False
@@ -250,22 +257,38 @@ class POHeader:
         for key, value in self._header_dictionary.iteritems():
             if key == 'plural-forms':
                 parts = parse_assignments(value)
-                if parts.get('nplurals') != 'INTEGER':
+                nplurals = parts.get('nplurals')
+                if nplurals is None:
+                    # Number of plurals not specified.  Default to single
+                    # form.
+                    self.number_plural_forms = 1
+                    self.plural_form_expression = '0'
+                elif nplurals != 'INTEGER':
                     # We found something different than gettext's default
                     # value.
-                    nplurals = parts.get('nplurals')
                     try:
                         self.number_plural_forms = int(nplurals)
-                    except TypeError:
+                    except (TypeError, ValueError):
                         # There are some po files with bad headers that have a
                         # non numeric value here and sometimes an empty value.
                         # In that case, set the default value.
-                        logging.info(
-                            POSyntaxWarning(
-                                msg=("The plural form header has an unknown"
-                                    " error. Using the default value...")))
-                        self.number_plural_forms = 1
+                        raise TranslationFormatSyntaxError(
+                            message="Invalid nplurals declaration in header: "
+                                    "'%s' (should be a number)." % nplurals)
+
+                    if self.number_plural_forms <= 0:
+                        text = "Number of plural forms is impossibly low."
+                        raise TranslationFormatSyntaxError(message=text)
+
+                    if self.number_plural_forms > 4:
+                        raise TooManyPluralFormsError()
+
                     self.plural_form_expression = parts.get('plural', '0')
+                else:
+                    # Plurals declaration contains default text.  This is
+                    # probably a template, so leave the text as it is.
+                    pass
+
             elif key == 'pot-creation-date':
                 try:
                     self.template_creation_date = (
@@ -467,7 +490,7 @@ class POParser(object):
             if len(self._pending_chars) - exc.start > 10:
                 raise TranslationFormatInvalidInputError(
                     line_number=self._lineno,
-                    message="could not decode input from %s" % charset)
+                    message="Could not decode input from %s" % charset)
             newchars, length = decode(self._pending_chars[:exc.start],
                                       'strict')
         self._pending_unichars += newchars
@@ -637,7 +660,7 @@ class POParser(object):
           >>> parser._parseQuotedString(utf8_string)
           Traceback (most recent call last):
           ...
-          TranslationFormatInvalidInputError: could not decode escaped string: (\302\253)
+          TranslationFormatInvalidInputError: Could not decode escaped string: (\302\253)
 
           Now, we note the original encoding so we get the right Unicode
           string.
@@ -649,15 +672,15 @@ class POParser(object):
           >>> parser._parseQuotedString(utf8_string)
           u'view \xab${version_title}\xbb'
 
-          Let's see that we raise a TranslationFormatInvalidInputError exception when we
-          have an escaped char that is not valid in the declared encoding
-          of the original string:
+          Let's see that we raise a TranslationFormatInvalidInputError
+          exception when we have an escaped char that is not valid in the
+          declared encoding of the original string:
 
           >>> iso8859_1_string = u'"foo \\xf9"'
           >>> parser._parseQuotedString(iso8859_1_string)
           Traceback (most recent call last):
           ...
-          TranslationFormatInvalidInputError: could not decode escaped string as UTF-8: (\xf9)
+          TranslationFormatInvalidInputError: Could not decode escaped string as UTF-8: (\xf9)
 
           An error will be raised if the entire string isn't contained in
           quotes properly:
@@ -665,19 +688,19 @@ class POParser(object):
           >>> parser._parseQuotedString(u'abc')
           Traceback (most recent call last):
             ...
-          TranslationFormatSyntaxError: string is not quoted
+          TranslationFormatSyntaxError: String is not quoted
           >>> parser._parseQuotedString(u'\"ab')
           Traceback (most recent call last):
             ...
-          TranslationFormatSyntaxError: string not terminated
+          TranslationFormatSyntaxError: String not terminated
           >>> parser._parseQuotedString(u'\"ab\"x')
           Traceback (most recent call last):
             ...
-          TranslationFormatSyntaxError: extra content found after string: (x)
+          TranslationFormatSyntaxError: Extra content found after string: (x)
         """
         if string[0] != '"':
             raise TranslationFormatSyntaxError(
-                line_number=self._lineno, message="string is not quoted")
+                line_number=self._lineno, message="String is not quoted")
 
         escape_map = {
             'a': '\a',
@@ -718,7 +741,8 @@ class POParser(object):
                 if string and not string.isspace():
                     raise TranslationFormatSyntaxError(
                         line_number=self._lineno,
-                        message="extra content found after string: (%s)" % string)
+                        message=("Extra content found after string: (%s)" %
+                                 string))
                 break
             elif string[0] == '\\' and string[1] in escape_map:
                 # We got one of the special escaped chars we know about, we
@@ -754,7 +778,7 @@ class POParser(object):
                 else:
                     raise TranslationFormatSyntaxError(
                         line_number=self._lineno,
-                        message="unknown escape sequence %s" % string[:2])
+                        message="Unknown escape sequence %s" % string[:2])
             if escaped_string:
                 # We found some text escaped that should be recoded to
                 # Unicode.
@@ -772,7 +796,7 @@ class POParser(object):
                         raise TranslationFormatInvalidInputError(
                             line_number=self._lineno,
                             message=(
-                                "could not decode escaped string as %s: (%s)"
+                                "Could not decode escaped string as %s: (%s)"
                                     % (charset, escaped_string)))
                 else:
                     # We don't know the original encoding of the imported file
@@ -784,7 +808,7 @@ class POParser(object):
                         raise TranslationFormatInvalidInputError(
                             line_number=self._lineno,
                             message=(
-                                "could not decode escaped string: (%s)" % (
+                                "Could not decode escaped string: (%s)" % (
                                     escaped_string)))
             else:
                 # It's a normal char, we just store it and jump to next one.
@@ -794,7 +818,7 @@ class POParser(object):
             # We finished parsing the string without finding the ending quote
             # char.
             raise TranslationFormatSyntaxError(
-                line_number=self._lineno, message="string not terminated")
+                line_number=self._lineno, message="String not terminated")
 
         return output
 
@@ -812,9 +836,14 @@ class POParser(object):
             # Note in the header that there are plural forms.
             self._translation_file.header.has_plural_forms = True
         elif self._section == 'msgstr':
-            self._message.addTranslation(
-                self._plural_form_mapping[self._plural_case],
-                self._parsed_content)
+            if self._message.msgid_plural is not None:
+                self._message.addTranslation(
+                    self._plural_form_mapping[self._plural_case],
+                    self._parsed_content)
+            else:
+                self._message.addTranslation(
+                    self._plural_case,
+                    self._parsed_content)
         else:
             raise AssertionError('Unknown section %s' % self._section)
 
@@ -888,7 +917,9 @@ class POParser(object):
         # Now we are in a msgctxt or msgid section, output previous section
         if l.startswith('msgid_plural'):
             if self._section != 'msgid':
-                raise TranslationFormatSyntaxError(line_number=self._lineno)
+                raise TranslationFormatSyntaxError(
+                    line_number=self._lineno,
+                    message="Unexpected keyword: msgid_plural")
             self._dumpCurrentSection()
             self._section = 'msgid_plural'
             l = l[len('msgid_plural'):]
@@ -896,12 +927,17 @@ class POParser(object):
             if (self._section is not None and
                 (self._section == 'msgctxt' or
                  self._section.startswith('msgid'))):
-                raise TranslationFormatSyntaxError(line_number=self._lineno)
+                raise TranslationFormatSyntaxError(
+                    line_number=self._lineno,
+                    message="Unexpected keyword: msgctxt")
             self._section = 'msgctxt'
             l = l[len('msgctxt'):]
         elif l.startswith('msgid'):
-            if self._section is not None and self._section.startswith('msgid'):
-                raise TranslationFormatSyntaxError(line_number=self._lineno)
+            if (self._section is not None and
+                self._section.startswith('msgid')):
+                raise TranslationFormatSyntaxError(
+                    line_number=self._lineno,
+                    message="Unexpected keyword: msgid")
             if self._section is not None:
                 self._dumpCurrentSection()
             self._section = 'msgid'
@@ -961,9 +997,9 @@ class POParser(object):
 def parse_assignments(text, separator=';', assigner='=', skipfirst=False):
     parts = {}
     if skipfirst:
-        start=1
+        start = 1
     else:
-        start=0
+        start = 0
     for assignment in text.split(separator)[start:]:
         if not assignment.strip():
             # empty

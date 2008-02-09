@@ -168,13 +168,14 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
     def all_milestones(self):
         """See IDistroSeries."""
         return Milestone.selectBy(
-            distroseries=self, orderBy=['dateexpected', 'name'])
+            distroseries=self, orderBy=['-dateexpected', 'name'])
 
     @property
     def milestones(self):
         """See IDistroSeries."""
         return Milestone.selectBy(
-            distroseries=self, visible=True, orderBy=['dateexpected', 'name'])
+            distroseries=self, visible=True,
+            orderBy=['-dateexpected', 'name'])
 
     @property
     def parent(self):
@@ -1522,7 +1523,7 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         """See `IHasTranslationTemplates`."""
         result = POTemplate.selectBy(distroseries=self,
                                      orderBy=['-priority', 'name'])
-        return shortlist(result, 300)
+        return shortlist(result, 2000)
 
     def getCurrentTranslationTemplates(self):
         """See `IHasTranslationTemplates`."""
@@ -1535,7 +1536,7 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
             ''' % sqlvalues(self),
             clauseTables = ['DistroSeries', 'Distribution'],
             orderBy=['-priority', 'name'])
-        return shortlist(result, 300)
+        return shortlist(result, 2000)
 
     def getObsoleteTranslationTemplates(self):
         """See `IHasTranslationTemplates`."""

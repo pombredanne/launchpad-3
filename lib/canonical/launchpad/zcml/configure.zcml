@@ -126,6 +126,7 @@
     <include file="sprintattendance.zcml" />
     <include file="sprintspecification.zcml" />
     <include file="sshkey.zcml" />
+    <include file="structuralsubscription.zcml" />
     <include file="teammembership.zcml" />
     <include file="teamparticipation.zcml" />
     <include file="team-subscriptions.zcml" />
@@ -148,6 +149,7 @@
     <include file="vpoexport.zcml" />
     <include file="vpotexport.zcml" />
     <include file="archive.zcml" />
+    <include file="webservice.zcml" />
 
     <include file="fields.zcml" />
     <include file="resources.zcml" />
