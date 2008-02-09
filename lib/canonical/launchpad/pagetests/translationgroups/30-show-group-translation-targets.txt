@@ -19,13 +19,13 @@ If we disable some of these projects...
   >>> admin_browser.getControl("Active").click()
   >>> admin_browser.getControl("Change").click()
   >>> admin_browser.url
-  http://launchpad.dev/projectgroups
+  'http://launchpad.dev/projectgroups'
 
   >>> admin_browser.open("http://launchpad.dev/netapplet/+review")
   >>> admin_browser.getControl("Active").click()
   >>> admin_browser.getControl("Change").click()
   >>> admin_browser.url
-  http://launchpad.dev/projects
+  'http://launchpad.dev/projects'
 
 They disappear from the listing:
 
@@ -44,12 +44,7 @@ story!
   >>> admin_browser.open("http://launchpad.dev/gnome/+review")
   >>> admin_browser.getControl("Active").click()
   >>> admin_browser.getControl("Change").click()
-  >>> admin_browser.url
-  http://launchpad.dev/projectgroups
-
   >>> admin_browser.open("http://launchpad.dev/netapplet/+review")
   >>> admin_browser.getControl("Active").click()
   >>> admin_browser.getControl("Change").click()
-  >>> admin_browser.url
-  http://launchpad.dev/projects
 
