@@ -22,9 +22,9 @@ from zope.interface import implements
 from canonical.launchpad.interfaces import (
     BugTaskSearchParams, IAuthServerApplication, IBazaarApplication, IBugSet,
     IBugTaskSet, IBugTrackerSet, IBugWatchSet,
-    ICodeImportSchedulerApplication, IDistroSeriesSet, IEmailAddressSet,
-    IFeedsApplication, IHWDBApplication, ILanguageSet, ILaunchBag,
-    ILaunchpadStatisticSet, IMailingListApplication, IMaloneApplication,
+    ICodeImportSchedulerApplication, IDistroSeriesSet, IFeedsApplication,
+    IHWDBApplication, ILanguageSet, ILaunchBag, ILaunchpadStatisticSet,
+    IMailingListApplication, IMaloneApplication, IMessageSet,
     IOpenIdApplication, IPersonSet, IProductSet, IRegistryApplication,
     IRosettaApplication, IShipItApplication, ITranslationGroupSet,
     IWebServiceApplication)
@@ -196,4 +196,6 @@ class WebServiceApplication(ServiceRootResource):
     # See ServiceRootResource for more on top_level_collections
     @property
     def top_level_collections(self):
-        return { 'people' : getUtility(IPersonSet) }
+        return { 'bugs' : getUtility(IBugSet),
+                 'people' : getUtility(IPersonSet),
+                 'messages' : getUtility(IMessageSet) }

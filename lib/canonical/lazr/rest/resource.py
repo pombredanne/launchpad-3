@@ -15,14 +15,16 @@ __all__ = [
     'ServiceRootResource'
     ]
 
-
+from datetime import datetime
 import simplejson
 import urllib
 
 from zope.component import getMultiAdapter
 from zope.interface import implements, directlyProvides
+from zope.proxy import isProxy
 from zope.publisher.interfaces import NotFound
 from zope.schema.interfaces import IField, IObject
+from zope.security.proxy import removeSecurityProxy
 
 # XXX leonardr 2008-01-25 bug=185958:
 # canonical_url code should be moved into lazr.
@@ -43,9 +45,25 @@ class ResourceJSONEncoder(simplejson.JSONEncoder):
 
     def default(self, obj):
         """Convert the given object to a simple data structure."""
+        if isinstance(obj, datetime):
+            return obj.isoformat()
         if IJSONPublishable.providedBy(obj):
             return obj.toDataForJSON()
-        return simplejson.JSONEncoder.default(self, obj)
+        if isProxy(obj):
+            # We have a security-proxied version of a built-in
+            # type. We create a new version of the type by copying the
+            # proxied version's content. That way the container is not
+            # security proxied (and simplejson will now what do do
+            # with it), but the content will still be security
+            # wrapped.
+            underlying_object = removeSecurityProxy(obj)
+            if isinstance(underlying_object, list):
+                return list(obj)
+            if isinstance(underlying_object, tuple):
+                return tuple(obj)
+            if isinstance(underlying_object, dict):
+                return dict(obj)
+        return simplejson.JSONEncoder.default(self, obj) # Error out.
 
 
 class HTTPResource:
@@ -145,7 +163,7 @@ class EntryResource(ReadOnlyResource):
         dict = {}
         dict['self_link'] = canonical_url(self, request=self.request)
         schema = self.context.schema
-        for name in schema.names():
+        for name in schema.names(True):
             element = schema.get(name)
             if ICollectionField.providedBy(element):
                 # The field is a collection; include a link to the
@@ -182,7 +200,7 @@ class EntryResource(ReadOnlyResource):
     def do_GET(self):
         """Render the entry as JSON."""
         self.request.response.setHeader('Content-type', 'application/json')
-        return ResourceJSONEncoder().encode(self)
+        return simplejson.dumps(self, cls=ResourceJSONEncoder)
 
 
 class CollectionResource(ReadOnlyResource):
@@ -218,7 +236,7 @@ class CollectionResource(ReadOnlyResource):
         entry_resources = [EntryResource(entry, self.request)
                            for entry in entries]
         self.request.response.setHeader('Content-type', 'application/json')
-        return ResourceJSONEncoder().encode(entry_resources)
+        return simplejson.dumps(entry_resources, cls=ResourceJSONEncoder)
 
 
 class ScopedCollectionResource(CollectionResource):

@@ -49,6 +49,7 @@ from canonical.lazr.interfaces import IEntry
 from canonical.lazr.rest.schema import CollectionField
 
 from canonical.launchpad import _
+
 from canonical.launchpad.fields import (
     BlacklistableContentNameField, IconImageUpload, LogoImageUpload,
     MugshotImageUpload, PasswordField, StrippedTextLine)
