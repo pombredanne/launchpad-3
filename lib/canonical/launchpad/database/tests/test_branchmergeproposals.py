@@ -109,7 +109,6 @@ class TestBranchMergeProposalTransitions(TestCase):
         [wip, needs_review, code_approved, rejected,
          merged, merge_failed, queued, superseded
          ] = BranchMergeProposalStatus.items
-         merged, merge_failed, superseded] = BranchMergeProposalStatus.items
 
         for status in (wip, needs_review, code_approved, rejected,
                        merged, queued, merge_failed):
