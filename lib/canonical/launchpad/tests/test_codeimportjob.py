@@ -437,5 +437,21 @@ class TestCodeImportJobWorkflowRequestJob(unittest.TestCase,
             pending_job.code_import, person=no_priv)
 
 
+class TestCodeImportJobWorkflowStartJob(unittest.TestCase,
+        AssertFailureMixin, AssertSqlDateMixin, AssertEventMixin):
+    """Unit tests for CodeImportJobWorkflow.startJob."""
+
+    layer = LaunchpadFunctionalLayer
+
+    def setUp(self):
+        login_for_code_imports()
+
+    def test_wrongJobState(self):
+        # Calling startJob with a job whose state is not PENDING is an error.
+
+    def test_offlineMachine(self):
+        # Calling startJob with a machine which is not ONLINE is an error.
+
+
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)
