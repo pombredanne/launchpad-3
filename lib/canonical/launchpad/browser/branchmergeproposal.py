@@ -126,7 +126,7 @@ class BranchMergeProposalContextMenu(ContextMenu):
         text = 'Resubmit proposal'
         enabled = self.context.queue_status not in (
             BranchMergeProposalStatus.MERGED,
-            BranchMergeProposalStatus.SUPERCEDED)
+            BranchMergeProposalStatus.SUPERSEDED)
         return Link('+resubmit', text, icon='edit', enabled=enabled)
 
 

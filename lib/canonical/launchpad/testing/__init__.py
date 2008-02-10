@@ -173,7 +173,7 @@ class LaunchpadObjectFactory:
         elif set_state == BranchMergeProposalStatus.QUEUED:
             proposal.enqueue(
                 proposal.target_branch.owner, 'some_revision')
-        elif set_state == BranchMergeProposalStatus.SUPERCEDED:
+        elif set_state == BranchMergeProposalStatus.SUPERSEDED:
             proposal.resubmit(proposal.registrant)
         else:
             raise AssertionError('Unknown status: %s' % set_state)

@@ -29,7 +29,7 @@ class TestBranchMergeProposalTransitions(TestCase):
         BranchMergeProposalStatus.MERGED: 'markAsMerged',
         BranchMergeProposalStatus.MERGE_FAILED: 'mergeFailed',
         BranchMergeProposalStatus.QUEUED: 'enqueue',
-        BranchMergeProposalStatus.SUPERCEDED: 'resubmit',
+        BranchMergeProposalStatus.SUPERSEDED: 'resubmit',
         }
 
     def setUp(self):
@@ -53,7 +53,7 @@ class TestBranchMergeProposalTransitions(TestCase):
                         BranchMergeProposalStatus.QUEUED):
             args = [proposal.target_branch.owner, 'some_revision_id']
         elif to_state in (BranchMergeProposalStatus.MERGE_FAILED,
-                          BranchMergeProposalStatus.SUPERCEDED):
+                          BranchMergeProposalStatus.SUPERSEDED):
             args = [proposal.registrant]
         else:
             args = []
@@ -107,15 +107,16 @@ class TestBranchMergeProposalTransitions(TestCase):
         """Rejected proposals can only be resubmitted."""
         # Test the transitions from rejected.
         [wip, needs_review, code_approved, rejected,
-         merged, merge_failed, queued, superceded
+         merged, merge_failed, queued, superseded
          ] = BranchMergeProposalStatus.items
+         merged, merge_failed, superseded] = BranchMergeProposalStatus.items
 
         for status in (wip, needs_review, code_approved, rejected,
                        merged, queued, merge_failed):
             # All bad, rejected is a final state.
             self.assertBadTransition(rejected, status)
-        # Can resubmit (supercede) a rejected proposal.
-        self.assertGoodTransition(rejected, superceded)
+        # Can resubmit (supersede) a rejected proposal.
+        self.assertGoodTransition(rejected, superseded)
 
     def test_transitions_from_merged(self):
         """Merged is a terminal state, so no transitions are valid."""
@@ -144,9 +145,9 @@ class TestBranchMergeProposalTransitions(TestCase):
         self.assertProposalState(
             proposal, BranchMergeProposalStatus.CODE_APPROVED)
 
-    def test_transitions_from_superceded(self):
-        """Superceded is a terminal state, so no transitions are valid."""
-        self.assertTerminatingState(BranchMergeProposalStatus.SUPERCEDED)
+    def test_transitions_from_superseded(self):
+        """Superseded is a terminal state, so no transitions are valid."""
+        self.assertTerminatingState(BranchMergeProposalStatus.SUPERSEDED)
 
 
 class TestBranchMergeProposalCanReview(TestCase):

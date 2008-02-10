@@ -22,7 +22,7 @@
   <div metal:use-macro="context/@@launchpad_form/form">
     <div metal:fill-slot="extra_info" style="clear: both">
       Resubmitting this proposal to merge will cause this proposal
-      to be marked as <strong>superceded</strong> another proposal
+      to be marked as <strong>superseded</strong> another proposal
       to merge with the same source and target branches will be created.
     </div>
   </div>

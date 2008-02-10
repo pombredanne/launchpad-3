@@ -74,14 +74,14 @@ class BranchMergeProposal(SQLBase):
         dbName='merge_reporter', foreignKey='Person', notNull=False,
         default=None)
 
-    superceded_proposal = ForeignKey(
-        dbName='superceded_proposal', foreignKey='BranchMergeProposal',
+    supersedes = ForeignKey(
+        dbName='supersedes', foreignKey='BranchMergeProposal',
         notNull=False, default=None)
 
     @property
-    def superceded_by(self):
+    def superseded_by(self):
         return BranchMergeProposal.selectOneBy(
-            superceded_proposal=self)
+            supersedes=self)
 
     date_created = UtcDateTimeCol(notNull=True, default=DEFAULT)
     date_review_requested = UtcDateTimeCol(notNull=False, default=None)
@@ -137,7 +137,7 @@ class BranchMergeProposal(SQLBase):
     def isMergable(self):
         """See `IBranchMergeProposal`."""
         # As long as the source branch has not been merged, rejected
-        # or superceded, then it is valid to be merged.
+        # or superseded, then it is valid to be merged.
         return (self.queue_status not in
                 BRANCH_MERGE_PROPOSAL_FINAL_STATES)
 
@@ -240,27 +240,27 @@ class BranchMergeProposal(SQLBase):
 
     def resubmit(self, registrant):
         """See `IBranchMergeProposal`."""
-        # You can transition from REJECTED to SUPERCEDED, but
-        # not from MERGED or SUPERCEDED.
+        # You can transition from REJECTED to SUPERSEDED, but
+        # not from MERGED or SUPERSEDED.
         self._transitionState(
-            BranchMergeProposalStatus.SUPERCEDED,
+            BranchMergeProposalStatus.SUPERSEDED,
             invalid_states=[BranchMergeProposalStatus.MERGED,
-                            BranchMergeProposalStatus.SUPERCEDED])
+                            BranchMergeProposalStatus.SUPERSEDED])
         self.syncUpdate()
         proposal = self.source_branch.addLandingTarget(
             registrant=registrant,
             target_branch=self.target_branch,
             dependent_branch=self.dependent_branch,
             whiteboard=self.whiteboard)
-        proposal.superceded_proposal = self
+        proposal.supersedes = self
         return proposal
 
     def deleteProposal(self):
         """See `IBranchMergeProposal`."""
-        # Delete this proposal, but keep the superceded chain linked.
-        if self.superceded_by is not None:
-            self.superceded_by.superceded_proposal = self.superceded_proposal
-            self.superceded_by.syncUpdate()
+        # Delete this proposal, but keep the superseded chain linked.
+        if self.superseded_by is not None:
+            self.superseded_by.supersedes = self.supersedes
+            self.superseded_by.syncUpdate()
         self.destroySelf()
 
     def getUnlandedSourceBranchRevisions(self):

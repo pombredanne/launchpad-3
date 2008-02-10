@@ -76,7 +76,7 @@ see the landing target information even after the merge has taken place.
 In comparison though, a trunk branch will have a significant number of
 merge candidates.  From the target branch point of view, it is normally
 only the source branches where the proposals are not in one of the
-terminal states (merged, rejected, superceded) that are of interest.
+terminal states (merged, rejected, superseded) that are of interest.
 The landing_candidates only returns unmerged proposals, with the most
 recent branch merge proposals first.
 
@@ -106,7 +106,7 @@ recent branch merge proposals first.
     ...     print proposal.queue_status.title
     Work in progress
     Work in progress
-    Superceded
+    Superseded
     Rejected
     Merged
 
@@ -120,7 +120,7 @@ recent branch merge proposals first.
     ...     print proposal.queue_status.title
     Work in progress
     Work in progress
-    Superceded
+    Superseded
     Rejected
     Merged
 
@@ -144,7 +144,7 @@ A branch merge proposal can be in one of several states:
     Merged
     Code failed to merge
     Queued
-    Superceded
+    Superseded
 
 When a merge proposal is initially created, it is in the "Work in
 progress" state.  The only state that is a final state is "Merged".
@@ -505,12 +505,12 @@ Sample Person is the registrant, so they can delete it.
 
 If a proposal has been rejected, the proposal can be resubmitted
 (normally after the branch author has fixed the problems).  When a
-proposal is resubmitted the original proposal is marked as SUPERCEDED
+proposal is resubmitted the original proposal is marked as SUPERSEDED
 and a new proposal is created which has the same details as the
 original.  The new proposal has an attribute called
-`superceded_proposal` which is the proposal it superceded (i.e. the
+`supersedes` which is the proposal it superseded (i.e. the
 original proposal).  The original proposal also has an attribute
-`superceded_by` which is the proposal that supercedes it (i.e. the
+`superseded_by` which is the proposal that supersedes it (i.e. the
 new proposal).
 
     >>> proposal = factory.makeBranchMergeProposal(registrant=sample_person)
@@ -523,35 +523,35 @@ new proposal).
     Work in progress
     >>> new_proposal == proposal
     False
-    >>> new_proposal.superceded_proposal == proposal
+    >>> new_proposal.supersedes == proposal
     True
     >>> flush_database_updates()
-    >>> proposal.superceded_by == new_proposal
+    >>> proposal.superseded_by == new_proposal
     True
 
 If the new proposal is deleted, the old proposal stays in the
-superceded state, but no longer has a `superceded_by` proposal.
+superseded state, but no longer has a `superseded_by` proposal.
 
     >>> new_proposal.deleteProposal()
     >>> print proposal.queue_status.title
-    Superceded
-    >>> print proposal.superceded_by
+    Superseded
+    >>> print proposal.superseded_by
     None
 
 If the old proposal is deleted, the new proposal no longer shows
-the superceded_proposal.
+the supersedes.
 
     >>> proposal = factory.makeBranchMergeProposal(registrant=sample_person)
     >>> new_proposal = proposal.resubmit(sample_person)
-    >>> new_proposal.superceded_proposal == proposal
+    >>> new_proposal.supersedes == proposal
     True
 
     >>> flush_database_updates()
     >>> proposal.deleteProposal()
-    >>> print new_proposal.superceded_proposal
+    >>> print new_proposal.supersedes
     None
 
-If there is a chain of superceded proposals, and the one in the middle
+If there is a chain of superseded proposals, and the one in the middle
 is deleted, then the chain is just made shorter.
 
     >>> original = factory.makeBranchMergeProposal(registrant=sample_person)
@@ -559,18 +559,18 @@ is deleted, then the chain is just made shorter.
     >>> last = middle.resubmit(sample_person)
     >>> flush_database_updates()
 
-    >>> original.superceded_by == middle
+    >>> original.superseded_by == middle
     True
-    >>> middle.superceded_proposal == original
+    >>> middle.supersedes == original
     True
-    >>> middle.superceded_by == last
+    >>> middle.superseded_by == last
     True
-    >>> last.superceded_proposal == middle
+    >>> last.supersedes == middle
     True
 
     >>> middle.deleteProposal()
 
-    >>> original.superceded_by == last
+    >>> original.superseded_by == last
     True
-    >>> last.superceded_proposal == original
+    >>> last.supersedes == original
     True
