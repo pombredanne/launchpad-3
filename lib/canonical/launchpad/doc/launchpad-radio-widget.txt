@@ -67,7 +67,7 @@ to associate the label with the radio button input.
     </tr>
     <tr>
       <td class="formHelp">Primarily hosted elsewhere and is periodically
-      mirrored from the remote location into Launchpad.  </td>
+      mirrored from the external location into Launchpad.  </td>
     </tr>
     <tr>
       <td rowspan="2"><input class="radioType" id="field.branch_type.2"

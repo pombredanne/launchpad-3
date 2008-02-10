@@ -338,9 +338,6 @@ All the teams the person is an active member of.
     >>> mirrors_admins in person_active_membership
     False
 
-    >>> person_active_membership.getQuery() is None
-    True
-
     >>> term = person_active_membership.getTerm(launchpad_team)
     >>> print term.token, term.value.displayname, term.title
     launchpad Launchpad Developers Launchpad Developers
