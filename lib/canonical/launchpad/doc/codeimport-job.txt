@@ -248,11 +248,27 @@ running and which machine it is running on.
     >>> machine = machine_set.getByHostname('bazaar-importer')
     >>> new_events = NewEvents()
 
+This method updates the date_started, heartbeat and state fields of
+the job.  Before the call, machine, date_started and heartbeat are
+NULL and the state is PENDING.
+
+    >>> print pending_job.machine
+    None
+    >>> print_date_attribute(pending_job, 'date_started')
+    None
+    >>> print_date_attribute(pending_job, 'heartbeat')
+    None
+    >>> print pending_job.state.name
+    PENDING
+
+After the call, the machine is set to the supplied import machine,
+date_started and heartbeat fields are both updated to the current time
+and the state is RUNNING.
+
     >>> workflow.startJob(pending_job, machine)
 
-This method updates the date_started, heartbeat and state fields of
-the job.
-
+    >>> print pending_job.machine.name
+    bazaar-importd
     >>> print_date_attribute(pending_job, 'date_started')
     UTC_NOW
     >>> print_date_attribute(pending_job, 'heartbeat')
