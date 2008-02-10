@@ -648,9 +648,12 @@ class PersonBranchesMenu(ApplicationMenu):
         return Link('+subscribedbranches', text, icon='branch')
 
     def addbranch(self):
+        if self.user is None:
+            enabled = False
+        else:
+            enabled = self.user.inTeam(self.context)
         text = 'Register branch'
-        return Link('+addbranch', text, icon='add')
-
+        return Link('+addbranch', text, icon='add', enabled=enabled)
 
 
 class PersonBugsMenu(ApplicationMenu):
