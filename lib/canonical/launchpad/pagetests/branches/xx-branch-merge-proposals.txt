@@ -321,7 +321,7 @@ Gone from the target branch.
 == Resubmitting proposals ==
 
 If a proposal ends up getting rejected, the proposal can be resubmitted.
-Actually you can resubmit a proposal that hasn't been superceded or merged
+Actually you can resubmit a proposal that hasn't been superseded or merged
 already, but mostly you resubmit rejected proposals.  When a proposal is
 resubmitted, a new proposal is registered with the same source and target
 branches but with the state set to work-in-progress.
@@ -346,7 +346,7 @@ branches but with the state set to work-in-progress.
     >>> sample_browser.getControl('Update').click()
 
 The new merge proposal is created as work in progress, and there is
-a link back to the superceded proposal.
+a link back to the superseded proposal.
 
     >>> print_summary(sample_browser)
     Source branch: ~name12/gnome-terminal/scanned
@@ -354,25 +354,25 @@ a link back to the superceded proposal.
            Status: Work in progress
 
     >>> print extract_text(find_tag_by_id(
-    ...     sample_browser.contents, 'superceded-proposal'))
-    This proposal supercedes an earlier proposal.
+    ...     sample_browser.contents, 'superseded-proposal'))
+    This proposal supersedes an earlier proposal.
 
     >>> sample_browser.getLink('earlier proposal').click()
     >>> print_summary(sample_browser)
     Source branch: ~name12/gnome-terminal/scanned
     Target branch: ~name12/gnome-terminal/main
-           Status: Superceded
+           Status: Superseded
 
     >>> print extract_text(find_tag_by_id(
     ...      sample_browser.contents, 'branch-whiteboard-value'))
     Resubmitting due to extensive changes.
 
-The earlier superceded proposal also has a link back to the
-new proposal that supercedes it.
+The earlier superseded proposal also has a link back to the
+new proposal that supersedes it.
 
     >>> print extract_text(find_tag_by_id(
-    ...     sample_browser.contents, 'superceded-by'))
-    This proposal has been superceded by a later proposal.
+    ...     sample_browser.contents, 'superseded-by'))
+    This proposal has been superseded by a later proposal.
     >>> sample_browser.getLink('later proposal').click()
 
     >>> print extract_text(find_tag_by_id(

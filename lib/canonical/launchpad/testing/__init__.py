@@ -170,7 +170,7 @@ class LaunchpadObjectFactory:
             proposal.markAsMerged()
         elif set_state == BranchMergeProposalStatus.MERGE_FAILED:
             proposal.mergeFailed(proposal.target_branch.owner)
-        elif set_state == BranchMergeProposalStatus.SUPERCEDED:
+        elif set_state == BranchMergeProposalStatus.SUPERSEDED:
             proposal.resubmit(proposal.registrant)
         else:
             raise AssertionError('Unknown status: %s' % set_state)

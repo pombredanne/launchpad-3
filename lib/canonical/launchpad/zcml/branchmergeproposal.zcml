@@ -10,7 +10,7 @@
                        dependent_branch whiteboard queue_status
                        reviewer reviewed_revision_id
                        merged_revno date_merged merge_reporter
-                       superceded_proposal superceded_by
+                       supersedes superseded_by
                        date_created date_review_requested date_reviewed
                        isPersonValidReviewer isMergable
                        getUnlandedSourceBranchRevisions"/>

@@ -86,17 +86,17 @@ class BranchMergeProposalStatus(DBEnumeratedType):
         target branch for some reason.
         """)
 
-    SUPERCEDED = DBItem(10, """
-        Superceded
+    SUPERSEDED = DBItem(10, """
+        Superseded
 
-        This proposal has been superceded by anther proposal to merge.
+        This proposal has been superseded by anther proposal to merge.
         """)
 
 
 BRANCH_MERGE_PROPOSAL_FINAL_STATES = (
     BranchMergeProposalStatus.REJECTED,
     BranchMergeProposalStatus.MERGED,
-    BranchMergeProposalStatus.SUPERCEDED,
+    BranchMergeProposalStatus.SUPERSEDED,
     )
 
 
@@ -154,10 +154,10 @@ class IBranchMergeProposal(Interface):
     merge_reporter = Attribute(
         "The user that marked the branch as merged.")
 
-    superceded_proposal = Attribute(
-        "The branch merge proposal that this one supercedes.")
-    superceded_by = Attribute(
-        "The branch merge proposal that supercedes this one.")
+    supersedes = Attribute(
+        "The branch merge proposal that this one supersedes.")
+    superseded_by = Attribute(
+        "The branch merge proposal that supersedes this one.")
 
     date_created = Datetime(
         title=_('Date Created'), required=True, readonly=True)
@@ -235,7 +235,7 @@ class IBranchMergeProposal(Interface):
         """
 
     def resubmit(registrant):
-        """Mark the branch merge proposal as superceded and return a new one.
+        """Mark the branch merge proposal as superseded and return a new one.
 
         The new proposal is created as work-in-progress, and copies across
         user-entered data like the whiteboard.
