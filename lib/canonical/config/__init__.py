@@ -16,6 +16,9 @@ from urlparse import urlparse, urlunparse
 import zope.thread
 import ZConfig
 
+from canonical.lazr.config import ConfigSchema
+from canonical.lazr.interfaces.config import ConfigErrors
+
 
 # LPCONFIG specifies the config to use, which corresponds to a subdirectory
 # of configs. LPCONFIG_SECTION specifies the <canonical> section inside that
@@ -36,6 +39,7 @@ class CanonicalConfig(object):
     is thread safe (not that this will be a problem if we stick with
     simple configuration).
     """
+    _config = None
     _cache = zope.thread.local()
     _default_config_section = os.environ.get(
             SECTION_ENVIRONMENT_VARIABLE, DEFAULT_SECTION
@@ -55,6 +59,36 @@ class CanonicalConfig(object):
     def getConfig(self, section=None):
         """Return the ZConfig configuration"""
 
+        # The lazr.config instance takes precedence. We use lazy
+        # initialization to control the singleton's life.
+        if self._config is None:
+            config_dir = os.path.join(
+                os.path.dirname(__file__), os.pardir, os.pardir, os.pardir,
+                'configs')
+            environ_dir = os.environ.get(
+                    CONFIG_ENVIRONMENT_VARIABLE, DEFAULT_CONFIG)
+            schema_file = os.path.join(config_dir, 'schema.lazr.conf')
+            # XXX sinzui 2008-02-11: this must select the test config too.
+            config_file = os.path.join(
+                config_dir, environ_dir,'launchpad.lazr.conf')
+            schema = ConfigSchema(schema_file)
+            self._config = schema.load(config_file)
+            try:
+                self._config.validate()
+            except ConfigErrors, error:
+                message = '\n'.join([str(e) for e in error.errors])
+                self.fail(message)
+
+        try:
+            return getattr(self._config, section)
+        except AttributeError:
+            # XXX sinzui 2008-02-11: This must raise a warning when
+            # os.environ.get('ENABLE_DEPRECATED_ZCONFIG_WARNINGS', 'false')
+            # is true.
+            pass
+
+        # XXX sinzui 2008-02-11: This section is deprecated. It will
+        # be removed once Launchpad calls lazr.config exclusively.
         if section is None:
             section = self._default_config_section
 

@@ -3,7 +3,7 @@
 `canonical.config` provides singleton access to the Launchpad
 configuration, accessed via the `config` module global. It is
 responsible for loading the Launchpad schema and the environment's
-correct config. 
+correct config.
 
 
 == CanonicalConfig AKA config ==
@@ -40,6 +40,54 @@ There are also some automatically generated config items.
     True
     >>> config.name == os.environ.get('LPCONFIG', DEFAULT_SECTION)
     True
+
+
+== Transition from ZConfig to LAZR ==
+
+XXX sinzui 2008-02-11: This feature is deprecated.
+
+During the transition from `ZConfig` to `canonical.lazr.config`,
+`canonical.config` will load both config systems. When the
+section and key are not found in the lazr.config instance,
+canonical.config will failover to the ZConfig instance.
+
+For example, ZConfig data is stored in the _cache attribute, lazr.config
+data is stored in _config. ZConfig stores the value as an int in this
+example, where lazr.config values are always strings. Data from the
+lazr.config instance takes precedence over ZConfig when data is accessed
+as attributes of canonical.config.
+
+    >>> config._config.answertracker.days_before_expiration
+    '15'
+    >>> config._cache.testrunner.answertracker.days_before_expiration
+    15
+    >>> config.answertracker.days_before_expiration
+    '15'
+
+lazr.config does not support multi-sections unlike ZConfig. Code that
+access launchpad.vhosts.blueprints.hostname will failover to the ZConfig
+instance.
+
+    >>> config._config.launchpad.vhosts.blueprints.hostname
+    Traceback (most recent call last):
+      ...
+    AttributeError: ...
+    >>> config._cache.testrunner.launchpad.vhosts.blueprints.hostname
+    'blueprints.launchpad.dev'
+    >>> config.launchpad.vhosts.blueprints.hostname
+    'blueprints.launchpad.dev'
+
+When the ENABLE_DEPRECATED_ZCONFIG_WARNINGS is set to true in the
+environment, a warning is raised when canonical.config fails over
+to ZConfig. The previous example will raise a warning after the
+variable is set.
+
+    >>> import os
+    >>> os.putenv('ENABLE_DEPRECATED_ZCONFIG_WARNINGS', 'true')
+    >>> config.launchpad.vhosts.blueprints.hostname
+    'blueprints.launchpad.dev'
+
+    >>> os.putenv('ENABLE_DEPRECATED_ZCONFIG_WARNINGS', 'false')
 
 
 == DatabaseConfig AKA dbconfig ==
@@ -84,3 +132,4 @@ get an exception if they are not set:
       ...
     ValueError: dbuser must be set
     >>> config.launchpad.dbuser = 'launchpad'
+

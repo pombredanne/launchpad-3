@@ -68,6 +68,8 @@ def test_suite():
     # We know we are not using dirnames.
     # pylint: disable-msg=W0612
     suite = unittest.TestSuite()
+    # XXX sinzui 2008-02-11: This feature is deprecated. It is testing
+    # ZConif validators.
     suite.addTest(DocTestSuite(
         'canonical.config',
         optionflags=NORMALIZE_WHITESPACE | ELLIPSIS
