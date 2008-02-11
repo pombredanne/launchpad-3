@@ -1073,7 +1073,8 @@ Similar happens for email credits as with name credits.
 
 POFileToTranslationFileDataAdapter is an adapter to export a POFile
 object. It implements the ITranslationFileData interface which is a
-common file format to convert from one file format to another.
+common file format in-memory to convert from one file format to
+another.
 
     >>> from canonical.launchpad.interfaces import ITranslationFileData
     >>> evolution_sourcepackagename = sourcepackagenameset['evolution']
@@ -1084,8 +1085,8 @@ common file format to convert from one file format to another.
     >>> evolution_22 = potemplatesubset['evolution-2.2']
     >>> evolution_ja = evolution_22.getPOFileByLang('ja')
 
-Getting the translation file data is just a matter of adapt the object
-to the ITranslationFileData interface.
+Getting the translation file data is just a matter of adapting the
+object to the ITranslationFileData interface.
 
     >>> translation_file_data = ITranslationFileData(evolution_ja)
 
@@ -1118,8 +1119,8 @@ instead of the imported one stored in POFile.header.
     X-Launchpad-Export-Date: ...-...-... ...:...+...
     X-Generator: Launchpad (build ...)
 
-We can see that last translator is Rosetta Administrators, just like
-the updated header says:
+We can see that last translator is Carlos, just like the updated header
+says:
 
     >>> evolution_ja.lasttranslator.displayname
     u'Carlos Perell\xf3 Mar\xedn'
@@ -1137,6 +1138,7 @@ Import the function that will help us to do this test.
     >>> from canonical.launchpad.webapp.authorization import check_permission
 
 A Launchpad admin must have permission to edit an IPOFile always.
+
     >>> login('foo.bar@canonical.com')
     >>> check_permission('launchpad.Edit', pofile)
     True

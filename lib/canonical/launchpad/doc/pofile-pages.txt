@@ -463,8 +463,8 @@ object, we will get a TranslationMessage.
 POExportView class is used to handle download requests from the web
 site.
 
-When we get a download request for a file, the user is redirected to
-the index page of the IPOFile.
+Once a download request is registered, we redirect to the IPOFile's
+index page.
 
     >>> potemplate = potemplatesubset['evolution-2.2']
     >>> pofile_es = potemplate.getPOFileByLang('es')
