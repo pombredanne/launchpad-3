@@ -1023,10 +1023,6 @@ class DummyPOFile(POFileMixIn):
         """See `IRosettaStats`."""
         return 100.0
 
-    def updateExportCache(self, contents):
-        """See `IPOFile`."""
-        raise NotImplementedError
-
     def export(self, ignore_obsolete=False, force_utf8=False):
         """See `IPOFile`."""
         raise NotImplementedError
