@@ -8,12 +8,14 @@ environment variable, and defaults to 'default'
 
 __metaclass__ = type
 
+
 import os
 import logging
 from urlparse import urlparse, urlunparse
 
 import zope.thread
 import ZConfig
+
 
 # LPCONFIG specifies the config to use, which corresponds to a subdirectory
 # of configs. LPCONFIG_SECTION specifies the <canonical> section inside that
@@ -25,6 +27,7 @@ SECTION_ENVIRONMENT_VARIABLE = 'LPCONFIG_SECTION'
 DEFAULT_SECTION = 'default'
 DEFAULT_CONFIG = 'default'
 
+
 class CanonicalConfig(object):
     """
     Singleton configuration, accessed via the `config` module global.
@@ -32,33 +35,6 @@ class CanonicalConfig(object):
     Cached copies are kept in thread locals ensuring the configuration
     is thread safe (not that this will be a problem if we stick with
     simple configuration).
-
-    >>> from canonical.config import config
-    >>> config.dbhost
-    'localhost'
-    >>> config.launchpad.db_statement_timeout is None
-    True
-    >>> config.launchpad.dbuser
-    'launchpad'
-    >>> config.librarian.dbuser
-    'librarian'
-    >>> config.librarian.upload_host
-    'localhost'
-    >>> config.librarian.upload_port
-    59090
-    >>> config.librarian.download_host
-    'localhost'
-    >>> config.librarian.download_port
-    58000
-
-    There are also some automatically generated config items
-
-    >>> import os.path, canonical
-    >>> os.path.join(config.root, 'lib', 'canonical') == os.path.dirname(
-    ...     canonical.__file__)
-    True
-    >>> config.name == os.environ.get('LPCONFIG', DEFAULT_SECTION)
-    True
     """
     _cache = zope.thread.local()
     _default_config_section = os.environ.get(
@@ -152,6 +128,7 @@ def url(value):
     value = urlunparse(bits)
     return value
 
+
 def urlbase(value):
     """ZConfig validator for url bases
 
@@ -202,9 +179,11 @@ def urlbase(value):
         value = value + '/'
     return value
 
+
 def commalist(value):
     """ZConfig validator for a comma seperated list"""
     return [v.strip() for v in value.split(',')]
+
 
 def loglevel(value):
     """ZConfig validator for log levels.
@@ -242,47 +221,7 @@ def loglevel(value):
 
 
 class DatabaseConfig:
-    """A class to provide the Launchpad database configuration.
-
-    The dbconfig option overlays the database configurations of a
-    chosen config section over the base section:
-
-        >>> from canonical.config import config, dbconfig
-        >>> print config.dbhost
-        localhost
-        >>> print config.dbuser
-        Traceback (most recent call last):
-          ...
-        AttributeError: ...
-        >>> print config.launchpad.dbhost
-        None
-        >>> print config.launchpad.dbuser
-        launchpad
-        >>> print config.librarian.dbuser
-        librarian
-
-        >>> dbconfig.setConfigSection('librarian')
-        >>> print dbconfig.dbhost
-        localhost
-        >>> print dbconfig.dbuser
-        librarian
-
-        >>> dbconfig.setConfigSection('launchpad')
-        >>> print dbconfig.dbhost
-        localhost
-        >>> print dbconfig.dbuser
-        launchpad
-
-    Some values are required to have a value, such as dbuser.  So we
-    get an exception if they are not set:
-
-        >>> config.launchpad.dbuser = None
-        >>> print dbconfig.dbuser
-        Traceback (most recent call last):
-          ...
-        ValueError: dbuser must be set
-        >>> config.launchpad.dbuser = 'launchpad'
-    """
+    """A class to provide the Launchpad database configuration."""
     _config_section = None
     _db_config_attrs = frozenset([
         'dbuser', 'dbhost', 'dbname', 'db_statement_timeout',

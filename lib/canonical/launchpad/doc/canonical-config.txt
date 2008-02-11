@@ -1,0 +1,86 @@
+= Canonical Config =
+
+`canonical.config` provides singleton access to the Launchpad
+configuration, accessed via the `config` module global. It is
+responsible for loading the Launchpad schema and the environment's
+correct config. 
+
+
+== CanonicalConfig AKA config ==
+
+CanonicalConfig is a singleton that manages access to the config.
+Cached copies are kept in thread locals ensuring the configuration
+is thread safe (not that this will be a problem if we stick with
+simple configuration).
+
+    >>> from canonical.config import config
+    >>> config.dbhost
+    'localhost'
+    >>> config.launchpad.db_statement_timeout is None
+    True
+    >>> config.launchpad.dbuser
+    'launchpad'
+    >>> config.librarian.dbuser
+    'librarian'
+    >>> config.librarian.upload_host
+    'localhost'
+    >>> config.librarian.upload_port
+    59090
+    >>> config.librarian.download_host
+    'localhost'
+    >>> config.librarian.download_port
+    58000
+
+There are also some automatically generated config items.
+
+    >>> import os.path, canonical
+    >>> from canonical.config import DEFAULT_SECTION
+    >>> os.path.join(config.root, 'lib', 'canonical') == os.path.dirname(
+    ...     canonical.__file__)
+    True
+    >>> config.name == os.environ.get('LPCONFIG', DEFAULT_SECTION)
+    True
+
+
+== DatabaseConfig AKA dbconfig ==
+
+XXX sinzui 2008-02-11: This feature is deprecated.
+
+The dbconfig option overlays the database configurations of a
+chosen config section over the base section:
+
+    >>> from canonical.config import dbconfig
+    >>> print config.dbhost
+    localhost
+    >>> print config.dbuser
+    Traceback (most recent call last):
+      ...
+    AttributeError: ...
+    >>> print config.launchpad.dbhost
+    None
+    >>> print config.launchpad.dbuser
+    launchpad
+    >>> print config.librarian.dbuser
+    librarian
+
+    >>> dbconfig.setConfigSection('librarian')
+    >>> print dbconfig.dbhost
+    localhost
+    >>> print dbconfig.dbuser
+    librarian
+
+    >>> dbconfig.setConfigSection('launchpad')
+    >>> print dbconfig.dbhost
+    localhost
+    >>> print dbconfig.dbuser
+    launchpad
+
+Some values are required to have a value, such as dbuser.  So we
+get an exception if they are not set:
+
+    >>> config.launchpad.dbuser = None
+    >>> print dbconfig.dbuser
+    Traceback (most recent call last):
+      ...
+    ValueError: dbuser must be set
+    >>> config.launchpad.dbuser = 'launchpad'
