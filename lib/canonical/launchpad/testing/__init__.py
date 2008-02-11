@@ -18,9 +18,11 @@ from zope.component import getUtility
 from canonical.launchpad.interfaces import (
     BranchSubscriptionNotificationLevel,
     BranchType,
+    CodeImportReviewStatus,
     CreateBugParams,
     IBranchSet,
     IBugSet,
+    ICodeImportJobWorkflow,
     ICodeImportSet,
     ILaunchpadCelebrities,
     IPersonSet,
@@ -248,11 +250,29 @@ class LaunchpadObjectFactory:
         syncUpdate(series)
         return series
 
-    def makeCodeImport(self):
-        """Create a new, arbitrary CodeImport."""
+    def makeCodeImport(self, url=None):
+        """Create and return a new, arbitrary code import.
+
+        The code import will be an import from a Subversion repository located
+        at `url`, or an arbitrary unique url if the parameter is not supplied.
+        """
+        if url is None:
+            url = self.getUniqueURL()
         vcs_imports = getUtility(ILaunchpadCelebrities).vcs_imports
-        branch = self.makeBranch(owner=vcs_imports)
-        import_set = getUtility(ICodeImportSet)
-        url = self.getUniqueURL()
-        return import_set.new(
-            branch.owner, branch, RevisionControlSystems.SVN, url)
+        branch = self.makeBranch(
+            BranchType.IMPORTED, owner=vcs_imports)
+        registrant = self.makePerson()
+        return getUtility(ICodeImportSet).new(
+            registrant, branch, rcs_type=RevisionControlSystems.SVN,
+            svn_branch_url=url)
+
+    def makeCodeImportJob(self, code_import):
+        """Create and return a new code import job for the given import.
+
+        This implies setting the import's review_status to REVIEWED.
+        """
+        code_import.updateFromData(
+            {'review_status': CodeImportReviewStatus.REVIEWED},
+            code_import.registrant)
+        workflow = getUtility(ICodeImportJobWorkflow)
+        return workflow.newJob(code_import)
