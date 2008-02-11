@@ -6,7 +6,7 @@ __metaclass__ = type
 
 __all__ = [
     'ArchiveNavigation',
-    'ArchiveOverviewMenu',
+    'ArchiveContextMenu',
     'ArchiveView',
     'ArchivePackageDeletionView',
     'ArchiveActivateView',
@@ -35,9 +35,9 @@ from canonical.launchpad.interfaces import (
     IBuildSet, IHasBuildRecords, ILaunchpadCelebrities, IPPAActivateForm,
     IStructuralHeaderPresentation, NotFoundError, PackagePublishingStatus)
 from canonical.launchpad.webapp import (
-    action, canonical_url, custom_widget, enabled_with_permission,
-    stepthrough, ApplicationMenu, LaunchpadEditFormView, LaunchpadFormView,
-    LaunchpadView, Link, Navigation, StandardLaunchpadFacets)
+    action, canonical_url, ContextMenu, custom_widget,
+    enabled_with_permission, stepthrough, LaunchpadEditFormView,
+    LaunchpadFormView, LaunchpadView, Link, Navigation)
 from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.widgets import LabeledMultiCheckBoxWidget
 from canonical.widgets.textwidgets import StrippedTextWidget
@@ -60,11 +60,10 @@ class ArchiveNavigation(Navigation):
             return None
 
 
-class ArchiveOverviewMenu(ApplicationMenu):
+class ArchiveContextMenu(ContextMenu):
     """Overview Menu for IArchive."""
 
     usedfor = IArchive
-    facet = 'overview'
     links = ['admin', 'edit', 'builds', 'delete']
 
     @enabled_with_permission('launchpad.Admin')

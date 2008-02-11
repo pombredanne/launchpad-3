@@ -25,6 +25,11 @@
       factory="canonical.launchpad.browser.archive_to_structualheading"
       />
 
+  <browser:menus
+    module="canonical.launchpad.browser"
+    classes="ArchiveContextMenu"
+    />
+
   <browser:defaultView
     for="canonical.launchpad.interfaces.IArchive"
     name="+index"
