@@ -39,6 +39,7 @@ from canonical.launchpad.webapp import (
     stepthrough, ApplicationMenu, LaunchpadEditFormView, LaunchpadFormView,
     LaunchpadView, Link, Navigation, StandardLaunchpadFacets)
 from canonical.launchpad.webapp.batching import BatchNavigator
+from canonical.launchpad.webapp.menu import structured
 from canonical.widgets import LabeledMultiCheckBoxWidget
 from canonical.widgets.textwidgets import StrippedTextWidget
 
@@ -394,7 +395,7 @@ class ArchivePackageDeletionView(ArchiveViewBase, LaunchpadFormView):
         messages.append("<p>Deletion comment: %s</p>" % comment)
 
         notification = "\n".join(messages)
-        self.request.response.addNotification(notification)
+        self.request.response.addNotification(structured(notification))
 
 
 class ArchiveActivateView(LaunchpadFormView):
@@ -464,6 +465,6 @@ class ArchiveEditView(BaseArchiveEditView):
 
 class ArchiveAdminView(BaseArchiveEditView):
 
-    field_names = ['enabled', 'authorized_size', 'whiteboard']
+    field_names = ['enabled', 'private', 'authorized_size', 'whiteboard']
     custom_widget(
         'whiteboard', TextAreaWidget, height=10, width=30)

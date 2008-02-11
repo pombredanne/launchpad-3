@@ -15,7 +15,7 @@ from sqlobject import ForeignKey, IntCol, StringCol
 from canonical.database.constants import DEFAULT, UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
-from canonical.database.sqlbase import SQLBase
+from canonical.database.sqlbase import SQLBase, sqlvalues
 
 from canonical.launchpad.database.branchrevision import BranchRevision
 from canonical.launchpad.interfaces import (
@@ -81,10 +81,9 @@ class BranchMergeProposal(SQLBase):
 
     def isPersonValidReviewer(self, reviewer):
         """See `IBranchMergeProposal`."""
-        target_review_team = self.target_branch.reviewer
-        if target_review_team is None:
-            target_review_team = self.target_branch.owner
-        return reviewer.inTeam(target_review_team)
+        if reviewer is None:
+            return False
+        return reviewer.inTeam(self.target_branch.code_reviewer)
 
     def isReviewable(self):
         """See `IBranchMergeProposal`."""
@@ -140,3 +139,14 @@ class BranchMergeProposal(SQLBase):
         if date_merged is None:
             date_merged = UTC_NOW
         self.date_merged = date_merged
+
+    def getUnlandedSourceBranchRevisions(self):
+        """See `IBranchMergeProposal`."""
+        return BranchRevision.select('''
+            BranchRevision.branch = %s AND
+            BranchRevision.sequence IS NOT NULL AND
+            BranchRevision.revision NOT IN (
+              SELECT revision FROM BranchRevision
+              WHERE branch = %s)
+            ''' % sqlvalues(self.source_branch, self.target_branch),
+            prejoins=['revision'], orderBy='-sequence')

@@ -231,3 +231,12 @@ class IBranchMergeProposal(Interface):
         As long as the source branch hasn't been merged into the target
         the proposal is able to be reviewed.
         """
+
+    def getUnlandedSourceBranchRevisions():
+        """Return a sequence of `BranchRevision` objects.
+
+        Returns those revisions that are in the revision history for the
+        source branch that are not in the revision history of the target
+        branch.  These are the revisions that have been committed to the
+        source branch since it branched off the target branch.
+        """

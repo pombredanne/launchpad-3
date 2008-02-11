@@ -32,5 +32,4 @@ builders listing page:
   >>> for td in portlet.fetch('td'):
   ...     print extract_text(td)
   i386
-  2
-
+  1

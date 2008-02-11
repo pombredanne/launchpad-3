@@ -76,6 +76,7 @@ class TestBranchView(unittest.TestCase):
                 'lifecycle_status': BranchLifecycleStatus.NEW,
                 'home_page': 'http://example.com',
                 'whiteboard': '',
+                'owner': arbitrary_person,
                 'author': arbitrary_person,
                 'product': arbitrary_product
                 }

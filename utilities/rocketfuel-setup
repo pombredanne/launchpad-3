@@ -123,7 +123,7 @@ if [ $? -ne 0 ]; then
   echo "Please add the following directives to your ~/.ssh/config:
 ------------------------------------------------------------
 Host bazaar.launchpad.dev
-    Hostname localhost
+    Hostname launchpad.dev
     HostKeyAlias bazaar.launchpad.dev
     User sabdfl
     Port 5022
@@ -178,74 +178,6 @@ if [ $? -ne 0 ]; then
   fi
 fi
 
-echo "
-NameVirtualHost 127.0.0.88:80
-
-<VirtualHost 127.0.0.88:80>
-  ServerName launchpad.dev
-  ServerAlias code.launchpad.dev answers.launchpad.dev blueprints.launchpad.dev bugs.launchpad.dev translations.launchpad.dev xmlrpc.launchpad.dev feeds.launchpad.dev
-  <Proxy *>
-    Order deny,allow
-    Allow from 127.0.0.0/255.0.0.0
-  </Proxy>
-  ProxyPreserveHost on
-  ProxyPass / http://localhost:8086/ retry=1
-</VirtualHost>
-" | sudo tee /etc/apache2/sites-available/launchpad.dev > /dev/null
-
-echo "
-<VirtualHost 127.0.0.88:80>
-  ServerName bazaar.launchpad.dev
-
-  ProxyRequests off
-  <Proxy *>
-    Order deny,allow
-    Allow from localhost 127.0.0.0/255.0.0.0
-  </Proxy>
-  ProxyTimeout 20
-
-  # The ACLs here are... complex:
-
-  # (1) People hitting the frontpage (i.e. /) are redirected to the Launchpad frontpage
-  # (2) Anything mapped in the launchpad-lookup.txt file is public, so we proxy it
-  # (3) Anything of the form /+branches/nnnnnnnn/ is only allowed from the branch scanner and proxied
-  # (4) Anything of the form /nn/nn/nn/nn/ is only allowed from ourselves (i.e. via a proxy from the above 2 rules)
-  # (5) The /robots.txt file is served normally.
-  # (6) Everything else is redirected to a non-existent page to give the user a 404
-
-  RewriteEngine On
-
-  # Generate this file using 'make rewritemap'.
-  RewriteMap branch-list txt:/var/tmp/sm-ng/config/launchpad-lookup.txt
-
-  # (1) / -> Launchpad frontpage
-  RewriteRule ^/$ http://launchpad.dev [L]
-
-  # (2) This turns things like ~mdz/branches/branchname into the actual dir
-  RewriteRule ^/(~[^/]+/[^/]+/[^/]+)(|/.*)$ /${branch-list:$1|notfound}$2 [L,P]
-
-  # (3) This is for e.g. http://bazaar.launchpad.net/+branches/0000f22a from the branch scanner
-  RewriteRule ^/\+branches/([[:xdigit:]]{2})([[:xdigit:]]{2})([[:xdigit:]]{2})([[:xdigit:]]{2})/(.*) /$1/$2/$3/$4/$5 [L,P]
-
-  # (4) Proxied access to the directory structure (4 levels of 2 digit hex directories)
-  RewriteRule ^/[[:xdigit:]]{2}/[[:xdigit:]]{2}/[[:xdigit:]]{2}/[[:xdigit:]]{2}/.*$ - [L]
-
-  # (5) The /robots.txt file is served normally.
-  RewriteRule ^/robots.txt$ - [L]
-
-  # (6) Anything else is not allowed
-  RewriteRule ^.*$ /notfound [L]
-
-  DocumentRoot /var/tmp/sm-ng/mirrors
-  <Directory /var/tmp/sm-ng/mirrors/>
-    Options SymLinksIfOwnerMatch
-    AllowOverride None
-    Options Indexes
-  </Directory>
-
-</VirtualHost>
-" | sudo tee /etc/apache2/sites-available/bazaar.launchpad.dev > /dev/null
-
 # Create the document root to avoid Apache warnings
 mkdir -p /var/tmp/sm-ng/mirrors
 
@@ -268,24 +200,6 @@ fi
 sudo a2enmod rewrite > /dev/null
 if [ $? -ne 0 ]; then
   echo "ERROR: Unable to enable rewrite module in Apache2"
-  exit 1
-fi
-
-sudo a2ensite launchpad.dev > /dev/null
-if [ $? -ne 0 ]; then
-  echo "ERROR: Unable to enable launchpad.dev"
-  exit 1
-fi
-
-sudo a2ensite bazaar.launchpad.dev > /dev/null
-if [ $? -ne 0 ]; then
-  echo "ERROR: Unable to enable bazaar.launchpad.dev"
-  exit 1
-fi
-
-sudo apache2ctl restart > /dev/null
-if [ $? -ne 0 ]; then
-  echo "ERROR: Unable to restart Apache2"
   exit 1
 fi
 
@@ -331,6 +245,14 @@ if [ ! `bzr info | grep -i "parent branch" | cut -d: -f3` = \
     exit 1
   fi
 fi
+
+sudo make install > /dev/null
+if [ $? -ne 0 ]; then
+  echo "ERROR: Unable to install apache config appropriately"
+  exit 1
+fi
+
+
 
 # Setup Bazaar locations configuration
 if [ ! -d ~/.bazaar ]; then

@@ -150,6 +150,42 @@ To check if a person is an Ubuntero, use IPerson.is_ubuntero:
     >>> foobar.is_ubuntero
     True
 
+=== Looking Up Users by OpenID Identifer ===
+
+Each Launchpad user is assigned an unchanging OpenID identity URL.
+The last component of this URL is specific to the user, and can be
+used to look up the user:
+
+    >>> person = personset.getByOpenIdIdentifier('name12_oid')
+    >>> print person.displayname
+    Sample Person
+
+If we look up a string not associated with any user, None is returned:
+
+    >>> print personset.getByOpenIdIdentifier('no-such-identifier')
+    None
+
+While an identifier may be assigned to a team, it will not be
+returned:
+
+    >>> team = personset.getByName('simple-team')
+    >>> team.isTeam()
+    True
+    >>> team.openid_identifier
+    u'simple-team_oid'
+    >>> print personset.getByOpenIdIdentifier('simple-team_oid')
+    None
+
+Accounts that have not been validated are not returned either:
+
+    >>> person = personset.getByName('matsubara')
+    >>> person.is_valid_person
+    False
+    >>> person.openid_identifier
+    u'matsubara_oid'
+    >>> print personset.getByOpenIdIdentifier('matsubara_oid')
+    None
+
 == Teams ==
 
 As we said above, the Person class is overloaded to represent teams so

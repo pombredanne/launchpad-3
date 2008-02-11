@@ -34,6 +34,9 @@ from canonical.launchpad.scripts.processaccepted import (
     close_bugs_for_queue_item)
 
 
+PARTNER_COMPONENT_NAME = 'partner'
+
+
 class FatalUploadError(Exception):
     """A fatal error occurred processing the upload; processing aborted."""
 
@@ -415,6 +418,15 @@ class NascentUpload:
             return False
         return self.policy.archive.purpose == ArchivePurpose.PPA
 
+    def getComponents(self):
+        """Return a set of components present in the uploaded files."""
+        return set(file.component_name for file in self.changes.files)
+
+    @property
+    def is_partner(self):
+        """Return true if this is an upload to the partner archive."""
+        return PARTNER_COMPONENT_NAME in self.getComponents()
+
     def reject(self, msg):
         """Add the provided message to the rejection message."""
         self.rejections.append(msg)
@@ -704,6 +716,46 @@ class NascentUpload:
         # That's why we need this conversion here.
         uploaded_file.priority_name = override.priority.name.lower()
 
+    def processUnknownFile(self, uploaded_file):
+        """Apply a set of actions for newly-uploaded (unknown) files.
+
+        Newly-uploaded files have a default set of overrides to be applied.
+        This reduces the amount of work that archive admins have to do
+        since they override the majority of new uploads with the same
+        values.  The rules for overriding are: (See bug #120052)
+            'contrib' -> 'multiverse'
+            'non-free' -> 'multiverse'
+            everything else -> 'universe'
+        This mainly relates to Debian syncs, where the default component
+        is 'main' but should not be in main for Ubuntu.
+
+        In the case of a PPA, files are always overridden to 'main'.
+
+        All files are also marked as new unless it's a PPA file, which are
+        never considered new as they are auto-accepted.
+        """
+        if self.is_ppa:
+            uploaded_file.component_name = 'main'
+            return
+
+        # All newly-uploaded, non-PPA files must be marked as new so that
+        # the upload goes to the correct queue.  PPA uploads are always
+        # auto-accepted so they are never new.
+        uploaded_file.new = True
+
+        if self.is_partner:
+            # Don't override partner uploads.
+            return
+
+        component_override_map = {
+            'contrib' : 'multiverse',
+            'non-free' : 'multiverse',
+            }
+
+        # Apply the component override and default to universe.
+        uploaded_file.component_name = component_override_map.get(
+            uploaded_file.component_name, 'universe')
+
     def find_and_apply_overrides(self):
         """Look for ancestry and overrides information.
 
@@ -728,12 +780,10 @@ class NascentUpload:
                     self.overrideSource(uploaded_file, ancestry)
                     uploaded_file.new = False
                 else:
-                    if self.is_ppa:
-                        uploaded_file.component_name = 'main'
-                    else:
-                        self.logger.debug(
-                            "%s: (source) NEW" % (uploaded_file.package))
-                        uploaded_file.new = True
+                    # If the source is new, then apply default overrides.
+                    self.logger.debug(
+                        "%s: (source) NEW" % (uploaded_file.package))
+                    self.processUnknownFile(uploaded_file)
 
             elif isinstance(uploaded_file, BaseBinaryUploadFile):
                 self.logger.debug(
@@ -761,12 +811,9 @@ class NascentUpload:
                     if ancestry is not None:
                         self.checkBinaryVersion(uploaded_file, ancestry)
                 else:
-                    if self.is_ppa:
-                        uploaded_file.component_name = 'main'
-                    else:
-                        self.logger.debug(
-                            "%s: (binary) NEW" % (uploaded_file.package))
-                        uploaded_file.new = True
+                    self.logger.debug(
+                        "%s: (binary) NEW" % (uploaded_file.package))
+                    self.processUnknownFile(uploaded_file)
 
     #
     # Actually processing accepted or rejected uploads -- and mailing people
@@ -976,10 +1023,9 @@ class NascentUpload:
         """
 
         # Get a set of the components used in this upload:
-        components = set(file.component_name for file in self.changes.files)
+        components = self.getComponents()
 
-        partner_component_name = 'partner'
-        if partner_component_name in components:
+        if PARTNER_COMPONENT_NAME in components:
             # Reject partner uploads to PPAs.
             if self.is_ppa:
                 self.reject("PPA does not support partner uploads.")
@@ -992,7 +1038,7 @@ class NascentUpload:
             # See if there is an archive to override with.
             distribution = self.policy.distroseries.distribution
             archive = distribution.getArchiveByComponent(
-                partner_component_name
+                PARTNER_COMPONENT_NAME
                 )
 
             # Check for data problems:
