@@ -215,6 +215,7 @@ name even if it differs:
     source: u'linux-source-2.6.15'
     binary: u'linux-2.6.12'
 
+
 == Distribution Sorting ==
 
 If you ask for all the distributions in the DistributionSet you should get
@@ -453,6 +454,7 @@ We can get only valid specs (those that are not obsolete or superseded):
  ...     print spec.name
  kde-desktopfile-langpacks
 
+
 == Milestones ==
 
 We can use IDistribution.milestones to get all milestones associated with any
@@ -511,6 +513,7 @@ the distribution in question:
 
     >>> [archive.owner.name for archive in debian.getAllPPAs()]
     []
+
 
 === Searching PPAs ===
 
@@ -629,7 +632,6 @@ Records in DONE also do not trigger pending-acceptance state in PPAs:
 
 
 == Retrieving only pending-acceptance PPAs ==
-
 
 'getPendingPublicationPPAs'lookup will only return PPA which have
 PENDING publishing records, it's used in 'publish-distro' in '--ppa'

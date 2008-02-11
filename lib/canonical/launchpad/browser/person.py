@@ -94,12 +94,11 @@ import pytz
 import urllib
 
 from zope.app.form.browser import SelectWidget, TextAreaWidget
-from zope.app.session.interfaces import ISession
 from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
-from zope.event import notify
 from zope.formlib import form
 from zope.interface import implements
 from zope.component import getUtility
+from zope.publisher.interfaces import NotFound
 from zope.publisher.interfaces.browser import IBrowserPublisher
 from zope.schema import Choice, TextLine
 from zope.schema.vocabulary import SimpleVocabulary, SimpleTerm
@@ -150,8 +149,8 @@ from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.dynmenu import DynMenu, neverempty
 from canonical.launchpad.webapp.publisher import LaunchpadView
 from canonical.launchpad.webapp.batching import BatchNavigator
-from canonical.launchpad.webapp.interfaces import (
-    IPlacelessLoginSource, LoggedOutEvent)
+from canonical.launchpad.webapp.interfaces import IPlacelessLoginSource
+from canonical.launchpad.webapp.login import logoutPerson
 from canonical.launchpad.webapp import (
     ApplicationMenu, ContextMenu, LaunchpadEditFormView, LaunchpadFormView,
     Link, Navigation, StandardLaunchpadFacets, action, canonical_url,
@@ -649,9 +648,12 @@ class PersonBranchesMenu(ApplicationMenu):
         return Link('+subscribedbranches', text, icon='branch')
 
     def addbranch(self):
+        if self.user is None:
+            enabled = False
+        else:
+            enabled = self.user.inTeam(self.context)
         text = 'Register branch'
-        return Link('+addbranch', text, icon='add')
-
+        return Link('+addbranch', text, icon='add', enabled=enabled)
 
 
 class PersonBugsMenu(ApplicationMenu):
@@ -829,7 +831,9 @@ class CommonMenuLinks:
         target = '+archive'
         text = 'Personal Package Archive'
         summary = 'Browse Personal Package Archive packages.'
-        enable_link = (self.context.archive is not None)
+        enable_link = (self.context.archive is not None and
+                       check_permission('launchpad.View',
+                                        self.context.archive))
         return Link(target, text, summary, icon='info', enabled=enable_link)
 
 
@@ -1190,14 +1194,7 @@ class PersonDeactivateAccountView(LaunchpadFormView):
     @action(_("Deactivate My Account"), name="deactivate")
     def deactivate_action(self, action, data):
         self.context.deactivateAccount(data['account_status_comment'])
-        session = ISession(self.request)
-        authdata = session['launchpad.authenticateduser']
-        previous_login = authdata.get('personid')
-        assert previous_login is not None, (
-            "User is not logged in; he can't be here.")
-        authdata['personid'] = None
-        authdata['logintime'] = datetime.utcnow()
-        notify(LoggedOutEvent(self.request))
+        logoutPerson(self.request)
         self.request.response.addNoticeNotification(
             _(u'Your account has been deactivated.'))
         self.next_url = self.request.getApplicationURL()
@@ -1207,6 +1204,15 @@ class PersonClaimView(LaunchpadFormView):
     """The page where a user can claim an unvalidated profile."""
 
     schema = IPersonClaim
+
+    def initialize(self):
+        if self.context.is_valid_person_or_team:
+            # Valid teams and people aren't claimable. We pull the path
+            # out of PATH_INFO to make sure that the exception looks
+            # good for subclasses. We're that picky!
+            name = self.request['PATH_INFO'].split("/")[-1]
+            raise NotFound(self, name, request=self.request)
+        LaunchpadFormView.initialize(self)
 
     def validate(self, data):
         emailaddress = data.get('emailaddress')
@@ -3024,7 +3030,11 @@ class PersonEditEmailsView(LaunchpadFormView):
         The email address must be syntactically valid and must not already
         be in use.
         """
-        self.validate_widgets(data, ['newemail'])
+        has_errors = bool(self.validate_widgets(data, ['newemail']))
+        if has_errors:
+            # We know that 'newemail' is empty.
+            return self.errors
+
         newemail = data['newemail']
         if not valid_email(newemail):
             self.addError(

@@ -3,10 +3,6 @@ consumer need not specify the identity URL, instead leaving it up to the
 OpenID provider to determine it. We call this mode 'OP Identifier' for
 lack of a better name.
 
-    >>> from canonical.launchpad.ftests.openidhelpers import install_consumer
-    >>> install_consumer()
-
-
 To do this, the consumer simply needs to specify the identity as
 'http://specs.openid.net/auth/2.0/identifier_select'.  Starting with a
 new browser context, we are presented with a login screen.  After
@@ -63,10 +59,4 @@ presented with an authorization screen instead:
     ...
     openid.return_to:http://launchpad.dev/+openid-consumer
     ...
-
-
-== Cleanup ==
-
-    >>> from canonical.launchpad.ftests.openidhelpers import uninstall_consumer
-    >>> uninstall_consumer()
 
