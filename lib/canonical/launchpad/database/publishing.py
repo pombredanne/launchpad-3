@@ -3,13 +3,15 @@
 
 __metaclass__ = type
 
-__all__ = ['SourcePackageFilePublishing', 'BinaryPackageFilePublishing',
-           'SecureSourcePackagePublishingHistory',
-           'SecureBinaryPackagePublishingHistory',
-           'SourcePackagePublishingHistory',
-           'BinaryPackagePublishingHistory',
-           'IndexStanzaFields',
-           ]
+__all__ = [
+    'BinaryPackageFilePublishing',
+    'BinaryPackagePublishingHistory',
+    'IndexStanzaFields',
+    'SecureBinaryPackagePublishingHistory',
+    'SecureSourcePackagePublishingHistory',
+    'SourcePackageFilePublishing',
+    'SourcePackagePublishingHistory',
+    ]
 
 from warnings import warn
 import os
@@ -22,12 +24,11 @@ from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
 from canonical.launchpad.interfaces import (
-    ISourcePackageFilePublishing, IBinaryPackageFilePublishing,
-    ISecureSourcePackagePublishingHistory, IBinaryPackagePublishingHistory,
-    ISecureBinaryPackagePublishingHistory, ISourcePackagePublishingHistory,
-    IArchiveSafePublisher, PackagePublishingPriority,
-    PackagePublishingStatus, PackagePublishingPocket,
-    PoolFileOverwriteError)
+    IArchiveSafePublisher, IBinaryPackageFilePublishing,
+    IBinaryPackagePublishingHistory, ISecureBinaryPackagePublishingHistory,
+    ISecureSourcePackagePublishingHistory, ISourcePackageFilePublishing,
+    ISourcePackagePublishingHistory, PackagePublishingPriority,
+    PackagePublishingStatus, PackagePublishingPocket, PoolFileOverwriteError)
 from canonical.launchpad.scripts.ftpmaster import ArchiveOverriderError
 
 
@@ -429,11 +430,13 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
             Build.sourcepackagerelease=%s AND
             DistroArchSeries.distroseries=%s AND
             BinaryPackagePublishingHistory.archive=%s AND
+            BinaryPackagePublishingHistory.pocket=%s AND
             BinaryPackagePublishingHistory.status=%s
             """ % sqlvalues(
                     self.sourcepackagerelease,
                     self.distroseries,
                     self.archive,
+                    self.pocket,
                     PackagePublishingStatus.PUBLISHED)
 
         orderBy = ['BinaryPackageName.name',
@@ -509,9 +512,12 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
         fields.append('Package', spr.name)
         fields.append('Binary', spr.dsc_binaries)
         fields.append('Version', spr.version)
+        fields.append('Section', self.section.name)
         fields.append('Maintainer', spr.dsc_maintainer_rfc822)
         fields.append('Build-Depends', spr.builddepends)
         fields.append('Build-Depends-Indep', spr.builddependsindep)
+        fields.append('Build-Conflicts', spr.build_conflicts)
+        fields.append('Build-Conflicts-Indep', spr.build_conflicts_indep)
         fields.append('Architecture', spr.architecturehintlist)
         fields.append('Standards-Version', spr.dsc_standards_version)
         fields.append('Format', spr.dsc_format)
@@ -669,19 +675,29 @@ class BinaryPackagePublishingHistory(SQLBase, ArchivePublisherBase):
         else:
             architecture = 'all'
 
+        essential = None
+        if bpr.essential:
+            essential = 'yes'
+
         fields = IndexStanzaFields()
         fields.append('Package', bpr.name)
+        fields.append('Source', spr.name)
         fields.append('Priority', self.priority.title.lower())
         fields.append('Section', self.section.name)
         fields.append('Installed-Size', bpr.installedsize)
         fields.append('Maintainer', spr.dsc_maintainer_rfc822)
         fields.append('Architecture', architecture)
         fields.append('Version', bpr.version)
+        fields.append('Recommends', bpr.recommends)
         fields.append('Replaces', bpr.replaces)
         fields.append('Suggests', bpr.suggests)
         fields.append('Provides', bpr.provides)
         fields.append('Depends', bpr.depends)
         fields.append('Conflicts', bpr.conflicts)
+        fields.append('Pre-Depends', bpr.pre_depends)
+        fields.append('Enhances', bpr.enhances)
+        fields.append('Breaks', bpr.breaks)
+        fields.append('Essential', essential)
         fields.append('Filename', bin_filepath)
         fields.append('Size', bin_size)
         fields.append('MD5sum', bin_md5)

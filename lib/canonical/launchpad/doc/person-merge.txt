@@ -177,6 +177,119 @@ merged accounts from lists etc.
     True
 
 
+== Person decoration ==
+
+Several tables "extend" the Person table by having additional information
+that is UNIQUEly keyed to Person.id. We have a utility function that merges
+information in those tables, we test it here.
+
+We will use PersonLocation as an example. There are many permutations and
+combinations, we will exercise them all, and in each case we'll create, and
+then delete, the needed two people.
+
+    >>> from canonical.launchpad.database import PersonSet
+    >>> from canonical.launchpad.interfaces import PersonCreationRationale
+    >>> personset = PersonSet()
+
+    >>> skip = []
+    >>> def decorator_refs(cur, winner, loser):
+    ...    cur.execute(
+    ...        "SELECT person, last_modified_by FROM PersonLocation "
+    ...        "WHERE person IN (%(loser)d, %(winner)d)"
+    ...        "      OR last_modified_by IN (%(loser)d, %(winner)d)"
+    ...        "ORDER BY date_created" % {
+    ...        'winner': winner.id, 'loser': loser.id})
+    ...    result = ''
+    ...    for line in cur.fetchall():
+    ...        for item in line:
+    ...            if item == winner.id: result += 'winner, '
+    ...            elif item == loser.id: result += 'loser, '
+    ...            else: result += str(item) + ', '
+    ...        result += '\n'
+    ...    return result.strip()
+    >>> def new_players():
+    ...  lead = 99
+    ...  while True:
+    ...     lead += 1
+    ...     name = str(lead)
+    ...     lp = PersonCreationRationale.OWNER_CREATED_LAUNCHPAD
+    ...     winner = Person(name=name+'.winner', displayname='Merge Winner',
+    ...                     creation_rationale=lp)
+    ...     loser = Person(name=name+'.loser', displayname='Merge Loser',
+    ...                     creation_rationale=lp)
+    ...     yield winner, loser
+    >>> endless_supply_of_players = new_players()
+
+First, we will test a merge where there is no decoration.
+
+    >>> winner, loser = endless_supply_of_players.next()
+    >>> print decorator_refs(cur, winner, loser)
+    <BLANKLINE>
+    >>> personset._merge_person_decoration(winner, loser, skip, cur,
+    ...     'PersonLocation', 'person', ['last_modified_by',])
+
+"Skip" should have been updated with the table and unique reference column
+name.
+
+    >>> print skip
+    [('personlocation', 'person')]
+
+There should still be no columns that reference the winner or loser.
+
+    >>> print decorator_refs(cur, winner, loser)
+    <BLANKLINE>
+
+OK, now, this time, we will add some decorator information to the winner but
+not the loser.
+
+    >>> winner, loser = endless_supply_of_players.next()
+    >>> winner.timezone = 'America/Santiago'
+    >>> print decorator_refs(cur, winner, loser)
+    winner, winner,
+    >>> personset._merge_person_decoration(winner, loser, skip, cur,
+    ...     'PersonLocation', 'person', ['last_modified_by',])
+
+There should now still be one decorator, with all columns pointing to the
+winner:
+
+    >>> print decorator_refs(cur, winner, loser)
+    winner, winner,
+
+This time, we will have a decorator for the person that is being merged INTO
+another person, but nothing on the target person.
+
+    >>> winner, loser = endless_supply_of_players.next()
+    >>> loser.timezone = 'America/Santiago'
+    >>> print decorator_refs(cur, winner, loser)
+    loser, loser,
+    >>> personset._merge_person_decoration(winner, loser, skip, cur,
+    ...     'PersonLocation', 'person', ['last_modified_by',])
+
+There should now still be one decorator, with all columns pointing to the
+winner:
+
+    >>> print decorator_refs(cur, winner, loser)
+    winner, winner,
+
+Now, we want to show what happens when there is a decorator for both the
+to_person and the from_person. We expect that the from_person record will
+remain as noise but non-unique columns will have been updated to point to
+the winner, and the to_person will be unaffected.
+
+    >>> winner, loser = endless_supply_of_players.next()
+    >>> winner.timezone = 'America/Santiago'
+    >>> loser.timezone = 'America/New_York'
+    >>> print decorator_refs(cur, winner, loser)
+    winner, winner,
+    loser, loser,
+    >>> personset._merge_person_decoration(winner, loser, skip, cur,
+    ...     'PersonLocation', 'person', ['last_modified_by',])
+    >>> print decorator_refs(cur, winner, loser)
+    winner, winner,
+    loser, winner,
+
+
+
 == Merging teams ==
 
 Merging of teams is also possible and uses the same API used for merging

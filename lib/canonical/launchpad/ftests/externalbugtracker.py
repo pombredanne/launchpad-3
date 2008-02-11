@@ -20,6 +20,7 @@ from canonical.launchpad.interfaces import (
     BugTaskStatus, UNKNOWN_REMOTE_STATUS)
 from canonical.launchpad.database import BugTracker
 from canonical.launchpad.interfaces import IBugTrackerSet, IPersonSet
+from canonical.launchpad.scripts import debbugs
 from canonical.testing.layers import LaunchpadZopelessLayer
 
 
@@ -461,7 +462,7 @@ class TestDebianBug:
 
     def __init__(self, reporter_email='foo@example.com', package='evolution',
                  summary='Test Summary', description='Test description.',
-                 status='open', severity=None, tags =None):
+                 status='open', severity=None, tags=None, id=None):
         if tags is None:
             tags = []
         self.originator = reporter_email
@@ -471,6 +472,7 @@ class TestDebianBug:
         self.status = status
         self.severity = severity
         self.tags = tags
+        self.id = id
 
 
 class TestDebBugsDB:
@@ -480,6 +482,7 @@ class TestDebBugsDB:
         self._data_path = os.path.join(os.path.dirname(__file__),
             'testfiles')
         self._data_file = 'debbugs-1-comment.txt'
+        self.fail_on_load_log = False
 
     @property
     def data_file(self):
@@ -487,6 +490,10 @@ class TestDebBugsDB:
 
     def load_log(self, bug):
         """Load the comments for a particular debian bug."""
+        if self.fail_on_load_log:
+            raise debbugs.LogParseFailed(
+                'debbugs-log.pl exited with code 512')
+
         comment_data = open(self.data_file).read()
         bug.comments = [comment.strip() for comment in
             comment_data.split('--\n')]

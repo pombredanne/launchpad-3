@@ -228,7 +228,7 @@ class BugTaskSetFindExpirableBugTasksTest(LaunchpadFunctionalTestCase):
         """Setup the zope interaction and create expirable bugtasks."""
         LaunchpadFunctionalTestCase.setUp(self)
         self.login('test@canonical.com')
-        user = getUtility(ILaunchBag).user
+        self.user = getUtility(ILaunchBag).user
         self.distribution = getUtility(IDistributionSet).getByName('ubuntu')
         self.distroseries = self.distribution.getSeries('hoary')
         self.product = getUtility(IProductSet).getByName('jokosher')
@@ -239,13 +239,13 @@ class BugTaskSetFindExpirableBugTasksTest(LaunchpadFunctionalTestCase):
             create_old_bug("90 days old", 90, self.distribution))
         bugtasks.append(
             self.bugtaskset.createTask(
-                bug=bugtasks[-1].bug, owner=user,
+                bug=bugtasks[-1].bug, owner=self.user,
                 distroseries=self.distroseries))
         bugtasks.append(
             create_old_bug("90 days old", 90, self.product))
         bugtasks.append(
             self.bugtaskset.createTask(
-                bug=bugtasks[-1].bug, owner=user,
+                bug=bugtasks[-1].bug, owner=self.user,
                 productseries=self.productseries))
         sync_bugtasks(bugtasks)
 
@@ -259,8 +259,8 @@ class BugTaskSetFindExpirableBugTasksTest(LaunchpadFunctionalTestCase):
                              self.product, self.productseries]
         for target in supported_targets:
             expirable_bugtasks = self.bugtaskset.findExpirableBugTasks(
-                0, target=target)
-            self.assertEqual(len(expirable_bugtasks), 1,
+                0, self.user, target=target)
+            self.assertNotEqual(len(expirable_bugtasks), 0,
                  "%s has %d expirable bugtasks." %
                  (self.distroseries, len(expirable_bugtasks)))
 
@@ -284,12 +284,12 @@ class BugTaskSetFindExpirableBugTasksTest(LaunchpadFunctionalTestCase):
         for target in unsupported_targets:
             self.assertRaises(
                 NotImplementedError, self.bugtaskset.findExpirableBugTasks,
-                0, target=target)
+                0, self.user, target=target)
 
         # Objects that are not a known BugTarget type raise an AssertionError.
         self.assertRaises(
             AssertionError, self.bugtaskset.findExpirableBugTasks,
-            0, target=[])
+            0, self.user, target=[])
 
 
 def test_suite():

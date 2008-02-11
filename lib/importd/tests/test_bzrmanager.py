@@ -23,7 +23,7 @@ from importd import Job
 from importd.bzrmanager import BzrManager
 from importd.tests.helpers import SandboxHelper, ZopelessUtilitiesHelper
 from importd.tests.testutil import makeSilentLogger
-from canonical.launchpad.scripts.importd.publish import ImportdPublisher
+from canonical.codehosting.codeimport.publish import ImportdPublisher
 
 class NoopJob(object):
     """Fake job object to make BzrManager.__init__ happy.

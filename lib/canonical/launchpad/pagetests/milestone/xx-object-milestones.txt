@@ -1,5 +1,21 @@
 = Milestones =
 
+== Utility function(s) ==
+
+We have a page which lists all the milestones for an object. This function
+will print them out:
+
+    >>> def all_milestones(browser):
+    ...     table = find_main_content(browser.contents).find('table')
+    ...     if table is None:
+    ...         return None
+    ...     return extract_text(table)
+
+    >>> def milestones_in_portlet(browser):
+    ...     portlet = find_portlet(browser.contents, 'Active milestones')
+    ...     if portlet is None:
+    ...         return None
+    ...     return extract_text(portlet.find('table'))
 
 == Milestone listings ==
 
@@ -13,23 +29,25 @@ a page in which all of their milestones are listed.
     >>> anon_browser.url
     'http://launchpad.dev/debian/+milestones'
 
-    >>> for li in find_tags_by_class(anon_browser.contents, 'milestone'):
-    ...     print extract_text(li)
-    3.1-rc1 Expected for 2056-02-16 For WOODY
-    3.1 Expected for 2056-05-16 For WOODY
+    >>> print all_milestones(anon_browser)
+    3.1
+    ...
+    3.1-rc1
+    ...
 
 
 === Distribution Series ===
 
     >>> anon_browser.open('http://launchpad.dev/debian/woody/+milestones')
-    >>> for li in find_tags_by_class(anon_browser.contents, 'milestone'):
-    ...     print extract_text(li)
-    3.1-rc1 Expected for 2056-02-16 For WOODY
-    3.1 Expected for 2056-05-16 For WOODY
+    >>> print all_milestones(anon_browser)
+    3.1
+    ...
+    3.1-rc1
+    ...
 
     >>> anon_browser.open('http://launchpad.dev/debian/sarge/+milestones')
-    >>> for li in find_tags_by_class(anon_browser.contents, 'milestone'):
-    ...     print extract_text(li)
+    >>> print all_milestones(anon_browser)
+    None
 
 
 === Products ===
@@ -38,21 +56,21 @@ a page in which all of their milestones are listed.
     >>> anon_browser.url
     'http://launchpad.dev/firefox/+milestones'
 
-    >>> for li in find_tags_by_class(anon_browser.contents, 'milestone'):
-    ...     print extract_text(li)
-    1.0 Expected for 2056-10-16 For Mozilla Firefox Series: trunk
+    >>> print all_milestones(anon_browser)
+    1.0
+    ...
 
 
 === Product Series ===
 
     >>> anon_browser.open('http://launchpad.dev/firefox/trunk/+milestones')
-    >>> for li in find_tags_by_class(anon_browser.contents, 'milestone'):
-    ...     print extract_text(li)
-    1.0 Expected for 2056-10-16 For Mozilla Firefox Series: trunk
+    >>> print all_milestones(anon_browser)
+    1.0
+    ...
 
     >>> anon_browser.open('http://launchpad.dev/firefox/1.0/+milestones')
-    >>> for li in find_tags_by_class(anon_browser.contents, 'milestone'):
-    ...     print extract_text(li)
+    >>> print all_milestones(anon_browser)
+    None
 
 
 === Projects ===
@@ -67,24 +85,26 @@ The main project page has a portlet "Active milestones":
     >>> test_helper.setUpProjectMilestoneTests()
     >>> logout()
     >>> anon_browser.open('http://launchpad.dev/gnome')
-    >>> milestones = find_portlet(anon_browser.contents, 'Active milestones')
-    >>> print extract_text(milestones)
-    Active milestones
+    >>> print milestones_in_portlet(anon_browser)
+    2010-04-01
     1.1
+    2010-04-02
     1.1.
+    2011-04-01
     1.2
-    All milestones
 
 The page "All milestones" lists all milestones, including the inactive ones:
 
-    >>> anon_browser.getLink('All milestones').click()
-    >>> for milestone in find_tags_by_class(
-    ...     anon_browser.contents, 'milestone'):
-    ...     print extract_text(milestone)
-    1.1 Expected for 2010-04-01
-    1.1. Expected for 2010-04-02
-    1.2 Expected for 2011-04-01
-    1.3 (Inactive) Expected for 2012-04-01
+    >>> anon_browser.getLink('See all milestones').click()
+    >>> print all_milestones(anon_browser)
+    1.1
+    ...
+    1.1.
+    ...
+    1.2
+    ...
+    1.3
+    ...
 
 
 == Individual milestones ==
@@ -96,14 +116,14 @@ associated with that milestone for products of this project:
     >>> specs = find_tag_by_id(anon_browser.contents, 'milestone_specs')
     >>> print extract_text(specs)
     Specification Product Priority Assignee Delivery
-    Title evolution specification Evolution Evolution ... High ...  Unknown
-    Title gnomebaker specification gnomebaker gnomebaker ... High ... Unknown
+    Title evolution specification   Evolution  High  Unknown
+    Title gnomebaker specification  gnomebaker High  Unknown
 
     >>> bugtasks = find_tag_by_id(anon_browser.contents, 'milestone_bugtasks')
     >>> print extract_text(bugtasks)
     Report Product Importance Assignee Status ...
-    Milestone test bug for evolution Evolution ... Undecided ... Confirmed ...
-    Milestone test bug for gnomebaker gnomebaker ... Undecided ... Confirmed
+    Milestone test bug for evolution  Evolution  Undecided Confirmed ...
+    Milestone test bug for gnomebaker gnomebaker Undecided Confirmed
 
 
 === Duplicate bugs ===
@@ -117,7 +137,7 @@ Firefox product:
     >>> browser = setupBrowser(auth='Basic test@canonical.com:test')
     >>> browser.open('http://bugs.launchpad.dev/firefox/')
     >>> browser.getLink('Report a bug').click()
-    >>> browser.getLink('complicated bug filing form').click()
+    >>> browser.getLink('Advanced reporting options').click()
     >>> print extract_text(find_main_content(browser.contents))
     Report a bug...
     >>> report_bug_url = browser.url
@@ -168,7 +188,7 @@ Next, we'll target each bug to the 1.0 milestone:
 Observe that both bugs are listed in the 1.0 milestone listing:
 
     >>> browser.open('http://launchpad.dev/firefox')
-    >>> browser.getLink('All milestones').click()
+    >>> browser.getLink('See all milestones').click()
     >>> browser.getLink(milestone).click()
     >>> print browser.title
     Milestone 1.0 for Mozilla Firefox...
@@ -261,7 +281,7 @@ We'll also create a new test milestone within the "trunk" series:
     >>> milestone = 'test-milestone'
     >>> browser.getControl('Name').value = milestone
     >>> browser.getControl('Date Targeted').value = '2100-08-08'
-    >>> browser.getControl('Add').click()
+    >>> browser.getControl('Register milestone').click()
     >>> print browser.title
     Overview of Mozilla Firefox Series: trunk
 
@@ -339,8 +359,8 @@ Observe that both bug tasks are now listed in the test milestone listing:
     >>> print extract_text(find_tag_by_id(browser.contents,
     ...                                   'milestone_bugtasks'))
     Report         Importance ...
-    Test Bug 1 ... Critical   ...
-    Test Bug 1 ... High       ...
+    Test Bug 1     Critical   ...
+    Test Bug 1     High       ...
 
 
 === Bugs targeted to development focus series ===

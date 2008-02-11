@@ -430,7 +430,7 @@ value also occurs in another table.
     ...     "CREATE TABLE double AS SELECT n, 2*n AS double FROM numeric")
     >>> copier = MultiTableCopy('test', ['numeric'])
     >>> copier.extract(
-    ...     'numeric', where_clause="numeric.n=double.double",
+    ...     'numeric', where_clause="source.n=double.double",
     ...     external_joins=['double'])
     >>> holding_table = copier.getHoldingTableName('numeric')
     >>> cur.execute("SELECT n FROM %s ORDER BY n" % holding_table)
@@ -451,7 +451,7 @@ table names get uncomfortably long.
     >>> copier = MultiTableCopy('test', ['numeric'])
     >>> copier.extract(
     ...     'numeric',
-    ...     where_clause="numeric.n = quad.double AND quad.n = dub.double",
+    ...     where_clause="source.n = quad.double AND quad.n = dub.double",
     ...     external_joins=['double dub', 'double quad'])
     >>> cur.execute("SELECT n FROM %s ORDER BY n" % holding_table)
     >>> for number, in cur.fetchall():

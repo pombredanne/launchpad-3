@@ -191,6 +191,9 @@ for testing if we will also be able to deal with more than one architecture.
     ...     PackagePublishingPocket)
     >>> alsa_hoary = hoary.getSourcePackage('alsa-utils')
     >>> alsa_spr = alsa_hoary.currentrelease.sourcepackagerelease
+    >>> print alsa_spr.title
+    alsa-utils - 1.0.9a-4
+
     >>> alsa_build = alsa_spr.createBuild(
     ...     hoary['hppa'], PackagePublishingPocket.RELEASE,
     ...     hoary.main_archive)
@@ -198,6 +201,9 @@ for testing if we will also be able to deal with more than one architecture.
 
     >>> pmount_hoary = hoary.getSourcePackage('pmount')
     >>> pmount_spr = pmount_hoary.currentrelease.sourcepackagerelease
+    >>> print pmount_spr.title
+    pmount - 0.1-2
+
     >>> pmount_build = pmount_spr.createBuild(
     ...     hoary['hppa'], PackagePublishingPocket.RELEASE,
     ...     hoary.main_archive)
@@ -216,7 +222,7 @@ and restricted
     ...     print "%s (%s, %d)" % (build.title, bq.lastscore, bq.id)
     hppa build of pmount 0.1-2 in ubuntu hoary RELEASE (1500, 4)
     i386 build of alsa-utils 1.0.9a-4ubuntu1 in ubuntu hoary RELEASE (1000, 2)
-    hppa build of alsa-utils 1.0.9a-4ubuntu1 in ubuntu hoary RELEASE (500, 3)
+    hppa build of alsa-utils 1.0.9a-4 in ubuntu hoary RELEASE (500, 3)
 
 Restricting the domain to only hoary/hppa:
 
@@ -225,7 +231,7 @@ Restricting the domain to only hoary/hppa:
     ...     build = bq.build
     ...     print "%s (%s, %d)" % (build.title, bq.lastscore, bq.id)
     hppa build of pmount 0.1-2 in ubuntu hoary RELEASE (1500, 4)
-    hppa build of alsa-utils 1.0.9a-4ubuntu1 in ubuntu hoary RELEASE (500, 3)
+    hppa build of alsa-utils 1.0.9a-4 in ubuntu hoary RELEASE (500, 3)
 
 This method asserts a valid 'archseries' argument, None or an empty
 list will result in a AssertionFailure.

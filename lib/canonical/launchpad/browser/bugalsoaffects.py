@@ -334,6 +334,7 @@ class BugTaskCreationStep(AlsoAffectsStep):
         """
         bug_url = data.get('bug_url', '')
         target = self.getTarget(data)
+        newcontext_escaped = cgi.escape(target.displayname)
         if (not self.request.get('ignore_missing_remote_bug') and 
             not target.official_malone and not bug_url):
             # We have no URL for the remote bug and the target does not use
@@ -346,13 +347,13 @@ class BugTaskCreationStep(AlsoAffectsStep):
             confirm_button = (
                 '<input type="hidden" name="%s" value="1" />'
                 '<input style="font-size: smaller" type="submit"'
-                ' value="Yes, Add Anyway" name="ignore_missing_remote_bug" />'
+                ' value="Add Anyway" name="ignore_missing_remote_bug" />'
                 % self.continue_action.__name__)
             self.notifications.append(_(dedent("""
                 %s doesn't use Launchpad as its bug tracker. Without a bug
-                URL to watch, status will need to be tracked manually.
-                Request a fix anyway?  %s""" %
-                (cgi.escape(self.getTarget().displayname), confirm_button))))
+                URL to watch, the %s status will not update automatically.
+                %s""" % (newcontext_escaped, newcontext_escaped,
+                confirm_button))))
             return None
 
         extracted_bug = None
@@ -428,6 +429,11 @@ class DistroBugTaskCreationStep(BugTaskCreationStep):
 
     label = "Also affects distribution/package"
     target_field_names = ('distribution', 'sourcepackagename')
+
+    @property
+    def initial_values(self):
+        """Return the initial values for the view's fields."""
+        return {'distribution': getUtility(ILaunchpadCelebrities).ubuntu}
 
     def getTarget(self, data=None):
         if data is not None:

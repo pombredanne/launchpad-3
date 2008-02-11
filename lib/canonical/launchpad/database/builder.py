@@ -33,7 +33,7 @@ from canonical.launchpad.database.buildqueue import BuildQueue
 from canonical.launchpad.helpers import filenameToContentType
 from canonical.launchpad.interfaces import (
     ArchivePurpose, BuildDaemonError, BuildSlaveFailure, BuildStatus,
-    CannotBuild, CannotResetHost, IBuildQueueSet, IBuildSet,
+    CannotBuild, CannotResumeHost, IBuildQueueSet, IBuildSet,
     IBuilder, IBuilderSet, IDistroArchSeriesSet, IHasBuildRecords,
     NotFoundError, PackagePublishingPocket, ProtocolVersionMismatch,
     pocketsuffix)
@@ -98,6 +98,8 @@ class Builder(SQLBase):
     trusted = BoolCol(dbName='trusted', default=False, notNull=True)
     speedindex = IntCol(dbName='speedindex', default=0)
     manual = BoolCol(dbName='manual', default=False)
+    vm_host = StringCol(dbName='vm_host', default=None)
+    active = BoolCol(dbName='active', default=True)
 
     def cacheFileOnSlave(self, logger, libraryfilealias):
         """See IBuilder."""
@@ -162,27 +164,29 @@ class Builder(SQLBase):
         """See IBuilder."""
         return self.slave.abort()
 
-    def resetSlaveHost(self, logger):
+    def resumeSlaveHost(self):
         """See IBuilder."""
+        logger = self._getSlaveScannerLogger()
         if self.trusted:
-            # currently trusted builders cannot reset their host environment.
-            raise CannotResetHost
-        # XXX cprov 2007-05-10: Please FIX ME ASAP !
-        # The ssh command line should be in the respective configuration
-        # file. The builder XEN-host should be stored in DB (Builder.vmhost)
-        # and not be calculated on the fly (this is gross).
+            raise CannotResumeHost('Builder is trusted.')
+
+        if not self.vm_host:
+            raise CannotResumeHost('Undefined vm_host.')
+
         logger.debug("Resuming %s", self.url)
-        hostname = self.url.split(':')[1][2:].split('.')[0]
-        host_url = '%s-host.ppa' % hostname
-        key_path = os.path.expanduser('~/.ssh/ppa-reset-builder')
-        resume_argv = [
-            'ssh', '-i' , key_path, 'ppa@%s' % host_url]
+        resume_command = config.builddmaster.vm_resume_command % {
+            'vm_host': self.vm_host}
+        resume_argv = resume_command.split()
+
         logger.debug('Running: %s', resume_argv)
         resume_process = subprocess.Popen(
             resume_argv, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        # XXX cprov 2007-06-15: If the reset command fails, we should raise
-        # an error rather than assuming it reset ok.
-        resume_process.communicate()
+        stdout, stderr = resume_process.communicate()
+
+        if resume_process.returncode != 0:
+            raise CannotResumeHost(
+                "Resuming failed:\nOUT:\n%s\nERR:\n%s\n" % (stdout, stderr))
+        return stdout, stderr
 
     @cachedproperty
     def slave(self):
@@ -295,9 +299,19 @@ class Builder(SQLBase):
          * Ensure that the build pocket allows builds for the current
            distroseries state.
         """
-        if self.trusted:
-            assert build_queue_item.is_trusted, (
-                "Attempt to build untrusted item on a trusted-only builder.")
+        assert not (self.trusted and not build_queue_item.is_trusted), (
+            "Attempt to build untrusted item on a trusted-only builder.")
+
+        # Assert that we are not silently building SECURITY jobs.
+        # See findBuildCandidates. Once we start building SECURITY
+        # correctly from EMBARGOED archive this assertion can be removed.
+        # XXX 2007-18-12 Julian. This is being addressed in the work on the
+        # blueprint:
+        # https://blueprints.launchpad.net/soyuz/+spec/security-in-soyuz
+        target_pocket = build_queue_item.build.pocket
+        assert target_pocket != PackagePublishingPocket.SECURITY, (
+            "Soyuz is not yet capable of building SECURITY uploads.")
+
         # Ensure build has the needed chroot
         chroot = build_queue_item.archseries.getChroot()
         if chroot is None:
@@ -306,13 +320,6 @@ class Builder(SQLBase):
                 build_queue_item.build.distroseries.distribution.name,
                 build_queue_item.build.distroseries.name,
                 build_queue_item.build.distroarchseries.architecturetag)
-
-        # XXX cprov 20071025: We silently ignore SECURITY builds until we
-        # have a proper infrastructure to build (EMBARGO archive) and
-        # reviewed the UI to hide their information until public disclosure.
-        if build_queue_item.build.pocket == PackagePublishingPocket.SECURITY:
-            raise CannotBuild(
-                'Soyuz is not yet capable of building SECURITY uploads.')
 
         # The main distribution has policies to prevent uploads to some
         # pockets (e.g. security) during different parts of the distribution
@@ -377,9 +384,9 @@ class Builder(SQLBase):
         # Make sure the request is valid; an exception is raised if it's not.
         self._verifyBuildRequest(build_queue_item, logger)
 
-        # If we are building untrusted source reset the entire machine.
+        # If we are building untrusted source resume the virtual machine.
         if not self.trusted:
-            self.resetSlaveHost(logger)
+            self.resumeSlaveHost()
 
         # Build extra arguments.
         args = {}
@@ -572,18 +579,29 @@ class Builder(SQLBase):
         logger = self._getSlaveScannerLogger()
         candidate = self._findBuildCandidate()
 
-        if not candidate:
-            return None
-
-        while candidate and candidate.is_last_version is False:
-            logger.debug(
-                "Build %s SUPERSEDED, queue item %s REMOVED"
-                % (candidate.build.id, candidate.id))
-            candidate.build.buildstate = BuildStatus.SUPERSEDED
+        # Mark build records targeted to old source versions as SUPERSEDED
+        # and build records target to SECURITY pocket as FAILEDTOBUILD.
+        # Builds in those situation should not be built because they will
+        # be wasting build-time, the former case already has a newer source
+        # and the latter could not be built in DAK.
+        while candidate is not None:
+            if candidate.build.pocket == PackagePublishingPocket.SECURITY:
+                logger.debug(
+                    "Build %s FAILEDTOBUILD, queue item %s REMOVED"
+                    % (candidate.build.id, candidate.id))
+                candidate.build.buildstate = BuildStatus.FAILEDTOBUILD
+            elif candidate.is_last_version:
+                return candidate
+            else:
+                logger.debug(
+                    "Build %s SUPERSEDED, queue item %s REMOVED"
+                    % (candidate.build.id, candidate.id))
+                candidate.build.buildstate = BuildStatus.SUPERSEDED
             candidate.destroySelf()
             candidate = self._findBuildCandidate()
 
-        return candidate
+        # No candidate was found
+        return None
 
     def dispatchBuildCandidate(self, candidate):
         """See `IBuilder`."""
@@ -611,11 +629,11 @@ class BuilderSet(object):
             raise NotFoundError(name)
 
     def new(self, processor, url, name, title, description, owner,
-            builderok=True, failnotes=None, trusted=False):
+            builderok=True, failnotes=None, trusted=False, vm_host=None):
         """See IBuilderSet."""
         return Builder(processor=processor, url=url, name=name, title=title,
                        description=description, owner=owner, trusted=trusted,
-                       builderok=builderok, failnotes=failnotes)
+                       builderok=builderok, failnotes=failnotes, vm_host=None)
 
     def get(self, builder_id):
         """See IBuilderSet."""
@@ -627,7 +645,7 @@ class BuilderSet(object):
 
     def getBuilders(self):
         """See IBuilderSet."""
-        return Builder.select()
+        return Builder.selectBy(active=True)
 
     def getBuildersByArch(self, arch):
         """See IBuilderSet."""

@@ -15,51 +15,51 @@ The PO parser handles GNU gettext format human readable files.
 
 PO files with empty headers are not allowed.
 
-  >>> parser = POParser()
-  >>> parser.parse('msgid "foo"\nmsgstr ""\n')
-  Traceback (most recent call last):
-  ...
-  TranslationFormatSyntaxError:...
+    >>> parser = POParser()
+    >>> parser.parse('msgid "foo"\nmsgstr ""\n')
+    Traceback (most recent call last):
+    ...
+    TranslationFormatSyntaxError:...
 
 PO files with context after msgids are reported as broken.
 
-  >>> parser.parse('msgid ""\nmsgstr ""\n'
-  ...              'msgid "blah"\nmsgctxt "foo"\nmsgstr "bar"\n')
-  Traceback (most recent call last):
-  ...
-  TranslationFormatSyntaxError:...
+    >>> parser.parse('msgid ""\nmsgstr ""\n'
+    ...              'msgid "blah"\nmsgctxt "foo"\nmsgstr "bar"\n')
+    Traceback (most recent call last):
+    ...
+    TranslationFormatSyntaxError:...
 
 And a msgctxt followed by msgctxt is caught as well.
 
-  >>> parser.parse('msgid ""\nmsgstr ""\n'
-  ...              'msgctxt "foo"\nmsgctxt "foo1"\n'
-  ...              'msgid "blah"\nmsgstr "bar"\n')
-  Traceback (most recent call last):
-  ...
-  TranslationFormatSyntaxError:...
+    >>> parser.parse('msgid ""\nmsgstr ""\n'
+    ...              'msgctxt "foo"\nmsgctxt "foo1"\n'
+    ...              'msgid "blah"\nmsgstr "bar"\n')
+    Traceback (most recent call last):
+    ...
+    TranslationFormatSyntaxError:...
 
 When a string is followed by non-string, non-space data, it is caught
 as an error.
 
-  >>> parser.parse('msgid ""\nmsgstr "something"\n'
-  ...              '"foo"  whatever\n')
-  Traceback (most recent call last):
-  ...
-  TranslationFormatSyntaxError:...extra content found after string...
+    >>> parser.parse('msgid ""\nmsgstr "something"\n'
+    ...              '"foo"  whatever\n')
+    Traceback (most recent call last):
+    ...
+    TranslationFormatSyntaxError:...Extra content found after string...
 
 Unrecognized escape sequences are caught as well.
 
-  >>> parser.parse('msgid "\!"\nmsgstr ""\n')
-  Traceback (most recent call last):
-  ...
-  TranslationFormatSyntaxError:...unknown escape sequence...
+    >>> parser.parse('msgid "\!"\nmsgstr ""\n')
+    Traceback (most recent call last):
+    ...
+    TranslationFormatSyntaxError:...Unknown escape sequence...
 
 Unclosed strings (missing closing quotes) are caught.
 
-  >>> parser.parse('msgid ""\nmsgstr "\n')
-  Traceback (most recent call last):
-  ...
-  TranslationFormatSyntaxError:...string not terminated...
+    >>> parser.parse('msgid ""\nmsgstr "\n')
+    Traceback (most recent call last):
+    ...
+    TranslationFormatSyntaxError:...String not terminated...
 
 
 == POHeader ==
@@ -111,34 +111,50 @@ And the translation_revision_date is exactly the one in the header string.
 This attribute gives you a datetime object representing the
 PO-Revision-Date field.
 
-  >>> header = POHeader("""
-  ... Project-Id-Version: foo
-  ... Report-Msgid-Bugs-To: foo@bar.com
-  ... POT-Creation-Date: 2005-01-26 01:01+0100
-  ... PO-Revision-Date: 2004-03-06 20:06+0100
-  ... Last-Translator: Foo translator <footranslator@bar.com>
-  ... MIME-Version: 1.0
-  ... Content-Type: text/plain; charset=UTF-8
-  ... Content-Transfer-Encoding: 8bit
-  ... """)
-  >>> header.translation_revision_date
-  datetime.datetime(2004, 3, 6, 20, 6, tzinfo=tzinfo(60))
+    >>> header = POHeader("""
+    ... Project-Id-Version: foo
+    ... Report-Msgid-Bugs-To: foo@bar.com
+    ... POT-Creation-Date: 2005-01-26 01:01+0100
+    ... PO-Revision-Date: 2004-03-06 20:06+0100
+    ... Last-Translator: Foo translator <footranslator@bar.com>
+    ... MIME-Version: 1.0
+    ... Content-Type: text/plain; charset=UTF-8
+    ... Content-Transfer-Encoding: 8bit
+    ... """)
+    >>> header.translation_revision_date
+    datetime.datetime(2004, 3, 6, 20, 6, tzinfo=tzinfo(60))
 
-If the PO-Revision-Date header contains unicode characters, we get a valid
-header but no revision date.
 
-  >>> header = POHeader("""
-  ... Project-Id-Version: foo
-  ... Report-Msgid-Bugs-To: foo@bar.com
-  ... POT-Creation-Date: 2005-01-26 01:01+0100
-  ... PO-Revision-Date: \xc3\xa1 2004-03-06 20:06+0100
-  ... Last-Translator: Foo translator <footranslator@bar.com>
-  ... MIME-Version: 1.0
-  ... Content-Type: text/plain; charset=UTF-8
-  ... Content-Transfer-Encoding: 8bit
-  ... """)
-  >>> print header.translation_revision_date
-  None
+It defaults to None.
+
+    >>> header = POHeader("""
+    ... Project-Id-Version: foo
+    ... Report-Msgid-Bugs-To: foo@bar.com
+    ... POT-Creation-Date: 2005-01-26 01:01+0100
+    ... Last-Translator: Foo translator <footranslator@bar.com>
+    ... MIME-Version: 1.0
+    ... Content-Type: text/plain; charset=UTF-8
+    ... Content-Transfer-Encoding: 8bit
+    ... """)
+    >>> print header.translation_revision_date
+    None
+
+
+If the PO-Revision-Date header contains non-ASCII characters, we get a
+valid header but no revision date.
+
+    >>> header = POHeader("""
+    ... Project-Id-Version: foo
+    ... Report-Msgid-Bugs-To: foo@bar.com
+    ... POT-Creation-Date: 2005-01-26 01:01+0100
+    ... PO-Revision-Date: \xc3\xa1 2004-03-06 20:06+0100
+    ... Last-Translator: Foo translator <footranslator@bar.com>
+    ... MIME-Version: 1.0
+    ... Content-Type: text/plain; charset=UTF-8
+    ... Content-Transfer-Encoding: 8bit
+    ... """)
+    >>> print header.translation_revision_date
+    None
 
 
 === updateFromTemplateHeader(template_header) ===
@@ -246,48 +262,49 @@ template.
 
 Parsing a PO template:
 
-  >>> content = """
-  ... msgid ""
-  ... msgstr ""
-  ... "Project-Id-Version: Foobar 1.0\\n"
-  ... "Report-Msgid-Bugs-To: \\n"
-  ... "POT-Creation-Date: 2004-05-11 20:22+0800\\n"
-  ... "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\\n"
-  ... "Last-Translator: FULL NAME <EMAIL@ADDRESS>\\n"
-  ... "Language-Team: LANGUAGE <LL@li.org>\\n"
-  ... "MIME-Version: 1.0\\n"
-  ... "Content-Type: text/plain; charset=CHARSET\\n"
-  ... "Content-Transfer-Encoding: 8bit\\n"
-  ... #: foo/bar.c:42
-  ... msgid "Foo"
-  ... msgstr ""
-  ... """
+    >>> content = """
+    ... msgid ""
+    ... msgstr ""
+    ... "Project-Id-Version: Foobar 1.0\\n"
+    ... "Report-Msgid-Bugs-To: \\n"
+    ... "POT-Creation-Date: 2004-05-11 20:22+0800\\n"
+    ... "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\\n"
+    ... "Last-Translator: FULL NAME <EMAIL@ADDRESS>\\n"
+    ... "Language-Team: LANGUAGE <LL@li.org>\\n"
+    ... "MIME-Version: 1.0\\n"
+    ... "Content-Type: text/plain; charset=CHARSET\\n"
+    ... "Content-Transfer-Encoding: 8bit\\n"
+    ... #: foo/bar.c:42
+    ... msgid "Foo"
+    ... msgstr ""
+    ... """
 
-  >>> parser = POParser()
-  >>> translation_file = parser.parse(content)
+    >>> parser = POParser()
+    >>> translation_file = parser.parse(content)
 
-  >>> len(translation_file.messages)
-  1
-  >>> print translation_file.messages[0].msgid_singular
-  Foo
+    >>> len(translation_file.messages)
+    1
+    >>> print translation_file.messages[0].msgid_singular
+    Foo
 
 PO templates, and other PO files that do not specify their encoding,
 are parsed as UTF-8 text.  If they contain non UTF-8 characters, parsing
 errors occur:
 
-  >>> chunk2 = """
-  ... #:foo/bar.c:42
-  ... msgid "Bar"
-  ... msgstr "\xb5\x7b\xa6\xa1\xbf\xf9\xbb\x7e"
-  ... #:foo/baz.c:42
-  ... msgid "Baz"
-  ... msgstr "abcdef"
-  ... """
+    >>> chunk2 = """
+    ... #:foo/bar.c:42
+    ... msgid "Bar"
+    ... msgstr "\xb5\x7b\xa6\xa1\xbf\xf9\xbb\x7e"
+    ... #:foo/baz.c:42
+    ... msgid "Baz"
+    ... msgstr "abcdef"
+    ... """
 
-  >>> parser.parse(content + chunk2)
-  Traceback (most recent call last):
+    >>> parser.parse(content + chunk2)
+    Traceback (most recent call last):
     ...
-  TranslationFormatInvalidInputError: could not decode input from UTF-8
+    TranslationFormatInvalidInputError: Line 13:
+    Could not decode input from UTF-8
 
 
 == Evil Big5 Multibyte Sequences ==
@@ -300,33 +317,33 @@ may include backslashes inside multibyte sequences.  These backslashes
 must be interpreted as part of the character rather than as an escape
 character.
 
-  >>> content = """
-  ... msgid ""
-  ... msgstr ""
-  ... "Last-Translator:  \xb5\x7b\xa6\xa1\xbf\xf9\xbb\x7e\\n"
-  ... "Content-Type: text/plain; charset=Big5\\n"
-  ... "Content-Transfer-Encoding: 8bit\\n"
-  ... #: lib/regex.c:1367
-  ... msgid "Success"
-  ... msgstr "\xa6\xa8\xa5\\"
-  ... """
+    >>> content = """
+    ... msgid ""
+    ... msgstr ""
+    ... "Last-Translator:  \xb5\x7b\xa6\xa1\xbf\xf9\xbb\x7e\\n"
+    ... "Content-Type: text/plain; charset=Big5\\n"
+    ... "Content-Transfer-Encoding: 8bit\\n"
+    ... #: lib/regex.c:1367
+    ... msgid "Success"
+    ... msgstr "\xa6\xa8\xa5\\"
+    ... """
 
-  >>> translation_file = parser.parse(content)
+    >>> translation_file = parser.parse(content)
 
 The Big5 characters in the PO header have been correctly converted and are
 displayed as unicode characters.
 
-  >>> translation_file.header.getRawContent()
-  u'...Last-Translator:   \u7a0b\u5f0f\u932f\u8aa4\n...'
+    >>> translation_file.header.getRawContent()
+    u'...Last-Translator:   \u7a0b\u5f0f\u932f\u8aa4\n...'
 
 The translation of the first message has been interpreted correctly,
 despite the backslash in the second multibyte sequence, because is the same
 as decoding '\xa6\xa8\xa5\\' as BIG5 encoding.
 
-  >>> '\xa6\xa8\xa5\\'.decode('BIG5')
-  u'\u6210\u529f'
-  >>> translation_file.messages[0].translations
-  [u'\u6210\u529f']
+    >>> '\xa6\xa8\xa5\\'.decode('BIG5')
+    u'\u6210\u529f'
+    >>> translation_file.messages[0].translations
+    [u'\u6210\u529f']
 
 
 == Newline Formats ==
@@ -343,13 +360,13 @@ which would cause problems if we naively use '\n' as a line separator.
 
 Change the last PO file to use Mac-style newlines:
 
-  >>> content = content.replace('\n', '\r')
+    >>> content = content.replace('\n', '\r')
 
 Verify that it still parses:
 
-  >>> translation_file = parser.parse(content)
-  >>> translation_file.messages[0].translations
-  [u'\u6210\u529f']
+    >>> translation_file = parser.parse(content)
+    >>> translation_file.messages[0].translations
+    [u'\u6210\u529f']
 
 
 == Escape Characters in Strings ==
@@ -359,37 +376,37 @@ them have special meaning like 'new line': '\n' or 'tabs' '\t' and others are
 just the numeric representation of a character in the declared encoding by
 the Content-Type field of the header.
 
-  >>> content = """
-  ... msgid ""
-  ... msgstr ""
-  ... "POT-Creation-Date: 2004-05-11 20:22+0800\\n"
-  ... "PO-Revision-Date: 2004-05-11 20:22+0800\\n"
-  ... "Content-Type: text/plain; charset=UTF-8\\n"
-  ... "Content-Transfer-Encoding: 8bit\\n"
-  ... #: foo/bar.c: 42
-  ... msgid "Foo\\n"
-  ... "Bar\\n"
-  ... msgstr "\\a\\b\\v\\f\\t\\v\\\\\\"\\'\\n"
-  ... "\\70 \\070 \\0700 \\x70\\n"
-  ...
-  ... #: foo/bar.c: 50
-  ... msgid "view \\302\\253${version_title}\\302\\273"
-  ... msgstr ""
-  ... """
+    >>> content = """
+    ... msgid ""
+    ... msgstr ""
+    ... "POT-Creation-Date: 2004-05-11 20:22+0800\\n"
+    ... "PO-Revision-Date: 2004-05-11 20:22+0800\\n"
+    ... "Content-Type: text/plain; charset=UTF-8\\n"
+    ... "Content-Transfer-Encoding: 8bit\\n"
+    ... #: foo/bar.c: 42
+    ... msgid "Foo\\n"
+    ... "Bar\\n"
+    ... msgstr "\\a\\b\\v\\f\\t\\v\\\\\\"\\'\\n"
+    ... "\\70 \\070 \\0700 \\x70\\n"
+    ...
+    ... #: foo/bar.c: 50
+    ... msgid "view \\302\\253${version_title}\\302\\273"
+    ... msgstr ""
+    ... """
 
-  >>> translation_file = parser.parse(content)
+    >>> translation_file = parser.parse(content)
 
 The special symbols and numeric representations of the chars '8', '80' and 'p'
 are decoded correctly.
 
-  >>> translation_file.messages[0].translations
-  [u'\x07\x08\x0b\x0c\t\x0b\\"\'\n8 8 80 p\n']
+    >>> translation_file.messages[0].translations
+    [u'\x07\x08\x0b\x0c\t\x0b\\"\'\n8 8 80 p\n']
 
 In this case, the numeric representation are UTF-8 only characters and we can
 see that we get its Unicode equivalent.
 
-  >>> translation_file.messages[1].msgid_singular
-  u'view \xab${version_title}\xbb'
+    >>> translation_file.messages[1].msgid_singular
+    u'view \xab${version_title}\xbb'
 
 == Plural forms mapping ==
 

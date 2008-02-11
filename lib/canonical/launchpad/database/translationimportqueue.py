@@ -22,6 +22,7 @@ from canonical.database.sqlbase import quote_like, SQLBase, sqlvalues
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.constants import UTC_NOW, DEFAULT
 from canonical.database.enumcol import EnumCol
+from canonical.launchpad.helpers import shortlist
 from canonical.launchpad.interfaces import (
     IDistribution, IDistroSeries, IHasTranslationImports, ILanguageSet,
     IPerson, IPOFileSet, IPOTemplateSet, IProduct, IProductSeries,
@@ -29,8 +30,6 @@ from canonical.launchpad.interfaces import (
     ITranslationImportQueueEntry, NotFoundError, RosettaImportStatus,
     TranslationFileFormat)
 from canonical.librarian.interfaces import ILibrarianClient
-
-from canonical.launchpad.database.pillar import pillar_sort_key
 
 
 # Number of days when the DELETED and IMPORTED entries are removed from the
@@ -650,17 +649,38 @@ class TranslationImportQueue:
         sourcepackagename=None, distroseries=None, productseries=None,
         potemplate=None):
         """See ITranslationImportQueue."""
-        # We need to know if we are handling .bz2 files, we could use the
-        # python2.4-magic but it makes no sense to add that dependency just
-        # for this check as the .bz2 files start with the 'BZh' string.
+        # XXX: This whole set of ifs is a workaround for bug 44773
+        # (Python's gzip support sometimes fails to work when using
+        # plain tarfile.open()). The issue is that we can't rely on
+        # tarfile's smart detection of filetypes and instead need to
+        # hardcode the type explicitly in the mode. We simulate magic
+        # here to avoid depending on the python-magic package. We can
+        # get rid of this when http://bugs.python.org/issue1488634 is
+        # fixed.
+        #
+        # XXX: Incidentally, this also works around bug #1982 (Python's
+        # bz2 support is not able to handle external file objects). That
+        # bug is worked around by using tarfile.open() which wraps the
+        # fileobj in a tarfile._Stream instance. We can get rid of this
+        # when we upgrade to python2.5 everywhere.
+        #       -- kiko, 2008-02-08
         if content.startswith('BZh'):
-            # Workaround for the bug #1982. Python's bz2 support is not able
-            # to handle external file objects.
-            tarball = tarfile.open('', 'r|bz2', StringIO(content))
+            mode = "r|bz2"
+        elif content.startswith('\037\213'):
+            mode = "r|gz"
+        elif content[257:262] == 'ustar':
+            mode = "r|tar"
         else:
-            tarball = tarfile.open('', 'r', StringIO(content))
+            mode = "r"
 
         num_files = 0
+        try:
+            tarball = tarfile.open('', mode, StringIO(content))
+        except tarfile.ReadError:
+            # If something went wrong with the tarfile, assume it's
+            # busted and let the user deal with it.
+            return num_files
+
         for tarinfo in tarball:
             filename = tarinfo.name
             # XXX: JeroenVermeulen 2007-06-18 bug=121798:
@@ -774,39 +794,41 @@ class TranslationImportQueue:
         from canonical.launchpad.database.distroseries import DistroSeries
         from canonical.launchpad.database.product import Product
 
+        if status is None:
+            status_clause = "TRUE"
+        else:
+            status_clause = "status = %s" % sqlvalues(status)
+
+        def product_sort_key(product):
+            return product.name
+
+        def distroseries_sort_key(distroseries):
+            return (distroseries.distribution.name, distroseries.name)
+
         query = [
             'ProductSeries.product = Product.id',
             'TranslationImportQueueEntry.productseries = ProductSeries.id'
             ]
         if status is not None:
-            query.append('TranslationImportQueueEntry.status=%s' % sqlvalues(
-                status))
+            query.append(status_clause)
 
-        products = Product.select(
+        products = shortlist(Product.select(
             ' AND '.join(query),
             clauseTables=['ProductSeries', 'TranslationImportQueueEntry'],
-            distinct=True)
+            distinct=True))
+        products.sort(key=product_sort_key)
 
-        query = [
-            'TranslationImportQueueEntry.distroseries = DistroSeries.id',
-            'DistroSeries.defer_translation_imports IS FALSE'
-            ]
-        if status is not None:
-            query.append('TranslationImportQueueEntry.status=%s' % sqlvalues(
-                status))
+        distroseriess = shortlist(DistroSeries.select("""
+            defer_translation_imports IS FALSE AND
+            id IN (
+                SELECT DISTINCT distroseries
+                FROM TranslationImportQueueEntry
+                WHERE %s
+                )
+            """ % status_clause))
+        distroseriess.sort(key=distroseries_sort_key)
 
-        distroseriess = DistroSeries.select(
-            ' AND '.join(query),
-            clauseTables=['TranslationImportQueueEntry'], distinct=True)
-
-        results = set()
-        for product in products:
-            if IHasTranslationImports.providedBy(product):
-                results.add(product)
-        for distroseries in distroseriess:
-            if IHasTranslationImports.providedBy(distroseries):
-                results.add(distroseries)
-        return sorted(results, key=pillar_sort_key)
+        return distroseriess + products
 
     def executeOptimisticApprovals(self, ztm):
         """See ITranslationImportQueue."""

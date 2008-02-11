@@ -101,7 +101,7 @@ mailing list.
     >>> list_two
     <MailingList for team "team-two"; status=REGISTERED at ...>
     >>> list_two.address
-    u'team-two@lists.launchpad.net'
+    u'team-two@lists.launchpad.dev'
 
 The newly registered mailing list is linked to its team, and the list's
 registrant is the team owner at the time the list was registered.  The list's
@@ -531,7 +531,7 @@ An active mailing list has an archive url.
     >>> list_one.status.name
     'ACTIVE'
     >>> list_one.archive_url
-    u'http://lists.launchpad.dev/archives/team-one'
+    u'http://lists.launchpad.dev/team-one'
 
 Inactive mailing lists also have an archive url, because once activated, a
 mailing list could have an archive and archives are never deleted.
@@ -541,4 +541,4 @@ mailing list could have an archive and archives are never deleted.
     >>> list_one.status.name
     'INACTIVE'
     >>> list_one.archive_url
-    u'http://lists.launchpad.dev/archives/team-one'
+    u'http://lists.launchpad.dev/team-one'

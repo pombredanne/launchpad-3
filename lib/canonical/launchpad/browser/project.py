@@ -593,9 +593,10 @@ class ProjectBranchesView(BranchListingView):
 
     extra_columns = ('author', 'product')
 
-    def _branches(self, lifecycle_status):
+    def _branches(self, lifecycle_status, show_dormant):
         return getUtility(IBranchSet).getBranchesForProject(
-            self.context, lifecycle_status, self.user, self.sort_by)
+            self.context, lifecycle_status, self.user, self.sort_by,
+            show_dormant)
 
     @property
     def no_branch_message(self):

@@ -21,8 +21,9 @@ from canonical.launchpad.database import (
 from canonical.launchpad.interfaces import (
     CodeImportJobState, CodeImportResultStatus, CodeImportEventType,
     CodeImportReviewStatus, ICodeImportEventSet, ICodeImportJobSet,
-    ICodeImportSet, ICodeImportJobWorkflow, IPersonSet)
+    ICodeImportSet, ICodeImportJobWorkflow)
 from canonical.launchpad.ftests import login
+from canonical.launchpad.testing import LaunchpadObjectFactory
 from canonical.testing import LaunchpadFunctionalLayer
 
 
@@ -346,55 +347,45 @@ class TestCodeImportJobWorkflowRequestJob(unittest.TestCase,
 
     def setUp(self):
         login_for_code_imports()
+        self.factory = LaunchpadObjectFactory()
 
     def test_wrongJobState(self):
         # CodeImportJobWorkflow.requestJob fails if the state of the
         # CodeImportJob is different from PENDING.
-        reviewed_import = getUtility(ICodeImportSet).get(1)
-        no_priv = getUtility(IPersonSet).getByName('no-priv')
-        # Checking sampledata expectations.
-        self.assertEqual(reviewed_import.branch.unique_name,
-                         '~vcs-imports/gnome-terminal/import')
-        # Testing requestJob failure.
-        import_job = reviewed_import.import_job
+        code_import = self.factory.makeCodeImport()
+        import_job = self.factory.makeCodeImportJob(code_import)
+        person = self.factory.makePerson()
         # ICodeImportJob does not allow setting 'state', so we must
         # use removeSecurityProxy.
         removeSecurityProxy(import_job).state = CodeImportJobState.RUNNING
         self.assertFailure(
-            "The CodeImportJob associated with "
-            "~vcs-imports/gnome-terminal/import is RUNNING.",
+            "The CodeImportJob associated with %s is "
+            "RUNNING." % code_import.branch.unique_name,
             getUtility(ICodeImportJobWorkflow).requestJob,
-            import_job, no_priv)
+            import_job, person)
 
     def test_alreadyRequested(self):
         # CodeImportJobWorkflow.requestJob fails if the job was requested
         # already, that is, if its requesting_user attribute is set.
-        reviewed_import = getUtility(ICodeImportSet).get(1)
-        no_priv = getUtility(IPersonSet).getByName('no-priv')
-        other_person = getUtility(IPersonSet).getByName('name12')
-        # Checking sampledata expectations.
-        self.assertEqual(reviewed_import.branch.unique_name,
-                         '~vcs-imports/gnome-terminal/import')
-        # Testing requestJob failure.
-        import_job = reviewed_import.import_job
+        code_import = self.factory.makeCodeImport()
+        import_job = self.factory.makeCodeImportJob(code_import)
+        person = self.factory.makePerson()
+        other_person = self.factory.makePerson()
         # ICodeImportJob does not allow setting requesting_user, so we must
         # use removeSecurityProxy.
-        removeSecurityProxy(import_job).requesting_user = no_priv
+        removeSecurityProxy(import_job).requesting_user = person
         self.assertFailure(
-            "The CodeImportJob associated with "
-            "~vcs-imports/gnome-terminal/import was "
-            "already requested by no-priv.",
+            "The CodeImportJob associated with %s was already requested by "
+            "%s." % (code_import.branch.unique_name, person.name),
             getUtility(ICodeImportJobWorkflow).requestJob,
             import_job, other_person)
 
     def test_requestFutureJob(self):
         # CodeImportJobWorkflow.requestJob sets requesting_user and
         # date_due if the current date_due is in the future.
-        pending_job = getUtility(ICodeImportSet).get(1).import_job
-        no_priv = getUtility(IPersonSet).getByName('no-priv')
-        # Checking sampledata expectations.
-        self.assertEqual(pending_job.state, CodeImportJobState.PENDING)
-        self.assertEqual(pending_job.requesting_user, None)
+        code_import = self.factory.makeCodeImport()
+        pending_job = self.factory.makeCodeImportJob(code_import)
+        person = self.factory.makePerson()
         # Set date_due in the future. ICodeImportJob does not allow setting
         # date_due, so we must use removeSecurityProxy.
         removeSecurityProxy(pending_job).date_due = (
@@ -402,23 +393,21 @@ class TestCodeImportJobWorkflowRequestJob(unittest.TestCase,
         # requestJob sets both requesting_user and date_due.
         new_events = NewEvents()
         getUtility(ICodeImportJobWorkflow).requestJob(
-            pending_job, no_priv)
-        self.assertEqual(pending_job.requesting_user, no_priv)
+            pending_job, person)
+        self.assertEqual(pending_job.requesting_user, person)
         self.assertSqlAttributeEqualsDate(pending_job, 'date_due', UTC_NOW)
         # When requestJob is successful, it creates a REQUEST event.
         [request_event] = list(new_events)
         self.assertEventLike(
             request_event, CodeImportEventType.REQUEST,
-            pending_job.code_import, person=no_priv)
+            pending_job.code_import, person=person)
 
     def test_requestOverdueJob(self):
         # CodeImportJobWorkflow.requestJob only sets requesting_user if the
         # date_due is already past.
-        pending_job = getUtility(ICodeImportSet).get(1).import_job
-        no_priv = getUtility(IPersonSet).getByName('no-priv')
-        # Checking sampledata expectations.
-        self.assertEqual(pending_job.state, CodeImportJobState.PENDING)
-        self.assertEqual(pending_job.requesting_user, None)
+        code_import = self.factory.makeCodeImport()
+        pending_job = self.factory.makeCodeImportJob(code_import)
+        person = self.factory.makePerson()
         # Set date_due in the past. ICodeImportJob does not allow setting
         # date_due, so we must use removeSecurityProxy.
         past_date = datetime(1900, 1, 1, tzinfo=UTC)
@@ -426,15 +415,15 @@ class TestCodeImportJobWorkflowRequestJob(unittest.TestCase,
         # requestJob only sets requesting_user.
         new_events = NewEvents()
         getUtility(ICodeImportJobWorkflow).requestJob(
-            pending_job, no_priv)
-        self.assertEqual(pending_job.requesting_user, no_priv)
+            pending_job, person)
+        self.assertEqual(pending_job.requesting_user, person)
         self.assertSqlAttributeEqualsDate(
             pending_job, 'date_due', past_date)
         # When requestJob is successful, it creates a REQUEST event.
         [request_event] = list(new_events)
         self.assertEventLike(
             request_event, CodeImportEventType.REQUEST,
-            pending_job.code_import, person=no_priv)
+            pending_job.code_import, person=person)
 
 
 class TestCodeImportJobWorkflowStartJob(unittest.TestCase,

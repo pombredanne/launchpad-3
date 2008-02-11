@@ -207,17 +207,18 @@
       </div>
       </div>
       </tal:recent-members>
-      <div class="section" 
+      <div class="section"
            tal:content="structure context/@@+portlet-related-projects" />
 
     </div>
 
     <div class="right">
 
-      <div class="section" 
-           tal:content="structure context/@@+pagelet-details" />
+      <div class="section"
+           tal:content="structure context/@@+portlet-details" />
 
-      <div tal:replace="structure context/@@+pagelet-contact-details" />
+      <div class="section"
+           tal:content="structure context/@@+portlet-contact-details" />
 
       <tal:not-team condition="not:context/isTeam">
       <div id="working-on"
@@ -321,18 +322,18 @@
       </p>
 
       <tal:logged-in condition="request/lp:person">
-        <tal:cannot-be-team condition="not: view/context_is_probably_a_team">
+        <tal:person condition="not: view/context_is_probably_a_team">
           <a tal:attributes="
             href string:/people/+requestmerge?field.dupeaccount=${context/name}"
-          >Hey, I'm <span tal:replace="context/browsername" />.</a>
-        </tal:cannot-be-team>
-        <tal:can-be-team condition="view/context_is_probably_a_team">
-          <a href="+claimteam">Hey, this is a team I run.</a>
-        </tal:can-be-team>
+          >Are you <span tal:replace="context/browsername" />?</a>
+        </tal:person>
+        <tal:team condition="view/context_is_probably_a_team">
+          <a href="+claimteam">Is this a team you run?</a>
+        </tal:team>
       </tal:logged-in>
 
       <tal:not-logged-in condition="not: request/lp:person">
-        <a href="+claim">Hey, I'm <span tal:replace="context/browsername" />.</a>
+        <a href="+claim">Are you <span tal:replace="context/browsername" />?</a>
       </tal:not-logged-in>
     </tal:noaccount>
 

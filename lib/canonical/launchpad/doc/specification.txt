@@ -82,6 +82,17 @@ specs attached to mozilla-firefox).
     >>> check_permission('launchpad.Edit', newspec)
     False
 
+SpecificationSet implements the ISpecificationSet interface
+
+    >>> ubuspec in specset.all_specifications
+    True
+    >>> specset.has_any_specifications
+    True
+
+    >>> from canonical.launchpad.webapp.testing import verifyObject
+    >>> verifyObject(ISpecificationSet, specset)
+    True
+
 
 SpecificationDelta
 ------------------

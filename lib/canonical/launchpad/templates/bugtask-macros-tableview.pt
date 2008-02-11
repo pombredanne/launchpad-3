@@ -524,7 +524,6 @@
 
     <fieldset>
       <legend>Other</legend>
-
           <table>
             <tr>
               <td style="white-space: nowrap">
@@ -539,11 +538,21 @@
               </td>
             </tr>
             <tr>
+	      <td>
+	      </td>
+              <td style="white-space: nowrap">
+                  <input tal:replace="structure view/widgets/has_cve" />
+                  <label tal:attributes="for view/widgets/has_cve/name">
+                     Show only bugs associated with a CVE
+                  </label>
+              </td>
+            </tr>
+	    <tr>
               <tal:comment tal:replace="nothing">
                 <!-- XXX: Bjorn Tillenius 2006-10-02:
                      The rendering of the widget is pretty much copied from
                      the widget macro; the difference is that we want to
-                     render the wiget in a table, and the label should
+                     render the widget in a table, and the label should
                      be rendered on the same line as the widget. When
                      FormLayout lands we should be able to use the
                      standard macro instead. -->
@@ -561,14 +570,25 @@
                     >An error message.</div>
                 </div>
               </td>
-              <td style="white-space: nowrap">
-                  <input tal:replace="structure view/widgets/has_cve" />
-                  <label tal:attributes="for view/widgets/has_cve/name">
-                     Show only bugs associated with a CVE
+	      <td>
+                <div condition="view/shouldShowTagsCombinatorWidget"
+                     class="value">
+                  <label>
+                    <input id="field.tags_combinator.0"
+                           name="field.tags_combinator"
+                           value="ANY" checked="checked"
+                           class="radioType" type="radio" />&nbsp;Any
                   </label>
-              </td>
-            </tr>
-
+                  <br />
+                  <label>
+                    <input id="field.tags_combinator.1"
+                           name="field.tags_combinator"
+                           value="ALL"
+                           class="radioType" type="radio" />&nbsp;All
+                  </label>
+                </div>
+	      </td>
+	    </tr>
             <tr>
               <td tal:condition="view/shouldShowNoPackageWidget">
                   <span tal:content="structure view/widgets/has_no_package" />

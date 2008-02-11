@@ -31,7 +31,8 @@ was supplied (through comments) are 'Incomplete (without response)'.
 Bugs that have been marked incomplete and for which new information was
 supplied are 'Incomplete (with response)'.
 
-    >>> user_browser.open('http://bugs.launchpad.dev/jokosher/+bugs?advanced=1')
+    >>> user_browser.open(
+    ...     'http://bugs.launchpad.dev/jokosher/+bugs?advanced=1')
     >>> user_browser.getControl(name='field.status:list').value = (
     ...     ['INCOMPLETE_WITH_RESPONSE'])
     >>> user_browser.getControl('Search', index=1).click()
@@ -55,7 +56,8 @@ comment for the bug.
 
 He tries again to find that bug using the advanced search form.
 
-    >>> user_browser.open('http://bugs.launchpad.dev/jokosher/+bugs?advanced=1')
+    >>> user_browser.open(
+    ...     'http://bugs.launchpad.dev/jokosher/+bugs?advanced=1')
     >>> user_browser.getControl(name='field.status:list').value = (
     ...     ['INCOMPLETE_WITH_RESPONSE'])
     >>> user_browser.getControl('Search', index=1).click()
@@ -66,7 +68,8 @@ The bug is there, since he supplied new information in a comment. No
 Privileges Person makes sure that it no longer is in the list of
 incomplete bugs without response.
 
-    >>> user_browser.open('http://bugs.launchpad.dev/jokosher/+bugs?advanced=1')
+    >>> user_browser.open(
+    ...     'http://bugs.launchpad.dev/jokosher/+bugs?advanced=1')
     >>> user_browser.getControl(name='field.status:list').value = (
     ...     ['INCOMPLETE_WITH_RESPONSE'])
     >>> user_browser.getControl('Search', index=1).click()
@@ -94,7 +97,7 @@ stating that the bug report will be marked for expiration.
     (find out why)
 
     >>> user_browser.getLink('find out why').url
-    'https://help.launchpad.net/BugStatuses'
+    'https://help.launchpad.net/BugExpiry'
 
 If the time by which a bug should have been expired has passed but the
 bug has not yet been expired, a different message will be displayed,
@@ -121,7 +124,7 @@ date. We alter the date_last_updated field of bug 11 to demonstrate this.
     (find out why)
 
     >>> user_browser.getLink('find out why').url
-    'https://help.launchpad.net/BugStatuses'
+    'https://help.launchpad.net/BugExpiry'
 
 == The expirable bug search ==
 
@@ -155,8 +158,7 @@ or the file-a-bug link because this is a specialized search.
     'Bugs that can expire in Jokosher Audio Editor'
 
     >>> contents = find_main_content(user_browser.contents)
-    >>> print extract_text(contents.find(
-    ...     'td', {'class' : 'batch-navigation-index'}))
+    >>> print_batch_header(contents)
     1 ... 2  of 2 results
 
     >>> buglisting = contents.find('table', id='buglisting')

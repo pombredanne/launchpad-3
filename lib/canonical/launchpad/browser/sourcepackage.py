@@ -246,20 +246,25 @@ class SourcePackageView(BuildRecordsView, TranslationsMixin):
         parser = ParseSrcDepends
         return relationship_builder(content, parser=parser, getter=getter)
 
+    @property
     def builddepends(self):
         return self._relationship_parser(
             self.context.currentrelease.builddepends)
 
+    @property
     def builddependsindep(self):
         return self._relationship_parser(
             self.context.currentrelease.builddependsindep)
 
-    def has_build_depends(self):
-        depends_indep = self.context.currentrelease.builddependsindep
-        depends = self.context.currentrelease.builddepends
-        if depends or depends_indep:
-            return True
-        return False
+    @property
+    def build_conflicts(self):
+        return self._relationship_parser(
+            self.context.currentrelease.build_conflicts)
+
+    @property
+    def build_conflicts_indep(self):
+        return self._relationship_parser(
+            self.context.currentrelease.build_conflicts_indep)
 
     def requestCountry(self):
         return ICountry(self.request, None)
