@@ -79,6 +79,7 @@ Now Robert Collins proposes himself as a member of the Ubuntu Team. This
 generates a notification email only to Ubuntu Team administrators.
 
     >>> lifeless = personset.getByName('lifeless')
+    >>> login(lifeless.preferredemail.email)
     >>> lifeless.join(ubuntu_team)
     >>> membership = membershipset.getByPersonAndTeam(lifeless, ubuntu_team)
     >>> membership.status.title
