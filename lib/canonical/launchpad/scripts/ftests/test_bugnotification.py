@@ -17,7 +17,8 @@ from canonical.launchpad.database import BugTask
 from canonical.launchpad.interfaces import (
     IBug, IBugSet, IMessageSet, IPersonSet, IProductSet)
 from canonical.launchpad.mailnotification import BugNotificationRecipients
-from canonical.launchpad.scripts.bugnotification import get_email_notifications
+from canonical.launchpad.scripts.bugnotification import (
+    get_email_notifications)
 
 
 class MockBug:

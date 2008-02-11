@@ -138,6 +138,9 @@ def get_email_notifications(bug_notifications, date_emailed=None):
         - Must be related to the same bug.
         - Must contain at most one comment.
     """
+    # Avoid spurious lint about possibly undefined loop variables.
+    notification = None
+    # Copy bug_notifications so we can modify it freely.
     bug_notifications = list(bug_notifications)
     while bug_notifications:
         found_comment = False
@@ -153,7 +156,10 @@ def get_email_notifications(bug_notifications, date_emailed=None):
             if notification.is_comment and found_comment:
                 # Oops, found a second comment, stop batching.
                 break
-            if (notification.bug, notification.message.owner) != (bug, person):
+            if notification.bug != bug:
+                # Found a different change, stop batching.
+                break
+            if notification.message.owner != person:
                 # Ah, we've found a change made by somebody else; time
                 # to stop batching too.
                 break
