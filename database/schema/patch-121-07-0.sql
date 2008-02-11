@@ -20,4 +20,4 @@ CREATE INDEX revisionauthor__person__idx
   ON RevisionAuthor(person);
 
 
-INSERT INTO LaunchpadDatabaseRevision VALUES (88, 92, 0);
+INSERT INTO LaunchpadDatabaseRevision VALUES (121, 7, 0);
