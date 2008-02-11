@@ -7,10 +7,8 @@ that private/private-membership teams can be connect to.
 __metaclass__ = type
 __all__ = ['PublicPersonValidator', 'PublicOrPrivatePersonValidator']
 
-from zope.component import getUtility
 from sqlobject.include.validators import Validator, InvalidField
 
-from canonical.launchpad.interfaces import IPersonSet
 from canonical.launchpad.fields import (
     is_valid_public_person_link, is_valid_public_or_private_person_link)
 
@@ -19,11 +17,14 @@ class PersonValidatorBase(Validator):
         """To be overridden in child classes."""
         raise NotImplementedError
 
-    def toPython(self, value, state=None):
+    def fromPython(self, value, state=None):
         if value is None:
             return value
         elif isinstance(value, int):
-            person = getUtility(IPersonSet).get(value)
+            # getUtility() can't be used since an interaction may not have
+            # been started.
+            from canonical.launchpad.database.person import PersonSet
+            person = PersonSet().get(value)
             if person is None:
                 raise InvalidField('No person with id=%d' % value,
                                    value, state)
