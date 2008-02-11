@@ -16,8 +16,8 @@ from canonical.database.sqlbase import quote, SQLBase
 from canonical.launchpad.interfaces import (
     BlueprintNotificationLevel, BugNotificationLevel, DeleteSubscriptionError,
     DuplicateSubscriptionError, IDistribution, IDistributionSourcePackage,
-    IDistroSeries, IProduct, IProductSeries, IStructuralSubscription,
-    IStructuralSubscriptionTarget)
+    IDistroSeries, IMilestone, IProduct, IProductSeries,
+    IStructuralSubscription, IStructuralSubscriptionTarget)
 
 
 class StructuralSubscription(SQLBase):
@@ -111,6 +111,8 @@ class StructuralSubscriptionTargetMixin:
         elif IDistribution.providedBy(self):
             args['distribution'] = self
             args['sourcepackagename'] = None
+        elif IMilestone.providedBy(self):
+            args['milestone'] = self
         else:
             raise AssertionError(
                 '%s is not a valid structural subscription target.')
@@ -241,6 +243,8 @@ class StructuralSubscriptionTargetMixin:
             parent = self.product
         elif IDistroSeries.providedBy(self):
             parent = self.distribution
+        elif IMilestone.providedBy(self):
+            parent = self.target
         else:
             parent = None
         # We only want to return the parent if it's
