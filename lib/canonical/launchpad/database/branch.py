@@ -563,6 +563,21 @@ class Branch(SQLBase):
             self.next_mirror_time = None
         self.syncUpdate()
 
+    def destroySelf(self, break_references=False):
+        """See `IBranch`."""
+        if break_references:
+            self._breakReferences()
+        if break_references or self.canBeDeleted():
+            # Delete any branch revisions.
+            branch_ancestry = BranchRevision.selectBy(branch=self)
+            for branch_revision in branch_ancestry:
+                BranchRevision.delete(branch_revision.id)
+            # Now delete the branch itself.
+            SQLBase.destroySelf(self)
+        else:
+            raise CannotDeleteBranch(
+                "Cannot delete branch: %s" % self.unique_name)
+
 
 class BranchWithSortKeys(Branch):
     """A hack to allow the sorting of Branch queries by human-meaningful keys.
@@ -812,21 +827,6 @@ class BranchSet:
                 BranchSubscriptionDiffSize.NODIFF)
 
         return branch
-
-    def delete(self, branch, break_references=False):
-        """See `IBranchSet`."""
-        if break_references:
-            branch._breakReferences()
-        if break_references or branch.canBeDeleted():
-            # Delete any branch revisions.
-            branch_ancestry = BranchRevision.selectBy(branch=branch)
-            for branch_revision in branch_ancestry:
-                BranchRevision.delete(branch_revision.id)
-            # Now delete the branch itself.
-            Branch.delete(branch.id)
-        else:
-            raise CannotDeleteBranch(
-                "Cannot delete branch: %s" % branch.unique_name)
 
     def getByUrl(self, url, default=None):
         """See `IBranchSet`."""

@@ -81,7 +81,7 @@ class TestBranchDeletion(TestCase):
                          "deleted.")
         branch_id = self.branch.id
         branch_set = BranchSet()
-        branch_set.delete(self.branch)
+        self.branch.destroySelf()
         self.assert_(branch_set.get(branch_id) is None,
                      "The branch has not been deleted.")
 
@@ -91,7 +91,7 @@ class TestBranchDeletion(TestCase):
             self.user, BranchSubscriptionNotificationLevel.NOEMAIL, None)
         self.assertEqual(self.branch.canBeDeleted(), False,
                          "A branch that has a subscription is not deletable.")
-        self.assertRaises(CannotDeleteBranch, BranchSet().delete, self.branch)
+        self.assertRaises(CannotDeleteBranch, self.branch.destroySelf)
 
     def test_codeImportDisablesDeletion(self):
         """A branch that has an attached code import can't be deleted."""
@@ -106,7 +106,7 @@ class TestBranchDeletion(TestCase):
         syncUpdate(code_import)
         self.assertEqual(branch.canBeDeleted(), False,
                          "A branch that has a import is not deletable.")
-        self.assertRaises(CannotDeleteBranch, BranchSet().delete, branch)
+        self.assertRaises(CannotDeleteBranch, branch.destroySelf)
 
     def test_bugBranchLinkDisablesDeletion(self):
         """A branch linked to a bug cannot be deleted."""
@@ -117,7 +117,7 @@ class TestBranchDeletion(TestCase):
         bug.addBranch(self.branch, self.user)
         self.assertEqual(self.branch.canBeDeleted(), False,
                          "A branch linked to a bug is not deletable.")
-        self.assertRaises(CannotDeleteBranch, BranchSet().delete, self.branch)
+        self.assertRaises(CannotDeleteBranch, self.branch.destroySelf)
 
     def test_specBranchLinkDisablesDeletion(self):
         """A branch linked to a spec cannot be deleted."""
@@ -128,7 +128,7 @@ class TestBranchDeletion(TestCase):
         spec.linkBranch(self.branch, self.user)
         self.assertEqual(self.branch.canBeDeleted(), False,
                          "A branch linked to a spec is not deletable.")
-        self.assertRaises(CannotDeleteBranch, BranchSet().delete, self.branch)
+        self.assertRaises(CannotDeleteBranch, self.branch.destroySelf)
 
     def test_associatedProductSeriesUserBranchDisablesDeletion(self):
         """A branch linked as a user_branch to a product series cannot be
@@ -139,7 +139,7 @@ class TestBranchDeletion(TestCase):
         self.assertEqual(self.branch.canBeDeleted(), False,
                          "A branch that is a user branch for a product series"
                          " is not deletable.")
-        self.assertRaises(CannotDeleteBranch, BranchSet().delete, self.branch)
+        self.assertRaises(CannotDeleteBranch, self.branch.destroySelf)
 
     def test_associatedProductSeriesImportBranchDisablesDeletion(self):
         """A branch linked as an import_branch to a product series cannot
@@ -150,7 +150,7 @@ class TestBranchDeletion(TestCase):
         self.assertEqual(self.branch.canBeDeleted(), False,
                          "A branch that is an import branch for a product "
                          "series is not deletable.")
-        self.assertRaises(CannotDeleteBranch, BranchSet().delete, self.branch)
+        self.assertRaises(CannotDeleteBranch, self.branch.destroySelf)
 
     def test_revisionsDeletable(self):
         """A branch that has some revisions can be deleted."""
@@ -168,7 +168,7 @@ class TestBranchDeletion(TestCase):
         self.assertEqual(self.branch.canBeDeleted(), True,
                          "A branch that has a revision is deletable.")
         unique_name = self.branch.unique_name
-        BranchSet().delete(self.branch)
+        self.branch.destroySelf()
         self.assertEqual(BranchSet().getByUniqueName(unique_name), None,
                          "Branch was not deleted.")
 
@@ -180,7 +180,7 @@ class TestBranchDeletion(TestCase):
         self.branch.addLandingTarget(self.user, target_branch)
         self.assertEqual(self.branch.canBeDeleted(), False,
                          "A branch with a landing target is not deletable.")
-        self.assertRaises(CannotDeleteBranch, BranchSet().delete, self.branch)
+        self.assertRaises(CannotDeleteBranch, self.branch.destroySelf)
 
     def test_landingCandidateDisablesDeletion(self):
         """A branch with a landing candidate cannot be deleted."""
@@ -191,7 +191,7 @@ class TestBranchDeletion(TestCase):
         self.assertEqual(self.branch.canBeDeleted(), False,
                          "A branch with a landing candidate is not"
                          " deletable.")
-        self.assertRaises(CannotDeleteBranch, BranchSet().delete, self.branch)
+        self.assertRaises(CannotDeleteBranch, self.branch.destroySelf)
 
     def test_dependentBranchDisablesDeletion(self):
         """A branch that is a dependent branch cannot be deleted."""
@@ -204,7 +204,7 @@ class TestBranchDeletion(TestCase):
         source_branch.addLandingTarget(self.user, target_branch, self.branch)
         self.assertEqual(self.branch.canBeDeleted(), False,
                          "A branch with a dependent target is not deletable.")
-        self.assertRaises(CannotDeleteBranch, BranchSet().delete, self.branch)
+        self.assertRaises(CannotDeleteBranch, self.branch.destroySelf)
 
 
 class TestBranchDeletionConsequences(TestCase):
@@ -256,7 +256,7 @@ class TestBranchDeletionConsequences(TestCase):
         merge_proposal = self.makeMergeProposal()
         merge_proposal_id = merge_proposal.id
         BranchMergeProposal.get(merge_proposal_id)
-        self.branch_set.delete(self.branch, break_references=True)
+        self.branch.destroySelf(break_references=True)
         self.assertRaises(SQLObjectNotFound,
             BranchMergeProposal.get, merge_proposal_id)
 
@@ -265,8 +265,7 @@ class TestBranchDeletionConsequences(TestCase):
         merge_proposal = self.makeMergeProposal()
         merge_proposal_id = merge_proposal.id
         BranchMergeProposal.get(merge_proposal_id)
-        self.branch_set.delete(merge_proposal.target_branch,
-                               break_references=True)
+        merge_proposal.target_branch.destroySelf(break_references=True)
         self.assertRaises(SQLObjectNotFound,
             BranchMergeProposal.get, merge_proposal_id)
 
@@ -274,8 +273,7 @@ class TestBranchDeletionConsequences(TestCase):
         """break_links enables deleting merge proposal dependant branches."""
         merge_proposal = self.makeMergeProposal()
         merge_proposal_id = merge_proposal.id
-        self.branch_set.delete(merge_proposal.dependent_branch,
-                               break_references=True)
+        merge_proposal.dependent_branch.destroySelf(break_references=True)
         self.assertEqual(None, merge_proposal.dependent_branch)
 
     def test_branchWithSubscriptionReqirements(self):
@@ -289,7 +287,7 @@ class TestBranchDeletionConsequences(TestCase):
         """break_links allows deleting a branch with subscription."""
         subscription = self.factory.makeBranchSubscription()
         subscription_id = subscription.id
-        self.branch_set.delete(subscription.branch, break_references=True)
+        subscription.branch.destroySelf(break_references=True)
         self.assertRaises(SQLObjectNotFound,
             BranchSubscription.get, subscription_id)
 
@@ -305,7 +303,7 @@ class TestBranchDeletionConsequences(TestCase):
         bug = self.factory.makeBug(self.branch)
         bug_branch = bug.bug_branches[0]
         bug_branch_id = bug_branch.id
-        self.branch_set.delete(self.branch, break_references=True)
+        self.branch.destroySelf(break_references=True)
         self.assertRaises(SQLObjectNotFound, BugBranch.get, bug_branch_id)
 
     def test_branchWithSpecRequirements(self):
@@ -320,7 +318,7 @@ class TestBranchDeletionConsequences(TestCase):
         """break_links allows deleting a branch with a spec."""
         spec = self.factory.makeSpec(branch=self.branch)
         spec_branch_id = self.branch.spec_links[0].id
-        self.branch_set.delete(self.branch, break_references=True)
+        self.branch.destroySelf(break_references=True)
         self.assertRaises(SQLObjectNotFound, SpecificationBranch.get,
                           spec_branch_id)
 
@@ -344,14 +342,14 @@ class TestBranchDeletionConsequences(TestCase):
         """break_links allows deleting a series' user_branch."""
         series = self.factory.makeSeries(self.branch)
         series_id = series.id
-        self.branch_set.delete(self.branch, break_references=True)
+        self.branch.destroySelf(break_references=True)
         self.assertEqual(None, series.user_branch)
 
     def test_branchWithSeriesImportDeletion(self):
         """break_links allows deleting a series' import_branch."""
         series = self.factory.makeSeries(import_branch=self.branch)
         series_id = series.id
-        self.branch_set.delete(self.branch, break_references=True)
+        self.branch.destroySelf(break_references=True)
         self.assertEqual(None, series.user_branch)
 
     def test_branchWithCodeImportRequirements(self):
@@ -365,7 +363,7 @@ class TestBranchDeletionConsequences(TestCase):
         """break_links allows deleting a code import branch."""
         code_import = self.factory.makeCodeImport()
         code_import_id = code_import.id
-        self.branch_set.delete(code_import.branch, break_references=True)
+        code_import.branch.destroySelf(break_references=True)
         self.assertRaises(
             SQLObjectNotFound, CodeImport.get, code_import_id)
 

@@ -1053,7 +1053,7 @@ A branch can be deleted trivially if it is not associated with any bugs or
 blueprints, has no subscribers, and hasn't been associated with any product
 series.
 
-Deleting the branch is done through the BranchSet.  If the branch is not
+Deleting the branch is done through Branch.destroySelf.  If the branch is not
 deletable then an exception is raised.
 
 More details can be found in the file
@@ -1075,7 +1075,7 @@ Adding a subscriber makes it not deletable.
     ...     ddaa, BranchSubscriptionNotificationLevel.NOEMAIL, None)
     >>> branch.canBeDeleted()
     False
-    >>> branchset.delete(branch)
+    >>> branch.destroySelf()
     Traceback (most recent call last):
     ...
     CannotDeleteBranch: Cannot delete branch: ~ddaa/gnome-terminal/to-delete
@@ -1085,7 +1085,7 @@ The process can be rectified though by removing the offending links.
     >>> branch.unsubscribe(ddaa)
     >>> branch.canBeDeleted()
     True
-    >>> branchset.delete(branch)
+    >>> branch.destroySelf()
     >>> print branchset.getByUniqueName('~ddaa/gnome-terminal/to-delete')
     None
 
@@ -1115,7 +1115,7 @@ items that have mandantory references to this branch, and alter items with
 optional references to this branch.  (Of course, this will fail if
 the user does not have appropriate permissions.)
 
-    >>> branchset.delete(branch, break_references=True)
+    >>> branch.destroySelf(break_references=True)
     >>> print branchset.getByUniqueName(
     ...     '~ddaa/gnome-terminal/to-delete')
     None
@@ -1127,7 +1127,7 @@ Branches with revisions are deletable.
     1
     >>> branch.canBeDeleted()
     True
-    >>> branchset.delete(branch)
+    >>> branch.destroySelf()
     >>> print branchset.getByUniqueName('~sabdfl/firefox/release--0.9.1')
     None
 

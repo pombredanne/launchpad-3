@@ -461,6 +461,16 @@ class IBranch(IHasOwner):
     date_last_modified = Datetime(
         title=_('Date Last Modified'), required=True, readonly=False)
 
+    def destroySelf(break_references=False):
+        """Delete the specified branch.
+
+        BranchRevisions associated with this branch will also be deleted.
+        :param break_references: If supplied, break any references to this
+            branch by deleting items with mandatory references and
+            NULLing other references.
+        :raise: CannotDeleteBranch if the branch cannot be deleted.
+        """
+
     def latest_revisions(quantity=10):
         """A specific number of the latest revisions in that branch."""
 
@@ -683,16 +693,6 @@ class IBranchSet(Interface):
 
         If product is None (indicating a +junk branch) then the owner must not
         be a team, except for the special case of the ~vcs-imports celebrity.
-        """
-
-    def delete(branch, break_references=False):
-        """Delete the specified branch.
-
-        BranchRevisions associated with this branch will also be deleted.
-        :param break_references: If supplied, break any references to this
-            branch by deleting items with mandatory references and
-            NULLing other references.
-        :raise: CannotDeleteBranch if the branch cannot be deleted.
         """
 
     def getByUniqueName(unique_name, default=None):
