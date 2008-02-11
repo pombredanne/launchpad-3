@@ -8,4 +8,4 @@ ALTER TABLE StructuralSubscription
     null_count(ARRAY[product, productseries, project,
                      distroseries, distribution, milestone]) = 5);
 
-INSERT INTO LaunchpadDatabaseRevision VALUES (88, 99, 1);
+INSERT INTO LaunchpadDatabaseRevision VALUES (121, 03, 0);
