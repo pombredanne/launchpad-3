@@ -150,6 +150,7 @@
     <include file="vpotexport.zcml" />
     <include file="archive.zcml" />
     <include file="webservice.zcml" />
+    <include file="packagediff.zcml" />
 
     <include file="fields.zcml" />
     <include file="resources.zcml" />
