@@ -375,8 +375,7 @@ def construct_bug_notification(bug, from_address, address, body, subject,
 
     # Add X-Launchpad-Bug-Visibility header.
     msg.add_header(
-        'X-Launchpad-Bug-Visibility',
-        u'private=%r; security=%r;' % (
+        'X-Launchpad-Bug-Visibility', u'private=%s; security=%s;' % (
             bool(bug.private), bool(bug.security_related)))
 
     if rationale_header is not None:
