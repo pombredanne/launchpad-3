@@ -35,8 +35,8 @@ from canonical.launchpad.interfaces import (
     IBuildSet, IHasBuildRecords, ILaunchpadCelebrities, IPPAActivateForm,
     IStructuralHeaderPresentation, NotFoundError, PackagePublishingStatus)
 from canonical.launchpad.webapp import (
-    action, canonical_url, ContextMenu, custom_widget,
-    enabled_with_permission, stepthrough, LaunchpadEditFormView,
+    action, canonical_url, custom_widget, enabled_with_permission,
+    stepthrough, ContextMenu, LaunchpadEditFormView,
     LaunchpadFormView, LaunchpadView, Link, Navigation)
 from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.widgets import LabeledMultiCheckBoxWidget
