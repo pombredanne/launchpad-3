@@ -12,4 +12,9 @@ CREATE TABLE PackageDiff (
     CONSTRAINT distinct_sources CHECK (from_source != to_source)
 );
 
-INSERT INTO LaunchpadDatabaseRevision VALUES (88, 99, 0);
+CREATE INDEX packagediff__diff_content__idx ON PackageDiff(diff_content);
+CREATE INDEX packagediff__requester__idx ON PackageDiff(requester);
+CREATE INDEX packagediff__from_source__idx ON PackageDiff(from_source);
+CREATE INDEX packagediff__to_source__idx ON PackageDiff(to_source);
+
+INSERT INTO LaunchpadDatabaseRevision VALUES (121, 02, 0);
