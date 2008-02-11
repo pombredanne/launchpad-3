@@ -1013,13 +1013,13 @@ specified:
     False
 
 
-== The X-Launchpad-Visibility header ==
+== The X-Launchpad-Bug-Visibility header ==
 
 When a notification is sent out about a bug, the
-X-Launchpad-Visibility header is filled with data about the bug's
+X-Launchpad-Bug-Visibility header is filled with data about the bug's
 visibility:
 
-    >>> sorted(message.get_all('X-Launchpad-Visibility'))
+    >>> message.get_all('X-Launchpad-Bug-Visibility')
     [u'private=False; security=False;']
 
 Predictably, private bugs are sent with slightly different header
@@ -1033,7 +1033,7 @@ values:
     >>> [(bug_notifications, messages)] = get_email_notifications(
     ...     notifications)
     >>> [message] = messages
-    >>> message.get_all('X-Launchpad-Visibility')
+    >>> message.get_all('X-Launchpad-Bug-Visibility')
     [u'private=True; security=False;']
 
 The same is true for security related bugs:
@@ -1045,7 +1045,7 @@ The same is true for security related bugs:
     >>> [(bug_notifications, messages)] = get_email_notifications(
     ...     notifications)
     >>> [message] = messages
-    >>> message.get_all('X-Launchpad-Visibility')
+    >>> message.get_all('X-Launchpad-Bug-Visibility')
     [u'private=True; security=True;']
 
 

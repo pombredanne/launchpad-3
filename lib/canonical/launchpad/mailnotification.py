@@ -373,9 +373,9 @@ def construct_bug_notification(bug, from_address, address, body, subject,
     for bugtask in bug.bugtasks:
         msg.add_header('X-Launchpad-Bug', bugtask.asEmailHeaderValue())
 
-    # Add X-Launchpad-Visibility header.
+    # Add X-Launchpad-Bug-Visibility header.
     msg.add_header(
-        'X-Launchpad-Visibility',
+        'X-Launchpad-Bug-Visibility',
         u'private=%r; security=%r;' % (
             bool(bug.private), bool(bug.security_related)))
 
