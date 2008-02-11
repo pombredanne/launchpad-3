@@ -22,11 +22,11 @@
 
     <div tal:condition="job">
 
-    <p
+    <div
       tal:define="message view/cancelBuildJob"
       tal:condition="message"
       tal:content="structure message"
-      class="informational message" 
+      class="informational message"
     />
 
       <p>
@@ -64,14 +64,14 @@
       </tbody>
      </table>
 
-     <p>Are you sure ?</p> 
+     <p>Are you sure ?</p>
 
      <form name="CANCEL" action="" method="POST">
-       <input name="BUILDERID" type="hidden" 
+       <input name="BUILDERID" type="hidden"
               tal:attributes="value context/id"/>
-       <input type="submit" value="Cancel Current Job"/>
+       <input type="submit" value="Cancel job"/>
      </form>
-       
+
     </div>
 
     <p tal:condition="not:job">

@@ -57,7 +57,8 @@ to associate the label with the radio button input.
       <td><label for="field.branch_type.0">Hosted</label></td>
     </tr>
     <tr>
-      <td>Launchpad is the primary location of this branch. </td>
+      <td class="formHelp">Launchpad is the primary location of this branch.
+      </td>
     </tr>
     <tr>
       <td rowspan="2"><input class="radioType" id="field.branch_type.1"
@@ -65,8 +66,8 @@ to associate the label with the radio button input.
       <td><label for="field.branch_type.1">Mirrored</label></td>
     </tr>
     <tr>
-      <td>Primarily hosted elsewhere and is periodically mirrored
-      from the remote location into Launchpad.  </td>
+      <td class="formHelp">Primarily hosted elsewhere and is periodically
+      mirrored from the external location into Launchpad.  </td>
     </tr>
     <tr>
       <td rowspan="2"><input class="radioType" id="field.branch_type.2"
@@ -74,7 +75,7 @@ to associate the label with the radio button input.
       <td><label for="field.branch_type.2">Remote</label></td>
     </tr>
     <tr>
-      <td>Registered in Launchpad with an external location,
+      <td class="formHelp">Registered in Launchpad with an external location,
       but is not to be mirrored, nor available through Launchpad. </td>
     </tr>
     </table>

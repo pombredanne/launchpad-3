@@ -69,6 +69,7 @@ page. The builds page is described in 23-builds-page.txt.
 
     >>> print extract_text(find_portlet(anon_browser.contents, 'Actions'))
     Actions
+    Administer (disabled)
     Show builds
 
 Only administrators can edit ('administer', in fact) the

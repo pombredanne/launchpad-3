@@ -10,7 +10,7 @@ you get a string.
   ... """)
   HTTP/1.1 200 Ok
   ...
-  This is Launchpad's web service.
+  This is a web service.
 
 Though web services in general support all HTTP methods, this
 particular resource supports only GET. Eventually it will also support
