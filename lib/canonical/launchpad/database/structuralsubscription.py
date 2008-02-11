@@ -15,8 +15,8 @@ from canonical.database.sqlbase import quote, SQLBase
 
 from canonical.launchpad.interfaces import (
     BlueprintNotificationLevel, BugNotificationLevel, DeleteSubscriptionError,
-    DuplicateSubscriptionError, IDistributionSourcePackage, IDistroSeries,
-    IProduct, IProductSeries, IStructuralSubscription,
+    DuplicateSubscriptionError, IDistribution, IDistributionSourcePackage,
+    IDistroSeries, IProduct, IProductSeries, IStructuralSubscription,
     IStructuralSubscriptionTarget)
 
 
@@ -108,6 +108,9 @@ class StructuralSubscriptionTargetMixin:
             args['sourcepackagename'] = self.sourcepackagename
         elif IProduct.providedBy(self):
             args['product'] = self
+        elif IDistribution.providedBy(self):
+            args['distribution'] = self
+            args['sourcepackagename'] = None
         else:
             raise AssertionError(
                 '%s is not a valid structural subscription target.')
@@ -176,9 +179,15 @@ class StructuralSubscriptionTargetMixin:
                          min_blueprint_notification_level=
                          BlueprintNotificationLevel.NOTHING):
         """See `IStructuralSubscriptionTarget`."""
-        target_clause = " AND ".join(
-            "StructuralSubscription.%s = %s " % (key, quote(value))
-            for key, value in self._target_args.items())
+        target_clause_parts = []
+        for key, value in self._target_args.items():
+            if value is None:
+                target_clause_parts.append(
+                    "StructuralSubscription.%s IS NULL " % (key,))
+            else:
+                target_clause_parts.append(
+                    "StructuralSubscription.%s = %s " % (key, quote(value)))
+        target_clause = " AND ".join(target_clause_parts)
         query = target_clause + """
             AND StructuralSubscription.subscriber = Person.id
             """
@@ -193,6 +202,22 @@ class StructuralSubscriptionTargetMixin:
                              (sub.blueprint_notification_level >=
                               min_blueprint_notification_level))]
         return subscriptions
+
+    def getBugNotificationsRecipients(self, recipients=None):
+        """See `IStructuralSubscriptionTarget`."""
+        subscribers = set()
+        subscriptions = self.bug_subscriptions
+        for subscription in subscriptions:
+            subscriber = subscription.subscriber
+            subscribers.add(subscriber)
+            if recipients is not None:
+                recipients.addStructuralSubscriber(
+                    subscriber, self)
+        parent = self.parent_subscription_target
+        if parent is not None:
+            subscribers.update(
+                parent.getBugNotificationsRecipients(recipients))
+        return subscribers
 
     @property
     def bug_subscriptions(self):

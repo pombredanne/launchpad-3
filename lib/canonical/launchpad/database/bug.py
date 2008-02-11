@@ -472,13 +472,9 @@ class Bug(SQLBase):
                 if recipients is not None:
                     recipients.addAssignee(bugtask.assignee)
 
-            target = bugtask.target
             if IStructuralSubscriptionTarget.providedBy(bugtask.target):
-                for sub in target.bug_subscriptions:
-                    also_notified_subscribers.add(sub.subscriber)
-                    if recipients is not None:
-                        recipients.addStructuralSubscriber(
-                            sub.subscriber, target)
+                also_notified_subscribers.update(
+                    bugtask.target.getBugNotificationsRecipients(recipients))
 
             # Bug contacts are indirect subscribers.
             if (IDistroBugTask.providedBy(bugtask) or
