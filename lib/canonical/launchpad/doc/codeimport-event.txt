@@ -136,7 +136,7 @@ retrieved using the items() method.
     SVN_BRANCH_URL u'svn://svn.example.com/trunk'
 
 The database IDs of the CodeImport is also recorded. It is useful to
-collate events associated to deleted CodeImport objects.
+collate events associated with deleted CodeImport objects.
 
     >>> event_dict = dict(svn_create_event.items())
     >>> event_dict[CodeImportEventDataType.CODE_IMPORT] == (
@@ -280,6 +280,32 @@ code import.
     UPDATE_INTERVAL u'1:00:00'
     OLD_UPDATE_INTERVAL None
     SVN_BRANCH_URL u'svn://svn.example.com/trunk'
+
+
+=== REQUEST ===
+
+Users can request that an import be run immediately. When such a request
+is made the requestJob method of the CodeImportJobWorkflowt utility is
+called, this method logs the event by creating a REQUEST event.
+
+Recording REQUEST and other event types allow us to always know why a
+code import job was run.
+
+    >>> request_event = event_set.newRequest(svn_import, nopriv)
+    >>> verify_event(request_event)
+    REQUEST
+    >>> print request_event.person.name
+    no-priv
+    >>> print_items(request_event)
+    CODE_IMPORT <muted>
+
+The database ID of the requested CodeImport is also recorded. It is
+useful to collate events associated with deleted CodeImport objects.
+
+    >>> event_dict = dict(request_event.items())
+    >>> event_dict[CodeImportEventDataType.CODE_IMPORT] == (
+    ...     unicode(svn_import.id))
+    True
 
 
 === ONLINE ===
