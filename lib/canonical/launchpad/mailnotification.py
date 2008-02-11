@@ -550,6 +550,7 @@ def generate_bug_add_email(bug, new_recipients=False, reason=None):
     it's just a notification of a new bug report.
     """
     subject = u"[Bug %d] [NEW] %s" % (bug.id, bug.title)
+    contents = ''
 
     if bug.private:
         # This is a confidential bug.
@@ -557,6 +558,11 @@ def generate_bug_add_email(bug, new_recipients=False, reason=None):
     else:
         # This is a public bug.
         visibility = u"Public"
+
+    if bug.security_related:
+        # This bug is security related.
+        visibility += ' security'
+        contents += '*** SECURITY RELATED ***\n\n'
 
     bug_info = []
     # Add information about the affected upstreams and packages.
@@ -574,10 +580,9 @@ def generate_bug_add_email(bug, new_recipients=False, reason=None):
     if bug.tags:
         bug_info.append('\n** Tags: %s' % ' '.join(bug.tags))
 
-    mailwrapper = MailWrapper(width=72)
     if new_recipients:
-        contents = ("You have been subscribed to a %(visibility)s bug:\n\n"
-                    "%(description)s\n\n%(bug_info)s")
+        contents += ("You have been subscribed to a %(visibility)s bug:\n\n"
+                     "%(description)s\n\n%(bug_info)s")
         # The visibility appears mid-phrase so.. hack hack.
         visibility = visibility.lower()
         # XXX: kiko, 2007-03-21:
@@ -587,9 +592,10 @@ def generate_bug_add_email(bug, new_recipients=False, reason=None):
         contents += (
             "\n-- \n%(bug_title)s\n%(bug_url)s\n%(notification_rationale)s")
     else:
-        contents = ("%(visibility)s bug reported:\n\n"
-                    "%(description)s\n\n%(bug_info)s")
+        contents += ("%(visibility)s bug reported:\n\n"
+                     "%(description)s\n\n%(bug_info)s")
 
+    mailwrapper = MailWrapper(width=72)
     contents = contents % {
         'visibility' : visibility, 'bug_url' : canonical_url(bug),
         'bug_info': "\n".join(bug_info), 'bug_title': bug.title,

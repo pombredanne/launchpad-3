@@ -98,7 +98,8 @@ Of course, security related bugs are private by default, so they have
 a slightly different message:
 
     >>> bug_four.setPrivate(
-    ...     True, getUtility(IPerson).getByName('name12'))
+    ...     True, getUtility(IPersonSet).getByName('name12'))
+    True
 
     >>> subject, body = generate_bug_add_email(bug_four)
     >>> subject
