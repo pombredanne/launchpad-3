@@ -30,7 +30,6 @@ and SourceForge because there is only one instance (SourceForge.net).
   Trac
   Mantis
   Request Tracker (RT)
-  GNU Savannah
 
 The bug tracker name is used in URLs and certain characters (like '!')
 aren't allowed.

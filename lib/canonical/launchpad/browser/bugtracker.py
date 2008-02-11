@@ -76,7 +76,8 @@ class BugTrackerAddView(LaunchpadFormView):
         vocab_items = [
             item for item in BugTrackerType.items.items
             if item not in (BugTrackerType.DEBBUGS,
-                            BugTrackerType.SOURCEFORGE)]
+                            BugTrackerType.SOURCEFORGE,
+                            BugTrackerType.SAVANNAH)]
         fields = []
         for field_name in self.field_names:
             if field_name == 'bugtrackertype':
