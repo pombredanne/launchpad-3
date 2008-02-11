@@ -118,7 +118,7 @@ class BugTaskCollection(Collection):
 
     def getEntryPath(self, entry):
         """See `ICollection`."""
-        return str(entry.id)
+        return str(entry.context.id)
 
     def lookupEntry(self, id):
         """Find a BugTask by ID."""

@@ -270,7 +270,7 @@ returns the model objects in the collection.
     ...
     ...     def getEntryPath(self, entry):
     ...         """Use a recipe's ID as its URI fragment."""
-    ...         return entry.context.id
+    ...         return str(entry.context.id)
 
     >>> provideAdapter(RecipeCollection, [IRecipeSet], ICollection)
 
@@ -300,7 +300,8 @@ from an author-scoped collection of recipes. Recipes have their own
 top-level collection, but comments don't exist except in terms of a
 recipe. So the list of comments scoped to a recipe needs to take on
 some of the duties of a top-level collection. Fortunately, there's a
-predefined class that works in common cases:
+predefined class that works in cases like this one, where the elements
+are indexed by their order within a parent collection:
 OrderBasedScopedCollection.
 
     >>> from canonical.lazr.rest.resource import OrderBasedScopedCollection

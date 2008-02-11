@@ -21,10 +21,7 @@ class CollectionField(AbstractCollection):
     implements(ICollectionField)
 
     def __init__(self, *args, **kwargs):
-        container = kwargs.get('is_entry_container')
-        self.is_entry_container = False
-        if container is not None:
-            self.is_entry_container = (container is True)
-            del(kwargs['is_entry_container'])
-
+        self.is_entry_container = kwargs.setdefault(
+            'is_entry_container', False)
+        del(kwargs['is_entry_container'])
         super(CollectionField, self).__init__(*args, **kwargs)

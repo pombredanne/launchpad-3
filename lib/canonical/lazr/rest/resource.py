@@ -384,7 +384,7 @@ class OrderBasedScopedCollection(ScopedCollection):
     numbers start from 1.
     """
 
-    def getEntryPath(self, entry):
+    def getEntryPath(self, child):
         """See `ICollection`."""
         for i, entry in enumerate(self.collection):
             if child.context == entry:
