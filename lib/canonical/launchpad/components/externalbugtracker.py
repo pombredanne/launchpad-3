@@ -146,8 +146,7 @@ def report_oops(message=None, properties=None, info=None):
         properties = list(properties)
 
     if message is not None:
-        properties.append(
-            ('error-explanation', '%s' % message))
+        properties.append(('error-explanation', message))
 
     # Create the dummy request object.
     request = errorlog.ScriptRequest(properties)
