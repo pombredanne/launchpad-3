@@ -132,27 +132,22 @@ class EntryResource(ReadOnlyResource):
     @property
     def inside(self):
         """See `ICanonicalUrlData`."""
-        if self.parent_collection is not None:
-            return self.parent_collection
-        return self.root_resource.publishTraverse(
-            self.request, self.context.parent_collection_name)
+        return self.parent_collection
 
     def __init__(self, context, request, parent_collection = None):
         """Associate this resource with a specific object and request."""
         super(EntryResource, self).__init__(IEntry(context), request)
-        self.parent_collection = parent_collection
+        if parent_collection:
+            self.parent_collection = parent_collection
+        else:
+            self.parent_collection = self.root_resource.publishTraverse(
+                self.request, self.context.parent_collection_name)
 
     @property
     def path(self):
         """See `IEntryResource`."""
-        path = None
-        if self.parent_collection:
-            # Give the parent a chance to choose its child's path.
-            path = self.parent_collection.context.child_fragment(self.context)
-
-        if path is None:
-            path = urllib.quote(self.context.fragment())
-        return path
+        path = self.parent_collection.getEntryPath(self.context)
+        return urllib.quote(path)
 
     def publishTraverse(self, request, name):
         """Fetch a scoped collection resource by name."""
@@ -245,6 +240,10 @@ class CollectionResource(ReadOnlyResource):
     def path(self):
         """See `ICollectionResource`."""
         return self.collection_name
+
+    def getEntryPath(self, entry):
+        """See `ICollectionResource`."""
+        return self.context.getEntryPath(entry)
 
     def makeEntryResource(self, entry, request):
         """Construct an entry resource for the given entry.
@@ -385,8 +384,8 @@ class OrderBasedScopedCollection(ScopedCollection):
     numbers start from 1.
     """
 
-    def child_fragment(self, child):
-        """See `IScopedCollection`."""
+    def getEntryPath(self, entry):
+        """See `ICollection`."""
         for i, entry in enumerate(self.collection):
             if child.context == entry:
                 return str(i+1)

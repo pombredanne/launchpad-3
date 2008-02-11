@@ -37,10 +37,6 @@ class MessageEntry(Entry):
 
     parent_collection_name = 'messages'
 
-    def fragment(self):
-        """The collection is responsible for its messages' URL fragments."""
-        return None
-
     @property
     def content(self):
         return self.context.text_contents

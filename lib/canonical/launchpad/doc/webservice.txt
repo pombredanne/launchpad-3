@@ -191,10 +191,6 @@ defines a constructor.
     ...     schema = IAuthorEntry
     ...
     ...     parent_collection_name = 'authors'
-    ...
-    ...     def fragment(self):
-    ...         """Use the author's name as its URI fragment."""
-    ...         return self.context.name
 
 The "schema" attribute points to the interface class that defines the
 attributes exposed through the web service. Above, "schema" is
@@ -208,15 +204,10 @@ IRecipeEntry, which exposes both "name" and "author".
     ...     schema = IRecipeEntry
     ...
     ...     parent_collection_name = 'recipes'
-    ...
-    ...     def fragment(self):
-    ...         """Use the recipe's ID as its URI fragment."""
-    ...         return str(self.context.id)
-    ...
 
 The comment entry is a little different. Note that it doesn't define
-parent_collection_name or fragment(). That's because a comment will be
-delegating many of an entry's tasks to the collection that contains it.
+parent_collection_name. That's because a comment will be delegating
+many of an entry's tasks to the collection that contains it.
 
     >>> class CommentEntry(Entry):
     ...     """A comment, as exposed through the web service."""
@@ -259,6 +250,10 @@ returns the model objects in the collection.
     ...     def lookupEntry(self, name):
     ...        """Find a single author by name."""
     ...        return self.context.getAuthor(name)
+    ...
+    ...     def getEntryPath(self, entry):
+    ...         """Use an author's name as its URI fragment."""
+    ...         return entry.name
 
     >>> provideAdapter(AuthorCollection, [IAuthorSet], ICollection)
 
@@ -272,6 +267,10 @@ returns the model objects in the collection.
     ...     def lookupEntry(self, id):
     ...        """Find a single recipe by ID."""
     ...        return self.context.get(int(id))
+    ...
+    ...     def getEntryPath(self, entry):
+    ...         """Use a recipe's ID as its URI fragment."""
+    ...         return entry.context.id
 
     >>> provideAdapter(RecipeCollection, [IRecipeSet], ICollection)
 

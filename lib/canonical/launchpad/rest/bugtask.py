@@ -92,10 +92,6 @@ class BugTaskEntry(Entry):
 
     parent_collection_name = 'bugtasks'
 
-    def fragment(self):
-        """See `IEntry`."""
-        return str(self.context.id)
-
     @property
     def status_explanation(self):
         """Perform a simple name mapping."""
@@ -119,6 +115,10 @@ class BugTaskEntry(Entry):
 
 class BugTaskCollection(Collection):
     """A collection of bugtasks."""
+
+    def getEntryPath(self, entry):
+        """See `ICollection`."""
+        return str(entry.id)
 
     def lookupEntry(self, id):
         """Find a BugTask by ID."""
