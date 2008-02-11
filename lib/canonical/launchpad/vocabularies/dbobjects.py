@@ -175,6 +175,19 @@ class BranchVocabularyBase(SQLObjectVocabularyBase):
             raise LookupError(token)
         return self.toTerm(branch)
 
+    def _getExactMatch(self, query):
+        """Return the branch if query is a valid unique_name."""
+        return BranchSet().getByUniqueName(query)
+
+    def searchForTerms(self, query=None):
+        """See `SQLObjectVocabularyBase`."""
+        # First see if the query is a unique name for the branch.
+        if query is not None:
+            branch = self._getExactMatch(query)
+            if branch is not None:
+                return CountableIterator(1, [branch], self.toTerm)
+        return SQLObjectVocabularyBase.searchForTerms(self, query)
+
     def __len__(self):
         """See `IVocabulary`."""
         return self.search('').count()
@@ -280,24 +293,37 @@ class BranchRestrictedOnProductVocabulary(BranchVocabularyBase):
     name of the registrant of the branch.
     """
 
-    def _restrictToProduct(self, product):
-        """Return the where clause to restrict to the product."""
-        if product is None:
-            return 'Branch.product is NULL'
-        else:
-            return 'Branch.product = %s' % quote(product)
+    def __init__(self, context=None):
+        BranchVocabularyBase.__init__(self, context)
 
-    def _constructNaiveQueryString(self, quoted_query):
-        """See `BranchVocabularyBase`."""
         if IProduct.providedBy(self.context):
-            restrict_sql = self._restrictToProduct(self.context)
+            self.product = self.context
         elif IProductSeries.providedBy(self.context):
-            restrict_sql = self._restrictToProduct(self.context.product)
+            self.product = self.context.product
         elif IBranch.providedBy(self.context):
-            restrict_sql = self._restrictToProduct(self.context.product)
+            self.product = self.context.product
         else:
             # An unexpected type.
             raise AssertionError('Unexpected context type')
+
+    def _getExactMatch(self, query):
+        """Return the branch if query is a valid unique_name."""
+        branch = BranchSet().getByUniqueName(query)
+        if branch is not None:
+            if branch.product == self.product:
+                return branch
+            else:
+                return None
+        else:
+            return None
+
+    def _constructNaiveQueryString(self, quoted_query):
+        """See `BranchVocabularyBase`."""
+
+        if self.product is None:
+            restrict_sql = 'Branch.product is NULL'
+        else:
+            restrict_sql = 'Branch.product = %s' % quote(self.product)
 
         base_sql = self._constructGeneralQuery(
             quoted_query, check_product=False)
