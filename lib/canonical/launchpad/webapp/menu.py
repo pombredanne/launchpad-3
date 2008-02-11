@@ -17,6 +17,7 @@ __all__ = [
     ]
 
 import cgi
+from zope.i18n import translate, Message, MessageID
 from zope.interface import implements
 from canonical.lp import decorates
 
@@ -26,7 +27,9 @@ from canonical.launchpad.webapp.interfaces import (
     )
 
 from canonical.launchpad.webapp.publisher import (
-    canonical_url, canonical_url_iterator, UserAttributeCache
+    canonical_url, canonical_url_iterator,
+    get_current_browser_request, UserAttributeCache
+    
     )
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.uri import InvalidURIError, URI
@@ -38,6 +41,7 @@ class structured:
     implements(IStructuredString)
 
     def __init__(self, text, *replacements, **kwreplacements):
+        text = self._translate_if_i18n(text)
         self.text = text
         if replacements and kwreplacements:
             raise TypeError(
@@ -55,6 +59,18 @@ class structured:
 
     def __repr__(self):
         return "<structured-string '%s'>" % self.text
+
+    def _translate_if_i18n(self, text_or_msgid):
+        """Return the text that will be displayed.  If the object
+        represents internationalized text, translate it first, then
+        return the result."""
+        if isinstance(text_or_msgid, (Message, MessageID)):
+            return translate(
+                text_or_msgid,
+                context=get_current_browser_request())
+        else:
+            # Just text (or something unknown).
+            return text_or_msgid
 
 
 def nearest_context_with_adapter(obj, interface):
@@ -241,8 +257,7 @@ class MenuBase(UserAttributeCache):
                 "Links in 'enable_only' not found in 'links': %s" %
                 (', '.join([name for name in enable_only - set(self.links)])))
 
-        sort_key = 0
-        for linkname in self.links:
+        for idx, linkname in enumerate(self.links):
             link = self._get_link(linkname)
             link.name = linkname
 
@@ -271,9 +286,7 @@ class MenuBase(UserAttributeCache):
                 if requesturi.ensureSlash() == link.url.ensureSlash():
                     link.linked = False
 
-            # Store its order key.
-            link.sort_key = sort_key
-            sort_key += 1
+            link.sort_key = idx
             yield link
 
 

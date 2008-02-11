@@ -909,9 +909,23 @@ class BugTaskFormatterAPI(ObjectFormatterExtendedAPI):
 class NumberFormatterAPI:
     """Adapter for converting numbers to formatted strings."""
 
+    implements(ITraversable)
+
     def __init__(self, number):
-        assert not float(number) < 0, "Expected a non-negative number."
         self._number = number
+
+    def traverse(self, name, furtherPath):
+        if name == 'float':
+            if len(furtherPath) != 1:
+                raise TraversalError(
+                    "fmt:float requires a single decimal argument")
+            # coerce the argument to float to ensure it's safe
+            format = furtherPath.pop()
+            return self.float(float(format))
+        elif name == 'bytes':
+            return self.bytes()
+        else:
+            raise TraversalError(name)
 
     def bytes(self):
         """Render number as byte contractions according to IEC60027-2."""
@@ -919,6 +933,7 @@ class NumberFormatterAPI:
         # /Binary_prefixes#Specific_units_of_IEC_60027-2_A.2
         # Note that there is a zope.app.size.byteDisplay() function, but
         # it really limited and doesn't work well enough for us here.
+        assert not float(self._number) < 0, "Expected a non-negative number."
         n = int(self._number)
         if n == 1:
             # Handle the singular case.
@@ -933,6 +948,17 @@ class NumberFormatterAPI:
             # If this is less than 1 KiB, no need for rounding.
             return "%s bytes" % n
         return "%.1f %s" % (n / 1024.0 ** exponent, suffixes[exponent - 1])
+
+    def float(self, format):
+        """Use like tal:content="context/foo/fmt:float/.2".
+
+        Will return a string formatted to the specification provided in
+        the manner Python "%f" formatter works. See
+        http://docs.python.org/lib/typesseq-strings.html for details and
+        doc.displaying-numbers for various examples.
+        """
+        value = "%" + str(format) + "f"
+        return value % float(self._number)
 
 
 class DateTimeFormatterAPI:

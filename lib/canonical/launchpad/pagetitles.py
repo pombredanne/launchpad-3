@@ -439,6 +439,8 @@ distribution_add = 'Register a new distribution'
 
 distribution_allpackages = ContextTitle('All packages in %s')
 
+distribution_upstream_bug_report = ContextTitle('Upstream Bug Report for %s')
+
 distribution_bugcontact = ContextTitle('Change bug contact for %s')
 
 distribution_change_mirror_admin = 'Change mirror administrator'
@@ -698,6 +700,8 @@ logintoken_validatesignonlygpg = 'Confirm sign-only OpenPGP key'
 
 logintoken_validateteamemail = 'Confirm e-mail address'
 
+mailinglists_review = 'Pending mailing lists requests'
+
 # main_template has the code to insert one of these titles.
 
 malone_about = 'About Launchpad Bugs'
@@ -840,7 +844,7 @@ def person_branches(context, view):
     """Return the view's heading."""
     return view.heading
 
-person_branch_add = ContextDisplayName('Register a new branch for %s')
+person_branch_add = 'Register a branch'
 
 person_changepassword = 'Change your password'
 
@@ -1086,7 +1090,7 @@ rosetta_index = 'Launchpad Translations'
 
 rosetta_products = 'Projects with Translations in Launchpad'
 
-product_branch_add = ContextDisplayName('Register a new %s branch')
+product_branch_add = 'Register a branch'
 
 def productseries_edit(context, view):
     """Return the page title for changing a product series details."""
