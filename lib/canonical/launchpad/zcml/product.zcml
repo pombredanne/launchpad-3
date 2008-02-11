@@ -64,7 +64,8 @@
     <allow attributes="bug_subscriptions getSubscriptions getSubscription" />
     <require
         permission="launchpad.AnyPerson"
-        attributes="addSubscription addBugSubscription removeBugSubscription" />
+        attributes="addSubscription addBugSubscription
+                    removeBugSubscription parent_subscription_target" />
   </content>
 
   <browser:defaultView

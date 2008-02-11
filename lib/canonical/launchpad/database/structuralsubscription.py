@@ -15,8 +15,9 @@ from canonical.database.sqlbase import quote, SQLBase
 
 from canonical.launchpad.interfaces import (
     BlueprintNotificationLevel, BugNotificationLevel, DeleteSubscriptionError,
-    DuplicateSubscriptionError, IDistributionSourcePackage, IProduct,
-    IStructuralSubscription)
+    DuplicateSubscriptionError, IDistributionSourcePackage, IDistroSeries,
+    IProduct, IProductSeries, IStructuralSubscription,
+    IStructuralSubscriptionTarget)
 
 
 class StructuralSubscription(SQLBase):
@@ -198,3 +199,28 @@ class StructuralSubscriptionTargetMixin:
         """See `IStructuralSubscriptionTarget`."""
         return self.getSubscriptions(
             min_bug_notification_level=BugNotificationLevel.METADATA)
+
+    @property
+    def parent_subscription_target(self):
+        """See `IStructuralSubscriptionTarget`."""
+        # Some structures have a related structure which can be thought
+        # of as their parent. A package is related to a distribution,
+        # a product is related to a project, etc'...
+        # This method determines whether the target has a parent,
+        # returning it if it exists.
+        if IDistributionSourcePackage.providedBy(self):
+            parent = self.distribution
+        elif IProduct.providedBy(self):
+            parent = self.project
+        elif IProductSeries.providedBy(self):
+            parent = self.product
+        elif IDistroSeries.providedBy(self):
+            parent = self.distribution
+        else:
+            parent = None
+        # We only want to return the parent if it's
+        # an `IStructuralSubscriptionTarget`.
+        if IStructuralSubscriptionTarget.providedBy(parent):
+            return parent
+        else:
+            return None
