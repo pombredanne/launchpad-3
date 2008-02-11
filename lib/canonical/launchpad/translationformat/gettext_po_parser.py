@@ -1030,7 +1030,7 @@ class POParser(object):
 
         if not self._escaped_line_break:
             line = self._parseFreshLine(line, original_line)
-            if len(line) == 0:
+            if line is None or len(line) == 0:
                 return
 
         line = self._parseQuotedString(line)
