@@ -1,3 +1,11 @@
+SET client_min_messages=ERROR;
+
+-- Recreated later.
+DROP INDEX translationmessage__msgstr1__idx;
+DROP INDEX translationmessage__msgstr2__idx;
+DROP INDEX translationmessage__msgstr3__idx;
+DROP INDEX translationmessage__pofile__potmsgset__msgstrs__key;
+
 ALTER TABLE TranslationMessage
     ADD COLUMN msgstr4 integer,
 
@@ -9,23 +17,17 @@ ALTER TABLE TranslationMessage
     ADD CONSTRAINT translationmessage__msgstr5__fk
     FOREIGN KEY (msgstr5) REFERENCES POTranslation(id);
 
--- Change previous existing indexes as suggested by Stuart.
-DROP INDEX translationmessage__msgstr1__idx;
+-- Indexes on msgstrX
 CREATE INDEX translationmessage__msgstr1__idx ON TranslationMessage(msgstr1)
     WHERE msgstr1 IS NOT NULL;
-DROP INDEX translationmessage__msgstr2__idx;
 CREATE INDEX translationmessage__msgstr2__idx ON TranslationMessage(msgstr2)
     WHERE msgstr2 IS NOT NULL;
-DROP INDEX translationmessage__msgstr3__idx;
 CREATE INDEX translationmessage__msgstr3__idx ON TranslationMessage(msgstr3)
     WHERE msgstr3 IS NOT NULL;
--- Create new indexes for the new fields.
 CREATE INDEX translationmessage__msgstr4__idx ON TranslationMessage(msgstr4)
     WHERE msgstr4 IS NOT NULL;
 CREATE INDEX translationmessage__msgstr5__idx ON TranslationMessage(msgstr5)
     WHERE msgstr5 IS NOT NULL;
-
-DROP INDEX translationmessage__pofile__potmsgset__msgstrs__key;
 
 CREATE UNIQUE INDEX translationmessage__pofile__potmsgset__msgstrs__key
     ON TranslationMessage(
@@ -129,4 +131,4 @@ FROM
         LEFT JOIN potranslation AS potranslation5 ON
             potranslation5.id = translationmessage.msgstr5;
 
-INSERT INTO LaunchpadDatabaseRevision VALUES (88, 99, 0);
+INSERT INTO LaunchpadDatabaseRevision VALUES (121, 04, 0);
