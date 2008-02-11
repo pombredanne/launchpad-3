@@ -16,4 +16,4 @@ CREATE INDEX archivedependency__dependency__idx ON archivedependency
      USING btree (dependency);
 
 
-INSERT INTO LaunchpadDatabaseRevision VALUES (88, 99, 0);
+INSERT INTO LaunchpadDatabaseRevision VALUES (121, 08, 0);
