@@ -2087,7 +2087,8 @@ class PersonSet:
         """See `IPersonSet`."""
         if orderBy is None:
             orderBy = Person.sortingColumns
-        return Person.select(Person.q.teamownerID!=None, orderBy=orderBy)
+        query = AND(Person.q.teamownerID!=None, Person.q.mergedID==None)
+        return Person.select(query, orderBy=orderBy)
 
     def find(self, text, orderBy=None):
         """See `IPersonSet`."""
