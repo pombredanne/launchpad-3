@@ -112,6 +112,13 @@ class BugTrackerType(DBEnumeratedType):
         RT is a web-based ticketing system written in Perl.
         """)
 
+    SAVANNAH = DBItem(8, """
+        GNU Savannah
+
+        Savannah is a web-based project hosting system which includes
+        bug, support and request tracking.
+        """)
+
 
 class IBugTracker(Interface):
     """A remote bug system."""
