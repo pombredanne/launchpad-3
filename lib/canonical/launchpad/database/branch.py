@@ -368,9 +368,11 @@ class Branch(SQLBase):
         """See `IBranch`."""
         alterations, deletions, _ignored = (
             self._deletionRequirements())
-        result = dict((k, ('alter', v)) for k, v in alterations.iteritems())
+        result = dict((associated_object, ('alter', reason)) for
+            associated_object, reason in alterations.iteritems())
         # Deletion entries should overwrite alteration entries.
-        result.update((k, ('delete', v)) for k, v in deletions.iteritems())
+        result.update((associated_object, ('delete', reason)) for
+            associated_object, reason in deletions.iteritems())
         return result
 
     def _breakReferences(self):
