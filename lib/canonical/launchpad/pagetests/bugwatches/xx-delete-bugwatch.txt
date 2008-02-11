@@ -3,7 +3,6 @@
 If a bug watch isn't linked to a bug task, it's possible to delete from
 the bug watch edit page.
 
-    >>> from canonical.launchpad.ftests.test_pages import find_portlet
     >>> user_browser.open('http://launchpad.dev/bugs/1')
     >>> bug_watches = find_portlet(user_browser.contents, 'Remote bug watches')
     >>> for li in bug_watches('li'):

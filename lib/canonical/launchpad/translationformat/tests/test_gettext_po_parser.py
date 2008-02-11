@@ -1,6 +1,7 @@
 # Copyright 2004-2006 Canonical Ltd.  All rights reserved.
 
 import doctest
+import re
 import unittest
 
 from canonical.launchpad.interfaces import (
@@ -203,6 +204,27 @@ class POBasicTestCase(unittest.TestCase):
                     True)
             else:
                 self.assertEqual(lines[index], expected[index])
+
+    def testEscapedNewline(self):
+        """Test escaped newline."""
+        # Escaped newlines are not currently supported.
+
+        # This string will parse just fine:
+        good_string = """
+            %s
+            msgid "foo"
+            msgstr "barf"
+            """ % DEFAULT_HEADER
+        translation_file = self.parser.parse(good_string)
+
+        # If we add an escaped newline, this breaks with a syntax error.
+        (bad_string, changes) = re.subn("barf", "bar\\\nf", good_string)
+        self.assertEqual(changes, 1,
+            "Failed to add 1 escaped newline to test string.")
+
+        self.assertRaises(
+            TranslationFormatSyntaxError, self.parser.parse, bad_string)
+
 
     def testMultipartString(self):
         """Test concatenated message strings on the same line.

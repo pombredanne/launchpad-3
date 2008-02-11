@@ -111,11 +111,28 @@ class MailmanService(Service):
         return config.mailman is not None and config.mailman.launch
 
     def launch(self):
-        # Don't run the server if it wasn't asked for.
-        if not self.should_launch:
-            return
-        runmailman.start_mailman()
-        atexit.register(runmailman.stop_mailman)
+        # Don't run the server if it wasn't asked for.  Also, don't attempt to
+        # shut it down at exit.
+        if self.should_launch:
+            runmailman.start_mailman()
+            atexit.register(runmailman.stop_mailman)
+
+
+class CodebrowseService(Service):
+    @property
+    def should_launch(self):
+        return False
+
+    def launch(self):
+        process = subprocess.Popen(
+            ['make', '-C', 'sourcecode/launchpad-loggerhead', 'fg'],
+            stdin=subprocess.PIPE)
+        process.stdin.close()
+        def stop_process():
+            if process.poll() is None:
+                os.kill(process.pid, signal.SIGTERM)
+                process.wait()
+        atexit.register(stop_process)
 
 
 def prepare_for_librarian():
@@ -132,6 +149,7 @@ SERVICES = {
                           config.authserver),
     'sftp': TacFile('sftp', 'daemons/sftp.tac', config.codehosting),
     'mailman': MailmanService(),
+    'codebrowse': CodebrowseService(),
     }
 
 

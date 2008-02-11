@@ -284,8 +284,9 @@ class IDistroSeries(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
                 warty-updates -> ALLOW
                 edgy-security -> DENY
 
-        Note that FROZEN is not considered either 'stable' or 'unstable' state.
-        Uploads to a FROZEN distroseries will end up in UNAPPROVED queue.
+        Note that FROZEN is not considered either 'stable' or 'unstable'
+        state.  Uploads to a FROZEN distroseries will end up in the
+        UNAPPROVED queue.
 
         Return True if the upload is allowed and False if denied.
         """
@@ -408,38 +409,42 @@ class IDistroSeries(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
     def createUploadedSourcePackageRelease(
         sourcepackagename, version, maintainer, builddepends,
         builddependsindep, architecturehintlist, component, creator, urgency,
-        changelog, dsc, dscsigningkey, section, dsc_maintainer_rfc822,
+        changelog_entry, dsc, dscsigningkey, section, dsc_maintainer_rfc822,
         dsc_standards_version, dsc_format, dsc_binaries, archive, copyright,
-        dateuploaded=None):
-        """Create an uploads SourcePackageRelease
+        build_conflicts, build_conflicts_indep, dateuploaded=None):
+        """Create an uploads `SourcePackageRelease`.
 
         Set this distroseries set to be the uploadeddistroseries.
 
         All arguments are mandatory, they are extracted/built when
         processing and uploaded source package:
 
-         * dateuploaded: timestamp, if not provided will be UTC_NOW
-         * sourcepackagename: ISourcePackageName
-         * version: string, a debian valid version
-         * maintainer: IPerson designed as package maintainer
-         * creator: IPerson, package uploader
-         * component: IComponent
-         * section: ISection
-         * urgency: dbschema.SourcePackageUrgency
-         * dscsigningkey: IGPGKey used to sign the DSC file
-         * dsc: string, original content of the dsc file
-         * copyright: string, the original debian/copyright content
-         * changelog: string, changelog extracted from the changesfile
-         * architecturehintlist: string, DSC architectures
-         * builddepends: string, DSC build dependencies
-         * builddependsindep: string, DSC architecture independent build
-           dependencies.
-         * dsc_maintainer_rfc822: string, DSC maintainer field
-         * dsc_standards_version: string, DSC standards version field
-         * dsc_format: string, DSC format version field
-         * dsc_binaries:  string, DSC binaries field
-         * archive: IArchive to where the upload was targeted
-         * dateuploaded: optional datetime, if omitted assumed nowUTC
+         :param dateuploaded: timestamp, if not provided will be UTC_NOW
+         :param sourcepackagename: `ISourcePackageName`
+         :param version: string, a debian valid version
+         :param maintainer: IPerson designed as package maintainer
+         :param creator: IPerson, package uploader
+         :param component: IComponent
+         :param section: ISection
+         :param urgency: dbschema.SourcePackageUrgency
+         :param dscsigningkey: IGPGKey used to sign the DSC file
+         :param dsc: string, original content of the dsc file
+         :param copyright: string, the original debian/copyright content
+         :param changelog: string, changelog extracted from the changesfile
+         :param architecturehintlist: string, DSC architectures
+         :param builddepends: string, DSC build dependencies
+         :param builddependsindep: string, DSC architecture independent build
+                                   dependencies.
+         :param build_conflicts: string, DSC Build-Conflicts content
+         :param build_conflicts_indep: string, DSC Build-Conflicts-Indep
+                                       content
+         :param dsc_maintainer_rfc822: string, DSC maintainer field
+         :param dsc_standards_version: string, DSC standards version field
+         :param dsc_format: string, DSC format version field
+         :param dsc_binaries:  string, DSC binaries field
+         :param archive: IArchive to where the upload was targeted
+         :param dateuploaded: optional datetime, if omitted assumed nowUTC
+         :return: the just creates `SourcePackageRelease`
         """
 
     def getComponentByName(name):

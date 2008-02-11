@@ -7,6 +7,9 @@ properly.
 
 import unittest
 
+from zope.component import getUtility
+
+from canonical.launchpad.interfaces import IPersonSet
 from canonical.launchpad.scripts import FakeLogger
 from canonical.launchpad.scripts.ftpmasterbase import (
     SoyuzScriptError, SoyuzScript)
@@ -94,6 +97,16 @@ class TestSoyuzScript(unittest.TestCase):
             SoyuzScriptError, soyuz.findLatestPublishedSource, 'marvin')
 
         soyuz = self.getSoyuz(ppa='cprov', suite='warty-security')
+        self.assertRaises(
+            SoyuzScriptError, soyuz.findLatestPublishedSource, 'pmount')
+
+        # Bug 159151 occurred because we were printing unicode characters
+        # to an ascii codec in the exception, which originated in the PPA
+        # owner's name.  Let's munge cprov's name to be unicode and ensure
+        # we still get the right exception raised (a UnicodeError is raised
+        # if the bug is present).
+        cprov = getUtility(IPersonSet).getByName('cprov')
+        cprov.displayname = u'\xe7\xe3o'
         self.assertRaises(
             SoyuzScriptError, soyuz.findLatestPublishedSource, 'pmount')
 

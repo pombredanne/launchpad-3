@@ -7,9 +7,63 @@ approval processes for them.
 
 == Mirror registration ==
 
-First of all we'll create a new mirror for the Ubuntu distribution...
+First of all we are going to create a new CD archive mirror for the
+Ubuntu distribution...
 
     >>> browser = setupBrowser(auth='Basic test@canonical.com:test')
+    >>> browser.open('http://launchpad.dev/ubuntu/+newmirror')
+    >>> http_url = 'http://my.cdmirror.com/pub'
+    >>> browser.getControl('Description').value = 'My own CD mirror'
+    >>> browser.getControl('Link Speed').displayValue = ['1 Mbps']
+    >>> browser.getControl('Location').displayValue =  ['Antarctica']
+    >>> browser.getControl('Content').displayValue = ['CD Image']
+    >>> browser.getControl('HTTP URL').value = http_url
+    >>> browser.getControl('Create Mirror').click()
+ 
+    >>> browser.url
+    'http://launchpad.dev/ubuntu/+mirror/my.cdmirror.com-release'
+    >>> print extract_text(find_tag_by_id(browser.contents, 'mirror-details'))
+    Speed: 1 Mbps
+    Country: Antarctica
+    Content: CD Image
+
+Given that it's a CD mirror, it doesn't have sources list entries.
+
+    >>> print find_tag_by_id(browser.contents, 'sources-list-entries')
+    None
+
+Now, we create an archive mirror for Ubuntu distribution that
+is only available using FTP.
+
+    >>> browser.open('http://launchpad.dev/ubuntu/+newmirror')
+    >>> ftp_url = 'ftp://my.ftpmirror.com/pub'
+    >>> browser.getControl('Description').value = 'My own FTP mirror'
+    >>> browser.getControl('Link Speed').displayValue = ['1 Mbps']
+    >>> browser.getControl('Location').displayValue =  ['Antarctica']
+    >>> browser.getControl('Content').displayValue = ['Archive']
+    >>> browser.getControl('FTP URL').value = ftp_url
+    >>> browser.getControl('Create Mirror').click()
+ 
+    >>> browser.url
+    'http://launchpad.dev/ubuntu/+mirror/my.ftpmirror.com-archive'
+    >>> print extract_text(find_tag_by_id(browser.contents, 'mirror-details'))
+    Speed: 1 Mbps
+    Country: Antarctica
+    Content: Archive
+
+The archive mirror does have sources list entries pointing to the
+FTP server. By default, sources-list-entries has a generic text for the
+distro series until a user selects a distro series in the form and
+thus, the text doesn't have the distro series information.
+
+    >>> print extract_text(find_tag_by_id(
+    ...     browser.contents, 'sources-list-entries'))
+    deb ftp://my.ftpmirror.com/pub/ YOUR_DISTRO_SERIES_HERE main
+    deb-src ftp://my.ftpmirror.com/pub/ YOUR_DISTRO_SERIES_HERE main
+
+Finally, we create an archive mirror for Ubuntu distribution that uses
+HTTP server.
+
     >>> browser.open('http://launchpad.dev/ubuntu/+newmirror')
     >>> http_url = 'http://my.mirror.com/pub'
     >>> browser.getControl('Description').value = 'My own mirror'
@@ -25,6 +79,13 @@ First of all we'll create a new mirror for the Ubuntu distribution...
     Speed: 1 Mbps
     Country: Antarctica
     Content: Archive
+
+The archive mirror does have sources list entries.
+
+    >>> print extract_text(find_tag_by_id(
+    ...     browser.contents, 'sources-list-entries'))
+    deb http://my.mirror.com/pub/ YOUR_DISTRO_SERIES_HERE main
+    deb-src http://my.mirror.com/pub/ YOUR_DISTRO_SERIES_HERE main
 
 
 == Updating a Mirror ==
@@ -56,7 +117,7 @@ Starting again from the mirror's page, we can also change the mirror's URLs:
     >>> browser.getLink('Change details').click()
     >>> browser.url
     'http://launchpad.dev/ubuntu/+mirror/my.mirror.com-archive/+edit'
-    
+
     >>> browser.getControl('HTTP URL').value = 'http://foo.bar/baz'
     >>> browser.getControl('FTP URL').value = 'ftp://foo.bar/baz'
     >>> browser.getControl('Rsync URL').value = 'rsync://foo.bar/baz'

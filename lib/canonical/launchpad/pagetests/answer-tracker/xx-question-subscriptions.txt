@@ -28,7 +28,7 @@ name appears in the 'Subscribers' portlet:
 
     >>> portlet = find_tag_by_id(user_browser.contents, 'portlet-subscribers')
     >>> portlet.first('h2')
-    <h2>Subscribers to question #2</h2>
+    <h2>Subscribers</h2>
     >>> portlet.first('ul')
     <ul class="person">
       <li>

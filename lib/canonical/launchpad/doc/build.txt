@@ -76,7 +76,7 @@ property:
 
 If the build does not have any uploads, None is returned:
 
-    >>> at_build = getUtility(IBuildSet).getByBuildID(20)
+    >>> at_build = getUtility(IBuildSet).getByBuildID(15)
     >>> print at_build.package_upload
     None
 
@@ -94,18 +94,35 @@ Test "retry" functionality:
     >>> frozen_build.can_be_retried
     False
 
-See section 'AssertionErros in IBuild' for further documentation about
-concequences of an denied 'retry' action.
+See section 'AssertionErrors in IBuild' for further documentation about
+consequences of an denied 'retry' action.
 
-    >>> active_build = getUtility(IBuildSet).getByBuildID(17)
+    >>> active_build = getUtility(IBuildSet).getByBuildID(9)
     >>> active_build.title
-    u'i386 build of pmount 0.1-1 in ubuntu breezy-autotest RELEASE'
+    u'i386 build of pmount 0.1-1 in ubuntu warty RELEASE'
     >>> active_build.buildstate.title
     'Failed to build'
-    >>> active_build.can_be_retried
-    True
     >>> active_build.builder.name
     u'bob'
+
+Since ubuntu/warty is already released the failed build can't be
+retried.
+
+    >>> active_build.can_be_retried
+    False
+
+We will reactivate ubuntu/warty allowing the pmount build to be
+retried.
+
+    >>> from canonical.launchpad.interfaces import DistroSeriesStatus
+    >>> login('foo.bar@canonical.com')
+    >>> warty.status = DistroSeriesStatus.DEVELOPMENT
+    >>> flush_database_updates()
+    >>> logout()
+    >>> login(ANONYMOUS)
+
+    >>> active_build.can_be_retried
+    True
 
 Retry Build record in question:
 
@@ -123,8 +140,16 @@ BuildQueue record was created.
     >>> active_build.buildqueue_record is not None
     True
 
+We will restore ubuntu/warty previously changes status, SUPPORTED, so
+it won't interfere in the next tests.
 
-Initialise all the required arguments to create a binary package for a
+    >>> login('foo.bar@canonical.com')
+    >>> warty.status = DistroSeriesStatus.SUPPORTED
+    >>> flush_database_updates()
+    >>> logout()
+    >>> login(ANONYMOUS)
+
+Initialize all the required arguments to create a binary package for a
 given build record entry.
 
     >>> from canonical.launchpad.interfaces import IBinaryPackageNameSet
@@ -148,18 +173,18 @@ given build record entry.
     >>> essential = False
     >>> installedsize = 0
     >>> architecturespecific = False
+    >>> pre_depends = None
+    >>> enhances = None
+    >>> breaks = None
 
 Invoke createBinaryPackageRelease with all required arguments.
 
     >>> bin = pmount_build.createBinaryPackageRelease(
-    ...                                 binarypackagename, version,
-    ...                                 summary, description,
-    ...                                 binpackageformat, component,
-    ...                                 section, priority, shlibdeps,
-    ...                                 depends, recommends, suggests,
-    ...                                 conflicts, replaces, provides,
-    ...                                 essential, installedsize,
-    ...                                 architecturespecific)
+    ...     binarypackagename, version, summary, description,
+    ...     binpackageformat, component, section, priority, shlibdeps,
+    ...     depends, recommends, suggests, conflicts, replaces, provides,
+    ...     pre_depends, enhances, breaks, essential, installedsize,
+    ...     architecturespecific)
 
     >>> from canonical.launchpad.interfaces import IBinaryPackageRelease
     >>> verifyObject(IBinaryPackageRelease, bin)
@@ -185,16 +210,13 @@ Emulate a huge list of binaries for 'pmount':
     >>> bpnameset = getUtility(IBinaryPackageNameSet)
     >>> for i in range(15):
     ...     version = "%d" % i
-    ...     bpname = bpnameset.ensure("test-%d" % i).id
+    ...     binarypackagename = bpnameset.ensure("test-%d" % i).id
     ...     b = pmount_build.createBinaryPackageRelease(
-    ...                                 bpname, version,
-    ...                                 summary, description,
-    ...                                 binpackageformat, component,
-    ...                                 section, priority, shlibdeps,
-    ...                                 depends, recommends, suggests,
-    ...                                 conflicts, replaces, provides,
-    ...                                 essential, installedsize,
-    ...                                 architecturespecific)
+    ...         binarypackagename, version, summary, description,
+    ...         binpackageformat, component, section, priority, shlibdeps,
+    ...         depends, recommends, suggests, conflicts, replaces, provides,
+    ...         pre_depends, enhances, breaks, essential, installedsize,
+    ...         architecturespecific)
 
 
 Check if the property still working:
@@ -238,7 +260,7 @@ collection of builds.
 We can find builds given a source package release and architecture tag.
 
     >>> bs.getBuildBySRAndArchtag(20,'i386').count()
-    5
+    4
 
 IHasBuildRecords uses a base method provided by IBuildSet,
 getBuildsByArchIds():
@@ -381,13 +403,13 @@ the superseded one does.
     >>> published_hoary_pmount[0].sourcepackagerelease.builds.count()
     0
     >>> hoary_pmount.getBuildRecords().count()
-    6
+    5
 
 
 For a given distribution as well:
 
     >>> ubuntu.getBuildRecords().count()
-    19
+    17
 
     >>> L = ubuntu.getBuildRecords(build_state=BuildStatus.FULLYBUILT)
     >>> for l in L:
@@ -419,15 +441,15 @@ Note that they are ordered by DESC lastscore, as expected:
     >>> for b in builds:
     ...     b.id, b.buildstate.value, b.buildqueue_record.lastscore
     (11, 0, 10)
-    (17, 0, 0)
+    (9, 0, 0)
 
 Using the optional name argument to filter build results:
 
     >>> builds = ubuntu.getBuildRecords(name='pm')
     >>> builds.count()
-    5
+    4
     >>> [(b.sourcepackagerelease.name, b.distroseries.name) for b in builds]
-    [(u'pmount', u'breezy-autotest'), (u'pmount', u'warty'), (u'pmount', u'breezy-autotest'), (u'pmount', u'hoary'), (u'pmount', u'hoary')]
+    [(u'pmount', u'warty'), (u'pmount', u'breezy-autotest'), (u'pmount', u'hoary'), (u'pmount', u'hoary')]
 
 or using optional pocket argument:
 
@@ -450,16 +472,16 @@ Check IHasBuildRecords when implemented by Builder:
 
     >>> bob_builds = bob.getBuildRecords()
     >>> bob_builds.count()
-    17
+    16
 
     >>> bob_failed_builds = bob.getBuildRecords(
     ...     build_state=BuildStatus.FAILEDTOBUILD)
     >>> bob_failed_builds.count()
-    4
+    3
 
     >>> bob_pmount_builds = bob.getBuildRecords(name='pmount')
     >>> bob_pmount_builds.count()
-    5
+    4
 
     >>> bob_pmount_ok_builds = bob.getBuildRecords(
     ...    build_state=BuildStatus.FULLYBUILT, name='pmount')
@@ -497,10 +519,10 @@ build for a released pocket.
 All those conditions are controlled by IBuild.can_be_retried() property
 (see above).
 
-    >>> failed_build = getUtility(IBuildSet).getByBuildID(9)
+    >>> failed_build = getUtility(IBuildSet).getByBuildID(6)
 
     >>> failed_build.title
-    u'i386 build of pmount 0.1-1 in ubuntu warty RELEASE'
+    u'i386 build of foobar 1.0 in ubuntu warty RELEASE'
 
     >>> failed_build.buildstate.name
     'FAILEDTOBUILD'
@@ -513,7 +535,7 @@ Attempt to retry this build record will fail with an AssertionError:
     >>> failed_build.retry()
     Traceback (most recent call last):
     ...
-    AssertionError: Build 9 cannot be retried
+    AssertionError: Build 6 cannot be retried
 
 Partner archive builds are an exception to this rule; they can be retried
 in the release pocket for a released distro.  Let's turn build 9 into a

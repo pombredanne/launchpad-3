@@ -121,7 +121,7 @@
 <!-- Primary Index -->
 <p><br />
 <br />
-Dumped on 2007-12-07</p>
+Dumped on 2008-01-15</p>
 <h1><a name="index" id="index">Index of database -
 launchpad_dev</a></h1>
 <ul>
@@ -219,6 +219,8 @@ launchpad_dev</a></h1>
 <li><a href="#public.table.emailaddress">emailaddress</a></li>
 <li><a href="#public.table.entitlement">entitlement</a></li>
 <li><a href="#public.table.faq">faq</a></li>
+<li><a href=
+"#public.table.featuredproject">featuredproject</a></li>
 <li><a href="#public.table.fticache">fticache</a></li>
 <li><a href="#public.table.gpgkey">gpgkey</a></li>
 <li><a href="#public.table.hwdevice">hwdevice</a></li>
@@ -1222,6 +1224,18 @@ answercontact__person__idx person <!-- View Definition -->
 <td></td>
 </tr>
 <tr class="tr0">
+<td>checkwatches</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="tr1">
 <td>launchpad</td>
 <td>
 <center>&diams;</center>
@@ -1239,7 +1253,7 @@ answercontact__person__idx person <!-- View Definition -->
 <td></td>
 <td></td>
 </tr>
-<tr class="tr1">
+<tr class="tr0">
 <td>postgres</td>
 <td>
 <center>&diams;</center>
@@ -1261,7 +1275,7 @@ answercontact__person__idx person <!-- View Definition -->
 <center>&diams;</center>
 </td>
 </tr>
-<tr class="tr0">
+<tr class="tr1">
 <td>processmail</td>
 <td>
 <center>&diams;</center>
@@ -1273,7 +1287,7 @@ answercontact__person__idx person <!-- View Definition -->
 <td></td>
 <td></td>
 </tr>
-<tr class="tr1">
+<tr class="tr0">
 <td>queued</td>
 <td>
 <center>&diams;</center>
@@ -1285,7 +1299,7 @@ answercontact__person__idx person <!-- View Definition -->
 <td></td>
 <td></td>
 </tr>
-<tr class="tr0">
+<tr class="tr1">
 <td>read</td>
 <td>
 <center>&diams;</center>
@@ -1297,7 +1311,7 @@ answercontact__person__idx person <!-- View Definition -->
 <td></td>
 <td></td>
 </tr>
-<tr class="tr1">
+<tr class="tr0">
 <td>uploader</td>
 <td>
 <center>&diams;</center>
@@ -1389,6 +1403,15 @@ The distribution that uses this archive.</td>
 <br />
 The purpose of this archive, e.g. COMMERCIAL. See the
 ArchivePurpose DBSchema item.</td>
+</tr>
+<tr class="tr0">
+<td></td>
+<td>private</td>
+<td>boolean</td>
+<td><i>NOT NULL DEFAULT false</i><br />
+<br />
+Whether or not the archive is private. This affects the global
+visibility of the archive.</td>
 </tr>
 </table>
 <!-- Inherits -->
@@ -4006,13 +4029,13 @@ revision_history.</td>
 </tr>
 <tr class="tr1">
 <td></td>
-<td>mirror_request_time</td>
+<td>next_mirror_time</td>
 <td>timestamp without time zone</td>
 <td><br />
 <br />
-The time when a user requested that we mirror this branch (NULL if
-not requested). This will be set automatically by pushing to a
-hosted branch. Once mirrored, it will be set back to NULL.</td>
+The time when we will next mirror this branch (NULL means never).
+This will be set automatically by pushing to a hosted branch,
+which, once mirrored, will be set back to NULL.</td>
 </tr>
 <tr class="tr0">
 <td></td>
@@ -4146,10 +4169,11 @@ OR (merge_robot IS NOT NULL)))</td>
 <!-- Indexes -->
 branch__date_created__idx date_created
 branch__last_scanned__owner__idx last_scanned, "owner") WHERE
-(last_scanned IS NOT NULL branch__private__idx private
-branch__product__id__idx product, id branch__reviewer__idx reviewer
-branch_author_idx author branch_owner_idx "owner" 
-<!-- View Definition -->
+(last_scanned IS NOT NULL branch__next_mirror_time__idx
+next_mirror_time) WHERE (next_mirror_time IS NOT NULL
+branch__private__idx private branch__product__id__idx product, id
+branch__reviewer__idx reviewer branch_author_idx author
+branch_owner_idx "owner" <!-- View Definition -->
  <!-- List off permissions -->
 <p>&nbsp;</p>
 <table width="100%" cellspacing="0" cellpadding="3">
@@ -5633,7 +5657,7 @@ Branch with three extra names joined on to it.</p>
 </tr>
 <tr class="tr1">
 <td></td>
-<td>mirror_request_time</td>
+<td>next_mirror_time</td>
 <td>timestamp without time zone</td>
 <td></td>
 </tr>
@@ -5725,7 +5749,7 @@ SELECT branch.id
 , branch.last_mirrored_id
 , branch.date_created
 , branch.revision_count
-, branch.mirror_request_time
+, branch.next_mirror_time
 , branch.private
 , branch.branch_type
 , branch.reviewer
@@ -6864,6 +6888,22 @@ bugbranch__registrant__idx registrant <!-- View Definition -->
 </td>
 </tr>
 <tr class="tr1">
+<td>branchscanner</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="tr0">
 <td>launchpad</td>
 <td>
 <center>&diams;</center>
@@ -6881,7 +6921,7 @@ bugbranch__registrant__idx registrant <!-- View Definition -->
 <td></td>
 <td></td>
 </tr>
-<tr class="tr0">
+<tr class="tr1">
 <td>postgres</td>
 <td>
 <center>&diams;</center>
@@ -6903,7 +6943,7 @@ bugbranch__registrant__idx registrant <!-- View Definition -->
 <center>&diams;</center>
 </td>
 </tr>
-<tr class="tr1">
+<tr class="tr0">
 <td>read</td>
 <td>
 <center>&diams;</center>
@@ -7012,6 +7052,20 @@ bugcve_cve_index cve <!-- View Definition -->
 </td>
 </tr>
 <tr class="tr1">
+<td>checkwatches</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="tr0">
 <td>launchpad</td>
 <td>
 <center>&diams;</center>
@@ -7027,7 +7081,7 @@ bugcve_cve_index cve <!-- View Definition -->
 <td></td>
 <td></td>
 </tr>
-<tr class="tr0">
+<tr class="tr1">
 <td>postgres</td>
 <td>
 <center>&diams;</center>
@@ -7049,7 +7103,7 @@ bugcve_cve_index cve <!-- View Definition -->
 <center>&diams;</center>
 </td>
 </tr>
-<tr class="tr1">
+<tr class="tr0">
 <td>processmail</td>
 <td>
 <center>&diams;</center>
@@ -7063,7 +7117,7 @@ bugcve_cve_index cve <!-- View Definition -->
 <td></td>
 <td></td>
 </tr>
-<tr class="tr0">
+<tr class="tr1">
 <td>queued</td>
 <td>
 <center>&diams;</center>
@@ -7077,7 +7131,7 @@ bugcve_cve_index cve <!-- View Definition -->
 <td></td>
 <td></td>
 </tr>
-<tr class="tr1">
+<tr class="tr0">
 <td>read</td>
 <td>
 <center>&diams;</center>
@@ -7089,7 +7143,7 @@ bugcve_cve_index cve <!-- View Definition -->
 <td></td>
 <td></td>
 </tr>
-<tr class="tr0">
+<tr class="tr1">
 <td>uploader</td>
 <td>
 <center>&diams;</center>
@@ -8333,11 +8387,18 @@ public</a></p>
 <td>timestamp without time zone</td>
 <td><i>NOT NULL DEFAULT timezone('UTC'::text, now())</i></td>
 </tr>
+<tr class="tr0">
+<td><a href="#public.table.person">public.person.id</a></td>
+<td>subscribed_by</td>
+<td>integer</td>
+<td><i>NOT NULL</i></td>
+</tr>
 </table>
 <!-- Inherits -->
 <!-- Constraint List -->
 <!-- Foreign Key Discovery -->
 <!-- Indexes -->
+bugsubscription__subscribed_by__idx subscribed_by
 bugsubscription_bug_idx bug bugsubscription_person_idx person 
 <!-- View Definition -->
  <!-- List off permissions -->
@@ -9377,7 +9438,9 @@ bugtracker_owner_idx "owner" <!-- View Definition -->
 <td>
 <center>&diams;</center>
 </td>
-<td></td>
+<td>
+<center>&diams;</center>
+</td>
 <td></td>
 <td></td>
 <td></td>
@@ -9677,7 +9740,9 @@ public.bugtrackeralias</caption>
 <td>
 <center>&diams;</center>
 </td>
-<td></td>
+<td>
+<center>&diams;</center>
+</td>
 <td></td>
 <td></td>
 <td></td>
@@ -10430,6 +10495,16 @@ from the it, but do not dispach anything to it automatically.</td>
 The virtual machine host associated to this builder. It should be
 empty for "native" builders (old fashion or architectures not yet
 supported by XEN).</td>
+</tr>
+<tr class="tr0">
+<td></td>
+<td>active</td>
+<td>boolean</td>
+<td><i>NOT NULL DEFAULT true</i><br />
+<br />
+Whether to present or not the builder in the public list of
+builders avaialble. It is used to hide transient or defunct
+builders while they get fixed.</td>
 </tr>
 </table>
 <!-- Inherits -->
@@ -13075,7 +13150,7 @@ cve_fti fti <!-- View Definition -->
 </td>
 </tr>
 <tr class="tr1">
-<td>cve</td>
+<td>checkwatches</td>
 <td>
 <center>&diams;</center>
 </td>
@@ -13091,7 +13166,7 @@ cve_fti fti <!-- View Definition -->
 <td></td>
 </tr>
 <tr class="tr0">
-<td>launchpad</td>
+<td>cve</td>
 <td>
 <center>&diams;</center>
 </td>
@@ -13107,6 +13182,22 @@ cve_fti fti <!-- View Definition -->
 <td></td>
 </tr>
 <tr class="tr1">
+<td>launchpad</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="tr0">
 <td>postgres</td>
 <td>
 <center>&diams;</center>
@@ -13128,7 +13219,7 @@ cve_fti fti <!-- View Definition -->
 <center>&diams;</center>
 </td>
 </tr>
-<tr class="tr0">
+<tr class="tr1">
 <td>processmail</td>
 <td>
 <center>&diams;</center>
@@ -13142,7 +13233,7 @@ cve_fti fti <!-- View Definition -->
 <td></td>
 <td></td>
 </tr>
-<tr class="tr1">
+<tr class="tr0">
 <td>queued</td>
 <td>
 <center>&diams;</center>
@@ -13156,7 +13247,7 @@ cve_fti fti <!-- View Definition -->
 <td></td>
 <td></td>
 </tr>
-<tr class="tr0">
+<tr class="tr1">
 <td>read</td>
 <td>
 <center>&diams;</center>
@@ -13168,7 +13259,7 @@ cve_fti fti <!-- View Definition -->
 <td></td>
 <td></td>
 </tr>
-<tr class="tr1">
+<tr class="tr0">
 <td>uploader</td>
 <td>
 <center>&diams;</center>
@@ -13308,6 +13399,22 @@ cvereference_cve_idx cve <!-- View Definition -->
 </td>
 </tr>
 <tr class="tr1">
+<td>checkwatches</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="tr0">
 <td>cve</td>
 <td>
 <center>&diams;</center>
@@ -13325,7 +13432,7 @@ cvereference_cve_idx cve <!-- View Definition -->
 <td></td>
 <td></td>
 </tr>
-<tr class="tr0">
+<tr class="tr1">
 <td>launchpad</td>
 <td>
 <center>&diams;</center>
@@ -13339,7 +13446,7 @@ cvereference_cve_idx cve <!-- View Definition -->
 <td></td>
 <td></td>
 </tr>
-<tr class="tr1">
+<tr class="tr0">
 <td>postgres</td>
 <td>
 <center>&diams;</center>
@@ -13361,7 +13468,7 @@ cvereference_cve_idx cve <!-- View Definition -->
 <center>&diams;</center>
 </td>
 </tr>
-<tr class="tr0">
+<tr class="tr1">
 <td>read</td>
 <td>
 <center>&diams;</center>
@@ -13674,6 +13781,16 @@ Indicates whether automatic bug expiration is enabled.</td>
 <br />
 Guidelines to the end user for reporting bugs on this
 distribution.</td>
+</tr>
+<tr class="tr0">
+<td></td>
+<td>reviewer_whiteboard</td>
+<td>text</td>
+<td><br />
+<br />
+A whiteboard for Launchpad admins, registry experts and the project
+owners to capture the state of current issues with the
+project.</td>
 </tr>
 </table>
 <!-- Inherits -->
@@ -14343,33 +14460,51 @@ Is the mirror a candidate for becoming an official mirror?</td>
 </tr>
 <tr class="tr1">
 <td></td>
-<td>official_approved</td>
-<td>boolean</td>
-<td><i>NOT NULL DEFAULT false</i><br />
-<br />
-Is the mirror approved as one of the official ones?</td>
-</tr>
-<tr class="tr0">
-<td></td>
 <td>enabled</td>
 <td>boolean</td>
 <td><i>NOT NULL DEFAULT false</i><br />
 <br />
 Is this mirror enabled?</td>
 </tr>
-<tr class="tr1">
+<tr class="tr0">
 <td></td>
 <td>date_created</td>
 <td>timestamp without time zone</td>
-<td><i>NOT NULL DEFAULT timezone('UTC'::text, now())</i></td>
+<td><i>NOT NULL DEFAULT timezone('UTC'::text, now())</i><br />
+<br />
+The date and time the mirror was created.</td>
 </tr>
-<tr class="tr0">
+<tr class="tr1">
 <td></td>
 <td>whiteboard</td>
 <td>text</td>
 <td><br />
 <br />
 Notes on the current status of the mirror</td>
+</tr>
+<tr class="tr0">
+<td></td>
+<td>status</td>
+<td>integer</td>
+<td><i>NOT NULL DEFAULT 10</i><br />
+<br />
+This mirror's status.</td>
+</tr>
+<tr class="tr1">
+<td></td>
+<td>date_reviewed</td>
+<td>timestamp without time zone</td>
+<td><br />
+<br />
+The date and time the mirror was reviewed.</td>
+</tr>
+<tr class="tr0">
+<td><a href="#public.table.person">public.person.id</a></td>
+<td>reviewer</td>
+<td>integer</td>
+<td><br />
+<br />
+The person who reviewed the mirror.</td>
 </tr>
 </table>
 <!-- Inherits -->
@@ -14422,8 +14557,9 @@ NULL)) OR (rsync_base_url IS NOT NULL)))</td>
 "#public.table.mirrorproberecord">public.mirrorproberecord</a></li>
 </ul>
 <!-- Indexes -->
-<!-- View Definition -->
-<!-- List off permissions -->
+distributionmirror__country__status__idx country, status
+distributionmirror__status__idx status <!-- View Definition -->
+ <!-- List off permissions -->
 <p>&nbsp;</p>
 <table width="100%" cellspacing="0" cellpadding="3">
 <caption>Permissions which apply to
@@ -17150,6 +17286,148 @@ fti <!-- View Definition -->
 <td>
 <center>&diams;</center>
 </td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="tr0">
+<td>postgres</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td>
+<center>&diams;</center>
+</td>
+</tr>
+<tr class="tr1">
+<td>read</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+</table>
+<p><a href="#index">Index</a> - <a href="#public.schema">Schema
+public</a></p>
+<hr />
+<h2>Table: <a href="#public.schema">public</a>.<a name=
+"public.table.featuredproject" id=
+"public.table.featuredproject">featuredproject</a></h2>
+<p>A list of featured projects. This table is really just a list of
+pillarname IDs, if a project's pillar name is in this list then it
+is a featured project and will be listed on the Launchpad home
+page.</p>
+<table width="100%" cellspacing="0" cellpadding="3">
+<caption>public.featuredproject Structure</caption>
+<tr>
+<th>F-Key</th>
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+<tr class="tr0">
+<td></td>
+<td>id</td>
+<td>serial</td>
+<td><i>PRIMARY KEY</i></td>
+</tr>
+<tr class="tr1">
+<td><a href=
+"#public.table.pillarname">public.pillarname.id</a></td>
+<td>pillar_name</td>
+<td>integer</td>
+<td><i>NOT NULL</i><br />
+<br />
+A reference to PillarName.id</td>
+</tr>
+</table>
+<!-- Inherits -->
+<!-- Constraint List -->
+<!-- Foreign Key Discovery -->
+<!-- Indexes -->
+featuredproject__pillar_name__idx pillar_name 
+<!-- View Definition -->
+ <!-- List off permissions -->
+<p>&nbsp;</p>
+<table width="100%" cellspacing="0" cellpadding="3">
+<caption>Permissions which apply to
+public.featuredproject</caption>
+<tr>
+<th>User</th>
+<th>
+<center>Select</center>
+</th>
+<th>
+<center>Insert</center>
+</th>
+<th>
+<center>Update</center>
+</th>
+<th>
+<center>Delete</center>
+</th>
+<th>
+<center>Reference</center>
+</th>
+<th>
+<center>Rule</center>
+</th>
+<th>
+<center>Trigger</center>
+</th>
+</tr>
+<tr class="tr0">
+<td>admin</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td>
+<center>&diams;</center>
+</td>
+</tr>
+<tr class="tr1">
+<td>launchpad</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
 <td>
 <center>&diams;</center>
 </td>
@@ -21591,7 +21869,7 @@ NULL)))</td>
 <td></td>
 </tr>
 <tr class="tr0">
-<td>poexport</td>
+<td>checkwatches</td>
 <td>
 <center>&diams;</center>
 </td>
@@ -21603,7 +21881,7 @@ NULL)))</td>
 <td></td>
 </tr>
 <tr class="tr1">
-<td>pofilestats</td>
+<td>poexport</td>
 <td>
 <center>&diams;</center>
 </td>
@@ -21615,6 +21893,18 @@ NULL)))</td>
 <td></td>
 </tr>
 <tr class="tr0">
+<td>pofilestats</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="tr1">
 <td>postgres</td>
 <td>
 <center>&diams;</center>
@@ -21636,7 +21926,7 @@ NULL)))</td>
 <center>&diams;</center>
 </td>
 </tr>
-<tr class="tr1">
+<tr class="tr0">
 <td>processmail</td>
 <td>
 <center>&diams;</center>
@@ -21648,7 +21938,7 @@ NULL)))</td>
 <td></td>
 <td></td>
 </tr>
-<tr class="tr0">
+<tr class="tr1">
 <td>queued</td>
 <td>
 <center>&diams;</center>
@@ -21660,7 +21950,7 @@ NULL)))</td>
 <td></td>
 <td></td>
 </tr>
-<tr class="tr1">
+<tr class="tr0">
 <td>read</td>
 <td>
 <center>&diams;</center>
@@ -21672,7 +21962,7 @@ NULL)))</td>
 <td></td>
 <td></td>
 </tr>
-<tr class="tr0">
+<tr class="tr1">
 <td>rosettaadmin</td>
 <td>
 <center>&diams;</center>
@@ -21684,7 +21974,7 @@ NULL)))</td>
 <td></td>
 <td></td>
 </tr>
-<tr class="tr1">
+<tr class="tr0">
 <td>statistician</td>
 <td>
 <center>&diams;</center>
@@ -21696,7 +21986,7 @@ NULL)))</td>
 <td></td>
 <td></td>
 </tr>
-<tr class="tr0">
+<tr class="tr1">
 <td>uploader</td>
 <td>
 <center>&diams;</center>
@@ -21708,7 +21998,7 @@ NULL)))</td>
 <td></td>
 <td></td>
 </tr>
-<tr class="tr1">
+<tr class="tr0">
 <td>write</td>
 <td>
 <center>&diams;</center>
@@ -22539,7 +22829,7 @@ public.libraryfilealias</caption>
 <td></td>
 </tr>
 <tr class="tr0">
-<td>distributionmirror</td>
+<td>checkwatches</td>
 <td>
 <center>&diams;</center>
 </td>
@@ -22553,7 +22843,7 @@ public.libraryfilealias</caption>
 <td></td>
 </tr>
 <tr class="tr1">
-<td>fiera</td>
+<td>distributionmirror</td>
 <td>
 <center>&diams;</center>
 </td>
@@ -22567,6 +22857,20 @@ public.libraryfilealias</caption>
 <td></td>
 </tr>
 <tr class="tr0">
+<td>fiera</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="tr1">
 <td>launchpad</td>
 <td>
 <center>&diams;</center>
@@ -22584,7 +22888,7 @@ public.libraryfilealias</caption>
 <td></td>
 <td></td>
 </tr>
-<tr class="tr1">
+<tr class="tr0">
 <td>librarian</td>
 <td>
 <center>&diams;</center>
@@ -22600,7 +22904,7 @@ public.libraryfilealias</caption>
 <td></td>
 <td></td>
 </tr>
-<tr class="tr0">
+<tr class="tr1">
 <td>librariangc</td>
 <td>
 <center>&diams;</center>
@@ -22616,7 +22920,7 @@ public.libraryfilealias</caption>
 <td></td>
 <td></td>
 </tr>
-<tr class="tr1">
+<tr class="tr0">
 <td>poexport</td>
 <td>
 <center>&diams;</center>
@@ -22630,7 +22934,7 @@ public.libraryfilealias</caption>
 <td></td>
 <td></td>
 </tr>
-<tr class="tr0">
+<tr class="tr1">
 <td>postgres</td>
 <td>
 <center>&diams;</center>
@@ -22652,7 +22956,7 @@ public.libraryfilealias</caption>
 <center>&diams;</center>
 </td>
 </tr>
-<tr class="tr1">
+<tr class="tr0">
 <td>processmail</td>
 <td>
 <center>&diams;</center>
@@ -22666,7 +22970,7 @@ public.libraryfilealias</caption>
 <td></td>
 <td></td>
 </tr>
-<tr class="tr0">
+<tr class="tr1">
 <td>productreleasefinder</td>
 <td>
 <center>&diams;</center>
@@ -22680,7 +22984,7 @@ public.libraryfilealias</caption>
 <td></td>
 <td></td>
 </tr>
-<tr class="tr1">
+<tr class="tr0">
 <td>queued</td>
 <td>
 <center>&diams;</center>
@@ -22694,7 +22998,7 @@ public.libraryfilealias</caption>
 <td></td>
 <td></td>
 </tr>
-<tr class="tr0">
+<tr class="tr1">
 <td>read</td>
 <td>
 <center>&diams;</center>
@@ -22706,7 +23010,7 @@ public.libraryfilealias</caption>
 <td></td>
 <td></td>
 </tr>
-<tr class="tr1">
+<tr class="tr0">
 <td>shipit</td>
 <td>
 <center>&diams;</center>
@@ -22720,7 +23024,7 @@ public.libraryfilealias</caption>
 <td></td>
 <td></td>
 </tr>
-<tr class="tr0">
+<tr class="tr1">
 <td>sourcerer</td>
 <td>
 <center>&diams;</center>
@@ -22732,7 +23036,7 @@ public.libraryfilealias</caption>
 <td></td>
 <td></td>
 </tr>
-<tr class="tr1">
+<tr class="tr0">
 <td>uploader</td>
 <td>
 <center>&diams;</center>
@@ -22746,7 +23050,7 @@ public.libraryfilealias</caption>
 <td></td>
 <td></td>
 </tr>
-<tr class="tr0">
+<tr class="tr1">
 <td>write</td>
 <td>
 <center>&diams;</center>
@@ -22912,6 +23216,20 @@ public.libraryfilecontent</caption>
 <td></td>
 </tr>
 <tr class="tr0">
+<td>checkwatches</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="tr1">
 <td>distributionmirror</td>
 <td>
 <center>&diams;</center>
@@ -22925,7 +23243,7 @@ public.libraryfilecontent</caption>
 <td></td>
 <td></td>
 </tr>
-<tr class="tr1">
+<tr class="tr0">
 <td>fiera</td>
 <td>
 <center>&diams;</center>
@@ -22939,7 +23257,7 @@ public.libraryfilecontent</caption>
 <td></td>
 <td></td>
 </tr>
-<tr class="tr0">
+<tr class="tr1">
 <td>librarian</td>
 <td>
 <center>&diams;</center>
@@ -22953,7 +23271,7 @@ public.libraryfilecontent</caption>
 <td></td>
 <td></td>
 </tr>
-<tr class="tr1">
+<tr class="tr0">
 <td>librariangc</td>
 <td>
 <center>&diams;</center>
@@ -22969,7 +23287,7 @@ public.libraryfilecontent</caption>
 <td></td>
 <td></td>
 </tr>
-<tr class="tr0">
+<tr class="tr1">
 <td>poexport</td>
 <td>
 <center>&diams;</center>
@@ -22983,7 +23301,7 @@ public.libraryfilecontent</caption>
 <td></td>
 <td></td>
 </tr>
-<tr class="tr1">
+<tr class="tr0">
 <td>postgres</td>
 <td>
 <center>&diams;</center>
@@ -23005,7 +23323,7 @@ public.libraryfilecontent</caption>
 <center>&diams;</center>
 </td>
 </tr>
-<tr class="tr0">
+<tr class="tr1">
 <td>processmail</td>
 <td>
 <center>&diams;</center>
@@ -23019,7 +23337,7 @@ public.libraryfilecontent</caption>
 <td></td>
 <td></td>
 </tr>
-<tr class="tr1">
+<tr class="tr0">
 <td>productreleasefinder</td>
 <td>
 <center>&diams;</center>
@@ -23033,7 +23351,7 @@ public.libraryfilecontent</caption>
 <td></td>
 <td></td>
 </tr>
-<tr class="tr0">
+<tr class="tr1">
 <td>queued</td>
 <td>
 <center>&diams;</center>
@@ -23047,7 +23365,7 @@ public.libraryfilecontent</caption>
 <td></td>
 <td></td>
 </tr>
-<tr class="tr1">
+<tr class="tr0">
 <td>read</td>
 <td>
 <center>&diams;</center>
@@ -23059,7 +23377,7 @@ public.libraryfilecontent</caption>
 <td></td>
 <td></td>
 </tr>
-<tr class="tr0">
+<tr class="tr1">
 <td>shipit</td>
 <td>
 <center>&diams;</center>
@@ -23073,7 +23391,7 @@ public.libraryfilecontent</caption>
 <td></td>
 <td></td>
 </tr>
-<tr class="tr1">
+<tr class="tr0">
 <td>sourcerer</td>
 <td>
 <center>&diams;</center>
@@ -23085,7 +23403,7 @@ public.libraryfilecontent</caption>
 <td></td>
 <td></td>
 </tr>
-<tr class="tr0">
+<tr class="tr1">
 <td>uploader</td>
 <td>
 <center>&diams;</center>
@@ -23099,7 +23417,7 @@ public.libraryfilecontent</caption>
 <td></td>
 <td></td>
 </tr>
-<tr class="tr1">
+<tr class="tr0">
 <td>write</td>
 <td>
 <center>&diams;</center>
@@ -23605,18 +23923,6 @@ If NULL, no welcome message is sent.</td>
 </table>
 <!-- Inherits -->
 <!-- Constraint List -->
-<p>&nbsp;</p>
-<table width="100%" cellspacing="0" cellpadding="3">
-<caption>public.mailinglist Constraints</caption>
-<tr>
-<th>Name</th>
-<th>Constraint</th>
-</tr>
-<tr class="tr0">
-<td>is_team</td>
-<td>CHECK (is_team(team))</td>
-</tr>
-</table>
 <!-- Foreign Key Discovery -->
 <p>Tables referencing this one via Foreign Key Constraints:</p>
 <ul>
@@ -26004,11 +26310,11 @@ The distro arch series.</td>
 </tr>
 <tr class="tr1">
 <td></td>
-<td>status</td>
+<td>freshness</td>
 <td>integer</td>
 <td><i>NOT NULL</i><br />
 <br />
-The status of the mirror, that is, how up-to-date it is.</td>
+The freshness of the mirror, that is, how up-to-date it is.</td>
 </tr>
 <tr class="tr0">
 <td></td>
@@ -26199,11 +26505,11 @@ The Distribution Release.</td>
 </tr>
 <tr class="tr1">
 <td></td>
-<td>status</td>
+<td>freshness</td>
 <td>integer</td>
 <td><i>NOT NULL</i><br />
 <br />
-The status of the mirror, that is, how up-to-date it is.</td>
+The freshness of the mirror, that is, how up-to-date it is.</td>
 </tr>
 <tr class="tr0">
 <td></td>
@@ -29356,7 +29662,19 @@ which they are explicitly named as a recipient.</td>
 <td></td>
 <td>visibility</td>
 <td>integer</td>
+<td><i>NOT NULL DEFAULT 1</i><br />
+<br />
+person.PersonVisibility enumeration which can be set to Public,
+Public with Private Membership, or Private.</td>
+</tr>
+<tr class="tr0">
 <td></td>
+<td>verbose_bugnotifications</td>
+<td>boolean</td>
+<td><i>NOT NULL DEFAULT false</i><br />
+<br />
+If true, all bugnotifications sent to this Person will include the
+bug description.</td>
 </tr>
 </table>
 <!-- Inherits -->
@@ -30223,6 +30541,18 @@ this language.</td>
 <td></td>
 </tr>
 <tr class="tr0">
+<td>checkwatches</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="tr1">
 <td>launchpad</td>
 <td>
 <center>&diams;</center>
@@ -30240,7 +30570,7 @@ this language.</td>
 <td></td>
 <td></td>
 </tr>
-<tr class="tr1">
+<tr class="tr0">
 <td>postgres</td>
 <td>
 <center>&diams;</center>
@@ -30262,7 +30592,7 @@ this language.</td>
 <center>&diams;</center>
 </td>
 </tr>
-<tr class="tr0">
+<tr class="tr1">
 <td>processmail</td>
 <td>
 <center>&diams;</center>
@@ -30274,7 +30604,7 @@ this language.</td>
 <td></td>
 <td></td>
 </tr>
-<tr class="tr1">
+<tr class="tr0">
 <td>queued</td>
 <td>
 <center>&diams;</center>
@@ -30286,7 +30616,7 @@ this language.</td>
 <td></td>
 <td></td>
 </tr>
-<tr class="tr0">
+<tr class="tr1">
 <td>read</td>
 <td>
 <center>&diams;</center>
@@ -30298,7 +30628,7 @@ this language.</td>
 <td></td>
 <td></td>
 </tr>
-<tr class="tr1">
+<tr class="tr0">
 <td>uploader</td>
 <td>
 <center>&diams;</center>
@@ -30310,7 +30640,7 @@ this language.</td>
 <td></td>
 <td></td>
 </tr>
-<tr class="tr0">
+<tr class="tr1">
 <td>write</td>
 <td>
 <center>&diams;</center>
@@ -30404,6 +30734,11 @@ NULL)) AND (distribution IS NULL))) OR (((product IS NULL) AND
 </tr>
 </table>
 <!-- Foreign Key Discovery -->
+<p>Tables referencing this one via Foreign Key Constraints:</p>
+<ul>
+<li><a href=
+"#public.table.featuredproject">public.featuredproject</a></li>
+</ul>
 <!-- Indexes -->
 <!-- View Definition -->
 <!-- List off permissions -->
@@ -31657,8 +31992,8 @@ this POFile.</td>
 <!-- Indexes -->
 pofile_datecreated_idx datecreated pofile_exportfile_idx exportfile
 pofile_language_idx "language" pofile_lasttranslator_idx
-lasttranslator pofile_owner_idx "owner" pofile_potemplate_idx
-potemplate pofile_variant_idx variant <!-- View Definition -->
+lasttranslator pofile_owner_idx "owner" pofile_variant_idx variant 
+<!-- View Definition -->
  <!-- List off permissions -->
 <p>&nbsp;</p>
 <table width="100%" cellspacing="0" cellpadding="3">
@@ -31887,7 +32222,8 @@ When was added latest translation message.</td>
 <!-- Constraint List -->
 <!-- Foreign Key Discovery -->
 <!-- Indexes -->
-pofiletranslator__date_last_touched__idx date_last_touched 
+pofiletranslator__date_last_touched__idx date_last_touched
+pofiletranslator__latest_message__idx latest_message 
 <!-- View Definition -->
  <!-- List off permissions -->
 <p>&nbsp;</p>
@@ -34669,6 +35005,16 @@ Indicates whether automatic bug expiration is enabled.</td>
 <br />
 Guidelines to the end user for reporting bugs on this product.</td>
 </tr>
+<tr class="tr0">
+<td></td>
+<td>reviewer_whiteboard</td>
+<td>text</td>
+<td><br />
+<br />
+A whiteboard for Launchpad admins, registry experts and the project
+owners to capture the state of current issues with the
+project.</td>
+</tr>
 </table>
 <!-- Inherits -->
 <!-- Constraint List -->
@@ -37027,6 +37373,16 @@ mugshot.</td>
 Guidelines to the end user for reporting bugs on products in this
 project.</td>
 </tr>
+<tr class="tr1">
+<td></td>
+<td>reviewer_whiteboard</td>
+<td>text</td>
+<td><br />
+<br />
+A whiteboard for Launchpad admins, registry experts and the project
+owners to capture the state of current issues with the
+project.</td>
+</tr>
 </table>
 <!-- Inherits -->
 <!-- Constraint List -->
@@ -39201,6 +39557,18 @@ public.questionsubscription</caption>
 <td></td>
 </tr>
 <tr class="tr0">
+<td>checkwatches</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="tr1">
 <td>launchpad</td>
 <td>
 <center>&diams;</center>
@@ -39218,7 +39586,7 @@ public.questionsubscription</caption>
 <td></td>
 <td></td>
 </tr>
-<tr class="tr1">
+<tr class="tr0">
 <td>postgres</td>
 <td>
 <center>&diams;</center>
@@ -39240,7 +39608,7 @@ public.questionsubscription</caption>
 <center>&diams;</center>
 </td>
 </tr>
-<tr class="tr0">
+<tr class="tr1">
 <td>processmail</td>
 <td>
 <center>&diams;</center>
@@ -39252,7 +39620,7 @@ public.questionsubscription</caption>
 <td></td>
 <td></td>
 </tr>
-<tr class="tr1">
+<tr class="tr0">
 <td>queued</td>
 <td>
 <center>&diams;</center>
@@ -39264,7 +39632,7 @@ public.questionsubscription</caption>
 <td></td>
 <td></td>
 </tr>
-<tr class="tr0">
+<tr class="tr1">
 <td>read</td>
 <td>
 <center>&diams;</center>
@@ -39276,7 +39644,7 @@ public.questionsubscription</caption>
 <td></td>
 <td></td>
 </tr>
-<tr class="tr1">
+<tr class="tr0">
 <td>uploader</td>
 <td>
 <center>&diams;</center>
@@ -49369,7 +49737,9 @@ NULL))))</td>
 <!-- Foreign Key Discovery -->
 <!-- Indexes -->
 translationimportqueueentry__content__idx content) WHERE (content
-IS NOT NULL <!-- View Definition -->
+IS NOT NULL translationimportqueueentry__context__path__idx
+distroseries, sourcepackagename, productseries, path 
+<!-- View Definition -->
  <!-- List off permissions -->
 <p>&nbsp;</p>
 <table width="100%" cellspacing="0" cellpadding="3">
@@ -49749,6 +50119,7 @@ translationmessage__msgstr0__idx msgstr0
 translationmessage__msgstr1__idx msgstr1
 translationmessage__msgstr2__idx msgstr2
 translationmessage__msgstr3__idx msgstr3
+translationmessage__pofile__submitter__idx pofile, submitter
 translationmessage__potmsgset__pofile__not_used__key potmsgset,
 pofile) WHERE (NOT ((is_current IS TRUE) AND (is_imported IS TRUE))
 translationmessage__reviewer__idx reviewer

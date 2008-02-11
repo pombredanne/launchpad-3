@@ -2,19 +2,21 @@
   xmlns:tal="http://xml.zope.org/namespaces/tal"
   xmlns:metal="http://xml.zope.org/namespaces/metal"
   xmlns:i18n="http://xml.zope.org/namespaces/i18n"
-  class="portlet" id="portlet-series">
-  <h2>Releases of <span tal:replace="context/displayname">Ubuntu</span></h2>
+  class="portlet" id="portlet-series"
+  tal:condition="context/serieses">
+  <h2>Major current versions</h2>
   <div class="portletBody portletContent">
-
-  These are the registered releases of <span tal:replace="context/title">
-  Ubuntu Linux</span>:
-	
-    <ul>
-      <li class="products" tal:repeat="release context/releases">
-        <a tal:content="release/displayname"
-           tal:attributes="href release/fmt:url" />
-      </li>
+    <ul class="distroseries">
+      <tal:per_series repeat="series context/serieses">
+        <li tal:condition="series/active">
+          <a tal:attributes="href series/fmt:url">
+            <tal:version replace="series/version" />
+            "<tal:codename replace="series/displayname" />"
+          </a>
+          - <tal:status replace="series/status/name/fmt:lower" />
+        </li>
+      </tal:per_series>
     </ul>
-           
+    <a href="+series">&raquo; See all versions...</a>
   </div>
 </div>

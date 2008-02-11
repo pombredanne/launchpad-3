@@ -40,6 +40,7 @@ __all__ = [
     'PackageReleaseVocabulary',
     'PersonAccountToMergeVocabulary',
     'PersonActiveMembershipVocabulary',
+    'PersonActiveMembershipPlusSelfVocabulary',
     'person_team_participations_vocabulary_factory',
     'ProcessorVocabulary',
     'ProcessorFamilyVocabulary',
@@ -88,7 +89,8 @@ from canonical.launchpad.interfaces import (
     IDistributionSourcePackage, IDistroBugTask, IDistroSeries,
     IDistroSeriesBugTask, IEmailAddressSet, IFAQ, IFAQTarget, ILanguage,
     ILaunchBag, IMailingListSet, IMilestoneSet, IPerson, IPersonSet,
-    IPillarName, IProduct, IProject, ISourcePackage, ISpecification, ITeam,
+    IPillarName, IProduct, IProductSeries, IProject, ISourcePackage,
+    ISpecification, ITeam,
     IUpstreamBugTask, LanguagePackType, MailingListStatus, PersonVisibility)
 
 from canonical.launchpad.webapp.vocabulary import (
@@ -272,7 +274,7 @@ class BranchVocabulary(BranchVocabularyBase):
 
 
 class BranchRestrictedOnProductVocabulary(BranchVocabularyBase):
-    """A vocabulary for searching branches restriced on product.
+    """A vocabulary for searching branches restricted on product.
 
     The query entered checks the name or URL of the branch, or the
     name of the registrant of the branch.
@@ -289,13 +291,16 @@ class BranchRestrictedOnProductVocabulary(BranchVocabularyBase):
         """See `BranchVocabularyBase`."""
         if IProduct.providedBy(self.context):
             restrict_sql = self._restrictToProduct(self.context)
+        elif IProductSeries.providedBy(self.context):
+            restrict_sql = self._restrictToProduct(self.context.product)
         elif IBranch.providedBy(self.context):
             restrict_sql = self._restrictToProduct(self.context.product)
         else:
             # An unexpected type.
             raise AssertionError('Unexpected context type')
 
-        base_sql = self._constructGeneralQuery(quoted_query, check_product=False)
+        base_sql = self._constructGeneralQuery(
+            quoted_query, check_product=False)
         if len(base_sql) > 0:
             return '%s AND %s' % (base_sql, restrict_sql)
         else:
@@ -850,42 +855,58 @@ class ValidTeamOwnerVocabulary(ValidPersonOrTeamVocabulary):
 class PersonActiveMembershipVocabulary:
     """All the teams the person is an active member of."""
 
-    implements(IVocabulary, IVocabularyTokenized)
+    implements(IVocabularyTokenized)
 
     def __init__(self, context):
         assert IPerson.providedBy(context)
         self.context = context
 
+    def _get_teams(self):
+        """The teams that the vocabulary is built from."""
+        return [membership.team for membership
+                in self.context.myactivememberships]
+
     def __len__(self):
-        return self.context.myactivememberships.count()
+        """See `IVocabularyTokenized`."""
+        return len(self._get_teams())
 
     def __iter__(self):
-        return iter(
-            [self.getTerm(membership.team)
-             for membership in self.context.myactivememberships])
+        """See `IVocabularyTokenized`."""
+        return iter([self.getTerm(team) for team in self._get_teams()])
 
     def getTerm(self, team):
+        """See `IVocabularyTokenized`."""
         if team not in self:
             raise LookupError(team)
         return SimpleTerm(team, team.name, team.displayname)
 
-    def __contains__(self, obj):
-        if not ITeam.providedBy(obj):
-            return False
-        member_teams = [
-            membership.team for membership in self.context.myactivememberships
-            ]
-        return obj in member_teams
-
-    def getQuery(self):
-        return None
-
     def getTermByToken(self, token):
-        for membership in self.context.myactivememberships:
-            if membership.team.name == token:
-                return self.getTerm(membership.team)
+        """See `IVocabularyTokenized`."""
+        for team in self._get_teams():
+            if team.name == token:
+                return self.getTerm(team)
         else:
             raise LookupError(token)
+
+    def __contains__(self, obj):
+        """See `IVocabularyTokenized`."""
+        return obj in self._get_teams()
+
+
+class PersonActiveMembershipPlusSelfVocabulary(
+    PersonActiveMembershipVocabulary):
+    """The logged in user, and all the teams they are a member of."""
+
+    def __init__(self, context):
+        # We are interested in the logged in user, not the actual context.
+        logged_in_user = getUtility(ILaunchBag).user
+        PersonActiveMembershipVocabulary.__init__(self, logged_in_user)
+
+    def _get_teams(self):
+        """See `PersonActiveMembershipVocabulary`."""
+        teams = PersonActiveMembershipVocabulary._get_teams(self)
+        # Add the logged in user as the first item.
+        return [self.context] + teams
 
 
 class ActiveMailingListVocabulary:
