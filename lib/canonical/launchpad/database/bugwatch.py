@@ -399,8 +399,11 @@ class BugWatchSet(BugSetBase):
         # best-effort guess.
         remote_bug = query.keys()[0]
 
-        base_url = urlunsplit((scheme, host, path, '', ''))
-        return base_url, remote_bug
+        # There's only one global Savannah bugtracker registered with
+        # Launchpad.
+        savannah_tracker = getUtility(ILaunchpadCelebrities).savannah_tracker
+
+        return savannah_tracker.baseurl, remote_bug
 
     def extractBugTrackerAndBug(self, url):
         """See IBugWatchSet."""
