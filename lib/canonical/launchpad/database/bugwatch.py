@@ -70,6 +70,7 @@ class BugWatch(SQLBase):
             BugTrackerType.RT:          'Ticket/Display.html?id=%s',
             BugTrackerType.SOURCEFORGE: 'support/tracker.php?aid=%s',
             BugTrackerType.MANTIS:      'view.php?id=%s',
+            BugTrackerType.SAVANNAH:    'bugs/?%s',
         }
         bt = self.bugtracker.bugtrackertype
         if not url_formats.has_key(bt):
@@ -198,6 +199,7 @@ class BugWatchSet(BugSetBase):
             BugTrackerType.SOURCEFORGE: self.parseSourceForgeURL,
             BugTrackerType.TRAC: self.parseTracURL,
             BugTrackerType.MANTIS: self.parseMantisURL,
+            BugTrackerType.SAVANNAH: self.parseSavannahURL,
         }
 
     def get(self, watch_id):
@@ -381,6 +383,24 @@ class BugWatchSet(BugSetBase):
         sf_tracker = getUtility(ILaunchpadCelebrities).sourceforge_tracker
 
         return sf_tracker.baseurl, remote_bug
+
+    def parseSavannahURL(self, scheme, host, path, query):
+        """Extract GNU Savannah base URL and bug ID."""
+        # GNU Savannah bugs URLs are in the form /bugs/?<bug-id>, so we
+        # exclude any path that isn't '/bugs/'. We also exclude query
+        # string that have a length of more or less than one, since in
+        # such cases we'd be taking a guess at the bug ID, which would
+        # probably be wrong.
+        if path != '/bugs/' or len(query) != 1:
+            return None
+
+        # The remote bug is actually a key in the query dict rather than
+        # a value, so we simply use the first key we come across as a
+        # best-effort guess.
+        remote_bug = query.keys()[0]
+
+        base_url = urlunsplit((scheme, host, path, '', ''))
+        return base_url, remote_bug
 
     def extractBugTrackerAndBug(self, url):
         """See IBugWatchSet."""

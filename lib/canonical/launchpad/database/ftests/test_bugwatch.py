@@ -187,6 +187,20 @@ class CpanExtractBugTrackerAndBugTest(ExtractBugTrackerAndBugTestBase):
     bug_id = '2379'
 
 
+class SavannahExtractBugTrackerAndBugTest(ExtractBugTrackerAndBugTestBase):
+    """Ensure BugWatchSet.extractBugTrackerAndBug works with Savannah URLs.
+    """
+
+    bugtracker_type = BugTrackerType.SAVANNAH
+    bug_url = 'http://savannah.gnu.org/bugs/?22003'
+    base_url = 'http://savannah.gnu.org/bugs/'
+    bug_id = '22003'
+
+    def test_unregistered_tracker_url(self):
+        # The Savannah tracker is always registered, so this test
+        # doesn't make sense for SourceForge URLs.
+        pass
+
 def test_suite():
     suite = unittest.TestSuite()
     suite.addTest(unittest.makeSuite(BugzillaExtractBugTrackerAndBugTest))
@@ -199,6 +213,7 @@ def test_suite():
     suite.addTest(unittest.makeSuite(MantisExtractBugTrackerAndBugTest))
     suite.addTest(unittest.makeSuite(RTExtractBugTrackerAndBugTest))
     suite.addTest(unittest.makeSuite(CpanExtractBugTrackerAndBugTest))
+    suite.addTest(unittest.makeSuite(SavannahExtractBugTrackerAndBugTest))
     return suite
 
 
