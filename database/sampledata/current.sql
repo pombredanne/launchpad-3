@@ -1198,6 +1198,7 @@ INSERT INTO bugtracker (id, bugtrackertype, name, title, summary, baseurl, "owne
 INSERT INTO bugtracker (id, bugtrackertype, name, title, summary, baseurl, "owner", contactdetails, date_created) VALUES (3, 2, 'debbugs', 'Debian Bug tracker', 'Bug tracker for debian project.', 'http://bugs.debian.org', 1, NULL, '2006-10-16 18:31:43.197881');
 INSERT INTO bugtracker (id, bugtrackertype, name, title, summary, baseurl, "owner", contactdetails, date_created) VALUES (4, 1, 'ubuntu-bugzilla', 'The Ubuntu.com bugzilla', 'The Ubuntu.com bugzilla tracks bugs in all products Ubuntu supports, in the Canonical.com hosted websites and in Bazaar and the Arch supermirror', 'http://bugzilla.ubuntu.com/bugs/', 1, NULL, '2006-10-16 18:31:43.198413');
 INSERT INTO bugtracker (id, bugtrackertype, name, title, summary, baseurl, "owner", contactdetails, date_created) VALUES (5, 5, 'sf', 'SourceForge.net Tracker', 'SourceForge.net is an Open Source software development web site, hosting more than 100,000 projects.  This is the tracker used by most of those projects.', 'http://sourceforge.net/', 60, NULL, '2006-10-16 18:31:43.19892');
+INSERT INTO bugtracker (id, bugtrackertype, name, title, summary, baseurl, "owner", contactdetails, date_created) VALUES (6, 8, 'savannah', 'GNU Savannah Bug Tracker', 'Savannah is an open source software development hosting service based on SourceForge.', 'http://savannah.gnu.org/bugs/', 25, NULL, '2008-02-11 15:25:58.504386');
 
 
 ALTER TABLE bugtracker ENABLE TRIGGER ALL;
@@ -1205,6 +1206,7 @@ ALTER TABLE bugtracker ENABLE TRIGGER ALL;
 
 ALTER TABLE bugtrackeralias DISABLE TRIGGER ALL;
 
+INSERT INTO bugtrackeralias (id, bugtracker, base_url) VALUES (1, 6, 'http://savannah.nognu.org/bugs/');
 
 
 ALTER TABLE bugtrackeralias ENABLE TRIGGER ALL;
