@@ -333,7 +333,7 @@ class BugNotificationRecipients(NotificationRecipientSet):
             text = "are the bug contact for %s" % upstream.displayname
         self._addReason(person, text, reason)
 
-    def addUpstreamRegistrant(self, person, upstream):
+    def addRegistrant(self, person, upstream):
         """Registers an upstream product registrant for this bug."""
         reason = "Registrant (%s)" % upstream.displayname
         if person.isTeam():

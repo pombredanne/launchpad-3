@@ -26,7 +26,6 @@ __all__ = [
     'ProductChangeTranslatorsView',
     'ProductReviewView',
     'ProductAddSeriesView',
-    'ProductBugContactEditView',
     'ProductReassignmentView',
     'ProductRdfView',
     'ProductSetFacets',
@@ -39,7 +38,6 @@ __all__ = [
     'PillarSearchItem',
     ]
 
-import cgi
 from operator import attrgetter
 
 import zope.security.interfaces
@@ -56,9 +54,8 @@ from canonical.launchpad import _
 from canonical.launchpad.interfaces import (
     BranchListingSort, IBranchSet, IBugTracker, ICountry, IDistribution,
     IHasIcon, ILaunchBag, ILaunchpadCelebrities, IPillarNameSet, IProduct,
-    IProductSeries, IProductSet, IProject, ITranslationImportQueue,
-    License, NotFoundError, RESOLVED_BUGTASK_STATUSES,
-    UnsafeFormGetSubmissionError)
+    IProductSeries, IProductSet, IProject, ITranslationImportQueue, License,
+    NotFoundError, RESOLVED_BUGTASK_STATUSES, UnsafeFormGetSubmissionError)
 from canonical.launchpad import helpers
 from canonical.launchpad.browser.announcement import HasAnnouncementsView
 from canonical.launchpad.browser.branding import BrandingChangeView
@@ -1158,88 +1155,6 @@ class ProductAddView(ProductAddViewBase):
             license_info=data['license_info'])
         self.notifyFeedbackMailingList()
         notify(ObjectCreatedEvent(self.product))
-
-
-class ProductBugContactEditView(LaunchpadEditFormView):
-    """Browser view class for editing the product bug contact."""
-
-    schema = IProduct
-    field_names = ['bugcontact']
-
-    @action('Change', name='change')
-    def change_action(self, action, data):
-        """Redirect to the product page with a success message."""
-        self.updateContextFromData(data)
-
-        product = self.context
-
-        bugcontact = product.bugcontact
-        if bugcontact:
-            contact_display_value = None
-            if bugcontact.preferredemail:
-                # The bug contact was set to a new person or team.
-                contact_display_value = bugcontact.preferredemail.email
-            else:
-                # The bug contact doesn't have a preferred email address,
-                # so it must be a team.
-                assert bugcontact.isTeam(), (
-                    "Expected bug contact with no email address "
-                    "to be a team.")
-                contact_display_value = bugcontact.browsername
-
-            self.request.response.addNotification(
-                "Successfully changed the bug contact to %s" %
-                contact_display_value)
-        else:
-            # The bug contact was set to noone.
-            self.request.response.addNotification(
-                "Successfully cleared the bug contact. There is no longer a "
-                "contact address that will receive all bugmail for this "
-                "project. You can set the bug contact again at any time.")
-
-        self.request.response.redirect(canonical_url(product))
-
-    def validate(self, data):
-        """Validates the new bug contact for the product.
-
-        The following values are valid as bug contacts:
-            * None, indicating that the bug contact field for the product
-              should be cleard in change_action().
-            * A valid Person (email address or launchpad id).
-            * A valid Team of which the current user is an administrator.
-
-        If the the bug contact entered does not meet any of the above criteria
-        then the submission will fail and the user will be notified of the
-        error.
-        """
-        # data will not have a bugcontact entry in cases where the bugcontact
-        # the user entered is valid according to the ValidPersonOrTeam
-        # vocabulary (i.e. is not a Person, Team or None).
-        if not data.has_key('bugcontact'):
-            self.setFieldError(
-                'bugcontact',
-                'You must choose a valid person or team to be the bug contact'
-                ' for %s.' %
-                cgi.escape(self.context.displayname))
-
-            return
-
-        contact = data['bugcontact']
-
-        if (contact is not None and contact.isTeam() and
-            contact not in self.user.getAdministratedTeams()):
-            error = (
-                "You cannot set %(team)s as the bug contact for "
-                "%(project)s because you are not an administrator of that "
-                "team.<br />If you believe that %(team)s should be the bug"
-                " contact for %(project)s, please notify one of the "
-                "<a href=\"%(url)s\">%(team)s administrators</a>."
-
-                % {'team': cgi.escape(contact.displayname),
-                   'project': cgi.escape(self.context.displayname),
-                   'url': canonical_url(contact, rootsite='mainsite')
-                          + '/+members'})
-            self.setFieldError('bugcontact', error)
 
 
 class ProductReassignmentView(ObjectReassignmentView):

@@ -27,11 +27,10 @@ from sqlobject import SQLObjectNotFound
 from canonical.launchpad.interfaces import (
     BugAttachmentType, BugTaskStatus, DistroSeriesStatus, IBug,
     IBugAttachmentSet, IBugBecameQuestionEvent, IBugBranch, IBugSet,
-    IBugTaskSet, IBugWatchSet, ICveSet, IDistribution, IDistroBugTask,
-    IDistroSeries, IDistroSeriesBugTask, ILaunchpadCelebrities,
-    ILibraryFileAliasSet, IMessage, IProduct, IProductSeries,
-    IProductSeriesBugTask, IQuestionTarget, ISourcePackage,
-    IStructuralSubscriptionTarget, IUpstreamBugTask, NominationError,
+    IBugTaskSet, IBugWatchSet, ICveSet, IDistribution, IDistroSeries,
+    ILaunchpadCelebrities, ILibraryFileAliasSet, IMessage, IProduct,
+    IProductSeries, IQuestionTarget, ISourcePackage,
+    IStructuralSubscriptionTarget, NominationError,
     NominationSeriesObsoleteError, NotFoundError, UNRESOLVED_BUGTASK_STATUSES)
 from canonical.launchpad.helpers import shortlist
 from canonical.database.sqlbase import cursor, SQLBase, sqlvalues
@@ -481,35 +480,14 @@ class Bug(SQLBase):
                     bugtask.milestone.getBugNotificationsRecipients(
                     recipients))
 
-            # Bug contacts are indirect subscribers.
-            if (IDistroBugTask.providedBy(bugtask) or
-                IDistroSeriesBugTask.providedBy(bugtask)):
-                if bugtask.distribution is not None:
-                    distribution = bugtask.distribution
-                else:
-                    distribution = bugtask.distroseries.distribution
-
-                if distribution.bugcontact:
-                    also_notified_subscribers.add(distribution.bugcontact)
-                    if recipients is not None:
-                        recipients.addDistroBugContact(
-                            distribution.bugcontact, distribution)
-            else:
-                if IUpstreamBugTask.providedBy(bugtask):
-                    product = bugtask.product
-                else:
-                    assert IProductSeriesBugTask.providedBy(bugtask)
-                    product = bugtask.productseries.product
-                if product.bugcontact:
-                    also_notified_subscribers.add(product.bugcontact)
-                    if recipients is not None:
-                        recipients.addUpstreamBugContact(
-                            product.bugcontact, product)
-                else:
-                    also_notified_subscribers.add(product.owner)
-                    if recipients is not None:
-                        recipients.addUpstreamRegistrant(
-                            product.owner, product)
+            # If the target's bug contact isn't set,
+            # we add the owner as a subscriber.
+            pillar = bugtask.pillar
+            if pillar.bugcontact is None:
+                also_notified_subscribers.add(pillar.owner)
+                if recipients is not None:
+                    recipients.addRegistrant(
+                        pillar.owner, pillar)
 
         # Direct subscriptions always take precedence over indirect
         # subscriptions.
