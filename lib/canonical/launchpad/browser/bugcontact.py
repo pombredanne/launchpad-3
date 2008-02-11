@@ -13,6 +13,7 @@ import cgi
 from canonical.launchpad.interfaces import IHasBugContact
 from canonical.launchpad.webapp import (
     action, canonical_url, LaunchpadEditFormView)
+from canonical.launchpad.webapp.menu import structured
 
 class BugContactEditView(LaunchpadEditFormView):
     """Browser view class for editing the bug contact."""
@@ -28,7 +29,7 @@ class BugContactEditView(LaunchpadEditFormView):
         target.setBugContact(bugcontact, self.user)
 
         if bugcontact is not None:
-            self.request.response.addNotification(
+            self.request.response.addNotification(structured(
                 'Successfully changed the bug contact to '
                 '<a href="%(contacturl)s">%(displayname)s</a>.'
                 '<br />'
@@ -42,7 +43,7 @@ class BugContactEditView(LaunchpadEditFormView):
                 contacturl=canonical_url(bugcontact),
                 displayname=bugcontact.displayname,
                 targetname=self.context.displayname,
-                targeturl=canonical_url(self.context))
+                targeturl=canonical_url(self.context)))
         else:
             self.request.response.addNotification(
                 "Successfully cleared the bug contact. "
