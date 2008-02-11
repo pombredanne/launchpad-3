@@ -239,87 +239,88 @@ class Build(SQLBase):
         """See `IBuild`."""
         return self.component_dependencies[self.current_component.name]
 
+    def _parseDependencyToken(self, token):
+        """Parse the given token.
+
+        Raises AssertionError if the given token couldn't be parsed.
+
+        Return a triple containing the corresponding (name, version,
+        relation) for the given dependency token.
+        """
+        # XXX cprov 2006-02-27: it may not work for and'd and or'd syntax.
+        try:
+            name, version, relation = token[0]
+        except ValueError:
+            raise AssertionError(
+                "APT is not dealing correctly with a dependency token "
+                "'%r' from %s (%s) with the following dependencies: %s\n"
+                "It is expected to be a tuple containing only another "
+                "tuple with 3 elements  (name, version, relation)."
+                % (token, self.title, self.id, self.depedencies))
+        return (name, version, relation)
+
+    def _checkDependencyVersion(self, available, required, relation):
+        """Return True if the available version satisfies the context."""
+        # This dict maps the package version relationship syntax in lambda
+        # functions which returns boolean according the results of
+        # apt_pkg.VersionCompare function (see the order above).
+        # For further information about pkg relationship syntax see:
+        #
+        # http://www.debian.org/doc/debian-policy/ch-relationships.html
+        #
+        version_relation_map = {
+            # any version is acceptable if no relationship is given
+            '': lambda x: True,
+            # stricly later
+            '>>': lambda x: x == 1,
+            # later or equal
+            '>=': lambda x: x >= 0,
+            # stricly equal
+            '=': lambda x: x == 0,
+            # earlier or equal
+            '<=': lambda x: x <= 0,
+            # strictly earlier
+            '<<': lambda x: x == -1
+            }
+
+        # Use apt_pkg function to compare versions
+        # it behaves similar to cmp, i.e. returns negative
+        # if first < second, zero if first == second and
+        # positive if first > second.
+        dep_result = apt_pkg.VersionCompare(available, required)
+
+        return version_relation_map[relation](dep_result)
+
+    def _isDependencySatisfied(self, token):
+        """Check if the given dependency token is satisfied.
+
+        Check if the dependency exists, if its version constraint is
+        satisfied and if it is reachable in the build context.
+        """
+        name, version, relation = self._parseDependencyToken(token)
+        dep_candidate = self.distroarchseries.findDepCandidateByName(name)
+
+        if not dep_candidate:
+            return False
+
+        if not self._checkDependencyVersion(
+            dep_candidate.binarypackageversion, version, relation):
+            return False
+
+        if dep_candidate.component not in self.ogre_components:
+            return False
+
+        return True
+
+    def _toAptFormat(self, token):
+        """Rebuild dependencies line in apt format."""
+        name, version, relation = self._parseDependencyToken(token)
+        if relation and version:
+            return '%s (%s %s)' % (name, relation, version)
+        return '%s' % name
+
     def updateDependencies(self):
         """See `IBuild`."""
-        def parse_dep_token(token):
-            """Parse the given token.
-
-            Raises AssertionError if the given token couldn't be parsed.
-
-            Return a triple containing the corresponding (name, version,
-            relation) for the given dependency token.
-            """
-            # XXX cprov 2006-02-27: it may not work for and'd and or'd syntax.
-            try:
-                name, version, relation = token[0]
-            except ValueError:
-                raise AssertionError(
-                    "APT is not dealing correctly with a dependency token "
-                    "'%r' from %s (%s) with the following dependencies: %s\n"
-                    "It is expected to be a tuple containing only another "
-                    "tuple with 3 elements  (name, version, relation)."
-                    % (token, self.title, self.id, self.depedencies))
-            return (name, version, relation)
-
-        def check_dependency_version(available, required, relation):
-            """Return True if the available version satisfies the context."""
-            # This dict maps the package version relationship syntax in lambda
-            # functions which returns boolean according the results of
-            # apt_pkg.VersionCompare function (see the order above).
-            # For further information about pkg relationship syntax see:
-            #
-            # http://www.debian.org/doc/debian-policy/ch-relationships.html
-            #
-            version_relation_map = {
-                # any version is acceptable if no relationship is given
-                '': lambda x: True,
-                # stricly later
-                '>>': lambda x: x == 1,
-                # later or equal
-                '>=': lambda x: x >= 0,
-                # stricly equal
-                '=': lambda x: x == 0,
-                # earlier or equal
-                '<=': lambda x: x <= 0,
-                # strictly earlier
-                '<<': lambda x: x == -1
-                }
-
-            # Use apt_pkg function to compare versions
-            # it behaves similar to cmp, i.e. returns negative
-            # if first < second, zero if first == second and
-            # positive if first > second.
-            dep_result = apt_pkg.VersionCompare(available, required)
-
-            return version_relation_map[relation](dep_result)
-
-        def is_dependency_satisfied(token):
-            """Check if the given dependency token is satisfied.
-
-            Check if the dependency exists, if its version constraint is
-            satisfied and if it is reachable in the build context.
-            """
-            name, version, relation = parse_dep_token(token)
-            dep_candidate = self.distroarchseries.findDepCandidateByName(name)
-
-            if not dep_candidate:
-                return False
-
-            if not check_dependency_version(
-                dep_candidate.binarypackageversion, version, relation):
-                return False
-
-            if dep_candidate.component not in self.ogre_components:
-                return False
-
-            return True
-
-        def to_apt_format(token):
-            """Rebuild dependencies line in apt format."""
-            name, version, relation = parse_dep_token(token)
-            if relation and version:
-                return '%s (%s %s)' % (name, relation, version)
-            return '%s' % name
 
         # apt_pkg requires InitSystem to get VersionCompare working properly.
         apt_pkg.InitSystem()
@@ -334,8 +335,8 @@ class Build(SQLBase):
                 % (self.title, self.id, self.depedencies))
 
         remaining_deps = [
-            to_apt_format(token) for token in parsed_deps
-            if not is_dependency_satisfied(token)]
+            self._toAptFormat(token) for token in parsed_deps
+            if not self._isDependencySatisfied(token)]
 
         # Update dependencies line
         self.dependencies = ", ".join(remaining_deps)

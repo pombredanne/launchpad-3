@@ -595,6 +595,7 @@ source published in 'main' component is only allowed to depend on
 binaries also published in 'main', on the other hand a source
 published in 'universe' is allowed to depend on binaries published in
 'main', 'restricted' and 'universe' components.
+
 A proper name for this "model" would be 'cross-component-dependency'.
 
     >>> from canonical.launchpad.interfaces import IComponentSet
@@ -669,6 +670,7 @@ A dependency can only be used if it is an a component allowed in our
 context (see above on 'Ogre' components). If we do a build using a
 dependency available in the sample data but published in an unreachable
 component, we will see that the dependency is considered to be unsatisfied.
+See also bug 177827.
 
     >>> depwait_build.dependencies = 'pmount'
     >>> flush_database_updates()
