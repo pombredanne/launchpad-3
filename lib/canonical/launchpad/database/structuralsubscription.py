@@ -1,7 +1,8 @@
 # Copyright 2008 Canonical Ltd.  All rights reserved.
 
 __metaclass__ = type
-__all__ = ['StructuralSubscription']
+__all__ = ['StructuralSubscription',
+           'StructuralSubscriptionTargetMixin']
 
 from zope.interface import implements
 
@@ -10,10 +11,12 @@ from sqlobject import ForeignKey
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
-from canonical.database.sqlbase import SQLBase
+from canonical.database.sqlbase import quote, SQLBase
 
 from canonical.launchpad.interfaces import (
-    BlueprintNotificationLevel, BugNotificationLevel, IStructuralSubscription)
+    BlueprintNotificationLevel, BugNotificationLevel, DeleteSubscriptionError,
+    DuplicateSubscriptionError, IDistributionSourcePackage, IProduct,
+    IStructuralSubscription)
 
 
 class StructuralSubscription(SQLBase):
@@ -87,3 +90,111 @@ class StructuralSubscription(SQLBase):
             return self.distroseries
         else:
             raise AssertionError, 'StructuralSubscription has no target.'
+
+
+class StructuralSubscriptionTargetMixin:
+    """Mixin class for implementing `IStructuralSubscriptionTarget`."""
+    @property
+    def _target_args(self):
+        """Target Arguments.
+
+        Return a dictionary with the arguments representing this
+        target in a call to the structural subscription constructor.
+        """
+        args = {}
+        if IDistributionSourcePackage.providedBy(self):
+            args['distribution'] = self.distribution
+            args['sourcepackagename'] = self.sourcepackagename
+        elif IProduct.providedBy(self):
+            args['product'] = self
+        else:
+            raise AssertionError(
+                '%s is not a valid structural subscription target.')
+        return args
+
+    def addSubscription(self, subscriber, subscribed_by):
+        """See `IStructuralSubscriptionTarget`."""
+        subscription_already_exists = (
+            self.getSubscription(subscriber) is not None)
+
+        if subscription_already_exists:
+            raise DuplicateSubscriptionError(
+                "%s is already subscribed to %s." %
+                (subscriber.name, self.displayname))
+        else:
+            return StructuralSubscription(
+                subscriber=subscriber,
+                subscribed_by=subscribed_by,
+                **self._target_args)
+
+    def addBugSubscription(self, subscriber, subscribed_by):
+        """See `IStructuralSubscriptionTarget`."""
+        # This is a helper method for creating a structural
+        # subscription and immediately giving it a full
+        # bug notification level. It is useful so long as
+        # subscriptions are mainly used to implement bug contacts.
+        sub = self.addSubscription(subscriber, subscribed_by)
+        sub.bug_notification_level = BugNotificationLevel.COMMENTS
+        return sub
+
+    def removeBugSubscription(self, person):
+        """See `IStructuralSubscriptionTarget`."""
+        subscription_to_remove = None
+        for subscription in self.getSubscriptions(
+            min_bug_notification_level=BugNotificationLevel.METADATA):
+            # Only search for bug subscriptions
+            if subscription.subscriber == person:
+                subscription_to_remove = subscription
+                break
+
+        if subscription_to_remove is None:
+            raise DeleteSubscriptionError(
+                "%s is not subscribed to %s." % (
+                person.name, self.displayname))
+        else:
+            if (subscription_to_remove.blueprint_notification_level >
+                BlueprintNotificationLevel.NOTHING):
+                # This is a subscription to other application too
+                # so only set the bug notification level
+                subscription_to_remove.bug_notification_level = (
+                    BugNotificationLevel.NOTHING)
+            else:
+                subscription_to_remove.destroySelf()
+
+    def getSubscription(self, person):
+        """See `IStructuralSubscriptionTarget`."""
+        all_subscriptions = self.getSubscriptions()
+        for subscription in all_subscriptions:
+            if subscription.subscriber == person:
+                return subscription
+        return None
+
+    def getSubscriptions(self,
+                         min_bug_notification_level=
+                         BugNotificationLevel.NOTHING,
+                         min_blueprint_notification_level=
+                         BlueprintNotificationLevel.NOTHING):
+        """See `IStructuralSubscriptionTarget`."""
+        target_clause = " AND ".join(
+            "StructuralSubscription.%s = %s " % (key, quote(value))
+            for key, value in self._target_args.items())
+        query = target_clause + """
+            AND StructuralSubscription.subscriber = Person.id
+            """
+        all_subscriptions = StructuralSubscription.select(
+            query,
+            orderBy='Person.displayname',
+            clauseTables=['Person'])
+        subscriptions = [sub for sub
+                         in all_subscriptions
+                         if ((sub.bug_notification_level >=
+                             min_bug_notification_level) and
+                             (sub.blueprint_notification_level >=
+                              min_blueprint_notification_level))]
+        return subscriptions
+
+    @property
+    def bug_subscriptions(self):
+        """See `IStructuralSubscriptionTarget`."""
+        return self.getSubscriptions(
+            min_bug_notification_level=BugNotificationLevel.METADATA)

@@ -124,10 +124,6 @@ class IStructuralSubscription(Interface):
 class IStructuralSubscriptionTarget(Interface):
     """A Launchpad Structure allowing users to subscribe to it."""
 
-    bug_subscriptions = Attribute(
-        "A sequence of people or teams that are subscribed to bug "
-        "notifications about this target.")
-
     def getSubscriptions(min_bug_notification_level,
                          min_blueprint_notification_level):
         """Return all the subscriptions with the specified levels.
@@ -143,6 +139,9 @@ class IStructuralSubscriptionTarget(Interface):
     def addSubscription(subscriber, subscribed_by):
         """Add a subscription for this structure.
 
+        This method is used to create a new `IStructuralSubscription`
+        for the target, with no levels set.
+
         :subscriber: The IPerson who will be subscribed.
         :subscribed_by: The IPerson creating the subscription.
         :return: The new subscription.
@@ -150,6 +149,10 @@ class IStructuralSubscriptionTarget(Interface):
 
     def addBugSubscription(subscriber, subscribed_by):
         """Add a bug subscription for this structure.
+
+        This method is used to create a new `IStructuralSubscription`
+        for the target with the bug notification level set to
+        COMMENTS, the only level currently in use.
 
         :subscriber: The IPerson who will be subscribed.
         :subscribed_by: The IPerson creating the subscription.
@@ -165,6 +168,9 @@ class IStructuralSubscriptionTarget(Interface):
 
         :subscriber: The IPerson who will be subscribed.
         """
+
+    def getSubscription(person):
+        """Return the subscription for `person`, if it exists."""
 
 
 class IStructuralSubscriptionForm(Interface):

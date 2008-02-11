@@ -31,8 +31,8 @@ from canonical.launchpad.interfaces import (
     IDistroSeries, IDistroSeriesBugTask, ILaunchpadCelebrities,
     ILibraryFileAliasSet, IMessage, IProduct, IProductSeries,
     IProductSeriesBugTask, IQuestionTarget, ISourcePackage,
-    IUpstreamBugTask, NominationError, NominationSeriesObsoleteError,
-    NotFoundError, UNRESOLVED_BUGTASK_STATUSES)
+    IStructuralSubscriptionTarget, IUpstreamBugTask, NominationError,
+    NominationSeriesObsoleteError, NotFoundError, UNRESOLVED_BUGTASK_STATUSES)
 from canonical.launchpad.helpers import shortlist
 from canonical.database.sqlbase import cursor, SQLBase, sqlvalues
 from canonical.database.constants import UTC_NOW
@@ -472,6 +472,14 @@ class Bug(SQLBase):
                 if recipients is not None:
                     recipients.addAssignee(bugtask.assignee)
 
+            target = bugtask.target
+            if IStructuralSubscriptionTarget.providedBy(bugtask.target):
+                for sub in target.bug_subscriptions:
+                    also_notified_subscribers.add(sub.subscriber)
+                    if recipients is not None:
+                        recipients.addPackageBugContact(
+                            sub.subscriber, target)
+                            
             # Bug contacts are indirect subscribers.
             if (IDistroBugTask.providedBy(bugtask) or
                 IDistroSeriesBugTask.providedBy(bugtask)):
@@ -485,15 +493,6 @@ class Bug(SQLBase):
                     if recipients is not None:
                         recipients.addDistroBugContact(
                             distribution.bugcontact, distribution)
-
-                if bugtask.sourcepackagename:
-                    sourcepackage = distribution.getSourcePackage(
-                        bugtask.sourcepackagename)
-                    for sub in sourcepackage.bug_subscriptions:
-                        also_notified_subscribers.add(sub.subscriber)
-                        if recipients is not None:
-                            recipients.addPackageBugContact(
-                                sub.subscriber, sourcepackage)
             else:
                 if IUpstreamBugTask.providedBy(bugtask):
                     product = bugtask.product

@@ -60,6 +60,11 @@
       permission="launchpad.Moderate"
       attributes="newFAQ"
       />
+    <!-- IStructuralSubscriptionTarget -->
+    <allow attributes="bug_subscriptions getSubscriptions getSubscription" />
+    <require
+        permission="launchpad.AnyPerson"
+        attributes="addSubscription addBugSubscription removeBugSubscription" />
   </content>
 
   <browser:defaultView
