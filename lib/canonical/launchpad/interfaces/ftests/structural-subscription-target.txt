@@ -42,13 +42,11 @@ Let's login then to add a subscription:
     [u'no-priv']
 
 Trying to add a subscription to a target when that person
-or team is already subscribed to that target will raise a
-DuplicateSubscriptionError.
+or team is already subscribed to that target will return
+the existing subscription.
 
     >>> target.addBugSubscription(no_priv, no_priv)
-    Traceback (most recent call last):
-      ...
-    DuplicateSubscriptionError: ...
+    <StructuralSubscription ...>
 
 Let's add an ITeam as one of the subscribers:
 

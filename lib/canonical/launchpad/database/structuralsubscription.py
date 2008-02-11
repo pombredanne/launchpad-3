@@ -15,9 +15,9 @@ from canonical.database.sqlbase import quote, SQLBase
 
 from canonical.launchpad.interfaces import (
     BlueprintNotificationLevel, BugNotificationLevel, DeleteSubscriptionError,
-    DuplicateSubscriptionError, IDistribution, IDistributionSourcePackage,
-    IDistroSeries, IMilestone, IProduct, IProductSeries,
-    IStructuralSubscription, IStructuralSubscriptionTarget)
+    IDistribution, IDistributionSourcePackage, IDistroSeries, IMilestone,
+    IProduct, IProductSeries, IStructuralSubscription,
+    IStructuralSubscriptionTarget)
 
 
 class StructuralSubscription(SQLBase):
@@ -120,13 +120,10 @@ class StructuralSubscriptionTargetMixin:
 
     def addSubscription(self, subscriber, subscribed_by):
         """See `IStructuralSubscriptionTarget`."""
-        subscription_already_exists = (
-            self.getSubscription(subscriber) is not None)
+        existing_subscription = self.getSubscription(subscriber)
 
-        if subscription_already_exists:
-            raise DuplicateSubscriptionError(
-                "%s is already subscribed to %s." %
-                (subscriber.name, self.displayname))
+        if existing_subscription is not None:
+            return existing_subscription
         else:
             return StructuralSubscription(
                 subscriber=subscriber,

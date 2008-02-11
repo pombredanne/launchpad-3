@@ -9,7 +9,6 @@ __all__ = [
     'BlueprintNotificationLevel',
     'BugNotificationLevel',
     'DeleteSubscriptionError',
-    'DuplicateSubscriptionError',
     'IStructuralSubscription',
     'IStructuralSubscriptionForm',
     'IStructuralSubscriptionTarget'
@@ -188,13 +187,6 @@ class IStructuralSubscriptionForm(Interface):
     subscribe_me = Bool(
         title=u"I want to subscribe to notifications.",
         required=False)
-
-
-class DuplicateSubscriptionError(Exception):
-    """Duplicate Subscription Error.
-
-    Raised when trying to add a structural subscription that already exists.
-    """
 
 
 class DeleteSubscriptionError(Exception):

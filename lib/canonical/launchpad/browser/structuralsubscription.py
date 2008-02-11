@@ -14,8 +14,8 @@ from zope.schema.vocabulary import SimpleTerm, SimpleVocabulary
 
 from canonical.cachedproperty import cachedproperty
 from canonical.launchpad.interfaces import (
-    BugNotificationLevel, DuplicateSubscriptionError,
-    IDistributionSourcePackage, IStructuralSubscriptionForm)
+    BugNotificationLevel, IDistributionSourcePackage,
+    IStructuralSubscriptionForm)
 from canonical.launchpad.webapp import (
     LaunchpadFormView, action, canonical_url, custom_widget)
 from canonical.launchpad.webapp.authorization import check_permission
@@ -207,18 +207,11 @@ class StructuralSubscriptionView(LaunchpadFormView):
         target = self.context
         new_subscription = data['new_subscription']
         if new_subscription is not None:
-            try:
-                sub = target.addBugSubscription(new_subscription, self.user)
-            except DuplicateSubscriptionError:
-                self.request.response.addNotification(
-                    '"%s" is already subscribed to %s.' % (
-                        new_subscription.displayname,
-                        target.displayname))
-            else:
-                self.request.response.addNotification(
-                    '"%s" was successfully subscribed to %s.' % (
-                        new_subscription.displayname,
-                        target.displayname))
+            sub = target.addBugSubscription(new_subscription, self.user)
+            self.request.response.addNotification(
+                '"%s" was successfully subscribed to %s.' % (
+                new_subscription.displayname,
+                target.displayname))
 
         subscriptions_to_remove = data.get('remove_other_subscriptions', [])
         for subscription in subscriptions_to_remove:

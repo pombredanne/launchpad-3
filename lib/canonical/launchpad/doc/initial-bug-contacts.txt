@@ -43,14 +43,11 @@ Let's login then to add a subscription:
     >>> [pbc.subscriber.name for pbc in debian_firefox.bug_subscriptions]
     [u'name12']
 
-Trying to add a subscription to a package when that person
-or team is already subscribe to that package will raise a
-DuplicateSubscriptionError.
+Trying to add a subscription to a package when that person or team is
+already subscribe to that package will return the existing subscription.
 
     >>> debian_firefox.addBugSubscription(sample_person, sample_person)
-    Traceback (most recent call last):
-      ...
-    DuplicateSubscriptionError: ...
+    <StructuralSubscription ...>
 
 Let's add an ITeam as one of the subscribers:
 
