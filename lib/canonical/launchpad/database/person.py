@@ -2050,7 +2050,7 @@ class PersonSet:
     def getByOpenIdIdentifier(self, openid_identifier):
         """Returns a Person with the given openid_identifier, or None."""
         person = Person.selectOneBy(openid_identifier=openid_identifier)
-        if person.is_valid_person:
+        if person is not None and person.is_valid_person:
             return person
         else:
             return None
@@ -2091,7 +2091,8 @@ class PersonSet:
         """See `IPersonSet`."""
         if orderBy is None:
             orderBy = Person.sortingColumns
-        return Person.select(Person.q.teamownerID!=None, orderBy=orderBy)
+        query = AND(Person.q.teamownerID!=None, Person.q.mergedID==None)
+        return Person.select(query, orderBy=orderBy)
 
     def find(self, text, orderBy=None):
         """See `IPersonSet`."""

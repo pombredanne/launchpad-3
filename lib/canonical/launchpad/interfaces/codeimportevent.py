@@ -322,6 +322,17 @@ class ICodeImportEventSet(Interface):
         :return: `CodeImportEvent` of MODIFY type, or None.
         """
 
+    def newRequest(code_import, person):
+        """Record that user requested an immediate run of this import.
+
+        Only called by `CodeImportJobWorkflow.requestJob`.
+
+        :param code_import: `CodeImport` for which an immediate run was
+            requested.
+        :param person: `Person` who requested the code import to run.
+        :return: `CodeImportEvent` of REQUEST type.
+        """
+
     def newOnline(machine):
         """Record that an import machine went online.
 

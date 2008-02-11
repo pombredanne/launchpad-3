@@ -21,12 +21,13 @@ import pytz
 from zope.app.datetimeutils import parse, DateTimeError
 from zope.app.form.browser.textwidgets import escape, TextWidget
 from zope.app.form.browser.widget import DisplayWidget
-from zope.app.form.interfaces import InputErrors
+from zope.app.form.interfaces import InputErrors, WidgetInputError
 from zope.app.form.interfaces import ConversionError
 from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 from zope.component import getUtility
 
 from canonical.launchpad.interfaces import ILaunchBag
+from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.lazr import ExportedFolder
 
 
@@ -40,15 +41,16 @@ class PopCalXPFolder(ExportedFolder):
 class DateTimeWidget(TextWidget):
     """A date and time selection widget with popup selector.
 
-      >>> from zope.publisher.browser import TestRequest
+      >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
       >>> from zope.schema import Field
       >>> field = Field(__name__='foo', title=u'Foo')
-      >>> widget = DateTimeWidget(field, TestRequest())
+      >>> widget = DateTimeWidget(field, LaunchpadTestRequest())
 
     The datetime popup widget shows the time zone in which it will return
     the time:
 
       >>> print widget()  #doctest: +ELLIPSIS
+      <BLANKLINE>
       <...in time zone: UTC...
 
     The datetime popup widget links to the page which allows the user to
@@ -74,12 +76,49 @@ class DateTimeWidget(TextWidget):
 
       >>> widget.required_timezone = pytz.timezone('America/Los_Angeles')
       >>> print widget()  #doctest: +ELLIPSIS
+      <BLANKLINE>
       <...in time zone: America/Los_Angeles...
       >>> 'change time zone' not in widget()
       True
       >>> 'login to set time zone' not in widget()
       True
 
+    If there is a from_date then the date provided must be later than that.
+    If an earlier date is provided, then getInputValue will raise
+    WidgetInputError. The message gives the required date/time in the widget
+    timezone even if the date provided was in a different timezone.
+
+      >>> widget.request.form[widget.name] = '2005-07-03'
+      >>> widget.from_date = datetime(2006, 5, 23,
+      ...                             tzinfo=pytz.timezone('UTC'))
+      >>> print widget.getInputValue()  #doctest: +ELLIPSIS
+      Traceback (most recent call last):
+      ...
+      WidgetInputError: (... Please pick a date after 2006-05-22 17:00:00)
+
+    If the date provided is greater than from_date then the widget works as
+    expected.
+
+      >>> widget.request.form[widget.name] = '2009-09-14'
+      >>> print widget.getInputValue()  #doctest: +ELLIPSIS
+      2009-09-14 00:00:00-07:00
+
+    If to_date is provided then getInputValue() will enforce this too.
+
+      >>> widget.to_date = datetime(2008, 1, 26,
+      ...                           tzinfo=pytz.timezone('UTC'))
+      >>> print widget.getInputValue()  #doctest: +ELLIPSIS
+      Traceback (most recent call last):
+      ...
+      WidgetInputError: (... Please pick a date before 2008-01-25 16:00:00)
+
+    A datetime picker can be disabled initially:
+
+      >>> 'disabled' in widget()
+      False
+      >>> widget.disabled = True
+      >>> 'disabled' in widget()
+      True
 
     """
 
@@ -88,6 +127,7 @@ class DateTimeWidget(TextWidget):
     display_zone = True
     from_date = None
     to_date = None
+    disabled = False
 
     # ZPT that renders our widget
     __call__ = ViewPageTemplateFile('templates/datetime.pt')
@@ -149,8 +189,7 @@ class DateTimeWidget(TextWidget):
         """
         if self.required_timezone is not None:
             return self.required_timezone
-        assert (
-            self.system_timezone is not None,
+        assert self.system_timezone is not None, (
             'DateTime widget needs a time zone.')
         return self.system_timezone
     timezone = property(timezone, doc=timezone.__doc__)
@@ -160,6 +199,31 @@ class DateTimeWidget(TextWidget):
         """The name of the widget time zone for display in the widget."""
         return self.timezone.zone
 
+    def _align_date_constraints_with_timezone(self):
+        """Ensure that from_date and to_date use the widget timezone."""
+        if isinstance(self.from_date, datetime):
+            if self.from_date.tzinfo is None:
+                # Timezone-naive constraint is interpreted as being in the
+                # widget time zone.
+                self.from_date = self.timezone.localize(self.from_date)
+            else:
+                self.from_date = self.from_date.astimezone(self.timezone)
+        if isinstance(self.to_date, datetime):
+            if self.to_date.tzinfo is None:
+                # Timezone-naive constraint is interpreted as being in the
+                # widget time zone.
+                self.to_date = self.timezone.localize(self.to_date)
+            else:
+                self.to_date = self.to_date.astimezone(self.timezone)
+
+    @property
+    def disabled_flag(self):
+        """Return a string to make the form input disabled if necessary."""
+        if self.disabled:
+            return "disabled"
+        else:
+            return ""
+
     #@property  XXX: do as a property when we have python2.5 for tests of
     #properties
     def daterange(self):
@@ -167,11 +231,11 @@ class DateTimeWidget(TextWidget):
 
           >>> from zope.publisher.browser import TestRequest
           >>> from zope.schema import Field
-          >>> from datetime import date
+          >>> from datetime import datetime
           >>> field = Field(__name__='foo', title=u'Foo')
           >>> widget = DateTimeWidget(field, TestRequest())
-          >>> from_date = datetime(2004, 4, 5).date()
-          >>> to_date = datetime(2004, 4, 10).date()
+          >>> from_date = datetime(2004, 4, 5)
+          >>> to_date = datetime(2004, 4, 10)
 
         The default date range is unlimited:
 
@@ -191,12 +255,12 @@ class DateTimeWidget(TextWidget):
           >>> widget.from_date = from_date
           >>> widget.to_date = None
           >>> widget.daterange
-          '[[2004,04,05],[]]'
+          '[[2004,04,05],null]'
 
           >>> widget.from_date = None
           >>> widget.to_date = to_date
           >>> widget.daterange
-          '[[],[2004,04,10]]'
+          '[null,[2004,04,10]]'
 
           >>> widget.from_date = from_date
           >>> widget.to_date = to_date
@@ -210,19 +274,43 @@ class DateTimeWidget(TextWidget):
           True
 
         """
+        self._align_date_constraints_with_timezone()
         if not (self.from_date or self.to_date):
             return 'null'
         daterange = '['
         if self.from_date is None:
-            daterange += '[],'
+            daterange += 'null,'
         else:
             daterange += self.from_date.strftime('[%Y,%m,%d],')
         if self.to_date is None:
-            daterange += '[]]'
+            daterange += 'null]'
         else:
             daterange += self.to_date.strftime('[%Y,%m,%d]]')
         return daterange
     daterange = property(daterange, doc=daterange.__doc__)
+
+    def getInputValue(self):
+        """Return the date, if it is in the allowed date range."""
+        value = super(DateTimeWidget, self).getInputValue()
+        if value is None:
+            return None
+        # Establish if the value is within the date range. 
+        self._align_date_constraints_with_timezone()
+        if self.from_date is not None and value < self.from_date:
+            limit = self.from_date.strftime(self.timeformat)
+            self._error = WidgetInputError(
+                self.name, self.label,
+                LaunchpadValidationError(
+                  'Please pick a date after %s' % limit))
+            raise self._error
+        if self.to_date is not None and value > self.to_date:
+            limit = self.to_date.strftime(self.timeformat)
+            self._error = WidgetInputError(
+                self.name, self.label,
+                LaunchpadValidationError(
+                    'Please pick a date before %s' % limit))
+            raise self._error
+        return value
 
     def _toFieldValue(self, input):
         """Return parsed input (datetime) as a date."""
@@ -320,7 +408,7 @@ class DateTimeWidget(TextWidget):
                 try:
                     value = self.getInputValue()
                 except InputErrors:
-                    return self._getRequestValue()
+                    return self._getFormInput()
             else:
                 value = self._getDefault()
         else:
@@ -343,8 +431,8 @@ class DateWidget(DateTimeWidget):
       >>> from zope.schema import Field
       >>> from datetime import date
       >>> field = Field(__name__='foo', title=u'Foo')
-      >>> from_date = datetime(2004, 4, 5).date()
-      >>> to_date = datetime(2004, 4, 10).date()
+      >>> from_date = date(2004, 4, 5)
+      >>> to_date = date(2004, 4, 10)
       >>> widget = DateWidget(field, TestRequest())
       >>> widget.from_date = from_date
       >>> widget.to_date = to_date
@@ -367,6 +455,14 @@ class DateWidget(DateTimeWidget):
       >>> widget.timezone
       <UTC>
 
+    A date picker can be disabled initially:
+
+      >>> 'disabled' in widget()
+      False
+      >>> widget.disabled = True
+      >>> 'disabled' in widget()
+      True
+
     """
 
     timeformat = '%Y-%m-%d'
@@ -376,8 +472,9 @@ class DateWidget(DateTimeWidget):
     __call__ = ViewPageTemplateFile('templates/date.pt')
 
     def __init__(self, context, request):
+        super(DateWidget, self).__init__(context, request)
         request.needs_datepicker_iframe = True
-        super(DateTimeWidget, self).__init__(context, request)
+        request.needs_datetimepicker_iframe = False
 
     def _toFieldValue(self, input):
         """Return parsed input (datetime) as a date.
@@ -421,15 +518,50 @@ class DateWidget(DateTimeWidget):
         """
         parsed = self._parseInput(input)
         if parsed is None:
-            return parsed
+            return None
         return parsed.date()
+
+    def _toFormValue(self, value):
+        """Convert a datetime to its string representation.
+
+          >>> from zope.publisher.browser import TestRequest
+          >>> from zope.schema import Field
+          >>> field = Field(__name__='foo', title=u'Foo')
+          >>> widget = DateWidget(field, TestRequest())
+
+        The 'missing' value is converted to an empty string:
+
+          >>> widget._toFormValue(field.missing_value)
+          u''
+
+        The widget ignores time and time zone information, returning only
+        the date:
+
+          >>> dt = datetime(
+          ...     2006, 1, 1, 12, 0, 0, tzinfo=pytz.timezone('UTC'))
+          >>> widget._toFormValue(dt)
+          '2006-01-01'
+
+        The widget can handle a date just as well as a datetime, of course.
+
+          >>> a_date = dt.date()
+          >>> widget._toFormValue(a_date)
+          '2006-01-01'
+
+        """
+        if value == self.context.missing_value:
+            return self._missing
+        return value.strftime(self.timeformat)
 
     def setRenderedValue(self, value):
         """Render a date from the underlying datetime."""
         if value is None:
             self._data = None
             return
-        self._data = value.date()
+        if isinstance(value, datetime):
+            self._data = value.date()
+        else:
+            self._data = value
 
 
 class DatetimeDisplayWidget(DisplayWidget):

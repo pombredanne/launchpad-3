@@ -14,9 +14,9 @@ into account any overrides applied since the package was uploaded.
 
     >>> print extract_text(browser.contents)
     "alsa-utils" versions published in Ubuntu
-    Warty (1.0.9a-4): main / base
-    Hoary (1.0.9a-4ubuntu1): main / base
-    Warty (1.0.8-1ubuntu1): main / base
+    Warty (1.0.9a-4): main/base
+    Hoary (1.0.9a-4ubuntu1): main/base
+    Warty (1.0.8-1ubuntu1): main/base
 
 When a source package has never been published, the portlet will say so.
 
@@ -28,4 +28,14 @@ When a source package has never been published, the portlet will say so.
     "a52dec" versions published in Ubuntu
     This source is not published in Ubuntu
 
+The portlet will only show the versions of packages published in active
+distroseries.  "cdrkit" is published in Warty and Breezy-autotest, but
+only Warty is active.
 
+    >>> browser.open(
+    ...     "http://launchpad.dev/ubuntu/+source/cdrkit/"
+    ...     "+portlet-publishing-details")
+
+    >>> print extract_text(browser.contents)
+    "cdrkit" versions published in Ubuntu
+    Warty (1.0): main/editors

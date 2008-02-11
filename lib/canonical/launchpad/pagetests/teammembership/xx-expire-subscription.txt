@@ -9,18 +9,16 @@ variables:
     >>> import urllib
     >>> browser = setupBrowser(auth="Basic mark@hbd.com:test")
     >>> browser.open("http://launchpad.dev/~name20/+member/name12",
-    ...              urllib.urlencode(dict(
-    ...                   admin="no",
-    ...                   day=1,
-    ...                   month=1,
-    ...                   year=2000,
-    ...                   comment="",
-    ...                   change="Change",
-    ...                   editactive=1)))
+    ...              urllib.urlencode({
+    ...                   "admin": "no",
+    ...                   "membership.expirationdate": "2000-01-01",
+    ...                   "comment": "",
+    ...                   "change": "Change",
+    ...                   "editactive": 1}))
     >>> browser.contents
     <BLANKLINE>
     ...
-    ...Invalid expiration: date provided is in the past...
+    ...Invalid expiration: Please pick a date after...
     ...
 
 Let's do it under the wraps:

@@ -20,8 +20,10 @@ __all__ = [
     'POTemplateViewPreferred',
     ]
 
+import datetime
 import operator
 import os.path
+import pytz
 from zope.component import getUtility
 from zope.interface import implements
 from zope.publisher.browser import FileUpload
@@ -44,6 +46,7 @@ from canonical.launchpad.webapp import (
     GetitemNavigation, Navigation, LaunchpadView, ApplicationMenu)
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.interfaces import ICanonicalUrlData
+from canonical.launchpad.webapp.menu import structured
 
 
 class POTemplateNavigation(Navigation):
@@ -218,8 +221,8 @@ class POTemplateSubsetView:
 class POTemplateView(LaunchpadView, TranslationsMixin):
 
     def initialize(self):
-        self.description = self.context.description
         """Get the requested languages and submit the form."""
+        self.description = self.context.description
         self.submitForm()
 
     def requestPoFiles(self):
@@ -332,10 +335,11 @@ class POTemplateView(LaunchpadView, TranslationsMixin):
                 potemplate=self.context)
 
             self.request.response.addInfoNotification(
+                structured(
                 'Thank you for your upload. The file content will be imported'
                 ' soon into Launchpad. You can track its status from the'
                 ' <a href="%s/+imports">Translation Import Queue</a>' %
-                    canonical_url(self.context.translationtarget))
+                    canonical_url(self.context.translationtarget)))
 
         elif helpers.is_tar_filename(filename):
             # Add the whole tarball to the import queue.
@@ -348,13 +352,14 @@ class POTemplateView(LaunchpadView, TranslationsMixin):
 
             if num > 0:
                 self.request.response.addInfoNotification(
+                    structured(
                     'Thank you for your upload. %d files from the tarball'
                     ' will be imported soon into Launchpad. You can track its'
                     ' status from the <a href="%s/+imports">Translation'
                     ' Import Queue<a>' % (
                         num, canonical_url(self.context.translationtarget)
                         )
-                    )
+                    ))
             else:
                 self.request.response.addWarningNotification(
                     "Nothing has happened. The tarball you uploaded does not"
@@ -374,6 +379,7 @@ class POTemplateEditView(SQLObjectEditView):
 
     def __init__(self, context, request):
         self.old_description = context.description
+        self.old_translation_domain = context.translation_domain
         self.user = getUtility(ILaunchBag).user
 
         SQLObjectEditView.__init__(self, context, request)
@@ -385,6 +391,12 @@ class POTemplateEditView(SQLObjectEditView):
                 'translationtemplatedescriptionchanged',
                 product=context.product, distribution=context.distribution,
                 sourcepackagename=context.sourcepackagename)
+        if self.old_translation_domain != context.translation_domain:
+            # We only update date_last_updated when translation_domain field
+            # is changed because is the only significative change that,
+            # somehow, affects the content of the potemplate.
+            UTC = pytz.timezone('UTC')
+            context.date_last_updated = datetime.datetime.now(UTC)
 
         # We need this because when potemplate name changes, canonical_url
         # for it changes as well.
