@@ -1619,7 +1619,7 @@ COMMENT ON COLUMN Archive.whiteboard IS 'Administrator comments about interventi
 COMMENT ON COLUMN Archive.distribution IS 'The distribution that uses this archive.';
 COMMENT ON COLUMN Archive.purpose IS 'The purpose of this archive, e.g. COMMERCIAL.  See the ArchivePurpose DBSchema item.';
 COMMENT ON COLUMN Archive.private IS 'Whether or not the archive is private. This affects the global visibility of the archive.';
-COMMENT ON COLUMN Archive.packagedescriptioncache IS 'Text blob containing all source and binarie names and descriptions concatenated. Used to to build the tsearch indexes on this table.';
+COMMENT ON COLUMN Archive.package_description_cache IS 'Text blob containing all source and binary names and descriptions concatenated. Used to to build the tsearch indexes on this table.';
 COMMENT ON COLUMN Archive.sources_cached IS 'Number of sources already cached for this archive.';
 COMMENT ON COLUMN Archive.binaries_cached IS 'Number of binaries already cached for this archive.';
 
