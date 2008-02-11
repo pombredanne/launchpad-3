@@ -104,7 +104,7 @@ def guess_bugtask(bug, person):
                 if person.inTeam(bugtask.distribution.members):
                     return bugtask
                 else:
-                    # Is the person one of the package bug contacts?
+                    # Is the person one of the package subscribers?
                     bug_sub = bugtask.target.getSubscription(person)
                     if bug_sub is not None:
                         if (bug_sub.bug_notification_level >

@@ -10,7 +10,7 @@ __all__ = [
 
 import cgi
 
-from canonical.launchpad.interfaces import IHasBugContact, IProduct
+from canonical.launchpad.interfaces import IHasBugContact
 from canonical.launchpad.webapp import (
     action, canonical_url, LaunchpadEditFormView)
 
@@ -22,10 +22,10 @@ class BugContactEditView(LaunchpadEditFormView):
 
     @action('Change', name='change')
     def change_action(self, action, data):
-        """Redirect to the product page with a success message."""
-        product = self.context
+        """Redirect to the target page with a success message."""
+        target = self.context
         bugcontact = data['bugcontact']
-        product.setBugContact(bugcontact, self.user)
+        target.setBugContact(bugcontact, self.user)
 
         if bugcontact is not None:
             self.request.response.addNotification(
@@ -36,26 +36,26 @@ class BugContactEditView(LaunchpadEditFormView):
                 'subscribed to bug notifications for %(targetname)s. '
                 '<br />'
                 'You can '
-                '<a href="%(producturl)s/+subscribe">'
+                '<a href="%(targeturl)s/+subscribe">'
                 'change the subscriptions</a> for '
                 '%(targetname)s at any time.',
                 contacturl=canonical_url(bugcontact),
                 displayname=bugcontact.displayname,
                 targetname=self.context.displayname,
-                producturl=canonical_url(self.context))
+                targeturl=canonical_url(self.context))
         else:
             self.request.response.addNotification(
                 "Successfully cleared the bug contact. "
                 "You can set the bug contact again at any time.")
 
-        self.request.response.redirect(canonical_url(product))
+        self.request.response.redirect(canonical_url(target))
 
     def validate(self, data):
         """Validates the new bug contact.
 
         The following values are valid as bug contacts:
-            * None, indicating that the bug contact field for the product
-              should be cleard in change_action().
+            * None, indicating that the bug contact field for the target
+              should be cleared in change_action().
             * A valid Person (email address or launchpad id).
             * A valid Team of which the current user is an administrator.
 
@@ -64,9 +64,10 @@ class BugContactEditView(LaunchpadEditFormView):
         error.
         """
 
-        # data will not have a bugcontact entry in cases where the bugcontact
-        # the user entered is valid according to the ValidPersonOrTeam
-        # vocabulary (i.e. is not a Person, Team or None).
+        # `data` will not have a bugcontact entry in cases where the
+        # bugcontact the user entered is valid according to the
+        # ValidPersonOrTeam vocabulary
+        # (i.e. is not a Person, Team or None).
         if not data.has_key('bugcontact'):
             self.setFieldError(
                 'bugcontact',

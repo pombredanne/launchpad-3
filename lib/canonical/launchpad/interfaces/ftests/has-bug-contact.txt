@@ -1,7 +1,7 @@
 = IHasBugContact =
 
 Bug contacts are people or teams who are responsible for dealing with
-bugs pretaining to a target. All objects with a bug contact are also
+bugs pertaining to a target. All objects with a bug contact are also
 structural subscription targets. When the bug contact for such an object
 is set, a new bug subscription is created as well.
 
@@ -61,3 +61,6 @@ But we can remove the bug contact by setting it to None.
     >>> target.setBugContact(None, None)
     >>> print target.bugcontact
     None
+
+Note that removing a person as a bug contact does not remove their
+subscription to the target, if it exists.
