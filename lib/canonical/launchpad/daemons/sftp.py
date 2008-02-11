@@ -46,8 +46,8 @@ class SSHService(service.Service):
         return sftpfactory
 
     def makeService(self):
-        """Return a service that provides an SFTP server. This is called in the
-        constructor.
+        """Return a service that provides an SFTP server. This is called in
+        the constructor.
         """
         hostPublicKey, hostPrivateKey = self.makeKeys()
         sftpfactory = self.makeFactory(hostPublicKey, hostPrivateKey)
@@ -70,7 +70,7 @@ class SSHService(service.Service):
 
     def startService(self):
         """Start the SFTP service."""
-        set_up_logging()
+        set_up_logging(configure_oops_reporting=True)
         service.Service.startService(self)
         self.service.startService()
 
