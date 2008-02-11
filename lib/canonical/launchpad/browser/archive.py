@@ -6,7 +6,6 @@ __metaclass__ = type
 
 __all__ = [
     'ArchiveNavigation',
-    'ArchiveFacets',
     'ArchiveOverviewMenu',
     'ArchiveView',
     'ArchivePackageDeletionView',
@@ -14,6 +13,7 @@ __all__ = [
     'ArchiveBuildsView',
     'ArchiveEditView',
     'ArchiveAdminView',
+    'archive_to_structualheading',
     ]
 
 from zope.app.form.browser import TextAreaWidget
@@ -33,7 +33,7 @@ from canonical.launchpad.browser.sourceslist import (
 from canonical.launchpad.interfaces import (
     ArchivePurpose, IArchive, IArchivePackageDeletionForm, IArchiveSet,
     IBuildSet, IHasBuildRecords, ILaunchpadCelebrities, IPPAActivateForm,
-    NotFoundError, PackagePublishingStatus)
+    IStructuralHeaderPresentation, NotFoundError, PackagePublishingStatus)
 from canonical.launchpad.webapp import (
     action, canonical_url, custom_widget, enabled_with_permission,
     stepthrough, ApplicationMenu, LaunchpadEditFormView, LaunchpadFormView,
@@ -48,11 +48,6 @@ class ArchiveNavigation(Navigation):
 
     usedfor = IArchive
 
-    def breadcrumb(self):
-        if self.context.purpose == ArchivePurpose.PPA:
-            return "PPA"
-        return self.context.title
-
     @stepthrough('+build')
     def traverse_build(self, name):
         try:
@@ -63,13 +58,6 @@ class ArchiveNavigation(Navigation):
             return getUtility(IBuildSet).getByBuildID(build_id)
         except NotFoundError:
             return None
-
-
-class ArchiveFacets(StandardLaunchpadFacets):
-    """The links that will appear in the facet menu for an IArchive."""
-
-    usedfor = IArchive
-    enable_only = ['overview']
 
 
 class ArchiveOverviewMenu(ApplicationMenu):
@@ -467,3 +455,8 @@ class ArchiveAdminView(BaseArchiveEditView):
     field_names = ['enabled', 'private', 'authorized_size', 'whiteboard']
     custom_widget(
         'whiteboard', TextAreaWidget, height=10, width=30)
+
+
+def archive_to_structualheading(archive):
+    """Adapts an `IArchive` into an `IStructuralHeaderPresentation`."""
+    return IStructuralHeaderPresentation(archive.owner)

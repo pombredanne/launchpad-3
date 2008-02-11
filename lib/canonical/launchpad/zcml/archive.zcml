@@ -19,14 +19,15 @@
       />
   </content>
 
+  <adapter
+      for="canonical.launchpad.interfaces.IArchive"
+      provides="canonical.launchpad.interfaces.IStructuralHeaderPresentation"
+      factory="canonical.launchpad.browser.archive_to_structualheading"
+      />
+
   <browser:defaultView
     for="canonical.launchpad.interfaces.IArchive"
     name="+index"
-    />
-
-  <browser:menus
-    module="canonical.launchpad.browser.archive"
-    classes="ArchiveFacets ArchiveOverviewMenu"
     />
 
   <browser:navigation
