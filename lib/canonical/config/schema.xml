@@ -1054,7 +1054,7 @@ k            </description>
             <example>http://codebrowse.launchpad.net/</example>
         </key>
 
-        <!-- XXX MichaelHudson 2008-11-02: This is copy-pasted from
+        <!-- XXX MichaelHudson 2008-02-11: This is copy-pasted from
              the script_errorreports sectiontype but doesn't mark
              oops_prefix as required so a config with no codehosting
              section can still be loaded.  This smelly hack will
