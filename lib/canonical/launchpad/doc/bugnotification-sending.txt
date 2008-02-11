@@ -1003,7 +1003,7 @@ X-Launchpad-Bug headers were added:
      u'distribution=debian; distroseries=woody;...',
      u'distribution=debian; sourcepackage=mozilla-firefox; component=...']
 
-The milestone field in X-Launchpad-Bug won't be filled where no milestone is 
+The milestone field in X-Launchpad-Bug won't be filled where no milestone is
 specified:
 
     >>> for line in sorted(message.get_all('X-Launchpad-Bug')):
@@ -1011,6 +1011,52 @@ specified:
     True
     False
     False
+
+
+== The X-Launchpad-Visibility header ==
+
+When a notification is sent out about a bug, the
+X-Launchpad-Visibility header is filled with data about the bug's
+visibility:
+
+    >>> sorted(message.get_all('X-Launchpad-Visibility'))
+    [u'private=False'; security=False;']
+
+Predictably, private bugs are sent with slightly different header
+values:
+
+    >>> bug_three.private
+    False
+    >>> bug_three.setPrivate(True, sample_person)
+    True
+
+    >>> notifications = getUtility(
+    ...     IBugNotificationSet).getNotificationsToSend()
+    >>> len(notifications)
+    1
+
+    >>> [(bug_notifications, messages)] = get_email_notifications(
+    ...     notifications)
+    >>> [message] = messages
+    >>> sorted(message.get_all('X-Launchpad-Visibility'))
+    [u'private=True'; security=False;']
+
+The same is true for security related bugs:
+
+    >>> bug_three.security_related
+    False
+    >>> bug_three.security_related = True
+
+    >>> notifications = getUtility(
+    ...     IBugNotificationSet).getNotificationsToSend()
+    >>> len(notifications)
+    1
+
+    >>> [(bug_notifications, messages)] = get_email_notifications(
+    ...     notifications)
+    >>> [message] = messages
+    >>> sorted(message.get_all('X-Launchpad-Visibility'))
+    [u'private=True'; security=True;']
 
 
 == Verbose bug notifications ==
