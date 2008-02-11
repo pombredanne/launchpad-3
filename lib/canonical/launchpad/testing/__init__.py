@@ -125,9 +125,9 @@ class LaunchpadObjectFactory:
 
         if branch_type in (BranchType.HOSTED, BranchType.IMPORTED):
             url = None
-        elif (branch_type in (BranchType.MIRRORED, BranchType.REMOTE)
-              and url is None):
-            url = self.getUniqueURL()
+        elif branch_type in (BranchType.MIRRORED, BranchType.REMOTE):
+            if url is None:
+                url = self.getUniqueURL()
         else:
             raise UnknownBranchTypeError(
                 'Unrecognized branch type: %r' % (branch_type,))

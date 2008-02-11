@@ -1,24 +1,17 @@
-<tr>
-  <th>Next mirror:</th>
-  <tal:mirror-disabled tal:condition="view/mirror_disabled">
-    <td>Disabled</td>
-  </tal:mirror-disabled>
-  <tal:mirror-enabled tal:condition="not:view/mirror_disabled">
-    <tal:mirror-in-future tal:condition="not:view/in_mirror_queue">
-      <td tal:attributes="title context/next_mirror_time/fmt:datetime"
-          tal:content="context/next_mirror_time/fmt:approximatedate"/>
-    </tal:mirror-in-future>
-    <tal:mirror-in-past tal:condition="view/in_mirror_queue">
-      <td>As soon as possible</td>
-    </tal:mirror-in-past>
-  </tal:mirror-enabled>
-</tr>
+<div
+    xmlns:tal="http://xml.zope.org/namespaces/tal"
+    xmlns:metal="http://xml.zope.org/namespaces/metal"
+    xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+    id="branch-messages"
+    tal:define="branch context">
 
-<tal:show-mirror-failures tal:condition="view/show_mirror_failure">
-  <tr>
-    <td colspan="2" id="mirror-failure"
-        class="warning message" style="font-weight: normal">
-      <tal:owner condition="context/required:launchpad.Edit">
+  <tal:mirrored-branch tal:condition="context/branch_type/enumvalue:MIRRORED">
+
+    <div id="mirror-failure"
+         class="warning message" style="font-weight: normal"
+         tal:condition="view/show_mirror_failure">
+
+      <tal:detailed-error-message condition="view/show_detailed_error_message">
         <tal:mirror-disabled tal:condition="view/mirror_disabled">
           Launchpad no longer mirrors this branch, because
           <tal:number-of-failures
@@ -46,7 +39,7 @@
             </tal:mirrored-yet>
             <tal:not-mirrored-yet tal:condition="not:context/last_mirrored">
               Launchpad has not been able to mirror this branch. The last attempt
-              was at
+              was
               <span tal:attributes="title context/last_mirror_attempt/fmt:datetime"
                     tal:content="context/last_mirror_attempt/fmt:displaydate" />
             </tal:not-mirrored-yet>
@@ -66,9 +59,11 @@
           <tal:mirror-in-future tal:condition="not:view/in_mirror_queue">
             <span tal:attributes="title context/next_mirror_time/fmt:datetime"
                   tal:content="context/next_mirror_time/fmt:approximatedate" />.
-            If you have fixed the problem, please ask Launchpad to try again.
+            <tal:owner condition="context/required:launchpad.Edit">
+              If you have fixed the problem, please ask Launchpad to try again.
 
-            <div metal:use-macro="context/@@launchpad_form/form" />
+              <div metal:use-macro="context/@@launchpad_form/form" />
+            </tal:owner>
           </tal:mirror-in-future>
           <tal:mirror-in-past tal:condition="view/in_mirror_queue">
             shortly.
@@ -76,13 +71,16 @@
         </tal:mirror-scheduled>
 
         <tal:mirror-disabled tal:condition="view/mirror_disabled">
-          If you have fixed the problem, please ask Launchpad to try again.
-          <div metal:use-macro="context/@@launchpad_form/form" />
+          <tal:owner condition="context/required:launchpad.Edit">
+            If you have fixed the problem, please ask Launchpad to try again.
+            <div metal:use-macro="context/@@launchpad_form/form" />
+          </tal:owner>
         </tal:mirror-disabled>
 
-      </tal:owner>
+      </tal:detailed-error-message>
 
-      <tal:not-owner condition="not:context/required:launchpad.Edit">
+      <tal:summary-error-message
+          condition="not: view/show_detailed_error_message">
         <tal:mirrored-yet tal:condition="context/last_mirrored">
           This branch may be out of date, because Launchpad has not been
           able to access it since
@@ -93,6 +91,39 @@
           This branch has not been mirrored, as Launchpad has been unable to
           access it.
         </tal:not-mirrored-yet>
-      </tal:not-owner>
-  </td></tr>
-</tal:show-mirror-failures>
+      </tal:summary-error-message>
+    </div>
+
+    <tal:comment condition="nothing">
+      <!-- XXX This David Allouche 2006-04-09
+           Style attribute is evil, but bold text makes the mirror error
+           difficult to read. Checked with mpt about that. -->
+    </tal:comment>
+    <p tal:condition="view/mirror_of_ssh" id="mirror-of-ssh"
+       class="warning message" style="font-weight: normal">
+      Launchpad cannot mirror this branch because its URL uses sftp or bzr+ssh.
+    </p>
+  </tal:mirrored-branch>
+
+  <tal:hosted-branch tal:condition="context/branch_type/enumvalue:HOSTED">
+    <tal:comment condition="nothing">
+      <!-- If a hosted branch has a mirror error, then something has gone
+           wrong getting the revisions from the quarantine area into the
+           hosted area, so make the error message visible. -->
+    </tal:comment>
+    <div id="mirror-failure"
+         class="warning message" style="font-weight: normal"
+         tal:condition="branch/mirror_status_message"
+         tal:content="branch/mirror_status_message">
+    </div>
+  </tal:hosted-branch>
+
+  <tal:hosted-branch tal:condition="context/branch_type/enumvalue:IMPORTED">
+    <tal:comment condition="nothing">
+      <!-- Once we have the handy link to the code import object, we
+           should provide details here. -->
+    </tal:comment>
+    <p>This branch is updated by the Launchpad import system.</p>
+  </tal:hosted-branch>
+
+</div>
