@@ -417,8 +417,7 @@ special = {
     'buildd-scoring.txt': LayeredDocFileSuite(
             '../doc/buildd-scoring.txt',
             setUp=builddmasterSetUp,
-            layer=LaunchpadZopelessLayer, optionflags=default_optionflags,
-            stdout_logging_level=logging.DEBUG
+            layer=LaunchpadZopelessLayer, optionflags=default_optionflags
             ),
     'buildd-queuebuilder.txt': LayeredDocFileSuite(
             '../doc/buildd-queuebuilder.txt',
