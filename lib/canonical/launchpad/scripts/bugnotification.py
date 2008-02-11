@@ -168,6 +168,8 @@ def get_email_notifications(bug_notifications, date_emailed=None):
         # being sent, so catch and log all exceptions.
         try:
             yield construct_email_notifications(notification_batch)
+        except (KeyboardInterrupt, SystemExit):
+            raise
         except:
             _log_exception_and_restart_transaction()
 
