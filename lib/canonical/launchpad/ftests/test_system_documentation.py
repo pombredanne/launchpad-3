@@ -31,6 +31,7 @@ from canonical.launchpad.layers import setFirstLayer
 from canonical.launchpad.tests.mail_helpers import pop_notifications
 from canonical.launchpad.webapp.authorization import LaunchpadSecurityPolicy
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
+from canonical.launchpad.webapp.tests import test_notifications
 from canonical.testing import (
     ExperimentalLaunchpadZopelessLayer,
     LaunchpadZopelessLayer, LaunchpadFunctionalLayer,DatabaseLayer,
@@ -706,7 +707,12 @@ special = {
             '../doc/publishing.txt',
             layer=LaunchpadZopelessLayer, optionflags=default_optionflags
             ),
-
+    'notification-text-escape.txt': DocFileSuite(
+            '../doc/notification-text-escape.txt',
+	    setUp=test_notifications.setUp,
+	    tearDown=test_notifications.tearDown,
+	    optionflags=default_optionflags
+	    ),
     }
 
 
