@@ -599,9 +599,6 @@ SET search_path = public, pg_catalog;
 
 
 
-
-
-
 ALTER TABLE announcement DISABLE TRIGGER ALL;
 
 INSERT INTO announcement (id, date_created, date_announced, registrant, product, distribution, project, title, summary, url, active, date_updated) VALUES (1, '2007-11-25 00:44:32.186178', '2007-11-20 03:00:00', 1, NULL, 1, NULL, 'Every Macedonian Student to Use Ubuntu-Powered Computer Workstations', 'The Macedonia Ministry of Education and Science will deploy more than 180,000 workstations running Canonical’s Edubuntu 7.04 as part of its "Computer for Every Child" project.', 'http://www.ubuntu.com/news/macedonia-school-computers', true, NULL);
@@ -3858,15 +3855,6 @@ ALTER TABLE openidrpconfig DISABLE TRIGGER ALL;
 
 
 ALTER TABLE openidrpconfig ENABLE TRIGGER ALL;
-
-
-ALTER TABLE packagebugcontact DISABLE TRIGGER ALL;
-
-INSERT INTO packagebugcontact (id, distribution, sourcepackagename, bugcontact, date_created) VALUES (1, 1, 1, 16, '2006-10-16 18:31:44.328897');
-INSERT INTO packagebugcontact (id, distribution, sourcepackagename, bugcontact, date_created) VALUES (2, 1, 14, 16, '2006-10-16 18:31:44.330261');
-
-
-ALTER TABLE packagebugcontact ENABLE TRIGGER ALL;
 
 
 ALTER TABLE packageselection DISABLE TRIGGER ALL;
@@ -8242,6 +8230,8 @@ ALTER TABLE standardshipitrequest ENABLE TRIGGER ALL;
 
 ALTER TABLE structuralsubscription DISABLE TRIGGER ALL;
 
+INSERT INTO structuralsubscription (id, product, productseries, project, milestone, distribution, distroseries, sourcepackagename, subscriber, subscribed_by, bug_notification_level, blueprint_notification_level, date_created, date_last_updated) VALUES (1, NULL, NULL, NULL, NULL, 1, NULL, 1, 16, 16, 40, 10, '2008-01-29 15:12:34.581468', '2008-01-29 15:12:34.581468');
+INSERT INTO structuralsubscription (id, product, productseries, project, milestone, distribution, distroseries, sourcepackagename, subscriber, subscribed_by, bug_notification_level, blueprint_notification_level, date_created, date_last_updated) VALUES (2, NULL, NULL, NULL, NULL, 1, NULL, 14, 16, 16, 40, 10, '2008-01-29 15:12:34.581468', '2008-01-29 15:12:34.581468');
 
 
 ALTER TABLE structuralsubscription ENABLE TRIGGER ALL;
