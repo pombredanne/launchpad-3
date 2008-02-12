@@ -2005,32 +2005,6 @@ class PersonView(LaunchpadView, FeedsMixin):
         """
         return self.userIsActiveMember()
 
-    def userCanRequestToJoin(self):
-        """Return true if the user can request to join this team.
-
-        The user can request if this is not a RESTRICTED team and if he's
-        not an active member of this team.
-        """
-        if not self.joinAllowed():
-            return False
-        return not (self.userIsActiveMember() or self.userIsProposedMember())
-
-    def joinAllowed(self):
-        """Return True if this is not a restricted team."""
-        # Joining a moderated team will put you on the proposed_members
-        # list. If it is a private membership team, you are not allowed
-        # to view the proposed_members attribute until you are an
-        # active member; therefore, it would look like the join button
-        # is broken. Either private membership teams should always have a
-        # restricted subscription policy, or we need a more complicated
-        # permission model.
-        if not (self.context.visibility is None
-                or self.context.visibility == PersonVisibility.PUBLIC):
-            return False
-
-        restricted = TeamSubscriptionPolicy.RESTRICTED
-        return self.context.subscriptionpolicy != restricted
-
     def obfuscatedEmail(self):
         if self.context.preferredemail is not None:
             return obfuscateEmail(self.context.preferredemail.email)
@@ -2668,6 +2642,36 @@ class PersonBrandingView(BrandingChangeView):
 
 
 class TeamJoinView(PersonView):
+
+    def joinAllowed(self):
+        """Is the logged in user allowed to join this team?
+
+        The answer is yes if this team's subscription policy is not RESTRICTED
+        and this team's visibility is either None or PUBLIC.
+        """
+        # Joining a moderated team will put you on the proposed_members
+        # list. If it is a private membership team, you are not allowed
+        # to view the proposed_members attribute until you are an
+        # active member; therefore, it would look like the join button
+        # is broken. Either private membership teams should always have a
+        # restricted subscription policy, or we need a more complicated
+        # permission model.
+        if not (self.context.visibility is None
+                or self.context.visibility == PersonVisibility.PUBLIC):
+            return False
+
+        restricted = TeamSubscriptionPolicy.RESTRICTED
+        return self.context.subscriptionpolicy != restricted
+
+    def userCanRequestToJoin(self):
+        """Can the logged in user request to join this team?
+
+        The user can request if he's allowed to join this team and if he's
+        not yet an active member of this team.
+        """
+        if not self.joinAllowed():
+            return False
+        return not (self.userIsActiveMember() or self.userIsProposedMember())
 
     def processForm(self):
         request = self.request
