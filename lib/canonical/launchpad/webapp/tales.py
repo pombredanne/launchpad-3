@@ -28,12 +28,14 @@ from zope.security.proxy import isinstance as zope_isinstance
 import pytz
 
 from canonical.config import config
+from canonical.launchpad import _
 from canonical.launchpad.interfaces import (
     BuildStatus,
     IBug,
     IBugAttachment,
     IBugNomination,
     IBugSet,
+    IDistribution,
     IFAQSet,
     IHasIcon,
     IHasLogo,
@@ -43,7 +45,7 @@ from canonical.launchpad.interfaces import (
     IProduct,
     IProject,
     ISprint,
-    IDistribution,
+    ISpecification,
     IStructuralHeaderPresentation,
     NotFoundError,
     )
@@ -438,6 +440,8 @@ class ObjectImageDisplayAPI:
             return '/@@/distribution'
         elif ISprint.providedBy(context):
             return '/@@/meeting'
+        elif ISpecification.providedBy(context):
+            return '/@@/blueprint'
         return '/@@/nyet-icon'
 
     def default_logo_resource(self, context):
@@ -874,6 +878,47 @@ class BranchFormatterAPI(ObjectFormatterExtendedAPI):
             '%(name)s</a>: %(title)s' % self._args(extra_path))
 
 
+class ConvenientFormatter(ObjectFormatterExtendedAPI):
+
+    _display = None
+
+    def link(self, extra_path):
+        values = dict((key, cgi.escape(value)) for key, value
+            in self.values().iteritems())
+        html = self._template % values
+        if self._display is not None:
+            html = self._display(self._context).icon() + ' ' + html
+        url = self.url()
+        if url:
+            html = '<a href="%s">%s</a>' % (url, html)
+        return html
+
+
+class BranchSubscriptionFormatterAPI(ConvenientFormatter):
+    """Adapter for IBranchSubscription objects to a formatted string."""
+
+    _template = _('Subscription of %(person)s to %(branch)s')
+
+    def values(self):
+        """Provide values for template substitution"""
+        return {
+            'person': self._context.person.displayname,
+            'branch': self._context.branch.title,
+        }
+
+
+class BranchMergeProposalFormatterAPI(ConvenientFormatter):
+
+    _template = _('Proposed merge of %(source)s into %(target)s')
+
+    def values(self):
+        merge_proposal = self._context
+        return {
+            'source': merge_proposal.source_branch.title,
+            'target': merge_proposal.target_branch.title,
+            }
+
+
 class BugFormatterAPI(ObjectFormatterExtendedAPI):
     """Adapter for IBug objects to a formatted string."""
 
@@ -904,6 +949,15 @@ class BugTaskFormatterAPI(ObjectFormatterExtendedAPI):
         image_html = BugTaskImageDisplayAPI(bugtask).icon()
         return '<a href="%s">%s&nbsp;Bug #%d: %s</a>' % (
             url, image_html, bugtask.bug.id, cgi.escape(bugtask.bug.title))
+
+
+class SpecificationFormatterAPI(ConvenientFormatter):
+
+    _template = '%(title)s'
+    _display = ObjectImageDisplayAPI
+
+    def values(self):
+        return {'title': self._context.title}
 
 
 class NumberFormatterAPI:

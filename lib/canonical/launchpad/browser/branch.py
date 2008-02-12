@@ -43,10 +43,22 @@ from canonical.launchpad.browser.objectreassignment import (
     ObjectReassignmentView)
 from canonical.launchpad.helpers import truncate_text
 from canonical.launchpad.interfaces import (
-    BranchCreationForbidden, BranchType, BranchVisibilityRule,
-    IBranch, IBranchMergeProposal, IBranchSet, IBranchSubscription, IBugSet,
-    ICodeImportSet, ILaunchpadCelebrities,
-    InvalidBranchMergeProposal, IPersonSet, UICreatableBranchType)
+    BranchCreationForbidden,
+    BranchType,
+    BranchVisibilityRule,
+    IBranch,
+    IBranchMergeProposal,
+    IBranchSet,
+    IBranchSubscription,
+    IBugBranch,
+    IBugSet,
+    ICodeImportSet,
+    ILaunchpadCelebrities,
+    InvalidBranchMergeProposal,
+    IPersonSet,
+    ISpecificationBranch,
+    UICreatableBranchType,
+    )
 from canonical.launchpad.webapp import (
     canonical_url, ContextMenu, Link, enabled_with_permission,
     LaunchpadView, Navigation, stepto, stepthrough, LaunchpadFormView,
@@ -177,8 +189,7 @@ class BranchContextMenu(ContextMenu):
     @enabled_with_permission('launchpad.Edit')
     def delete_branch(self):
         text = 'Delete branch'
-        enabled = self.context.canBeDeleted()
-        return Link('+delete', text, enabled=enabled)
+        return Link('+delete', text)
 
     def browse_code(self):
         """Return a link to the branch's file listing on codebrowse."""
@@ -545,22 +556,51 @@ class BranchDeletionView(LaunchpadFormView):
     schema = IBranch
     field_names = []
 
+    def displayDeletionRequirements(self):
+        reqs = []
+        for item, (action, reason) in (
+            self.context.deletionRequirements().iteritems()):
+            allowed = check_permission('launchpad.Edit', item)
+            reqs.append((item, action, reason, allowed))
+        return reqs
+
     @action('Delete Branch', name='delete_branch')
     def delete_branch_action(self, action, data):
         branch = self.context
-        if self.context.canBeDeleted():
+        forbidden = [item for item, action, reason, allowed in
+            self.displayDeletionRequirements() if not allowed]
+        if len(forbidden) == 0:
             # Since the user is going to delete the branch, we need to have
             # somewhere valid to send them next.  Since most of the time it
             # will be the owner of the branch deleting it, we should send
             # them to the code listing for the owner.
             self.next_url = canonical_url(branch.owner)
             message = "Branch %s deleted." % branch.unique_name
-            getUtility(IBranchSet).delete(branch)
+            self.context.destroySelf(break_references=True)
             self.request.response.addNotification(message)
         else:
             self.request.response.addNotification(
                 "This branch cannot be deleted.")
             self.next_url = canonical_url(branch)
+
+    @property
+    def branch_deletion_actions(self):
+        branch = self.context
+        row_dict = {'delete': [], 'alter': []}
+        for item, action, reason, allowed in (
+            self.displayDeletionRequirements()):
+            if IBugBranch.providedBy(item):
+                item = item.branch
+                action = 'alter'
+            elif ISpecificationBranch.providedBy(item):
+                item = item.specification
+                action = 'alter'
+            row = {'item': item,
+                   'reason': reason,
+                   'allowed': allowed,
+                  }
+            row_dict[action].append(row)
+        return row_dict
 
 
 class BranchEditView(BranchEditFormView, BranchNameValidationMixin):
