@@ -233,7 +233,7 @@ class TestSyncSourceScript(TestCase):
     dbuser = 'ro'
 
     def setUp(self):
-        self._home = os.path.abspath('')
+        self._home = os.getcwd()
         self._jail = os.path.abspath(
             './lib/canonical/launchpad/scripts/ftests/sync_source_home/')
         os.chdir(self._jail)
@@ -262,22 +262,31 @@ class TestSyncSourceScript(TestCase):
     def testSyncSourceRun(self):
         """Try a simple sync-source.py run.
 
+        It will run in a special tree prepared to cope with sync-source
+        requirements (see `setUp`). It contains a usable archive index
+        named as '$distribution_$suite_$component_Sources' and the
+        'etherwake' source files.
+
         Check that:
          * return code is ZERO,
-         * check empty standard error and readable output,
+         * check standard error and standard output,
          * check if the expected changesfile was generated,
-         * parse and inspect the changesfile using the archiveuploader 
+         * parse and inspect the changesfile using the archiveuploader
            component (the same approach adopted by Soyuz).
          * delete the changesfile.
         """
         returncode, out, err = self.runSyncSource(
-            extra_args=['-b', 'cprov', '-S', 'incoming', 'etherwake'])
+            extra_args=['-b', 'cprov', '-D', 'debian', '-C', 'main',
+                        '-S', 'incoming', 'etherwake'])
 
         self.assertEqual(
             0, returncode, "\nScript Failed:%s\nStdout:\n%s\nStderr\n%s\n"
             % (returncode, out, err))
 
-        self.assertEqual(err.strip(), '')
+        self.assertEqual(
+            err.splitlines(),
+            ['W: Could not find blacklist file on '
+                  '/srv/launchpad.net/dak/sync-blacklist.txt'])
         self.assertEqual(
             out.splitlines(),
             ['Getting binaries for hoary...',
@@ -289,8 +298,8 @@ class TestSyncSourceScript(TestCase):
 
         expected_changesfile = 'etherwake_1.08-1_source.changes'
         self.assertTrue(
-            os.path.exists(expected_changesfile), 
-            "Couldn't find %s" % expected_changesfile)
+            os.path.exists(expected_changesfile),
+            "Couldn't find %s." % expected_changesfile)
 
         # Parse the generated unsigned changesfile.
         parsed_changes = parse_tagfile(
@@ -304,10 +313,10 @@ class TestSyncSourceScript(TestCase):
         self.assertEqual(parsed_changes['origin'], 'Debian/incoming')
         self.assertEqual(parsed_changes['distribution'], 'hoary')
 
-        # And finally, 'maintainer' role was preserved and 'changed-by' 
+        # And finally, 'maintainer' role was preserved and 'changed-by'
         # role was assigned as specified in the sync-source command-line.
         self.assertEqual(
-            parsed_changes['maintainer'], 
+            parsed_changes['maintainer'],
             'Alain Schroeder <alain@debian.org>')
         self.assertEqual(
             parsed_changes['changed-by'],
