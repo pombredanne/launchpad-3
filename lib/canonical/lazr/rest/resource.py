@@ -10,6 +10,7 @@ __all__ = [
     'EntryResource',
     'HTTPResource',
     'JSONItem',
+    'OrderBasedScopedCollection',
     'ReadOnlyResource',
     'ScopedCollection',
     'ScopedCollectionResource',
@@ -130,19 +131,23 @@ class EntryResource(ReadOnlyResource):
     rootsite = None
     @property
     def inside(self):
-        """Find the top-level collection resource associated with this entry.
-        """
-        return self.root_resource.publishTraverse(
-            self.request, self.context.parent_collection_name)
+        """See `ICanonicalUrlData`."""
+        return self.parent_collection
 
-    def __init__(self, context, request):
+    def __init__(self, context, request, parent_collection = None):
         """Associate this resource with a specific object and request."""
         super(EntryResource, self).__init__(IEntry(context), request)
+        if parent_collection:
+            self.parent_collection = parent_collection
+        else:
+            self.parent_collection = self.root_resource.publishTraverse(
+                self.request, self.context.parent_collection_name)
 
     @property
     def path(self):
         """See `IEntryResource`."""
-        return urllib.quote(self.context.fragment())
+        path = self.parent_collection.getEntryPath(self.context)
+        return urllib.quote(path)
 
     def publishTraverse(self, request, name):
         """Fetch a scoped collection resource by name."""
@@ -163,7 +168,7 @@ class EntryResource(ReadOnlyResource):
         # and what the collection's relationship is to the entry it's
         # scoped to.
         scoped_collection.collection = collection
-        scoped_collection.relationship = name
+        scoped_collection.relationship = field
 
         return ScopedCollectionResource(scoped_collection, self.request, name)
 
@@ -226,6 +231,7 @@ class CollectionResource(ReadOnlyResource):
     rootsite = None
 
     def __init__(self, context, request, collection_name):
+        """Initialize a resource for a given collection."""
         super(CollectionResource, self).__init__(
             ICollection(context), request)
         self.collection_name = collection_name
@@ -235,19 +241,30 @@ class CollectionResource(ReadOnlyResource):
         """See `ICollectionResource`."""
         return self.collection_name
 
+    def getEntryPath(self, entry):
+        """See `ICollectionResource`."""
+        return self.context.getEntryPath(entry)
+
+    def makeEntryResource(self, entry, request):
+        """Construct an entry resource for the given entry.
+
+        This is a factory method to be overridden by subclasses.
+        """
+        return EntryResource(entry, request)
+
     def publishTraverse(self, request, name):
         """Fetch an entry resource by name."""
         entry = self.context.lookupEntry(name)
         if entry is None:
             raise NotFound(self, name)
-        return EntryResource(entry, self.request)
+        return self.makeEntryResource(entry, self.request)
 
     def do_GET(self):
         """Fetch a collection and render it as JSON."""
         entries = self.context.find()
         if entries is None:
             raise NotFound(self, self.collection_name)
-        entry_resources = [EntryResource(entry, self.request)
+        entry_resources = [self.makeEntryResource(entry, self.request)
                            for entry in entries]
         self.request.response.setHeader('Content-type', 'application/json')
         return simplejson.dumps(entry_resources, cls=ResourceJSONEncoder)
@@ -263,6 +280,20 @@ class ScopedCollectionResource(CollectionResource):
         The object to which the collection is scoped.
         """
         return EntryResource(self.context.context, self.request)
+
+    def makeEntryResource(self, entry, request):
+        """Construct an entry resource, possibly scoped to this collection.
+
+        If this is the sort of scoped collection that contains the
+        actual entries (as opposed to containing references to entries
+        that 'really' live in a top-level collection), the entry resource
+        will be created knowing who its parent is.
+        """
+        if self.context.relationship.is_entry_container:
+            parent_collection = self
+        else:
+            parent_collection = None
+        return EntryResource(entry, request, parent_collection)
 
 
 class ServiceRootResource:
@@ -313,7 +344,7 @@ class Collection:
 
 class ScopedCollection:
     """A collection associated with some parent object."""
-    implements(ICollection)
+    implements(IScopedCollection)
 
     def __init__(self, context, collection):
         """Initialize the scoped collection.
@@ -324,6 +355,16 @@ class ScopedCollection:
         self.context = context
         self.collection = collection
 
+    def child_fragment(self, child):
+        """Choose a URL fragment for one of this collection's entries.
+
+        The default behavior is to let the child entry choose its own
+        URL fragment. But sometimes the child doesn't have a top-level
+        collection or unique ID of its own; it only makes sense in
+        relation to its parent collection. In such cases it's the
+        parent collection's job to decide on a URL.
+        """
+        return None
 
     def lookupEntry(self, name):
         """See `ICollection`"""
@@ -333,3 +374,31 @@ class ScopedCollection:
         """See `ICollection`."""
         return self.collection
 
+
+class OrderBasedScopedCollection(ScopedCollection):
+    """A scoped collection where the entries are identified by order.
+
+    The entries in this collection don't have unique IDs of their own.
+    They're identified by their ordering within this collection. So
+    their URLs look like /collection/1, /collection/2, etc. The
+    numbers start from 1.
+    """
+
+    def getEntryPath(self, child):
+        """See `ICollection`."""
+        for i, entry in enumerate(self.collection):
+            if child.context == entry:
+                return str(i+1)
+        else:
+            return None
+
+    def lookupEntry(self, number):
+        """Find a message by its order number."""
+        try:
+            number = int(number)
+        except ValueError:
+            return None
+        try:
+            return self.collection[number-1]
+        except IndexError:
+            return None

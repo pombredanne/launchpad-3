@@ -267,6 +267,7 @@ class AcceptanceTests(SSHTestCase):
         else:
             url = None
         return database.Branch(
+            registrant=owner,
             name=branch_name, owner=owner, author=owner, product=product,
             url=url, title=None, lifecycle_status=BranchLifecycleStatus.NEW,
             summary=None, home_page=None, whiteboard=None, private=private,

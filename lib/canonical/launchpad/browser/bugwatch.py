@@ -20,8 +20,9 @@ from canonical.launchpad.interfaces import (
     IBugWatch, IBugWatchSet, ILaunchBag, ILaunchpadCelebrities,
     NoBugTrackerFound, UnrecognizedBugTrackerURL)
 from canonical.launchpad.webapp import (
-    GetitemNavigation, LaunchpadFormView, LaunchpadView, action,
-    canonical_url, custom_widget)
+    action, canonical_url, custom_widget, GetitemNavigation,
+    LaunchpadFormView, LaunchpadView)
+from canonical.launchpad.webapp.menu import structured
 
 
 class BugWatchSetNavigation(GetitemNavigation):
@@ -104,10 +105,11 @@ class BugWatchEditView(LaunchpadFormView):
     def delete_action(self, action, data):
         bugwatch = self.context
         self.request.response.addInfoNotification(
+            structured(
             'The <a href="%(url)s">%(bugtracker)s #%(remote_bug)s</a>'
             ' bug watch has been deleted.',
             url=bugwatch.url, bugtracker=bugwatch.bugtracker.name,
-            remote_bug=bugwatch.remotebug)
+            remote_bug=bugwatch.remotebug))
         bugwatch.destroySelf()
 
     @property

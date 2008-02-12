@@ -340,6 +340,7 @@ class IBranch(IHasOwner):
         default=False)
 
     # People attributes
+    registrant = Attribute("The user that registered the branch.")
     owner = Choice(
         title=_('Owner'), required=True,
         vocabulary='PersonActiveMembershipPlusSelf',
