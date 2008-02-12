@@ -30,6 +30,7 @@ from canonical.launchpad.interfaces import (
     ITranslationImportQueueEntry, NotFoundError, RosettaImportStatus,
     TranslationFileFormat)
 from canonical.librarian.interfaces import ILibrarianClient
+from canonical.launchpad.validators.person import PublicPersonValidator
 
 
 # Number of days when the DELETED and IMPORTED entries are removed from the
@@ -44,7 +45,8 @@ class TranslationImportQueueEntry(SQLBase):
     path = StringCol(dbName='path', notNull=True)
     content = ForeignKey(foreignKey='LibraryFileAlias', dbName='content',
         notNull=False)
-    importer = ForeignKey(foreignKey='Person', dbName='importer',
+    importer = ForeignKey(foreignKey='Person',
+        validator=PublicPersonValidator, dbName='importer',
         notNull=True)
     dateimported = UtcDateTimeCol(dbName='dateimported', notNull=True,
         default=DEFAULT)

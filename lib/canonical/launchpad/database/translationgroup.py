@@ -18,6 +18,7 @@ from canonical.database.sqlbase import SQLBase, sqlvalues
 from canonical.database.constants import DEFAULT
 from canonical.database.datetimecol import UtcDateTimeCol
 
+from canonical.launchpad.validators.person import PublicPersonValidator
 from canonical.launchpad.database.translator import Translator
 
 
@@ -34,7 +35,8 @@ class TranslationGroup(SQLBase):
     title = StringCol(notNull=True)
     summary = StringCol(notNull=True)
     datecreated = UtcDateTimeCol(notNull=True, default=DEFAULT)
-    owner = ForeignKey(dbName='owner', foreignKey='Person', notNull=True)
+    owner = ForeignKey(dbName='owner', foreignKey='Person',
+        validator=PublicPersonValidator, notNull=True)
 
     # useful joins
     products = SQLMultipleJoin('Product', joinColumn='translationgroup')

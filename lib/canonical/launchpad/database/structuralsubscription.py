@@ -14,6 +14,7 @@ from canonical.database.sqlbase import SQLBase
 
 from canonical.launchpad.interfaces import (
     BlueprintNotificationLevel, BugNotificationLevel, IStructuralSubscription)
+from canonical.launchpad.validators.person import PublicPersonValidator
 
 
 class StructuralSubscription(SQLBase):
@@ -43,9 +44,11 @@ class StructuralSubscription(SQLBase):
         dbName='sourcepackagename', foreignKey='SourcePackageName',
         notNull=False, default=None)
     subscriber = ForeignKey(
-        dbName='subscriber', foreignKey='Person', notNull=True)
+        dbName='subscriber', foreignKey='Person',
+        validator=PublicPersonValidator, notNull=True)
     subscribed_by = ForeignKey(
-        dbName='subscribed_by', foreignKey='Person', notNull=True)
+        dbName='subscribed_by', foreignKey='Person',
+        validator=PublicPersonValidator, notNull=True)
     bug_notification_level = EnumCol(
         enum=BugNotificationLevel,
         default=BugNotificationLevel.NOTHING,

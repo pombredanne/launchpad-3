@@ -15,6 +15,7 @@ from canonical.database.enumcol import EnumCol
 from canonical.launchpad.interfaces import (
     BranchSubscriptionNotificationLevel, BranchSubscriptionDiffSize,
     IBranchSubscription)
+from canonical.launchpad.validators.person import PublicPersonValidator
 
 
 class BranchSubscription(SQLBase):
@@ -24,7 +25,8 @@ class BranchSubscription(SQLBase):
 
     _table = 'BranchSubscription'
 
-    person = ForeignKey(dbName='person', foreignKey='Person', notNull=True)
+    person = ForeignKey(dbName='person', foreignKey='Person',
+        validator=PublicPersonValidator, notNull=True)
     branch = ForeignKey(dbName='branch', foreignKey='Branch', notNull=True)
     notification_level = EnumCol(enum=BranchSubscriptionNotificationLevel,
                                  notNull=True, default=DEFAULT)

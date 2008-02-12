@@ -44,11 +44,15 @@ class PersonValidatorBase(Validator):
         return value
 
 
-class PublicOrPrivatePersonValidator(PersonValidatorBase):
+class PublicOrPrivatePersonValidatorClass(PersonValidatorBase):
     def isValidPersonLink(self, person, state_object):
         return is_valid_public_or_private_person_link(person, state_object)
 
 
-class PublicPersonValidator(PersonValidatorBase):
+class PublicPersonValidatorClass(PersonValidatorBase):
     def isValidPersonLink(self, person, state_object):
         return is_valid_public_person_link(person, state_object)
+
+
+PublicOrPrivatePersonValidator = PublicOrPrivatePersonValidatorClass()
+PublicPersonValidator = PublicPersonValidatorClass()

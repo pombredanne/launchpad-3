@@ -31,6 +31,7 @@ from canonical.database.sqlbase import (
     SQLBase, flush_database_updates, quote, sqlvalues)
 from canonical.launchpad import helpers
 from canonical.launchpad.components.rosettastats import RosettaStats
+from canonical.launchpad.validators.person import PublicPersonValidator
 from canonical.launchpad.database.potmsgset import POTMsgSet
 from canonical.launchpad.database.translationmessage import (
     DummyTranslationMessage, TranslationMessage)
@@ -220,6 +221,7 @@ class POFile(SQLBase, POFileMixIn):
     fuzzyheader = BoolCol(dbName='fuzzyheader',
                           notNull=True)
     lasttranslator = ForeignKey(foreignKey='Person',
+        validator=PublicPersonValidator,
                                 dbName='lasttranslator',
                                 notNull=False,
                                 default=None)
@@ -246,6 +248,7 @@ class POFile(SQLBase, POFileMixIn):
                                 notNull=False,
                                 default=None)
     owner = ForeignKey(foreignKey='Person',
+        validator=PublicPersonValidator,
                        dbName='owner',
                        notNull=True)
     variant = StringCol(dbName='variant',
@@ -1283,7 +1286,8 @@ class POFileTranslator(SQLBase):
 
     implements(IPOFileTranslator)
     pofile = ForeignKey(foreignKey='POFile', dbName='pofile', notNull=True)
-    person = ForeignKey(foreignKey='Person', dbName='person', notNull=True)
+    person = ForeignKey(foreignKey='Person',
+        validator=PublicPersonValidator, dbName='person', notNull=True)
     latest_message = ForeignKey(foreignKey='TranslationMessage',
         dbName='latest_message', notNull=True)
     date_last_touched = UtcDateTimeCol(dbName='date_last_touched',

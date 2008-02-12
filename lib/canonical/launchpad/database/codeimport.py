@@ -26,6 +26,7 @@ from canonical.launchpad.database.productseries import ProductSeries
 from canonical.launchpad.interfaces import (
     CodeImportReviewStatus, ICodeImport, ICodeImportEventSet, ICodeImportSet,
     ILaunchpadCelebrities, NotFoundError, RevisionControlSystems)
+from canonical.launchpad.validators.person import PublicPersonValidator
 
 
 class CodeImport(SQLBase):
@@ -38,9 +39,12 @@ class CodeImport(SQLBase):
     branch = ForeignKey(dbName='branch', foreignKey='Branch',
                         notNull=True)
     registrant = ForeignKey(dbName='registrant', foreignKey='Person',
+        validator=PublicPersonValidator,
                             notNull=True)
-    owner = ForeignKey(dbName='owner', foreignKey='Person', notNull=True)
+    owner = ForeignKey(dbName='owner', foreignKey='Person',
+        validator=PublicPersonValidator, notNull=True)
     assignee = ForeignKey(dbName='assignee', foreignKey='Person',
+        validator=PublicPersonValidator,
                           notNull=False, default=None)
 
     @property

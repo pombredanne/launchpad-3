@@ -10,6 +10,7 @@ from zope.interface import implements
 from sqlobject import ForeignKey, BoolCol
 
 from canonical.launchpad.interfaces import ISpecificationSubscription
+from canonical.launchpad.validators.person import PublicPersonValidator
 
 from canonical.database.sqlbase import SQLBase
 
@@ -22,7 +23,8 @@ class SpecificationSubscription(SQLBase):
     _table='SpecificationSubscription'
     specification = ForeignKey(dbName='specification',
         foreignKey='Specification', notNull=True)
-    person = ForeignKey(dbName='person', foreignKey='Person', notNull=True)
+    person = ForeignKey(dbName='person', foreignKey='Person',
+        validator=PublicPersonValidator, notNull=True)
     essential = BoolCol(notNull=True, default=False)
 
 

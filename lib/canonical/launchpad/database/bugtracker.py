@@ -29,6 +29,7 @@ from canonical.database.sqlbase import (
 from canonical.launchpad.helpers import shortlist
 from canonical.launchpad.database.bug import Bug
 from canonical.launchpad.database.bugwatch import BugWatch
+from canonical.launchpad.validators.person import PublicPersonValidator
 from canonical.launchpad.interfaces import (
     BugTrackerType, IBugTracker, IBugTrackerAlias, IBugTrackerAliasSet,
     IBugTrackerSet, NotFoundError)
@@ -102,7 +103,8 @@ class BugTracker(SQLBase):
     title = StringCol(notNull=True)
     summary = StringCol(notNull=True)
     baseurl = StringCol(notNull=True)
-    owner = ForeignKey(dbName='owner', foreignKey='Person', notNull=True)
+    owner = ForeignKey(dbName='owner', foreignKey='Person',
+        validator=PublicPersonValidator, notNull=True)
     contactdetails = StringCol(notNull=False)
     projects = SQLMultipleJoin(
         'Project', joinColumn='bugtracker', orderBy='name')

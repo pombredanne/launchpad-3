@@ -7,6 +7,7 @@ __metaclass__ = type
 
 from sqlobject import ForeignKey
 from canonical.database.sqlbase import SQLBase
+from canonical.launchpad.validators.person import PublicPersonValidator
 
 class PackageBugContact(SQLBase):
     """Database class for the package bug contact.
@@ -20,4 +21,5 @@ class PackageBugContact(SQLBase):
     sourcepackagename = ForeignKey(
         dbName="sourcepackagename", notNull=True, foreignKey="SourcePackageName")
     bugcontact = ForeignKey(
-        dbName="bugcontact", notNull=True, foreignKey="Person")
+        dbName="bugcontact", notNull=True, foreignKey="Person",
+        validator=PublicPersonValidator)

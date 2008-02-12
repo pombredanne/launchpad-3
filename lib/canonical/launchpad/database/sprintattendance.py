@@ -10,6 +10,7 @@ from zope.interface import implements
 from sqlobject import ForeignKey
 
 from canonical.launchpad.interfaces import ISprintAttendance
+from canonical.launchpad.validators.person import PublicPersonValidator
 
 from canonical.database.constants import DEFAULT, UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
@@ -27,6 +28,7 @@ class SprintAttendance(SQLBase):
     sprint = ForeignKey(dbName='sprint', foreignKey='Sprint',
         notNull=True)
     attendee = ForeignKey(dbName='attendee', foreignKey='Person',
+        validator=PublicPersonValidator,
         notNull=True)
     time_starts = UtcDateTimeCol(notNull=True)
     time_ends = UtcDateTimeCol(notNull=True)

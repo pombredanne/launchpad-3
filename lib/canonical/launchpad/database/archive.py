@@ -26,6 +26,7 @@ from canonical.launchpad.interfaces import (
     ArchivePurpose, IArchive, IArchiveSet, IHasOwner, IHasBuildRecords,
     IBuildSet, ILaunchpadCelebrities, PackagePublishingStatus)
 from canonical.launchpad.webapp.url import urlappend
+from canonical.launchpad.validators.person import PublicPersonValidator
 
 
 class Archive(SQLBase):
@@ -33,7 +34,8 @@ class Archive(SQLBase):
     _table = 'Archive'
     _defaultOrder = 'id'
 
-    owner = ForeignKey(foreignKey='Person', dbName='owner', notNull=False)
+    owner = ForeignKey(foreignKey='Person',
+        validator=PublicPersonValidator, dbName='owner', notNull=False)
 
     description = StringCol(dbName='description', notNull=False, default=None)
 

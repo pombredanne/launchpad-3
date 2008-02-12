@@ -26,7 +26,7 @@ class AnswerContact(SQLBase):
 
     person = ForeignKey(
         dbName='person', notNull=True, foreignKey='Person',
-        validator=PublicPersonValidator())
+        validator=PublicPersonValidator)
     product = ForeignKey(
         dbName='product', notNull=False, foreignKey='Product')
     distribution = ForeignKey(

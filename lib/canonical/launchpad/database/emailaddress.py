@@ -11,7 +11,6 @@ from sqlobject import ForeignKey, StringCol
 from canonical.database.sqlbase import quote, SQLBase
 from canonical.database.enumcol import EnumCol
 
-from canonical.launchpad.database.mailinglist import MailingListSubscription
 from canonical.launchpad.interfaces import (
     EmailAddressAlreadyTaken, IEmailAddress, IEmailAddressSet,
     EmailAddressStatus)
@@ -33,6 +32,7 @@ class EmailAddress(SQLBase):
 
     def destroySelf(self):
         """Destroy this email address and any associated subscriptions."""
+        from canonical.launchpad.database import MailingListSubscription
         for subscription in MailingListSubscription.selectBy(
             email_address=self):
             subscription.destroySelf()

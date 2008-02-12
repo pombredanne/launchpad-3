@@ -10,6 +10,7 @@ from canonical.database.sqlbase import SQLBase
 from sqlobject import ForeignKey
 from zope.interface import implements
 
+from canonical.launchpad.validators.person import PublicPersonValidator
 
 class DistroComponentUploader(SQLBase):
     """A grant of upload rights to a person or team, applying to a
@@ -23,6 +24,7 @@ class DistroComponentUploader(SQLBase):
     component = ForeignKey(dbName='component', foreignKey='Component',
         notNull=True)
     uploader = ForeignKey(dbName='uploader', foreignKey='Person',
+        validator=PublicPersonValidator,
         notNull=True)
 
     def __contains__(self, person):

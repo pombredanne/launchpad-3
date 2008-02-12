@@ -21,6 +21,7 @@ from canonical.launchpad.database.branchrevision import BranchRevision
 from canonical.launchpad.interfaces import (
     BadStateTransition, BranchMergeProposalStatus, IBranchMergeProposal,
     UserNotBranchReviewer)
+from canonical.launchpad.validators.person import PublicPersonValidator
 
 
 class BranchMergeProposal(SQLBase):
@@ -32,7 +33,8 @@ class BranchMergeProposal(SQLBase):
     _defaultOrder = ['-date_created']
 
     registrant = ForeignKey(
-        dbName='registrant', foreignKey='Person', notNull=True)
+        dbName='registrant', foreignKey='Person',
+        validator=PublicPersonValidator, notNull=True)
 
     source_branch = ForeignKey(
         dbName='source_branch', foreignKey='Branch', notNull=True)
@@ -50,7 +52,8 @@ class BranchMergeProposal(SQLBase):
         default=BranchMergeProposalStatus.WORK_IN_PROGRESS)
 
     reviewer = ForeignKey(
-        dbName='reviewer', foreignKey='Person', notNull=False,
+        dbName='reviewer', foreignKey='Person',
+        validator=PublicPersonValidator, notNull=False,
         default=None)
     reviewed_revision_id = StringCol(default=None)
 
@@ -58,7 +61,8 @@ class BranchMergeProposal(SQLBase):
     merged_revno = IntCol(default=None)
 
     merge_reporter = ForeignKey(
-        dbName='merge_reporter', foreignKey='Person', notNull=False,
+        dbName='merge_reporter', foreignKey='Person',
+        validator=PublicPersonValidator, notNull=False,
         default=None)
 
     date_created = UtcDateTimeCol(notNull=True, default=DEFAULT)

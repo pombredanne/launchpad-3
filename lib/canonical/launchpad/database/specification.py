@@ -42,6 +42,7 @@ from canonical.launchpad.event.sqlobjectevent import (
 
 from canonical.launchpad.database.buglinktarget import BugLinkTargetMixin
 from canonical.launchpad.database.mentoringoffer import MentoringOffer
+from canonical.launchpad.validators.person import PublicPersonValidator
 from canonical.launchpad.database.specificationdependency import (
     SpecificationDependency)
 from canonical.launchpad.database.specificationbranch import (
@@ -77,12 +78,16 @@ class Specification(SQLBase, BugLinkTargetMixin):
     priority = EnumCol(schema=SpecificationPriority, notNull=True,
         default=SpecificationPriority.UNDEFINED)
     assignee = ForeignKey(dbName='assignee', notNull=False,
-        foreignKey='Person', default=None)
+        foreignKey='Person',
+        validator=PublicPersonValidator, default=None)
     drafter = ForeignKey(dbName='drafter', notNull=False,
-        foreignKey='Person', default=None)
+        foreignKey='Person',
+        validator=PublicPersonValidator, default=None)
     approver = ForeignKey(dbName='approver', notNull=False,
-        foreignKey='Person', default=None)
-    owner = ForeignKey(dbName='owner', foreignKey='Person', notNull=True)
+        foreignKey='Person',
+        validator=PublicPersonValidator, default=None)
+    owner = ForeignKey(dbName='owner', foreignKey='Person',
+        validator=PublicPersonValidator, notNull=True)
     datecreated = UtcDateTimeCol(notNull=True, default=DEFAULT)
     product = ForeignKey(dbName='product', foreignKey='Product',
         notNull=False, default=None)
@@ -95,10 +100,12 @@ class Specification(SQLBase, BugLinkTargetMixin):
     goalstatus = EnumCol(schema=SpecificationGoalStatus, notNull=True,
         default=SpecificationGoalStatus.PROPOSED)
     goal_proposer = ForeignKey(dbName='goal_proposer', notNull=False,
-        foreignKey='Person', default=None)
+        foreignKey='Person',
+        validator=PublicPersonValidator, default=None)
     date_goal_proposed = UtcDateTimeCol(notNull=False, default=None)
     goal_decider = ForeignKey(dbName='goal_decider', notNull=False,
-        foreignKey='Person', default=None)
+        foreignKey='Person',
+        validator=PublicPersonValidator, default=None)
     date_goal_decided = UtcDateTimeCol(notNull=False, default=None)
     milestone = ForeignKey(dbName='milestone',
         foreignKey='Milestone', notNull=False, default=None)
@@ -112,10 +119,12 @@ class Specification(SQLBase, BugLinkTargetMixin):
     superseded_by = ForeignKey(dbName='superseded_by',
         foreignKey='Specification', notNull=False, default=None)
     completer = ForeignKey(dbName='completer', notNull=False,
-        foreignKey='Person', default=None)
+        foreignKey='Person',
+        validator=PublicPersonValidator, default=None)
     date_completed = UtcDateTimeCol(notNull=False, default=None)
     starter = ForeignKey(dbName='starter', notNull=False,
-        foreignKey='Person', default=None)
+        foreignKey='Person',
+        validator=PublicPersonValidator, default=None)
     date_started = UtcDateTimeCol(notNull=False, default=None)
 
     # useful joins

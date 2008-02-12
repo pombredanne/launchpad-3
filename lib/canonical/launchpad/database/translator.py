@@ -14,6 +14,7 @@ from canonical.launchpad.interfaces import \
 from canonical.database.sqlbase import SQLBase
 from canonical.database.constants import DEFAULT
 from canonical.database.datetimecol import UtcDateTimeCol
+from canonical.launchpad.validators.person import PublicPersonValidator
 
 class Translator(SQLBase):
     """A Translator in a TranslationGroup."""
@@ -29,6 +30,7 @@ class Translator(SQLBase):
     language = ForeignKey(dbName='language',
         foreignKey='Language', notNull=True)
     translator = ForeignKey(dbName='translator', foreignKey='Person',
+        validator=PublicPersonValidator,
         notNull=True)
     datecreated = UtcDateTimeCol(notNull=True, default=DEFAULT)
 

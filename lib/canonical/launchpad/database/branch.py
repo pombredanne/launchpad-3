@@ -44,6 +44,7 @@ from canonical.launchpad.database.branchmergeproposal import (
     BranchMergeProposal)
 from canonical.launchpad.database.branchrevision import BranchRevision
 from canonical.launchpad.database.branchsubscription import BranchSubscription
+from canonical.launchpad.validators.person import PublicPersonValidator
 from canonical.launchpad.database.revision import Revision
 from canonical.launchpad.mailnotification import NotificationRecipientSet
 from canonical.launchpad.webapp import urlappend
@@ -67,10 +68,13 @@ class Branch(SQLBase):
 
     private = BoolCol(default=False, notNull=True)
 
-    owner = ForeignKey(dbName='owner', foreignKey='Person', notNull=True)
-    author = ForeignKey(dbName='author', foreignKey='Person', default=None)
+    owner = ForeignKey(dbName='owner', foreignKey='Person',
+        validator=PublicPersonValidator, notNull=True)
+    author = ForeignKey(dbName='author', foreignKey='Person',
+        validator=PublicPersonValidator, default=None)
     reviewer = ForeignKey(
-        dbName='reviewer', foreignKey='Person', default=None)
+        dbName='reviewer', foreignKey='Person',
+        validator=PublicPersonValidator, default=None)
 
     product = ForeignKey(dbName='product', foreignKey='Product', default=None)
 

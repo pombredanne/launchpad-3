@@ -30,14 +30,17 @@ from canonical.database.enumcol import EnumCol
 from canonical.launchpad.interfaces import (
     BugNominationStatus, IBugNomination, IBugTaskSet, IBugNominationSet,
     ILaunchpadCelebrities, NotFoundError)
+from canonical.launchpad.validators.person import PublicPersonValidator
 
 class BugNomination(SQLBase):
     implements(IBugNomination)
     _table = "BugNomination"
 
-    owner = ForeignKey(dbName='owner', foreignKey='Person', notNull=True)
+    owner = ForeignKey(dbName='owner', foreignKey='Person',
+        validator=PublicPersonValidator, notNull=True)
     decider = ForeignKey(
-        dbName='decider', foreignKey='Person', notNull=False, default=None)
+        dbName='decider', foreignKey='Person',
+        validator=PublicPersonValidator, notNull=False, default=None)
     date_created = UtcDateTimeCol(notNull=True, default=UTC_NOW)
     date_decided = UtcDateTimeCol(notNull=False, default=None)
     distroseries = ForeignKey(

@@ -23,6 +23,7 @@ from canonical.launchpad.interfaces import (
 from canonical.database.sqlbase import SQLBase, quote, sqlvalues
 from canonical.database.constants import DEFAULT, UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
+from canonical.launchpad.validators.person import PublicPersonValidator
 
 
 class MentoringOffer(SQLBase):
@@ -33,9 +34,11 @@ class MentoringOffer(SQLBase):
     _defaultOrder = ['-date_created', '-id']
 
     # db field names
-    owner = ForeignKey(dbName='owner', foreignKey='Person', notNull=True)
+    owner = ForeignKey(dbName='owner', foreignKey='Person',
+        validator=PublicPersonValidator, notNull=True)
     date_created = UtcDateTimeCol(notNull=True, default=DEFAULT)
-    team = ForeignKey(dbName='team', notNull=True, foreignKey='Person')
+    team = ForeignKey(dbName='team', notNull=True, foreignKey='Person',
+        validator=PublicPersonValidator)
     bug = ForeignKey(dbName='bug', notNull=False,
                      foreignKey='Bug', default=None)
     specification = ForeignKey(dbName='specification', notNull=False,

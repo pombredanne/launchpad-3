@@ -29,6 +29,7 @@ from canonical.launchpad.interfaces import (
     ISecureSourcePackagePublishingHistory, ISourcePackageFilePublishing,
     ISourcePackagePublishingHistory, PackagePublishingPriority,
     PackagePublishingStatus, PackagePublishingPocket, PoolFileOverwriteError)
+from canonical.launchpad.validators.person import PublicPersonValidator
 from canonical.launchpad.scripts.ftpmaster import ArchiveOverriderError
 
 
@@ -239,7 +240,8 @@ class SecureSourcePackagePublishingHistory(SQLBase, ArchiveSafePublisherBase):
     embargolifted = UtcDateTimeCol(default=None)
     archive = ForeignKey(dbName="archive", foreignKey="Archive", notNull=True)
     removed_by = ForeignKey(
-        dbName="removed_by", foreignKey="Person", default=None)
+        dbName="removed_by", foreignKey="Person",
+        validator=PublicPersonValidator, default=None)
     removal_comment = StringCol(dbName="removal_comment", default=None)
 
     @classmethod
@@ -286,7 +288,8 @@ class SecureBinaryPackagePublishingHistory(SQLBase, ArchiveSafePublisherBase):
     embargolifted = UtcDateTimeCol(default=None)
     archive = ForeignKey(dbName="archive", foreignKey="Archive", notNull=True)
     removed_by = ForeignKey(
-        dbName="removed_by", foreignKey="Person", default=None)
+        dbName="removed_by", foreignKey="Person",
+        validator=PublicPersonValidator, default=None)
     removal_comment = StringCol(dbName="removal_comment", default=None)
 
     @classmethod
@@ -414,7 +417,8 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
     embargo = BoolCol(dbName='embargo', default=False, notNull=True)
     embargolifted = UtcDateTimeCol(default=None)
     removed_by = ForeignKey(
-        dbName="removed_by", foreignKey="Person", default=None)
+        dbName="removed_by", foreignKey="Person",
+        validator=PublicPersonValidator, default=None)
     removal_comment = StringCol(dbName="removal_comment", default=None)
 
     def getPublishedBinaries(self):
@@ -609,7 +613,8 @@ class BinaryPackagePublishingHistory(SQLBase, ArchivePublisherBase):
     embargo = BoolCol(dbName='embargo', default=False, notNull=True)
     embargolifted = UtcDateTimeCol(default=None)
     removed_by = ForeignKey(
-        dbName="removed_by", foreignKey="Person", default=None)
+        dbName="removed_by", foreignKey="Person",
+        validator=PublicPersonValidator, default=None)
     removal_comment = StringCol(dbName="removal_comment", default=None)
 
     @property

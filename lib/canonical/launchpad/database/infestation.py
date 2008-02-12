@@ -25,6 +25,7 @@ from canonical.launchpad.interfaces import (
     IBugProductInfestation, IBugProductInfestationSet, NotFoundError)
 
 from canonical.launchpad.database.bugset import BugSetBase
+from canonical.launchpad.validators.person import PublicPersonValidator
 
 
 class BugProductInfestation(SQLBase):
@@ -40,13 +41,16 @@ class BugProductInfestation(SQLBase):
     infestationstatus = EnumCol(
         notNull=False, default=None, schema=BugInfestationStatus)
     datecreated = UtcDateTimeCol(notNull=True)
-    creator = ForeignKey(dbName="creator", foreignKey='Person', notNull=True)
+    creator = ForeignKey(dbName="creator", foreignKey='Person',
+        validator=PublicPersonValidator, notNull=True)
     dateverified = UtcDateTimeCol(notNull=False)
     verifiedby = ForeignKey(
-        dbName="verifiedby", foreignKey='Person', notNull=False, default=None)
+        dbName="verifiedby", foreignKey='Person',
+        validator=PublicPersonValidator, notNull=False, default=None)
     lastmodified = UtcDateTimeCol(notNull=True)
     lastmodifiedby = ForeignKey(
-        dbName="lastmodifiedby", foreignKey='Person', notNull=True)
+        dbName="lastmodifiedby", foreignKey='Person',
+        validator=PublicPersonValidator, notNull=True)
 
     # used for launchpad pages
     def _title(self):
@@ -70,11 +74,14 @@ class BugPackageInfestation(SQLBase):
     infestationstatus = EnumCol(dbName='infestationstatus', notNull=True,
         schema=BugInfestationStatus)
     datecreated = UtcDateTimeCol(dbName='datecreated', notNull=True)
-    creator = ForeignKey(dbName='creator', foreignKey='Person', notNull=True)
+    creator = ForeignKey(dbName='creator', foreignKey='Person',
+        validator=PublicPersonValidator, notNull=True)
     dateverified = UtcDateTimeCol(dbName='dateverified')
-    verifiedby = ForeignKey(dbName='verifiedby', foreignKey='Person')
+    verifiedby = ForeignKey(dbName='verifiedby', foreignKey='Person',
+        validator=PublicPersonValidator)
     lastmodified = UtcDateTimeCol(dbName='lastmodified')
-    lastmodifiedby = ForeignKey(dbName='lastmodifiedby', foreignKey='Person')
+    lastmodifiedby = ForeignKey(dbName='lastmodifiedby', foreignKey='Person',
+        validator=PublicPersonValidator)
 
     # used for launchpad pages
     def title(self):

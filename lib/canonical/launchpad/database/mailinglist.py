@@ -24,6 +24,7 @@ from canonical.launchpad.interfaces import (
     CannotChangeSubscription, CannotSubscribe, CannotUnsubscribe,
     EmailAddressStatus, IEmailAddressSet, ILaunchpadCelebrities, IMailingList,
     IMailingListSet, IMailingListSubscription, MailingListStatus)
+from canonical.launchpad.validators.person import PublicPersonValidator
 
 
 class MailingList(SQLBase):

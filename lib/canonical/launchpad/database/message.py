@@ -23,6 +23,7 @@ from canonical.launchpad.helpers import get_filename_from_message_id
 from canonical.launchpad.interfaces import (
     IMessage, IMessageSet, IMessageChunk, IPersonSet, ILibraryFileAliasSet,
     UnknownSender, InvalidEmailMessage, NotFoundError, PersonCreationRationale)
+from canonical.launchpad.validators.person import PublicPersonValidator
 
 from canonical.database.sqlbase import SQLBase
 from canonical.database.constants import UTC_NOW
@@ -43,7 +44,8 @@ class Message(SQLBase):
     _defaultOrder = '-id'
     datecreated = UtcDateTimeCol(notNull=True, default=UTC_NOW)
     subject = StringCol(notNull=False, default=None)
-    owner = ForeignKey(foreignKey='Person', dbName='owner', notNull=True)
+    owner = ForeignKey(foreignKey='Person',
+        validator=PublicPersonValidator, dbName='owner', notNull=True)
     parent = ForeignKey(foreignKey='Message', dbName='parent',
         notNull=False, default=None)
     distribution = ForeignKey(foreignKey='Distribution',

@@ -30,6 +30,7 @@ from canonical.buildd.slave import BuilderStatus
 from canonical.buildmaster.master import BuilddMaster
 from canonical.database.sqlbase import cursor, SQLBase, sqlvalues
 from canonical.launchpad.database.buildqueue import BuildQueue
+from canonical.launchpad.validators.person import PublicPersonValidator
 from canonical.launchpad.helpers import filenameToContentType
 from canonical.launchpad.interfaces import (
     ArchivePurpose, BuildDaemonError, BuildSlaveFailure, BuildStatus,
@@ -92,7 +93,8 @@ class Builder(SQLBase):
     name = StringCol(dbName='name', notNull=True)
     title = StringCol(dbName='title', notNull=True)
     description = StringCol(dbName='description', notNull=True)
-    owner = ForeignKey(dbName='owner', foreignKey='Person', notNull=True)
+    owner = ForeignKey(dbName='owner', foreignKey='Person',
+        validator=PublicPersonValidator, notNull=True)
     builderok = BoolCol(dbName='builderok', notNull=True)
     failnotes = StringCol(dbName='failnotes', default=None)
     trusted = BoolCol(dbName='trusted', default=False, notNull=True)

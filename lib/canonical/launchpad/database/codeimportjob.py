@@ -21,6 +21,7 @@ from canonical.launchpad.database.codeimportresult import CodeImportResult
 from canonical.launchpad.interfaces import (
     CodeImportJobState, CodeImportReviewStatus, ICodeImportJob,
     ICodeImportJobSet, ICodeImportJobWorkflow)
+from canonical.launchpad.validators.person import PublicPersonValidator
 
 
 class CodeImportJob(SQLBase):
@@ -45,6 +46,7 @@ class CodeImportJob(SQLBase):
 
     requesting_user = ForeignKey(
         dbName='requesting_user', foreignKey='Person',
+        validator=PublicPersonValidator,
         notNull=False, default=None)
 
     ordering = IntCol(notNull=False, default=None)

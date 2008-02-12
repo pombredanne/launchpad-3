@@ -14,6 +14,7 @@ from canonical.database.enumcol import EnumCol
 
 from canonical.launchpad.interfaces import (
     IPOExportRequestSet, IPOExportRequest, IPOTemplate, TranslationFileFormat)
+from canonical.launchpad.validators.person import PublicPersonValidator
 
 
 class POExportRequestSet:
@@ -127,7 +128,8 @@ class POExportRequest(SQLBase):
 
     _table = 'POExportRequest'
 
-    person = ForeignKey(dbName='person', foreignKey='Person', notNull=True)
+    person = ForeignKey(dbName='person', foreignKey='Person',
+        validator=PublicPersonValidator, notNull=True)
     potemplate = ForeignKey(dbName='potemplate', foreignKey='POTemplate',
         notNull=True)
     pofile = ForeignKey(dbName='pofile', foreignKey='POFile')
