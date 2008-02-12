@@ -9,6 +9,7 @@ __all__ = ['PublicPersonValidator', 'PublicOrPrivatePersonValidator']
 
 from sqlobject.include.validators import Validator, InvalidField
 
+from canonical.launchpad.interfaces import IPerson
 from canonical.launchpad.fields import (
     is_valid_public_person_link, is_valid_public_or_private_person_link)
 
@@ -20,7 +21,7 @@ class PersonValidatorBase(Validator):
     def fromPython(self, value, state=None):
         if value is None:
             return value
-        elif isinstance(value, int):
+        elif isinstance(value, (int, long)):
             # getUtility() can't be used since an interaction may not have
             # been started.
             from canonical.launchpad.database.person import PersonSet
