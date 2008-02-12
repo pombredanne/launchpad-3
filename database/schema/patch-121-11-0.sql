@@ -8,4 +8,4 @@ ALTER TABLE POFile DROP COLUMN license;
 
 DROP TABLE License;
 
-INSERT INTO LaunchpadDatabaseRevision VALUES (88, 99, 0);
+INSERT INTO LaunchpadDatabaseRevision VALUES (121, 11, 0);
