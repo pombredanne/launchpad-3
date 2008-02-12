@@ -568,9 +568,7 @@ def generate_bug_add_email(bug, new_recipients=False, reason=None):
         visibility = u"Public"
 
     if bug.security_related:
-        # This bug is security related.
-        visibility += ' security'
-        contents += '*** SECURITY RELATED ***\n\n'
+        contents += '*** This bug is a security vulnerability ***\n\n'
 
     bug_info = []
     # Add information about the affected upstreams and packages.
