@@ -113,7 +113,7 @@ class BugTrackerType(DBEnumeratedType):
         """)
 
     SAVANNAH = DBItem(8, """
-        GNU Savannah
+        GNU / NoGNU Savannah
 
         Savannah is a web-based project hosting system which includes
         bug, support and request tracking.
