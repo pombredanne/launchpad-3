@@ -220,9 +220,8 @@ class LaunchpadObjectFactory:
         return workflow.newJob(code_import)
 
     def makeCodeImportMachine(self):
-        """This seems to work."""
-        from canonical.launchpad.database import CodeImportMachine
+        """Return a new CodeImportMachine.
+
+        The machine will be in the OFFLINE state."""
         hostname = self.getUniqueString('machine-')
-        CodeImportMachine(hostname=hostname, heartbeat=None)
-        # Return proxied version.
-        return getUtility(ICodeImportMachineSet).getByHostname(hostname)
+        return getUtility(ICodeImportMachineSet).new(hostname)
