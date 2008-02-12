@@ -38,34 +38,34 @@ every test.
     >>> potmsgset = potemplate.createMessageSetFromText(u'normal string', None)
     >>> text = u'another normal string'
 
-    In this case, it should not change.
+In this case, it should not change.
 
     >>> potmsgset.normalizeWhitespaces(text)
     u'another normal string'
 
-    Let's try with a 'text' that has some leading and trailing whitespaces,
-    they will disappear as the msgid does not have them.
+Let's try with a 'text' that has some leading and trailing whitespaces,
+they will disappear as the msgid does not have them.
 
     >>> text = u' a string with \n whitespaces \n'
     >>> potmsgset.normalizeWhitespaces(text)
     u'a string with \n whitespaces'
 
-    Now, the msgid will have a leading whitespace. That means that 'text'
-    should have it too.
+Now, the msgid will have a leading whitespace. That means that 'text'
+should have it too.
 
     >>> potmsgset = potemplate.createMessageSetFromText(
     ...     u'\nnormal string with leading newline', None)
     >>> potmsgset.normalizeWhitespaces(text)
     u'\na string with \n whitespaces'
 
-    If 'text' has only whitespaces and nothing else, we should get the empty
-    string.
+If 'text' has only whitespaces and nothing else, we should get the empty
+string.
 
     >>> text = u'\n'
     >>> potmsgset.normalizeWhitespaces(text)
     ''
 
-    And if 'text' is None, we get 'text' unchanged.
+And if 'text' is None, we get 'text' unchanged.
 
     >>> potmsgset.normalizeWhitespaces(None) is None
     True
@@ -102,7 +102,6 @@ Now, msgid will have also that char, so 'text' should not change.
 
 
 == POTMsgSet.normalizeNewLines ==
-
 
 This method syncs the new line chars to use the same as the associated msgid.
 
