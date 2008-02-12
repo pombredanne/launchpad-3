@@ -17,8 +17,6 @@ __all__ = [
     'HasAnnouncementsView',
     ]
 
-import cgi
-
 from zope.interface import Interface
 
 from zope.schema import Choice, TextLine

@@ -39,7 +39,6 @@ __all__ = [
     'PillarSearchItem',
     ]
 
-import cgi
 from operator import attrgetter
 
 import zope.security.interfaces

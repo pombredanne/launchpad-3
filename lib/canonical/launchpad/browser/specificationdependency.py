@@ -9,8 +9,6 @@ __all__ = [
     'SpecificationDependencyRemoveView',
     ]
 
-import cgi
-
 from canonical.launchpad import _
 from canonical.launchpad.webapp import (
     action, canonical_url, custom_widget,
