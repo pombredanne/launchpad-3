@@ -395,7 +395,6 @@ class BugWatchSet(BugSetBase):
 
         return sf_tracker.baseurl, remote_bug
 
-<<<<<<< TREE
     def parseSavannahURL(self, scheme, host, path, query):
         """Extract GNU Savannah base URL and bug ID."""
         # GNU Savannah bugs URLs are in the form /bugs/?<bug-id>, so we
@@ -417,7 +416,6 @@ class BugWatchSet(BugSetBase):
 
         return savannah_tracker.baseurl, remote_bug
 
-=======
     def parseEmailAddressURL(self, scheme, host, path, query):
         """Extract an email address from a bug URL.
 
@@ -436,7 +434,6 @@ class BugWatchSet(BugSetBase):
 
         return '%s:%s' % (scheme, path), ''
 
->>>>>>> MERGE-SOURCE
     def extractBugTrackerAndBug(self, url):
         """See IBugWatchSet."""
         for trackertype, parse_func in (
