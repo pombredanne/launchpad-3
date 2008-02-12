@@ -526,6 +526,31 @@ We can guess the pluralforms for this language through ILanguage.pluralforms:
     [None, None, None]
 
 
+=== Missing forms ===
+
+Even when a message has a singular and a plural in English, a
+translation does not have to cover all plural forms available in the
+target language.
+
+We call such a message incomplete, and undesirable as it is, it is still
+gracefully accepted.
+
+    >>> plural_potmsgset = pofile_es.potemplate.getPOTMsgSetByMsgIDText(
+    ...     u'%d contact')
+    >>> pofile_es.plural_forms
+    2
+    >>> message = plural_potmsgset.updateTranslation(pofile_es, foobar,
+    ...     {0: u'foo %d', 1: None}, is_fuzzy=False, is_imported=False,
+    ...     lock_timestamp=datetime.datetime.now(UTC))
+    >>> message.is_complete
+    False
+    >>> message = plural_potmsgset.updateTranslation(pofile_es, foobar,
+    ...     {0: None}, is_fuzzy=False, is_imported=False,
+    ...     lock_timestamp=datetime.datetime.now(UTC))
+    >>> message.is_complete
+    False
+
+
 == isTranslationNewerThan ==
 
 This method tells us whether the active translation was reviewed after
