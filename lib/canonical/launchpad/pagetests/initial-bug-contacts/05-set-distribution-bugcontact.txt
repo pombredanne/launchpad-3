@@ -41,8 +41,6 @@ Ubuntu.
 
 And then we're redirected to the distribution page.
 
-  >>> from canonical.launchpad.ftests.test_pages import find_tags_by_class
-
   >>> browser.url
   'http://launchpad.dev/ubuntu'
 

@@ -45,11 +45,14 @@ from canonical.launchpad.interfaces import (
     IFrontPageBugAddForm, IProjectBugAddForm, UNRESOLVED_BUGTASK_STATUSES,
     BugTaskStatus)
 from canonical.launchpad.webapp import (
-    canonical_url, LaunchpadView, LaunchpadFormView, action, custom_widget,
+    LaunchpadFormView, LaunchpadView, action, canonical_url, custom_widget,
     safe_action, urlappend)
+from canonical.launchpad.webapp.authorization import check_permission
 from canonical.widgets.bug import BugTagsWidget
 from canonical.widgets.launchpadtarget import LaunchpadTargetWidget
 from canonical.launchpad.vocabularies import ValidPersonOrTeamVocabulary
+from canonical.launchpad.webapp.menu import structured
+
 
 class FileBugData:
     """Extra data to be added to the bug."""
@@ -398,13 +401,13 @@ class FileBugViewBase(LaunchpadFormView):
         #     We need to have a proper FileUpload widget rather than
         #     this rather hackish solution.
         attachment = self.request.form.get(self.widgets['filecontent'].name)
-        if attachment is not None or extra_data.attachments:
+        if attachment or extra_data.attachments:
             # Attach all the comments to a single empty comment.
             attachment_comment = bug.newMessage(
                 owner=self.user, subject=bug.followup_subject(), content=None)
 
             # Deal with attachments added in the filebug form.
-            if attachment is not None:
+            if attachment:
                 # We convert slashes in filenames to hyphens to avoid
                 # problems.
                 filename = attachment.filename.replace('/', '-')
@@ -459,16 +462,17 @@ class FileBugViewBase(LaunchpadFormView):
             self.request.response.addNotification(notification)
         if bug.security_related:
             self.request.response.addNotification(
-                'Security-related bugs are by default <span title="Private '
-                'bugs are visible only to their direct subscribers.">private'
-                '</span>. You may choose to <a href="+secrecy">publically '
-                'disclose</a> this bug.')
+                structured(
+                'Security-related bugs are by default private '
+                '(visible only to their direct subscribers). '
+                'You may choose to <a href="+secrecy">publicly '
+                'disclose</a> this bug.'))
         if bug.private and not bug.security_related:
             self.request.response.addNotification(
-                'This bug report has been marked as <span title="Private '
-                'bugs are visible only to their direct subscribers.">private'
-                '</span>. You may choose to <a href="+secrecy">change '
-                'this</a>.')
+                structured(
+                'This bug report has been marked private '
+                '(visible only to its direct subscribers). '
+                'You may choose to <a href="+secrecy">change this</a>.'))
 
         self.request.response.redirect(canonical_url(bug.bugtasks[0]))
 
@@ -707,6 +711,8 @@ class FileBugGuidedView(FileBugViewBase):
             duplicateof = bug.duplicateof
             if duplicateof is not None:
                 bug = duplicateof
+            if not check_permission('launchpad.View', bug):
+                continue
             if bug not in matching_bugs:
                 matching_bugs.append(bug)
                 if len(matching_bugs) >= matching_bugs_limit:

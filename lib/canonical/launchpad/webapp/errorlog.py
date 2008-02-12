@@ -206,17 +206,18 @@ class ErrorReportingUtility:
     def __init__(self):
         self.lastid_lock = threading.Lock()
 
-    def _findLastOopsId(self, directory):
-        """Find the last error number used by this Launchpad instance
+    def _findLastOopsIdFilename(self, directory):
+        """Find details of the last OOPS reported in the given directory.
 
-        The purpose of this function is to not repeat sequence numbers
-        if the Launchpad instance is restarted.
+        This function only considers OOPSes with the currently
+        configured oops_prefix.
 
-        This method is not thread safe, and only intended to be called
-        from the constructor.
+        :return: a tuple (oops_id, oops_filename), which will be (0,
+            None) if no OOPS is found.
         """
         prefix = config.launchpad.errorreports.oops_prefix
         lastid = 0
+        lastfilename = None
         for filename in os.listdir(directory):
             oopsid = filename.rsplit('.', 1)[1]
             if not oopsid.startswith(prefix):
@@ -224,13 +225,51 @@ class ErrorReportingUtility:
             oopsid = oopsid[len(prefix):]
             if oopsid.isdigit() and int(oopsid) > lastid:
                 lastid = int(oopsid)
-        return lastid
+                lastfilename = filename
+        return lastid, lastfilename
+
+    def _findLastOopsId(self, directory):
+        """Find the last error number used by this Launchpad instance.
+
+        The purpose of this function is to not repeat sequence numbers
+        if the Launchpad instance is restarted.
+
+        This method is not thread safe, and only intended to be called
+        from the constructor.
+        """
+        return self._findLastOopsIdFilename(directory)[0]
 
     def getOopsReport(self, time):
         """Return the contents of the OOPS report logged at 'time'."""
         oops_filename = self.getOopsFilename(
             self._findLastOopsId(self.errordir(time)), time)
         oops_report = open(oops_filename, 'r')
+        try:
+            return ErrorReport.read(oops_report)
+        finally:
+            oops_report.close()
+
+    def getLastOopsReport(self):
+        """Return the last ErrorReport reported with the current config.
+
+        This should only be used in integration tests.
+
+        Note that this function only checks for OOPSes reported today
+        and yesterday (to avoid midnight bugs where an OOPS is logged
+        at 23:59:59 but not checked for until 0:00:01), and ignores
+        OOPSes recorded longer ago.
+
+        Returns None if no OOPS is found.
+        """
+        now = datetime.datetime.now(UTC)
+        directory = self.errordir(now)
+        oopsid, filename = self._findLastOopsIdFilename(directory)
+        if filename is None:
+            directory = self.errordir(now - datetime.timedelta(days=1))
+            oopsid, filename = self._findLastOopsIdFilename(directory)
+            if filename is None:
+                return None
+        oops_report = open(os.path.join(directory, filename), 'r')
         try:
             return ErrorReport.read(oops_report)
         finally:

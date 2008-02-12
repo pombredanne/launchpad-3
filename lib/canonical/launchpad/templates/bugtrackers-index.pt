@@ -21,9 +21,17 @@
 <div metal:fill-slot="main">
 
       <p>
-        Registering a bug tracker lets you link Launchpad bug reports with
-        reports in that bug tracker, so that assignees in Launchpad will be
-        notified when the upstream bug report changes state.
+        Launchpad supports watching bugs in selected remote bug
+        trackers.  Registering a bug tracker allows you to link
+        Launchpad bug reports with bugs in the remote bug tracker; once
+        linked, status will be visible on Launchpad bug pages, and
+        subscribers will be notified when the upstream bug report
+        changes.
+      </p>
+      <p>
+        <a href="https://help.launchpad.net/RemoteBugCoverage">This
+        grid</a> details the extent of Launchpad's support for each
+        remote bug tracker type.
       </p>
 
   <table class="sortable listing" id="trackers">
