@@ -113,7 +113,7 @@ clickable link to his PPA page:
     >>> browser.title
     'PPA for Celso Providelo'
 
-The PPA page "Actions" portlet list all the related pages, only 
+The PPA page "Actions" portlet list all the related pages, only
 'View build records' is allowed for unprivileged access.
 
     >>> print extract_text(
