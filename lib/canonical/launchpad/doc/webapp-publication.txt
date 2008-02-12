@@ -342,11 +342,13 @@ the registered factories.)
     # IRequest and IPublication.
     >>> def get_request_and_publication(host='localhost', port=None,
     ...                                 method='GET', mime_type='text/html',
-    ...                                 in_stream=''):
+    ...                                 in_stream='', extra_environment=None):
     ...     environment = {'HTTP_HOST': host,
     ...                    'REQUEST_METHOD': method,
     ...                    'SERVER_PORT': port,
     ...                    'CONTENT_TYPE': mime_type}
+    ...     if extra_environment is not None:
+    ...         environment.update(extra_environment)
     ...     launchpad_factory = factoryRegistry.lookup(
     ...         method, mime_type, environment)
     ...     request_factory, publication_factory = launchpad_factory()
@@ -685,7 +687,7 @@ name of the context class and the view class name.
     >>> print request._orig_env['launchpad.pageid']
     TestContext:TestView
 
-When a view is registered using ZCML, the Zope machinery will store 
+When a view is registered using ZCML, the Zope machinery will store
 the name under which the view was registered in the view's '__name__'
 attribute. For these views, that's the name that will be used in
 the pageid.
@@ -804,15 +806,17 @@ the publication, up to the point where it was forcefully stopped.
     True
     >>> publication.endRequest(request, None)
 
-In some cases, when a Retry or DisconnectionError exception is raised,
-the request will be retried with a copy of the WSGI environment, but if
-this happens we'll remove the [publication,traversal]ticks variables from
-there.
+When a Retry or DisconnectionError exception is raised and the request
+supports retry, it will be retried with a copy of the WSGI environment.
+If that happens, though, we'll remove the [publication,traversal]ticks 
+variables from there.
 
     >>> request, publication = get_request_and_publication()
     >>> request.setPrincipal(auth_utility.unauthenticatedPrincipal())
     >>> request._orig_env['launchpad.traversalticks'] = 500
     >>> request._orig_env['launchpad.publicationticks'] = 500
+    >>> request.supportsRetry()
+    True
     >>> from zope.publisher.interfaces import Retry
     >>> try:
     ...     raise Retry('foo')
@@ -832,6 +836,8 @@ there.
     >>> request.setPrincipal(auth_utility.unauthenticatedPrincipal())
     >>> request._orig_env['launchpad.traversalticks'] = 500
     >>> request._orig_env['launchpad.publicationticks'] = 500
+    >>> request.supportsRetry()
+    True
     >>> import canonical.launchpad.webapp.adapter as da
     >>> try:
     ...     raise da.DisconnectionError()
@@ -848,6 +854,32 @@ there.
     False
     >>> request._orig_env.has_key('launchpad.traversalticks')
     False
+
+Of course, any request can only be retried a certain number of times and
+when we reach that number of retries we don't pop the tick conts from the
+WSGI env.
+
+    >>> request, publication = get_request_and_publication()
+    >>> request.setPrincipal(auth_utility.unauthenticatedPrincipal())
+    >>> request._orig_env['launchpad.traversalticks'] = 500
+    >>> request._orig_env['launchpad.publicationticks'] = 500
+    >>> request.supportsRetry = lambda: False
+    >>> request.supportsRetry()
+    False
+    >>> from zope.publisher.interfaces import Retry
+    >>> try:
+    ...     raise Retry('foo')
+    ... except:
+    ...     publication.handleException(
+    ...         None, request, sys.exc_info(), retry_allowed=True)
+    Traceback (most recent call last):
+    ...
+    Retry: 'foo'
+
+    >>> request._orig_env['launchpad.publicationticks']
+    500
+    >>> request._orig_env['launchpad.traversalticks']
+    500
 
 (A bit of cleanup so the test can continue)
 
@@ -985,3 +1017,60 @@ In other cases, like a GET, the body would be unchanged.
     >>> publication.afterCall(request, None)
     >>> print request.response.consumeBody()
     Some boring content.
+
+
+== Authentication of requests ==
+
+In LaunchpadBrowserPublication, authentication happens in the
+beforeTraversal() hook. Our publication will set the principal to
+the value of the getPrincipal().
+
+For example, this publication subclass returns a marker object that
+will get associated with the request after the beforeTraversal() hook.
+
+    >>> marker = object()
+    >>> class MyPublication(LaunchpadBrowserPublication):
+    ...	      def getPrincipal(self, request):
+    ...	      	  return marker
+
+    >>> publication = MyPublication(None)
+    >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
+    >>> request = LaunchpadTestRequest()
+
+    # We need close the previous interaction.
+    >>> from zope.security.management import endInteraction
+    >>> endInteraction()
+
+    # The call to beforeTraversal will start a request that will need
+    # to be manually ended.
+    >>> publication.beforeTraversal(request)
+    >>> request.principal is marker
+    True
+
+The default implementation will use the IPlacelessAuthentication
+utility to setup the request.
+
+    >>> foo_bar_auth = 'Basic %s' % (
+    ...	    'foo.bar@canonical.com:test'.encode('base64'))
+    >>> request, publication = get_request_and_publication(
+    ...	    extra_environment=dict(HTTP_AUTHORIZATION=foo_bar_auth))
+    >>> principal = publication.getPrincipal(request)
+    >>> print principal.title
+    Foo Bar
+
+The feeds implementation always returns the anonymous user.
+
+    >>> request, publication = get_request_and_publication(
+    ...	    'feeds.launchpad.dev',
+    ...	    extra_environment=dict(HTTP_AUTHORIZATION=foo_bar_auth))
+    >>> principal = publication.getPrincipal(request)
+
+    >>> from zope.app.security.interfaces import IUnauthenticatedPrincipal
+    >>> IUnauthenticatedPrincipal.providedBy(principal)
+    True
+
+Close the bogus request that was started by the call to
+beforeTraversal, in order to ensure we leave our state sane.
+
+    >>> publication.endRequest(request, None)
+

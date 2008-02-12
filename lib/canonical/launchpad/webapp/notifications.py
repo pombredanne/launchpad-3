@@ -12,23 +12,21 @@ browser window the request came from.
 
 __metaclass__ = type
 
-import cgi, urllib
-from urlparse import urlunsplit
-from datetime import datetime, timedelta
+import cgi
+from datetime import datetime
 
 from zope.interface import implements
 from zope.app.session.interfaces import ISession
 import zope.i18n
-from zope.publisher.interfaces.browser import IBrowserRequest
 
 from canonical.config import config
-from canonical.uuid import generate_uuid
 from canonical.launchpad.webapp.interfaces import (
         INotificationRequest, INotificationResponse, BrowserNotificationLevel,
-        INotification, INotificationList
+        INotification, INotificationList, IStructuredString
         )
+from canonical.launchpad.webapp.menu import structured
 from canonical.launchpad.webapp.publisher import LaunchpadView
-from canonical.launchpad.webapp.url import urlsplit
+
 
 SESSION_KEY = 'launchpad'
 
@@ -61,7 +59,7 @@ class NotificationRequest:
     >>> response = INotificationResponse(request)
     >>> response.addNotification('Aargh')
     >>> [notification.message for notification in request.notifications]
-    ['Fnord', 'Aargh']
+    ['Fnord', u'Aargh']
     """
     implements(INotificationRequest)
 
@@ -99,11 +97,10 @@ class NotificationResponse:
     >>> len(response.notifications)
     0
 
-    >>> response.addNotification("<b>%(escaped)s</b>", escaped="<Fnord>")
+    >>> msg = structured("<b>%(escaped)s</b>", escaped="<Fnord>")
+    >>> response.addNotification(msg)
 
     >>> response.addNotification("Whatever", BrowserNotificationLevel.DEBUG)
-    >>> response.addNotification("%(percentage)0.2f%%", percentage=99.0)
-    >>> response.addNotification("%(num)d thingies", num=10)
     >>> response.addDebugNotification('Debug')
     >>> response.addInfoNotification('Info')
     >>> response.addNoticeNotification('Notice')
@@ -121,8 +118,6 @@ class NotificationResponse:
     ...     print "%d -- %s" % (notification.level, notification.message)
     25 -- <b>&lt;Fnord&gt;</b>
     10 -- Whatever
-    25 -- 99.00%
-    25 -- 10 thingies
     10 -- Debug
     20 -- Info
     25 -- Notice
@@ -166,21 +161,20 @@ class NotificationResponse:
     # which would be bad.
     _notifications = None
 
-    def addNotification(self, msg, level=BrowserNotificationLevel.NOTICE, **kw):
-        """See canonical.launchpad.webapp.interfaces.INotificationResponse."""
-        # Bug #54987
+    def addNotification(self, msg, level=BrowserNotificationLevel.NOTICE):
+        """See `INotificationResponse`."""
+        # It is possible that the message is wrapped in an
+        # internationalized object, so we need to translate it
+        # first. See bug #54987.
         if isinstance(msg, (zope.i18n.Message, zope.i18n.MessageID)):
             msg = zope.i18n.translate(msg, context=self._request)
-        if kw:
-            quoted_args = {}
-            for key, value in kw.items():
-                if isinstance(value, (int, float)):
-                    quoted_args[key] = value
-                else:
-                    quoted_args[key] = cgi.escape(unicode(value))
-            msg = msg % quoted_args
 
-        self.notifications.append(Notification(level, msg))
+        if IStructuredString.providedBy(msg):
+            escaped_msg = msg.escapedtext
+        else:
+            escaped_msg = cgi.escape(unicode(msg))
+
+        self.notifications.append(Notification(level, escaped_msg))
 
     @property
     def notifications(self):
@@ -238,25 +232,25 @@ class NotificationResponse:
             session['notifications'] = self._notifications
         return super(NotificationResponse, self).redirect(location, status)
 
-    def addDebugNotification(self, msg, **kw):
-        """See canonical.launchpad.webapp.interfaces.INotificationResponse"""
-        self.addNotification(msg, BrowserNotificationLevel.DEBUG, **kw)
+    def addDebugNotification(self, msg):
+        """See `INotificationResponse`."""
+        self.addNotification(msg, BrowserNotificationLevel.DEBUG)
 
-    def addInfoNotification(self, msg, **kw):
-        """See canonical.launchpad.webapp.interfaces.INotificationResponse"""
-        self.addNotification(msg, BrowserNotificationLevel.INFO, **kw)
+    def addInfoNotification(self, msg):
+        """See `INotificationResponse`."""
+        self.addNotification(msg, BrowserNotificationLevel.INFO)
 
-    def addNoticeNotification(self, msg, **kw):
-        """See canonical.launchpad.webapp.interfaces.INotificationResponse"""
-        self.addNotification(msg, BrowserNotificationLevel.NOTICE, **kw)
+    def addNoticeNotification(self, msg):
+        """See `INotificationResponse`."""
+        self.addNotification(msg, BrowserNotificationLevel.NOTICE)
 
-    def addWarningNotification(self, msg, **kw):
-        """See canonical.launchpad.webapp.interfaces.INotificationResponse"""
-        self.addNotification(msg, BrowserNotificationLevel.WARNING, **kw)
+    def addWarningNotification(self, msg):
+        """See `INotificationResponse`."""
+        self.addNotification(msg, BrowserNotificationLevel.WARNING)
 
-    def addErrorNotification(self, msg, **kw):
-        """See canonical.launchpad.webapp.interfaces.INotificationResponse"""
-        self.addNotification(msg, BrowserNotificationLevel.ERROR, **kw)
+    def addErrorNotification(self, msg):
+        """See `INotificationResponse`."""
+        self.addNotification(msg, BrowserNotificationLevel.ERROR)
 
 
 class NotificationList(list):
@@ -298,7 +292,8 @@ class NotificationList(list):
 
     def __getitem__(self, index_or_levelname):
         if isinstance(index_or_levelname, int):
-            return super(NotificationList, self).__getitem__(index_or_levelname)
+            return super(NotificationList, self).__getitem__(
+                index_or_levelname)
 
         level = getattr(
                 BrowserNotificationLevel, index_or_levelname.upper(), None
@@ -336,20 +331,15 @@ class NotificationTestView1(LaunchpadView):
         # Add some notifications
         for count in range(1, 3):
             response.addDebugNotification(
-                    'Debug notification <b>%(count)d</b>', count=count
-                    )
+                structured('Debug notification <b>%d</b>' % count))
             response.addInfoNotification(
-                    'Info notification <b>%(count)d</b>', count=count
-                    )
+                structured('Info notification <b>%d</b>' % count))
             response.addNoticeNotification(
-                    'Notice notification <b>%(count)d</b>', count=count
-                    )
+                structured('Notice notification <b>%d</b>' % count))
             response.addWarningNotification(
-                    'Warning notification <b>%(count)d</b>', count=count
-                    )
+                structured('Warning notification <b>%d</b>' %count))
             response.addErrorNotification(
-                    'Error notification <b>%(count)d</b>', count=count
-                    )
+                structured('Error notification <b>%d</b>' % count))
 
 
 class NotificationTestView2(NotificationTestView1):

@@ -15,6 +15,7 @@ import transaction
 
 from zope.app import zapi  # used to get at the adapters service
 import zope.app.publication.browser
+from zope.app.publication.interfaces import BeforeTraverseEvent
 from zope.app.security.interfaces import IUnauthenticatedPrincipal
 from zope.component import getUtility, queryView
 from zope.event import notify
@@ -24,14 +25,12 @@ from zope.publisher.interfaces import IPublishTraverse, Retry
 from zope.publisher.interfaces.browser import IDefaultSkin, IBrowserRequest
 from zope.publisher.publish import mapply
 
-from zope.security.interfaces import Unauthorized
 from zope.security.proxy import removeSecurityProxy
 from zope.security.management import newInteraction
 
 from canonical.config import config
 from canonical.launchpad.webapp.interfaces import (
-    IOpenLaunchBag, ILaunchpadRoot, AfterTraverseEvent,
-    BeforeTraverseEvent, OffsiteFormPostError)
+    ILaunchpadRoot, IOpenLaunchBag, OffsiteFormPostError)
 import canonical.launchpad.layers as layers
 from canonical.launchpad.webapp.interfaces import IPlacelessAuthUtility
 import canonical.launchpad.webapp.adapter as da
@@ -167,17 +166,19 @@ class LaunchpadBrowserPublication(
         if layer is not None:
             layers.setAdditionalLayer(request, layer)
 
-        # Try to authenticate against our registry
-        prin_reg = getUtility(IPlacelessAuthUtility)
-        p = prin_reg.authenticate(request)
-        if p is None:
-            p = prin_reg.unauthenticatedPrincipal()
-            if p is None:
-                raise Unauthorized # If there's no default principal
-
-        request.setPrincipal(p)
+        principal = self.getPrincipal(request)
+        request.setPrincipal(principal)
         self.maybeRestrictToTeam(request)
         self.maybeBlockOffsiteFormPost(request)
+
+    def getPrincipal(self, request):
+        """Return the authenticated principal for this request."""
+        auth_utility = getUtility(IPlacelessAuthUtility)
+        principal = auth_utility.authenticate(request)
+        if principal is None:
+            principal = auth_utility.unauthenticatedPrincipal()
+            assert principal is not None, "Missing unauthenticated principal."
+        return principal
 
     def maybeRestrictToTeam(self, request):
 
@@ -306,7 +307,7 @@ class LaunchpadBrowserPublication(
         request.setInWSGIEnvironment(
             'launchpad.userid', request.principal.id)
 
-        # launchpad.pageid contains an identifier of the form 
+        # launchpad.pageid contains an identifier of the form
         # ContextName:ViewName. It will end up in the page log.
         unrestricted_ob = removeSecurityProxy(ob)
         context = removeSecurityProxy(
@@ -368,14 +369,13 @@ class LaunchpadBrowserPublication(
 
     def afterTraversal(self, request, ob):
         """ We don't want to call _maybePlacefullyAuthenticate as does
-        zopepublication but we do want to send an AfterTraverseEvent """
+        zopepublication."""
         assert hasattr(request, '_traversalticks_start'), (
             'request._traversalticks_start, which should have been set by '
             'beforeTraversal(), was not found.')
         ticks = tickcount.difference(
             request._traversalticks_start, tickcount.tickcount())
         request.setInWSGIEnvironment('launchpad.traversalticks', ticks)
-        notify(AfterTraverseEvent(ob, request))
 
         # Debugging code. Please leave. -- StuartBishop 20050622
         # Set 'threads 1' in launchpad.conf if you are using this.
@@ -428,10 +428,11 @@ class LaunchpadBrowserPublication(
         # handleException method we call does this (bug to be fixed upstream)
         if (retry_allowed
             and isinstance(exc_info[1], (Retry, da.DisconnectionError))):
-            # Remove variables used for counting ticks as this request is
-            # going to be retried.
-            orig_env.pop('launchpad.traversalticks', None)
-            orig_env.pop('launchpad.publicationticks', None)
+            if request.supportsRetry():
+                # Remove variables used for counting ticks as this request is
+                # going to be retried.
+                orig_env.pop('launchpad.traversalticks', None)
+                orig_env.pop('launchpad.publicationticks', None)
             if isinstance(exc_info[1], Retry):
                 raise
             raise Retry(exc_info)
@@ -471,5 +472,3 @@ class LaunchpadBrowserPublication(
 
             # Increment counters for status code groups.
             OpStats.stats[str(status)[0] + 'XXs'] += 1
-
-

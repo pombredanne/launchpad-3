@@ -112,6 +112,12 @@ class BugTrackerType(DBEnumeratedType):
         RT is a web-based ticketing system written in Perl.
         """)
 
+    EMAILADDRESS = DBItem(8, """
+        Email Address
+
+        Bugs are tracked by email, perhaps on a mailing list.
+        """)
+
 
 class IBugTracker(Interface):
     """A remote bug system."""

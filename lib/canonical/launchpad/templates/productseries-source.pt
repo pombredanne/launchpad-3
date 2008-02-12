@@ -103,12 +103,6 @@
 
       <script type="text/javascript">
         //<![CDATA[
-        function updateField(field, enabled)
-        {
-          field.disabled = !enabled;
-          field.style.backgroundColor = enabled ? 'white' : 'lightgrey';
-        }
-
         function updateWidgets() {
           /* which rcs type radio button has been selected? */
           var rcstypes = document.getElementsByName('field.rcstype');

@@ -47,6 +47,8 @@ re_changelog_header = re.compile(
     r"^\S+ \((?P<version>.*)\) .*;.*urgency=(?P<urgency>\w+).*")
 re_closes = re.compile(
     r"closes:\s*(?:bug)?\#?\s?\d+(?:,\s*(?:bug)?\#?\s?\d+)*", re.I)
+re_lp_closes = re.compile(
+    r"LP:\s*(?:bug)?\#?\s?\d+(?:,\s*(?:bug)?\#?\s?\d+)*")
 re_bug_numbers = re.compile(r"\#?\s?(\d+)")
 
 
@@ -120,9 +122,9 @@ def sign_changes(changes, dsc):
     os.unlink(temp_filename)
 
 
-def generate_changes(dsc, dsc_files, suite, changelog, urgency, closes, section,
-                     priority, description, have_orig_tar_gz, requested_by,
-                     origin):
+def generate_changes(dsc, dsc_files, suite, changelog, urgency, closes, lp_closes,
+                     section, priority, description, have_orig_tar_gz,
+                     requested_by, origin):
     """Generate a .changes as a string"""
 
     # XXX cprov 2007-07-03:
@@ -150,6 +152,8 @@ def generate_changes(dsc, dsc_files, suite, changelog, urgency, closes, section,
         changes += " %s\n" % (description)
     if closes:
         changes += "Closes: %s\n" % (" ".join(closes))
+    if lp_closes:
+        changes += "Launchpad-Bugs-Closed: %s\n" % (" ".join(lp_closes))
     changes += "Changes: \n"
     changes += changelog
     changes += "Files: \n"
@@ -175,7 +179,7 @@ def parse_changelog(changelog_filename, previous_version):
     for line in changelog_file.readlines():
         match = re_changelog_header.match(line)
         if match:
-            is_debian_changelog = 1
+            is_debian_chaqngelog = 1
             if previous_version is None:
                 previous_version = "9999:9999"
             elif apt_pkg.VersionCompare(
@@ -197,7 +201,16 @@ def parse_changelog(changelog_filename, previous_version):
     l.sort()
     closes = map(str, l)
 
-    return (changes, urgency_from_numeric(urgency), closes)
+    lp_closes = []
+    for match in re_lp_closes.finditer(changes):
+        bug_match = re_bug_numbers.findall(match.group(0))
+        lp_closes += map(int, bug_match)
+
+    l = map(int, lp_closes)
+    l.sort()
+    lp_closes = map(str, l)
+
+    return (changes, urgency_from_numeric(urgency), closes, lp_closes)
 
 
 def fix_changelog(changelog):
@@ -366,7 +379,7 @@ def import_dsc(dsc_filename, suite, previous_version, signing_rules,
         "%s-%s/debian/changelog" % (dsc["source"], upstr_version))
 
     # Parse it and then adapt it for .changes
-    (changelog, urgency, closes) = parse_changelog(
+    (changelog, urgency, closes, lp_closes) = parse_changelog(
         changelog_filename, previous_version)
     changelog = fix_changelog(changelog)
 
@@ -377,8 +390,8 @@ def import_dsc(dsc_filename, suite, previous_version, signing_rules,
     cleanup_source(tmpdir, old_cwd, dsc)
 
     changes = generate_changes(dsc, dsc_files, suite, changelog, urgency, closes,
-                               section, priority, description, have_orig_tar_gz,
-                               requested_by, origin)
+                               lp_closes, section, priority, description,
+                               have_orig_tar_gz, requested_by, origin)
 
     # XXX cprov 2007-07-03: Soyuz wants an unsigned changes
     #sign_changes(changes, dsc)

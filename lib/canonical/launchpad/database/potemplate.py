@@ -654,13 +654,16 @@ class POTemplate(SQLBase, RosettaStats):
         try:
             translation_importer.importFile(entry_to_import, logger)
         except (TranslationFormatSyntaxError,
-                TranslationFormatInvalidInputError):
+                TranslationFormatInvalidInputError), exception:
             if logger:
-                logger.warning(
+                logger.info(
                     'We got an error importing %s', self.title, exc_info=1)
             subject = 'Import problem - %s' % self.displayname
             template_mail = 'poimport-syntax-error.txt'
             entry_to_import.status = RosettaImportStatus.FAILED
+            error_text = str(exception)
+        else:
+            error_text = None
 
         replacements = {
             'dateimport': entry_to_import.dateimported.strftime('%F %R%z'),
@@ -670,6 +673,9 @@ class POTemplate(SQLBase, RosettaStats):
             'importer': entry_to_import.importer.displayname,
             'template': self.displayname,
             }
+
+        if error_text is not None:
+            replacements['error'] = error_text
 
         if entry_to_import.status != RosettaImportStatus.FAILED:
             entry_to_import.status = RosettaImportStatus.IMPORTED
