@@ -14,6 +14,7 @@ from canonical.launchpad.interfaces import MailingListStatus
 from canonical.launchpad.webapp import (
     LaunchpadFormView, action, canonical_url)
 from canonical.launchpad.webapp.interfaces import UnexpectedFormData
+from canonical.launchpad.webapp.menu import structured
 
 
 class ReviewForm(Interface):
@@ -67,10 +68,11 @@ class MailingListsReviewView(LaunchpadFormView):
             if status is not None:
                 mailing_list.review(self.user, status)
                 self.request.response.addInfoNotification(
-                    '<a href="%s">%s</a> mailing list was %s' % (
-                        canonical_url(mailing_list.team),
-                        mailing_list.team.displayname,
-                        status.title.lower()))
+                    structured(
+                        '<a href="%s">%s</a> mailing list was %s',
+                            canonical_url(mailing_list.team),
+                            mailing_list.team.displayname,
+                            status.title.lower()))
         # Redirect to prevent double posts (and not require
         # flush_database_updates() :)
         self.next_url = canonical_url(self.context)

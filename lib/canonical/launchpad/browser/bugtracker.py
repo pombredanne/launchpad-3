@@ -38,8 +38,10 @@ from canonical.widgets import DelimitedListWidget
 # tracker.
 SINGLE_INSTANCE_TRACKERS = (
     BugTrackerType.DEBBUGS,
+    BugTrackerType.EMAILADDRESS,
     BugTrackerType.SAVANNAH,
-    BugTrackerType.SOURCEFORGE)
+    BugTrackerType.SOURCEFORGE,
+    )
 
 class BugTrackerSetNavigation(GetitemNavigation):
 
@@ -83,7 +85,7 @@ class BugTrackerAddView(LaunchpadFormView):
         # multiple instances in the bugtrackertype Choice widget.
         vocab_items = [
             item for item in BugTrackerType.items.items
-            if item not in SINGLE_INSTANCE_TRACKERS]
+                if item not in SINGLE_INSTANCE_TRACKERS]
         fields = []
         for field_name in self.field_names:
             if field_name == 'bugtrackertype':
