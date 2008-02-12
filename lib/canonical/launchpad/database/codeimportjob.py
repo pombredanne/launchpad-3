@@ -179,5 +179,5 @@ class CodeImportJobWorkflow:
         naked_job.logtail = u''
         naked_job.machine = machine
         naked_job.state = CodeImportJobState.RUNNING
-        #getUtility(ICodeImportEventSet).newStart(
-        #    import_job.code_import, machine)
+        getUtility(ICodeImportEventSet).newStart(
+            import_job.code_import, machine)

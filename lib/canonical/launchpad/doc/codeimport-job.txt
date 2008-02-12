@@ -283,4 +283,4 @@ to the supplied import machine and the state is RUNNING.
 The event is also recorded in the CodeImportEvent audit trail.
 
     >>> print new_events.summary()
-    START ~vcs-imports/gnome-terminal/import
+    START ~vcs-imports/gnome-terminal/import bazaar-importer
