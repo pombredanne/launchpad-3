@@ -29,6 +29,7 @@ class TranslationsCopier(LaunchpadCronScript):
         self.parser.add_option('-s', '--series', dest='series',
             help='Name of distroseries whose translations should be updated')
         self.parser.add_option('-f', '--force', dest='force',
+            action="store_true", default=False,
             help="Don't check if target's UI and imports are blocked; "
                  "actively block them.")
 
@@ -52,8 +53,8 @@ class TranslationsCopier(LaunchpadCronScript):
                 self.logger.error(
                     'Before this process starts, set the '
                     'hide_all_translations and defer_translation_imports '
-                    'flags for distribution %s, series %s; or use the --force '
-                    'option to make it happen automatically.' % (
+                    'flags for distribution %s, series %s; or use the '
+                    '--force option to make it happen automatically.' % (
                         self.options.distro, self.options.series))
                 sys.exit(1)
 
@@ -75,8 +76,11 @@ class TranslationsCopier(LaunchpadCronScript):
             if not blocked:
                 # We messed with the series' flags.  Restore them.
                 series = self._getTargetSeries()
-                if (series.hide_all_translations != hide_translations or
-                    series.defer_translation_imports != series_defer_imports):
+                changed = (
+                    series.hide_all_translations !=
+                        series_hide_translations or
+                    series.defer_translation_imports != series_defer_imports)
+                if changed:
                     # The flags have been changed while we were working.  Play
                     # safe and don't touch them.
                     self.logger.warning("Translations flags for %s have been "
