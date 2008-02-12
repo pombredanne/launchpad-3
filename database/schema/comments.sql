@@ -21,6 +21,7 @@ COMMENT ON COLUMN AnswerContact.date_created IS 'The date the answer contact was
 
 -- Branch 
 COMMENT ON TABLE Branch IS 'Bzr branch';
+COMMENT ON COLUMN Branch.registrant IS 'The user that registered the branch.';
 COMMENT ON COLUMN Branch.branch_type IS 'Branches are currently one of HOSTED (1), MIRRORED (2), or IMPORTED (3).';
 COMMENT ON COLUMN Branch.whiteboard IS 'Notes on the current status of the branch';
 COMMENT ON COLUMN Branch.summary IS 'A single paragraph description of the branch';
@@ -1624,6 +1625,13 @@ COMMENT ON COLUMN Archive.whiteboard IS 'Administrator comments about interventi
 COMMENT ON COLUMN Archive.distribution IS 'The distribution that uses this archive.';
 COMMENT ON COLUMN Archive.purpose IS 'The purpose of this archive, e.g. COMMERCIAL.  See the ArchivePurpose DBSchema item.';
 COMMENT ON COLUMN Archive.private IS 'Whether or not the archive is private. This affects the global visibility of the archive.';
+
+
+-- ArchiveDependency
+COMMENT ON TABLE ArchiveDependency IS 'This table maps a given archive to all other archives it should depend on.';
+COMMENT ON COLUMN ArchiveDependency.date_created IS 'Instant when the dependency was created.';
+COMMENT ON COLUMN ArchiveDependency.archive IS 'The archive where the dependency should be applied.';
+COMMENT ON COLUMN ArchiveDependency.dependency IS 'The archive to depend on.';
 
 -- Component
 COMMENT ON TABLE Component IS 'Known components in Launchpad';
