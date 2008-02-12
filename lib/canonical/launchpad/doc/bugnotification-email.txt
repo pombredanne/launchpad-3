@@ -88,26 +88,9 @@ Security related bugs have a prominent warning:
     >>> subject
     u'[Bug 4] [NEW] Reflow problems with complex page layouts'
     >>> print body
-    *** SECURITY RELATED ***
+    *** This bug is a security vulnerability ***
     <BLANKLINE>
-    Public security bug reported:
-    <BLANKLINE>
-    ...
-
-Of course, security related bugs are private by default, so they have
-a slightly different message:
-
-    >>> bug_four.setPrivate(
-    ...     True, getUtility(IPersonSet).getByName('name12'))
-    True
-
-    >>> subject, body = generate_bug_add_email(bug_four)
-    >>> subject
-    u'[Bug 4] [NEW] Reflow problems with complex page layouts'
-    >>> print body
-    *** SECURITY RELATED ***
-    <BLANKLINE>
-    Private security bug reported:
+    Public bug reported:
     <BLANKLINE>
     ...
 

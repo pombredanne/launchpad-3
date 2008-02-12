@@ -18,9 +18,11 @@ be sent:
 And let's define a function to make printing out the notifications
 easier.
 
-    >>> def print_notification(email_notification):
-    ...     for header in ['To', 'From', 'Subject',
-    ...                    'X-Launchpad-Message-Rationale']:
+    >>> def print_notification(email_notification, extra_headers=()):
+    ...     headers = ['To', 'From', 'Subject',
+    ...                'X-Launchpad-Message-Rationale']
+    ...     headers.extend(extra_headers)
+    ...     for header in headers:
     ...         print "%s: %s" % (header, email_notification[header])
     ...     print
     ...     print email_notification.get_payload(decode=True)
@@ -856,13 +858,40 @@ top of the email:
     <BLANKLINE>
     ----------------------------------------------------------------------
 
-
 Also note that notification was sent to Mark as well, since he's a
 subscriber of bug one.
 
     >>> for notification in BugNotification.select():
     ...     notification.date_emailed = datetime.now(pytz.timezone('UTC'))
     >>> flush_database_updates()
+
+
+== Security Vulnerabilities ==
+
+When a bug is marked as a security vulnerability, a small notification
+is inserted at the top of the message body:
+
+    >>> new_bug.security_related
+    False
+    >>> new_bug.security_related = True
+    >>> new_bug.security_related
+    True
+
+    >>> email_notifications = get_email_notifications(notifications)
+    >>> for bug_notifications, messages in email_notifications:
+    ...     for message in messages:
+    ...         print_notification(message, extra_headers=[
+    ...             'X-Launchpad-Bug-Security-Vulnerability'])
+    To: foo.bar@canonical.com
+    From: Sample Person <test@canonical.com>
+    Subject: [Bug ...] subject
+    X-Launchpad-Message-Rationale: Bug Contact (mozilla-firefox in ubuntu) via Bug 1
+    X-Launchpad-Bug-Security-Vulnerability: yes
+    <BLANKLINE>
+    *** This bug is a security vulnerability ***
+    <BLANKLINE>
+    ...
+
 
 == The cronscript ==
 
