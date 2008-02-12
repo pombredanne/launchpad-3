@@ -293,6 +293,9 @@ class SprintAddView(LaunchpadFormView):
 
     def setUpWidgets(self):
         LaunchpadFormView.setUpWidgets(self)
+        timeformat = '%Y-%m-%d %H:%M'
+        self.widgets['time_starts'].timeformat = timeformat
+        self.widgets['time_ends'].timeformat = timeformat
         time_zone_widget = self.widgets['time_zone']
         if time_zone_widget.hasValidInput():
             tz = pytz.timezone(time_zone_widget.getInputValue())
@@ -351,6 +354,9 @@ class SprintEditView(LaunchpadEditFormView):
 
     def setUpWidgets(self):
         LaunchpadEditFormView.setUpWidgets(self)
+        timeformat = '%Y-%m-%d %H:%M'
+        self.widgets['time_starts'].timeformat = timeformat
+        self.widgets['time_ends'].timeformat = timeformat
         time_zone_widget = self.widgets['time_zone']
         # What time zone are the start and end values relative to?
         if time_zone_widget.hasValidInput():
