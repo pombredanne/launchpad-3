@@ -240,8 +240,8 @@ class POTMsgSet(SQLBase):
         If there are `translations` with greater pluralforms than allowed,
         sanitize and keep them.
         """
-        # Leave out None translations.  Strip any trailing or leading
-        # whitespace.
+        # Strip any trailing or leading whitespace, and normalize empty
+        # translations to None.
         sanitized_translations = {}
         for pluralform in range(pluralforms):
             if pluralform < len(translations):
