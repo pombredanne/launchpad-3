@@ -1013,40 +1013,56 @@ specified:
     False
 
 
-== The X-Launchpad-Bug-Visibility header ==
+== The X-Launchpad-Bug-Private header ==
 
 When a notification is sent out about a bug, the
-X-Launchpad-Bug-Visibility header is filled with data about the bug's
-visibility:
-
-    >>> message.get_all('X-Launchpad-Bug-Visibility')
-    [u'private=False; security=False;']
-
-Predictably, private bugs are sent with slightly different header
-values:
+X-Launchpad-Bug-Private header shows if the bug is marked as
+private. It can have the value "yes" or "no".
 
     >>> bug_three.private
     False
+
+    >>> message.get_all('X-Launchpad-Bug-Private')
+    ['no']
+
+Predictably, private bugs are sent with a slightly different header:
+
     >>> bug_three.setPrivate(True, sample_person)
+    True
+    >>> bug_three.private
     True
 
     >>> email_notifications = get_email_notifications(notifications)
     >>> for bug_notifications, messages in email_notifications:
     ...     for message in messages:
-    ...         message.get_all('X-Launchpad-Bug-Visibility')
-    [u'private=True; security=False;']
+    ...         message.get_all('X-Launchpad-Bug-Private')
+    ['yes']
 
-The same is true for security related bugs:
+
+== The X-Launchpad-Bug-Security-Vulnerabilty header ==
+
+When a notification is sent out about a bug, the
+X-Launchpad-Bug-Security-Vulnerabilty header records if the bug is a
+security vulnerability. It can have the value "yes" or "no".
 
     >>> bug_three.security_related
     False
+
+    >>> message.get_all('X-Launchpad-Bug-Security-Vulnerability')
+    ['no']
+
+The presence of the security flag on a bug is, with little
+controversy, denoted by a simple "yes":
+
     >>> bug_three.security_related = True
+    >>> bug_three.security_related
+    True
 
     >>> email_notifications = get_email_notifications(notifications)
     >>> for bug_notifications, messages in email_notifications:
     ...     for message in messages:
-    ...         message.get_all('X-Launchpad-Bug-Visibility')
-    [u'private=True; security=True;']
+    ...         message.get_all('X-Launchpad-Bug-Security-Vulnerability')
+    ['yes']
 
 
 == Verbose bug notifications ==
