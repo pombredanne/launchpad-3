@@ -824,6 +824,42 @@ def objectize_options():
     Options.requestor = Options.requestor.encode("ascii", "replace")
 
 
+def parseBlacklist(path):
+    """Parse given file path as a 'blacklist'.
+
+    Format:
+
+    {{{
+    # [comment]
+    <sourcename> # [comment]
+    }}}
+
+    Return a blacklist dictionary where the keys are blacklisted source
+    package names.
+
+    Return an empty dictionary if the given 'path' doesn't exist.
+    """
+    Blacklisted = {}
+
+    try:
+        blacklist_file = open(path)
+    except IOError:
+        return Blacklisted
+
+    for line in blacklist_file:
+        try:
+            line = line[:line.index("#")]
+        except ValueError:
+            pass
+        line = line.strip()
+        if not line:
+            continue
+        Blacklisted[line] = ""
+    blacklist_file.close()
+
+    return Blacklisted
+
+
 def init():
     global Blacklisted, Library, Lock, Log, Options
 
@@ -846,21 +882,10 @@ def init():
 
     objectize_options()
 
-    # Blacklist
-    Blacklisted = {}
-    blacklist_file = open(Options.blacklist_path)
-    for line in blacklist_file:
-        try:
-            line = line[:line.index("#")]
-        except ValueError:
-            pass
-        line = line.strip()
-        if not line:
-            continue
-        Blacklisted[line] = ""
-    blacklist_file.close()
+    Blacklisted = parseBlacklist(Options.blacklist_path)
 
     return arguments
+
 
 def main():
     arguments = init()

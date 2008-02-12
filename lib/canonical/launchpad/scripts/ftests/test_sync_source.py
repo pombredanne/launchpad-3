@@ -10,11 +10,11 @@ import sys
 import tempfile
 from unittest import TestCase, TestLoader
 
+from canonical.archiveuploader.tagfiles import parse_tagfile
 from canonical.config import config
 from canonical.librarian.ftests.harness import (
     fillLibrarianFile, cleanupLibrarianFiles)
 from canonical.testing import LaunchpadZopelessLayer
-
 from canonical.launchpad.scripts.ftpmaster import (
     SyncSource, SyncSourceError)
 
@@ -265,14 +265,13 @@ class TestSyncSourceScript(TestCase):
         Check that:
          * return code is ZERO,
          * check empty standard error and readable output,
-         * check if the expected changesfile was generated and delete it.
+         * check if the expected changesfile was generated,
+         * parse and inspect the changesfile using the archiveuploader 
+           component (the same approach adopted by Soyuz).
+         * delete the changesfile.
         """
         returncode, out, err = self.runSyncSource(
-            extra_args=['-B', 'blacklist.txt', 
-                        '-b', 'cprov',
-                        '-D', 'debian',
-                        '-S' 'incoming',
-                        'etherwake'])
+            extra_args=['-b', 'cprov', '-S' 'incoming', 'etherwake'])
 
         self.assertEqual(
             0, returncode, "\nScript Failed:%s\nStdout:\n%s\nStderr\n%s\n"
@@ -290,8 +289,29 @@ class TestSyncSourceScript(TestCase):
 
         expected_changesfile = 'etherwake_1.08-1_source.changes'
         self.assertTrue(
-            os.exists(expected_changesfile), 
+            os.path.exists(expected_changesfile), 
             "Couldn't find %s" % expected_changesfile)
+
+        # Parse the generated unsigned changesfile.
+        parsed_changes = parse_tagfile(
+            expected_changesfile, allow_unsigned=True)
+
+        # It refers to the right source/version.
+        self.assertEqual(parsed_changes['source'], 'etherwake')
+        self.assertEqual(parsed_changes['version'], '1.08-1')
+
+        # It includes the correct 'origin' and 'target' information.
+        self.assertEqual(parsed_changes['origin'], 'Debian/incoming')
+        self.assertEqual(parsed_changes['distribution'], 'hoary')
+
+        # And finally, 'maintainer' role was preserved and 'changed-by' 
+        # role was assigned as specified in the sync-source command-line.
+        self.assertEqual(
+            parsed_changes['maintainer'], 
+            'Alain Schroeder <alain@debian.org>')
+        self.assertEqual(
+            parsed_changes['changed-by'],
+            'Celso Providelo <celso.providelo@canonical.com>')
 
         os.unlink(expected_changesfile)
 
