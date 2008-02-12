@@ -177,7 +177,6 @@ class LaunchpadObjectFactory:
                 log_body=self.getUniqueString('log-body'),
                 revision_date=date_generator.next(),
                 revision_author=author,
-                owner=admin_user,
                 parent_ids=parent_ids,
                 properties={})
             sequence += 1

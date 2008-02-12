@@ -15,7 +15,7 @@ from canonical.launchpad.interfaces import IHasOwner
 from canonical.launchpad import _
 
 
-class IRevision(IHasOwner):
+class IRevision(Interface):
     """Bazaar revision."""
 
     id = Int(title=_('The database revision ID'))
