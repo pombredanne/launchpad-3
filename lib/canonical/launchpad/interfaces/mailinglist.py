@@ -447,6 +447,11 @@ class IMailingList(Interface):
 class IMailingListSet(Interface):
     """A set of mailing lists."""
 
+    title = TextLine(
+        title=_('Title'),
+        description=_('The hard coded title.'),
+        readonly=True)
+
     def new(team, registrant=None):
         """Register a new team mailing list.
 
