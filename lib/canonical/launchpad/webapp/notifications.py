@@ -24,7 +24,7 @@ from canonical.launchpad.webapp.interfaces import (
         INotificationRequest, INotificationResponse, BrowserNotificationLevel,
         INotification, INotificationList, IStructuredString
         )
-from canonical.launchpad.webapp.menu import structured
+from canonical.launchpad.webapp.menu import escape, structured
 from canonical.launchpad.webapp.publisher import LaunchpadView
 
 
@@ -163,18 +163,8 @@ class NotificationResponse:
 
     def addNotification(self, msg, level=BrowserNotificationLevel.NOTICE):
         """See `INotificationResponse`."""
-        # It is possible that the message is wrapped in an
-        # internationalized object, so we need to translate it
-        # first. See bug #54987.
-        if isinstance(msg, (zope.i18n.Message, zope.i18n.MessageID)):
-            msg = zope.i18n.translate(msg, context=self._request)
-
-        if IStructuredString.providedBy(msg):
-            escaped_msg = msg.escapedtext
-        else:
-            escaped_msg = cgi.escape(unicode(msg))
-
-        self.notifications.append(Notification(level, escaped_msg))
+        self.notifications.append(
+            Notification(level, escape(msg)))
 
     @property
     def notifications(self):

@@ -3,8 +3,12 @@
 
 __metaclass__ = type
 __all__ = [
+    'enabled_with_permission',
+    'escape',
     'nearest_context_with_adapter',
     'nearest_adapter',
+    'structured',
+    'translate_if_msgid',
     'FacetMenu',
     'ApplicationMenu',
     'ContextMenu',
@@ -12,8 +16,6 @@ __all__ = [
     'LinkData',
     'FacetLink',
     'MenuLink',
-    'structured',
-    'enabled_with_permission',
     ]
 
 import cgi
@@ -28,9 +30,7 @@ from canonical.launchpad.webapp.interfaces import (
 
 from canonical.launchpad.webapp.publisher import (
     canonical_url, canonical_url_iterator,
-    get_current_browser_request, UserAttributeCache
-    
-    )
+    get_current_browser_request, UserAttributeCache)
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.uri import InvalidURIError, URI
 from canonical.launchpad.webapp.vhosts import allvhosts
@@ -41,7 +41,7 @@ class structured:
     implements(IStructuredString)
 
     def __init__(self, text, *replacements, **kwreplacements):
-        text = self._translate_if_i18n(text)
+        text = translate_if_msgid(text)
         self.text = text
         if replacements and kwreplacements:
             raise TypeError(
@@ -59,18 +59,6 @@ class structured:
 
     def __repr__(self):
         return "<structured-string '%s'>" % self.text
-
-    def _translate_if_i18n(self, text_or_msgid):
-        """Return the text that will be displayed.  If the object
-        represents internationalized text, translate it first, then
-        return the result."""
-        if isinstance(text_or_msgid, (Message, MessageID)):
-            return translate(
-                text_or_msgid,
-                context=get_current_browser_request())
-        else:
-            # Just text (or something unknown).
-            return text_or_msgid
 
 
 def nearest_context_with_adapter(obj, interface):
@@ -371,3 +359,48 @@ class enabled_with_permission:
             return link
         return enable_if_allowed
 
+
+##
+## Helpers for working with normal, structured, and internationalized
+## text.
+##
+
+# XXX mars 2008-2-12:
+# This entire block should be extracted into its own module, along
+# with the structured() class.
+
+
+def escape(message):
+    """Perform translation and CGI-escaping of a message.
+
+    A plain string message will be CGI escaped.  Passing a message
+    that provides the `IStructuredString` interface will return a
+    unicode string that has been properly escaped.  Passing an
+    instance of a Zope internationalized message will cause the
+    message to be translated, then CGI escaped.
+
+    :param message: This may be a string, `zope.i18n.Message`,
+    	`zope.i18n.MessageID`, or an instance of `IStructuredString`.
+    """
+    if IStructuredString.providedBy(message):
+        return message.escapedtext
+    else:
+        # It is possible that the message is wrapped in an
+        # internationalized object, so we need to translate it
+        # first. See bug #54987.
+        return cgi.escape(
+            unicode(
+                translate_if_msgid(message)))
+
+
+def translate_if_msgid(obj_or_msgid):
+    """Translate an internationalized object and return the resulting
+    text, while returning other objects untouched.
+    """
+    if isinstance(obj_or_msgid, (Message, MessageID)):
+        return translate(
+            obj_or_msgid,
+            context=get_current_browser_request())
+    else:
+        # Just text (or something unknown).
+        return obj_or_msgid
