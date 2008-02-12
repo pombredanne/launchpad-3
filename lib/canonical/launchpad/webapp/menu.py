@@ -293,7 +293,8 @@ class FacetMenu(MenuBase):
         return link
 
     def _get_link(self, name):
-        return IFacetLink(self._filterLink(name, MenuBase._get_link(self, name)))
+        return IFacetLink(
+            self._filterLink(name, MenuBase._get_link(self, name)))
 
     def iterlinks(self, requesturi=None, selectedfacetname=None):
         """See IFacetMenu."""
