@@ -177,22 +177,6 @@ def report_warning(message, properties=None, info=None):
         return report_oops(message, properties, info)
 
 
-def attempt(expr, **locals):
-    """Attempt to eval an expression, ignoring almost all errors.
-
-    This is useful during error conditions when trying to gather
-    properties for OOPS reporting.
-
-    :param locals: The locals mapping for `eval`.
-    """
-    try:
-        return eval(expr, None, locals)
-    except (SystemExit, KeyboardInterrupt):
-        raise
-    except:
-        return None
-
-
 _exception_to_bugwatcherrortype = [
    (BugTrackerConnectError, BugWatchErrorType.CONNECTION_ERROR),
    (UnparseableBugData, BugWatchErrorType.UNPARSABLE_BUG),
@@ -348,14 +332,11 @@ class ExternalBugTracker:
         Subclasses should override this, but chain their properties
         after these, perhaps with the use of `itertools.chain`.
         """
-        def _attempt(expr):
-            return attempt(expr, self=self)
-        yield 'batch_size', _attempt('self.batch_size')
-        yield 'batch_query_threshold', _attempt('self.batch_query_threshold')
-        yield 'import_comments', _attempt('self.import_comments')
-        yield 'bugtracker', _attempt('self.bugtracker.name')
-        yield 'externalbugtracker', _attempt('self.__class__.__name__')
-        yield 'baseurl', _attempt('self.baseurl')
+        return [('batch_size', self.batch_size),
+                ('batch_query_threshold', self.batch_query_threshold),
+                ('import_comments', self.import_comments),
+                ('externalbugtracker', self.__class__.__name__),
+                ('baseurl', self.baseurl)]
 
     def info(self, message):
         """Record an informational message related to this bug tracker."""
