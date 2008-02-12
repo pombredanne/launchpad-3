@@ -157,6 +157,65 @@ the To and CC headers will be ignored:
     False
 
 
+== OOPSes processing incoming mail ==
+
+If an unhandled exception occurs when we try to process an email from
+a user, we record an OOPS with the exception and sent it to the user.
+
+We use create a handler that is guaranteed to raise an exception when
+attempting to process incoming mail.
+
+    >>> class TestOopsException(Exception):
+    ...     pass
+    >>> class OopsHandler:
+    ...     implements(IMailHandler)
+    ...     def process(self, mail, to_addr, filealias):
+    ...         raise TestOopsException()
+    >>> mail_handlers.add('oops.com', OopsHandler())
+
+And submit an email to the handler.
+
+    >>> import email
+    >>> msg = email.message_from_string(
+    ... """From: Foo Bar <foo.bar@canonical.com>
+    ... To: launchpad@oops.com
+    ... X-Original-To: launchpad@oops.com
+    ... Subject: doesn't matter
+    ...
+    ... doesn't matter
+    ... """)
+    >>> msgid = sendmail(msg, ['edit@malone-domain'])
+    >>> handleMail(zopeless_transaction)
+    ERROR:canonical.launchpad.mail:An exception was raised inside the handler:
+    ...
+    TestOopsException
+
+An exception is raised, an OOPS is recorded, and an email is sent back
+to the user, citing the OOPS ID, with the original message attached.
+
+    >>> print stub.test_emails[-1][2]
+    Content-Type: multipart/mixed...
+    ...
+    To: Foo Bar <foo.bar@canonical.com>
+    ...
+    Sorry, something went wrong when Launchpad tried processing your mail.
+    We've recorded what happened, and we'll fix it as soon as possible.
+    Apologies for the inconvenience.
+    <BLANKLINE>
+    If this is blocking your work, let us know on the launchpad-users
+    mailing list.
+    <BLANKLINE>
+    Include the error ID OOPS-... in your message.
+    ...
+    From: Foo Bar <foo.bar@canonical.com>
+    To: launchpad@oops.com
+    X-Original-To: launchpad@oops.com
+    Subject: doesn't matter
+    ...
+
+    >>> stub.test_emails = []
+
+
 == DB exceptions ==
 
 If something goes wrongs in the handler, a DB exception can be raised,
@@ -175,7 +234,6 @@ Let's create and register a handler which raises a SQL error:
 
 Now we send a mail to the handler, which will cause an exception:
 
-    >>> import email
     >>> exception_raiser = email.message_from_string(
     ... """From: Foo Bar <foo.bar@canonical.com>
     ... To: something@except.com
@@ -210,10 +268,11 @@ The second mail we sent got handled despite the exception:
     >>> msgid in foo_handler.handledMails
     True
 
-There are no mails left in the mail box:
+There is only one mail left in the mail box - the one sent back to
+the user reporting the error:
 
     >>> len(stub.test_emails)
-    0
+    1
 
 
 == Librarian not running ==
@@ -230,7 +289,7 @@ logged.
     >>> msg.replace_header('To', '123@foo.com')
     >>> msgid = '<%s>' % sendmail(msg)
     >>> len(stub.test_emails)
-    1
+    2
 
     >>> handleMail(transaction)
     ERROR:...:Upload to Librarian failed...
@@ -238,7 +297,7 @@ logged.
     UploadFailed: (111, 'Connection refused')
 
     >>> len(stub.test_emails)
-    1
+    2
 
     >>> LibrarianLayer.reveal()
     >>> stub.test_emails = []
