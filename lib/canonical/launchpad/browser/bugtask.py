@@ -2044,7 +2044,7 @@ class BugTaskSearchListingView(LaunchpadFormView, FeedsMixin):
             if self.getFieldError(name):
                 self.setFieldError(
                     name, error_message %
-                        cgi.escape(self.request.get('field.%s' % name)))
+                        self.request.get('field.%s' % name))
 
     @property
     def isUpstreamProduct(self):

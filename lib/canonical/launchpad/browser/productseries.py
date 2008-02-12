@@ -754,11 +754,12 @@ class ProductSeriesSourceView(LaunchpadEditFormView):
                     cvsroot, cvsmodule, cvsbranch)
                 if self.context != series and series is not None:
                     self.addError(
+                        structured(
                         "Those CVS details are already specified for"
-                        " <a href=\"%s\">%s %s</a>."
-                        % (quote(canonical_url(series)),
-                           quote(series.product.displayname),
-                           quote(series.displayname)))
+                        " <a href=\"%s\">%s %s</a>.",
+                        canonical_url(series),
+                        series.product.displayname,
+                        series.displayname))
 
         elif rcstype == UIRevisionControlSystems.SVN:
             data['rcstype'] = RevisionControlSystems.SVN
@@ -771,11 +772,12 @@ class ProductSeriesSourceView(LaunchpadEditFormView):
                     svnrepository)
                 if self.context != series and series is not None:
                     self.setFieldError('svnrepository',
+                        structured(
                         "This Subversion branch URL is already specified for"
-                        " <a href=\"%s\">%s %s</a>."
-                        % (quote(canonical_url(series)),
-                           quote(series.product.displayname),
-                           quote(series.displayname)))
+                        " <a href=\"%s\">%s %s</a>.",
+                        canonical_url(series),
+                        series.product.displayname,
+                        series.displayname))
 
         if self.resettoautotest_action.submitted():
             if rcstype is None or rcstype == UIRevisionControlSystems.BZR:

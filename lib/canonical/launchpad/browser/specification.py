@@ -555,14 +555,14 @@ class SpecificationRetargetingView(LaunchpadFormView):
             self.setFieldError('target',
                 "There is no project with the name '%s'. "
                 "Please check that name and try again." %
-                cgi.escape(self.request.form.get("field.target")))
+                self.request.form.get("field.target"))
             return
 
         if target.getSpecification(self.context.name) is not None:
             self.setFieldError('target',
                 'There is already a blueprint with this name for %s. '
                 'Please change the name of this blueprint and try again.' %
-                cgi.escape(target.displayname))
+                target.displayname)
             return
 
     @action(_('Retarget Blueprint'), name='retarget')

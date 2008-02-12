@@ -1246,13 +1246,14 @@ class PersonClaimView(LaunchpadFormView):
                          % self.context.name)
             else:
                 # There seems to be another unvalidated profile for you!
-                error = ("Although this email address is not associated with "
+                error = structured(
+                         "Although this email address is not associated with "
                          "this profile, it's associated with yet another "
                          'one. You can <a href="%s/+claim">claim that other '
                          'profile</a> and then later '
                          '<a href="/people/+requestmerge">combine</a> both '
-                         'of them into a single one.'
-                         % canonical_url(email.person))
+                         'of them into a single one.',
+                         canonical_url(email.person))
         else:
             # Yay! You got the right email this time.
             pass

@@ -276,11 +276,12 @@ class ChooseProductStep(AlsoAffectsStep):
         search_url = self.widgets['product'].popupHref()
         self.setFieldError(
             'product',
-            'There is no project in Launchpad named "%s". Please '
-            '<a href="%s">search for it</a> as it may be registered with '
-            'a different name.' % (
-                cgi.escape(entered_product),
-                cgi.escape(search_url, quote=True)))
+            structured(
+                'There is no project in Launchpad named "%s". Please '
+                '<a href="%s">search for it</a> as it may be registered with '
+                'a different name.',
+                entered_product,
+                search_url))
 
     def main_action(self, data):
         """Inject the selected product into the form and set the next_view to
@@ -477,11 +478,12 @@ class DistroBugTaskCreationStep(BugTaskCreationStep):
                 getUtility(ILaunchpadCelebrities).launchpad)
             self.setFieldError(
                 'sourcepackagename',
+                structured(
                 'There is no package in %s named "%s". If it should'
-                ' be here, <a href="%s">report this as a bug</a>.' % (
-                    cgi.escape(distribution.displayname),
-                    cgi.escape(entered_package),
-                    cgi.escape(filebug_url, quote=True)))
+                ' be here, <a href="%s">report this as a bug</a>.',
+                distribution.displayname,
+                entered_package,
+                filebug_url))
         else:
             try:
                 validate_new_distrotask(
