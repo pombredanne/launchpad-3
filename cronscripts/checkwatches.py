@@ -21,7 +21,7 @@ class CheckWatches(LaunchpadCronScript):
         # checkwatches has been assigned the prefix 'CW.
         config.launchpad.errorreports.oops_prefix += '-CW'
         # Don't copy OOPSes to the zlog; we will do that
-        # explicitely. See `externalbugtracker.report_oops` and
+        # explicitly. See `externalbugtracker.report_oops` and
         # `report_warning`.
         config.launchpad.errorreports.copy_to_zlog = False
 
