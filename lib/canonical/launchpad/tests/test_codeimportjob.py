@@ -450,8 +450,9 @@ class TestCodeImportJobWorkflowStartJob(unittest.TestCase,
         machine.setOnline()
         # Testing startJob failure.
         self.assertFailure(
-            "XXX",
-            getUtility(ICodeImportJobWorkflow).startJob,
+            "The CodeImportJob associated with %s is "
+            "RUNNING." % code_import.branch.unique_name,
+            getUtility(ICodeImportJobWorkflow).requestJob,
             job, machine)
 
     def test_offlineMachine(self):
@@ -461,7 +462,7 @@ class TestCodeImportJobWorkflowStartJob(unittest.TestCase,
         job = self.factory.makeCodeImportJob(code_import)
         # Testing startJob failure.
         self.assertFailure(
-            "XXX",
+            "The machine %s is OFFLINE." % machine.hostname,
             getUtility(ICodeImportJobWorkflow).startJob,
             job, machine)
 

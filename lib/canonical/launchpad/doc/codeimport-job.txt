@@ -249,30 +249,34 @@ running and which machine it is running on.
     >>> new_events = NewEvents()
 
 This method updates the date_started, heartbeat and state fields of
-the job.  Before the call, machine, date_started and heartbeat are
-NULL and the state is PENDING.
+the job.  Before the call, date_started, heartbeat, logtail and
+machine are NULL and the state is PENDING.
 
-    >>> print pending_job.machine
-    None
     >>> print_date_attribute(pending_job, 'date_started')
     None
     >>> print_date_attribute(pending_job, 'heartbeat')
+    None
+    >>> print pending_job.logtail
+    None
+    >>> print pending_job.machine
     None
     >>> print pending_job.state.name
     PENDING
 
-After the call, the machine is set to the supplied import machine,
-date_started and heartbeat fields are both updated to the current time
-and the state is RUNNING.
+After the call, the date_started and heartbeat fields are both updated
+to the current time, the logtail is the empty string, machine is set
+to the supplied import machine and the state is RUNNING.
 
     >>> workflow.startJob(pending_job, machine)
 
-    >>> print pending_job.machine.name
-    bazaar-importd
     >>> print_date_attribute(pending_job, 'date_started')
     UTC_NOW
     >>> print_date_attribute(pending_job, 'heartbeat')
     UTC_NOW
+    >>> pending_job.logtail
+    u''
+    >>> print pending_job.machine.hostname
+    bazaar-importer
     >>> print pending_job.state.name
     RUNNING
 
