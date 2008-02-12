@@ -77,9 +77,12 @@ And the code composed email with a notification of the error.
     On ..., you uploaded a file with translation templates for firefox in
     Mozilla Firefox trunk to Launchpad.
     <BLANKLINE>
-    We were unable to import the file because of errors in its format.
+    We were unable to import the file because of errors in its format:
     <BLANKLINE>
-    You can check your file for correct formatting with the 'msgfmt' command.
+    No header found in this pofile
+    <BLANKLINE>
+    If you use gettext, you can check your file for correct formatting with
+    the 'msgfmt -c' command.
     Please fix any errors raised by msgfmt and upload the file again. If you
     check the file and you don't find any error in it, please look for an
     answer or file a question at https://answers.launchpad.net/rosetta/

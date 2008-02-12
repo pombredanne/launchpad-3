@@ -23,18 +23,15 @@ from zope.event import notify
 from zope.app.form.browser.add import AddView
 from zope.app.event.objectevent import ObjectCreatedEvent
 
-from canonical.launchpad.browser.build import BuildRecordsView
-
 from canonical.cachedproperty import cachedproperty
+from canonical.launchpad.browser.build import BuildRecordsView
 from canonical.launchpad.helpers import shortlist
-
 from canonical.launchpad.interfaces import (
-    BuildStatus, IPerson, IBuilderSet, IBuilder, IBuildSet, NotFoundError
-    )
-
+    IBuilderSet, IBuilder, IBuildSet, IPerson, NotFoundError)
 from canonical.launchpad.webapp import (
-    StandardLaunchpadFacets, GetitemNavigation, Navigation, stepthrough, Link,
-    ApplicationMenu, enabled_with_permission, canonical_url)
+    ApplicationMenu, GetitemNavigation, Link, Navigation,
+    StandardLaunchpadFacets, canonical_url, enabled_with_permission,
+    stepthrough)
 from canonical.launchpad.webapp.tales import DateTimeFormatterAPI
 
 
@@ -167,7 +164,7 @@ class BuilderView(CommonBuilderView, BuildRecordsView):
         # until we can test it properly, since we can only 'abort' slaves
         # in BUILDING state it does depends of the major issue for testing
         # Auto Build System, getting slave building something sane.
-        return '<p>Cancel (%s). Not implemented yet</p>' % builder_id
+        return '<p>Cancel (%s). Not implemented yet.</p>' % builder_id
 
     def defaultBuildState(self):
         """Present all jobs by default."""

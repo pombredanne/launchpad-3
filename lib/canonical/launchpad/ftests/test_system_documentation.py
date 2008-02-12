@@ -31,7 +31,9 @@ from canonical.launchpad.layers import setFirstLayer
 from canonical.launchpad.tests.mail_helpers import pop_notifications
 from canonical.launchpad.webapp.authorization import LaunchpadSecurityPolicy
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
+from canonical.launchpad.webapp.tests import test_notifications
 from canonical.testing import (
+    ExperimentalLaunchpadZopelessLayer,
     LaunchpadZopelessLayer, LaunchpadFunctionalLayer,DatabaseLayer,
     FunctionalLayer)
 
@@ -112,9 +114,10 @@ def uploaderTearDown(test):
 
 def builddmasterSetUp(test):
     """Setup the connection for the build master tests."""
+    test_dbuser = config.builddmaster.dbuser
+    test.globs['test_dbuser'] = test_dbuser
     LaunchpadZopelessLayer.alterConnection(
-        dbuser=config.builddmaster.dbuser,
-        isolation=READ_COMMITTED_ISOLATION)
+        dbuser=test_dbuser, isolation=READ_COMMITTED_ISOLATION)
     setGlobs(test)
 
 def branchscannerSetUp(test):
@@ -414,8 +417,13 @@ special = {
     'buildd-scoring.txt': LayeredDocFileSuite(
             '../doc/buildd-scoring.txt',
             setUp=builddmasterSetUp,
+            layer=LaunchpadZopelessLayer, optionflags=default_optionflags
+            ),
+    'buildd-queuebuilder.txt': LayeredDocFileSuite(
+            '../doc/buildd-queuebuilder.txt',
+            setUp=builddmasterSetUp,
             layer=LaunchpadZopelessLayer, optionflags=default_optionflags,
-            stdout_logging_level=logging.DEBUG
+            stdout_logging_level=logging.WARNING
             ),
     'revision.txt': LayeredDocFileSuite(
             '../doc/revision.txt',
@@ -675,6 +683,7 @@ special = {
             '../doc/pillar.txt',
             setUp=setUp, tearDown=tearDown,
             optionflags=default_optionflags,
+            #layer=ExperimentalLaunchpadZopelessLayer
             layer=LaunchpadZopelessLayer
             ),
     'openid-fetcher.txt': FunctionalDocFileSuite(
@@ -701,6 +710,12 @@ special = {
             '../doc/sourcepackagerelease-build-lookup.txt',
             layer=LaunchpadZopelessLayer, optionflags=default_optionflags
             ),
+    'notification-text-escape.txt': DocFileSuite(
+            '../doc/notification-text-escape.txt',
+	    setUp=test_notifications.setUp,
+	    tearDown=test_notifications.tearDown,
+	    optionflags=default_optionflags
+	    ),
     }
 
 

@@ -94,7 +94,7 @@ first subscribing one of Foo Bar's teams.
 
 Now the subscribe link says 'Subscribe/Unsubscribe'.
 
-  >>> subscribe_link = browser.getLink('Subscribe/')
+  >>> subscribe_link = browser.getLink('Subscribe')
   >>> subscribe_link.text
   'Subscribe/Unsubscribe'
 

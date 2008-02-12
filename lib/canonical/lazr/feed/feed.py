@@ -18,6 +18,7 @@ __all__ = [
 
 from BeautifulSoup import BeautifulSoup
 from datetime import datetime
+import pytz
 import operator
 import os
 import time
@@ -36,7 +37,7 @@ from canonical.config import config
 # working prototype.  Bug 153795.
 from canonical.launchpad.interfaces import ILaunchpadRoot
 from canonical.launchpad.webapp import (
-    LaunchpadFormView, canonical_url, urlparse)
+    LaunchpadView, canonical_url, urlappend, urlparse)
 from canonical.launchpad.webapp.vhosts import allvhosts
 from canonical.lazr.interfaces import (
     IFeed, IFeedEntry, IFeedPerson, IFeedTypedData, UnsupportedFeedFormat)
@@ -45,7 +46,7 @@ SUPPORTED_FEEDS = ('.atom', '.html')
 MINUTES = 60 # Seconds in a minute.
 
 
-class FeedBase(LaunchpadFormView):
+class FeedBase(LaunchpadView):
     """See `IFeed`.
 
     Base class for feeds.
@@ -67,14 +68,6 @@ class FeedBase(LaunchpadFormView):
         self.root_url = canonical_url(getUtility(ILaunchpadRoot),
                                       rootsite=self.rootsite)
 
-    def initialize(self):
-        """See `IFeed`."""
-        # This method must not delegate to the superclass method as it does
-        # things that are inappropriate (e.g. set up widgets) for a Feed
-        # class.  Therefore this implementation must not be removed and
-        # invoking the super class version must not happen.
-        pass
-
     @property
     def title(self):
         """See `IFeed`."""
@@ -83,8 +76,12 @@ class FeedBase(LaunchpadFormView):
     @property
     def link_self(self):
         """See `IFeed`."""
-        return "%s/%s.%s" % (canonical_url(self.context, rootsite="feeds"),
-                             self.feedname, self.format)
+
+        # The self link is the URL for this particular feed.  For example:
+        # http://feeds.launchpad.net/ubuntu/announcments.atom
+        path = "%s.%s" % (self.feedname, self.format)
+        return urlappend(canonical_url(self.context, rootsite="feeds"),
+                         path)
 
     @property
     def site_url(self):
@@ -127,14 +124,6 @@ class FeedBase(LaunchpadFormView):
         """See `IFeed`."""
         raise NotImplementedError
 
-    def getPublicRawItems(self):
-        """See `IFeed`."""
-        raise NotImplementedError
-
-    def itemToFeedEntry(self, item):
-        """See `IFeed`."""
-        raise NotImplementedError
-
     @property
     def feed_format(self):
         """See `IFeed`."""
@@ -162,7 +151,10 @@ class FeedBase(LaunchpadFormView):
                               key=operator.attrgetter('last_modified'),
                               reverse=True)
         if len(sorted_items) == 0:
-            return datetime.utcnow()
+            # datetime.isoformat() doesn't place the necessary "+00:00"
+            # for the feedvalidator's check of the iso8601 date format
+            # unless a timezone is specified with tzinfo.
+            return datetime.utcnow().replace(tzinfo=pytz.utc)
         last_modified = sorted_items[0].last_modified
         if last_modified is None:
             raise AssertionError, 'All feed entries require a date updated.'

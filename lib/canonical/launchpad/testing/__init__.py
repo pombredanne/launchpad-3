@@ -1,4 +1,4 @@
-# Copyright 2007 Canonical Ltd.  All rights reserved.
+ # Copyright 2007 Canonical Ltd.  All rights reserved.
 
 """Testing infrastructure for the Launchpad application.
 
@@ -16,9 +16,10 @@ import pytz
 
 from zope.component import getUtility
 from canonical.launchpad.interfaces import (
-    BranchType, CreateBugParams, IBranchSet, IBugSet, ILaunchpadCelebrities,
-    IPersonSet, IProductSet, IRevisionSet, License, PersonCreationRationale,
-    UnknownBranchTypeError)
+    BranchType, CodeImportReviewStatus, CreateBugParams, IBranchSet, IBugSet,
+    ICodeImportJobWorkflow, ICodeImportSet, ILaunchpadCelebrities, IPersonSet,
+    IProductSet, IRevisionSet, License, PersonCreationRationale,
+    RevisionControlSystems, UnknownBranchTypeError)
 
 
 def time_counter(origin=None, delta=timedelta(seconds=5)):
@@ -49,12 +50,6 @@ def time_counter(origin=None, delta=timedelta(seconds=5)):
 # is by no means complete for Launchpad objects.  If you need to create
 # anonymous objects for your tests then add methods to the factory.
 #
-# All factory methods should be callable with no parameters.  If you
-# add a keyword argument to a method, please be considerate of the other
-# users of the factory and make it behave at least as good as it was
-# before.
-
-
 class LaunchpadObjectFactory:
     """Factory methods for creating Launchpad objects.
 
@@ -194,3 +189,30 @@ class LaunchpadObjectFactory:
             owner, title, comment=self.getUniqueString())
         create_bug_params.setBugTarget(product=self.makeProduct())
         return getUtility(IBugSet).createBug(create_bug_params)
+
+    def makeCodeImport(self, url=None):
+        """Create and return a new, arbitrary code import.
+
+        The code import will be an import from a Subversion repository located
+        at `url`, or an arbitrary unique url if the parameter is not supplied.
+        """
+        if url is None:
+            url = self.getUniqueURL()
+        vcs_imports = getUtility(ILaunchpadCelebrities).vcs_imports
+        branch = self.makeBranch(
+            BranchType.IMPORTED, owner=vcs_imports)
+        registrant = self.makePerson()
+        return getUtility(ICodeImportSet).new(
+            registrant, branch, rcs_type=RevisionControlSystems.SVN,
+            svn_branch_url=url)
+
+    def makeCodeImportJob(self, code_import):
+        """Create and return a new code import job for the given import.
+
+        This implies setting the import's review_status to REVIEWED.
+        """
+        code_import.updateFromData(
+            {'review_status': CodeImportReviewStatus.REVIEWED},
+            code_import.registrant)
+        workflow = getUtility(ICodeImportJobWorkflow)
+        return workflow.newJob(code_import)

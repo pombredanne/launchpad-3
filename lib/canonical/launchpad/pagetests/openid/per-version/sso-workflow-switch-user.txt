@@ -11,11 +11,9 @@ portion of the authentication process:
     >>> from openid.consumer.consumer import Consumer
     >>> from openid.fetchers import setDefaultFetcher
     >>> from openid.store.memstore import MemoryStore
-    >>> from canonical.launchpad.ftests.openidhelpers import (
-    ...     complete_from_browser, install_consumer,
-    ...     make_identifier_select_endpoint, uninstall_consumer,
+    >>> from canonical.launchpad.testing.openidhelpers import (
+    ...     complete_from_browser, make_identifier_select_endpoint,
     ...     PublisherFetcher)
-    >>> install_consumer()
     >>> setDefaultFetcher(PublisherFetcher())
 
 We will first authenticate as Mark Shuttleworth:
@@ -77,4 +75,3 @@ identity URL will be sent to the relying party:
 == Cleanup ==
 
     >>> setDefaultFetcher(None)
-    >>> uninstall_consumer()

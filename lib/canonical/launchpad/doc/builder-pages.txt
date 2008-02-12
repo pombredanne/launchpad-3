@@ -40,7 +40,7 @@ Let's instantiate the view for +cancel:
   >>> builder_view = getMultiAdapter((builder, request), name="+cancel")
 
   >>> builder_view.cancelBuildJob()
-  '<p>Cancel (1). Not implemented yet</p>'
+  '<p>Cancel (1). Not implemented yet.</p>'
 
 
 Let's instantiate the view for +mode:

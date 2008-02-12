@@ -8,9 +8,13 @@ __all__ = [
     ]
 
 import pytz
-import datetime
+from datetime import datetime
 
+from zope.app.form import CustomWidgetFactory
+from zope.app.form.interfaces import InputErrors
 from zope.component import getUtility
+from zope.formlib import form
+from zope.schema import Date
 
 from canonical.launchpad import _
 from canonical.launchpad.webapp import canonical_url
@@ -20,6 +24,8 @@ from canonical.launchpad.interfaces import (
     UnexpectedFormData)
 from canonical.launchpad.browser.launchpad import (
     StructuralHeaderPresentation)
+
+from canonical.widgets import DateWidget
 
 
 class TeamMembershipSHP(StructuralHeaderPresentation):
@@ -33,20 +39,46 @@ class TeamMembershipSHP(StructuralHeaderPresentation):
 
 class TeamMembershipEditView:
 
-    monthnames = {1: 'January', 2: 'February', 3: 'March', 4: 'April',
-                  5: 'May', 6: 'June', 7: 'July', 8: 'August', 9: 'September',
-                  10: 'October', 11: 'November', 12: 'December'}
-
     def __init__(self, context, request):
         self.context = context
         self.request = request
         self.user = getUtility(ILaunchBag).user
         self.errormessage = ""
+        self.prefix = 'membership'
+        self.max_year = 2050
+        fields = form.Fields(Date(
+            __name__='expirationdate', title=_('Expiration date')))
+        expiration_field = fields['expirationdate']
+        expiration_field.custom_widget = CustomWidgetFactory(DateWidget)
+        expires = self.context.dateexpires
+        UTC = pytz.timezone('UTC') 
+        if self.isExpired():
+            # For expired members, we will present the team's default
+            # renewal date.
+            expires = self.context.team.defaultrenewedexpirationdate
+        if self.isDeactivated():
+            # For members who were deactivated, we present by default
+            # their original expiration date, or, if that has passed, or
+            # never set, the team's default renewal date.
+            if expires is None or expires < datetime.now(UTC):
+                expires = self.context.team.defaultrenewedexpirationdate
+        if expires is not None:
+            # We get a datetime from the database, but we want to use a
+            # datepicker so we must feed it a plain date without time.
+            expires = expires.date()
+        data = {'expirationdate': expires}
+        self.widgets = form.setUpWidgets(
+            fields, self.prefix, context, request, ignore_request=False,
+            data=data)
+        self.expiration_widget = self.widgets['expirationdate']
+        # Set the acceptable date range for expiration.
+        self.expiration_widget.from_date = datetime.now(UTC).date()
+        # Disable the date widget if there is no current or required
+        # expiration
+        if not expires:
+            self.expiration_widget.disabled = True
 
-    #
     # Boolean helpers
-    #
-
     def userIsTeamOwnerOrLPAdmin(self):
         return (self.user.inTeam(self.context.team.teamowner) or
                 self.user.inTeam(getUtility(ILaunchpadCelebrities).admin))
@@ -78,33 +110,45 @@ class TeamMembershipEditView:
         return self.context.status == TeamMembershipStatus.DEACTIVATED
 
     def adminIsSelected(self):
-        """Whether the admin radiobutton should be selected or not"""
+        """Whether the admin radiobutton should be selected."""
         request_admin = self.request.get('admin')
-        if request_admin:
-            return request_admin == 'yes'
-        return self.isAdmin()
+        if request_admin == 'yes':
+            return 'checked'
+        if self.isAdmin():
+            return 'checked'
+        return ''
+
+    def adminIsNotSelected(self):
+        """Whether the not-admin radiobutton should be selected."""
+        if self.adminIsSelected() != 'checked':
+            return 'checked'
+        return ''
 
     def expiresIsSelected(self):
-        """Whether the expires radiobutton should be selected or not"""
+        """Whether the expiration date radiobutton should be selected."""
         request_expires = self.request.get('expires')
-        if request_expires:
-            return request_expires == 'date'
+        if request_expires == 'date':
+            return 'checked'
         if self.isExpired():
-            # Always return false when expired, because there's another
+            # Never checked when expired, because there's another
             # radiobutton in that situation.
-            return False
-        return self.membershipExpires()
+            return ''
+        if self.membershipExpires():
+            return 'checked'
+        return ''
 
     def neverExpiresIsSelected(self):
-        """Whether the expires radiobutton should be selected or not"""
+        """Whether the never-expires radiobutton should be selected."""
         request_expires = self.request.get('expires')
-        if request_expires:
-            return request_expires == 'never'
+        if request_expires == 'never':
+            return 'checked'
         if self.isExpired():
-            # Always return false when expired, because there's another
+            # Never checked when expired, because there's another
             # radiobutton in that situation.
-            return False
-        return not self.membershipExpires()
+            return ''
+        if not self.membershipExpires():
+            return 'checked'
+        return ''
 
     def canChangeExpirationDate(self):
         """Return True if the logged in user can change the expiration date of
@@ -211,6 +255,13 @@ class TeamMembershipEditView:
             self.request.response.redirect(
                 '%s/+members' % canonical_url(self.context.team))
 
+    @property
+    def date_picker_trigger(self):
+        """JavaScript function call to trigger the date picker."""
+        return """pickDate('membership.expirationdate', %s);
+         document.getElementById('membership.expirationdate').disabled=false;
+         """ % (self.expiration_widget.daterange)
+
     def _setMembershipData(self, status):
         """Set all data specified on the form, for this TeamMembership.
 
@@ -228,8 +279,7 @@ class TeamMembershipEditView:
                     expires = self._getExpirationDate()
                 except ValueError, err:
                     self.errormessage = (
-                        'Invalid expiration: %s. '
-                        'Please fix this and resubmit your changes.' % err)
+                        'Invalid expiration: %s' % err)
                     return False
         else:
             expires = self.context.dateexpires
@@ -247,73 +297,23 @@ class TeamMembershipEditView:
         API to the caller, who needs to check only for that specific
         exception.
         """
-        year = int(self.request.form.get('year'))
-        month = int(self.request.form.get('month'))
-        day = int(self.request.form.get('day'))
+        expires = None
+        try:
+            expires = self.expiration_widget.getInputValue()
+        except InputErrors, value:
+            # Handle conversion errors. We have to do this explicitly here
+            # because we are not using the full form machinery which would
+            # put the relevant error message into the field error. We are
+            # mixing the zope3 widget stuff with a hand-crafted form
+            # processor, so we need to trap this manually.
+            raise ValueError(value.doc())
+        if expires is None:
+            return None
 
-        if 0 in (year, month, day):
-            raise ValueError('incomplete date provided')
-
-        expires = datetime.datetime(year, month, day,
-                                    tzinfo=pytz.timezone('UTC'))
-
-        now = datetime.datetime.now(pytz.timezone('UTC'))
-        if expires <= now:
-            raise ValueError('date provided is in the past')
-
+        # We used a date picker, so we have a date. What we want is a
+        # datetime in UTC
+        UTC = pytz.timezone('UTC')
+        expires = datetime(expires.year, expires.month, expires.day,
+                           tzinfo=UTC)
         return expires
-
-    #
-    # Helper methods for widgets and processing
-    #
-
-    def dateChooserForExpiredMembers(self):
-        expires = self.context.team.defaultrenewedexpirationdate
-        return self._buildDateChooser(expires)
-
-    def dateChooserForProposedMembers(self):
-        expires = self.context.team.defaultexpirationdate
-        return self._buildDateChooser(expires)
-
-    def dateChooserWithCurrentExpirationSelected(self):
-        return self._buildDateChooser(self.context.dateexpires)
-
-    # XXX: salgado 2005-03-15: This will be replaced as soon as we have
-    # browser:form.
-    def _buildDateChooser(self, selected=None):
-        # Get form values and use them as the selected value.
-        html = '<select name="day">'
-        html += '<option value="0"></option>'
-        for day in range(1, 32):
-            if selected and day == selected.day:
-                html += '<option selected value="%d">%d</option>' % (day, day)
-            else:
-                html += '<option value="%d">%d</option>' % (day, day)
-        html += '</select>'
-
-        html += '<select name=month>'
-        html += '<option value="0"></option>'
-        for month in range(1, 13):
-            monthname = self.monthnames[month]
-            if selected and month == selected.month:
-                html += ('<option selected value="%d">%s</option>' %
-                         (month, monthname))
-            else:
-                html += ('<option value="%d">%s</option>' %
-                         (month, monthname))
-        html += '</select>'
-
-        # XXX: salgado 2005-03-16: We need to define it somewhere else, but
-        # it's not that urgent, so I'll leave it here for now.
-        max_year = 2050
-        html += '<select name="year">'
-        html += '<option value="0"></option>'
-        for year in range(datetime.datetime.utcnow().year, max_year):
-            if selected and year == selected.year:
-                html += '<option selected value="%d">%d</option>' % (year, year)
-            else:
-                html += '<option value="%d">%d</option>' % (year, year)
-        html += '</select>'
-
-        return html
 
