@@ -49,6 +49,7 @@ from canonical.lazr.interfaces import IEntry
 from canonical.lazr.rest.schema import CollectionField
 
 from canonical.launchpad import _
+
 from canonical.launchpad.fields import (
     BlacklistableContentNameField, IconImageUpload, LogoImageUpload,
     MugshotImageUpload, PasswordField, PublicPersonChoice, StrippedTextLine)
@@ -1396,7 +1397,7 @@ class IPersonSet(Interface):
         """Return the person with the given OpenID identifier, or None."""
 
     def getAllTeams(orderBy=None):
-        """Return all Teams.
+        """Return all Teams, ignoring the merged ones.
 
         <orderBy> can be either a string with the column name you want to sort
         or a list of column names as strings.

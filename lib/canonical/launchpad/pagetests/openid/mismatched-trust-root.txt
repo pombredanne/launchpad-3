@@ -23,10 +23,6 @@ as a trust root but with a return URL from a different domain.  We
 need to temporarily turn on error handling so that the
 UntrustedReturnURL error gets converted to an OpenID response.
 
-    >>> from canonical.launchpad.ftests.openidhelpers import (
-    ...     install_consumer, uninstall_consumer)
-    >>> install_consumer()
-
     >>> from urllib import urlencode
     >>> args = urlencode({
     ...     'openid.mode': 'checkid_setup',
@@ -50,8 +46,3 @@ UntrustedReturnURL error gets converted to an OpenID response.
 So provided that the trust roots we implement special handling for are
 not overly broad, we can rely on the OpenID library to block malicious
 requests.
-
-
-== Cleanup ==
-
-    >>> uninstall_consumer()

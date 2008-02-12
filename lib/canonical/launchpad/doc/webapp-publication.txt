@@ -806,15 +806,17 @@ the publication, up to the point where it was forcefully stopped.
     True
     >>> publication.endRequest(request, None)
 
-In some cases, when a Retry or DisconnectionError exception is raised,
-the request will be retried with a copy of the WSGI environment, but if
-this happens we'll remove the [publication,traversal]ticks variables from
-there.
+When a Retry or DisconnectionError exception is raised and the request
+supports retry, it will be retried with a copy of the WSGI environment.
+If that happens, though, we'll remove the [publication,traversal]ticks 
+variables from there.
 
     >>> request, publication = get_request_and_publication()
     >>> request.setPrincipal(auth_utility.unauthenticatedPrincipal())
     >>> request._orig_env['launchpad.traversalticks'] = 500
     >>> request._orig_env['launchpad.publicationticks'] = 500
+    >>> request.supportsRetry()
+    True
     >>> from zope.publisher.interfaces import Retry
     >>> try:
     ...     raise Retry('foo')
@@ -834,6 +836,8 @@ there.
     >>> request.setPrincipal(auth_utility.unauthenticatedPrincipal())
     >>> request._orig_env['launchpad.traversalticks'] = 500
     >>> request._orig_env['launchpad.publicationticks'] = 500
+    >>> request.supportsRetry()
+    True
     >>> import canonical.launchpad.webapp.adapter as da
     >>> try:
     ...     raise da.DisconnectionError()
@@ -850,6 +854,32 @@ there.
     False
     >>> request._orig_env.has_key('launchpad.traversalticks')
     False
+
+Of course, any request can only be retried a certain number of times and
+when we reach that number of retries we don't pop the tick conts from the
+WSGI env.
+
+    >>> request, publication = get_request_and_publication()
+    >>> request.setPrincipal(auth_utility.unauthenticatedPrincipal())
+    >>> request._orig_env['launchpad.traversalticks'] = 500
+    >>> request._orig_env['launchpad.publicationticks'] = 500
+    >>> request.supportsRetry = lambda: False
+    >>> request.supportsRetry()
+    False
+    >>> from zope.publisher.interfaces import Retry
+    >>> try:
+    ...     raise Retry('foo')
+    ... except:
+    ...     publication.handleException(
+    ...         None, request, sys.exc_info(), retry_allowed=True)
+    Traceback (most recent call last):
+    ...
+    Retry: 'foo'
+
+    >>> request._orig_env['launchpad.publicationticks']
+    500
+    >>> request._orig_env['launchpad.traversalticks']
+    500
 
 (A bit of cleanup so the test can continue)
 

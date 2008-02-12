@@ -235,26 +235,9 @@ class Builder(SQLBase):
                  PackagePublishingPocket.PROPOSED),
             }
 
-    @property
-    def component_dependencies(self):
-        """A dictionary of component to component dependencies.
-
-        Return a dictionary that maps a component to a string of
-        components that it is allowed to depend on for a build. This
-        string can be used directly at the end of sources.list lines.
-        """
-        return {
-            'main': 'main',
-            'restricted': 'main restricted',
-            'universe': 'main restricted universe',
-            'multiverse': 'main restricted universe multiverse',
-            'partner' : 'partner',
-            }
-
     def _determineArchivesForBuild(self, build_queue_item):
         """Work out what sources.list lines should be passed to builder."""
-        ogre_components = self.component_dependencies[
-            build_queue_item.build.current_component.name]
+        ogre_components = " ".join(build_queue_item.build.ogre_components)
         dist_name = build_queue_item.archseries.distroseries.name
         archive_url = build_queue_item.build.archive.archive_url
         ubuntu_source_lines = []

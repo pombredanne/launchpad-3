@@ -116,6 +116,16 @@ class CodeImportEventSet:
         self._recordItems(event, items)
         return event
 
+    def newRequest(self, code_import, person):
+        """See `ICodeImportEventSet`."""
+        assert code_import is not None, "code_import must not be None"
+        assert person is not None, "person must not be None"
+        event = CodeImportEvent(
+            event_type=CodeImportEventType.REQUEST,
+            code_import=code_import, person=person)
+        self._recordCodeImport(event, code_import)
+        return event
+
     def newOnline(self, machine):
         """See `ICodeImportEventSet`."""
         assert machine is not None, "machine must not be None"
@@ -155,6 +165,10 @@ class CodeImportEventSet:
         """Record a snapshot of the code import in the event data."""
         self._recordItems(event, self._iterItemsForSnapshot(code_import))
 
+    def _recordCodeImport(self, event, code_import):
+        """Record the code import id in the event data."""
+        self._recordItems(event, [self._getCodeImportItem(code_import)])
+
     def _recordItems(self, event, items):
         """Record the specified event data into the database."""
         for key, value in items:
@@ -164,7 +178,7 @@ class CodeImportEventSet:
 
     def _iterItemsForSnapshot(self, code_import):
         """Yield key-value tuples to save a snapshot of the code import."""
-        yield 'CODE_IMPORT', str(code_import.id)
+        yield self._getCodeImportItem(code_import)
         yield 'REVIEW_STATUS', code_import.review_status.name
         yield 'OWNER', str(code_import.owner.id)
         yield 'UPDATE_INTERVAL', self._getNullableValue(
@@ -173,6 +187,10 @@ class CodeImportEventSet:
             code_import.assignee, use_id=True)
         for detail in self._iterSourceDetails(code_import):
             yield detail
+
+    def _getCodeImportItem(self, code_import):
+        """Return the key-value tuple for the code import id."""
+        return 'CODE_IMPORT', str(code_import.id)
 
     def _getNullableValue(self, value, use_id=False):
         """Return the string value for a nullable value.

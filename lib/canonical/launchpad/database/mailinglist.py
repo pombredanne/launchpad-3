@@ -20,6 +20,7 @@ from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import SQLBase, sqlvalues
+from canonical.launchpad import _
 from canonical.launchpad.interfaces import (
     CannotChangeSubscription, CannotSubscribe, CannotUnsubscribe,
     EmailAddressStatus, IEmailAddressSet, ILaunchpadCelebrities, IMailingList,
@@ -326,6 +327,8 @@ class MailingList(SQLBase):
 
 class MailingListSet:
     implements(IMailingListSet)
+
+    title = _('Team mailing lists')
 
     def new(self, team, registrant=None):
         """See `IMailingListSet`."""

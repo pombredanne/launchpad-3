@@ -651,17 +651,38 @@ class TranslationImportQueue:
         sourcepackagename=None, distroseries=None, productseries=None,
         potemplate=None):
         """See ITranslationImportQueue."""
-        # We need to know if we are handling .bz2 files, we could use the
-        # python2.4-magic but it makes no sense to add that dependency just
-        # for this check as the .bz2 files start with the 'BZh' string.
+        # XXX: This whole set of ifs is a workaround for bug 44773
+        # (Python's gzip support sometimes fails to work when using
+        # plain tarfile.open()). The issue is that we can't rely on
+        # tarfile's smart detection of filetypes and instead need to
+        # hardcode the type explicitly in the mode. We simulate magic
+        # here to avoid depending on the python-magic package. We can
+        # get rid of this when http://bugs.python.org/issue1488634 is
+        # fixed.
+        #
+        # XXX: Incidentally, this also works around bug #1982 (Python's
+        # bz2 support is not able to handle external file objects). That
+        # bug is worked around by using tarfile.open() which wraps the
+        # fileobj in a tarfile._Stream instance. We can get rid of this
+        # when we upgrade to python2.5 everywhere.
+        #       -- kiko, 2008-02-08
         if content.startswith('BZh'):
-            # Workaround for the bug #1982. Python's bz2 support is not able
-            # to handle external file objects.
-            tarball = tarfile.open('', 'r|bz2', StringIO(content))
+            mode = "r|bz2"
+        elif content.startswith('\037\213'):
+            mode = "r|gz"
+        elif content[257:262] == 'ustar':
+            mode = "r|tar"
         else:
-            tarball = tarfile.open('', 'r', StringIO(content))
+            mode = "r"
 
         num_files = 0
+        try:
+            tarball = tarfile.open('', mode, StringIO(content))
+        except tarfile.ReadError:
+            # If something went wrong with the tarfile, assume it's
+            # busted and let the user deal with it.
+            return num_files
+
         for tarinfo in tarball:
             filename = tarinfo.name
             # XXX: JeroenVermeulen 2007-06-18 bug=121798:

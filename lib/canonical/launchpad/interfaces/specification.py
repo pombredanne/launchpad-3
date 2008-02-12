@@ -894,9 +894,10 @@ class ISpecificationSet(IHasSpecifications):
     def getByURL(url):
         """Return the specification with the given url."""
 
-    def new(name, title, specurl, summary, priority, status, owner,
-        assignee=None, drafter=None, approver=None, product=None,
-        distribution=None):
+    def new(name, title, specurl, summary, definition_status,
+        owner, approver=None, product=None, distribution=None, assignee=None,
+        drafter=None, whiteboard=None,
+        priority=SpecificationPriority.UNDEFINED):
         """Create a new specification."""
 
 
