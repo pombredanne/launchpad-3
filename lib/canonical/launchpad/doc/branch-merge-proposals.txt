@@ -296,7 +296,10 @@ a user in the reviewer team can approve or reject the branch.
 
 A branch proposal to merge that has been approved can be added to the
 merge queue for the target branch.  The proposal to merge will be given
-a queue position where the value '1' is the front of the queue.
+a queue position which is has no significance other than defining the
+order in the queue.  There can be no assumptions on the actual value
+of the queue position as any integer value is valid, and a smaller
+integer value comes before a larger integer value in the queue.
 
 When a proposal is queued, the person that queues up the branch is
 recorded, along with the revision_id of the tip revision.  This revision_id
@@ -307,8 +310,8 @@ is the revision that will be merged into the target branch.
     Queued
     >>> print proposal.queuer.displayname
     Sample Person
-    >>> print proposal.queue_position
-    1
+    >>> proposal.queued_revision_id == tip.revision_id
+    True
 
 
 == Removing a branch from the merge queue ==
@@ -347,8 +350,6 @@ queuing the branch is not a reviewer, an exception is raised.
     eric-reviewer
     >>> print proposal.reviewer.name
     eric-reviewer
-    >>> print proposal.queue_position
-    1
 
 
 == Marking as failed to merge ==
