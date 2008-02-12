@@ -53,7 +53,7 @@ CodeImportMachine.  There is only one CodeImportMachine in the sample data.
 Machine objects themselves provide ICodeImportMachine, which includes
 hostname and online state information.
 
-    >>> verifyObject(ICodeImportMachine, machine)
+    >>> verifyObject(ICodeImportMachine, sample_machine)
     True
     >>> sample_machine.hostname
     u'bazaar-importer'
@@ -96,7 +96,10 @@ update the fields and in addition create events in the CodeImportEvent audit
 trail.  The NewEvents class helps testing the creation of CodeImportEvent
 objects.
 
+    >>> from canonical.launchpad.interfaces import (
+    ...     CodeImportEventDataType, CodeImportMachineOfflineReason)
     >>> from canonical.launchpad.tests.test_codeimportjob import NewEvents
+
 
 === setOnline ===
 
@@ -105,7 +108,6 @@ corresponding event. It is called when a code-import-controller daemon
 goes online.
 
     >>> new_events = NewEvents()
-    >>> new_machine = reset_machine(machine)
     >>> new_machine.setOnline()
     >>> print new_machine.state.name
     ONLINE
@@ -140,12 +142,19 @@ records the corresponding event.
     >>> new_events = NewEvents()
     >>> new_machine.setQuiescing(ddaa, "1.1.42 rollout")
     >>> print new_events.summary()
-    QUIESCING frobisher David Allouche
+    QUIESCE frobisher ddaa
 
     >>> [new_event] = new_events
     >>> dict(new_event.items())[CodeImportEventDataType.MESSAGE]
     u'1.1.42 rollout'
 
+Getting the machine directly from the QUIESCING state to the ONLINE state
+cannot be done via the manipulation methods (see below), so we force it using
+removeSecurityProxy() for the tests.
+
+    >>> from zope.security.proxy import removeSecurityProxy
+    >>> removeSecurityProxy(new_machine).state = \
+    ...     CodeImportMachineState.ONLINE
 
 === Allowed State Transitions ===
 
@@ -172,11 +181,10 @@ If the machine state is already offline, setOffline will defensively
 fail, this will usefully detect logic errors where a single thread of
 execution makes redundant calls to this method.
 
-    >>> new_machine.setOnline()
     >>> print new_machine.state.name
     ONLINE
 
-    >>> new_machine.setOffline()
+    >>> new_machine.setOffline(some_reason)
     >>> print new_machine.state.name
     OFFLINE
     >>> new_machine.setOffline(some_reason)
