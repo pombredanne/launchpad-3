@@ -50,4 +50,10 @@ CREATE TABLE OAuthAccessToken (
     secret text NOT NULL
 );
 
+CREATE TABLE OAuthNonce (
+    nonce text UNIQUE,
+    request_timestamp timestamp without time zone,
+    consumer integer NOT NULL REFERENCES OAuthConsumer
+);
+
 INSERT INTO LaunchpadDatabaseRevision VALUES (88, 77, 0);
