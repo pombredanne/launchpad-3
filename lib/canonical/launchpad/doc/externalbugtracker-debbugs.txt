@@ -79,8 +79,10 @@ Log in and kick off the update. The importing of comments, which is
 controlled by a configuration option, is disabled here and will be
 tested later.
 
+    >>> from canonical.launchpad.scripts.checkwatches import BugWatchUpdater
+    >>> bug_watch_updater = BugWatchUpdater(txn)
     >>> external_debbugs.import_comments = False
-    >>> external_debbugs.updateBugWatches(bug_watches)
+    >>> bug_watch_updater.updateBugWatches(external_debbugs, bug_watches)
     INFO:...:Updating 5 watches on http://bugs.some.where
 
     >>> for bug_watch in bug_watches:
