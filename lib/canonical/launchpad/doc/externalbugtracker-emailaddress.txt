@@ -6,7 +6,8 @@ Launchpad allows users to register an email address as an external bug
 tracker. This means that bugs for that bug tracker can be forwarded to
 the specified email address.
 
-The BugTrackerType enumeration defines an EMAILADDRESS bug tracker type.
+The BugTrackerType enumeration defines an EMAILADDRESS bug tracker
+type.
 
     >>> from canonical.launchpad.interfaces import BugTrackerType
     >>> BugTrackerType.EMAILADDRESS.title
@@ -28,8 +29,8 @@ create a new ExternalBugTracker for an email address will fail.
       ...
     UnknownBugTrackerTypeError: EMAILADDRESS
 
-A bug tracker of type EMAILADDRESS can be created in the same way as any
-other bug tracker, but with a baseurl in the form
+A bug tracker of type EMAILADDRESS can be created in the same way as
+any other bug tracker, but with a baseurl in the form
 mailto:<email-address>.
 
     >>> from zope.component import getUtility
@@ -66,8 +67,8 @@ the local part of an email address (e.g. <local_name>@foobar.com).
 == Adding a BugWatch to an upstream email address ==
 
 We can add a bug watch to an upstream email address in the normal
-fashion. For email addresses, we record the message ID of the mail sent to
-the remote email address, if it is known. The presence of a bug watch
+fashion. For email addresses, we record the message ID of the mail sent
+to the remote email address, if it is known. The presence of a bug watch
 means that a message has been sent to the upstream tracker.
 
     >>> from canonical.launchpad.interfaces import IBugSet
@@ -93,8 +94,8 @@ field.
     True
 
 Normally, BugTracker.getBugsWatching() returns a shortlist of the bugs
-watching a given remote bug for that bug tracker. However, since with an
-email address bug tracker Launchpad can never know a remote bug ID,
+watching a given remote bug for that bug tracker. However, since with
+an email address bug tracker Launchpad can never know a remote bug ID,
 calling getBugsWatching() on an email address bug tracker will always
 return an empty list.
 

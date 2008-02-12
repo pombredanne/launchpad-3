@@ -190,7 +190,7 @@ class CpanExtractBugTrackerAndBugTest(ExtractBugTrackerAndBugTestBase):
 
 class EmailAddressExtractBugTrackerAndBugTest(
     ExtractBugTrackerAndBugTestBase):
-    """Ensure BugWatchSet.extractBugTrackerAndBug works with Email address.
+    """Ensure BugWatchSet.extractBugTrackerAndBug works with email addresses.
     """
 
     bugtracker_type = BugTrackerType.EMAILADDRESS
