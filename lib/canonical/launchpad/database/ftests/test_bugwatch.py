@@ -198,8 +198,9 @@ class SavannahExtractBugTrackerAndBugTest(ExtractBugTrackerAndBugTestBase):
 
     def test_unregistered_tracker_url(self):
         # The Savannah tracker is always registered, so this test
-        # doesn't make sense for SourceForge URLs.
+        # doesn't make sense for Savannah URLs.
         pass
+
 
 def test_suite():
     suite = unittest.TestSuite()
