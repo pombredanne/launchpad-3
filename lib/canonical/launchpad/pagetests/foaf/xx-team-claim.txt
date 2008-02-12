@@ -111,3 +111,12 @@ page.
     Team owner: No Privileges Person
     ...
 
+
+Trying to access +claimteam for an already active team 404s as you would
+expect it to (we shouldn't be linking to from anywhere):
+
+    >>> user_browser.open("http://launchpad.dev/~doc/+claimteam")
+    Traceback (most recent call last):
+    ...
+    NotFound:...
+

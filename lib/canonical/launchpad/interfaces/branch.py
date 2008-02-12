@@ -57,14 +57,11 @@ class BranchLifecycleStatus(DBEnumeratedType):
     Essentially, this tells us what the author of the branch thinks of the
     code in the branch.
     """
-    sort_order = (
-        'MATURE', 'DEVELOPMENT', 'EXPERIMENTAL', 'MERGED', 'ABANDONED', 'NEW')
 
     NEW = DBItem(1, """
         New
 
-        This branch has just been created, and we know nothing else about
-        it.
+        This branch has just been created.
         """)
 
     EXPERIMENTAL = DBItem(10, """
@@ -124,7 +121,7 @@ class BranchType(DBEnumeratedType):
         Mirrored
 
         Primarily hosted elsewhere and is periodically mirrored
-        from the remote location into Launchpad.
+        from the external location into Launchpad.
         """)
 
     IMPORTED = DBItem(3, """
@@ -328,10 +325,8 @@ class IBranch(IHasOwner):
         allow_query=False,
         allow_fragment=False,
         trailing_slash=False,
-        description=_("The URL where the Bazaar branch is hosted. This is "
-            "the URL used to checkout the branch. The only branch format "
-            "supported is that of the Bazaar revision control system, see "
-            "www.bazaar-vcs.org for more information."))
+        description=_("This is the external location where the Bazaar "
+                      "branch is hosted."))
 
     whiteboard = Whiteboard(title=_('Whiteboard'), required=False,
         description=_('Notes on the current status of the branch.'))
@@ -346,8 +341,11 @@ class IBranch(IHasOwner):
 
     # People attributes
     registrant = Attribute("The user that registered the branch.")
-    owner = Choice(title=_('Owner'), required=True, vocabulary='ValidOwner',
-        description=_("Branch owner, either a valid Person or Team."))
+    owner = Choice(
+        title=_('Owner'), required=True,
+        vocabulary='PersonActiveMembershipPlusSelf',
+        description=_("Either yourself or a team you are a member of. "
+                      "This controls who can modify the branch."))
     author = Choice(
         title=_('Author'), required=False, vocabulary='ValidPersonOrTeam',
         description=_("The author of the branch. Leave blank if the author "
@@ -659,7 +657,7 @@ class IBranchSet(Interface):
         Return the default value if there is no such branch.
         """
 
-    def new(branch_type, name, registrant, owner, product, url, title=None,
+    def new(branch_type, name, creator, owner, product, url, title=None,
             lifecycle_status=BranchLifecycleStatus.NEW, author=None,
             summary=None, home_page=None, whiteboard=None, date_created=None):
         """Create a new branch.

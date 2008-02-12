@@ -8,7 +8,6 @@ __all__ = [
     'QueueItemsView',
     ]
 from zope.component import getUtility
-from zope.security.interfaces import Unauthorized
 
 from canonical.launchpad.interfaces import (
     IHasQueueItems, IPackageUploadSet, QueueInconsistentStateError,
@@ -49,13 +48,9 @@ class QueueItemsView(LaunchpadView):
             self.state = PackageUploadStatus.items[state_value]
         except KeyError:
             raise UnexpectedFormData(
-                'No suitable status found for value "%s"' % state_value
-                )
+                'No suitable status found for value "%s"' % state_value)
 
         self.queue = self.context.getPackageUploadQueue(self.state)
-
-        if not check_permission('launchpad.View', self.queue):
-            raise Unauthorized("User don't have permission to see this queue.")
 
         valid_states = [
             PackageUploadStatus.NEW,
@@ -64,13 +59,6 @@ class QueueItemsView(LaunchpadView):
             PackageUploadStatus.DONE,
             PackageUploadStatus.UNAPPROVED,
             ]
-
-        if not check_permission('launchpad.Edit', self.queue):
-            # Omit the UNAPPROVED status, which the user is unable to
-            # view anyway. If he hand-hacks the URL, all he will get is
-            # a Forbidden which is enforced by the security wrapper for
-            # Upload.
-            valid_states.remove(PackageUploadStatus.UNAPPROVED)
 
         self.filtered_options = []
 

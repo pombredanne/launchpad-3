@@ -25,14 +25,15 @@ from sqlobject import SQLMultipleJoin, SQLRelatedJoin
 from sqlobject import SQLObjectNotFound
 
 from canonical.launchpad.interfaces import (
-    BugAttachmentType, BugTaskStatus, DistroSeriesStatus, IBug,
-    IBugAttachmentSet, IBugBecameQuestionEvent, IBugBranch, IBugSet,
-    IBugTaskSet, IBugWatchSet, ICveSet, IDistribution, IDistroBugTask,
-    IDistroSeries, IDistroSeriesBugTask, ILaunchpadCelebrities,
-    ILibraryFileAliasSet, IMessage, IProduct, IProductSeries,
-    IProductSeriesBugTask, IQuestionTarget, ISourcePackage,
-    IUpstreamBugTask, NominationError, NominationSeriesObsoleteError,
-    NotFoundError, UNRESOLVED_BUGTASK_STATUSES)
+    BugAttachmentType, BugTaskStatus, BugTrackerType,
+    DistroSeriesStatus, IBug, IBugAttachmentSet,
+    IBugBecameQuestionEvent, IBugBranch, IBugSet, IBugTaskSet,
+    IBugWatchSet, ICveSet, IDistribution, IDistroBugTask, IDistroSeries,
+    IDistroSeriesBugTask, ILaunchpadCelebrities, ILibraryFileAliasSet,
+    IMessage, IProduct, IProductSeries, IProductSeriesBugTask,
+    IQuestionTarget, ISourcePackage, IUpstreamBugTask, NominationError,
+    NominationSeriesObsoleteError, NotFoundError,
+    UNRESOLVED_BUGTASK_STATUSES)
 from canonical.launchpad.helpers import shortlist
 from canonical.database.sqlbase import cursor, SQLBase, sqlvalues
 from canonical.database.constants import UTC_NOW
@@ -934,6 +935,14 @@ class Bug(SQLBase):
 
     def getBugWatch(self, bugtracker, remote_bug):
         """See `IBug`."""
+        # If the bug tracker is of BugTrackerType.EMAILADDRESS we can
+        # never tell if a bug is already being watched upstream, since
+        # the remotebug field for such bug watches contains either '' or
+        # an RFC822 message ID. In these cases, then, we always return
+        # None for the sake of sanity.
+        if bugtracker.bugtrackertype == BugTrackerType.EMAILADDRESS:
+            return None
+
         # XXX: BjornT 2006-10-11:
         # This matching is a bit fragile, since bugwatch.remotebug
         # is a user editable text string. We should improve the
