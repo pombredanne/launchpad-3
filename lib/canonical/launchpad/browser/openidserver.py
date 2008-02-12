@@ -36,6 +36,7 @@ from canonical.launchpad.webapp import (
 from canonical.launchpad.webapp.interfaces import (
     IPlacelessLoginSource)
 from canonical.launchpad.webapp.login import logInPerson, logoutPerson
+from canonical.launchpad.webapp.menu import structured
 from canonical.launchpad.webapp.vhosts import allvhosts
 from canonical.uuid import generate_uuid
 from canonical.widgets.itemswidgets import LaunchpadRadioWidget
@@ -553,7 +554,7 @@ class LoginServiceLoginView(LoginServiceBaseView):
                     structured(_(
                     "The email address <strong>${email}</strong> can not be "
                     "used to log in as it belongs to a team.",
-                    mapping=dict(email=email)))
+                    mapping=dict(email=email))))
         elif action == 'createaccount':
             if person is not None and person.is_valid_person:
                 self.addError(_(

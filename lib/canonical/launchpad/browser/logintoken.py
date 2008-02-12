@@ -678,7 +678,7 @@ class NewAccountView(BaseLoginTokenView, LaunchpadFormView):
         if self.email is not None and self.email.person.is_valid_person:
             self.addError(_(
                 'The email address ${email} is already registered.',
-                mapping=(email=self.context.email)))
+                mapping=dict(email=self.context.email)))
 
     @action(_('Continue'), name='continue')
     def continue_action(self, action, data):

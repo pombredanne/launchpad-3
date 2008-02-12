@@ -186,7 +186,7 @@ class AdminTeamMergeView(AdminMergeBaseView):
             self.addError(_(
                 "${name} is associated with a Launchpad mailing list; we "
                 "can't merge it.",
-                mapping=(name=data['dupe_person'].name)))
+                mapping=dict(name=data['dupe_person'].name)))
 
     @action('Merge', name='merge')
     def merge_action(self, action, data):
