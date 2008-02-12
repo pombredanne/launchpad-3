@@ -35,7 +35,7 @@
   </tal:actions>
   </table>
   </tal:deletetable>
-  <tal:altertable condition="view/branch_deletion_actions/delete">
+  <tal:altertable condition="view/branch_deletion_actions/alter">
   <div style="margin-top: 1em">The following items will be <em>changed</em>:</div>
   <table style="margin-bottom: 0">
   <tr><th>Item</th><th>Reason</th></tr>
@@ -49,7 +49,14 @@
   </tal:actions>
   </table>
   </tal:altertable>
-<p style="margin-bottom: 0;">Branch deletion is permanent.</p>
+  <p style="margin-bottom: 0;" tal:condition="view/all_permitted">
+      Branch deletion is permanent.
+  </p>
+  <p style="margin-bottom: 0;" tal:condition="not:view/all_permitted">
+      You do not have permission make all the changes required to delete this
+      Branch.
+  </p>
+
   <div metal:use-macro="context/@@launchpad_form/form" style="margin: 0">
   </div>
 </div><tal:comment condition="nothing"><!-- end main slot --></tal:comment>

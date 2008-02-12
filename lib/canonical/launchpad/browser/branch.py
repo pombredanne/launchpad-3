@@ -564,12 +564,15 @@ class BranchDeletionView(LaunchpadFormView):
             reqs.append((item, action, reason, allowed))
         return reqs
 
-    @action('Delete Branch', name='delete_branch')
+    def all_permitted(self):
+        return len([item for item, action, reason, allowed in
+            self.displayDeletionRequirements() if not allowed]) == 0
+
+    @action('Delete Branch', name='delete_branch',
+            condition=lambda x, y: x.all_permitted())
     def delete_branch_action(self, action, data):
         branch = self.context
-        forbidden = [item for item, action, reason, allowed in
-            self.displayDeletionRequirements() if not allowed]
-        if len(forbidden) == 0:
+        if self.all_permitted():
             # Since the user is going to delete the branch, we need to have
             # somewhere valid to send them next.  Since most of the time it
             # will be the owner of the branch deleting it, we should send
