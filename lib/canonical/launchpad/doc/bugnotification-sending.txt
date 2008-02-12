@@ -1030,10 +1030,10 @@ values:
     >>> bug_three.setPrivate(True, sample_person)
     True
 
-    >>> [(bug_notifications, messages)] = get_email_notifications(
-    ...     notifications)
-    >>> [message] = messages
-    >>> message.get_all('X-Launchpad-Bug-Visibility')
+    >>> email_notifications = get_email_notifications(notifications)
+    >>> for bug_notifications, messages in email_notifications:
+    ...     for message in messages:
+    ...         message.get_all('X-Launchpad-Bug-Visibility')
     [u'private=True; security=False;']
 
 The same is true for security related bugs:
@@ -1042,10 +1042,10 @@ The same is true for security related bugs:
     False
     >>> bug_three.security_related = True
 
-    >>> [(bug_notifications, messages)] = get_email_notifications(
-    ...     notifications)
-    >>> [message] = messages
-    >>> message.get_all('X-Launchpad-Bug-Visibility')
+    >>> email_notifications = get_email_notifications(notifications)
+    >>> for bug_notifications, messages in email_notifications:
+    ...     for message in messages:
+    ...         message.get_all('X-Launchpad-Bug-Visibility')
     [u'private=True; security=True;']
 
 
