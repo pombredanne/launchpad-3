@@ -1,7 +1,10 @@
 #!/usr/bin/python2.4
 # Copyright 2008 Canonical Ltd.  All rights reserved.
+"""Creates the GNU Savannah bugtracker celebrity.
 
-# Creates the GNU Savannah bugtracker celebrity
+This script should only need to be run once on production or staging. It
+creates the records needed for the savannah_tracker LaunchpadCelebrity.
+"""
 
 import _pythonpath
 
@@ -12,8 +15,8 @@ from canonical.launchpad.scripts import execute_zcml_for_scripts
 from canonical.lp import initZopeless
 from canonical.launchpad.database import BugTrackerAlias
 from canonical.launchpad.interfaces import (
-    BugTrackerType, ILaunchpadCelebrities, IBugTrackerAliasSet,
-    IBugTrackerSet, IPersonSet)
+    BugTrackerType, IBugTrackerAliasSet, IBugTrackerSet,
+    ILaunchpadCelebrities)
 
 
 execute_zcml_for_scripts()
@@ -35,8 +38,6 @@ else:
 
 bugtrackeralias_set = getUtility(IBugTrackerAliasSet)
 if not bugtrackeralias_set.queryByBugTracker(savannah):
-    # This looks messy but BugTracker.aliases is a tuple and there isn't
-    # a nicer way to do it.
     savannah_alias = BugTrackerAlias(bugtracker=savannah,
         base_url='http://savannah.nognu.org/bugs/')
     print "Created NoGNU alias for Savannah tracker."
