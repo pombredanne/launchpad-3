@@ -373,12 +373,13 @@ def construct_bug_notification(bug, from_address, address, body, subject,
     for bugtask in bug.bugtasks:
         msg.add_header('X-Launchpad-Bug', bugtask.asEmailHeaderValue())
 
-    # Add X-Launchpad-Bug-Visibility header. Always append a trailing
-    # semi-colon so that procmail (et al.) recipes can be simple and
-    # reliable.
-    msg.add_header(
-        'X-Launchpad-Bug-Visibility', u'private=%s; security=%s;' % (
-            bool(bug.private), bool(bug.security_related)))
+    # Add X-Launchpad-Bug-Private and ...-Bug-Security-Vulnerability
+    # headers. These are simple yes/no values denoting privacy and
+    # security for the bug.
+    msg.add_header('X-Launchpad-Bug-Private',
+                   (bug.private and 'yes' or 'no'))
+    msg.add_header('X-Launchpad-Bug-Security-Vulnerability',
+                   (bug.security_related and 'yes' or 'no'))
 
     if rationale_header is not None:
         msg.add_header('X-Launchpad-Message-Rationale', rationale_header)
