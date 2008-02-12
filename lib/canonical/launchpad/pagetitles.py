@@ -844,7 +844,7 @@ def person_branches(context, view):
     """Return the view's heading."""
     return view.heading
 
-person_branch_add = ContextDisplayName('Register a new branch for %s')
+person_branch_add = 'Register a branch'
 
 person_changepassword = 'Change your password'
 
@@ -1090,7 +1090,7 @@ rosetta_index = 'Launchpad Translations'
 
 rosetta_products = 'Projects with Translations in Launchpad'
 
-product_branch_add = ContextDisplayName('Register a new %s branch')
+product_branch_add = 'Register a branch'
 
 def productseries_edit(context, view):
     """Return the page title for changing a product series details."""

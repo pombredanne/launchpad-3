@@ -107,6 +107,14 @@ class ICodeImportJob(Interface):
         required=False, readonly=True,
         description=_("When the import began to be processed."))
 
+    def isOverdue():
+        """Return whether `self.date_due` is now or in the past.
+
+        This method should be used in preference to comparing date_due to the
+        system clock. It does the correct thing, which is to compare date_due
+        to the time of the current transaction.
+        """
+
 
 class ICodeImportJobSet(Interface):
     """The set of pending and active code import jobs."""
@@ -122,10 +130,38 @@ class ICodeImportJobWorkflow(Interface):
     """Utility to manage `CodeImportJob` objects through their life cycle."""
 
     def newJob(code_import):
-        """Create a new `CodeImportJob` associated to a reviewed `CodeImport`.
+        """Create a `CodeImportJob` associated with a reviewed `CodeImport`.
+
+        Call this method from `CodeImport.updateFromData` when the
+        review_status of `code_import` changes to REVIEWED.
 
         :param code_import: `CodeImport` object.
         :precondition: `code_import` has REVIEWED review_status.
         :precondition: `code_import` has no associated `CodeImportJob`.
         :return: A new `CodeImportJob` object associated to `code_import`.
+        """
+
+    def deletePendingJob(code_import):
+        """Delete a pending `CodeImportJob` associated with a `CodeImport`.
+
+        Call this method from `CodeImport.updateFromData` when the
+        review_status of `code_import` changes from REVIEWED.
+
+        :param code_import: `CodeImport` object.
+        :precondition: `code_import`.review_status != REVIEWED.
+        :precondition: `code_import` is associated to a `CodeImportJob`.
+        :precondition: `code_import`.import_job.state == PENDING.
+        :postcondition: `code_import`.import_job is None.
+        """
+
+    def requestJob(import_job, user):
+        """Request that a job be run as soon as possible.
+
+        :param import_job: `CodeImportJob` object.
+        :param user: `Person` who makes the request.
+        :precondition: `import_job`.states == PENDING.
+        :precondition: `import_job`.requesting_user is None.
+        :postcondition: `import_job`.date_due is now or in the past.
+        :postcondition: `import_job`.request_user is set to `user`.
+        :postcondition: A REQUEST `CodeImportEvent` was created.
         """

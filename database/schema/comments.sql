@@ -791,6 +791,18 @@ COMMENT ON COLUMN DistroSeries.language_pack_delta IS 'Current language pack upd
 COMMENT ON COLUMN DistroSeries.language_pack_proposed IS 'Either a full or update language pack being tested to be used in language_pack_base or language_pack_delta.';
 COMMENT ON COLUMN DistroSeries.language_pack_full_export_requested IS 'Whether next language pack export should be a full export or an update.';
 
+
+-- PackageDiff
+
+COMMENT ON TABLE PackageDiff IS 'This table stores diffs bettwen two scpecific SourcePackageRelease versions.';
+COMMENT ON COLUMN PackageDiff.date_requested IS 'Instant when the diff was requested.';
+COMMENT ON COLUMN PackageDiff.requester IS 'The Person responsible for the request.';
+COMMENT ON COLUMN PackageDiff.from_source IS 'The SourcePackageRelease to diff from.';
+COMMENT ON COLUMN PackageDiff.to_source IS 'The SourcePackageRelease to diff to.';
+COMMENT ON COLUMN PackageDiff.date_fulfilled IS 'Instant when the diff was completed.';
+COMMENT ON COLUMN PackageDiff.diff_content IS 'LibraryFileAlias containing the th diff results.';
+
+
 -- PackageUpload
 COMMENT ON TABLE PackageUpload IS 'An upload. This table stores information pertaining to uploads to a given DistroSeries/Archive.';
 
