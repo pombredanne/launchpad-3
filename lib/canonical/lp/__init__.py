@@ -14,8 +14,6 @@ from canonical.database.sqlbase import (
         READ_COMMITTED_ISOLATION, SERIALIZABLE_ISOLATION
         )
 
-from canonical.config import config
-
 import psycopgda.adapter
 
 # Single MessageIDFactory for everyone
@@ -37,9 +35,21 @@ __all__ = [
 # if the host is empty it can be overridden by the standard PostgreSQL
 # environment variables, this feature currently required by Async's
 # office environment.
-dbname = os.environ.get('LP_DBNAME', config.dbname)
-dbhost = os.environ.get('LP_DBHOST', config.dbhost or '')
-dbuser = os.environ.get('LP_DBUSER', config.launchpad.dbuser)
+
+@property
+def dbname(module):
+    from canonical.config import config
+    return os.environ.get('LP_DBNAME', config.dbname)
+
+@property
+def dbhost(module):
+    from canonical.config import config
+    return os.environ.get('LP_DBHOST', config.dbhost or '')
+
+@property
+def dbuser(module):
+    from canonical.config import config
+    return os.environ.get('LP_DBUSER', config.launchpad.dbuser)
 
 _typesRegistered = False
 def registerTypes():

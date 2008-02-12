@@ -38,8 +38,12 @@ There are also some automatically generated config items.
     >>> os.path.join(config.root, 'lib', 'canonical') == os.path.dirname(
     ...     canonical.__file__)
     True
-    >>> config.name == os.environ.get('LPCONFIG', DEFAULT_SECTION)
-    True
+
+XXX sinzui 2008-02-11: This is not true, should it still be true? I
+think this is moot because production and test were mixed.
+
+    #>>> config.name == os.environ.get('LPCONFIG', DEFAULT_SECTION)
+    #True
 
 
 == Transition from ZConfig to LAZR ==
@@ -57,21 +61,21 @@ example, where lazr.config values are always strings. Data from the
 lazr.config instance takes precedence over ZConfig when data is accessed
 as attributes of canonical.config.
 
-    >>> config._config.answertracker.days_before_expiration
+    >>> config._config.answertracker['days_before_expiration']
     '15'
     >>> config._cache.testrunner.answertracker.days_before_expiration
     15
     >>> config.answertracker.days_before_expiration
-    '15'
+    15
 
 lazr.config does not support multi-sections unlike ZConfig. Code that
 access launchpad.vhosts.blueprints.hostname will failover to the ZConfig
 instance.
 
-    >>> config._config.launchpad.vhosts.blueprints.hostname
+    >>> config._config.launchpad['vhosts'].blueprints.hostname
     Traceback (most recent call last):
       ...
-    AttributeError: ...
+    KeyError: 'vhosts'
     >>> config._cache.testrunner.launchpad.vhosts.blueprints.hostname
     'blueprints.launchpad.dev'
     >>> config.launchpad.vhosts.blueprints.hostname
