@@ -636,6 +636,7 @@ class Specification(SQLBase, BugLinkTargetMixin):
         notify(SQLObjectCreatedEvent(branch_link))
         return branch_link
 
+
 class HasSpecificationsMixin:
     """A mixin class that implements many of the common shortcut properties
     for other classes that have specifications.

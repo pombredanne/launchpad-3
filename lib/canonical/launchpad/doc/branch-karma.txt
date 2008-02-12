@@ -2,7 +2,10 @@
 
 We want people to register their branches on Launchpad, and also to
 link their branches to bugs and specs, so we give them some karma for
-it.
+it.  By linking bugs and specs to branches the users are enriching
+the information that Launchpad has about the work going on in the
+branches.  We want to encourage the linking of information, and so
+give karma for it.
 
     >>> from canonical.launchpad.database.karma import KarmaCategory
     >>> code_category = KarmaCategory.byName('code')
@@ -29,7 +32,7 @@ Karma is added for registering a branch.
     >>> branch = factory.makeBranch(owner=eric, product=fooix)
     Karma added: action=branchcreated, product=fooix, person=eric
 
-However, no karam is added for junk branches.
+However, no karma is added for junk branches.
 
     >>> junk_branch = factory.makeBranch(
     ...     owner=eric, product=None, explicit_junk=True)
@@ -37,7 +40,7 @@ However, no karam is added for junk branches.
 
 == Linking bugs and branches ==
 
-The registrant of a bug branch link gets karma for linking them.
+You get karma for linking a bug to a branch.
 
     >>> bug = factory.makeBug(product=fooix)
     >>> branch_link = bug.addBranch(branch, eric)
@@ -50,7 +53,7 @@ As long as it is not a junk branch.
 
 == Linking blueprints and branches ==
 
-The registrant of a blueprint branch link gets karma for linking them.
+You get karma for linking a blueprint to a branch.
 
     >>> blueprint = factory.makeBlueprint(product=fooix)
     >>> branch_link = blueprint.linkBranch(branch, eric)
