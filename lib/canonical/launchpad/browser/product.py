@@ -882,9 +882,10 @@ class ProductReviewView(ProductEditView):
     def validate(self, data):
         if data.get('private_bugs') and self.context.bugcontact is None:
             self.setFieldError('private_bugs',
-                'Set a <a href="%s/+bugcontact">bug contact</a> '
-                'for this project first.' %
-                canonical_url(self.context, rootsite="bugs"))
+                structured(
+                    'Set a <a href="%s/+bugcontact">bug contact</a> '
+                    'for this project first.',
+                    canonical_url(self.context, rootsite="bugs")))
 
 
 class ProductAddSeriesView(LaunchpadFormView):
@@ -1215,8 +1216,7 @@ class ProductBugContactEditView(LaunchpadEditFormView):
             self.setFieldError(
                 'bugcontact',
                 'You must choose a valid person or team to be the bug contact'
-                ' for %s.' %
-                cgi.escape(self.context.displayname))
+                ' for %s.' % self.context.displayname)
 
             return
 
@@ -1224,17 +1224,16 @@ class ProductBugContactEditView(LaunchpadEditFormView):
 
         if (contact is not None and contact.isTeam() and
             contact not in self.user.getAdministratedTeams()):
-            error = (
+            error = structured(
                 "You cannot set %(team)s as the bug contact for "
                 "%(project)s because you are not an administrator of that "
                 "team.<br />If you believe that %(team)s should be the bug"
                 " contact for %(project)s, please notify one of the "
-                "<a href=\"%(url)s\">%(team)s administrators</a>."
-
-                % {'team': cgi.escape(contact.displayname),
-                   'project': cgi.escape(self.context.displayname),
-                   'url': canonical_url(contact, rootsite='mainsite')
-                          + '/+members'})
+                "<a href=\"%(url)s\">%(team)s administrators</a>.",
+                team=contact.displayname,
+                project=self.context.displayname,
+                url=canonical_url(contact, rootsite='mainsite')
+                          + '/+members')
             self.setFieldError('bugcontact', error)
 
 

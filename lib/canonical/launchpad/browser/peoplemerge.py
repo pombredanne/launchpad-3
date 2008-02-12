@@ -11,6 +11,8 @@ __all__ = [
     'RequestPeopleMergeMultipleEmailsView',
     'RequestPeopleMergeView']
 
+import cgi
+
 from zope.app.form.browser.add import AddView
 from zope.component import getUtility
 
@@ -90,8 +92,9 @@ class AdminMergeBaseView(LaunchpadFormView):
         dupe_person = data.get('dupe_person')
         target_person = data.get('target_person')
         if dupe_person == target_person and dupe_person is not None:
-            self.addError(
-                _("You can't merge %s into itself." % dupe_person.name))
+            dname = cgi.escape(dupe_person.name)
+            self.addError(_("You can't merge ${name} into itself.",
+                  mapping=dict(name=dname)))
 
     def render(self):
         # Subclasses may define other actions that they will render manually
@@ -181,8 +184,9 @@ class AdminTeamMergeView(AdminMergeBaseView):
             data['dupe_person'].name)
         if mailing_list is not None:
             self.addError(_(
-                "%s is associated with a Launchpad mailing list; we can't "
-                "merge it." % data['dupe_person'].name))
+                "${name} is associated with a Launchpad mailing list; we "
+                "can't merge it.",
+                mapping=(name=data['dupe_person'].name)))
 
     @action('Merge', name='merge')
     def merge_action(self, action, data):

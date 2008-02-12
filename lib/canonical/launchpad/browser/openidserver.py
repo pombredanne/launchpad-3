@@ -549,17 +549,20 @@ class LoginServiceLoginView(LoginServiceBaseView):
                     "Your account details have not been found. Please "
                     "check your subscription email address and try again."))
             elif person.isTeam():
-                self.addError(_(
-                    "The email address <strong>%s</strong> can not be used "
-                    "to log in as it belongs to a team." % email))
+                self.addError(
+                    structured(_(
+                    "The email address <strong>${email}</strong> can not be "
+                    "used to log in as it belongs to a team.",
+                    mapping=dict(email=email)))
         elif action == 'createaccount':
             if person is not None and person.is_valid_person:
                 self.addError(_(
-                    "Sorry, someone has already registered the %s email "
-                    "address.  If this is you and you've forgotten your "
-                    "password, just choose the 'I've forgotten my "
+                    "Sorry, someone has already registered the ${email} "
+                    "email address.  If this is you and you've forgotten "
+                    "your password, just choose the 'I've forgotten my "
                     "password' option below and we'll allow you to "
-                    "change it." % cgi.escape(email)))
+                    "change it.",
+                    mapping=dict(email=cgi.escape(email))))
             else:
                 # This is either an email address we've never seen or it's
                 # associated with an unvalidated profile, so we just move
@@ -575,10 +578,12 @@ class LoginServiceLoginView(LoginServiceBaseView):
         if principal is not None and principal.validate(password):
             person = getUtility(IPersonSet).getByEmail(email)
             if person.preferredemail is None:
-                self.addError(_(
-                    "The email address '%s' has not yet been confirmed. We "
-                    "sent an email to that address with instructions on how "
-                    "to confirm that it belongs to you." % email))
+                self.addError(
+                        _(
+                    "The email address '${email}' has not yet been confirmed. "
+                    "We sent an email to that address with instructions on "
+                    "how to confirm that it belongs to you.",
+                    mapping=dict(email=email)))
                 self.token = getUtility(ILoginTokenSet).new(
                     person, email, email, LoginTokenType.VALIDATEEMAIL)
                 self.token.sendEmailValidationRequest(

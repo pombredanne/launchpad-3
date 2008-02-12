@@ -465,8 +465,7 @@ class DistroBugTaskCreationStep(BugTaskCreationStep):
                 "Bug watches can not be added for %s, as it uses Launchpad"
                 " as its official bug tracker. Alternatives are to add a"
                 " watch for another project, or a comment containing a"
-                " URL to the related bug report." % cgi.escape(
-                    target.displayname))
+                " URL to the related bug report." % target.displayname)
 
         distribution = data.get('distribution')
         sourcepackagename = data.get('sourcepackagename')

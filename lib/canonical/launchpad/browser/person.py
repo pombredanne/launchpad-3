@@ -3038,8 +3038,7 @@ class PersonEditEmailsView(LaunchpadFormView):
         newemail = data['newemail']
         if not valid_email(newemail):
             self.addError(
-                "'%s' doesn't seem to be a valid email address." %
-                cgi.escape(newemail))
+                "'%s' doesn't seem to be a valid email address." % newemail)
             return self.errors
 
         email = getUtility(IEmailAddressSet).getByEmail(newemail)
@@ -3060,12 +3059,15 @@ class PersonEditEmailsView(LaunchpadFormView):
                     '%s/+requestmerge?field.dupeaccount=%s'
                     % (canonical_url(getUtility(IPersonSet)), owner_name))
                 self.addError(
+                    structured(
                     "The email address '%s' is already registered to "
                     '<a href="%s">%s</a>. If you think that is a '
                     'duplicated account, you can <a href="%s">merge it</a> '
-                    "into your account. "
-                    % (email.email, canonical_url(owner),
-                       cgi.escape(owner.browsername), merge_url))
+                    "into your account. ",
+                    email.email,
+                    canonical_url(owner),
+                    owner.browsername,
+                    merge_url))
         return self.errors
 
     @action(_("Add"), name="add_email", validator=validate_action_add_email)
