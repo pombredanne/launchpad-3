@@ -16,7 +16,7 @@
           Launchpad no longer mirrors this branch, because
           <tal:number-of-failures
               tal:replace="branch/mirror_failures">3
-          </tal:number-of-failures> attempts failed
+          </tal:number-of-failures> attempts failed.
         </tal:mirror-disabled>
 
         <tal:mirror-scheduled tal:condition="not:view/mirror_disabled">
@@ -24,7 +24,7 @@
             This branch may be out of date, as Launchpad was not able to
             access it
             <span tal:attributes="title branch/last_mirror_attempt/fmt:datetime"
-                  tal:content="branch/last_mirror_attempt/fmt:displaydate" />
+                  tal:content="branch/last_mirror_attempt/fmt:displaydate" />.
           </tal:failed-once>
 
           <tal:failed-multiple tal:condition="not:view/mirror_failed_once">
@@ -35,23 +35,23 @@
                     tal:content="branch/last_mirrored/fmt:approximatedate" />
               and
               <span tal:attributes="title branch/last_mirror_attempt/fmt:datetime"
-                    tal:content="branch/last_mirror_attempt/fmt:approximatedate" />
+                    tal:content="branch/last_mirror_attempt/fmt:approximatedate" />.
             </tal:mirrored-yet>
             <tal:not-mirrored-yet tal:condition="not:branch/last_mirrored">
               Launchpad has not been able to mirror this branch. The last attempt
               was
               <span tal:attributes="title branch/last_mirror_attempt/fmt:datetime"
-                    tal:content="branch/last_mirror_attempt/fmt:displaydate" />
+                    tal:content="branch/last_mirror_attempt/fmt:displaydate" />.
             </tal:not-mirrored-yet>
           </tal:failed-multiple>
         </tal:mirror-scheduled>
 
         <tal:has-error-message tal:condition="branch/mirror_status_message">
-          (<tal:error-message tal:replace="view/mirror_status_message">Error 1</tal:error-message>).
+          (<tal:error-message tal:replace="view/mirror_status_message">Error 1</tal:error-message>)
         </tal:has-error-message>
 
         <tal:no-error-message tal:condition="not:branch/mirror_status_message">
-          (no error message available).
+          The cause of the error is not available.
         </tal:no-error-message>
 
         <tal:mirror-scheduled tal:condition="not:view/mirror_disabled">
@@ -95,8 +95,7 @@
     </div>
 
     <tal:comment condition="nothing">
-      <!-- XXX This David Allouche 2006-04-09
-           Style attribute is evil, but bold text makes the mirror error
+      <!-- Style attribute is evil, but bold text makes the mirror error
            difficult to read. Checked with mpt about that. -->
     </tal:comment>
     <p tal:condition="view/mirror_of_ssh" id="mirror-of-ssh"

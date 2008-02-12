@@ -9,12 +9,12 @@ page, together with the last failure message we got when mirroring.
     >>> login(ANONYMOUS)
     >>> eric = factory.makePerson(
     ...     name='eric', email='eric@example.com', password='test')
-    >>> from canonical.launchpad.interfaces import BranchType, IBranchSet
+    >>> from canonical.launchpad.interfaces import BranchType
     >>> mirror_branch = factory.makeBranch(
     ...     BranchType.MIRRORED, owner=eric)
     >>> mirror_name = mirror_branch.unique_name
     >>> from canonical.launchpad.webapp import canonical_url
-    >>> branch_location = canonical_url(mirror_branch)
+    >>> branch_location = str(canonical_url(mirror_branch))
     >>> mirror_branch.startMirroring()
     >>> mirror_branch.mirrorFailed(
     ...     'Cannot access branch at "example.com".')
@@ -33,7 +33,7 @@ The initial error message doesn't give a count or last failure.
     >>> browser.open(branch_location)
     >>> print_browser_tag(browser, 'mirror-failure')
     This branch may be out of date, as Launchpad was not able to
-    access it ... ago (Cannot access branch at "example.com".).
+    access it ... ago. (Cannot access branch at "example.com".)
     Launchpad will try again in ...
     If you have fixed the problem, please ask Launchpad to try again.
 
@@ -43,24 +43,24 @@ the branch to be mirrored ASAP.
     >>> browser.getControl('Try again').click()
     >>> print_browser_tag(browser, 'mirror-failure')
     This branch may be out of date, as Launchpad was not able to
-    access it ... ago (Cannot access branch at "example.com".).
+    access it ... ago. (Cannot access branch at "example.com".)
     Launchpad will try again shortly.
 
 A subsequent failure shows:
 
     >>> login(ANONYMOUS)
     >>> from zope.component import getUtility
+    >>> from canonical.launchpad.interfaces import IBranchSet
     >>> mirror_branch = getUtility(IBranchSet).getByUniqueName(mirror_name)
     >>> mirror_branch.startMirroring()
     >>> mirror_branch.mirrorFailed(
     ...     'Cannot access branch at "example.com".')
     >>> logout()
 
-    >>> browser = setupBrowser(auth='Basic eric@example.com:test')
     >>> browser.open(branch_location)
     >>> print_browser_tag(browser, 'mirror-failure')
     Launchpad has not been able to mirror this branch. The last attempt
-    was ... ago (Cannot access branch at "example.com".).
+    was ... ago. (Cannot access branch at "example.com".)
     Launchpad will try again in ...
     If you have fixed the problem, please ask Launchpad to try again.
 
@@ -78,12 +78,11 @@ different.
     ...     'Cannot access branch at "example.com".')
     >>> logout()
 
-    >>> browser = setupBrowser(auth='Basic eric@example.com:test')
     >>> browser.open(branch_location)
     >>> print_browser_tag(browser, 'mirror-failure')
     This branch may be out of date, as Launchpad has not been able to
-    access between 2007-12-25 and ... ago
-    (Cannot access branch at "example.com".).
+    access between 2007-12-25 and ... ago.
+    (Cannot access branch at "example.com".)
     Launchpad will try again in ...
     If you have fixed the problem, please ask Launchpad to try again.
 
@@ -98,11 +97,10 @@ a different message again.
     ...     'Cannot access branch at "example.com".')
     >>> logout()
 
-    >>> browser = setupBrowser(auth='Basic eric@example.com:test')
     >>> browser.open(branch_location)
     >>> print_browser_tag(browser, 'mirror-failure')
-    Launchpad no longer mirrors this branch, because 101 attempts failed
-    (Cannot access branch at "example.com".).
+    Launchpad no longer mirrors this branch, because 101 attempts failed.
+    (Cannot access branch at "example.com".)
     If you have fixed the problem, please ask Launchpad to try again.
 
 There is the "Try again" button available to have the user let Launchpad
@@ -111,8 +109,8 @@ know that they have fixed the problem.
     >>> browser.getControl('Try again').click()
     >>> print_browser_tag(browser, 'mirror-failure')
     This branch may be out of date, as Launchpad has not been able to
-    access between 2007-12-25 and ... ago
-    (Cannot access branch at "example.com".).
+    access between 2007-12-25 and ... ago.
+    (Cannot access branch at "example.com".)
     Launchpad will try again shortly.
 
 Someone who is a bazaar expert is also able to see the detailed message.
@@ -122,8 +120,8 @@ Someone who is a bazaar expert is also able to see the detailed message.
     >>> ddaa_browser.open(branch_location)
     >>> print_browser_tag(ddaa_browser, 'mirror-failure')
     This branch may be out of date, as Launchpad has not been able to
-    access between 2007-12-25 and ... ago
-    (Cannot access branch at "example.com".).
+    access between 2007-12-25 and ... ago.
+    (Cannot access branch at "example.com".)
     Launchpad will try again shortly.
 
 Launchpad admins can also see the detailed message.
@@ -131,8 +129,8 @@ Launchpad admins can also see the detailed message.
     >>> admin_browser.open(branch_location)
     >>> print_browser_tag(admin_browser, 'mirror-failure')
     This branch may be out of date, as Launchpad has not been able to
-    access between 2007-12-25 and ... ago
-    (Cannot access branch at "example.com".).
+    access between 2007-12-25 and ... ago.
+    (Cannot access branch at "example.com".)
     Launchpad will try again shortly.
 
 If the user is not logged in, or is not the owner of the branch (or
@@ -154,12 +152,11 @@ report the absence of an error message.
     >>> flush_database_updates()
     >>> logout()
 
-    >>> browser = setupBrowser(auth='Basic eric@example.com:test')
     >>> browser.open(branch_location)
     >>> print_browser_tag(browser, 'mirror-failure')
     This branch may be out of date, as Launchpad has not been able to
-    access between 2007-12-25 and ... ago
-    (no error message available).
+    access between 2007-12-25 and ... ago.
+    The cause of the error is not available.
     Launchpad will try again shortly.
 
 Ultimately, if a branch was successfully mirrored, then we obviously won't
@@ -171,7 +168,6 @@ display any failure-related information.
     >>> mirror_branch.mirrorComplete('some-revision-id')
     >>> logout()
 
-    >>> browser = setupBrowser(auth='Basic eric@example.com:test')
     >>> browser.open(branch_location)
     >>> print_browser_tag(browser, 'mirror-failure')
     None
@@ -181,7 +177,8 @@ display any failure-related information.
 
 If a branch has a sftp or bzr+ssh URL, immediately display an error message
 (even before mirroring is attempted) and do not display the mirror failure
-message.
+message.  Any ssh access requires that Launchpad use client ssh keys
+or passwords, neither of which is currently supported.
 
     >>> login(ANONYMOUS)
     >>> mirror_branch = factory.makeBranch(
