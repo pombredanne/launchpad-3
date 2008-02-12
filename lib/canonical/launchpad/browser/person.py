@@ -2020,8 +2020,7 @@ class PersonView(LaunchpadView, FeedsMixin):
         # is broken. Either private membership teams should always have a
         # restricted subscription policy, or we need a more complicated
         # permission model.
-        if not (self.context.visibility is None
-                or self.context.visibility == PersonVisibility.PUBLIC):
+        if self.context.visibility != PersonVisibility.PUBLIC:
             return False
 
         restricted = TeamSubscriptionPolicy.RESTRICTED

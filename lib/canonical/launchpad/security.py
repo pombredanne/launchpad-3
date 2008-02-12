@@ -449,10 +449,7 @@ class ViewPublicOrPrivateTeamMembers(AuthorizationBase):
 
     def checkUnauthenticated(self):
         """Unauthenticated users can only view public memberships."""
-        # XXX Edwin Grubbs 2007-12-11 bug=175758
-        # Checking if visibility is None is only necessary until next cycle.
-        if (self.obj.visibility is None
-            or self.obj.visibility == PersonVisibility.PUBLIC):
+        if self.obj.visibility == PersonVisibility.PUBLIC:
             return True
         return False
 
@@ -463,10 +460,7 @@ class ViewPublicOrPrivateTeamMembers(AuthorizationBase):
         Only a team member or a Launchpad admin can view a
         private membership.
         """
-        # XXX Edwin Grubbs 2007-12-11 bug=175758
-        # Checking if visibility is None is only necessary until next cycle.
-        if (self.obj.visibility is None
-            or self.obj.visibility == PersonVisibility.PUBLIC):
+        if self.obj.visibility == PersonVisibility.PUBLIC:
             return True
         admins = getUtility(ILaunchpadCelebrities).admin
         if user.inTeam(admins) or user.inTeam(self.obj):
