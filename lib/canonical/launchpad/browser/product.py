@@ -877,7 +877,7 @@ class ProductChangeTranslatorsView(ProductEditView):
 class ProductReviewView(ProductEditView):
     label = "Administer project details"
     field_names = ["name", "owner", "active", "autoupdate", "reviewed",
-                   "private_bugs"]
+                   "private_bugs", "reviewer_whiteboard"]
 
     def validate(self, data):
         if data.get('private_bugs') and self.context.bugcontact is None:

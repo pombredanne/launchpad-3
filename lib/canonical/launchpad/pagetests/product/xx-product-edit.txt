@@ -166,3 +166,19 @@ again have zero licenses.
     There is 1 error.
     Select all licenses for this software or select
     Other/Proprietary or Other/Open Source.
+
+== Admin can use the reviewer whiteboard on +review page ==
+
+A Launchpad Admin can use the reviewer whiteboard on the +review page
+for storing random notes about a project. At first the whiteboard is
+empty, then we store some insightful notes in it.
+
+   >>> admin_browser.open('http://launchpad.dev/firefox/+review')
+   >>> admin_browser.getControl(name='field.reviewer_whiteboard').value
+   ''
+   >>> admin_browser.getControl(name='field.reviewer_whiteboard').value = \
+   ... "This project is in a fight with that project"
+   >>> admin_browser.getControl(name='field.actions.change').click()
+   >>> admin_browser.open('http://launchpad.dev/firefox/+review')
+   >>> admin_browser.getControl(name='field.reviewer_whiteboard').value
+   'This project is in a fight with that project'
