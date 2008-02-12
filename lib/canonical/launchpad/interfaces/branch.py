@@ -657,7 +657,7 @@ class IBranchSet(Interface):
         Return the default value if there is no such branch.
         """
 
-    def new(branch_type, name, registrant, owner, product, url, title=None,
+    def new(branch_type, name, creator, owner, product, url, title=None,
             lifecycle_status=BranchLifecycleStatus.NEW, author=None,
             summary=None, home_page=None, whiteboard=None, date_created=None):
         """Create a new branch.
