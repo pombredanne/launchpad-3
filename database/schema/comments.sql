@@ -412,6 +412,7 @@ COMMENT ON COLUMN MessageApproval.mailing_list IS 'The mailing list to which the
 COMMENT ON COLUMN MessageApproval.posted_message IS 'Foreign key to libraryfilealias table pointing to where the posted message\'s text lives.';
 COMMENT ON COLUMN MessageApproval.posted_date IS 'The date the message was posted.';
 COMMENT ON COLUMN MessageApproval.status IS 'The status of the posted message.  Values are described in dbschema.PostedMessageStatus.';
+COMMENT ON COLUMN MessageApproval.reason IS 'The reason for the current status if any. This information will be displayed to the end user and mailing list moderators need to be aware of this - not a private whiteboard.';
 COMMENT ON COLUMN MessageApproval.disposed_by IS 'The person who disposed of (i.e. approved or rejected) the message, or NULL if no disposition has yet been made.';
 COMMENT ON COLUMN MessageApproval.disposal_date IS 'The date on which this message was disposed, or NULL if no disposition has yet been made.';
 
