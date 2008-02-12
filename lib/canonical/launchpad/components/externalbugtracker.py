@@ -871,7 +871,6 @@ class DebBugs(ExternalBugTracker):
         # Need to flush databse updates, so that the bug watch knows it
         # is linked from a bug task.
         flush_database_updates()
-        self.updateBugWatches([bug_watch])
 
         return bug
 
