@@ -109,7 +109,8 @@ class LaunchpadObjectFactory:
             licenses=[License.GPL])
 
     def makeBranch(self, branch_type=None, owner=None, name=None,
-                   product=None, url=None, **optional_branch_args):
+                   product=None, url=None, registrant=None,
+                   **optional_branch_args):
         """Create and return a new, arbitrary Branch of the given type.
 
         Any parameters for IBranchSet.new can be specified to override the
@@ -119,6 +120,8 @@ class LaunchpadObjectFactory:
             branch_type = BranchType.HOSTED
         if owner is None:
             owner = self.makePerson()
+        if registrant is None:
+            registrant = owner
         if name is None:
             name = self.getUniqueString('branch')
         if product is None:
@@ -133,7 +136,7 @@ class LaunchpadObjectFactory:
             raise UnknownBranchTypeError(
                 'Unrecognized branch type: %r' % (branch_type,))
         return getUtility(IBranchSet).new(
-            branch_type, name, owner, owner, product, url,
+            branch_type, name, registrant, owner, product, url,
             **optional_branch_args)
 
     def makeRevisionsForBranch(self, branch, count=5, author=None,

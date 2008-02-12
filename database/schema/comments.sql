@@ -21,6 +21,7 @@ COMMENT ON COLUMN AnswerContact.date_created IS 'The date the answer contact was
 
 -- Branch 
 COMMENT ON TABLE Branch IS 'Bzr branch';
+COMMENT ON COLUMN Branch.registrant IS 'The user that registered the branch.';
 COMMENT ON COLUMN Branch.branch_type IS 'Branches are currently one of HOSTED (1), MIRRORED (2), or IMPORTED (3).';
 COMMENT ON COLUMN Branch.whiteboard IS 'Notes on the current status of the branch';
 COMMENT ON COLUMN Branch.summary IS 'A single paragraph description of the branch';
