@@ -42,10 +42,6 @@ def construct_email_notifications(bug_notifications):
                 "Only one of the notifications is allowed to be a comment.")
             comment = notification.message
 
-    if bug.security_related:
-        text_notifications.append(
-            '*** This bug is a security vulnerability ***')
-
     if bug.duplicateof is not None:
         text_notifications.append(
             '*** This bug is a duplicate of bug %d ***\n    %s' %

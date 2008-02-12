@@ -18,11 +18,9 @@ be sent:
 And let's define a function to make printing out the notifications
 easier.
 
-    >>> def print_notification(email_notification, extra_headers=()):
-    ...     headers = ['To', 'From', 'Subject',
-    ...                'X-Launchpad-Message-Rationale']
-    ...     headers.extend(extra_headers)
-    ...     for header in headers:
+    >>> def print_notification(email_notification):
+    ...     for header in ['To', 'From', 'Subject',
+    ...                    'X-Launchpad-Message-Rationale']:
     ...         print "%s: %s" % (header, email_notification[header])
     ...     print
     ...     print email_notification.get_payload(decode=True)
@@ -868,29 +866,67 @@ subscriber of bug one.
 
 == Security Vulnerabilities ==
 
-When a bug is marked as a security vulnerability, a small notification
-is inserted at the top of the message body:
+When a new security related bug is filed, a small notification is
+inserted at the top of the message body.
 
-    >>> new_bug.security_related
-    False
-    >>> new_bug.security_related = True
-    >>> new_bug.security_related
+    >>> sec_vuln_description = getUtility(IMessageSet).fromText(
+    ...     'Zero-day on Frobulator', 'Woah.', sample_person,
+    ...     datecreated=ten_minutes_ago)
+    >>> sec_vuln_bug = ubuntu.createBug(CreateBugParams(
+    ...         msg=sec_vuln_description, owner=sample_person,
+    ...         title='Zero-day on Frobulator',
+    ...         security_related=True, private=True))
+    >>> sec_vuln_bug.addCommentNotification(sec_vuln_description)
+
+    >>> sec_vuln_bug.security_related
+    True
+    >>> sec_vuln_bug.private
     True
 
+    >>> notifications = (
+    ...     getUtility(IBugNotificationSet).getNotificationsToSend())
     >>> email_notifications = get_email_notifications(notifications)
     >>> for bug_notifications, messages in email_notifications:
     ...     for message in messages:
-    ...         print_notification(message, extra_headers=[
-    ...             'X-Launchpad-Bug-Security-Vulnerability'])
-    To: foo.bar@canonical.com
+    ...         print_notification(message)
+    To: support@ubuntu.com
     From: Sample Person <test@canonical.com>
-    Subject: [Bug ...] subject
-    X-Launchpad-Message-Rationale: Bug Contact (mozilla-firefox in ubuntu) via Bug 1
-    X-Launchpad-Bug-Security-Vulnerability: yes
+    Subject: [Bug ...] [NEW] Zero-day on Frobulator
+    X-Launchpad-Message-Rationale: Subscriber @ubuntu-team
     <BLANKLINE>
     *** This bug is a security vulnerability ***
     <BLANKLINE>
     ...
+
+    >>> for notification in BugNotification.select():
+    ...     notification.date_emailed = datetime.now(pytz.timezone('UTC'))
+    >>> flush_database_updates()
+
+The message is only inserted for new bugs, not for modified bugs:
+
+    >>> comment = getUtility(IMessageSet).fromText(
+    ...     'subject', 'a comment.', sample_person,
+    ...     datecreated=ten_minutes_ago)
+    >>> sec_vuln_bug.addCommentNotification(comment)
+
+    >>> notifications = (
+    ...     getUtility(IBugNotificationSet).getNotificationsToSend())
+    >>> email_notifications = get_email_notifications(notifications)
+    >>> for bug_notifications, messages in email_notifications:
+    ...     for message in messages:
+    ...         print_notification(message)
+    To: support@ubuntu.com
+    From: Sample Person <test@canonical.com>
+    Subject: [Bug ...] subject
+    X-Launchpad-Message-Rationale: Subscriber @ubuntu-team
+    <BLANKLINE>
+    a comment.
+    <BLANKLINE>
+    ...
+
+    >>> for notification in BugNotification.select():
+    ...     notification.date_emailed = datetime.now(pytz.timezone('UTC'))
+    >>> flush_database_updates()
 
 
 == The cronscript ==
@@ -1080,8 +1116,8 @@ security vulnerability. It can have the value "yes" or "no".
     >>> message.get_all('X-Launchpad-Bug-Security-Vulnerability')
     ['no']
 
-The presence of the security flag on a bug is, with little
-controversy, denoted by a simple "yes":
+The presence of the security flag on a bug is, surprise, denoted by a
+simple "yes":
 
     >>> bug_three.security_related = True
     >>> bug_three.security_related

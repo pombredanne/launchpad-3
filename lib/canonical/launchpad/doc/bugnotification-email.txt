@@ -80,7 +80,7 @@ as well.
     <BLANKLINE>
     ** Tags: bar foo
 
-Security related bugs have a prominent warning:
+New security related bugs are sent with a prominent warning:
 
     >>> bug_four.security_related = True
 
@@ -90,7 +90,20 @@ Security related bugs have a prominent warning:
     >>> print body
     *** This bug is a security vulnerability ***
     <BLANKLINE>
-    Public bug reported:
+    Public security bug reported:
+    <BLANKLINE>
+    ...
+
+But of course, security related bugs are private by default:
+
+    >>> bug_four.setPrivate(True, getUtility(ILaunchBag).user)
+    True
+
+    >>> subject, body = generate_bug_add_email(bug_four)
+    >>> print body
+    *** This bug is a security vulnerability ***
+    <BLANKLINE>
+    Private security bug reported:
     <BLANKLINE>
     ...
 
