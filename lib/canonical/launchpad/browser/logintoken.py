@@ -29,6 +29,7 @@ from canonical.launchpad import _
 from canonical.launchpad.webapp.interfaces import (
     IAlwaysSubmittedWidget, IPlacelessLoginSource)
 from canonical.launchpad.webapp.login import logInPerson
+from canonical.launchpad.webapp.menu import structured
 from canonical.launchpad.webapp.vhosts import allvhosts
 from canonical.launchpad.webapp import (
     action, canonical_url, custom_widget, GetitemNavigation,
@@ -388,10 +389,12 @@ class ValidateGPGKeyView(BaseLoginTokenView, LaunchpadFormView):
         if lpkey:
             lpkey.active = True
             lpkey.can_encrypt = can_encrypt
-            self.request.response.addInfoNotification(_(
-                'Key %s successfully reactivated. '
-                '<a href="%s/+editpgpkeys">See more Information</a>'
-                % (lpkey.displayname, person_url)))
+            msgid = _(
+                'Key ${lpkey} successfully reactivated. '
+                '<a href="${url}/+editpgpkeys">See more Information'
+                '</a>',
+                mapping=dict(lpkey=lpkey.displayname, url=person_url))
+            self.request.response.addInfoNotification(structured(msgid))
             self.context.consume()
             return
 
@@ -407,30 +410,32 @@ class ValidateGPGKeyView(BaseLoginTokenView, LaunchpadFormView):
 
         self.context.consume()
         self.request.response.addInfoNotification(_(
-            "The key %s was successfully validated. " % (lpkey.displayname)))
+            "The key ${lpkey} was successfully validated. ",
+            mapping=dict(lpkey=lpkey.displayname)))
         guessed, hijacked = self._guessGPGEmails(key.emails)
 
         if len(guessed):
             # build email list
             emails = ' '.join([email.email for email in guessed])
-
-            self.request.response.addInfoNotification(_(
+            msgid = _(
                 '<p>Some email addresses were found in your key but are '
-                'not registered with Launchpad:<code>%s</code>. If you '
-                'want to use these addressess with Launchpad, you need to '
-                '<a href="%s/+editemails\">confirm them</a>.</p>'
-                % (emails, person_url)))
+                'not registered with Launchpad:<code>${emails}</code>. If you '
+                'want to use these addresses with Launchpad, you need to '
+                '<a href="${url}/+editemails\">confirm them</a>.</p>',
+                mapping=dict(emails=emails, url=person_url))
+            self.request.response.addInfoNotification(structured(msgid))
 
         if len(hijacked):
             # build email list
             emails = ' '.join([email.email for email in hijacked])
-            self.request.response.addInfoNotification(_(
+            msgid = _(
                 "<p>Also some of them were registered into another "
-                "account(s):<code>%s</code>. Those accounts, probably "
+                "account(s):<code>${emails}</code>. Those accounts, probably "
                 "already belong to you, in this case you should be able to "
                 "<a href=\"/people/+requestmerge\">merge them</a> into your "
-                "current account.</p>"
-                % emails))
+                "current account.</p>",
+                mapping=dict(emails=emails))
+            self.request.response.addInfoNotification(structured(msgid))
 
     def _guessGPGEmails(self, uids):
         """Figure out which emails from the GPG UIDs are unknown in LP

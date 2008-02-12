@@ -1624,6 +1624,13 @@ COMMENT ON COLUMN Archive.package_description_cache IS 'Text blob containing all
 COMMENT ON COLUMN Archive.sources_cached IS 'Number of sources already cached for this archive.';
 COMMENT ON COLUMN Archive.binaries_cached IS 'Number of binaries already cached for this archive.';
 
+
+-- ArchiveDependency
+COMMENT ON TABLE ArchiveDependency IS 'This table maps a given archive to all other archives it should depend on.';
+COMMENT ON COLUMN ArchiveDependency.date_created IS 'Instant when the dependency was created.';
+COMMENT ON COLUMN ArchiveDependency.archive IS 'The archive where the dependency should be applied.';
+COMMENT ON COLUMN ArchiveDependency.dependency IS 'The archive to depend on.';
+
 -- Component
 COMMENT ON TABLE Component IS 'Known components in Launchpad';
 COMMENT ON COLUMN Component.name IS 'Component name text';

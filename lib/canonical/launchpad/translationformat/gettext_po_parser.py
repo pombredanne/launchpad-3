@@ -479,6 +479,10 @@ class POParser(object):
         self._plural_form_mapping = {0: 0, 1: 1, 2: 2, 3: 3}
         self._expected_plural_formula = plural_formula
 
+        # Marks when we're parsing a continuation of a string after an escaped
+        # newline.
+        self._escaped_line_break = False
+
     def _decode(self):
         # is there anything to convert?
         if not self._pending_chars:
@@ -791,21 +795,26 @@ class POParser(object):
             ...
           TranslationFormatSyntaxError: Extra content found after string: (x)
         """
-        if string[0] != '"':
-            raise TranslationFormatSyntaxError(
-                line_number=self._lineno, message="String is not quoted")
+        if self._escaped_line_break:
+            # Continuing a line after an escaped newline.  Strip indentation.
+            string = string.lstrip()
+            self._escaped_line_break = False
+        else:
+            # Regular string.  Must start with opening quote, which we strip.
+            if string[0] != '"':
+                raise TranslationFormatSyntaxError(
+                    line_number=self._lineno, message="String is not quoted")
+            string = string[1:]
 
-        # Remove initial quote char
-        string = string[1:]
         output = ''
-        while string:
+        while len(string) > 0:
             if string[0] == '"':
                 # Reached the end of the quoted string.  It's rare, but there
                 # may be another quoted string on the same line.  It should be
                 # suffixed to what we already have, with any whitespace
                 # between the strings removed.
                 string = string[1:].lstrip()
-                if not string:
+                if len(string) == 0:
                     # End of line, end of string: the normal case
                     break
                 if string[0] == '"':
@@ -818,7 +827,7 @@ class POParser(object):
 
                 # if there is any non-string data afterwards, raise an
                 # exception
-                if string and not string.isspace():
+                if len(string) > 0 and not string.isspace():
                     raise TranslationFormatSyntaxError(
                         line_number=self._lineno,
                         message=("Extra content found after string: (%s)" %
@@ -826,12 +835,9 @@ class POParser(object):
                 break
             elif string[0] == '\\':
                 if len(string) == 1:
-                    # Escaped newline.  The gettext docs say not to do it,
-                    # msgfmt accepts it, and our parser currently isn't able
-                    # to handle it.
-                    raise TranslationFormatSyntaxError(
-                        line_number=self._lineno,
-                        message="Backslash at end of line.")
+                    self._escaped_line_break = True
+                    string = ''
+                    break
                 elif string[1] in ESCAPE_MAP:
                     # We got one of the special escaped chars we know about.
                     # Unescape it using the mapping table.
@@ -880,23 +886,25 @@ class POParser(object):
 
         self._parsed_content = u''
 
-    def _parseLine(self, original_line):
-        self._lineno += 1
-        # Skip empty lines
-        l = original_line.strip()
+    def _parseFreshLine(self, line, original_line):
+        """Parse a new line (not a continuation after escaped newline).
 
+        :param line: Remaining part of input line.
+        :param original_line: Line as it originally was on input.
+        :return: If there is one, the first line of a quoted string belonging
+            to the line's section.  Otherwise, None.
+        """
         is_obsolete = False
-        if l[:2] == '#~':
+        if line[:2] == '#~':
             is_obsolete = True
-            l = l[2:].lstrip()
-
-        if not l:
-            return
+            line = line[2:].lstrip()
+            if len(line) == 0:
+                return None
 
         # If we get a comment line after a msgstr or a line starting with
         # msgid or msgctxt, this is a new entry.
-        if ((l.startswith('#') or l.startswith('msgid') or
-             l.startswith('msgctxt')) and self._section == 'msgstr'):
+        if ((line.startswith('#') or line.startswith('msgid') or
+            line.startswith('msgctxt')) and self._section == 'msgstr'):
             if self._message is None:
                 # first entry - do nothing.
                 pass
@@ -923,38 +931,38 @@ class POParser(object):
             # Record whether the message is obsolete.
             self._message.is_obsolete = is_obsolete
 
-        if l[0] == '#':
+        if line[0] == '#':
             # Record flags
-            if l[:2] == '#,':
-                new_flags = [flag.strip() for flag in l[2:].split(',')]
+            if line[:2] == '#,':
+                new_flags = [flag.strip() for flag in line[2:].split(',')]
                 self._message.flags.update(new_flags)
-                return
+                return None
             # Record file references
-            if l[:2] == '#:':
+            if line[:2] == '#:':
                 if self._message.file_references:
                     # There is already a file reference, let's split it from
                     # the new one with a new line char.
                     self._message.file_references += '\n'
-                self._message.file_references += l[2:].strip()
-                return
+                self._message.file_references += line[2:].strip()
+                return None
             # Record source comments
-            if l[:2] == '#.':
-                self._message.source_comment += l[2:].strip() + '\n'
-                return
+            if line[:2] == '#.':
+                self._message.source_comment += line[2:].strip() + '\n'
+                return None
             # Record comments
-            self._message.comment += l[1:] + '\n'
-            return
+            self._message.comment += line[1:] + '\n'
+            return None
 
         # Now we are in a msgctxt or msgid section, output previous section
-        if l.startswith('msgid_plural'):
+        if line.startswith('msgid_plural'):
             if self._section != 'msgid':
                 raise TranslationFormatSyntaxError(
                     line_number=self._lineno,
                     message="Unexpected keyword: msgid_plural")
             self._dumpCurrentSection()
             self._section = 'msgid_plural'
-            l = l[len('msgid_plural'):]
-        elif l.startswith('msgctxt'):
+            line = line[len('msgid_plural'):]
+        elif line.startswith('msgctxt'):
             if (self._section is not None and
                 (self._section == 'msgctxt' or
                  self._section.startswith('msgid'))):
@@ -962,8 +970,8 @@ class POParser(object):
                     line_number=self._lineno,
                     message="Unexpected keyword: msgctxt")
             self._section = 'msgctxt'
-            l = l[len('msgctxt'):]
-        elif l.startswith('msgid'):
+            line = line[len('msgctxt'):]
+        elif line.startswith('msgid'):
             if (self._section is not None and
                 self._section.startswith('msgid')):
                 raise TranslationFormatSyntaxError(
@@ -972,23 +980,23 @@ class POParser(object):
             if self._section is not None:
                 self._dumpCurrentSection()
             self._section = 'msgid'
-            l = l[len('msgid'):]
+            line = line[len('msgid'):]
             self._plural_case = None
         # Now we are in a msgstr section
-        elif l.startswith('msgstr'):
+        elif line.startswith('msgstr'):
             self._dumpCurrentSection()
             self._section = 'msgstr'
-            l = l[len('msgstr'):]
-            # XXX kiko 2005-08-19: if l is empty, it means we got an msgstr
+            line = line[len('msgstr'):]
+            # XXX kiko 2005-08-19: if line is empty, it means we got an msgstr
             # followed by a newline; that may be critical, but who knows?
-            if l and l[0] == '[':
-                # plural case
-                new_plural_case, l = l[1:].split(']', 1)
+            if line.startswith('['):
+                # Plural case
+                new_plural_case, line = line[1:].split(']', 1)
                 new_plural_case = int(new_plural_case)
                 if (self._plural_case is not None) and (
                         new_plural_case != self._plural_case + 1):
                     logging.warning(POSyntaxWarning(self._lineno,
-                                                  'bad plural case number'))
+                                                'bad plural case number'))
                 if new_plural_case != self._plural_case:
                     self._plural_case = new_plural_case
                 else:
@@ -1004,23 +1012,36 @@ class POParser(object):
             # This line could be the continuation of a previous section.
             pass
 
-        l = l.strip()
-        if not l:
+        line = line.strip()
+        if len(line) == 0:
             logging.info(
                 POSyntaxWarning(
                     self._lineno,
                     'line has no content; this is not supported by'
                     'some implementations of msgfmt'))
+        return line
+
+    def _parseLine(self, original_line):
+        self._lineno += 1
+        # Skip empty lines
+        line = original_line.strip()
+        if len(line) == 0:
             return
 
-        l = self._parseQuotedString(l)
+        if not self._escaped_line_break:
+            line = self._parseFreshLine(line, original_line)
+            if line is None or len(line) == 0:
+                return
 
-        if self._section in ('msgctxt', 'msgid', 'msgid_plural', 'msgstr'):
-            self._parsed_content += l
-        else:
+        line = self._parseQuotedString(line)
+
+        text_section_types = ('msgctxt', 'msgid', 'msgid_plural', 'msgstr')
+        if self._section not in text_section_types:
             raise TranslationFormatSyntaxError(
                 line_number=self._lineno,
                 message='Invalid content: %r' % original_line)
+
+        self._parsed_content += line
 
 
 # convenience function to parse "assignment" expressions like
