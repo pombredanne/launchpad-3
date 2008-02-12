@@ -442,6 +442,10 @@ class BaseArchiveEditView(LaunchpadEditFormView):
         self.updateContextFromData(data)
         self.next_url = canonical_url(self.context)
 
+    @action(_("Cancel"), name="cancel", validator='validate_cancel')
+    def action_cancel(self, action, data):
+        self.next_url = canonical_url(self.context)
+
 
 class ArchiveEditView(BaseArchiveEditView):
 
