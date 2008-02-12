@@ -18,6 +18,7 @@ from zope.interface import classImplements, providedBy
 from zope.interface.advice import addClassAdvisor
 from zope.event import notify
 from zope.formlib import form
+from zope.formlib.form import action # imported so it may be exported
 from zope.app.form import CustomWidgetFactory
 from zope.app.form.interfaces import IInputWidget
 from zope.app.form.browser import (
