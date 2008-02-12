@@ -140,7 +140,7 @@ def get_email_notifications(bug_notifications, date_emailed=None):
     """
     # Avoid spurious lint about possibly undefined loop variables.
     notification = None
-    # Copy bug_notifications so we can modify it freely.
+    # Copy bug_notifications because we will modify it as we go.
     bug_notifications = list(bug_notifications)
     while bug_notifications:
         found_comment = False
