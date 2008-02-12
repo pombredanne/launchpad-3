@@ -66,8 +66,17 @@ class TranslationsCopier(LaunchpadCronScript):
         self.logger.info('Starting...')
 
         try:
-            # Do the actual work.
-            series.copyMissingTranslationsFromParent(self.txn, self.logger)
+            # XXX JeroenVermeulen 2008-02-12: In python2.5 and up we'll be
+            # able to combine these two try blocks.  In 2.4, we can't.
+            try:
+                # Do the actual work.
+                series.copyMissingTranslationsFromParent(
+                    self.txn, self.logger)
+            except:
+                # Give us a fresh transaction for proper cleanup.
+                self.txn.abort()
+                self.txn.begin()
+                raise
         finally:
             # We've crossed transaction boundaries.  Remember to forget the
             # old ORM object.
@@ -98,6 +107,7 @@ class TranslationsCopier(LaunchpadCronScript):
                     # No worries.  Restore flags.
                     series.hide_all_translations = series_hide_translations
                     series.defer_translation_imports = series_defer_imports
+                    self.txn.commit()
 
         # We would like to update the DistroRelase statistics, but it takes
         # too long so this should be done after.
