@@ -1,5 +1,6 @@
 #!/usr/bin/python2.4
 # Copyright 2006 Canonical Ltd.  All rights reserved.
+# pylint: disable-msg=W0403
 
 """Furnish distroseries with lacking translations that its parent does have.
 
@@ -45,8 +46,11 @@ class TranslationsCopier(LaunchpadCronScript):
 
         series_hide_translations = series.hide_all_translations
         series_defer_imports = series.defer_translation_imports
-        blocked = (series_hide_translations and series_defer_imports)
 
+        # Both translation UI and imports for this series should be blocked
+        # while the copy is in progress, to reduce the chances of deadlocks or
+        # other conflicts.
+        blocked = (series_hide_translations and series_defer_imports)
         if not blocked:
             if not self.options.force:
                 self.txn.abort()
@@ -57,11 +61,11 @@ class TranslationsCopier(LaunchpadCronScript):
                     '--force option to make it happen automatically.' % (
                         self.options.distro, self.options.series))
                 sys.exit(1)
-
-            series.hide_all_translations = True
-            series.defer_translation_imports = True
-            self.txn.commit()
-            self.txn.begin()
+            else:
+                series.hide_all_translations = True
+                series.defer_translation_imports = True
+                self.txn.commit()
+                self.txn.begin()
 
         self.logger.info('Starting...')
 
@@ -78,8 +82,8 @@ class TranslationsCopier(LaunchpadCronScript):
                 self.txn.begin()
                 raise
         finally:
-            # We've crossed transaction boundaries.  Remember to forget the
-            # old ORM object.
+            # We've crossed transaction boundaries.  Forget the old ORM
+            # object.
             series = None
 
             if not blocked:

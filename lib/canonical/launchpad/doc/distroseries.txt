@@ -937,6 +937,9 @@ to do the translation migration to this new distro series.
     ...     ubuntu, 'testing', 'Testing Test', 'The Testing Test', 'Fat',
     ...     'Yo Momma', '99.4',hoary, hoary.owner)
     >>> testing_series.defer_translation_imports = False
+    >>> testing_series.hide_all_translations
+    True
+
     >>> from canonical.launchpad.ftests import syncUpdate
     >>> syncUpdate(testing_series)
     >>> testing_series.getTranslationTemplates()
@@ -972,6 +975,11 @@ set.
             automatically.
     DEBUG   Removing lock file: /var/lock/launchpad-copy-missing-translations-ubuntu-testing.lock
 
+    >>> testing_series = DistroSeries.get(testing_series_id)
+    >>> testing_series.defer_translation_imports
+    False
+    >>> testing_series.hide_all_translations
+    True
 
 It succeeds, however, when we pass the --force option.  The script then
 sets the defer_translation_imports flag itself before copying.
@@ -994,6 +1002,8 @@ flag to its previous value (off).
     >>> testing_series = DistroSeries.get(testing_series_id)
     >>> testing_series.defer_translation_imports
     False
+    >>> testing_series.hide_all_translations
+    True
 
 
     >>> # Set the flag again to facilitate further testing.
