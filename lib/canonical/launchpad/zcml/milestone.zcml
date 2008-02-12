@@ -48,24 +48,20 @@
         template="../templates/milestone-portlet-details.pt" />
     </browser:pages>
 
-    <browser:editform
+    <browser:page
         name="+edit"
         for="canonical.launchpad.interfaces.IMilestone"
         class="canonical.launchpad.browser.milestone.MilestoneEditView"
         facet="overview"
-        schema="canonical.launchpad.interfaces.IMilestone"
-        fields="name dateexpected visible description"
         permission="launchpad.Edit"
         template="../templates/milestone-edit.pt"
         />
 
-    <browser:editform
+    <browser:page
         name="+admin"
         for="canonical.launchpad.interfaces.IMilestone"
         class="canonical.launchpad.browser.milestone.MilestoneAdminEditView"
         facet="overview"
-        schema="canonical.launchpad.interfaces.IMilestone"
-        fields="productseries distroseries"
         permission="launchpad.Admin"
         template="../templates/milestone-edit.pt"
         />

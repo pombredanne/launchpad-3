@@ -16,8 +16,10 @@ from zope.schema import Object
 from canonical.lazr.rest import Collection, Entry, ScopedCollection
 from canonical.lazr.interfaces import IEntry
 from canonical.lazr.rest.schema import CollectionField
-from canonical.launchpad.interfaces import (IPerson,
-     IPersonSet, make_person_name_field)
+
+from canonical.launchpad.interfaces import (
+    IPerson, IPersonSet, make_person_name_field)
+
 from canonical.lp import decorates
 
 class IPersonEntry(IEntry):
@@ -81,4 +83,3 @@ class PersonPersonCollection(ScopedCollection):
         if person in self.collection:
             return person
         return None
-
