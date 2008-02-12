@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/python2.4
 # Copyright (C) 2005, 2007  Canonical Software Ltd. <james.troup@canonical.com>
 
 """ 'Sync' a source package by generating an upload.
@@ -179,7 +179,7 @@ def parse_changelog(changelog_filename, previous_version):
     for line in changelog_file.readlines():
         match = re_changelog_header.match(line)
         if match:
-            is_debian_chaqngelog = 1
+            is_debian_changelog = 1
             if previous_version is None:
                 previous_version = "9999:9999"
             elif apt_pkg.VersionCompare(
@@ -763,6 +763,9 @@ def options_setup():
                       default='debian', help="sync from DISTRO")
     parser.add_option("-S", "--from-suite", dest="fromsuite",
                       help="sync from SUITE (aka distroseries)")
+    parser.add_option("-B", "--blacklist", dest="blacklist_path",
+                      default="/srv/launchpad.net/dak/sync-blacklist.txt",
+                      help="Blacklist file path.")
 
 
     (Options, arguments) = parser.parse_args()
@@ -822,7 +825,7 @@ def objectize_options():
 
 
 def init():
-    global Blacklisted, Library, Lock, Log
+    global Blacklisted, Library, Lock, Log, Options
 
     apt_pkg.init()
 
@@ -845,8 +848,7 @@ def init():
 
     # Blacklist
     Blacklisted = {}
-    # XXX cprov 2007-07-06: hardcoded file location for production.
-    blacklist_file = open("/srv/launchpad.net/dak/sync-blacklist.txt")
+    blacklist_file = open(Options.blacklist_path)
     for line in blacklist_file:
         try:
             line = line[:line.index("#")]
