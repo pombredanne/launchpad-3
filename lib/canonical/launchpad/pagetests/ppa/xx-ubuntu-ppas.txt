@@ -113,6 +113,17 @@ clickable link to his PPA page:
     >>> browser.title
     'PPA for Celso Providelo'
 
+The PPA page "Actions" portlet list all the related pages, only 
+'View build records' is allowed for unprivileged access.
+
+    >>> print extract_text(
+    ...    find_portlet(browser.contents, 'Actions'))
+    Actions
+    Administer archive (disabled)
+    Change details (disabled)
+    View build records
+    Delete packages (disabled)
+
 The PPA page contains a portlet listing all series and architectures
 which supports PPA building in ubuntu.
 
