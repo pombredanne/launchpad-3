@@ -13,7 +13,7 @@
   </head>
   <body>
     <metal:pageheading fill-slot="pageheading">
-      Submissions to the Hardware Database
+      <h1>Hardware Database Submissions</h1>
     </metal:pageheading>
 
     <div metal:fill-slot="main"
@@ -22,7 +22,7 @@
                      show_private view/userIsOwner">
       <tal:results condition="batch">
         <table class="listing">
-          <tbody>
+          <thead>
             <tr>
               <th>System</th>
               <th>Date submitted</th>
@@ -30,6 +30,8 @@
               <th tal:condition="show_private">Private</th>
               <th>Raw</th>
             </tr>
+          </thead>
+          <tbody>
             <tr tal:repeat="submission batch">
               <td>
                 <a tal:attributes="href submission/system_fingerprint/fmt:url"
