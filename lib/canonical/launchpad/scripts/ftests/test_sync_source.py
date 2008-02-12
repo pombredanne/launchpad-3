@@ -271,7 +271,7 @@ class TestSyncSourceScript(TestCase):
          * delete the changesfile.
         """
         returncode, out, err = self.runSyncSource(
-            extra_args=['-b', 'cprov', '-S' 'incoming', 'etherwake'])
+            extra_args=['-b', 'cprov', '-S', 'incoming', 'etherwake'])
 
         self.assertEqual(
             0, returncode, "\nScript Failed:%s\nStdout:\n%s\nStderr\n%s\n"
