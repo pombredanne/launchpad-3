@@ -15,9 +15,11 @@ from datetime import datetime, timedelta
 import pytz
 
 from zope.component import getUtility
+from canonical.database.sqlbase import connect, sqlvalues
 from canonical.launchpad.interfaces import (
-    BranchType, CodeImportReviewStatus, CreateBugParams, IBranchSet, IBugSet,
-    ICodeImportJobWorkflow, ICodeImportSet, ILaunchpadCelebrities, IPersonSet,
+    BranchType, CodeImportMachineState, CodeImportReviewStatus,
+    CreateBugParams, IBranchSet, IBugSet, ICodeImportJobWorkflow,
+    ICodeImportMachineSet, ICodeImportSet, ILaunchpadCelebrities, IPersonSet,
     IProductSet, IRevisionSet, License, PersonCreationRationale,
     RevisionControlSystems, UnknownBranchTypeError)
 
@@ -216,3 +218,11 @@ class LaunchpadObjectFactory:
             code_import.registrant)
         workflow = getUtility(ICodeImportJobWorkflow)
         return workflow.newJob(code_import)
+
+    def makeCodeImportMachine(self):
+        """This seems to work."""
+        from canonical.launchpad.database import CodeImportMachine
+        hostname = self.getUniqueString('machine-')
+        CodeImportMachine(hostname=hostname, heartbeat=None)
+        # Return proxied version.
+        return getUtility(ICodeImportMachineSet).getByHostname(hostname)

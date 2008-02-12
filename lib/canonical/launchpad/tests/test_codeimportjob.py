@@ -126,7 +126,8 @@ class NewEvents(object):
         for event in self:
             words = []
             words.append(event.event_type.name)
-            words.append(event.code_import.branch.unique_name)
+            if event.code_import is not None:
+                words.append(event.code_import.branch.unique_name)
             if event.machine is not None:
                 words.append(event.machine.hostname)
             if event.person is not None:
@@ -434,12 +435,35 @@ class TestCodeImportJobWorkflowStartJob(unittest.TestCase,
 
     def setUp(self):
         login_for_code_imports()
+        self.factory = LaunchpadObjectFactory()
 
     def test_wrongJobState(self):
         # Calling startJob with a job whose state is not PENDING is an error.
+        machine = self.factory.makeCodeImportMachine()
+        code_import = self.factory.makeCodeImport()
+        job = self.factory.makeCodeImportJob(code_import)
+        # ICodeImportJob does not allow setting 'state', so we must
+        # use removeSecurityProxy.
+        RUNNING = CodeImportJobState.RUNNING
+        removeSecurityProxy(job).state = RUNNING
+        # Machines are OFFLINE when they are created.
+        machine.setOnline()
+        # Testing startJob failure.
+        self.assertFailure(
+            "XXX",
+            getUtility(ICodeImportJobWorkflow).startJob,
+            job, machine)
 
     def test_offlineMachine(self):
         # Calling startJob with a machine which is not ONLINE is an error.
+        machine = self.factory.makeCodeImportMachine()
+        code_import = self.factory.makeCodeImport()
+        job = self.factory.makeCodeImportJob(code_import)
+        # Testing startJob failure.
+        self.assertFailure(
+            "XXX",
+            getUtility(ICodeImportJobWorkflow).startJob,
+            job, machine)
 
 
 def test_suite():
