@@ -78,7 +78,7 @@ class RevisionAuthor(SQLBase):
 
     name_without_email = property(_getNameWithoutEmail)
 
-    email = StringCol(notNull=False)
+    email = StringCol(notNull=False, default=None)
     person = ForeignKey(dbName='person', foreignKey='Person', notNull=False,
                         default=None)
 
