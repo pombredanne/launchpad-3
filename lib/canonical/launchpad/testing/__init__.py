@@ -86,14 +86,23 @@ class LaunchpadObjectFactory:
         return 'http://%s.example.com/%s' % (
             self.getUniqueString('domain'), self.getUniqueString('path'))
 
-    def makePerson(self, email=None, name=None):
+    def makePerson(self, email=None, name=None, password=None):
         """Create and return a new, arbitrary Person."""
         if email is None:
             email = self.getUniqueString('email')
         if name is None:
             name = self.getUniqueString('person-name')
-        return getUtility(IPersonSet).createPersonAndEmail(
-            email, rationale=PersonCreationRationale.UNKNOWN, name=name)[0]
+        if password is None:
+            password = self.getUniqueString('password')
+        # Set the password to test in order to allow people that have
+        # been created this way can be logged in.
+        person, email = getUtility(IPersonSet).createPersonAndEmail(
+            email, rationale=PersonCreationRationale.UNKNOWN, name=name,
+            password=password)
+        # To make the person someone valid in Launchpad, validate the
+        # email.
+        person.validateAndEnsurePreferredEmail(email)
+        return person
 
     def makeProduct(self, name=None):
         """Create and return a new, arbitrary Product."""
