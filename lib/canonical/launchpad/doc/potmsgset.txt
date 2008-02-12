@@ -506,7 +506,7 @@ back to the most common case:
     None
     >>> apa_dummy_current = (
     ...     plural_potmsgset.getCurrentDummyTranslationMessage(
-    ...         apa_dummypofile.language)
+    ...         apa_dummypofile.language))
     >>> apa_dummy_current.plural_forms
     2
     >>> apa_dummy_current.translations
@@ -634,7 +634,7 @@ translations in Spanish:
     [u' caratas']
 
     >>> suggestions = (
-    ...     evo_product_message.getExternallyUsedTranslationMessages(spanish)
+    ...     evo_product_message.getExternallyUsedTranslationMessages(spanish))
     >>> print_suggestions(suggestions)
     Spanish (es) translation of evolution-2.2 in Ubuntu Hoary package
     "evolution":  caratas (Launchpad)
@@ -658,7 +658,7 @@ are not available as suggestions anymore:
     >>> evo_distro_template.iscurrent = False
     >>> flush_database_updates()
     >>> suggestions = (
-    ...     evo_product_message.getExternallyUsedTranslationMessages(spanish)
+    ...     evo_product_message.getExternallyUsedTranslationMessages(spanish))
     >>> len(suggestions)
     0
 
@@ -672,7 +672,7 @@ translations.
     >>> evo_distro_template.iscurrent = True
     >>> flush_database_updates()
     >>> suggestions = (
-    ...     evo_product_message.getExternallyUsedTranslationMessages(spanish)
+    ...     evo_product_message.getExternallyUsedTranslationMessages(spanish))
     >>> len(suggestions)
     0
 
