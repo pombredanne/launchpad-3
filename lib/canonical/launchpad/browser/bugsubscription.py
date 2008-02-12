@@ -11,6 +11,7 @@ from canonical.launchpad.browser.addview import SQLObjectAddView
 from canonical.launchpad.interfaces import ILaunchBag
 from canonical.launchpad.webapp import canonical_url
 
+
 class BugSubscriptionAddView(SQLObjectAddView):
     """Browser view class for subscribing someone else to a bug."""
 
@@ -22,11 +23,11 @@ class BugSubscriptionAddView(SQLObjectAddView):
         subscription = self.context.bug.subscribe(
             person, getUtility(ILaunchBag).user)
         if person.isTeam():
-            message = '%(name)s team has been subscribed to this bug.'
+            message = '%s team has been subscribed to this bug.'
         else:
-            message = '%(name)s has been subscribed to this bug.'
-        self.request.response.addInfoNotification(
-            message, name=person.displayname)
+            message = '%s has been subscribed to this bug.'
+        self.request.response.addInfoNotification(message %
+                                                  person.displayname)
         return subscription
 
     def nextURL(self):

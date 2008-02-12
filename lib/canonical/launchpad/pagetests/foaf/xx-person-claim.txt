@@ -140,3 +140,12 @@ can be claimed) they /do/ have a preferred email and we need to handle this.
     ...     print tag.renderContents()
     Profile claimed successfully
 
+
+Trying to access +claim for an already active team 404s as you would
+expect it to (we shouldn't be linking to from anywhere):
+
+    >>> user_browser.open("http://launchpad.dev/~ubuntu-team/+claim")
+    Traceback (most recent call last):
+    ...
+    NotFound:...
+
