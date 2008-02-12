@@ -122,3 +122,10 @@ bug tracker for all registered Savannah projects.
     ...     'savannah')
     >>> celebs.savannah_tracker == savannah_tracker
     True
+
+The Savannah bug tracker also has a BugTrackerAlias with the URL
+http://savannah.nognu.org/bugs/.
+
+    >>> for alias in celebs.savannah_tracker.aliases:
+    ...     print alias
+    http://savannah.nognu.org/bugs/
