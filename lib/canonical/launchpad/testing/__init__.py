@@ -234,7 +234,7 @@ class LaunchpadObjectFactory:
             and this is used as the primary bug target.
         """
         if product is None:
-            product=self.makeProduct()
+            product = self.makeProduct()
         owner = self.makePerson()
         title = self.getUniqueString()
         create_bug_params = CreateBugParams(
@@ -249,7 +249,7 @@ class LaunchpadObjectFactory:
             not specified, an arbitrary product is created.
         """
         if product is None:
-            product=self.makeProduct()
+            product = self.makeProduct()
         return getUtility(ISpecificationSet).new(
             name=self.getUniqueString('name'),
             title=self.getUniqueString('title'),
