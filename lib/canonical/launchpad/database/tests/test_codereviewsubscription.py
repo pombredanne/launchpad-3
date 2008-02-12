@@ -2,11 +2,11 @@
 
 """Unit tests for CodeReviewSubscription"""
 
-from datetime import datetime
 import unittest
 
 import pytz
 
+from canonical.database.sqlbase import cursor
 from canonical.testing import LaunchpadFunctionalLayer
 from canonical.launchpad.ftests import login
 from canonical.launchpad.testing import LaunchpadObjectFactory
@@ -25,12 +25,14 @@ class TestCodeReviewSubscription(unittest.TestCase):
 
     def test_create_self_subscription(self):
         subscription = self.bmp.createSubscription(self.subscriber)
-        cur_time = datetime.now(tz=pytz.timezone('UTC'))
         self.assertEqual(self.bmp, subscription.branch_merge_proposal)
         self.assertEqual(self.subscriber, subscription.person)
-        delta = subscription.date_created - cur_time
-        seconds_difference = delta.days * 24 * 60 * 60 + delta.seconds
-        self.assertAlmostEqual(0, seconds_difference, -1)
+        cur = cursor()
+        cur.execute("SELECT CURRENT_TIMESTAMP AT TIME ZONE 'UTC';")
+        [database_now] = cur.fetchone()
+        database_now = database_now.replace(tzinfo=pytz.timezone('UTC'))
+        self.assertEqual(database_now,
+                         subscription.date_created)
 
     def test_create_other_subscription(self):
         subscription = self.bmp.createSubscription(
