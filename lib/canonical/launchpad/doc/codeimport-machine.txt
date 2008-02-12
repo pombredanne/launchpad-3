@@ -177,16 +177,22 @@ creation of redundant OFFLINE events with different reason values, where
 one of the reasons will be WATCHDOG. Those races should not have any
 other adverse effect.
 
+To make the tests more readable, we define a little helper function to
+forcibly reset the machine to a given state and import the
+CodeImportMachineState entries into the local namespace.
+
+    >>> from zope.security.proxy import removeSecurityProxy
+    >>> def reset_machine(machine, state):
+    ...     removeSecurityProxy(new_machine).state = state
+    >>> ONLINE = CodeImportMachineState.ONLINE
+    >>> OFFLINE = CodeImportMachineState.OFFLINE
+    >>> QUIESCING = CodeImportMachineState.QUIESCING
+
 If the machine state is already offline, setOffline will defensively
 fail, this will usefully detect logic errors where a single thread of
 execution makes redundant calls to this method.
 
-    >>> print new_machine.state.name
-    ONLINE
-
-    >>> new_machine.setOffline(some_reason)
-    >>> print new_machine.state.name
-    OFFLINE
+    >>> reset_machine(new_machine, OFFLINE)
     >>> new_machine.setOffline(some_reason)
     Traceback (most recent call last):
     ...
@@ -194,8 +200,7 @@ execution makes redundant calls to this method.
 
 Attempting the transition from OFFLINE to QUIESCING is also logic error.
 
-    >>> print new_machine.state.name
-    OFFLINE
+    >>> reset_machine(new_machine, OFFLINE)
     >>> new_machine.setQuiescing(ddaa, "No worky!")
     Traceback (most recent call last):
     ...
@@ -204,20 +209,21 @@ Attempting the transition from OFFLINE to QUIESCING is also logic error.
 From the ONLINE state, a machine can go OFFLINE or QUIESCING, setOnline
 must fail.
 
-    >>> new_machine.setOnline()
-    >>> print new_machine.state.name
-    ONLINE
-    >>> new_machine.setOnline()
-    Traceback (most recent call last):
-    ...
-    AssertionError: State of machine frobisher was ONLINE.
-
-    >>> print new_machine.state.name
-    ONLINE
+    >>> reset_machine(new_machine, ONLINE)
     >>> new_machine.setQuiescing(ddaa, "Because.")
     >>> print new_machine.state.name
     QUIESCING
 
+    >>> reset_machine(new_machine, ONLINE)
+    >>> new_machine.setOffline(some_reason)
+    >>> print new_machine.state.name
+    OFFLINE
+
+    >>> reset_machine(new_machine, ONLINE)
+    >>> new_machine.setOnline()
+    Traceback (most recent call last):
+    ...
+    AssertionError: State of machine frobisher was ONLINE.
 
 From the QUIESCING state, a machine can only go OFFLINE. The setOnline
 and setQuiescing method must fail.
@@ -226,22 +232,19 @@ It would be meaningful to allow the transition from QUIESCING to ONLINE,
 meaning "oops, I did not want you to quiesce, after all", but it would
 require a new event type. We will add it later if we find we need it.
 
-    >>> print new_machine.state.name
-    QUIESCING
+    >>> reset_machine(new_machine, QUIESCING)
     >>> new_machine.setOnline()
     Traceback (most recent call last):
     ...
     AssertionError: State of machine frobisher was QUIESCING.
 
-    >>> print new_machine.state.name
-    QUIESCING
+    >>> reset_machine(new_machine, QUIESCING)
     >>> new_machine.setQuiescing(ddaa, "No worky!")
     Traceback (most recent call last):
     ...
     AssertionError: State of machine frobisher was QUIESCING.
 
-    >>> print new_machine.state.name
-    QUIESCING
+    >>> reset_machine(new_machine, QUIESCING)
     >>> new_machine.setOffline(some_reason)
     >>> print new_machine.state.name
     OFFLINE
