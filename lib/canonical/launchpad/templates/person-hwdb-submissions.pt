@@ -13,7 +13,7 @@
   </head>
   <body>
     <metal:pageheading fill-slot="pageheading">
-      <h1>Hardware Database Submissions</h1>
+      <h1>Submissions for <span tal:replace="context/title" /></h1>
     </metal:pageheading>
 
     <div metal:fill-slot="main"
