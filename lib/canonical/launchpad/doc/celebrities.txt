@@ -124,8 +124,8 @@ bug tracker for all registered Savannah projects.
     True
 
 The Savannah bug tracker also has a BugTrackerAlias with the URL
-http://savannah.nognu.org/bugs/.
+http://savannah.nognu.org/
 
     >>> for alias in celebs.savannah_tracker.aliases:
     ...     print alias
-    http://savannah.nognu.org/bugs/
+    http://savannah.nognu.org/
