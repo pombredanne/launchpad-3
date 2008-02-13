@@ -154,9 +154,15 @@ class IBranchMergeProposal(Interface):
         description=_("The commit message that should be used when merging "
                       "the source branch."))
 
-    queue_position = Attribute(_("The position in the queue."))
+    queue_position = Int(
+        title=_("Queue Position"), required=False, readonly=True,
+        description=_("The position in the queue."))
 
-    queuer = Attribute(_("The person that queued up the branch."))
+    queuer = Choice(
+        title=_('Queuer'), vocabulary='ValidPerson',
+        required=False, readonly=True,
+        description=_("The person that queued up the branch."))
+
     queued_revision_id = Attribute(
         _("The revision id that has been queued for landing."))
 
