@@ -16,12 +16,11 @@ from zope.interface import directlyProvides, directlyProvidedBy
 
 from canonical.uuid import generate_uuid
 from canonical.launchpad.interfaces import (
-    GPGVerificationError, IGPGHandler, ILaunchBag, ILibraryFileAliasSet,
-    IMailBox, IPerson, IWeaklyAuthenticatedPrincipal)
+    GPGVerificationError, IGPGHandler, ILibraryFileAliasSet, IMailBox,
+    IPerson, IWeaklyAuthenticatedPrincipal)
 from canonical.launchpad.webapp import errorlog
 from canonical.launchpad.webapp.interaction import get_current_principal
-from canonical.launchpad.webapp.interfaces import (
-    IPlacelessAuthUtility, IPlacelessLoginSource)
+from canonical.launchpad.webapp.interfaces import IPlacelessAuthUtility
 from canonical.launchpad.webapp.interaction import setupInteraction
 from canonical.launchpad.mail.commands import get_error_message
 from canonical.launchpad.mail.handlers import mail_handlers
@@ -270,7 +269,6 @@ def handleMail(trans=transaction):
                 # email, so that it doesn't stop the rest of the emails
                 # from being processed.
                 mailbox.delete(mail_id)
-                trans.abort()
                 msg = signed_message_from_string(raw_mail)
                 oops_id = report_oops(
                     file_alias_url=file_alias_url)

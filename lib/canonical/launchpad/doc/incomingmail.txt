@@ -160,9 +160,9 @@ the To and CC headers will be ignored:
 == OOPSes processing incoming mail ==
 
 If an unhandled exception occurs when we try to process an email from
-a user, we record an OOPS with the exception and sent it to the user.
+a user, we record an OOPS with the exception and send it to the user.
 
-We use create a handler that is guaranteed to raise an exception when
+We create a handler that is guaranteed to raise an exception when
 attempting to process incoming mail.
 
     >>> class TestOopsException(Exception):
