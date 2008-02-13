@@ -86,14 +86,20 @@ class LaunchpadObjectFactory:
         return 'http://%s.example.com/%s' % (
             self.getUniqueString('domain'), self.getUniqueString('path'))
 
-    def makePerson(self, email=None, name=None):
+    def makePerson(self, email=None, name=None, email_address_status=None):
         """Create and return a new, arbitrary Person."""
         if email is None:
             email = self.getUniqueString('email')
         if name is None:
             name = self.getUniqueString('person-name')
-        return getUtility(IPersonSet).createPersonAndEmail(
+        person = getUtility(IPersonSet).createPersonAndEmail(
             email, rationale=PersonCreationRationale.UNKNOWN, name=name)[0]
+        if email_address_status is not None:
+            # There should only be one email for this person.
+            for email in person.guessedemails:
+                email.status = email_address_status
+                email.syncUpdate()
+        return person
 
     def makeProduct(self, name=None):
         """Create and return a new, arbitrary Product."""
@@ -109,7 +115,8 @@ class LaunchpadObjectFactory:
             licenses=[License.GPL])
 
     def makeBranch(self, branch_type=None, owner=None, name=None,
-                   product=None, url=None, **optional_branch_args):
+                   product=None, url=None, registrant=None,
+                   **optional_branch_args):
         """Create and return a new, arbitrary Branch of the given type.
 
         Any parameters for IBranchSet.new can be specified to override the
@@ -119,6 +126,8 @@ class LaunchpadObjectFactory:
             branch_type = BranchType.HOSTED
         if owner is None:
             owner = self.makePerson()
+        if registrant is None:
+            registrant = owner
         if name is None:
             name = self.getUniqueString('branch')
         if product is None:
@@ -133,7 +142,7 @@ class LaunchpadObjectFactory:
             raise UnknownBranchTypeError(
                 'Unrecognized branch type: %r' % (branch_type,))
         return getUtility(IBranchSet).new(
-            branch_type, name, owner, owner, product, url,
+            branch_type, name, registrant, owner, product, url,
             **optional_branch_args)
 
     def makeRevisionsForBranch(self, branch, count=5, author=None,
@@ -168,7 +177,6 @@ class LaunchpadObjectFactory:
                 log_body=self.getUniqueString('log-body'),
                 revision_date=date_generator.next(),
                 revision_author=author,
-                owner=admin_user,
                 parent_ids=parent_ids,
                 properties={})
             sequence += 1
