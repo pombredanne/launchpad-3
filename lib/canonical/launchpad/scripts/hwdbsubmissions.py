@@ -13,8 +13,11 @@ __all__ = ['SubmissionParser']
 from cStringIO import StringIO
 from datetime import datetime, timedelta
 from logging import getLogger
+import os
+import re
+
 from lxml import etree
-import os, pytz, re
+import pytz
 
 from canonical.config import config
 
@@ -22,10 +25,15 @@ from canonical.config import config
 _relax_ng_files = {
     '1.0': 'hardware-1_0.rng', }
 
-_time_regex = re.compile(
-    r'^(\d\d\d\d)-(\d\d)-(\d\d)'
-     'T(\d\d):(\d\d):(\d\d)(\.(\d{0,6}))?'
-     '((([-+])(\d\d):(\d\d))|Z)?$')
+_time_regex = re.compile(r"""
+    ^(?P<year>\d\d\d\d)-(?P<month>\d\d)-(?P<day>\d\d)
+    T(?P<hour>\d\d):(?P<minute>\d\d):(?P<second>\d\d)
+    (?:\.(?P<second_fraction>\d{0,6}))?
+    (?P<tz>
+        (?:(?P<tz_sign>[-+])(?P<tz_hour>\d\d):(?P<tz_minute>\d\d))
+        | Z)?$
+    """,
+    re.VERBOSE)
 
 
 class SubmissionParser:
@@ -100,38 +108,33 @@ class SubmissionParser:
         return node.attrib['value']
 
     def _getValueAttributeAsDateTime(self, time_node):
-        """Convert a "value" attribute into a datetime object.
-
-        The Relax NG validation must ensure that text contains a valid
-        date and time value in the form yyyy-mm-ddThh:mm:ss.ffffff,
-        optionally followed by timezone data in the form 'Z' (meaning UTC)
-        or +hh:mm or -hh:mm.
-        """
+        """Convert a "value" attribute into a datetime object."""
         time_text = time_node.get('value')
 
         # we cannot use time.strptime: this function accepts neither fractions
         # of a second nor a time zone given e.g. as '+02:30'.
         mo = _time_regex.search(time_text)
 
-        # Paranoia check: _time_regex should match for all datetime strings
-        # that passed the Relax NG validation.
-        assert mo is not None, (
-            'Parsing submission %s: Invald datetime string: %s'
-            % (self.submission_key, time_text))
+        # The Relax NG schema allows a leading minus sign and year numbers
+        # with more than four digits, which are not "covered" by _time_regex.
+        if mo is None:
+            raise ValueError(
+                'Timestamp with unreasonable value: %s' % time_text)
 
-        (year, month, day, hour, minute, second, dot_second_fraction,
-         second_fraction, tz1, tz2, tz_sign, tz_hour, tz_minute) = mo.groups()
+        time_parts = mo.groupdict()
 
-        year = int(year)
-        month = int(month)
-        day = int(day)
-        hour = int(hour)
-        minute = int(minute)
-        second = int(second)
+        year = int(time_parts['year'])
+        month = int(time_parts['month'])
+        day = int(time_parts['day'])
+        hour = int(time_parts['hour'])
+        minute = int(time_parts['minute'])
+        second = int(time_parts['second'])
+        second_fraction = time_parts['second_fraction']
         if second_fraction is not None:
-            second_fraction = int(second_fraction)
+            milliseconds = second_fraction + '0' * (6 - len(second_fraction))
+            milliseconds = int(milliseconds)
         else:
-            second_fraction = 0
+            milliseconds = 0
 
         # The Relax NG validator accepts leap seconds, but the datetime
         # constructor rejects them. The time values submitted by the HWDB
@@ -139,10 +142,14 @@ class SubmissionParser:
         # to 59.999999 seconds without losing any real precision.
         if second > 59:
             second = 59
-            second_fraction = 999999
+            milliseconds = 999999
 
         timestamp = datetime(year, month, day, hour, minute, second,
-                             second_fraction, tzinfo=pytz.timezone('utc'))
+                             milliseconds, tzinfo=pytz.timezone('utc'))
+
+        tz_sign = time_parts['tz_sign']
+        tz_hour = time_parts['tz_hour']
+        tz_minute = time_parts['tz_minute']
         if tz_sign in ('-', '+'):
             delta = timedelta(hours=int(tz_hour), minutes=int(tz_minute))
             if tz_sign == '-':
@@ -588,7 +595,7 @@ class SubmissionParser:
 
         # The RelaxNG validation ensures that submission_doc has exactly
         # four sub-nodes and that the names of the sub-nodes appear in the
-        # keys of self._parser_system_tags.
+        # keys of self._parse_system.
         try:
             for node in submission_doc.getchildren():
                 parser = self._parse_system[node.tag]

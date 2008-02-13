@@ -8,6 +8,7 @@ import re
 from unittest import TestCase, TestLoader
 
 from zope.testing.loghandler import Handler
+
 from canonical.config import config
 from canonical.launchpad.scripts.hwdbsubmissions import SubmissionParser
 from canonical.testing import BaseLayer
@@ -1540,7 +1541,7 @@ class TestHWDBSubmissionRelaxNGValidation(TestCase):
             'Extra element aliases in interleave',
             'invalid sub-tag of <aliases>')
 
-    def testAliasTag(self):
+    def testAliasTagAttributes(self):
         """Validation of the <alias> tag."""
         # The attribute target is required.
         # Note that the expected error message from the validator
@@ -1549,6 +1550,15 @@ class TestHWDBSubmissionRelaxNGValidation(TestCase):
         # not as informative as one might wish.
         sample_data = self.sample_data.replace(
             '<alias target="65">', '<alias>')
+        result, submission_id = self.runValidator(sample_data)
+        self.assertErrorMessage(
+            submission_id, result,
+            'Extra element aliases in interleave',
+            'missing attribute of <alias>')
+
+        # target must be an integer.
+        sample_data = self.sample_data.replace(
+            '<alias target="65">', '<alias target="noInteger">')
         result, submission_id = self.runValidator(sample_data)
         self.assertErrorMessage(
             submission_id, result,
@@ -1565,6 +1575,7 @@ class TestHWDBSubmissionRelaxNGValidation(TestCase):
             'Extra element aliases in interleave',
             'invalid attribute of <alias>')
 
+    def testAliasTagContent(self):
         # The <alias> tag requires exactly two sub-tags: <vendor> and
         # <model>. Omitting either of them is forbidden. Again, we get
         # same error message from the validator.
@@ -1593,6 +1604,17 @@ class TestHWDBSubmissionRelaxNGValidation(TestCase):
         sample_data = self.insertSampledata(
             data=self.sample_data,
             insert_text='<nonsense/>',
+            where='</alias>')
+        result, submission_id = self.runValidator(sample_data)
+        self.assertErrorMessage(
+            submission_id, result,
+            'Extra element aliases in interleave',
+            'invalid sub-tag of <alias>')
+
+        # CDATA content not allowed.
+        sample_data = self.insertSampledata(
+            data=self.sample_data,
+            insert_text='nonsense',
             where='</alias>')
         result, submission_id = self.runValidator(sample_data)
         self.assertErrorMessage(

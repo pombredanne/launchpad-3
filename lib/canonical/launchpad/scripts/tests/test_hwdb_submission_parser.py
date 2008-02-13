@@ -3,12 +3,15 @@
 
 from datetime import datetime
 import logging
-from lxml import etree
 import os
-import pytz
 from unittest import TestCase, TestLoader
 
+from lxml import etree
+
+import pytz
+
 from zope.testing.loghandler import Handler
+
 from canonical.config import config
 from canonical.launchpad.scripts.hwdbsubmissions import SubmissionParser
 from canonical.testing import BaseLayer
@@ -32,6 +35,9 @@ class TestHWDBSubmissionParser(TestCase):
             config.root, 'lib', 'canonical', 'launchpad', 'scripts',
             'tests', 'hardwaretest.xml')
         self.sample_data = open(sample_data_path).read()
+
+        parsed_sample_data, submission_id = self.runParser(self.sample_data)
+        self.parsed_sample_data = parsed_sample_data
 
     def assertErrorMessage(self, submission_key, result, message, test):
         """Search for message in the log entries for submission_key.
@@ -118,6 +124,15 @@ class TestHWDBSubmissionParser(TestCase):
         self.assertEqual(parser._getValueAttributeAsDateTime(time_node),
                          datetime(2008, 1, 2, 4, 4, 5, tzinfo=utc_tz))
 
+        # time values may be given with microsecond resolution.
+        time_node = self.getTimestampETreeNode('2008-01-02T03:04:05.123')
+        self.assertEqual(parser._getValueAttributeAsDateTime(time_node),
+                         datetime(2008, 1, 2, 3, 4, 5, 123000, tzinfo=utc_tz))
+
+        time_node = self.getTimestampETreeNode('2008-01-02T03:04:05.123456')
+        self.assertEqual(parser._getValueAttributeAsDateTime(time_node),
+                         datetime(2008, 1, 2, 3, 4, 5, 123456, tzinfo=utc_tz))
+
         # The time zone offset may be given with "minute resolution".
         time_node = self.getTimestampETreeNode('2008-01-02T03:04:05+00:01')
         self.assertEqual(parser._getValueAttributeAsDateTime(time_node),
@@ -132,7 +147,19 @@ class TestHWDBSubmissionParser(TestCase):
         self.assertEqual(parser._getValueAttributeAsDateTime(time_node),
                          datetime(2008, 1, 2, 23, 59, 59, 999999,
                                   tzinfo=utc_tz))
-        
+
+        # "Negative" time values raise a ValueError.
+        time_node = self.getTimestampETreeNode('-1000-01-02/03:04:05')
+        parser.submission_key = 'testing negative time stamps'
+        self.assertRaises(
+            ValueError, parser._getValueAttributeAsDateTime, time_node)
+
+        # Time values with years values with five or more digits raise
+        # a ValueError.
+        time_node = self.getTimestampETreeNode('12345-01-02/03:04:05')
+        parser.submission_key = 'testing negative time stamps'
+        self.assertRaises(
+            ValueError, parser._getValueAttributeAsDateTime, time_node)
 
     def testBooleanValuesInSummary(self):
         """Test boolean values in the <summary> section.
@@ -140,8 +167,7 @@ class TestHWDBSubmissionParser(TestCase):
         # The parser returns either True or False for the nodes
         # <live_cd>, <private>, <contactable>.
         boolean_nodes = ('live_cd', 'private', 'contactable')
-        result, submission_id = self.runParser(self.sample_data)
-        summary = result['summary']
+        summary = self.parsed_sample_data['summary']
         for node in boolean_nodes:
             self.assertEqual(
                 summary[node], False,
@@ -159,17 +185,13 @@ class TestHWDBSubmissionParser(TestCase):
 
     def testSummaryParser(self):
         """Test of the parser for the XML submission data."""
-        result, submission_id = self.runParser(self.sample_data)
-        self.assertNotEqual(result, None, 
-                            'Submission parser returned an error '
-                            'for valid data.')
 
         # The <summary> section is returned as a simple dictionary.
         # Possibly missing tags are already catched by the Relax NG
         # validation, as is invalid content of tags with boolean
         # or datetime content, hence there is no need to check for
         # this type of "bad data" here.
-        summary = result['summary']
+        summary = self.parsed_sample_data['summary']
         client_expected = {'name': 'hwtest',
                            'version': '0.9',
                            'plugins': [{'name': 'architecture_info',
@@ -230,7 +252,8 @@ class TestHWDBSubmissionParser(TestCase):
                          'Invalid parsing result for boolean property %s'
                              % property_xml)
 
-        property_xml = '<property name="booltest" type="bool">False</property>'
+        property_xml = (
+            '<property name="booltest" type="bool">False</property>')
         properties = self._runPropertyTest(property_xml)
         self.assertEqual(properties,
                          {'booltest': (False, 'bool')},
@@ -254,7 +277,7 @@ class TestHWDBSubmissionParser(TestCase):
                              % property_xml)
 
     def testStringProperties(self):
-        """String properties are converted into {'name': (value, type_string)}.
+        """String properties are converted into {'name': (value, type)}.
 
         type(value) is string.
         """
@@ -286,7 +309,8 @@ class TestHWDBSubmissionParser(TestCase):
 
         type(value) is int or long, depending on the value.
         """
-        property_template = '<property name="inttest" type="%s">123</property>'
+        property_template = (
+            '<property name="inttest" type="%s">123</property>')
         for property_type in ('dbus.Byte', 'dbus.Int16', 'dbus.Int32',
                               'dbus.Int64', 'dbus.UInt16', 'dbus.UInt32',
                               'dbus.UInt64', 'int', 'long'):
@@ -386,8 +410,7 @@ class TestHWDBSubmissionParser(TestCase):
         
     def testHalData(self):
         """The <hal> node is converted into a Python dict."""
-        result, submission_id = self.runParser(self.sample_data)
-        hal_data = result['hardware']['hal']
+        hal_data = self.parsed_sample_data['hardware']['hal']
         expected_device_1 = {
             'udi': '/org/freedesktop/Hal/devices/platform_bluetooth',
             'id': 0,
@@ -421,8 +444,7 @@ class TestHWDBSubmissionParser(TestCase):
 
         The list elements represent the <processor> nodes.
         """
-        result, submission_id = self.runParser(self.sample_data)
-        processors_data = result['hardware']['processors']
+        processors_data = self.parsed_sample_data['hardware']['processors']
         expected_data = [
             {'id': 123,
              'name': '0',
@@ -440,8 +462,7 @@ class TestHWDBSubmissionParser(TestCase):
 
         The list elements represent the <alias> nodes.
         """
-        result, submission_id = self.runParser(self.sample_data)
-        aliases_data = result['hardware']['aliases']
+        aliases_data = self.parsed_sample_data['hardware']['aliases']
         expected_data = [
             {'target': 65,
              'model': 'QuickPrint 9876',
@@ -454,8 +475,7 @@ class TestHWDBSubmissionParser(TestCase):
 
         Each dict item represents a <property> sub-node.
         """
-        result, submission_id = self.runParser(self.sample_data)
-        lsbrelease_data = result['software']['lsbrelease']
+        lsbrelease_data = self.parsed_sample_data['software']['lsbrelease']
         expected_data = {
             'release': ('7.04', 'str'),
             'codename': ('feisty', 'str'),
@@ -477,8 +497,7 @@ class TestHWDBSubmissionParser(TestCase):
         is a dictionary representing the <property> sub-nodes of a
         <package> node.
         """
-        result, submission_id = self.runParser(self.sample_data)
-        packages_data = result['software']['packages']
+        packages_data = self.parsed_sample_data['software']['packages']
         expected_data = {
             'metacity': {
                 'installed_size': (868352, 'int'),
@@ -494,25 +513,22 @@ class TestHWDBSubmissionParser(TestCase):
 
     def testDuplicatePackage(self):
         """Two <package> nodes with the same name are rejected."""
-        sample_data = self.sample_data
-        duplicate_package = """
-            <package name="metacity">
-                <property name="whatever" type="int">1</property>
-            </package>"""
-        insert_at ='<packages>'
-        sample_data = sample_data.replace(
-            insert_at, insert_at + duplicate_package)
-
-        result, submission_id = self.runParser(sample_data)
-        self.assertErrorMessage(
-            submission_id, result,
-            '<package name="metacity"> appears more than once in <packages>',
-            'Detection of duplicate <package> nodes in <packages>')
+        test_data = """
+            <packages>
+                <package name="foo">
+                    <property name="size" type="int">10000</property>
+                </package>
+                <package name="foo">
+                    <property name="size" type="int">10000</property>
+                </package>
+            </packages>
+        """
+        tree = etree.fromstring(test_data)
+        self.assertRaises(ValueError, SubmissionParser()._parsePackages, tree)
 
     def testXorgData(self):
         """The <xorg> node is converted into a Python dictionary."""
-        result, submission_id = self.runParser(self.sample_data)
-        xorg_data = result['software']['xorg']
+        xorg_data = self.parsed_sample_data['software']['xorg']
         expected_data = {
             'version': '1.3.0',
             'drivers': {
@@ -526,23 +542,18 @@ class TestHWDBSubmissionParser(TestCase):
 
     def testDuplicateXorgDriver(self):
         """Two <driver> nodes in <xorg> with the same name are rejected."""
-        sample_data = self.sample_data
-        duplicate_driver = (
-            '<driver name="fglrx" class="X.Org Video Driver"/>')
-        insert_at ='<xorg version="1.3.0">'
-        sample_data = sample_data.replace(
-            insert_at, insert_at + duplicate_driver)
-
-        result, submission_id = self.runParser(sample_data)
-        self.assertErrorMessage(
-            submission_id, result,
-            '<driver name="fglrx"> appears more than once in <xorg>',
-            'Detection of duplicate <driver> node in <xorg>')
+        test_data = """
+            <xorg>
+                <driver name="mouse" class="X.Org XInput driver"/>
+                <driver name="mouse" class="X.Org XInput driver"/>
+            </xorg>
+        """
+        tree = etree.fromstring(test_data)
+        self.assertRaises(ValueError, SubmissionParser()._parseXOrg, tree)
 
     def testQuestionsData(self):
-        """The <questions> node is converted into a Python dictionaryxxxxx."""
-        result, submission_id = self.runParser(self.sample_data)
-        questions_data = result['questions']
+        """The <questions> node is converted into a Python dictionary."""
+        questions_data = self.parsed_sample_data['questions']
 
         expected_question_1 = {
             'name': 'detected_network_controllers',
