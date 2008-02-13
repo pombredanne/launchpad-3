@@ -188,6 +188,8 @@ class BugWatch(SQLBase):
             AND BugMessage.bugwatch = %s
         """ % sqlvalues(comment_id, self)
 
+        # XXX 2008-02-13 gmb:
+        #     This might be more efficient if we used an EXISTS query.
         comment = BugMessage.selectOne(query, clauseTables=['Message'])
 
         return comment is not None

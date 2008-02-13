@@ -6,7 +6,6 @@ __metaclass__ = type
 
 import cgi
 import csv
-import email
 import os.path
 import re
 import socket
@@ -500,13 +499,15 @@ class ExternalBugTracker:
         """See `ISupportsCommentImport`."""
         imported_comments = 0
         for comment_id in self.getCommentIds(bug_watch):
-            displayname, email = self.getPosterForComment(bug_watch, comment_id)
+            displayname, email = self.getPosterForComment(
+                bug_watch, comment_id)
 
             poster = getUtility(IPersonSet).ensurePerson(
                 email, displayname, PersonCreationRationale.BUGIMPORT,
                 comment='when importing comments for %s.' % bug_watch.title)
 
-            comment_message = self._getComment(bug_watch, comment_id, poster)
+            comment_message = self.getMessageForComment(
+                bug_watch, comment_id, poster)
             if not bug_watch.hasComment(comment_id):
                 bug_watch.addComment(comment_id, comment_message)
                 imported_comments += 1
@@ -1023,7 +1024,7 @@ class DebBugs(ExternalBugTracker):
         return comment_ids
 
     def getPosterForComment(self, bug_watch, comment_id):
-        """Return a tuple of (displayname, email_address) for a comment's poster."""
+        """Return a tuple of (name, emailaddress) for a comment's poster."""
         debian_bug = self._findBug(bug_watch.remotebug)
         self._loadLog(debian_bug)
 
@@ -1032,7 +1033,7 @@ class DebBugs(ExternalBugTracker):
             if parsed_comment['message-id'] == comment_id:
                 return parseaddr(parsed_comment['from'])
 
-    def _getComment(self, bug_watch, comment_id, poster):
+    def getMessageForComment(self, bug_watch, comment_id, poster):
         """Return a Message object for a comment."""
         debian_bug = self._findBug(bug_watch.remotebug)
         self._loadLog(debian_bug)
