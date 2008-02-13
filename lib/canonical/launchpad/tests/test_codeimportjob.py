@@ -126,7 +126,8 @@ class NewEvents(object):
         for event in self:
             words = []
             words.append(event.event_type.name)
-            words.append(event.code_import.branch.unique_name)
+            if event.code_import is not None:
+                words.append(event.code_import.branch.unique_name)
             if event.machine is not None:
                 words.append(event.machine.hostname)
             if event.person is not None:
