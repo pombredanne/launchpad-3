@@ -5,13 +5,16 @@ __metaclass__ = type
 
 import os
 import shutil
+import subprocess
+import sys
 import tempfile
 from unittest import TestCase, TestLoader
 
+from canonical.archiveuploader.tagfiles import parse_tagfile
+from canonical.config import config
 from canonical.librarian.ftests.harness import (
     fillLibrarianFile, cleanupLibrarianFiles)
 from canonical.testing import LaunchpadZopelessLayer
-
 from canonical.launchpad.scripts.ftpmaster import (
     SyncSource, SyncSourceError)
 
@@ -223,6 +226,103 @@ class TestSyncSource(TestCase):
             ['\tfoobar-1.0.dsc: already in distro '
              '- downloading from librarian'])
         self.assertEqual(self._listFiles(), ['foobar-1.0.dsc'])
+
+
+class TestSyncSourceScript(TestCase):
+    layer = LaunchpadZopelessLayer
+    dbuser = 'ro'
+
+    def setUp(self):
+        self._home = os.getcwd()
+        self._jail = os.path.abspath(
+            './lib/canonical/launchpad/scripts/ftests/sync_source_home/')
+        os.chdir(self._jail)
+
+    def tearDown(self):
+        """'chdir' back to the previous path (home)."""
+        os.chdir(self._home)
+
+    def runSyncSource(self, extra_args=None):
+        """Run sync-source.py, returning the result and output.
+
+        Returns a tuple of the process's return code, stdout output and
+        stderr output.
+        """
+        if extra_args is None:
+            extra_args = []
+        script = os.path.join(
+            config.root, "scripts", "ftpmaster-tools", "sync-source.py")
+        args = [sys.executable, script]
+        args.extend(extra_args)
+        process = subprocess.Popen(
+            args, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        stdout, stderr = process.communicate()
+        return (process.returncode, stdout, stderr)
+
+    def testSyncSourceRun(self):
+        """Try a simple sync-source.py run.
+
+        It will run in a special tree prepared to cope with sync-source
+        requirements (see `setUp`). It contains a usable archive index
+        named as '$distribution_$suite_$component_Sources' and the
+        'etherwake' source files.
+
+        Check that:
+         * return code is ZERO,
+         * check standard error and standard output,
+         * check if the expected changesfile was generated,
+         * parse and inspect the changesfile using the archiveuploader
+           component (the same approach adopted by Soyuz).
+         * delete the changesfile.
+        """
+        returncode, out, err = self.runSyncSource(
+            extra_args=['-b', 'cprov', '-D', 'debian', '-C', 'main',
+                        '-S', 'incoming', 'etherwake'])
+
+        self.assertEqual(
+            0, returncode, "\nScript Failed:%s\nStdout:\n%s\nStderr\n%s\n"
+            % (returncode, out, err))
+
+        self.assertEqual(
+            err.splitlines(),
+            ['W: Could not find blacklist file on '
+                  '/srv/launchpad.net/dak/sync-blacklist.txt'])
+        self.assertEqual(
+            out.splitlines(),
+            ['Getting binaries for hoary...',
+             '[Updating] etherwake (0 [Ubuntu] < 1.08-1 [Debian])',
+             ' * Trying to add etherwake...',
+             '  - <etherwake_1.08-1.diff.gz: cached>',
+             '  - <etherwake_1.08.orig.tar.gz: cached>',
+             '  - <etherwake_1.08-1.dsc: cached>'])
+
+        expected_changesfile = 'etherwake_1.08-1_source.changes'
+        self.assertTrue(
+            os.path.exists(expected_changesfile),
+            "Couldn't find %s." % expected_changesfile)
+
+        # Parse the generated unsigned changesfile.
+        parsed_changes = parse_tagfile(
+            expected_changesfile, allow_unsigned=True)
+
+        # It refers to the right source/version.
+        self.assertEqual(parsed_changes['source'], 'etherwake')
+        self.assertEqual(parsed_changes['version'], '1.08-1')
+
+        # It includes the correct 'origin' and 'target' information.
+        self.assertEqual(parsed_changes['origin'], 'Debian/incoming')
+        self.assertEqual(parsed_changes['distribution'], 'hoary')
+
+        # And finally, 'maintainer' role was preserved and 'changed-by'
+        # role was assigned as specified in the sync-source command-line.
+        self.assertEqual(
+            parsed_changes['maintainer'],
+            'Alain Schroeder <alain@debian.org>')
+        self.assertEqual(
+            parsed_changes['changed-by'],
+            'Celso Providelo <celso.providelo@canonical.com>')
+
+        os.unlink(expected_changesfile)
 
 
 def test_suite():

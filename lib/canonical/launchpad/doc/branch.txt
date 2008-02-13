@@ -635,8 +635,6 @@ used to identify when a scan is needed for a branch.
 
     >>> branch.last_scanned_id = 'test@canonical.com-20051031165248-6f1bb97973c2b4f4'
     >>> rev = branch.getTipRevision()
-    >>> print rev.owner.name
-    admins
     >>> print rev.date_created
     2005-10-31 17:21:47.381770+00:00
     >>> print rev.log_body

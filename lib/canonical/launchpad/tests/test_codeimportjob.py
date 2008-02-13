@@ -126,7 +126,8 @@ class NewEvents(object):
         for event in self:
             words = []
             words.append(event.event_type.name)
-            words.append(event.code_import.branch.unique_name)
+            if event.code_import is not None:
+                words.append(event.code_import.branch.unique_name)
             if event.machine is not None:
                 words.append(event.machine.hostname)
             if event.person is not None:
@@ -425,6 +426,67 @@ class TestCodeImportJobWorkflowRequestJob(unittest.TestCase,
             request_event, CodeImportEventType.REQUEST,
             pending_job.code_import, person=person)
 
+
+class TestCodeImportJobWorkflowStartJob(unittest.TestCase,
+        AssertFailureMixin, AssertSqlDateMixin, AssertEventMixin):
+    """Unit tests for CodeImportJobWorkflow.startJob."""
+
+    layer = LaunchpadFunctionalLayer
+
+    def setUp(self):
+        login_for_code_imports()
+        self.factory = LaunchpadObjectFactory()
+
+    def test_wrongJobState(self):
+        # Calling startJob with a job whose state is not PENDING is an error.
+        machine = self.factory.makeCodeImportMachine()
+        code_import = self.factory.makeCodeImport()
+        job = self.factory.makeCodeImportJob(code_import)
+        # ICodeImportJob does not allow setting 'state', so we must
+        # use removeSecurityProxy.
+        RUNNING = CodeImportJobState.RUNNING
+        removeSecurityProxy(job).state = RUNNING
+        # Machines are OFFLINE when they are created.
+        machine.setOnline()
+        # Testing startJob failure.
+        self.assertFailure(
+            "The CodeImportJob associated with %s is "
+            "RUNNING." % code_import.branch.unique_name,
+            getUtility(ICodeImportJobWorkflow).requestJob,
+            job, machine)
+
+    def test_offlineMachine(self):
+        # Calling startJob with a machine which is not ONLINE is an error.
+        machine = self.factory.makeCodeImportMachine()
+        code_import = self.factory.makeCodeImport()
+        job = self.factory.makeCodeImportJob(code_import)
+        # Testing startJob failure.
+        self.assertFailure(
+            "The machine %s is OFFLINE." % machine.hostname,
+            getUtility(ICodeImportJobWorkflow).startJob,
+            job, machine)
+
+class TestCodeImportJobWorkflowUpdateHeartbeat(unittest.TestCase,
+        AssertFailureMixin, AssertSqlDateMixin, AssertEventMixin):
+    """Unit tests for CodeImportJobWorkflow.startJob."""
+
+    layer = LaunchpadFunctionalLayer
+
+    def setUp(self):
+        login_for_code_imports()
+        self.factory = LaunchpadObjectFactory()
+
+    def test_wrongJobState(self):
+        # Calling updateHeartbeat with a job whose state is not RUNNING is an
+        # error.
+        machine = self.factory.makeCodeImportMachine()
+        code_import = self.factory.makeCodeImport()
+        job = self.factory.makeCodeImportJob(code_import)
+        self.assertFailure(
+            "The CodeImportJob associated with %s is "
+            "PENDING." % code_import.branch.unique_name,
+            getUtility(ICodeImportJobWorkflow).updateHeartbeat,
+            job, u'')
 
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)

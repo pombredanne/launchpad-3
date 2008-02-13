@@ -15,9 +15,11 @@ from datetime import datetime, timedelta
 import pytz
 
 from zope.component import getUtility
+from canonical.database.sqlbase import connect, sqlvalues
 from canonical.launchpad.interfaces import (
-    BranchType, CodeImportReviewStatus, CreateBugParams, IBranchSet, IBugSet,
-    ICodeImportJobWorkflow, ICodeImportSet, ILaunchpadCelebrities, IPersonSet,
+    BranchType, CodeImportMachineState, CodeImportReviewStatus,
+    CreateBugParams, IBranchSet, IBugSet, ICodeImportJobWorkflow,
+    ICodeImportMachineSet, ICodeImportSet, ILaunchpadCelebrities, IPersonSet,
     IProductSet, IRevisionSet, License, PersonCreationRationale,
     RevisionControlSystems, UnknownBranchTypeError)
 
@@ -86,14 +88,20 @@ class LaunchpadObjectFactory:
         return 'http://%s.example.com/%s' % (
             self.getUniqueString('domain'), self.getUniqueString('path'))
 
-    def makePerson(self, email=None, name=None):
+    def makePerson(self, email=None, name=None, email_address_status=None):
         """Create and return a new, arbitrary Person."""
         if email is None:
             email = self.getUniqueString('email')
         if name is None:
             name = self.getUniqueString('person-name')
-        return getUtility(IPersonSet).createPersonAndEmail(
+        person = getUtility(IPersonSet).createPersonAndEmail(
             email, rationale=PersonCreationRationale.UNKNOWN, name=name)[0]
+        if email_address_status is not None:
+            # There should only be one email for this person.
+            for email in person.guessedemails:
+                email.status = email_address_status
+                email.syncUpdate()
+        return person
 
     def makeProduct(self, name=None):
         """Create and return a new, arbitrary Product."""
@@ -171,7 +179,6 @@ class LaunchpadObjectFactory:
                 log_body=self.getUniqueString('log-body'),
                 revision_date=date_generator.next(),
                 revision_author=author,
-                owner=admin_user,
                 parent_ids=parent_ids,
                 properties={})
             sequence += 1
@@ -219,3 +226,10 @@ class LaunchpadObjectFactory:
             code_import.registrant)
         workflow = getUtility(ICodeImportJobWorkflow)
         return workflow.newJob(code_import)
+
+    def makeCodeImportMachine(self):
+        """Return a new CodeImportMachine.
+
+        The machine will be in the OFFLINE state."""
+        hostname = self.getUniqueString('machine-')
+        return getUtility(ICodeImportMachineSet).new(hostname)
