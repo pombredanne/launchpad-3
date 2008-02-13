@@ -185,6 +185,8 @@ branchmergeproposal_index = 'Proposal to merge branch'
 
 branchmergeproposal_request_review = ViewLabel()
 
+branchmergeproposal_resubmit = ViewLabel()
+
 branchmergeproposal_review = ViewLabel()
 
 branchmergeproposal_work_in_progress = ViewLabel()
@@ -361,19 +363,19 @@ build_retry = ContextTitle('Retry %s')
 
 build_rescore = ContextTitle('Rescore %s')
 
+builder_admin = ContextTitle('Administer %s builder')
+
+builder_cancel = ContextTitle('Cancel job for %s')
+
+builder_edit = ContextTitle('Edit build machine %s')
+
+builder_history = ContextTitle('Build history for %s')
+
+builder_index = ContextTitle('Build machine %s')
+
+builder_mode = ContextTitle('Change mode for %s')
+
 builders_index = 'Launchpad build farm'
-
-builder_edit = ContextTitle(smartquote('Edit build machine "%s"'))
-
-builder_index = ContextTitle(smartquote('Build machine "%s"'))
-
-builder_cancel = ContextTitle(smartquote('Cancel job for "%s"'))
-
-builder_mode = ContextTitle(smartquote('Change mode for "%s"'))
-
-builder_admin = ContextTitle(smartquote('Administer "%s" builder'))
-
-builder_history = ContextTitle(smartquote('Build History for "%s"'))
 
 calendar_index = ContextTitle('%s')
 
@@ -442,6 +444,8 @@ distributionmirror_review = ContextTitle('Review mirror %s')
 distribution_add = 'Register a new distribution'
 
 distribution_allpackages = ContextTitle('All packages in %s')
+
+distribution_upstream_bug_report = ContextTitle('Upstream Bug Report for %s')
 
 distribution_bugcontact = ContextTitle('Change bug contact for %s')
 
@@ -702,6 +706,8 @@ logintoken_validatesignonlygpg = 'Confirm sign-only OpenPGP key'
 
 logintoken_validateteamemail = 'Confirm e-mail address'
 
+mailinglists_review = 'Pending mailing lists requests'
+
 # main_template has the code to insert one of these titles.
 
 malone_about = 'About Launchpad Bugs'
@@ -844,7 +850,7 @@ def person_branches(context, view):
     """Return the view's heading."""
     return view.heading
 
-person_branch_add = ContextDisplayName('Register a new branch for %s')
+person_branch_add = 'Register a branch'
 
 person_changepassword = 'Change your password'
 
@@ -1090,7 +1096,7 @@ rosetta_index = 'Launchpad Translations'
 
 rosetta_products = 'Projects with Translations in Launchpad'
 
-product_branch_add = ContextDisplayName('Register a new %s branch')
+product_branch_add = 'Register a branch'
 
 def productseries_edit(context, view):
     """Return the page title for changing a product series details."""

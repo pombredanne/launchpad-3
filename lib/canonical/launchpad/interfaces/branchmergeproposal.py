@@ -7,6 +7,7 @@ __metaclass__ = type
 __all__ = [
     'BadStateTransition',
     'BranchMergeProposalStatus',
+    'BRANCH_MERGE_PROPOSAL_FINAL_STATES',
     'InvalidBranchMergeProposal',
     'IBranchMergeProposal',
     'UserNotBranchReviewer',
@@ -92,6 +93,19 @@ class BranchMergeProposalStatus(DBEnumeratedType):
         target branch.
         """)
 
+    SUPERSEDED = DBItem(10, """
+        Superseded
+
+        This proposal has been superseded by anther proposal to merge.
+        """)
+
+
+BRANCH_MERGE_PROPOSAL_FINAL_STATES = (
+    BranchMergeProposalStatus.REJECTED,
+    BranchMergeProposalStatus.MERGED,
+    BranchMergeProposalStatus.SUPERSEDED,
+    )
+
 
 class IBranchMergeProposal(Interface):
     """Branch merge proposals show intent of landing one branch on another."""
@@ -137,7 +151,7 @@ class IBranchMergeProposal(Interface):
 
     commit_message = Summary(
         title=_("Commit Message"), required=False,
-        description=_("The commit message that should be used when merging"
+        description=_("The commit message that should be used when merging "
                       "the source branch."))
 
     queue_position = Attribute(_("The position in the queue."))
@@ -158,6 +172,11 @@ class IBranchMergeProposal(Interface):
 
     merge_reporter = Attribute(
         "The user that marked the branch as merged.")
+
+    supersedes = Attribute(
+        "The branch merge proposal that this one supersedes.")
+    superseded_by = Attribute(
+        "The branch merge proposal that supersedes this one.")
 
     date_created = Datetime(
         title=_('Date Created'), required=True, readonly=True)
@@ -254,6 +273,13 @@ class IBranchMergeProposal(Interface):
         :type merge_reporter: ``Person``
         """
 
+    def resubmit(registrant):
+        """Mark the branch merge proposal as superseded and return a new one.
+
+        The new proposal is created as work-in-progress, and copies across
+        user-entered data like the whiteboard.
+        """
+
     def isPersonValidReviewer(reviewer):
         """Return true if the `reviewer` is able to review the proposal.
 
@@ -264,11 +290,11 @@ class IBranchMergeProposal(Interface):
         as the authorised user.
         """
 
-    def isReviewable():
-        """Is the proposal is in a state condusive to being reviewed?
+    def isMergable():
+        """Is the proposal in a state that allows it to being merged?
 
-        As long as the source branch hasn't been merged into the target
-        the proposal is able to be reviewed.
+        As long as the proposal isn't in one of the end states, it is valid
+        to be merged.
         """
 
     def getUnlandedSourceBranchRevisions():
@@ -279,3 +305,6 @@ class IBranchMergeProposal(Interface):
         branch.  These are the revisions that have been committed to the
         source branch since it branched off the target branch.
         """
+
+    def deleteProposal():
+        """Delete the proposal to merge."""

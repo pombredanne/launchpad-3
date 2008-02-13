@@ -238,6 +238,13 @@
         />
 
     <adapter
+        for="float"
+        provides="zope.app.traversing.interfaces.IPathAdapter"
+        factory="canonical.launchpad.webapp.tales.NumberFormatterAPI"
+        name="fmt"
+        />
+
+    <adapter
         for="types.NoneType"
         provides="zope.app.traversing.interfaces.IPathAdapter"
         factory="canonical.launchpad.webapp.tales.NoneFormatter"
@@ -312,26 +319,6 @@
         component="canonical.launchpad.webapp.authentication.authService"
         provides="canonical.launchpad.webapp.interfaces.IPlacelessAuthUtility"
         permission="zope.Public"
-        />
-
-    <subscriber
-        for="canonical.launchpad.webapp.interfaces.IAfterTraverseEvent"
-        handler="canonical.launchpad.webapp.authentication.handle"
-        />
-
-    <subscriber
-        for="zope.app.publication.interfaces.IBeforeTraverseEvent"
-        handler="canonical.launchpad.webapp.authentication.handle"
-        />
-
-    <subscriber
-        for="canonical.launchpad.webapp.interfaces.ILoggedInEvent"
-        handler="canonical.launchpad.webapp.authentication.handle"
-        />
-
-    <subscriber
-        for="canonical.launchpad.webapp.interfaces.ILoggedOutEvent"
-        handler="canonical.launchpad.webapp.authentication.handle"
         />
 
     <subscriber

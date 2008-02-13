@@ -1,5 +1,5 @@
 # Copyright 2004 Canonical Ltd.  All rights reserved.
-# pylint: disable-msg=E0211,E0213
+# pylint: disable-msg=E0211,E0213,W0611
 
 """Interfaces pertaining to the launchpad application.
 
@@ -18,23 +18,17 @@ from canonical.launchpad.webapp.interfaces import ILaunchpadApplication
 # These import shims are actually necessary if we don't go over the
 # entire codebase and fix where the import should come from.
 from canonical.launchpad.webapp.interfaces import (
-    NotFoundError, ILaunchpadRoot, ILaunchBag, IOpenLaunchBag, IBreadcrumb,
-    IBasicLaunchpadRequest, IAfterTraverseEvent, AfterTraverseEvent,
-    IBeforeTraverseEvent, BeforeTraverseEvent, UnexpectedFormData,
-    UnsafeFormGetSubmissionError,
-    )
+    IBasicLaunchpadRequest, IBreadcrumb, ILaunchBag, ILaunchpadRoot,
+    IOpenLaunchBag, NotFoundError, UnexpectedFormData,
+    UnsafeFormGetSubmissionError)
 
 __all__ = [
-    'AfterTraverseEvent',
-    'BeforeTraverseEvent',
-    'IAfterTraverseEvent',
     'IAging',
     'IAppFrontPageSearchForm',
     'IAuthApplication',
     'IAuthServerApplication',
     'IBasicLaunchpadRequest',
     'IBazaarApplication',
-    'IBeforeTraverseEvent',
     'IBreadcrumb',
     'ICrowd',
     'IFeedsApplication',

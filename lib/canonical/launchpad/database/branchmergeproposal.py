@@ -8,6 +8,7 @@ __all__ = [
     'BranchMergeProposal',
     ]
 
+from zope.component import getUtility
 from zope.interface import implements
 
 from sqlobject import ForeignKey, IntCol, StringCol
@@ -15,11 +16,14 @@ from sqlobject import ForeignKey, IntCol, StringCol
 from canonical.database.constants import DEFAULT, UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
-from canonical.database.sqlbase import cursor, quote, SQLBase, sqlvalues
+from canonical.database.sqlbase import SQLBase, sqlvalues
 
 from canonical.launchpad.database.branchrevision import BranchRevision
 from canonical.launchpad.interfaces import (
-    BadStateTransition, BranchMergeProposalStatus, IBranchMergeProposal,
+    BadStateTransition,
+    BRANCH_MERGE_PROPOSAL_FINAL_STATES,
+    BranchMergeProposalStatus, IBranchMergeProposal,
+    ILaunchpadCelebrities,
     UserNotBranchReviewer)
 
 
@@ -29,7 +33,7 @@ class BranchMergeProposal(SQLBase):
     implements(IBranchMergeProposal)
 
     _table = 'BranchMergeProposal'
-    _defaultOrder = ['-date_created']
+    _defaultOrder = ['-date_created', 'id']
 
     registrant = ForeignKey(
         dbName='registrant', foreignKey='Person', notNull=True)
@@ -70,36 +74,71 @@ class BranchMergeProposal(SQLBase):
         dbName='merge_reporter', foreignKey='Person', notNull=False,
         default=None)
 
+    @property
+    def supersedes(self):
+        return BranchMergeProposal.selectOneBy(superseded_by=self)
+
+    superseded_by = ForeignKey(
+        dbName='superseded_by', foreignKey='BranchMergeProposal',
+        notNull=False, default=None)
+
     date_created = UtcDateTimeCol(notNull=True, default=DEFAULT)
     date_review_requested = UtcDateTimeCol(notNull=False, default=None)
     date_reviewed = UtcDateTimeCol(notNull=False, default=None)
     date_queued = UtcDateTimeCol(notNull=False, default=None)
 
+    def _transitionState(self, next_state, invalid_states=None):
+        """Update the queue_status of the proposal.
+
+        Raise an error if the proposal is in a final state.
+        """
+        if invalid_states is None:
+            invalid_states = BRANCH_MERGE_PROPOSAL_FINAL_STATES
+        if self.queue_status in invalid_states:
+            raise BadStateTransition(
+                'Invalid state transition for merge proposal: %s -> %s'
+                % (self.queue_status.title, next_state.title))
+        # The only valid transitions for queued proposals are to mark
+        # as either merged, or merge failed.
+        if (self.queue_status == BranchMergeProposalStatus.QUEUED and
+            next_state not in (BranchMergeProposalStatus.MERGED,
+                               BranchMergeProposalStatus.MERGE_FAILED)):
+            raise BadStateTransition(
+                'Invalid state transition for merge proposal: %s -> %s'
+                % (self.queue_status.title, next_state.title))
+        # Transition to the same state occur in two particular
+        # situations:
+        #  * stale posts
+        #  * approving a later revision
+        # In both these cases, there is no real reason to disallow
+        # transitioning to the same state.
+        self.queue_status = next_state
+
     def setAsWorkInProgress(self):
         """See `IBranchMergeProposal`."""
-        if self.queue_status == BranchMergeProposalStatus.MERGED:
-            raise BadStateTransition('Merged proposals cannot change state.')
-        self.queue_status = BranchMergeProposalStatus.WORK_IN_PROGRESS
+        self._transitionState(BranchMergeProposalStatus.WORK_IN_PROGRESS)
         self.date_review_requested = None
 
     def requestReview(self):
         """See `IBranchMergeProposal`."""
-        if self.queue_status == BranchMergeProposalStatus.MERGED:
-            raise BadStateTransition('Merged proposals cannot change state.')
-        self.queue_status = BranchMergeProposalStatus.NEEDS_REVIEW
+        self._transitionState(BranchMergeProposalStatus.NEEDS_REVIEW)
         self.date_review_requested = UTC_NOW
 
     def isPersonValidReviewer(self, reviewer):
         """See `IBranchMergeProposal`."""
         if reviewer is None:
             return False
-        return reviewer.inTeam(self.target_branch.code_reviewer)
+        # We trust Launchpad admins.
+        lp_admins = getUtility(ILaunchpadCelebrities).admin
+        return (reviewer.inTeam(self.target_branch.code_reviewer) or
+                reviewer.inTeam(lp_admins))
 
-    def isReviewable(self):
+    def isMergable(self):
         """See `IBranchMergeProposal`."""
-        # As long as the source branch has not been merged, it is valid
-        # to review it.
-        return self.queue_status != BranchMergeProposalStatus.MERGED
+        # As long as the source branch has not been merged, rejected
+        # or superseded, then it is valid to be merged.
+        return (self.queue_status not in
+                BRANCH_MERGE_PROPOSAL_FINAL_STATES)
 
     def _reviewProposal(self, reviewer, next_state, revision_id):
         """Set the proposal to one of the two review statuses."""
@@ -107,11 +146,7 @@ class BranchMergeProposal(SQLBase):
         if not self.isPersonValidReviewer(reviewer):
             raise UserNotBranchReviewer
         # Check the current state of the proposal.
-        if not self.isReviewable():
-            raise BadStateTransition(
-                'Invalid state transition for merge proposal: %s -> %s'
-                % (self.queue_state.title, next_state.title))
-        self.queue_status = next_state
+        self._transitionState(next_state)
         # Record the reviewer
         self.reviewer = reviewer
         self.date_reviewed = UTC_NOW
@@ -139,6 +174,12 @@ class BranchMergeProposal(SQLBase):
                 FROM BranchMergeProposal)
             """)
 
+        # The queue_position will wrap if we ever get to
+        # two billion queue entries where the queue has
+        # never become empty.  Perhaps sometime in the future
+        # we may want to (maybe) consider keeping track of
+        # the maximum value here.  I doubt that it'll ever be
+        # a problem -- thumper.
         if last_entry is None:
             position = 1
         else:
@@ -182,13 +223,13 @@ class BranchMergeProposal(SQLBase):
 
     def mergeFailed(self, merger):
         """See `IBranchMergeProposal`."""
-        self.queue_status = BranchMergeProposalStatus.MERGE_FAILED
+        self._transitionState(BranchMergeProposalStatus.MERGE_FAILED)
         self.merger = merger
 
     def markAsMerged(self, merged_revno=None, date_merged=None,
                      merge_reporter=None):
         """See `IBranchMergeProposal`."""
-        self.queue_status = BranchMergeProposalStatus.MERGED
+        self._transitionState(BranchMergeProposalStatus.MERGED)
         self.merged_revno = merged_revno
         self.merge_reporter = merge_reporter
 
@@ -201,6 +242,38 @@ class BranchMergeProposal(SQLBase):
         if date_merged is None:
             date_merged = UTC_NOW
         self.date_merged = date_merged
+
+    def resubmit(self, registrant):
+        """See `IBranchMergeProposal`."""
+        # You can transition from REJECTED to SUPERSEDED, but
+        # not from MERGED or SUPERSEDED.
+        self._transitionState(
+            BranchMergeProposalStatus.SUPERSEDED,
+            invalid_states=[BranchMergeProposalStatus.MERGED,
+                            BranchMergeProposalStatus.SUPERSEDED])
+        # This sync update is needed as the add landing target does
+        # a database query to identify if there are any active proposals
+        # with the same source and target branches.
+        self.syncUpdate()
+        proposal = self.source_branch.addLandingTarget(
+            registrant=registrant,
+            target_branch=self.target_branch,
+            dependent_branch=self.dependent_branch,
+            whiteboard=self.whiteboard)
+        self.superseded_by = proposal
+        # This sync update is needed to ensure that the transitive
+        # properties of supersedes and superseded_by are visible to
+        # the old and the new proposal.
+        self.syncUpdate()
+        return proposal
+
+    def deleteProposal(self):
+        """See `IBranchMergeProposal`."""
+        # Delete this proposal, but keep the superseded chain linked.
+        if self.supersedes is not None:
+            self.supersedes.superseded_by = self.superseded_by
+            self.supersedes.syncUpdate()
+        self.destroySelf()
 
     def getUnlandedSourceBranchRevisions(self):
         """See `IBranchMergeProposal`."""

@@ -140,9 +140,9 @@
 
   <browser:page
       for="*"
-      name="branch-javascript-macros"
+      name="branch-form-macros"
       permission="zope.Public"
-      template="../templates/branch-javascript-macros.pt" />
+      template="../templates/branch-form-macros.pt" />
 
   <browser:page
       name="+whiteboard"
