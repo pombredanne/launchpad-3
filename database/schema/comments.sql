@@ -301,14 +301,6 @@ COMMENT ON COLUMN CodeReviewMessage.branch_merge_proposal IS 'The merge proposal
 COMMENT ON COLUMN CodeReviewMessage.message IS 'The actual message.';
 COMMENT ON COLUMN CodeReviewMessage.vote IS 'The reviewer''s vote for this message.';
 
--- CodeReviewSubscription
-
-COMMENT ON TABLE CodeReviewSubscription IS 'A subscription of a person to a code review discussion.';
-COMMENT ON COLUMN CodeReviewSubscription.branch_merge_proposal IS 'The merge proposal being subscribed to.';
-COMMENT ON COLUMN CodeReviewSubscription.person IS 'The person subscribed to the code review discussion.';
-COMMENT ON COLUMN CodeReviewSubscription.date_created IS 'The date the subscription was created.';
-COMMENT ON COLUMN CodeReviewSubscription.registrant IS 'The person who created the subscription.';
-
 -- CVE
 
 COMMENT ON TABLE CVE IS 'A CVE Entry. The formal database of CVE entries is available at http://cve.mitre.org/ and we sync that database into Launchpad on a regular basis.';
