@@ -24,7 +24,7 @@ from canonical.launchpad.interfaces import (
     HWSubmissionProcessingStatus, IHWSubmission, IHWSubmissionSet,
     IHWSystemFingerprint, IHWSystemFingerprintSet, ILaunchpadCelebrities,
     ILibraryFileAliasSet, IPersonSet)
-from canonical.launchpad.validators.person import PublicPersonValidator
+from canonical.launchpad.validators.person import public_person_validator
 
 
 class HWSubmission(SQLBase):
@@ -41,7 +41,7 @@ class HWSubmission(SQLBase):
     contactable = BoolCol(notNull=True)
     submission_key = StringCol(notNull=True)
     owner = ForeignKey(
-        dbName='owner', foreignKey='Person', validator=PublicPersonValidator)
+        dbName='owner', foreignKey='Person', validator=public_person_validator)
     distroarchseries = ForeignKey(dbName='DistroArchSeries',
                                   foreignKey='DistroArchSeries',
                                   notNull=True)

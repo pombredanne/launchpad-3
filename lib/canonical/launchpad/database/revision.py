@@ -20,7 +20,7 @@ from canonical.launchpad.interfaces import (
     IRevision, IRevisionAuthor, IRevisionParent, IRevisionProperty,
     IRevisionSet)
 from canonical.launchpad.helpers import shortlist
-from canonical.launchpad.validators.person import PublicPersonValidator
+from canonical.launchpad.validators.person import public_person_validator
 
 
 class Revision(SQLBase):
@@ -30,7 +30,7 @@ class Revision(SQLBase):
 
     owner = ForeignKey(
         dbName='owner', foreignKey='Person',
-        validator=PublicPersonValidator, notNull=True)
+        validator=public_person_validator, notNull=True)
     date_created = UtcDateTimeCol(notNull=True, default=DEFAULT)
     log_body = StringCol(notNull=True)
     gpgkey = ForeignKey(dbName='gpgkey', foreignKey='GPGKey', default=None)

@@ -12,7 +12,7 @@ from canonical.launchpad.interfaces import \
     IBountySubscription, IBountySubscriptionSet
 
 from canonical.database.sqlbase import SQLBase
-from canonical.launchpad.validators.person import PublicPersonValidator
+from canonical.launchpad.validators.person import public_person_validator
 
 
 class BountySubscription(SQLBase):
@@ -25,7 +25,7 @@ class BountySubscription(SQLBase):
     bounty = ForeignKey(dbName='bounty', foreignKey='Bounty', notNull=True)
     person = ForeignKey(
         dbName='person', foreignKey='Person',
-        validator=PublicPersonValidator, notNull=True)
+        validator=public_person_validator, notNull=True)
 
 
 class BountySubscriptionSet:

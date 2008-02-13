@@ -11,7 +11,7 @@ from sqlobject import ForeignKey
 from canonical.database.sqlbase import SQLBase
 
 from canonical.launchpad.interfaces import IBugSubscription
-from canonical.launchpad.validators.person import PublicPersonValidator
+from canonical.launchpad.validators.person import public_person_validator
 
 
 class BugSubscription(SQLBase):
@@ -22,11 +22,11 @@ class BugSubscription(SQLBase):
     _table = 'BugSubscription'
 
     person = ForeignKey(dbName='person', foreignKey='Person',
-                        notNull=True, validator=PublicPersonValidator)
+                        notNull=True, validator=public_person_validator)
     bug = ForeignKey(dbName='bug', foreignKey='Bug', notNull=True)
     subscribed_by = ForeignKey(
         dbName='subscribed_by', foreignKey='Person',
-        validator=PublicPersonValidator, notNull=True)
+        validator=public_person_validator, notNull=True)
 
     @property
     def display_subscribed_by(self):

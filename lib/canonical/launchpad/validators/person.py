@@ -5,7 +5,7 @@ that private/private-membership teams can be connect to.
 """
 
 __metaclass__ = type
-__all__ = ['PublicPersonValidator', 'PublicOrPrivatePersonValidator']
+__all__ = ['public_or_private_person_validator', 'public_person_validator']
 
 from sqlobject.include.validators import Validator, InvalidField
 
@@ -55,5 +55,5 @@ class PublicPersonValidatorClass(PersonValidatorBase):
         return is_valid_public_person_link(person, state_object)
 
 
-PublicOrPrivatePersonValidator = PublicOrPrivatePersonValidatorClass()
-PublicPersonValidator = PublicPersonValidatorClass()
+public_or_private_person_validator = PublicOrPrivatePersonValidatorClass()
+public_person_validator = PublicPersonValidatorClass()

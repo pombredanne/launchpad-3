@@ -21,7 +21,7 @@ from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.sqlbase import SQLBase
 from canonical.launchpad.interfaces import ILocation
-from canonical.launchpad.validators.person import PublicPersonValidator
+from canonical.launchpad.validators.person import public_person_validator
 
 
 class PersonLocation(SQLBase):
@@ -32,13 +32,13 @@ class PersonLocation(SQLBase):
     date_created = UtcDateTimeCol(notNull=True, default=UTC_NOW)
     person = ForeignKey(
         dbName='person', foreignKey='Person',
-        validator=PublicPersonValidator, notNull=True, unique=True)
+        validator=public_person_validator, notNull=True, unique=True)
     latitude = FloatCol(notNull=False)
     longitude = FloatCol(notNull=False)
     time_zone = StringCol(notNull=True)
     last_modified_by = ForeignKey(
         dbName='last_modified_by', foreignKey='Person',
-        validator=PublicPersonValidator, notNull=True)
+        validator=public_person_validator, notNull=True)
     date_last_modified = UtcDateTimeCol(notNull=True, default=UTC_NOW)
 
 

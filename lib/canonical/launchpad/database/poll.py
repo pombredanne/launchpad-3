@@ -31,7 +31,7 @@ from canonical.launchpad.interfaces import (
     IPoll, IPollSet, IPollOption, IPollOptionSet, IVote, IVoteCast,
     PollStatus, IVoteCastSet, IVoteSet, PollAlgorithm, PollSecrecy,
     OptionIsNotFromSimplePoll)
-from canonical.launchpad.validators.person import PublicPersonValidator
+from canonical.launchpad.validators.person import public_person_validator
 
 
 class Poll(SQLBase):
@@ -44,7 +44,7 @@ class Poll(SQLBase):
 
     team = ForeignKey(
         dbName='team', foreignKey='Person',
-        validator=PublicPersonValidator, notNull=True)
+        validator=public_person_validator, notNull=True)
 
     name = StringCol(dbName='name', notNull=True)
 
@@ -345,7 +345,7 @@ class VoteCast(SQLBase):
 
     person = ForeignKey(
         dbName='person', foreignKey='Person',
-        validator=PublicPersonValidator, notNull=True)
+        validator=public_person_validator, notNull=True)
 
     poll = ForeignKey(dbName='poll', foreignKey='Poll', notNull=True)
 
@@ -369,7 +369,7 @@ class Vote(SQLBase):
 
     person = ForeignKey(
         dbName='person', foreignKey='Person',
-        validator=PublicPersonValidator)
+        validator=public_person_validator)
 
     poll = ForeignKey(dbName='poll', foreignKey='Poll', notNull=True)
 

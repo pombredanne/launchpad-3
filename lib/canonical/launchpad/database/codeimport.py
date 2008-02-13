@@ -26,7 +26,7 @@ from canonical.launchpad.database.productseries import ProductSeries
 from canonical.launchpad.interfaces import (
     CodeImportReviewStatus, ICodeImport, ICodeImportEventSet, ICodeImportSet,
     ILaunchpadCelebrities, NotFoundError, RevisionControlSystems)
-from canonical.launchpad.validators.person import PublicPersonValidator
+from canonical.launchpad.validators.person import public_person_validator
 
 
 class CodeImport(SQLBase):
@@ -40,13 +40,13 @@ class CodeImport(SQLBase):
                         notNull=True)
     registrant = ForeignKey(
         dbName='registrant', foreignKey='Person',
-        validator=PublicPersonValidator, notNull=True)
+        validator=public_person_validator, notNull=True)
     owner = ForeignKey(
         dbName='owner', foreignKey='Person',
-        validator=PublicPersonValidator, notNull=True)
+        validator=public_person_validator, notNull=True)
     assignee = ForeignKey(
         dbName='assignee', foreignKey='Person',
-        validator=PublicPersonValidator, notNull=False, default=None)
+        validator=public_person_validator, notNull=False, default=None)
 
     @property
     def product(self):

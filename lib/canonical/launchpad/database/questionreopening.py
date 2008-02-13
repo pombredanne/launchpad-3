@@ -21,7 +21,7 @@ from canonical.database.enumcol import EnumCol
 
 from canonical.launchpad.event import SQLObjectCreatedEvent
 from canonical.launchpad.interfaces import IQuestionReopening, QuestionStatus
-from canonical.launchpad.validators.person import PublicPersonValidator
+from canonical.launchpad.validators.person import public_person_validator
 
 
 class QuestionReopening(SQLBase):
@@ -36,10 +36,10 @@ class QuestionReopening(SQLBase):
     datecreated = UtcDateTimeCol(notNull=True, default=DEFAULT)
     reopener = ForeignKey(
         dbName='reopener', foreignKey='Person',
-        validator=PublicPersonValidator, notNull=True)
+        validator=public_person_validator, notNull=True)
     answerer = ForeignKey(
         dbName='answerer', foreignKey='Person',
-        validator=PublicPersonValidator, notNull=False, default=None)
+        validator=public_person_validator, notNull=False, default=None)
     date_solved = UtcDateTimeCol(notNull=False, default=None)
     priorstate = EnumCol(schema=QuestionStatus, notNull=True)
 

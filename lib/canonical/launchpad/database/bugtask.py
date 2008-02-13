@@ -41,7 +41,7 @@ from canonical.lazr.enum import DBItem
 
 from canonical.launchpad.searchbuilder import all, any, NULL, not_equals
 from canonical.launchpad.database.pillar import pillar_sort_key
-from canonical.launchpad.validators.person import PublicPersonValidator
+from canonical.launchpad.validators.person import public_person_validator
 from canonical.launchpad.interfaces import (
     BUG_CONTACT_BUGTASK_STATUSES,
     BugNominationStatus,
@@ -366,7 +366,7 @@ class BugTask(SQLBase, BugTaskMixin):
         default=BugTaskImportance.UNDECIDED)
     assignee = ForeignKey(
         dbName='assignee', foreignKey='Person',
-        validator=PublicPersonValidator,
+        validator=public_person_validator,
         notNull=False, default=None)
     bugwatch = ForeignKey(dbName='bugwatch', foreignKey='BugWatch',
         notNull=False, default=None)
@@ -378,7 +378,7 @@ class BugTask(SQLBase, BugTaskMixin):
     date_incomplete = UtcDateTimeCol(notNull=False, default=None)
     owner = ForeignKey(
         dbName='owner', foreignKey='Person',
-        validator=PublicPersonValidator, notNull=True)
+        validator=public_person_validator, notNull=True)
     # The targetnamecache is a value that is only supposed to be set
     # when a bugtask is created/modified or by the
     # update-bugtask-targetnamecaches cronscript. For this reason it's

@@ -21,7 +21,7 @@ from canonical.database.sqlbase import SQLBase
 from canonical.launchpad.interfaces import (
     ITranslationMessage, ITranslationMessageSet, RosettaTranslationOrigin,
     TranslationValidationStatus)
-from canonical.launchpad.validators.person import PublicPersonValidator
+from canonical.launchpad.validators.person import public_person_validator
 
 
 class TranslationMessageMixIn:
@@ -110,12 +110,12 @@ class TranslationMessage(SQLBase, TranslationMessageMixIn):
         dbName='date_created', notNull=True, default=UTC_NOW)
     submitter = ForeignKey(
         foreignKey='Person',
-        validator=PublicPersonValidator, dbName='submitter', notNull=True)
+        validator=public_person_validator, dbName='submitter', notNull=True)
     date_reviewed = UtcDateTimeCol(
         dbName='date_reviewed', notNull=False, default=None)
     reviewer = ForeignKey(
         dbName='reviewer', foreignKey='Person',
-        validator=PublicPersonValidator, notNull=False, default=None)
+        validator=public_person_validator, notNull=False, default=None)
     msgstr0 = ForeignKey(
         foreignKey='POTranslation', dbName='msgstr0', notNull=True)
     msgstr1 = ForeignKey(

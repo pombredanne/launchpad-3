@@ -31,7 +31,7 @@ from canonical.database.sqlbase import (
     SQLBase, flush_database_updates, quote, sqlvalues)
 from canonical.launchpad import helpers
 from canonical.launchpad.components.rosettastats import RosettaStats
-from canonical.launchpad.validators.person import PublicPersonValidator
+from canonical.launchpad.validators.person import public_person_validator
 from canonical.launchpad.database.potmsgset import POTMsgSet
 from canonical.launchpad.database.translationmessage import (
     DummyTranslationMessage, TranslationMessage)
@@ -222,7 +222,7 @@ class POFile(SQLBase, POFileMixIn):
                           notNull=True)
     lasttranslator = ForeignKey(
         dbName='lasttranslator', foreignKey='Person',
-        validator=PublicPersonValidator, notNull=False, default=None)
+        validator=public_person_validator, notNull=False, default=None)
 
     date_changed = UtcDateTimeCol(
         dbName='date_changed', notNull=True, default=UTC_NOW)
@@ -247,7 +247,7 @@ class POFile(SQLBase, POFileMixIn):
                                 default=None)
     owner = ForeignKey(
         dbName='owner', foreignKey='Person',
-        validator=PublicPersonValidator, notNull=True)
+        validator=public_person_validator, notNull=True)
     variant = StringCol(dbName='variant',
                         notNull=False,
                         default=None)
@@ -1285,7 +1285,7 @@ class POFileTranslator(SQLBase):
     pofile = ForeignKey(foreignKey='POFile', dbName='pofile', notNull=True)
     person = ForeignKey(
         dbName='person', foreignKey='Person',
-        validator=PublicPersonValidator, notNull=True)
+        validator=public_person_validator, notNull=True)
     latest_message = ForeignKey(foreignKey='TranslationMessage',
         dbName='latest_message', notNull=True)
     date_last_touched = UtcDateTimeCol(dbName='date_last_touched',

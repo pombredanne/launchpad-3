@@ -16,7 +16,7 @@ from canonical.database.sqlbase import SQLBase
 
 from canonical.launchpad.interfaces import (
     ISprintSpecification, SprintSpecificationStatus)
-from canonical.launchpad.validators.person import PublicPersonValidator
+from canonical.launchpad.validators.person import public_person_validator
 
 
 class SprintSpecification(SQLBase):
@@ -35,11 +35,11 @@ class SprintSpecification(SQLBase):
     whiteboard = StringCol(notNull=False, default=None)
     registrant = ForeignKey(
         dbName='registrant', foreignKey='Person',
-        validator=PublicPersonValidator, notNull=True)
+        validator=public_person_validator, notNull=True)
     date_created = UtcDateTimeCol(notNull=True, default=DEFAULT)
     decider = ForeignKey(
         dbName='decider', foreignKey='Person',
-        validator=PublicPersonValidator, notNull=False, default=None)
+        validator=public_person_validator, notNull=False, default=None)
     date_decided = UtcDateTimeCol(notNull=False, default=None)
 
     @property

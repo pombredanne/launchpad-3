@@ -13,7 +13,7 @@ from sqlobject import ForeignKey
 
 from canonical.database.sqlbase import SQLBase
 from canonical.launchpad.interfaces import IAnswerContact
-from canonical.launchpad.validators.person import PublicPersonValidator
+from canonical.launchpad.validators.person import public_person_validator
 
 
 class AnswerContact(SQLBase):
@@ -26,7 +26,7 @@ class AnswerContact(SQLBase):
 
     person = ForeignKey(
         dbName='person', notNull=True, foreignKey='Person',
-        validator=PublicPersonValidator)
+        validator=public_person_validator)
     product = ForeignKey(
         dbName='product', notNull=False, foreignKey='Product')
     distribution = ForeignKey(

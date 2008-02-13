@@ -10,7 +10,7 @@ from zope.interface import implements
 from sqlobject import ForeignKey, StringCol
 
 from canonical.launchpad.interfaces import ISpecificationFeedback
-from canonical.launchpad.validators.person import PublicPersonValidator
+from canonical.launchpad.validators.person import public_person_validator
 
 from canonical.database.sqlbase import SQLBase
 
@@ -25,10 +25,10 @@ class SpecificationFeedback(SQLBase):
         foreignKey='Specification', notNull=True)
     reviewer = ForeignKey(
         dbName='reviewer', foreignKey='Person',
-        validator=PublicPersonValidator, notNull=True)
+        validator=public_person_validator, notNull=True)
     requester = ForeignKey(
         dbName='requester', foreignKey='Person',
-        validator=PublicPersonValidator, notNull=True)
+        validator=public_person_validator, notNull=True)
     queuemsg = StringCol(notNull=False, default=None)
 
 

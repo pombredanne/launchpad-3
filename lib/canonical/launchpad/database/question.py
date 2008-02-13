@@ -35,7 +35,7 @@ from canonical.launchpad.interfaces import (
     IProductSet, IQuestion, IQuestionSet, IQuestionTarget, ISourcePackage,
     QUESTION_STATUS_DEFAULT_SEARCH, QuestionAction, QuestionParticipation,
     QuestionPriority, QuestionSort, QuestionStatus)
-from canonical.launchpad.validators.person import PublicPersonValidator
+from canonical.launchpad.validators.person import public_person_validator
 
 from canonical.database.sqlbase import cursor, quote, SQLBase, sqlvalues
 from canonical.database.constants import DEFAULT, UTC_NOW
@@ -106,7 +106,7 @@ class Question(SQLBase, BugLinkTargetMixin):
     # db field names
     owner = ForeignKey(
         dbName='owner', foreignKey='Person',
-        validator=PublicPersonValidator, notNull=True)
+        validator=public_person_validator, notNull=True)
     title = StringCol(notNull=True)
     description = StringCol(notNull=True)
     language = ForeignKey(
@@ -118,10 +118,10 @@ class Question(SQLBase, BugLinkTargetMixin):
         default=QuestionPriority.NORMAL)
     assignee = ForeignKey(
         dbName='assignee', notNull=False, foreignKey='Person',
-        validator=PublicPersonValidator, default=None)
+        validator=public_person_validator, default=None)
     answerer = ForeignKey(
         dbName='answerer', notNull=False, foreignKey='Person',
-        validator=PublicPersonValidator, default=None)
+        validator=public_person_validator, default=None)
     answer = ForeignKey(dbName='answer', notNull=False,
         foreignKey='QuestionMessage', default=None)
     datecreated = UtcDateTimeCol(notNull=True, default=DEFAULT)

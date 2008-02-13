@@ -26,7 +26,7 @@ from canonical.database.sqlbase import (
 from canonical.database.constants import DEFAULT
 from canonical.database.datetimecol import UtcDateTimeCol
 
-from canonical.launchpad.validators.person import PublicPersonValidator
+from canonical.launchpad.validators.person import public_person_validator
 from canonical.launchpad.database.sprintattendance import SprintAttendance
 from canonical.launchpad.database.sprintspecification import (
     SprintSpecification)
@@ -42,13 +42,13 @@ class Sprint(SQLBase):
     # db field names
     owner = ForeignKey(
         dbName='owner', foreignKey='Person',
-        validator=PublicPersonValidator, notNull=True)
+        validator=public_person_validator, notNull=True)
     name = StringCol(notNull=True, alternateID=True)
     title = StringCol(notNull=True)
     summary = StringCol(notNull=True)
     driver = ForeignKey(
         dbName='driver', foreignKey='Person',
-        validator=PublicPersonValidator)
+        validator=public_person_validator)
     home_page = StringCol(notNull=False, default=None)
     homepage_content = StringCol(default=None)
     icon = ForeignKey(

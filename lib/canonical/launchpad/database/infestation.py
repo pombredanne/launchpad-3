@@ -25,7 +25,7 @@ from canonical.launchpad.interfaces import (
     IBugProductInfestation, IBugProductInfestationSet, NotFoundError)
 
 from canonical.launchpad.database.bugset import BugSetBase
-from canonical.launchpad.validators.person import PublicPersonValidator
+from canonical.launchpad.validators.person import public_person_validator
 
 
 class BugProductInfestation(SQLBase):
@@ -43,15 +43,15 @@ class BugProductInfestation(SQLBase):
     datecreated = UtcDateTimeCol(notNull=True)
     creator = ForeignKey(
         dbName="creator", foreignKey='Person',
-        validator=PublicPersonValidator, notNull=True)
+        validator=public_person_validator, notNull=True)
     dateverified = UtcDateTimeCol(notNull=False)
     verifiedby = ForeignKey(
         dbName="verifiedby", foreignKey='Person',
-        validator=PublicPersonValidator, notNull=False, default=None)
+        validator=public_person_validator, notNull=False, default=None)
     lastmodified = UtcDateTimeCol(notNull=True)
     lastmodifiedby = ForeignKey(
         dbName="lastmodifiedby", foreignKey='Person',
-        validator=PublicPersonValidator, notNull=True)
+        validator=public_person_validator, notNull=True)
 
     # used for launchpad pages
     def _title(self):
@@ -77,15 +77,15 @@ class BugPackageInfestation(SQLBase):
     datecreated = UtcDateTimeCol(dbName='datecreated', notNull=True)
     creator = ForeignKey(
         dbName='creator', foreignKey='Person',
-        validator=PublicPersonValidator, notNull=True)
+        validator=public_person_validator, notNull=True)
     dateverified = UtcDateTimeCol(dbName='dateverified')
     verifiedby = ForeignKey(
         dbName='verifiedby', foreignKey='Person',
-        validator=PublicPersonValidator)
+        validator=public_person_validator)
     lastmodified = UtcDateTimeCol(dbName='lastmodified')
     lastmodifiedby = ForeignKey(
         dbName='lastmodifiedby', foreignKey='Person',
-        validator=PublicPersonValidator)
+        validator=public_person_validator)
 
     # used for launchpad pages
     def title(self):

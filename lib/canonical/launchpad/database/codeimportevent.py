@@ -23,7 +23,7 @@ from canonical.launchpad.interfaces import (
     CodeImportEventDataType, CodeImportEventType,
     ICodeImportEvent, ICodeImportEventSet, ICodeImportEventToken,
     CodeImportMachineOfflineReason, RevisionControlSystems)
-from canonical.launchpad.validators.person import PublicPersonValidator
+from canonical.launchpad.validators.person import public_person_validator
 from canonical.lazr.enum import DBItem
 
 
@@ -41,7 +41,7 @@ class CodeImportEvent(SQLBase):
         dbName='code_import', foreignKey='CodeImport', default=None)
     person = ForeignKey(
         dbName='person', foreignKey='Person',
-        validator=PublicPersonValidator, default=None)
+        validator=public_person_validator, default=None)
     machine = ForeignKey(
         dbName='machine', foreignKey='CodeImportMachine', default=None)
 
