@@ -10,13 +10,17 @@ import email
 import os.path
 import re
 import socket
+import sys
 import urllib
 import urllib2
-from urlparse import urlunparse
-import ClientCookie
 import xml.parsers.expat
+
 from email.Utils import parseaddr
+from itertools import chain
+from urlparse import urlunparse
 from xml.dom import minidom
+
+import ClientCookie
 
 from BeautifulSoup import BeautifulSoup, Comment, SoupStrainer
 from zope.component import getUtility
@@ -34,14 +38,19 @@ from canonical.launchpad.interfaces import (
     ILaunchpadCelebrities, IMessageSet, IPersonSet,
     PersonCreationRationale, ISupportsCommentImport,
     UNKNOWN_REMOTE_IMPORTANCE, UNKNOWN_REMOTE_STATUS)
+from canonical.launchpad.webapp import errorlog
 from canonical.launchpad.webapp.url import urlparse
+
 
 # The user agent we send in our requests
 LP_USER_AGENT = "Launchpad Bugscraper/0.2 (https://bugs.launchpad.net/)"
 
+
 #
 # Exceptions caught in scripts/checkwatches.py
 #
+
+
 class BugWatchUpdateError(Exception):
     """Base exception for when we fail to update watches for a tracker."""
 
@@ -81,10 +90,20 @@ class BugTrackerConnectError(BugWatchUpdateError):
     def __str__(self):
         return "%s: %s" % (self.url, self.error)
 
+
 #
 # Exceptions caught locally
 #
-class InvalidBugId(Exception):
+
+
+class BugWatchUpdateWarning(Exception):
+    """An exception representing a warning.
+
+    This is a flag exception for the benefit of the OOPS machinery.
+    """
+
+
+class InvalidBugId(BugWatchUpdateWarning):
     """The bug id wasn't in the format the bug tracker expected.
 
     For example, Bugzilla and debbugs expect the bug id to be an
@@ -92,8 +111,71 @@ class InvalidBugId(Exception):
     """
 
 
-class BugNotFound(Exception):
+class BugNotFound(BugWatchUpdateWarning):
     """The bug was not found in the external bug tracker."""
+
+
+#
+# OOPS reporting.
+#
+
+
+def report_oops(message=None, properties=None, info=None):
+    """Record an oops for the current exception.
+
+    This must only be called while handling an exception.
+
+    :param message: custom explanatory error message. Do not use
+        str(exception) to fill in this parameter, it should only be
+        set when a human readable error has been explicitly generated.
+
+    :param properties: Properties to record in the OOPS report.
+    :type properties: An iterable of (name, value) tuples.
+
+    :param info: Exception info.
+    :type info: The return value of `sys.exc_info()`.
+    """
+    # Get the current exception info first of all.
+    if info is None:
+        info = sys.exc_info()
+
+    # Collect properties to report.
+    if properties is None:
+        properties = []
+    else:
+        properties = list(properties)
+
+    if message is not None:
+        properties.append(('error-explanation', message))
+
+    # Create the dummy request object.
+    request = errorlog.ScriptRequest(properties)
+    errorlog.globalErrorUtility.raising(info, request)
+
+    return request
+
+
+def report_warning(message, properties=None, info=None):
+    """Create and report a warning as an OOPS.
+
+    If no exception info is passed in this will create a generic
+    `BugWatchUpdateWarning` to record. The reason is that the stack
+    trace may be useful for later diagnosis.
+
+    :param message: See `report_oops`.
+    :param properties: See `report_oops`.
+    :param info: See `report_oops`.
+    """
+    if info is None:
+        # Raise and catch the exception so that sys.exc_info will
+        # return our warning and stack trace.
+        try:
+            raise BugWatchUpdateWarning
+        except BugWatchUpdateWarning:
+            return report_oops(message, properties)
+    else:
+        return report_oops(message, properties, info)
+
 
 _exception_to_bugwatcherrortype = [
    (BugTrackerConnectError, BugWatchErrorType.CONNECTION_ERROR),
@@ -110,6 +192,7 @@ def get_bugwatcherrortype_for_error(error):
             return bugwatcherrortype
     else:
         return BugWatchErrorType.UNKNOWN
+
 
 class ExternalBugTracker:
     """Base class for an external bug tracker."""
@@ -240,6 +323,45 @@ class ExternalBugTracker:
             bug_watches_by_remote_bug[remote_bug].append(bug_watch)
         return bug_watches_by_remote_bug
 
+    @property
+    def _oops_properties(self):
+        """Properties that are useful to record in an OOPS report.
+
+        Return an iterable of 2-tuples (name, value).
+
+        Subclasses should override this, but chain their properties
+        after these, perhaps with the use of `itertools.chain`.
+        """
+        return [('batch_size', self.batch_size),
+                ('batch_query_threshold', self.batch_query_threshold),
+                ('import_comments', self.import_comments),
+                ('externalbugtracker', self.__class__.__name__),
+                ('baseurl', self.baseurl)]
+
+    def info(self, message):
+        """Record an informational message related to this bug tracker."""
+        log.info(message)
+
+    def warning(self, message, properties=None, info=None):
+        """Record a warning related to this bug tracker."""
+        if properties is None:
+            properties = self._oops_properties
+        else:
+            properties = chain(properties, self._oops_properties)
+        report_warning(message, properties, info)
+        # Also put it in the log.
+        log.warning(message)
+
+    def error(self, message, properties=None, info=None):
+        """Record an error related to this external bug tracker."""
+        if properties is None:
+            properties = self._oops_properties
+        else:
+            properties = chain(properties, self._oops_properties)
+        report_oops(message, properties, info)
+        # Also put it in the log.
+        log.error(message, exc_info=info)
+
     def updateBugWatches(self, bug_watches):
         """Update the given bug watches."""
         # Save the url for later, since we might need it to report an
@@ -266,8 +388,8 @@ class ExternalBugTracker:
                 if bug_watch.remotebug not in remote_ids:
                     bug_watches.remove(bug_watch)
 
-        log.info("Updating %i watches on %s" %
-            (len(bug_watches), bug_tracker_url))
+        self.info("Updating %i watches on %s" %
+                  (len(bug_watches), bug_tracker_url))
 
         bug_watch_ids = [bug_watch.id for bug_watch in bug_watches]
         bug_watches_by_remote_bug = self._getBugWatchesByRemoteBug(
@@ -315,12 +437,22 @@ class ExternalBugTracker:
                         new_remote_importance)
                 except InvalidBugId:
                     error = BugWatchErrorType.INVALID_BUG_ID
-                    log.warn("Invalid bug %r on %s (local bugs: %s)." %
-                             (bug_id, self.baseurl, local_ids))
+                    self.warning(
+                        "Invalid bug %r on %s (local bugs: %s)." % (
+                            bug_id, self.baseurl, local_ids),
+                        properties=[
+                            ('bug_id', bug_id),
+                            ('local_ids', local_ids)],
+                        info=sys.exc_info())
                 except BugNotFound:
                     error = BugWatchErrorType.BUG_NOT_FOUND
-                    log.warn("Didn't find bug %r on %s (local bugs: %s)." %
-                             (bug_id, self.baseurl, local_ids))
+                    self.warning(
+                        "Didn't find bug %r on %s (local bugs: %s)." % (
+                            bug_id, self.baseurl, local_ids),
+                        properties=[
+                            ('bug_id', bug_id),
+                            ('local_ids', local_ids)],
+                        info=sys.exc_info())
 
                 for bug_watch in bug_watches:
                     bug_watch.lastchecked = UTC_NOW
@@ -357,9 +489,12 @@ class ExternalBugTracker:
                     bugwatch.lastchecked = UTC_NOW
                     bugwatch.last_error_type = errortype
 
-                log.error("Failure updating bug %r on %s (local bugs: %s)." %
-                            (bug_id, bug_tracker_url, local_ids),
-                          exc_info=True)
+                self.error(
+                    "Failure updating bug %r on %s (local bugs: %s)." % (
+                        bug_id, bug_tracker_url, local_ids),
+                    properties=[
+                        ('bug_id', bug_id),
+                        ('local_ids', local_ids)])
 
     def importBugComments(self, bug_watch):
         """See `ISupportsCommentImport`."""
@@ -377,7 +512,7 @@ class ExternalBugTracker:
                 imported_comments += 1
 
         if imported_comments > 0:
-            log.info("Imported %(count)i comments for remote bug "
+            self.info("Imported %(count)i comments for remote bug "
                 "%(remotebug)s on %(bugtracker_url)s into Launchpad bug "
                 "%(bug_id)s." %
                 {'count': imported_comments,
@@ -534,7 +669,7 @@ class Bugzilla(ExternalBugTracker):
         elif remote_status in ['UNCONFIRMED']:
             malone_status = BugTaskStatus.NEW
         else:
-            log.warning(
+            self.warning(
                 "Unknown Bugzilla status '%s' at %s." % (
                     remote_status, self.baseurl))
             malone_status = BugTaskStatus.UNKNOWN
@@ -684,6 +819,11 @@ debbugsstatusmap = {'open':      BugTaskStatus.NEW,
                     'forwarded': BugTaskStatus.CONFIRMED,
                     'done':      BugTaskStatus.FIXRELEASED}
 
+
+class DebBugsDatabaseNotFound(BugTrackerConnectError):
+    """The Debian bug database was not found."""
+
+
 class DebBugs(ExternalBugTracker):
     """A class that deals with communications with a debbugs db."""
 
@@ -702,20 +842,19 @@ class DebBugs(ExternalBugTracker):
             self.db_location = db_location
 
         if not os.path.exists(os.path.join(self.db_location, 'db-h')):
-            log.error("There's no debbugs db at %s." % self.db_location)
-            self.debbugs_db = None
+            raise DebBugsDatabaseNotFound(
+                self.db_location, '"db-h" not found.')
 
-        else:
-            # The debbugs database is split in two parts: a current
-            # database, which is kept under the 'db-h' directory, and
-            # the archived database, which is kept under 'archive'. The
-            # archived database is used as a fallback, as you can see in
-            # getRemoteStatus
-            self.debbugs_db = debbugs.Database(self.db_location,
-                self.debbugs_pl)
-            if os.path.exists(os.path.join(self.db_location, 'archive')):
-                self.debbugs_db_archive = debbugs.Database(
-                    self.db_location, self.debbugs_pl, subdir="archive")
+        # The debbugs database is split in two parts: a current
+        # database, which is kept under the 'db-h' directory, and
+        # the archived database, which is kept under 'archive'. The
+        # archived database is used as a fallback, as you can see in
+        # getRemoteStatus
+        self.debbugs_db = debbugs.Database(
+            self.db_location, self.debbugs_pl)
+        if os.path.exists(os.path.join(self.db_location, 'archive')):
+            self.debbugs_db_archive = debbugs.Database(
+                self.db_location, self.debbugs_pl, subdir="archive")
 
     def initializeRemoteBugDB(self, bug_ids):
         """See `ExternalBugTracker`.
@@ -745,7 +884,7 @@ class DebBugs(ExternalBugTracker):
             return BugTaskStatus.UNKNOWN
         parts = remote_status.split(' ')
         if len(parts) < 2:
-            log.error('Malformed debbugs status: %r.' % remote_status)
+            self.warning('Malformed debbugs status: %r.' % remote_status)
             return BugTaskStatus.UNKNOWN
         status = parts[0]
         severity = parts[1]
@@ -755,7 +894,7 @@ class DebBugs(ExternalBugTracker):
         try:
             malone_status = debbugsstatusmap[status]
         except KeyError:
-            log.warn('Unknown debbugs status "%s".' % status)
+            self.warning('Unknown debbugs status "%s".' % status)
             malone_status = BugTaskStatus.UNKNOWN
         if status == 'open':
             confirmed_tags = [
@@ -777,8 +916,6 @@ class DebBugs(ExternalBugTracker):
         return malone_status
 
     def _findBug(self, bug_id):
-        if self.debbugs_db is None:
-            raise BugNotFound(bug_id)
         if not bug_id.isdigit():
             raise InvalidBugId(
                 "Debbugs bug number not an integer: %s" % bug_id)
@@ -804,9 +941,6 @@ class DebBugs(ExternalBugTracker):
         If no comment log can be found, a debbugs.LogParseFailed error
         will be raised.
         """
-        if self.debbugs_db is None:
-            raise BugNotFound(debian_bug.id)
-
         # If we can't find the log in the main database we try the
         # archive.
         try:
@@ -854,7 +988,7 @@ class DebBugs(ExternalBugTracker):
         else:
             # Debbugs requires all bugs to be targeted to a package, so
             # it shouldn't be empty.
-            log.warning(
+            self.warning(
                 'Unknown Debian package (debbugs #%s): %s' % (
                     remote_bug, debian_bug.package))
         bug = bug_target.createBug(
@@ -956,7 +1090,8 @@ class MantisLoginHandler(ClientCookie.HTTPRedirectHandler):
             query = cgi.parse_qs(query, True)
             query['username'] = query['password'] = ['guest']
             if 'return' not in query:
-                log.warn("Mantis redirected us to the login page "
+                self.warning(
+                    "Mantis redirected us to the login page "
                     "but did not set a return path.")
             query = urllib.urlencode(query, True)
             newurl = urlunparse(
@@ -1162,8 +1297,9 @@ class Mantis(ExternalBugTracker):
 
             return bugs
 
-        except csv.Error, e:
-            log.warn("Exception parsing CSV file: %s." % e)
+        except csv.Error, error:
+            raise UnparseableBugData(
+                "Exception parsing CSV file: %s." % error)
 
     def _processCSVBugLine(self, bug_line):
         """Processes a single line of the CSV.
@@ -1176,19 +1312,19 @@ class Mantis(ExternalBugTracker):
             try:
                 data = bug_line.pop(0)
             except IndexError:
-                log.warn("Line '%r' incomplete." % bug_line)
+                self.warning("Line '%r' incomplete." % bug_line)
                 return
             bug[header] = data
         for field in required_fields:
             if field not in bug:
-                log.warn("Bug %s lacked field '%r'." % (bug['id'], field))
+                self.warning("Bug %s lacked field '%r'." % (bug['id'], field))
                 return
             try:
                 # See __init__ for an explanation of why we use integer
                 # IDs in the internal data structure.
                 bug_id = int(bug['id'])
             except ValueError:
-                log.warn("Encountered invalid bug ID: %r." % bug['id'])
+                self.warning("Encountered invalid bug ID: %r." % bug['id'])
                 return
 
         return bug
@@ -1381,8 +1517,8 @@ class Mantis(ExternalBugTracker):
                 # XXX: kiko 2007-07-05: Pretty inconsistently used
                 return BugTaskStatus.FIXRELEASED
 
-        log.warn("Unknown status/resolution %s/%s." %
-                 (remote_status, remote_resolution))
+        self.warning("Unknown status/resolution %s/%s." %
+                     (remote_status, remote_resolution))
         return BugTaskStatus.UNKNOWN
 
 
@@ -1435,7 +1571,7 @@ class Trac(ExternalBugTracker):
             return False
 
     def getRemoteBug(self, bug_id):
-        """See `ExternalBugTracker`.""" 
+        """See `ExternalBugTracker`."""
         bug_id = int(bug_id)
         query_url = "%s/%s" % (self.baseurl, self.ticket_url % bug_id)
         reader = csv.DictReader(self._fetchPage(query_url))
@@ -1526,7 +1662,7 @@ class Trac(ExternalBugTracker):
             except KeyError:
                 # Some Trac instances don't include the bug status in their
                 # CSV exports. In those cases we raise a warning.
-                log.warn("Trac ticket %i defines no status." % bug_id)
+                self.warning("Trac ticket %i defines no status." % bug_id)
                 return UNKNOWN_REMOTE_STATUS
 
     def convertRemoteImportance(self, remote_importance):
@@ -1560,7 +1696,7 @@ class Trac(ExternalBugTracker):
         try:
             return status_map[remote_status]
         except KeyError:
-            log.warn("Unknown remote status '%s'." % remote_status)
+            self.warning("Unknown remote status '%s'." % remote_status)
             return BugTaskStatus.UNKNOWN
 
 
@@ -1785,7 +1921,7 @@ class Roundup(ExternalBugTracker):
             try:
                 return self.status_map[int(remote_status)]
             except (KeyError, ValueError):
-                log.warn("Unknown remote status '%s'." % remote_status)
+                self.warning("Unknown remote status '%s'." % remote_status)
                 return BugTaskStatus.UNKNOWN
 
     def _convertPythonRemoteStatus(self, remote_status):
@@ -1809,7 +1945,7 @@ class Roundup(ExternalBugTracker):
             # If we can't find the status in our status map we can give
             # up now.
             if not self.status_map.has_key(status):
-                log.warn("Unknown remote status '%s'." % remote_status)
+                self.warning("Unknown remote status '%s'." % remote_status)
                 return BugTaskStatus.UNKNOWN
         except ValueError:
             raise AssertionError("The remote status must be an integer.")
@@ -1830,7 +1966,7 @@ class Roundup(ExternalBugTracker):
         elif self.status_map[1].has_key(resolution):
             return self.status_map[1][resolution]
         else:
-            log.warn("Unknown remote status '%s'." % remote_status)
+            self.warning("Unknown remote status '%s'." % remote_status)
             return BugTaskStatus.UNKNOWN
 
 
@@ -1990,13 +2126,13 @@ class SourceForge(ExternalBugTracker):
             resolution = None
 
         if status not in status_map:
-            log.warn("Unknown status '%s'" % remote_status)
+            self.warning("Unknown status '%s'" % remote_status)
             return BugTaskStatus.UNKNOWN
 
         local_status = status_map[status].get(
             resolution, status_map['Open'].get(resolution))
         if local_status is None:
-            log.warn("Unknown status '%s'" % remote_status)
+            self.warning("Unknown status '%s'" % remote_status)
             return BugTaskStatus.UNKNOWN
         else:
             return local_status
@@ -2174,7 +2310,7 @@ class RequestTracker(ExternalBugTracker):
             remote_status = remote_status.lower()
             return status_map[remote_status]
         except KeyError:
-            log.warn("Unknown status '%s'." % remote_status)
+            self.warning("Unknown status '%s'." % remote_status)
             return BugTaskStatus.UNKNOWN
 
 
