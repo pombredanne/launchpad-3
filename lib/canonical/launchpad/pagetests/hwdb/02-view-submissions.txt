@@ -38,7 +38,7 @@ are tested in detail later.
     '200 Ok'
     >>> anon_browser.goBack(1)
 
-Submissions that are marked as private are only displayed to the 
+Submissions that are marked as private are only displayed to the
 submitter himself.
 
     >>> browser.open('http://launchpad.dev/+hwdb/+submit')
@@ -71,7 +71,7 @@ submitter himself.
     ...         control = browser.getControl('Submission data:')
     ...         control.add_file(filedata, 'text/plain', filename)
     >>> fill_form(
-    ...     browser, submit_data, submit_data_checkboxes, submit_file, 
+    ...     browser, submit_data, submit_data_checkboxes, submit_file,
     ...     'test2.txt')
     >>> browser.getControl('Upload').click()
     >>> anon_browser.open('http://launchpad.dev/~name12/+hwdb-submissions')
@@ -102,7 +102,7 @@ displayed.
 
     >>> anon_browser.open('http://launchpad.dev/~name16/+hwdb-submissions')
     >>> print extract_text(find_main_content(anon_browser.contents))
-    Submissions for Foo Bar 
+    Submissions for Foo Bar
     Foo Bar has posted no submissions.
 
 Submissions that are marked as private and owned by a team are only
@@ -125,7 +125,7 @@ visible for members of the team and admins.
     ... }
     >>> submit_file = StringIO('some data')
     >>> fill_form(
-    ...     browser, team_submit_data, team_submit_data_checkboxes, 
+    ...     browser, team_submit_data, team_submit_data_checkboxes,
     ...     submit_file, 'teamtest.txt')
     >>> browser.getControl('Upload').click()
     >>> anon_browser.open(
@@ -196,8 +196,8 @@ all submissions for a fingerprint/system name.
     Date submitted     Submitted by    Download     Raw
     ...                     n/a        test.txt     ...
 
-The owner is only displayed, if the page is viewed by the owner, or if 
-the field "contactable" of this submission is "True" and the "Private" 
+The owner is only displayed, if the page is viewed by the owner, or if
+the field "contactable" of this submission is "True" and the "Private"
 is False.
 
     >>> submit_data_checkboxes['Private Submission'] = False
@@ -205,7 +205,7 @@ is False.
     >>> submit_data['Unique Submission Key:'] = 'unique-id-4'
     >>> browser.open('http://launchpad.dev/+hwdb/+submit')
     >>> fill_form(
-    ...     browser, submit_data, submit_data_checkboxes, submit_file, 
+    ...     browser, submit_data, submit_data_checkboxes, submit_file,
     ...     'test3.txt')
     >>> browser.getControl('Upload').click()
     >>> anon_browser.open(
