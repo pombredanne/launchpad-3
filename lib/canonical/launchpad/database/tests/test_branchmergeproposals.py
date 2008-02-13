@@ -179,8 +179,8 @@ class TestBranchMergeProposalCanReview(TestCase):
             True, "No user cannot review code")
 
 
-class TestBranchMergeProposalQueuing(TestCase):
-    """Test the enqueuing and dequeuing of merge proposals."""
+class TestBranchMergeProposalQueueing(TestCase):
+    """Test the enqueueing and dequeueing of merge proposals."""
 
     layer = LaunchpadFunctionalLayer
 
@@ -207,7 +207,7 @@ class TestBranchMergeProposalQueuing(TestCase):
         proposal.enqueue(self.target_branch.owner, 'some-revision-id')
         queued_proposals = list(self.target_branch.getMergeQueue())
         self.assertEqual(1, len(queued_proposals),
-                         "Should have one entry in the queue, got %s"
+                         "Should have one entry in the queue, got %s."
                          % len(queued_proposals))
 
     def test_queue_ordering(self):

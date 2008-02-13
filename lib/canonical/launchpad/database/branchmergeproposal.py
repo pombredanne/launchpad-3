@@ -175,6 +175,12 @@ class BranchMergeProposal(SQLBase):
                 FROM BranchMergeProposal)
             """)
 
+        # The queue_position will wrap if we ever get to
+        # two billion queue entries where the queue has
+        # never become empty.  Perhaps sometime in the future
+        # we may want to (maybe) consider keeping track of
+        # the maximum value here.  I doubt that it'll ever be
+        # a problem -- thumper.
         if last_entry is None:
             position = 1
         else:

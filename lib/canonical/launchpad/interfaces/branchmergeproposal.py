@@ -151,7 +151,7 @@ class IBranchMergeProposal(Interface):
 
     commit_message = Summary(
         title=_("Commit Message"), required=False,
-        description=_("The commit message that should be used when merging"
+        description=_("The commit message that should be used when merging "
                       "the source branch."))
 
     queue_position = Attribute(_("The position in the queue."))

@@ -200,8 +200,8 @@ class Branch(SQLBase):
         return BranchMergeProposal.select("""
             BranchMergeProposal.target_branch = %s AND
             BranchMergeProposal.queue_status = %s
-            """ % sqlvalues(self, BranchMergeProposalStatus.QUEUED)
-            , orderBy="queue_position")
+            """ % sqlvalues(self, BranchMergeProposalStatus.QUEUED),
+            orderBy="queue_position")
 
     @property
     def code_is_browseable(self):
