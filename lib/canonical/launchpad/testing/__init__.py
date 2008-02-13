@@ -19,6 +19,7 @@ from canonical.launchpad.interfaces import (
     BranchType,
     CodeImportReviewStatus,
     CreateBugParams,
+    EmailAddressStatus,
     IBranchSet,
     IBugSet,
     ICodeImportJobWorkflow,
