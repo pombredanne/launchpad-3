@@ -41,7 +41,7 @@ class structured:
     implements(IStructuredString)
 
     def __init__(self, text, *replacements, **kwreplacements):
-        text = translate_if_msgid(text)
+        text = translate_if_i18n(text)
         self.text = text
         if replacements and kwreplacements:
             raise TypeError(
@@ -49,13 +49,14 @@ class structured:
                 "arguments to structured(), not both.")
         if replacements:
             self.escapedtext = text % tuple(
-                cgi.escape(replacement) for replacement in replacements)
+                cgi.escape(unicode(replacement))
+                for replacement in replacements)
         elif kwreplacements:
             self.escapedtext = text % dict(
-                (key, cgi.escape(value))
+                (key, cgi.escape(unicode(value)))
                 for key, value in kwreplacements.iteritems())
         else:
-            self.escapedtext = self.text
+            self.escapedtext = unicode(text)
 
     def __repr__(self):
         return "<structured-string '%s'>" % self.text
@@ -391,12 +392,13 @@ def escape(message):
         # first. See bug #54987.
         return cgi.escape(
             unicode(
-                translate_if_msgid(message)))
+                translate_if_i18n(message)))
 
 
-def translate_if_msgid(obj_or_msgid):
-    """Translate an internationalized object and return the resulting
-    text, while returning other objects untouched.
+def translate_if_i18n(obj_or_msgid):
+    """Translate an internationalized object, returning the result.
+
+    Returns any other type of object untouched.
     """
     if isinstance(obj_or_msgid, (Message, MessageID)):
         return translate(
