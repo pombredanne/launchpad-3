@@ -51,6 +51,8 @@ from canonical.launchpad.webapp.authorization import check_permission
 from canonical.widgets.bug import BugTagsWidget
 from canonical.widgets.launchpadtarget import LaunchpadTargetWidget
 from canonical.launchpad.vocabularies import ValidPersonOrTeamVocabulary
+from canonical.launchpad.webapp.menu import structured
+
 
 class FileBugData:
     """Extra data to be added to the bug."""
@@ -460,15 +462,17 @@ class FileBugViewBase(LaunchpadFormView):
             self.request.response.addNotification(notification)
         if bug.security_related:
             self.request.response.addNotification(
+                structured(
                 'Security-related bugs are by default private '
                 '(visible only to their direct subscribers). '
                 'You may choose to <a href="+secrecy">publicly '
-                'disclose</a> this bug.')
+                'disclose</a> this bug.'))
         if bug.private and not bug.security_related:
             self.request.response.addNotification(
+                structured(
                 'This bug report has been marked private '
                 '(visible only to its direct subscribers). '
-                'You may choose to <a href="+secrecy">change this</a>.')
+                'You may choose to <a href="+secrecy">change this</a>.'))
 
         self.request.response.redirect(canonical_url(bug.bugtasks[0]))
 

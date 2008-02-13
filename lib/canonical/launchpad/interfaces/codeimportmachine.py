@@ -137,3 +137,9 @@ class ICodeImportMachineSet(Interface):
         Returns a `ICodeImportMachine` provider or ``None`` if no such machine
         is present.
         """
+
+    def new(hostname):
+        """Create a new CodeImportMachine.
+
+        The machine will initially be in the 'OFFLINE' state.
+        """

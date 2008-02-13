@@ -1,4 +1,4 @@
--- Generated Wed Oct 10 11:18:51 2007 UTC
+-- Generated Tue Jan 29 09:27:48 2008 UTC
 
 SET client_min_messages TO ERROR;
 
@@ -38,6 +38,31 @@ CREATE TABLE revision (
     revision_date timestamp without time zone
 );
 
+CREATE TABLE announcement (
+    id integer NOT NULL,
+    date_created timestamp without time zone DEFAULT timezone('UTC'::text, now()) NOT NULL,
+    date_announced timestamp without time zone,
+    registrant integer NOT NULL,
+    product integer,
+    distribution integer,
+    project integer,
+    title text NOT NULL,
+    summary text,
+    url text,
+    active boolean DEFAULT true NOT NULL,
+    date_updated timestamp without time zone,
+    CONSTRAINT has_target CHECK ((((product IS NOT NULL) OR (project IS NOT NULL)) OR (distribution IS NOT NULL))),
+    CONSTRAINT valid_url CHECK (valid_absolute_url(url))
+);
+
+CREATE SEQUENCE announcement_id_seq
+    INCREMENT BY 1
+    NO MAXVALUE
+    NO MINVALUE
+    CACHE 1;
+
+ALTER SEQUENCE announcement_id_seq OWNED BY announcement.id;
+
 CREATE TABLE answercontact (
     id integer NOT NULL,
     product integer,
@@ -64,7 +89,8 @@ CREATE TABLE archive (
     authorized_size integer,
     whiteboard text,
     distribution integer,
-    purpose integer NOT NULL
+    purpose integer NOT NULL,
+    private boolean DEFAULT false NOT NULL
 );
 
 CREATE SEQUENCE archive_id_seq
@@ -103,33 +129,6 @@ CREATE SEQUENCE binarypackagefile_id_seq
     NO MINVALUE
     CACHE 1;
 
-CREATE TABLE securebinarypackagepublishinghistory (
-    id integer NOT NULL,
-    binarypackagerelease integer NOT NULL,
-    distroarchrelease integer NOT NULL,
-    status integer NOT NULL,
-    component integer NOT NULL,
-    section integer NOT NULL,
-    priority integer NOT NULL,
-    datecreated timestamp without time zone NOT NULL,
-    datepublished timestamp without time zone,
-    datesuperseded timestamp without time zone,
-    supersededby integer,
-    datemadepending timestamp without time zone,
-    scheduleddeletiondate timestamp without time zone,
-    dateremoved timestamp without time zone,
-    pocket integer DEFAULT 0 NOT NULL,
-    embargo boolean DEFAULT false NOT NULL,
-    embargolifted timestamp without time zone,
-    archive integer NOT NULL
-);
-
-CREATE VIEW binarypackagepublishinghistory AS
-    SELECT securebinarypackagepublishinghistory.id, securebinarypackagepublishinghistory.archive, securebinarypackagepublishinghistory.binarypackagerelease, securebinarypackagepublishinghistory.distroarchrelease, securebinarypackagepublishinghistory.status, securebinarypackagepublishinghistory.component, securebinarypackagepublishinghistory.section, securebinarypackagepublishinghistory.priority, securebinarypackagepublishinghistory.datecreated, securebinarypackagepublishinghistory.datepublished, securebinarypackagepublishinghistory.datesuperseded, securebinarypackagepublishinghistory.supersededby, securebinarypackagepublishinghistory.datemadepending, securebinarypackagepublishinghistory.scheduleddeletiondate, securebinarypackagepublishinghistory.dateremoved, securebinarypackagepublishinghistory.pocket, securebinarypackagepublishinghistory.embargo, securebinarypackagepublishinghistory.embargolifted FROM securebinarypackagepublishinghistory WHERE (securebinarypackagepublishinghistory.embargo = false);
-
-CREATE VIEW binarypackagepublishing AS
-    SELECT binarypackagepublishinghistory.id, binarypackagepublishinghistory.archive, binarypackagepublishinghistory.binarypackagerelease, binarypackagepublishinghistory.distroarchrelease, binarypackagepublishinghistory.status, binarypackagepublishinghistory.component, binarypackagepublishinghistory.section, binarypackagepublishinghistory.priority, binarypackagepublishinghistory.datecreated, binarypackagepublishinghistory.datepublished, binarypackagepublishinghistory.datesuperseded, binarypackagepublishinghistory.supersededby, binarypackagepublishinghistory.datemadepending, binarypackagepublishinghistory.scheduleddeletiondate, binarypackagepublishinghistory.dateremoved, binarypackagepublishinghistory.pocket, binarypackagepublishinghistory.embargo, binarypackagepublishinghistory.embargolifted FROM binarypackagepublishinghistory WHERE (binarypackagepublishinghistory.status < 7);
-
 CREATE TABLE binarypackagerelease (
     id integer NOT NULL,
     binarypackagename integer NOT NULL,
@@ -153,6 +152,9 @@ CREATE TABLE binarypackagerelease (
     architecturespecific boolean NOT NULL,
     fti ts2.tsvector,
     datecreated timestamp without time zone DEFAULT timezone('UTC'::text, ('now'::text)::timestamp(6) with time zone) NOT NULL,
+    pre_depends text,
+    enhances text,
+    breaks text,
     CONSTRAINT valid_version CHECK (valid_debian_version(version))
 );
 
@@ -160,7 +162,7 @@ CREATE TABLE build (
     id integer NOT NULL,
     datecreated timestamp without time zone DEFAULT timezone('UTC'::text, ('now'::text)::timestamp(6) with time zone) NOT NULL,
     processor integer NOT NULL,
-    distroarchrelease integer NOT NULL,
+    distroarchseries integer NOT NULL,
     buildstate integer NOT NULL,
     datebuilt timestamp without time zone,
     buildduration interval,
@@ -169,7 +171,9 @@ CREATE TABLE build (
     sourcepackagerelease integer NOT NULL,
     pocket integer DEFAULT 0 NOT NULL,
     dependencies text,
-    archive integer NOT NULL
+    archive integer NOT NULL,
+    estimated_build_duration interval,
+    build_warnings text
 );
 
 CREATE TABLE component (
@@ -179,18 +183,19 @@ CREATE TABLE component (
     CONSTRAINT valid_name CHECK (valid_name(name))
 );
 
-CREATE TABLE distroarchrelease (
+CREATE TABLE distroarchseries (
     id integer NOT NULL,
-    distrorelease integer NOT NULL,
+    distroseries integer NOT NULL,
     processorfamily integer NOT NULL,
     architecturetag text NOT NULL,
     "owner" integer NOT NULL,
     official boolean NOT NULL,
     package_count integer DEFAULT 0 NOT NULL,
-    date_created timestamp without time zone DEFAULT timezone('UTC'::text, now()) NOT NULL
+    date_created timestamp without time zone DEFAULT timezone('UTC'::text, now()) NOT NULL,
+    ppa_supported boolean DEFAULT false NOT NULL
 );
 
-CREATE TABLE distrorelease (
+CREATE TABLE distroseries (
     id integer NOT NULL,
     distribution integer NOT NULL,
     name text NOT NULL,
@@ -199,7 +204,7 @@ CREATE TABLE distrorelease (
     version text NOT NULL,
     releasestatus integer NOT NULL,
     datereleased timestamp without time zone,
-    parentrelease integer,
+    parent_series integer,
     "owner" integer NOT NULL,
     lucilleconfig text,
     summary text NOT NULL,
@@ -230,7 +235,31 @@ CREATE TABLE libraryfilealias (
     mimetype text NOT NULL,
     expires timestamp without time zone,
     last_accessed timestamp without time zone DEFAULT timezone('UTC'::text, ('now'::text)::timestamp(6) with time zone) NOT NULL,
+    date_created timestamp without time zone DEFAULT timezone('UTC'::text, now()) NOT NULL,
     CONSTRAINT valid_filename CHECK ((filename !~~ '%/%'::text))
+);
+
+CREATE TABLE securebinarypackagepublishinghistory (
+    id integer NOT NULL,
+    binarypackagerelease integer NOT NULL,
+    distroarchseries integer NOT NULL,
+    status integer NOT NULL,
+    component integer NOT NULL,
+    section integer NOT NULL,
+    priority integer NOT NULL,
+    datecreated timestamp without time zone NOT NULL,
+    datepublished timestamp without time zone,
+    datesuperseded timestamp without time zone,
+    supersededby integer,
+    datemadepending timestamp without time zone,
+    scheduleddeletiondate timestamp without time zone,
+    dateremoved timestamp without time zone,
+    pocket integer DEFAULT 0 NOT NULL,
+    embargo boolean DEFAULT false NOT NULL,
+    embargolifted timestamp without time zone,
+    archive integer NOT NULL,
+    removed_by integer,
+    removal_comment text
 );
 
 CREATE TABLE sourcepackagerelease (
@@ -241,7 +270,7 @@ CREATE TABLE sourcepackagerelease (
     urgency integer NOT NULL,
     dscsigningkey integer,
     component integer,
-    changelog text,
+    changelog_entry text,
     builddepends text,
     builddependsindep text,
     architecturehintlist text NOT NULL,
@@ -249,7 +278,7 @@ CREATE TABLE sourcepackagerelease (
     section integer NOT NULL,
     maintainer integer NOT NULL,
     sourcepackagename integer NOT NULL,
-    uploaddistrorelease integer NOT NULL,
+    upload_distroseries integer NOT NULL,
     format integer NOT NULL,
     dsc_maintainer_rfc822 text,
     dsc_standards_version text,
@@ -257,11 +286,13 @@ CREATE TABLE sourcepackagerelease (
     dsc_binaries text,
     upload_archive integer NOT NULL,
     copyright text,
+    build_conflicts text,
+    build_conflicts_indep text,
     CONSTRAINT valid_version CHECK (valid_debian_version(version))
 );
 
 CREATE VIEW binarypackagefilepublishing AS
-    SELECT (((libraryfilealias.id)::text || '.'::text) || (binarypackagepublishing.id)::text) AS id, distrorelease.distribution, binarypackagepublishing.id AS binarypackagepublishing, component.name AS componentname, libraryfilealias.filename AS libraryfilealiasfilename, sourcepackagename.name AS sourcepackagename, binarypackagefile.libraryfile AS libraryfilealias, distrorelease.name AS distroreleasename, distroarchrelease.architecturetag, binarypackagepublishing.status AS publishingstatus, binarypackagepublishing.pocket, binarypackagepublishing.archive FROM (((((((((binarypackagepublishing JOIN binarypackagerelease ON ((binarypackagepublishing.binarypackagerelease = binarypackagerelease.id))) JOIN build ON ((binarypackagerelease.build = build.id))) JOIN sourcepackagerelease ON ((build.sourcepackagerelease = sourcepackagerelease.id))) JOIN sourcepackagename ON ((sourcepackagerelease.sourcepackagename = sourcepackagename.id))) JOIN binarypackagefile ON ((binarypackagefile.binarypackagerelease = binarypackagerelease.id))) JOIN libraryfilealias ON ((binarypackagefile.libraryfile = libraryfilealias.id))) JOIN distroarchrelease ON ((binarypackagepublishing.distroarchrelease = distroarchrelease.id))) JOIN distrorelease ON ((distroarchrelease.distrorelease = distrorelease.id))) JOIN component ON ((binarypackagepublishing.component = component.id)));
+    SELECT (((libraryfilealias.id)::text || '.'::text) || (securebinarypackagepublishinghistory.id)::text) AS id, distroseries.distribution, securebinarypackagepublishinghistory.id AS binarypackagepublishing, component.name AS componentname, libraryfilealias.filename AS libraryfilealiasfilename, sourcepackagename.name AS sourcepackagename, binarypackagefile.libraryfile AS libraryfilealias, distroseries.name AS distroseriesname, distroarchseries.architecturetag, securebinarypackagepublishinghistory.status AS publishingstatus, securebinarypackagepublishinghistory.pocket, securebinarypackagepublishinghistory.archive FROM (((((((((securebinarypackagepublishinghistory JOIN binarypackagerelease ON ((securebinarypackagepublishinghistory.binarypackagerelease = binarypackagerelease.id))) JOIN build ON ((binarypackagerelease.build = build.id))) JOIN sourcepackagerelease ON ((build.sourcepackagerelease = sourcepackagerelease.id))) JOIN sourcepackagename ON ((sourcepackagerelease.sourcepackagename = sourcepackagename.id))) JOIN binarypackagefile ON ((binarypackagefile.binarypackagerelease = binarypackagerelease.id))) JOIN libraryfilealias ON ((binarypackagefile.libraryfile = libraryfilealias.id))) JOIN distroarchseries ON ((securebinarypackagepublishinghistory.distroarchseries = distroarchseries.id))) JOIN distroseries ON ((distroarchseries.distroseries = distroseries.id))) JOIN component ON ((securebinarypackagepublishinghistory.component = component.id))) WHERE (securebinarypackagepublishinghistory.dateremoved IS NULL);
 
 CREATE SEQUENCE binarypackagename_id_seq
     INCREMENT BY 1
@@ -270,6 +301,9 @@ CREATE SEQUENCE binarypackagename_id_seq
     CACHE 1;
 
 ALTER SEQUENCE binarypackagename_id_seq OWNED BY binarypackagename.id;
+
+CREATE VIEW binarypackagepublishinghistory AS
+    SELECT securebinarypackagepublishinghistory.id, securebinarypackagepublishinghistory.binarypackagerelease, securebinarypackagepublishinghistory.status, securebinarypackagepublishinghistory.component, securebinarypackagepublishinghistory.section, securebinarypackagepublishinghistory.priority, securebinarypackagepublishinghistory.distroarchseries, securebinarypackagepublishinghistory.pocket, securebinarypackagepublishinghistory.archive, securebinarypackagepublishinghistory.datecreated, securebinarypackagepublishinghistory.datepublished, securebinarypackagepublishinghistory.datesuperseded, securebinarypackagepublishinghistory.supersededby, securebinarypackagepublishinghistory.datemadepending, securebinarypackagepublishinghistory.scheduleddeletiondate, securebinarypackagepublishinghistory.dateremoved, securebinarypackagepublishinghistory.removed_by, securebinarypackagepublishinghistory.removal_comment, securebinarypackagepublishinghistory.embargo, securebinarypackagepublishinghistory.embargolifted FROM securebinarypackagepublishinghistory WHERE (securebinarypackagepublishinghistory.embargo = false);
 
 CREATE SEQUENCE binarypackagerelease_id_seq
     INCREMENT BY 1
@@ -354,9 +388,14 @@ CREATE TABLE branch (
     last_mirrored_id text,
     date_created timestamp without time zone DEFAULT timezone('UTC'::text, now()) NOT NULL,
     revision_count integer DEFAULT 0 NOT NULL,
-    mirror_request_time timestamp without time zone,
+    next_mirror_time timestamp without time zone,
     private boolean DEFAULT false NOT NULL,
     branch_type integer NOT NULL,
+    reviewer integer,
+    merge_robot integer,
+    merge_control_status integer DEFAULT 1 NOT NULL,
+    date_last_modified timestamp without time zone DEFAULT timezone('UTC'::text, now()) NOT NULL,
+    CONSTRAINT branch_robotic_control CHECK ((((merge_robot IS NULL) AND (merge_control_status = 1)) OR (merge_robot IS NOT NULL))),
     CONSTRAINT branch_type_url_consistent CHECK (((((branch_type = 2) AND (url IS NOT NULL)) OR ((branch_type = ANY (ARRAY[1, 3])) AND (url IS NULL))) OR (branch_type = 4))),
     CONSTRAINT branch_url_no_trailing_slash CHECK ((url !~~ '%/'::text)),
     CONSTRAINT branch_url_not_supermirror CHECK ((url !~~ 'http://bazaar.launchpad.net/%'::text)),
@@ -384,6 +423,21 @@ CREATE TABLE branchmergeproposal (
     merged_revno integer,
     merge_reporter integer,
     date_created timestamp without time zone DEFAULT timezone('UTC'::text, now()) NOT NULL,
+    commit_message text,
+    queue_position integer,
+    queue_status integer DEFAULT 1 NOT NULL,
+    date_review_requested timestamp without time zone,
+    reviewer integer,
+    date_reviewed timestamp without time zone,
+    reviewed_revision_id text,
+    queuer integer,
+    date_queued timestamp without time zone,
+    queued_revision_id text,
+    merger integer,
+    merged_revision_id text,
+    date_merge_started timestamp without time zone,
+    date_merge_finished timestamp without time zone,
+    merge_log_file integer,
     CONSTRAINT different_branches CHECK ((((source_branch <> target_branch) AND (dependent_branch <> source_branch)) AND (dependent_branch <> target_branch))),
     CONSTRAINT positive_revno CHECK (((merged_revno IS NULL) OR (merged_revno > 0)))
 );
@@ -395,6 +449,24 @@ CREATE SEQUENCE branchmergeproposal_id_seq
     CACHE 1;
 
 ALTER SEQUENCE branchmergeproposal_id_seq OWNED BY branchmergeproposal.id;
+
+CREATE TABLE branchmergerobot (
+    id integer NOT NULL,
+    registrant integer NOT NULL,
+    "owner" integer NOT NULL,
+    name text NOT NULL,
+    whiteboard text,
+    date_created timestamp without time zone DEFAULT timezone('UTC'::text, now()) NOT NULL
+);
+
+CREATE SEQUENCE branchmergerobot_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MAXVALUE
+    NO MINVALUE
+    CACHE 1;
+
+ALTER SEQUENCE branchmergerobot_id_seq OWNED BY branchmergerobot.id;
 
 CREATE SEQUENCE branchrelationship_id_seq
     START WITH 1
@@ -452,6 +524,108 @@ CREATE SEQUENCE branchvisibilitypolicy_id_seq
 
 ALTER SEQUENCE branchvisibilitypolicy_id_seq OWNED BY branchvisibilitypolicy.id;
 
+CREATE TABLE person (
+    id integer NOT NULL,
+    displayname text NOT NULL,
+    "password" text,
+    teamowner integer,
+    teamdescription text,
+    name text NOT NULL,
+    "language" integer,
+    fti ts2.tsvector,
+    defaultmembershipperiod integer,
+    defaultrenewalperiod integer,
+    subscriptionpolicy integer DEFAULT 1 NOT NULL,
+    merged integer,
+    datecreated timestamp without time zone DEFAULT timezone('UTC'::text, ('now'::text)::timestamp(6) with time zone) NOT NULL,
+    addressline1 text,
+    addressline2 text,
+    organization text,
+    city text,
+    province text,
+    country integer,
+    postcode text,
+    phone text,
+    homepage_content text,
+    icon integer,
+    mugshot integer,
+    hide_email_addresses boolean DEFAULT false NOT NULL,
+    creation_rationale integer,
+    creation_comment text,
+    registrant integer,
+    logo integer,
+    renewal_policy integer DEFAULT 10 NOT NULL,
+    openid_identifier text NOT NULL,
+    account_status_comment text,
+    account_status integer DEFAULT 10 NOT NULL,
+    personal_standing integer DEFAULT 0 NOT NULL,
+    personal_standing_reason_text text,
+    mail_resumption_date date,
+    mailing_list_auto_subscribe_policy integer DEFAULT 1 NOT NULL,
+    mailing_list_receive_duplicates boolean DEFAULT true NOT NULL,
+    visibility integer DEFAULT 1 NOT NULL,
+    verbose_bugnotifications boolean DEFAULT false NOT NULL,
+    CONSTRAINT creation_rationale_not_null_for_people CHECK (((creation_rationale IS NULL) = (teamowner IS NOT NULL))),
+    CONSTRAINT no_loops CHECK ((id <> teamowner)),
+    CONSTRAINT non_empty_displayname CHECK ((btrim(displayname) <> ''::text)),
+    CONSTRAINT people_have_no_emblems CHECK (((icon IS NULL) OR (teamowner IS NOT NULL))),
+    CONSTRAINT sane_defaultrenewalperiod CHECK (CASE WHEN (teamowner IS NULL) THEN (defaultrenewalperiod IS NULL) WHEN (renewal_policy = ANY (ARRAY[20, 30])) THEN ((defaultrenewalperiod IS NOT NULL) AND (defaultrenewalperiod > 0)) ELSE ((defaultrenewalperiod IS NULL) OR (defaultrenewalperiod > 0)) END),
+    CONSTRAINT teams_have_no_account CHECK (((teamowner IS NULL) OR (account_status = 10))),
+    CONSTRAINT valid_name CHECK (valid_name(name))
+);
+
+CREATE TABLE product (
+    id integer NOT NULL,
+    project integer,
+    "owner" integer NOT NULL,
+    name text NOT NULL,
+    displayname text NOT NULL,
+    title text NOT NULL,
+    summary text NOT NULL,
+    description text,
+    datecreated timestamp without time zone DEFAULT timezone('UTC'::text, ('now'::text)::timestamp(6) with time zone) NOT NULL,
+    homepageurl text,
+    screenshotsurl text,
+    wikiurl text,
+    listurl text,
+    programminglang text,
+    downloadurl text,
+    lastdoap text,
+    sourceforgeproject text,
+    freshmeatproject text,
+    reviewed boolean DEFAULT false NOT NULL,
+    active boolean DEFAULT true NOT NULL,
+    fti ts2.tsvector,
+    autoupdate boolean DEFAULT false NOT NULL,
+    translationgroup integer,
+    translationpermission integer DEFAULT 1 NOT NULL,
+    official_rosetta boolean DEFAULT false NOT NULL,
+    official_malone boolean DEFAULT false NOT NULL,
+    bugcontact integer,
+    security_contact integer,
+    driver integer,
+    bugtracker integer,
+    development_focus integer,
+    homepage_content text,
+    icon integer,
+    mugshot integer,
+    logo integer,
+    official_answers boolean DEFAULT false NOT NULL,
+    private_bugs boolean DEFAULT false NOT NULL,
+    private_specs boolean DEFAULT false NOT NULL,
+    license_info text,
+    official_blueprints boolean DEFAULT false NOT NULL,
+    enable_bug_expiration boolean DEFAULT false NOT NULL,
+    bug_reporting_guidelines text,
+    reviewer_whiteboard text,
+    CONSTRAINT only_launchpad_has_expiration CHECK (((enable_bug_expiration IS FALSE) OR (official_malone IS TRUE))),
+    CONSTRAINT private_bugs_need_contact CHECK (((private_bugs IS FALSE) OR (bugcontact IS NOT NULL))),
+    CONSTRAINT valid_name CHECK (valid_name(name))
+);
+
+CREATE VIEW branchwithsortkeys AS
+    SELECT branch.id, branch.title, branch.summary, branch."owner", branch.product, branch.author, branch.name, branch.home_page, branch.url, branch.whiteboard, branch.lifecycle_status, branch.last_mirrored, branch.last_mirror_attempt, branch.mirror_failures, branch.pull_disabled, branch.mirror_status_message, branch.last_scanned, branch.last_scanned_id, branch.last_mirrored_id, branch.date_created, branch.revision_count, branch.next_mirror_time, branch.private, branch.branch_type, branch.reviewer, branch.merge_robot, branch.merge_control_status, branch.date_last_modified, product.name AS product_name, author.displayname AS author_name, "owner".displayname AS owner_name FROM (((branch JOIN person "owner" ON ((branch."owner" = "owner".id))) LEFT JOIN product ON ((branch.product = product.id))) LEFT JOIN person author ON ((branch.author = author.id)));
+
 CREATE TABLE bug (
     id integer NOT NULL,
     datecreated timestamp without time zone DEFAULT timezone('UTC'::text, ('now'::text)::timestamp(6) with time zone) NOT NULL,
@@ -467,8 +641,10 @@ CREATE TABLE bug (
     date_made_private timestamp without time zone,
     who_made_private integer,
     date_last_message timestamp without time zone,
-    CONSTRAINT no_empty_desctiption CHECK ((btrim(description) <> ''::text)),
+    number_of_duplicates integer DEFAULT 0 NOT NULL,
+    message_count integer DEFAULT 0 NOT NULL,
     CONSTRAINT notduplicateofself CHECK ((NOT (id = duplicateof))),
+    CONSTRAINT sane_description CHECK (((ltrim(description) <> ''::text) AND (char_length(description) <= 50000))),
     CONSTRAINT valid_bug_name CHECK (valid_bug_name(name))
 );
 
@@ -525,7 +701,8 @@ CREATE TABLE bugbranch (
     branch integer NOT NULL,
     revision_hint integer,
     status integer NOT NULL,
-    whiteboard text
+    whiteboard text,
+    registrant integer NOT NULL
 );
 
 CREATE SEQUENCE bugbranch_id_seq
@@ -551,23 +728,6 @@ CREATE SEQUENCE bugcve_id_seq
 
 ALTER SEQUENCE bugcve_id_seq OWNED BY bugcve.id;
 
-CREATE TABLE bugexternalref (
-    id integer NOT NULL,
-    bug integer NOT NULL,
-    url text NOT NULL,
-    title text NOT NULL,
-    datecreated timestamp without time zone DEFAULT timezone('UTC'::text, ('now'::text)::timestamp(6) with time zone) NOT NULL,
-    "owner" integer NOT NULL
-);
-
-CREATE SEQUENCE bugexternalref_id_seq
-    INCREMENT BY 1
-    NO MAXVALUE
-    NO MINVALUE
-    CACHE 1;
-
-ALTER SEQUENCE bugexternalref_id_seq OWNED BY bugexternalref.id;
-
 CREATE TABLE bugmessage (
     id integer NOT NULL,
     bug integer NOT NULL,
@@ -586,7 +746,7 @@ ALTER SEQUENCE bugmessage_id_seq OWNED BY bugmessage.id;
 CREATE TABLE bugnomination (
     id integer NOT NULL,
     bug integer NOT NULL,
-    distrorelease integer,
+    distroseries integer,
     productseries integer,
     status integer NOT NULL,
     date_created timestamp without time zone DEFAULT timezone('UTC'::text, now()),
@@ -665,17 +825,12 @@ CREATE SEQUENCE bugproductinfestation_id_seq
 
 ALTER SEQUENCE bugproductinfestation_id_seq OWNED BY bugproductinfestation.id;
 
-CREATE TABLE bugrelationship (
-    subject integer NOT NULL,
-    label integer NOT NULL,
-    "object" integer NOT NULL
-);
-
 CREATE TABLE bugsubscription (
     id integer NOT NULL,
     person integer NOT NULL,
     bug integer NOT NULL,
-    date_created timestamp without time zone DEFAULT timezone('UTC'::text, now()) NOT NULL
+    date_created timestamp without time zone DEFAULT timezone('UTC'::text, now()) NOT NULL,
+    subscribed_by integer NOT NULL
 );
 
 CREATE SEQUENCE bugsubscription_id_seq
@@ -706,7 +861,7 @@ CREATE TABLE bugtask (
     bug integer NOT NULL,
     product integer,
     distribution integer,
-    distrorelease integer,
+    distroseries integer,
     sourcepackagename integer,
     binarypackagename integer,
     status integer NOT NULL,
@@ -726,7 +881,7 @@ CREATE TABLE bugtask (
     date_closed timestamp without time zone,
     productseries integer,
     date_incomplete timestamp without time zone,
-    CONSTRAINT bugtask_assignment_checks CHECK (CASE WHEN (product IS NOT NULL) THEN ((((productseries IS NULL) AND (distribution IS NULL)) AND (distrorelease IS NULL)) AND (sourcepackagename IS NULL)) WHEN (productseries IS NOT NULL) THEN (((distribution IS NULL) AND (distrorelease IS NULL)) AND (sourcepackagename IS NULL)) WHEN (distribution IS NOT NULL) THEN (distrorelease IS NULL) WHEN (distrorelease IS NOT NULL) THEN true ELSE false END)
+    CONSTRAINT bugtask_assignment_checks CHECK (CASE WHEN (product IS NOT NULL) THEN ((((productseries IS NULL) AND (distribution IS NULL)) AND (distroseries IS NULL)) AND (sourcepackagename IS NULL)) WHEN (productseries IS NOT NULL) THEN (((distribution IS NULL) AND (distroseries IS NULL)) AND (sourcepackagename IS NULL)) WHEN (distribution IS NOT NULL) THEN (distroseries IS NULL) WHEN (distroseries IS NOT NULL) THEN true ELSE false END)
 );
 
 CREATE SEQUENCE bugtask_id_seq
@@ -758,6 +913,20 @@ CREATE SEQUENCE bugtracker_id_seq
 
 ALTER SEQUENCE bugtracker_id_seq OWNED BY bugtracker.id;
 
+CREATE TABLE bugtrackeralias (
+    id integer NOT NULL,
+    bugtracker integer NOT NULL,
+    base_url text NOT NULL
+);
+
+CREATE SEQUENCE bugtrackeralias_id_seq
+    INCREMENT BY 1
+    NO MAXVALUE
+    NO MINVALUE
+    CACHE 1;
+
+ALTER SEQUENCE bugtrackeralias_id_seq OWNED BY bugtrackeralias.id;
+
 CREATE TABLE bugwatch (
     id integer NOT NULL,
     bug integer NOT NULL,
@@ -767,7 +936,9 @@ CREATE TABLE bugwatch (
     lastchanged timestamp without time zone DEFAULT timezone('UTC'::text, ('now'::text)::timestamp(6) with time zone),
     lastchecked timestamp without time zone DEFAULT timezone('UTC'::text, ('now'::text)::timestamp(6) with time zone),
     datecreated timestamp without time zone DEFAULT timezone('UTC'::text, ('now'::text)::timestamp(6) with time zone) NOT NULL,
-    "owner" integer NOT NULL
+    "owner" integer NOT NULL,
+    last_error_type integer,
+    remote_importance text
 );
 
 CREATE SEQUENCE bugwatch_id_seq
@@ -800,6 +971,8 @@ CREATE TABLE builder (
     url text NOT NULL,
     manual boolean DEFAULT false,
     date_created timestamp without time zone DEFAULT timezone('UTC'::text, now()) NOT NULL,
+    vm_host text,
+    active boolean DEFAULT true NOT NULL,
     CONSTRAINT valid_absolute_url CHECK (valid_absolute_url(url))
 );
 
@@ -829,57 +1002,6 @@ CREATE SEQUENCE buildqueue_id_seq
     CACHE 1;
 
 ALTER SEQUENCE buildqueue_id_seq OWNED BY buildqueue.id;
-
-CREATE TABLE calendar (
-    id integer NOT NULL,
-    title text NOT NULL,
-    revision integer NOT NULL,
-    date_created timestamp without time zone DEFAULT timezone('UTC'::text, now()) NOT NULL
-);
-
-CREATE SEQUENCE calendar_id_seq
-    INCREMENT BY 1
-    NO MAXVALUE
-    NO MINVALUE
-    CACHE 1;
-
-ALTER SEQUENCE calendar_id_seq OWNED BY calendar.id;
-
-CREATE TABLE calendarevent (
-    id integer NOT NULL,
-    uid character varying(255) NOT NULL,
-    calendar integer NOT NULL,
-    dtstart timestamp without time zone NOT NULL,
-    duration interval NOT NULL,
-    title text NOT NULL,
-    description text,
-    "location" text,
-    date_created timestamp without time zone DEFAULT timezone('UTC'::text, now()) NOT NULL
-);
-
-CREATE SEQUENCE calendarevent_id_seq
-    INCREMENT BY 1
-    NO MAXVALUE
-    NO MINVALUE
-    CACHE 1;
-
-ALTER SEQUENCE calendarevent_id_seq OWNED BY calendarevent.id;
-
-CREATE TABLE calendarsubscription (
-    id integer NOT NULL,
-    subject integer NOT NULL,
-    "object" integer NOT NULL,
-    colour text DEFAULT '#efefef'::text NOT NULL,
-    date_created timestamp without time zone DEFAULT timezone('UTC'::text, now()) NOT NULL
-);
-
-CREATE SEQUENCE calendarsubscription_id_seq
-    INCREMENT BY 1
-    NO MAXVALUE
-    NO MINVALUE
-    CACHE 1;
-
-ALTER SEQUENCE calendarsubscription_id_seq OWNED BY calendarsubscription.id;
 
 CREATE TABLE codeimport (
     id integer NOT NULL,
@@ -991,7 +1113,7 @@ CREATE TABLE codeimportresult (
     log_excerpt text,
     log_file integer,
     status integer NOT NULL,
-    date_started timestamp without time zone
+    date_job_started timestamp without time zone
 );
 
 CREATE SEQUENCE codeimportresult_id_seq
@@ -1013,7 +1135,7 @@ ALTER SEQUENCE component_id_seq OWNED BY component.id;
 
 CREATE TABLE componentselection (
     id integer NOT NULL,
-    distrorelease integer NOT NULL,
+    distroseries integer NOT NULL,
     component integer NOT NULL,
     date_created timestamp without time zone DEFAULT timezone('UTC'::text, now()) NOT NULL
 );
@@ -1125,6 +1247,11 @@ CREATE TABLE distribution (
     fti ts2.tsvector,
     official_answers boolean DEFAULT false NOT NULL,
     language_pack_admin integer,
+    official_blueprints boolean DEFAULT false NOT NULL,
+    enable_bug_expiration boolean DEFAULT false NOT NULL,
+    bug_reporting_guidelines text,
+    reviewer_whiteboard text,
+    CONSTRAINT only_launchpad_has_expiration CHECK (((enable_bug_expiration IS FALSE) OR (official_malone IS TRUE))),
     CONSTRAINT valid_name CHECK (valid_name(name))
 );
 
@@ -1165,10 +1292,12 @@ CREATE TABLE distributionmirror (
     country integer NOT NULL,
     content integer NOT NULL,
     official_candidate boolean DEFAULT false NOT NULL,
-    official_approved boolean DEFAULT false NOT NULL,
     enabled boolean DEFAULT false NOT NULL,
     date_created timestamp without time zone DEFAULT timezone('UTC'::text, now()) NOT NULL,
     whiteboard text,
+    status integer DEFAULT 10 NOT NULL,
+    date_reviewed timestamp without time zone,
+    reviewer integer,
     CONSTRAINT one_or_more_urls CHECK ((((http_base_url IS NOT NULL) OR (ftp_base_url IS NOT NULL)) OR (rsync_base_url IS NOT NULL))),
     CONSTRAINT valid_ftp_base_url CHECK (valid_absolute_url(ftp_base_url)),
     CONSTRAINT valid_http_base_url CHECK (valid_absolute_url(http_base_url)),
@@ -1211,13 +1340,13 @@ CREATE SEQUENCE distributionsourcepackagecache_id_seq
 
 ALTER SEQUENCE distributionsourcepackagecache_id_seq OWNED BY distributionsourcepackagecache.id;
 
-CREATE SEQUENCE distroarchrelease_id_seq
+CREATE SEQUENCE distroarchseries_id_seq
     INCREMENT BY 1
     NO MAXVALUE
     NO MINVALUE
     CACHE 1;
 
-ALTER SEQUENCE distroarchrelease_id_seq OWNED BY distroarchrelease.id;
+ALTER SEQUENCE distroarchseries_id_seq OWNED BY distroarchseries.id;
 
 CREATE TABLE distrocomponentuploader (
     id integer NOT NULL,
@@ -1235,17 +1364,17 @@ CREATE SEQUENCE distrocomponentuploader_id_seq
 
 ALTER SEQUENCE distrocomponentuploader_id_seq OWNED BY distrocomponentuploader.id;
 
-CREATE SEQUENCE distrorelease_id_seq
+CREATE SEQUENCE distroseries_id_seq
     INCREMENT BY 1
     NO MAXVALUE
     NO MINVALUE
     CACHE 1;
 
-ALTER SEQUENCE distrorelease_id_seq OWNED BY distrorelease.id;
+ALTER SEQUENCE distroseries_id_seq OWNED BY distroseries.id;
 
-CREATE TABLE distroreleaselanguage (
+CREATE TABLE distroserieslanguage (
     id integer NOT NULL,
-    distrorelease integer,
+    distroseries integer,
     "language" integer,
     currentcount integer NOT NULL,
     updatescount integer NOT NULL,
@@ -1255,17 +1384,17 @@ CREATE TABLE distroreleaselanguage (
     unreviewed_count integer DEFAULT 0 NOT NULL
 );
 
-CREATE SEQUENCE distroreleaselanguage_id_seq
+CREATE SEQUENCE distroserieslanguage_id_seq
     INCREMENT BY 1
     NO MAXVALUE
     NO MINVALUE
     CACHE 1;
 
-ALTER SEQUENCE distroreleaselanguage_id_seq OWNED BY distroreleaselanguage.id;
+ALTER SEQUENCE distroserieslanguage_id_seq OWNED BY distroserieslanguage.id;
 
-CREATE TABLE distroreleasepackagecache (
-    id integer NOT NULL,
-    distrorelease integer NOT NULL,
+CREATE TABLE distroseriespackagecache (
+    id integer DEFAULT nextval('distroseriespackagecache'::regclass) NOT NULL,
+    distroseries integer NOT NULL,
     binarypackagename integer NOT NULL,
     name text,
     summary text,
@@ -1275,20 +1404,13 @@ CREATE TABLE distroreleasepackagecache (
     fti ts2.tsvector
 );
 
-CREATE SEQUENCE distroreleasepackagecache_id_seq
+CREATE SEQUENCE distroseriespackagecache_id_seq
     INCREMENT BY 1
     NO MAXVALUE
     NO MINVALUE
     CACHE 1;
 
-ALTER SEQUENCE distroreleasepackagecache_id_seq OWNED BY distroreleasepackagecache.id;
-
-CREATE SEQUENCE distroreleaserole_id_seq
-    START WITH 1
-    INCREMENT BY 1
-    NO MAXVALUE
-    NO MINVALUE
-    CACHE 1;
+ALTER SEQUENCE distroseriespackagecache_id_seq OWNED BY distroseriespackagecache.id;
 
 CREATE TABLE emailaddress (
     id integer NOT NULL,
@@ -1355,6 +1477,19 @@ CREATE SEQUENCE faq_id_seq
 
 ALTER SEQUENCE faq_id_seq OWNED BY faq.id;
 
+CREATE TABLE featuredproject (
+    id integer NOT NULL,
+    pillar_name integer NOT NULL
+);
+
+CREATE SEQUENCE featuredproject_id_seq
+    INCREMENT BY 1
+    NO MAXVALUE
+    NO MINVALUE
+    CACHE 1;
+
+ALTER SEQUENCE featuredproject_id_seq OWNED BY featuredproject.id;
+
 CREATE TABLE fticache (
     id integer NOT NULL,
     tablename text NOT NULL,
@@ -1391,6 +1526,72 @@ CREATE SEQUENCE gpgkey_id_seq
 
 ALTER SEQUENCE gpgkey_id_seq OWNED BY gpgkey.id;
 
+CREATE TABLE hwdevice (
+    id integer NOT NULL,
+    bus_vendor_id integer NOT NULL,
+    bus_product_id text NOT NULL,
+    variant text,
+    name text NOT NULL,
+    submissions integer NOT NULL
+);
+
+CREATE SEQUENCE hwdevice_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MAXVALUE
+    NO MINVALUE
+    CACHE 1;
+
+ALTER SEQUENCE hwdevice_id_seq OWNED BY hwdevice.id;
+
+CREATE TABLE hwdevicedriverlink (
+    id integer NOT NULL,
+    device integer NOT NULL,
+    driver integer
+);
+
+CREATE SEQUENCE hwdevicedriverlink_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MAXVALUE
+    NO MINVALUE
+    CACHE 1;
+
+ALTER SEQUENCE hwdevicedriverlink_id_seq OWNED BY hwdevicedriverlink.id;
+
+CREATE TABLE hwdevicenamevariant (
+    id integer NOT NULL,
+    vendor_name integer NOT NULL,
+    product_name text NOT NULL,
+    device integer NOT NULL,
+    submissions integer NOT NULL
+);
+
+CREATE SEQUENCE hwdevicenamevariant_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MAXVALUE
+    NO MINVALUE
+    CACHE 1;
+
+ALTER SEQUENCE hwdevicenamevariant_id_seq OWNED BY hwdevicenamevariant.id;
+
+CREATE TABLE hwdriver (
+    id integer NOT NULL,
+    package_name text,
+    name text NOT NULL,
+    license integer
+);
+
+CREATE SEQUENCE hwdriver_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MAXVALUE
+    NO MINVALUE
+    CACHE 1;
+
+ALTER SEQUENCE hwdriver_id_seq OWNED BY hwdriver.id;
+
 CREATE TABLE hwsubmission (
     id integer NOT NULL,
     date_created timestamp without time zone NOT NULL,
@@ -1400,10 +1601,11 @@ CREATE TABLE hwsubmission (
     private boolean NOT NULL,
     contactable boolean NOT NULL,
     submission_key text NOT NULL,
-    "owner" integer NOT NULL,
+    "owner" integer,
     distroarchseries integer,
     raw_submission integer NOT NULL,
-    system_fingerprint integer NOT NULL
+    system_fingerprint integer NOT NULL,
+    raw_emailaddress text
 );
 
 CREATE SEQUENCE hwsubmission_id_seq
@@ -1413,6 +1615,22 @@ CREATE SEQUENCE hwsubmission_id_seq
     CACHE 1;
 
 ALTER SEQUENCE hwsubmission_id_seq OWNED BY hwsubmission.id;
+
+CREATE TABLE hwsubmissiondevice (
+    id integer NOT NULL,
+    device_driver_link integer NOT NULL,
+    submission integer NOT NULL,
+    parent integer
+);
+
+CREATE SEQUENCE hwsubmissiondevice_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MAXVALUE
+    NO MINVALUE
+    CACHE 1;
+
+ALTER SEQUENCE hwsubmissiondevice_id_seq OWNED BY hwsubmissiondevice.id;
 
 CREATE TABLE hwsystemfingerprint (
     id integer NOT NULL,
@@ -1426,6 +1644,140 @@ CREATE SEQUENCE hwsystemfingerprint_id_seq
     CACHE 1;
 
 ALTER SEQUENCE hwsystemfingerprint_id_seq OWNED BY hwsystemfingerprint.id;
+
+CREATE TABLE hwtest (
+    id integer NOT NULL,
+    namespace text,
+    name text NOT NULL,
+    version text NOT NULL
+);
+
+CREATE SEQUENCE hwtest_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MAXVALUE
+    NO MINVALUE
+    CACHE 1;
+
+ALTER SEQUENCE hwtest_id_seq OWNED BY hwtest.id;
+
+CREATE TABLE hwtestanswer (
+    id integer NOT NULL,
+    test integer NOT NULL,
+    choice integer,
+    intval integer,
+    floatval double precision,
+    unit text,
+    "comment" text,
+    "language" integer,
+    submission integer NOT NULL,
+    CONSTRAINT hwtestanswer_check CHECK (((((choice IS NULL) AND (unit IS NOT NULL)) AND ((intval IS NULL) <> (floatval IS NULL))) OR ((((choice IS NOT NULL) AND (unit IS NULL)) AND (intval IS NULL)) AND (floatval IS NULL))))
+);
+
+CREATE SEQUENCE hwtestanswer_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MAXVALUE
+    NO MINVALUE
+    CACHE 1;
+
+ALTER SEQUENCE hwtestanswer_id_seq OWNED BY hwtestanswer.id;
+
+CREATE TABLE hwtestanswerchoice (
+    id integer NOT NULL,
+    choice text NOT NULL,
+    test integer NOT NULL
+);
+
+CREATE SEQUENCE hwtestanswerchoice_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MAXVALUE
+    NO MINVALUE
+    CACHE 1;
+
+ALTER SEQUENCE hwtestanswerchoice_id_seq OWNED BY hwtestanswerchoice.id;
+
+CREATE TABLE hwtestanswercount (
+    id integer NOT NULL,
+    test integer NOT NULL,
+    distroarchseries integer,
+    choice integer,
+    average double precision,
+    sum_square double precision,
+    unit text,
+    num_answers integer NOT NULL,
+    CONSTRAINT hwtestanswercount_check CHECK ((((((choice IS NULL) AND (average IS NOT NULL)) AND (sum_square IS NOT NULL)) AND (unit IS NOT NULL)) OR ((((choice IS NOT NULL) AND (average IS NULL)) AND (sum_square IS NULL)) AND (unit IS NULL))))
+);
+
+CREATE SEQUENCE hwtestanswercount_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MAXVALUE
+    NO MINVALUE
+    CACHE 1;
+
+ALTER SEQUENCE hwtestanswercount_id_seq OWNED BY hwtestanswercount.id;
+
+CREATE TABLE hwtestanswercountdevice (
+    id integer NOT NULL,
+    answer integer NOT NULL,
+    device_driver integer NOT NULL
+);
+
+CREATE SEQUENCE hwtestanswercountdevice_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MAXVALUE
+    NO MINVALUE
+    CACHE 1;
+
+ALTER SEQUENCE hwtestanswercountdevice_id_seq OWNED BY hwtestanswercountdevice.id;
+
+CREATE TABLE hwtestanswerdevice (
+    id integer NOT NULL,
+    answer integer NOT NULL,
+    device_driver integer NOT NULL
+);
+
+CREATE SEQUENCE hwtestanswerdevice_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MAXVALUE
+    NO MINVALUE
+    CACHE 1;
+
+ALTER SEQUENCE hwtestanswerdevice_id_seq OWNED BY hwtestanswerdevice.id;
+
+CREATE TABLE hwvendorid (
+    id integer NOT NULL,
+    bus integer NOT NULL,
+    vendor_id_for_bus text NOT NULL,
+    vendor_name integer NOT NULL
+);
+
+CREATE SEQUENCE hwvendorid_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MAXVALUE
+    NO MINVALUE
+    CACHE 1;
+
+ALTER SEQUENCE hwvendorid_id_seq OWNED BY hwvendorid.id;
+
+CREATE TABLE hwvendorname (
+    id integer NOT NULL,
+    name text NOT NULL
+);
+
+CREATE SEQUENCE hwvendorname_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MAXVALUE
+    NO MINVALUE
+    CACHE 1;
+
+ALTER SEQUENCE hwvendorname_id_seq OWNED BY hwvendorname.id;
 
 CREATE TABLE ircid (
     id integer NOT NULL,
@@ -1677,12 +2029,10 @@ CREATE TABLE mailinglist (
     date_reviewed timestamp without time zone DEFAULT timezone('UTC'::text, now()),
     date_activated timestamp without time zone DEFAULT timezone('UTC'::text, now()),
     status integer DEFAULT 1 NOT NULL,
-    welcome_message_text text,
-    CONSTRAINT is_team CHECK (is_team(team))
+    welcome_message_text text
 );
 
 CREATE SEQUENCE mailinglist_id_seq
-    START WITH 1
     INCREMENT BY 1
     NO MAXVALUE
     NO MINVALUE
@@ -1716,7 +2066,6 @@ CREATE TABLE mailinglistsubscription (
 );
 
 CREATE SEQUENCE mailinglistsubscription_id_seq
-    START WITH 1
     INCREMENT BY 1
     NO MAXVALUE
     NO MINVALUE
@@ -1809,8 +2158,9 @@ CREATE TABLE milestone (
     dateexpected timestamp without time zone,
     visible boolean DEFAULT true NOT NULL,
     productseries integer,
-    distrorelease integer,
+    distroseries integer,
     date_created timestamp without time zone DEFAULT timezone('UTC'::text, now()) NOT NULL,
+    description text,
     CONSTRAINT valid_name CHECK (valid_name(name)),
     CONSTRAINT valid_target CHECK ((NOT ((product IS NULL) AND (distribution IS NULL))))
 );
@@ -1845,26 +2195,26 @@ CREATE SEQUENCE mirror_id_seq
 
 ALTER SEQUENCE mirror_id_seq OWNED BY mirror.id;
 
-CREATE TABLE mirrorcdimagedistrorelease (
+CREATE TABLE mirrorcdimagedistroseries (
     id integer NOT NULL,
     distribution_mirror integer NOT NULL,
-    distrorelease integer NOT NULL,
+    distroseries integer NOT NULL,
     flavour text NOT NULL,
     date_created timestamp without time zone DEFAULT timezone('UTC'::text, now()) NOT NULL
 );
 
-CREATE SEQUENCE mirrorcdimagedistrorelease_id_seq
+CREATE SEQUENCE mirrorcdimagedistroseries_id_seq
     INCREMENT BY 1
     NO MAXVALUE
     NO MINVALUE
     CACHE 1;
 
-ALTER SEQUENCE mirrorcdimagedistrorelease_id_seq OWNED BY mirrorcdimagedistrorelease.id;
+ALTER SEQUENCE mirrorcdimagedistroseries_id_seq OWNED BY mirrorcdimagedistroseries.id;
 
 CREATE TABLE mirrorcontent (
     id integer NOT NULL,
     mirror integer NOT NULL,
-    distroarchrelease integer NOT NULL,
+    distroarchseries integer NOT NULL,
     component integer NOT NULL,
     date_created timestamp without time zone DEFAULT timezone('UTC'::text, now()) NOT NULL
 );
@@ -1878,41 +2228,41 @@ CREATE SEQUENCE mirrorcontent_id_seq
 
 ALTER SEQUENCE mirrorcontent_id_seq OWNED BY mirrorcontent.id;
 
-CREATE TABLE mirrordistroarchrelease (
+CREATE TABLE mirrordistroarchseries (
     id integer NOT NULL,
     distribution_mirror integer NOT NULL,
-    distro_arch_release integer NOT NULL,
-    status integer NOT NULL,
+    distroarchseries integer NOT NULL,
+    freshness integer NOT NULL,
     pocket integer NOT NULL,
     component integer,
     date_created timestamp without time zone DEFAULT timezone('UTC'::text, now()) NOT NULL
 );
 
-CREATE SEQUENCE mirrordistroarchrelease_id_seq
+CREATE SEQUENCE mirrordistroarchseries_id_seq
     INCREMENT BY 1
     NO MAXVALUE
     NO MINVALUE
     CACHE 1;
 
-ALTER SEQUENCE mirrordistroarchrelease_id_seq OWNED BY mirrordistroarchrelease.id;
+ALTER SEQUENCE mirrordistroarchseries_id_seq OWNED BY mirrordistroarchseries.id;
 
-CREATE TABLE mirrordistroreleasesource (
+CREATE TABLE mirrordistroseriessource (
     id integer NOT NULL,
     distribution_mirror integer NOT NULL,
-    distrorelease integer NOT NULL,
-    status integer NOT NULL,
+    distroseries integer NOT NULL,
+    freshness integer NOT NULL,
     pocket integer NOT NULL,
     component integer,
     date_created timestamp without time zone DEFAULT timezone('UTC'::text, now()) NOT NULL
 );
 
-CREATE SEQUENCE mirrordistroreleasesource_id_seq
+CREATE SEQUENCE mirrordistroseriessource_id_seq
     INCREMENT BY 1
     NO MAXVALUE
     NO MINVALUE
     CACHE 1;
 
-ALTER SEQUENCE mirrordistroreleasesource_id_seq OWNED BY mirrordistroreleasesource.id;
+ALTER SEQUENCE mirrordistroseriessource_id_seq OWNED BY mirrordistroseriessource.id;
 
 CREATE TABLE mirrorproberecord (
     id integer NOT NULL,
@@ -1932,7 +2282,7 @@ ALTER SEQUENCE mirrorproberecord_id_seq OWNED BY mirrorproberecord.id;
 CREATE TABLE mirrorsourcecontent (
     id integer NOT NULL,
     mirror integer NOT NULL,
-    distrorelease integer NOT NULL,
+    distroseries integer NOT NULL,
     component integer NOT NULL,
     date_created timestamp without time zone DEFAULT timezone('UTC'::text, now()) NOT NULL
 );
@@ -2043,7 +2393,7 @@ ALTER SEQUENCE packagebugcontact_id_seq OWNED BY packagebugcontact.id;
 
 CREATE TABLE packageselection (
     id integer NOT NULL,
-    distrorelease integer NOT NULL,
+    distroseries integer NOT NULL,
     sourcepackagename integer,
     binarypackagename integer,
     "action" integer NOT NULL,
@@ -2065,7 +2415,7 @@ ALTER SEQUENCE packageselection_id_seq OWNED BY packageselection.id;
 CREATE TABLE packageupload (
     id integer NOT NULL,
     status integer DEFAULT 0 NOT NULL,
-    distrorelease integer NOT NULL,
+    distroseries integer NOT NULL,
     pocket integer NOT NULL,
     changesfile integer NOT NULL,
     date_created timestamp without time zone DEFAULT timezone('UTC'::text, now()) NOT NULL,
@@ -2131,7 +2481,7 @@ CREATE TABLE packaging (
     packaging integer NOT NULL,
     id integer DEFAULT nextval(('packaging_id_seq'::text)::regclass) NOT NULL,
     sourcepackagename integer,
-    distrorelease integer,
+    distroseries integer,
     productseries integer NOT NULL,
     datecreated timestamp without time zone DEFAULT timezone('UTC'::text, ('now'::text)::timestamp(6) with time zone) NOT NULL,
     "owner" integer,
@@ -2143,55 +2493,6 @@ CREATE SEQUENCE packaging_id_seq
     NO MAXVALUE
     NO MINVALUE
     CACHE 1;
-
-CREATE TABLE person (
-    id integer NOT NULL,
-    displayname text NOT NULL,
-    "password" text,
-    teamowner integer,
-    teamdescription text,
-    name text NOT NULL,
-    "language" integer,
-    fti ts2.tsvector,
-    defaultmembershipperiod integer,
-    defaultrenewalperiod integer,
-    subscriptionpolicy integer DEFAULT 1 NOT NULL,
-    merged integer,
-    datecreated timestamp without time zone DEFAULT timezone('UTC'::text, ('now'::text)::timestamp(6) with time zone) NOT NULL,
-    calendar integer,
-    timezone text DEFAULT 'UTC'::text NOT NULL,
-    addressline1 text,
-    addressline2 text,
-    organization text,
-    city text,
-    province text,
-    country integer,
-    postcode text,
-    phone text,
-    homepage_content text,
-    icon integer,
-    mugshot integer,
-    hide_email_addresses boolean DEFAULT false NOT NULL,
-    creation_rationale integer,
-    creation_comment text,
-    registrant integer,
-    logo integer,
-    renewal_policy integer DEFAULT 10 NOT NULL,
-    openid_identifier text NOT NULL,
-    account_status_comment text,
-    account_status integer DEFAULT 10 NOT NULL,
-    personal_standing integer DEFAULT 0 NOT NULL,
-    personal_standing_reason_text text,
-    mail_resumption_date date,
-    mailing_list_auto_subscribe_policy integer DEFAULT 1 NOT NULL,
-    mailing_list_receive_duplicates boolean DEFAULT true NOT NULL,
-    CONSTRAINT creation_rationale_not_null_for_people CHECK (((creation_rationale IS NULL) = (teamowner IS NOT NULL))),
-    CONSTRAINT no_loops CHECK ((id <> teamowner)),
-    CONSTRAINT non_empty_displayname CHECK ((btrim(displayname) <> ''::text)),
-    CONSTRAINT people_have_no_emblems CHECK (((icon IS NULL) OR (teamowner IS NOT NULL))),
-    CONSTRAINT sane_defaultrenewalperiod CHECK (CASE WHEN (teamowner IS NULL) THEN (defaultrenewalperiod IS NULL) WHEN (renewal_policy = ANY (ARRAY[20, 30])) THEN ((defaultrenewalperiod IS NOT NULL) AND (defaultrenewalperiod > 0)) ELSE ((defaultrenewalperiod IS NULL) OR (defaultrenewalperiod > 0)) END),
-    CONSTRAINT valid_name CHECK (valid_name(name))
-);
 
 CREATE SEQUENCE person_id_seq
     INCREMENT BY 1
@@ -2216,6 +2517,25 @@ CREATE SEQUENCE personlanguage_id_seq
 
 ALTER SEQUENCE personlanguage_id_seq OWNED BY personlanguage.id;
 
+CREATE TABLE personlocation (
+    id integer NOT NULL,
+    date_created timestamp without time zone DEFAULT timezone('UTC'::text, now()) NOT NULL,
+    person integer NOT NULL,
+    latitude double precision,
+    longitude double precision,
+    time_zone text NOT NULL,
+    last_modified_by integer NOT NULL,
+    date_last_modified timestamp without time zone DEFAULT timezone('UTC'::text, now()) NOT NULL
+);
+
+CREATE SEQUENCE personlocation_id_seq
+    INCREMENT BY 1
+    NO MAXVALUE
+    NO MINVALUE
+    CACHE 1;
+
+ALTER SEQUENCE personlocation_id_seq OWNED BY personlocation.id;
+
 CREATE TABLE pillarname (
     id integer NOT NULL,
     name text NOT NULL,
@@ -2237,7 +2557,7 @@ ALTER SEQUENCE pillarname_id_seq OWNED BY pillarname.id;
 
 CREATE TABLE pocketchroot (
     id integer NOT NULL,
-    distroarchrelease integer,
+    distroarchseries integer,
     pocket integer NOT NULL,
     chroot integer,
     date_created timestamp without time zone DEFAULT timezone('UTC'::text, now()) NOT NULL
@@ -2292,56 +2612,14 @@ CREATE TABLE pofile (
     exporttime timestamp without time zone,
     datecreated timestamp without time zone DEFAULT timezone('UTC'::text, ('now'::text)::timestamp(6) with time zone) NOT NULL,
     from_sourcepackagename integer,
-    last_touched_pomsgset integer,
     unreviewed_count integer DEFAULT 0 NOT NULL,
+    date_changed timestamp without time zone DEFAULT timezone('UTC'::text, now()) NOT NULL,
     CONSTRAINT valid_variant CHECK ((variant <> ''::text))
 );
 
 CREATE TABLE pomsgid (
     id integer NOT NULL,
     msgid text NOT NULL
-);
-
-CREATE TABLE pomsgidsighting (
-    id integer NOT NULL,
-    potmsgset integer NOT NULL,
-    pomsgid integer NOT NULL,
-    datefirstseen timestamp without time zone NOT NULL,
-    datelastseen timestamp without time zone NOT NULL,
-    inlastrevision boolean NOT NULL,
-    pluralform integer NOT NULL
-);
-
-CREATE TABLE pomsgset (
-    id integer NOT NULL,
-    "sequence" integer NOT NULL,
-    pofile integer NOT NULL,
-    iscomplete boolean NOT NULL,
-    obsolete boolean NOT NULL,
-    isfuzzy boolean NOT NULL,
-    commenttext text,
-    potmsgset integer NOT NULL,
-    publishedfuzzy boolean DEFAULT false NOT NULL,
-    publishedcomplete boolean DEFAULT false NOT NULL,
-    isupdated boolean DEFAULT false NOT NULL,
-    date_reviewed timestamp without time zone,
-    reviewer integer,
-    "language" integer,
-    CONSTRAINT pomsgset__reviewer__date_reviewed__valid CHECK (((reviewer IS NULL) = (date_reviewed IS NULL)))
-);
-
-CREATE TABLE posubmission (
-    id integer NOT NULL,
-    pomsgset integer NOT NULL,
-    pluralform integer NOT NULL,
-    potranslation integer NOT NULL,
-    origin integer NOT NULL,
-    datecreated timestamp without time zone DEFAULT timezone('UTC'::text, ('now'::text)::timestamp(6) with time zone) NOT NULL,
-    person integer NOT NULL,
-    validationstatus integer DEFAULT 0 NOT NULL,
-    active boolean DEFAULT false NOT NULL,
-    published boolean DEFAULT false NOT NULL,
-    CONSTRAINT posubmission_valid_pluralform CHECK ((pluralform >= 0))
 );
 
 CREATE TABLE potemplate (
@@ -2356,10 +2634,9 @@ CREATE TABLE potemplate (
     messagecount integer NOT NULL,
     "owner" integer NOT NULL,
     sourcepackagename integer,
-    distrorelease integer,
+    distroseries integer,
     sourcepackageversion text,
-    "header" text,
-    potemplatename integer NOT NULL,
+    "header" text NOT NULL,
     binarypackagename integer,
     languagepack boolean DEFAULT false NOT NULL,
     productseries integer,
@@ -2367,30 +2644,24 @@ CREATE TABLE potemplate (
     date_last_updated timestamp without time zone DEFAULT timezone('UTC'::text, now()) NOT NULL,
     source_file integer,
     source_file_format integer DEFAULT 1 NOT NULL,
-    CONSTRAINT valid_from_sourcepackagename CHECK (((sourcepackagename IS NOT NULL) OR (from_sourcepackagename IS NULL))),
-    CONSTRAINT valid_link CHECK ((((productseries IS NULL) <> (distrorelease IS NULL)) AND ((distrorelease IS NULL) = (sourcepackagename IS NULL))))
-);
-
-CREATE TABLE potemplatename (
-    id integer NOT NULL,
     name text NOT NULL,
-    title text NOT NULL,
-    description text,
-    translationdomain text NOT NULL,
-    CONSTRAINT potemplate_valid_name CHECK (valid_name(name))
+    translation_domain text NOT NULL,
+    CONSTRAINT potemplate_valid_name CHECK (valid_name(name)),
+    CONSTRAINT valid_from_sourcepackagename CHECK (((sourcepackagename IS NOT NULL) OR (from_sourcepackagename IS NULL))),
+    CONSTRAINT valid_link CHECK ((((productseries IS NULL) <> (distroseries IS NULL)) AND ((distroseries IS NULL) = (sourcepackagename IS NULL))))
 );
 
 CREATE TABLE potmsgset (
     id integer NOT NULL,
-    primemsgid integer NOT NULL,
+    msgid_singular integer NOT NULL,
     "sequence" integer NOT NULL,
     potemplate integer NOT NULL,
     commenttext text,
     filereferences text,
     sourcecomment text,
     flagscomment text,
-    alternative_msgid text,
-    context text
+    context text,
+    msgid_plural integer
 );
 
 CREATE TABLE potranslation (
@@ -2398,8 +2669,31 @@ CREATE TABLE potranslation (
     translation text NOT NULL
 );
 
+CREATE TABLE translationmessage (
+    id integer NOT NULL,
+    pofile integer NOT NULL,
+    potmsgset integer NOT NULL,
+    date_created timestamp without time zone DEFAULT timezone('UTC'::text, now()) NOT NULL,
+    submitter integer NOT NULL,
+    date_reviewed timestamp without time zone,
+    reviewer integer,
+    msgstr0 integer,
+    msgstr1 integer,
+    msgstr2 integer,
+    msgstr3 integer,
+    "comment" text,
+    origin integer NOT NULL,
+    validation_status integer DEFAULT 0 NOT NULL,
+    is_current boolean DEFAULT false NOT NULL,
+    is_fuzzy boolean DEFAULT false NOT NULL,
+    is_imported boolean DEFAULT false NOT NULL,
+    was_obsolete_in_last_import boolean DEFAULT false NOT NULL,
+    was_fuzzy_in_last_import boolean DEFAULT false NOT NULL,
+    CONSTRAINT translationmessage__reviewer__date_reviewed__valid CHECK (((reviewer IS NULL) = (date_reviewed IS NULL)))
+);
+
 CREATE VIEW poexport AS
-    SELECT ((((((COALESCE((potmsgset.id)::text, 'X'::text) || '.'::text) || COALESCE((pomsgset.id)::text, 'X'::text)) || '.'::text) || COALESCE((pomsgidsighting.id)::text, 'X'::text)) || '.'::text) || COALESCE((posubmission.id)::text, 'X'::text)) AS id, potemplatename.name, potemplatename.translationdomain, potemplate.id AS potemplate, potemplate.productseries, potemplate.sourcepackagename, potemplate.distrorelease, potemplate."header" AS potheader, potemplate.languagepack, pofile.id AS pofile, pofile."language", pofile.variant, pofile.topcomment AS potopcomment, pofile."header" AS poheader, pofile.fuzzyheader AS pofuzzyheader, potmsgset.id AS potmsgset, potmsgset."sequence" AS potsequence, potmsgset.commenttext AS potcommenttext, potmsgset.sourcecomment, potmsgset.flagscomment, potmsgset.filereferences, pomsgset.id AS pomsgset, pomsgset."sequence" AS posequence, pomsgset.iscomplete, pomsgset.obsolete, pomsgset.isfuzzy, pomsgset.commenttext AS pocommenttext, pomsgidsighting.pluralform AS msgidpluralform, posubmission.pluralform AS translationpluralform, posubmission.id AS activesubmission, potmsgset.context, pomsgid.msgid, potranslation.translation FROM ((((((((pomsgid JOIN pomsgidsighting ON ((pomsgid.id = pomsgidsighting.pomsgid))) JOIN potmsgset ON ((potmsgset.id = pomsgidsighting.potmsgset))) JOIN potemplate ON ((potemplate.id = potmsgset.potemplate))) JOIN potemplatename ON ((potemplatename.id = potemplate.potemplatename))) JOIN pofile ON ((potemplate.id = pofile.potemplate))) LEFT JOIN pomsgset ON (((potmsgset.id = pomsgset.potmsgset) AND (pomsgset.pofile = pofile.id)))) LEFT JOIN posubmission ON (((pomsgset.id = posubmission.pomsgset) AND posubmission.active))) LEFT JOIN potranslation ON ((potranslation.id = posubmission.potranslation)));
+    SELECT ((COALESCE((potmsgset.id)::text, 'X'::text) || '.'::text) || COALESCE((translationmessage.id)::text, 'X'::text)) AS id, potemplate.productseries, potemplate.sourcepackagename, potemplate.distroseries, potemplate.id AS potemplate, potemplate."header" AS template_header, potemplate.languagepack, pofile.id AS pofile, pofile."language", pofile.variant, pofile.topcomment AS translation_file_comment, pofile."header" AS translation_header, pofile.fuzzyheader AS is_translation_header_fuzzy, potmsgset."sequence", potmsgset.id AS potmsgset, translationmessage."comment", potmsgset.sourcecomment AS source_comment, potmsgset.filereferences AS file_references, potmsgset.flagscomment AS flags_comment, potmsgset.context, msgid_singular.msgid AS msgid_singular, msgid_plural.msgid AS msgid_plural, translationmessage.is_fuzzy, translationmessage.is_current, translationmessage.is_imported, potranslation0.translation AS translation0, potranslation1.translation AS translation1, potranslation2.translation AS translation2, potranslation3.translation AS translation3 FROM (((((((((potmsgset JOIN potemplate ON ((potemplate.id = potmsgset.potemplate))) JOIN pofile ON ((potemplate.id = pofile.potemplate))) LEFT JOIN translationmessage ON ((((potmsgset.id = translationmessage.potmsgset) AND (translationmessage.pofile = pofile.id)) AND (translationmessage.is_current IS TRUE)))) LEFT JOIN pomsgid msgid_singular ON ((msgid_singular.id = potmsgset.msgid_singular))) LEFT JOIN pomsgid msgid_plural ON ((msgid_plural.id = potmsgset.msgid_plural))) LEFT JOIN potranslation potranslation0 ON ((potranslation0.id = translationmessage.msgstr0))) LEFT JOIN potranslation potranslation1 ON ((potranslation1.id = translationmessage.msgstr1))) LEFT JOIN potranslation potranslation2 ON ((potranslation2.id = translationmessage.msgstr2))) LEFT JOIN potranslation potranslation3 ON ((potranslation3.id = translationmessage.msgstr3)));
 
 CREATE TABLE poexportrequest (
     id integer NOT NULL,
@@ -2430,7 +2724,7 @@ CREATE TABLE pofiletranslator (
     id integer NOT NULL,
     person integer NOT NULL,
     pofile integer NOT NULL,
-    latest_posubmission integer NOT NULL,
+    latest_message integer NOT NULL,
     date_last_touched timestamp without time zone DEFAULT timezone('UTC'::text, now()) NOT NULL
 );
 
@@ -2491,30 +2785,6 @@ CREATE SEQUENCE pomsgid_id_seq
 
 ALTER SEQUENCE pomsgid_id_seq OWNED BY pomsgid.id;
 
-CREATE SEQUENCE pomsgidsighting_id_seq
-    INCREMENT BY 1
-    NO MAXVALUE
-    NO MINVALUE
-    CACHE 1;
-
-ALTER SEQUENCE pomsgidsighting_id_seq OWNED BY pomsgidsighting.id;
-
-CREATE SEQUENCE pomsgset_id_seq
-    INCREMENT BY 1
-    NO MAXVALUE
-    NO MINVALUE
-    CACHE 1;
-
-ALTER SEQUENCE pomsgset_id_seq OWNED BY pomsgset.id;
-
-CREATE SEQUENCE posubmission_id_seq
-    INCREMENT BY 1
-    NO MAXVALUE
-    NO MINVALUE
-    CACHE 1;
-
-ALTER SEQUENCE posubmission_id_seq OWNED BY posubmission.id;
-
 CREATE TABLE posubscription (
     id integer NOT NULL,
     person integer NOT NULL,
@@ -2542,16 +2812,8 @@ CREATE SEQUENCE potemplate_id_seq
 
 ALTER SEQUENCE potemplate_id_seq OWNED BY potemplate.id;
 
-CREATE SEQUENCE potemplatename_id_seq
-    INCREMENT BY 1
-    NO MAXVALUE
-    NO MINVALUE
-    CACHE 1;
-
-ALTER SEQUENCE potemplatename_id_seq OWNED BY potemplatename.id;
-
 CREATE VIEW potexport AS
-    SELECT (((COALESCE((potmsgset.id)::text, 'X'::text) || '.'::text) || COALESCE((pomsgidsighting.id)::text, 'X'::text)) || '.'::text) AS id, potemplatename.name, potemplatename.translationdomain, potemplate.id AS potemplate, potemplate.productseries, potemplate.sourcepackagename, potemplate.distrorelease, potemplate."header", potemplate.languagepack, potmsgset.id AS potmsgset, potmsgset."sequence", potmsgset.commenttext, potmsgset.sourcecomment, potmsgset.flagscomment, potmsgset.filereferences, pomsgidsighting.pluralform, potmsgset.context, pomsgid.msgid FROM ((((pomsgid JOIN pomsgidsighting ON ((pomsgid.id = pomsgidsighting.pomsgid))) JOIN potmsgset ON ((potmsgset.id = pomsgidsighting.potmsgset))) JOIN potemplate ON ((potemplate.id = potmsgset.potemplate))) JOIN potemplatename ON ((potemplatename.id = potemplate.potemplatename)));
+    SELECT COALESCE((potmsgset.id)::text, 'X'::text) AS id, potemplate.productseries, potemplate.sourcepackagename, potemplate.distroseries, potemplate.id AS potemplate, potemplate."header" AS template_header, potemplate.languagepack, potmsgset."sequence", potmsgset.id AS potmsgset, potmsgset.commenttext AS "comment", potmsgset.sourcecomment AS source_comment, potmsgset.filereferences AS file_references, potmsgset.flagscomment AS flags_comment, potmsgset.context, msgid_singular.msgid AS msgid_singular, msgid_plural.msgid AS msgid_plural FROM (((potmsgset JOIN potemplate ON ((potemplate.id = potmsgset.potemplate))) LEFT JOIN pomsgid msgid_singular ON ((potmsgset.msgid_singular = msgid_singular.id))) LEFT JOIN pomsgid msgid_plural ON ((potmsgset.msgid_plural = msgid_plural.id)));
 
 CREATE SEQUENCE potmsgset_id_seq
     INCREMENT BY 1
@@ -2600,50 +2862,6 @@ CREATE SEQUENCE processorfamily_id_seq
 
 ALTER SEQUENCE processorfamily_id_seq OWNED BY processorfamily.id;
 
-CREATE TABLE product (
-    id integer NOT NULL,
-    project integer,
-    "owner" integer NOT NULL,
-    name text NOT NULL,
-    displayname text NOT NULL,
-    title text NOT NULL,
-    summary text NOT NULL,
-    description text,
-    datecreated timestamp without time zone DEFAULT timezone('UTC'::text, ('now'::text)::timestamp(6) with time zone) NOT NULL,
-    homepageurl text,
-    screenshotsurl text,
-    wikiurl text,
-    listurl text,
-    programminglang text,
-    downloadurl text,
-    lastdoap text,
-    sourceforgeproject text,
-    freshmeatproject text,
-    reviewed boolean DEFAULT false NOT NULL,
-    active boolean DEFAULT true NOT NULL,
-    fti ts2.tsvector,
-    autoupdate boolean DEFAULT false NOT NULL,
-    translationgroup integer,
-    translationpermission integer DEFAULT 1 NOT NULL,
-    calendar integer,
-    official_rosetta boolean DEFAULT false NOT NULL,
-    official_malone boolean DEFAULT false NOT NULL,
-    bugcontact integer,
-    security_contact integer,
-    driver integer,
-    bugtracker integer,
-    development_focus integer,
-    homepage_content text,
-    icon integer,
-    mugshot integer,
-    logo integer,
-    official_answers boolean DEFAULT false NOT NULL,
-    private_bugs boolean DEFAULT false NOT NULL,
-    private_specs boolean DEFAULT false NOT NULL,
-    CONSTRAINT private_bugs_need_contact CHECK (((private_bugs IS FALSE) OR (bugcontact IS NOT NULL))),
-    CONSTRAINT valid_name CHECK (valid_name(name))
-);
-
 CREATE SEQUENCE product_id_seq
     INCREMENT BY 1
     NO MAXVALUE
@@ -2685,6 +2903,20 @@ CREATE SEQUENCE productcvsmodule_id_seq
 
 ALTER SEQUENCE productcvsmodule_id_seq OWNED BY productcvsmodule.id;
 
+CREATE TABLE productlicense (
+    id integer NOT NULL,
+    product integer NOT NULL,
+    license integer NOT NULL
+);
+
+CREATE SEQUENCE productlicense_id_seq
+    INCREMENT BY 1
+    NO MAXVALUE
+    NO MINVALUE
+    CACHE 1;
+
+ALTER SEQUENCE productlicense_id_seq OWNED BY productlicense.id;
+
 CREATE TABLE productrelease (
     id integer NOT NULL,
     datereleased timestamp without time zone NOT NULL,
@@ -2715,7 +2947,8 @@ CREATE TABLE productreleasefile (
     description text,
     uploader integer NOT NULL,
     date_uploaded timestamp without time zone DEFAULT timezone('UTC'::text, now()) NOT NULL,
-    fti ts2.tsvector
+    fti ts2.tsvector,
+    signature integer
 );
 
 CREATE SEQUENCE productreleasefile_id_seq
@@ -2802,13 +3035,14 @@ CREATE TABLE project (
     fti ts2.tsvector,
     translationgroup integer,
     translationpermission integer DEFAULT 1 NOT NULL,
-    calendar integer,
     driver integer,
     bugtracker integer,
     homepage_content text,
     icon integer,
     mugshot integer,
     logo integer,
+    bug_reporting_guidelines text,
+    reviewer_whiteboard text,
     CONSTRAINT valid_name CHECK (valid_name(name))
 );
 
@@ -2862,8 +3096,8 @@ CREATE TABLE section (
     name text NOT NULL
 );
 
-CREATE VIEW publishedpackageview AS
-    SELECT binarypackagepublishing.id, binarypackagepublishing.archive, distroarchrelease.id AS distroarchrelease, distrorelease.distribution, distrorelease.id AS distrorelease, distrorelease.name AS distroreleasename, processorfamily.id AS processorfamily, processorfamily.name AS processorfamilyname, binarypackagepublishing.status AS packagepublishingstatus, component.name AS component, section.name AS section, binarypackagerelease.id AS binarypackagerelease, binarypackagename.name AS binarypackagename, binarypackagerelease.summary AS binarypackagesummary, binarypackagerelease.description AS binarypackagedescription, binarypackagerelease.version AS binarypackageversion, build.id AS build, build.datebuilt, sourcepackagerelease.id AS sourcepackagerelease, sourcepackagerelease.version AS sourcepackagereleaseversion, sourcepackagename.name AS sourcepackagename, binarypackagepublishing.pocket, binarypackagerelease.fti AS binarypackagefti FROM ((((((((((binarypackagepublishing JOIN distroarchrelease ON ((distroarchrelease.id = binarypackagepublishing.distroarchrelease))) JOIN distrorelease ON ((distroarchrelease.distrorelease = distrorelease.id))) JOIN processorfamily ON ((distroarchrelease.processorfamily = processorfamily.id))) JOIN component ON ((binarypackagepublishing.component = component.id))) JOIN binarypackagerelease ON ((binarypackagepublishing.binarypackagerelease = binarypackagerelease.id))) JOIN section ON ((binarypackagepublishing.section = section.id))) JOIN binarypackagename ON ((binarypackagerelease.binarypackagename = binarypackagename.id))) JOIN build ON ((binarypackagerelease.build = build.id))) JOIN sourcepackagerelease ON ((build.sourcepackagerelease = sourcepackagerelease.id))) JOIN sourcepackagename ON ((sourcepackagerelease.sourcepackagename = sourcepackagename.id)));
+CREATE VIEW publishedpackage AS
+    SELECT securebinarypackagepublishinghistory.id, distroarchseries.id AS distroarchseries, distroseries.distribution, distroseries.id AS distroseries, distroseries.name AS distroseriesname, processorfamily.id AS processorfamily, processorfamily.name AS processorfamilyname, securebinarypackagepublishinghistory.status AS packagepublishingstatus, component.name AS component, section.name AS section, binarypackagerelease.id AS binarypackagerelease, binarypackagename.name AS binarypackagename, binarypackagerelease.summary AS binarypackagesummary, binarypackagerelease.description AS binarypackagedescription, binarypackagerelease.version AS binarypackageversion, build.id AS build, build.datebuilt, sourcepackagerelease.id AS sourcepackagerelease, sourcepackagerelease.version AS sourcepackagereleaseversion, sourcepackagename.name AS sourcepackagename, securebinarypackagepublishinghistory.pocket, securebinarypackagepublishinghistory.archive, binarypackagerelease.fti AS binarypackagefti FROM ((((((((((securebinarypackagepublishinghistory JOIN distroarchseries ON ((distroarchseries.id = securebinarypackagepublishinghistory.distroarchseries))) JOIN distroseries ON ((distroarchseries.distroseries = distroseries.id))) JOIN processorfamily ON ((distroarchseries.processorfamily = processorfamily.id))) JOIN component ON ((securebinarypackagepublishinghistory.component = component.id))) JOIN binarypackagerelease ON ((securebinarypackagepublishinghistory.binarypackagerelease = binarypackagerelease.id))) JOIN section ON ((securebinarypackagepublishinghistory.section = section.id))) JOIN binarypackagename ON ((binarypackagerelease.binarypackagename = binarypackagename.id))) JOIN build ON ((binarypackagerelease.build = build.id))) JOIN sourcepackagerelease ON ((build.sourcepackagerelease = sourcepackagerelease.id))) JOIN sourcepackagename ON ((sourcepackagerelease.sourcepackagename = sourcepackagename.id))) WHERE (securebinarypackagepublishinghistory.dateremoved IS NULL);
 
 CREATE TABLE pushmirroraccess (
     id integer NOT NULL,
@@ -2985,7 +3219,7 @@ CREATE TABLE requestedcds (
     request integer NOT NULL,
     quantity integer NOT NULL,
     flavour integer NOT NULL,
-    distrorelease integer NOT NULL,
+    distroseries integer NOT NULL,
     architecture integer NOT NULL,
     quantityapproved integer NOT NULL,
     CONSTRAINT quantity_is_positive CHECK ((quantity >= 0)),
@@ -3080,7 +3314,7 @@ ALTER SEQUENCE section_id_seq OWNED BY section.id;
 
 CREATE TABLE sectionselection (
     id integer NOT NULL,
-    distrorelease integer NOT NULL,
+    distroseries integer NOT NULL,
     section integer NOT NULL,
     date_created timestamp without time zone DEFAULT timezone('UTC'::text, now()) NOT NULL
 );
@@ -3104,7 +3338,7 @@ ALTER SEQUENCE securebinarypackagepublishinghistory_id_seq OWNED BY securebinary
 CREATE TABLE securesourcepackagepublishinghistory (
     id integer NOT NULL,
     sourcepackagerelease integer NOT NULL,
-    distrorelease integer NOT NULL,
+    distroseries integer NOT NULL,
     status integer NOT NULL,
     component integer NOT NULL,
     section integer NOT NULL,
@@ -3118,7 +3352,9 @@ CREATE TABLE securesourcepackagepublishinghistory (
     pocket integer DEFAULT 0 NOT NULL,
     embargo boolean DEFAULT false NOT NULL,
     embargolifted timestamp without time zone,
-    archive integer NOT NULL
+    archive integer NOT NULL,
+    removed_by integer,
+    removal_comment text
 );
 
 CREATE SEQUENCE securesourcepackagepublishinghistory_id_seq
@@ -3247,12 +3483,6 @@ CREATE SEQUENCE signedcodeofconduct_id_seq
 
 ALTER SEQUENCE signedcodeofconduct_id_seq OWNED BY signedcodeofconduct.id;
 
-CREATE VIEW sourcepackagepublishinghistory AS
-    SELECT securesourcepackagepublishinghistory.id, securesourcepackagepublishinghistory.archive, securesourcepackagepublishinghistory.sourcepackagerelease, securesourcepackagepublishinghistory.distrorelease, securesourcepackagepublishinghistory.status, securesourcepackagepublishinghistory.component, securesourcepackagepublishinghistory.section, securesourcepackagepublishinghistory.datecreated, securesourcepackagepublishinghistory.datepublished, securesourcepackagepublishinghistory.datesuperseded, securesourcepackagepublishinghistory.supersededby, securesourcepackagepublishinghistory.datemadepending, securesourcepackagepublishinghistory.scheduleddeletiondate, securesourcepackagepublishinghistory.dateremoved, securesourcepackagepublishinghistory.pocket, securesourcepackagepublishinghistory.embargo, securesourcepackagepublishinghistory.embargolifted FROM securesourcepackagepublishinghistory WHERE (securesourcepackagepublishinghistory.embargo = false);
-
-CREATE VIEW sourcepackagepublishing AS
-    SELECT sourcepackagepublishinghistory.id, sourcepackagepublishinghistory.archive, sourcepackagepublishinghistory.sourcepackagerelease, sourcepackagepublishinghistory.distrorelease, sourcepackagepublishinghistory.status, sourcepackagepublishinghistory.component, sourcepackagepublishinghistory.section, sourcepackagepublishinghistory.datecreated, sourcepackagepublishinghistory.datepublished, sourcepackagepublishinghistory.datesuperseded, sourcepackagepublishinghistory.supersededby, sourcepackagepublishinghistory.datemadepending, sourcepackagepublishinghistory.scheduleddeletiondate, sourcepackagepublishinghistory.dateremoved, sourcepackagepublishinghistory.pocket, sourcepackagepublishinghistory.embargo, sourcepackagepublishinghistory.embargolifted FROM sourcepackagepublishinghistory WHERE (sourcepackagepublishinghistory.status < 7);
-
 CREATE TABLE sourcepackagereleasefile (
     sourcepackagerelease integer NOT NULL,
     libraryfile integer NOT NULL,
@@ -3261,7 +3491,7 @@ CREATE TABLE sourcepackagereleasefile (
 );
 
 CREATE VIEW sourcepackagefilepublishing AS
-    SELECT (((libraryfilealias.id)::text || '.'::text) || (sourcepackagepublishing.id)::text) AS id, distrorelease.distribution, sourcepackagepublishing.id AS sourcepackagepublishing, sourcepackagereleasefile.libraryfile AS libraryfilealias, libraryfilealias.filename AS libraryfilealiasfilename, sourcepackagename.name AS sourcepackagename, component.name AS componentname, distrorelease.name AS distroreleasename, sourcepackagepublishing.status AS publishingstatus, sourcepackagepublishing.pocket, sourcepackagepublishing.archive FROM ((((((sourcepackagepublishing JOIN sourcepackagerelease ON ((sourcepackagepublishing.sourcepackagerelease = sourcepackagerelease.id))) JOIN sourcepackagename ON ((sourcepackagerelease.sourcepackagename = sourcepackagename.id))) JOIN sourcepackagereleasefile ON ((sourcepackagereleasefile.sourcepackagerelease = sourcepackagerelease.id))) JOIN libraryfilealias ON ((libraryfilealias.id = sourcepackagereleasefile.libraryfile))) JOIN distrorelease ON ((sourcepackagepublishing.distrorelease = distrorelease.id))) JOIN component ON ((sourcepackagepublishing.component = component.id)));
+    SELECT (((libraryfilealias.id)::text || '.'::text) || (securesourcepackagepublishinghistory.id)::text) AS id, distroseries.distribution, securesourcepackagepublishinghistory.id AS sourcepackagepublishing, sourcepackagereleasefile.libraryfile AS libraryfilealias, libraryfilealias.filename AS libraryfilealiasfilename, sourcepackagename.name AS sourcepackagename, component.name AS componentname, distroseries.name AS distroseriesname, securesourcepackagepublishinghistory.status AS publishingstatus, securesourcepackagepublishinghistory.pocket, securesourcepackagepublishinghistory.archive FROM ((((((securesourcepackagepublishinghistory JOIN sourcepackagerelease ON ((securesourcepackagepublishinghistory.sourcepackagerelease = sourcepackagerelease.id))) JOIN sourcepackagename ON ((sourcepackagerelease.sourcepackagename = sourcepackagename.id))) JOIN sourcepackagereleasefile ON ((sourcepackagereleasefile.sourcepackagerelease = sourcepackagerelease.id))) JOIN libraryfilealias ON ((libraryfilealias.id = sourcepackagereleasefile.libraryfile))) JOIN distroseries ON ((securesourcepackagepublishinghistory.distroseries = distroseries.id))) JOIN component ON ((securesourcepackagepublishinghistory.component = component.id))) WHERE (securesourcepackagepublishinghistory.dateremoved IS NULL);
 
 CREATE SEQUENCE sourcepackagename_id_seq
     INCREMENT BY 1
@@ -3270,6 +3500,9 @@ CREATE SEQUENCE sourcepackagename_id_seq
     CACHE 1;
 
 ALTER SEQUENCE sourcepackagename_id_seq OWNED BY sourcepackagename.id;
+
+CREATE VIEW sourcepackagepublishinghistory AS
+    SELECT securesourcepackagepublishinghistory.id, securesourcepackagepublishinghistory.sourcepackagerelease, securesourcepackagepublishinghistory.status, securesourcepackagepublishinghistory.component, securesourcepackagepublishinghistory.section, securesourcepackagepublishinghistory.distroseries, securesourcepackagepublishinghistory.pocket, securesourcepackagepublishinghistory.archive, securesourcepackagepublishinghistory.datecreated, securesourcepackagepublishinghistory.datepublished, securesourcepackagepublishinghistory.datesuperseded, securesourcepackagepublishinghistory.supersededby, securesourcepackagepublishinghistory.datemadepending, securesourcepackagepublishinghistory.scheduleddeletiondate, securesourcepackagepublishinghistory.dateremoved, securesourcepackagepublishinghistory.removed_by, securesourcepackagepublishinghistory.removal_comment, securesourcepackagepublishinghistory.embargo, securesourcepackagepublishinghistory.embargolifted FROM securesourcepackagepublishinghistory WHERE (securesourcepackagepublishinghistory.embargo = false);
 
 CREATE SEQUENCE sourcepackagerelationship_id_seq
     START WITH 1
@@ -3305,7 +3538,7 @@ CREATE TABLE specification (
     product integer,
     productseries integer,
     distribution integer,
-    distrorelease integer,
+    distroseries integer,
     milestone integer,
     definition_status integer NOT NULL,
     priority integer DEFAULT 5 NOT NULL,
@@ -3326,13 +3559,13 @@ CREATE TABLE specification (
     starter integer,
     date_started timestamp without time zone,
     private boolean DEFAULT false NOT NULL,
-    CONSTRAINT distribution_and_distrorelease CHECK (((distrorelease IS NULL) OR (distribution IS NOT NULL))),
+    CONSTRAINT distribution_and_distroseries CHECK (((distroseries IS NULL) OR (distribution IS NOT NULL))),
     CONSTRAINT product_and_productseries CHECK (((productseries IS NULL) OR (product IS NOT NULL))),
     CONSTRAINT product_xor_distribution CHECK (((product IS NULL) <> (distribution IS NULL))),
     CONSTRAINT specification_completion_fully_recorded_chk CHECK (((date_completed IS NULL) = (completer IS NULL))),
     CONSTRAINT specification_completion_recorded_chk CHECK (((date_completed IS NULL) <> (((implementation_status = 90) OR (definition_status = ANY (ARRAY[60, 70]))) OR ((implementation_status = 95) AND (definition_status = 10))))),
     CONSTRAINT specification_decision_recorded CHECK (((goalstatus = 30) OR ((goal_decider IS NOT NULL) AND (date_goal_decided IS NOT NULL)))),
-    CONSTRAINT specification_goal_nomination_chk CHECK ((((productseries IS NULL) AND (distrorelease IS NULL)) OR ((goal_proposer IS NOT NULL) AND (date_goal_proposed IS NOT NULL)))),
+    CONSTRAINT specification_goal_nomination_chk CHECK ((((productseries IS NULL) AND (distroseries IS NULL)) OR ((goal_proposer IS NOT NULL) AND (date_goal_proposed IS NOT NULL)))),
     CONSTRAINT specification_not_self_superseding CHECK ((superseded_by <> id)),
     CONSTRAINT specification_start_fully_recorded_chk CHECK (((date_started IS NULL) = (starter IS NULL))),
     CONSTRAINT specification_start_recorded_chk CHECK (((date_started IS NULL) <> ((implementation_status <> ALL (ARRAY[0, 5, 10, 95])) OR ((implementation_status = 95) AND (definition_status = 10))))),
@@ -3353,7 +3586,8 @@ CREATE TABLE specificationbranch (
     datecreated timestamp without time zone DEFAULT timezone('UTC'::text, now()) NOT NULL,
     specification integer NOT NULL,
     branch integer NOT NULL,
-    summary text
+    summary text,
+    registrant integer NOT NULL
 );
 
 CREATE SEQUENCE specificationbranch_id_seq
@@ -3545,6 +3779,7 @@ CREATE TABLE standardshipitrequest (
     quantityamd64 integer NOT NULL,
     isdefault boolean DEFAULT false NOT NULL,
     flavour integer NOT NULL,
+    description text,
     CONSTRAINT quantityamd64_is_positive CHECK ((quantityamd64 >= 0)),
     CONSTRAINT quantityppc_is_positive CHECK ((quantityppc >= 0)),
     CONSTRAINT quantityx86_is_positive CHECK ((quantityx86 >= 0))
@@ -3557,6 +3792,34 @@ CREATE SEQUENCE standardshipitrequest_id_seq
     CACHE 1;
 
 ALTER SEQUENCE standardshipitrequest_id_seq OWNED BY standardshipitrequest.id;
+
+CREATE TABLE structuralsubscription (
+    id integer NOT NULL,
+    product integer,
+    productseries integer,
+    project integer,
+    milestone integer,
+    distribution integer,
+    distroseries integer,
+    sourcepackagename integer,
+    subscriber integer NOT NULL,
+    subscribed_by integer NOT NULL,
+    bug_notification_level integer NOT NULL,
+    blueprint_notification_level integer NOT NULL,
+    date_created timestamp without time zone DEFAULT timezone('UTC'::text, now()) NOT NULL,
+    date_last_updated timestamp without time zone DEFAULT timezone('UTC'::text, now()) NOT NULL,
+    CONSTRAINT one_target CHECK ((null_count(ARRAY[product, productseries, project, distroseries, distribution]) = 4)),
+    CONSTRAINT sourcepackagename_requires_distribution CHECK (((sourcepackagename IS NULL) OR (distribution IS NOT NULL)))
+);
+
+CREATE SEQUENCE structuralsubscription_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MAXVALUE
+    NO MINVALUE
+    CACHE 1;
+
+ALTER SEQUENCE structuralsubscription_id_seq OWNED BY structuralsubscription.id;
 
 CREATE TABLE teammembership (
     id integer NOT NULL,
@@ -3629,7 +3892,7 @@ CREATE TABLE translationimportqueueentry (
     content integer NOT NULL,
     importer integer NOT NULL,
     dateimported timestamp without time zone DEFAULT timezone('UTC'::text, ('now'::text)::timestamp(6) with time zone) NOT NULL,
-    distrorelease integer,
+    distroseries integer,
     sourcepackagename integer,
     productseries integer,
     is_published boolean NOT NULL,
@@ -3638,7 +3901,7 @@ CREATE TABLE translationimportqueueentry (
     status integer DEFAULT 5 NOT NULL,
     date_status_changed timestamp without time zone DEFAULT timezone('UTC'::text, ('now'::text)::timestamp(6) with time zone) NOT NULL,
     format integer DEFAULT 1 NOT NULL,
-    CONSTRAINT valid_link CHECK ((((productseries IS NULL) <> (distrorelease IS NULL)) AND ((distrorelease IS NULL) = (sourcepackagename IS NULL))))
+    CONSTRAINT valid_link CHECK ((((productseries IS NULL) <> (distroseries IS NULL)) AND ((distroseries IS NULL) = (sourcepackagename IS NULL))))
 );
 
 CREATE SEQUENCE translationimportqueueentry_id_seq
@@ -3648,6 +3911,14 @@ CREATE SEQUENCE translationimportqueueentry_id_seq
     CACHE 1;
 
 ALTER SEQUENCE translationimportqueueentry_id_seq OWNED BY translationimportqueueentry.id;
+
+CREATE SEQUENCE translationmessage_id_seq
+    INCREMENT BY 1
+    NO MAXVALUE
+    NO MINVALUE
+    CACHE 1;
+
+ALTER SEQUENCE translationmessage_id_seq OWNED BY translationmessage.id;
 
 CREATE TABLE translator (
     id integer NOT NULL,
@@ -3715,6 +3986,8 @@ CREATE SEQUENCE wikiname_id_seq
 
 ALTER SEQUENCE wikiname_id_seq OWNED BY wikiname.id;
 
+ALTER TABLE announcement ALTER COLUMN id SET DEFAULT nextval('announcement_id_seq'::regclass);
+
 ALTER TABLE answercontact ALTER COLUMN id SET DEFAULT nextval('answercontact_id_seq'::regclass);
 
 ALTER TABLE archive ALTER COLUMN id SET DEFAULT nextval('archive_id_seq'::regclass);
@@ -3733,6 +4006,8 @@ ALTER TABLE branch ALTER COLUMN id SET DEFAULT nextval('branch_id_seq'::regclass
 
 ALTER TABLE branchmergeproposal ALTER COLUMN id SET DEFAULT nextval('branchmergeproposal_id_seq'::regclass);
 
+ALTER TABLE branchmergerobot ALTER COLUMN id SET DEFAULT nextval('branchmergerobot_id_seq'::regclass);
+
 ALTER TABLE branchrevision ALTER COLUMN id SET DEFAULT nextval('branchrevision_id_seq'::regclass);
 
 ALTER TABLE branchsubscription ALTER COLUMN id SET DEFAULT nextval('branchsubscription_id_seq'::regclass);
@@ -3748,8 +4023,6 @@ ALTER TABLE bugattachment ALTER COLUMN id SET DEFAULT nextval('bugattachment_id_
 ALTER TABLE bugbranch ALTER COLUMN id SET DEFAULT nextval('bugbranch_id_seq'::regclass);
 
 ALTER TABLE bugcve ALTER COLUMN id SET DEFAULT nextval('bugcve_id_seq'::regclass);
-
-ALTER TABLE bugexternalref ALTER COLUMN id SET DEFAULT nextval('bugexternalref_id_seq'::regclass);
 
 ALTER TABLE bugmessage ALTER COLUMN id SET DEFAULT nextval('bugmessage_id_seq'::regclass);
 
@@ -3769,6 +4042,8 @@ ALTER TABLE bugtask ALTER COLUMN id SET DEFAULT nextval('bugtask_id_seq'::regcla
 
 ALTER TABLE bugtracker ALTER COLUMN id SET DEFAULT nextval('bugtracker_id_seq'::regclass);
 
+ALTER TABLE bugtrackeralias ALTER COLUMN id SET DEFAULT nextval('bugtrackeralias_id_seq'::regclass);
+
 ALTER TABLE bugwatch ALTER COLUMN id SET DEFAULT nextval('bugwatch_id_seq'::regclass);
 
 ALTER TABLE build ALTER COLUMN id SET DEFAULT nextval('build_id_seq'::regclass);
@@ -3776,12 +4051,6 @@ ALTER TABLE build ALTER COLUMN id SET DEFAULT nextval('build_id_seq'::regclass);
 ALTER TABLE builder ALTER COLUMN id SET DEFAULT nextval('builder_id_seq'::regclass);
 
 ALTER TABLE buildqueue ALTER COLUMN id SET DEFAULT nextval('buildqueue_id_seq'::regclass);
-
-ALTER TABLE calendar ALTER COLUMN id SET DEFAULT nextval('calendar_id_seq'::regclass);
-
-ALTER TABLE calendarevent ALTER COLUMN id SET DEFAULT nextval('calendarevent_id_seq'::regclass);
-
-ALTER TABLE calendarsubscription ALTER COLUMN id SET DEFAULT nextval('calendarsubscription_id_seq'::regclass);
 
 ALTER TABLE codeimport ALTER COLUMN id SET DEFAULT nextval('codeimport_id_seq'::regclass);
 
@@ -3815,15 +4084,13 @@ ALTER TABLE distributionmirror ALTER COLUMN id SET DEFAULT nextval('distribution
 
 ALTER TABLE distributionsourcepackagecache ALTER COLUMN id SET DEFAULT nextval('distributionsourcepackagecache_id_seq'::regclass);
 
-ALTER TABLE distroarchrelease ALTER COLUMN id SET DEFAULT nextval('distroarchrelease_id_seq'::regclass);
+ALTER TABLE distroarchseries ALTER COLUMN id SET DEFAULT nextval('distroarchseries_id_seq'::regclass);
 
 ALTER TABLE distrocomponentuploader ALTER COLUMN id SET DEFAULT nextval('distrocomponentuploader_id_seq'::regclass);
 
-ALTER TABLE distrorelease ALTER COLUMN id SET DEFAULT nextval('distrorelease_id_seq'::regclass);
+ALTER TABLE distroseries ALTER COLUMN id SET DEFAULT nextval('distroseries_id_seq'::regclass);
 
-ALTER TABLE distroreleaselanguage ALTER COLUMN id SET DEFAULT nextval('distroreleaselanguage_id_seq'::regclass);
-
-ALTER TABLE distroreleasepackagecache ALTER COLUMN id SET DEFAULT nextval('distroreleasepackagecache_id_seq'::regclass);
+ALTER TABLE distroserieslanguage ALTER COLUMN id SET DEFAULT nextval('distroserieslanguage_id_seq'::regclass);
 
 ALTER TABLE emailaddress ALTER COLUMN id SET DEFAULT nextval('emailaddress_id_seq'::regclass);
 
@@ -3831,13 +4098,41 @@ ALTER TABLE entitlement ALTER COLUMN id SET DEFAULT nextval('entitlement_id_seq'
 
 ALTER TABLE faq ALTER COLUMN id SET DEFAULT nextval('faq_id_seq'::regclass);
 
+ALTER TABLE featuredproject ALTER COLUMN id SET DEFAULT nextval('featuredproject_id_seq'::regclass);
+
 ALTER TABLE fticache ALTER COLUMN id SET DEFAULT nextval('fticache_id_seq'::regclass);
 
 ALTER TABLE gpgkey ALTER COLUMN id SET DEFAULT nextval('gpgkey_id_seq'::regclass);
 
+ALTER TABLE hwdevice ALTER COLUMN id SET DEFAULT nextval('hwdevice_id_seq'::regclass);
+
+ALTER TABLE hwdevicedriverlink ALTER COLUMN id SET DEFAULT nextval('hwdevicedriverlink_id_seq'::regclass);
+
+ALTER TABLE hwdevicenamevariant ALTER COLUMN id SET DEFAULT nextval('hwdevicenamevariant_id_seq'::regclass);
+
+ALTER TABLE hwdriver ALTER COLUMN id SET DEFAULT nextval('hwdriver_id_seq'::regclass);
+
 ALTER TABLE hwsubmission ALTER COLUMN id SET DEFAULT nextval('hwsubmission_id_seq'::regclass);
 
+ALTER TABLE hwsubmissiondevice ALTER COLUMN id SET DEFAULT nextval('hwsubmissiondevice_id_seq'::regclass);
+
 ALTER TABLE hwsystemfingerprint ALTER COLUMN id SET DEFAULT nextval('hwsystemfingerprint_id_seq'::regclass);
+
+ALTER TABLE hwtest ALTER COLUMN id SET DEFAULT nextval('hwtest_id_seq'::regclass);
+
+ALTER TABLE hwtestanswer ALTER COLUMN id SET DEFAULT nextval('hwtestanswer_id_seq'::regclass);
+
+ALTER TABLE hwtestanswerchoice ALTER COLUMN id SET DEFAULT nextval('hwtestanswerchoice_id_seq'::regclass);
+
+ALTER TABLE hwtestanswercount ALTER COLUMN id SET DEFAULT nextval('hwtestanswercount_id_seq'::regclass);
+
+ALTER TABLE hwtestanswercountdevice ALTER COLUMN id SET DEFAULT nextval('hwtestanswercountdevice_id_seq'::regclass);
+
+ALTER TABLE hwtestanswerdevice ALTER COLUMN id SET DEFAULT nextval('hwtestanswerdevice_id_seq'::regclass);
+
+ALTER TABLE hwvendorid ALTER COLUMN id SET DEFAULT nextval('hwvendorid_id_seq'::regclass);
+
+ALTER TABLE hwvendorname ALTER COLUMN id SET DEFAULT nextval('hwvendorname_id_seq'::regclass);
 
 ALTER TABLE ircid ALTER COLUMN id SET DEFAULT nextval('ircid_id_seq'::regclass);
 
@@ -3885,13 +4180,13 @@ ALTER TABLE milestone ALTER COLUMN id SET DEFAULT nextval('milestone_id_seq'::re
 
 ALTER TABLE mirror ALTER COLUMN id SET DEFAULT nextval('mirror_id_seq'::regclass);
 
-ALTER TABLE mirrorcdimagedistrorelease ALTER COLUMN id SET DEFAULT nextval('mirrorcdimagedistrorelease_id_seq'::regclass);
+ALTER TABLE mirrorcdimagedistroseries ALTER COLUMN id SET DEFAULT nextval('mirrorcdimagedistroseries_id_seq'::regclass);
 
 ALTER TABLE mirrorcontent ALTER COLUMN id SET DEFAULT nextval('mirrorcontent_id_seq'::regclass);
 
-ALTER TABLE mirrordistroarchrelease ALTER COLUMN id SET DEFAULT nextval('mirrordistroarchrelease_id_seq'::regclass);
+ALTER TABLE mirrordistroarchseries ALTER COLUMN id SET DEFAULT nextval('mirrordistroarchseries_id_seq'::regclass);
 
-ALTER TABLE mirrordistroreleasesource ALTER COLUMN id SET DEFAULT nextval('mirrordistroreleasesource_id_seq'::regclass);
+ALTER TABLE mirrordistroseriessource ALTER COLUMN id SET DEFAULT nextval('mirrordistroseriessource_id_seq'::regclass);
 
 ALTER TABLE mirrorproberecord ALTER COLUMN id SET DEFAULT nextval('mirrorproberecord_id_seq'::regclass);
 
@@ -3921,6 +4216,8 @@ ALTER TABLE person ALTER COLUMN id SET DEFAULT nextval('person_id_seq'::regclass
 
 ALTER TABLE personlanguage ALTER COLUMN id SET DEFAULT nextval('personlanguage_id_seq'::regclass);
 
+ALTER TABLE personlocation ALTER COLUMN id SET DEFAULT nextval('personlocation_id_seq'::regclass);
+
 ALTER TABLE pillarname ALTER COLUMN id SET DEFAULT nextval('pillarname_id_seq'::regclass);
 
 ALTER TABLE pocketchroot ALTER COLUMN id SET DEFAULT nextval('pocketchroot_id_seq'::regclass);
@@ -3939,17 +4236,9 @@ ALTER TABLE polloption ALTER COLUMN id SET DEFAULT nextval('polloption_id_seq'::
 
 ALTER TABLE pomsgid ALTER COLUMN id SET DEFAULT nextval('pomsgid_id_seq'::regclass);
 
-ALTER TABLE pomsgidsighting ALTER COLUMN id SET DEFAULT nextval('pomsgidsighting_id_seq'::regclass);
-
-ALTER TABLE pomsgset ALTER COLUMN id SET DEFAULT nextval('pomsgset_id_seq'::regclass);
-
-ALTER TABLE posubmission ALTER COLUMN id SET DEFAULT nextval('posubmission_id_seq'::regclass);
-
 ALTER TABLE posubscription ALTER COLUMN id SET DEFAULT nextval('posubscription_id_seq'::regclass);
 
 ALTER TABLE potemplate ALTER COLUMN id SET DEFAULT nextval('potemplate_id_seq'::regclass);
-
-ALTER TABLE potemplatename ALTER COLUMN id SET DEFAULT nextval('potemplatename_id_seq'::regclass);
 
 ALTER TABLE potmsgset ALTER COLUMN id SET DEFAULT nextval('potmsgset_id_seq'::regclass);
 
@@ -3964,6 +4253,8 @@ ALTER TABLE product ALTER COLUMN id SET DEFAULT nextval('product_id_seq'::regcla
 ALTER TABLE productbounty ALTER COLUMN id SET DEFAULT nextval('productbounty_id_seq'::regclass);
 
 ALTER TABLE productcvsmodule ALTER COLUMN id SET DEFAULT nextval('productcvsmodule_id_seq'::regclass);
+
+ALTER TABLE productlicense ALTER COLUMN id SET DEFAULT nextval('productlicense_id_seq'::regclass);
 
 ALTER TABLE productrelease ALTER COLUMN id SET DEFAULT nextval('productrelease_id_seq'::regclass);
 
@@ -4049,6 +4340,8 @@ ALTER TABLE sshkey ALTER COLUMN id SET DEFAULT nextval('sshkey_id_seq'::regclass
 
 ALTER TABLE standardshipitrequest ALTER COLUMN id SET DEFAULT nextval('standardshipitrequest_id_seq'::regclass);
 
+ALTER TABLE structuralsubscription ALTER COLUMN id SET DEFAULT nextval('structuralsubscription_id_seq'::regclass);
+
 ALTER TABLE teammembership ALTER COLUMN id SET DEFAULT nextval('teammembership_id_seq'::regclass);
 
 ALTER TABLE teamparticipation ALTER COLUMN id SET DEFAULT nextval('teamparticipation_id_seq'::regclass);
@@ -4059,6 +4352,8 @@ ALTER TABLE translationgroup ALTER COLUMN id SET DEFAULT nextval('translationgro
 
 ALTER TABLE translationimportqueueentry ALTER COLUMN id SET DEFAULT nextval('translationimportqueueentry_id_seq'::regclass);
 
+ALTER TABLE translationmessage ALTER COLUMN id SET DEFAULT nextval('translationmessage_id_seq'::regclass);
+
 ALTER TABLE translator ALTER COLUMN id SET DEFAULT nextval('translator_id_seq'::regclass);
 
 ALTER TABLE vote ALTER COLUMN id SET DEFAULT nextval('vote_id_seq'::regclass);
@@ -4066,6 +4361,9 @@ ALTER TABLE vote ALTER COLUMN id SET DEFAULT nextval('vote_id_seq'::regclass);
 ALTER TABLE votecast ALTER COLUMN id SET DEFAULT nextval('votecast_id_seq'::regclass);
 
 ALTER TABLE wikiname ALTER COLUMN id SET DEFAULT nextval('wikiname_id_seq'::regclass);
+
+ALTER TABLE ONLY announcement
+    ADD CONSTRAINT announcement_pkey PRIMARY KEY (id);
 
 ALTER TABLE ONLY archive
     ADD CONSTRAINT archive_pkey PRIMARY KEY (id);
@@ -4126,6 +4424,15 @@ ALTER TABLE ONLY branchmergeproposal
 ALTER TABLE ONLY branchmergeproposal
     ADD CONSTRAINT branchmergeproposal_source_branch_key UNIQUE (source_branch, target_branch, date_merged);
 
+ALTER TABLE ONLY branchmergerobot
+    ADD CONSTRAINT branchmergerobot_name_key UNIQUE (name);
+
+ALTER TABLE ONLY branchmergerobot
+    ADD CONSTRAINT branchmergerobot_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY branchsubscription
+    ADD CONSTRAINT branchsubscription__person__branch__key UNIQUE (person, branch);
+
 ALTER TABLE ONLY branchsubscription
     ADD CONSTRAINT branchsubscription_pkey PRIMARY KEY (id);
 
@@ -4147,14 +4454,14 @@ ALTER TABLE ONLY bugactivity
 ALTER TABLE ONLY bugattachment
     ADD CONSTRAINT bugattachment_pkey PRIMARY KEY (id);
 
+ALTER TABLE ONLY bugbranch
+    ADD CONSTRAINT bugbranch_pkey PRIMARY KEY (id);
+
 ALTER TABLE ONLY bugcve
     ADD CONSTRAINT bugcve_bug_cve_uniq UNIQUE (bug, cve);
 
 ALTER TABLE ONLY bugcve
     ADD CONSTRAINT bugcve_pkey PRIMARY KEY (id);
-
-ALTER TABLE ONLY bugexternalref
-    ADD CONSTRAINT bugexternalref_pkey PRIMARY KEY (id);
 
 ALTER TABLE ONLY bugmessage
     ADD CONSTRAINT bugmessage_bug_key UNIQUE (bug, message);
@@ -4198,11 +4505,20 @@ ALTER TABLE ONLY bugtag
 ALTER TABLE ONLY bugtask
     ADD CONSTRAINT bugtask_pkey PRIMARY KEY (id);
 
+ALTER TABLE ONLY bugtrackeralias
+    ADD CONSTRAINT bugtracker__base_url__key UNIQUE (base_url);
+
+ALTER TABLE ONLY bugtrackeralias
+    ADD CONSTRAINT bugtrackeralias_pkey PRIMARY KEY (id);
+
 ALTER TABLE ONLY bugwatch
     ADD CONSTRAINT bugwatch_bugtask_target UNIQUE (id, bug);
 
 ALTER TABLE ONLY bugwatch
     ADD CONSTRAINT bugwatch_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY build
+    ADD CONSTRAINT build_distroarchseries_uniq UNIQUE (distroarchseries, sourcepackagerelease, archive);
 
 ALTER TABLE ONLY build
     ADD CONSTRAINT build_pkey PRIMARY KEY (id);
@@ -4215,21 +4531,6 @@ ALTER TABLE ONLY builder
 
 ALTER TABLE ONLY buildqueue
     ADD CONSTRAINT buildqueue_pkey PRIMARY KEY (id);
-
-ALTER TABLE ONLY calendar
-    ADD CONSTRAINT calendar_pkey PRIMARY KEY (id);
-
-ALTER TABLE ONLY calendarevent
-    ADD CONSTRAINT calendarevent_pkey PRIMARY KEY (id);
-
-ALTER TABLE ONLY calendarevent
-    ADD CONSTRAINT calendarevent_uid_key UNIQUE (uid);
-
-ALTER TABLE ONLY calendarsubscription
-    ADD CONSTRAINT calendarsubscription_pkey PRIMARY KEY (id);
-
-ALTER TABLE ONLY calendarsubscription
-    ADD CONSTRAINT calendarsubscription_subject_key UNIQUE (subject, "object");
 
 ALTER TABLE ONLY revision
     ADD CONSTRAINT changeset_pkey PRIMARY KEY (id);
@@ -4269,6 +4570,9 @@ ALTER TABLE ONLY component
 
 ALTER TABLE ONLY component
     ADD CONSTRAINT component_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY componentselection
+    ADD CONSTRAINT componentselection__distroseries__component__key UNIQUE (distroseries, component);
 
 ALTER TABLE ONLY componentselection
     ADD CONSTRAINT componentselection_pkey PRIMARY KEY (id);
@@ -4338,14 +4642,14 @@ ALTER TABLE distributionsourcepackagecache CLUSTER ON distributionsourcepackagec
 ALTER TABLE ONLY distributionsourcepackagecache
     ADD CONSTRAINT distributionsourcepackagecache_pkey PRIMARY KEY (id);
 
-ALTER TABLE ONLY distroarchrelease
-    ADD CONSTRAINT distroarchrelease_distrorelease_architecturetag_unique UNIQUE (distrorelease, architecturetag);
-
-ALTER TABLE ONLY distroarchrelease
-    ADD CONSTRAINT distroarchrelease_distrorelease_processorfamily_unique UNIQUE (distrorelease, processorfamily);
-
-ALTER TABLE ONLY distroarchrelease
+ALTER TABLE ONLY distroarchseries
     ADD CONSTRAINT distroarchrelease_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY distroarchseries
+    ADD CONSTRAINT distroarchseries__architecturetag__distroseries__key UNIQUE (architecturetag, distroseries);
+
+ALTER TABLE ONLY distroarchseries
+    ADD CONSTRAINT distroarchseries__processorfamily__distroseries__key UNIQUE (processorfamily, distroseries);
 
 ALTER TABLE ONLY distrocomponentuploader
     ADD CONSTRAINT distrocomponentuploader_distro_component_uniq UNIQUE (distribution, component);
@@ -4353,27 +4657,22 @@ ALTER TABLE ONLY distrocomponentuploader
 ALTER TABLE ONLY distrocomponentuploader
     ADD CONSTRAINT distrocomponentuploader_pkey PRIMARY KEY (id);
 
-ALTER TABLE ONLY distrorelease
+ALTER TABLE ONLY distroseries
     ADD CONSTRAINT distrorelease_distribution_key UNIQUE (distribution, name);
 
-ALTER TABLE ONLY distrorelease
+ALTER TABLE ONLY distroseries
     ADD CONSTRAINT distrorelease_distro_release_unique UNIQUE (distribution, id);
 
-ALTER TABLE ONLY distrorelease
+ALTER TABLE ONLY distroseries
     ADD CONSTRAINT distrorelease_pkey PRIMARY KEY (id);
 
-ALTER TABLE ONLY distroreleaselanguage
-    ADD CONSTRAINT distroreleaselanguage_distrorelease_language_uniq UNIQUE (distrorelease, "language");
+ALTER TABLE ONLY distroserieslanguage
+    ADD CONSTRAINT distroreleaselanguage_distrorelease_language_uniq UNIQUE (distroseries, "language");
 
-ALTER TABLE ONLY distroreleaselanguage
+ALTER TABLE ONLY distroserieslanguage
     ADD CONSTRAINT distroreleaselanguage_pkey PRIMARY KEY (id);
 
-ALTER TABLE ONLY distroreleasepackagecache
-    ADD CONSTRAINT distroreleasepackagecache_distrorelease_binarypackagename_uniq UNIQUE (distrorelease, binarypackagename);
-
-ALTER TABLE distroreleasepackagecache CLUSTER ON distroreleasepackagecache_distrorelease_binarypackagename_uniq;
-
-ALTER TABLE ONLY distroreleasepackagecache
+ALTER TABLE ONLY distroseriespackagecache
     ADD CONSTRAINT distroreleasepackagecache_pkey PRIMARY KEY (id);
 
 ALTER TABLE ONLY packageupload
@@ -4394,6 +4693,11 @@ ALTER TABLE ONLY packageuploadsource
 ALTER TABLE ONLY packageuploadsource
     ADD CONSTRAINT distroreleasequeuesource_pkey PRIMARY KEY (id);
 
+ALTER TABLE ONLY distroseriespackagecache
+    ADD CONSTRAINT distroseriespackagecache__binarypackagename_distroseries__key UNIQUE (binarypackagename, distroseries);
+
+ALTER TABLE distroseriespackagecache CLUSTER ON distroseriespackagecache__binarypackagename_distroseries__key;
+
 ALTER TABLE ONLY emailaddress
     ADD CONSTRAINT emailaddress__person__id__key UNIQUE (person, id);
 
@@ -4405,6 +4709,9 @@ ALTER TABLE ONLY entitlement
 
 ALTER TABLE ONLY faq
     ADD CONSTRAINT faq_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY featuredproject
+    ADD CONSTRAINT featuredproject_pkey PRIMARY KEY (id);
 
 ALTER TABLE ONLY fticache
     ADD CONSTRAINT fticache_pkey PRIMARY KEY (id);
@@ -4421,17 +4728,86 @@ ALTER TABLE ONLY gpgkey
 ALTER TABLE ONLY gpgkey
     ADD CONSTRAINT gpgkey_pkey PRIMARY KEY (id);
 
+ALTER TABLE ONLY hwdevice
+    ADD CONSTRAINT hwdevice__bus_vendor_id__bus_product_id__variant__key UNIQUE (bus_vendor_id, bus_product_id, variant);
+
+ALTER TABLE ONLY hwdevice
+    ADD CONSTRAINT hwdevice_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY hwdevicedriverlink
+    ADD CONSTRAINT hwdevicedriverlink_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY hwdevicenamevariant
+    ADD CONSTRAINT hwdevicenamevariant__vendor_name__product_name__device__key UNIQUE (vendor_name, product_name, device);
+
+ALTER TABLE ONLY hwdevicenamevariant
+    ADD CONSTRAINT hwdevicenamevariant_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY hwdriver
+    ADD CONSTRAINT hwdriver__package_name__name__key UNIQUE (package_name, name);
+
+ALTER TABLE ONLY hwdriver
+    ADD CONSTRAINT hwdriver_pkey PRIMARY KEY (id);
+
 ALTER TABLE ONLY hwsubmission
     ADD CONSTRAINT hwsubmission__submission_key__key UNIQUE (submission_key);
 
 ALTER TABLE ONLY hwsubmission
     ADD CONSTRAINT hwsubmission_pkey PRIMARY KEY (id);
 
+ALTER TABLE ONLY hwsubmissiondevice
+    ADD CONSTRAINT hwsubmissiondevice__devicer_driver_link__submission__key UNIQUE (device_driver_link, submission);
+
+ALTER TABLE ONLY hwsubmissiondevice
+    ADD CONSTRAINT hwsubmissiondevice_pkey PRIMARY KEY (id);
+
 ALTER TABLE ONLY hwsystemfingerprint
     ADD CONSTRAINT hwsystemfingerprint__fingerprint__key UNIQUE (fingerprint);
 
 ALTER TABLE ONLY hwsystemfingerprint
     ADD CONSTRAINT hwsystemfingerprint_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY hwtest
+    ADD CONSTRAINT hwtest_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY hwtestanswer
+    ADD CONSTRAINT hwtestanswer_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY hwtestanswerchoice
+    ADD CONSTRAINT hwtestanswerchoice__choice__test__key UNIQUE (choice, test);
+
+ALTER TABLE ONLY hwtestanswerchoice
+    ADD CONSTRAINT hwtestanswerchoice__test__id__key UNIQUE (test, id);
+
+ALTER TABLE ONLY hwtestanswerchoice
+    ADD CONSTRAINT hwtestanswerchoice_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY hwtestanswercount
+    ADD CONSTRAINT hwtestanswercount_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY hwtestanswercountdevice
+    ADD CONSTRAINT hwtestanswercountdevice__answer__device_driver__key UNIQUE (answer, device_driver);
+
+ALTER TABLE ONLY hwtestanswercountdevice
+    ADD CONSTRAINT hwtestanswercountdevice_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY hwtestanswerdevice
+    ADD CONSTRAINT hwtestanswerdevice__answer__device_driver__key UNIQUE (answer, device_driver);
+
+ALTER TABLE ONLY hwtestanswerdevice
+    ADD CONSTRAINT hwtestanswerdevice_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY hwvendorid
+    ADD CONSTRAINT hwvendorid__bus_vendor_id__vendor_name__key UNIQUE (bus, vendor_id_for_bus, vendor_name);
+
+ALTER TABLE ONLY hwvendorid
+    ADD CONSTRAINT hwvendorid_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY hwvendorname
+    ADD CONSTRAINT hwvendorname_name_key UNIQUE (name);
+
+ALTER TABLE ONLY hwvendorname
+    ADD CONSTRAINT hwvendorname_pkey PRIMARY KEY (id);
 
 ALTER TABLE ONLY ircid
     ADD CONSTRAINT ircid_pkey PRIMARY KEY (id);
@@ -4495,6 +4871,9 @@ ALTER TABLE ONLY license
     ADD CONSTRAINT license_pkey PRIMARY KEY (id);
 
 ALTER TABLE ONLY logintoken
+    ADD CONSTRAINT logintoken_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY logintoken
     ADD CONSTRAINT logintoken_token_key UNIQUE (token);
 
 ALTER TABLE ONLY mailinglist
@@ -4554,19 +4933,19 @@ ALTER TABLE ONLY mirror
 ALTER TABLE ONLY mirror
     ADD CONSTRAINT mirror_pkey PRIMARY KEY (id);
 
-ALTER TABLE ONLY mirrorcdimagedistrorelease
-    ADD CONSTRAINT mirrorcdimagedistrorelease__unq UNIQUE (distrorelease, flavour, distribution_mirror);
-
-ALTER TABLE ONLY mirrorcdimagedistrorelease
+ALTER TABLE ONLY mirrorcdimagedistroseries
     ADD CONSTRAINT mirrorcdimagedistrorelease_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY mirrorcdimagedistroseries
+    ADD CONSTRAINT mirrorcdimagedistroseries__unq UNIQUE (distroseries, flavour, distribution_mirror);
 
 ALTER TABLE ONLY mirrorcontent
     ADD CONSTRAINT mirrorcontent_pkey PRIMARY KEY (id);
 
-ALTER TABLE ONLY mirrordistroarchrelease
+ALTER TABLE ONLY mirrordistroarchseries
     ADD CONSTRAINT mirrordistroarchrelease_pkey PRIMARY KEY (id);
 
-ALTER TABLE ONLY mirrordistroreleasesource
+ALTER TABLE ONLY mirrordistroseriessource
     ADD CONSTRAINT mirrordistroreleasesource_pkey PRIMARY KEY (id);
 
 ALTER TABLE ONLY mirrorproberecord
@@ -4609,10 +4988,7 @@ ALTER TABLE ONLY packaging
     ADD CONSTRAINT packaging_pkey PRIMARY KEY (id);
 
 ALTER TABLE ONLY packaging
-    ADD CONSTRAINT packaging_uniqueness UNIQUE (distrorelease, sourcepackagename, productseries);
-
-ALTER TABLE ONLY person
-    ADD CONSTRAINT person_calendar_key UNIQUE (calendar);
+    ADD CONSTRAINT packaging_uniqueness UNIQUE (distroseries, sourcepackagename, productseries);
 
 ALTER TABLE ONLY person
     ADD CONSTRAINT person_openid_identifier_key UNIQUE (openid_identifier);
@@ -4628,6 +5004,12 @@ ALTER TABLE ONLY personlanguage
 ALTER TABLE ONLY personlanguage
     ADD CONSTRAINT personlanguage_pkey PRIMARY KEY (id);
 
+ALTER TABLE ONLY personlocation
+    ADD CONSTRAINT personlocation_person_key UNIQUE (person);
+
+ALTER TABLE ONLY personlocation
+    ADD CONSTRAINT personlocation_pkey PRIMARY KEY (id);
+
 ALTER TABLE ONLY pillarname
     ADD CONSTRAINT pillarname_name_key UNIQUE (name);
 
@@ -4637,7 +5019,7 @@ ALTER TABLE ONLY pillarname
 ALTER TABLE pillarname CLUSTER ON pillarname_pkey;
 
 ALTER TABLE ONLY pocketchroot
-    ADD CONSTRAINT pocketchroot_distroarchrelease_key UNIQUE (distroarchrelease, pocket);
+    ADD CONSTRAINT pocketchroot_distroarchrelease_key UNIQUE (distroarchseries, pocket);
 
 ALTER TABLE ONLY pocketchroot
     ADD CONSTRAINT pocketchroot_pkey PRIMARY KEY (id);
@@ -4677,24 +5059,6 @@ ALTER TABLE ONLY polloption
 ALTER TABLE ONLY pomsgid
     ADD CONSTRAINT pomsgid_pkey PRIMARY KEY (id);
 
-ALTER TABLE ONLY pomsgidsighting
-    ADD CONSTRAINT pomsgidsighting_pkey PRIMARY KEY (id);
-
-ALTER TABLE ONLY pomsgset
-    ADD CONSTRAINT pomsgset__potmsgset__pofile__key UNIQUE (potmsgset, pofile);
-
-ALTER TABLE ONLY pomsgset
-    ADD CONSTRAINT pomsgset_pkey PRIMARY KEY (id);
-
-ALTER TABLE ONLY posubmission
-    ADD CONSTRAINT posubmission__pomsgset__pluralform__id__key UNIQUE (pomsgset, pluralform, id);
-
-ALTER TABLE ONLY posubmission
-    ADD CONSTRAINT posubmission__potranslation__pomsgset__pluralform__key UNIQUE (potranslation, pomsgset, pluralform);
-
-ALTER TABLE ONLY posubmission
-    ADD CONSTRAINT posubmission_pkey PRIMARY KEY (id);
-
 ALTER TABLE ONLY posubscription
     ADD CONSTRAINT posubscription_person_key UNIQUE (person, potemplate, "language");
 
@@ -4702,22 +5066,7 @@ ALTER TABLE ONLY posubscription
     ADD CONSTRAINT posubscription_pkey PRIMARY KEY (id);
 
 ALTER TABLE ONLY potemplate
-    ADD CONSTRAINT potemplate_distrorelease_key UNIQUE (distrorelease, sourcepackagename, potemplatename);
-
-ALTER TABLE ONLY potemplatename
-    ADD CONSTRAINT potemplate_name_key UNIQUE (name);
-
-ALTER TABLE ONLY potemplate
     ADD CONSTRAINT potemplate_pkey PRIMARY KEY (id);
-
-ALTER TABLE ONLY potemplate
-    ADD CONSTRAINT potemplate_productseries_ptname_uniq UNIQUE (productseries, potemplatename);
-
-ALTER TABLE ONLY potemplatename
-    ADD CONSTRAINT potemplate_translationdomain_key UNIQUE (translationdomain);
-
-ALTER TABLE ONLY potemplatename
-    ADD CONSTRAINT potemplatename_pkey PRIMARY KEY (id);
 
 ALTER TABLE ONLY potmsgset
     ADD CONSTRAINT potmsgset_pkey PRIMARY KEY (id);
@@ -4738,9 +5087,6 @@ ALTER TABLE ONLY processorfamily
     ADD CONSTRAINT processorfamily_pkey PRIMARY KEY (id);
 
 ALTER TABLE ONLY product
-    ADD CONSTRAINT product_calendar_key UNIQUE (calendar);
-
-ALTER TABLE ONLY product
     ADD CONSTRAINT product_name_key UNIQUE (name);
 
 ALTER TABLE ONLY product
@@ -4754,6 +5100,12 @@ ALTER TABLE ONLY productbounty
 
 ALTER TABLE ONLY productcvsmodule
     ADD CONSTRAINT productcvsmodule_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY productlicense
+    ADD CONSTRAINT productlicense__product__license__key UNIQUE (product, license);
+
+ALTER TABLE ONLY productlicense
+    ADD CONSTRAINT productlicense_pkey PRIMARY KEY (id);
 
 ALTER TABLE ONLY productrelease
     ADD CONSTRAINT productrelease_pkey PRIMARY KEY (id);
@@ -4784,9 +5136,6 @@ ALTER TABLE ONLY productseries
 
 ALTER TABLE ONLY productsvnmodule
     ADD CONSTRAINT productsvnmodule_pkey PRIMARY KEY (id);
-
-ALTER TABLE ONLY project
-    ADD CONSTRAINT project_calendar_key UNIQUE (calendar);
 
 ALTER TABLE ONLY project
     ADD CONSTRAINT project_name_key UNIQUE (name);
@@ -4839,6 +5188,9 @@ ALTER TABLE ONLY revisionproperty
 ALTER TABLE ONLY revisionproperty
     ADD CONSTRAINT revisionproperty_pkey PRIMARY KEY (id);
 
+ALTER TABLE ONLY scriptactivity
+    ADD CONSTRAINT scriptactivity_pkey PRIMARY KEY (id);
+
 ALTER TABLE ONLY section
     ADD CONSTRAINT section_name_key UNIQUE (name);
 
@@ -4871,6 +5223,9 @@ ALTER TABLE ONLY shippingrun
 
 ALTER TABLE ONLY shockandawe
     ADD CONSTRAINT shockandawe_pkey PRIMARY KEY (id);
+
+ALTER TABLE ONLY signedcodeofconduct
+    ADD CONSTRAINT signedcodeofconduct_pkey PRIMARY KEY (id);
 
 ALTER TABLE ONLY mentoringoffer
     ADD CONSTRAINT single_offer_per_bug_key UNIQUE (bug, "owner");
@@ -4968,6 +5323,9 @@ ALTER TABLE ONLY standardshipitrequest
 ALTER TABLE ONLY standardshipitrequest
     ADD CONSTRAINT standardshipitrequest_pkey PRIMARY KEY (id);
 
+ALTER TABLE ONLY structuralsubscription
+    ADD CONSTRAINT structuralsubscription_pkey PRIMARY KEY (id);
+
 ALTER TABLE ONLY answercontact
     ADD CONSTRAINT supportcontact__distribution__sourcepackagename__person__key UNIQUE (distribution, sourcepackagename, person);
 
@@ -5028,6 +5386,9 @@ ALTER TABLE ONLY translationgroup
 ALTER TABLE ONLY translationimportqueueentry
     ADD CONSTRAINT translationimportqueueentry_pkey PRIMARY KEY (id);
 
+ALTER TABLE ONLY translationmessage
+    ADD CONSTRAINT translationmessage_pkey PRIMARY KEY (id);
+
 ALTER TABLE ONLY translator
     ADD CONSTRAINT translator_pkey PRIMARY KEY (id);
 
@@ -5053,6 +5414,14 @@ ALTER TABLE ONLY wikiname
 
 ALTER TABLE ONLY wikiname
     ADD CONSTRAINT wikiname_wikiname_key UNIQUE (wikiname, wiki);
+
+CREATE INDEX announcement__distribution__active__idx ON announcement USING btree (distribution, active) WHERE (distribution IS NOT NULL);
+
+CREATE INDEX announcement__product__active__idx ON announcement USING btree (product, active) WHERE (product IS NOT NULL);
+
+CREATE INDEX announcement__project__active__idx ON announcement USING btree (project, active) WHERE (project IS NOT NULL);
+
+CREATE INDEX announcement__registrant__idx ON announcement USING btree (registrant);
 
 CREATE UNIQUE INDEX answercontact__distribution__person__key ON answercontact USING btree (distribution, person) WHERE (sourcepackagename IS NULL);
 
@@ -5082,9 +5451,13 @@ CREATE INDEX branch__date_created__idx ON branch USING btree (date_created);
 
 CREATE INDEX branch__last_scanned__owner__idx ON branch USING btree (last_scanned, "owner") WHERE (last_scanned IS NOT NULL);
 
+CREATE INDEX branch__next_mirror_time__idx ON branch USING btree (next_mirror_time) WHERE (next_mirror_time IS NOT NULL);
+
 CREATE INDEX branch__private__idx ON branch USING btree (private);
 
 CREATE INDEX branch__product__id__idx ON branch USING btree (product, id);
+
+CREATE INDEX branch__reviewer__idx ON branch USING btree (reviewer);
 
 CREATE INDEX branch_author_idx ON branch USING btree (author);
 
@@ -5098,13 +5471,21 @@ CREATE INDEX branchmergeproposal__dependent_branch__idx ON branchmergeproposal U
 
 CREATE INDEX branchmergeproposal__merge_reporter__idx ON branchmergeproposal USING btree (merge_reporter) WHERE (merge_reporter IS NOT NULL);
 
+CREATE INDEX branchmergeproposal__merger__idx ON branchmergeproposal USING btree (merger);
+
+CREATE INDEX branchmergeproposal__queuer__idx ON branchmergeproposal USING btree (queuer);
+
+CREATE INDEX branchmergeproposal__reviewer__idx ON branchmergeproposal USING btree (reviewer);
+
 CREATE INDEX branchmergeproposal__source_branch__idx ON branchmergeproposal USING btree (source_branch);
 
 CREATE INDEX branchmergeproposal__target_branch__idx ON branchmergeproposal USING btree (target_branch);
 
-CREATE INDEX branchsubscription__branch__idx ON branchsubscription USING btree (branch);
+CREATE INDEX branchmergerobot__owner__idx ON branchmergerobot USING btree ("owner");
 
-CREATE INDEX branchsubscription__person__idx ON branchsubscription USING btree (person);
+CREATE INDEX branchmergerobot__registrant__idx ON branchmergerobot USING btree (registrant);
+
+CREATE INDEX branchsubscription__branch__idx ON branchsubscription USING btree (branch);
 
 CREATE INDEX branchvisibilitypolicy__product__idx ON branchvisibilitypolicy USING btree (product) WHERE (product IS NOT NULL);
 
@@ -5140,11 +5521,9 @@ CREATE INDEX bugattachment_libraryfile_idx ON bugattachment USING btree (library
 
 CREATE INDEX bugattachment_message_idx ON bugattachment USING btree (message);
 
+CREATE INDEX bugbranch__registrant__idx ON bugbranch USING btree (registrant);
+
 CREATE INDEX bugcve_cve_index ON bugcve USING btree (cve);
-
-CREATE INDEX bugexternalref_bug_idx ON bugexternalref USING btree (bug);
-
-CREATE INDEX bugexternalref_datecreated_idx ON bugexternalref USING btree (datecreated);
 
 CREATE INDEX bugmessage__bugwatch__idx ON bugmessage USING btree (bugwatch);
 
@@ -5160,6 +5539,8 @@ CREATE INDEX bugnomination__owner__idx ON bugnomination USING btree ("owner");
 
 CREATE INDEX bugnotification__date_emailed__idx ON bugnotification USING btree (date_emailed);
 
+CREATE INDEX bugsubscription__subscribed_by__idx ON bugsubscription USING btree (subscribed_by);
+
 CREATE INDEX bugsubscription_bug_idx ON bugsubscription USING btree (bug);
 
 ALTER TABLE bugsubscription CLUSTER ON bugsubscription_bug_idx;
@@ -5168,45 +5549,45 @@ CREATE INDEX bugsubscription_person_idx ON bugsubscription USING btree (person);
 
 CREATE INDEX bugtag__bug__idx ON bugtag USING btree (bug);
 
+CREATE INDEX bugtask__assignee__idx ON bugtask USING btree (assignee);
+
+CREATE INDEX bugtask__binarypackagename__idx ON bugtask USING btree (binarypackagename) WHERE (binarypackagename IS NOT NULL);
+
+CREATE INDEX bugtask__bug__idx ON bugtask USING btree (bug);
+
 CREATE UNIQUE INDEX bugtask__date_closed__id__idx ON bugtask USING btree (date_closed, id) WHERE (status = 30);
 
 CREATE INDEX bugtask__date_incomplete__idx ON bugtask USING btree (date_incomplete) WHERE (date_incomplete IS NOT NULL);
 
+CREATE INDEX bugtask__datecreated__idx ON bugtask USING btree (datecreated);
+
+CREATE INDEX bugtask__distribution__sourcepackagename__idx ON bugtask USING btree (distribution, sourcepackagename);
+
+ALTER TABLE bugtask CLUSTER ON bugtask__distribution__sourcepackagename__idx;
+
+CREATE INDEX bugtask__distroseries__sourcepackagename__idx ON bugtask USING btree (distroseries, sourcepackagename);
+
+CREATE INDEX bugtask__milestone__idx ON bugtask USING btree (milestone);
+
+CREATE INDEX bugtask__owner__idx ON bugtask USING btree ("owner");
+
+CREATE UNIQUE INDEX bugtask__product__bug__key ON bugtask USING btree (product, bug) WHERE (product IS NOT NULL);
+
 CREATE INDEX bugtask__productseries__idx ON bugtask USING btree (productseries) WHERE (productseries IS NOT NULL);
 
-CREATE INDEX bugtask_assignee_idx ON bugtask USING btree (assignee);
+CREATE INDEX bugtask__sourcepackagename__idx ON bugtask USING btree (sourcepackagename) WHERE (sourcepackagename IS NOT NULL);
 
-CREATE INDEX bugtask_binarypackagename_idx ON bugtask USING btree (binarypackagename);
+CREATE INDEX bugtask__status__idx ON bugtask USING btree (status);
 
-CREATE INDEX bugtask_bug_idx ON bugtask USING btree (bug);
-
-CREATE INDEX bugtask_datecreated_idx ON bugtask USING btree (datecreated);
-
-CREATE UNIQUE INDEX bugtask_distinct_sourcepackage_assignment ON bugtask USING btree (bug, (COALESCE(sourcepackagename, -1)), (COALESCE(distrorelease, -1)), (COALESCE(distribution, -1))) WHERE ((product IS NULL) AND (productseries IS NULL));
-
-CREATE INDEX bugtask_distribution_and_sourcepackagename_idx ON bugtask USING btree (distribution, sourcepackagename);
-
-ALTER TABLE bugtask CLUSTER ON bugtask_distribution_and_sourcepackagename_idx;
-
-CREATE INDEX bugtask_distribution_idx ON bugtask USING btree (distribution);
-
-CREATE INDEX bugtask_distrorelease_and_sourcepackagename_idx ON bugtask USING btree (distrorelease, sourcepackagename);
-
-CREATE INDEX bugtask_distrorelease_idx ON bugtask USING btree (distrorelease);
+CREATE UNIQUE INDEX bugtask_distinct_sourcepackage_assignment ON bugtask USING btree (bug, (COALESCE(sourcepackagename, -1)), (COALESCE(distroseries, -1)), (COALESCE(distribution, -1))) WHERE ((product IS NULL) AND (productseries IS NULL));
 
 CREATE INDEX bugtask_fti ON bugtask USING gist (fti ts2.gist_tsvector_ops);
-
-CREATE INDEX bugtask_milestone_idx ON bugtask USING btree (milestone);
-
-CREATE INDEX bugtask_owner_idx ON bugtask USING btree ("owner");
-
-CREATE UNIQUE INDEX bugtask_product_key ON bugtask USING btree (product, bug) WHERE (product IS NOT NULL);
-
-CREATE INDEX bugtask_sourcepackagename_idx ON bugtask USING btree (sourcepackagename);
 
 CREATE UNIQUE INDEX bugtracker_name_key ON bugtracker USING btree (name);
 
 CREATE INDEX bugtracker_owner_idx ON bugtracker USING btree ("owner");
+
+CREATE INDEX bugtrackeralias__bugtracker__idx ON bugtrackeralias USING btree (bugtracker);
 
 CREATE INDEX bugwatch_bug_idx ON bugwatch USING btree (bug);
 
@@ -5218,6 +5599,10 @@ CREATE INDEX bugwatch_owner_idx ON bugwatch USING btree ("owner");
 
 CREATE INDEX build__archive__idx ON build USING btree (archive);
 
+CREATE INDEX build__distroarchseries__buildstate__idx ON build USING btree (distroarchseries, buildstate);
+
+CREATE INDEX build__distroarchseries__datebuilt__idx ON build USING btree (distroarchseries, datebuilt);
+
 CREATE INDEX build_builder_and_buildstate_idx ON build USING btree (builder, buildstate);
 
 CREATE INDEX build_buildlog_idx ON build USING btree (buildlog) WHERE (buildlog IS NOT NULL);
@@ -5227,10 +5612,6 @@ CREATE INDEX build_buildstate_idx ON build USING btree (buildstate);
 CREATE INDEX build_datebuilt_idx ON build USING btree (datebuilt);
 
 CREATE INDEX build_datecreated_idx ON build USING btree (datecreated);
-
-CREATE INDEX build_distroarchrelease_and_buildstate_idx ON build USING btree (distroarchrelease, buildstate);
-
-CREATE INDEX build_distroarchrelease_and_datebuilt_idx ON build USING btree (distroarchrelease, datebuilt);
 
 CREATE INDEX build_sourcepackagerelease_idx ON build USING btree (sourcepackagerelease);
 
@@ -5272,8 +5653,6 @@ CREATE INDEX codeimportresult__machine__date_created__idx ON codeimportresult US
 
 CREATE INDEX codeimportresult__requesting_user__idx ON codeimportresult USING btree (requesting_user);
 
-CREATE UNIQUE INDEX componentselection__distrorelease__component__uniq ON componentselection USING btree (distrorelease, component);
-
 CREATE INDEX cve_datecreated_idx ON cve USING btree (datecreated);
 
 CREATE INDEX cve_datemodified_idx ON cve USING btree (datemodified);
@@ -5298,19 +5677,25 @@ CREATE INDEX distribution_translationgroup_idx ON distribution USING btree (tran
 
 CREATE INDEX distributionbounty_distribution_idx ON distributionbounty USING btree (distribution);
 
+CREATE INDEX distributionmirror__country__status__idx ON distributionmirror USING btree (country, status);
+
+CREATE INDEX distributionmirror__status__idx ON distributionmirror USING btree (status);
+
 CREATE INDEX distributionsourcepackagecache_fti ON distributionsourcepackagecache USING gist (fti ts2.gist_tsvector_ops);
 
-CREATE INDEX distroarchrelease_architecturetag_idx ON distroarchrelease USING btree (architecturetag);
+CREATE INDEX distroarchseries__distroseries__idx ON distroarchseries USING btree (distroseries);
 
-CREATE INDEX distroarchrelease_distrorelease_idx ON distroarchrelease USING btree (distrorelease);
-
-CREATE INDEX distroarchrelease_processorfamily_idx ON distroarchrelease USING btree (processorfamily);
+CREATE INDEX distroarchseries__owner__idx ON distroarchseries USING btree ("owner");
 
 CREATE INDEX distrocomponentuploader_uploader_idx ON distrocomponentuploader USING btree (uploader);
 
-CREATE INDEX distroreleasepackagecache_fti ON distroreleasepackagecache USING gin (fti ts2.gin_tsvector_ops);
+CREATE INDEX distroseries__driver__idx ON distroseries USING btree (driver) WHERE (driver IS NOT NULL);
 
-CREATE INDEX distroreleasepackagecache_fti_gist ON distroreleasepackagecache USING gist (fti ts2.gist_tsvector_ops);
+CREATE INDEX distroseries__owner__idx ON distroseries USING btree ("owner");
+
+CREATE INDEX distroseriespackagecache__distroseries__idx ON distroseriespackagecache USING btree (distroseries);
+
+CREATE INDEX distroseriespackagecache_fti ON distroseriespackagecache USING gist (fti ts2.gist_tsvector_ops);
 
 CREATE UNIQUE INDEX emailaddress_person_key ON emailaddress USING btree (person, (NULLIF((status = 4), false)));
 
@@ -5332,13 +5717,67 @@ CREATE INDEX faq__product__idx ON faq USING btree (product) WHERE (product IS NO
 
 CREATE INDEX faq_fti ON faq USING gist (fti ts2.gist_tsvector_ops);
 
+CREATE INDEX featuredproject__pillar_name__idx ON featuredproject USING btree (pillar_name);
+
+CREATE INDEX hwdevice__bus_product_id__idx ON hwdevice USING btree (bus_product_id);
+
+CREATE INDEX hwdevice__name__idx ON hwdevice USING btree (name);
+
+CREATE UNIQUE INDEX hwdevicedriverlink__device__driver__key ON hwdevicedriverlink USING btree (device, driver) WHERE (driver IS NOT NULL);
+
+CREATE INDEX hwdevicedriverlink__device__idx ON hwdevicedriverlink USING btree (device);
+
+CREATE UNIQUE INDEX hwdevicedriverlink__device__key ON hwdevicedriverlink USING btree (device) WHERE (driver IS NULL);
+
+CREATE INDEX hwdevicedriverlink__driver__idx ON hwdevicedriverlink USING btree (driver);
+
+CREATE INDEX hwdevicenamevariant__device__idx ON hwdevicenamevariant USING btree (device);
+
+CREATE INDEX hwdevicenamevariant__product_name__idx ON hwdevicenamevariant USING btree (product_name);
+
+CREATE INDEX hwdriver__name__idx ON hwdriver USING btree (name);
+
 CREATE INDEX hwsubmission__owner__idx ON hwsubmission USING btree ("owner");
+
+CREATE INDEX hwsubmission__raw_emailaddress__idx ON hwsubmission USING btree (raw_emailaddress);
 
 CREATE INDEX hwsubmission__raw_submission__idx ON hwsubmission USING btree (raw_submission);
 
 CREATE INDEX hwsubmission__status__idx ON hwsubmission USING btree (status);
 
 CREATE INDEX hwsubmission__system_fingerprint__idx ON hwsubmission USING btree (system_fingerprint);
+
+CREATE INDEX hwsubmissiondevice__parent__idx ON hwsubmissiondevice USING btree (parent) WHERE (parent IS NOT NULL);
+
+CREATE INDEX hwsubmissiondevice__submission__idx ON hwsubmissiondevice USING btree (submission);
+
+CREATE UNIQUE INDEX hwtest__name__version__key ON hwtest USING btree (name, version) WHERE (namespace IS NULL);
+
+CREATE UNIQUE INDEX hwtest__namespace__name__version__key ON hwtest USING btree (namespace, name, version) WHERE (namespace IS NOT NULL);
+
+CREATE INDEX hwtestanswer__choice__idx ON hwtestanswer USING btree (choice);
+
+CREATE INDEX hwtestanswer__submission__idx ON hwtestanswer USING btree (submission);
+
+CREATE INDEX hwtestanswer__test__idx ON hwtestanswer USING btree (test);
+
+CREATE INDEX hwtestanswerchoice__test__idx ON hwtestanswerchoice USING btree (test);
+
+CREATE INDEX hwtestanswercount__choice__idx ON hwtestanswercount USING btree (choice);
+
+CREATE INDEX hwtestanswercount__distroarchrelease__idx ON hwtestanswercount USING btree (distroarchseries) WHERE (distroarchseries IS NOT NULL);
+
+CREATE INDEX hwtestanswercount__test__idx ON hwtestanswercount USING btree (test);
+
+CREATE INDEX hwtestanswercountdevice__device_driver__idx ON hwtestanswercountdevice USING btree (device_driver);
+
+CREATE INDEX hwtestanswerdevice__device_driver__idx ON hwtestanswerdevice USING btree (device_driver);
+
+CREATE INDEX hwvendorid__vendor_id_for_bus__idx ON hwvendorid USING btree (vendor_id_for_bus);
+
+CREATE INDEX hwvendorid__vendorname__idx ON hwvendorid USING btree (vendor_name);
+
+CREATE INDEX hwvendorname__name__idx ON hwdriver USING btree (name);
 
 CREATE UNIQUE INDEX idx_emailaddress_email ON emailaddress USING btree (lower(email));
 
@@ -5436,9 +5875,9 @@ CREATE INDEX messagechunk_blob_idx ON messagechunk USING btree (blob) WHERE (blo
 
 CREATE INDEX messagechunk_fti ON messagechunk USING gist (fti ts2.gist_tsvector_ops);
 
-CREATE UNIQUE INDEX mirrordistroarchrelease_uniq ON mirrordistroarchrelease USING btree (distribution_mirror, distro_arch_release, component, pocket);
+CREATE UNIQUE INDEX mirrordistroarchseries_uniq ON mirrordistroarchseries USING btree (distribution_mirror, distroarchseries, component, pocket);
 
-CREATE UNIQUE INDEX mirrordistroreleasesource_uniq ON mirrordistroreleasesource USING btree (distribution_mirror, distrorelease, component, pocket);
+CREATE UNIQUE INDEX mirrordistroseriessource_uniq ON mirrordistroseriessource USING btree (distribution_mirror, distroseries, component, pocket);
 
 CREATE INDEX mirrorproberecord__date_created__idx ON mirrorproberecord USING btree (date_created);
 
@@ -5468,9 +5907,9 @@ CREATE INDEX packagebugcontact_bugcontact_idx ON packagebugcontact USING btree (
 
 CREATE INDEX packageupload__changesfile__idx ON packageupload USING btree (changesfile);
 
-CREATE INDEX packageupload__distrorelease__key ON packageupload USING btree (distrorelease);
+CREATE INDEX packageupload__distroseries__key ON packageupload USING btree (distroseries);
 
-CREATE INDEX packageupload__distrorelease__status__idx ON packageupload USING btree (distrorelease, status);
+CREATE INDEX packageupload__distroseries__status__idx ON packageupload USING btree (distroseries, status);
 
 CREATE INDEX packageupload__signing_key__idx ON packageupload USING btree (signing_key);
 
@@ -5482,7 +5921,7 @@ CREATE INDEX packageuploadcustom__packageupload__idx ON packageuploadcustom USIN
 
 CREATE INDEX packageuploadsource__sourcepackagerelease__idx ON packageuploadsource USING btree (sourcepackagerelease);
 
-CREATE INDEX packaging_distrorelease_and_sourcepackagename_idx ON packaging USING btree (distrorelease, sourcepackagename);
+CREATE INDEX packaging__distroseries__sourcepackagename__idx ON packaging USING btree (distroseries, sourcepackagename);
 
 CREATE INDEX packaging_sourcepackagename_idx ON packaging USING btree (sourcepackagename);
 
@@ -5514,6 +5953,8 @@ CREATE INDEX pocomment_person_idx ON pocomment USING btree (person);
 
 CREATE UNIQUE INDEX poexportrequest_duplicate_key ON poexportrequest USING btree (potemplate, person, format, (COALESCE(pofile, -1)));
 
+CREATE UNIQUE INDEX pofile__potemplate__path__key ON pofile USING btree (potemplate, path);
+
 CREATE UNIQUE INDEX pofile__unreviewed_count__id__key ON pofile USING btree (unreviewed_count, id);
 
 CREATE INDEX pofile_datecreated_idx ON pofile USING btree (datecreated);
@@ -5526,47 +5967,27 @@ CREATE INDEX pofile_lasttranslator_idx ON pofile USING btree (lasttranslator);
 
 CREATE INDEX pofile_owner_idx ON pofile USING btree ("owner");
 
-CREATE INDEX pofile_potemplate_idx ON pofile USING btree (potemplate);
-
 CREATE UNIQUE INDEX pofile_template_and_language_idx ON pofile USING btree (potemplate, "language", (COALESCE(variant, ''::text)));
+
+ALTER TABLE pofile CLUSTER ON pofile_template_and_language_idx;
 
 CREATE INDEX pofile_variant_idx ON pofile USING btree (variant);
 
 CREATE INDEX pofiletranslator__date_last_touched__idx ON pofiletranslator USING btree (date_last_touched);
 
+CREATE INDEX pofiletranslator__latest_message__idx ON pofiletranslator USING btree (latest_message);
+
 CREATE INDEX polloption_poll_idx ON polloption USING btree (poll);
 
 CREATE UNIQUE INDEX pomsgid_msgid_key ON pomsgid USING btree (sha1(msgid));
 
-CREATE INDEX pomsgidsighting_inlastrevision_idx ON pomsgidsighting USING btree (inlastrevision);
-
-CREATE INDEX pomsgidsighting_pluralform_idx ON pomsgidsighting USING btree (pluralform);
-
-CREATE INDEX pomsgidsighting_pomsgid_idx ON pomsgidsighting USING btree (pomsgid);
-
-CREATE INDEX pomsgidsighting_pomsgset_idx ON pomsgidsighting USING btree (potmsgset);
-
-CREATE UNIQUE INDEX pomsgidsighting_potmsgset_pluralform_uniq ON pomsgidsighting USING btree (potmsgset, pluralform) WHERE (inlastrevision = true);
-
-CREATE INDEX pomsgset__language__idx ON pomsgset USING btree ("language");
-
-CREATE INDEX pomsgset__pofile__sequence__idx ON pomsgset USING btree (pofile, "sequence");
-
-CREATE INDEX pomsgset__reviewer__idx ON pomsgset USING btree (reviewer);
-
-CREATE INDEX pomsgset__sequence__idx ON pomsgset USING btree ("sequence");
-
-CREATE INDEX posubmission__person__idx ON posubmission USING btree (person);
-
-CREATE INDEX posubmission__pomsgset__pluralform__active__idx ON posubmission USING btree (pomsgset, pluralform, active);
-
-CREATE UNIQUE INDEX posubmission__pomsgset__pluralform__active__unique_idx ON posubmission USING btree (pomsgset, pluralform) WHERE (active IS TRUE);
-
-CREATE INDEX posubmission__pomsgset__pluralform__published__idx ON posubmission USING btree (pomsgset, pluralform, published);
-
-CREATE UNIQUE INDEX posubmission__pomsgset__pluralform__published__unique_idx ON posubmission USING btree (pomsgset, pluralform) WHERE (published IS TRUE);
-
 CREATE INDEX potemplate__date_last_updated__idx ON potemplate USING btree (date_last_updated);
+
+CREATE UNIQUE INDEX potemplate__distroseries__sourcepackagename__name__key ON potemplate USING btree (distroseries, sourcepackagename, name);
+
+CREATE INDEX potemplate__name__idx ON potemplate USING btree (name);
+
+CREATE UNIQUE INDEX potemplate__productseries__name__key ON potemplate USING btree (productseries, name);
 
 CREATE INDEX potemplate__source_file__idx ON potemplate USING btree (source_file) WHERE (source_file IS NOT NULL);
 
@@ -5574,19 +5995,13 @@ CREATE INDEX potemplate_languagepack_idx ON potemplate USING btree (languagepack
 
 CREATE INDEX potemplate_owner_idx ON potemplate USING btree ("owner");
 
-CREATE INDEX potemplate_potemplatename_idx ON potemplate USING btree (potemplatename);
+CREATE UNIQUE INDEX potmsgset__potemplate__context__primemsgid__key ON potmsgset USING btree (potemplate, context, msgid_singular) WHERE (context IS NOT NULL);
 
-CREATE UNIQUE INDEX potmsgset__alternative_msgid__potemplate__key ON potmsgset USING btree (alternative_msgid, potemplate) WHERE (alternative_msgid IS NOT NULL);
-
-CREATE UNIQUE INDEX potmsgset__potemplate__context__primemsgid__key ON potmsgset USING btree (potemplate, context, primemsgid) WHERE (context IS NOT NULL);
-
-CREATE UNIQUE INDEX potmsgset__potemplate__no_context__primemsgid__key ON potmsgset USING btree (potemplate, primemsgid) WHERE (context IS NULL);
-
-CREATE INDEX potmsgset_alternative_msgid_idx ON potmsgset USING btree (alternative_msgid);
+CREATE UNIQUE INDEX potmsgset__potemplate__no_context__primemsgid__key ON potmsgset USING btree (potemplate, msgid_singular) WHERE (context IS NULL);
 
 CREATE INDEX potmsgset_potemplate_and_sequence_idx ON potmsgset USING btree (potemplate, "sequence");
 
-CREATE INDEX potmsgset_primemsgid_idx ON potmsgset USING btree (primemsgid);
+CREATE INDEX potmsgset_primemsgid_idx ON potmsgset USING btree (msgid_singular);
 
 CREATE INDEX potmsgset_sequence_idx ON potmsgset USING btree ("sequence");
 
@@ -5616,9 +6031,13 @@ CREATE INDEX product_project_idx ON product USING btree (project);
 
 CREATE INDEX product_translationgroup_idx ON product USING btree (translationgroup);
 
+CREATE INDEX productlicense__license__idx ON productlicense USING btree (license);
+
 CREATE INDEX productrelease_datecreated_idx ON productrelease USING btree (datecreated);
 
 CREATE INDEX productrelease_owner_idx ON productrelease USING btree ("owner");
+
+CREATE INDEX productreleasefile__signature__idx ON productreleasefile USING btree (signature) WHERE (signature IS NOT NULL);
 
 CREATE INDEX productreleasefile__uploader__idx ON productreleasefile USING btree (uploader);
 
@@ -5680,11 +6099,15 @@ CREATE INDEX scriptactivity__name__date_started__idx ON scriptactivity USING btr
 
 CREATE INDEX securebinarypackagepublishinghistory__archive__status__idx ON securebinarypackagepublishinghistory USING btree (archive, status);
 
+CREATE INDEX securebinarypackagepublishinghistory__distroarchseries__idx ON securebinarypackagepublishinghistory USING btree (distroarchseries);
+
+CREATE INDEX securebinarypackagepublishinghistory__removed_by__idx ON securebinarypackagepublishinghistory USING btree (removed_by) WHERE (removed_by IS NOT NULL);
+
+CREATE INDEX securebinarypackagepublishinghistory__supersededby__idx ON securebinarypackagepublishinghistory USING btree (supersededby);
+
 CREATE INDEX securebinarypackagepublishinghistory_binarypackagerelease_idx ON securebinarypackagepublishinghistory USING btree (binarypackagerelease);
 
 CREATE INDEX securebinarypackagepublishinghistory_component_idx ON securebinarypackagepublishinghistory USING btree (component);
-
-CREATE INDEX securebinarypackagepublishinghistory_distroarchrelease_idx ON securebinarypackagepublishinghistory USING btree (distroarchrelease);
 
 CREATE INDEX securebinarypackagepublishinghistory_pocket_idx ON securebinarypackagepublishinghistory USING btree (pocket);
 
@@ -5694,9 +6117,11 @@ CREATE INDEX securebinarypackagepublishinghistory_status_idx ON securebinarypack
 
 CREATE INDEX securesourcepackagepublishinghistory__archive__status__idx ON securesourcepackagepublishinghistory USING btree (archive, status);
 
-CREATE INDEX securesourcepackagepublishinghistory_component_idx ON securesourcepackagepublishinghistory USING btree (component);
+CREATE INDEX securesourcepackagepublishinghistory__distroseries__idx ON securesourcepackagepublishinghistory USING btree (distroseries);
 
-CREATE INDEX securesourcepackagepublishinghistory_distrorelease_idx ON securesourcepackagepublishinghistory USING btree (distrorelease);
+CREATE INDEX securesourcepackagepublishinghistory__removed_by__idx ON securesourcepackagepublishinghistory USING btree (removed_by) WHERE (removed_by IS NOT NULL);
+
+CREATE INDEX securesourcepackagepublishinghistory_component_idx ON securesourcepackagepublishinghistory USING btree (component);
 
 CREATE INDEX securesourcepackagepublishinghistory_pocket_idx ON securesourcepackagepublishinghistory USING btree (pocket);
 
@@ -5768,6 +6193,8 @@ CREATE INDEX specification_fti ON specification USING gist (fti ts2.gist_tsvecto
 
 CREATE INDEX specification_owner_idx ON specification USING btree ("owner");
 
+CREATE INDEX specificationbranch__registrant__idx ON specificationbranch USING btree (registrant);
+
 CREATE INDEX specificationbranch__specification__idx ON specificationbranch USING btree (specification);
 
 CREATE INDEX specificationbug_bug_idx ON specificationbug USING btree (bug);
@@ -5808,15 +6235,63 @@ CREATE INDEX sprintspecification__registrant__idx ON sprintspecification USING b
 
 CREATE INDEX sshkey_person_key ON sshkey USING btree (person);
 
+CREATE INDEX structuralsubscription__blueprint_notification_level__idx ON structuralsubscription USING btree (blueprint_notification_level);
+
+CREATE INDEX structuralsubscription__bug_notification_level__idx ON structuralsubscription USING btree (bug_notification_level);
+
+CREATE INDEX structuralsubscription__distribution__sourcepackagename__idx ON structuralsubscription USING btree (distribution, sourcepackagename) WHERE (distribution IS NOT NULL);
+
+CREATE INDEX structuralsubscription__distroseries__idx ON structuralsubscription USING btree (distroseries) WHERE (distroseries IS NOT NULL);
+
+CREATE INDEX structuralsubscription__milestone__idx ON structuralsubscription USING btree (milestone) WHERE (milestone IS NOT NULL);
+
+CREATE INDEX structuralsubscription__product__idx ON structuralsubscription USING btree (product) WHERE (product IS NOT NULL);
+
+CREATE INDEX structuralsubscription__productseries__idx ON structuralsubscription USING btree (productseries) WHERE (productseries IS NOT NULL);
+
+CREATE INDEX structuralsubscription__project__idx ON structuralsubscription USING btree (project) WHERE (project IS NOT NULL);
+
+CREATE INDEX structuralsubscription__subscribed_by__idx ON structuralsubscription USING btree (subscribed_by);
+
+CREATE INDEX structuralsubscription__subscriber__idx ON structuralsubscription USING btree (subscriber);
+
 CREATE INDEX teamparticipation_person_idx ON teamparticipation USING btree (person);
 
 ALTER TABLE teamparticipation CLUSTER ON teamparticipation_person_idx;
 
 CREATE INDEX translationimportqueueentry__content__idx ON translationimportqueueentry USING btree (content) WHERE (content IS NOT NULL);
 
-CREATE UNIQUE INDEX translationimportqueueentry__entry_per_importer__unq ON translationimportqueueentry USING btree (importer, path, (COALESCE(potemplate, -1)), (COALESCE(distrorelease, -1)), (COALESCE(sourcepackagename, -1)), (COALESCE(productseries, -1)));
+CREATE INDEX translationimportqueueentry__context__path__idx ON translationimportqueueentry USING btree (distroseries, sourcepackagename, productseries, path);
+
+CREATE UNIQUE INDEX translationimportqueueentry__entry_per_importer__unq ON translationimportqueueentry USING btree (importer, path, (COALESCE(potemplate, -1)), (COALESCE(distroseries, -1)), (COALESCE(sourcepackagename, -1)), (COALESCE(productseries, -1)));
 
 CREATE UNIQUE INDEX translationimportqueueentry__status__dateimported__id__idx ON translationimportqueueentry USING btree (status, dateimported, id);
+
+CREATE INDEX translationmessage__83fix2__idx ON translationmessage USING btree (potmsgset) WHERE (((is_current IS TRUE) OR (is_imported IS TRUE)) AND (is_fuzzy IS NOT TRUE));
+
+CREATE INDEX translationmessage__msgstr0__idx ON translationmessage USING btree (msgstr0);
+
+CREATE INDEX translationmessage__msgstr1__idx ON translationmessage USING btree (msgstr1);
+
+CREATE INDEX translationmessage__msgstr2__idx ON translationmessage USING btree (msgstr2);
+
+CREATE INDEX translationmessage__msgstr3__idx ON translationmessage USING btree (msgstr3);
+
+CREATE UNIQUE INDEX translationmessage__pofile__potmsgset__msgstrs__key ON translationmessage USING btree (pofile, potmsgset, (COALESCE(msgstr0, -1)), (COALESCE(msgstr1, -1)), (COALESCE(msgstr2, -1)), (COALESCE(msgstr3, -1)));
+
+CREATE INDEX translationmessage__pofile__submitter__idx ON translationmessage USING btree (pofile, submitter);
+
+CREATE INDEX translationmessage__potmsgset__idx ON translationmessage USING btree (potmsgset);
+
+CREATE UNIQUE INDEX translationmessage__potmsgset__pofile__is_current__key ON translationmessage USING btree (potmsgset, pofile) WHERE (is_current IS TRUE);
+
+CREATE UNIQUE INDEX translationmessage__potmsgset__pofile__is_imported__key ON translationmessage USING btree (potmsgset, pofile) WHERE (is_imported IS TRUE);
+
+CREATE INDEX translationmessage__potmsgset__pofile__not_used__key ON translationmessage USING btree (potmsgset, pofile) WHERE (NOT ((is_current IS TRUE) AND (is_imported IS TRUE)));
+
+CREATE INDEX translationmessage__reviewer__idx ON translationmessage USING btree (reviewer);
+
+CREATE INDEX translationmessage__submitter__idx ON translationmessage USING btree (submitter);
 
 CREATE INDEX votecast_poll_idx ON votecast USING btree (poll);
 
@@ -5843,17 +6318,10 @@ CREATE TRIGGER mv_pillarname_project_t
     FOR EACH ROW
     EXECUTE PROCEDURE mv_pillarname_project();
 
-CREATE TRIGGER mv_pofiletranslator_pomsgset
-    BEFORE DELETE OR UPDATE ON pomsgset
+CREATE TRIGGER mv_pofiletranslator_translationmessage
+    AFTER INSERT OR DELETE OR UPDATE ON translationmessage
     FOR EACH ROW
-    EXECUTE PROCEDURE mv_pofiletranslator_pomsgset();
-
-ALTER TABLE pomsgset DISABLE TRIGGER mv_pofiletranslator_pomsgset;
-
-CREATE TRIGGER mv_pofiletranslator_posubmission
-    AFTER INSERT OR DELETE OR UPDATE ON posubmission
-    FOR EACH ROW
-    EXECUTE PROCEDURE mv_pofiletranslator_posubmission();
+    EXECUTE PROCEDURE mv_pofiletranslator_translationmessage();
 
 CREATE TRIGGER mv_validpersonorteamcache_emailaddress_t
     AFTER INSERT OR DELETE OR UPDATE ON emailaddress
@@ -5864,6 +6332,16 @@ CREATE TRIGGER mv_validpersonorteamcache_person_t
     AFTER INSERT OR UPDATE ON person
     FOR EACH ROW
     EXECUTE PROCEDURE mv_validpersonorteamcache_person();
+
+CREATE TRIGGER set_bug_message_count_t
+    AFTER INSERT OR DELETE OR UPDATE ON bugmessage
+    FOR EACH ROW
+    EXECUTE PROCEDURE set_bug_message_count();
+
+CREATE TRIGGER set_bug_number_of_duplicates_t
+    AFTER INSERT OR DELETE OR UPDATE ON bug
+    FOR EACH ROW
+    EXECUTE PROCEDURE set_bug_number_of_duplicates();
 
 CREATE TRIGGER set_date_last_message_t
     AFTER INSERT OR DELETE OR UPDATE ON bugmessage
@@ -5901,7 +6379,7 @@ CREATE TRIGGER tsvectorupdate
     EXECUTE PROCEDURE ts2.ftiupdate('sequence', 'a', 'description', 'b');
 
 CREATE TRIGGER tsvectorupdate
-    BEFORE INSERT OR UPDATE ON distroreleasepackagecache
+    BEFORE INSERT OR UPDATE ON distroseriespackagecache
     FOR EACH ROW
     EXECUTE PROCEDURE ts2.ftiupdate('name', 'a', 'summaries', 'b', 'descriptions', 'c');
 
@@ -5984,9 +6462,6 @@ ALTER TABLE ONLY builder
 ALTER TABLE ONLY distribution
     ADD CONSTRAINT "$1" FOREIGN KEY ("owner") REFERENCES person(id);
 
-ALTER TABLE ONLY distroarchrelease
-    ADD CONSTRAINT "$1" FOREIGN KEY (distrorelease) REFERENCES distrorelease(id);
-
 ALTER TABLE ONLY libraryfilealias
     ADD CONSTRAINT "$1" FOREIGN KEY (content) REFERENCES libraryfilecontent(id);
 
@@ -5995,12 +6470,6 @@ ALTER TABLE ONLY productreleasefile
 
 ALTER TABLE ONLY sourcepackagereleasefile
     ADD CONSTRAINT "$1" FOREIGN KEY (sourcepackagerelease) REFERENCES sourcepackagerelease(id);
-
-ALTER TABLE ONLY build
-    ADD CONSTRAINT "$1" FOREIGN KEY (processor) REFERENCES processor(id);
-
-ALTER TABLE ONLY packageselection
-    ADD CONSTRAINT "$1" FOREIGN KEY (distrorelease) REFERENCES distrorelease(id);
 
 ALTER TABLE ONLY spokenin
     ADD CONSTRAINT "$1" FOREIGN KEY ("language") REFERENCES "language"(id);
@@ -6017,18 +6486,6 @@ ALTER TABLE ONLY bugsubscription
 ALTER TABLE ONLY bugactivity
     ADD CONSTRAINT "$1" FOREIGN KEY (bug) REFERENCES bug(id);
 
-ALTER TABLE ONLY bugexternalref
-    ADD CONSTRAINT "$1" FOREIGN KEY (bug) REFERENCES bug(id);
-
-ALTER TABLE ONLY bugrelationship
-    ADD CONSTRAINT "$1" FOREIGN KEY (subject) REFERENCES bug(id);
-
-ALTER TABLE ONLY componentselection
-    ADD CONSTRAINT "$1" FOREIGN KEY (distrorelease) REFERENCES distrorelease(id);
-
-ALTER TABLE ONLY sectionselection
-    ADD CONSTRAINT "$1" FOREIGN KEY (distrorelease) REFERENCES distrorelease(id);
-
 ALTER TABLE ONLY bugmessage
     ADD CONSTRAINT "$1" FOREIGN KEY (bug) REFERENCES bug(id);
 
@@ -6040,9 +6497,6 @@ ALTER TABLE ONLY pushmirroraccess
 
 ALTER TABLE ONLY buildqueue
     ADD CONSTRAINT "$1" FOREIGN KEY (build) REFERENCES build(id);
-
-ALTER TABLE ONLY pocketchroot
-    ADD CONSTRAINT "$1" FOREIGN KEY (distroarchrelease) REFERENCES distroarchrelease(id);
 
 ALTER TABLE ONLY polloption
     ADD CONSTRAINT "$1" FOREIGN KEY (poll) REFERENCES poll(id);
@@ -6059,14 +6513,8 @@ ALTER TABLE ONLY country
 ALTER TABLE ONLY packagebugcontact
     ADD CONSTRAINT "$1" FOREIGN KEY (distribution) REFERENCES distribution(id);
 
-ALTER TABLE ONLY translationimportqueueentry
-    ADD CONSTRAINT "$1" FOREIGN KEY (content) REFERENCES libraryfilealias(id);
-
 ALTER TABLE ONLY builder
     ADD CONSTRAINT "$2" FOREIGN KEY ("owner") REFERENCES person(id);
-
-ALTER TABLE ONLY distroarchrelease
-    ADD CONSTRAINT "$2" FOREIGN KEY (processorfamily) REFERENCES processorfamily(id);
 
 ALTER TABLE ONLY productreleasefile
     ADD CONSTRAINT "$2" FOREIGN KEY (libraryfile) REFERENCES libraryfilealias(id);
@@ -6074,17 +6522,8 @@ ALTER TABLE ONLY productreleasefile
 ALTER TABLE ONLY sourcepackagereleasefile
     ADD CONSTRAINT "$2" FOREIGN KEY (libraryfile) REFERENCES libraryfilealias(id);
 
-ALTER TABLE ONLY build
-    ADD CONSTRAINT "$2" FOREIGN KEY (distroarchrelease) REFERENCES distroarchrelease(id);
-
-ALTER TABLE ONLY packageselection
-    ADD CONSTRAINT "$2" FOREIGN KEY (sourcepackagename) REFERENCES sourcepackagename(id);
-
 ALTER TABLE ONLY spokenin
     ADD CONSTRAINT "$2" FOREIGN KEY (country) REFERENCES country(id);
-
-ALTER TABLE ONLY pomsgidsighting
-    ADD CONSTRAINT "$2" FOREIGN KEY (pomsgid) REFERENCES pomsgid(id);
 
 ALTER TABLE ONLY pocomment
     ADD CONSTRAINT "$2" FOREIGN KEY (pomsgid) REFERENCES pomsgid(id);
@@ -6095,18 +6534,6 @@ ALTER TABLE ONLY posubscription
 ALTER TABLE ONLY bugsubscription
     ADD CONSTRAINT "$2" FOREIGN KEY (bug) REFERENCES bug(id);
 
-ALTER TABLE ONLY bugexternalref
-    ADD CONSTRAINT "$2" FOREIGN KEY ("owner") REFERENCES person(id);
-
-ALTER TABLE ONLY bugrelationship
-    ADD CONSTRAINT "$2" FOREIGN KEY ("object") REFERENCES bug(id);
-
-ALTER TABLE ONLY componentselection
-    ADD CONSTRAINT "$2" FOREIGN KEY (component) REFERENCES component(id);
-
-ALTER TABLE ONLY sectionselection
-    ADD CONSTRAINT "$2" FOREIGN KEY (section) REFERENCES section(id);
-
 ALTER TABLE ONLY buildqueue
     ADD CONSTRAINT "$2" FOREIGN KEY (builder) REFERENCES builder(id);
 
@@ -6116,26 +6543,8 @@ ALTER TABLE ONLY distribution
 ALTER TABLE ONLY pofile
     ADD CONSTRAINT "$2" FOREIGN KEY (exportfile) REFERENCES libraryfilealias(id);
 
-ALTER TABLE ONLY pocketchroot
-    ADD CONSTRAINT "$2" FOREIGN KEY (chroot) REFERENCES libraryfilealias(id);
-
 ALTER TABLE ONLY packagebugcontact
     ADD CONSTRAINT "$2" FOREIGN KEY (sourcepackagename) REFERENCES sourcepackagename(id);
-
-ALTER TABLE ONLY translationimportqueueentry
-    ADD CONSTRAINT "$2" FOREIGN KEY (importer) REFERENCES person(id);
-
-ALTER TABLE ONLY potemplate
-    ADD CONSTRAINT "$2" FOREIGN KEY (from_sourcepackagename) REFERENCES sourcepackagename(id);
-
-ALTER TABLE ONLY distroarchrelease
-    ADD CONSTRAINT "$3" FOREIGN KEY ("owner") REFERENCES person(id);
-
-ALTER TABLE ONLY build
-    ADD CONSTRAINT "$3" FOREIGN KEY (buildlog) REFERENCES libraryfilealias(id);
-
-ALTER TABLE ONLY packageselection
-    ADD CONSTRAINT "$3" FOREIGN KEY (binarypackagename) REFERENCES binarypackagename(id);
 
 ALTER TABLE ONLY pocomment
     ADD CONSTRAINT "$3" FOREIGN KEY ("language") REFERENCES "language"(id);
@@ -6152,44 +6561,29 @@ ALTER TABLE ONLY distribution
 ALTER TABLE ONLY packagebugcontact
     ADD CONSTRAINT "$3" FOREIGN KEY (bugcontact) REFERENCES person(id);
 
-ALTER TABLE ONLY translationimportqueueentry
-    ADD CONSTRAINT "$3" FOREIGN KEY (distrorelease) REFERENCES distrorelease(id);
-
 ALTER TABLE ONLY pofile
     ADD CONSTRAINT "$3" FOREIGN KEY (from_sourcepackagename) REFERENCES sourcepackagename(id);
-
-ALTER TABLE ONLY build
-    ADD CONSTRAINT "$4" FOREIGN KEY (builder) REFERENCES builder(id);
-
-ALTER TABLE ONLY packageselection
-    ADD CONSTRAINT "$4" FOREIGN KEY (component) REFERENCES component(id);
 
 ALTER TABLE ONLY pocomment
     ADD CONSTRAINT "$4" FOREIGN KEY (potranslation) REFERENCES potranslation(id);
 
-ALTER TABLE ONLY translationimportqueueentry
-    ADD CONSTRAINT "$4" FOREIGN KEY (sourcepackagename) REFERENCES sourcepackagename(id);
-
-ALTER TABLE ONLY packageselection
-    ADD CONSTRAINT "$5" FOREIGN KEY (section) REFERENCES section(id);
-
 ALTER TABLE ONLY pocomment
     ADD CONSTRAINT "$5" FOREIGN KEY (person) REFERENCES person(id);
 
-ALTER TABLE ONLY translationimportqueueentry
-    ADD CONSTRAINT "$5" FOREIGN KEY (productseries) REFERENCES productseries(id);
-
-ALTER TABLE ONLY build
-    ADD CONSTRAINT "$6" FOREIGN KEY (sourcepackagerelease) REFERENCES sourcepackagerelease(id);
-
-ALTER TABLE ONLY translationimportqueueentry
-    ADD CONSTRAINT "$6" FOREIGN KEY (pofile) REFERENCES pofile(id);
-
-ALTER TABLE ONLY translationimportqueueentry
-    ADD CONSTRAINT "$7" FOREIGN KEY (potemplate) REFERENCES potemplate(id);
-
 ALTER TABLE ONLY karma
     ADD CONSTRAINT action_fkey FOREIGN KEY ("action") REFERENCES karmaaction(id);
+
+ALTER TABLE ONLY announcement
+    ADD CONSTRAINT announcement_distribution_fkey FOREIGN KEY (distribution) REFERENCES distribution(id);
+
+ALTER TABLE ONLY announcement
+    ADD CONSTRAINT announcement_product_fkey FOREIGN KEY (product) REFERENCES product(id);
+
+ALTER TABLE ONLY announcement
+    ADD CONSTRAINT announcement_project_fkey FOREIGN KEY (project) REFERENCES project(id);
+
+ALTER TABLE ONLY announcement
+    ADD CONSTRAINT announcement_registrant_fkey FOREIGN KEY (registrant) REFERENCES person(id);
 
 ALTER TABLE ONLY answercontact
     ADD CONSTRAINT answercontact__distribution__fkey FOREIGN KEY (distribution) REFERENCES distribution(id);
@@ -6252,25 +6646,49 @@ ALTER TABLE ONLY branch
     ADD CONSTRAINT branch_author_fk FOREIGN KEY (author) REFERENCES person(id);
 
 ALTER TABLE ONLY branch
+    ADD CONSTRAINT branch_merge_robot_fkey FOREIGN KEY (merge_robot) REFERENCES branchmergerobot(id);
+
+ALTER TABLE ONLY branch
     ADD CONSTRAINT branch_owner_fk FOREIGN KEY ("owner") REFERENCES person(id);
 
 ALTER TABLE ONLY branch
     ADD CONSTRAINT branch_product_fk FOREIGN KEY (product) REFERENCES product(id);
 
+ALTER TABLE ONLY branch
+    ADD CONSTRAINT branch_reviewer_fkey FOREIGN KEY (reviewer) REFERENCES person(id);
+
 ALTER TABLE ONLY branchmergeproposal
     ADD CONSTRAINT branchmergeproposal_dependent_branch_fkey FOREIGN KEY (dependent_branch) REFERENCES branch(id);
+
+ALTER TABLE ONLY branchmergeproposal
+    ADD CONSTRAINT branchmergeproposal_merge_log_file_fkey FOREIGN KEY (merge_log_file) REFERENCES libraryfilealias(id);
 
 ALTER TABLE ONLY branchmergeproposal
     ADD CONSTRAINT branchmergeproposal_merge_reporter_fkey FOREIGN KEY (merge_reporter) REFERENCES person(id);
 
 ALTER TABLE ONLY branchmergeproposal
+    ADD CONSTRAINT branchmergeproposal_merger_fkey FOREIGN KEY (merger) REFERENCES person(id);
+
+ALTER TABLE ONLY branchmergeproposal
+    ADD CONSTRAINT branchmergeproposal_queuer_fkey FOREIGN KEY (queuer) REFERENCES person(id);
+
+ALTER TABLE ONLY branchmergeproposal
     ADD CONSTRAINT branchmergeproposal_registrant_fkey FOREIGN KEY (registrant) REFERENCES person(id);
+
+ALTER TABLE ONLY branchmergeproposal
+    ADD CONSTRAINT branchmergeproposal_reviewer_fkey FOREIGN KEY (reviewer) REFERENCES person(id);
 
 ALTER TABLE ONLY branchmergeproposal
     ADD CONSTRAINT branchmergeproposal_source_branch_fkey FOREIGN KEY (source_branch) REFERENCES branch(id);
 
 ALTER TABLE ONLY branchmergeproposal
     ADD CONSTRAINT branchmergeproposal_target_branch_fkey FOREIGN KEY (target_branch) REFERENCES branch(id);
+
+ALTER TABLE ONLY branchmergerobot
+    ADD CONSTRAINT branchmergerobot_owner_fkey FOREIGN KEY ("owner") REFERENCES person(id);
+
+ALTER TABLE ONLY branchmergerobot
+    ADD CONSTRAINT branchmergerobot_registrant_fkey FOREIGN KEY (registrant) REFERENCES person(id);
 
 ALTER TABLE ONLY branchrevision
     ADD CONSTRAINT branchrevision_branch_fk FOREIGN KEY (branch) REFERENCES branch(id);
@@ -6320,6 +6738,9 @@ ALTER TABLE ONLY bugbranch
 ALTER TABLE ONLY bugbranch
     ADD CONSTRAINT bugbranch_fixed_in_revision_fkey FOREIGN KEY (revision_hint) REFERENCES revision(id);
 
+ALTER TABLE ONLY bugbranch
+    ADD CONSTRAINT bugbranch_registrant_fkey FOREIGN KEY (registrant) REFERENCES person(id);
+
 ALTER TABLE ONLY bugcve
     ADD CONSTRAINT bugcve_bug_fk FOREIGN KEY (bug) REFERENCES bug(id);
 
@@ -6339,7 +6760,7 @@ ALTER TABLE ONLY bugnomination
     ADD CONSTRAINT bugnomination__decider__fk FOREIGN KEY (decider) REFERENCES person(id);
 
 ALTER TABLE ONLY bugnomination
-    ADD CONSTRAINT bugnomination__distrorelease__fk FOREIGN KEY (distrorelease) REFERENCES distrorelease(id);
+    ADD CONSTRAINT bugnomination__distroseries__fk FOREIGN KEY (distroseries) REFERENCES distroseries(id);
 
 ALTER TABLE ONLY bugnomination
     ADD CONSTRAINT bugnomination__owner__fk FOREIGN KEY ("owner") REFERENCES person(id);
@@ -6383,44 +6804,50 @@ ALTER TABLE ONLY bugproductinfestation
 ALTER TABLE ONLY bugproductinfestation
     ADD CONSTRAINT bugproductinfestation_verifiedby_fk FOREIGN KEY (verifiedby) REFERENCES person(id);
 
-ALTER TABLE ONLY bugtask
-    ADD CONSTRAINT bugtask_binarypackagename_fk FOREIGN KEY (binarypackagename) REFERENCES binarypackagename(id);
+ALTER TABLE ONLY bugsubscription
+    ADD CONSTRAINT bugsubscription_subscribed_by_fkey FOREIGN KEY (subscribed_by) REFERENCES person(id);
 
 ALTER TABLE ONLY bugtask
-    ADD CONSTRAINT bugtask_bug_fk FOREIGN KEY (bug) REFERENCES bug(id);
+    ADD CONSTRAINT bugtask__assignee__fk FOREIGN KEY (assignee) REFERENCES person(id);
 
 ALTER TABLE ONLY bugtask
-    ADD CONSTRAINT bugtask_bugwatch_fk FOREIGN KEY (bugwatch, bug) REFERENCES bugwatch(id, bug);
+    ADD CONSTRAINT bugtask__binarypackagename__fk FOREIGN KEY (binarypackagename) REFERENCES binarypackagename(id);
 
 ALTER TABLE ONLY bugtask
-    ADD CONSTRAINT bugtask_distribution_fk FOREIGN KEY (distribution) REFERENCES distribution(id);
+    ADD CONSTRAINT bugtask__bug__fk FOREIGN KEY (bug) REFERENCES bug(id);
 
 ALTER TABLE ONLY bugtask
-    ADD CONSTRAINT bugtask_distribution_milestone_fk FOREIGN KEY (distribution, milestone) REFERENCES milestone(distribution, id);
+    ADD CONSTRAINT bugtask__bugwatch__fk FOREIGN KEY (bugwatch) REFERENCES bugwatch(id);
 
 ALTER TABLE ONLY bugtask
-    ADD CONSTRAINT bugtask_distrorelease_fk FOREIGN KEY (distrorelease) REFERENCES distrorelease(id);
+    ADD CONSTRAINT bugtask__distribution__fk FOREIGN KEY (distribution) REFERENCES distribution(id);
 
 ALTER TABLE ONLY bugtask
-    ADD CONSTRAINT bugtask_owner_fk FOREIGN KEY ("owner") REFERENCES person(id);
+    ADD CONSTRAINT bugtask__distribution__milestone__fk FOREIGN KEY (distribution, milestone) REFERENCES milestone(distribution, id);
 
 ALTER TABLE ONLY bugtask
-    ADD CONSTRAINT bugtask_person_fk FOREIGN KEY (assignee) REFERENCES person(id);
+    ADD CONSTRAINT bugtask__distroseries__fk FOREIGN KEY (distroseries) REFERENCES distroseries(id);
 
 ALTER TABLE ONLY bugtask
-    ADD CONSTRAINT bugtask_product_fk FOREIGN KEY (product) REFERENCES product(id);
+    ADD CONSTRAINT bugtask__owner__fk FOREIGN KEY ("owner") REFERENCES person(id);
 
 ALTER TABLE ONLY bugtask
-    ADD CONSTRAINT bugtask_product_milestone_fk FOREIGN KEY (product, milestone) REFERENCES milestone(product, id);
+    ADD CONSTRAINT bugtask__product__fk FOREIGN KEY (product) REFERENCES product(id);
 
 ALTER TABLE ONLY bugtask
-    ADD CONSTRAINT bugtask_productseries_fk FOREIGN KEY (productseries) REFERENCES productseries(id);
+    ADD CONSTRAINT bugtask__product__milestone__fk FOREIGN KEY (product, milestone) REFERENCES milestone(product, id);
 
 ALTER TABLE ONLY bugtask
-    ADD CONSTRAINT bugtask_sourcepackagename_fk FOREIGN KEY (sourcepackagename) REFERENCES sourcepackagename(id);
+    ADD CONSTRAINT bugtask__productseries__fk FOREIGN KEY (productseries) REFERENCES productseries(id);
+
+ALTER TABLE ONLY bugtask
+    ADD CONSTRAINT bugtask__sourcepackagename__fk FOREIGN KEY (sourcepackagename) REFERENCES sourcepackagename(id);
 
 ALTER TABLE ONLY bugtracker
     ADD CONSTRAINT bugtracker_owner_fk FOREIGN KEY ("owner") REFERENCES person(id);
+
+ALTER TABLE ONLY bugtrackeralias
+    ADD CONSTRAINT bugtrackeralias__bugtracker__fk FOREIGN KEY (bugtracker) REFERENCES bugtracker(id);
 
 ALTER TABLE ONLY bugwatch
     ADD CONSTRAINT bugwatch_bug_fk FOREIGN KEY (bug) REFERENCES bug(id);
@@ -6434,14 +6861,20 @@ ALTER TABLE ONLY bugwatch
 ALTER TABLE ONLY build
     ADD CONSTRAINT build__archive__fk FOREIGN KEY (archive) REFERENCES archive(id);
 
-ALTER TABLE ONLY calendarevent
-    ADD CONSTRAINT calendarevent_calendar_fk FOREIGN KEY (calendar) REFERENCES calendar(id);
+ALTER TABLE ONLY build
+    ADD CONSTRAINT build__builder__fk FOREIGN KEY (builder) REFERENCES builder(id);
 
-ALTER TABLE ONLY calendarsubscription
-    ADD CONSTRAINT calendarsubscription_object_fk FOREIGN KEY ("object") REFERENCES calendar(id);
+ALTER TABLE ONLY build
+    ADD CONSTRAINT build__buildlog__fk FOREIGN KEY (buildlog) REFERENCES libraryfilealias(id);
 
-ALTER TABLE ONLY calendarsubscription
-    ADD CONSTRAINT calendarsubscription_subject_fk FOREIGN KEY (subject) REFERENCES calendar(id);
+ALTER TABLE ONLY build
+    ADD CONSTRAINT build__distroarchseries__fk FOREIGN KEY (distroarchseries) REFERENCES distroarchseries(id);
+
+ALTER TABLE ONLY build
+    ADD CONSTRAINT build__processor__fk FOREIGN KEY (processor) REFERENCES processor(id);
+
+ALTER TABLE ONLY build
+    ADD CONSTRAINT build__sourcepackagerelease__fk FOREIGN KEY (sourcepackagerelease) REFERENCES sourcepackagerelease(id);
 
 ALTER TABLE ONLY codeimport
     ADD CONSTRAINT codeimport_assignee_fkey FOREIGN KEY (assignee) REFERENCES person(id);
@@ -6488,6 +6921,12 @@ ALTER TABLE ONLY codeimportresult
 ALTER TABLE ONLY codeimportresult
     ADD CONSTRAINT codeimportresult__requesting_user__fk FOREIGN KEY (requesting_user) REFERENCES person(id);
 
+ALTER TABLE ONLY componentselection
+    ADD CONSTRAINT componentselection__component__fk FOREIGN KEY (component) REFERENCES component(id);
+
+ALTER TABLE ONLY componentselection
+    ADD CONSTRAINT componentselection__distroseries__fk FOREIGN KEY (distroseries) REFERENCES distroseries(id);
+
 ALTER TABLE ONLY cvereference
     ADD CONSTRAINT cvereference_cve_fk FOREIGN KEY (cve) REFERENCES cve(id);
 
@@ -6513,7 +6952,7 @@ ALTER TABLE ONLY distribution
     ADD CONSTRAINT distribution_security_contact_fkey FOREIGN KEY (security_contact) REFERENCES person(id);
 
 ALTER TABLE ONLY distribution
-    ADD CONSTRAINT distribution_translation_focus_fkey FOREIGN KEY (translation_focus) REFERENCES distrorelease(id);
+    ADD CONSTRAINT distribution_translation_focus_fkey FOREIGN KEY (translation_focus) REFERENCES distroseries(id);
 
 ALTER TABLE ONLY distribution
     ADD CONSTRAINT distribution_translationgroup_fk FOREIGN KEY (translationgroup) REFERENCES translationgroup(id);
@@ -6536,11 +6975,23 @@ ALTER TABLE ONLY distributionmirror
 ALTER TABLE ONLY distributionmirror
     ADD CONSTRAINT distributionmirror_owner_fkey FOREIGN KEY ("owner") REFERENCES person(id);
 
+ALTER TABLE ONLY distributionmirror
+    ADD CONSTRAINT distributionmirror_reviewer_fkey FOREIGN KEY (reviewer) REFERENCES person(id);
+
 ALTER TABLE ONLY distributionsourcepackagecache
     ADD CONSTRAINT distributionsourcepackagecache_distribution_fk FOREIGN KEY (distribution) REFERENCES distribution(id);
 
 ALTER TABLE ONLY distributionsourcepackagecache
     ADD CONSTRAINT distributionsourcepackagecache_sourcepackagename_fk FOREIGN KEY (sourcepackagename) REFERENCES sourcepackagename(id);
+
+ALTER TABLE ONLY distroarchseries
+    ADD CONSTRAINT distroarchseries__distroseries__fk FOREIGN KEY (distroseries) REFERENCES distroseries(id);
+
+ALTER TABLE ONLY distroarchseries
+    ADD CONSTRAINT distroarchseries__owner__fk FOREIGN KEY ("owner") REFERENCES person(id);
+
+ALTER TABLE ONLY distroarchseries
+    ADD CONSTRAINT distroarchseries__processorfamily__fk FOREIGN KEY (processorfamily) REFERENCES processorfamily(id);
 
 ALTER TABLE ONLY distrocomponentuploader
     ADD CONSTRAINT distrocomponentuploader_component_fk FOREIGN KEY (component) REFERENCES component(id);
@@ -6551,41 +7002,47 @@ ALTER TABLE ONLY distrocomponentuploader
 ALTER TABLE ONLY distrocomponentuploader
     ADD CONSTRAINT distrocomponentuploader_uploader_fk FOREIGN KEY (uploader) REFERENCES person(id);
 
-ALTER TABLE ONLY distrorelease
-    ADD CONSTRAINT distrorelease_distribution_fk FOREIGN KEY (distribution) REFERENCES distribution(id);
+ALTER TABLE ONLY distroseries
+    ADD CONSTRAINT distrorelease_parentrelease_fk FOREIGN KEY (parent_series) REFERENCES distroseries(id);
 
-ALTER TABLE ONLY distrorelease
-    ADD CONSTRAINT distrorelease_driver_fk FOREIGN KEY (driver) REFERENCES person(id);
-
-ALTER TABLE ONLY distrorelease
-    ADD CONSTRAINT distrorelease_nominatedarchindep_fk FOREIGN KEY (nominatedarchindep) REFERENCES distroarchrelease(id);
-
-ALTER TABLE ONLY distrorelease
-    ADD CONSTRAINT distrorelease_owner_fk FOREIGN KEY ("owner") REFERENCES person(id);
-
-ALTER TABLE ONLY distrorelease
-    ADD CONSTRAINT distrorelease_parentrelease_fk FOREIGN KEY (parentrelease) REFERENCES distrorelease(id);
-
-ALTER TABLE ONLY distroreleaselanguage
-    ADD CONSTRAINT distroreleaselanguage_distrorelease_fk FOREIGN KEY (distrorelease) REFERENCES distrorelease(id);
-
-ALTER TABLE ONLY distroreleaselanguage
+ALTER TABLE ONLY distroserieslanguage
     ADD CONSTRAINT distroreleaselanguage_language_fk FOREIGN KEY ("language") REFERENCES "language"(id);
 
-ALTER TABLE ONLY distroreleasepackagecache
-    ADD CONSTRAINT distroreleasepackagecache_binarypackagename_fk FOREIGN KEY (binarypackagename) REFERENCES binarypackagename(id);
+ALTER TABLE ONLY distroseries
+    ADD CONSTRAINT distroseries__distribution__fk FOREIGN KEY (distribution) REFERENCES distribution(id);
 
-ALTER TABLE ONLY distroreleasepackagecache
-    ADD CONSTRAINT distroreleasepackagecache_distrorelease_fk FOREIGN KEY (distrorelease) REFERENCES distrorelease(id);
+ALTER TABLE ONLY distroseries
+    ADD CONSTRAINT distroseries__driver__fk FOREIGN KEY (driver) REFERENCES person(id);
 
-ALTER TABLE ONLY distrorelease
+ALTER TABLE ONLY distroseries
     ADD CONSTRAINT distroseries__language_pack_base__fk FOREIGN KEY (language_pack_base) REFERENCES languagepack(id);
 
-ALTER TABLE ONLY distrorelease
+ALTER TABLE ONLY distroseries
     ADD CONSTRAINT distroseries__language_pack_delta__fk FOREIGN KEY (language_pack_delta) REFERENCES languagepack(id);
 
-ALTER TABLE ONLY distrorelease
+ALTER TABLE ONLY distroseries
     ADD CONSTRAINT distroseries__language_pack_proposed__fk FOREIGN KEY (language_pack_proposed) REFERENCES languagepack(id);
+
+ALTER TABLE ONLY distroseries
+    ADD CONSTRAINT distroseries__nominatedarchindep__fk FOREIGN KEY (nominatedarchindep) REFERENCES distroarchseries(id);
+
+ALTER TABLE ONLY distroseries
+    ADD CONSTRAINT distroseries__owner__fk FOREIGN KEY ("owner") REFERENCES person(id);
+
+ALTER TABLE ONLY distroseries
+    ADD CONSTRAINT distroseries__parent_series__fk FOREIGN KEY (parent_series) REFERENCES distroseries(id);
+
+ALTER TABLE ONLY distroserieslanguage
+    ADD CONSTRAINT distroserieslanguage__distroseries__fk FOREIGN KEY (distroseries) REFERENCES distroseries(id);
+
+ALTER TABLE ONLY distroserieslanguage
+    ADD CONSTRAINT distroserieslanguage__language__fk FOREIGN KEY ("language") REFERENCES "language"(id);
+
+ALTER TABLE ONLY distroseriespackagecache
+    ADD CONSTRAINT distroseriespackagecache__binarypackagename__fk FOREIGN KEY (binarypackagename) REFERENCES binarypackagename(id);
+
+ALTER TABLE ONLY distroseriespackagecache
+    ADD CONSTRAINT distroseriespackagecache__distroseries__fk FOREIGN KEY (distroseries) REFERENCES distroseries(id);
 
 ALTER TABLE ONLY emailaddress
     ADD CONSTRAINT emailaddress_person_fk FOREIGN KEY (person) REFERENCES person(id);
@@ -6611,11 +7068,32 @@ ALTER TABLE ONLY faq
 ALTER TABLE ONLY faq
     ADD CONSTRAINT faq_product_fkey FOREIGN KEY (product) REFERENCES product(id);
 
+ALTER TABLE ONLY featuredproject
+    ADD CONSTRAINT featuredproject_pillar_name_fkey FOREIGN KEY (pillar_name) REFERENCES pillarname(id);
+
 ALTER TABLE ONLY gpgkey
     ADD CONSTRAINT gpgkey_owner_fk FOREIGN KEY ("owner") REFERENCES person(id);
 
+ALTER TABLE ONLY hwdevice
+    ADD CONSTRAINT hwdevice_bus_vendor_id_fkey FOREIGN KEY (bus_vendor_id) REFERENCES hwvendorid(id);
+
+ALTER TABLE ONLY hwdevicedriverlink
+    ADD CONSTRAINT hwdevicedriverlink_device_fkey FOREIGN KEY (device) REFERENCES hwdevice(id);
+
+ALTER TABLE ONLY hwdevicedriverlink
+    ADD CONSTRAINT hwdevicedriverlink_driver_fkey FOREIGN KEY (driver) REFERENCES hwdriver(id);
+
+ALTER TABLE ONLY hwdevicenamevariant
+    ADD CONSTRAINT hwdevicenamevariant_device_fkey FOREIGN KEY (device) REFERENCES hwdevice(id);
+
+ALTER TABLE ONLY hwdevicenamevariant
+    ADD CONSTRAINT hwdevicenamevariant_vendor_name_fkey FOREIGN KEY (vendor_name) REFERENCES hwvendorname(id);
+
+ALTER TABLE ONLY hwdriver
+    ADD CONSTRAINT hwdriver_license_fkey FOREIGN KEY (license) REFERENCES license(id);
+
 ALTER TABLE ONLY hwsubmission
-    ADD CONSTRAINT hwsubmission__distroarchseries__fk FOREIGN KEY (distroarchseries) REFERENCES distroarchrelease(id);
+    ADD CONSTRAINT hwsubmission__distroarchseries__fk FOREIGN KEY (distroarchseries) REFERENCES distroarchseries(id);
 
 ALTER TABLE ONLY hwsubmission
     ADD CONSTRAINT hwsubmission__owned__fk FOREIGN KEY ("owner") REFERENCES person(id);
@@ -6625,6 +7103,57 @@ ALTER TABLE ONLY hwsubmission
 
 ALTER TABLE ONLY hwsubmission
     ADD CONSTRAINT hwsubmission__system_fingerprint__fk FOREIGN KEY (system_fingerprint) REFERENCES hwsystemfingerprint(id);
+
+ALTER TABLE ONLY hwsubmissiondevice
+    ADD CONSTRAINT hwsubmissiondevice_device_driver_link_fkey FOREIGN KEY (device_driver_link) REFERENCES hwdevicedriverlink(id);
+
+ALTER TABLE ONLY hwsubmissiondevice
+    ADD CONSTRAINT hwsubmissiondevice_parent_fkey FOREIGN KEY (parent) REFERENCES hwsubmissiondevice(id);
+
+ALTER TABLE ONLY hwsubmissiondevice
+    ADD CONSTRAINT hwsubmissiondevice_submission_fkey FOREIGN KEY (submission) REFERENCES hwsubmission(id);
+
+ALTER TABLE ONLY hwtestanswer
+    ADD CONSTRAINT hwtestanswer__choice__test__fk FOREIGN KEY (test, choice) REFERENCES hwtestanswerchoice(test, id);
+
+ALTER TABLE ONLY hwtestanswer
+    ADD CONSTRAINT hwtestanswer_choice_fkey FOREIGN KEY (choice) REFERENCES hwtestanswerchoice(id);
+
+ALTER TABLE ONLY hwtestanswer
+    ADD CONSTRAINT hwtestanswer_language_fkey FOREIGN KEY ("language") REFERENCES "language"(id);
+
+ALTER TABLE ONLY hwtestanswer
+    ADD CONSTRAINT hwtestanswer_submission_fkey FOREIGN KEY (submission) REFERENCES hwsubmission(id);
+
+ALTER TABLE ONLY hwtestanswer
+    ADD CONSTRAINT hwtestanswer_test_fkey FOREIGN KEY (test) REFERENCES hwtest(id);
+
+ALTER TABLE ONLY hwtestanswerchoice
+    ADD CONSTRAINT hwtestanswerchoice_test_fkey FOREIGN KEY (test) REFERENCES hwtest(id);
+
+ALTER TABLE ONLY hwtestanswercount
+    ADD CONSTRAINT hwtestanswercount_choice_fkey FOREIGN KEY (choice) REFERENCES hwtestanswerchoice(id);
+
+ALTER TABLE ONLY hwtestanswercount
+    ADD CONSTRAINT hwtestanswercount_distroarchseries_fkey FOREIGN KEY (distroarchseries) REFERENCES distroarchseries(id);
+
+ALTER TABLE ONLY hwtestanswercount
+    ADD CONSTRAINT hwtestanswercount_test_fkey FOREIGN KEY (test) REFERENCES hwtest(id);
+
+ALTER TABLE ONLY hwtestanswercountdevice
+    ADD CONSTRAINT hwtestanswercountdevice_answer_fkey FOREIGN KEY (answer) REFERENCES hwtestanswercount(id);
+
+ALTER TABLE ONLY hwtestanswercountdevice
+    ADD CONSTRAINT hwtestanswercountdevice_device_driver_fkey FOREIGN KEY (device_driver) REFERENCES hwdevicedriverlink(id);
+
+ALTER TABLE ONLY hwtestanswerdevice
+    ADD CONSTRAINT hwtestanswerdevice_answer_fkey FOREIGN KEY (answer) REFERENCES hwtestanswer(id);
+
+ALTER TABLE ONLY hwtestanswerdevice
+    ADD CONSTRAINT hwtestanswerdevice_device_driver_fkey FOREIGN KEY (device_driver) REFERENCES hwdevicedriverlink(id);
+
+ALTER TABLE ONLY hwvendorid
+    ADD CONSTRAINT hwvendorid_vendor_name_fkey FOREIGN KEY (vendor_name) REFERENCES hwvendorname(id);
 
 ALTER TABLE ONLY ircid
     ADD CONSTRAINT ircid_person_fk FOREIGN KEY (person) REFERENCES person(id);
@@ -6669,7 +7198,7 @@ ALTER TABLE ONLY languagepack
     ADD CONSTRAINT languagepack__updates__fk FOREIGN KEY (updates) REFERENCES languagepack(id);
 
 ALTER TABLE ONLY languagepack
-    ADD CONSTRAINT languagepackage__distroseries__fk FOREIGN KEY (distroseries) REFERENCES distrorelease(id);
+    ADD CONSTRAINT languagepackage__distroseries__fk FOREIGN KEY (distroseries) REFERENCES distroseries(id);
 
 ALTER TABLE ONLY logintoken
     ADD CONSTRAINT logintoken_requester_fk FOREIGN KEY (requester) REFERENCES person(id);
@@ -6741,13 +7270,13 @@ ALTER TABLE ONLY messagechunk
     ADD CONSTRAINT messagechunk_message_fk FOREIGN KEY (message) REFERENCES message(id);
 
 ALTER TABLE ONLY milestone
+    ADD CONSTRAINT milestone__distroseries__distribution__fk FOREIGN KEY (distroseries, distribution) REFERENCES distroseries(id, distribution);
+
+ALTER TABLE ONLY milestone
+    ADD CONSTRAINT milestone__distroseries__fk FOREIGN KEY (distroseries) REFERENCES distroseries(id);
+
+ALTER TABLE ONLY milestone
     ADD CONSTRAINT milestone_distribution_fk FOREIGN KEY (distribution) REFERENCES distribution(id);
-
-ALTER TABLE ONLY milestone
-    ADD CONSTRAINT milestone_distribution_release_fk FOREIGN KEY (distribution, distrorelease) REFERENCES distrorelease(distribution, id);
-
-ALTER TABLE ONLY milestone
-    ADD CONSTRAINT milestone_distrorelease_fk FOREIGN KEY (distrorelease) REFERENCES distrorelease(id);
 
 ALTER TABLE ONLY milestone
     ADD CONSTRAINT milestone_product_fk FOREIGN KEY (product) REFERENCES product(id);
@@ -6764,38 +7293,38 @@ ALTER TABLE ONLY mirror
 ALTER TABLE ONLY mirror
     ADD CONSTRAINT mirror_owner_fk FOREIGN KEY ("owner") REFERENCES person(id);
 
-ALTER TABLE ONLY mirrorcdimagedistrorelease
-    ADD CONSTRAINT mirrorcdimagedistrorelease_distribution_mirror_fkey FOREIGN KEY (distribution_mirror) REFERENCES distributionmirror(id);
+ALTER TABLE ONLY mirrorcdimagedistroseries
+    ADD CONSTRAINT mirrorcdimagedistroseries__distribution_mirror__fk FOREIGN KEY (distribution_mirror) REFERENCES distributionmirror(id);
 
-ALTER TABLE ONLY mirrorcdimagedistrorelease
-    ADD CONSTRAINT mirrorcdimagedistrorelease_distrorelease_fkey FOREIGN KEY (distrorelease) REFERENCES distrorelease(id);
+ALTER TABLE ONLY mirrorcdimagedistroseries
+    ADD CONSTRAINT mirrorcdimagedistroseries__distroseries__fk FOREIGN KEY (distroseries) REFERENCES distroseries(id);
+
+ALTER TABLE ONLY mirrorcontent
+    ADD CONSTRAINT mirrorcontent__distroarchseries__fk FOREIGN KEY (distroarchseries) REFERENCES distroarchseries(id);
 
 ALTER TABLE ONLY mirrorcontent
     ADD CONSTRAINT mirrorcontent_component_fk FOREIGN KEY (component) REFERENCES component(id);
 
 ALTER TABLE ONLY mirrorcontent
-    ADD CONSTRAINT mirrorcontent_distroarchrelease_fk FOREIGN KEY (distroarchrelease) REFERENCES distroarchrelease(id);
-
-ALTER TABLE ONLY mirrorcontent
     ADD CONSTRAINT mirrorcontent_mirror_fk FOREIGN KEY (mirror) REFERENCES mirror(id);
 
-ALTER TABLE ONLY mirrordistroarchrelease
-    ADD CONSTRAINT mirrordistroarchrelease__component__fk FOREIGN KEY (component) REFERENCES component(id);
+ALTER TABLE ONLY mirrordistroarchseries
+    ADD CONSTRAINT mirrordistroarchseries__component__fk FOREIGN KEY (component) REFERENCES component(id);
 
-ALTER TABLE ONLY mirrordistroarchrelease
-    ADD CONSTRAINT mirrordistroarchrelease_distribution_mirror_fkey FOREIGN KEY (distribution_mirror) REFERENCES distributionmirror(id);
+ALTER TABLE ONLY mirrordistroarchseries
+    ADD CONSTRAINT mirrordistroarchseries__distribution_mirror__fk FOREIGN KEY (distribution_mirror) REFERENCES distributionmirror(id);
 
-ALTER TABLE ONLY mirrordistroarchrelease
-    ADD CONSTRAINT mirrordistroarchrelease_distro_arch_release_fkey FOREIGN KEY (distro_arch_release) REFERENCES distroarchrelease(id);
+ALTER TABLE ONLY mirrordistroarchseries
+    ADD CONSTRAINT mirrordistroarchseries__distroarchseries__fk FOREIGN KEY (distroarchseries) REFERENCES distroarchseries(id);
 
-ALTER TABLE ONLY mirrordistroreleasesource
-    ADD CONSTRAINT mirrordistroreleasesource__component__fk FOREIGN KEY (component) REFERENCES component(id);
+ALTER TABLE ONLY mirrordistroseriessource
+    ADD CONSTRAINT mirrordistroseriessource__component__fk FOREIGN KEY (component) REFERENCES component(id);
 
-ALTER TABLE ONLY mirrordistroreleasesource
-    ADD CONSTRAINT mirrordistroreleasesource_distribution_mirror_fkey FOREIGN KEY (distribution_mirror) REFERENCES distributionmirror(id);
+ALTER TABLE ONLY mirrordistroseriessource
+    ADD CONSTRAINT mirrordistroseriessource__distribution_mirror__fk FOREIGN KEY (distribution_mirror) REFERENCES distributionmirror(id);
 
-ALTER TABLE ONLY mirrordistroreleasesource
-    ADD CONSTRAINT mirrordistroreleasesource_distro_release_fkey FOREIGN KEY (distrorelease) REFERENCES distrorelease(id);
+ALTER TABLE ONLY mirrordistroseriessource
+    ADD CONSTRAINT mirrordistroseriessource__distroseries__fk FOREIGN KEY (distroseries) REFERENCES distroseries(id);
 
 ALTER TABLE ONLY mirrorproberecord
     ADD CONSTRAINT mirrorproberecord_distribution_mirror_fkey FOREIGN KEY (distribution_mirror) REFERENCES distributionmirror(id);
@@ -6804,10 +7333,10 @@ ALTER TABLE ONLY mirrorproberecord
     ADD CONSTRAINT mirrorproberecord_log_file_fkey FOREIGN KEY (log_file) REFERENCES libraryfilealias(id);
 
 ALTER TABLE ONLY mirrorsourcecontent
-    ADD CONSTRAINT mirrorsourcecontent_component_fk FOREIGN KEY (component) REFERENCES component(id);
+    ADD CONSTRAINT mirrorsourcecontent__distroseries__fk FOREIGN KEY (distroseries) REFERENCES distroseries(id);
 
 ALTER TABLE ONLY mirrorsourcecontent
-    ADD CONSTRAINT mirrorsourcecontent_distrorelease_fk FOREIGN KEY (distrorelease) REFERENCES distrorelease(id);
+    ADD CONSTRAINT mirrorsourcecontent_component_fk FOREIGN KEY (component) REFERENCES component(id);
 
 ALTER TABLE ONLY mirrorsourcecontent
     ADD CONSTRAINT mirrorsourcecontent_mirror_fk FOREIGN KEY (mirror) REFERENCES mirror(id);
@@ -6827,6 +7356,21 @@ ALTER TABLE ONLY openidauthorization
 ALTER TABLE ONLY openidrpconfig
     ADD CONSTRAINT openidrpconfig__logo__fk FOREIGN KEY (logo) REFERENCES libraryfilealias(id);
 
+ALTER TABLE ONLY packageselection
+    ADD CONSTRAINT packageselection__binarypackagename__fk FOREIGN KEY (binarypackagename) REFERENCES binarypackagename(id);
+
+ALTER TABLE ONLY packageselection
+    ADD CONSTRAINT packageselection__component__fk FOREIGN KEY (component) REFERENCES component(id);
+
+ALTER TABLE ONLY packageselection
+    ADD CONSTRAINT packageselection__distroseries__fk FOREIGN KEY (distroseries) REFERENCES distroseries(id);
+
+ALTER TABLE ONLY packageselection
+    ADD CONSTRAINT packageselection__section__fk FOREIGN KEY (section) REFERENCES section(id);
+
+ALTER TABLE ONLY packageselection
+    ADD CONSTRAINT packageselection__sourcepackagename__fk FOREIGN KEY (sourcepackagename) REFERENCES sourcepackagename(id);
+
 ALTER TABLE ONLY packageupload
     ADD CONSTRAINT packageupload__archive__fk FOREIGN KEY (archive) REFERENCES archive(id);
 
@@ -6834,7 +7378,7 @@ ALTER TABLE ONLY packageupload
     ADD CONSTRAINT packageupload__changesfile__fk FOREIGN KEY (changesfile) REFERENCES libraryfilealias(id);
 
 ALTER TABLE ONLY packageupload
-    ADD CONSTRAINT packageupload__distrorelease__fk FOREIGN KEY (distrorelease) REFERENCES distrorelease(id);
+    ADD CONSTRAINT packageupload__distroseries__fk FOREIGN KEY (distroseries) REFERENCES distroseries(id);
 
 ALTER TABLE ONLY packageupload
     ADD CONSTRAINT packageupload__signing_key__fk FOREIGN KEY (signing_key) REFERENCES gpgkey(id);
@@ -6858,7 +7402,7 @@ ALTER TABLE ONLY packageuploadsource
     ADD CONSTRAINT packageuploadsource__sourcepackagerelease__fk FOREIGN KEY (sourcepackagerelease) REFERENCES sourcepackagerelease(id);
 
 ALTER TABLE ONLY packaging
-    ADD CONSTRAINT packaging_distrorelease_fk FOREIGN KEY (distrorelease) REFERENCES distrorelease(id);
+    ADD CONSTRAINT packaging__distroseries__fk FOREIGN KEY (distroseries) REFERENCES distroseries(id);
 
 ALTER TABLE ONLY packaging
     ADD CONSTRAINT packaging_owner_fk FOREIGN KEY ("owner") REFERENCES person(id);
@@ -6877,9 +7421,6 @@ ALTER TABLE ONLY person
 
 ALTER TABLE ONLY person
     ADD CONSTRAINT person__mugshot__fk FOREIGN KEY (mugshot) REFERENCES libraryfilealias(id);
-
-ALTER TABLE ONLY person
-    ADD CONSTRAINT person_calendar_fk FOREIGN KEY (calendar) REFERENCES calendar(id);
 
 ALTER TABLE ONLY person
     ADD CONSTRAINT person_country_fk FOREIGN KEY (country) REFERENCES country(id);
@@ -6905,8 +7446,11 @@ ALTER TABLE ONLY personlanguage
 ALTER TABLE ONLY personlanguage
     ADD CONSTRAINT personlanguage_person_fk FOREIGN KEY (person) REFERENCES person(id);
 
-ALTER TABLE ONLY pofiletranslator
-    ADD CONSTRAINT personpofile__latest_posubmission__fk FOREIGN KEY (latest_posubmission) REFERENCES posubmission(id) DEFERRABLE INITIALLY DEFERRED;
+ALTER TABLE ONLY personlocation
+    ADD CONSTRAINT personlocation_last_modified_by_fkey FOREIGN KEY (last_modified_by) REFERENCES person(id);
+
+ALTER TABLE ONLY personlocation
+    ADD CONSTRAINT personlocation_person_fkey FOREIGN KEY (person) REFERENCES person(id);
 
 ALTER TABLE ONLY pillarname
     ADD CONSTRAINT pillarname_distribution_fkey FOREIGN KEY (distribution) REFERENCES distribution(id) ON DELETE CASCADE;
@@ -6916,6 +7460,12 @@ ALTER TABLE ONLY pillarname
 
 ALTER TABLE ONLY pillarname
     ADD CONSTRAINT pillarname_project_fkey FOREIGN KEY (project) REFERENCES project(id) ON DELETE CASCADE;
+
+ALTER TABLE ONLY pocketchroot
+    ADD CONSTRAINT pocketchroot__distroarchseries__fk FOREIGN KEY (distroarchseries) REFERENCES distroarchseries(id);
+
+ALTER TABLE ONLY pocketchroot
+    ADD CONSTRAINT pocketchroot__libraryfilealias__fk FOREIGN KEY (chroot) REFERENCES libraryfilealias(id);
 
 ALTER TABLE ONLY poexportrequest
     ADD CONSTRAINT poeportrequest_potemplate_fk FOREIGN KEY (potemplate) REFERENCES potemplate(id);
@@ -6930,9 +7480,6 @@ ALTER TABLE ONLY pofile
     ADD CONSTRAINT pofile_language_fk FOREIGN KEY ("language") REFERENCES "language"(id);
 
 ALTER TABLE ONLY pofile
-    ADD CONSTRAINT pofile_last_touched_pomsgset_fkey FOREIGN KEY (last_touched_pomsgset) REFERENCES pomsgset(id);
-
-ALTER TABLE ONLY pofile
     ADD CONSTRAINT pofile_lasttranslator_fk FOREIGN KEY (lasttranslator) REFERENCES person(id);
 
 ALTER TABLE ONLY pofile
@@ -6945,6 +7492,9 @@ ALTER TABLE ONLY pofile
     ADD CONSTRAINT pofile_potemplate_fk FOREIGN KEY (potemplate) REFERENCES potemplate(id);
 
 ALTER TABLE ONLY pofiletranslator
+    ADD CONSTRAINT pofiletranslator__latest_message__fk FOREIGN KEY (latest_message) REFERENCES translationmessage(id) DEFERRABLE INITIALLY DEFERRED;
+
+ALTER TABLE ONLY pofiletranslator
     ADD CONSTRAINT pofiletranslator__person__fk FOREIGN KEY (person) REFERENCES person(id);
 
 ALTER TABLE ONLY pofiletranslator
@@ -6953,29 +7503,11 @@ ALTER TABLE ONLY pofiletranslator
 ALTER TABLE ONLY poll
     ADD CONSTRAINT poll_team_fk FOREIGN KEY (team) REFERENCES person(id);
 
-ALTER TABLE ONLY pomsgidsighting
-    ADD CONSTRAINT pomsgidsighting_potmsgset_fk FOREIGN KEY (potmsgset) REFERENCES potmsgset(id);
+ALTER TABLE ONLY potemplate
+    ADD CONSTRAINT potemplate__distrorelease__fk FOREIGN KEY (distroseries) REFERENCES distroseries(id);
 
-ALTER TABLE ONLY pomsgset
-    ADD CONSTRAINT pomsgset__person__fk FOREIGN KEY (reviewer) REFERENCES person(id);
-
-ALTER TABLE ONLY pomsgset
-    ADD CONSTRAINT pomsgset__pofile__fk FOREIGN KEY (pofile) REFERENCES pofile(id);
-
-ALTER TABLE ONLY pomsgset
-    ADD CONSTRAINT pomsgset__potmsgset__fk FOREIGN KEY (potmsgset) REFERENCES potmsgset(id);
-
-ALTER TABLE ONLY pomsgset
-    ADD CONSTRAINT pomsgset_language_fkey FOREIGN KEY ("language") REFERENCES "language"(id);
-
-ALTER TABLE ONLY posubmission
-    ADD CONSTRAINT posubmission__person__fk FOREIGN KEY (person) REFERENCES person(id);
-
-ALTER TABLE ONLY posubmission
-    ADD CONSTRAINT posubmission__pomsgset__fk FOREIGN KEY (pomsgset) REFERENCES pomsgset(id);
-
-ALTER TABLE ONLY posubmission
-    ADD CONSTRAINT posubmission__potranslation__fk FOREIGN KEY (potranslation) REFERENCES potranslation(id);
+ALTER TABLE ONLY potemplate
+    ADD CONSTRAINT potemplate__from_sourcepackagename__fk FOREIGN KEY (from_sourcepackagename) REFERENCES sourcepackagename(id);
 
 ALTER TABLE ONLY potemplate
     ADD CONSTRAINT potemplate__source_file__fk FOREIGN KEY (source_file) REFERENCES libraryfilealias(id);
@@ -6984,16 +7516,10 @@ ALTER TABLE ONLY potemplate
     ADD CONSTRAINT potemplate_binarypackagename_fk FOREIGN KEY (binarypackagename) REFERENCES binarypackagename(id);
 
 ALTER TABLE ONLY potemplate
-    ADD CONSTRAINT potemplate_distrorelease_fk FOREIGN KEY (distrorelease) REFERENCES distrorelease(id);
-
-ALTER TABLE ONLY potemplate
     ADD CONSTRAINT potemplate_license_fk FOREIGN KEY (license) REFERENCES license(id);
 
 ALTER TABLE ONLY potemplate
     ADD CONSTRAINT potemplate_owner_fk FOREIGN KEY ("owner") REFERENCES person(id);
-
-ALTER TABLE ONLY potemplate
-    ADD CONSTRAINT potemplate_potemplatename_fk FOREIGN KEY (potemplatename) REFERENCES potemplatename(id);
 
 ALTER TABLE ONLY potemplate
     ADD CONSTRAINT potemplate_productseries_fk FOREIGN KEY (productseries) REFERENCES productseries(id);
@@ -7002,10 +7528,13 @@ ALTER TABLE ONLY potemplate
     ADD CONSTRAINT potemplate_sourcepackagename_fk FOREIGN KEY (sourcepackagename) REFERENCES sourcepackagename(id);
 
 ALTER TABLE ONLY potmsgset
+    ADD CONSTRAINT potmsgset__msgid_plural__fk FOREIGN KEY (msgid_plural) REFERENCES pomsgid(id);
+
+ALTER TABLE ONLY potmsgset
     ADD CONSTRAINT potmsgset_potemplate_fk FOREIGN KEY (potemplate) REFERENCES potemplate(id);
 
 ALTER TABLE ONLY potmsgset
-    ADD CONSTRAINT potmsgset_primemsgid_fk FOREIGN KEY (primemsgid) REFERENCES pomsgid(id);
+    ADD CONSTRAINT potmsgset_primemsgid_fk FOREIGN KEY (msgid_singular) REFERENCES pomsgid(id);
 
 ALTER TABLE ONLY product
     ADD CONSTRAINT product__development_focus__fk FOREIGN KEY (development_focus) REFERENCES productseries(id);
@@ -7021,9 +7550,6 @@ ALTER TABLE ONLY product
 
 ALTER TABLE ONLY product
     ADD CONSTRAINT product_bugtracker_fkey FOREIGN KEY (bugtracker) REFERENCES bugtracker(id);
-
-ALTER TABLE ONLY product
-    ADD CONSTRAINT product_calendar_fk FOREIGN KEY (calendar) REFERENCES calendar(id);
 
 ALTER TABLE ONLY product
     ADD CONSTRAINT product_driver_fk FOREIGN KEY (driver) REFERENCES person(id);
@@ -7049,8 +7575,14 @@ ALTER TABLE ONLY productbounty
 ALTER TABLE ONLY productcvsmodule
     ADD CONSTRAINT productcvsmodule_product_fk FOREIGN KEY (product) REFERENCES product(id);
 
+ALTER TABLE ONLY productlicense
+    ADD CONSTRAINT productlicense_product_fkey FOREIGN KEY (product) REFERENCES product(id);
+
 ALTER TABLE ONLY productrelease
     ADD CONSTRAINT productrelease_owner_fk FOREIGN KEY ("owner") REFERENCES person(id);
+
+ALTER TABLE ONLY productreleasefile
+    ADD CONSTRAINT productreleasefile__signature__fk FOREIGN KEY (signature) REFERENCES libraryfilealias(id);
 
 ALTER TABLE ONLY productreleasefile
     ADD CONSTRAINT productreleasefile__uploader__fk FOREIGN KEY (uploader) REFERENCES person(id);
@@ -7084,9 +7616,6 @@ ALTER TABLE ONLY project
 
 ALTER TABLE ONLY project
     ADD CONSTRAINT project_bugtracker_fkey FOREIGN KEY (bugtracker) REFERENCES bugtracker(id);
-
-ALTER TABLE ONLY project
-    ADD CONSTRAINT project_calendar_fk FOREIGN KEY (calendar) REFERENCES calendar(id);
 
 ALTER TABLE ONLY project
     ADD CONSTRAINT project_driver_fk FOREIGN KEY (driver) REFERENCES person(id);
@@ -7184,8 +7713,17 @@ ALTER TABLE ONLY revisionparent
 ALTER TABLE ONLY revisionproperty
     ADD CONSTRAINT revisionproperty__revision__fk FOREIGN KEY (revision) REFERENCES revision(id);
 
+ALTER TABLE ONLY sectionselection
+    ADD CONSTRAINT sectionselection__distroseries__fk FOREIGN KEY (distroseries) REFERENCES distroseries(id);
+
+ALTER TABLE ONLY sectionselection
+    ADD CONSTRAINT sectionselection__section__fk FOREIGN KEY (section) REFERENCES section(id);
+
 ALTER TABLE ONLY securebinarypackagepublishinghistory
     ADD CONSTRAINT securebinarypackagepublishinghistory__archive__fk FOREIGN KEY (archive) REFERENCES archive(id);
+
+ALTER TABLE ONLY securebinarypackagepublishinghistory
+    ADD CONSTRAINT securebinarypackagepublishinghistory__distroarchseries__fk FOREIGN KEY (distroarchseries) REFERENCES distroarchseries(id);
 
 ALTER TABLE ONLY securebinarypackagepublishinghistory
     ADD CONSTRAINT securebinarypackagepublishinghistory_binarypackagerelease_fk FOREIGN KEY (binarypackagerelease) REFERENCES binarypackagerelease(id);
@@ -7194,7 +7732,7 @@ ALTER TABLE ONLY securebinarypackagepublishinghistory
     ADD CONSTRAINT securebinarypackagepublishinghistory_component_fk FOREIGN KEY (component) REFERENCES component(id);
 
 ALTER TABLE ONLY securebinarypackagepublishinghistory
-    ADD CONSTRAINT securebinarypackagepublishinghistory_distroarchrelease_fk FOREIGN KEY (distroarchrelease) REFERENCES distroarchrelease(id);
+    ADD CONSTRAINT securebinarypackagepublishinghistory_removedby_fk FOREIGN KEY (removed_by) REFERENCES person(id);
 
 ALTER TABLE ONLY securebinarypackagepublishinghistory
     ADD CONSTRAINT securebinarypackagepublishinghistory_section_fk FOREIGN KEY (section) REFERENCES section(id);
@@ -7206,10 +7744,13 @@ ALTER TABLE ONLY securesourcepackagepublishinghistory
     ADD CONSTRAINT securesourcepackagepublishinghistory__archive__fk FOREIGN KEY (archive) REFERENCES archive(id);
 
 ALTER TABLE ONLY securesourcepackagepublishinghistory
+    ADD CONSTRAINT securesourcepackagepublishinghistory__distroseries__fk FOREIGN KEY (distroseries) REFERENCES distroseries(id);
+
+ALTER TABLE ONLY securesourcepackagepublishinghistory
     ADD CONSTRAINT securesourcepackagepublishinghistory_component_fk FOREIGN KEY (component) REFERENCES component(id);
 
 ALTER TABLE ONLY securesourcepackagepublishinghistory
-    ADD CONSTRAINT securesourcepackagepublishinghistory_distrorelease_fk FOREIGN KEY (distrorelease) REFERENCES distrorelease(id);
+    ADD CONSTRAINT securesourcepackagepublishinghistory_removedby_fk FOREIGN KEY (removed_by) REFERENCES person(id);
 
 ALTER TABLE ONLY securesourcepackagepublishinghistory
     ADD CONSTRAINT securesourcepackagepublishinghistory_section_fk FOREIGN KEY (section) REFERENCES section(id);
@@ -7260,6 +7801,9 @@ ALTER TABLE ONLY sourcepackagerelease
     ADD CONSTRAINT sourcepackagerelease__upload_archive__fk FOREIGN KEY (upload_archive) REFERENCES archive(id);
 
 ALTER TABLE ONLY sourcepackagerelease
+    ADD CONSTRAINT sourcepackagerelease__upload_distroseries__fk FOREIGN KEY (upload_distroseries) REFERENCES distroseries(id);
+
+ALTER TABLE ONLY sourcepackagerelease
     ADD CONSTRAINT sourcepackagerelease_component_fk FOREIGN KEY (component) REFERENCES component(id);
 
 ALTER TABLE ONLY sourcepackagerelease
@@ -7271,8 +7815,8 @@ ALTER TABLE ONLY sourcepackagerelease
 ALTER TABLE ONLY sourcepackagerelease
     ADD CONSTRAINT sourcepackagerelease_sourcepackagename_fk FOREIGN KEY (sourcepackagename) REFERENCES sourcepackagename(id);
 
-ALTER TABLE ONLY sourcepackagerelease
-    ADD CONSTRAINT sourcepackagerelease_uploaddistrorelease_fk FOREIGN KEY (uploaddistrorelease) REFERENCES distrorelease(id);
+ALTER TABLE ONLY specification
+    ADD CONSTRAINT specification__distroseries__distribution__fk FOREIGN KEY (distroseries, distribution) REFERENCES distroseries(id, distribution);
 
 ALTER TABLE ONLY specification
     ADD CONSTRAINT specification_approver_fk FOREIGN KEY (approver) REFERENCES person(id);
@@ -7288,9 +7832,6 @@ ALTER TABLE ONLY specification
 
 ALTER TABLE ONLY specification
     ADD CONSTRAINT specification_distribution_milestone_fk FOREIGN KEY (distribution, milestone) REFERENCES milestone(distribution, id);
-
-ALTER TABLE ONLY specification
-    ADD CONSTRAINT specification_distrorelease_valid FOREIGN KEY (distribution, distrorelease) REFERENCES distrorelease(distribution, id);
 
 ALTER TABLE ONLY specification
     ADD CONSTRAINT specification_drafter_fk FOREIGN KEY (drafter) REFERENCES person(id);
@@ -7324,6 +7865,9 @@ ALTER TABLE ONLY specificationbranch
 
 ALTER TABLE ONLY specificationbranch
     ADD CONSTRAINT specificationbranch__specification__fk FOREIGN KEY (specification) REFERENCES specification(id);
+
+ALTER TABLE ONLY specificationbranch
+    ADD CONSTRAINT specificationbranch_registrant_fkey FOREIGN KEY (registrant) REFERENCES person(id);
 
 ALTER TABLE ONLY specificationbug
     ADD CONSTRAINT specificationbug_bug_fk FOREIGN KEY (bug) REFERENCES bug(id);
@@ -7391,6 +7935,33 @@ ALTER TABLE ONLY sprintspecification
 ALTER TABLE ONLY sprintspecification
     ADD CONSTRAINT sprintspecification_decider_fkey FOREIGN KEY (decider) REFERENCES person(id);
 
+ALTER TABLE ONLY structuralsubscription
+    ADD CONSTRAINT structuralsubscription_distribution_fkey FOREIGN KEY (distribution) REFERENCES distribution(id);
+
+ALTER TABLE ONLY structuralsubscription
+    ADD CONSTRAINT structuralsubscription_distroseries_fkey FOREIGN KEY (distroseries) REFERENCES distroseries(id);
+
+ALTER TABLE ONLY structuralsubscription
+    ADD CONSTRAINT structuralsubscription_milestone_fkey FOREIGN KEY (milestone) REFERENCES milestone(id);
+
+ALTER TABLE ONLY structuralsubscription
+    ADD CONSTRAINT structuralsubscription_product_fkey FOREIGN KEY (product) REFERENCES product(id);
+
+ALTER TABLE ONLY structuralsubscription
+    ADD CONSTRAINT structuralsubscription_productseries_fkey FOREIGN KEY (productseries) REFERENCES productseries(id);
+
+ALTER TABLE ONLY structuralsubscription
+    ADD CONSTRAINT structuralsubscription_project_fkey FOREIGN KEY (project) REFERENCES project(id);
+
+ALTER TABLE ONLY structuralsubscription
+    ADD CONSTRAINT structuralsubscription_sourcepackagename_fkey FOREIGN KEY (sourcepackagename) REFERENCES sourcepackagename(id);
+
+ALTER TABLE ONLY structuralsubscription
+    ADD CONSTRAINT structuralsubscription_subscribed_by_fkey FOREIGN KEY (subscribed_by) REFERENCES person(id);
+
+ALTER TABLE ONLY structuralsubscription
+    ADD CONSTRAINT structuralsubscription_subscriber_fkey FOREIGN KEY (subscriber) REFERENCES person(id);
+
 ALTER TABLE ONLY teammembership
     ADD CONSTRAINT teammembership_person_fk FOREIGN KEY (person) REFERENCES person(id);
 
@@ -7408,6 +7979,51 @@ ALTER TABLE ONLY temporaryblobstorage
 
 ALTER TABLE ONLY translationgroup
     ADD CONSTRAINT translationgroup_owner_fk FOREIGN KEY ("owner") REFERENCES person(id);
+
+ALTER TABLE ONLY translationimportqueueentry
+    ADD CONSTRAINT translationimportqueueentry__content__fk FOREIGN KEY (content) REFERENCES libraryfilealias(id);
+
+ALTER TABLE ONLY translationimportqueueentry
+    ADD CONSTRAINT translationimportqueueentry__distroseries__fk FOREIGN KEY (distroseries) REFERENCES distroseries(id);
+
+ALTER TABLE ONLY translationimportqueueentry
+    ADD CONSTRAINT translationimportqueueentry__importer__fk FOREIGN KEY (importer) REFERENCES person(id);
+
+ALTER TABLE ONLY translationimportqueueentry
+    ADD CONSTRAINT translationimportqueueentry__pofile__fk FOREIGN KEY (pofile) REFERENCES pofile(id);
+
+ALTER TABLE ONLY translationimportqueueentry
+    ADD CONSTRAINT translationimportqueueentry__potemplate__fk FOREIGN KEY (potemplate) REFERENCES potemplate(id);
+
+ALTER TABLE ONLY translationimportqueueentry
+    ADD CONSTRAINT translationimportqueueentry__productseries__fk FOREIGN KEY (productseries) REFERENCES productseries(id);
+
+ALTER TABLE ONLY translationimportqueueentry
+    ADD CONSTRAINT translationimportqueueentry__sourcepackagename__fk FOREIGN KEY (sourcepackagename) REFERENCES sourcepackagename(id);
+
+ALTER TABLE ONLY translationmessage
+    ADD CONSTRAINT translationmessage__msgstr0__fk FOREIGN KEY (msgstr0) REFERENCES potranslation(id);
+
+ALTER TABLE ONLY translationmessage
+    ADD CONSTRAINT translationmessage__msgstr1__fk FOREIGN KEY (msgstr1) REFERENCES potranslation(id);
+
+ALTER TABLE ONLY translationmessage
+    ADD CONSTRAINT translationmessage__msgstr2__fk FOREIGN KEY (msgstr2) REFERENCES potranslation(id);
+
+ALTER TABLE ONLY translationmessage
+    ADD CONSTRAINT translationmessage__msgstr3__fk FOREIGN KEY (msgstr3) REFERENCES potranslation(id);
+
+ALTER TABLE ONLY translationmessage
+    ADD CONSTRAINT translationmessage__pofile__fk FOREIGN KEY (pofile) REFERENCES pofile(id);
+
+ALTER TABLE ONLY translationmessage
+    ADD CONSTRAINT translationmessage__potmsgset__fk FOREIGN KEY (potmsgset) REFERENCES potmsgset(id);
+
+ALTER TABLE ONLY translationmessage
+    ADD CONSTRAINT translationmessage__reviewer__fk FOREIGN KEY (reviewer) REFERENCES person(id);
+
+ALTER TABLE ONLY translationmessage
+    ADD CONSTRAINT translationmessage__submitter__fk FOREIGN KEY (submitter) REFERENCES person(id);
 
 ALTER TABLE ONLY translator
     ADD CONSTRAINT translator_language_fk FOREIGN KEY ("language") REFERENCES "language"(id);

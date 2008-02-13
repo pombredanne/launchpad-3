@@ -76,8 +76,6 @@ class IPOFile(IRosettaStats):
         title=_('When this file was last changed.'), readonly=False,
         required=True)
 
-    license = Int(title=_('The license under this translation is done.'))
-
     lastparsed = Datetime(title=_('Last time this pofile was parsed.'))
 
     owner = Choice(

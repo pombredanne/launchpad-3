@@ -21,6 +21,7 @@ COMMENT ON COLUMN AnswerContact.date_created IS 'The date the answer contact was
 
 -- Branch 
 COMMENT ON TABLE Branch IS 'Bzr branch';
+COMMENT ON COLUMN Branch.registrant IS 'The user that registered the branch.';
 COMMENT ON COLUMN Branch.branch_type IS 'Branches are currently one of HOSTED (1), MIRRORED (2), or IMPORTED (3).';
 COMMENT ON COLUMN Branch.whiteboard IS 'Notes on the current status of the branch';
 COMMENT ON COLUMN Branch.summary IS 'A single paragraph description of the branch';
@@ -621,6 +622,12 @@ COMMENT ON COLUMN POFile.from_sourcepackagename IS 'The sourcepackagename from w
 COMMENT ON COLUMN POFile.unreviewed_count IS 'Number of POTMsgSets with new,
 unreviewed TranslationMessages for this POFile.';
 
+-- RevisionAuthor
+COMMENT ON TABLE RevisionAuthor IS 'All distinct authors for revisions.';
+COMMENT ON COLUMN RevisionAuthor.name IS 'The exact text extracted from the branch revision.';
+COMMENT ON COLUMN RevisionAuthor.email IS 'A valid email address extracted from the name.  This email address may or may not be associated with a Launchpad user at this stage.';
+COMMENT ON COLUMN RevisionAuthor.person IS 'The Launchpad person that has a verified email address that matches the email address of the revision author.';
+
 -- Sprint
 COMMENT ON TABLE Sprint IS 'A meeting, sprint or conference. This is a convenient way to keep track of a collection of specs that will be discussed, and the people that will be attending.';
 COMMENT ON COLUMN Sprint.driver IS 'The driver (together with the registrant or owner) is responsible for deciding which topics will be accepted onto the agenda of the sprint.';
@@ -805,6 +812,18 @@ COMMENT ON COLUMN DistroSeries.language_pack_base IS 'Current full export langua
 COMMENT ON COLUMN DistroSeries.language_pack_delta IS 'Current language pack update based on language_pack_base information.';
 COMMENT ON COLUMN DistroSeries.language_pack_proposed IS 'Either a full or update language pack being tested to be used in language_pack_base or language_pack_delta.';
 COMMENT ON COLUMN DistroSeries.language_pack_full_export_requested IS 'Whether next language pack export should be a full export or an update.';
+
+
+-- PackageDiff
+
+COMMENT ON TABLE PackageDiff IS 'This table stores diffs bettwen two scpecific SourcePackageRelease versions.';
+COMMENT ON COLUMN PackageDiff.date_requested IS 'Instant when the diff was requested.';
+COMMENT ON COLUMN PackageDiff.requester IS 'The Person responsible for the request.';
+COMMENT ON COLUMN PackageDiff.from_source IS 'The SourcePackageRelease to diff from.';
+COMMENT ON COLUMN PackageDiff.to_source IS 'The SourcePackageRelease to diff to.';
+COMMENT ON COLUMN PackageDiff.date_fulfilled IS 'Instant when the diff was completed.';
+COMMENT ON COLUMN PackageDiff.diff_content IS 'LibraryFileAlias containing the th diff results.';
+
 
 -- PackageUpload
 COMMENT ON TABLE PackageUpload IS 'An upload. This table stores information pertaining to uploads to a given DistroSeries/Archive.';
@@ -1621,6 +1640,13 @@ COMMENT ON COLUMN Archive.whiteboard IS 'Administrator comments about interventi
 COMMENT ON COLUMN Archive.distribution IS 'The distribution that uses this archive.';
 COMMENT ON COLUMN Archive.purpose IS 'The purpose of this archive, e.g. COMMERCIAL.  See the ArchivePurpose DBSchema item.';
 COMMENT ON COLUMN Archive.private IS 'Whether or not the archive is private. This affects the global visibility of the archive.';
+
+
+-- ArchiveDependency
+COMMENT ON TABLE ArchiveDependency IS 'This table maps a given archive to all other archives it should depend on.';
+COMMENT ON COLUMN ArchiveDependency.date_created IS 'Instant when the dependency was created.';
+COMMENT ON COLUMN ArchiveDependency.archive IS 'The archive where the dependency should be applied.';
+COMMENT ON COLUMN ArchiveDependency.dependency IS 'The archive to depend on.';
 
 -- Component
 COMMENT ON TABLE Component IS 'Known components in Launchpad';

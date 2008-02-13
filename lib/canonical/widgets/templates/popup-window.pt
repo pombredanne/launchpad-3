@@ -27,6 +27,7 @@ function update(value) {
     }
     if (e != null) {
         e.value = value;
+        e.focus();
         hide();
     }
 }
