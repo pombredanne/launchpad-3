@@ -434,8 +434,18 @@ def export_translation_message(translation_message, wrap_width=77):
         ]).strip()
 
 
-class SinglePoFileStorage:
-    """Store a single file for export."""
+class SinglePoFileStorageStrategy:
+    """Store a single file for export.
+
+    Provides a way to store a single PO or POT file, but through the same API
+    that `TarballFileStorageStrategy` offers to store any number of files into
+    a single tarball.  Both classes have an `addFile` operation, though a
+    `SinglePoFileStorageStrategy` instance will only let you add a single
+    file.
+
+    (The type of the stored file matters in this strategy because the storage
+    strategy declares the MIME type of the file it produces).
+    """
     path = None
     extension = None
 
@@ -463,11 +473,13 @@ class SinglePoFileStorage:
         return output
 
 
-class TarballFileStorage:
+class TarballFileStorageStrategy:
     """Store any number of files for export as a tarball.
 
-    Each file is written as soon as it is added.  There is no need to keep the
-    full contents of the tarball in memory at any single time.
+    Similar to `SinglePoFileStorageStrategy`, but lets you store any number of
+    files using the same API.  Each file is written into the resulting tarball
+    as soon as it is added.  There is no need to keep the full contents of the
+    tarball in memory at any single time.
     """
     def __init__(self):
         self.buffer = tempfile.TemporaryFile()
@@ -539,10 +551,10 @@ class GettextPOExporter:
 
         if len(translation_file_list) == 1:
             # Export single file.
-            storage = SinglePoFileStorage()
+            storage = SinglePoFileStorageStrategy()
         else:
             # Export multiple files, wrapped up as a tarball.
-            storage = TarballFileStorage()
+            storage = TarballFileStorageStrategy()
 
         for translation_file in translation_file_list:
             dirname = os.path.dirname(translation_file.path)
