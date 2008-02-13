@@ -17,6 +17,7 @@ ALTER TABLE BranchSubscription
 ALTER TABLE BranchSubscription
   ALTER COLUMN review_level SET DEFAULT 0;
 
+
 CREATE TABLE CodeReviewMessage (
 -- CodeReviewMessage does not need a date_created, because it's always created
 -- at the same time as a Message, which has one.
@@ -26,7 +27,21 @@ CREATE TABLE CodeReviewMessage (
     vote INTEGER
     );
 
+
 ALTER TABLE BranchMergeProposal
     ADD COLUMN conversation INTEGER REFERENCES CodeReviewMessage;
+
+
+CREATE TABLE CodeReviewVote (
+    id SERIAL PRIMARY KEY,
+    branch_merge_proposal INTEGER NOT NULL REFERENCES BranchMergeProposal(id),
+    reviewer INTEGER NOT NULL REFERENCES Person(id),
+    review_type TEXT,
+    registrant INTEGER NOT NULL REFERENCES Person(id),
+    vote_message INTEGER REFERENCES CodeReviewMessage(id),
+    date_created TIMESTAMP WITHOUT TIME ZONE NOT NULL
+      DEFAULT timezone('UTC'::text, now())
+    );
+
 
 INSERT INTO LaunchpadDatabaseRevision VALUES (121, 90, 0);
