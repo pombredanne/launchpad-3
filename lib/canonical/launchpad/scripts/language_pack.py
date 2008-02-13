@@ -223,7 +223,8 @@ def export_language_pack(distribution_name, series_name, logger,
         except:
             # Bare except statements are used in order to prevent premature
             # termination of the script.
-            logger.exception('Uncaught exception while uploading to the Librarian')
+            logger.exception(
+                'Uncaught exception while uploading to the Librarian')
             return None
 
         logger.debug('Upload complete, file alias: %d' % file_alias)

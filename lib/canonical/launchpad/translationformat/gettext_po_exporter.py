@@ -2,7 +2,7 @@
 
 """Export module for gettext's .po file format.
 
-You can read more about this file format from:
+You can read more about this file format at:
 http://www.gnu.org/software/gettext/manual/html_chapter/gettext_10.html#PO-Files
 """
 
