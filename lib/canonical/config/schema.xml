@@ -1019,6 +1019,7 @@ k            </description>
         <key name="spew" datatype="boolean" required="no" default="no" />
         <key name="logfile" datatype="string" required="no" default="-" />
         <key name="debug_logfile" datatype="string" required="no" />
+        <key name="bzr_lp_prefix" datatype="string" default="lp:"/>
         <key name="smartserver_root" datatype="canonical.config.urlbase"
             default="bzr+ssh://%(user)s@bazaar.launchpad.net/">
             <description>

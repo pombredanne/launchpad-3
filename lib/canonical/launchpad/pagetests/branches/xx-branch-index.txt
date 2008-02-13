@@ -54,7 +54,7 @@ branches).
     >>> revision = find_tags_by_class(
     ...         user_browser.contents, 'revision-details', only_first=True)
     >>> print revision.a
-    <a href="http://codebrowse.launchpad.dev/~name12/+junk/junk.dev/revision/6">6</a>
+    <a href="http://bazaar.launchpad.dev/~name12/+junk/junk.dev/revision/6">6</a>
 
 
 === Email addresses ===
@@ -261,13 +261,13 @@ link is shown.
     ...     browser.contents, "recent-revisions").dl)
     6. By foo... fix bug in bar...
     >>> print browser.getLink('Browse code').url
-    http://codebrowse.launchpad.dev/~name12/+junk/junk.dev/files
+    http://bazaar.launchpad.dev/~name12/+junk/junk.dev/files
 
 In addition, there is a "Browse revisions" link that links to the
 changelog view in codebrowse.
 
     >>> print browser.getLink('Browse revisions').url
-    http://codebrowse.launchpad.dev/~name12/+junk/junk.dev/changes
+    http://bazaar.launchpad.dev/~name12/+junk/junk.dev/changes
 
 If the branch is private, the browse code link is not shown.
 In order to see the private branch, we need to log in as a user that
