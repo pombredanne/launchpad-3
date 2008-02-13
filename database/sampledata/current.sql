@@ -1207,7 +1207,7 @@ ALTER TABLE bugtracker ENABLE TRIGGER ALL;
 
 ALTER TABLE bugtrackeralias DISABLE TRIGGER ALL;
 
-INSERT INTO bugtrackeralias (id, bugtracker, base_url) VALUES (1, 6, 'http://savannah.nognu.org/bugs/');
+INSERT INTO bugtrackeralias (id, bugtracker, base_url) VALUES (1, 7, 'http://savannah.nognu.org/bugs/');
 
 
 ALTER TABLE bugtrackeralias ENABLE TRIGGER ALL;
