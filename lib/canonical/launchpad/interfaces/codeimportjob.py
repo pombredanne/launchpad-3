@@ -179,3 +179,18 @@ class ICodeImportJobWorkflow(Interface):
         :postcondition: `import_job`.heartbeat == UTC_NOW.
         :postcondition: A START `CodeImportEvent` was created.
         """
+
+    def updateHeartbeat(import_job, logtail):
+        """Updates the heartbeat of a running `CodeImportJob`.
+
+        Call this method at regular intervals while a job is running to provide
+        progress information for users and prevent the job from being reclaimed
+        by the code-import watchdog.
+
+        :param import_job: `CodeImportJob` with RUNNING state.
+        :param logtail: string containing the last few lines of the progress
+            output from the job.
+        :precondition: `import_job`.state == RUNNING.
+        :postcondition: `import_job`.heartbeat == UTC_NOW.
+        :postcondition: `import_job`.logtail == logtail.
+        """
