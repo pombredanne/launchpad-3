@@ -27,4 +27,4 @@ CREATE TABLE CodeReviewMessage (
 ALTER TABLE BranchMergeProposal
     ADD COLUMN conversation INTEGER REFERENCES CodeReviewMessage;
 
-INSERT INTO LaunchpadDatabaseRevision VALUES (88, 90, 0);
+INSERT INTO LaunchpadDatabaseRevision VALUES (121, 90, 0);
