@@ -257,6 +257,18 @@ class TestFilesystem(ServerTestCase, TestCaseWithTransport):
         transport.rename('branch/.bzr/dir1', 'branch/.bzr/dir2')
         self.assertEqual(['dir2'], transport.list_dir('branch/.bzr'))
 
+    @deferToThread
+    @wait_for_disconnect
+    def test_make_directory_twice(self):
+        # Let's see what happens if we try to make the same directory twice!
+        # 'rename dir1 dir2' succeeds if 'dir2' doesn't exist.
+        transport = self.getTransport('~testuser/+junk')
+        transport.mkdir('branch')
+        transport.mkdir('branch/.bzr')
+        transport.mkdir('branch/.bzr/dir1')
+        self.assertRaises(
+            errors.FileExists, transport.mkdir, 'branch/.bzr/dir1')
+
 
 class TestErrorMessages(ServerTestCase, TestCaseWithTransport):
 
