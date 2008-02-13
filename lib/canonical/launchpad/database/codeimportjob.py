@@ -181,3 +181,6 @@ class CodeImportJobWorkflow:
         naked_job.state = CodeImportJobState.RUNNING
         getUtility(ICodeImportEventSet).newStart(
             import_job.code_import, machine)
+
+    def updateHeartbeat(self, import_job, logtail):
+        """See `ICodeImportJobWorkflow`."""

@@ -466,6 +466,27 @@ class TestCodeImportJobWorkflowStartJob(unittest.TestCase,
             getUtility(ICodeImportJobWorkflow).startJob,
             job, machine)
 
+class TestCodeImportJobWorkflowUpdateHeartbeat(unittest.TestCase,
+        AssertFailureMixin, AssertSqlDateMixin, AssertEventMixin):
+    """Unit tests for CodeImportJobWorkflow.startJob."""
+
+    layer = LaunchpadFunctionalLayer
+
+    def setUp(self):
+        login_for_code_imports()
+        self.factory = LaunchpadObjectFactory()
+
+    def test_wrongJobState(self):
+        # Calling updateHeartbeat with a job whose state is not RUNNING is an
+        # error.
+        machine = self.factory.makeCodeImportMachine()
+        code_import = self.factory.makeCodeImport()
+        job = self.factory.makeCodeImportJob(code_import)
+        self.assertFailure(
+            "The CodeImportJob associated with %s is "
+            "PENDING." % code_import.branch.unique_name,
+            getUtility(ICodeImportJobWorkflow).updateHeartbeat,
+            job, u'')
 
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)
