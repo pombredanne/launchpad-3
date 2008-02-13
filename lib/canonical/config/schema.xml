@@ -1046,7 +1046,7 @@ k            </description>
             <example>http://bazaar.launchpad.net/</example>
         </key>
         <key name="codebrowse_root" datatype="canonical.config.urlbase"
-             default="http://codebrowse.launchpad.net/">
+             default="http://bazaar.launchpad.net/">
             <description>
                 The URL prefix for links to the Bazaar code browser.
                 Links are formed by appending the branch's unique name
