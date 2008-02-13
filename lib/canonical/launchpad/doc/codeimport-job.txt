@@ -93,7 +93,7 @@ instead of the actual time value.
     ...     syncUpdate(job)
     ...     query_template = 'id=%%s AND %s=%%s' % attribute
     ...     found_job = CodeImportJob.selectOne(
-    ...         query_template% sqlvalues(job.id, UTC_NOW))
+    ...         query_template % sqlvalues(job.id, UTC_NOW))
     ...     if found_job is None:
     ...         print getattr(job, attribute)
     ...     else:
