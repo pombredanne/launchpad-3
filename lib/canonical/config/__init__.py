@@ -183,7 +183,9 @@ def failover_to_zconfig(func):
 
         if not is_zconfig and lazr_value is None:
             # The callsite was converted to lazr config, but has an error.
-            raise AttributeError("Not found in ZConfig or lazr.config.")
+            raise AttributeError(
+                "ZConfig or lazr.config instances have no attribute '%s'." %
+                name)
         elif not is_zconfig and lazr_value is not None:
             # The callsite was converted to lazr.config.
             return lazr_value
@@ -191,7 +193,8 @@ def failover_to_zconfig(func):
               and lazr_value is not None and lazr_value == zconfig_value):
             # The ZConfig and lazr.config instances are compatible.
             return lazr_value
-        elif is_zconfig and lazr_value != zconfig_value:
+        elif (is_zconfig
+            and lazr_value is not None and lazr_value != zconfig_value):
             # The ZConfig and lazr.config instances are incompatible.
             raise_warning(
                 "Callsite expects a different type for '%s.%s'." %
@@ -199,7 +202,9 @@ def failover_to_zconfig(func):
             return zconfig_value
         else:
             # The callsite is using ZConfig, probably a multisection.
-            raise_warning("%s does not have '%s' key." % (self.name, name))
+            raise_warning(
+                "Callsite requests a nonexistent key: '%s.%s'." %
+                (self.name, name))
             return zconfig_value
 
     return failover_getattr

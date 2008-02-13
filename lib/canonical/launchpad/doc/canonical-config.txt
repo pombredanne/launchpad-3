@@ -57,53 +57,143 @@ During the transition from `ZConfig` to `canonical.lazr.config`,
 section and key are not found in the lazr.config instance,
 canonical.config will failover to the ZConfig instance.
 
-For example, ZConfig data is stored in the _cache attribute, lazr.config
-data is stored in _config. ZConfig stores the value as an int in this
-example, where lazr.config values are always strings. Data from the
-lazr.config instance takes precedence over ZConfig when data is accessed
-as attributes of canonical.config.
+
+=== There are five states that govern the returned value ===
+
+There are five states that `canonical.config` recognizes:
+
+1. When the section or key does not exist in either ZConfig or
+lazr.config, an error is raised. This state implies that the callsite
+was updated to lazr.config, but there is an error with the callsite
+or the schema. Neither the lazr.config or the ZConfig instances have
+a value for answertracker.bad_key. An AttributeError is raised stating
+the fact.
+
+Note that the ZConfig instance is stored in config._cache, while the
+lazr.config instance is stored in config._config.
+
+    >>> config._config.answertracker['bad_key']
+    Traceback (most recent call last):
+      ...
+    KeyError: 'bad_key'
+
+    >>> config._cache.testrunner.answertracker.bad_key
+    Traceback (most recent call last):
+     ...
+    AttributeError: SectionValue instance has no attribute 'bad_key'
+
+    >>> config.answertracker.bad_key
+    Traceback (most recent call last):
+     ...
+    AttributeError: ZConfig or lazr.config instances have no attribute
+    'bad_key'.
+
+2. When the key is found in the lazr.config instance, but not in the
+ZConfig instance, the lazr.config value is returned. It is assumed that
+the callsite was updated to lazr.conf. For example, The lazr.config
+schema has a database category, and the ZConfig does not.
+
+    >>> config._config.database.answertracker.dbuser
+    'answertracker'
+
+    >>> config._cache.testrunner.database.answertracker.dbuser
+    Traceback (most recent call last):
+     ...
+    AttributeError: SectionValue instance has no attribute 'database'
+
+    >>> config.database.answertracker.dbuser
+    'answertracker'
+
+3. When the key is found in both lazr.config and ZConfig instances,
+and they have the same value, the lazr.config value is returns. This
+case implies the two configuration are compatible. It is certain that
+the values are both strs too since lazr.config only supports str types.
+For example, both configs have 'answertracker.email_domain' and the
+value is a str.
+
+    >>> config._config.answertracker.email_domain
+    'answers.launchpad.net'
+
+    >>> config._cache.testrunner.answertracker.email_domain
+    'answers.launchpad.net'
+
+    >>> config.answertracker.email_domain
+    'answers.launchpad.net'
+
+4. When the key is found in both lazr.config and ZConfig instances, but
+they are not the same, the ZConfig value is returned. This implies that
+the callsite must be updates to expect a str. Since canonical.config
+compares the configs, and not the callsite's expectation, the ZConfig
+schema must be updated to use a str so that state 3 is met. For example,
+Both configs have 'answertracker.days_before_expiration', but the values
+are not the same; The ZConfig value is an int.
 
     >>> config._config.answertracker['days_before_expiration']
     '15'
+
     >>> config._cache.testrunner.answertracker.days_before_expiration
     15
+
     >>> config.answertracker.days_before_expiration
     15
 
+5. When the key is found in ZConfig, only, the ZConfig value is
+returned. The key was probably a ZConfig section; lazr.config does not
+support multi-sections. For example, the ZConfig instance has nested
+hostnames: 'launchpad.vhosts.blueprints.hostname'.
+
+    >>> config._config.launchpad['vhosts'].blueprints.hostname
+    Traceback (most recent call last):
+      ...
+    KeyError: 'vhosts'
+
+    >>> config._cache.testrunner.launchpad.vhosts.blueprints.hostname
+    'blueprints.launchpad.dev'
+
+    >>> config.launchpad.vhosts.blueprints.hostname
+    'blueprints.launchpad.dev'
+
+
+=== UnconvertedConfigWarning ===
+
+To support the developer, migrating to lazr.config, warnings can
+be emitted when ZConfig values are returned. When the
+ENABLE_DEPRECATED_ZCONFIG_WARNINGS is set to true in the
+environment, a warning is raised when canonical.config fails over
+to ZConfig.
+
+Note, the testrunner treats all warnings as errors, so we can
+test this by by checking for a traceback. Adding:
+
+    import warnings
+    warnings.filterwarnings('default', '.*', UnconvertedConfigWarning)
+
+will show all the warning emitted after the test comletes.
+
+Repeating the test for state 4, when the values of the keys are
+different types, a warning is raised stating that ZConfig has wrong
+type.
+
     >>> import os
     >>> os.environ['ENABLE_DEPRECATED_ZCONFIG_WARNINGS'] = 'true'
+
     >>> config.answertracker.days_before_expiration
     Traceback (most recent call last):
      ...
     UnconvertedConfigWarning: Callsite expects a different type for
     'answertracker.days_before_expiration'.
 
-    >>> os.environ['ENABLE_DEPRECATED_ZCONFIG_WARNINGS'] = 'false'
+Repeated the for state 5, when the key is only found in ZConfig, a
+warning is emitted to state that the callsite requested a non-existent
+key.
 
-lazr.config does not support multi-sections unlike ZConfig. Code that
-access launchpad.vhosts.blueprints.hostname will failover to the ZConfig
-instance.
-
-    >>> config._config.launchpad['vhosts'].blueprints.hostname
+    >>> config.launchpad.vhosts.blueprints.hostname
     Traceback (most recent call last):
-      ...
-    KeyError: 'vhosts'
-    >>> config._cache.testrunner.launchpad.vhosts.blueprints.hostname
-    'blueprints.launchpad.dev'
-    >>> config.launchpad.vhosts.blueprints.hostname
-    'blueprints.launchpad.dev'
+     ...
+    UnconvertedConfigWarning: Callsite requests a nonexistent key:
+    'launchpad.vhosts'.
 
-When the ENABLE_DEPRECATED_ZCONFIG_WARNINGS is set to true in the
-environment, a warning is raised when canonical.config fails over
-to ZConfig. The testrunner treats all warnings as errors, so we can
-test this by ...
-
-    >>> import os
-    >>> os.putenv('ENABLE_DEPRECATED_ZCONFIG_WARNINGS', 'true')
-    >>> config.launchpad.vhosts.blueprints.hostname
-    'blueprints.launchpad.dev'
-
-    >>> os.putenv('ENABLE_DEPRECATED_ZCONFIG_WARNINGS', 'false')
+    >>> os.environ['ENABLE_DEPRECATED_ZCONFIG_WARNINGS'] = 'false'
 
 
 == DatabaseConfig AKA dbconfig ==
