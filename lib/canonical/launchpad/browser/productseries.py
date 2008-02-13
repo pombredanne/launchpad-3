@@ -300,9 +300,12 @@ def get_series_branch_error(product, branch):
     Returns an HTML error message on error, and None otherwise.
     """
     if branch.product != product:
-        return ('<a href="%s">%s</a> is not a branch of <a href="%s">%s</a>.'
-                % (canonical_url(branch), quote(branch.unique_name),
-                   canonical_url(product), quote(product.displayname)))
+        return structured(
+            '<a href="%s">%s</a> is not a branch of <a href="%s">%s</a>.',
+            canonical_url(branch),
+            branch.unique_name,
+            canonical_url(product),
+            product.displayname)
     return None
 
 

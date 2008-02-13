@@ -1235,7 +1235,8 @@ class PersonClaimView(LaunchpadFormView):
                      % self.context.name)
         elif email.person != self.context:
             if email.person.is_valid_person:
-                error = ("This email address is associated with yet another "
+                error = structured(
+                         "This email address is associated with yet another "
                          "Launchpad profile, which you seem to have used at "
                          "some point. If that's the case, you can "
                          '<a href="/people/+requestmerge'
@@ -1243,8 +1244,8 @@ class PersonClaimView(LaunchpadFormView):
                          "this profile with the other one</a> (you'll "
                          "have to log in with the other profile first, "
                          "though). If that's not the case, please try with a "
-                         "different email address."
-                         % self.context.name)
+                         "different email address.",
+                         self.context.name)
             else:
                 # There seems to be another unvalidated profile for you!
                 error = structured(
