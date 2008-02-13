@@ -102,7 +102,7 @@ displayed.
 
     >>> anon_browser.open('http://launchpad.dev/~name16/+hwdb-submissions')
     >>> print extract_text(find_main_content(anon_browser.contents))
-    Submissions to the Hardware Database
+    Submissions for Foo Bar 
     Foo Bar has posted no submissions.
 
 Submissions that are marked as private and owned by a team are only
@@ -131,15 +131,16 @@ visible for members of the team and admins.
     >>> anon_browser.open(
     ...     'http://launchpad.dev/~ubuntu-team/+hwdb-submissions')
     >>> print extract_text(find_main_content(anon_browser.contents))
-    Submissions to the Hardware Database
+    Submissions for Ubuntu Team
     Ubuntu Team has posted no submissions.
 
     >>> browser = setupBrowser(auth='Basic celso.providelo@canonical.com:cprov')
     >>> browser.open('http://launchpad.dev/~ubuntu-team/+hwdb-submissions')
-    >>> print extract_text(find_main_content(browser.contents))
-    Submissions to the Hardware Database
-    System       Date submitted Download        Raw
-    Black Box 42 ...            teamtest.txt    ...
+    >>> [content_table] = find_tags_by_class(browser.contents, 'listing')
+    >>> print extract_text(content_table)
+    Submissions for Ubuntu Team
+    System        Date submitted  Download          Raw
+    Black Box 42  ...             teamtest.txt      ...
 
     >>> import transaction
     >>> transaction.commit()
