@@ -194,7 +194,7 @@ class SavannahExtractBugTrackerAndBugTest(ExtractBugTrackerAndBugTestBase):
 
     bugtracker_type = BugTrackerType.SAVANNAH
     bug_url = 'http://savannah.gnu.org/bugs/?22003'
-    base_url = 'http://savannah.gnu.org/bugs/'
+    base_url = 'http://savannah.gnu.org/'
     bug_id = '22003'
 
     def test_unregistered_tracker_url(self):
