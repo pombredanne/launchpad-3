@@ -96,12 +96,13 @@ class CanonicalConfig(object):
                 'configs')
             environ_dir = os.environ.get(
                     CONFIG_ENVIRONMENT_VARIABLE, DEFAULT_CONFIG)
+            if self._default_config_section == 'testrunner':
+                role = 'test'
+            else:
+                role = 'lazr'
             schema_file = os.path.join(config_dir, 'schema.lazr.conf')
-            # XXX sinzui 2008-02-11:
-            # This must select the test config too. 'launchpad.test.conf' will
-            # alway extend the local 'launchpad.lazr.conf'.
             config_file = os.path.join(
-                config_dir, environ_dir,'launchpad.lazr.conf')
+                config_dir, environ_dir,'launchpad.%s.conf' % role)
 
             # Monkey patch Section to store it's ZConfig counterpart, and
             # use it when it cannot provide the data.
@@ -186,22 +187,13 @@ def failover_to_zconfig(func):
             raise AttributeError(
                 "ZConfig or lazr.config instances have no attribute '%s'." %
                 name)
-        elif not is_zconfig and lazr_value is not None:
-            # The callsite was converted to lazr.config.
+        elif lazr_value is not None:
+            # The callsite was converted to lazr.config. It is assumed
+            # that the once a key is added to the config, all callsites
+            # are adpated.
             return lazr_value
-        elif (is_zconfig
-              and lazr_value is not None and lazr_value == zconfig_value):
-            # The ZConfig and lazr.config instances are compatible.
-            return lazr_value
-        elif (is_zconfig
-            and lazr_value is not None and lazr_value != zconfig_value):
-            # The ZConfig and lazr.config instances are incompatible.
-            raise_warning(
-                "Callsite expects a different type for '%s.%s'." %
-                (self.name, name))
-            return zconfig_value
         else:
-            # The callsite is using ZConfig, probably a multisection.
+            # The callsite is using ZConfig, it must be adapted.
             raise_warning(
                 "Callsite requests a nonexistent key: '%s.%s'." %
                 (self.name, name))
