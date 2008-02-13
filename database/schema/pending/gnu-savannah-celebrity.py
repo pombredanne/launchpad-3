@@ -28,7 +28,7 @@ admin_team = getUtility(ILaunchpadCelebrities).admin
 savannah = bugtracker_set.getByName('savannah')
 if savannah is None:
     savannah = bugtracker_set.ensureBugTracker(
-        'http://savannah.gnu.org/bugs/', admin_team, BugTrackerType.SAVANNAH,
+        'http://savannah.gnu.org/', admin_team, BugTrackerType.SAVANNAH,
         "GNU Savannah Bug Tracker", "Savannah is an open source software "
         "development hosting service based on SourceForge.",
         name='savannah')
@@ -39,7 +39,7 @@ else:
 bugtrackeralias_set = getUtility(IBugTrackerAliasSet)
 if not bugtrackeralias_set.queryByBugTracker(savannah):
     savannah_alias = BugTrackerAlias(bugtracker=savannah,
-        base_url='http://savannah.nognu.org/bugs/')
+        base_url='http://savannah.nognu.org/')
     print "Created NoGNU alias for Savannah tracker."
 else:
     print "NoGNU alias for Savannah already exists."
