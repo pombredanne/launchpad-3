@@ -138,7 +138,6 @@ visible for members of the team and admins.
     >>> browser.open('http://launchpad.dev/~ubuntu-team/+hwdb-submissions')
     >>> [content_table] = find_tags_by_class(browser.contents, 'listing')
     >>> print extract_text(content_table)
-    Submissions for Ubuntu Team
     System        Date submitted  Download          Raw
     Black Box 42  ...             teamtest.txt      ...
 
