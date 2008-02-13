@@ -3,7 +3,7 @@
 Any team administrator is allowed to propose/add (depending on the
 subscription policy) their teams as members of another team.
 
-This is done from the +add-my-teams page, which is linked to from a team's
+This is done from the +add-my-teams page, which is linked from a team's
 home page.
 
     >>> browser = setupBrowser(auth='Basic salgado@ubuntu.com:zeca')
@@ -12,8 +12,8 @@ home page.
     >>> browser.title
     'Propose/add one of your teams to another one'
 
-Since ubuntu-team is a moderated team, we're only allowed to propose the
-teams as members.
+For moderated teams, it's only possible to propose another team as a member.
+The proposal will have to be reviewed by a team administrator.
 
     >>> print extract_text(find_tag_by_id(browser.contents, 'maincontent'))
     Propose these teams as members
@@ -74,6 +74,11 @@ your teams as members.
     >>> browser.open('http://launchpad.dev/~ubuntu-team/+add-my-teams')
     >>> print extract_text(find_tag_by_id(browser.contents, 'maincontent'))
     This is a restricted team
-    New members can not be proposed -- they can only be added by one
+    New members can not be proposed&mdash;they can only be added by one
     of the team's administrators.
 
+The page is restricted to logged in users.
+
+    >>> anon_browser.open('http://launchpad.dev/~ubuntu-team/+add-my-teams')
+    Traceback (most recent call last):
+    Unauthorized:...

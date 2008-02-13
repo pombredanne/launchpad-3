@@ -957,8 +957,8 @@ class TeamOverviewMenu(ApplicationMenu, CommonMenuLinks):
              'add_member', 'memberships', 'received_invitations', 'mugshots',
              'editemail', 'configure_mailing_list', 'editlanguages', 'polls',
              'add_poll', 'joinleave', 'add_my_teams', 'mentorships',
-             'reassign', 'common_packages', 'related_projects', 'activate_ppa',
-             'show_ppa']
+             'reassign', 'common_packages', 'related_projects',
+             'activate_ppa', 'show_ppa']
 
     @enabled_with_permission('launchpad.Edit')
     def edit(self):
@@ -2650,7 +2650,8 @@ class PersonBrandingView(BrandingChangeView):
 
 class TeamJoinView(PersonView):
 
-    def joinAllowed(self):
+    @property
+    def join_allowed(self):
         """Is the logged in user allowed to join this team?
 
         The answer is yes if this team's subscription policy is not RESTRICTED
@@ -2670,7 +2671,8 @@ class TeamJoinView(PersonView):
         restricted = TeamSubscriptionPolicy.RESTRICTED
         return self.context.subscriptionpolicy != restricted
 
-    def userCanRequestToJoin(self):
+    @property
+    def user_can_request_to_join(self):
         """Can the logged in user request to join this team?
 
         The user can request if he's allowed to join this team and if he's
@@ -2690,7 +2692,7 @@ class TeamJoinView(PersonView):
         context = self.context
 
         notification = None
-        if 'join' in request.form and self.userCanRequestToJoin():
+        if 'join' in request.form and self.user_can_request_to_join:
             policy = context.subscriptionpolicy
             user.join(context)
             if policy == TeamSubscriptionPolicy.MODERATED:
@@ -2712,7 +2714,7 @@ class TeamJoinView(PersonView):
 
 
 class TeamAddMyTeamsView(LaunchpadFormView):
-    """Propose/add to this team any of the teams you're an administrator of."""
+    """Propose/add to this team any team that you're an administrator of."""
 
     custom_widget('teams', LabeledMultiCheckBoxWidget)
 
@@ -2745,7 +2747,7 @@ class TeamAddMyTeamsView(LaunchpadFormView):
         self.widgets['teams'].display_label = False
 
     @action(_("Cancel"), name="cancel",
-            validator=lambda self, action, data: [])
+            validator=LaunchpadFormView.validate_none)
     def cancel_action(self, action, data):
         """Simply redirect to the team's page."""
         pass
@@ -2759,9 +2761,10 @@ class TeamAddMyTeamsView(LaunchpadFormView):
     @action(_("Continue"), name="continue")
     def continue_action(self, action, data):
         """Make the selected teams join this team."""
+        context = self.context
         for team in data['teams']:
-            team.join(self.context, reviewer=self.user)
-        if self.context.subscriptionpolicy == TeamSubscriptionPolicy.MODERATED:
+            team.join(context, requester=self.user)
+        if context.subscriptionpolicy == TeamSubscriptionPolicy.MODERATED:
             msg = 'proposed to this team.'
         else:
             msg = 'added to this team.'

@@ -1098,15 +1098,15 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
 
         tm.setStatus(TeamMembershipStatus.DEACTIVATED, self)
 
-    def join(self, team, reviewer=None):
+    def join(self, team, requester=None):
         """See `IPerson`."""
         if self in team.activemembers:
             return
 
-        if reviewer is None:
+        if requester is None:
             assert not self.isTeam(), (
                 "You need to specify a reviewer when a team joins another.")
-            reviewer = self
+            requester = self
 
         expired = TeamMembershipStatus.EXPIRED
         proposed = TeamMembershipStatus.PROPOSED
@@ -1131,7 +1131,7 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
         # has the right permission to add the specified person to the team.
         naked_team = removeSecurityProxy(team)
         naked_team.addMember(
-            self, reviewer=reviewer, status=status, force_team_add=True)
+            self, reviewer=requester, status=status, force_team_add=True)
 
     def clearInTeamCache(self):
         """See `IPerson`."""

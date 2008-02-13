@@ -99,7 +99,7 @@ Team admins can make any of their teams join other teams as well.
 Just like for people, if the team is MODERATED, the membership will
 be PENDING, whereas for OPEN teams the membership will be automatically
 approved.  Note, though, that in the case of teams we need to pass a
-reviewer to the join() method.
+requester to the join() method.
 
     >>> ubuntu_team = personset.getByName('ubuntu-team')
     >>> from canonical.launchpad.ftests import ANONYMOUS, login, logout

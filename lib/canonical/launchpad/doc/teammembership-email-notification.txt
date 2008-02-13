@@ -208,11 +208,11 @@ The same for deactivating a membership.
     ----------------------------------------
 
 Team admins can propose their teams using the join() method as well, but in
-that case we'll use the reviewer's (the person proposint the team as the
+that case we'll use the requester's (the person proposing the team as the
 other's member) email address in the 'Reply-To' header of the message sent.
 
     >>> admins = personset.getByName('admins')
-    >>> admins.join(ubuntu_team, reviewer=sabdfl)
+    >>> admins.join(ubuntu_team, requester=sabdfl)
     >>> transaction.commit()
     >>> len(stub.test_emails)
     4 

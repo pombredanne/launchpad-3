@@ -1213,7 +1213,7 @@ class IPersonViewRestricted(Interface):
 class IPersonEditRestricted(Interface):
     """IPerson attributes that require launchpad.Edit permission."""
 
-    def join(team, reviewer=None):
+    def join(team, requester=None):
         """Join the given team if its subscriptionpolicy is not RESTRICTED.
 
         Join the given team according to the policies and defaults of that
@@ -1223,6 +1223,9 @@ class IPersonEditRestricted(Interface):
         - If the team subscriptionpolicy is MODERATED, the user is added as
           a PROPOSED member and one of the team's administrators have to
           approve the membership.
+
+        :param requester: The person who requested the membership on behalf of
+        a team or None when a person requests the membership for himself.
         """
 
     def leave(team):
