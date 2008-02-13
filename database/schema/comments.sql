@@ -84,6 +84,7 @@ COMMENT ON COLUMN BranchSubscription.person IS 'The person or team associated wi
 COMMENT ON COLUMN BranchSubscription.branch IS 'The branch associated with the person or team.';
 COMMENT ON COLUMN BranchSubscription.notification_level IS 'The level of email the person wants to receive from branch updates.';
 COMMENT ON COLUMN BranchSubscription.max_diff_lines IS 'If the generated diff for a revision is larger than this number, then the diff is not sent in the notification email.';
+COMMENT ON COLUMN BranchSubscription.review_level IS 'The level of email the person wants to receive from review activity';
 
 -- BranchVisibilityPolicy
 
