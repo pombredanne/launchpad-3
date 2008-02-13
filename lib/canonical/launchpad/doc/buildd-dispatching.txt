@@ -235,10 +235,17 @@ environment is back to the initial state.
 
 == Security build dispatching ==
 
-Create a new Build record for test source targeted to SECURITY pocket:
+Setup chroot for warty/i386.
+
+  >>> warty = getUtility(IDistributionSet)['ubuntu']['warty']
+  >>> warty_i386 = warty['i386']
+  >>> pc = warty_i386.addOrUpdateChroot(chroot=chroot)
+
+Create a new Build record for test source targeted to warty/i386
+architecture and SECURITY pocket:
 
   >>> sec_build = sprf.sourcepackagerelease.createBuild(
-  ...     hoary_i386, PackagePublishingPocket.SECURITY, hoary.main_archive)
+  ...     warty_i386, PackagePublishingPocket.SECURITY, hoary.main_archive)
 
 Create BuildQueue record and inspect some parameters:
 
@@ -266,12 +273,17 @@ implementation.
 
 To solve this problem temporarily until we start building security
 uploads, we will mark builds targeted to the SECURITY pocket as
-FAILEDTOBUILD during the findBuildCandidate look-up. We will also
-create another candidate to check if legitimate pending candidates will
-remain valid.
+FAILEDTOBUILD during the findBuildCandidate look-up.
+
+We will also create another build candidate in breezy-autotest/i386 to
+check if legitimate pending candidates will remain valid.
+
+  >>> breezy = getUtility(IDistributionSet)['ubuntu']['breezy-autotest']
+  >>> breezy_i386 = breezy['i386']
+  >>> pc = breezy_i386.addOrUpdateChroot(chroot=chroot)
 
   >>> pending_build = sprf.sourcepackagerelease.createBuild(
-  ...     hoary_i386, PackagePublishingPocket.UPDATES, hoary.main_archive)
+  ...     breezy_i386, PackagePublishingPocket.UPDATES, hoary.main_archive)
   >>> pending_job = pending_build.createBuildQueueEntry()
 
 We increase the score of the security job to ensure it is considered

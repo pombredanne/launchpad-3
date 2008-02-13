@@ -54,7 +54,8 @@ from canonical.launchpad.interfaces import (
     IJabberID, IJabberIDSet, ILaunchBag, ILaunchpadCelebrities,
     ILaunchpadStatisticSet, ILoginTokenSet, IMailingListSet,
     INACTIVE_ACCOUNT_STATUSES, IPasswordEncryptor, IPerson, IPersonSet,
-    IPillarNameSet, IProduct, ISSHKey, ISSHKeySet, ISignedCodeOfConductSet,
+    IPillarNameSet, IProduct, IRevisionSet,
+    ISSHKey, ISSHKeySet, ISignedCodeOfConductSet,
     ISourcePackageNameSet, ITeam, ITranslationGroupSet, IWikiName,
     IWikiNameSet, JoinNotAllowed, LoginTokenType,
     PersonCreationRationale, PersonVisibility,
@@ -1690,6 +1691,9 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
         else:
             email.status = EmailAddressStatus.VALIDATED
             getUtility(IHWSubmissionSet).setOwnership(email)
+        # Now that we have validated the email, see if this can be
+        # matched to an existing RevisionAuthor.
+        getUtility(IRevisionSet).checkNewVerifiedEmail(email)
 
     def setContactAddress(self, email):
         """See `IPerson`."""

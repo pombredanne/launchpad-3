@@ -33,7 +33,6 @@ from canonical.launchpad.webapp.authorization import LaunchpadSecurityPolicy
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 from canonical.launchpad.webapp.tests import test_notifications
 from canonical.testing import (
-    ExperimentalLaunchpadZopelessLayer,
     LaunchpadZopelessLayer, LaunchpadFunctionalLayer,DatabaseLayer,
     FunctionalLayer)
 
@@ -417,8 +416,7 @@ special = {
     'buildd-scoring.txt': LayeredDocFileSuite(
             '../doc/buildd-scoring.txt',
             setUp=builddmasterSetUp,
-            layer=LaunchpadZopelessLayer, optionflags=default_optionflags,
-            stdout_logging_level=logging.DEBUG
+            layer=LaunchpadZopelessLayer, optionflags=default_optionflags
             ),
     'buildd-queuebuilder.txt': LayeredDocFileSuite(
             '../doc/buildd-queuebuilder.txt',
@@ -605,6 +603,13 @@ special = {
     'externalbugtracker-debbugs.txt':
             LayeredDocFileSuite(
                 '../doc/externalbugtracker-debbugs.txt',
+                setUp=checkwatchesSetUp,
+                tearDown=tearDown,
+                optionflags=default_optionflags, layer=LaunchpadZopelessLayer
+                ),
+    'externalbugtracker-emailaddress.txt':
+            LayeredDocFileSuite(
+                '../doc/externalbugtracker-emailaddress.txt',
                 setUp=checkwatchesSetUp,
                 tearDown=tearDown,
                 optionflags=default_optionflags, layer=LaunchpadZopelessLayer
