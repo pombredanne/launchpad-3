@@ -28,7 +28,7 @@ Karma is added for registering a branch.
     >>> from canonical.launchpad.testing import LaunchpadObjectFactory
     >>> factory = LaunchpadObjectFactory()
     >>> fooix = factory.makeProduct(name='fooix')
-    >>> eric = factory.makePerson(name='eric')
+    >>> eric = factory.makePerson(name='eric', password='test')
     >>> branch = factory.makeBranch(owner=eric, product=fooix)
     Karma added: action=branchcreated, product=fooix, person=eric
 
