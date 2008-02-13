@@ -17,9 +17,22 @@ import pytz
 from zope.component import getUtility
 from canonical.launchpad.interfaces import (
     BranchMergeProposalStatus,
-    BranchType, CreateBugParams, IBranchSet, IBugSet, ILaunchpadCelebrities,
-    IPersonSet, IProductSet, IRevisionSet, License, PersonCreationRationale,
-    UnknownBranchTypeError)
+    BranchType,
+    CodeImportReviewStatus,
+    CreateBugParams,
+    IBranchSet,
+    IBugSet,
+    ICodeImportJobWorkflow,
+    ICodeImportSet,
+    ILaunchpadCelebrities,
+    IPersonSet,
+    IProductSet,
+    IRevisionSet,
+    License,
+    PersonCreationRationale,
+    RevisionControlSystems,
+    UnknownBranchTypeError,
+    )
 
 
 def time_counter(origin=None, delta=timedelta(seconds=5)):
@@ -116,7 +129,8 @@ class LaunchpadObjectFactory:
             licenses=[License.GPL])
 
     def makeBranch(self, branch_type=None, owner=None, name=None,
-                   product=None, url=None, **optional_branch_args):
+                   product=None, url=None, registrant=None,
+                   **optional_branch_args):
         """Create and return a new, arbitrary Branch of the given type.
 
         Any parameters for IBranchSet.new can be specified to override the
@@ -126,6 +140,8 @@ class LaunchpadObjectFactory:
             branch_type = BranchType.HOSTED
         if owner is None:
             owner = self.makePerson()
+        if registrant is None:
+            registrant = owner
         if name is None:
             name = self.getUniqueString('branch')
         if product is None:
@@ -140,7 +156,7 @@ class LaunchpadObjectFactory:
             raise UnknownBranchTypeError(
                 'Unrecognized branch type: %r' % (branch_type,))
         return getUtility(IBranchSet).new(
-            branch_type, name, owner, owner, product, url,
+            branch_type, name, registrant, owner, product, url,
             **optional_branch_args)
 
     def makeBranchMergeProposal(self, target_branch=None, registrant=None,
@@ -230,3 +246,30 @@ class LaunchpadObjectFactory:
             owner, title, comment=self.getUniqueString())
         create_bug_params.setBugTarget(product=self.makeProduct())
         return getUtility(IBugSet).createBug(create_bug_params)
+
+    def makeCodeImport(self, url=None):
+        """Create and return a new, arbitrary code import.
+
+        The code import will be an import from a Subversion repository located
+        at `url`, or an arbitrary unique url if the parameter is not supplied.
+        """
+        if url is None:
+            url = self.getUniqueURL()
+        vcs_imports = getUtility(ILaunchpadCelebrities).vcs_imports
+        branch = self.makeBranch(
+            BranchType.IMPORTED, owner=vcs_imports)
+        registrant = self.makePerson()
+        return getUtility(ICodeImportSet).new(
+            registrant, branch, rcs_type=RevisionControlSystems.SVN,
+            svn_branch_url=url)
+
+    def makeCodeImportJob(self, code_import):
+        """Create and return a new code import job for the given import.
+
+        This implies setting the import's review_status to REVIEWED.
+        """
+        code_import.updateFromData(
+            {'review_status': CodeImportReviewStatus.REVIEWED},
+            code_import.registrant)
+        workflow = getUtility(ICodeImportJobWorkflow)
+        return workflow.newJob(code_import)

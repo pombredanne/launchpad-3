@@ -591,7 +591,7 @@ And run the import script.
     >>> process.run()
     INFO    Importing: Template "firefox" in Mozilla Firefox trunk
     INFO    Importing: Welsh (cy) ... of firefox in Mozilla Firefox trunk
-    WARNING Got an old version for Welsh (cy) ... in Mozilla Firefox trunk
+    INFO    Got an old version for Welsh (cy) ... in Mozilla Firefox trunk
     INFO    Importing: Welsh (cy) ... of firefox in Mozilla Firefox trunk
     INFO    Import requests completed.
 
