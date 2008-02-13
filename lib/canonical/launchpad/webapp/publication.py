@@ -428,10 +428,11 @@ class LaunchpadBrowserPublication(
         # handleException method we call does this (bug to be fixed upstream)
         if (retry_allowed
             and isinstance(exc_info[1], (Retry, da.DisconnectionError))):
-            # Remove variables used for counting ticks as this request is
-            # going to be retried.
-            orig_env.pop('launchpad.traversalticks', None)
-            orig_env.pop('launchpad.publicationticks', None)
+            if request.supportsRetry():
+                # Remove variables used for counting ticks as this request is
+                # going to be retried.
+                orig_env.pop('launchpad.traversalticks', None)
+                orig_env.pop('launchpad.publicationticks', None)
             if isinstance(exc_info[1], Retry):
                 raise
             raise Retry(exc_info)
