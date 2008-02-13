@@ -24,9 +24,10 @@ from canonical.launchpad.interfaces import (
     IBugTaskSet, IBugTrackerSet, IBugWatchSet,
     ICodeImportSchedulerApplication, IDistroSeriesSet, IFeedsApplication,
     IHWDBApplication, ILanguageSet, ILaunchBag, ILaunchpadStatisticSet,
-    IMailingListApplication, IMaloneApplication, IOpenIdApplication,
-    IPersonSet, IProductSet, IRegistryApplication, IRosettaApplication,
-    IShipItApplication, ITranslationGroupSet, IWebServiceApplication)
+    IMailingListApplication, IMaloneApplication, IMessageSet,
+    IOpenIdApplication, IPersonSet, IProductSet, IRegistryApplication,
+    IRosettaApplication, IShipItApplication, ITranslationGroupSet,
+    IWebServiceApplication)
 from canonical.lazr.rest import ServiceRootResource
 
 class AuthServerApplication:
@@ -195,4 +196,6 @@ class WebServiceApplication(ServiceRootResource):
     # See ServiceRootResource for more on top_level_collections
     @property
     def top_level_collections(self):
-        return { 'people' : getUtility(IPersonSet) }
+        return { 'bugtasks' : getUtility(IBugTaskSet),
+                 'bugs' : getUtility(IBugSet),
+                 'people' : getUtility(IPersonSet) }

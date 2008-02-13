@@ -144,7 +144,8 @@
       </metal:block></div>
       <div style="clear: both;">&nbsp;</div>
     </div>
-    <div id="footer">Copyright &copy; 2007 Canonical Ltd.</div>
+    <div id="footer">&copy;&nbsp;2004-2008&nbsp;<a
+        href="http://canonical.com/">Canonical&nbsp;Ltd.</a></div>
   </body>
 </html>
 </metal:page>

@@ -14,17 +14,17 @@ from canonical.launchpad.interfaces import (
     ICodeImport, ICodeImportJob, ICodeImportJobSet, ICodeImportJobWorkflow,
     ICodeImportMachine, ICodeImportMachineSet, ICodeImportSet, IDistribution,
     IDistributionMirror, IDistroSeries, IDistroSeriesLanguage, IEntitlement,
-    IFAQ, IFAQTarget, IHasBug, IHasDrivers, IHasOwner, IHWSubmission,
-    ILanguage, ILanguagePack, ILanguageSet, ILaunchpadCelebrities, IMilestone,
-    IPackageUpload, IPackageUploadQueue, IPerson, IPOFile, IPoll, IPollSubset,
-    IPollOption, IPOTemplate, IPOTemplateSubset, IProduct, IProductRelease,
+    IFAQ, IFAQTarget, IHWSubmission, IHasBug, IHasDrivers, IHasOwner,
+    ILanguage, ILanguagePack, ILanguageSet, ILaunchpadCelebrities,
+    IMailingListSet, IMilestone, IPOFile, IPOTemplate, IPOTemplateSubset,
+    IPackageUpload, IPackageUploadQueue, IPackaging, IPerson, IPoll,
+    IPollOption, IPollSubset, IProduct, IProductRelease, IProductReleaseFile,
     IProductSeries, IQuestion, IQuestionTarget, IRequestedCDs,
     IShipItApplication, IShippingRequest, IShippingRequestSet, IShippingRun,
     ISpecification, ISpecificationSubscription, ISprint, ISprintSpecification,
     IStandardShipItRequest, IStandardShipItRequestSet, ITeam, ITeamMembership,
     ITranslationGroup, ITranslationGroupSet, ITranslationImportQueue,
-    ITranslationImportQueueEntry, ITranslator, PackageUploadStatus,
-    IPackaging, IProductReleaseFile, PersonVisibility)
+    ITranslationImportQueueEntry, ITranslator, PersonVisibility)
 
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.interfaces import IAuthorization
@@ -1021,31 +1021,8 @@ class EditPackageUploadQueue(AdminByAdminsTeam):
         return user.inTeam(self.obj.distroseries.distribution.upload_admin)
 
 
-class ViewPackageUploadQueue(EditPackageUploadQueue):
-    permission = 'launchpad.View'
-    usedfor = IPackageUploadQueue
-
-    def checkAuthenticated(self, user):
-        """Allow only members of the admin team to view unapproved entries.
-
-        Any logged in user can view entries in other state.
-        """
-        if EditPackageUploadQueue.checkAuthenticated(self, user):
-            return True
-        # deny access to non-admin on unapproved records
-        if self.obj.status == PackageUploadStatus.UNAPPROVED:
-            return False
-
-        return True
-
-
 class EditPackageUpload(EditPackageUploadQueue):
     permission = 'launchpad.Edit'
-    usedfor = IPackageUpload
-
-
-class ViewPackageUpload(ViewPackageUploadQueue):
-    permission = 'launchpad.View'
     usedfor = IPackageUpload
 
 
@@ -1385,3 +1362,12 @@ class ViewArchive(AuthorizationBase):
     def checkUnauthenticated(self):
         """Unauthenticated users can see the PPA if it's not private."""
         return not self.obj.private
+
+
+class MailingListApprovalByExperts(AuthorizationBase):
+    permission = 'launchpad.Admin'
+    usedfor = IMailingListSet
+
+    def checkAuthenticated(self, user):
+        experts = getUtility(ILaunchpadCelebrities).mailing_list_experts
+        return user.inTeam(experts)

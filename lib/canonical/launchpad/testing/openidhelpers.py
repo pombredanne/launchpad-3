@@ -4,12 +4,11 @@
 
 __metaclass__ = type
 __all__ = [
+    'ConsumerView',
     'PublisherFetcher',
     'complete_from_browser',
-    'install_consumerview',
     'make_endpoint',
     'make_identifier_select_endpoint',
-    'uninstall_consumerview',
 ]
 
 from StringIO import StringIO
@@ -21,13 +20,6 @@ from openid.consumer.discover import (
     OPENID_2_0_TYPE, OPENID_IDP_2_0_TYPE)
 from openid.message import IDENTIFIER_SELECT
 
-from zope.app.testing.ztapi import browserView
-from zope.interface import implements
-from zope.publisher.interfaces.browser import IBrowserPublisher
-from zope.security.checker import (
-    Checker, CheckerPublic, defineChecker, undefineChecker)
-from zope.testbrowser.testing import PublisherHTTPHandler
-
 from canonical.launchpad.webapp import LaunchpadView
 from canonical.launchpad.webapp.vhosts import allvhosts
 
@@ -36,7 +28,6 @@ class ConsumerView(LaunchpadView):
     """Register a view that renders the parameters in the response
     in an easily testable format.
     """
-    implements(IBrowserPublisher)
     def render(self):
         out = StringIO()
         print >> out, 'Consumer received %s' % self.request.method
@@ -44,53 +35,21 @@ class ConsumerView(LaunchpadView):
         for key in keys:
             print >> out, '%s:%s' % (key, self.request.form[key])
         return out.getvalue()
-    def browserDefault(self, request):
-        return self, ()
-
-
-def install_consumer():
-    defineChecker(ConsumerView, Checker({
-        '__call__': CheckerPublic,
-        'browserDefault': CheckerPublic,
-        'render': CheckerPublic}))
-    browserView(None, '+openid-consumer', ConsumerView)
-
-
-def uninstall_consumer():
-    undefineChecker(ConsumerView)
 
 
 class PublisherFetcher(fetchers.Urllib2Fetcher):
     """An `HTTPFetcher` that passes requests on to the Zope publisher."""
     def __init__(self):
         super(PublisherFetcher, self).__init__()
-        self.urlopen = urllib2.build_opener(PublisherHTTPHandler).open
+        # This module does "from test import pystone".  Doing this
+        # import earlier causes "make run" to fail due to test.py
+        # shadowing the package.
+        from zope.testbrowser.testing import PublisherHTTPHandler
+        self.opener = urllib2.build_opener(PublisherHTTPHandler)
 
-    def fetch(self, url, body=None, headers=None):
-        if not fetchers._allowedURL(url):
-            raise ValueError('Bad URL scheme: %r' % (url,))
-
-        if headers is None:
-            headers = {}
-
-        headers.setdefault(
-            'User-Agent',
-            "%s Python-urllib/%s" % (fetchers.USER_AGENT,
-                                     urllib2.__version__,))
-        headers.setdefault('X-zope-handle-errors', True)
-
-        req = urllib2.Request(url, data=body, headers=headers)
-        try:
-            f = self.urlopen(req)
-            try:
-                return self._makeResponse(f)
-            finally:
-                f.close()
-        except urllib2.HTTPError, why:
-            try:
-                return self._makeResponse(why)
-            finally:
-                why.close()
+    def urlopen(self, request):
+        request.add_header('X-zope-handle-errors', True)
+        return self.opener.open(request)
 
 
 def make_endpoint(protocol_uri, claimed_id, local_id=None):

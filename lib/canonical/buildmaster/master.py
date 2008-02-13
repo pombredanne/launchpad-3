@@ -252,12 +252,20 @@ class BuilddMaster:
                     "No processors defined for %s: skipping %s"
                     % (archseries.title, header))
                 continue
-            # Dismiss if build is already present for this
-            # distroarchseries.
-            if pubrec.sourcepackagerelease.getBuildByArch(
-                archseries, pubrec.archive):
+
+            build_candidate = pubrec.sourcepackagerelease.getBuildByArch(
+                archseries, pubrec.archive)
+
+            # Dismiss if build is already present for this specific
+            # distroarchseries or if it was already FULLYBUILT in any
+            # architecture.
+            if (build_candidate is not None and
+                (build_candidate.distroarchseries == archseries or
+                 build_candidate.buildstate == BuildStatus.FULLYBUILT)):
                 continue
-            # Create new Build record.
+
+            # Create new Build record, its corresponding BuildQueue and
+            # score it, so it will be ready for dispatching.
             self._logger.debug(
                 header + "Creating %s (%s)"
                 % (archseries.architecturetag, pubrec.pocket.title))

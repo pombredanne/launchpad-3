@@ -21,17 +21,16 @@ from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
 
+from canonical.launchpad.database.bugset import BugSetBase
 from canonical.launchpad.event import SQLObjectModifiedEvent
-
-from canonical.launchpad.webapp import urlappend, urlsplit
-from canonical.launchpad.webapp.snapshot import Snapshot
-from canonical.launchpad.webapp.uri import find_uris_in_text
-
 from canonical.launchpad.interfaces import (
     BugTrackerType, BugWatchErrorType, IBugTrackerSet, IBugWatch,
     IBugWatchSet, ILaunchpadCelebrities, NoBugTrackerFound,
     NotFoundError, UnrecognizedBugTrackerURL)
-from canonical.launchpad.database.bugset import BugSetBase
+from canonical.launchpad.validators.email import valid_email
+from canonical.launchpad.webapp import urlappend, urlsplit
+from canonical.launchpad.webapp.snapshot import Snapshot
+from canonical.launchpad.webapp.uri import find_uris_in_text
 
 
 class BugWatch(SQLBase):
@@ -193,12 +192,12 @@ class BugWatchSet(BugSetBase):
         self.bugtracker_parse_functions = {
             BugTrackerType.BUGZILLA: self.parseBugzillaURL,
             BugTrackerType.DEBBUGS:  self.parseDebbugsURL,
+            BugTrackerType.EMAILADDRESS: self.parseEmailAddressURL,
+            BugTrackerType.MANTIS: self.parseMantisURL,
             BugTrackerType.ROUNDUP: self.parseRoundupURL,
             BugTrackerType.RT: self.parseRTURL,
             BugTrackerType.SOURCEFORGE: self.parseSourceForgeURL,
-            BugTrackerType.TRAC: self.parseTracURL,
-            BugTrackerType.MANTIS: self.parseMantisURL,
-        }
+            BugTrackerType.TRAC: self.parseTracURL,}
 
     def get(self, watch_id):
         """See canonical.launchpad.interfaces.IBugWatchSet."""
@@ -222,11 +221,22 @@ class BugWatchSet(BugSetBase):
             try:
                 bugtracker, remotebug = self.extractBugTrackerAndBug(str(url))
             except NoBugTrackerFound, error:
+                # We don't want to auto-create EMAILADDRESS bug trackers
+                # based on mailto: URIs in comments.
+                if error.bugtracker_type == BugTrackerType.EMAILADDRESS:
+                    continue
+
                 bugtracker = getUtility(IBugTrackerSet).ensureBugTracker(
                     error.base_url, owner, error.bugtracker_type)
                 remotebug = error.remote_bug
             except UnrecognizedBugTrackerURL:
                 # It doesn't look like a bug URL, so simply ignore it.
+                continue
+
+            # We don't create bug watches for EMAILADDRESS bug trackers
+            # from mailto: URIs in comments, so in those cases we give
+            # up.
+            if bugtracker.bugtrackertype == BugTrackerType.EMAILADDRESS:
                 continue
 
             if bug.getBugWatch(bugtracker, remotebug) is None:
@@ -381,6 +391,24 @@ class BugWatchSet(BugSetBase):
         sf_tracker = getUtility(ILaunchpadCelebrities).sourceforge_tracker
 
         return sf_tracker.baseurl, remote_bug
+
+    def parseEmailAddressURL(self, scheme, host, path, query):
+        """Extract an email address from a bug URL.
+
+        This method will return (mailto:<email_address>, '') since email
+        address bug trackers cannot have bug numbers. We return an empty
+        string for the remote bug since BugWatch.remotebug cannot be
+        None.
+        """
+        # We ignore anything that isn't a mailto URL.
+        if scheme != 'mailto':
+            return None
+
+        # We also reject invalid email addresses.
+        if not valid_email(path):
+            return None
+
+        return '%s:%s' % (scheme, path), ''
 
     def extractBugTrackerAndBug(self, url):
         """See IBugWatchSet."""

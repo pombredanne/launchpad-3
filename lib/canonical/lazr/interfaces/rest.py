@@ -5,17 +5,26 @@
 __metaclass__ = type
 __all__ = [
     'ICollection',
+    'ICollectionField',
     'ICollectionResource',
     'IEntry',
     'IEntryResource',
     'IHTTPResource',
     'IJSONPublishable',
+    'IScopedCollection',
     'IServiceRootResource'
     ]
 
 from zope.interface import Interface, Attribute
 from zope.publisher.interfaces import IPublishTraverse
+from zope.schema.interfaces import IObject
 from canonical.launchpad.webapp.interfaces import ICanonicalUrlData
+
+class ICollectionField(IObject):
+    """A collection associated with an entry.
+
+    This is a marker interface.
+    """
 
 
 class IHTTPResource(IPublishTraverse, ICanonicalUrlData):
@@ -58,6 +67,9 @@ class ICollectionResource(IHTTPResource, IPublishTraverse):
     def path(self):
         """Find the URL fragment that names this collection."""
 
+    def getEntryPath(self, entry):
+        """Find the URL fragment that names the given entry."""
+
     def do_GET(self):
         """Retrieve this collection.
 
@@ -89,7 +101,18 @@ class ICollection(Interface):
         """
 
     def find(self):
-        """Retrieve all entries in the collection.
+        """Retrieve all entries in the collection under the given scope.
 
         :return: A list of IEntry objects.
         """
+
+    def getEntryPath(self, child):
+        """Choose a URL fragment for one of this collection's entries."""
+
+
+class IScopedCollection(ICollection):
+
+    relationship = Attribute("The relationship between an entry and a "
+                             "collection.")
+    collection = Attribute("The collection scoped to an entry.")
+

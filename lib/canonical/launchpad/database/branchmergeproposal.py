@@ -74,14 +74,13 @@ class BranchMergeProposal(SQLBase):
         dbName='merge_reporter', foreignKey='Person', notNull=False,
         default=None)
 
-    supersedes = ForeignKey(
-        dbName='supersedes', foreignKey='BranchMergeProposal',
-        notNull=False, default=None)
-
     @property
-    def superseded_by(self):
-        return BranchMergeProposal.selectOneBy(
-            supersedes=self)
+    def supersedes(self):
+        return BranchMergeProposal.selectOneBy(superseded_by=self)
+
+    superseded_by = ForeignKey(
+        dbName='superseded_by', foreignKey='BranchMergeProposal',
+        notNull=False, default=None)
 
     date_created = UtcDateTimeCol(notNull=True, default=DEFAULT)
     date_review_requested = UtcDateTimeCol(notNull=False, default=None)
@@ -252,21 +251,28 @@ class BranchMergeProposal(SQLBase):
             BranchMergeProposalStatus.SUPERSEDED,
             invalid_states=[BranchMergeProposalStatus.MERGED,
                             BranchMergeProposalStatus.SUPERSEDED])
+        # This sync update is needed as the add landing target does
+        # a database query to identify if there are any active proposals
+        # with the same source and target branches.
         self.syncUpdate()
         proposal = self.source_branch.addLandingTarget(
             registrant=registrant,
             target_branch=self.target_branch,
             dependent_branch=self.dependent_branch,
             whiteboard=self.whiteboard)
-        proposal.supersedes = self
+        self.superseded_by = proposal
+        # This sync update is needed to ensure that the transitive
+        # properties of supersedes and superseded_by are visible to
+        # the old and the new proposal.
+        self.syncUpdate()
         return proposal
 
     def deleteProposal(self):
         """See `IBranchMergeProposal`."""
         # Delete this proposal, but keep the superseded chain linked.
-        if self.superseded_by is not None:
-            self.superseded_by.supersedes = self.supersedes
-            self.superseded_by.syncUpdate()
+        if self.supersedes is not None:
+            self.supersedes.superseded_by = self.superseded_by
+            self.supersedes.syncUpdate()
         self.destroySelf()
 
     def getUnlandedSourceBranchRevisions(self):
