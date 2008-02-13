@@ -9,18 +9,18 @@
   metal:use-macro="view/macro:page/applicationhome"
   i18n:domain="launchpad"
 >
-<body>
+  <body>
     <h1 metal:fill-slot="heading">Hardware Database Submission</h1>
 
     <div metal:fill-slot="main">
-        <div metal:use-macro="context/@@launchpad_form/form">
+      <div metal:use-macro="context/@@launchpad_form/form">
 
-            <p metal:fill-slot="extra_info">
-              This form is only intended to be filled and submitted by Ubuntu's 
-              Hardware Database Client.
-            </p>
+        <p metal:fill-slot="extra_info">
+          This form is only intended to be filled and submitted by Ubuntu's 
+          Hardware Database Client.
+        </p>
 
-        </div>
+      </div>
     </div>
-</body>
+  </body>
 </html>
