@@ -373,13 +373,14 @@ class enabled_with_permission:
 
 
 def escape(message):
-    """Perform translation and CGI-escaping of a message.
+    """Performs translation and sanitizes any HTML present in the message string.
 
-    A plain string message will be CGI escaped.  Passing a message
-    that provides the `IStructuredString` interface will return a
-    unicode string that has been properly escaped.  Passing an
-    instance of a Zope internationalized message will cause the
-    message to be translated, then CGI escaped.
+    A plain string message will be sanitized ("&", "<" and ">" are
+    converted to HTML-safe sequences).  Passing a message that
+    provides the `IStructuredString` interface will return a unicode
+    string that has been properly escaped.  Passing an instance of a
+    Zope internationalized message will cause the message to be
+    translated, then santizied.
 
     :param message: This may be a string, `zope.i18n.Message`,
     	`zope.i18n.MessageID`, or an instance of `IStructuredString`.
