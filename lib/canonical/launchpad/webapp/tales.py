@@ -883,8 +883,12 @@ class ConvenientFormatter(ObjectFormatterExtendedAPI):
     _display = None
 
     def link(self, extra_path):
-        values = dict((key, cgi.escape(value)) for key, value
-            in self.values().iteritems())
+        values = {}
+        for key, value in self.values().iteritems():
+            if value is None:
+                values[key] = ''
+            else:
+                values[key] = cgi.escape(value)
         html = self._template % values
         if self._display is not None:
             html = self._display(self._context).icon() + ' ' + html
@@ -949,6 +953,19 @@ class BugTaskFormatterAPI(ObjectFormatterExtendedAPI):
         image_html = BugTaskImageDisplayAPI(bugtask).icon()
         return '<a href="%s">%s&nbsp;Bug #%d: %s</a>' % (
             url, image_html, bugtask.bug.id, cgi.escape(bugtask.bug.title))
+
+
+class CodeImportFormatterAPI(ConvenientFormatter):
+
+    _template = _('Import of %(product)s: %(branch)s')
+
+    def values(self):
+        branch_title = self._context.branch.title
+        if branch_title is None:
+            branch_title = _('(no title)')
+        return {'product': self._context.product.displayname,
+                'branch': branch_title,
+               }
 
 
 class ProductSeriesFormatterAPI(ConvenientFormatter):

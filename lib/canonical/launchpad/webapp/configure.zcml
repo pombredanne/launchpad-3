@@ -322,6 +322,12 @@
         />
 
     <adapter
+        for="canonical.launchpad.interfaces.ICodeImport"
+        provides="zope.app.traversing.interfaces.IPathAdapter"
+        factory="canonical.launchpad.webapp.tales.CodeImportFormatterAPI"
+        name="fmt"
+        />
+    <adapter
         for="canonical.launchpad.interfaces.IProductSeries"
         provides="zope.app.traversing.interfaces.IPathAdapter"
         factory="canonical.launchpad.webapp.tales.ProductSeriesFormatterAPI"
