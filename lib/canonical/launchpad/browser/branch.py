@@ -593,7 +593,7 @@ class BranchDeletionView(LaunchpadFormView):
         for item, action, reason, allowed in (
             self.displayDeletionRequirements()):
             if IBugBranch.providedBy(item):
-                item = item.branch
+                item = item.bug
                 action = 'alter'
             elif ISpecificationBranch.providedBy(item):
                 item = item.specification
