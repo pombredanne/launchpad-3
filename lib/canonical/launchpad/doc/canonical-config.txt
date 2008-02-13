@@ -40,7 +40,8 @@ There are also some automatically generated config items.
     True
 
 XXX sinzui 2008-02-11: This is not true, should it still be true? I
-think this is moot because production and test were mixed.
+think this is moot because production and test configs were mixed.
+The test config should extend the production config.
 
     #>>> config.name == os.environ.get('LPCONFIG', DEFAULT_SECTION)
     #True
@@ -48,7 +49,8 @@ think this is moot because production and test were mixed.
 
 == Transition from ZConfig to LAZR ==
 
-XXX sinzui 2008-02-11: This feature is deprecated.
+XXX sinzui 2008-02-11: This feature is must be removed when all
+launchpad callsites use lazr.config.
 
 During the transition from `ZConfig` to `canonical.lazr.config`,
 `canonical.config` will load both config systems. When the
@@ -68,6 +70,16 @@ as attributes of canonical.config.
     >>> config.answertracker.days_before_expiration
     15
 
+    >>> import os
+    >>> os.environ['ENABLE_DEPRECATED_ZCONFIG_WARNINGS'] = 'true'
+    >>> config.answertracker.days_before_expiration
+    Traceback (most recent call last):
+     ...
+    UnconvertedConfigWarning: Callsite expects a different type for
+    'answertracker.days_before_expiration'.
+
+    >>> os.environ['ENABLE_DEPRECATED_ZCONFIG_WARNINGS'] = 'false'
+
 lazr.config does not support multi-sections unlike ZConfig. Code that
 access launchpad.vhosts.blueprints.hostname will failover to the ZConfig
 instance.
@@ -83,8 +95,8 @@ instance.
 
 When the ENABLE_DEPRECATED_ZCONFIG_WARNINGS is set to true in the
 environment, a warning is raised when canonical.config fails over
-to ZConfig. The previous example will raise a warning after the
-variable is set.
+to ZConfig. The testrunner treats all warnings as errors, so we can
+test this by ...
 
     >>> import os
     >>> os.putenv('ENABLE_DEPRECATED_ZCONFIG_WARNINGS', 'true')

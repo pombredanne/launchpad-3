@@ -84,8 +84,12 @@ class CanonicalConfig(object):
                 return branch
         raise KeyError, section
 
-    def _loadConfig(self):
-        """Load the schema and config for this environment."""
+    def _getConfig(self):
+        """Get the schema and config for this environment.
+
+        The config is will be loaded only when there is not a config.
+        Repeated calls to this method will not cause the config to reload.
+        """
         if self._config is None:
             config_dir = os.path.join(
                 os.path.dirname(__file__), os.pardir, os.pardir, os.pardir,
@@ -93,15 +97,16 @@ class CanonicalConfig(object):
             environ_dir = os.environ.get(
                     CONFIG_ENVIRONMENT_VARIABLE, DEFAULT_CONFIG)
             schema_file = os.path.join(config_dir, 'schema.lazr.conf')
-            # XXX sinzui 2008-02-11: this must select the test config too.
+            # XXX sinzui 2008-02-11:
+            # This must select the test config too. 'launchpad.test.conf' will
+            # alway extend the local 'launchpad.lazr.conf'.
             config_file = os.path.join(
                 config_dir, environ_dir,'launchpad.lazr.conf')
 
-            # Monkey patch Section to store it's ZConfig counterpart and
-            # use it when there is an AttributeError.
+            # Monkey patch Section to store it's ZConfig counterpart, and
+            # use it when it cannot provide the data.
             from canonical.lazr.config import Section
             Section._zconfig = self.getConfig()
-            #Section._true_getattr = Section.__getattr__
             Section.__getattr__ = failover_to_zconfig(Section.__getattr__)
 
             schema = ConfigSchema(schema_file)
@@ -134,8 +139,7 @@ class CanonicalConfig(object):
         config.servers = root_options.servers
 
     def __getattr__(self, name):
-        # The lazr.config instance takes precedence over ZConfig.
-        self._loadConfig()
+        self._getConfig()
         try:
             return getattr(self._config, name)
         except AttributeError:
@@ -151,7 +155,7 @@ class CanonicalConfig(object):
 # Transitionary functions and classes.
 
 def failover_to_zconfig(func):
-    """Return a decorated func that will failover to ZConfig."""
+    """Return a decorated function that will failover to ZConfig."""
 
     def failover_getattr(self, name):
         """Failover to the ZConfig section.
@@ -160,13 +164,14 @@ def failover_to_zconfig(func):
         __getattr__ is decorated with a function that accesses the
         ZConfig.
         """
-        is_zconfig = False
+        # This method may access protected members.
+        # pylint: disable-msg=W0212
         try:
             section_value = getattr(self._zconfig, self.name)
             zconfig_value = getattr(section_value, name)
             is_zconfig = True
         except AttributeError:
-            # Then 'is_zconfig is False'.
+            is_zconfig = False
             pass
 
         try:
@@ -176,31 +181,48 @@ def failover_to_zconfig(func):
             lazr_value = None
             pass
 
-        if not is_zconfig and lazr_value is not None:
+        if not is_zconfig and lazr_value is None:
+            # The callsite was converted to lazr config, but has an error.
+            raise AttributeError("Not found in ZConfig or lazr.config.")
+        elif not is_zconfig and lazr_value is not None:
             # The callsite was converted to lazr.config.
             return lazr_value
-        elif not is_zconfig and lazr_value is None:
-            # The callsite was converted to lazr config, but has an error.
-            raise AttributeError("Not founf in ZConfig or lazr.config.")
-        elif is_zconfig and lazr_value == zconfig_value:
-            # the ZConfig and lazr.config instances are compatible.
+        elif (is_zconfig
+              and lazr_value is not None and lazr_value == zconfig_value):
+            # The ZConfig and lazr.config instances are compatible.
             return lazr_value
+        elif is_zconfig and lazr_value != zconfig_value:
+            # The ZConfig and lazr.config instances are incompatible.
+            raise_warning(
+                "Callsite expects a different type for '%s.%s'." %
+                (self.name, name))
+            return zconfig_value
         else:
-            # We are missing a
-            # Raise a warning that the callsite expects something other
-            # than a str. Raise a warning.
-            warnings.warn(
-                "%s does not have '%s' key." % (self.name, name),
-                UnconvertedConfigWarning, stacklevel=2)
+            # The callsite is using ZConfig, probably a multisection.
+            raise_warning("%s does not have '%s' key." % (self.name, name))
             return zconfig_value
 
     return failover_getattr
 
 
-import warnings
 class UnconvertedConfigWarning(UserWarning):
     """A Warning that the callsite is using ZConfig."""
-warnings.filterwarnings('default', '.*', UnconvertedConfigWarning)
+
+
+def raise_warning(message):
+    """Raise a UnconvertedConfigWarning if the warning is enabled.
+
+    When the environmental variable ENABLE_DEPRECATED_ZCONFIG_WARNINGS is
+    'true' a warning is emitted.
+    """
+    import warnings
+    is_enabled = os.environ.get('ENABLE_DEPRECATED_ZCONFIG_WARNINGS', 'false')
+    if is_enabled == 'true':
+        warnings.warn(
+            message,
+            UnconvertedConfigWarning,
+            stacklevel=2)
+
 
 config = CanonicalConfig()
 
