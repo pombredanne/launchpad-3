@@ -184,3 +184,14 @@ class CodeImportJobWorkflow:
 
     def updateHeartbeat(self, import_job, logtail):
         """See `ICodeImportJobWorkflow`."""
+        assert import_job.state == CodeImportJobState.RUNNING, (
+            "The CodeImportJob associated with %s is %s."
+            % (import_job.code_import.branch.unique_name,
+               import_job.state.name))
+        # CodeImportJobWorkflow is the only class that is allowed to
+        # set the heartbeat and logtail attributes of CodeImportJob,
+        # they are not settable through ICodeImportJob. So we must use
+        # removeSecurityProxy here.
+        naked_job = removeSecurityProxy(import_job)
+        naked_job.heartbeat = UTC_NOW
+        naked_job.logtail = logtail
