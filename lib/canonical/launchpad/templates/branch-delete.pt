@@ -22,44 +22,41 @@
   </tal:branch-link>
   <h1>Delete branch</h1>
   <tal:deletetable condition="view/branch_deletion_actions/delete">
-  The following items will be <em>deleted</em>:
-  <table>
-  <tr><th>Item</th><th>Reason</th></tr>
+  The following items must be <em>deleted</em>:
+  <ul>
   <tal:actions repeat="row view/branch_deletion_actions/delete">
-  <tr>
-    <td><img src="/@@/no" title="Insufficient privilages"
-        tal:condition="not:row/allowed"/><tal:item tal:content="structure
-        row/item/fmt:link" /></td>
-    <td tal:content="row/reason" />
-  </tr>
+  <li>
+    <img src="/@@/no" title="Insufficient privilages"
+         tal:condition="not:row/allowed"/>
+        <tal:item tal:content="structure row/item/fmt:link" />
+        (<tal:reason tal:content="row/reason" />)
+  </li>
   </tal:actions>
-  </table>
+  </ul>
   </tal:deletetable>
   <tal:altertable condition="view/branch_deletion_actions/alter">
-  <div style="margin-top: 1em">The following items will be <em>changed</em>:</div>
-  <table style="margin-bottom: 0">
-  <tr><th>Item</th><th>Reason</th></tr>
+  <div>The following items require <em>changes</em>:</div>
+  <ul>
   <tal:actions repeat="row view/branch_deletion_actions/alter">
-  <tr>
-    <td><img src="/@@/no" title="Insufficient privilages"
-        tal:condition="not:row/allowed"/><tal:item tal:content="structure
-        row/item/fmt:link" /></td>
-    <td tal:content="row/reason" />
-  </tr>
+  <li>
+    <img src="/@@/no" title="Insufficient privilages"
+         tal:condition="not:row/allowed"/>
+        <tal:item tal:content="structure row/item/fmt:link" />
+        (<tal:reason tal:content="row/reason" />)
+  </li>
   </tal:actions>
-  </table>
+  </ul>
   </tal:altertable>
-  <p style="margin-bottom: 0;" tal:condition="view/all_permitted">
+  <p tal:condition="view/all_permitted">
       Branch deletion is permanent.
   </p>
-  <p style="margin-bottom: 0;" tal:condition="not:view/all_permitted">
+  <p tal:condition="not:view/all_permitted">
       You do not have permission make all the changes required to delete this
       Branch.
   </p>
 
-  <div metal:use-macro="context/@@launchpad_form/form" style="margin: 0">
+  <div metal:use-macro="context/@@launchpad_form/form">
   </div>
 </div><tal:comment condition="nothing"><!-- end main slot --></tal:comment>
-
 </body>
 </html>
