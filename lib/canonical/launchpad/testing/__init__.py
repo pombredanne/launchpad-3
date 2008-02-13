@@ -120,6 +120,11 @@ class LaunchpadObjectFactory:
             name = self.getUniqueString('person-name')
         if password is None:
             password = self.getUniqueString('password')
+        else:
+            # If a password was specified, validate the email address,
+            # unless told otherwise.
+            if email_address_status is None:
+                email_address_status = EmailAddressStatus.VALIDATED
         # Set the password to test in order to allow people that have
         # been created this way can be logged in.
         person, email = getUtility(IPersonSet).createPersonAndEmail(
@@ -127,12 +132,14 @@ class LaunchpadObjectFactory:
             password=password)
         # To make the person someone valid in Launchpad, validate the
         # email.
-        if (email_address_status is None or
-            email_address_status == EmailAddressStatus.VALIDATED):
+        if email_address_status == EmailAddressStatus.VALIDATED:
             person.validateAndEnsurePreferredEmail(email)
-        else:
+        elif email_address_status is not None:
             email.status = email_address_status
             email.syncUpdate()
+        else:
+            # Leave the email as NEW.
+            pass
         return person
 
     def makeProduct(self, name=None):
@@ -215,7 +222,6 @@ class LaunchpadObjectFactory:
                 log_body=self.getUniqueString('log-body'),
                 revision_date=date_generator.next(),
                 revision_author=author,
-                owner=admin_user,
                 parent_ids=parent_ids,
                 properties={})
             sequence += 1
