@@ -12,16 +12,15 @@ import pytz
 
 from zope.interface import implements
 
-from sqlobject import (
-    ForeignKey, SQLMultipleJoin, SQLRelatedJoin)
+from sqlobject import ForeignKey
 
 from canonical.launchpad.interfaces import (
     IMentoringOffer,
     IMentoringOfferSet,
     )
 
-from canonical.database.sqlbase import SQLBase, quote, sqlvalues
-from canonical.database.constants import DEFAULT, UTC_NOW
+from canonical.database.sqlbase import SQLBase, sqlvalues
+from canonical.database.constants import DEFAULT
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.launchpad.validators.person import PublicPersonValidator
 

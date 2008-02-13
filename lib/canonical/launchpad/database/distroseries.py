@@ -104,8 +104,8 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         dbName='owner', foreignKey='Person',
         validator=PublicPersonValidator, notNull=True)
     driver = ForeignKey(
-        foreignKey="Person",
-        validator=PublicPersonValidator, dbName="driver", notNull=False, default=None)
+        dbName="driver", foreignKey="Person",
+        validator=PublicPersonValidator, notNull=False, default=None)
     lucilleconfig = StringCol(notNull=False, default=None)
     changeslist = StringCol(notNull=False, default=None)
     nominatedarchindep = ForeignKey(

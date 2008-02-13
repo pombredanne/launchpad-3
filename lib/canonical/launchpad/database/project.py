@@ -21,7 +21,8 @@ from canonical.database.enumcol import EnumCol
 
 from canonical.launchpad.interfaces import (
     IFAQCollection, IHasIcon, IHasLogo, IHasMugshot,
-    IProduct, IProject, IProjectSeries, IProjectSet, ISearchableByQuestionOwner,
+    IProduct, IProject, IProjectSeries, IProjectSet,
+    ISearchableByQuestionOwner,
     ImportStatus, NotFoundError, QUESTION_STATUS_DEFAULT_SEARCH,
     SpecificationFilter, SpecificationImplementationStatus,
     SpecificationSort, SprintSpecificationStatus, TranslationPermission)
@@ -71,8 +72,8 @@ class Project(SQLBase, BugTargetBase, HasSpecificationsMixin,
     datecreated = UtcDateTimeCol(dbName='datecreated', notNull=True,
         default=UTC_NOW)
     driver = ForeignKey(
-        foreignKey="Person",
-        validator=PublicPersonValidator, dbName="driver", notNull=False, default=None)
+        dbName="driver", foreignKey="Person",
+        validator=PublicPersonValidator, notNull=False, default=None)
     homepageurl = StringCol(dbName='homepageurl', notNull=False, default=None)
     homepage_content = StringCol(default=None)
     icon = ForeignKey(

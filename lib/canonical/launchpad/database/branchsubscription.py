@@ -6,7 +6,7 @@ __all__ = ['BranchSubscription']
 
 from zope.interface import implements
 
-from sqlobject import ForeignKey, IntCol
+from sqlobject import ForeignKey
 
 from canonical.database.constants import DEFAULT
 from canonical.database.sqlbase import SQLBase

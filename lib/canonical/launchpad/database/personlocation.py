@@ -13,7 +13,7 @@ __all__ = [
     'PersonLocation',
     ]
 
-from sqlobject import FloatCol, IntCol, ForeignKey, StringCol
+from sqlobject import FloatCol, ForeignKey, StringCol
 
 from zope.interface import implements
 

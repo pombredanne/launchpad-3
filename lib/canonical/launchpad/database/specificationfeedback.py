@@ -20,7 +20,7 @@ class SpecificationFeedback(SQLBase):
 
     implements(ISpecificationFeedback)
 
-    _table='SpecificationFeedback'
+    _table = 'SpecificationFeedback'
     specification = ForeignKey(dbName='specification',
         foreignKey='Specification', notNull=True)
     reviewer = ForeignKey(

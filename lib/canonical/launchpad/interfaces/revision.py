@@ -9,7 +9,7 @@ __all__ = [
     'IRevisionSet']
 
 from zope.interface import Interface, Attribute
-from zope.schema import Datetime, Int, Choice, Text, TextLine
+from zope.schema import Datetime, Int, Text, TextLine
 
 from canonical.launchpad.interfaces import IHasOwner
 from canonical.launchpad import _
@@ -45,7 +45,8 @@ class IRevisionAuthor(Interface):
     """Committer of a Bazaar revision."""
 
     name = TextLine(title=_("Revision Author Name"), required=True)
-    name_without_email = Attribute("Revision author name without email address")
+    name_without_email = Attribute(
+        "Revision author name without email address")
 
 
 class IRevisionParent(Interface):

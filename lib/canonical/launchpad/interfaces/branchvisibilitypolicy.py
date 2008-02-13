@@ -11,7 +11,7 @@ __all__ = [
     'IBranchVisibilityTeamPolicy',
     ]
 
-from zope.interface import Interface, Attribute
+from zope.interface import Interface
 
 from zope.schema import Choice
 

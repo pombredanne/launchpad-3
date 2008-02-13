@@ -15,7 +15,7 @@ __all__ = [
 
 from zope.interface import Attribute, Interface
 
-from zope.schema import Datetime, Choice, Bool
+from zope.schema import Datetime, Bool
 
 from canonical.launchpad import _
 from canonical.launchpad.fields import PublicPersonChoice

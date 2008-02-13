@@ -163,7 +163,8 @@ class HasAnnouncements:
                     (SELECT id FROM Product WHERE project = %s))
                     """ % sqlvalues (self.id, self.id)
         elif IDistribution.providedBy(self):
-            query += ' AND Announcement.distribution = %s' % sqlvalues(self.id)
+            query += (' AND Announcement.distribution = %s'
+                % sqlvalues(self.id))
         elif IAnnouncementSet.providedBy(self):
             # There is no need to filter for pillar if we are looking for
             # all announcements.

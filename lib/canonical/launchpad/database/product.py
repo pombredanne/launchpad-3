@@ -81,8 +81,8 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
         validator=PublicPersonValidator, notNull=False,
         default=None)
     driver = ForeignKey(
-        foreignKey="Person",
-        validator=PublicPersonValidator, dbName="driver", notNull=False, default=None)
+        dbName="driver", foreignKey="Person",
+        validator=PublicPersonValidator, notNull=False, default=None)
     name = StringCol(
         dbName='name', notNull=True, alternateID=True, unique=True)
     displayname = StringCol(dbName='displayname', notNull=True)

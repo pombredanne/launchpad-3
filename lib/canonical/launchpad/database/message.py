@@ -22,7 +22,8 @@ from canonical.encoding import guess as ensure_unicode
 from canonical.launchpad.helpers import get_filename_from_message_id
 from canonical.launchpad.interfaces import (
     IMessage, IMessageSet, IMessageChunk, IPersonSet, ILibraryFileAliasSet,
-    UnknownSender, InvalidEmailMessage, NotFoundError, PersonCreationRationale)
+    UnknownSender, InvalidEmailMessage, NotFoundError,
+    PersonCreationRationale)
 from canonical.launchpad.validators.person import PublicPersonValidator
 
 from canonical.database.sqlbase import SQLBase
@@ -55,7 +56,8 @@ class Message(SQLBase):
     bugs = SQLRelatedJoin('Bug', joinColumn='message', otherColumn='bug',
         intermediateTable='BugMessage')
     chunks = SQLMultipleJoin('MessageChunk', joinColumn='message')
-    raw = ForeignKey(foreignKey='LibraryFileAlias', dbName='raw', default=None)
+    raw = ForeignKey(foreignKey='LibraryFileAlias', dbName='raw',
+                     default=None)
     bugattachments = SQLMultipleJoin('BugAttachment', joinColumn='message')
 
     def __iter__(self):
@@ -351,7 +353,8 @@ class MessageSet:
                         file=cStringIO(content),
                         contentType=part['content-type']
                         )
-                    MessageChunk(message=message, sequence=sequence, blob=blob)
+                    MessageChunk(message=message, sequence=sequence,
+                                 blob=blob)
                     sequence += 1
 
         # Don't store the epilogue

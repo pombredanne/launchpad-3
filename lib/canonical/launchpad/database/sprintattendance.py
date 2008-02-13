@@ -12,7 +12,6 @@ from sqlobject import ForeignKey
 from canonical.launchpad.interfaces import ISprintAttendance
 from canonical.launchpad.validators.person import PublicPersonValidator
 
-from canonical.database.constants import DEFAULT, UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 
 from canonical.database.sqlbase import SQLBase
@@ -23,7 +22,7 @@ class SprintAttendance(SQLBase):
 
     implements(ISprintAttendance)
 
-    _table='SprintAttendance'
+    _table = 'SprintAttendance'
 
     sprint = ForeignKey(dbName='sprint', foreignKey='Sprint',
         notNull=True)

@@ -114,8 +114,8 @@ class TranslationMessage(SQLBase, TranslationMessageMixIn):
     date_reviewed = UtcDateTimeCol(
         dbName='date_reviewed', notNull=False, default=None)
     reviewer = ForeignKey(
-        foreignKey='Person',
-        validator=PublicPersonValidator, dbName='reviewer', notNull=False, default=None)
+        dbName='reviewer', foreignKey='Person',
+        validator=PublicPersonValidator, notNull=False, default=None)
     msgstr0 = ForeignKey(
         foreignKey='POTranslation', dbName='msgstr0', notNull=True)
     msgstr1 = ForeignKey(

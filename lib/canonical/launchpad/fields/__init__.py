@@ -353,7 +353,8 @@ class UniqueField(TextLine):
         raise NotImplementedError
 
     def _isValueTaken(self, value):
-        """Returns true if and only if the specified value is already taken."""
+        """Returns true if and only if the specified value is already taken.
+        """
         return self._getByAttribute(value) is not None
 
     def _validate(self, input):

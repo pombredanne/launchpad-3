@@ -6,7 +6,7 @@ __all__ = ['BugActivity', 'BugActivitySet']
 
 from zope.interface import implements
 
-from sqlobject import ForeignKey, IntCol, StringCol
+from sqlobject import ForeignKey, StringCol
 
 from canonical.launchpad.interfaces import IBugActivity, IBugActivitySet
 

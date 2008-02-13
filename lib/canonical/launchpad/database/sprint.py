@@ -8,7 +8,6 @@ __all__ = [
     'HasSprintsMixin',
     ]
 
-import pytz
 
 from zope.component import getUtility
 from zope.interface import implements
@@ -283,7 +282,8 @@ class Sprint(SQLBase):
     @property
     def attendances(self):
         ret = SprintAttendance.selectBy(sprint=self)
-        return sorted(ret.prejoin(['attendee']), key=lambda a: a.attendee.name)
+        return sorted(ret.prejoin(['attendee']),
+                      key=lambda a: a.attendee.name)
 
     # linking to specifications
     def linkSpecification(self, spec):

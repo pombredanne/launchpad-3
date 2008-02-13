@@ -12,7 +12,7 @@ from zope.interface import implements
 from sqlobject import (
     ForeignKey, IntCol, StringCol, SQLObjectNotFound, SQLMultipleJoin)
 
-from canonical.database.sqlbase import SQLBase, sqlvalues
+from canonical.database.sqlbase import SQLBase
 from canonical.database.constants import DEFAULT
 from canonical.database.datetimecol import UtcDateTimeCol
 
@@ -115,8 +115,8 @@ class RevisionSet:
     def getByRevisionId(self, revision_id):
         return Revision.selectOneBy(revision_id=revision_id)
 
-    def new(self, revision_id, log_body, revision_date, revision_author, owner,
-            parent_ids, properties):
+    def new(self, revision_id, log_body, revision_date, revision_author,
+            owner, parent_ids, properties):
         """See IRevisionSet.new()"""
         if properties is None:
             properties = {}

@@ -20,7 +20,7 @@ class BountySubscription(SQLBase):
 
     implements(IBountySubscription)
 
-    _table='BountySubscription'
+    _table = 'BountySubscription'
 
     bounty = ForeignKey(dbName='bounty', foreignKey='Bounty', notNull=True)
     person = ForeignKey(

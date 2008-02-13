@@ -87,7 +87,8 @@ class BugNomination(SQLBase):
                         distroseries=distroseries)
         else:
             bugtaskset.createTask(
-                bug=self.bug, owner=approver, productseries=self.productseries)
+                bug=self.bug, owner=approver,
+                productseries=self.productseries)
 
     def decline(self, decliner):
         """See IBugNomination."""

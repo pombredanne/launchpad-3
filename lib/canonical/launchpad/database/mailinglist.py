@@ -40,14 +40,19 @@ class MailingList(SQLBase):
 
     implements(IMailingList)
 
-    team = ForeignKey(dbName='team', foreignKey='Person')
+    team = ForeignKey(
+        dbName='team', foreignKey='Person',
+        validator=PublicPersonValidator)
 
-    registrant = ForeignKey(dbName='registrant', foreignKey='Person')
+    registrant = ForeignKey(
+        dbName='registrant', foreignKey='Person',
+        validator=PublicPersonValidator)
 
     date_registered = UtcDateTimeCol(notNull=True, default=None)
 
-    reviewer = ForeignKey(dbName='reviewer', foreignKey='Person',
-                          default=None)
+    reviewer = ForeignKey(
+        dbName='reviewer', foreignKey='Person',
+        validator=PublicPersonValidator, default=None)
 
     date_reviewed = UtcDateTimeCol(notNull=True, default=None)
 
@@ -397,7 +402,9 @@ class MailingListSubscription(SQLBase):
 
     implements(IMailingListSubscription)
 
-    person = ForeignKey(dbName='person', foreignKey='Person')
+    person = ForeignKey(
+        dbName='person', foreignKey='Person',
+        validator=PublicPersonValidator)
 
     mailing_list = ForeignKey(dbName='mailing_list', foreignKey='MailingList')
 

@@ -10,7 +10,7 @@ __all__ = [
     ]
 
 from zope.interface import Interface, Attribute
-from zope.schema import Choice, Int
+from zope.schema import Int
 from canonical.launchpad import _
 from canonical.launchpad.fields import PublicPersonChoice
 

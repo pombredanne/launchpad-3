@@ -20,7 +20,7 @@ class SpecificationSubscription(SQLBase):
 
     implements(ISpecificationSubscription)
 
-    _table='SpecificationSubscription'
+    _table = 'SpecificationSubscription'
     specification = ForeignKey(dbName='specification',
         foreignKey='Specification', notNull=True)
     person = ForeignKey(

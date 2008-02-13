@@ -11,7 +11,7 @@ __all__ = [
     ]
 
 from zope.interface import Interface, Attribute
-from zope.schema import Choice, Int
+from zope.schema import Int
 from canonical.launchpad import _
 from canonical.launchpad.fields import PublicPersonChoice
 
@@ -20,8 +20,8 @@ class IBountySubscription(Interface):
 
     id = Int(title=_('ID'), readonly=True, required=True)
     person = PublicPersonChoice(
-            title=_('Person ID'), required=True, vocabulary='ValidPersonOrTeam',
-            readonly=True,
+            title=_('Person ID'), required=True,
+            vocabulary='ValidPersonOrTeam', readonly=True,
             )
     bounty = Int(title=_('Bounty ID'), required=True, readonly=True)
 

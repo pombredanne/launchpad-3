@@ -108,7 +108,8 @@ class HWSubmissionSet:
             raw_emailaddress=emailaddress)
 
     def _userHasAccessClause(self, user):
-        """Limit results of HWSubmission queries to rows the user can access."""
+        """Limit results of HWSubmission queries to rows the user can access.
+        """
         admins = getUtility(ILaunchpadCelebrities).admin
         if user is None:
             return " AND NOT HWSubmission.private"
@@ -169,7 +170,6 @@ class HWSubmissionSet:
     def submissionIdExists(self, submission_key):
         """See `IHWSubmissionSet`."""
         rows = HWSubmission.selectBy(submission_key=submission_key)
-        return bool(rows)
         return rows.count() > 0
 
     def setOwnership(self, email):

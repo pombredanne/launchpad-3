@@ -19,7 +19,8 @@ class PackageBugContact(SQLBase):
     distribution = ForeignKey(
         dbName="distribution", notNull=True, foreignKey="Distribution")
     sourcepackagename = ForeignKey(
-        dbName="sourcepackagename", notNull=True, foreignKey="SourcePackageName")
+        dbName="sourcepackagename", notNull=True,
+        foreignKey="SourcePackageName")
     bugcontact = ForeignKey(
         dbName="bugcontact", notNull=True, foreignKey="Person",
         validator=PublicPersonValidator)
