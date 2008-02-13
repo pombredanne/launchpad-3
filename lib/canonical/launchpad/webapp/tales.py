@@ -951,6 +951,15 @@ class BugTaskFormatterAPI(ObjectFormatterExtendedAPI):
             url, image_html, bugtask.bug.id, cgi.escape(bugtask.bug.title))
 
 
+class ProductSeriesFormatterAPI(ConvenientFormatter):
+
+    _template = '%(product)s Series: %(series)s'
+
+    def values(self):
+        return {'series': self._context.name,
+                'product': self._context.product.displayname}
+
+
 class SpecificationFormatterAPI(ConvenientFormatter):
 
     _template = '%(title)s'
