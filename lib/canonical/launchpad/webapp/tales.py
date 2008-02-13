@@ -880,7 +880,7 @@ class BranchFormatterAPI(ObjectFormatterExtendedAPI):
 
 class ConvenientFormatter(ObjectFormatterExtendedAPI):
 
-    _display = None
+    _display = ObjectImageDisplayAPI
 
     def link(self, extra_path):
         values = {}
@@ -902,6 +902,7 @@ class BranchSubscriptionFormatterAPI(ConvenientFormatter):
     """Adapter for IBranchSubscription objects to a formatted string."""
 
     _template = _('Subscription of %(person)s to %(branch)s')
+    _display = None
 
     def values(self):
         """Provide values for template substitution"""
@@ -914,6 +915,7 @@ class BranchSubscriptionFormatterAPI(ConvenientFormatter):
 class BranchMergeProposalFormatterAPI(ConvenientFormatter):
 
     _template = _('Proposed merge of %(source)s into %(target)s')
+    _display = None
 
     def values(self):
         merge_proposal = self._context
@@ -958,6 +960,7 @@ class BugTaskFormatterAPI(ObjectFormatterExtendedAPI):
 class CodeImportFormatterAPI(ConvenientFormatter):
 
     _template = _('Import of %(product)s: %(branch)s')
+    _display = None
 
     def values(self):
         branch_title = self._context.branch.title
@@ -970,7 +973,8 @@ class CodeImportFormatterAPI(ConvenientFormatter):
 
 class ProductSeriesFormatterAPI(ConvenientFormatter):
 
-    _template = '%(product)s Series: %(series)s'
+    _template = _('%(product)s Series: %(series)s')
+    _display = None
 
     def values(self):
         return {'series': self._context.name,
@@ -979,8 +983,7 @@ class ProductSeriesFormatterAPI(ConvenientFormatter):
 
 class SpecificationFormatterAPI(ConvenientFormatter):
 
-    _template = '%(title)s'
-    _display = ObjectImageDisplayAPI
+    _template = _('%(title)s')
 
     def values(self):
         return {'title': self._context.title}
