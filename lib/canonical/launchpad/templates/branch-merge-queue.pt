@@ -31,6 +31,7 @@
       <tr>
         <th>Position</th>
         <th>Branch details</th>
+        <th>Commit message</th>
       </tr>
     </thead>
     <tbody>
@@ -43,7 +44,6 @@
               condition="queue_entry/proposal"
               define="mergeproposal queue_entry/proposal;
                       branch mergeproposal/source_branch;
-                      show_commit_message python:True;
                       show_associations python:True;
                       ">
             <metal:landing-target use-macro="context/@@+macros/merge-proposal"/>
@@ -51,6 +51,12 @@
           <tal:cant-see-proposal condition="not: queue_entry/proposal">
             You can't see this :-)
           </tal:cant-see-proposal>
+        </td>
+        <td class="commit_message">
+          <tal:commit-message
+               content="structure queue_entry/proposal/commit_message/fmt:text-to-html">
+            The commit message.
+          </tal:commit-message>
         </td>
       </tr>
     </tbody>
