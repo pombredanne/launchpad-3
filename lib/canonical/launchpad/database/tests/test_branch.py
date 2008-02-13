@@ -36,8 +36,8 @@ class TestBranchDeletion(TestCase):
 
     def setUp(self):
         login('test@canonical.com')
-        # Getting database classes directly where necessary to avoid the hastle
-        # of worrying about the security contexts.
+        # Getting database classes directly where necessary to avoid the
+        # hastle of worrying about the security contexts.
         self.product = ProductSet().getByName('firefox')
         self.user = getUtility(IPersonSet).getByEmail('test@canonical.com')
         self.branch_set = BranchSet()
@@ -111,8 +111,8 @@ class TestBranchDeletion(TestCase):
         self.product.development_focus.user_branch = self.branch
         syncUpdate(self.product.development_focus)
         self.assertEqual(self.branch.canBeDeleted(), False,
-                         "A branch that is a user branch for a product series "
-                         "is not deletable.")
+                         "A branch that is a user branch for a product series"
+                         " is not deletable.")
         self.assertRaises(CannotDeleteBranch, BranchSet().delete, self.branch)
 
     def test_associatedProductSeriesImportBranchDisablesDeletion(self):
@@ -163,7 +163,8 @@ class TestBranchDeletion(TestCase):
             self.product, None)
         source_branch.addLandingTarget(self.user, self.branch)
         self.assertEqual(self.branch.canBeDeleted(), False,
-                         "A branch with a landing candidate is not deletable.")
+                         "A branch with a landing candidate is not deletable."
+                         )
         self.assertRaises(CannotDeleteBranch, BranchSet().delete, self.branch)
 
     def test_dependentBranchDisablesDeletion(self):
@@ -355,7 +356,7 @@ class BranchDateLastModified(BranchTestCase):
         branch = self.makeBranch(date_created=date_created)
         self.assertEqual(branch.date_last_modified, date_created)
 
-        branch.updateScannedDetails("hello world", 42);
+        branch.updateScannedDetails("hello world", 42)
         self.assertTrue(branch.date_last_modified > date_created,
                         "Date last modified was not updated.")
 
