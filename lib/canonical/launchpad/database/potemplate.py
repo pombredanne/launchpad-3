@@ -88,8 +88,9 @@ class POTemplate(SQLBase, RosettaStats):
         notNull=True)
     iscurrent = BoolCol(dbName='iscurrent', notNull=True, default=True)
     messagecount = IntCol(dbName='messagecount', notNull=True, default=0)
-    owner = ForeignKey(foreignKey='Person',
-        validator=PublicPersonValidator, dbName='owner', notNull=True)
+    owner = ForeignKey(
+        dbName='owner', foreignKey='Person',
+        validator=PublicPersonValidator, notNull=True)
     sourcepackagename = ForeignKey(foreignKey='SourcePackageName',
         dbName='sourcepackagename', notNull=False, default=None)
     from_sourcepackagename = ForeignKey(foreignKey='SourcePackageName',

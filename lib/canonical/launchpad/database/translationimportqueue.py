@@ -45,9 +45,9 @@ class TranslationImportQueueEntry(SQLBase):
     path = StringCol(dbName='path', notNull=True)
     content = ForeignKey(foreignKey='LibraryFileAlias', dbName='content',
         notNull=False)
-    importer = ForeignKey(foreignKey='Person',
-        validator=PublicPersonValidator, dbName='importer',
-        notNull=True)
+    importer = ForeignKey(
+        dbName='importer', foreignKey='Person',
+        validator=PublicPersonValidator, notNull=True)
     dateimported = UtcDateTimeCol(dbName='dateimported', notNull=True,
         default=DEFAULT)
     sourcepackagename = ForeignKey(foreignKey='SourcePackageName',

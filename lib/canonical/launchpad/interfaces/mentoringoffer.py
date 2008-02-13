@@ -28,8 +28,8 @@ class IMentoringOffer(IHasOwner):
     owner = PublicPersonChoice(
         title=_('Owner'), required=True, readonly=True,
         vocabulary='ValidPerson')
-    team = PublicPersonChoice(title=_('Team'), required=True,
-        vocabulary='UserTeamsParticipation')
+    team = PublicPersonChoice(
+        title=_('Team'), required=True, vocabulary='UserTeamsParticipation')
     date_created = Datetime(
         title=_('Date Created'), required=True, readonly=True)
     subscription_request = Bool(title=_('Email me about this'),

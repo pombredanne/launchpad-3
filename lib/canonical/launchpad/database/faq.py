@@ -37,7 +37,8 @@ class FAQ(SQLBase):
     _table = 'FAQ'
     _defaultOrder = ['date_created', 'id']
 
-    owner = ForeignKey(dbName='owner', foreignKey='Person',
+    owner = ForeignKey(
+        dbName='owner', foreignKey='Person',
         validator=PublicPersonValidator, notNull=True)
 
     title = StringCol(notNull=True)

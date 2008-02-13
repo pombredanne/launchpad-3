@@ -23,12 +23,12 @@ class SpecificationFeedback(SQLBase):
     _table='SpecificationFeedback'
     specification = ForeignKey(dbName='specification',
         foreignKey='Specification', notNull=True)
-    reviewer = ForeignKey(dbName='reviewer', foreignKey='Person',
-        validator=PublicPersonValidator,
-        notNull=True)
-    requester = ForeignKey(dbName='requester', foreignKey='Person',
-        validator=PublicPersonValidator,
-        notNull=True)
+    reviewer = ForeignKey(
+        dbName='reviewer', foreignKey='Person',
+        validator=PublicPersonValidator, notNull=True)
+    requester = ForeignKey(
+        dbName='requester', foreignKey='Person',
+        validator=PublicPersonValidator, notNull=True)
     queuemsg = StringCol(notNull=False, default=None)
 
 

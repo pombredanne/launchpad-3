@@ -33,7 +33,8 @@ class BranchVisibilityTeamPolicy(SQLBase):
 
     project = ForeignKey(dbName='project', foreignKey='Project')
     product = ForeignKey(dbName='product', foreignKey='Product')
-    team = ForeignKey(dbName='team', foreignKey='Person',
+    team = ForeignKey(
+        dbName='team', foreignKey='Person',
         validator=PublicPersonValidator, default=None)
     rule = EnumCol(
         dbName="policy", enum=BranchVisibilityRule, notNull=True,

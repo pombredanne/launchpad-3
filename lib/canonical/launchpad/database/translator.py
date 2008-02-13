@@ -29,9 +29,9 @@ class Translator(SQLBase):
         foreignKey='TranslationGroup', notNull=True)
     language = ForeignKey(dbName='language',
         foreignKey='Language', notNull=True)
-    translator = ForeignKey(dbName='translator', foreignKey='Person',
-        validator=PublicPersonValidator,
-        notNull=True)
+    translator = ForeignKey(
+        dbName='translator', foreignKey='Person',
+        validator=PublicPersonValidator, notNull=True)
     datecreated = UtcDateTimeCol(notNull=True, default=DEFAULT)
 
 

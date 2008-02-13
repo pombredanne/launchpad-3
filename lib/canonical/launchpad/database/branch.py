@@ -73,7 +73,8 @@ class Branch(SQLBase):
     owner = ForeignKey(
         dbName='owner', foreignKey='Person',
         validator=PublicPersonValidator, notNull=True)
-    author = ForeignKey(dbName='author', foreignKey='Person',
+    author = ForeignKey(
+        dbName='author', foreignKey='Person',
         validator=PublicPersonValidator, default=None)
     reviewer = ForeignKey(
         dbName='reviewer', foreignKey='Person',

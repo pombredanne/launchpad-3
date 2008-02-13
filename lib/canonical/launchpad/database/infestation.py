@@ -41,7 +41,8 @@ class BugProductInfestation(SQLBase):
     infestationstatus = EnumCol(
         notNull=False, default=None, schema=BugInfestationStatus)
     datecreated = UtcDateTimeCol(notNull=True)
-    creator = ForeignKey(dbName="creator", foreignKey='Person',
+    creator = ForeignKey(
+        dbName="creator", foreignKey='Person',
         validator=PublicPersonValidator, notNull=True)
     dateverified = UtcDateTimeCol(notNull=False)
     verifiedby = ForeignKey(
@@ -74,13 +75,16 @@ class BugPackageInfestation(SQLBase):
     infestationstatus = EnumCol(dbName='infestationstatus', notNull=True,
         schema=BugInfestationStatus)
     datecreated = UtcDateTimeCol(dbName='datecreated', notNull=True)
-    creator = ForeignKey(dbName='creator', foreignKey='Person',
+    creator = ForeignKey(
+        dbName='creator', foreignKey='Person',
         validator=PublicPersonValidator, notNull=True)
     dateverified = UtcDateTimeCol(dbName='dateverified')
-    verifiedby = ForeignKey(dbName='verifiedby', foreignKey='Person',
+    verifiedby = ForeignKey(
+        dbName='verifiedby', foreignKey='Person',
         validator=PublicPersonValidator)
     lastmodified = UtcDateTimeCol(dbName='lastmodified')
-    lastmodifiedby = ForeignKey(dbName='lastmodifiedby', foreignKey='Person',
+    lastmodifiedby = ForeignKey(
+        dbName='lastmodifiedby', foreignKey='Person',
         validator=PublicPersonValidator)
 
     # used for launchpad pages

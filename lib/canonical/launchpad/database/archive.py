@@ -34,8 +34,9 @@ class Archive(SQLBase):
     _table = 'Archive'
     _defaultOrder = 'id'
 
-    owner = ForeignKey(foreignKey='Person',
-        validator=PublicPersonValidator, dbName='owner', notNull=False)
+    owner = ForeignKey(
+        dbName='owner', foreignKey='Person',
+        validator=PublicPersonValidator, notNull=False)
 
     description = StringCol(dbName='description', notNull=False, default=None)
 

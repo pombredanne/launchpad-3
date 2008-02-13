@@ -376,8 +376,9 @@ class BugTask(SQLBase, BugTaskMixin):
     date_inprogress = UtcDateTimeCol(notNull=False, default=None)
     date_closed = UtcDateTimeCol(notNull=False, default=None)
     date_incomplete = UtcDateTimeCol(notNull=False, default=None)
-    owner = ForeignKey(foreignKey='Person',
-        validator=PublicPersonValidator, dbName='owner', notNull=True)
+    owner = ForeignKey(
+        dbName='owner', foreignKey='Person',
+        validator=PublicPersonValidator, notNull=True)
     # The targetnamecache is a value that is only supposed to be set
     # when a bugtask is created/modified or by the
     # update-bugtask-targetnamecaches cronscript. For this reason it's

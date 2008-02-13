@@ -71,8 +71,8 @@ class ProductSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
     summary = StringCol(notNull=True)
     datecreated = UtcDateTimeCol(notNull=True, default=UTC_NOW)
     owner = ForeignKey(
-        foreignKey="Person",
-        validator=PublicPersonValidator, dbName="owner", notNull=True)
+        dbName="owner", foreignKey="Person",
+        validator=PublicPersonValidator, notNull=True)
     driver = ForeignKey(
         foreignKey="Person",
         validator=PublicPersonValidator, dbName="driver", notNull=False, default=None)

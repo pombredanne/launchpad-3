@@ -18,8 +18,8 @@ from canonical.launchpad.fields import PublicPersonChoice
 class ISprintAttendance(Interface):
     """An attendance of a person at a sprint."""
 
-    attendee = PublicPersonChoice(title=_('Attendee'), required=True,
-        vocabulary='ValidPersonOrTeam')
+    attendee = PublicPersonChoice(
+        title=_('Attendee'), required=True, vocabulary='ValidPersonOrTeam')
     sprint = Choice(title=_('The Sprint'), required=True,
         vocabulary='Sprint',
         description=_("Select the meeting from the list presented above."))

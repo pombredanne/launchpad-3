@@ -46,10 +46,12 @@ class Bounty(SQLBase):
         default=BountyStatus.OPEN)
     difficulty = EnumCol(enum=BountyDifficulty, notNull=True,
         default=BountyDifficulty.NORMAL)
-    reviewer = ForeignKey(dbName='reviewer', notNull=True, foreignKey='Person',
-        validator=PublicPersonValidator)
+    reviewer = ForeignKey(
+        dbName='reviewer', foreignKey='Person',
+        validator=PublicPersonValidator, notNull=True)
     datecreated = UtcDateTimeCol(notNull=True, default=DEFAULT)
-    owner = ForeignKey(dbName='owner', foreignKey='Person',
+    owner = ForeignKey(
+        dbName='owner', foreignKey='Person',
         validator=PublicPersonValidator, notNull=True)
 
     # useful joins

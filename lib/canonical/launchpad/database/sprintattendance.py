@@ -27,9 +27,9 @@ class SprintAttendance(SQLBase):
 
     sprint = ForeignKey(dbName='sprint', foreignKey='Sprint',
         notNull=True)
-    attendee = ForeignKey(dbName='attendee', foreignKey='Person',
-        validator=PublicPersonValidator,
-        notNull=True)
+    attendee = ForeignKey(
+        dbName='attendee', foreignKey='Person',
+        validator=PublicPersonValidator, notNull=True)
     time_starts = UtcDateTimeCol(notNull=True)
     time_ends = UtcDateTimeCol(notNull=True)
 

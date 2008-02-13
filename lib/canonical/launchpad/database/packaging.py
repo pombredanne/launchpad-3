@@ -38,7 +38,8 @@ class Packaging(SQLBase):
     packaging = EnumCol(dbName='packaging', notNull=True,
                         enum=PackagingType)
     datecreated = UtcDateTimeCol(notNull=True, default=UTC_NOW)
-    owner = ForeignKey(dbName='owner', foreignKey='Person',
+    owner = ForeignKey(
+        dbName='owner', foreignKey='Person',
         validator=PublicPersonValidator, notNull=True)
 
     @property

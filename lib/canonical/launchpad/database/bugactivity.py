@@ -22,7 +22,8 @@ class BugActivity(SQLBase):
     _table = 'BugActivity'
     bug = ForeignKey(foreignKey='BugActivity', dbName='bug', notNull=True)
     datechanged = UtcDateTimeCol(notNull=True)
-    person = ForeignKey(dbName='person', foreignKey='Person',
+    person = ForeignKey(
+        dbName='person', foreignKey='Person',
         validator=PublicPersonValidator, notNull=True)
     whatchanged = StringCol(notNull=True)
     oldvalue = StringCol(default=None)

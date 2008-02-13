@@ -23,7 +23,8 @@ class SpecificationSubscription(SQLBase):
     _table='SpecificationSubscription'
     specification = ForeignKey(dbName='specification',
         foreignKey='Specification', notNull=True)
-    person = ForeignKey(dbName='person', foreignKey='Person',
+    person = ForeignKey(
+        dbName='person', foreignKey='Person',
         validator=PublicPersonValidator, notNull=True)
     essential = BoolCol(notNull=True, default=False)
 

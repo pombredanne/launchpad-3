@@ -86,7 +86,8 @@ class Specification(SQLBase, BugLinkTargetMixin):
     approver = ForeignKey(dbName='approver', notNull=False,
         foreignKey='Person',
         validator=PublicPersonValidator, default=None)
-    owner = ForeignKey(dbName='owner', foreignKey='Person',
+    owner = ForeignKey(
+        dbName='owner', foreignKey='Person',
         validator=PublicPersonValidator, notNull=True)
     datecreated = UtcDateTimeCol(notNull=True, default=DEFAULT)
     product = ForeignKey(dbName='product', foreignKey='Product',

@@ -123,7 +123,8 @@ class BugTracker(SQLBase):
     title = StringCol(notNull=True)
     summary = StringCol(notNull=True)
     baseurl = StringCol(notNull=True)
-    owner = ForeignKey(dbName='owner', foreignKey='Person',
+    owner = ForeignKey(
+        dbName='owner', foreignKey='Person',
         validator=PublicPersonValidator, notNull=True)
     contactdetails = StringCol(notNull=False)
     projects = SQLMultipleJoin(

@@ -93,7 +93,8 @@ class Builder(SQLBase):
     name = StringCol(dbName='name', notNull=True)
     title = StringCol(dbName='title', notNull=True)
     description = StringCol(dbName='description', notNull=True)
-    owner = ForeignKey(dbName='owner', foreignKey='Person',
+    owner = ForeignKey(
+        dbName='owner', foreignKey='Person',
         validator=PublicPersonValidator, notNull=True)
     builderok = BoolCol(dbName='builderok', notNull=True)
     failnotes = StringCol(dbName='failnotes', default=None)

@@ -44,8 +44,9 @@ class Message(SQLBase):
     _defaultOrder = '-id'
     datecreated = UtcDateTimeCol(notNull=True, default=UTC_NOW)
     subject = StringCol(notNull=False, default=None)
-    owner = ForeignKey(foreignKey='Person',
-        validator=PublicPersonValidator, dbName='owner', notNull=True)
+    owner = ForeignKey(
+        dbName='owner', foreignKey='Person',
+        validator=PublicPersonValidator, notNull=True)
     parent = ForeignKey(foreignKey='Message', dbName='parent',
         notNull=False, default=None)
     distribution = ForeignKey(foreignKey='Distribution',

@@ -48,7 +48,8 @@ class BugWatch(SQLBase):
     lastchecked = UtcDateTimeCol(notNull=False, default=None)
     last_error_type = EnumCol(schema=BugWatchErrorType, default=None)
     datecreated = UtcDateTimeCol(notNull=True, default=UTC_NOW)
-    owner = ForeignKey(dbName='owner', foreignKey='Person',
+    owner = ForeignKey(
+        dbName='owner', foreignKey='Person',
         validator=PublicPersonValidator, notNull=True)
 
     # useful joins

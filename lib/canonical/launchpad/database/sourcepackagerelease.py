@@ -47,14 +47,15 @@ class SourcePackageRelease(SQLBase):
     _table = 'SourcePackageRelease'
 
     section = ForeignKey(foreignKey='Section', dbName='section')
-    creator = ForeignKey(foreignKey='Person',
-        validator=PublicPersonValidator, dbName='creator', notNull=True)
+    creator = ForeignKey(
+        dbName='creator', foreignKey='Person',
+        validator=PublicPersonValidator, notNull=True)
     component = ForeignKey(foreignKey='Component', dbName='component')
     sourcepackagename = ForeignKey(foreignKey='SourcePackageName',
         dbName='sourcepackagename', notNull=True)
-    maintainer = ForeignKey(foreignKey='Person',
-        validator=PublicPersonValidator, dbName='maintainer',
-        notNull=True)
+    maintainer = ForeignKey(
+        dbName='maintainer', foreignKey='Person',
+        validator=PublicPersonValidator, notNull=True)
     dscsigningkey = ForeignKey(foreignKey='GPGKey', dbName='dscsigningkey')
     urgency = EnumCol(dbName='urgency', schema=SourcePackageUrgency,
         default=SourcePackageUrgency.LOW, notNull=True)

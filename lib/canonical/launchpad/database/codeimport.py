@@ -38,14 +38,15 @@ class CodeImport(SQLBase):
     date_created = UtcDateTimeCol(notNull=True, default=DEFAULT)
     branch = ForeignKey(dbName='branch', foreignKey='Branch',
                         notNull=True)
-    registrant = ForeignKey(dbName='registrant', foreignKey='Person',
-        validator=PublicPersonValidator,
-                            notNull=True)
-    owner = ForeignKey(dbName='owner', foreignKey='Person',
+    registrant = ForeignKey(
+        dbName='registrant', foreignKey='Person',
         validator=PublicPersonValidator, notNull=True)
-    assignee = ForeignKey(dbName='assignee', foreignKey='Person',
-        validator=PublicPersonValidator,
-                          notNull=False, default=None)
+    owner = ForeignKey(
+        dbName='owner', foreignKey='Person',
+        validator=PublicPersonValidator, notNull=True)
+    assignee = ForeignKey(
+        dbName='assignee', foreignKey='Person',
+        validator=PublicPersonValidator, notNull=False, default=None)
 
     @property
     def product(self):

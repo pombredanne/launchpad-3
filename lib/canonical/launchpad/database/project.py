@@ -60,8 +60,9 @@ class Project(SQLBase, BugTargetBase, HasSpecificationsMixin,
     _table = "Project"
 
     # db field names
-    owner = ForeignKey(foreignKey='Person',
-        validator=PublicPersonValidator, dbName='owner', notNull=True)
+    owner = ForeignKey(
+        dbName='owner', foreignKey='Person',
+        validator=PublicPersonValidator, notNull=True)
     name = StringCol(dbName='name', notNull=True)
     displayname = StringCol(dbName='displayname', notNull=True)
     title = StringCol(dbName='title', notNull=True)

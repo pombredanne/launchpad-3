@@ -46,7 +46,8 @@ class DistroArchSeries(SQLBase):
         foreignKey='ProcessorFamily', notNull=True)
     architecturetag = StringCol(notNull=True)
     official = BoolCol(notNull=True)
-    owner = ForeignKey(dbName='owner', foreignKey='Person',
+    owner = ForeignKey(
+        dbName='owner', foreignKey='Person',
         validator=PublicPersonValidator, notNull=True)
     package_count = IntCol(notNull=True, default=DEFAULT)
     ppa_supported = BoolCol(notNull=False, default=False)

@@ -154,7 +154,8 @@ class Bug(SQLBase):
     title = StringCol(notNull=True)
     description = StringCol(notNull=False,
                             default=None)
-    owner = ForeignKey(dbName='owner', foreignKey='Person',
+    owner = ForeignKey(
+        dbName='owner', foreignKey='Person',
         validator=PublicPersonValidator, notNull=True)
     duplicateof = ForeignKey(
         dbName='duplicateof', foreignKey='Bug', default=None)

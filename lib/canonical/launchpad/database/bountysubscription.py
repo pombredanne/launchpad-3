@@ -23,7 +23,8 @@ class BountySubscription(SQLBase):
     _table='BountySubscription'
 
     bounty = ForeignKey(dbName='bounty', foreignKey='Bounty', notNull=True)
-    person = ForeignKey(dbName='person', foreignKey='Person',
+    person = ForeignKey(
+        dbName='person', foreignKey='Person',
         validator=PublicPersonValidator, notNull=True)
 
 

@@ -33,13 +33,13 @@ class SprintSpecification(SQLBase):
     status = EnumCol(schema=SprintSpecificationStatus, notNull=True,
         default=SprintSpecificationStatus.PROPOSED)
     whiteboard = StringCol(notNull=False, default=None)
-    registrant = ForeignKey(dbName='registrant', foreignKey='Person',
-        validator=PublicPersonValidator,
-        notNull=True)
+    registrant = ForeignKey(
+        dbName='registrant', foreignKey='Person',
+        validator=PublicPersonValidator, notNull=True)
     date_created = UtcDateTimeCol(notNull=True, default=DEFAULT)
-    decider = ForeignKey(dbName='decider', foreignKey='Person',
-        validator=PublicPersonValidator,
-        notNull=False, default=None)
+    decider = ForeignKey(
+        dbName='decider', foreignKey='Person',
+        validator=PublicPersonValidator, notNull=False, default=None)
     date_decided = UtcDateTimeCol(notNull=False, default=None)
 
     @property

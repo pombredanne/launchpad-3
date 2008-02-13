@@ -40,8 +40,8 @@ class HWSubmission(SQLBase):
     private = BoolCol(notNull=True)
     contactable = BoolCol(notNull=True)
     submission_key = StringCol(notNull=True)
-    owner = ForeignKey(dbName='owner', foreignKey='Person',
-        validator=PublicPersonValidator)
+    owner = ForeignKey(
+        dbName='owner', foreignKey='Person', validator=PublicPersonValidator)
     distroarchseries = ForeignKey(dbName='DistroArchSeries',
                                   foreignKey='DistroArchSeries',
                                   notNull=True)

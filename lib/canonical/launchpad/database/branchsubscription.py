@@ -25,7 +25,8 @@ class BranchSubscription(SQLBase):
 
     _table = 'BranchSubscription'
 
-    person = ForeignKey(dbName='person', foreignKey='Person',
+    person = ForeignKey(
+        dbName='person', foreignKey='Person',
         validator=PublicPersonValidator, notNull=True)
     branch = ForeignKey(dbName='branch', foreignKey='Branch', notNull=True)
     notification_level = EnumCol(enum=BranchSubscriptionNotificationLevel,

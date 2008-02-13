@@ -104,7 +104,8 @@ class Question(SQLBase, BugLinkTargetMixin):
     _defaultOrder = ['-priority', 'datecreated']
 
     # db field names
-    owner = ForeignKey(dbName='owner', foreignKey='Person',
+    owner = ForeignKey(
+        dbName='owner', foreignKey='Person',
         validator=PublicPersonValidator, notNull=True)
     title = StringCol(notNull=True)
     description = StringCol(notNull=True)

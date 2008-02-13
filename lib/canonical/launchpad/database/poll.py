@@ -42,7 +42,8 @@ class Poll(SQLBase):
     sortingColumns = ['title', 'id']
     _defaultOrder = sortingColumns
 
-    team = ForeignKey(dbName='team', foreignKey='Person',
+    team = ForeignKey(
+        dbName='team', foreignKey='Person',
         validator=PublicPersonValidator, notNull=True)
 
     name = StringCol(dbName='name', notNull=True)
@@ -342,7 +343,8 @@ class VoteCast(SQLBase):
     _table = 'VoteCast'
     _defaultOrder = 'id'
 
-    person = ForeignKey(dbName='person', foreignKey='Person',
+    person = ForeignKey(
+        dbName='person', foreignKey='Person',
         validator=PublicPersonValidator, notNull=True)
 
     poll = ForeignKey(dbName='poll', foreignKey='Poll', notNull=True)
@@ -365,7 +367,8 @@ class Vote(SQLBase):
     _table = 'Vote'
     _defaultOrder = ['preference', 'id']
 
-    person = ForeignKey(dbName='person', foreignKey='Person',
+    person = ForeignKey(
+        dbName='person', foreignKey='Person',
         validator=PublicPersonValidator)
 
     poll = ForeignKey(dbName='poll', foreignKey='Poll', notNull=True)

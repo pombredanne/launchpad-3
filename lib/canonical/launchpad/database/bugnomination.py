@@ -36,7 +36,8 @@ class BugNomination(SQLBase):
     implements(IBugNomination)
     _table = "BugNomination"
 
-    owner = ForeignKey(dbName='owner', foreignKey='Person',
+    owner = ForeignKey(
+        dbName='owner', foreignKey='Person',
         validator=PublicPersonValidator, notNull=True)
     decider = ForeignKey(
         dbName='decider', foreignKey='Person',

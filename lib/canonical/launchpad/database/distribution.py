@@ -107,7 +107,8 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
     mugshot = ForeignKey(
         dbName='mugshot', foreignKey='LibraryFileAlias', default=None)
     domainname = StringCol(notNull=True)
-    owner = ForeignKey(dbName='owner', foreignKey='Person',
+    owner = ForeignKey(
+        dbName='owner', foreignKey='Person',
         validator=PublicPersonValidator, notNull=True)
     bugcontact = ForeignKey(
         dbName='bugcontact', foreignKey='Person',
@@ -118,9 +119,10 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
         validator=PublicPersonValidator, notNull=False,
         default=None)
     driver = ForeignKey(
-        foreignKey="Person",
-        validator=PublicPersonValidator, dbName="driver", notNull=False, default=None)
-    members = ForeignKey(dbName='members', foreignKey='Person',
+        dbName="driver", foreignKey="Person",
+        validator=PublicPersonValidator, notNull=False, default=None)
+    members = ForeignKey(
+        dbName='members', foreignKey='Person',
         validator=PublicPersonValidator, notNull=True)
     mirror_admin = ForeignKey(
         dbName='mirror_admin', foreignKey='Person',
@@ -159,8 +161,8 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
                                             orderBy="name",
                                             prejoins=['sourcepackagename'])
     date_created = UtcDateTimeCol(notNull=False, default=UTC_NOW)
-    language_pack_admin = ForeignKey(dbName='language_pack_admin',
-        foreignKey='Person',
+    language_pack_admin = ForeignKey(
+        dbName='language_pack_admin', foreignKey='Person',
         validator=PublicPersonValidator, notNull=False, default=None)
 
     @cachedproperty

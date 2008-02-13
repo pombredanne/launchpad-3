@@ -21,8 +21,8 @@ class DistroComponentUploader(SQLBase):
 
     distribution = ForeignKey(dbName='distribution',
         foreignKey='Distribution', notNull=True)
-    component = ForeignKey(dbName='component', foreignKey='Component',
-        notNull=True)
+    component = ForeignKey(
+        dbName='component', foreignKey='Component', notNull=True)
     uploader = ForeignKey(dbName='uploader', foreignKey='Person',
         validator=PublicPersonValidator,
         notNull=True)

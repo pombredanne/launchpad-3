@@ -22,8 +22,7 @@ class BugSubscription(SQLBase):
     _table = 'BugSubscription'
 
     person = ForeignKey(dbName='person', foreignKey='Person',
-                        notNull=True,
-                        validator=PublicPersonValidator)
+                        notNull=True, validator=PublicPersonValidator)
     bug = ForeignKey(dbName='bug', foreignKey='Bug', notNull=True)
     subscribed_by = ForeignKey(
         dbName='subscribed_by', foreignKey='Person',

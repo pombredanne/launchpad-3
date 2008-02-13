@@ -24,7 +24,8 @@ class IAnswerContact(Interface):
     in a particular context.
     """
 
-    person = PublicPersonChoice(title=_('Answer Contact'), required=False,
+    person = PublicPersonChoice(
+        title=_('Answer Contact'), required=False,
         description=_(
             "The person receiving notifications about all questions."),
         vocabulary='ValidPersonOrTeam')

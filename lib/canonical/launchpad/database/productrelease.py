@@ -34,7 +34,8 @@ class ProductRelease(SQLBase):
     changelog = StringCol(notNull=False, default=None)
     datecreated = UtcDateTimeCol(
         dbName='datecreated', notNull=True, default=UTC_NOW)
-    owner = ForeignKey(dbName="owner", foreignKey="Person",
+    owner = ForeignKey(
+        dbName="owner", foreignKey="Person",
         validator=PublicPersonValidator, notNull=True)
     productseries = ForeignKey(dbName='productseries',
                                foreignKey='ProductSeries', notNull=True)
@@ -109,9 +110,9 @@ class ProductReleaseFile(SQLBase):
 
     description = StringCol(notNull=False, default=None)
 
-    uploader = ForeignKey(dbName="uploader", foreignKey='Person',
-        validator=PublicPersonValidator,
-                          notNull=True)
+    uploader = ForeignKey(
+        dbName="uploader", foreignKey='Person',
+        validator=PublicPersonValidator, notNull=True)
 
     date_uploaded = UtcDateTimeCol(notNull=True, default=UTC_NOW)
 

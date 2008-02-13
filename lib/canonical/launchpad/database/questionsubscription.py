@@ -27,7 +27,8 @@ class QuestionSubscription(SQLBase):
     question = ForeignKey(
         dbName='question', foreignKey='Question', notNull=True)
 
-    person = ForeignKey(dbName='person', foreignKey='Person',
+    person = ForeignKey(
+        dbName='person', foreignKey='Person',
         validator=PublicPersonValidator, notNull=True)
 
 

@@ -128,7 +128,8 @@ class POExportRequest(SQLBase):
 
     _table = 'POExportRequest'
 
-    person = ForeignKey(dbName='person', foreignKey='Person',
+    person = ForeignKey(
+        dbName='person', foreignKey='Person',
         validator=PublicPersonValidator, notNull=True)
     potemplate = ForeignKey(dbName='potemplate', foreignKey='POTemplate',
         notNull=True)

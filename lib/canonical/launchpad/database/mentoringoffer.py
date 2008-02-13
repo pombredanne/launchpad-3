@@ -34,11 +34,13 @@ class MentoringOffer(SQLBase):
     _defaultOrder = ['-date_created', '-id']
 
     # db field names
-    owner = ForeignKey(dbName='owner', foreignKey='Person',
+    owner = ForeignKey(
+        dbName='owner', foreignKey='Person',
         validator=PublicPersonValidator, notNull=True)
     date_created = UtcDateTimeCol(notNull=True, default=DEFAULT)
-    team = ForeignKey(dbName='team', notNull=True, foreignKey='Person',
-        validator=PublicPersonValidator)
+    team = ForeignKey(
+        dbName='team', foreignKey='Person',
+        validator=PublicPersonValidator, notNull=True)
     bug = ForeignKey(dbName='bug', notNull=False,
                      foreignKey='Bug', default=None)
     specification = ForeignKey(dbName='specification', notNull=False,

@@ -155,8 +155,8 @@ class IBounty(IHasOwner, IMessageTarget):
     difficulty = Choice(
         title=_('Difficulty'), vocabulary=BountyDifficulty,
         default=BountyDifficulty.NORMAL)
-    reviewer = PublicPersonChoice(title=_('The bounty reviewer.'),
-        required=False,
+    reviewer = PublicPersonChoice(
+        title=_('The bounty reviewer.'), required=False,
         description=_("The person who is responsible for deciding whether "
         "the bounty is awarded, and to whom if there are multiple "
         "claimants."), vocabulary='ValidPersonOrTeam')
