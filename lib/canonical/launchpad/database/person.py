@@ -1130,7 +1130,7 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
         # has the right permission to add the specified person to the team.
         naked_team = removeSecurityProxy(team)
         naked_team.addMember(
-            self, reviewer=self, status=status, force_team_add=True)
+            self, reviewer=reviewer, status=status, force_team_add=True)
 
     def clearInTeamCache(self):
         """See `IPerson`."""

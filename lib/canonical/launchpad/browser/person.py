@@ -76,6 +76,7 @@ __all__ = [
     'SearchNeedAttentionQuestionsView',
     'SearchSubscribedQuestionsView',
     'SubscribedBugTaskSearchListingView',
+    'TeamAddMyTeamsView',
     'TeamJoinView',
     'TeamLeaveView',
     'TeamListView',
@@ -100,7 +101,7 @@ from zope.interface import implements
 from zope.component import getUtility
 from zope.publisher.interfaces import NotFound
 from zope.publisher.interfaces.browser import IBrowserPublisher
-from zope.schema import Choice, TextLine
+from zope.schema import Choice, List, TextLine
 from zope.schema.vocabulary import SimpleVocabulary, SimpleTerm
 from zope.security.interfaces import Unauthorized
 
@@ -108,6 +109,7 @@ from canonical.config import config
 from canonical.database.sqlbase import flush_database_updates
 
 from canonical.widgets import LaunchpadRadioWidget, PasswordChangeWidget
+from canonical.widgets.itemswidgets import LabeledMultiCheckBoxWidget
 
 from canonical.cachedproperty import cachedproperty
 
@@ -954,8 +956,8 @@ class TeamOverviewMenu(ApplicationMenu, CommonMenuLinks):
     links = ['edit', 'branding', 'common_edithomepage', 'members',
              'add_member', 'memberships', 'received_invitations', 'mugshots',
              'editemail', 'configure_mailing_list', 'editlanguages', 'polls',
-             'add_poll', 'joinleave', 'mentorships', 'reassign',
-             'common_packages', 'related_projects', 'activate_ppa',
+             'add_poll', 'joinleave', 'add_my_teams', 'mentorships',
+             'reassign', 'common_packages', 'related_projects', 'activate_ppa',
              'show_ppa']
 
     @enabled_with_permission('launchpad.Edit')
@@ -994,6 +996,11 @@ class TeamOverviewMenu(ApplicationMenu, CommonMenuLinks):
     def add_member(self):
         target = '+addmember'
         text = 'Add member'
+        return Link(target, text, icon='add')
+
+    def add_my_teams(self):
+        target = '+add-my-teams'
+        text = 'Add one of my teams'
         return Link(target, text, icon='add')
 
     def memberships(self):
@@ -2702,6 +2709,68 @@ class TeamJoinView(PersonView):
         if notification is not None:
             request.response.addInfoNotification(notification)
         self.request.response.redirect(canonical_url(context))
+
+
+class TeamAddMyTeamsView(LaunchpadFormView):
+    """Propose/add to this team any of the teams you're an administrator of."""
+
+    custom_widget('teams', LabeledMultiCheckBoxWidget)
+
+    def initialize(self):
+        context = self.context
+        if context.subscriptionpolicy == TeamSubscriptionPolicy.MODERATED:
+            self.label = 'Propose these teams as members'
+        else:
+            self.label = 'Add these teams to %s' % context.displayname
+        self.next_url = canonical_url(context)
+        super(TeamAddMyTeamsView, self).initialize()
+
+    def setUpFields(self):
+        terms = []
+        for team in self.user.getAdministratedTeams():
+            if team not in self.context.activemembers:
+                text = '<a href="%s">%s</a>' % (
+                    canonical_url(team), team.displayname)
+                terms.append(SimpleTerm(team, team.name, text))
+        self.form_fields = form.Fields(
+            List(__name__='teams',
+                 title=_(''),
+                 value_type=Choice(vocabulary=SimpleVocabulary(terms)),
+                 required=False),
+            custom_widget=self.custom_widgets['teams'],
+            render_context=self.render_context)
+
+    def setUpWidgets(self, context=None):
+        super(TeamAddMyTeamsView, self).setUpWidgets(context)
+        self.widgets['teams'].display_label = False
+
+    @action(_("Cancel"), name="cancel",
+            validator=lambda self, action, data: [])
+    def cancel_action(self, action, data):
+        """Simply redirect to the team's page."""
+        pass
+
+    def validate(self, data):
+        if len(data.get('teams', [])) == 0:
+            self.setFieldError('teams',
+                               'Please select the team(s) you want to be '
+                               'member(s) of this team.')
+
+    @action(_("Continue"), name="continue")
+    def continue_action(self, action, data):
+        """Make the selected teams join this team."""
+        for team in data['teams']:
+            team.join(self.context, reviewer=self.user)
+        if self.context.subscriptionpolicy == TeamSubscriptionPolicy.MODERATED:
+            msg = 'proposed to this team.'
+        else:
+            msg = 'added to this team.'
+        if len(data['teams']) > 1:
+            msg = "have been %s" % msg
+        else:
+            msg = "has been %s" % msg
+        team_names = ', '.join(team.displayname for team in data['teams'])
+        self.request.response.addInfoNotification("%s %s" % (team_names, msg))
 
 
 class TeamLeaveView(PersonView):
