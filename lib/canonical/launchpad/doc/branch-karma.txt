@@ -62,3 +62,7 @@ You get karma for linking a blueprint to a branch.
 But again, not for junk branches.
 
     >>> branch_link = blueprint.linkBranch(junk_branch, eric)
+
+    # Unregister the event listener to make sure we won't interfere in
+    # other tests.
+    >>> karma_helper.unregister_listener()
