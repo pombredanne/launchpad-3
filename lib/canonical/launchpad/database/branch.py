@@ -69,7 +69,8 @@ class Branch(SQLBase):
     private = BoolCol(default=False, notNull=True)
 
     registrant = ForeignKey(
-        dbName='registrant', foreignKey='Person', notNull=True)
+        dbName='registrant', foreignKey='Person',
+        validator=public_person_validator, notNull=True)
     owner = ForeignKey(
         dbName='owner', foreignKey='Person',
         validator=public_person_validator, notNull=True)
