@@ -12,17 +12,15 @@ browser window the request came from.
 
 __metaclass__ = type
 
-import cgi
 from datetime import datetime
 
 from zope.interface import implements
 from zope.app.session.interfaces import ISession
-import zope.i18n
 
 from canonical.config import config
 from canonical.launchpad.webapp.interfaces import (
         INotificationRequest, INotificationResponse, BrowserNotificationLevel,
-        INotification, INotificationList, IStructuredString
+        INotification, INotificationList
         )
 from canonical.launchpad.webapp.menu import escape, structured
 from canonical.launchpad.webapp.publisher import LaunchpadView
