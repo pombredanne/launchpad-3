@@ -4,7 +4,7 @@ CREATE TABLE OAuthConsumer (
     id SERIAL PRIMARY KEY,
     date_created timestamp without time zone NOT NULL
         DEFAULT (CURRENT_TIMESTAMP AT TIME ZONE 'UTC'),
-        -- Misbehaving consumers will be disabled by admins
+    -- Misbehaving consumers will be disabled by admins
     disabled boolean NOT NULL DEFAULT FALSE,
     key text NOT NULL UNIQUE,
     -- In the first round the secret won't be used as we'll create consumers
@@ -36,15 +36,14 @@ CREATE TABLE OAuthRequestToken (
     --   * Read public and private data
     --   * Read/Write public and private data
     permission integer,
-    -- XXX: Don't we need date_expires here too so the user can
-    -- specify this?
+    date_expires timestamp without time zone,
     date_created timestamp without time zone NOT NULL
         DEFAULT (CURRENT_TIMESTAMP AT TIME ZONE 'UTC'),
-    date_authorized timestamp without time zone,
+    date_reviewed timestamp without time zone,
     key text UNIQUE NOT NULL,
     secret text NOT NULL,
     CONSTRAINT authorized_request CHECK (
-        date_authorized IS NULL = person IS NULL = permission IS NULL)
+        date_reviewed IS NULL = person IS NULL = permission IS NULL)
 );
 
 CREATE INDEX oauthrequesttoken__consumer__idx

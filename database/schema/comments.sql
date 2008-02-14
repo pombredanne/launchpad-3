@@ -1854,6 +1854,8 @@ person to the consumer.';
 COMMENT ON COLUMN OAuthRequestToken.key IS 'This token\'s unique key.';
 COMMENT ON COLUMN OAuthRequestToken.secret IS 'The secret used by the consumer (together with the token\'s key) to get an access token once the user has authorized its use.';
 COMMENT ON COLUMN OAuthRequestToken.date_created IS 'The date/time in which the token was created.';
+COMMENT ON COLUMN OAuthRequestToken.date_expires IS 'When the authorization is to expire.';
+COMMENT ON COLUMN OAuthRequestToken.date_reviewed IS 'When the authorization request was authorized or rejected by the person.';
 
 COMMENT ON TABLE OAuthAccessToken IS 'An access token used by the consumer to act on behalf of one of our users.';
 COMMENT ON COLUMN OAuthAccessToken.consumer IS 'The consumer which is going to access the protected resources.';
