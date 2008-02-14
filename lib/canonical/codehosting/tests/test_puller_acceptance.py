@@ -183,28 +183,11 @@ class TestBranchPuller(BranchTestCase):
         self.assertRanSuccessfully(command, retcode, output, error)
         self.assertMirrored(self.getHostedPath(branch), branch)
 
-    def _makeLoomBranchAndTree(self):
-        # XXX: Copied from test_acceptance.
-        tree = self.make_branch_and_tree('loom')
-        tree.lock_write()
-        try:
-            tree.branch.nick = 'bottom-thread'
-            loom_branch.loomify(tree.branch)
-        finally:
-            tree.unlock()
-        loomtree = tree.bzrdir.open_workingtree()
-        loomtree.lock_write()
-        loomtree.branch.new_thread('bottom-thread')
-        loomtree.commit('this is a commit', rev_id='commit-1')
-        loomtree.unlock()
-        loomtree.branch.record_loom('sample loom')
-        return loomtree
-
     def test_mirrorAHostedLoomBranch(self):
         """Run the puller over a branch with looms enabled."""
         branch = self.makeBranch(BranchType.HOSTED)
-        loomtree = self._makeLoomBranchAndTree()
-        self.pushToBranch(branch, loomtree)
+        loom_tree = self.makeLoomBranchAndTree('loom')
+        self.pushToBranch(branch, loom_tree)
         branch.requestMirror()
         transaction.commit()
         command, retcode, output, error = self.runPuller('upload')
