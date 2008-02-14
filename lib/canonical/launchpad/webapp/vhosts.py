@@ -74,12 +74,14 @@ class AllVirtualHostsConfiguration:
         launchpad.conf.
 
         """
-        self._has_inited = False
+        self._has_VHost_data = False
 
 
-    def _lazyInit(self):
+    def _getVHostData(self):
         """Parse the vhosts on demand."""
-        #Avoid the circular imports inherrent with the use of canonical.lazr.
+        # Avoid the circular imports inherent with the use of canonical.lazr.
+        if self._has_VHost_data:
+            return
         from canonical.config import config
         launchpad_conf_vhosts = config.launchpad.vhosts
         self._use_https = launchpad_conf_vhosts.use_https
@@ -96,28 +98,26 @@ class AllVirtualHostsConfiguration:
                 self._use_https)
             self._hostnames.add(config.hostname)
             self._hostnames.update(config.althostnames)
-        self._has_inited = True
+        self._has_VHost_data = True
 
     @property
     def use_https(self):
         """Do the vhosts use HTTPS?"""
-        if not self._has_inited:
-            self._lazyInit()
+        self._getVHostData()
         return self._use_https
 
     @property
     def configs(self):
         """Return the VirtualHostConfig dict."""
-        if not self._has_inited:
-            self._lazyInit()
+        self._getVHostData()
         return self._configs
 
     @property
     def hostnames(self):
         """Return the set of hostnames."""
-        if not self._has_inited:
-            self._lazyInit()
+        self._getVHostData()
         return self._hostnames
+
 # The only public API to this module, the global virtual host configuration.
 allvhosts = AllVirtualHostsConfiguration()
 

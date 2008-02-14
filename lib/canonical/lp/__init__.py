@@ -1,23 +1,21 @@
 # Copyright 2004 Canonical Ltd.  All rights reserved.
+# This module uses an older naming convention to support the callsites.
+# pylint: disable-msg=C0103
+
+"""Launcpad Zope extensions."""
 
 __metaclass__ = type
 
-import sys, os, warnings
+import sys, os
 from types import ClassType
 from zope.interface.advice import addClassAdvisor
 from zope.interface import classImplements
-from zope.i18n import MessageIDFactory
 
-from sqlobject import connectionForURI
 from canonical.database.sqlbase import (
-        ZopelessTransactionManager, DEFAULT_ISOLATION, AUTOCOMMIT_ISOLATION,
-        READ_COMMITTED_ISOLATION, SERIALIZABLE_ISOLATION
-        )
+        ZopelessTransactionManager, DEFAULT_ISOLATION)
 
 import psycopgda.adapter
 
-# Single MessageIDFactory for everyone
-from canonical.launchpad import _
 
 __all__ = [
     'DEFAULT_ISOLATION', 'AUTOCOMMIT_ISOLATION',
@@ -36,20 +34,70 @@ __all__ = [
 # environment variables, this feature currently required by Async's
 # office environment.
 
-@property
-def dbname(module):
-    from canonical.config import config
-    return os.environ.get('LP_DBNAME', config.dbname)
 
-@property
-def dbhost(module):
-    from canonical.config import config
-    return os.environ.get('LP_DBHOST', config.dbhost or '')
+# Store the dbname, dbhost, and dbuser.
+_db = {}
 
-@property
-def dbuser(module):
-    from canonical.config import config
-    return os.environ.get('LP_DBUSER', config.launchpad.dbuser)
+def _init_db():
+    """Initialize the db values from the config."""
+    if len(_db) == 0:
+        import pdb; pdb.set_trace()
+        # Avoid circular imports.
+        from canonical.config import config
+        _db['dbname'] = os.environ.get('LP_DBNAME', config.dbname)
+        _db['dbhost'] = os.environ.get('LP_DBNAME', config.dbhost)
+        _db['dbuser'] = os.environ.get('LP_DBUSER', config.launchpad.dbuser)
+
+
+def create_db_property(key):
+    """return a getter-setter property to access a db key."""
+    def getter():
+        """Return the key."""
+        _init_db()
+        return _db[key]
+
+    def setter(value):
+        """Set the key."""
+        _db[key] = value
+
+    return property(getter, setter, doc='Return the %s.' % key)
+
+
+def dbname():
+    """Return the dbname."""
+    _init_db()
+    return _db['dbname']
+
+def _setdbname(value):
+    """Set the dbname."""
+    _db['dbname'] = value
+
+dbname = property(dbname, _setdbname, doc=dbname.__doc__)
+
+
+def dbhost():
+    """Return the dbhost."""
+    _init_db()
+    return _db['dbhost']
+
+def _setdbhost(value):
+    """Set the dbhost."""
+    _db['dbhost'] = value
+
+dbhost = property(dbhost, _setdbhost, doc=dbhost.__doc__)
+
+
+def dbuser():
+    """Return the dbuser."""
+    _init_db()
+    return _db['dbuser']
+
+def _setdbuser(value):
+    """Set the dbhost."""
+    _db['dbuser'] = value
+
+dbuser = property(dbuser, _setdbuser, doc=dbuser.__doc__)
+
 
 _typesRegistered = False
 def registerTypes():

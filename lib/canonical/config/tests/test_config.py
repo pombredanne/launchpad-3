@@ -73,6 +73,7 @@ def test_suite():
         ))
     # Add a test for every launchpad[.lazr].conf file in our tree.
     prefix_len = len(top_directory) + 1
+    lazr_conf_files = ('launchpad.default.conf', 'launchpad.testrunner.conf')
     for dirpath, dirnames, filenames in os.walk(top_directory):
         for filename in filenames:
             if filename == 'launchpad.conf':
@@ -84,8 +85,7 @@ def test_suite():
                 # doesn't do what we want.
                 suite.addTest(unittest.FunctionTestCase(
                     make_test(config_file, 'configs/' + description)))
-            elif (filename.endswith('.default.conf')
-                  or filename.endswith('.testrunner.conf')):
+            elif filename in lazr_conf_files:
                 # Test the lazr.config conf files.
                 config_file = os.path.join(dirpath, filename)
                 description = config_file[prefix_len:]
