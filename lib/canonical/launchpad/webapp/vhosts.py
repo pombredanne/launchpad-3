@@ -74,13 +74,13 @@ class AllVirtualHostsConfiguration:
         launchpad.conf.
 
         """
-        self._has_VHost_data = False
+        self._has_vhost_data = False
 
 
     def _getVHostData(self):
         """Parse the vhosts on demand."""
         # Avoid the circular imports inherent with the use of canonical.lazr.
-        if self._has_VHost_data:
+        if self._has_vhost_data:
             return
         from canonical.config import config
         launchpad_conf_vhosts = config.launchpad.vhosts
@@ -98,7 +98,7 @@ class AllVirtualHostsConfiguration:
                 self._use_https)
             self._hostnames.add(config.hostname)
             self._hostnames.update(config.althostnames)
-        self._has_VHost_data = True
+        self._has_vhost_data = True
 
     @property
     def use_https(self):
