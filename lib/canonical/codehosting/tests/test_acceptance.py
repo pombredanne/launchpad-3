@@ -1,7 +1,4 @@
 # Copyright 2004-2007 Canonical Ltd.  All rights reserved.
-# XXX: Aaron Bentley 2008-01-21: This is due to the loom test.
-# Will be removed when looms are enabled.
-# pylint: disable-msg=W0101
 
 """Acceptance tests for Supermirror SFTP server's bzr support."""
 
@@ -18,7 +15,6 @@ import bzrlib.branch
 from bzrlib.builtins import cmd_branch, cmd_push
 from bzrlib.errors import (
     BzrCommandError, LockFailed, NotBranchError, TransportNotPossible)
-# XXX: Aaron Bentley 2008-01-21: loom plugin is not yet supported
 from bzrlib.plugins.loom import branch as loom_branch
 from bzrlib.repofmt.weaverepo import RepositoryFormat7
 from bzrlib.repository import format_registry
