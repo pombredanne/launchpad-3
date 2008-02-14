@@ -117,7 +117,7 @@ need to be able to hide the fact that a builder is building a private
 PPA job.
 
 This feature is evaluated on the view layer, since it varies according
-to the user who is trying to accessing a given content.
+to the user who is trying to access a given content.
 
 Before checking if it works as expected we will setup a environment
 where builder 'Frog' is building a job from Celso's private PPA.
@@ -166,6 +166,9 @@ all the 'private' information is exposed.
     >>> empty_request = LaunchpadTestRequest(form={})
     >>> admin_view = getMultiAdapter((frog, empty_request), name="+index")
 
+    >>> print admin_view.context
+    <security proxied canonical.launchpad.database.builder.Builder ...>
+
     >>> print admin_view.context.builderok
     True
 
@@ -179,12 +182,16 @@ all the 'private' information is exposed.
     BUILDING i386 build of iceweasel 1.0 in ubuntu warty RELEASE [cprov] (AUTO)
 
 When accessing the same view as a unprivileged user, No-Priv, the
-sensitive information is hidden ('cloaked') and the builder shows up
-as 'NOT OK'.
+sensitive information is hidden (the context class is 'cloaked', see
+browser/builder.py for futher information on this) and the builder
+shows up as 'NOT OK'.
 
     >>> login('no-priv@canonical.com')
 
     >>> nopriv_view = getMultiAdapter((frog, empty_request), name="+index")
+
+    >>> print nopriv_view.context
+    <canonical.launchpad.browser.builder.HiddenBuilder ...>
 
     >>> print nopriv_view.context.builderok
     False
