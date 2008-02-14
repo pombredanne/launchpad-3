@@ -1,4 +1,5 @@
 # Copyright 2004-2007 Canonical Ltd.  All rights reserved.
+# pylint: disable-msg=W0101
 
 """Acceptance tests for Supermirror SFTP server's bzr support."""
 

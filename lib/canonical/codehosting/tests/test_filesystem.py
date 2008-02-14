@@ -14,7 +14,8 @@ from canonical.codehosting import branch_id_to_path
 from canonical.codehosting.tests.servers import (
     make_launchpad_server, make_sftp_server)
 from canonical.codehosting.tests.helpers import (
-    CodeHostingTestProviderAdapter, ServerTestCase, adapt_suite, deferToThread)
+    CodeHostingTestProviderAdapter, ServerTestCase, adapt_suite,
+    deferToThread)
 
 from canonical.testing import TwistedLayer
 
@@ -118,8 +119,8 @@ class TestFilesystem(ServerTestCase, TestCaseWithTransport):
 
     @deferToThread
     def test_make_team_branch_directory(self):
-        # You can make a branch directory under a team directory that you are a
-        # member of (so long as it's a real product), though.
+        # You can make a branch directory under a team directory that you are
+        # a member of (so long as it's a real product), though.
         transport = self.getTransport()
         transport.mkdir('~testteam/firefox/shiny-new-thing')
         self.assertTrue(
@@ -187,8 +188,8 @@ class TestFilesystem(ServerTestCase, TestCaseWithTransport):
 
     @deferToThread
     def test_non_bzr_directory_inside_branch(self):
-        # Users can only create Bazaar control directories (e.g. '.bzr') inside
-        # a branch. Other directories are strictly forbidden.
+        # Users can only create Bazaar control directories (e.g. '.bzr')
+        # inside a branch. Other directories are strictly forbidden.
         transport = self.getTransport()
         transport.mkdir('~testuser/+junk/banana')
         self.assertTransportRaises(
@@ -198,8 +199,8 @@ class TestFilesystem(ServerTestCase, TestCaseWithTransport):
     @deferToThread
     @wait_for_disconnect
     def test_non_bzr_file_inside_branch(self):
-        # Users can only create Bazaar control directories (e.g. '.bzr') inside
-        # a branch. Files are not allowed.
+        # Users can only create Bazaar control directories (e.g. '.bzr')
+        # inside a branch. Files are not allowed.
         transport = self.getTransport()
         transport.mkdir('~testuser/+junk/banana')
         self.assertTransportRaises(
