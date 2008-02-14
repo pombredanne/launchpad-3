@@ -52,7 +52,8 @@ list of emails to send:
 
     >>> from canonical.launchpad.scripts.bugnotification import (
     ...     get_email_notifications)
-    >>> for bug_notifications, messages in get_email_notifications(notifications):
+    >>> email_notifications = get_email_notifications(notifications)
+    >>> for bug_notifications, messages in email_notifications:
     ...     for message in messages:
     ...         print_notification(message)
     To: foo.bar@canonical.com
@@ -135,7 +136,8 @@ subject, though, which is often the case when someone replies via email.
     >>> bug_one.addCommentNotification(comment)
     >>> pending_notifications = getUtility(
     ...     IBugNotificationSet).getNotificationsToSend()
-    >>> for bug_notifications, messages in get_email_notifications(pending_notifications):
+    >>> email_notifications = get_email_notifications(pending_notifications)
+    >>> for bug_notifications, messages in email_notifications:
     ...     for message in messages:
     ...         print_notification(message)
     To: foo.bar@canonical.com
@@ -174,7 +176,8 @@ Let's add a few changes and see how it looks like:
     >>> len(pending_notifications)
     2
 
-    >>> for bug_notifications, messages in get_email_notifications(pending_notifications):
+    >>> email_notifications = get_email_notifications(pending_notifications)
+    >>> for bug_notifications, messages in email_notifications:
     ...     for message in messages:
     ...         print_notification(message)
     To: foo.bar@canonical.com
@@ -219,7 +222,8 @@ the constructed email:
 Notice how the comment is in the top of the email, and the changes are
 in the order they were added:
 
-    >>> for bug_notifications, messages in get_email_notifications(pending_notifications):
+    >>> email_notifications = get_email_notifications(pending_notifications)
+    >>> for bug_notifications, messages in email_notifications:
     ...     for message in messages:
     ...         print_notification(message)
     To: foo.bar@canonical.com
@@ -259,7 +263,8 @@ If we insert yet another comment, it will be sent as a separate email.
     >>> len(pending_notifications)
     6
 
-    >>> for bug_notifications, messages in get_email_notifications(pending_notifications):
+    >>> email_notifications = get_email_notifications(pending_notifications)
+    >>> for bug_notifications, messages in email_notifications:
     ...     for message in messages:
     ...         print_notification(message)
     To: foo.bar@canonical.com
@@ -328,7 +333,8 @@ If we add three comments, three notifications will be sent:
     >>> len(pending_notifications)
     3
 
-    >>> for bug_notifications, messages in get_email_notifications(pending_notifications):
+    >>> email_notifications = get_email_notifications(pending_notifications)
+    >>> for bug_notifications, messages in email_notifications:
     ...     for message in messages:
     ...         print_notification(message)
     To: foo.bar@canonical.com
@@ -411,7 +417,8 @@ change in between, three notifications will be sent:
     >>> len(pending_notifications)
     3
 
-    >>> for bug_notifications, messages in get_email_notifications(pending_notifications):
+    >>> email_notifications = get_email_notifications(pending_notifications)
+    >>> for bug_notifications, messages in email_notifications:
     ...     for message in messages:
     ...         print_notification(message)
     To: foo.bar@canonical.com
@@ -554,7 +561,8 @@ well:
     >>> len(pending_notifications)
     9
 
-    >>> for bug_notifications, messages in get_email_notifications(pending_notifications):
+    >>> email_notifications = get_email_notifications(pending_notifications)
+    >>> for bug_notifications, messages in email_notifications:
     ...     for message in messages:
     ...         print_notification(message)
     To: support@ubuntu.com
@@ -705,7 +713,8 @@ notification will be sent to all members individually.
     >>> len(pending_notifications)
     1
 
-    >>> for bug_notifications, messages in get_email_notifications(pending_notifications):
+    >>> email_notifications = get_email_notifications(pending_notifications)
+    >>> for bug_notifications, messages in email_notifications:
     ...     for message in messages:
     ...         print message['To']
     foo.bar@canonical.com
@@ -1060,10 +1069,10 @@ filled with data about that bug:
 If we take a closer look at a notification, we can see that
 X-Launchpad-Bug headers were added:
 
-    >>> [(bug_notifications, messages)] = get_email_notifications(
-    ...     notifications)
-    >>> [message] = messages
-    >>> sorted(message.get_all('X-Launchpad-Bug'))
+    >>> email_notifications = get_email_notifications(notifications)
+    >>> for bug_notifications, messages in email_notifications:
+    ...     for message in messages:
+    ...         sorted(message.get_all('X-Launchpad-Bug'))
     [u'distribution=debian; distroseries=sarge;... milestone=3.1;...',
      u'distribution=debian; distroseries=woody;...',
      u'distribution=debian; sourcepackage=mozilla-firefox; component=...']
@@ -1181,25 +1190,25 @@ its status in all of its targets. All other subscribers will receive
 standard notifications that don't include the bug description. To help
 with demonstrating this, we'll define a helper function.
 
-    >>> def sort_messages_by_recipient(messages):
+    >>> def collate_messages_by_recipient(messages):
     ...     messages_by_recipient = {}
     ...     for message in messages:
-    ...         if message['To'] in messages_by_recipient:
-    ...             messages_by_recipient[message['To']].append(message)
+    ...         recipient = message['To']
+    ...         if recipient in messages_by_recipient:
+    ...             messages_by_recipient[recipient].append(message)
     ...         else:
-    ...             messages_by_recipient[message['To']] = [message]
+    ...             messages_by_recipient[recipient] = [message]
     ...     return messages_by_recipient
 
-    >>> from canonical.launchpad.scripts.bugnotification import (
-    ...     get_email_notifications)
-    >>> [(bug_notifications, messages)] = (
-    ...     get_email_notifications(notifications))
-    >>> sorted_messages = sort_messages_by_recipient(messages)
+    >>> from itertools import chain
+    >>> collated_messages = collate_messages_by_recipient(
+    ...     chain(*(messages for bug_notifications, messages in
+    ...             get_email_notifications(notifications))))
 
 We can see that foo.bar@canonical.com doesn't receive verbose
 notifications:
 
-    >>> print_notification(sorted_messages['foo.bar@canonical.com'][0])
+    >>> print_notification(collated_messages['foo.bar@canonical.com'][0])
     To: foo.bar@canonical.com
     From: Sample Person <test@canonical.com>
     Subject: [Bug 15] subject
@@ -1207,18 +1216,18 @@ notifications:
     <BLANKLINE>
     a really simple comment.
     <BLANKLINE>
-    -- 
+    --
     Nonsensical bugs are useless
     http://bugs.launchpad.dev/bugs/15
     You received this bug notification because you are a direct subscriber
     of the bug.
     <BLANKLINE>
-    ---------------------------------------------------------------------- 
+    ----------------------------------------------------------------------
 
 Whereas ddaa does:
 
     >>> print_notification(
-    ...     sorted_messages['david.allouche@canonical.com'][0])
+    ...     collated_messages['david.allouche@canonical.com'][0])
     To: david.allouche@canonical.com
     From: Sample Person <test@canonical.com>
     Subject: [Bug 15] subject
@@ -1226,7 +1235,7 @@ Whereas ddaa does:
     <BLANKLINE>
     a really simple comment.
     <BLANKLINE>
-    -- 
+    --
     Nonsensical bugs are useless
     http://bugs.launchpad.dev/bugs/15
     You received this bug notification because you are a direct subscriber
@@ -1238,5 +1247,5 @@ Whereas ddaa does:
     Bug description:
     Like this one, natch.
     <BLANKLINE>
-    ---------------------------------------------------------------------- 
+    ----------------------------------------------------------------------
 
