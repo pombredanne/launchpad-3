@@ -304,20 +304,6 @@ First, we create some bug watches to test with:
 
     >>> login('no-priv@canonical.com')
 
-We'll create a mock transaction manager object which we can pass to the
-methods that we're testing.
-
-    >>> class MockTransactionManager:
-    ...     def abort(self):
-    ...         pass
-    ...
-    ...     def begin(self):
-    ...         pass
-    ...
-    ...     def commit(self):
-    ...         pass
-    >>> transactionmgr = MockTransactionManager()
-
 Next, we monkey-patch urllib2.urlopen so that it always times out.
 
     >>> import socket
@@ -328,7 +314,7 @@ Next, we monkey-patch urllib2.urlopen so that it always times out.
     ...     raise socket.timeout("Connection timed out.")
     >>> try:
     ...     urllib2.urlopen = do_not_urlopen
-    ...     updater = BugWatchUpdater(transactionmgr)
+    ...     updater = BugWatchUpdater(transaction)
     ...     updater._login()
     ...     updater.updateBugTracker(example_bug_tracker)
     ... finally:
@@ -360,10 +346,27 @@ of the externalbugtracker module to ensure that it raises this error.
     ...     raise externalbugtracker.UnknownBugTrackerTypeError(
     ...         bugtrackertype.name, bugtracker.name)
 
+We need to re-create the example bugtracker, bug and watch, since they
+were destroyed when the timeout error above caused the transaction to be
+reset.
+
+    >>> example_bug_tracker = BugTracker(
+    ...     name="example-bugs",
+    ...     title="Example.com Roundup",
+    ...     bugtrackertype=BugTrackerType.ROUNDUP,
+    ...     baseurl="http://bugs.example.com",
+    ...     summary="Contains bugs for Example.com",
+    ...     contactdetails="foo.bar@example.com",
+    ...     owner=sample_person)
+
+    >>> example_bug = getUtility(IBugSet).get(10)
+    >>> example_bugwatch = example_bug.addWatch(
+    ...     example_bug_tracker, 1235, sample_person)
+
     >>> try:
     ...     externalbugtracker.get_external_bugtracker = (
     ...         broken_get_external_bugtracker)
-    ...     updater = BugWatchUpdater(transactionmgr)
+    ...     updater = BugWatchUpdater(transaction)
     ...     updater._login()
     ...     updater.updateBugTracker(example_bug_tracker)
     ... finally:
@@ -377,7 +380,6 @@ the error that was raised:
     'Unsupported Bugtracker'
 
 
-
 == Batched Bugwatch Updating ==
 
 checkwatches.py will only update those bugs that need updating, but
@@ -389,7 +391,7 @@ BugWatchUpdate.updateBugTracker() automatically rolls back the
 transaction if something goes wrong.
 
     >>> login('test@canonical.com')
-    >>> for bug_id in range(0, 10):
+    >>> for bug_id in range(1, 10):
     ...     example_bugwatch = example_bug.addWatch(
     ...         example_bug_tracker, bug_id, sample_person)
 
@@ -409,7 +411,7 @@ requests are actually made.
     >>> original_log = externalbugtracker.log
     >>> batch_size = externalbugtracker.Roundup.batch_size
     >>> try:
-    ...     updater = BugWatchUpdater(transactionmgr)
+    ...     updater = BugWatchUpdater(transaction)
     ...     updater._login()
     ...     urllib2.urlopen = do_not_urlopen
     ...     externalbugtracker.Roundup.batch_size = 5
@@ -421,63 +423,3 @@ requests are actually made.
     ...     urllib2.urlopen = urlopen
     INFO Updating 5 watches on http://bugs.example.com
     ERROR:root:Connection timed out when updating http://bugs.example.com
-
-
-== Updating selected bug trackers ==
-
-The BugWatchUpdater class can be instructed to update only a subset of
-bugtrackers. This is acheived by passing a list of bug tracker names to
-the updateBugTrackers() method. No watches will actually be updated
-because all the watches had their lastchecked time set to UTC_NOW above.
-
-    >>> updater = BugWatchUpdater(transactionmgr, log=FakeLogger())
-    >>> updater._login()
-    >>> updater.updateBugTrackers(['debbugs', 'gnome-bugzilla'])
-    INFO No watches to update on http://bugs.debian.org
-    INFO No watches to update on http://bugzilla.gnome.org/bugs
-
-This functionality can also be used with the checkwatches cronscript,
-allowing a user to pass a list of bugtrackers to check at the command
-line.
-
-    >>> process = subprocess.Popen(
-    ...     ['cronscripts/checkwatches.py', '--bug-tracker=mozilla.org',
-    ...      '--bug-tracker=debbugs'], stdin=subprocess.PIPE,
-    ...     stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-    >>> (out, err) = process.communicate()
-    >>> out
-    ''
-    >>> process.returncode
-    0
-
-    >>> print err
-    INFO    creating lockfile
-    INFO    No watches to update on http://bugs.debian.org
-    INFO    No watches to update on https://bugzilla.mozilla.org/
-    INFO    Time for this run: ... seconds.
-    <BLANKLINE>
-
-The help for the checkwatches cronscript explains the usage of the bug
-tracker option fully.
-
-    >>> process = subprocess.Popen(
-    ...     ['cronscripts/checkwatches.py', '-h'],
-    ...     stdin=subprocess.PIPE, stdout=subprocess.PIPE,
-    ...     stderr=subprocess.PIPE)
-    >>> (out, err) = process.communicate()
-    >>> print out
-    usage: checkwatches.py [options]
-    <BLANKLINE>
-    options:
-      -h, --help            show this help message and exit
-      -v, --verbose         Increase verbosity. May be specified
-                            multiple times.
-      -q, --quiet           Decrease verbosity. May be specified
-                            multiple times.
-      --log-file=LOG_FILE   Send log to the given file, rather than
-                            stderr.
-      -t BUG_TRACKER, --bug-tracker=BUG_TRACKER
-                            Only check a given bug tracker. Specifying
-                            more than one bugtracker using this option
-                            will check all the bugtrackers specified.
-
