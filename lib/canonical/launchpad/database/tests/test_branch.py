@@ -135,7 +135,7 @@ class TestBranchDeletion(TestCase):
         revision = RevisionSet().new(
             revision_id='some-unique-id', log_body='commit message',
             revision_date=None, revision_author='ddaa@localhost',
-            owner=self.user, parent_ids=[], properties=None)
+            parent_ids=[], properties=None)
         self.branch.createBranchRevision(0, revision)
         transaction.commit()
         LaunchpadZopelessLayer.switchDbUser(config.launchpad.dbuser)

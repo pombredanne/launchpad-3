@@ -608,6 +608,12 @@ COMMENT ON COLUMN POFile.from_sourcepackagename IS 'The sourcepackagename from w
 COMMENT ON COLUMN POFile.unreviewed_count IS 'Number of POTMsgSets with new,
 unreviewed TranslationMessages for this POFile.';
 
+-- RevisionAuthor
+COMMENT ON TABLE RevisionAuthor IS 'All distinct authors for revisions.';
+COMMENT ON COLUMN RevisionAuthor.name IS 'The exact text extracted from the branch revision.';
+COMMENT ON COLUMN RevisionAuthor.email IS 'A valid email address extracted from the name.  This email address may or may not be associated with a Launchpad user at this stage.';
+COMMENT ON COLUMN RevisionAuthor.person IS 'The Launchpad person that has a verified email address that matches the email address of the revision author.';
+
 -- Sprint
 COMMENT ON TABLE Sprint IS 'A meeting, sprint or conference. This is a convenient way to keep track of a collection of specs that will be discussed, and the people that will be attending.';
 COMMENT ON COLUMN Sprint.driver IS 'The driver (together with the registrant or owner) is responsible for deciding which topics will be accepted onto the agenda of the sprint.';
