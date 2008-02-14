@@ -14,7 +14,6 @@ __all__ = ['ImportdTargetGetter']
 import os
 import shutil
 
-from bzrlib.bzrdir import BzrDir
 from bzrlib.errors import UpToDateFormat
 from bzrlib.transport import get_transport
 from bzrlib.upgrade import upgrade

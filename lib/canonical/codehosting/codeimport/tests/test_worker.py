@@ -8,8 +8,6 @@ import shutil
 import tempfile
 import unittest
 
-from zope.component import getUtility
-
 from bzrlib.bzrdir import BzrDir
 from bzrlib.tests import TestCaseWithTransport
 from bzrlib.transport import get_transport
@@ -21,9 +19,7 @@ from canonical.codehosting.codeimport.worker import (
 from canonical.codehosting.tests.helpers import (
     create_branch_with_one_revision)
 from canonical.config import config
-from canonical.launchpad.interfaces import (
-    BranchType, BranchTypeError, ICodeImportSet, ILaunchpadCelebrities,
-    RevisionControlSystems)
+from canonical.launchpad.interfaces import BranchType, BranchTypeError
 from canonical.launchpad.testing import LaunchpadObjectFactory
 from canonical.testing import LaunchpadScriptLayer
 

@@ -17,11 +17,7 @@ from bzrlib.builtins import get_format_type
 from bzrlib.bzrdir import BzrDir
 from bzrlib.repository import Repository
 from bzrlib.urlutils import local_path_to_url
-from zope.component import getUtility
 
-from canonical.database.sqlbase import commit
-from canonical.launchpad.ftests import sync
-from canonical.launchpad.interfaces import ILaunchpadCelebrities
 from canonical.codehosting.codeimport.gettarget import ImportdTargetGetter
 from canonical.codehosting.codeimport.publish import ImportdPublisher
 from canonical.codehosting.codeimport.tests.helpers import (
@@ -55,8 +51,8 @@ class ImportdTargetGetterTestCase(ImportdTestCase):
         repository = control.open_repository()
         branch = control.open_branch()
         workingtree = control.open_workingtree()
-        # check that bzrworking has the same history as the mirror, and that it
-        # is one revision long, as provided by setUpMirror.
+        # check that bzrworking has the same history as the mirror, and that
+        # it is one revision long, as provided by setUpMirror.
         bzrworking_history = self.bzrworkingHistory()
         mirror_history = self.mirrorHistory()
         self.assertEqual(len(mirror_history), 1)
@@ -109,7 +105,7 @@ class TestImportdTargetGetter(ImportdTargetGetterTestCase):
         os.mkdir(self.bzrworking)
         # And create a file in the directory, to ensure that get_target() does
         # a recursive delete.
-        open(os.path.join(self.bzrworking, 'hello'), 'w').close
+        open(os.path.join(self.bzrworking, 'hello'), 'w').close()
         # Finally, check that get_target() can still make a good bzrworking.
         self.importd_getter.get_target()
         self.assertGoodBzrWorking()

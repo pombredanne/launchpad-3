@@ -15,16 +15,9 @@ from bzrlib.bzrdir import BzrDir
 from bzrlib.branch import Branch
 from bzrlib.errors import DivergedBranches
 from bzrlib.urlutils import local_path_to_url
-from zope.component import getUtility
 
-from canonical.codehosting.codeimport.publish import (
-    ensure_series_branch, ImportdPublisher)
+from canonical.codehosting.codeimport.publish import ImportdPublisher
 from canonical.codehosting.codeimport.tests.helpers import ImportdTestCase
-from canonical.database.sqlbase import commit
-from canonical.launchpad.interfaces import (
-    BranchType, BranchTypeError, IBranchSet, ILaunchpadCelebrities,
-    IPersonSet)
-from canonical.launchpad.testing import LaunchpadObjectFactory
 
 
 class TestImportdPublisher(ImportdTestCase):
@@ -53,8 +46,8 @@ class TestImportdPublisher(ImportdTestCase):
 
     def testInitialPublish(self):
         # Initial publishing of a vcs-import creates a Branch record, sets the
-        # branch attribute of the productseries, and pushes to a branch without
-        # working tree, with a name based on the branch id.
+        # branch attribute of the productseries, and pushes to a branch
+        # without working tree, with a name based on the branch id.
         self.setUpOneCommit()
         self.assertEqual(self.series_helper.getSeries().import_branch, None)
         self.importd_publisher.publish()

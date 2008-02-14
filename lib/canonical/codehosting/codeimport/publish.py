@@ -12,10 +12,6 @@ __all__ = ['ImportdPublisher', 'mirror_url_from_series']
 
 import os
 
-from bzrlib.branch import Branch
-from bzrlib.bzrdir import BzrDir
-from bzrlib.errors import NotBranchError
-from bzrlib.transport import get_transport
 from zope.component import getUtility
 
 from bzrlib.transport import get_transport
@@ -25,7 +21,6 @@ from canonical.codehosting.codeimport.worker import BazaarBranchStore
 from canonical.database.sqlbase import begin, commit
 from canonical.launchpad.interfaces import (
     BranchType, ILaunchpadCelebrities, IBranchSet, IProductSeriesSet)
-from canonical.launchpad.webapp.url import urlappend
 
 
 class ImportdPublisher:
@@ -67,5 +62,6 @@ def create_branch_for_series(series):
     vcs_imports = getUtility(ILaunchpadCelebrities).vcs_imports
     product = series.product
     branch = getUtility(IBranchSet).new(
-        BranchType.IMPORTED, name, vcs_imports, vcs_imports, product, url=None)
+        BranchType.IMPORTED, name, vcs_imports, vcs_imports, product,
+        url=None)
     return branch
