@@ -58,8 +58,6 @@ class CanonicalConfig(object):
 
     def getConfig(self, section=None):
         """Return the ZConfig configuration"""
-        # XXX sinzui 2008-02-11: This section is deprecated. It will
-        # be removed once Launchpad calls lazr.config exclusively.
         if section is None:
             section = self._default_config_section
 
@@ -71,7 +69,7 @@ class CanonicalConfig(object):
         schemafile = os.path.join(os.path.dirname(__file__), 'schema.xml')
         configfile = os.path.join(
                 os.path.dirname(__file__), os.pardir, os.pardir, os.pardir,
-                'configs',os.environ.get(
+                'configs', os.environ.get(
                     CONFIG_ENVIRONMENT_VARIABLE, DEFAULT_CONFIG),
                 'launchpad.conf'
                 )
@@ -96,10 +94,7 @@ class CanonicalConfig(object):
                 'configs')
             environ_dir = os.environ.get(
                     CONFIG_ENVIRONMENT_VARIABLE, DEFAULT_CONFIG)
-            if self._default_config_section == 'testrunner':
-                role = 'test'
-            else:
-                role = 'lazr'
+            role = self._default_config_section
             schema_file = os.path.join(config_dir, 'schema.lazr.conf')
             config_file = os.path.join(
                 config_dir, environ_dir,'launchpad.%s.conf' % role)
@@ -190,7 +185,7 @@ def failover_to_zconfig(func):
         elif lazr_value is not None:
             # The callsite was converted to lazr.config. It is assumed
             # that the once a key is added to the config, all callsites
-            # are adpated.
+            # are adapted.
             return lazr_value
         else:
             # The callsite is using ZConfig, it must be adapted.
@@ -335,7 +330,47 @@ def loglevel(value):
 
 
 class DatabaseConfig:
-    """A class to provide the Launchpad database configuration."""
+    """A class to provide the Launchpad database configuration.
+
+    The dbconfig option overlays the database configurations of a
+    chosen config section over the base section:
+
+        >>> from canonical.config import config, dbconfig
+        >>> print config.dbhost
+        localhost
+        >>> print config.dbuser
+        Traceback (most recent call last):
+          ...
+        AttributeError: ...
+        >>> print config.launchpad.dbhost
+        None
+        >>> print config.launchpad.dbuser
+        launchpad
+        >>> print config.librarian.dbuser
+        librarian
+
+        >>> dbconfig.setConfigSection('librarian')
+        >>> print dbconfig.dbhost
+        localhost
+        >>> print dbconfig.dbuser
+        librarian
+
+        >>> dbconfig.setConfigSection('launchpad')
+        >>> print dbconfig.dbhost
+        localhost
+        >>> print dbconfig.dbuser
+        launchpad
+
+    Some values are required to have a value, such as dbuser.  So we
+    get an exception if they are not set:
+
+        >>> config.launchpad.dbuser = None
+        >>> print dbconfig.dbuser
+        Traceback (most recent call last):
+          ...
+        ValueError: dbuser must be set
+        >>> config.launchpad.dbuser = 'launchpad'
+    """
     _config_section = None
     _db_config_attrs = frozenset([
         'dbuser', 'dbhost', 'dbname', 'db_statement_timeout',

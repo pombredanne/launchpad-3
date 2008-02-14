@@ -1,6 +1,9 @@
 # Copyright 2004-2007 Canonical Ltd.  All rights reserved.
+# We know we are not using root and handlers.
+# pylint: disable-msg=W0612
 
 """Test canonical.config."""
+
 
 __metaclass__ = type
 
@@ -28,11 +31,7 @@ overrides = ['canonical/pid_dir=/tmp']
 
 
 def make_test(config_file, description):
-    """Return a test for a single ZConfig config file."""
-    # We know we are not using root and handlers.
-    # pylint: disable-msg=W0612
     def test_function():
-        """Validate the schema."""
         root, handlers = ZConfig.loadConfig(schema, config_file, overrides)
     test_function.__name__ = description
     return test_function
@@ -41,7 +40,7 @@ def make_test(config_file, description):
 def make_config_test(config_file, description):
     """Return a class to test a single lazr.config file.
 
-    The config file name is shown in the output of test -vv. eg.
+    The config file name is shown in the output of test.py -vv. eg.
     testConfig (canonical.config.tests.test_config...configs/schema.lazr.conf)
     """
     class LAZRConfigTestCase(unittest.TestCase):
@@ -68,8 +67,6 @@ def test_suite():
     # We know we are not using dirnames.
     # pylint: disable-msg=W0612
     suite = unittest.TestSuite()
-    # XXX sinzui 2008-02-11: This feature is deprecated. It is testing
-    # ZConif validators.
     suite.addTest(DocTestSuite(
         'canonical.config',
         optionflags=NORMALIZE_WHITESPACE | ELLIPSIS
@@ -87,7 +84,8 @@ def test_suite():
                 # doesn't do what we want.
                 suite.addTest(unittest.FunctionTestCase(
                     make_test(config_file, 'configs/' + description)))
-            elif filename.endswith('.lazr.conf'):
+            elif (filename.endswith('.default.conf')
+                  or filename.endswith('.testrunner.conf')):
                 # Test the lazr.config conf files.
                 config_file = os.path.join(dirpath, filename)
                 description = config_file[prefix_len:]

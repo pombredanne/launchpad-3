@@ -31,22 +31,34 @@ simple configuration).
     >>> config.librarian.download_port
     58000
 
-There are also some automatically generated config items.
+Configs are loaded from the configs/<environ>/ directory.
+canonical.config loads the conf file that matches the environ. The
+default conf file is launchpad.default.conf. The testrunner will
+override the 'DEFAULT_SECTION' to 'testrunner' to select
+launchpad.testrunner.conf, which extends the default conf.
 
     >>> import os.path, canonical
-    >>> from canonical.config import DEFAULT_SECTION
+    >>> from canonical.config import (
+    ...     CONFIG_ENVIRONMENT_VARIABLE, DEFAULT_CONFIG, DEFAULT_SECTION)
     >>> os.path.join(config.root, 'lib', 'canonical') == os.path.dirname(
     ...     canonical.__file__)
     True
 
-XXX sinzui 2008-02-11: This is not true, should it still be true? I
-think this is moot because production and test configs were mixed.
-The test config should extend the production config.
-
-    #>>> config.name == os.environ.get('LPCONFIG', DEFAULT_SECTION)
-    #True
+    >>> config._default_config_section
+    'testrunner'
     >>> config.name
-    'launchpad.test.conf'
+    'launchpad.testrunner.conf'
+
+    >>> os.environ.get('LPCONFIG', DEFAULT_SECTION)
+    'default'
+    >>> config.extends.name
+    'launchpad.default.conf'
+
+    >>> environ_dir = os.environ.get(
+    ...     CONFIG_ENVIRONMENT_VARIABLE, DEFAULT_CONFIG)
+    >>> environ_and_name = os.path.join(environ_dir, config.name)
+    >>> config.filename.endswith(environ_and_name)
+    True
 
 
 == Transition from ZConfig to LAZR ==
@@ -155,48 +167,4 @@ key.
     'launchpad.vhosts'.
 
     >>> os.environ['ENABLE_DEPRECATED_ZCONFIG_WARNINGS'] = 'false'
-
-
-== DatabaseConfig AKA dbconfig ==
-
-XXX sinzui 2008-02-11: This feature is deprecated.
-
-The dbconfig option overlays the database configurations of a
-chosen config section over the base section:
-
-    >>> from canonical.config import dbconfig
-    >>> print config.dbhost
-    localhost
-    >>> print config.dbuser
-    Traceback (most recent call last):
-      ...
-    AttributeError: ...
-    >>> print config.launchpad.dbhost
-    None
-    >>> print config.launchpad.dbuser
-    launchpad
-    >>> print config.librarian.dbuser
-    librarian
-
-    >>> dbconfig.setConfigSection('librarian')
-    >>> print dbconfig.dbhost
-    localhost
-    >>> print dbconfig.dbuser
-    librarian
-
-    >>> dbconfig.setConfigSection('launchpad')
-    >>> print dbconfig.dbhost
-    localhost
-    >>> print dbconfig.dbuser
-    launchpad
-
-Some values are required to have a value, such as dbuser.  So we
-get an exception if they are not set:
-
-    >>> config.launchpad.dbuser = None
-    >>> print dbconfig.dbuser
-    Traceback (most recent call last):
-      ...
-    ValueError: dbuser must be set
-    >>> config.launchpad.dbuser = 'launchpad'
 
