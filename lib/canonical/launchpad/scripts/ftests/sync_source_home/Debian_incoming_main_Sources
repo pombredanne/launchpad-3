@@ -1,0 +1,14 @@
+Format: 1.0
+Package: etherwake
+Binary: etherwake
+Architecture: all
+Version: 1.08-1
+Standards-Version: 3.7.3
+Maintainer: Alain Schroeder <alain@debian.org>
+Closes: 95946 111681 124604 135420 171051 179290 185134 194909
+Directory: .
+Files: 
+ f13711c5b8261fbb77b43ae0e8ba9360 566 etherwake_1.08-1.dsc
+ c2dc10f98bac012b900fd0b46721fc80 4455 etherwake_1.08.orig.tar.gz
+ 95c1e89e3ad7bc8740793bdf7aeb7334 4145 etherwake_1.08-1.diff.gz
+

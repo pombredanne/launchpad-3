@@ -238,18 +238,6 @@ components since partner is allowed for upload:
     partner
 
 
-== Handy properties ==
-
-IDistroSeries.suite_name can be used to return a string representing the
-suite name of the current distroseries and the supplied pocket.
-
-    >>> hoary.suite_name(PackagePublishingPocket.RELEASE)
-    u'hoary'
-
-    >>> hoary.suite_name(PackagePublishingPocket.UPDATES)
-    u'hoary-updates'
-
-
 == DistroSeries can be initialised from their parents ==
 
 When a distroseries is derived from another distroseries (be it a
@@ -597,9 +585,9 @@ and child distro series.
    ...         for old_pofile in old_template.pofiles:
    ...             new_pofile = new_template.getPOFileByLang(
    ...                 old_pofile.language.code, old_pofile.variant)
-   ...             old_pofile_data = old_pofile.uncachedExport(
+   ...             old_pofile_data = old_pofile.export(
    ...                 ignore_obsolete=True,force_utf8=True)
-   ...             new_pofile_data = new_pofile.uncachedExport(
+   ...             new_pofile_data = new_pofile.export(
    ...                 ignore_obsolete=True, force_utf8=True)
    ...             output = get_diff(old_pofile_data, new_pofile_data)
    ...             if output is not None:
@@ -669,7 +657,6 @@ translated in Hoary but not in Humpy.
     ...         msgid, None, context=context)
     ...     context_msg = removeSecurityProxy(context_msg)
     ...     context_msg.sequence = sequence
-    ...     potemplate.invalidateCache()
     ...     return context_msg
 
     >>> def add_translation(pofile, potmsgset, translation):

@@ -137,7 +137,16 @@ if __name__ == '__main__':
     if options.verbose >= 3 and main_process:
         profiled.setup_profiling()
 
-    result = testrunner.run(defaults)
+    # The working directory change is just so that the test script
+    # can be invoked from places other than the root of the source
+    # tree. This is very useful for IDE integration, so an IDE can
+    # e.g. run the test that you are currently editing.
+    try:
+        there = os.getcwd()
+        os.chdir(here)
+        result = testrunner.run(defaults)
+    finally:
+        os.chdir(there)
     # Cribbed from sourcecode/zope/test.py - avoid spurious error during exit.
     logging.disable(999999999)
 

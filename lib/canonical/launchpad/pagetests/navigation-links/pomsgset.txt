@@ -27,10 +27,10 @@ But the actions should point to IPOFile urls because IPOMsgSet is just a
 zoom view for IPOfile.
 
   >>> print_action_links(browser.contents)
-  Download: http://translations.launchpad.dev/evolution/trunk/+pots/evolution-2.2/es/+export
   Overview: http://translations.launchpad.dev/evolution/trunk/+pots/evolution-2.2/es/
   Translate many: http://translations.launchpad.dev/evolution/trunk/+pots/evolution-2.2/es/+translate
   Upload a file: http://translations.launchpad.dev/evolution/trunk/+pots/evolution-2.2/es/+upload
+  Download: http://translations.launchpad.dev/evolution/trunk/+pots/evolution-2.2/es/+export
 
 Taking an IPOMsgSet for ISourcePackage context:
 
@@ -73,7 +73,7 @@ But the actions should point to IPOFile urls because IPOMsgSet is just a
 zoom view for IPOfile.
 
   >>> print_action_links(browser.contents)
-  Download: http://translations.launchpad.dev/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/+export
   Overview: http://translations.launchpad.dev/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/
   Translate many: http://translations.launchpad.dev/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/+translate
   Upload a file: http://translations.launchpad.dev/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/+upload
+  Download: http://translations.launchpad.dev/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/+export

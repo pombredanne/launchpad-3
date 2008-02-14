@@ -7,17 +7,14 @@ first source package found in the "Affects" list.
 
     >>> user_browser.open(
     ...     'http://launchpad.dev/tomcat/+bug/2')
-    >>> soup = find_main_content(user_browser.contents)
-    >>> affects_table = soup.first('table', {'class': 'listing'})
-    >>> for tr in affects_table.tbody.findAll('tr', recursive=False):
-    ...     if tr.td.table:
-    ...         continue
-    ...     print extract_text(tr.findAll('td', limit=1)[0])
-    Tomcat
-    Ubuntu
-    Hoary
-    mozilla-firefox (Debian)
-    Woody
+
+    >>> from canonical.launchpad.ftests.bug import print_bug_affects_table
+    >>> print_bug_affects_table(user_browser.contents)
+    Tomcat                      New         Low
+    Ubuntu                      Status tracked in Hoary
+    Hoary                       New         Undecided
+    mozilla-firefox (Debian)    Confirmed   Low         Sample Person
+    Woody                       New         Medium
 
     >>> user_browser.getLink(url='+distrotask').click()
     >>> user_browser.url

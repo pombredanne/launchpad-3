@@ -54,7 +54,8 @@ from canonical.launchpad.interfaces import (
     IJabberID, IJabberIDSet, ILaunchBag, ILaunchpadCelebrities,
     ILaunchpadStatisticSet, ILoginTokenSet, IMailingListSet,
     INACTIVE_ACCOUNT_STATUSES, IPasswordEncryptor, IPerson, IPersonSet,
-    IPillarNameSet, IProduct, ISSHKey, ISSHKeySet, ISignedCodeOfConductSet,
+    IPillarNameSet, IProduct, IRevisionSet,
+    ISSHKey, ISSHKeySet, ISignedCodeOfConductSet,
     ISourcePackageNameSet, ITeam, ITranslationGroupSet, IWikiName,
     IWikiNameSet, JoinNotAllowed, LoginTokenType,
     PersonCreationRationale, PersonVisibility,
@@ -1688,6 +1689,9 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
         else:
             email.status = EmailAddressStatus.VALIDATED
             getUtility(IHWSubmissionSet).setOwnership(email)
+        # Now that we have validated the email, see if this can be
+        # matched to an existing RevisionAuthor.
+        getUtility(IRevisionSet).checkNewVerifiedEmail(email)
 
     def setContactAddress(self, email):
         """See `IPerson`."""
@@ -2046,7 +2050,7 @@ class PersonSet:
     def getByOpenIdIdentifier(self, openid_identifier):
         """Returns a Person with the given openid_identifier, or None."""
         person = Person.selectOneBy(openid_identifier=openid_identifier)
-        if person.is_valid_person:
+        if person is not None and person.is_valid_person:
             return person
         else:
             return None
@@ -2087,7 +2091,8 @@ class PersonSet:
         """See `IPersonSet`."""
         if orderBy is None:
             orderBy = Person.sortingColumns
-        return Person.select(Person.q.teamownerID!=None, orderBy=orderBy)
+        query = AND(Person.q.teamownerID!=None, Person.q.mergedID==None)
+        return Person.select(query, orderBy=orderBy)
 
     def find(self, text, orderBy=None):
         """See `IPersonSet`."""

@@ -21,17 +21,16 @@ from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
 
+from canonical.launchpad.database.bugset import BugSetBase
 from canonical.launchpad.event import SQLObjectModifiedEvent
-
-from canonical.launchpad.webapp import urlappend, urlsplit
-from canonical.launchpad.webapp.snapshot import Snapshot
-from canonical.launchpad.webapp.uri import find_uris_in_text
-
 from canonical.launchpad.interfaces import (
     BugTrackerType, BugWatchErrorType, IBugTrackerSet, IBugWatch,
     IBugWatchSet, ILaunchpadCelebrities, NoBugTrackerFound,
     NotFoundError, UnrecognizedBugTrackerURL)
-from canonical.launchpad.database.bugset import BugSetBase
+from canonical.launchpad.validators.email import valid_email
+from canonical.launchpad.webapp import urlappend, urlsplit
+from canonical.launchpad.webapp.snapshot import Snapshot
+from canonical.launchpad.webapp.uri import find_uris_in_text
 
 
 class BugWatch(SQLBase):
@@ -63,13 +62,14 @@ class BugWatch(SQLBase):
     def url(self):
         """See canonical.launchpad.interfaces.IBugWatch."""
         url_formats = {
-            BugTrackerType.BUGZILLA:    'show_bug.cgi?id=%s',
-            BugTrackerType.TRAC:        'ticket/%s',
-            BugTrackerType.DEBBUGS:     'cgi-bin/bugreport.cgi?bug=%s',
-            BugTrackerType.ROUNDUP:     'issue%s',
-            BugTrackerType.RT:          'Ticket/Display.html?id=%s',
+            BugTrackerType.BUGZILLA: 'show_bug.cgi?id=%s',
+            BugTrackerType.TRAC: 'ticket/%s',
+            BugTrackerType.DEBBUGS: 'cgi-bin/bugreport.cgi?bug=%s',
+            BugTrackerType.ROUNDUP: 'issue%s',
+            BugTrackerType.RT: 'Ticket/Display.html?id=%s',
             BugTrackerType.SOURCEFORGE: 'support/tracker.php?aid=%s',
-            BugTrackerType.MANTIS:      'view.php?id=%s',
+            BugTrackerType.MANTIS: 'view.php?id=%s',
+            BugTrackerType.SAVANNAH: 'bugs/?%s',
         }
         bt = self.bugtracker.bugtrackertype
         if not url_formats.has_key(bt):
@@ -193,11 +193,13 @@ class BugWatchSet(BugSetBase):
         self.bugtracker_parse_functions = {
             BugTrackerType.BUGZILLA: self.parseBugzillaURL,
             BugTrackerType.DEBBUGS:  self.parseDebbugsURL,
+            BugTrackerType.EMAILADDRESS: self.parseEmailAddressURL,
+            BugTrackerType.MANTIS: self.parseMantisURL,
             BugTrackerType.ROUNDUP: self.parseRoundupURL,
             BugTrackerType.RT: self.parseRTURL,
+            BugTrackerType.SAVANNAH: self.parseSavannahURL,
             BugTrackerType.SOURCEFORGE: self.parseSourceForgeURL,
             BugTrackerType.TRAC: self.parseTracURL,
-            BugTrackerType.MANTIS: self.parseMantisURL,
         }
 
     def get(self, watch_id):
@@ -222,11 +224,22 @@ class BugWatchSet(BugSetBase):
             try:
                 bugtracker, remotebug = self.extractBugTrackerAndBug(str(url))
             except NoBugTrackerFound, error:
+                # We don't want to auto-create EMAILADDRESS bug trackers
+                # based on mailto: URIs in comments.
+                if error.bugtracker_type == BugTrackerType.EMAILADDRESS:
+                    continue
+
                 bugtracker = getUtility(IBugTrackerSet).ensureBugTracker(
                     error.base_url, owner, error.bugtracker_type)
                 remotebug = error.remote_bug
             except UnrecognizedBugTrackerURL:
                 # It doesn't look like a bug URL, so simply ignore it.
+                continue
+
+            # We don't create bug watches for EMAILADDRESS bug trackers
+            # from mailto: URIs in comments, so in those cases we give
+            # up.
+            if bugtracker.bugtrackertype == BugTrackerType.EMAILADDRESS:
                 continue
 
             if bug.getBugWatch(bugtracker, remotebug) is None:
@@ -382,6 +395,45 @@ class BugWatchSet(BugSetBase):
 
         return sf_tracker.baseurl, remote_bug
 
+    def parseSavannahURL(self, scheme, host, path, query):
+        """Extract GNU Savannah base URL and bug ID."""
+        # GNU Savannah bugs URLs are in the form /bugs/?<bug-id>, so we
+        # exclude any path that isn't '/bugs/'. We also exclude query
+        # string that have a length of more or less than one, since in
+        # such cases we'd be taking a guess at the bug ID, which would
+        # probably be wrong.
+        if path != '/bugs/' or len(query) != 1:
+            return None
+
+        # The remote bug is actually a key in the query dict rather than
+        # a value, so we simply use the first and only key we come
+        # across as a best-effort guess.
+        remote_bug = query.popitem()[0]
+
+        # There's only one global Savannah bugtracker registered with
+        # Launchpad.
+        savannah_tracker = getUtility(ILaunchpadCelebrities).savannah_tracker
+
+        return savannah_tracker.baseurl, remote_bug
+
+    def parseEmailAddressURL(self, scheme, host, path, query):
+        """Extract an email address from a bug URL.
+
+        This method will return (mailto:<email_address>, '') since email
+        address bug trackers cannot have bug numbers. We return an empty
+        string for the remote bug since BugWatch.remotebug cannot be
+        None.
+        """
+        # We ignore anything that isn't a mailto URL.
+        if scheme != 'mailto':
+            return None
+
+        # We also reject invalid email addresses.
+        if not valid_email(path):
+            return None
+
+        return '%s:%s' % (scheme, path), ''
+
     def extractBugTrackerAndBug(self, url):
         """See IBugWatchSet."""
         for trackertype, parse_func in (
@@ -406,3 +458,4 @@ class BugWatchSet(BugSetBase):
                 raise NoBugTrackerFound(base_url, remote_bug, trackertype)
 
         raise UnrecognizedBugTrackerURL(url)
+

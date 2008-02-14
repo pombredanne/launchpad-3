@@ -67,6 +67,8 @@ class Branch(SQLBase):
 
     private = BoolCol(default=False, notNull=True)
 
+    registrant = ForeignKey(
+        dbName='registrant', foreignKey='Person', notNull=True)
     owner = ForeignKey(dbName='owner', foreignKey='Person', notNull=True)
     author = ForeignKey(dbName='author', foreignKey='Person', default=None)
     reviewer = ForeignKey(
@@ -258,6 +260,14 @@ class Branch(SQLBase):
             return self.unique_name
 
     @property
+    def code_reviewer(self):
+        """See `IBranch`."""
+        if self.reviewer:
+            return self.reviewer
+        else:
+            return self.owner
+
+    @property
     def sort_key(self):
         """See `IBranch`."""
         if self.product is None:
@@ -354,6 +364,11 @@ class Branch(SQLBase):
         assert sequence is not None, \
                "Only use this to fetch revisions from mainline history."
         return BranchRevision.selectOneBy(branch=self, sequence=sequence)
+
+    def getBranchRevisionByRevisionId(self, revision_id):
+        """See `IBranch`."""
+        revision = Revision.selectOneBy(revision_id=revision_id)
+        return BranchRevision.selectOneBy(branch=self, revision=revision)
 
     def createBranchRevision(self, sequence, revision):
         """See `IBranch`."""
@@ -687,7 +702,8 @@ class BranchSet:
         else:
             return PRIVATE_BRANCH
 
-    def new(self, branch_type, name, creator, owner, product, url, title=None,
+    def new(self, branch_type, name, creator, owner, product,
+            url, title=None,
             lifecycle_status=BranchLifecycleStatus.NEW, author=None,
             summary=None, home_page=None, whiteboard=None, date_created=None):
         """See `IBranchSet`."""
@@ -708,6 +724,7 @@ class BranchSet:
         IBranch['name'].validate(unicode(name))
 
         branch = Branch(
+            registrant=creator,
             name=name, owner=owner, author=author, product=product, url=url,
             title=title, lifecycle_status=lifecycle_status, summary=summary,
             home_page=home_page, whiteboard=whiteboard, private=private,

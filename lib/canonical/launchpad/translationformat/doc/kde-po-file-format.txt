@@ -211,7 +211,6 @@ Let's define a helper function for the exports.
     >>> def export_with_format(translation_file, format):
     ...     from canonical.launchpad.interfaces import (
     ...         ITranslationExporter, ITranslationFileData)
-    ...     from zope.proxy import removeAllProxies
     ...
     ...     translation_exporter = getUtility(ITranslationExporter)
     ...     translation_format_exporter = (
@@ -220,7 +219,7 @@ Let's define a helper function for the exports.
     ...     requested_file = ITranslationFileData(translation_file)
     ...     exported_file = translation_format_exporter.exportTranslationFiles(
     ...         [requested_file])
-    ...     return removeAllProxies(exported_file)._content_file.read()
+    ...     return exported_file.read()
 
 Make sure all the date constants are replaced with real values in database:
 
@@ -300,8 +299,7 @@ But, we can also export it as a regular gettext PO file:
 
 Exporting a translation is possible in a very similar way.
 
-    >>> print export_with_format(firefox_serbian_pofile,
-    ...                          TranslationFileFormat.KDEPO)
+    >>> print firefox_serbian_pofile.export().decode('utf8')
     msgid ""
     msgstr ""
     ...
@@ -463,8 +461,7 @@ Exporting a PO template as a KDE PO file joins the context back together:
 
 And the same happens with a translation:
 
-    >>> print export_with_format(firefox_serbian_pofile,
-    ...                          TranslationFileFormat.KDEPO)
+    >>> print firefox_serbian_pofile.export().decode('utf8')
     msgid ""
     msgstr ""
     ...

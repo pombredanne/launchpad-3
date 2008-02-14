@@ -18,6 +18,7 @@ from canonical.launchpad.webapp.interfaces import (
         INotificationRequest, INotificationResponse
         )
 from canonical.launchpad.webapp.notifications import NotificationResponse
+from canonical.launchpad.webapp.menu import structured
 
 class MockSession(dict):
     implements(ISession)
@@ -80,6 +81,7 @@ def setUp(test):
             )
 
     test.globs['MockResponse'] = MockHTTPApplicationResponse
+    test.globs['structured'] = structured
 
 
 def tearDown(test):

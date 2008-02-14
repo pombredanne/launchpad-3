@@ -23,7 +23,7 @@ in a known state to perform the tests.
 
 Notification for a FAILEDTOBUILD (failed) build record:
 
-  >>> failed_candidate = buildset.getByBuildID(17)
+  >>> failed_candidate = buildset.getByBuildID(9)
   >>> failed_candidate.sourcepackagerelease.name
   u'pmount'
   >>> failed_candidate.buildstate.name
@@ -80,7 +80,7 @@ special headers to help filtering on users' mailboxes, they are:
   ...         print 'X-Launchpad-PPA: omitted'
 
   >>> dump_build_notification(build_notification)
-  Subject: [Build #17] i386 build of pmount 0.1-1 in ubuntu breezy-autotest RELEASE
+  Subject: [Build #9] i386 build of pmount 0.1-1 in ubuntu warty RELEASE
   X-Creator-Recipient: mark@hbd.com
   X-Launchpad-Build-State: FAILEDTOBUILD
   X-Launchpad-Build-Component: main
@@ -120,8 +120,8 @@ This same basic content applies to all types of notification.
   contact a member of the Launchpad Buildd Administrators team.
   <BLANKLINE>
   --
-  i386 build of pmount 0.1-1 in ubuntu breezy-autotest RELEASE
-  http://launchpad.dev/ubuntu/+source/pmount/0.1-1/+build/17
+  i386 build of pmount 0.1-1 in ubuntu warty RELEASE
+  http://launchpad.dev/ubuntu/+source/pmount/0.1-1/+build/9
   <BLANKLINE>
 
 Notification for a pending (NEEDSBUILD) build record:
@@ -425,7 +425,7 @@ Checking if the second recipient:
 Checking subject and extra headers:
 
   >>> dump_build_notification(build_notification)
-  Subject: [Build #17] i386 build of pmount 0.1-1 in ubuntu breezy-autotest RELEASE (cprov PPA)
+  Subject: [Build #9] i386 build of pmount 0.1-1 in ubuntu warty RELEASE (cprov PPA)
   X-Creator-Recipient: mark@hbd.com
   X-Launchpad-Build-State: FAILEDTOBUILD
   X-Launchpad-Build-Component: main

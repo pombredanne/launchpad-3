@@ -82,16 +82,6 @@ class AnnouncementsFeedBase(FeedBase):
                           content=content)
         return entry
 
-    @property
-    def link_self(self):
-        """See `IFeed`."""
-
-        # The self link is the URL for this particular feed.  For example:
-        # http://feeds.launchpad.net/ubuntu/announcments.atom
-        path = "%s.%s" % (self.feedname, self.format)
-        return urlappend(canonical_url(self.context, rootsite="feeds"),
-                         path)
-
     def _entryTitle(self, announcement):
         """Return the title for the announcement.
 

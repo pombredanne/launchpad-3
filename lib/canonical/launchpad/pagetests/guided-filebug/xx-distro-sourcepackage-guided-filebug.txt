@@ -13,7 +13,6 @@ Thunderbird bug.
 In this case, since we search only Ubuntu Firefox bugs, there are no
 similar matching bugs.
 
-    >>> from canonical.launchpad.ftests.test_pages import find_tag_by_id
     >>> similar_bugs_table = find_tag_by_id(
     ...     user_browser.contents, "similar-bugs")
     >>> similar_bugs_table is None
