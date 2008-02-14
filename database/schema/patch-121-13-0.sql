@@ -29,4 +29,4 @@ CREATE TABLE CodeReviewMessage (
         UNIQUE (branch_merge_proposal, id)
     );
 
-INSERT INTO LaunchpadDatabaseRevision VALUES (121, 18, 0);
+INSERT INTO LaunchpadDatabaseRevision VALUES (121, 13, 0);
