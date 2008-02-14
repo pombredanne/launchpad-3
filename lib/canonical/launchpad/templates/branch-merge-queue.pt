@@ -38,6 +38,14 @@
       <tr tal:repeat="queue_entry view/merge_queue">
         <td>
           <tal:position replace="queue_entry/position"/>
+          <tal:dequeue condition="queue_entry/proposal/required:launchpad.Edit">
+            <tal:button replace="structure queue_entry/proposal/@@+dequeue-inline"/>
+          </tal:dequeue>
+          <tal:show-button condition="not: repeat/queue_entry/start">
+          <tal:jump-queue condition="context/required:launchpad.Edit">
+            <tal:button replace="structure queue_entry/proposal/@@+jump-queue"/>
+          </tal:jump-queue>
+          </tal:show-button>
         </td>
         <td>
           <tal:proposal

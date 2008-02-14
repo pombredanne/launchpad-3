@@ -20,6 +20,7 @@ from canonical.launchpad.interfaces import (
     BranchType,
     CodeImportReviewStatus,
     CreateBugParams,
+    EmailAddressStatus,
     IBranchSet,
     IBugSet,
     ICodeImportJobWorkflow,
@@ -99,20 +100,38 @@ class LaunchpadObjectFactory:
         return 'http://%s.example.com/%s' % (
             self.getUniqueString('domain'), self.getUniqueString('path'))
 
-    def makePerson(self, email=None, name=None):
-        """Create and return a new, arbitrary Person."""
+    def makePerson(self, email=None, name=None, password=None,
+                   email_address_status=None):
+        """Create and return a new, arbitrary Person.
+
+        :param email: The email address for the new person.
+        :param name: The name for the new person.
+        :param password: The password for the person.
+            This password can be used in setupBrowser in combination
+            with the email address to create a browser for this new
+            person.
+        :param email_address_status: If specified, the status of the email
+            address is set to the email_address_status.
+        """
         if email is None:
             email = self.getUniqueString('email')
         if name is None:
             name = self.getUniqueString('person-name')
+        if password is None:
+            password = self.getUniqueString('password')
         # Set the password to test in order to allow people that have
         # been created this way can be logged in.
         person, email = getUtility(IPersonSet).createPersonAndEmail(
             email, rationale=PersonCreationRationale.UNKNOWN, name=name,
-            password='test')
+            password=password)
         # To make the person someone valid in Launchpad, validate the
         # email.
-        person.validateAndEnsurePreferredEmail(email)
+        if (email_address_status is None or
+            email_address_status == EmailAddressStatus.VALIDATED):
+            person.validateAndEnsurePreferredEmail(email)
+        else:
+            email.status = email_address_status
+            email.syncUpdate()
         return person
 
     def makeProduct(self, name=None):
@@ -187,6 +206,7 @@ class LaunchpadObjectFactory:
         elif set_state == BranchMergeProposalStatus.MERGE_FAILED:
             proposal.mergeFailed(proposal.target_branch.owner)
         elif set_state == BranchMergeProposalStatus.QUEUED:
+            proposal.commit_message = self.getUniqueString('commit message')
             proposal.enqueue(
                 proposal.target_branch.owner, 'some_revision')
         elif set_state == BranchMergeProposalStatus.SUPERSEDED:
