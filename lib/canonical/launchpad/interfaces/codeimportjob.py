@@ -11,6 +11,7 @@ __all__ = [
     'CodeImportJobState',
     'ICodeImportJob',
     'ICodeImportJobSet',
+    'ICodeImportJobSetScheduling',
     'ICodeImportJobWorkflow',
     ]
 
@@ -124,6 +125,12 @@ class ICodeImportJobSet(Interface):
 
         :return: A `CodeImportJob` or None if this database id is not found.
         """
+
+class ICodeImportJobSetScheduling(Interface):
+    """XXX."""
+
+    def getJobForMachine(machine):
+        """XXX."""
 
 
 class ICodeImportJobWorkflow(Interface):

@@ -23,7 +23,7 @@ from canonical.launchpad.database.codeimportresult import CodeImportResult
 from canonical.launchpad.interfaces import (
     CodeImportJobState, CodeImportMachineState, CodeImportReviewStatus,
     ICodeImportEventSet, ICodeImportJob, ICodeImportJobSet,
-    ICodeImportJobWorkflow)
+    ICodeImportJobSetScheduling, ICodeImportJobWorkflow)
 
 
 class CodeImportJob(SQLBase):
@@ -79,7 +79,7 @@ class CodeImportJob(SQLBase):
 class CodeImportJobSet(object):
     """See `ICodeImportJobSet`."""
 
-    implements(ICodeImportJobSet)
+    implements(ICodeImportJobSet, ICodeImportJobSetScheduling)
 
     # CodeImportJob database objects are created using
     # CodeImportJobWorkflow.newJob.
@@ -90,6 +90,10 @@ class CodeImportJobSet(object):
             return CodeImportJob.get(id)
         except SQLObjectNotFound:
             return None
+
+    def getJobForMachine(self, machine):
+        """See `ICodeImportJobSet`."""
+        return None
 
 
 class CodeImportJobWorkflow:

@@ -22,6 +22,8 @@
     <require
       permission="launchpad.View"
       interface="canonical.launchpad.interfaces.ICodeImportJobSet" />
+    <allow
+      interface="canonical.launchpad.interfaces.ICodeImportJobSetScheduling" />
   </securedutility>
 
   <!-- CodeImportJobWorkflow -->

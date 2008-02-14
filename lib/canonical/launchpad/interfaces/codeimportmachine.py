@@ -8,6 +8,7 @@ __metaclass__ = type
 __all__ = [
     'ICodeImportMachine',
     'ICodeImportMachineSet',
+    'ICodeImportMachineSetScheduling',
     'CodeImportMachineOfflineReason',
     'CodeImportMachineState',
     ]
@@ -131,15 +132,19 @@ class ICodeImportMachineSet(Interface):
     def getAll():
         """Return an iterable of all code machines."""
 
+    def new(hostname):
+        """Create a new CodeImportMachine.
+
+        The machine will initially be in the 'OFFLINE' state.
+        """
+
+
+class ICodeImportMachineSetScheduling(Interface):
+    """XXX."""
+
     def getByHostname(hostname):
         """Retrieve the code import machine for a hostname.
 
         Returns a `ICodeImportMachine` provider or ``None`` if no such machine
         is present.
-        """
-
-    def new(hostname):
-        """Create a new CodeImportMachine.
-
-        The machine will initially be in the 'OFFLINE' state.
         """
