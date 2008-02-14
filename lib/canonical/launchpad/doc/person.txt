@@ -420,6 +420,50 @@ each direct member of that team.
      'robertc@robertcollins.net']
 
 
+=== Team Visibility ===
+
+A Team can have its visibility attribute set to PersonVisibility.PUBLIC
+or PersonVisibility.PRIVATE_MEMBERSHIP. To prevent leaking of
+private membership information, private-membership teams are only
+allowed to be connected with a few different database objects. This is
+enforced in the model, but there are also checks in the form handling to
+provide clearer error messages. 
+
+The PublicPersonChoice for interface classes and the public_person_validator
+for SQLObject classes only allow public teams to be assigned to the
+specified field.
+
+PublicOrPrivatePersonChoice and public_or_private_person_validator
+allow private-membership teams to be assigned if the referencing object
+meets certain conditions. For example, a private-membership team
+can be a member of another private-membership team. The SQLObject
+validators will raise an InvalidField exception if an invalid team
+is passed to the constructor or is used to set one of the attributes.
+
+
+    >>> login('foo.bar@canonical.com')
+    >>> from canonical.launchpad.interfaces import (
+    ...     IBugSet, IPersonSet, TeamMembershipStatus)
+    >>> from canonical.launchpad.database import BugSubscription
+    >>> person_set = getUtility(IPersonSet)
+    >>> bug_set = getUtility(IBugSet)
+    >>> myteam = person_set.getByName('myteam')
+    >>> guadamen = person_set.getByName('guadamen')
+    >>> bug = bug_set.get(1)
+    >>> BugSubscription(bug=bug, person=myteam, subscribed_by=myteam)
+    Traceback (most recent call last):
+    ...
+    InvalidField: Cannot link person
+    (name=myteam, visibility=PRIVATE_MEMBERSHIP) to <BugSubscription...
+    >>> bug_subscription = BugSubscription(bug=bug, person=guadamen,
+    ...                                    subscribed_by=guadamen)
+    >>> bug_subscription.person = myteam
+    Traceback (most recent call last):
+    ...
+    InvalidField: Cannot link person
+    (name=myteam, visibility=PRIVATE_MEMBERSHIP) to <BugSubscription...
+
+
 == Deactivating user accounts ==
 
 Any user can deactivate his own account, in case they don't want it anymore

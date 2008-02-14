@@ -26,7 +26,7 @@ from canonical.launchpad.mailnotification import MailWrapper
 from canonical.launchpad.helpers import (
     contactEmailAddresses, get_email_template)
 from canonical.launchpad.validators.person import (
-    public_or_private_person_validator)
+    public_person_validator, public_or_private_person_validator)
 from canonical.launchpad.interfaces import (
     DAYS_BEFORE_EXPIRATION_WARNING_IS_SENT, ILaunchpadCelebrities,
     IPersonSet, ITeamMembership, ITeamMembershipSet, ITeamParticipation,
@@ -49,7 +49,7 @@ class TeamMembership(SQLBase):
         validator=public_or_private_person_validator, notNull=True)
     reviewer = ForeignKey(
         dbName='reviewer', foreignKey='Person',
-        validator=public_or_private_person_validator, default=None)
+        validator=public_person_validator, default=None)
     status = EnumCol(
         dbName='status', notNull=True, enum=TeamMembershipStatus)
     datejoined = UtcDateTimeCol(
