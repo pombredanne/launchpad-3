@@ -1,0 +1,78 @@
+= Launchpad OpenID Teams Extension and Private Teams =
+
+The Launchpad OpenID Teams Extension provides a way for relying
+parties to check a user's team membership.  Launchpad also supports
+the concept of private membership teams.  We do not want Launchpad's
+OpenID code to disclose details of private membership teams.
+
+The sample data contains a private team called "myteam", which has a
+member called "member":
+
+    >>> from zope.component import getUtility
+    >>> from canonical.launchpad.ftests import ANONYMOUS, login, logout
+    >>> from canonical.launchpad.interfaces import IPersonSet
+
+    >>> login(ANONYMOUS)
+    >>> myteam = getUtility(IPersonSet).getByName('myteam')
+    >>> member = getUtility(IPersonSet).getByName('member')
+    >>> print myteam.visibility.name
+    PRIVATE_MEMBERSHIP
+    >>> print member.inTeam(myteam)
+    True
+
+The user-specific portion of member's OpenID URL is cCGE3LA:
+    >>> print member.openid_identifier
+    cCGE3LA
+
+    >>> logout()
+
+Now lets set up an OpenID authentication request for this user,
+checking to see whether they are a member of "myteam".  First we'll
+set up the consumer:
+
+    >>> from openid.consumer.consumer import Consumer
+    >>> from openid.fetchers import setDefaultFetcher
+    >>> from openid.store.memstore import MemoryStore
+    >>> from canonical.launchpad.testing.openidhelpers import (
+    ...     complete_from_browser, make_endpoint, PublisherFetcher)
+    >>> setDefaultFetcher(PublisherFetcher())
+
+    >>> openid_store = MemoryStore()
+    >>> consumer = Consumer(session={}, store=openid_store)
+
+Now perform the authentication request:
+
+    >>> endpoint = make_endpoint(
+    ...     PROTOCOL_URI, 'http://openid.launchpad.dev/+id/cCGE3LA')
+    >>> request = consumer.beginWithoutDiscovery(endpoint)
+
+    >>> from canonical.launchpad.browser.openidserver import (
+    ...     LAUNCHPAD_TEAMS_NS)
+    >>> print LAUNCHPAD_TEAMS_NS
+    http://ns.launchpad.net/2007/openid-teams
+    >>> request.message.namespaces.addAlias(LAUNCHPAD_TEAMS_NS, 'lp')
+    'lp'
+    >>> request.addExtensionArg(
+    ...     LAUNCHPAD_TEAMS_NS, 'query_membership', 'myteam')
+
+    >>> browser.addHeader('Authorization', 'Basic member@canonical.com:test')
+    >>> browser.open(request.redirectURL(
+    ...     'http://launchpad.dev/', 'http://launchpad.dev/+openid-consumer'))
+    >>> browser.getControl('Sign In', index=0).click()
+    >>> print browser.url
+    http://launchpad.dev/+openid-consumer?...
+
+    >>> info = complete_from_browser(consumer, browser)
+    >>> print info.status
+    success
+
+Even though the user is a member of "myteam", Launchpad has not
+revealed that fact to the RP:
+
+    >>> info.getSigned(LAUNCHPAD_TEAMS_NS, 'is_member')
+    ''
+
+
+== Cleanup ==
+
+    >>> setDefaultFetcher(None)

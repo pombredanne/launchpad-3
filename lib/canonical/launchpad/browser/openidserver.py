@@ -29,7 +29,8 @@ from canonical.launchpad import _
 from canonical.launchpad.interfaces import (
     ILaunchpadOpenIdStoreFactory, ILoginServiceAuthorizeForm,
     ILoginServiceLoginForm, ILoginTokenSet, IOpenIdAuthorizationSet,
-    IOpenIDRPConfigSet, IPersonSet, LoginTokenType, UnexpectedFormData)
+    IOpenIDRPConfigSet, IPersonSet, LoginTokenType, PersonVisibility,
+    UnexpectedFormData)
 from canonical.launchpad.validators.email import valid_email
 from canonical.launchpad.webapp import (
     action, custom_widget, LaunchpadFormView, LaunchpadView)
@@ -239,10 +240,10 @@ class OpenIdMixin:
             team = person_set.getByName(team_name)
             if team is None or not team.isTeam():
                 continue
-            # XXX jamesh 2007-12-05 bug=174076:
-            # When private membership teams are added, this method
-            # needs to be updated to not disclose membership of such
-            # teams.
+            # Only disclose membership of public teams.
+            if not (team.visibility is None or
+                    team.visibility == PersonVisibility.PUBLIC):
+                continue
             if self.user.inTeam(team):
                 memberships.append(team_name)
         openid_response.fields.namespaces.addAlias(LAUNCHPAD_TEAMS_NS, 'lp')
