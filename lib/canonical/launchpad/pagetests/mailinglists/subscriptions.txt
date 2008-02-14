@@ -212,20 +212,51 @@ Jdub is only a member of the ubuntu team.  He can request to be placed
 on another team's mailing list at the same time that he requests
 membership on the team.
 
+First, we need to make sure that Jdub is a member of the Beta Testers
+team.  (Otherwise, the mailing list subscription checkbox won't show at
+all.)
+
+    >>> login('foo.bar@canonical.com')
+    >>> beta = getUtility(ILaunchpadCelebrities).launchpad_beta_testers
+    >>> jdub = person_set.getByName('jdub')
+    >>> sabdfl = person_set.getByName('sabdfl')
+    >>> beta.addMember(jdub, reviewer=sabdfl)
+    >>> flush_database_updates()
+    >>> logout()
+
+
+We also need to confirm that the disired team has a list to subscribe
+to.  We will use Carlos, as he is an administrator for the Rosetta
+Admins team, and he should know if the list is available.
+
+    >>> browser.open('http://launchpad.dev/~carlos/')
+    >>> browser.getLink("Change e-mail settings").click()
+    >>> browser.title
+    "Carlos Perell\xc3\xb3 Mar\xc3\xadn's e-mail addresses"
+
+    >>> rosetta_admins = browser.getControl(
+    ...     name='field.subscription.rosetta-admins')
+    >>> rosetta_admins.displayOptions
+    ['Preferred address', "Don't subscribe",
+     'carlos@canonical.com', 'carlos@test.com']
+
+
+Now Jdub can apply for team membership and mailing list access.
+
     >>> browser = setupBrowser(auth='Basic jeff.waugh@ubuntulinux.com:jdub')
-    >>> browser.open('http://launchpad.dev/~testing-spanish-team')
+    >>> browser.open('http://launchpad.dev/~rosetta-admins')
     >>> browser.getLink('Join the team').click()
     >>> browser.url
-    'http://launchpad.dev/~testing-spanish-team/+join'
+    'http://launchpad.dev/~rosetta-admins/+join'
 
-    >>> browser.getControl(name='field.mailinglist_subscribe').click()
+    >>> browser.getControl(name='mailinglist_subscribe').value = ['checked']
     >>> browser.getControl(name='join').click()
     >>> browser.url
-    'http://launchpad.dev/~testing-spanish-team'
+    'http://launchpad.dev/~rosetta-admins'
 
 
 Jdub hasn't been approved for the team yet, so he is not subscribed to
-the list, and the list will not show up on his Subscription Management
+the list.  The list will not show up on his Subscription Management
 screen.
 
     >>> browser.open('http://launchpad.dev/~jdub/')
@@ -234,27 +265,26 @@ screen.
     "Jeff Waugh's e-mail addresses"
 
     >>> browser.getControl(
-    ... 	name='field.subscription.testing-spanish-team')
+    ... 	name='field.subscription.rosetta-admins')
     Traceback (most recent call last):
     ...
-    LookupError: name 'field.subscription.testing-spanish-team'
+    LookupError: name 'field.subscription.rosetta-admins'
 
 
 Jdub will become a member of the team's mailing list as soon as he has
 been approved for the team.
 
-    >>> admin_browser = setupBrowser(auth='Basic carlos@canonical.com:test')
-    >>> admin_browser.open('http://launchpad.dev/~testing-spanish-team/')
+    >>> admin_browser.open('http://launchpad.dev/~rosetta-admins/')
     >>> admin_browser.getLink('Show all members').click()
     >>> admin_browser.getLink(
-    ...     url='/~testing-spanish-team/+member/jdub').click()
+    ...     url='/~rosetta-admins/+member/jdub').click()
     >>> admin_browser.getLink('Approve').click()
 
 
 The mailing list subscription is now available to be managed.
 
     >>> spanish_team = browser.getControl(
-    ... 	name='field.subscription.testing-spanish-team')
+    ... 	name='field.subscription.rosetta-admins')
 
     >>> spanish_team.displayOptions
     ['Preferred address', "Don't subscribe", 'jeff.waugh@canonical.com']

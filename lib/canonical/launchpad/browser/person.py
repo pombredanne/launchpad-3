@@ -2687,6 +2687,11 @@ class TeamJoinView(PersonView):
             else:
                 notification = _(
                     'Successfully joined %s.' % context.displayname)
+
+            if 'mailinglist_subscribe' in request.form \
+                    and context.mailing_list.isUsable():
+                context.mailing_list.subscribe(user)
+
         elif 'join' in request.form:
             notification = _('You cannot join %s.' % context.displayname)
         elif 'goback' in request.form:
