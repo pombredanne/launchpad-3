@@ -42,7 +42,7 @@ CREATE TABLE OAuthRequestToken (
     date_reviewed timestamp without time zone,
     key text UNIQUE NOT NULL,
     secret text NOT NULL,
-    CONSTRAINT authorized_request CHECK (
+    CONSTRAINT reviewed_request CHECK (
         date_reviewed IS NULL = person IS NULL = permission IS NULL)
 );
 
