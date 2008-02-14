@@ -44,33 +44,13 @@ class WorkerTest(TestCaseWithTransport):
         self.addCleanup(lambda: shutil.rmtree(directory))
         return directory
 
-    def makeCodeImport(self, svn_branch_url=None, cvs_root=None,
-                       cvs_module=None):
-        if svn_branch_url is cvs_root is cvs_module is None:
-            svn_branch_url = self.factory.getUniqueURL()
-
-        vcs_imports = getUtility(ILaunchpadCelebrities).vcs_imports
-        branch = self.factory.makeBranch(
-            BranchType.IMPORTED, owner=vcs_imports)
-        registrant = self.factory.makePerson()
-
-        code_import_set = getUtility(ICodeImportSet)
-        if svn_branch_url is not None:
-            return code_import_set.new(
-                registrant, branch, rcs_type=RevisionControlSystems.SVN,
-                svn_branch_url=svn_branch_url)
-        else:
-            return code_import_set.new(
-                registrant, branch, rcs_type=RevisionControlSystems.CVS,
-                cvs_root=cvs_root, cvs_module=cvs_module)
-
 
 class TestBazaarBranchStore(WorkerTest):
     """Tests for `BazaarBranchStore`."""
 
     def setUp(self):
         WorkerTest.setUp(self)
-        self.code_import = self.makeCodeImport()
+        self.code_import = self.factory.makeCodeImport()
         self.temp_dir = self.makeTemporaryDirectory()
 
     def makeBranchStore(self):
