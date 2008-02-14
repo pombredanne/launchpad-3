@@ -109,10 +109,8 @@
              tal:define="archive_url view/archive_url"
              tal:condition="archive_url">
         <tr>
-          <th>Mailing list archive:</th>
-          <td><a id="mailing-list-archive" tal:content="archive_url"
-                 tal:attributes="href archive_url"
-               >http://lists.launchpad.dev/archives/team_name</a>
+          <td><a id="mailing-list-archive" tal:attributes="href archive_url"
+               >Mailing list archive</a>
           </td>
         </tr>
       </table>
