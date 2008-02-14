@@ -848,31 +848,6 @@ class BugTaskEditView(LaunchpadEditFormView):
 
         return editable_field_names
 
-    def setUpWidgets(self, context=None):
-        """Remove the `UNKOWN` option from the importance widget.
-
-        Users shouldn't be able to set a bugtask's importance to
-        `UNKOWN`, only bug watches do that.
-        """
-
-        importance_vocab_items = [
-            item for item in BugTaskImportance.items.items
-            if item != BugTaskImportance.UNKNOWN]
-
-        fields = []
-        for field in self.form_fields:
-            if (field.field.getName() == 'importance'
-                and self.userCanEditImportance()):
-                fields.append(form.FormField(
-                    Choice(__name__='importance',
-                           title=_('Importance'),
-                           values=importance_vocab_items,
-                           default=BugTaskImportance.UNDECIDED)))
-            else:
-                fields.append(field)
-        self.form_fields = form.Fields(*fields)
-        super(BugTaskEditView, self).setUpWidgets(context=context)
-
     @property
     def is_question(self):
         """Return True or False if this bug was converted into a question.
@@ -971,6 +946,19 @@ class BugTaskEditView(LaunchpadEditFormView):
             if field in read_only_field_names:
                 self.form_fields[field].custom_widget = CustomWidgetFactory(
                     DBItemDisplayWidget)
+
+        if 'importance' not in read_only_field_names:
+            # Users shouldn't be able to set a bugtask's importance to
+            # `UNKOWN`, only bug watches do that.
+            importance_vocab_items = [
+                item for item in BugTaskImportance.items.items
+                if item != BugTaskImportance.UNKNOWN]
+            self.form_fields = self.form_fields.omit('importance')
+            self.form_fields += form.Fields(
+                Choice(__name__='importance',
+                       title=_('Importance'),
+                       values=importance_vocab_items,
+                       default=BugTaskImportance.UNDECIDED))
 
         if self.context.target_uses_malone:
             self.form_fields = self.form_fields.omit('bugwatch')
