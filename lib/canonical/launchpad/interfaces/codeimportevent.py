@@ -357,6 +357,24 @@ class ICodeImportEventSet(Interface):
         :return: `CodeImportEvent` of QUIESCE type.
         """
 
+    def newStart(code_import, machine):
+        """Record that a machine is about to start working on a code import.
+
+        :param code_import: The `CodeImport` which is about to be worked on.
+        :param machine: `CodeImportMachine` which is about to start the job.
+        :return: `CodeImportEvent` of START type.
+        """
+
+    def newFinish(code_import, machine):
+        """Record that a machine has finished working on a code import.
+
+        :param code_import: The `CodeImport` which is no longer being worked
+                            on.
+        :param machine: `CodeImportMachine` which is no longer working on this
+                        import.
+        :return: `CodeImportEvent` of FINISH type.
+        """
+
 
 class ICodeImportEventToken(Interface):
     """Opaque structure returned by `ICodeImportEventSet.beginModify`."""
