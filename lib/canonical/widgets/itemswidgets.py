@@ -109,7 +109,7 @@ class LaunchpadRadioWidgetWithDescription(LaunchpadRadioWidget):
               <td><label for="%s">%s</label></td>
             </tr>
             <tr>
-              <td>%s</td>
+              <td class="formHelp">%s</td>
             </tr>
          ''')
     _labelWithoutDescriptionTemplate = (
