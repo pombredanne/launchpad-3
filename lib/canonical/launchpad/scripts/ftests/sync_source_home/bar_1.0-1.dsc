@@ -10,12 +10,12 @@ Maintainer: Launchpad team <launchpad@lists.canonical.com>
 Standards-Version: 3.6.2
 Files: 
  fc1464e5985b962a042d5354452f361d 164 bar_1.0.orig.tar.gz
- 88cf9dd8788dae5acecf53ad82d5c463 584 bar_1.0-1.diff.gz
+ a259bf88aedcdeded4e5d94ad4af3b4a 610 bar_1.0-1.diff.gz
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1.4.6 (GNU/Linux)
 
-iD8DBQFHsvlvjn63CGxkqMURAtpXAKCd6z2KFAHvtMVxSsf7PhOwJrf9gQCfTSw1
-nbXp3EuxgL6ZumHhNs1T3yE=
-=fJ8j
+iD8DBQFHtDONjn63CGxkqMURAoPtAJ0dQMXvjTu0YZVHgGvqGJkhTvqUqwCfV+Pj
+5G9UWQ5qwtNMnC4ZSuiAF6k=
+=zCGh
 -----END PGP SIGNATURE-----
