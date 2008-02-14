@@ -44,10 +44,9 @@ UPDATE DistributionSourcePackageCache set archive=(
     );
 CREATE INDEX distributionsourcepackagecache__archive__idx
     ON DistributionSourcePackageCache(archive);
-ALTER TABLE DistributionSourcePackageCache ADD CONSTRAINT
-    distributionsourcepackagecache__archive__fk
+ALTER TABLE DistributionSourcePackageCache
+    ADD CONSTRAINT distributionsourcepackagecache__archive__fk
     FOREIGN KEY (archive) REFERENCES Archive,
-    ALTER COLUMN archive SET NOT NULL,
     ADD CONSTRAINT
         distributionsourcepackagecache__distribution__sourcepackagename__archive__key
         UNIQUE(distribution, sourcepackagename, archive);
@@ -63,10 +62,9 @@ UPDATE DistroSeriesPackageCache set archive=(
     );
 CREATE INDEX distroseriespackagecache__archive__idx
     ON DistroSeriesPackageCache(archive);
-ALTER TABLE DistroSeriesPackageCache ADD CONSTRAINT
-    distroseriespackagecache__archive__fk
+ALTER TABLE DistroSeriesPackageCache
+    ADD CONSTRAINT distroseriespackagecache__archive__fk
     FOREIGN KEY (archive) REFERENCES Archive,
-    ALTER COLUMN archive SET NOT NULL,
     ADD CONSTRAINT
     distroseriespackagecache__distroseries__binarypackagename__archive__key
     UNIQUE(distroseries, binarypackagename, archive);
