@@ -26,7 +26,8 @@ def ensure_base(transport):
 class BazaarBranchStore:
     """A place where Bazaar branches of code imports are kept."""
 
-    # This code is intended to replace c.codehosting.codeimport.publish.
+    # This code is intended to replace c.codehosting.codeimport.publish and
+    # canonical.codeimport.codeimport.gettarget.
 
     def __init__(self, transport):
         """Construct a Bazaar branch store based at `transport`."""
