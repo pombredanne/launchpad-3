@@ -17,6 +17,11 @@ from canonical.config import config
 
 
 def ensure_base(transport):
+    """Make sure that the base directory of `transport` exists.
+
+    If the base directory does not exist, try to make it. If the parent of the
+    base directory doesn't exist, try to make that, and so on.
+    """
     try:
         transport.ensure_base()
     except NoSuchFile:
@@ -33,26 +38,26 @@ class BazaarBranchStore:
         """Construct a Bazaar branch store based at `transport`."""
         self.transport = transport
 
-    def _getMirrorURL(self, code_import):
-        return urljoin(self.transport.base, '%08x' % code_import.branch.id)
+    def _getMirrorURL(self, db_branch):
+        return urljoin(self.transport.base, '%08x' % db_branch.id)
 
-    def pull(self, code_import, target_path):
+    def pull(self, db_branch, target_path):
         """Pull down the Bazaar branch for `code_import` to `target_path`.
 
         :return: A Bazaar working tree for the branch of `code_import`.
         """
         try:
-            bzr_dir = BzrDir.open(self._getMirrorURL(code_import))
+            bzr_dir = BzrDir.open(self._getMirrorURL(db_branch))
         except NotBranchError:
             return BzrDir.create_standalone_workingtree(target_path)
         bzr_dir.sprout(target_path)
         return BzrDir.open(target_path).open_workingtree()
 
-    def push(self, code_import, bzr_tree):
+    def push(self, db_branch, bzr_tree):
         """Push up `bzr_tree` as the Bazaar branch for `code_import`."""
         ensure_base(self.transport)
         branch_from = bzr_tree.branch
-        target_url = self._getMirrorURL(code_import)
+        target_url = self._getMirrorURL(db_branch)
         try:
             branch_to = Branch.open(target_url)
         except NotBranchError:

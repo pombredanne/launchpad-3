@@ -50,8 +50,9 @@ class TestBazaarBranchStore(WorkerTest):
 
     def setUp(self):
         WorkerTest.setUp(self)
-        self.code_import = self.factory.makeCodeImport()
+        code_import = self.factory.makeCodeImport()
         self.temp_dir = self.makeTemporaryDirectory()
+        self.branch = code_import.branch
 
     def makeBranchStore(self):
         return BazaarBranchStore(self.get_transport())
@@ -67,7 +68,7 @@ class TestBazaarBranchStore(WorkerTest):
         # If there's no Bazaar branch for the code import object, then pull
         # creates a new Bazaar working tree.
         store = self.makeBranchStore()
-        bzr_working_tree = store.pull(self.code_import, self.temp_dir)
+        bzr_working_tree = store.pull(self.branch, self.temp_dir)
         self.assertEqual([], bzr_working_tree.branch.revision_history())
 
     def test_pushBranchThenPull(self):
@@ -75,8 +76,8 @@ class TestBazaarBranchStore(WorkerTest):
         # from the store.
         store = self.makeBranchStore()
         tree = create_branch_with_one_revision('original')
-        store.push(self.code_import, tree)
-        new_tree = store.pull(self.code_import, self.temp_dir)
+        store.push(self.branch, tree)
+        new_tree = store.pull(self.branch, self.temp_dir)
         self.assertEqual(
             tree.branch.last_revision(), new_tree.branch.last_revision())
 
@@ -85,9 +86,9 @@ class TestBazaarBranchStore(WorkerTest):
         # store.
         store = self.makeBranchStore()
         tree = create_branch_with_one_revision('original')
-        store.push(self.code_import, tree)
-        store.push(self.code_import, tree)
-        new_tree = store.pull(self.code_import, self.temp_dir)
+        store.push(self.branch, tree)
+        store.push(self.branch, tree)
+        new_tree = store.pull(self.branch, self.temp_dir)
         self.assertEqual(
             tree.branch.last_revision(), new_tree.branch.last_revision())
 
@@ -108,7 +109,7 @@ class TestBazaarBranchStore(WorkerTest):
         # doesn't already exist.
         store = BazaarBranchStore(self.get_transport('doesntexist'))
         tree = create_branch_with_one_revision('original')
-        store.push(self.code_import, tree)
+        store.push(self.branch, tree)
         self.assertIsDirectory('doesntexist', self.get_transport())
 
     def test_storedLocation(self):
@@ -116,10 +117,9 @@ class TestBazaarBranchStore(WorkerTest):
         # the BazaarBranchStore's transport.
         store = self.makeBranchStore()
         tree = create_branch_with_one_revision('original')
-        store.push(self.code_import, tree)
+        store.push(self.branch, tree)
         new_tree = self.fetchBranch(
-            urljoin(store.transport.base,
-                    '%08x' % self.code_import.branch.id),
+            urljoin(store.transport.base, '%08x' % self.branch.id),
             'new_tree')
         self.assertEqual(
             tree.branch.last_revision(), new_tree.branch.last_revision())
