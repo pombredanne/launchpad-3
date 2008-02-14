@@ -1,3 +1,17 @@
+= Bugtask importance =
+
+It is possible to set the bug importance using the bugtask edit form.
+
+   >>> admin_browser.open('http://bugs.launchpad.dev/bugs/10')
+   >>> importance_control = admin_browser.getControl('Importance')
+   >>> print '\n'.join(importance_control.displayOptions)
+   Critical
+   High
+   Medium
+   Low
+   Wishlist
+   Undecided
+
 Only the bug contact, or a user with launchpd.Edit on the respective
 product or distro, can edit Importance.
 

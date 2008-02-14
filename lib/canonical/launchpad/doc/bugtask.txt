@@ -1004,6 +1004,21 @@ target uses Malone as its official bugtracker.
     mozilla-firefox (Debian)       False
 
 
+== `UNKNOWN` importance ==
+
+Only bugtasks for targets that don't use Malone for bug tracking can
+have their importance set to `UNKNOWN`.
+
+    >>> external_bugtask = bugtaskset.get(3)
+    >>> external_bugtask.target.official_malone
+    False
+    >>> external_bugtask.importance = BugTaskImportance.UNKNOWN
+    Traceback (most recent call last):
+    ...
+    AssertionError: Attempting to set the importance of a bug target that uses
+    Malone for bug tracking to UNKNOWN.
+
+
 == Handling IntegrityError and ProgrammingError ==
 
 # XXX: Brad Bollenbach 2005-02-24: This bit testing the IntegrityError
@@ -1029,4 +1044,3 @@ ProgrammingError
     ERROR:  new row for relation "bugtask" violates check constraint "bugtask_assignment_checks"
     <BLANKLINE>
     INSERT INTO BugTask ...
-

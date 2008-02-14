@@ -527,6 +527,13 @@ class BugTask(SQLBase, BugTaskMixin):
 
     def _set_importance(self, value):
         """Set importance, and update conjoined BugTask."""
+        # The `UNKOWN` importance is only used by bug watches,
+        # for bugtasks on targets that don't use Malone for
+        # bug tracking.
+        if value == BugTaskImportance.UNKNOWN:
+            assert self.pillar.official_malone, (
+                'Attempting to set the importance of a bug target that uses '
+                'Malone for bug tracking to UNKNOWN.')
         self._setValueAndUpdateConjoinedBugTask("importance", value)
 
     def _set_milestone(self, value):

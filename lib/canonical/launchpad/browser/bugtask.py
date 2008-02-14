@@ -848,6 +848,31 @@ class BugTaskEditView(LaunchpadEditFormView):
 
         return editable_field_names
 
+    def setUpWidgets(self, context=None):
+        """Remove the `UNKOWN` option from the importance widget.
+
+        Users shouldn't be able to set a bugtask's importance to
+        `UNKOWN`, only bug watches do that.
+        """
+
+        importance_vocab_items = [
+            item for item in BugTaskImportance.items.items
+            if item != BugTaskImportance.UNKNOWN]
+
+        fields = []
+        for field in self.form_fields:
+            if (field.field.getName() == 'importance'
+                and self.userCanEditImportance()):
+                fields.append(form.FormField(
+                    Choice(__name__='importance',
+                           title=_('Importance'),
+                           values=importance_vocab_items,
+                           default=BugTaskImportance.UNDECIDED)))
+            else:
+                fields.append(field)
+        self.form_fields = form.Fields(*fields)
+        super(BugTaskEditView, self).setUpWidgets(context=context)
+
     @property
     def is_question(self):
         """Return True or False if this bug was converted into a question.
