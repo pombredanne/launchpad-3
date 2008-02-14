@@ -39,9 +39,10 @@ from canonical.launchpad.interfaces import (
     IPOFileSet, IPOFileTranslator, ITranslationExporter,
     ITranslationFileData, ITranslationImporter, IVPOExportSet,
     NotExportedFromLaunchpad, NotFoundError, OutdatedTranslationError,
-    RosettaImportStatus, TranslationFormatSyntaxError,
-    TranslationFormatInvalidInputError, TranslationPermission,
-    TranslationValidationStatus, ZeroLengthPOExportError)
+    RosettaImportStatus, TooManyPluralFormsError,
+    TranslationFormatInvalidInputError, TranslationFormatSyntaxError,
+    TranslationPermission, TranslationValidationStatus,
+    ZeroLengthPOExportError)
 from canonical.launchpad.translationformat import TranslationMessageData
 from canonical.launchpad.webapp import canonical_url
 from canonical.librarian.interfaces import (
@@ -226,9 +227,6 @@ class POFile(SQLBase, POFileMixIn):
     date_changed = UtcDateTimeCol(
         dbName='date_changed', notNull=True, default=UTC_NOW)
 
-    license = IntCol(dbName='license',
-                     notNull=False,
-                     default=None)
     currentcount = IntCol(dbName='currentcount',
                           notNull=True,
                           default=0)
@@ -730,31 +728,38 @@ class POFile(SQLBase, POFileMixIn):
         #   everything but the messages with errors. We handle it returning a
         #   list of faulty messages.
         import_rejected = False
+        error_text = None
         try:
             errors = translation_importer.importFile(entry_to_import, logger)
         except NotExportedFromLaunchpad:
             # We got a file that was not exported from Rosetta as a non
             # published upload. We log it and select the email template.
             if logger:
-                logger.warning(
+                logger.info(
                     'Error importing %s' % self.title, exc_info=1)
             template_mail = 'poimport-not-exported-from-rosetta.txt'
             import_rejected = True
         except (TranslationFormatSyntaxError,
-                TranslationFormatInvalidInputError):
+                TranslationFormatInvalidInputError), exception:
             # The import failed with a format error. We log it and select the
             # email template.
             if logger:
-                logger.warning(
+                logger.info(
                     'Error importing %s' % self.title, exc_info=1)
             template_mail = 'poimport-syntax-error.txt'
             import_rejected = True
+            error_text = str(exception)
         except OutdatedTranslationError:
             # The attached file is older than the last imported one, we ignore
             # it. We also log this problem and select the email template.
             if logger:
-                logger.warning('Got an old version for %s' % self.title)
+                logger.info('Got an old version for %s' % self.title)
             template_mail = 'poimport-got-old-version.txt'
+            import_rejected = True
+        except TooManyPluralFormsError:
+            if logger:
+                logger.warning("Too many plural forms.")
+            template_mail = 'poimport-too-many-plural-forms.txt'
             import_rejected = True
 
         # Prepare the mail notification.
@@ -770,9 +775,13 @@ class POFile(SQLBase, POFileMixIn):
                 self.language.displayname, self.potemplate.displayname),
             'importer': entry_to_import.importer.displayname,
             'language': self.language.displayname,
+            'language_code': self.language.code,
             'numberofmessages': msgsets_imported,
             'template': self.potemplate.displayname,
             }
+
+        if error_text is not None:
+            replacements['error'] = error_text
 
         if import_rejected:
             # We got an error that prevented us to import any translation, we
@@ -973,7 +982,6 @@ class DummyPOFile(POFileMixIn):
         self.lasttranslator = None
         UTC = pytz.timezone('UTC')
         self.date_changed  = None
-        self.license = None
         self.lastparsed = None
         self.owner = getUtility(ILaunchpadCelebrities).rosetta_experts
 

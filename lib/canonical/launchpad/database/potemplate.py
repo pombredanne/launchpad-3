@@ -77,7 +77,6 @@ class POTemplate(SQLBase, RosettaStats):
     translation_domain = StringCol(dbName='translation_domain', notNull=True)
     description = StringCol(dbName='description', notNull=False, default=None)
     copyright = StringCol(dbName='copyright', notNull=False, default=None)
-    license = IntCol(dbName='license', notNull=False, default=None)
     datecreated = UtcDateTimeCol(dbName='datecreated', default=DEFAULT)
     path = StringCol(dbName='path', notNull=False, default=None)
     source_file = ForeignKey(foreignKey='LibraryFileAlias',
@@ -655,13 +654,16 @@ class POTemplate(SQLBase, RosettaStats):
         try:
             translation_importer.importFile(entry_to_import, logger)
         except (TranslationFormatSyntaxError,
-                TranslationFormatInvalidInputError):
+                TranslationFormatInvalidInputError), exception:
             if logger:
-                logger.warning(
+                logger.info(
                     'We got an error importing %s', self.title, exc_info=1)
             subject = 'Import problem - %s' % self.displayname
             template_mail = 'poimport-syntax-error.txt'
             entry_to_import.status = RosettaImportStatus.FAILED
+            error_text = str(exception)
+        else:
+            error_text = None
 
         replacements = {
             'dateimport': entry_to_import.dateimported.strftime('%F %R%z'),
@@ -671,6 +673,9 @@ class POTemplate(SQLBase, RosettaStats):
             'importer': entry_to_import.importer.displayname,
             'template': self.displayname,
             }
+
+        if error_text is not None:
+            replacements['error'] = error_text
 
         if entry_to_import.status != RosettaImportStatus.FAILED:
             entry_to_import.status = RosettaImportStatus.IMPORTED

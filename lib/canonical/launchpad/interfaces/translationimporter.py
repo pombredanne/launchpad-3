@@ -1,4 +1,4 @@
-# Copyright 2006-2007 Canonical Ltd.  All rights reserved.
+# Copyright 2006-2008 Canonical Ltd.  All rights reserved.
 # pylint: disable-msg=E0211,E0213
 
 """Interfaces to handle translation files imports."""
@@ -10,6 +10,7 @@ __all__ = [
     'ITranslationImporter',
     'OutdatedTranslationError',
     'NotExportedFromLaunchpad',
+    'TooManyPluralFormsError',
     'TranslationFormatSyntaxError',
     'TranslationFormatInvalidInputError',
     ]
@@ -29,10 +30,14 @@ class NotExportedFromLaunchpad(TranslationImportExportBaseException):
     """An imported file lacks the Launchpad export time."""
 
 
+class TooManyPluralFormsError(TranslationImportExportBaseException):
+    """Translation defines more plural forms than we can handle."""
+
+
 class TranslationFormatBaseError(TranslationImportExportBaseException):
     """Base exception for errors in translation format files."""
 
-    def __init__(self, filename='unknown', line_number=None, message=None):
+    def __init__(self, filename=None, line_number=None, message=None):
         """Initialise the exception information.
 
         :param filename: The file name that is being parsed.
@@ -40,37 +45,52 @@ class TranslationFormatBaseError(TranslationImportExportBaseException):
         :param message: The concrete syntax error found. If we get a not None
             value here, filename and line_number are ignored.
         """
-        assert filename is not None, 'filename cannot be None'
+        TranslationImportExportBaseException.__init__(self, message)
 
         self.filename = filename
         self.line_number = line_number
         self.message = message
+
+    def represent(self, default_message):
+        """Return human-readable description of error location."""
+        if self.filename is not None:
+            safe_filename = self.filename.encode("ascii", "backslashreplace")
+
+        if self.line_number is not None and self.line_number > 0:
+            if self.filename is not None:
+                location = "%s, line %d" % (safe_filename, self.line_number)
+            else:
+                location = "Line %d" % self.line_number
+        elif self.filename is not None:
+            location = safe_filename
+        else:
+            location = None
+
+        if location is not None:
+            location_prefix = "%s: " % location
+        else:
+            location_prefix = ""
+
+        if self.message is not None:
+            text = self.message.encode("ascii", "backslashreplace")
+        else:
+            text = default_message
+
+        return "%s%s" % (location_prefix, text)
 
 
 class TranslationFormatSyntaxError(TranslationFormatBaseError):
     """A syntax error occurred while parsing a translation file."""
 
     def __str__(self):
-        if self.message is not None:
-            return self.message
-        if self.line_number is None:
-            return '%s: syntax error on an unknown line' % self.filename
-        else:
-            return '%s: syntax error on entry at line %d' % (
-                self.filename, self.line_number)
+        return self.represent("Unknown syntax error")
 
 
 class TranslationFormatInvalidInputError(TranslationFormatBaseError):
     """Some fields in the parsed file contain bad content."""
 
     def __str__(self):
-        if self.message is not None:
-            return self.message
-        if self.line_number is None:
-            return '%s: invalid input on an unknown line' % self.filename
-        else:
-            return '%s: invalid input on entry at line %d' % (
-                self.filename, self.line_number)
+        return self.represent("Invalid input")
 
 
 class ITranslationImporter(Interface):
