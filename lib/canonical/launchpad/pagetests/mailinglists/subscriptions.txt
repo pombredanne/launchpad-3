@@ -6,6 +6,10 @@ can subscribe to a mailing list using any of his email addresses, or a
 dynamic subscription which uses whichever email address is his
 preferred address at a given time.
 
+Non-team members can request a subscription to a mailing list at the
+same time as they sign up for a new team.  Their list membership is
+approved at the same time that they are approved for the team.
+
 
 == Setup ==
 
@@ -200,3 +204,57 @@ menu item to "Don't subscribe".
     ["Don't subscribe"]
     >>> print rosetta_admins.value
     ["Don't subscribe"]
+
+
+== Subscription during team signup ==
+
+Jdub is only a member of the ubuntu team.  He can request to be placed
+on another team's mailing list at the same time that he requests
+membership on the team.
+
+    >>> browser = setupBrowser(auth='Basic jeff.waugh@ubuntulinux.com:jdub')
+    >>> browser.open('http://launchpad.dev/~testing-spanish-team')
+    >>> browser.getLink('Join the team').click()
+    >>> browser.url
+    'http://launchpad.dev/~testing-spanish-team/+join'
+
+    >>> browser.getControl(name='field.mailinglist_subscribe').click()
+    >>> browser.getControl(name='join').click()
+    >>> browser.url
+    'http://launchpad.dev/~testing-spanish-team'
+
+
+Jdub hasn't been approved for the team yet, so he is not subscribed to
+the list, and the list will not show up on his Subscription Management
+screen.
+
+    >>> browser.open('http://launchpad.dev/~jdub/')
+    >>> browser.getLink("Change e-mail settings").click()
+    >>> browser.title
+    "Jeff Waugh's e-mail addresses"
+
+    >>> browser.getControl(
+    ... 	name='field.subscription.testing-spanish-team')
+    Traceback (most recent call last):
+    ...
+    LookupError: name 'field.subscription.testing-spanish-team'
+
+
+Jdub will become a member of the team's mailing list as soon as he has
+been approved for the team.
+
+    >>> admin_browser = setupBrowser(auth='Basic carlos@canonical.com:test')
+    >>> admin_browser.open('http://launchpad.dev/~testing-spanish-team/')
+    >>> admin_browser.getLink('Show all members').click()
+    >>> admin_browser.getLink(
+    ...     url='/~testing-spanish-team/+member/jdub').click()
+    >>> admin_browser.getLink('Approve').click()
+
+
+The mailing list subscription is now available to be managed.
+
+    >>> spanish_team = browser.getControl(
+    ... 	name='field.subscription.testing-spanish-team')
+
+    >>> spanish_team.displayOptions
+    ['Preferred address', "Don't subscribe", 'jeff.waugh@canonical.com']
