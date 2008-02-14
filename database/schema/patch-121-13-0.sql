@@ -1,6 +1,5 @@
 SET client_min_messages=ERROR;
 
--- Deffered for now
 -- CREATE TABLE CodeReviewSubscription (
 --     id SERIAL PRIMARY KEY,
 --     branch_merge_proposal INTEGER NOT NULL REFERENCES BranchMergeProposal(id),
