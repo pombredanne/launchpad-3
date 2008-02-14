@@ -12,6 +12,7 @@ from zope.component import getUtility
 
 from bzrlib.bzrdir import BzrDir
 from bzrlib.tests import TestCaseWithTransport
+from bzrlib.transport import get_transport
 from bzrlib.urlutils import join as urljoin
 
 from canonical.cachedproperty import cachedproperty
@@ -21,7 +22,8 @@ from canonical.codehosting.tests.helpers import (
     create_branch_with_one_revision)
 from canonical.config import config
 from canonical.launchpad.interfaces import (
-    BranchType, ICodeImportSet, ILaunchpadCelebrities, RevisionControlSystems)
+    BranchType, BranchTypeError, ICodeImportSet, ILaunchpadCelebrities,
+    RevisionControlSystems)
 from canonical.launchpad.testing import LaunchpadObjectFactory
 from canonical.testing import LaunchpadScriptLayer
 
@@ -92,6 +94,14 @@ class TestBazaarBranchStore(WorkerTest):
         self.assertEqual(
             tree.branch.last_revision(), new_tree.branch.last_revision())
 
+    def test_pushNonImportBranch(self):
+        # push() raises a BranchTypeError if you try to push a non-imported
+        # branch.
+        store = self.makeBranchStore()
+        tree = create_branch_with_one_revision('original')
+        db_branch = self.factory.makeBranch(BranchType.HOSTED)
+        self.assertRaises(BranchTypeError, store.push, db_branch, tree)
+
     def fetchBranch(self, from_url, target_path):
         """Pull a branch from `from_url` to `target_path`.
 
@@ -123,6 +133,25 @@ class TestBazaarBranchStore(WorkerTest):
             'new_tree')
         self.assertEqual(
             tree.branch.last_revision(), new_tree.branch.last_revision())
+
+    def test_sftpPrefix(self):
+        # Since branches are mirrored by importd via sftp, _getMirrorURL must
+        # support sftp urls. There was once a bug that made it incorrect with
+        # sftp.
+        sftp_prefix = 'sftp://example/base/'
+        store = BazaarBranchStore(get_transport(sftp_prefix))
+        self.assertEqual(
+            store._getMirrorURL(self.branch),
+            sftp_prefix + '%08x' % self.branch.id)
+
+    def test_sftpPrefixNoSlash(self):
+        # If the prefix has no trailing slash, one should be added. It's very
+        # easy to forget a trailing slash in the importd configuration.
+        sftp_prefix_noslash = 'sftp://example/base'
+        store = BazaarBranchStore(get_transport(sftp_prefix_noslash))
+        self.assertEqual(
+            store._getMirrorURL(self.branch),
+            sftp_prefix_noslash + '/' + '%08x' % self.branch.id)
 
 
 def test_suite():

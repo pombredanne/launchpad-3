@@ -14,6 +14,7 @@ from bzrlib.errors import NoSuchFile, NotBranchError
 from bzrlib.urlutils import join as urljoin
 
 from canonical.config import config
+from canonical.launchpad.interfaces import BranchType, BranchTypeError
 
 
 def ensure_base(transport):
@@ -55,6 +56,10 @@ class BazaarBranchStore:
 
     def push(self, db_branch, bzr_tree):
         """Push up `bzr_tree` as the Bazaar branch for `code_import`."""
+        if db_branch.branch_type != BranchType.IMPORTED:
+            raise BranchTypeError(
+                "Can only store imported branches: %r is of type %r."
+                % (db_branch, db_branch.branch_type))
         ensure_base(self.transport)
         branch_from = bzr_tree.branch
         target_url = self._getMirrorURL(db_branch)
