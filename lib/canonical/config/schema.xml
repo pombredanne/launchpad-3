@@ -1117,6 +1117,12 @@ k            </description>
               Subversion, in seconds.
           </description>
         </key>
+        <key name="bazaar_branch_store" datatype="string"
+             required="no" default="file:///tmp/bazaar-branches">
+          <description>
+            Where the Bazaar imports are stored.
+          </description>
+        </key>
     </sectiontype>
 
     <sectiontype name="personalpackagearchive">
