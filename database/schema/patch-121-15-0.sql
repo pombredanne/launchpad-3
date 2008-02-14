@@ -36,7 +36,7 @@ CREATE TABLE OAuthRequestToken (
     --   * Read public and private data
     --   * Read/Write public and private data
     permission integer,
-    -- XXX: Don't we need expiration_date here too so the user can
+    -- XXX: Don't we need date_expires here too so the user can
     -- specify this?
     date_created timestamp without time zone NOT NULL
         DEFAULT (CURRENT_TIMESTAMP AT TIME ZONE 'UTC'),
@@ -64,7 +64,7 @@ CREATE TABLE OAuthAccessToken (
     permission integer NOT NULL,
     date_created timestamp without time zone NOT NULL
         DEFAULT (CURRENT_TIMESTAMP AT TIME ZONE 'UTC'),
-    expiration_date timestamp without time zone,
+    date_expires timestamp without time zone,
     key text UNIQUE NOT NULL,
     secret text NOT NULL
 );
@@ -75,8 +75,8 @@ CREATE INDEX oauthaccesstoken__consumer__idx
 CREATE INDEX oauthaccesstoken__person__idx
     ON OAuthAccessToken(person);
 
-CREATE INDEX oauthaccesstoken__expiration_date__idx
-    ON OAuthAccessToken(expiration_date) WHERE expiration_date IS NOT NULL;
+CREATE INDEX oauthaccesstoken__date_expires__idx
+    ON OAuthAccessToken(date_expires) WHERE date_expires IS NOT NULL;
 
 CREATE TABLE OAuthNonce (
     id serial PRIMARY KEY,
