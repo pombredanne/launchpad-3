@@ -8,10 +8,11 @@ __metaclass__ = type
 __all__ = ['ITeamMembership', 'ITeamMembershipSet', 'ITeamMember',
            'ITeamParticipation', 'DAYS_BEFORE_EXPIRATION_WARNING_IS_SENT']
 
-from zope.schema import Choice, Int, Text
+from zope.schema import Int, Text
 from zope.interface import Interface, Attribute
 
 from canonical.launchpad import _
+from canonical.launchpad.fields import PublicOrPrivatePersonChoice
 
 # One week before a membership expires we send a notification to the member,
 # either inviting him to renew his own membership or asking him to get a team
@@ -33,10 +34,11 @@ class ITeamMembership(Interface):
             "If this is an active membership, it contains the date in which "
             "the membership was approved. If this is a proposed membership, "
             "it contains the date the user asked to join."))
-    dateexpires = Text(title=_("Date Expires"), required=False, readonly=False)
+    dateexpires = Text(title=_("Date Expires"),
+                       required=False, readonly=False)
     reviewercomment = Text(title=_("Reviewer Comment"), required=False,
                            readonly=False)
-    status= Int(title=_("If Membership was approved or not"), required=True,
+    status = Int(title=_("If Membership was approved or not"), required=True,
                 readonly=True)
 
     statusname = Attribute("Status Name")
@@ -140,10 +142,11 @@ class ITeamMembershipSet(Interface):
 class ITeamMember(Interface):
     """The interface used in the form to add a new member to a team."""
 
-    newmember = Choice(title=_('New member'), required=True,
-                       vocabulary='ValidTeamMember',
-                       description=_("The user or team which is going to be "
-                                     "added as the new member of this team."))
+    newmember = PublicOrPrivatePersonChoice(
+        title=_('New member'), required=True,
+        vocabulary='ValidTeamMember',
+        description=_("The user or team which is going to be "
+                        "added as the new member of this team."))
 
 
 class ITeamParticipation(Interface):
