@@ -149,6 +149,8 @@ class TestErrorReport(unittest.TestCase):
 
 class TestErrorReportingUtility(unittest.TestCase):
     def setUp(self):
+        # ErrorReportingUtility reads the global config to get the
+        # current error directory.
         self.saved_errordir = config.launchpad.errorreports.errordir
         config.launchpad.errorreports.errordir = tempfile.mkdtemp()
         shutil.rmtree(config.launchpad.errorreports.errordir,
