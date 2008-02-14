@@ -39,7 +39,15 @@ class BazaarBranchStore:
         """Construct a Bazaar branch store based at `transport`."""
         self.transport = transport
 
+    def _checkBranchIsImported(self, db_branch):
+        """Raise `BranchTypeError` if `db_branch` not an imported branch."""
+        if db_branch.branch_type != BranchType.IMPORTED:
+            raise BranchTypeError(
+                "Can only store imported branches: %r is of type %r."
+                % (db_branch, db_branch.branch_type))
+
     def _getMirrorURL(self, db_branch):
+        """Return the URL that `db_branch` is stored at."""
         return urljoin(self.transport.base, '%08x' % db_branch.id)
 
     def pull(self, db_branch, target_path):
@@ -47,6 +55,7 @@ class BazaarBranchStore:
 
         :return: A Bazaar working tree for the branch of `code_import`.
         """
+        self._checkBranchIsImported(db_branch)
         try:
             bzr_dir = BzrDir.open(self._getMirrorURL(db_branch))
         except NotBranchError:
@@ -56,10 +65,7 @@ class BazaarBranchStore:
 
     def push(self, db_branch, bzr_tree):
         """Push up `bzr_tree` as the Bazaar branch for `code_import`."""
-        if db_branch.branch_type != BranchType.IMPORTED:
-            raise BranchTypeError(
-                "Can only store imported branches: %r is of type %r."
-                % (db_branch, db_branch.branch_type))
+        self._checkBranchIsImported(db_branch)
         ensure_base(self.transport)
         branch_from = bzr_tree.branch
         target_url = self._getMirrorURL(db_branch)

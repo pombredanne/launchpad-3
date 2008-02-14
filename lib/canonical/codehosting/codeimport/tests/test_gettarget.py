@@ -114,23 +114,6 @@ class TestImportdTargetGetter(ImportdTargetGetterTestCase):
         self.importd_getter.get_target()
         self.assertGoodBzrWorking()
 
-    def testBadBranchOwner(self):
-        # Getting a sync target fails if the branch associated with the
-        # ProductSeries has an owner other than vcs-imports.
-        # First create the standard test mirror.
-        self.setUpMirror()
-        # Then set the branch owner to something other than vcs_imports, so we
-        # end up with an environment that is valid for get_target in all
-        # respects, except for the owner of the branch record.
-        series = self.series_helper.series
-        sync(series)
-        series.import_branch.owner = series.product.owner
-        vcs_imports = getUtility(ILaunchpadCelebrities).vcs_imports
-        assert series.import_branch.owner != vcs_imports
-        commit()
-        # This bad value of the branch owner must be enough to cause a failure.
-        self.assertRaises(AssertionError, self.importd_getter.get_target)
-
 
 class TestImportdTargetGetterUpgrade(ImportdTargetGetterTestCase):
     """Test upgrade functionality of ImportdTargetGetter."""

@@ -102,6 +102,13 @@ class TestBazaarBranchStore(WorkerTest):
         db_branch = self.factory.makeBranch(BranchType.HOSTED)
         self.assertRaises(BranchTypeError, store.push, db_branch, tree)
 
+    def test_pullNonImportBranch(self):
+        # pull() raises a BranchTypeError if you try to pull a non-imported
+        # branch.
+        store = self.makeBranchStore()
+        db_branch = self.factory.makeBranch(BranchType.HOSTED)
+        self.assertRaises(BranchTypeError, store.pull, db_branch, 'tree')
+
     def fetchBranch(self, from_url, target_path):
         """Pull a branch from `from_url` to `target_path`.
 
