@@ -302,9 +302,6 @@ COMMENT ON COLUMN CodeReviewMessage.branch_merge_proposal IS 'The merge proposal
 COMMENT ON COLUMN CodeReviewMessage.message IS 'The actual message.';
 COMMENT ON COLUMN CodeReviewMessage.vote IS 'The reviewer''s vote for this message.';
 
--- CodeReviewTask
-COMMENT ON TABLE CodeReviewTask IS 'An assiment of a reviewer';
-
 -- CVE
 
 COMMENT ON TABLE CVE IS 'A CVE Entry. The formal database of CVE entries is available at http://cve.mitre.org/ and we sync that database into Launchpad on a regular basis.';
