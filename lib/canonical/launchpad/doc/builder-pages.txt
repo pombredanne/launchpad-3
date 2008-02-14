@@ -8,6 +8,7 @@
   >>> builder = getUtility(IBuilderSet).get(1)
 
 Get a "mock" request:
+
   >>> mock_form = {}
   >>> request = LaunchpadTestRequest(form=mock_form)
 
@@ -108,4 +109,108 @@ We've modified the buildername
   >>> builder.id, builder.name
   (1, u'biscoito')
 
+
+== Builders building private jobs ==
+
+In order to restrict access to private PPA details in general, we also
+need to be able to hide the fact that a builder is building a private
+PPA job.
+
+This feature is evaluated on the view layer, since it varies according
+to the user who is trying to accessing a given content.
+
+Before checking if it works as expected we will setup a environment
+where builder 'Frog' is building a job from Celso's private PPA.
+
+    >>> from canonical.launchpad.database.buildqueue import BuildQueue
+    >>> from canonical.launchpad.interfaces import (
+    ...    IBuildSet, IBuilderSet, IPersonSet)
+
+    >>> cprov = getUtility(IPersonSet).getByName("cprov")
+    >>> cprov.archive.private = True
+
+    >>> frog = getUtility(IBuilderSet)['frog']
+    >>> frog.builderok = True
+
+    >>> random_build = 2
+    >>> cprov_builds = getUtility(
+    ...     IBuildSet).getBuildsForArchive(cprov.archive)
+    >>> private_job = BuildQueue(build=cprov_builds[random_build], builder=frog)
+
+At the content class level, all the information about the current job
+is widely available:
+
+ * Frog is OK;
+ * Frog 'currentjob' exists;
+ * Frog has no 'failnotes';
+ * Frog status exposes its 'currentjob'.
+
+    >>> print frog.builderok
+    True
+
+    >>> print frog.currentjob.build.title
+    i386 build of iceweasel 1.0 in ubuntu warty RELEASE
+
+    >>> print frog.failnotes
+    None
+
+    >>> print frog.status
+    BUILDING i386 build of iceweasel 1.0 in ubuntu warty RELEASE [cprov] (AUTO)
+
+Accessing the view for $builder/+index as a Foo Bar, which has
+launchpad.View permission on the target archive of the 'currentjob',
+all the 'private' information is exposed.
+
+    >>> login("foo.bar@canonical.com")
+
+    >>> empty_request = LaunchpadTestRequest(form={})
+    >>> admin_view = getMultiAdapter((frog, empty_request), name="+index")
+
+    >>> print admin_view.context.builderok
+    True
+
+    >>> print admin_view.context.currentjob.build.title
+    i386 build of iceweasel 1.0 in ubuntu warty RELEASE
+
+    >>> print admin_view.context.failnotes
+    None
+
+    >>> print admin_view.context.status
+    BUILDING i386 build of iceweasel 1.0 in ubuntu warty RELEASE [cprov] (AUTO)
+
+When accessing the same view as a unprivileged user, No-Priv, the
+sensitive information is hidden ('cloaked') and the builder shows up
+as 'NOT OK'.
+
+    >>> login('no-priv@canonical.com')
+
+    >>> nopriv_view = getMultiAdapter((frog, empty_request), name="+index")
+
+    >>> print nopriv_view.context.builderok
+    False
+
+    >>> print nopriv_view.context.currentjob
+    None
+
+    >>> print nopriv_view.context.failnotes
+    None
+
+    >>> print nopriv_view.context.status
+    NOT OK: (AUTO)
+
+XXX cprov 20080214: this is clearly a counterintuitive way to identify
+builders building private jobs. We will certainly have to fine-tune it
+before public release.
+
+Once the private job is gone, Frog 'real' details are exposed publicly
+again.
+
+    >>> login("foo.bar@canonical.com")
+    >>> private_job.destroySelf()
+
+    >>> login('no-priv@canonical.com')
+    >>> nopriv_view = getMultiAdapter((frog, empty_request), name="+index")
+
+    >>> print nopriv_view.context.status
+    IDLE (AUTO)
 

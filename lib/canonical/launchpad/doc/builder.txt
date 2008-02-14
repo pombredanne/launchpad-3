@@ -23,6 +23,20 @@ Test some attributes:
     >>> builder.id, builder.name
     (1, u'bob')
 
+Test 'status' property:
+
+    >>> builder.failnotes = 'Could not open Socket'
+    >>> print builder.status
+    NOT OK : Could not open Socket (AUTO)
+
+    >>> builder.builderok = True
+    >>> print builder.status
+    BUILDING i386 build of mozilla-firefox 0.9 in ubuntu hoary RELEASE (AUTO)
+
+    >>> builder.manual = True
+    >>> print builder.status
+    BUILDING i386 build of mozilla-firefox 0.9 in ubuntu hoary RELEASE (MANUAL)
+
 Confirm we can get the slave xmlrpc interface
 
     >>> s = builder.slave

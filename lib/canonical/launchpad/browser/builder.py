@@ -156,7 +156,7 @@ class HiddenBuilder:
     """
     decorates(IBuilder)
 
-    failnotes = ""
+    failnotes = None
     currentjob = None
     builderok = False
 
