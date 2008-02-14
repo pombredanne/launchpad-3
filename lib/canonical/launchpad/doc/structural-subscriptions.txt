@@ -63,7 +63,7 @@ A target's parent can be retrieved using the
    None
 
    >>> ff_milestone = firefox.getMilestone('1.0')
-   >>> ff_milestone.parent_subscription_target is firefox
+   >>> ff_milestone.parent_subscription_target == firefox
    True
    >>> print ff_milestone.parent_subscription_target.displayname
    Mozilla Firefox

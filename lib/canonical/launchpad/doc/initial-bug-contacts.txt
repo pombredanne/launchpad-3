@@ -177,7 +177,7 @@ in the footer of the email with the bug title and URL.
     ...     bug_one_in_ubuntu_firefox.bug.initial_message.rfc822msgid)
     True
     >>> msg['X-Launchpad-Message-Rationale']
-    'Bug Contact (pmount in ubuntu)'
+    'Subscriber (pmount in ubuntu)'
     >>> msg['Subject']
     '[Bug 1] [NEW] Firefox does not support SVG'
     >>> print msg.get_payload(decode=True)
@@ -209,7 +209,7 @@ in the footer of the email with the bug title and URL.
     Firefox does not support SVG
     http://bugs.launchpad.dev/bugs/1
     You received this bug notification because you
-    are a bug contact for pmount in ubuntu.
+    are subscribed to pmount in ubuntu.
 
 Since the reporter didn't do anything to trigger this change, the bug
 address is used as the From address.
@@ -317,7 +317,7 @@ bug that aren't already subscribed.
 
 Let's make Foo Bar a bug contact for upstream firefox:
 
-    >>> mozilla_firefox.bugcontact = foobar
+    >>> mozilla_firefox.setBugContact(foobar, foobar)
 
 Then we'll reassign bug #2 in Ubuntu to be in Firefox, noting that Foo
 Bar gets subscribed to the bug in the process:
@@ -348,8 +348,12 @@ Bar gets subscribed to the bug in the process:
 
 With the product changed, we can see that Foo Bar is now subscribed:
 
-    >>> subscriber_names(bug_two_in_ubuntu.bug)
-    [u'Foo Bar', u'Sample Person', u'Steve Alexander', u'Ubuntu Team']
+    >>> print '\n'.join(subscriber_names(bug_two_in_ubuntu.bug))
+    Foo Bar
+    Mark Shuttleworth
+    Sample Person
+    Steve Alexander
+    Ubuntu Team
 
 And Foo Bar gets an email containing complete information about the bug
 report. It states that he received the email because he is the bug
@@ -378,7 +382,7 @@ contact for Mozilla Firefox.
     Blackhole Trash folder
     http://bugs.launchpad.dev/bugs/2
     You received this bug notification because you
-    are the bug contact for Mozilla Firefox.
+    are subscribed to Mozilla Firefox.
 
 
 == Teams as bug contacts ==
