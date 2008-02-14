@@ -98,6 +98,7 @@ from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 from zope.formlib import form
 from zope.interface import implements
 from zope.component import getUtility
+from zope.publisher.interfaces import NotFound
 from zope.publisher.interfaces.browser import IBrowserPublisher
 from zope.schema import Choice, TextLine
 from zope.schema.vocabulary import SimpleVocabulary, SimpleTerm
@@ -389,8 +390,8 @@ class TeamMembershipSelfRenewalView(LaunchpadFormView):
         member = self.context.person
         member.renewTeamMembership(self.context.team)
         self.request.response.addInfoNotification(
-            _("Membership renewed until %(date)s."),
-            date=self.context.dateexpires.strftime('%Y-%m-%d'))
+            _("Membership renewed until ${date}.", mapping=dict(
+                    date=self.context.dateexpires.strftime('%Y-%m-%d'))))
 
     @action(_("Let it Expire"), name="nothing")
     def do_nothing_action(self, action, data):
@@ -435,8 +436,8 @@ class TeamInvitationView(LaunchpadFormView):
         member.acceptInvitationToBeMemberOf(
             self.context.team, data['reviewercomment'])
         self.request.response.addInfoNotification(
-            _("This team is now a member of %(team)s"),
-            team=self.context.team.browsername)
+            _("This team is now a member of ${team}", mapping=dict(
+                  team=self.context.team.browsername)))
 
     @action(_("Decline"), name="decline")
     def decline_action(self, action, data):
@@ -448,8 +449,8 @@ class TeamInvitationView(LaunchpadFormView):
         member.declineInvitationToBeMemberOf(
             self.context.team, data['reviewercomment'])
         self.request.response.addInfoNotification(
-            _("Declined the invitation to join %(team)s"),
-            team=self.context.team.browsername)
+            _("Declined the invitation to join ${team}", mapping=dict(
+                  team=self.context.team.browsername)))
 
     @action(_("Cancel"), name="cancel")
     def cancel_action(self, action, data):
@@ -647,9 +648,12 @@ class PersonBranchesMenu(ApplicationMenu):
         return Link('+subscribedbranches', text, icon='branch')
 
     def addbranch(self):
+        if self.user is None:
+            enabled = False
+        else:
+            enabled = self.user.inTeam(self.context)
         text = 'Register branch'
-        return Link('+addbranch', text, icon='add')
-
+        return Link('+addbranch', text, icon='add', enabled=enabled)
 
 
 class PersonBugsMenu(ApplicationMenu):
@@ -1201,6 +1205,15 @@ class PersonClaimView(LaunchpadFormView):
 
     schema = IPersonClaim
 
+    def initialize(self):
+        if self.context.is_valid_person_or_team:
+            # Valid teams and people aren't claimable. We pull the path
+            # out of PATH_INFO to make sure that the exception looks
+            # good for subclasses. We're that picky!
+            name = self.request['PATH_INFO'].split("/")[-1]
+            raise NotFound(self, name, request=self.request)
+        LaunchpadFormView.initialize(self)
+
     def validate(self, data):
         emailaddress = data.get('emailaddress')
         if emailaddress is None:
@@ -1258,12 +1271,12 @@ class PersonClaimView(LaunchpadFormView):
             tokentype=LoginTokenType.PROFILECLAIM)
         token.sendClaimProfileEmail()
         self.request.response.addInfoNotification(_(
-            "A confirmation  message has been sent to '%(email)s'. "
+            "A confirmation  message has been sent to '${email}'. "
             "Follow the instructions in that message to finish claiming this "
             "profile. "
             "(If the message doesn't arrive in a few minutes, your mail "
             "provider might use 'greylisting', which could delay the message "
-            "for up to an hour or two.)"), email=email)
+            "for up to an hour or two.)", mapping=dict(email=email)))
 
 
 class BeginTeamClaimView(PersonClaimView):
@@ -1281,13 +1294,13 @@ class BeginTeamClaimView(PersonClaimView):
             tokentype=LoginTokenType.TEAMCLAIM)
         token.sendClaimTeamEmail()
         self.request.response.addInfoNotification(_(
-            "A confirmation message has been sent to '%(email)s'. "
+            "A confirmation message has been sent to '${email}'. "
             "Follow the instructions in that message to finish claiming this "
             "team. "
             "(If the above address is from a mailing list, it may be "
             "necessary to talk with one of its admins to accept the message "
-            "from Launchpad so that you can finish the process.)"),
-            email=email)
+            "from Launchpad so that you can finish the process.)",
+            mapping=dict(email=email)))
 
 
 class RedirectToEditLanguagesView(LaunchpadView):

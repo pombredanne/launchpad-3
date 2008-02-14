@@ -322,6 +322,17 @@ class ICodeImportEventSet(Interface):
         :return: `CodeImportEvent` of MODIFY type, or None.
         """
 
+    def newRequest(code_import, person):
+        """Record that user requested an immediate run of this import.
+
+        Only called by `CodeImportJobWorkflow.requestJob`.
+
+        :param code_import: `CodeImport` for which an immediate run was
+            requested.
+        :param person: `Person` who requested the code import to run.
+        :return: `CodeImportEvent` of REQUEST type.
+        """
+
     def newOnline(machine):
         """Record that an import machine went online.
 
@@ -344,6 +355,24 @@ class ICodeImportEventSet(Interface):
         :param user: `Person` that requested quiescing.
         :param message: User-provided message.
         :return: `CodeImportEvent` of QUIESCE type.
+        """
+
+    def newStart(code_import, machine):
+        """Record that a machine is about to start working on a code import.
+
+        :param code_import: The `CodeImport` which is about to be worked on.
+        :param machine: `CodeImportMachine` which is about to start the job.
+        :return: `CodeImportEvent` of START type.
+        """
+
+    def newFinish(code_import, machine):
+        """Record that a machine has finished working on a code import.
+
+        :param code_import: The `CodeImport` which is no longer being worked
+                            on.
+        :param machine: `CodeImportMachine` which is no longer working on this
+                        import.
+        :return: `CodeImportEvent` of FINISH type.
         """
 
 

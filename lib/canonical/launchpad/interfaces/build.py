@@ -48,7 +48,7 @@ class IBuild(Interface):
         "details for this sourcepackagerelease in this distribution.")
     binarypackages = Attribute(
         "A list of binary packages that resulted from this build, "
-        "not limitted and ordered by name.")
+        "not limited and ordered by name.")
     distroarchseriesbinarypackages = Attribute(
         "A list of distroarchseriesbinarypackages that resulted from this"
         "build, ordered by name.")
@@ -62,12 +62,22 @@ class IBuild(Interface):
     calculated_buildstart = Attribute(
         "Emulates a buildstart timestamp by calculating it from "
         "datebuilt - buildduration.")
+
     is_trusted = Attribute(
         "whether or not the record corresponds to a source targeted to "
         "the distribution main_archive (archive == distro.main_archive).")
+
     package_upload = Attribute(
         "The PackageUpload for this build, or None if there is "
         "no build.")
+
+    component_dependencies = Attribute(
+        "Return a dictionary which maps a component name to a list of "
+        "component names it could depend of.")
+
+    ogre_components = Attribute(
+        "The components this build is allowed to use. It returns a string "
+        "that can be used directly at the end of sources.list lines.")
 
     def retry():
         """Restore the build record to its initial state.
