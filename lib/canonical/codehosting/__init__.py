@@ -9,7 +9,7 @@ __all__ = [
 
 
 import os.path
-from bzrlib.plugin import set_plugins_path
+from bzrlib.plugin import load_plugins
 from bzrlib.progress import ProgressBarStack
 from bzrlib.ui import SilentUIFactory
 
@@ -64,4 +64,4 @@ def get_bzr_plugins_path():
 
 
 os.environ['BZR_PLUGIN_PATH'] = get_bzr_plugins_path()
-set_plugins_path()
+load_plugins()

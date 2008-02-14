@@ -17,6 +17,7 @@ import xmlrpclib
 import transaction
 
 from bzrlib.branch import Branch
+from bzrlib.plugins.loom import branch as loom_branch
 from bzrlib.tests import HttpServer
 from bzrlib.urlutils import local_path_from_url
 
@@ -58,9 +59,9 @@ class TestBranchPuller(BranchTestCase):
         """Assert that 'branch' was mirrored succesfully."""
         # Make sure that we are testing the actual data.
         removeSecurityProxy(branch).sync()
+        self.assertEqual(None, branch.mirror_status_message)
         self.assertEqual(branch.last_mirror_attempt, branch.last_mirrored)
         self.assertEqual(0, branch.mirror_failures)
-        self.assertEqual(None, branch.mirror_status_message)
         hosted_branch = Branch.open(source_path)
         mirrored_branch = Branch.open(self.getMirroredPath(branch))
         self.assertEqual(
@@ -102,16 +103,18 @@ class TestBranchPuller(BranchTestCase):
             shutil.rmtree(path)
         os.makedirs(path)
 
-    def pushToBranch(self, branch):
+    def pushToBranch(self, branch, tree=None):
         """Push a trivial Bazaar branch to a given Launchpad branch.
 
         :param branch: A Launchpad Branch object.
         """
         hosted_path = self.getHostedPath(branch)
-        tree = self.createTemporaryBazaarBranchAndTree()
+        if tree is None:
+            tree = self.createTemporaryBazaarBranchAndTree()
         out, err = self.run_bzr(
             ['push', '--create-prefix', '-d',
-             local_path_from_url(tree.branch.base), hosted_path], retcode=None)
+             local_path_from_url(tree.branch.base), hosted_path],
+            retcode=None)
         # We want to be sure that a new branch was indeed created.
         self.assertEqual("Created new branch.\n", err)
 
@@ -174,6 +177,34 @@ class TestBranchPuller(BranchTestCase):
         # 124849.
         branch = self.makeBranch(BranchType.HOSTED)
         self.pushToBranch(branch)
+        branch.requestMirror()
+        transaction.commit()
+        command, retcode, output, error = self.runPuller('upload')
+        self.assertRanSuccessfully(command, retcode, output, error)
+        self.assertMirrored(self.getHostedPath(branch), branch)
+
+    def _makeLoomBranchAndTree(self):
+        # XXX: Copied from test_acceptance.
+        tree = self.make_branch_and_tree('loom')
+        tree.lock_write()
+        try:
+            tree.branch.nick = 'bottom-thread'
+            loom_branch.loomify(tree.branch)
+        finally:
+            tree.unlock()
+        loomtree = tree.bzrdir.open_workingtree()
+        loomtree.lock_write()
+        loomtree.branch.new_thread('bottom-thread')
+        loomtree.commit('this is a commit', rev_id='commit-1')
+        loomtree.unlock()
+        loomtree.branch.record_loom('sample loom')
+        return loomtree
+
+    def test_mirrorAHostedLoomBranch(self):
+        """Run the puller over a branch with looms enabled."""
+        branch = self.makeBranch(BranchType.HOSTED)
+        loomtree = self._makeLoomBranchAndTree()
+        self.pushToBranch(branch, loomtree)
         branch.requestMirror()
         transaction.commit()
         command, retcode, output, error = self.runPuller('upload')
