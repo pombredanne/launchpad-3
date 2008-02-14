@@ -19,7 +19,6 @@ from zope.formlib import form
 from zope.schema import Choice
 
 from canonical.config import config
-from canonical.lp import decorates
 
 from canonical.cachedproperty import cachedproperty
 from canonical.launchpad.browser.branch import BranchBadges
@@ -34,6 +33,7 @@ from canonical.launchpad.interfaces import (
     ISpecificationBranchSet)
 from canonical.launchpad.webapp import LaunchpadFormView, custom_widget
 from canonical.launchpad.webapp.batching import TableBatchNavigator
+from canonical.lazr import decorates
 from canonical.widgets import LaunchpadDropdownWidget
 
 

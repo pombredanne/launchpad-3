@@ -19,7 +19,7 @@ __all__ = [
 import cgi
 from zope.i18n import translate, Message, MessageID
 from zope.interface import implements
-from canonical.lp import decorates
+from canonical.lazr import decorates
 
 from canonical.launchpad.webapp.interfaces import (
     IMenuBase, IFacetMenu, IApplicationMenu, IContextMenu,
@@ -28,9 +28,8 @@ from canonical.launchpad.webapp.interfaces import (
 
 from canonical.launchpad.webapp.publisher import (
     canonical_url, canonical_url_iterator,
-    get_current_browser_request, UserAttributeCache
-    
-    )
+    get_current_browser_request, UserAttributeCache)
+
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.uri import InvalidURIError, URI
 from canonical.launchpad.webapp.vhosts import allvhosts
@@ -96,7 +95,8 @@ def nearest_adapter(obj, interface):
 
     This might be an adapter for the object given as an argument.
 
-    Return None if there is no object that has such an adapter in the url chain.
+    :return None: if there is no object that has such an adapter in the url
+        chain.
 
     This will often be used with an interface of IFacetMenu, when looking up
     the facet menu for a particular context.
@@ -305,7 +305,8 @@ class FacetMenu(MenuBase):
         return link
 
     def _get_link(self, name):
-        return IFacetLink(self._filterLink(name, MenuBase._get_link(self, name)))
+        return IFacetLink(
+            self._filterLink(name, MenuBase._get_link(self, name)))
 
     def iterlinks(self, requesturi=None, selectedfacetname=None):
         """See IFacetMenu."""
@@ -338,7 +339,8 @@ class enabled_with_permission:
     """Function decorator that disables the output link unless the current
     user has the given permission on the context.
 
-    This class is instantiated by programmers who want to apply this decorator.
+    This class is instantiated by programmers who want to apply this
+    decorator.
 
     Use it like:
 

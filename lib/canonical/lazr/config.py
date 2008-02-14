@@ -24,7 +24,7 @@ from canonical.lazr.interfaces import (
     InvalidSectionNameError, ISection, ISectionSchema, IStackableConfig,
     NoCategoryError, NoConfigError, RedefinedSectionError, UnknownKeyError,
     UnknownSectionError)
-from canonical.lp import decorates
+from canonical.lazr.decorates import decorates
 
 
 def read_content(filename):

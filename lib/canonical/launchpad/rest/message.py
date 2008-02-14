@@ -12,9 +12,9 @@ __all__ = [
 from zope.component import adapts
 from zope.schema import Datetime, Object, Text, TextLine
 
+from canonical.lazr import decorates
 from canonical.lazr.interfaces import IEntry
 from canonical.lazr.rest import Entry, Collection
-from canonical.lp import decorates
 from canonical.launchpad.interfaces import IMessage, IPerson
 
 
