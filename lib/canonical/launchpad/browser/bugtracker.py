@@ -34,6 +34,14 @@ from canonical.launchpad.webapp import (
 from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.widgets import DelimitedListWidget
 
+# A set of bug tracker types for which there can only ever be one bug
+# tracker.
+SINGLE_INSTANCE_TRACKERS = (
+    BugTrackerType.DEBBUGS,
+    BugTrackerType.EMAILADDRESS,
+    BugTrackerType.SAVANNAH,
+    BugTrackerType.SOURCEFORGE,
+    )
 
 class BugTrackerSetNavigation(GetitemNavigation):
 
@@ -73,11 +81,11 @@ class BugTrackerAddView(LaunchpadFormView):
                    'baseurl', 'contactdetails']
 
     def setUpWidgets(self, context=None):
+        # We only show those bug tracker types for which there can be
+        # multiple instances in the bugtrackertype Choice widget.
         vocab_items = [
             item for item in BugTrackerType.items.items
-            if item not in (BugTrackerType.DEBBUGS,
-                            BugTrackerType.EMAILADDRESS,
-                            BugTrackerType.SOURCEFORGE)]
+                if item not in SINGLE_INSTANCE_TRACKERS]
         fields = []
         for field_name in self.field_names:
             if field_name == 'bugtrackertype':
