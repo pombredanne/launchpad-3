@@ -1104,10 +1104,10 @@ Predictably, private bugs are sent with a slightly different header:
     ['yes']
 
 
-== The X-Launchpad-Bug-Security-Vulnerabilty header ==
+== The X-Launchpad-Bug-Security-Vulnerability header ==
 
 When a notification is sent out about a bug, the
-X-Launchpad-Bug-Security-Vulnerabilty header records if the bug is a
+X-Launchpad-Bug-Security-Vulnerability header records if the bug is a
 security vulnerability. It can have the value "yes" or "no".
 
     >>> bug_three.security_related
