@@ -15,14 +15,17 @@ from datetime import datetime, timedelta
 import pytz
 
 from zope.component import getUtility
+from canonical.database.sqlbase import connect, sqlvalues
 from canonical.launchpad.interfaces import (
     BranchType,
+    CodeImportMachineState,
     CodeImportReviewStatus,
     CreateBugParams,
     EmailAddressStatus,
     IBranchSet,
     IBugSet,
     ICodeImportJobWorkflow,
+    ICodeImportMachineSet,
     ICodeImportSet,
     ILaunchpadCelebrities,
     IPersonSet,
@@ -180,9 +183,9 @@ class LaunchpadObjectFactory:
 
         if branch_type in (BranchType.HOSTED, BranchType.IMPORTED):
             url = None
-        elif (branch_type in (BranchType.MIRRORED, BranchType.REMOTE)
-              and url is None):
-            url = self.getUniqueURL()
+        elif branch_type in (BranchType.MIRRORED, BranchType.REMOTE):
+            if url is None:
+                url = self.getUniqueURL()
         else:
             raise UnknownBranchTypeError(
                 'Unrecognized branch type: %r' % (branch_type,))
@@ -291,3 +294,10 @@ class LaunchpadObjectFactory:
             code_import.registrant)
         workflow = getUtility(ICodeImportJobWorkflow)
         return workflow.newJob(code_import)
+
+    def makeCodeImportMachine(self):
+        """Return a new CodeImportMachine.
+
+        The machine will be in the OFFLINE state."""
+        hostname = self.getUniqueString('machine-')
+        return getUtility(ICodeImportMachineSet).new(hostname)
