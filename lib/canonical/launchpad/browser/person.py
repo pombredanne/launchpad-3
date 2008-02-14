@@ -2678,7 +2678,7 @@ class TeamJoinView(PersonView):
         The user can request if he's allowed to join this team and if he's
         not yet an active member of this team.
         """
-        if not self.joinAllowed():
+        if not self.join_allowed:
             return False
         return not (self.userIsActiveMember() or self.userIsProposedMember())
 
