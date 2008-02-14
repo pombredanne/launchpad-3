@@ -11,7 +11,7 @@ __all__ = [
     'Section',
     'SectionSchema',]
 
-from ConfigParser import NoSectionError, RawConfigParser
+from ConfigParser import NoSectionError, SafeConfigParser
 import copy
 from os.path import abspath, basename, dirname
 import re
@@ -51,14 +51,14 @@ class ConfigSchema:
             ill-formed.
         """
         # XXX sinzui 2007-12-13:
-        # RawConfigParser permits redefinition and non-ascii characters.
+        # SafeConfigParser permits redefinition and non-ascii characters.
         # The raw schema data is examined before creating a config.
         self.filename = filename
         self.name = basename(filename)
         self._section_schemas = {}
         self._category_names = []
         raw_schema = self._getRawSchema(filename)
-        parser = RawConfigParser()
+        parser = SafeConfigParser()
         parser.readfp(raw_schema, filename)
         self._setSectionSchemasAndCategoryNames(parser)
 
@@ -330,7 +330,7 @@ class Config:
         if confs is None:
             confs = []
         encoding_errors = self._verifyEncoding(conf_data)
-        parser = RawConfigParser()
+        parser = SafeConfigParser()
         parser.readfp(StringIO.StringIO(conf_data), conf_filename)
         confs.append((conf_filename, parser, encoding_errors))
         if parser.has_option('meta', 'extends'):
@@ -452,7 +452,7 @@ class SectionSchema:
         :raise `RedefinedKeyError`: if a keys is redefined in SectionSchema.
         """
         # This method should raise RedefinedKeyError if the schema file
-        # redefines a key, but RawConfigParser swallows redefined keys.
+        # redefines a key, but SafeConfigParser swallows redefined keys.
         self.name = name
         self._options = options
         self.optional = is_optional
