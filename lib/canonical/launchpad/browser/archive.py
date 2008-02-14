@@ -49,6 +49,9 @@ class ArchiveNavigation(Navigation):
 
     usedfor = IArchive
 
+    def breadcrumb(self):
+        return self.context.title
+
     @stepthrough('+build')
     def traverse_build(self, name):
         try:
@@ -440,6 +443,10 @@ class BaseArchiveEditView(LaunchpadEditFormView):
     @action(_("Save"), name="save")
     def action_save(self, action, data):
         self.updateContextFromData(data)
+        self.next_url = canonical_url(self.context)
+
+    @action(_("Cancel"), name="cancel", validator='validate_cancel')
+    def action_cancel(self, action, data):
         self.next_url = canonical_url(self.context)
 
 
