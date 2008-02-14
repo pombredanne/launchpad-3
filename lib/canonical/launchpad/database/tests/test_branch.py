@@ -288,7 +288,7 @@ class BranchAddLandingTarget(TestCase):
         proposal = self.source.addLandingTarget(
             self.user, self.target, self.dependent)
         proposal.rejectBranch(self.user, 'some_revision')
-
+        syncUpdate(proposal)
         new_proposal = self.source.addLandingTarget(
             self.user, self.target, self.dependent)
 
