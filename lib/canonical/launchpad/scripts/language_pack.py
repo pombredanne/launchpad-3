@@ -100,7 +100,7 @@ def export(distroseries, component, update, force_utf8, logger):
         try:
             # We don't want obsolete entries here, it makes no sense for a
             # language pack.
-            contents = pofile.uncachedExport(
+            contents = pofile.export(
                 ignore_obsolete=True, force_utf8=force_utf8)
 
             # Store it in the tarball.
@@ -221,7 +221,8 @@ def export_language_pack(distribution_name, series_name, logger,
         except:
             # Bare except statements are used in order to prevent premature
             # termination of the script.
-            logger.exception('Uncaught exception while uploading to the Librarian')
+            logger.exception(
+                'Uncaught exception while uploading to the Librarian')
             return None
 
         logger.debug('Upload complete, file alias: %d' % file_alias)
