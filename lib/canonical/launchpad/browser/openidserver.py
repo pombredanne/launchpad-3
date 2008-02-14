@@ -240,9 +240,17 @@ class OpenIdMixin:
             team = person_set.getByName(team_name)
             if team is None or not team.isTeam():
                 continue
-            # Only disclose membership of public teams.
+            # Control access to private teams
             if team.visibility != PersonVisibility.PUBLIC:
-                continue
+                # XXX jamesh 2008-02-14 bug=174076:
+
+                # We should have fine grained control of which RPs can
+                # query for which teams, but for now we will let any
+                # RP with an OpenIDRPconfig perform such queries.
+                rpconfig = getUtility(IOpenIDRPConfigSet).getByTrustRoot(
+                    self.openid_request.trust_root)
+                if rpconfig is None:
+                    continue
             if self.user.inTeam(team):
                 memberships.append(team_name)
         openid_response.fields.namespaces.addAlias(LAUNCHPAD_TEAMS_NS, 'lp')

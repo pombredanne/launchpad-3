@@ -1,9 +1,10 @@
-= Launchpad OpenID Teams Extension and Private Teams =
+= Launchpad OpenID Teams Extension Restrictions on Private Teams =
 
 The Launchpad OpenID Teams Extension provides a way for relying
 parties to check a user's team membership.  Launchpad also supports
 the concept of private membership teams.  We do not want Launchpad's
-OpenID code to disclose details of private membership teams.
+OpenID code to disclose details of private membership teams to unknown
+RPs.
 
 The sample data contains a private team called "myteam", which has a
 member called "member":
@@ -74,6 +75,51 @@ user's membership to the RP:
 
     >>> info.getSigned(LAUNCHPAD_TEAMS_NS, 'is_member')
     ''
+
+
+== Known RPs ==
+
+XXX jamesh bug=174076:
+We need to make this more configurable, to provide more fine grained
+controls than just "can query private teams" or not.
+
+If the RP is known to Launchpad by having an OpenIDRPConfig, then it
+is allowed to query for private teams.  To test this, lets create an
+RP config:
+
+    >>> from canonical.launchpad.interfaces import IOpenIDRPConfigSet
+    >>> login('foo.bar@canonical.com')
+    >>> rpconfig = getUtility(IOpenIDRPConfigSet).new(
+    ...     trust_root='http://launchpad.dev/',
+    ...     displayname='Test RP', description='A test RP')
+    >>> logout()
+
+Now perform a second authentication request:
+
+    >>> endpoint = make_endpoint(
+    ...     PROTOCOL_URI, 'http://openid.launchpad.dev/+id/cCGE3LA')
+    >>> request = consumer.beginWithoutDiscovery(endpoint)
+    >>> request.message.namespaces.addAlias(LAUNCHPAD_TEAMS_NS, 'lp')
+    'lp'
+    >>> request.addExtensionArg(
+    ...     LAUNCHPAD_TEAMS_NS, 'query_membership', 'myteam')
+
+    >>> browser.open(request.redirectURL(
+    ...     'http://launchpad.dev/', 'http://launchpad.dev/+openid-consumer'))
+    >>> browser.getControl('Sign In', index=0).click()
+    >>> print browser.url
+    http://launchpad.dev/+openid-consumer?...
+
+The authentication request is successful:
+
+    >>> info = complete_from_browser(consumer, browser)
+    >>> print info.status
+    success
+
+And Launchpad has informed us that "member" is a member of "myteam":
+
+    >>> info.getSigned(LAUNCHPAD_TEAMS_NS, 'is_member')
+    'myteam'
 
 
 == Cleanup ==
