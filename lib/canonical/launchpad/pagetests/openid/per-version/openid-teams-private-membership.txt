@@ -21,12 +21,13 @@ member called "member":
     True
 
 The user-specific portion of member's OpenID URL is cCGE3LA:
+
     >>> print member.openid_identifier
     cCGE3LA
 
     >>> logout()
 
-Now lets set up an OpenID authentication request for this user,
+Now let's set up an OpenID authentication request for this user,
 checking to see whether they are a member of "myteam".  First we'll
 set up the consumer:
 
@@ -40,7 +41,8 @@ set up the consumer:
     >>> openid_store = MemoryStore()
     >>> consumer = Consumer(session={}, store=openid_store)
 
-Now perform the authentication request:
+Now perform the authentication request, using the teams extension to
+query membership of "myteam":
 
     >>> endpoint = make_endpoint(
     ...     PROTOCOL_URI, 'http://openid.launchpad.dev/+id/cCGE3LA')
@@ -48,8 +50,6 @@ Now perform the authentication request:
 
     >>> from canonical.launchpad.browser.openidserver import (
     ...     LAUNCHPAD_TEAMS_NS)
-    >>> print LAUNCHPAD_TEAMS_NS
-    http://ns.launchpad.net/2007/openid-teams
     >>> request.message.namespaces.addAlias(LAUNCHPAD_TEAMS_NS, 'lp')
     'lp'
     >>> request.addExtensionArg(
@@ -62,12 +62,15 @@ Now perform the authentication request:
     >>> print browser.url
     http://launchpad.dev/+openid-consumer?...
 
+The authentication request is successful:
+
     >>> info = complete_from_browser(consumer, browser)
     >>> print info.status
     success
 
-Even though the user is a member of "myteam", Launchpad has not
-revealed that fact to the RP:
+The authentication response includes a list of the teams the user is a
+member of.  As "myteam" is private, Launchpad has not disclosed the
+user's membership to the RP:
 
     >>> info.getSigned(LAUNCHPAD_TEAMS_NS, 'is_member')
     ''

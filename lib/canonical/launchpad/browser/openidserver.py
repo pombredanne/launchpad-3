@@ -241,8 +241,7 @@ class OpenIdMixin:
             if team is None or not team.isTeam():
                 continue
             # Only disclose membership of public teams.
-            if not (team.visibility is None or
-                    team.visibility == PersonVisibility.PUBLIC):
+            if team.visibility != PersonVisibility.PUBLIC:
                 continue
             if self.user.inTeam(team):
                 memberships.append(team_name)
