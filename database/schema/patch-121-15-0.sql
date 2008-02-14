@@ -2,12 +2,14 @@ SET client_min_messages=ERROR;
 
 CREATE TABLE OAuthConsumer (
     id SERIAL PRIMARY KEY,
+    date_created timestamp without time zone NOT NULL
+        DEFAULT (CURRENT_TIMESTAMP AT TIME ZONE 'UTC'),
+        -- Misbehaving consumers will be disabled by admins
+    disabled boolean NOT NULL DEFAULT FALSE,
     key text NOT NULL UNIQUE,
     -- In the first round the secret won't be used as we'll create consumers
     -- automatically.
-    secret text, 
-    date_created timestamp without time zone,
-    disabled boolean DEFAULT FALSE  -- Misbehaving consumers will be disabled
+    secret text
 );
 
 -- The request token is created when the consumer (third part application)
@@ -34,26 +36,57 @@ CREATE TABLE OAuthRequestToken (
     --   * Read public and private data
     --   * Read/Write public and private data
     permission integer,
-    key text UNIQUE,
-    date_created timestamp without time zone,
-    secret text NOT NULL
+    -- XXX: Don't we need expiration_date here too so the user can
+    -- specify this?
+    date_created timestamp without time zone NOT NULL
+        DEFAULT (CURRENT_TIMESTAMP AT TIME ZONE 'UTC'),
+    date_authorized timestamp without time zone,
+    key text UNIQUE NOT NULL,
+    secret text NOT NULL,
+    CONSTRAINT authorized_request CHECK (
+        date_authorized IS NULL = person IS NULL = permission IS NULL)
 );
+
+CREATE INDEX oauthrequesttoken__consumer__idx
+    ON OAuthRequestToken(consumer);
+
+CREATE INDEX oauthrequesttoken__person__idx
+    ON OAuthRequestToken(person) WHERE person IS NOT NULL;
+
+-- Needed to prune old tokens never used efficiently.
+CREATE INDEX oauthrequesttoken__date_created__idx
+    ON OAuthRequestToken(date_created);
 
 CREATE TABLE OAuthAccessToken (
     id SERIAL PRIMARY KEY,
     consumer integer NOT NULL REFERENCES OAuthConsumer,
     person integer NOT NULL REFERENCES Person,
     permission integer NOT NULL,
-    key text UNIQUE,
-    date_created timestamp without time zone,
+    date_created timestamp without time zone NOT NULL
+        DEFAULT (CURRENT_TIMESTAMP AT TIME ZONE 'UTC'),
     expiration_date timestamp without time zone,
+    key text UNIQUE NOT NULL,
     secret text NOT NULL
 );
 
+CREATE INDEX oauthaccesstoken__consumer__idx
+    ON OAuthAccessToken(consumer);
+
+CREATE INDEX oauthaccesstoken__person__idx
+    ON OAuthAccessToken(person);
+
+CREATE INDEX oauthaccesstoken__expiration_date__idx
+    ON OAuthAccessToken(expiration_date) WHERE expiration_date IS NOT NULL;
+
 CREATE TABLE OAuthNonce (
-    nonce text UNIQUE,
-    request_timestamp timestamp without time zone,
-    consumer integer NOT NULL REFERENCES OAuthConsumer
+    id serial PRIMARY KEY,
+    request_timestamp timestamp without time zone
+        NOT NULL DEFAULT (CURRENT_TIMESTAMP AT TIME ZONE 'UTC'),
+    consumer integer NOT NULL REFERENCES OAuthConsumer,
+    nonce text UNIQUE NOT NULL
 );
 
-INSERT INTO LaunchpadDatabaseRevision VALUES (88, 77, 0);
+CREATE INDEX oauthnonce__consumer__request_timestamp__idx
+    ON OAuthNonce(consumer, request_timestamp);
+
+INSERT INTO LaunchpadDatabaseRevision VALUES (121, 15, 0);
