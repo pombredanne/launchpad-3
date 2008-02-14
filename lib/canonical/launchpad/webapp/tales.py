@@ -440,8 +440,6 @@ class ObjectImageDisplayAPI:
             return '/@@/distribution'
         elif ISprint.providedBy(context):
             return '/@@/meeting'
-        elif ISpecification.providedBy(context):
-            return '/@@/blueprint'
         return '/@@/nyet-icon'
 
     def default_logo_resource(self, context):
@@ -984,6 +982,7 @@ class ProductSeriesFormatterAPI(ConvenientFormatter):
 class SpecificationFormatterAPI(ConvenientFormatter):
 
     _template = _('%(title)s')
+    _display = SpecificationImageDisplayAPI
 
     def values(self):
         return {'title': self._context.title}
