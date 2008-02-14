@@ -16,14 +16,11 @@ from canonical.launchpad import _
 from canonical.launchpad.fields import PublicPersonChoice
 
 
-class IRevision(IHasOwner):
+class IRevision(Interface):
     """Bazaar revision."""
 
     id = Int(title=_('The database revision ID'))
 
-    owner = PublicPersonChoice(
-        title=_('Owner'), required=True, readonly=True,
-        vocabulary='ValidPersonOrTeam')
     date_created = Datetime(
         title=_("Date Created"), required=True, readonly=True)
     log_body = Attribute("The revision log message.")
@@ -46,7 +43,20 @@ class IRevisionAuthor(Interface):
 
     name = TextLine(title=_("Revision Author Name"), required=True)
     name_without_email = Attribute(
-        "Revision author name without email address")
+        "Revision author name without email address.")
+    email = Attribute("The email address extracted from the author text.")
+    person = PublicPersonChoice(title=_('Author'), required=False,
+        readonly=False, vocabulary='ValidPersonOrTeam')
+
+    def linkToLaunchpadPerson():
+        """Attempt to link the revision author to a Launchpad `Person`.
+
+        This method looks to see if the `email` address used in the
+        text of `RevisionAuthor.name` has been validated against a
+        `Person`.
+
+        :return: True if a valid link is made.
+        """
 
 
 class IRevisionParent(Interface):
@@ -69,9 +79,18 @@ class IRevisionSet(Interface):
     """The set of all revisions."""
 
     def getByRevisionId(revision_id):
-        """Find a revision by revision_id. None if the revision is not known.
+        """Find a revision by revision_id.
+
+        None if the revision is not known.
         """
 
-    def new(revision_id, log_body, revision_date, revision_author, owner,
+    def new(revision_id, log_body, revision_date, revision_author,
             parent_ids, properties):
         """Create a new Revision with the given revision ID."""
+
+    def checkNewVerifiedEmail(email):
+        """See if this email address has been used to commit revisions.
+
+        If it has, then associate the RevisionAuthor with the Launchpad person
+        who owns this email address.
+        """

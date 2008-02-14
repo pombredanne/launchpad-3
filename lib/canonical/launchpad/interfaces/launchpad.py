@@ -97,6 +97,7 @@ class ILaunchpadCelebrities(Interface):
     launchpad_developers = Attribute("The Launchpad development team.")
     mailing_list_experts = Attribute("The Mailing List Experts team.")
     rosetta_experts = Attribute("The Rosetta Experts team.")
+    savannah_tracker = Attribute("The GNU Savannah Bug Tracker.")
     shipit_admin = Attribute("The ShipIt Administrators.")
     sourceforge_tracker = Attribute("The SourceForge Bug Tracker")
     ubuntu_archive_mirror = Attribute("The main archive mirror for Ubuntu.")

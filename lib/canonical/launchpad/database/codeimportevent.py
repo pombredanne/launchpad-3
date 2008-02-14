@@ -161,6 +161,22 @@ class CodeImportEventSet:
             data_value=message)
         return event
 
+    def newStart(self, code_import, machine):
+        """See `ICodeImportEventSet`."""
+        assert code_import is not None, "code_import must not be None"
+        assert machine is not None, "machine must not be None"
+        return CodeImportEvent(
+            event_type=CodeImportEventType.START,
+            code_import=code_import, machine=machine)
+
+    def newFinish(self, code_import, machine):
+        """See `ICodeImportEventSet`."""
+        assert code_import is not None, "code_import must not be None"
+        assert machine is not None, "machine must not be None"
+        return CodeImportEvent(
+            event_type=CodeImportEventType.FINISH,
+            code_import=code_import, machine=machine)
+
     def _recordSnapshot(self, event, code_import):
         """Record a snapshot of the code import in the event data."""
         self._recordItems(event, self._iterItemsForSnapshot(code_import))
