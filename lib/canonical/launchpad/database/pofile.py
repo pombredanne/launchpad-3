@@ -221,9 +221,6 @@ class POFile(SQLBase, POFileMixIn):
     date_changed = UtcDateTimeCol(
         dbName='date_changed', notNull=True, default=UTC_NOW)
 
-    license = IntCol(dbName='license',
-                     notNull=False,
-                     default=None)
     currentcount = IntCol(dbName='currentcount',
                           notNull=True,
                           default=0)
@@ -865,7 +862,6 @@ class DummyPOFile(POFileMixIn):
         self.lasttranslator = None
         UTC = pytz.timezone('UTC')
         self.date_changed  = None
-        self.license = None
         self.lastparsed = None
         self.owner = getUtility(ILaunchpadCelebrities).rosetta_experts
 

@@ -198,5 +198,4 @@ class WebServiceApplication(ServiceRootResource):
     def top_level_collections(self):
         return { 'bugtasks' : getUtility(IBugTaskSet),
                  'bugs' : getUtility(IBugSet),
-                 'people' : getUtility(IPersonSet),
-                 'messages' : getUtility(IMessageSet) }
+                 'people' : getUtility(IPersonSet) }

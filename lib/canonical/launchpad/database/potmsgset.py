@@ -240,7 +240,8 @@ class POTMsgSet(SQLBase):
         If there are `translations` with greater pluralforms than allowed,
         sanitize and keep them.
         """
-        # Fix the trailing and leading whitespaces
+        # Strip any trailing or leading whitespace, and normalize empty
+        # translations to None.
         sanitized_translations = {}
         for pluralform in range(pluralforms):
             if pluralform < len(translations):
@@ -521,6 +522,8 @@ class POTMsgSet(SQLBase):
 
     def applySanityFixes(self, text):
         """See `IPOTMsgSet`."""
+        if text is None:
+            return None
 
         # Fix the visual point that users copy & paste from the web interface.
         new_text = self.convertDotToSpace(text)

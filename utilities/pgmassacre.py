@@ -124,7 +124,7 @@ def main():
         return 666
 
     con = connect()
-
+    con.set_isolation_level(0) # Autocommit
     cur = con.cursor()
 
     # Ensure the database exists. Note that the script returns success
@@ -137,16 +137,21 @@ def main():
                 % database)
         return 0
 
+    # Allow connections to the doomed database if something turned this off,
+    # such as an aborted run of this script.
+    cur.execute(
+        "UPDATE pg_database SET datallowconn=TRUE WHERE datname=%s",
+        [database])
+
     # Rollback prepared transactions.
     rollback_prepared_transactions(database)
 
     try:
         # Stop connections to the doomed database.
         cur.execute(
-            "UPDATE pg_database SET datallowconn=false WHERE datname=%s",
+            "UPDATE pg_database SET datallowconn=FALSE WHERE datname=%s",
             [database])
 
-        con.commit()
         con.close()
 
         # Terminate current statements.
