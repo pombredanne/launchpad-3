@@ -126,6 +126,7 @@ class POFileView(LaunchpadView):
     def contributors(self):
         return list(self.context.contributors)
 
+
 class TranslationMessageContainer:
     def __init__(self, translation):
         self.data = translation
@@ -140,6 +141,7 @@ class TranslationMessageContainer:
                 self.usage_class = 'hiddentranslation'
             else:
                 self.usage_class = 'suggestedtranslation'
+
 
 class FilteredPOTMsgSets:
     def __init__(self, translations):
@@ -159,7 +161,7 @@ class FilteredPOTMsgSets:
                     current_potmsgset = {
                         'potmsgset' : translation.potmsgset,
                         'translations' : [TranslationMessageContainer(
-                        translation)],
+                            translation)],
                         'context' : translation
                         }
             if current_potmsgset is not None:
@@ -167,12 +169,14 @@ class FilteredPOTMsgSets:
 
             self.potmsgsets = potmsgsets
 
+
 class POFileFilteredView(LaunchpadView):
-    """A filtered view for a POFile."""
+    """A filtered view for a `POFile`."""
 
     DEFAULT_BATCH_SIZE = 50
 
     def initialize(self):
+        """See `LaunchpadView`."""
         self.person = None
         person = self.request.form.get('person')
         if person is None:
@@ -194,13 +198,17 @@ class POFileFilteredView(LaunchpadView):
 
     @property
     def translations(self):
-        # We do batching over TranslationMessage's, but for display,
-        # we group them under POTMsgSets.
+        """Group a list of `TranslationMessages` under `POTMsgSets`.
+
+        Batching is done over TranslationMessages, and in order to
+        display them grouped by English string, we transform the
+        current batch.
+        """
         return FilteredPOTMsgSets(self.batchnav.currentBatch()).potmsgsets
 
 
 class POFileUploadView(POFileView):
-    """A basic view for a POFile"""
+    """A basic view for a `POFile`."""
 
     def initialize(self):
         self.form = self.request.form

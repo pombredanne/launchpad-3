@@ -7,7 +7,7 @@ Let's do some imports we will need to test this class.
     >>> from canonical.launchpad.database import (
     ...     POTemplate, POTMsgSet, TranslationMessage)
     >>> from canonical.launchpad.interfaces import (
-    ...     ILanguageSet, ITranslationMessage)
+    ...     ILanguageSet, IPersonSet, IProductSet, ITranslationMessage)
 
     >>> potemplate = POTemplate.get(1)
     >>> potmsgsets = potemplate.getPOTMsgSets()
@@ -26,31 +26,6 @@ implement ITranslationMessage interface:
     >>> verifyObject(ITranslationMessage, dummy_translationmessage)
     True
 
-== destroySelf ==
-
-With this method, we allow to remove a submission, it comes from SQLObject,
-but we test it here to be sure it appears in our public interface.
-
-We will need extra permissions to use this method.
-
-    >>> import transaction
-    >>> from canonical.launchpad.ftests.harness import (
-    ...     LaunchpadFunctionalTestSetup)
-    >>> LaunchpadFunctionalTestSetup(dbuser='rosettaadmin').setUp()
-
-Select an existing ITranslationMessage and try to remove it.
-
-    >>> translationmessage = TranslationMessage.get(1)
-    >>> translationmessage.destroySelf()
-
-It should not exist now.
-
-    >>> translationmessage = TranslationMessage.get(1)
-    Traceback (most recent call last):
-    ...
-    SQLObjectNotFound:...
-
-    >>> LaunchpadFunctionalTestSetup().tearDown()
 
 == plural_forms ==
 
@@ -106,3 +81,140 @@ a default of 2, which is the most common number of plural forms:
     ...     divehi)
     >>> current_dv.plural_forms
     2
+
+    >>> login('foo.bar@canonical.com')
+
+
+== is_hidden ==
+
+This property tells if a TranslationMessage is actually shown in the
+web translation interface or not.
+
+We have to commit transaction for every message update so we end up
+with different timestamps on messages.
+
+    >>> import transaction
+
+    >>> from datetime import datetime
+    >>> import pytz
+    >>> UTC = pytz.timezone('UTC')
+
+We are working with Evolution POFile.
+
+    >>> evolution = getUtility(IProductSet).getByName('evolution')
+    >>> evolution_trunk = evolution.getSeries('trunk')
+    >>> evolution_potemplate = evolution_trunk.getPOTemplate('evolution-2.2')
+
+We will be working with Serbian (sr) translations, with the new PO file.
+
+    >>> pofile_sr = evolution_potemplate.newPOFile('sr')
+    >>> serbian = pofile_sr.language
+    >>> potmsgset = evolution_potemplate.getPOTMsgSetByMsgIDText(
+    ...     u'evolution addressbook')
+
+A non-privileged user can only submit a suggestion, which will not be
+hidden.
+
+    >>> nopriv = getUtility(IPersonSet).getByName('no-priv')
+    >>> login('no-priv@canonical.com')
+
+    >>> new_suggestion = potmsgset.updateTranslation(
+    ...     pofile_sr, nopriv, {0: u'suggestion'}, is_fuzzy=False,
+    ...     is_imported=False, lock_timestamp=datetime.now(UTC))
+    >>> transaction.commit()
+    >>> new_suggestion.is_hidden
+    False
+
+Carlos is a privileged translator that will do the updates.
+
+    >>> carlos = getUtility(IPersonSet).getByName('carlos')
+    >>> login('carlos@canonical.com')
+
+An imported translation is not hidden when submitted.
+
+    >>> imported_translation = potmsgset.updateTranslation(
+    ...     pofile_sr, carlos, {0: u'foo'}, is_fuzzy=False,
+    ...     is_imported=True, lock_timestamp=datetime.now(UTC))
+    >>> transaction.commit()
+    >>> imported_translation.is_hidden
+    False
+
+A previous suggestion is now hidden.
+
+    >>> new_suggestion.is_hidden
+    True
+
+A newly submitted non-imported translation is not hidden either.
+
+    >>> current_translation = potmsgset.updateTranslation(
+    ...     pofile_sr, carlos, {0: u'bar'}, is_fuzzy=False,
+    ...     is_imported=False, lock_timestamp=datetime.now(UTC))
+    >>> transaction.commit()
+    >>> current_translation.is_hidden
+    False
+
+However, previous imported translation is not hidden yet.
+
+    >>> imported_translation.is_hidden
+    False
+
+If a new current translation is submitted, the old one is hidden.
+
+    >>> new_current_translation = potmsgset.updateTranslation(
+    ...     pofile_sr, carlos, {0: u'new'}, is_fuzzy=False,
+    ...     is_imported=False, lock_timestamp=datetime.now(UTC))
+    >>> transaction.commit()
+    >>> new_current_translation.is_hidden
+    False
+    >>> current_translation.is_hidden
+    True
+
+    >>> new_current_translation.is_hidden
+    False
+    >>> imported_translation.is_hidden
+    False
+
+If a non-privileged user submits another suggestion, it's not hidden,
+and last current translation is not hidden either.
+
+    >>> nopriv = getUtility(IPersonSet).getByName('no-priv')
+    >>> login('no-priv@canonical.com')
+
+    >>> another_suggestion = potmsgset.updateTranslation(
+    ...     pofile_sr, nopriv, {0: u'another suggestion'}, is_fuzzy=False,
+    ...     is_imported=False, lock_timestamp=datetime.now(UTC))
+    >>> transaction.commit()
+    >>> another_suggestion.is_hidden
+    False
+    >>> new_current_translation.is_hidden
+    False
+
+
+== destroySelf ==
+(Note: keep this test last because of tearDown())
+
+With this method, we allow to remove a submission, it comes from SQLObject,
+but we test it here to be sure it appears in our public interface.
+
+We will need extra permissions to use this method.
+
+    >>> import transaction
+    >>> from canonical.launchpad.ftests.harness import (
+    ...     LaunchpadFunctionalTestSetup)
+    >>> LaunchpadFunctionalTestSetup(dbuser='rosettaadmin').setUp()
+
+Select an existing ITranslationMessage and try to remove it.
+
+    >>> translationmessage = TranslationMessage.get(1)
+    >>> translationmessage.destroySelf()
+
+It should not exist now.
+
+    >>> translationmessage = TranslationMessage.get(1)
+    Traceback (most recent call last):
+    ...
+    SQLObjectNotFound:...
+
+    # NOTE: Once this has executed, you may experience strange
+    # failures.  Keep this test at the bottom.
+    >>> LaunchpadFunctionalTestSetup().tearDown()

@@ -14,17 +14,16 @@ contributors.
     Mark Shuttleworth (filter)
     No Privileges Person (filter)
 
-We can filter any contributions done by Carlos (the first person
+User can filter any contributions done by Carlos (the first person
 appearing among contributors), by choosing the 'filter' link:
 
     >>> anon_browser.getLink('filter').click()
-    >>> anon_browser.url
-    'http://translations.launchpad.dev/evolution/trunk/+pots/evolution-2.2/es/+filter?person=carlos'
+    >>> anon_browser.title
+    'Translations by Carlos Perell\xc3\xb3 Mar\xc3\xadn in \xe2\x80\x9cSpanish (es) translation of evolution-2.2 in Evolution trunk\xe2\x80\x9d'
 
-We want to display all the translations submitted by Carlos, and to
-allow easier debuging and problem catching when changes are
-introduced, we define a separate method to pretty-print all the
-translations.
+To display all the translations submitted by Carlos, and allow easier
+debugging and problem catching when changes are introduced, we define
+a separate method to pretty-print all the translations.
 
     >>> def print_shown_translations(browser):
     ...     # Extract a class from any of the contained <td> elements,
@@ -45,13 +44,6 @@ translations.
     ...                 contents.append(text)
     ...         return ' '.join(contents)
     ...
-    ...     def strip_to_length(string, length=18):
-    ...         if string is None: return None
-    ...         if len(string)>length:
-    ...             return string[:length-3]+'...'
-    ...         else:
-    ...             return string
-    ...
     ...     table = find_tags_by_class(browser.contents, 'listing')[0]
     ...     rows = table.findAll('tr')
     ...     for row in rows:
@@ -62,14 +54,15 @@ translations.
     ...                   'hiddentranslation' : ' old',
     ...                   'suggestedtranslation' : ' unused' }
     ...         contents = get_columns(cells)
-    ...         print "%-10s %s" % (types[type],
-    ...                             strip_to_length(contents, 50))
+    ...         if len(contents) > 50:
+    ...             contents = contents[:47] + '...'
+    ...         print "%-10s %s" % (types[type], contents)
 
-Now we can look at all the submissions Carlos has made.  Note that
-'english' in the first column indicates a msgid, and 'used', 'old' or
-'unused' indicate type of a translation ('used' if it is is_current,
-'unused' if not current but unreviewed, and 'old' if it was reviewed
-and rejected).
+A user can see all the submissions Carlos has made to this POFile.
+Note that 'english' in the first column indicates a msgid, and 'used',
+'old' or 'unused' indicate type of a translation ('used' if it is
+is_current, 'unused' if not current but unreviewed, and 'old' if it
+was reviewed and rejected).
 
     >>> print_shown_translations(anon_browser)
     english    1. evolution addressbook
@@ -94,7 +87,7 @@ and rejected).
     english    ~ _Add Group
      used      2005-04-07 _A...
 
-Looking at the same page filtered by 'no-priv' person, we are shown
+Looking at the same page filtered by 'no-priv' person, the user is shown
 only a single unused suggestion instead:
 
     >>> anon_browser.open('http://translations.launchpad.dev/evolution/trunk/'
@@ -108,3 +101,25 @@ A POTMsgSet sequence number is also a link to edit a translation.
     >>> anon_browser.getLink('14.').click()
     >>> anon_browser.url
     'http://translations.launchpad.dev/evolution/trunk/+pots/evolution-2.2/es/14/+translate'
+    >>> anon_browser.title
+    'Translating evolution-2.2 in Evolution trunk into Spanish'
+
+
+== Invalid input ==
+
+Manually filtering by non-existent user warns the user of the problem.
+
+    >>> anon_browser.open('http://translations.launchpad.dev/evolution/trunk/'
+    ...                   '+pots/evolution-2.2/es/+filter?person=danilo')
+    >>> get_feedback_messages(anon_browser.contents)
+    [u'Requested person not found.',
+    u'This person has made no contributions to this file.']
+
+If a person to filter by is not specified, user is notified of that.
+
+    >>> anon_browser.open('http://translations.launchpad.dev/evolution/trunk/'
+    ...                   '+pots/evolution-2.2/es/+filter')
+    >>> get_feedback_messages(anon_browser.contents)
+    [u'No person to filter by specified.',
+    u'This person has made no contributions to this file.']
+

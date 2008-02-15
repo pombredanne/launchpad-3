@@ -217,7 +217,11 @@ class IPOFile(IRosettaStats):
         """Get message sets that have translations imported with errors."""
 
     def getTranslationsFilteredBy(person):
-        """Get TranslationMessages in this POFile contributed by `person`."""
+        """Get TranslationMessages in this `IPOFile` contributed by `person`.
+
+        Returned messages are ordered by the `POTMsgSet`, and then by
+        `date_created` with newest first.
+        """
 
     def export(ignore_obsolete=False, export_utf8=False):
         """Export this PO file as string.

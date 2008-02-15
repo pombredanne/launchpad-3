@@ -83,6 +83,7 @@ class DummyTranslationMessage(TranslationMessageMixIn):
         self.is_fuzzy = False
         self.is_imported = False
         self.is_empty = True
+        self.is_hidden = True
         self.was_obsolete_in_last_import = False
         self.was_complete_in_last_import = False
         self.was_fuzzy_in_last_import = False
@@ -247,11 +248,23 @@ class TranslationMessage(SQLBase, TranslationMessageMixIn):
         # it's not hidden.
         if self.is_current or self.is_imported:
             return False
-        # Otherwise, we are not showing it as a suggestion if
-        # currently used one was reviewed after this one was created.
+
+        # Otherwise, if this suggestions has been reviewed and
+        # rejected (i.e. current translation's date_reviewed is
+        # more recent than the date of suggestion's date_created),
+        # it is hidden.
+        # If it has not been reviewed yet, it's not hidden.
         current = self.potmsgset.getCurrentTranslationMessage(
             self.pofile.language, self.pofile.variant)
-        return current.date_reviewed > self.date_created
+        # If there is no current translation, none of the
+        # suggestions have been reviewed, so they are all shown.
+        if current is None:
+            return False
+        date_reviewed = current.date_reviewed
+        # For an imported current translation, no date_reviewed is set.
+        if date_reviewed is None:
+            date_reviewed = current.date_created
+        return date_reviewed > self.date_created
 
 
 class TranslationMessageSet:

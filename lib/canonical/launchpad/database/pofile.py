@@ -391,11 +391,10 @@ class POFile(SQLBase, POFileMixIn):
 
     def getTranslationsFilteredBy(self, person):
         """See `IPOFile`."""
-        # Return a dict of potmsgset -> [translationmessage1,
-        # translationmessage2,...]
-        # The specification is designed for multiple suggestions
-        # per POTMsgSet. In practice, that's going to be less common case,
-        # so we should optimise for fetching translationmessages instead.
+        # We are displaying translations grouped by POTMsgSets,
+        # but since the most common case will be having a single
+        # TranslationMessage per POTMsgSet, we are issuing a slightly
+        # faster SQL query by avoiding a join with POTMsgSet.
         assert person is not None, "You must provide a person to filter by."
         return TranslationMessage.select(
             """
