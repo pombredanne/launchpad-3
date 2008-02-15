@@ -11,11 +11,11 @@ from bzrlib import errors
 from bzrlib.tests import TestCaseWithTransport
 
 from canonical.codehosting import branch_id_to_path
+from canonical.codehosting.tests.helpers import (
+    adapt_suite, deferToThreadCode, HostingTestProviderAdapter,
+    ServerTestCase)
 from canonical.codehosting.tests.servers import (
     make_launchpad_server, make_sftp_server)
-from canonical.codehosting.tests.helpers import (
-    CodeHostingTestProviderAdapter, ServerTestCase, adapt_suite,
-    deferToThread)
 
 from canonical.testing import TwistedLayer
 
