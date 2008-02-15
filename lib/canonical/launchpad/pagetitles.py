@@ -181,6 +181,8 @@ branchmergeproposal_index = 'Proposal to merge branch'
 
 branchmergeproposal_request_review = ViewLabel()
 
+branchmergeproposal_resubmit = ViewLabel()
+
 branchmergeproposal_review = ViewLabel()
 
 branchmergeproposal_work_in_progress = ViewLabel()
