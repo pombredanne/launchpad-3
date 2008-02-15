@@ -27,6 +27,11 @@ class DeleteBugContactError(Exception):
 
 
 class IDistributionSourcePackage(IBugTarget):
+    """Represents a source package in a distribution.
+
+    Create IDistributionSourcePackages by invoking
+    `IDistribution.getSourcePackage()`.
+    """
 
     distribution = Attribute("The distribution.")
     sourcepackagename = Attribute("The source package name.")
@@ -35,18 +40,13 @@ class IDistributionSourcePackage(IBugTarget):
     displayname = Attribute("Display name for this package.")
     title = Attribute("Title for this package.")
 
-    # XXX sabdfl 2005-10-16:
-    distro = Attribute("The distribution.")
-
-    subscribers = Attribute("The subscribers to this package.")
-
     currentrelease = Attribute(
         "The latest published SourcePackageRelease of a source package with "
         "this name in the distribution or distroseries, or None if no source "
         "package with that name is published in this distroseries.")
 
     releases = Attribute(
-        "The list of all releases of this source package in this distribution.")
+        "A list of all releases of this source package in this distribution.")
 
     publishing_history = Attribute(
         "Return a list of publishing records for this source package in this "
@@ -123,11 +123,6 @@ class IDistributionSourcePackage(IBugTarget):
         :person: An IPerson or ITeam.
         """
 
-    def subscribe(person):
-        """Subscribe a person to this package.
-
-        :person: The person to subscribe. An IPerson.
-        """
 
 class IDistributionSourcePackageManageBugcontacts(Interface):
     """Schema for the manage bug contacts form."""

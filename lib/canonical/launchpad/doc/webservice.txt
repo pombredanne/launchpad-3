@@ -15,11 +15,12 @@ application, with no special knowledge of web services.
     # All classes defined in this test are new-style classes.
     >>> __metaclass__ = type
 
-    >>> from zope.interface import Interface
+    >>> from zope.interface import Interface, Attribute
     >>> from zope.schema import Int, TextLine, Object
 
     >>> class IAuthor(Interface):
     ...     name = TextLine(title=u"Name", required=True)
+    ...     favorites = Attribute("List of this author's favorite recipes.")
 
     >>> class IRecipe(Interface):
     ...     id = Int(title=u"Unique ID", required=True)
@@ -52,6 +53,7 @@ Here are simple implementations of IAuthor and IRecipe.
     ...     implements(IAuthor)
     ...     def __init__(self, name):
     ...         self.name = name
+    ...         self.favorites = []
 
     >>> class Recipe:
     ...     implements(IRecipe)
@@ -68,6 +70,8 @@ Here are the "model objects" themselves:
     >>> R1 = Recipe(1, "Green eggs and ham", P1)
     >>> R2 = Recipe(7, "Steak au poivre", P2)
     >>> R3 = Recipe(10, "Raw celery", P1)
+
+    >>> P1.favorites = [R1, R2]
 
 Here's a simple RecipeSet with a predefined list of recipes.
 
@@ -109,35 +113,49 @@ exposed through a specific resource. Right now it's just a marker
 interface, but it's expected to define a number of data fields: the
 same kind of fields defined by a model interface like IRecipe.
 
-There's not much to our IAuthor model, and we can expose it through
-the web service exactly as it's defined, by defining a class that
-includes both interfaces:
+If there's not much to an interface, you can expose it through the web
+service exactly as it's defined, by defining a class that inherits
+from both the interface and IEntry.
+
+That usually doesn't work, though, because we usually don't want to
+expose to the web service the same data model we expose
+internally. Usually there are fields we don't want to expose,
+synthetic fields we do want to expose, fields we want to expose as a
+different type under a different name, and so on. This is why we have
+IEntry in the first place: the IEntry subclass defines the interface
+we _do_ want to expose through the web service.
+
+The reason we can't just define IAuthorEntry(IAuthor, IEntry) is that
+IAuthor defines the "favorites" collection as an Attribute. Attribute
+is about as generic as "object", and doesn't convey any information
+about what kind of object is in the collection, or even that
+"favorites" is a collection at all. To expose the corresponding field
+to the web service we use CollectionField.
 
     >>> from canonical.lazr.interfaces import IEntry
-    >>> class IAuthorEntry(IEntry, IAuthor):
-    ...     """An IAuthor exposed as an entry."""
+    >>> from canonical.lazr.rest.schema import CollectionField
+    >>> class IAuthorEntry(IEntry):
+    ...     "The part of an author that we expose through the web service."
+    ...     name = TextLine(title=u"Name", required=True)
+    ...     favorites = CollectionField(value_type=Object(schema=IRecipe))
 
-But most of the time, we don't want to expose our models directly
-through the web service. There will be fields we don't want to expose,
-synthetic fields we do want to expose, fields we want to expose under
-a different name, and so on. In that case, our IEntry subclass will
-define the interface we _do_ want to expose through the web
-service. Here, we're exposing an IRecipe that exposes the underlying
-Recipe's name and author but not its ID. References to associated
+In the following code block we define an interface that exposes the
+underlying Recipe's name but not its ID. References to associated
 objects (like the recipe's author) are represented with the
-zope.schema.Object type.
+zope.schema.Object type: this makes it possible to serve a link from a
+recipe to its author.
 
     >>> class IRecipeEntry(IEntry):
     ...     "The part of a recipe that we expose through the web service."
-    ...     name = IRecipe.get('name')
-    ...     author = IRecipe.get('author')
+    ...     name = TextLine(title=u"Name", required=True)
+    ...     author = Object(schema=IAuthor)
 
-Here's the implementation of IRecipeEntry: a simple decorator on the
-original model object. It subclasses Entry, a simple base class
-that defines a constructor.
+Here's the implementation of IAuthorEntry: a simple decorator on the
+original model object. It subclasses Entry, a simple base class that
+defines a constructor.
 
     >>> from zope.component import adapts
-    >>> from canonical.lp import decorates
+    >>> from canonical.lazr import decorates
     >>> from canonical.lazr.rest import Entry
 
     >>> class AuthorEntry(Entry):
@@ -223,6 +241,23 @@ returns the model objects in the collection.
 
 Like Entry, Collection is a simple base class that defines a
 constructor.
+
+Finally, we need to define a collection of the recipes associated with
+an author. We say that the collection is scoped to an author. This
+class manages an author-scoped collection of recipes.
+
+    >>> from canonical.lazr.rest import ScopedCollection
+    >>> class AuthorRecipeCollection(ScopedCollection):
+    ...
+    ...     def lookupEntry(self, name):
+    ...         recipe = RecipeSet().get(name)
+    ...         if recipe in self.collection:
+    ...             return recipe
+    ...         return None
+
+    >>> from canonical.lazr.interfaces import IScopedCollection
+    >>> provideAdapter(AuthorRecipeCollection, [IAuthorEntry, IRecipe],
+    ...                IScopedCollection)
 
 
 == Resource objects ==
@@ -348,10 +383,27 @@ that (for instance) /recipes/10 is mapped to the "Raw celery" Entry.
     >>> canonical_url(entry, request=request)
     u'http://api.launchpad.dev/recipes/10'
 
-    >>> simplejson.loads(entry())
-    {u'self_link': u'http://api.launchpad.dev/recipes/10',
-     u'name': u'Raw celery',
-     u'author_link': u'http://api.launchpad.dev/authors/Jacob%20Berendes'}
+    >>> recipe_ten = simplejson.loads(entry())
+    >>> sorted(recipe_ten.items())
+    [(u'author_link', u'http://api.launchpad.dev/authors/Jacob%20Berendes'),
+     (u'name', u'Raw celery'),
+     (u'self_link', u'http://api.launchpad.dev/recipes/10')]
+
+You can also traverse from an entry to an associated collection:
+
+    >>> authors = app.publishTraverse(request, "authors")
+    >>> jacob_resource = authors.publishTraverse(request, "Jacob Berendes")
+    >>> jacob = simplejson.loads(jacob_resource())
+    >>> sorted(jacob.items())
+    [(u'favorites_collection_link',
+        u'http://api.launchpad.dev/authors/Jacob%20Berendes/favorites'),
+     (u'name', u'Jacob Berendes'),
+     (u'self_link', u'http://api.launchpad.dev/authors/Jacob%20Berendes')]
+
+    >>> jacob_favorites = jacob_resource.publishTraverse(request, "favorites")
+    >>> favorites = simplejson.loads(jacob_favorites())
+    >>> sorted(f['name'] for f in favorites)
+    [u'Green eggs and ham', u'Steak au poivre']
 
 If the user tries to traverse to a nonexistent object, the result is a
 NotFound exception:

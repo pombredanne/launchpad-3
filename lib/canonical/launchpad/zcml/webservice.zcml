@@ -21,9 +21,31 @@
         <allow interface='canonical.lazr.interfaces.IEntryResource' />
     </class>
 
+    <class class="canonical.lazr.rest.ScopedCollectionResource">
+        <allow interface='canonical.lazr.interfaces.ICollectionResource' />
+    </class>
+
+    <adapter
+        for="canonical.lazr.enum.BaseItem"
+        provides="canonical.lazr.interfaces.IJSONPublishable"
+        factory="canonical.lazr.rest.JSONItem"
+        />
+
+    <adapter
+        for="canonical.launchpad.interfaces.IBug"
+        provides="canonical.launchpad.rest.IBugEntry"
+        factory="canonical.launchpad.rest.BugEntry"
+        />
+
+    <adapter
+        for="canonical.launchpad.interfaces.IBugSet"
+        provides="canonical.lazr.interfaces.ICollection"
+        factory="canonical.launchpad.rest.BugCollection"
+        />
+
     <adapter
         for="canonical.launchpad.interfaces.IPerson"
-        provides="canonical.launchpad.interfaces.IPersonEntry"
+        provides="canonical.launchpad.rest.IPersonEntry"
         factory="canonical.launchpad.rest.PersonEntry"
         />
 
@@ -32,4 +54,64 @@
         provides="canonical.lazr.interfaces.ICollection"
         factory="canonical.launchpad.rest.PersonCollection"
         />
+
+    <adapter
+        for="canonical.launchpad.rest.IPersonEntry
+             canonical.launchpad.interfaces.IPerson"
+        provides="canonical.lazr.interfaces.IScopedCollection"
+        factory="canonical.launchpad.rest.PersonPersonCollection"
+        />
+
+    <adapter
+        for="canonical.launchpad.rest.IBugEntry
+             canonical.launchpad.interfaces.IBug"
+        provides="canonical.lazr.interfaces.IScopedCollection"
+        factory="canonical.lazr.rest.ScopedCollection"
+        />
+
+    <adapter
+        for="canonical.launchpad.interfaces.IMessage"
+        provides="canonical.launchpad.rest.IMessageEntry"
+        factory="canonical.launchpad.rest.MessageEntry"
+        />
+
+    <adapter
+        for="canonical.launchpad.interfaces.IMessageSet"
+        provides="canonical.lazr.interfaces.ICollection"
+        factory="canonical.launchpad.rest.MessageCollection"
+        />
+
+    <adapter
+        for="canonical.launchpad.rest.IBugEntry
+             canonical.launchpad.interfaces.IMessage"
+        provides="canonical.lazr.interfaces.IScopedCollection"
+        factory="canonical.lazr.rest.ScopedCollection"
+        />
+
+    <adapter
+        for="canonical.launchpad.interfaces.IBugTask"
+        provides="canonical.launchpad.rest.IBugTaskEntry"
+        factory="canonical.launchpad.rest.BugTaskEntry"
+        />
+
+    <adapter
+        for="canonical.launchpad.interfaces.IBugTaskSet"
+        provides="canonical.lazr.interfaces.ICollection"
+        factory="canonical.launchpad.rest.BugTaskCollection"
+        />
+
+    <adapter
+        for="canonical.launchpad.rest.IBugEntry
+             canonical.launchpad.interfaces.IBugTask"
+        provides="canonical.lazr.interfaces.IScopedCollection"
+        factory="canonical.lazr.rest.ScopedCollection"
+        />
+
+    <adapter
+        for="canonical.launchpad.rest.IBugTaskEntry
+             canonical.launchpad.interfaces.IBugTask"
+        provides="canonical.lazr.interfaces.IScopedCollection"
+        factory="canonical.lazr.rest.ScopedCollection"
+        />
+
 </configure>

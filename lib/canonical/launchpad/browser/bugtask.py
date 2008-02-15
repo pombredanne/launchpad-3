@@ -57,7 +57,6 @@ from zope.schema.vocabulary import (
 from zope.security.proxy import isinstance as zope_isinstance
 
 from canonical.config import config
-from canonical.lp import decorates
 from canonical.launchpad import _
 from canonical.cachedproperty import cachedproperty
 from canonical.launchpad.validators import LaunchpadValidationError
@@ -96,11 +95,12 @@ from canonical.launchpad.browser.launchpad import StructuralObjectPresentation
 
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.batching import TableBatchNavigator
+from canonical.launchpad.webapp.menu import structured
 from canonical.launchpad.webapp.snapshot import Snapshot
 from canonical.launchpad.webapp.tales import PersonFormatterAPI
 from canonical.launchpad.webapp.vocabulary import vocab_factory
 
-from canonical.lazr import EnumeratedType, Item
+from canonical.lazr import decorates, EnumeratedType, Item
 
 from canonical.widgets.bug import BugTagsWidget
 from canonical.widgets.bugtask import (
@@ -535,7 +535,8 @@ class BugTaskView(LaunchpadView, CanBeMentoredView, FeedsMixin):
         self.context.bug.unsubscribe(self.user)
 
         self.request.response.addNotification(
-            self._getUnsubscribeNotification(self.user, unsubed_dupes))
+            structured(
+                self._getUnsubscribeNotification(self.user, unsubed_dupes)))
 
         if not check_permission("launchpad.View", self.context.bug):
             # Redirect the user to the bug listing, because they can no
@@ -554,7 +555,8 @@ class BugTaskView(LaunchpadView, CanBeMentoredView, FeedsMixin):
         self.context.bug.unsubscribe(user)
         unsubed_dupes = self.context.bug.unsubscribeFromDupes(user)
         self.request.response.addNotification(
-            self._getUnsubscribeNotification(user, unsubed_dupes))
+            structured(
+                self._getUnsubscribeNotification(user, unsubed_dupes)))
 
     def _getUnsubscribeNotification(self, user, unsubed_dupes):
         """Construct and return the unsubscribe-from-bug feedback message.
@@ -621,8 +623,8 @@ class BugTaskView(LaunchpadView, CanBeMentoredView, FeedsMixin):
         """Nominate the bug for the series and redirect to the bug page."""
         self.context.bug.addNomination(self.user, series)
         self.request.response.addInfoNotification(
-            'This bug has been nominated to be fixed in %(target)s.',
-            target=series.bugtargetdisplayname)
+            'This bug has been nominated to be fixed in %s.' %
+                series.bugtargetdisplayname)
         self.request.response.redirect(canonical_url(self.context))
 
     def reportBugInContext(self):
@@ -1144,6 +1146,7 @@ class BugTaskEditView(LaunchpadEditFormView):
                     # contributor in this pillar, we display a warning
                     # to the user, in case they made a mistake.
                     self.request.response.addWarningNotification(
+                        structured(
                         """<a href="%s">%s</a>
                         did not previously have any assigned bugs in
                         <a href="%s">%s</a>.
@@ -1155,7 +1158,7 @@ class BugTaskEditView(LaunchpadEditFormView):
                         new_assignee.displayname,
                         canonical_url(bugtask.pillar),
                         bugtask.pillar.title,
-                        canonical_url(bugtask)))
+                        canonical_url(bugtask))))
 
         if bugtask_before_modification.bugwatch != bugtask.bugwatch:
             if bugtask.bugwatch is None:
@@ -2193,7 +2196,7 @@ class BugTaskSearchListingView(LaunchpadFormView, FeedsMixin):
             return None
         bugtaskset = getUtility(IBugTaskSet)
         expirable_bugtasks = bugtaskset.findExpirableBugTasks(
-            0, target=self.context)
+            0, user=self.user, target=self.context)
         count = len(expirable_bugtasks)
         label = self._bugOrBugs(count)
         url = "%s/+expirable-bugs" % canonical_url(self.context)
@@ -2614,9 +2617,12 @@ class BugTaskRemoveQuestionView(LaunchpadFormView):
         if owner_is_subscribed is True:
             self.context.bug.subscribe(question.owner, self.user)
         self.request.response.addNotification(
-            'Removed Question #%s: <a href="%s">%s<a>.'
-            % (question.id, canonical_url(question),
-               cgi.escape(question.title)))
+            structured(
+                'Removed Question #%s: <a href="%s">%s<a>.',
+                str(question.id),
+                canonical_url(question),
+                question.title))
+
         comment = data.get('comment', None)
         if comment is not None:
             self.context.bug.newMessage(
@@ -2650,7 +2656,8 @@ class BugTaskExpirableListingView(LaunchpadView):
     def search(self):
         """Return an `ITableBatchNavigator` for the expirable bugtasks."""
         bugtaskset = getUtility(IBugTaskSet)
-        bugtasks = bugtaskset.findExpirableBugTasks(0, target=self.context)
+        bugtasks = bugtaskset.findExpirableBugTasks(
+            0, user=self.user, target=self.context)
         return BugListingBatchNavigator(
             bugtasks, self.request, columns_to_show=self.columns_to_show,
             size=config.malone.buglist_batch_size)

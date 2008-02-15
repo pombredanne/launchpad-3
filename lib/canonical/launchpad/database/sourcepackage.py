@@ -163,8 +163,7 @@ class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin,
                    SourcePackageRelease.id AND
                    SourcePackageRelease.sourcepackagename = %s AND
                    SourcePackagePublishingHistory.distroseries = %s AND
-                   SourcePackagePublishingHistory.archive IN %s AND
-                   SourcePackagePublishingHistory.dateremoved is NULL
+                   SourcePackagePublishingHistory.archive IN %s
                 """ % sqlvalues(
                         self.sourcepackagename,
                         self.distroseries,
@@ -272,14 +271,13 @@ class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin,
         """
         order_const = "debversion_sort_key(SourcePackageRelease.version)"
         releases = SourcePackageRelease.select('''
-            SourcePackageRelease.sourcepackagename = %s AND
             SourcePackagePublishingHistory.distroseries =
                 DistroSeries.id AND
-            DistroSeries.distribution = %s AND
-            SourcePackagePublishingHistory.archive IN %s AND
             SourcePackagePublishingHistory.sourcepackagerelease =
                 SourcePackageRelease.id AND
-            SourcePackagePublishingHistory.dateremoved is NULL
+            SourcePackageRelease.sourcepackagename = %s AND
+            DistroSeries.distribution = %s AND
+            SourcePackagePublishingHistory.archive IN %s
             ''' % sqlvalues(self.sourcepackagename, self.distribution,
                             self.distribution.all_distro_archive_ids),
             clauseTables=['DistroSeries', 'SourcePackagePublishingHistory'],

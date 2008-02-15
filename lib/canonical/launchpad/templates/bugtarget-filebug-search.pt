@@ -71,13 +71,11 @@
     </div>
   </div>
 
-  <p class="discreet">
-    <small>
-      This guided form will try to help you find out whether your bug
-      has already been reported. You may prefer the
-      <a href="#" tal:attributes="href view/advanced_filebug_url">complicated bug filing form</a>.
-    </small>
-  </p>
+      <p>
+        &#187;
+        <a tal:attributes="href view/advanced_filebug_url"
+        >Advanced reporting options</a>
+      </p>
 
   <tal:most-common-bugs condition="view/most_common_bugs">
     <h2>Most Frequently Reported Bugs</h2>
