@@ -32,9 +32,11 @@ from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
 
 from canonical.launchpad.interfaces import (
+    BRANCH_MERGE_PROPOSAL_FINAL_STATES,
     BranchCreationForbidden, BranchCreationNoTeamOwnedJunkBranches,
     BranchCreatorNotMemberOfOwnerTeam, BranchCreatorNotOwner,
-    BranchLifecycleStatus, BranchListingSort, BranchSubscriptionDiffSize,
+    BranchLifecycleStatus, BranchListingSort, BranchMergeProposalStatus,
+    BranchSubscriptionDiffSize,
     BranchSubscriptionNotificationLevel, BranchType, BranchTypeError,
     BranchVisibilityRule, CannotDeleteBranch,
     DEFAULT_BRANCH_STATUS_IN_LISTING, IBranch, IBranchSet,
@@ -133,14 +135,18 @@ class Branch(SQLBase):
     @property
     def landing_candidates(self):
         """See `IBranch`."""
-        return BranchMergeProposal.selectBy(
-            target_branch=self, date_merged=None)
+        return BranchMergeProposal.select("""
+            BranchMergeProposal.target_branch = %s AND
+            BranchMergeProposal.queue_status NOT IN %s
+            """ % sqlvalues(self, BRANCH_MERGE_PROPOSAL_FINAL_STATES))
 
     @property
     def dependent_branches(self):
         """See `IBranch`."""
-        return BranchMergeProposal.selectBy(
-            dependent_branch=self, date_merged=None)
+        return BranchMergeProposal.select("""
+            BranchMergeProposal.dependent_branch = %s AND
+            BranchMergeProposal.queue_status NOT IN %s
+            """ % sqlvalues(self, BRANCH_MERGE_PROPOSAL_FINAL_STATES))
 
     def addLandingTarget(self, registrant, target_branch,
                          dependent_branch=None, whiteboard=None,
@@ -174,12 +180,16 @@ class Branch(SQLBase):
                 raise InvalidBranchMergeProposal(
                     'Target and dependent branches must be different.')
 
-        target = BranchMergeProposal.selectOneBy(
-            source_branch=self, target_branch=target_branch, date_merged=None)
-        if target is not None:
+        target = BranchMergeProposal.select("""
+            BranchMergeProposal.source_branch = %s AND
+            BranchMergeProposal.target_branch = %s AND
+            BranchMergeProposal.queue_status NOT IN %s
+            """ % sqlvalues(self, target_branch,
+                            BRANCH_MERGE_PROPOSAL_FINAL_STATES))
+        if target.count() > 0:
             raise InvalidBranchMergeProposal(
                 'There is already a branch merge proposal registered for '
-                'branch %s to land on %s'
+                'branch %s to land on %s that is still active.'
                 % (self.unique_name, target_branch.unique_name))
 
         if date_created is None:
@@ -194,7 +204,13 @@ class Branch(SQLBase):
             target_branch=target_branch, dependent_branch=dependent_branch,
             whiteboard=whiteboard, date_created=date_created)
 
-    next_mirror_time = UtcDateTimeCol(default=None)
+    def getMergeQueue(self):
+        """See `IBranch`."""
+        return BranchMergeProposal.select("""
+            BranchMergeProposal.target_branch = %s AND
+            BranchMergeProposal.queue_status = %s
+            """ % sqlvalues(self, BranchMergeProposalStatus.QUEUED),
+            orderBy="queue_position")
 
     @property
     def code_is_browseable(self):

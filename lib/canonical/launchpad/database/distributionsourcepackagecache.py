@@ -6,10 +6,9 @@ __all__ = ['DistributionSourcePackageCache', ]
 
 from zope.interface import implements
 
-from sqlobject import SQLObjectNotFound
 from sqlobject import StringCol, ForeignKey
 
-from canonical.database.sqlbase import SQLBase, quote
+from canonical.database.sqlbase import SQLBase
 
 from canonical.launchpad.interfaces import IDistributionSourcePackageCache
 
@@ -18,6 +17,8 @@ class DistributionSourcePackageCache(SQLBase):
     implements(IDistributionSourcePackageCache)
     _table = 'DistributionSourcePackageCache'
 
+    archive = ForeignKey(dbName='archive',
+        foreignKey='Archive', notNull=True)
     distribution = ForeignKey(dbName='distribution',
         foreignKey='Distribution', notNull=True)
     sourcepackagename = ForeignKey(dbName='sourcepackagename',

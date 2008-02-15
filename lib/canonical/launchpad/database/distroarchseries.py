@@ -181,9 +181,14 @@ class DistroArchSeries(SQLBase):
         return DistroArchSeriesBinaryPackage(
             self, name)
 
-    def getBuildRecords(self, build_state=None, name=None, pocket=None):
+    def getBuildRecords(self, build_state=None, name=None, pocket=None,
+                        user=None):
         """See IHasBuildRecords"""
-        # use facility provided by IBuildSet to retrieve the records
+        # Ignore "user", since it would not make any difference to the
+        # records returned here (private builds are only in PPA right
+        # now).
+
+        # Use the facility provided by IBuildSet to retrieve the records.
         return getUtility(IBuildSet).getBuildsByArchIds(
             [self.id], build_state, name, pocket)
 

@@ -1040,52 +1040,6 @@ class IPersonPublic(IHasSpecifications, IHasMentoringOffers,
         The person's membership may be direct or indirect.
         """
 
-    def join(team):
-        """Join the given team if its subscriptionpolicy is not RESTRICTED.
-
-        Join the given team according to the policies and defaults of that
-        team:
-        - If the team subscriptionpolicy is OPEN, the user is added as
-          an APPROVED member with a NULL TeamMembership.reviewer.
-        - If the team subscriptionpolicy is MODERATED, the user is added as
-          a PROPOSED member and one of the team's administrators have to
-          approve the membership.
-
-        This method returns True if this person was added as a member of
-        <team> or False if that wasn't possible.
-
-        Teams cannot call this method because they're not allowed to
-        login and thus can't 'join' another team. Instead, they're added
-        as a member (using the addMember() method) by a team administrator.
-        """
-
-    def leave(team):
-        """Leave the given team.
-
-        If there's a membership entry for this person on the given team and
-        its status is either APPROVED or ADMIN, we change the status to
-        DEACTIVATED and remove the relevant entries in teamparticipation.
-
-        Teams cannot call this method because they're not allowed to
-        login and thus can't 'leave' another team. Instead, they have their
-        subscription deactivated (using the setMembershipData() method) by
-        a team administrator.
-        """
-
-    def setMembershipData(person, status, reviewer, expires=None,
-                          comment=None):
-        """Set the attributes of the person's membership on this team.
-
-        Set the status, dateexpires, reviewer and comment, where reviewer is
-        the user responsible for this status change and comment is the comment
-        left by the reviewer for the change.
-
-        This method will ensure that we only allow the status transitions
-        specified in the TeamMembership spec. It's also responsible for
-        filling/cleaning the TeamParticipation table when the transition
-        requires it.
-        """
-
     def getAdministratedTeams():
         """Return the teams that this person/team is an administrator of.
 
@@ -1259,6 +1213,48 @@ class IPersonViewRestricted(Interface):
 
 class IPersonEditRestricted(Interface):
     """IPerson attributes that require launchpad.Edit permission."""
+
+    def join(team, requester=None):
+        """Join the given team if its subscriptionpolicy is not RESTRICTED.
+
+        Join the given team according to the policies and defaults of that
+        team:
+        - If the team subscriptionpolicy is OPEN, the user is added as
+          an APPROVED member with a NULL TeamMembership.reviewer.
+        - If the team subscriptionpolicy is MODERATED, the user is added as
+          a PROPOSED member and one of the team's administrators have to
+          approve the membership.
+
+        :param requester: The person who requested the membership on behalf of
+        a team or None when a person requests the membership for himself.
+        """
+
+    def leave(team):
+        """Leave the given team.
+
+        If there's a membership entry for this person on the given team and
+        its status is either APPROVED or ADMIN, we change the status to
+        DEACTIVATED and remove the relevant entries in teamparticipation.
+
+        Teams cannot call this method because they're not allowed to
+        login and thus can't 'leave' another team. Instead, they have their
+        subscription deactivated (using the setMembershipData() method) by
+        a team administrator.
+        """
+
+    def setMembershipData(person, status, reviewer, expires=None,
+                          comment=None):
+        """Set the attributes of the person's membership on this team.
+
+        Set the status, dateexpires, reviewer and comment, where reviewer is
+        the user responsible for this status change and comment is the comment
+        left by the reviewer for the change.
+
+        This method will ensure that we only allow the status transitions
+        specified in the TeamMembership spec. It's also responsible for
+        filling/cleaning the TeamParticipation table when the transition
+        requires it.
+        """
 
     def addMember(person, reviewer, status=TeamMembershipStatus.APPROVED,
                   comment=None, force_team_add=False):
