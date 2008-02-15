@@ -361,14 +361,19 @@ class TestLaunchpadTransportReadOnly(TestCase):
             backing_transport, mirror_transport)
         self.lp_transport = get_transport(self.lp_server.get_url())
 
+        self.writable_file = '/~testuser/firefox/baz/.bzr/hello.txt'
+        self.file_on_both_transports = '/~name12/+junk/junk.dev/.bzr/README'
+        self.file_on_mirror_only = '/~name12/+junk/junk.dev/.bzr/MIRROR-ONLY'
+
         self._makeFilesInBranches(
             backing_transport,
-            [('/~testuser/firefox/baz/.bzr/hello.txt', 'Hello World!'),
-             ('/~name12/+junk/junk.dev/.bzr/README', 'Hello World!')])
+            [(self.writable_file, 'Hello World!'),
+             (self.file_on_both_transports, 'Hello World!')])
 
         self._makeFilesInBranches(
             mirror_transport,
-            [('/~name12/+junk/junk.dev/.bzr/README', 'Goodbye World!')])
+            [(self.file_on_both_transports, 'Goodbye World!'),
+             (self.file_on_mirror_only, 'ignored')])
 
     def _setUpMemoryServer(self):
         memory_server = MemoryServer()
@@ -413,7 +418,7 @@ class TestLaunchpadTransportReadOnly(TestCase):
         # is read-only to us.
         self.assertRaises(
             errors.TransportNotPossible,
-            self.lp_transport.rename, '/~testuser/firefox/baz/.bzr/hello.txt',
+            self.lp_transport.rename, self.writable_file,
             '/~name12/+junk/junk.dev/.bzr/goodbye.txt')
 
     def test_readonly_refers_to_mirror(self):
@@ -422,12 +427,18 @@ class TestLaunchpadTransportReadOnly(TestCase):
         # XXX: JonathanLange 2007-06-21, Explain more of this.
         self.assertEqual(
             'Goodbye World!',
-            self.lp_transport.get_bytes('/~name12/+junk/junk.dev/.bzr/README'))
+            self.lp_transport.get_bytes(self.file_on_both_transports))
 
     def test_iter_files_refers_to_mirror(self):
         # iter_files_recursive gets its data from the mirror if it cannot
         # write to the branch.
-        pass
+        read_only_branch_name = '/~name12/+junk/junk.dev/'
+        transport = self.lp_transport.clone(read_only_branch_name)
+        files = list(transport.iter_files_recursive())
+
+        mirror_only = self.file_on_mirror_only[len(read_only_branch_name):]
+        self.assertTrue(
+            mirror_only in files, '%r not in %r' % (mirror_only, files))
 
 
 class TestLoggingSetup(TestCase):
