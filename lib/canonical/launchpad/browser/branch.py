@@ -331,13 +331,6 @@ class BranchView(LaunchpadView, FeedsMixin):
         linkdata = BranchContextMenu(self.context).edit()
         return '%s/%s' % (canonical_url(self.context), linkdata.target)
 
-    def mirror_of_ssh(self):
-        """True if this a mirror branch with an sftp or bzr+ssh URL."""
-        if not self.context.url:
-            return False # not a mirror branch
-        uri = URI(self.context.url)
-        return uri.scheme in ('sftp', 'bzr+ssh')
-
     def user_can_upload(self):
         """Whether the user can upload to this branch."""
         return (self.user is not None and
@@ -507,20 +500,43 @@ class BranchMirrorStatusView(LaunchpadFormView):
 
     field_names = []
 
+    @property
+    def show_detailed_error_message(self):
+        """Show detailed error message for branch owner and experts."""
+        if self.user is None:
+            return False
+        else:
+            celebs = getUtility(ILaunchpadCelebrities)
+            return (self.user.inTeam(self.context.owner) or
+                    self.user.inTeam(celebs.admin) or
+                    self.user.inTeam(celebs.bazaar_experts))
+
+    @property
+    def mirror_of_ssh(self):
+        """True if this a mirror branch with an sftp or bzr+ssh URL."""
+        if not self.context.url:
+            return False # not a mirror branch
+        uri = URI(self.context.url)
+        return uri.scheme in ('sftp', 'bzr+ssh')
+
+    @property
     def in_mirror_queue(self):
         """Is it likely that the branch is being mirrored in the next run of
         the puller?
         """
         return self.context.next_mirror_time < datetime.now(pytz.UTC)
 
+    @property
     def mirror_disabled(self):
         """Has mirroring this branch been disabled?"""
         return self.context.next_mirror_time is None
 
+    @property
     def mirror_failed_once(self):
         """Has there been exactly one failed attempt to mirror this branch?"""
         return self.context.mirror_failures == 1
 
+    @property
     def mirror_status_message(self):
         """A message from a bad scan or pull, truncated for display."""
         message = self.context.mirror_status_message
@@ -529,14 +545,10 @@ class BranchMirrorStatusView(LaunchpadFormView):
         return truncate_text(
             message, self.MAXIMUM_STATUS_MESSAGE_LENGTH) + ' ...'
 
+    @property
     def show_mirror_failure(self):
         """True if mirror_of_ssh is false and branch mirroring failed."""
-        if URI(self.context.url).scheme in ('sftp', 'bzr+ssh'):
-            # SSH branches can't be mirrored, so a general failure message
-            # is shown instead of the reported errors.
-            return False
-        else:
-            return self.context.mirror_failures
+        return not self.mirror_of_ssh and self.context.mirror_failures
 
     @property
     def action_url(self):

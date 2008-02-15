@@ -57,6 +57,7 @@ One way of adding new members to a team is by having the user himself join the
 team he wants.
 
     >>> salgado = personset.getByName('salgado')
+    >>> login(salgado.preferredemail.email)
     >>> salgado.join(t3)
     >>> salgado.join(t4)
 
@@ -68,6 +69,7 @@ member of that team --somebody has to approve his membership first:
 
     >>> [m.displayname for m in t3.allmembers]
     [u'Foo Bar']
+    >>> login(t3.teamowner.preferredemail.email)
     >>> t3.setMembershipData(salgado, TeamMembershipStatus.APPROVED, reviewer)
     >>> flush_database_updates()
     >>> [m.displayname for m in t3.allmembers]
@@ -80,6 +82,7 @@ given team.
     >>> launchpad = personset.getByName('launchpad')
     >>> launchpad.subscriptionpolicy == TeamSubscriptionPolicy.RESTRICTED
     True
+    >>> login(salgado.preferredemail.email)
     >>> salgado.join(launchpad)
     Traceback (most recent call last):
     ...
@@ -92,15 +95,32 @@ given team.
     >>> salgado in t4.activemembers
     True
 
-Also note that the join() method must only be called from an person object;
-never from a team, because teams can't perform actions in launchpad, so it
-doesn't make sense to have a team joining another one. (Hint: see below a way
-to add a team as a member of another one)
+Team admins can make any of their teams join other teams as well.
+Just like for people, if the team is MODERATED, the membership will
+be PENDING, whereas for OPEN teams the membership will be automatically
+approved.  Note, though, that in the case of teams we need to pass a
+requester to the join() method.
 
-    >>> t2.join(t3)
-    Traceback (most recent call last):
-    ...
-    AssertionError: Teams take no actions in Launchpad...
+    >>> ubuntu_team = personset.getByName('ubuntu-team')
+    >>> from canonical.launchpad.ftests import ANONYMOUS, login, logout
+    >>> login(ubuntu_team.teamowner.preferredemail.email)
+    >>> ubuntu_team.join(t3, ubuntu_team.teamowner)
+    >>> t3.subscriptionpolicy
+    <DBItem TeamSubscriptionPolicy.MODERATED...
+    >>> ubuntu_team in t3.proposedmembers
+    True
+
+    >>> t2.subscriptionpolicy
+    <DBItem TeamSubscriptionPolicy.OPEN...
+    >>> ubuntu_team.join(t2, ubuntu_team.teamowner)
+    >>> ubuntu_team in t2.activemembers
+    True
+
+    # Clean things up to not upset the other tests.
+    >>> login(t2.teamowner.preferredemail.email)
+    >>> t2.setMembershipData(
+    ...     ubuntu_team, TeamMembershipStatus.DEACTIVATED, t2.teamowner)
+    >>> login(ANONYMOUS)
 
 Another API for adding members is ITeam.addMember(), which ensures the given
 person has a membership entry for that team, regardless of whether the person
@@ -123,7 +143,6 @@ to a team.
 
 Log in as the team owner.
 
-    >>> from canonical.launchpad.ftests import ANONYMOUS, login, logout
     >>> login(t3.teamowner.preferredemail.email)
     >>> t3.addMember(
     ...     salgado, reviewer=sabdfl, status=TeamMembershipStatus.ADMIN)
@@ -248,6 +267,7 @@ t2 can't use its leave() method to leave t5 because it's a team and teams
 take no actions. One of t5 administrators have to go and remove t2 from t5
 if t2 shouldn't be a member of t5 anymore.
 
+    >>> login(t5.teamowner.preferredemail.email)
     >>> t5.setMembershipData(t2, TeamMembershipStatus.DEACTIVATED, reviewer)
 
 Removing t2 from t5 will have implications in all teams that have t5 as a
@@ -273,6 +293,7 @@ Nothing changes in t1, because t5 wasn't one of its members.
 If 'Guilherme Salgado' decides to leave t3, he'll also be removed from t1
 and t2, but not from t4, because he's a direct member of t4.
 
+    >>> login(salgado.preferredemail.email)
     >>> salgado.leave(t3)
     >>> salgado in t1.allmembers
     False
@@ -319,6 +340,7 @@ It's important to note that even if Foo Bar leaves the team he's the owner,
 he'll retains his rights over the team because he's the team's owner. This
 ensures we'll never have teams which can't be managed.
 
+    >>> login(foobar.preferredemail.email)
     >>> foobar.leave(t5)
     >>> flush_database_updates()
     >>> [m.displayname for m in t5.allmembers]
@@ -669,6 +691,7 @@ except shorter)
 
 We can also change the sort order of the results of getMembersByStatus.
 
+    >>> login(cprov.preferredemail.email)
     >>> cprov.leave(t3)
     >>> flush_database_updates()
 

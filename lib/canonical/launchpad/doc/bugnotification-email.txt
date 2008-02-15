@@ -80,6 +80,33 @@ as well.
     <BLANKLINE>
     ** Tags: bar foo
 
+New security related bugs are sent with a prominent warning:
+
+    >>> bug_four.security_related = True
+
+    >>> subject, body = generate_bug_add_email(bug_four)
+    >>> subject
+    u'[Bug 4] [NEW] Reflow problems with complex page layouts'
+    >>> print body
+    *** This bug is a security vulnerability ***
+    <BLANKLINE>
+    Public security bug reported:
+    <BLANKLINE>
+    ...
+
+But of course, security related bugs are private by default:
+
+    >>> bug_four.setPrivate(True, getUtility(ILaunchBag).user)
+    True
+
+    >>> subject, body = generate_bug_add_email(bug_four)
+    >>> print body
+    *** This bug is a security vulnerability ***
+    <BLANKLINE>
+    Private security bug reported:
+    <BLANKLINE>
+    ...
+
 
 = Editing a bug =
 
