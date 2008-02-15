@@ -1004,6 +1004,7 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         if cache is None:
             log.debug("Creating new binary cache entry.")
             cache = DistroSeriesPackageCache(
+                archive=self.main_archive,
                 distroseries=self,
                 binarypackagename=binarypackagename)
 

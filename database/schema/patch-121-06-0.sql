@@ -8,8 +8,8 @@ ALTER TABLE Archive
     ADD COLUMN binaries_cached integer,
     ADD COLUMN package_description_cache text;
 
--- Indexing Archive summary and description. It will require us to update
--- the indexes for the pre-existing records.
+-- Indexing Archive package_description_text and description. It will
+-- require us to update the indexes for the pre-existing records.
 
 -- fti.py maintains this column for us.
 --
