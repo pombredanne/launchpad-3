@@ -36,7 +36,7 @@
       <p tal:condition="context/mailing_list/isUsable|nothing">
 	<input type="checkbox" name="mailinglist_subscribe"
 	       value="checkbox" />
-	Join this team's mailing list.
+	Subscribe me to this team's mailing list.
       </p>
       <input type="submit" name="goback" value="Cancel" />
       <input type="submit" name="join" value="Join" />
