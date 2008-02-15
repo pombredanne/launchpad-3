@@ -202,10 +202,9 @@ to the user, citing the OOPS ID, with the original message attached.
     We've recorded what happened, and we'll fix it as soon as possible.
     Apologies for the inconvenience.
     <BLANKLINE>
-    If this is blocking your work, let us know on the launchpad-users
-    mailing list.
-    <BLANKLINE>
-    Include the error ID OOPS-... in your message.
+    If this is blocking your work, please file a question at
+    https://answers.edge.launchpad.net/launchpad/+addquestion
+    and include the error ID ... in the description.
     ...
     From: Foo Bar <foo.bar@canonical.com>
     To: launchpad@oops.com
