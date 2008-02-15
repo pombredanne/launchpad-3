@@ -596,6 +596,14 @@
   <browser:page
     for="canonical.launchpad.interfaces.ITeam"
     permission="launchpad.AnyPerson"
+    class="canonical.launchpad.browser.TeamAddMyTeamsView"
+    name="+add-my-teams"
+    template="../templates/team-add-my-teams.pt"
+    />
+
+  <browser:page
+    for="canonical.launchpad.interfaces.ITeam"
+    permission="launchpad.AnyPerson"
     class="canonical.launchpad.browser.TeamJoinView"
     name="+join"
     template="../templates/team-join.pt"
