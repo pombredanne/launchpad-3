@@ -166,7 +166,8 @@ class TestErrorReportingUtility(unittest.TestCase):
         self.assertEqual(oopsid, 'OOPS-91T1')
         self.assertEqual(filename, '/var/tmp/lperr.test/2006-04-01/01800.T1')
         self.assertEqual(utility.lastid, 1)
-        self.assertEqual(utility.lasterrordate, '2006-04-01')
+        self.assertEqual(
+            utility.lasterrordir, '/var/tmp/lperr.test/2006-04-01')
 
         # second oops of the day
         now = datetime.datetime(2006, 04, 01, 12, 00, 00, tzinfo=UTC)
@@ -174,7 +175,8 @@ class TestErrorReportingUtility(unittest.TestCase):
         self.assertEqual(oopsid, 'OOPS-91T2')
         self.assertEqual(filename, '/var/tmp/lperr.test/2006-04-01/43200.T2')
         self.assertEqual(utility.lastid, 2)
-        self.assertEqual(utility.lasterrordate, '2006-04-01')
+        self.assertEqual(
+            utility.lasterrordir, '/var/tmp/lperr.test/2006-04-01')
 
         # first oops of following day
         now = datetime.datetime(2006, 04, 02, 00, 30, 00, tzinfo=UTC)
@@ -182,11 +184,39 @@ class TestErrorReportingUtility(unittest.TestCase):
         self.assertEqual(oopsid, 'OOPS-92T1')
         self.assertEqual(filename, '/var/tmp/lperr.test/2006-04-02/01800.T1')
         self.assertEqual(utility.lastid, 1)
-        self.assertEqual(utility.lasterrordate, '2006-04-02')
+        self.assertEqual(
+            utility.lasterrordir, '/var/tmp/lperr.test/2006-04-02')
 
         # another oops with a naiive datetime
         now = datetime.datetime(2006, 04, 02, 00, 30, 00)
         self.assertRaises(ValueError, utility.newOopsId, now)
+
+    def test_changeErrorDir(self):
+        """Test changing the error dir using the global config."""
+        utility = ErrorReportingUtility()
+        # First an oops in the original error directory.
+        now = datetime.datetime(2006, 04, 01, 00, 30, 00, tzinfo=UTC)
+        oopsid, filename = utility.newOopsId(now)
+        self.assertEqual(utility.lastid, 1)
+        self.assertEqual(
+            utility.lasterrordir, '/var/tmp/lperr.test/2006-04-01')
+
+        # ErrorReportingUtility reads the global config to get the
+        # current error directory.
+        old_errordir = config.launchpad.errorreports.errordir
+        config.launchpad.errorreports.errordir = '/var/tmp/lperr.new.test'
+
+        # Now an oops on the same day, in the new directory.
+        now = datetime.datetime(2006, 04, 01, 12, 00, 00, tzinfo=UTC)
+        oopsid, filename = utility.newOopsId(now)
+
+        # Since it's a new directory, with no previous oops reports, the
+        # id is 1 again, rather than 2.
+        self.assertEqual(oopsid, 'OOPS-91T1')
+        self.assertEqual(utility.lastid, 1)
+        self.assertEqual(
+            utility.lasterrordir, '/var/tmp/lperr.new.test/2006-04-01')
+        config.launchpad.errorreports.errordir = old_errordir
 
     def test_findLastOopsId(self):
         """Test ErrorReportingUtility._findLastOopsId()"""
