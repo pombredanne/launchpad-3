@@ -20,7 +20,7 @@
 
     <tal:block condition="history">
 
-      <div class="lesser">
+      <div class="lesser" id="top-navigation">
         <tal:navigation content="structure view/batchnav/@@+navigation-links-upper" />
       </div>
 
