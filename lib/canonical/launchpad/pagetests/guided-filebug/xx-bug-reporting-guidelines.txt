@@ -28,11 +28,9 @@ page, because that page does not include a bug description field.
     ...     filebug_url = (
     ...         'http://launchpad.dev/%s/+filebug' % (context_path,))
     ...     user_browser.open(filebug_url)
-    ...     print find_tag_by_id(
-    ...         user_browser.contents, 'bug-reporting-guidelines')
-    None
-    None
-    None
+    ...     guidelines = find_tag_by_id(...)
+    ...     if guidelines is not None:
+    ...         print 'Found %s guidelines: %s' % (context_path, guidelines)
 
 But they are displayed on the advanced bug-reporting page, which does
 include a bug description field.
