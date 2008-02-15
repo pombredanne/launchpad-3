@@ -675,25 +675,21 @@ def is_valid_public_or_private_person_link(person, other):
                              PersonVisibility.PRIVATE_MEMBERSHIP):
         if IPerson.providedBy(other) and other.visibility in (
             PersonVisibility.PRIVATE, PersonVisibility.PRIVATE_MEMBERSHIP):
-            # private to private person link allowed
+            # Private to private person links are allowed.
             return True
         else:
+            # Private to public person links are forbidden.
             return False
     else:
+        # Public to public person links are allowed.
         return True
 
 
 class PublicPersonChoice(Choice):
     def constraint(self, value):
-        if is_valid_public_person_link(value, self.context):
-            return True
-        else:
-            return False
+        return is_valid_public_person_link(value, self.context)
 
 
 class PublicOrPrivatePersonChoice(Choice):
     def constraint(self, value):
-        if is_valid_public_or_private_person_link(value, self.context):
-            return True
-        else:
-            return False
+        return is_valid_public_or_private_person_link(value, self.context)

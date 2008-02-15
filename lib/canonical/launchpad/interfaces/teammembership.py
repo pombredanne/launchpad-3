@@ -8,7 +8,7 @@ __metaclass__ = type
 __all__ = ['ITeamMembership', 'ITeamMembershipSet', 'ITeamMember',
            'ITeamParticipation', 'DAYS_BEFORE_EXPIRATION_WARNING_IS_SENT']
 
-from zope.schema import Int, Text
+from zope.schema import Choice, Int, Text
 from zope.interface import Interface, Attribute
 
 from canonical.launchpad import _
@@ -38,8 +38,9 @@ class ITeamMembership(Interface):
                        required=False, readonly=False)
     reviewercomment = Text(title=_("Reviewer Comment"), required=False,
                            readonly=False)
-    status = Int(title=_("If Membership was approved or not"), required=True,
-                readonly=True)
+    status = Choice(title=_("If Membership was approved or not"),
+                    vocabulary='TeamMembershipStatus',
+                    required=True, readonly=True)
 
     statusname = Attribute("Status Name")
 

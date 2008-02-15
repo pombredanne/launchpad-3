@@ -1,7 +1,9 @@
 # Copyright 2004-2007 Canonical Ltd.  All rights reserved.
 
-"""Validator for sqlobject attributes to restrict the objects
-that private/private-membership teams can be connect to.
+"""Validator for sqlobject attributes.
+
+Restricts the objects that private/private-membership teams
+can be connect to.
 """
 
 __metaclass__ = type

@@ -7,7 +7,7 @@
 
 __metaclass__ = type
 __all__ = [
-    'Person', 'PersonSet', 
+    'Person', 'PersonSet',
     'SSHKey', 'SSHKeySet',
     'WikiName', 'WikiNameSet',
     'JabberID', 'JabberIDSet', 'IrcID', 'IrcIDSet']

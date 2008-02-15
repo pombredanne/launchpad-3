@@ -440,6 +440,9 @@ can be a member of another private-membership team. The SQLObject
 validators will raise an InvalidField exception if an invalid team
 is passed to the constructor or is used to set one of the attributes.
 
+myteam is a private-membership team, so public_person_validator
+will reject it for the BugSubscription.person and 
+BugSubscription.subscribed_by attributes.
 
     >>> login('foo.bar@canonical.com')
     >>> from canonical.launchpad.interfaces import (
@@ -450,7 +453,7 @@ is passed to the constructor or is used to set one of the attributes.
     >>> myteam = person_set.getByName('myteam')
     >>> guadamen = person_set.getByName('guadamen')
     >>> bug = bug_set.get(1)
-    >>> BugSubscription(bug=bug, person=myteam, subscribed_by=myteam)
+    >>> BugSubscription(bug=bug, person=myteam, subscribed_by=guadamen)
     Traceback (most recent call last):
     ...
     InvalidField: Cannot link person
@@ -463,6 +466,21 @@ is passed to the constructor or is used to set one of the attributes.
     InvalidField: Cannot link person
     (name=myteam, visibility=PRIVATE_MEMBERSHIP) to <BugSubscription...
 
+myteam is a private-membership team, and guadamen is a public
+team, so public_or_private_person_validator will not allow
+myteam to become a member of guadamen.
+
+    >>> from canonical.launchpad.interfaces import (
+    ...     PersonVisibility, TeamMembershipStatus)
+    >>> guadamen.addMember(myteam, reviewer=guadamen)
+    Traceback (most recent call last):
+    ...
+    InvalidField: Cannot link person
+    (name=myteam, visibility=PRIVATE_MEMBERSHIP) to <TeamMembership...
+    >>> guadamen.visibility = PersonVisibility.PRIVATE_MEMBERSHIP
+    >>> guadamen.addMember(myteam, reviewer=guadamen)
+    >>> other_team = person_set.getByName('otherteam')
+    >>> guadamen.addMember(myteam, reviewer=guadamen)
 
 == Deactivating user accounts ==
 
