@@ -234,8 +234,11 @@
                           <tal:notifications
                             define="notifications request/notifications"
                             condition="notifications"
-                          ><metal:notifications
-                              use-macro="context/@@+main-template-macros/notifications" />
+                          >
+                            <metal:notifications
+                              use-macro=
+                                "context/@@+main-template-macros/notifications"
+                            />
                           </tal:notifications>
                           <metal:block define-slot="main" />
                         </tal:noportlets>

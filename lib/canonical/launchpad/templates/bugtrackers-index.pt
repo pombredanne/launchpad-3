@@ -43,22 +43,16 @@
     </tbody>
   </table>
 
-    <div class="action">
-      <p
+      <div
+        class="action"
         tal:define="link context/menu:context/newbugtracker"
         tal:condition="link/enabled"
       >
-        <img alt="" src="/@@/add" />
-        <a
-          class="button"
-          tal:attributes="href link/target"
-          tal:content="link/escapedtext"
-        />
-      </p>
-      <tal:XXX condition="nothing">
-        20080130 mpt: Should be converted to use /@@+link when it's available.
-      </tal:XXX>
-    </div>
+        <p>
+          <img alt="" src="/@@/add" />
+          <tal:link replace="structure link/@@+link" />
+        </p>
+      </div>
 
 </div>
 

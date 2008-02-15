@@ -1,4 +1,8 @@
-<html metal:use-macro="view/macro:page/onecolumn">
+<html
+  xmlns="http://www.w3.org/1999/xhtml"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  metal:use-macro="view/macro:page/onecolumn"
+>
   <body>
     <h1 metal:fill-slot="heading">Register an external bug tracker</h1>
     <div metal:fill-slot="main">
