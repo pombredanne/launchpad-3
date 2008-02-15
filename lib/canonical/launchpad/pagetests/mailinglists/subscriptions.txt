@@ -278,13 +278,20 @@ been approved for the team.
     >>> admin_browser.getLink('Show all members').click()
     >>> admin_browser.getLink(
     ...     url='/~rosetta-admins/+member/jdub').click()
-    >>> admin_browser.getLink('Approve').click()
+    >>> admin_browser.url
+    'http://launchpad.dev/~rosetta-admins/+member/jdub'
+    >>> admin_browser.getControl(name='approve').click()
 
 
 The mailing list subscription is now available to be managed.
 
-    >>> spanish_team = browser.getControl(
+    >>> browser.open('http://launchpad.dev/~jdub/')
+    >>> browser.getLink("Change e-mail settings").click()
+    >>> browser.title
+    "Jeff Waugh's e-mail addresses"
+
+    >>> rosetta_team = browser.getControl(
     ... 	name='field.subscription.rosetta-admins')
 
-    >>> spanish_team.displayOptions
-    ['Preferred address', "Don't subscribe", 'jeff.waugh@canonical.com']
+    >>> rosetta_team.displayOptions
+    ['Preferred address', "Don't subscribe", 'jeff.waugh@ubuntulinux.com']
