@@ -194,7 +194,7 @@ class ErrorReportingUtility:
     _ignored_exceptions = set(['Unauthorized', 'TranslationUnavailable'])
     copy_to_zlog = False
 
-    lasterrordate = None
+    lasterrordir = None
     lastid = 0
 
     def __init__(self):
@@ -282,10 +282,10 @@ class ErrorReportingUtility:
             now = datetime.datetime.now(UTC)
         date = now.strftime('%Y-%m-%d')
         errordir = os.path.join(config.launchpad.errorreports.errordir, date)
-        if date != self.lasterrordate:
+        if errordir != self.lasterrordir:
             self.lastid_lock.acquire()
             try:
-                self.lasterrordate = date
+                self.lasterrordir = errordir
                 # make sure the directory exists
                 try:
                     os.makedirs(errordir)
