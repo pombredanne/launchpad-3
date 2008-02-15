@@ -66,6 +66,7 @@ COMMENT ON COLUMN BranchMergeProposal.merged_revision_id IS 'The Bazaar revision
 COMMENT ON COLUMN BranchMergeProposal.date_merge_started IS 'If the merge is performed by a bot the time the merge was started is recorded otherwise it is NULL.';
 COMMENT ON COLUMN BranchMergeProposal.date_merge_finished IS 'If the merge is performed by a bot the time the merge was finished is recorded otherwise it is NULL.';
 COMMENT ON COLUMN BranchMergeProposal.merge_log_file IS 'If the merge is performed by a bot the log file is accessible from the librarian.';
+COMMENT ON COLUMN BranchMergeProposal.superseded_by IS 'The proposal to merge has been superceded by this one.';
 
 
 -- BranchMergeRobot
@@ -294,6 +295,13 @@ COMMENT ON COLUMN CodeImportMachine.state IS 'Whether the controller daemon on t
 --COMMENT ON COLUMN CodeImportMachine.quiescing_message IS 'The reason for the quiescing request.';
 --COMMENT ON COLUMN CodeImportMachine.offline_reason IS 'The reason the machine was taken offline, from the CodeImportMachineOfflineReason enumeration.';
 
+-- CodeReviewMessage
+
+COMMENT ON TABLE CodeReviewMessage IS 'A message that is part of a code review discussion.';
+COMMENT ON COLUMN CodeReviewMessage.branch_merge_proposal IS 'The merge proposal that is being discussed.';
+COMMENT ON COLUMN CodeReviewMessage.message IS 'The actual message.';
+COMMENT ON COLUMN CodeReviewMessage.vote IS 'The reviewer''s vote for this message.';
+
 -- CVE
 
 COMMENT ON TABLE CVE IS 'A CVE Entry. The formal database of CVE entries is available at http://cve.mitre.org/ and we sync that database into Launchpad on a regular basis.';
@@ -321,6 +329,7 @@ COMMENT ON COLUMN DistributionSourcePackageCache.binpkgnames IS 'The binary pack
 COMMENT ON COLUMN DistributionSourcePackageCache.binpkgsummaries IS 'The aggregated summaries of all the binary packages generated from these source packages in this distribution.';
 COMMENT ON COLUMN DistributionSourcePackageCache.binpkgdescriptions IS 'The aggregated description of all the binary packages generated from these source packages in this distribution.';
 COMMENT ON COLUMN DistributionSourcePackageCache.changelog IS 'A concatenation of the source package release changelogs for this source package, where the status is not REMOVED.';
+COMMENT ON COLUMN DistributionSourcePackageCache.archive IS 'The archive where the source is published.';
 
 
 -- DistroSeriesPackageCache
@@ -332,7 +341,7 @@ COMMENT ON COLUMN DistroSeriesPackageCache.name IS 'The binary package name itse
 COMMENT ON COLUMN DistroSeriesPackageCache.summary IS 'A single summary for one of the binary packages of this name in this distroseries. We could potentially have binary packages in different architectures with the same name and different summaries, so this is a way of collapsing to one arbitrarily-chosen one, for display purposes. The chances of actually having different summaries and descriptions is pretty small. It could happen, though, because of the way package superseding works when a package does not build on a specific architecture.';
 COMMENT ON COLUMN DistroSeriesPackageCache.summaries IS 'The aggregated summaries of all the binary packages with this name in this distroseries.';
 COMMENT ON COLUMN DistroSeriesPackageCache.descriptions IS 'The aggregated description of all the binary packages with this name in this distroseries.';
-
+COMMENT ON COLUMN DistroSeriesPackageCache.archive IS 'The archive where the binary is published.';
 
 -- EmailAddress
 
@@ -397,6 +406,7 @@ COMMENT ON COLUMN MessageApproval.mailing_list IS 'The mailing list to which the
 COMMENT ON COLUMN MessageApproval.posted_message IS 'Foreign key to libraryfilealias table pointing to where the posted message\'s text lives.';
 COMMENT ON COLUMN MessageApproval.posted_date IS 'The date the message was posted.';
 COMMENT ON COLUMN MessageApproval.status IS 'The status of the posted message.  Values are described in dbschema.PostedMessageStatus.';
+COMMENT ON COLUMN MessageApproval.reason IS 'The reason for the current status if any. This information will be displayed to the end user and mailing list moderators need to be aware of this - not a private whiteboard.';
 COMMENT ON COLUMN MessageApproval.disposed_by IS 'The person who disposed of (i.e. approved or rejected) the message, or NULL if no disposition has yet been made.';
 COMMENT ON COLUMN MessageApproval.disposal_date IS 'The date on which this message was disposed, or NULL if no disposition has yet been made.';
 
@@ -1616,6 +1626,9 @@ COMMENT ON COLUMN Archive.whiteboard IS 'Administrator comments about interventi
 COMMENT ON COLUMN Archive.distribution IS 'The distribution that uses this archive.';
 COMMENT ON COLUMN Archive.purpose IS 'The purpose of this archive, e.g. COMMERCIAL.  See the ArchivePurpose DBSchema item.';
 COMMENT ON COLUMN Archive.private IS 'Whether or not the archive is private. This affects the global visibility of the archive.';
+COMMENT ON COLUMN Archive.package_description_cache IS 'Text blob containing all source and binary names and descriptions concatenated. Used to to build the tsearch indexes on this table.';
+COMMENT ON COLUMN Archive.sources_cached IS 'Number of sources already cached for this archive.';
+COMMENT ON COLUMN Archive.binaries_cached IS 'Number of binaries already cached for this archive.';
 
 
 -- ArchiveDependency
@@ -1813,3 +1826,37 @@ COMMENT ON COLUMN StructuralSubscription.bug_notification_level IS 'The volume a
 COMMENT ON COLUMN StructuralSubscription.blueprint_notification_level IS 'The volume and type of blueprint notifications this subscription will generate. The value is an item of the enumeration `BugNotificationLevel`.';
 COMMENT ON COLUMN StructuralSubscription.date_created IS 'The date on which this subscription was created.';
 COMMENT ON COLUMN StructuralSubscription.date_last_updated IS 'The date on which this subscription was last updated.';
+
+-- OAuth
+COMMENT ON TABLE OAuthConsumer IS 'A third part application that will access Launchpad on behalf of one of our users.';
+COMMENT ON COLUMN OAuthConsumer.key IS 'The unique key for this consumer.';
+COMMENT ON COLUMN OAuthConsumer.secret IS 'The secret used by this consumer (together with its key) to identify itself with Launchpad.';
+COMMENT ON COLUMN OAuthConsumer.date_created IS 'The creation date.';
+COMMENT ON COLUMN OAuthConsumer.disabled IS 'Is this consumer disabled?';
+
+COMMENT ON TABLE OAuthRequestToken IS 'A request token which, once authorized by the user, is exchanged for an access token.';
+COMMENT ON COLUMN OAuthRequestToken.consumer IS 'The consumer which is going to access the protected resources.';
+COMMENT ON COLUMN OAuthRequestToken.person IS 'The person who authorized this token.';
+COMMENT ON COLUMN OAuthRequestToken.permission IS 'The permission given by the
+person to the consumer.';
+COMMENT ON COLUMN OAuthRequestToken.key IS 'This token\'s unique key.';
+COMMENT ON COLUMN OAuthRequestToken.secret IS 'The secret used by the consumer (together with the token\'s key) to get an access token once the user has authorized its use.';
+COMMENT ON COLUMN OAuthRequestToken.date_created IS 'The date/time in which the token was created.';
+COMMENT ON COLUMN OAuthRequestToken.date_expires IS 'When the authorization is to expire.';
+COMMENT ON COLUMN OAuthRequestToken.date_reviewed IS 'When the authorization request was authorized or rejected by the person.';
+
+COMMENT ON TABLE OAuthAccessToken IS 'An access token used by the consumer to act on behalf of one of our users.';
+COMMENT ON COLUMN OAuthAccessToken.consumer IS 'The consumer which is going to access the protected resources.';
+COMMENT ON COLUMN OAuthAccessToken.person IS 'The person on whose behalf the
+consumer will access Launchpad.';
+COMMENT ON COLUMN OAuthAccessToken.permission IS 'The permission given by that person to the consumer.';
+COMMENT ON COLUMN OAuthAccessToken.key IS 'This token\'s unique key.';
+COMMENT ON COLUMN OAuthAccessToken.secret IS 'The secret used by the consumer (together with the token\'s key) to access Launchpad on behalf of the person.';
+COMMENT ON COLUMN OAuthAccessToken.date_created IS 'The date/time in which the token was created.';
+COMMENT ON COLUMN OAuthAccessToken.date_expires IS 'The date/time in which this token will stop being accepted by Launchpad.';
+
+COMMENT ON TABLE OAuthNonce IS 'The unique nonce for any request with a
+given timestamp. This is generated by the consumer.';
+COMMENT ON COLUMN OAuthNonce.consumer IS 'The consumer which is going to access the protected resources.';
+COMMENT ON COLUMN OAuthNonce.nonce IS 'The nonce itself.';
+COMMENT ON COLUMN OAuthNonce.request_timestamp IS 'The date and time (as a timestamp) in which the request was made.';
