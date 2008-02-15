@@ -272,7 +272,13 @@ Sub-team members may still ask to subscribe to the super-team's list,
 but their subscription will not become active, as they are not an
 approved member of the super-team.
 
+    # This will raise an error because the subscription object
+    # already exists.  However, the UI should have taken this into
+    # account.
     >>> list_one.subscribe(dirk)
+    Traceback (most recent call last):
+    ...
+    CannotSubscribe: Dirk Person is already subscribed to list Team One
 
     >>> sorted(email.email for email in list_one.getSubscribedAddresses())
     [u'anne.person@example.com', u'bperson@example.org',

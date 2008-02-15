@@ -2688,8 +2688,8 @@ class TeamJoinView(PersonView):
                 notification = _(
                     'Successfully joined %s.' % context.displayname)
 
-            if 'mailinglist_subscribe' in request.form \
-                    and context.mailing_list.isUsable():
+            if 'mailinglist_subscribe' in request.form and \
+                    self.userMaySubscribeToList():
                 context.mailing_list.subscribe(user)
 
         elif 'join' in request.form:
@@ -2703,6 +2703,17 @@ class TeamJoinView(PersonView):
         if notification is not None:
             request.response.addInfoNotification(notification)
         self.request.response.redirect(canonical_url(context))
+
+    def userMaySubscribeToList(self):
+        """Return True if the user may subscribe to the mailing list."""
+        mailing_list = self.context.mailing_list
+        if not mailing_list:
+            return False
+        if not mailing_list.isUsable():
+            return False
+
+        has_subscription = bool(mailing_list.getSubscription(self.user))
+        return not has_subscription
 
 
 class TeamLeaveView(PersonView):
