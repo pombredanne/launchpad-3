@@ -17,7 +17,6 @@ import xmlrpclib
 import transaction
 
 from bzrlib.branch import Branch
-from bzrlib.plugins.loom import branch as loom_branch
 from bzrlib.tests import HttpServer
 from bzrlib.urlutils import local_path_from_url
 
@@ -27,9 +26,7 @@ from zope.security.proxy import removeSecurityProxy
 from canonical.authserver.tests.harness import AuthserverTacTestSetup
 from canonical.codehosting.tests.helpers import BranchTestCase
 from canonical.config import config
-from canonical.database.sqlbase import cursor, sqlvalues
-from canonical.launchpad.interfaces import (
-    BranchType, IBranchSet, IScriptActivitySet)
+from canonical.launchpad.interfaces import BranchType, IScriptActivitySet
 from canonical.codehosting import branch_id_to_path
 from canonical.testing import LaunchpadScriptLayer
 

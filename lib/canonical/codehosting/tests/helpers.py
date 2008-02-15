@@ -23,15 +23,13 @@ from bzrlib.plugins.loom import branch as loom_branch
 from bzrlib.tests import TestCaseWithTransport
 from bzrlib.errors import SmartProtocolError
 
-from zope.component import getUtility
 from zope.security.management import getSecurityPolicy, setSecurityPolicy
 
 from canonical.authserver.interfaces import PERMISSION_DENIED_FAULT_CODE
 from canonical.codehosting.transport import branch_id_to_path
 from canonical.config import config
 from canonical.database.sqlbase import cursor
-from canonical.launchpad.interfaces import (
-    BranchType, IBranchSet)
+from canonical.launchpad.interfaces import BranchType
 from canonical.launchpad.testing import LaunchpadObjectFactory
 from canonical.launchpad.webapp.authorization import LaunchpadSecurityPolicy
 from canonical.testing import LaunchpadFunctionalLayer
