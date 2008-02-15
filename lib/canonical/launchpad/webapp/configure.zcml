@@ -238,6 +238,13 @@
         />
 
     <adapter
+        for="float"
+        provides="zope.app.traversing.interfaces.IPathAdapter"
+        factory="canonical.launchpad.webapp.tales.NumberFormatterAPI"
+        name="fmt"
+        />
+
+    <adapter
         for="types.NoneType"
         provides="zope.app.traversing.interfaces.IPathAdapter"
         factory="canonical.launchpad.webapp.tales.NoneFormatter"

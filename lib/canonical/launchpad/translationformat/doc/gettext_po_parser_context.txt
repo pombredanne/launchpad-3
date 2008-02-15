@@ -161,7 +161,7 @@ Importing this file fails because of conflicting messages.
     >>> entry = import_pofile_or_potemplate(potemplate_contents, carlos,
     ...                                     firefox_trunk,
     ...                                     potemplate=potemplate)
-    WARNING We got an error import...
+    INFO We got an error import...
     ...duplicate msgid...
     >>> print entry.status.name
     FAILED
@@ -296,7 +296,7 @@ And a Serbian PO file is exported using regular export_pofile call.
 It's different from the imported file only in a few headers.
 
     >>> pofile = potemplate.getPOFileByLang('sr')
-    >>> print pofile.uncachedExport().decode('UTF-8')
+    >>> print pofile.export().decode('UTF-8')
     msgid ""
     msgstr ""
     "Project-Id-Version: PACKAGE VERSION\n"

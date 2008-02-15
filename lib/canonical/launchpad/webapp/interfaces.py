@@ -148,6 +148,11 @@ class ILinkData(Interface):
     site = Attribute(
         "The name of the site this link is to, or None for the current site.")
 
+    # CarlosPerelloMarin 20080131 bugs=187837: This should be removed once
+    # action menu is not used anymore and we move to use inline navigation.
+    sort_key = Attribute(
+        "The sort key to use when rendering it with a group of links.")
+
 
 class ILink(ILinkData):
     """An object that represents a link in a menu.
@@ -578,17 +583,20 @@ class INotificationResponse(Interface):
     have been set when redirect() is called.
     """
 
-    def addNotification(msg, level=BrowserNotificationLevel.NOTICE, **kw):
-        """Append the given message to the list of notifications
+    def addNotification(msg, level=BrowserNotificationLevel.NOTICE):
+        """Append the given message to the list of notifications.
 
-        msg may be an XHTML fragment suitable for inclusion in a block
-        tag such as <div>. It may also contain standard Python string
-        replacement markers to be filled out by the keyword arguments
-        (ie. %(foo)s). The keyword arguments inserted this way are
-        automatically HTML quoted.
+        A plain string message will be CGI escaped.  Passing a message
+        that provides the `IStructuredString` interface will return a
+        unicode string that has been properly escaped.  Passing an
+        instance of a Zope internationalized message will cause the
+        message to be translated, then CGI escaped.
 
-        level is one of the BrowserNotificationLevels: DEBUG, INFO, NOTICE,
-        WARNING, ERROR.
+        :param msg: This may be a string, `zope.i18n.Message`,
+        	`zope.i18n.MessageID`, or an instance of `IStructuredString`.
+
+        :param level: One of the `BrowserNotificationLevel` values: DEBUG,
+        	INFO, NOTICE, WARNING, ERROR.
         """
 
     def removeAllNotifications():
@@ -602,20 +610,20 @@ class INotificationResponse(Interface):
             schema=INotificationList
             )
 
-    def addDebugNotification(msg, **kw):
-        """Shortcut to addNotification(msg, DEBUG, **kw)"""
+    def addDebugNotification(msg):
+        """Shortcut to addNotification(msg, DEBUG)."""
 
-    def addInfoNotification(msg, **kw):
-        """Shortcut to addNotification(msg, INFO, **kw)"""
+    def addInfoNotification(msg):
+        """Shortcut to addNotification(msg, INFO)."""
 
-    def addNoticeNotification(msg, **kw):
-        """Shortcut to addNotification(msg, NOTICE, **kw)"""
+    def addNoticeNotification(msg):
+        """Shortcut to addNotification(msg, NOTICE)."""
 
-    def addWarningNotification(msg, **kw):
-        """Shortcut to addNotification(msg, WARNING, **kw)"""
+    def addWarningNotification(msg):
+        """Shortcut to addNotification(msg, WARNING)."""
 
-    def addErrorNotification(msg, **kw):
-        """Shortcut to addNotification(msg, ERROR, **kw)"""
+    def addErrorNotification(msg):
+        """Shortcut to addNotification(msg, ERROR)."""
 
     def redirect(location, status=None):
         """As per IHTTPApplicationResponse.redirect, except notifications

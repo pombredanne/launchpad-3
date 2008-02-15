@@ -460,15 +460,14 @@ object, we will get a TranslationMessage.
 
 = POExportView =
 
-POExportView class is used to handle download requests from the web site.
+POExportView class is used to handle download requests from the web
+site.
 
-When we get a download request for a file that doesn't have a valid
-cached export, the user is redirected to the index page of the IPOFile.
+Once a download request is registered, we redirect to the IPOFile's
+index page.
 
     >>> potemplate = potemplatesubset['evolution-2.2']
     >>> pofile_es = potemplate.getPOFileByLang('es')
-    >>> pofile_es.is_cached_export_valid
-    False
 
     # Request the download.
     >>> form = {'format': 'PO' }
@@ -481,21 +480,3 @@ And we are redirected to the index page, as expected:
 
     >>> print pofile_view.request.response.getHeader('Location')
     http://launchpad.dev/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es
-
-But when there is an export done before the request, that already has a valid
-cache.
-
-    >>> potemplate = potemplatesubset['evolution-2.2']
-    >>> pofile_es = potemplate.getPOFileByLang('es')
-    >>> content = pofile_es.export()
-    >>> pofile_es.is_cached_export_valid
-    True
-
-The request now redirects directly to the librarian URL.
-
-    >>> pofile_view = create_view(
-    ...     pofile_es, '+export', form=form, layer=TranslationsLayer)
-    >>> pofile_view.request.method = 'POST'
-    >>> pofile_view.initialize()
-    >>> print pofile_view.request.response.getHeader('Location')
-    http://localhost:58000/.../es.po
