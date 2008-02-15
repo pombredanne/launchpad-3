@@ -150,10 +150,15 @@ class TestErrorReportingUtility(unittest.TestCase):
     def setUp(self):
         shutil.rmtree(config.launchpad.errorreports.errordir,
                       ignore_errors=True)
+        self.current_copy_to_zlog = (
+            config.launchpad.errorreports.copy_to_zlog)
+        config.launchpad.errorreports.copy_to_zlog = True
 
     def tearDown(self):
         shutil.rmtree(config.launchpad.errorreports.errordir,
                       ignore_errors=True)
+        config.launchpad.errorreports.copy_to_zlog = (
+            self.current_copy_to_zlog)
         reset_logging()
 
     def test_newOopsId(self):
@@ -501,7 +506,6 @@ class TestErrorReportingUtility(unittest.TestCase):
         # place of a traceback. This is useful when the original traceback
         # object is unavailable.
         utility = ErrorReportingUtility()
-        utility.copy_to_zlog = True
         now = datetime.datetime(2006, 04, 01, 00, 30, 00, tzinfo=UTC)
 
         try:
