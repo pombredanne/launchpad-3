@@ -351,57 +351,83 @@ class TestLaunchpadTransportReadOnly(TestCase):
 
     def setUp(self):
         TestCase.setUp(self)
-        _memory_server = MemoryServer()
-        _memory_server.setUp()
-        self.addCleanup(_memory_server.tearDown)
-        mirror_transport = get_transport(_memory_server.get_url())
 
+        memory_server = self._setUpMemoryServer()
+        memory_transport = get_transport(memory_server.get_url())
+        backing_transport = memory_transport.clone('backing')
+        mirror_transport = memory_transport.clone('mirror')
+
+        self.lp_server = self._setUpLaunchpadServer(
+            backing_transport, mirror_transport)
+        self.lp_transport = get_transport(self.lp_server.get_url())
+
+        self._makeFilesInBranches(
+            backing_transport,
+            [('/~testuser/firefox/baz/.bzr/hello.txt', 'Hello World!'),
+             ('/~name12/+junk/junk.dev/.bzr/README', 'Hello World!')])
+
+        self._makeFilesInBranches(
+            mirror_transport,
+            [('/~name12/+junk/junk.dev/.bzr/README', 'Goodbye World!')])
+
+    def _setUpMemoryServer(self):
+        memory_server = MemoryServer()
+        memory_server.setUp()
+        self.addCleanup(memory_server.tearDown)
+        return memory_server
+
+    def _setUpLaunchpadServer(self, backing_transport, mirror_transport):
         self.authserver = FakeLaunchpad()
         self.user_id = 1
-        self.backing_transport = MemoryTransport()
-        self.server = LaunchpadServer(
-            self.authserver, self.user_id, self.backing_transport,
+        server = LaunchpadServer(
+            self.authserver, self.user_id, backing_transport,
             mirror_transport)
-        self.server.setUp()
-        self.addCleanup(self.server.tearDown)
-        self.transport = get_transport(self.server.get_url())
-        path = self.server.translate_virtual_path(
-            '/~testuser/firefox/baz/.bzr')[0]
-        makedirs(self.backing_transport, path)
-        self.backing_transport.put_bytes(
-            os.path.join(path, 'hello.txt'), 'Hello World!')
-        path = self.server.translate_virtual_path(
-            '/~name12/+junk/junk.dev/.bzr')[0]
-        makedirs(self.backing_transport, path)
-        t = self.backing_transport.clone(path)
-        t.put_bytes('README', 'Hello World!')
-        makedirs(mirror_transport, path)
-        mirror_transport.clone(path).put_bytes('README', 'Goodbye World!')
+        server.setUp()
+        self.addCleanup(server.tearDown)
+        return server
+
+    def _makeFilesInBranches(self, transport, file_spec):
+        """Write a bunch of files inside branches on the LP codehost.
+
+        :param transport: Either a backing transport or a mirror transport
+            for a Launchpad server.
+        :param file_spec: A list of (filename, contents) tuples.
+            The path in the filename is translated as if it were a virtual
+            path.
+        """
+        for filename, contents in file_spec:
+            path_to_file = self.lp_server.translate_virtual_path(filename)[0]
+            directory = os.path.dirname(path_to_file)
+            makedirs(transport, directory)
+            transport.put_bytes(path_to_file, contents)
 
     def test_mkdir_readonly(self):
         # If we only have READ_ONLY access to a branch then we should not be
         # able to create directories within that branch.
         self.assertRaises(
             errors.TransportNotPossible,
-            self.transport.mkdir, '~name12/+junk/junk.dev/.bzr')
+            self.lp_transport.mkdir, '~name12/+junk/junk.dev/.bzr')
 
     def test_rename_target_readonly(self):
         # Even if we can write to a file, we can't rename it to location which
         # is read-only to us.
-        transport = get_transport(self.server.get_url())
         self.assertRaises(
             errors.TransportNotPossible,
-            self.transport.rename, '/~testuser/firefox/baz/.bzr/hello.txt',
+            self.lp_transport.rename, '/~testuser/firefox/baz/.bzr/hello.txt',
             '/~name12/+junk/junk.dev/.bzr/goodbye.txt')
 
     def test_readonly_refers_to_mirror(self):
         # Read-only operations should get their data from the mirror, not the
         # primary backing transport.
         # XXX: JonathanLange 2007-06-21, Explain more of this.
-        transport = get_transport(self.server.get_url())
         self.assertEqual(
             'Goodbye World!',
-            transport.get_bytes('/~name12/+junk/junk.dev/.bzr/README'))
+            self.lp_transport.get_bytes('/~name12/+junk/junk.dev/.bzr/README'))
+
+    def test_iter_files_refers_to_mirror(self):
+        # iter_files_recursive gets its data from the mirror if it cannot
+        # write to the branch.
+        pass
 
 
 class TestLoggingSetup(TestCase):
