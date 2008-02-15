@@ -140,7 +140,7 @@ class TestNewlyValidatedEmailsLinkRevisionAuthors(MakeHarryTestCase):
         # A newly validated email for a user.
         self.assertEqual(None, self.author.person,
                          'No author should be initially set.')
-        harry = self._makeHarry()
+        harry = self._makeHarry(EmailAddressStatus.NEW)
         # Since the email address is initially new, there should still be
         # no link.
         self.assertEqual(None, self.author.person,
