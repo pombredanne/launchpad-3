@@ -726,14 +726,14 @@ demonstrate, let's first make no_privs an indirect subscriber from bug
 
     >>> sorted([subscriber.displayname
     ...  for subscriber in bug_five.getIndirectSubscribers()])
-    [u'Sample Person']
+    [u'Sample Person', u'Ubuntu Team']
 
     >>> bug_six.subscribe(no_priv, no_priv)
     <BugSubscription...>
 
     >>> sorted([subscriber.displayname
     ...  for subscriber in bug_five.getIndirectSubscribers()])
-    [u'No Privileges Person', u'Sample Person']
+    [u'No Privileges Person', u'Sample Person', u'Ubuntu Team']
 
 Now, if we unsubscribe no-priv from bug #5, he will actually get
 unsubscribed from bug #6, thus no longer being indirectly subscribed to
@@ -749,7 +749,7 @@ bug #5.
 
     >>> sorted([subscriber.displayname
     ...  for subscriber in bug_five.getIndirectSubscribers()])
-    [u'Sample Person']
+    [u'Sample Person', u'Ubuntu Team']
 
 (Log back in as test@canonical.com for the tests that follow.)
 
