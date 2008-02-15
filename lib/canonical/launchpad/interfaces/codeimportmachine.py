@@ -7,6 +7,7 @@ __metaclass__ = type
 
 __all__ = [
     'ICodeImportMachine',
+    'ICodeImportMachinePublic',
     'ICodeImportMachineSet',
     'ICodeImportMachineSetScheduling',
     'CodeImportMachineOfflineReason',
@@ -90,9 +91,6 @@ class ICodeImportMachine(Interface):
     date_created = Datetime(
         title=_("Date Created"), required=True, readonly=True)
 
-    hostname = TextLine(
-        title=_('Host name'), required=True,
-        description=_('The hostname of the machine.'))
     state = Choice(
         title=_('State'), required=True, vocabulary=CodeImportMachineState,
         default=CodeImportMachineState.OFFLINE,
@@ -124,6 +122,14 @@ class ICodeImportMachine(Interface):
         :param user: `Person` that requested the machine to quiesce.
         :param message: User-provided message.
         """
+
+
+class ICodeImportMachinePublic(Interface):
+    """XXX."""
+
+    hostname = TextLine(
+        title=_('Host name'), required=True,
+        description=_('The hostname of the machine.'))
 
 
 class ICodeImportMachineSet(Interface):

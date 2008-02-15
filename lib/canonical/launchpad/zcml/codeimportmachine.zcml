@@ -13,6 +13,9 @@
       interface="canonical.launchpad.interfaces.ICodeImportMachine"
       />
 
+    <allow
+      interface="canonical.launchpad.interfaces.ICodeImportMachinePublic" />
+
     <!-- ICodeImportMachine has no set_schema, because all modifications
       should be done through methods that create CodeImportEvent objects when
       appropriate. -->

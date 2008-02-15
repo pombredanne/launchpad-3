@@ -21,13 +21,14 @@ from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import SQLBase
 from canonical.launchpad.interfaces import (
     CodeImportMachineState, ICodeImportEventSet, ICodeImportMachine,
-    ICodeImportMachineSet, ICodeImportMachineSetScheduling)
+    ICodeImportMachinePublic, ICodeImportMachineSet,
+    ICodeImportMachineSetScheduling)
 
 
 class CodeImportMachine(SQLBase):
     """See `ICodeImportMachine`."""
 
-    implements(ICodeImportMachine)
+    implements(ICodeImportMachine, ICodeImportMachinePublic)
 
     date_created = UtcDateTimeCol(notNull=True, default=DEFAULT)
 

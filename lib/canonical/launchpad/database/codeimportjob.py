@@ -93,7 +93,17 @@ class CodeImportJobSet(object):
 
     def getJobForMachine(self, machine):
         """See `ICodeImportJobSet`."""
-        return None
+        results = CodeImportJob.select(
+            "date_due >= %s AND state = %s"
+            % sqlvalues(UTC_NOW, CodeImportJobState.PENDING),
+            orderBy=['ordering', 'requesting_user', 'date_due'])
+        try:
+            job = iter(results).next()
+        except StopIteration:
+            return None
+        else:
+            getUtility(ICodeImportJobWorkflow).startJob(job, machine)
+            return job
 
 
 class CodeImportJobWorkflow:
