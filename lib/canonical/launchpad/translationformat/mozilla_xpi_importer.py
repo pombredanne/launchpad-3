@@ -431,6 +431,7 @@ class MozillaXpiImporter:
     content_type = 'application/zip'
 
     file_extensions = ['.xpi']
+    template_suffix = 'en-US.xpi'
 
     uses_source_string_msgids = True
 

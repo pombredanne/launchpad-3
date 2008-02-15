@@ -37,6 +37,7 @@ class GettextPOImporter:
     content_type = 'application/x-po'
 
     file_extensions = ['.po', '.pot']
+    template_suffix = '.pot'
 
     uses_source_string_msgids = False
 

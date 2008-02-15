@@ -135,6 +135,64 @@ class TranslationImporterTestCase(unittest.TestCase):
             self.translation_importer.supported_file_extensions,
             ['.po', '.pot', '.xpi'])
 
+    def testTemplateSuffixes(self):
+        """Check for changes in filename suffixes that identify templates."""
+        self.assertEqual(
+            self.translation_importer.template_suffixes,
+            ['.pot', 'en-US.xpi'])
+
+    def testTemplateNameRecognition(self):
+        """Test that we can recognize templates by name."""
+        def assertIsTemplate(path):
+            self.assertTrue(
+                self.translation_importer.isTemplateName(path),
+                'Failed to recognize "%s" as a template name.' % path)
+
+        def assertIsNotTemplate(path):
+            self.assertFalse(
+                self.translation_importer.isTemplateName(path),
+                'Mistook "%s" for a template name.' % path)
+
+        assertIsNotTemplate("sales.xls")
+        assertIsNotTemplate("dotlessname")
+
+        assertIsTemplate("bar.pot")
+        assertIsTemplate("foo/bar.pot")
+        assertIsTemplate("foo.bar.pot")
+        assertIsTemplate("en-US.xpi")
+        assertIsTemplate("translations/en-US.xpi")
+
+        assertIsNotTemplate("pt_BR.po")
+        assertIsNotTemplate("pt_BR.xpi")
+        assertIsNotTemplate("pt-BR.xpi")
+
+    def testTranslationNameRecognition(self):
+        """Test that we can recognize translation files by name."""
+        def assertIsTranslation(path):
+            self.assertTrue(
+                self.translation_importer.isTranslationName(path),
+                'Failed to recognize "%s" as a translation file name.' % path)
+
+        def assertIsNotTranslation(path):
+            self.assertFalse(
+                self.translation_importer.isTranslationName(path),
+                'Mistook "%s for a translation file name.' % path)
+
+        assertIsNotTranslation("sales.xls")
+        assertIsNotTranslation("dotlessname")
+
+        assertIsTranslation("el.po")
+        assertIsTranslation("po/el.po")
+        assertIsTranslation("po/package-el.po")
+        assertIsTranslation("po/package-zh_TW.po")
+        assertIsTranslation("en-GB.xpi")
+        assertIsTranslation("translations/en-GB.xpi")
+
+        assertIsNotTranslation("hi.pot")
+        assertIsNotTranslation("po/hi.pot")
+        assertIsNotTranslation("en-US.xpi")
+        assertIsNotTranslation("translations/en-US.xpi")
+
     def testIsIdenticalTranslation(self):
         """Test `is_identical_translation`."""
         msg1 = TranslationMessageData()
