@@ -2164,6 +2164,24 @@ class RequestTracker(ExternalBugTracker):
         except KeyError:
             return {'user': 'guest', 'pass': 'guest'}
 
+    def _logIn(self, opener):
+        """Attempt to log in to the remote RT service.
+
+        :param opener: An instance of urllib2.OpenerDirector
+            to be used to connect to the remote server.
+
+        If HTTPError or URLErrors are encountered at any point in this
+        process, they will be raised to be caught at the callsite.
+
+        This method is separate from the _opener property so as to allow
+        us to test the _opener property without having to connect to a
+        remote server.
+        """
+        # To log in to an RT instance we must pass a username and
+        # password to its login form, as a user would from the web.
+        opener.open('%s/' % self.baseurl, urllib.urlencode(
+            self.credentials))
+
     @cachedproperty
     def _opener(self):
         """Return a urllib2.OpenerDirector for the remote RT instance.
@@ -2172,17 +2190,19 @@ class RequestTracker(ExternalBugTracker):
         the opener is returned. If logging in is not successful a
         BugTrackerConnectError will be raised
         """
-        # To log in to an RT instance we must pass a username and
-        # password to its login form, as a user would from the web.
         opener = urllib2.build_opener(urllib2.HTTPCookieProcessor())
+
+        # Attempt to log in to the remote system. Raise an error if we
+        # can't.
         try:
-            opener.open('%s/' % self.baseurl, urllib.urlencode(
-                self.credentials))
+            self._logIn(opener)
         except (urllib2.HTTPError, urllib2.URLError), error:
             raise BugTrackerConnectError('%s/' % self.baseurl,
                 "Unable to authenticate with remote RT service: "
                 "Could not submit login form: " +
                 error.message)
+
+        return opener
 
     def urlopen(self, request, data=None):
         """Return a handle to a remote resource.

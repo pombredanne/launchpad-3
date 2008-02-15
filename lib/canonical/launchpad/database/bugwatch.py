@@ -63,13 +63,14 @@ class BugWatch(SQLBase):
     def url(self):
         """See canonical.launchpad.interfaces.IBugWatch."""
         url_formats = {
-            BugTrackerType.BUGZILLA:    'show_bug.cgi?id=%s',
-            BugTrackerType.TRAC:        'ticket/%s',
-            BugTrackerType.DEBBUGS:     'cgi-bin/bugreport.cgi?bug=%s',
-            BugTrackerType.ROUNDUP:     'issue%s',
-            BugTrackerType.RT:          'Ticket/Display.html?id=%s',
+            BugTrackerType.BUGZILLA: 'show_bug.cgi?id=%s',
+            BugTrackerType.TRAC: 'ticket/%s',
+            BugTrackerType.DEBBUGS: 'cgi-bin/bugreport.cgi?bug=%s',
+            BugTrackerType.ROUNDUP: 'issue%s',
+            BugTrackerType.RT: 'Ticket/Display.html?id=%s',
             BugTrackerType.SOURCEFORGE: 'support/tracker.php?aid=%s',
-            BugTrackerType.MANTIS:      'view.php?id=%s',
+            BugTrackerType.MANTIS: 'view.php?id=%s',
+            BugTrackerType.SAVANNAH: 'bugs/?%s',
         }
         bt = self.bugtracker.bugtrackertype
         if not url_formats.has_key(bt):
@@ -218,8 +219,10 @@ class BugWatchSet(BugSetBase):
             BugTrackerType.MANTIS: self.parseMantisURL,
             BugTrackerType.ROUNDUP: self.parseRoundupURL,
             BugTrackerType.RT: self.parseRTURL,
+            BugTrackerType.SAVANNAH: self.parseSavannahURL,
             BugTrackerType.SOURCEFORGE: self.parseSourceForgeURL,
-            BugTrackerType.TRAC: self.parseTracURL,}
+            BugTrackerType.TRAC: self.parseTracURL,
+        }
 
     def get(self, watch_id):
         """See canonical.launchpad.interfaces.IBugWatchSet."""
@@ -413,6 +416,27 @@ class BugWatchSet(BugSetBase):
         sf_tracker = getUtility(ILaunchpadCelebrities).sourceforge_tracker
 
         return sf_tracker.baseurl, remote_bug
+
+    def parseSavannahURL(self, scheme, host, path, query):
+        """Extract GNU Savannah base URL and bug ID."""
+        # GNU Savannah bugs URLs are in the form /bugs/?<bug-id>, so we
+        # exclude any path that isn't '/bugs/'. We also exclude query
+        # string that have a length of more or less than one, since in
+        # such cases we'd be taking a guess at the bug ID, which would
+        # probably be wrong.
+        if path != '/bugs/' or len(query) != 1:
+            return None
+
+        # The remote bug is actually a key in the query dict rather than
+        # a value, so we simply use the first and only key we come
+        # across as a best-effort guess.
+        remote_bug = query.popitem()[0]
+
+        # There's only one global Savannah bugtracker registered with
+        # Launchpad.
+        savannah_tracker = getUtility(ILaunchpadCelebrities).savannah_tracker
+
+        return savannah_tracker.baseurl, remote_bug
 
     def parseEmailAddressURL(self, scheme, host, path, query):
         """Extract an email address from a bug URL.

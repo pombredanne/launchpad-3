@@ -207,6 +207,7 @@ clean:
 	    -o -name '*.la' -o -name '*.lo' \
 	    -o -name '*.py[co]' -o -name '*.dll' \) -exec rm -f {} \;
 	rm -rf build
+	rm -rf lib/mailman
 
 realclean: clean
 	rm -f TAGS tags

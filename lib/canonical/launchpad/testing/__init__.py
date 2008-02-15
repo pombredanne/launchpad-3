@@ -15,11 +15,27 @@ from datetime import datetime, timedelta
 import pytz
 
 from zope.component import getUtility
+from canonical.database.sqlbase import connect, sqlvalues
 from canonical.launchpad.interfaces import (
-    BranchType, CodeImportReviewStatus, CreateBugParams, IBranchSet, IBugSet,
-    ICodeImportJobWorkflow, ICodeImportSet, ILaunchpadCelebrities, IPersonSet,
-    IProductSet, IRevisionSet, License, PersonCreationRationale,
-    RevisionControlSystems, UnknownBranchTypeError)
+    BranchType,
+    CodeImportMachineState,
+    CodeImportReviewStatus,
+    CreateBugParams,
+    EmailAddressStatus,
+    IBranchSet,
+    IBugSet,
+    ICodeImportJobWorkflow,
+    ICodeImportMachineSet,
+    ICodeImportSet,
+    ILaunchpadCelebrities,
+    IPersonSet,
+    IProductSet,
+    IRevisionSet,
+    License,
+    PersonCreationRationale,
+    RevisionControlSystems,
+    UnknownBranchTypeError,
+    )
 
 
 def time_counter(origin=None, delta=timedelta(seconds=5)):
@@ -86,14 +102,46 @@ class LaunchpadObjectFactory:
         return 'http://%s.example.com/%s' % (
             self.getUniqueString('domain'), self.getUniqueString('path'))
 
-    def makePerson(self, email=None, name=None):
-        """Create and return a new, arbitrary Person."""
+    def makePerson(self, email=None, name=None, password=None,
+                   email_address_status=None):
+        """Create and return a new, arbitrary Person.
+
+        :param email: The email address for the new person.
+        :param name: The name for the new person.
+        :param password: The password for the person.
+            This password can be used in setupBrowser in combination
+            with the email address to create a browser for this new
+            person.
+        :param email_address_status: If specified, the status of the email
+            address is set to the email_address_status.
+        """
         if email is None:
             email = self.getUniqueString('email')
         if name is None:
             name = self.getUniqueString('person-name')
-        return getUtility(IPersonSet).createPersonAndEmail(
-            email, rationale=PersonCreationRationale.UNKNOWN, name=name)[0]
+        if password is None:
+            password = self.getUniqueString('password')
+        else:
+            # If a password was specified, validate the email address,
+            # unless told otherwise.
+            if email_address_status is None:
+                email_address_status = EmailAddressStatus.VALIDATED
+        # Set the password to test in order to allow people that have
+        # been created this way can be logged in.
+        person, email = getUtility(IPersonSet).createPersonAndEmail(
+            email, rationale=PersonCreationRationale.UNKNOWN, name=name,
+            password=password)
+        # To make the person someone valid in Launchpad, validate the
+        # email.
+        if email_address_status == EmailAddressStatus.VALIDATED:
+            person.validateAndEnsurePreferredEmail(email)
+        elif email_address_status is not None:
+            email.status = email_address_status
+            email.syncUpdate()
+        else:
+            # Leave the email as NEW.
+            pass
+        return person
 
     def makeProduct(self, name=None):
         """Create and return a new, arbitrary Product."""
@@ -129,9 +177,9 @@ class LaunchpadObjectFactory:
 
         if branch_type in (BranchType.HOSTED, BranchType.IMPORTED):
             url = None
-        elif (branch_type in (BranchType.MIRRORED, BranchType.REMOTE)
-              and url is None):
-            url = self.getUniqueURL()
+        elif branch_type in (BranchType.MIRRORED, BranchType.REMOTE):
+            if url is None:
+                url = self.getUniqueURL()
         else:
             raise UnknownBranchTypeError(
                 'Unrecognized branch type: %r' % (branch_type,))
@@ -171,7 +219,6 @@ class LaunchpadObjectFactory:
                 log_body=self.getUniqueString('log-body'),
                 revision_date=date_generator.next(),
                 revision_author=author,
-                owner=admin_user,
                 parent_ids=parent_ids,
                 properties={})
             sequence += 1
@@ -219,3 +266,10 @@ class LaunchpadObjectFactory:
             code_import.registrant)
         workflow = getUtility(ICodeImportJobWorkflow)
         return workflow.newJob(code_import)
+
+    def makeCodeImportMachine(self):
+        """Return a new CodeImportMachine.
+
+        The machine will be in the OFFLINE state."""
+        hostname = self.getUniqueString('machine-')
+        return getUtility(ICodeImportMachineSet).new(hostname)

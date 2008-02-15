@@ -47,7 +47,6 @@ four team names:
     >>> info = complete_from_browser(consumer, browser)
     >>> print info.status
     success
-    >>> print
     >>> print info.getSigned(LAUNCHPAD_TEAMS_NS, 'is_member')
     ubuntu-team
 
