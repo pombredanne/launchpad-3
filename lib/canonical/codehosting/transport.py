@@ -457,7 +457,8 @@ class LaunchpadTransport(Transport):
 
     def listable(self):
         self.server.logger.debug('listable()')
-        return self.server.backing_transport.listable()
+        transport, path, permissions = self._get_transport_and_path('.')
+        return transport.listable()
 
     def list_dir(self, relpath):
         return self._call('list_dir', relpath)

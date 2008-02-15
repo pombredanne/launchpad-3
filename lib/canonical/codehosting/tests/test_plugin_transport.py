@@ -430,7 +430,7 @@ class TestLaunchpadTransportReadOnly(TestCase):
             self.lp_transport.get_bytes(self.file_on_both_transports))
 
     def test_iter_files_refers_to_mirror(self):
-        # iter_files_recursive gets its data from the mirror if it cannot
+        # iter_files_recursive() gets its data from the mirror if it cannot
         # write to the branch.
         read_only_branch_name = '/~name12/+junk/junk.dev/'
         transport = self.lp_transport.clone(read_only_branch_name)
