@@ -21,10 +21,11 @@ from canonical.launchpad.interfaces import (
     IPollOption, IPollSubset, IProduct, IProductRelease, IProductReleaseFile,
     IProductSeries, IQuestion, IQuestionTarget, IRequestedCDs,
     IShipItApplication, IShippingRequest, IShippingRequestSet, IShippingRun,
-    ISpecification, ISpecificationSubscription, ISprint, ISprintSpecification,
-    IStandardShipItRequest, IStandardShipItRequestSet, ITeam, ITeamMembership,
-    ITranslationGroup, ITranslationGroupSet, ITranslationImportQueue,
-    ITranslationImportQueueEntry, ITranslator, PersonVisibility)
+    ISpecification, ISpecificationBranch, ISpecificationSubscription, ISprint,
+    ISprintSpecification, IStandardShipItRequest, IStandardShipItRequestSet,
+    ITeam, ITeamMembership, ITranslationGroup, ITranslationGroupSet,
+    ITranslationImportQueue, ITranslationImportQueueEntry, ITranslator,
+    PersonVisibility)
 
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.interfaces import IAuthorization
@@ -128,6 +129,23 @@ class EditDistributionMirrorByOwnerOrDistroOwnerOrMirrorAdminsOrAdmins(
         return (user.inTeam(self.obj.owner) or user.inTeam(admins) or
                 user.inTeam(self.obj.distribution.owner) or
                 user.inTeam(self.obj.distribution.mirror_admin))
+
+
+class EditSpecificationBranch(AuthorizationBase):
+
+    usedfor = ISpecificationBranch
+    permission = 'launchpad.Edit'
+
+    def checkAuthenticated(self, user):
+        return True
+
+
+class ViewSpecificationBranch(EditSpecificationBranch):
+
+    permission = 'launchpad.View'
+
+    def checkUnauthenticated():
+        return True
 
 
 class EditSpecificationByTargetOwnerOrOwnersOrAdmins(AuthorizationBase):
@@ -560,6 +578,26 @@ class SeriesDrivers(AuthorizationBase):
                 return True
         admins = getUtility(ILaunchpadCelebrities).admin
         return user.inTeam(admins)
+
+
+class ViewProductSeries(AuthorizationBase):
+
+    usedfor = IProductSeries
+    permision = 'launchpad.View'
+
+    def checkUnauthenticated(self):
+        """See `IAuthorization.checkUnauthenticated`.
+
+        :return: True or False.
+        """
+        return True
+
+    def checkAuthenticated(self, user):
+        """See `IAuthorization.checkAuthenticated`.
+
+        :return: True or False.
+        """
+        return True
 
 
 class EditProductSeries(EditByRegistryExpertsOrOwnersOrAdmins):
