@@ -225,7 +225,7 @@ all.)
     >>> logout()
 
 
-We also need to confirm that the disired team has a list to subscribe
+We also need to confirm that the desired team has a list to subscribe
 to.  We will use Carlos, as he is an administrator for the Rosetta
 Admins team, and he should know if the list is available.
 
@@ -295,3 +295,50 @@ The mailing list subscription is now available to be managed.
 
     >>> rosetta_team.displayOptions
     ['Preferred address', "Don't subscribe", 'jeff.waugh@ubuntulinux.com']
+
+
+Jdub's mailing list preferences are preserved when he leaves the team.
+When he requests to re-join, the option to re-subscribe to the mailing
+list is not presented.
+
+    >>> browser.open('http://launchpad.dev/~rosetta-admins/+leave')
+    >>> browser.getControl(name='leave').click()
+
+    >>> browser.open('http://launchpad.dev/~rosetta-admins')
+    >>> browser.getLink('Join the team').click()
+    >>> browser.url
+    'http://launchpad.dev/~rosetta-admins/+join'
+
+    >>> browser.getControl(name='mailinglist_subscribe')
+    Traceback (most recent call last):
+    ...
+    LookupError: name 'mailinglist_subscribe'
+
+
+Of course, the option to subscribe to the mailing list isn't present
+for teams that don't have mailing lists.
+
+    >>> browser.open('http://launchpad.dev/~testing-spanish-team')
+    >>> browser.getLink('Join the team').click()
+    >>> browser.url
+    'http://launchpad.dev/~testing-spanish-team/+join'
+
+    >>> browser.getControl(name='mailinglist_subscribe')
+    Traceback (most recent call last):
+    ...
+    LookupError: name 'mailinglist_subscribe'
+
+
+And the option is also missing from the sign-up pages of teams that
+have restricted membership.  (Note that we can only see the join page
+if we visit the URL directly, as the link is not present on the Team
+Overview.)
+
+    >>> browser.open('http://launchpad.dev/~launchpad/+join')
+    >>> browser.url
+    'http://launchpad.dev/~launchpad/+join'
+
+    >>> browser.getControl(name='mailinglist_subscribe')
+    Traceback (most recent call last):
+    ...
+    LookupError: name 'mailinglist_subscribe'
