@@ -168,7 +168,7 @@ class ITranslationImportQueueEntry(Interface):
         """
 
     def getElapsedTimeText():
-        """Return a string representing the elapsed time since we got the file.
+        """Return a string representing elapsed time since we got the file.
 
         The returned string is like:
             '2 days 3 hours 10 minutes ago' or 'just requested'

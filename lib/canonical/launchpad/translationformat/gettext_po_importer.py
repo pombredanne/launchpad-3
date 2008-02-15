@@ -54,9 +54,9 @@ class GettextPOImporter:
         self.content = librarian_client.getFileByAlias(
             translation_import_queue_entry.content.id)
 
-        if translation_import_queue_entry.pofile is not None:
-            pluralformula = (
-                translation_import_queue_entry.pofile.language.pluralexpression)
+        pofile = translation_import_queue_entry.pofile
+        if pofile is not None:
+            pluralformula = pofile.language.pluralexpression
         else:
             pluralformula = None
         parser = POParser(pluralformula)
