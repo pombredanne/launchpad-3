@@ -44,14 +44,14 @@ class ImportdTargetGetterTestCase(ImportdTestCase):
     def assertGoodBzrWorking(self):
         """Helper to check that the retrieved bzrworking matches expectations.
         """
-        # check that bzrworking is a standalone working tree
+        # Check that bzrworking is a standalone working tree.
         control = BzrDir.open(self.bzrworking)
-        # we really want to use BzrDir.open_repository() to ensure this is a
-        # standalone working tree
+        # We really want to use BzrDir.open_repository() to ensure this is a
+        # standalone working tree.
         repository = control.open_repository()
         branch = control.open_branch()
         workingtree = control.open_workingtree()
-        # check that bzrworking has the same history as the mirror, and that
+        # Check that bzrworking has the same history as the mirror, and that
         # it is one revision long, as provided by setUpMirror.
         bzrworking_history = self.bzrworkingHistory()
         mirror_history = self.mirrorHistory()
