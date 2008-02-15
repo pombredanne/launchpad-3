@@ -440,6 +440,19 @@ class TestLaunchpadTransportReadOnly(TestCase):
         self.assertTrue(
             mirror_only in files, '%r not in %r' % (mirror_only, files))
 
+    def test_listable_refers_to_mirror(self):
+        # listable() refers to the mirror transport for read-only branches.
+        read_only_branch_name = '/~name12/+junk/junk.dev/'
+        transport = self.lp_transport.clone(read_only_branch_name)
+
+        # listable() returns the same value for both transports. To
+        # distinguish them, we'll monkey patch the mirror and backing
+        # transports.
+        self.lp_server.mirror_transport.listable = lambda: 'mirror'
+        self.lp_server.backing_transport.listable = lambda: 'backing'
+
+        self.assertEqual('mirror', transport.listable())
+
 
 class TestLoggingSetup(TestCase):
 
