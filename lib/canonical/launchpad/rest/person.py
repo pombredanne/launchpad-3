@@ -16,8 +16,10 @@ from zope.schema import Object
 from canonical.lazr.rest import Collection, Entry, ScopedCollection
 from canonical.lazr.interfaces import IEntry
 from canonical.lazr.rest.schema import CollectionField
-from canonical.launchpad.interfaces import (IPerson,
-     IPersonSet, make_person_name_field)
+
+from canonical.launchpad.interfaces import (
+    IPerson, IPersonSet, make_person_name_field)
+
 from canonical.lp import decorates
 
 class IPersonEntry(IEntry):
@@ -38,10 +40,6 @@ class PersonEntry(Entry):
 
     parent_collection_name = 'people'
 
-    def fragment(self):
-        """See `IEntry`."""
-        return self.context.name
-
     @property
     def members(self):
         """See `IPersonEntry`."""
@@ -52,6 +50,10 @@ class PersonEntry(Entry):
 
 class PersonCollection(Collection):
     """A collection of people."""
+
+    def getEntryPath(self, entry):
+        """See `ICollection`."""
+        return entry.name
 
     def lookupEntry(self, name):
         """Find a person by name."""
@@ -81,4 +83,3 @@ class PersonPersonCollection(ScopedCollection):
         if person in self.collection:
             return person
         return None
-

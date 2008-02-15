@@ -131,8 +131,11 @@ class Archive(SQLBase):
 
         return pubconf
 
-    def getBuildRecords(self, build_state=None, name=None, pocket=None):
+    def getBuildRecords(self, build_state=None, name=None, pocket=None,
+                        user=None):
         """See IHasBuildRecords"""
+        # Ignore "user", since anyone already accessing this archive
+        # will implicitly have permission to see it.
         return getUtility(IBuildSet).getBuildsForArchive(
             self, build_state, name, pocket)
 

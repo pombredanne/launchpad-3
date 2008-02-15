@@ -9,20 +9,26 @@ __all__ = [
     'Entry',
     'EntryResource',
     'HTTPResource',
+    'JSONItem',
+    'OrderBasedScopedCollection',
     'ReadOnlyResource',
     'ScopedCollection',
     'ScopedCollectionResource',
     'ServiceRootResource'
     ]
 
-
+from datetime import datetime
 import simplejson
 import urllib
 
-from zope.component import getMultiAdapter
+from zope.component import adapts, getMultiAdapter
 from zope.interface import implements, directlyProvides
+from zope.proxy import isProxy
 from zope.publisher.interfaces import NotFound
 from zope.schema.interfaces import IField, IObject
+from zope.security.proxy import removeSecurityProxy
+
+from canonical.lazr.enum import BaseItem
 
 # XXX leonardr 2008-01-25 bug=185958:
 # canonical_url code should be moved into lazr.
@@ -43,9 +49,36 @@ class ResourceJSONEncoder(simplejson.JSONEncoder):
 
     def default(self, obj):
         """Convert the given object to a simple data structure."""
-        if IJSONPublishable.providedBy(obj):
-            return obj.toDataForJSON()
-        return simplejson.JSONEncoder.default(self, obj)
+        if isinstance(obj, datetime):
+            return obj.isoformat()
+        if isProxy(obj):
+            # We have a security-proxied version of a built-in
+            # type. We create a new version of the type by copying the
+            # proxied version's content. That way the container is not
+            # security proxied (and simplejson will now what do do
+            # with it), but the content will still be security
+            # wrapped.
+            underlying_object = removeSecurityProxy(obj)
+            if isinstance(underlying_object, list):
+                return list(obj)
+            if isinstance(underlying_object, tuple):
+                return tuple(obj)
+            if isinstance(underlying_object, dict):
+                return dict(obj)
+        return IJSONPublishable(obj).toDataForJSON()
+
+
+class JSONItem:
+    """JSONPublishable adapter for lazr.enum."""
+    adapts(BaseItem)
+    implements(IJSONPublishable)
+
+    def __init__(self, context):
+        self.context = context
+
+    def toDataForJSON(self):
+        """See `ISJONPublishable`"""
+        return str(self.context.title)
 
 
 class HTTPResource:
@@ -98,19 +131,23 @@ class EntryResource(ReadOnlyResource):
     rootsite = None
     @property
     def inside(self):
-        """Find the top-level collection resource associated with this entry.
-        """
-        return self.root_resource.publishTraverse(
-            self.request, self.context.parent_collection_name)
+        """See `ICanonicalUrlData`."""
+        return self.parent_collection
 
-    def __init__(self, context, request):
+    def __init__(self, context, request, parent_collection = None):
         """Associate this resource with a specific object and request."""
         super(EntryResource, self).__init__(IEntry(context), request)
+        if parent_collection:
+            self.parent_collection = parent_collection
+        else:
+            self.parent_collection = self.root_resource.publishTraverse(
+                self.request, self.context.parent_collection_name)
 
     @property
     def path(self):
         """See `IEntryResource`."""
-        return urllib.quote(self.context.fragment())
+        path = self.parent_collection.getEntryPath(self.context)
+        return urllib.quote(path)
 
     def publishTraverse(self, request, name):
         """Fetch a scoped collection resource by name."""
@@ -131,7 +168,7 @@ class EntryResource(ReadOnlyResource):
         # and what the collection's relationship is to the entry it's
         # scoped to.
         scoped_collection.collection = collection
-        scoped_collection.relationship = name
+        scoped_collection.relationship = field
 
         return ScopedCollectionResource(scoped_collection, self.request, name)
 
@@ -145,7 +182,7 @@ class EntryResource(ReadOnlyResource):
         dict = {}
         dict['self_link'] = canonical_url(self, request=self.request)
         schema = self.context.schema
-        for name in schema.names():
+        for name in schema.names(True):
             element = schema.get(name)
             if ICollectionField.providedBy(element):
                 # The field is a collection; include a link to the
@@ -182,7 +219,7 @@ class EntryResource(ReadOnlyResource):
     def do_GET(self):
         """Render the entry as JSON."""
         self.request.response.setHeader('Content-type', 'application/json')
-        return ResourceJSONEncoder().encode(self)
+        return simplejson.dumps(self, cls=ResourceJSONEncoder)
 
 
 class CollectionResource(ReadOnlyResource):
@@ -194,6 +231,7 @@ class CollectionResource(ReadOnlyResource):
     rootsite = None
 
     def __init__(self, context, request, collection_name):
+        """Initialize a resource for a given collection."""
         super(CollectionResource, self).__init__(
             ICollection(context), request)
         self.collection_name = collection_name
@@ -203,22 +241,33 @@ class CollectionResource(ReadOnlyResource):
         """See `ICollectionResource`."""
         return self.collection_name
 
+    def getEntryPath(self, entry):
+        """See `ICollectionResource`."""
+        return self.context.getEntryPath(entry)
+
+    def makeEntryResource(self, entry, request):
+        """Construct an entry resource for the given entry.
+
+        This is a factory method to be overridden by subclasses.
+        """
+        return EntryResource(entry, request)
+
     def publishTraverse(self, request, name):
         """Fetch an entry resource by name."""
         entry = self.context.lookupEntry(name)
         if entry is None:
             raise NotFound(self, name)
-        return EntryResource(entry, self.request)
+        return self.makeEntryResource(entry, self.request)
 
     def do_GET(self):
         """Fetch a collection and render it as JSON."""
         entries = self.context.find()
         if entries is None:
             raise NotFound(self, self.collection_name)
-        entry_resources = [EntryResource(entry, self.request)
+        entry_resources = [self.makeEntryResource(entry, self.request)
                            for entry in entries]
         self.request.response.setHeader('Content-type', 'application/json')
-        return ResourceJSONEncoder().encode(entry_resources)
+        return simplejson.dumps(entry_resources, cls=ResourceJSONEncoder)
 
 
 class ScopedCollectionResource(CollectionResource):
@@ -231,6 +280,20 @@ class ScopedCollectionResource(CollectionResource):
         The object to which the collection is scoped.
         """
         return EntryResource(self.context.context, self.request)
+
+    def makeEntryResource(self, entry, request):
+        """Construct an entry resource, possibly scoped to this collection.
+
+        If this is the sort of scoped collection that contains the
+        actual entries (as opposed to containing references to entries
+        that 'really' live in a top-level collection), the entry resource
+        will be created knowing who its parent is.
+        """
+        if self.context.relationship.is_entry_container:
+            parent_collection = self
+        else:
+            parent_collection = None
+        return EntryResource(entry, request, parent_collection)
 
 
 class ServiceRootResource:
@@ -281,7 +344,7 @@ class Collection:
 
 class ScopedCollection:
     """A collection associated with some parent object."""
-    implements(ICollection)
+    implements(IScopedCollection)
 
     def __init__(self, context, collection):
         """Initialize the scoped collection.
@@ -292,6 +355,16 @@ class ScopedCollection:
         self.context = context
         self.collection = collection
 
+    def child_fragment(self, child):
+        """Choose a URL fragment for one of this collection's entries.
+
+        The default behavior is to let the child entry choose its own
+        URL fragment. But sometimes the child doesn't have a top-level
+        collection or unique ID of its own; it only makes sense in
+        relation to its parent collection. In such cases it's the
+        parent collection's job to decide on a URL.
+        """
+        return None
 
     def lookupEntry(self, name):
         """See `ICollection`"""
@@ -301,3 +374,31 @@ class ScopedCollection:
         """See `ICollection`."""
         return self.collection
 
+
+class OrderBasedScopedCollection(ScopedCollection):
+    """A scoped collection where the entries are identified by order.
+
+    The entries in this collection don't have unique IDs of their own.
+    They're identified by their ordering within this collection. So
+    their URLs look like /collection/1, /collection/2, etc. The
+    numbers start from 1.
+    """
+
+    def getEntryPath(self, child):
+        """See `ICollection`."""
+        for i, entry in enumerate(self.collection):
+            if child.context == entry:
+                return str(i+1)
+        else:
+            return None
+
+    def lookupEntry(self, number):
+        """Find a message by its order number."""
+        try:
+            number = int(number)
+        except ValueError:
+            return None
+        try:
+            return self.collection[number-1]
+        except IndexError:
+            return None

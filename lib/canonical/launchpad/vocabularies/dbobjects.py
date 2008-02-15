@@ -40,6 +40,7 @@ __all__ = [
     'PackageReleaseVocabulary',
     'PersonAccountToMergeVocabulary',
     'PersonActiveMembershipVocabulary',
+    'PersonActiveMembershipPlusSelfVocabulary',
     'person_team_participations_vocabulary_factory',
     'ProcessorVocabulary',
     'ProcessorFamilyVocabulary',
@@ -174,6 +175,19 @@ class BranchVocabularyBase(SQLObjectVocabularyBase):
             raise LookupError(token)
         return self.toTerm(branch)
 
+    def _getExactMatch(self, query):
+        """Return the branch if query is a valid unique_name."""
+        return BranchSet().getByUniqueName(query)
+
+    def searchForTerms(self, query=None):
+        """See `SQLObjectVocabularyBase`."""
+        # First see if the query is a unique name for the branch.
+        if query is not None:
+            branch = self._getExactMatch(query)
+            if branch is not None:
+                return CountableIterator(1, [branch], self.toTerm)
+        return SQLObjectVocabularyBase.searchForTerms(self, query)
+
     def __len__(self):
         """See `IVocabulary`."""
         return self.search('').count()
@@ -279,24 +293,37 @@ class BranchRestrictedOnProductVocabulary(BranchVocabularyBase):
     name of the registrant of the branch.
     """
 
-    def _restrictToProduct(self, product):
-        """Return the where clause to restrict to the product."""
-        if product is None:
-            return 'Branch.product is NULL'
-        else:
-            return 'Branch.product = %s' % quote(product)
+    def __init__(self, context=None):
+        BranchVocabularyBase.__init__(self, context)
 
-    def _constructNaiveQueryString(self, quoted_query):
-        """See `BranchVocabularyBase`."""
         if IProduct.providedBy(self.context):
-            restrict_sql = self._restrictToProduct(self.context)
+            self.product = self.context
         elif IProductSeries.providedBy(self.context):
-            restrict_sql = self._restrictToProduct(self.context.product)
+            self.product = self.context.product
         elif IBranch.providedBy(self.context):
-            restrict_sql = self._restrictToProduct(self.context.product)
+            self.product = self.context.product
         else:
             # An unexpected type.
             raise AssertionError('Unexpected context type')
+
+    def _getExactMatch(self, query):
+        """Return the branch if query is a valid unique_name."""
+        branch = BranchSet().getByUniqueName(query)
+        if branch is not None:
+            if branch.product == self.product:
+                return branch
+            else:
+                return None
+        else:
+            return None
+
+    def _constructNaiveQueryString(self, quoted_query):
+        """See `BranchVocabularyBase`."""
+
+        if self.product is None:
+            restrict_sql = 'Branch.product is NULL'
+        else:
+            restrict_sql = 'Branch.product = %s' % quote(self.product)
 
         base_sql = self._constructGeneralQuery(
             quoted_query, check_product=False)
@@ -854,42 +881,58 @@ class ValidTeamOwnerVocabulary(ValidPersonOrTeamVocabulary):
 class PersonActiveMembershipVocabulary:
     """All the teams the person is an active member of."""
 
-    implements(IVocabulary, IVocabularyTokenized)
+    implements(IVocabularyTokenized)
 
     def __init__(self, context):
         assert IPerson.providedBy(context)
         self.context = context
 
+    def _get_teams(self):
+        """The teams that the vocabulary is built from."""
+        return [membership.team for membership
+                in self.context.myactivememberships]
+
     def __len__(self):
-        return self.context.myactivememberships.count()
+        """See `IVocabularyTokenized`."""
+        return len(self._get_teams())
 
     def __iter__(self):
-        return iter(
-            [self.getTerm(membership.team)
-             for membership in self.context.myactivememberships])
+        """See `IVocabularyTokenized`."""
+        return iter([self.getTerm(team) for team in self._get_teams()])
 
     def getTerm(self, team):
+        """See `IVocabularyTokenized`."""
         if team not in self:
             raise LookupError(team)
         return SimpleTerm(team, team.name, team.displayname)
 
-    def __contains__(self, obj):
-        if not ITeam.providedBy(obj):
-            return False
-        member_teams = [
-            membership.team for membership in self.context.myactivememberships
-            ]
-        return obj in member_teams
-
-    def getQuery(self):
-        return None
-
     def getTermByToken(self, token):
-        for membership in self.context.myactivememberships:
-            if membership.team.name == token:
-                return self.getTerm(membership.team)
+        """See `IVocabularyTokenized`."""
+        for team in self._get_teams():
+            if team.name == token:
+                return self.getTerm(team)
         else:
             raise LookupError(token)
+
+    def __contains__(self, obj):
+        """See `IVocabularyTokenized`."""
+        return obj in self._get_teams()
+
+
+class PersonActiveMembershipPlusSelfVocabulary(
+    PersonActiveMembershipVocabulary):
+    """The logged in user, and all the teams they are a member of."""
+
+    def __init__(self, context):
+        # We are interested in the logged in user, not the actual context.
+        logged_in_user = getUtility(ILaunchBag).user
+        PersonActiveMembershipVocabulary.__init__(self, logged_in_user)
+
+    def _get_teams(self):
+        """See `PersonActiveMembershipVocabulary`."""
+        teams = PersonActiveMembershipVocabulary._get_teams(self)
+        # Add the logged in user as the first item.
+        return [self.context] + teams
 
 
 class ActiveMailingListVocabulary:

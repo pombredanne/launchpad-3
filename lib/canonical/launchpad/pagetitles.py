@@ -700,6 +700,8 @@ logintoken_validatesignonlygpg = 'Confirm sign-only OpenPGP key'
 
 logintoken_validateteamemail = 'Confirm e-mail address'
 
+mailinglists_review = 'Pending mailing lists requests'
+
 # main_template has the code to insert one of these titles.
 
 malone_about = 'About Launchpad Bugs'
@@ -842,7 +844,7 @@ def person_branches(context, view):
     """Return the view's heading."""
     return view.heading
 
-person_branch_add = ContextDisplayName('Register a new branch for %s')
+person_branch_add = 'Register a branch'
 
 person_changepassword = 'Change your password'
 
@@ -1088,7 +1090,7 @@ rosetta_index = 'Launchpad Translations'
 
 rosetta_products = 'Projects with Translations in Launchpad'
 
-product_branch_add = ContextDisplayName('Register a new %s branch')
+product_branch_add = 'Register a branch'
 
 def productseries_edit(context, view):
     """Return the page title for changing a product series details."""
@@ -1331,6 +1333,8 @@ standardshipitrequest_new = 'Create a new standard option'
 standardshipitrequest_edit = 'Edit standard option'
 
 team_addmember = ContextBrowsername('Add members to %s')
+
+team_add_my_teams = 'Propose/add one of your teams to another one'
 
 team_contactaddress = ContextDisplayName('%s contact address')
 
