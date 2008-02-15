@@ -802,21 +802,65 @@ class PersonFormatterAPI(ObjectFormatterExtendedAPI):
             url, image_html, cgi.escape(person.browsername))
 
 
-class PillarFormatterAPI(ObjectFormatterExtendedAPI):
+class ConvenientFormatter(ObjectFormatterExtendedAPI):
+    """A ObjectFormatterExtendedAPI that is easy to customize"""
+
+    _permission = 'launchpad.View'
+
+    def _should_link(self):
+        """Return True if a link should be shown, False otherwise"""
+        return check_permission(self._permission, self._context)
+
+    def _values(self):
+        """Return a dict of values to use for template substitution"""
+        raise NotImplementedError(self._values)
+
+    def _make_summary(self):
+        """Create a summary from _template and _values()"""
+        values = {}
+        for key, value in self._values().iteritems():
+            if value is None:
+                values[key] = ''
+            else:
+                values[key] = cgi.escape(value)
+        return self._template % values
+
+    def _get_icon(self):
+        icon = queryAdapter(self._context, IPathAdapter, 'image').icon()
+        if 'src="/@@/nyet-icon"' in icon:
+            return None
+        else:
+            return icon
+
+    def link(self, extra_path):
+        """Return html including a link, description and icon.
+
+        Icon and link are optional, depending on type and permissions.
+        Uses self._make_summary for the summary, self._get_icon
+        for the icon, self._should_link to determine whether to link, and
+        self.url() to generate the url.
+        """
+        html = self._make_summary()
+        if self._should_link():
+            url = self.url(extra_path)
+        else:
+            url = ''
+        if url:
+            html = '<a href="%s">%s</a>' % (url, html)
+        icon = self._get_icon()
+        if icon is not None:
+            html = icon + ' ' + html
+        return html
+
+
+class PillarFormatterAPI(ConvenientFormatter):
     """Adapter for IProduct, IDistribution and IProject objects to a
     formatted string."""
 
-    def link(self, extra_path):
-        """Return an HTML link to the pillar page containing an icon
-        followed by the pillar's display name.
-        """
-        pillar = self._context
-        url = canonical_url(pillar)
-        icon_html = ObjectImageDisplayAPI(pillar).icon()
-        if extra_path:
-            url = '%s/%s' % (url, extra_path)
-        return ('<a href="%s">%s&nbsp;%s</a>' % (
-                          url, icon_html, pillar.displayname))
+    _template = '%(displayname)s'
+
+    def _values(self):
+        return {'displayname': self._context.displayname}
 
 
 class BranchFormatterAPI(ObjectFormatterExtendedAPI):
@@ -878,57 +922,6 @@ class BranchFormatterAPI(ObjectFormatterExtendedAPI):
             '%(name)s</a>: %(title)s' % self._args(extra_path))
 
 
-class ConvenientFormatter(ObjectFormatterExtendedAPI):
-    """A ObjectFormatterExtendedAPI that is easy to customize"""
-
-    _permission = 'launchpad.View'
-
-    def _should_link(self):
-        """Return True if a link should be shown, False otherwise"""
-        return check_permission(self._permission, self._context)
-
-    def _values(self):
-        """Return a dict of values to use for template substitution"""
-        raise NotImplementedError(self._values)
-
-    def _make_summary(self):
-        """Create a summary from _template and _values()"""
-        values = {}
-        for key, value in self._values().iteritems():
-            if value is None:
-                values[key] = ''
-            else:
-                values[key] = cgi.escape(value)
-        return self._template % values
-
-    def _get_icon(self):
-        icon = queryAdapter(self._context, IPathAdapter, 'image').icon()
-        if 'src="/@@/nyet-icon"' in icon:
-            return None
-        else:
-            return icon
-
-    def link(self, extra_path):
-        """Return html including a link, description and icon.
-
-        Icon and link are optional, depending on type and permissions.
-        Uses self._make_summary for the summary, self._get_icon
-        for the icon, self._should_link to determine whether to link, and
-        self.url() to generate the url.
-        """
-        html = self._make_summary()
-        if self._should_link():
-            url = self.url(extra_path)
-        else:
-            url = ''
-        if url:
-            html = '<a href="%s">%s</a>' % (url, html)
-        icon = self._get_icon()
-        if icon is not None:
-            html = icon + ' ' + html
-        return html
-
-
 class BranchSubscriptionFormatterAPI(ConvenientFormatter):
     """Adapter for IBranchSubscription objects to a formatted string."""
 
@@ -972,31 +965,22 @@ class BugBranchFormatterAPI(ConvenientFormatter):
         return self._get_task_formatter()._get_icon()
 
 
-class BugFormatterAPI(ObjectFormatterExtendedAPI):
+class BugFormatterAPI(ConvenientFormatter):
     """Adapter for IBug objects to a formatted string."""
-
-    def link(self, extra_path):
-        """Return an HTML link to the bug page containing an icon
-        followed by the bug's title.
-        """
-        bug = self._context
-        url = canonical_url(bug)
-        if extra_path:
-            url = '%s/%s' % (url, extra_path)
-        return ('<a href="%s"><img src="/@@/bug" alt=""/>'
-                '&nbsp;Bug #%d: %s</a>' % (
-                    url, bug.id, cgi.escape(bug.title)))
-
-
-class BugTaskFormatterAPI(ConvenientFormatter):
-    """Adapter for IBugTask objects to a formatted string."""
 
     _template = 'Bug #%(id)s: %(title)s'
 
     def _values(self):
         """See ConvenientFormatter._values."""
-        bugtask = self._context
-        return {'id': str(bugtask.bug.id), 'title': bugtask.bug.title}
+        bug = self._context
+        return {'id': str(bug.id), 'title': bug.title}
+
+
+class BugTaskFormatterAPI(ConvenientFormatter):
+    """Adapter for IBugTask objects to a formatted string."""
+
+    def _make_summary(self):
+        return BugFormatterAPI(self._context.bug)._make_summary()
 
 
 class CodeImportFormatterAPI(ConvenientFormatter):
