@@ -56,6 +56,7 @@ from canonical.launchpad.interfaces import (
     ILaunchpadCelebrities,
     InvalidBranchMergeProposal,
     IPersonSet,
+    IProductSeries,
     ISpecificationBranch,
     UICreatableBranchType,
     )
@@ -602,15 +603,15 @@ class BranchDeletionView(LaunchpadFormView):
         'item', 'reason' and 'allowed'.
         """
         branch = self.context
-        row_dict = {'delete': [], 'alter': []}
+        row_dict = {'delete': [], 'alter': [], 'break_link': []}
         for item, action, reason, allowed in (
             self.displayDeletionRequirements()):
             if IBugBranch.providedBy(item):
-                item = item.bug
-                action = 'alter'
+                action = 'break_link'
             elif ISpecificationBranch.providedBy(item):
-                item = item.specification
-                action = 'alter'
+                action = 'break_link'
+            elif IProductSeries.providedBy(item):
+                action = 'break_link'
             row = {'item': item,
                    'reason': reason,
                    'allowed': allowed,

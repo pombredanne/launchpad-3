@@ -34,8 +34,21 @@
   </tal:actions>
   </ul>
   </tal:deletetable>
+  <tal:breaktable condition="view/branch_deletion_actions/break_link">
+  <div>The links will be <em>broken</em>:</div>
+  <ul>
+  <tal:actions repeat="row view/branch_deletion_actions/break_link">
+  <li>
+    <img src="/@@/no" title="Insufficient privilages"
+         tal:condition="not:row/allowed"/>
+        <tal:item tal:content="structure row/item/fmt:link" />
+        (<tal:reason tal:content="row/reason" />)
+  </li>
+  </tal:actions>
+  </ul>
+  </tal:breaktable>
   <tal:altertable condition="view/branch_deletion_actions/alter">
-  <div>The following items require <em>changes</em>:</div>
+  <div>The following items will be <em>updated</em>:</div>
   <ul>
   <tal:actions repeat="row view/branch_deletion_actions/alter">
   <li>
