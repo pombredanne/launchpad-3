@@ -1241,6 +1241,10 @@ class BranchSubscriptionEdit(AuthorizationBase):
         return user.inTeam(self.obj.person) or user.inTeam(admins)
 
 
+class BranchSubscriptionView(BranchSubscriptionEdit):
+    permission = 'launchpad.View'
+
+
 class BranchMergeProposalView(AuthorizationBase):
     permission = 'launchpad.View'
     usedfor = IBranchMergeProposal
