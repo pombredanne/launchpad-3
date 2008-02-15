@@ -48,8 +48,8 @@
         <a tal:content="contributor/browsername"
           tal:attributes="href contributor/fmt:url" />
         (<a tal:attributes="
-            href string:${context/fmt:url}/+filter?person=${contributor/name}">
-          filter</a>)
+            href string:${context/fmt:url}/+filter?person=${contributor/name}"
+          >filter</a>)
       </li>
     </ul>
 
