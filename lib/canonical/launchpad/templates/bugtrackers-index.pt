@@ -12,10 +12,12 @@
     <div metal:fill-slot="main">
       <h1>Bug trackers registered in Launchpad</h1>
       <p>
-        Bug reports in Launchpad can be linked to the equivalent reports in
+        A bug report in Launchpad can be linked to the equivalent report in
         other bug trackers.
-        Subscribers to a Launchpad bug report are notified when
-        a linked external bug report changes state.
+        For most bug tracker types,
+        the bug&#8217;s status in that tracker is shown in Launchpad,
+        and subscribers to the Launchpad bug report are notified when
+        the external status changes.
       </p>
 
   <table class="sortable listing" id="trackers">

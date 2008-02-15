@@ -46,6 +46,7 @@ from canonical.launchpad.webapp import (
     GetitemNavigation, Navigation, LaunchpadView, ApplicationMenu)
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.interfaces import ICanonicalUrlData
+from canonical.launchpad.webapp.menu import structured
 
 
 class POTemplateNavigation(Navigation):
@@ -334,10 +335,11 @@ class POTemplateView(LaunchpadView, TranslationsMixin):
                 potemplate=self.context)
 
             self.request.response.addInfoNotification(
+                structured(
                 'Thank you for your upload. The file content will be imported'
                 ' soon into Launchpad. You can track its status from the'
                 ' <a href="%s/+imports">Translation Import Queue</a>' %
-                    canonical_url(self.context.translationtarget))
+                    canonical_url(self.context.translationtarget)))
 
         elif helpers.is_tar_filename(filename):
             # Add the whole tarball to the import queue.
@@ -350,13 +352,14 @@ class POTemplateView(LaunchpadView, TranslationsMixin):
 
             if num > 0:
                 self.request.response.addInfoNotification(
+                    structured(
                     'Thank you for your upload. %d files from the tarball'
                     ' will be imported soon into Launchpad. You can track its'
                     ' status from the <a href="%s/+imports">Translation'
                     ' Import Queue<a>' % (
                         num, canonical_url(self.context.translationtarget)
                         )
-                    )
+                    ))
             else:
                 self.request.response.addWarningNotification(
                     "Nothing has happened. The tarball you uploaded does not"

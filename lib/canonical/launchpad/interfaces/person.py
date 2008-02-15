@@ -33,6 +33,7 @@ __all__ = [
     'TeamMembershipRenewalPolicy',
     'TeamMembershipStatus',
     'TeamSubscriptionPolicy',
+    'make_person_name_field',
     ]
 
 
@@ -43,9 +44,12 @@ from zope.interface.exceptions import Invalid
 from zope.interface.interface import invariant
 from zope.component import getUtility
 
-from canonical.launchpad import _
 from canonical.lazr import DBEnumeratedType, DBItem, EnumeratedType, Item
 from canonical.lazr.interfaces import IEntry
+from canonical.lazr.rest.schema import CollectionField
+
+from canonical.launchpad import _
+
 from canonical.launchpad.fields import (
     BlacklistableContentNameField, IconImageUpload, LogoImageUpload,
     MugshotImageUpload, PasswordField, StrippedTextLine)
@@ -403,6 +407,7 @@ class INewPerson(Interface):
     creation_comment = Text(
         title=_('Creation reason'), required=True,
         description=_("The reason why you're creating this profile."))
+
 
 def make_person_name_field():
     """Construct a PersonNameField.
@@ -1034,52 +1039,6 @@ class IPersonPublic(IHasSpecifications, IHasMentoringOffers,
         The person's membership may be direct or indirect.
         """
 
-    def join(team):
-        """Join the given team if its subscriptionpolicy is not RESTRICTED.
-
-        Join the given team according to the policies and defaults of that
-        team:
-        - If the team subscriptionpolicy is OPEN, the user is added as
-          an APPROVED member with a NULL TeamMembership.reviewer.
-        - If the team subscriptionpolicy is MODERATED, the user is added as
-          a PROPOSED member and one of the team's administrators have to
-          approve the membership.
-
-        This method returns True if this person was added as a member of
-        <team> or False if that wasn't possible.
-
-        Teams cannot call this method because they're not allowed to
-        login and thus can't 'join' another team. Instead, they're added
-        as a member (using the addMember() method) by a team administrator.
-        """
-
-    def leave(team):
-        """Leave the given team.
-
-        If there's a membership entry for this person on the given team and
-        its status is either APPROVED or ADMIN, we change the status to
-        DEACTIVATED and remove the relevant entries in teamparticipation.
-
-        Teams cannot call this method because they're not allowed to
-        login and thus can't 'leave' another team. Instead, they have their
-        subscription deactivated (using the setMembershipData() method) by
-        a team administrator.
-        """
-
-    def setMembershipData(person, status, reviewer, expires=None,
-                          comment=None):
-        """Set the attributes of the person's membership on this team.
-
-        Set the status, dateexpires, reviewer and comment, where reviewer is
-        the user responsible for this status change and comment is the comment
-        left by the reviewer for the change.
-
-        This method will ensure that we only allow the status transitions
-        specified in the TeamMembership spec. It's also responsible for
-        filling/cleaning the TeamParticipation table when the transition
-        requires it.
-        """
-
     def getAdministratedTeams():
         """Return the teams that this person/team is an administrator of.
 
@@ -1254,6 +1213,48 @@ class IPersonViewRestricted(Interface):
 class IPersonEditRestricted(Interface):
     """IPerson attributes that require launchpad.Edit permission."""
 
+    def join(team, requester=None):
+        """Join the given team if its subscriptionpolicy is not RESTRICTED.
+
+        Join the given team according to the policies and defaults of that
+        team:
+        - If the team subscriptionpolicy is OPEN, the user is added as
+          an APPROVED member with a NULL TeamMembership.reviewer.
+        - If the team subscriptionpolicy is MODERATED, the user is added as
+          a PROPOSED member and one of the team's administrators have to
+          approve the membership.
+
+        :param requester: The person who requested the membership on behalf of
+        a team or None when a person requests the membership for himself.
+        """
+
+    def leave(team):
+        """Leave the given team.
+
+        If there's a membership entry for this person on the given team and
+        its status is either APPROVED or ADMIN, we change the status to
+        DEACTIVATED and remove the relevant entries in teamparticipation.
+
+        Teams cannot call this method because they're not allowed to
+        login and thus can't 'leave' another team. Instead, they have their
+        subscription deactivated (using the setMembershipData() method) by
+        a team administrator.
+        """
+
+    def setMembershipData(person, status, reviewer, expires=None,
+                          comment=None):
+        """Set the attributes of the person's membership on this team.
+
+        Set the status, dateexpires, reviewer and comment, where reviewer is
+        the user responsible for this status change and comment is the comment
+        left by the reviewer for the change.
+
+        This method will ensure that we only allow the status transitions
+        specified in the TeamMembership spec. It's also responsible for
+        filling/cleaning the TeamParticipation table when the transition
+        requires it.
+        """
+
     def addMember(person, reviewer, status=TeamMembershipStatus.APPROVED,
                   comment=None, force_team_add=False):
         """Add the given person as a member of this team.
@@ -1282,6 +1283,7 @@ class IPersonEntry(IEntry):
 
     name = make_person_name_field()
     teamowner = Object(schema=IPerson)
+    members = CollectionField(value_type=Object(schema=IPerson))
 
 
 class INewPersonForm(IPerson):
@@ -1390,7 +1392,7 @@ class IPersonSet(Interface):
         """Return the person with the given OpenID identifier, or None."""
 
     def getAllTeams(orderBy=None):
-        """Return all Teams.
+        """Return all Teams, ignoring the merged ones.
 
         <orderBy> can be either a string with the column name you want to sort
         or a list of column names as strings.

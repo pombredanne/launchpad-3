@@ -8,7 +8,7 @@ import shutil
 import tempfile
 
 from canonical.testing import PageTestLayer
-from canonical.launchpad.ftests.test_pages import PageTestSuite
+from canonical.launchpad.testing.pages import PageTestSuite
 
 class TestMakeStoryTest(unittest.TestCase):
     layer = PageTestLayer

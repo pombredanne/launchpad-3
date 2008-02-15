@@ -32,6 +32,7 @@ from canonical.launchpad.interfaces import (
 from canonical.launchpad.webapp import (
     ApplicationMenu, Link, canonical_url, LaunchpadView, Navigation)
 from canonical.launchpad.webapp.batching import BatchNavigator
+from canonical.launchpad.webapp.menu import structured
 
 
 class CustomDropdownWidget(DropdownWidget):
@@ -196,10 +197,11 @@ class POFileUploadView(POFileView):
             potemplate=self.context.potemplate, pofile=self.context)
 
         self.request.response.addInfoNotification(
+            structured(
             'Thank you for your upload. The translation content will be'
             ' imported soon into Launchpad. You can track its status from the'
             ' <a href="%s/+imports">Translation Import Queue</a>' %
-                canonical_url(self.context.potemplate.translationtarget))
+                canonical_url(self.context.potemplate.translationtarget)))
 
 
 class POFileTranslateView(BaseTranslationView):
@@ -406,12 +408,6 @@ class POFileTranslateView(BaseTranslationView):
 class POExportView(BaseExportView):
 
     def processForm(self):
-        if self.context.is_cached_export_valid:
-            # There is already a valid exported file cached in Librarian, we
-            # can serve that file directly.
-            self.request.response.redirect(self.context.exportfile.http_url)
-            return None
-
         return (None, [self.context])
 
     def getDefaultFormat(self):

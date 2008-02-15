@@ -65,6 +65,7 @@ from canonical.launchpad.interfaces import (
     ILaunchpadRoot,
     ILaunchpadStatisticSet,
     ILoginTokenSet,
+    IMailingListSet,
     IMaloneApplication,
     IMentoringOfferSet,
     IPersonSet,
@@ -161,11 +162,11 @@ class MenuBox(LaunchpadView):
         self.contextmenuitems = sorted([
             link for link in context_menu_links.values() if (link.enabled or
                                                              config.devmode)],
-            key=operator.attrgetter('text'))
+            key=operator.attrgetter('sort_key'))
         self.applicationmenuitems = sorted([
             link for link in menuapi.application() if (link.enabled or
                                                        config.devmode)],
-            key=operator.attrgetter('text'))
+            key=operator.attrgetter('sort_key'))
 
     def render(self):
         if not self.contextmenuitems and not self.applicationmenuitems:
@@ -412,7 +413,7 @@ class LaunchpadRootNavigation(Navigation):
     @stepto('support')
     def redirect_support(self):
         """Redirect /support to Answers root site."""
-        target_url= canonical_url(
+        target_url = canonical_url(
             getUtility(ILaunchpadRoot), rootsite='answers')
         return self.redirectSubTree(target_url + 'questions', status=301)
 
@@ -448,6 +449,7 @@ class LaunchpadRootNavigation(Navigation):
         'karmaaction': IKarmaActionSet,
         '+imports': ITranslationImportQueue,
         '+languages': ILanguageSet,
+        '+mailinglists': IMailingListSet,
         '+mentoring': IMentoringOfferSet,
         'people': IPersonSet,
         'projects': IProductSet,
@@ -511,19 +513,24 @@ class LaunchpadRootNavigation(Navigation):
         user = getUtility(ILaunchBag).user
         ignore_inactive = True
         if user and user.inTeam(admins):
-            # Admins should be able to access deactivated projects too
+            # Admins should be able to access deactivated projects too.
             ignore_inactive = False
         pillar = getUtility(IPillarNameSet).getByName(
             name, ignore_inactive=ignore_inactive)
         return pillar
 
     def _getBetaRedirectionView(self):
-        # If the inhibit_beta_redirect cookie is set, don't redirect:
+        # If the inhibit_beta_redirect cookie is set, don't redirect.
         if self.request.cookies.get('inhibit_beta_redirect', '0') == '1':
             return None
 
-        # If we are looking at the front page, don't redirect:
+        # If we are looking at the front page, don't redirect.
         if self.request['PATH_INFO'] == '/':
+            return None
+
+        # If this is a HTTP POST, we don't want to issue a redirect.
+        # Doing so would go against the HTTP standard.
+        if self.request.method == 'POST':
             return None
 
         # If no redirection host is set, don't redirect.
@@ -544,10 +551,10 @@ class LaunchpadRootNavigation(Navigation):
             getUtility(ILaunchpadCelebrities).launchpad_beta_testers):
             return None
 
-        # Alter the host name to point at the redirection target:
+        # Alter the host name to point at the redirection target.
         new_host = uri.host[:-len(mainsite_host)] + redirection_host
         uri = uri.replace(host=new_host)
-        # Complete the URL from the environment:
+        # Complete the URL from the environment.
         uri = uri.replace(path=self.request['PATH_INFO'])
         query_string = self.request.get('QUERY_STRING')
         if query_string:
