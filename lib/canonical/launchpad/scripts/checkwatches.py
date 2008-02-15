@@ -266,8 +266,9 @@ class BugWatchUpdater(object):
 
                     new_remote_importance = remotesystem.getRemoteImportance(
                         bug_id)
-                    new_malone_importance = remotesystem.convertRemoteImportance(
-                        new_remote_importance)
+                    new_malone_importance = (
+                        remotesystem.convertRemoteImportance(
+                            new_remote_importance))
                 except InvalidBugId:
                     error = BugWatchErrorType.INVALID_BUG_ID
                     remotesystem.warning(
@@ -311,8 +312,9 @@ class BugWatchUpdater(object):
                 # bug watches will get recorded.
                 self.txn.abort()
                 self.txn.begin()
-                bug_watches_by_remote_bug = remotesystem._getBugWatchesByRemoteBug(
-                    bug_watch_ids)
+                bug_watches_by_remote_bug = (
+                    remotesystem._getBugWatchesByRemoteBug(
+                        bug_watch_ids))
 
                 # We record errors against the bug watches and update
                 # their lastchecked dates so that we don't try to
