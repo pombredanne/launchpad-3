@@ -1103,6 +1103,7 @@ Predictably, private bugs are sent with a slightly different header:
     ...     for message in messages:
     ...         message.get_all('X-Launchpad-Bug-Private')
     ['yes']
+    ['yes']
 
 
 == The X-Launchpad-Bug-Security-Vulnerability header ==
@@ -1128,6 +1129,7 @@ simple "yes":
     >>> for bug_notifications, messages in email_notifications:
     ...     for message in messages:
     ...         message.get_all('X-Launchpad-Bug-Security-Vulnerability')
+    ['yes']
     ['yes']
 
 
