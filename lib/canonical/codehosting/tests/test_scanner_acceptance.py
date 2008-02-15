@@ -1,7 +1,7 @@
-# Copyright 2006 Canonical Ltd.  All rights reserved.
+# Copyright 2006-2008 Canonical Ltd.  All rights reserved.
 # Author: David Allouche <david@allouche.net>
 
-"""Feature tests for the Branch Scanner script."""
+"""End-to-end tests for the Branch Scanner script."""
 
 __metaclass__ = type
 
@@ -26,9 +26,10 @@ from canonical.testing import LaunchpadZopelessLayer
 
 
 class BranchScannerTest(TestCase):
+    """Branch to install branch-scanner test data on."""
+
     layer = LaunchpadZopelessLayer
     branch_id = 7
-    """Branch to install branch-scanner test data on."""
 
     def setUp(self):
         TestCase.setUp(self)
@@ -37,7 +38,9 @@ class BranchScannerTest(TestCase):
         self.testdir = tempfile.mkdtemp()
         self._saved_environ = dict(os.environ)
         os.environ['HOME'] = self.testdir
-        self.warehouse = None
+        self.setUpWarehouse()
+        self.db_branch = getUtility(IBranchSet)[self.branch_id]
+        assert self.db_branch.revision_history.count() == 0
 
     def tearDown(self):
         rmtree(self.testdir)
@@ -45,7 +48,7 @@ class BranchScannerTest(TestCase):
         os.environ.update(self._saved_environ)
         TestCase.tearDown(self)
 
-    def setupWarehouse(self):
+    def setUpWarehouse(self):
         """Create a sandbox branch warehouse for testing.
 
         See doc/bazaar for more context on the branch warehouse concept.
@@ -58,35 +61,59 @@ class BranchScannerTest(TestCase):
         os.mkdir(warehouse)
         self.warehouse = warehouse
 
-    def installTestBranch(self, db_branch):
-        """Create a test data in the warehouse for the given branch object."""
+    def getWarehouseLocation(self, db_branch):
+        """Get the warehouse location for a database branch."""
         destination = join(self.warehouse, '%08x' % db_branch.id)
         assert not exists(destination)
-        create_branch_with_one_revision(destination)
-        # record the last mirrored revision
-        bzr_branch = bzrlib.branch.Branch.open(destination)
-        db_branch.last_mirrored_id = bzr_branch.last_revision()
+        return destination
 
-    def test_branch_scanner_script(self):
-        # this test checks that branch-scanner.py does something
-        self.setupWarehouse()
-        branch = getUtility(IBranchSet)[self.branch_id]
-        assert branch.revision_history.count() == 0
-        self.installTestBranch(branch)
+    def installTestBranch(self, db_branch, bzr_branch):
+        """Tell the DB that the contents of `db_branch` is `bzr_branch`."""
+        # record the last mirrored revision
+        db_branch.last_mirrored_id = bzr_branch.last_revision()
         transaction.commit()
-        # run branch-scanner.py and check the process outputs
+
+    def runScanner(self):
+        """Run branch-scanner.py and return the outputs.
+
+        The result can be checked using `assertScannerRanOK`.
+        """
         script = join(config.root, 'cronscripts', 'branch-scanner.py')
         process = Popen([script, '-q'],
                         stdout=PIPE, stderr=PIPE, stdin=open('/dev/null'))
         output, error = process.communicate()
         status = process.returncode
+        return status, output, error
+
+    def assertScannerRanOK(self, (status, output, error)):
+        """Assert that the scanner script ran OK.
+
+        This script takes the return value of `runScanner` as its only
+        parameter.
+        """
         self.assertEqual(status, 0,
                          'baz2bzr exited with status=%d\n'
                          '>>>stdout<<<\n%s\n>>>stderr<<<\n%s'
                          % (status, output, error))
-        # check that all branches were set to the test data
+
+    def test_branchScannerScript(self):
+        # Running the scanner script scans branches that have been mirrored
+        # recently.
+        #
+        # This test is more of a smoke test to confirm that the script itself
+        # behaves sanely. For more comprehensive tests, see
+        # lib/canonical/codehosting/tests/test_scanner_bzrsync.
+        destination = self.getWarehouseLocation(self.db_branch)
+        bzr_tree = create_branch_with_one_revision(destination)
+        self.installTestBranch(self.db_branch, bzr_tree.branch)
+
+        # Run branch-scanner.py and check the process outputs.
+        result = self.runScanner()
+        self.assertScannerRanOK(result)
+
+        # Check that all branches were set to the test data.
         transaction.abort()
-        history = branch.revision_history
+        history = self.db_branch.revision_history
         self.assertEqual(history.count(), 1)
         revision = history[0].revision
         self.assertEqual(revision.log_body, 'message')
