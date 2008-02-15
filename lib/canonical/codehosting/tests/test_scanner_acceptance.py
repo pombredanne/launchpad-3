@@ -10,8 +10,7 @@ import os
 from os.path import join, isdir, exists
 from shutil import rmtree
 from subprocess import Popen, PIPE
-import tempfile
-from unittest import TestCase, TestLoader
+from unittest import TestLoader
 
 import bzrlib.branch
 
@@ -19,36 +18,26 @@ import transaction
 from zope.component import getUtility
 
 from canonical.codehosting.tests.helpers import (
-    create_branch_with_one_revision)
+    BranchTestCase, create_branch_with_one_revision)
 from canonical.config import config
 from canonical.launchpad.interfaces import IBranchSet
 from canonical.testing import LaunchpadZopelessLayer
 
 
-class BranchScannerTest(TestCase):
-    """Branch to install branch-scanner test data on."""
+class BranchScannerTest(BranchTestCase):
+    """Tests for cronscripts/branch-scanner.py."""
 
     layer = LaunchpadZopelessLayer
+    # Branch to install branch-scanner test data on.
     branch_id = 7
 
     def setUp(self):
-        TestCase.setUp(self)
-        # Clear the HOME environment variable in order to ignore existing
-        # user config files.
-        self.testdir = tempfile.mkdtemp()
-        self._saved_environ = dict(os.environ)
-        os.environ['HOME'] = self.testdir
-        self.setUpWarehouse()
+        BranchTestCase.setUp(self)
+        self.warehouse = self.makeWarehouse()
         self.db_branch = getUtility(IBranchSet)[self.branch_id]
         assert self.db_branch.revision_history.count() == 0
 
-    def tearDown(self):
-        rmtree(self.testdir)
-        os.environ.clear()
-        os.environ.update(self._saved_environ)
-        TestCase.tearDown(self)
-
-    def setUpWarehouse(self):
+    def makeWarehouse(self):
         """Create a sandbox branch warehouse for testing.
 
         See doc/bazaar for more context on the branch warehouse concept.
@@ -59,7 +48,7 @@ class BranchScannerTest(TestCase):
         if isdir(warehouse):
             rmtree(warehouse)
         os.mkdir(warehouse)
-        self.warehouse = warehouse
+        return warehouse
 
     def getWarehouseLocation(self, db_branch):
         """Get the warehouse location for a database branch."""
@@ -79,7 +68,7 @@ class BranchScannerTest(TestCase):
         The result can be checked using `assertScannerRanOK`.
         """
         script = join(config.root, 'cronscripts', 'branch-scanner.py')
-        process = Popen([script, '-q'],
+        process = Popen([script],
                         stdout=PIPE, stderr=PIPE, stdin=open('/dev/null'))
         output, error = process.communicate()
         status = process.returncode
@@ -91,10 +80,11 @@ class BranchScannerTest(TestCase):
         This script takes the return value of `runScanner` as its only
         parameter.
         """
-        self.assertEqual(status, 0,
-                         'baz2bzr exited with status=%d\n'
-                         '>>>stdout<<<\n%s\n>>>stderr<<<\n%s'
-                         % (status, output, error))
+        self.assertEqual(
+            status, 0,
+            'branch-scanner.py exited with status=%d\n'
+            '>>>stdout<<<\n%s\n>>>stderr<<<\n%s'
+            % (status, output, error))
 
     def test_branchScannerScript(self):
         # Running the scanner script scans branches that have been mirrored
@@ -117,6 +107,26 @@ class BranchScannerTest(TestCase):
         self.assertEqual(history.count(), 1)
         revision = history[0].revision
         self.assertEqual(revision.log_body, 'message')
+
+    def test_branchScannerLooms(self):
+        # The branch scanner can scan loomified branches.
+        destination = self.getWarehouseLocation(self.db_branch)
+        # makeLoomBranchAndTree creates the branch in a test-specific sandbox.
+        # We want to put it in the store.
+        loom_tree = self.makeLoomBranchAndTree('loom')
+        os.rename(loom_tree.basedir, destination)
+        loom_branch = bzrlib.branch.Branch.open(destination)
+        self.installTestBranch(self.db_branch, loom_branch)
+
+        # Run branch-scanner.py and check the process outputs.
+        result = self.runScanner()
+        self.assertScannerRanOK(result)
+
+        # Check that all branches were set to the test data.
+        transaction.abort()
+        history = self.db_branch.revision_history
+        self.assertEqual(history.count(), 1)
+
 
 
 def test_suite():
