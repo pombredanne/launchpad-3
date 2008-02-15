@@ -1118,7 +1118,7 @@ k            </description>
           </description>
         </key>
         <key name="bazaar_branch_store" datatype="string"
-             required="no" default="file:///tmp/bazaar-branches">
+             required="no" default="sftp://hoover@escudero/srv/importd/www/">
           <description>
             Where the Bazaar imports are stored.
           </description>
