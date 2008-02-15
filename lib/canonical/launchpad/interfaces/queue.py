@@ -159,6 +159,8 @@ class IPackageUpload(Interface):
 
         If a logger is provided, messages will be written to it as the upload
         is entered into the publishing records.
+
+        Return a list containing the publishing records created.
         """
 
     def addSource(spr):

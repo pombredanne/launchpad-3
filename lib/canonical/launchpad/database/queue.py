@@ -23,6 +23,7 @@ from sqlobject import (
 from canonical.archivepublisher.customupload import CustomUploadError
 from canonical.archiveuploader.tagfiles import parse_tagfile_lines
 from canonical.archiveuploader.utils import safe_fix_maintainer
+from canonical.buildmaster.master import determineArchitecturesToBuild
 from canonical.cachedproperty import cachedproperty
 from canonical.config import config
 from canonical.database.sqlbase import SQLBase, sqlvalues
@@ -208,9 +209,21 @@ class PackageUpload(SQLBase):
             return
 
         logger.debug("Creating PENDING publishing record.")
-        self.realiseUpload()
+        [pub_source] = self.realiseUpload()
 
         if self.isPPA():
+            # Create a Build record.
+            ppa_archs = [das for das in self.distroseries.ppa_architectures]
+            build_archs = determineArchitecturesToBuild(
+                pub_source, ppa_archs, self.distroseries)
+            for arch in build_archs:
+                logger.debug(
+                    "Creating PENDING build for %s." % arch.architecturetag)
+                build = pub_source.sourcepackagerelease.createBuild(
+                    distroarchseries=arch, archive=self.archive,
+                    pocket=self.pocket)
+                build_queue = build.createBuildQueueEntry()
+                build_queue.score()
             # Do not even try to close bugs for PPA uploads
             return
 
@@ -369,14 +382,15 @@ class PackageUpload(SQLBase):
                 "series in the '%s' state." % (
                 self.pocket.name, self.distroseries.status.name))
 
+        publishing_records = []
         # In realising an upload we first load all the sources into
         # the publishing tables, then the binaries, then we attempt
         # to publish the custom objects.
         for queue_source in self.sources:
             queue_source.verifyBeforePublish()
-            queue_source.publish(logger)
+            publishing_records.append(queue_source.publish(logger))
         for queue_build in self.builds:
-            queue_build.publish(logger)
+            publishing_records.extend(queue_build.publish(logger))
         for customfile in self.customfiles:
             try:
                 customfile.publish(logger)
@@ -386,6 +400,8 @@ class PackageUpload(SQLBase):
                 return
 
         self.setDone()
+
+        return publishing_records
 
     def addSource(self, spr):
         """See `IPackageUpload`."""
