@@ -8,8 +8,8 @@ from zope.interface import implements
 from zope.component import getUtility
 
 from sqlobject import (
-    StringCol, IntCol, BoolCol, SQLRelatedJoin, SQLObjectNotFound, OR,
-    CONTAINSSTRING)
+    BoolCol, IntCol, LIKE, OR, SQLObjectNotFound, SQLRelatedJoin, StringCol)
+from sqlobject.sqlbuilder import func
 
 from canonical.database.sqlbase import SQLBase
 from canonical.database.enumcol import EnumCol
@@ -199,12 +199,11 @@ class LanguageSet:
     def search(self, text):
         """See `ILanguageSet`."""
         if text:
-            text.lower()
+            search_pattern = '%%%s%%' % text.lower()
             results = Language.select(
                 OR (
-                    CONTAINSSTRING(Language.q.code, text),
-                    CONTAINSSTRING(Language.q.englishname, text)
-                    ),
+                    LIKE(func.lower(Language.q.code), search_pattern),
+                    LIKE(func.lower(Language.q.englishname), search_pattern)),
                 orderBy='englishname'
                 )
         else:
