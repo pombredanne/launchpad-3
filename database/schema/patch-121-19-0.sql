@@ -10,6 +10,13 @@ ALTER TABLE Entitlement
     ADD CONSTRAINT only_one_target CHECK (
         null_count(ARRAY[person, product, project, distribution]) = 3);
 
+CREATE INDEX entitlement__distribution__idx ON Entitlement(distribution)
+    WHERE distribution IS NOT NULL;
+CREATE INDEX entitlement__product__idx ON Entitlement(product)
+    WHERE product IS NOT NULL;
+CREATE INDEX entitlement__project__idx ON Entitlement(project)
+    WHERE project  IS NOT NULL;
+
 ALTER TABLE PillarName ADD COLUMN alias_for integer;
 ALTER TABLE PillarName ADD CONSTRAINT pillarname__alias_for__fk
     FOREIGN KEY (alias_for) REFERENCES PillarName;
