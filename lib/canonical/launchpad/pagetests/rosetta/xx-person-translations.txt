@@ -23,7 +23,6 @@ And we can actually see what has he worked on so far.
 
 We are showing four columns, so let's make sure the headers are correct.
 
-    >>> import sys
     >>> listing = find_tags_by_class(anon_browser.contents, 'listing')[0]
     >>> listing_head = listing.findAll('thead')[0]
     >>> print extract_text(listing_head)
