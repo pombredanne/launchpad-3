@@ -557,6 +557,10 @@ class BranchDeletionView(LaunchpadFormView):
     field_names = []
 
     def displayDeletionRequirements(self):
+        """Normal deletion requirements, indication of permissions.
+
+        :return: A list of tuples of (item, action, reason, allowed)
+        """
         reqs = []
         for item, (action, reason) in (
             self.context.deletionRequirements().iteritems()):
@@ -565,6 +569,10 @@ class BranchDeletionView(LaunchpadFormView):
         return reqs
 
     def all_permitted(self):
+        """Return True if all deletion requirements are permitted, else False.
+
+        Uses displayDeletionRequirements as its source data
+        """
         return len([item for item, action, reason, allowed in
             self.displayDeletionRequirements() if not allowed]) == 0
 
@@ -588,6 +596,11 @@ class BranchDeletionView(LaunchpadFormView):
 
     @property
     def branch_deletion_actions(self):
+        """Return the branch deletion actions as a zpt-friendly dict.
+
+        The keys are 'delete' and 'alter'; the values are dicts of
+        'item', 'reason' and 'allowed'.
+        """
         branch = self.context
         row_dict = {'delete': [], 'alter': []}
         for item, action, reason, allowed in (

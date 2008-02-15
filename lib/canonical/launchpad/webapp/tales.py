@@ -877,20 +877,44 @@ class BranchFormatterAPI(ObjectFormatterExtendedAPI):
 
 
 class ConvenientFormatter(ObjectFormatterExtendedAPI):
+    """A ObjectFormatterExtendedAPI that is easy to customize"""
 
     _display = ObjectImageDisplayAPI
+    _permission = 'launchpad.View'
 
-    def link(self, extra_path):
+    def _should_link(self):
+        """Return True if a link should be shown, False otherwise"""
+        check_permission(self._permission, self._context)
+
+    def _values(self):
+        """Return a dict of values to use for template substitution"""
+        raise NotImplementedError(self._values)
+
+    def _make_summary(self):
+        """Create a summary from _template and _values()"""
         values = {}
-        for key, value in self.values().iteritems():
+        for key, value in self._values().iteritems():
             if value is None:
                 values[key] = ''
             else:
                 values[key] = cgi.escape(value)
-        html = self._template % values
+        return self._template % values
+
+    def link(self, extra_path):
+        """Return html including a link, description and icon.
+
+        Icon and link are optional, depending on type and permissions.
+        Uses self._make_summary for the summary, self._display
+        for the icon, self._should_link to determine whether to link, and
+        self.url() to generate the url.
+        """
+        html = self._make_summary()
         if self._display is not None:
             html = self._display(self._context).icon() + ' ' + html
-        url = self.url()
+        if self._should_link():
+            url = self.url()
+        else:
+            url = ''
         if url:
             html = '<a href="%s">%s</a>' % (url, html)
         return html
@@ -902,7 +926,7 @@ class BranchSubscriptionFormatterAPI(ConvenientFormatter):
     _template = _('Subscription of %(person)s to %(branch)s')
     _display = None
 
-    def values(self):
+    def _values(self):
         """Provide values for template substitution"""
         return {
             'person': self._context.person.displayname,
@@ -915,7 +939,7 @@ class BranchMergeProposalFormatterAPI(ConvenientFormatter):
     _template = _('Proposed merge of %(source)s into %(target)s')
     _display = None
 
-    def values(self):
+    def _values(self):
         merge_proposal = self._context
         return {
             'source': merge_proposal.source_branch.title,
@@ -960,7 +984,7 @@ class CodeImportFormatterAPI(ConvenientFormatter):
     _template = _('Import of %(product)s: %(branch)s')
     _display = None
 
-    def values(self):
+    def _values(self):
         branch_title = self._context.branch.title
         if branch_title is None:
             branch_title = _('(no title)')
@@ -974,7 +998,7 @@ class ProductSeriesFormatterAPI(ConvenientFormatter):
     _template = _('%(product)s Series: %(series)s')
     _display = None
 
-    def values(self):
+    def _values(self):
         return {'series': self._context.name,
                 'product': self._context.product.displayname}
 
@@ -984,7 +1008,7 @@ class SpecificationFormatterAPI(ConvenientFormatter):
     _template = _('%(title)s')
     _display = SpecificationImageDisplayAPI
 
-    def values(self):
+    def _values(self):
         return {'title': self._context.title}
 
 
