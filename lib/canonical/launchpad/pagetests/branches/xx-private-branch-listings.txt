@@ -11,6 +11,14 @@ created and imported branches), on the bug details page for bug-branch
 links, and on the blueprint pages when branches are associated with the
 blueprint.
 
+Branch listing pages now hide dormant branches by default.  Dormant
+branches are branches that have not been updated or committed to for
+some time.  Since this is a time based change all the branches
+are reset here to be recently updated.
+
+    >>> from canonical.launchpad.ftests.branch_helper import (
+    ...     reset_all_branch_last_modified)
+    >>> reset_all_branch_last_modified()
 
 == Additional sample data ==
 
@@ -134,16 +142,16 @@ listing tab.
     today...
 
     >>> print_landscape_code_listing(no_priv_browser)
-    testing-branch             ... New
+    testing-branch             New
 
     >>> print_landscape_code_listing(landscape_dev_browser)
-    feature-x  Sample Person   ... New
-    trunk      Sample Person   ... New
+    feature-x  Sample Person   New
+    trunk      Sample Person   New
 
     >>> print_landscape_code_listing(admin_browser)
-    feature-x  Sample Person   ... New
-    trunk      Sample Person   ... New
-    testing-branch             ... New
+    feature-x  Sample Person   New
+    trunk      Sample Person   New
+    testing-branch             New
 
 
 == Person code listing pages ==
@@ -304,7 +312,5 @@ But normal people can't.
     >>> anon_browser.open('http://launchpad.dev/landscape/trunk')
     >>> print extract_text(find_tag_by_id(
     ...     anon_browser.contents, 'branch-details'))
-    No revision control details recorded for trunk.
-    If upstream is maintained in CVS or SVN, you can
-    specify the location of the upstream branch to
-    import it as a Bazaar branch.
+    No revision control details recorded for
+    The Landscape Project Series: trunk.

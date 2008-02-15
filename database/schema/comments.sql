@@ -21,6 +21,7 @@ COMMENT ON COLUMN AnswerContact.date_created IS 'The date the answer contact was
 
 -- Branch 
 COMMENT ON TABLE Branch IS 'Bzr branch';
+COMMENT ON COLUMN Branch.registrant IS 'The user that registered the branch.';
 COMMENT ON COLUMN Branch.branch_type IS 'Branches are currently one of HOSTED (1), MIRRORED (2), or IMPORTED (3).';
 COMMENT ON COLUMN Branch.whiteboard IS 'Notes on the current status of the branch';
 COMMENT ON COLUMN Branch.summary IS 'A single paragraph description of the branch';
@@ -108,6 +109,7 @@ COMMENT ON COLUMN Bug.security_related IS 'Is this bug a security issue?';
 COMMENT ON COLUMN Bug.description IS 'A detailed description of the bug. Initially this will be set to the contents of the initial email or bug filing comment, but later it can be edited to give a more accurate description of the bug itself rather than the symptoms observed by the reporter.';
 COMMENT ON COLUMN Bug.date_last_message IS 'When the last BugMessage was attached to this Bug. Maintained by a trigger on the BugMessage table.';
 COMMENT ON COLUMN Bug.number_of_duplicates IS 'The number of bugs marked as duplicates of this bug, populated by a trigger after setting the duplicateof of bugs.';
+COMMENT ON COLUMN Bug.message_count IS 'The number of messages (currently just comments) on this bugbug, maintained by the set_bug_message_count_t trigger.';
 
 -- BugBranch
 COMMENT ON TABLE BugBranch IS 'A branch related to a bug, most likely a branch for fixing the bug.';
@@ -279,7 +281,7 @@ COMMENT ON COLUMN CodeImportResult.machine IS 'The machine the job ran on.';
 COMMENT ON COLUMN CodeImportResult.log_file IS 'A partial log of the job for users to see. It is normally only recorded if the job failed in a step that interacts with the remote repository. If a job was successful, or failed in a houskeeping step, the log file would not contain information useful to the user.';
 COMMENT ON COLUMN CodeImportResult.log_excerpt IS 'The last few lines of the partial log, in case it is set.';
 COMMENT ON COLUMN CodeImportResult.status IS 'How the job ended. Success, some kind of failure, or some kind of interruption before completion.';
-COMMENT ON COLUMN CodeImportResult.date_started IS 'When the job started to run (date_created is when it finished).';
+COMMENT ON COLUMN CodeImportResult.date_job_started IS 'When the job started to run (date_created is when it finished).';
 --COMMENT ON COLUMN CodeImportResult.killing_user IS 'The user who killed the job.';
 
 -- CodeImportMachine
@@ -598,12 +600,16 @@ COMMENT ON COLUMN POTemplate.translation_domain IS 'The translation domain for t
 
 -- POFile
 COMMENT ON TABLE POFile IS 'This table stores a PO file for a given PO template.';
-COMMENT ON COLUMN POFile.exportfile IS 'The Library file alias of an export of this PO file.';
-COMMENT ON COLUMN POFile.exporttime IS 'The time at which the file referenced by exportfile was generated.';
 COMMENT ON COLUMN POFile.path IS 'The path (included the filename) inside the tree from where the content was imported.';
 COMMENT ON COLUMN POFile.from_sourcepackagename IS 'The sourcepackagename from where the last .po file came (only if it\'s different from POFile.potemplate.sourcepackagename)';
 COMMENT ON COLUMN POFile.unreviewed_count IS 'Number of POTMsgSets with new,
 unreviewed TranslationMessages for this POFile.';
+
+-- RevisionAuthor
+COMMENT ON TABLE RevisionAuthor IS 'All distinct authors for revisions.';
+COMMENT ON COLUMN RevisionAuthor.name IS 'The exact text extracted from the branch revision.';
+COMMENT ON COLUMN RevisionAuthor.email IS 'A valid email address extracted from the name.  This email address may or may not be associated with a Launchpad user at this stage.';
+COMMENT ON COLUMN RevisionAuthor.person IS 'The Launchpad person that has a verified email address that matches the email address of the revision author.';
 
 -- Sprint
 COMMENT ON TABLE Sprint IS 'A meeting, sprint or conference. This is a convenient way to keep track of a collection of specs that will be discussed, and the people that will be attending.';
@@ -790,6 +796,18 @@ COMMENT ON COLUMN DistroSeries.language_pack_delta IS 'Current language pack upd
 COMMENT ON COLUMN DistroSeries.language_pack_proposed IS 'Either a full or update language pack being tested to be used in language_pack_base or language_pack_delta.';
 COMMENT ON COLUMN DistroSeries.language_pack_full_export_requested IS 'Whether next language pack export should be a full export or an update.';
 
+
+-- PackageDiff
+
+COMMENT ON TABLE PackageDiff IS 'This table stores diffs bettwen two scpecific SourcePackageRelease versions.';
+COMMENT ON COLUMN PackageDiff.date_requested IS 'Instant when the diff was requested.';
+COMMENT ON COLUMN PackageDiff.requester IS 'The Person responsible for the request.';
+COMMENT ON COLUMN PackageDiff.from_source IS 'The SourcePackageRelease to diff from.';
+COMMENT ON COLUMN PackageDiff.to_source IS 'The SourcePackageRelease to diff to.';
+COMMENT ON COLUMN PackageDiff.date_fulfilled IS 'Instant when the diff was completed.';
+COMMENT ON COLUMN PackageDiff.diff_content IS 'LibraryFileAlias containing the th diff results.';
+
+
 -- PackageUpload
 COMMENT ON TABLE PackageUpload IS 'An upload. This table stores information pertaining to uploads to a given DistroSeries/Archive.';
 
@@ -831,34 +849,6 @@ COMMENT ON COLUMN SourcePackageName.name IS
     'A lowercase name identifying one or more sourcepackages';
 COMMENT ON COLUMN BinaryPackageName.name IS
     'A lowercase name identifying one or more binarypackages';
-
-
-
--- SourcePackageRelease
-COMMENT ON COLUMN SourcePackageRelease.creator IS 'The person who issued the upload';
-COMMENT ON COLUMN SourcePackageRelease.version IS 'Debian-like version string for this release. Indexed with debversion_sort_key and validated with valid_debian_version constraint.';
-COMMENT ON COLUMN SourcePackageRelease.dateuploaded IS 'Creation timestamp.';
-COMMENT ON COLUMN SourcePackageRelease.urgency IS 'SourcePackageUrgency constant';
-COMMENT ON COLUMN SourcePackageRelease.dscsigningkey IS 'Reference to the GPGKey used to sign the DSC.';
-COMMENT ON COLUMN SourcePackageRelease.component IS 'The original component to where this source was submitted.';
-COMMENT ON COLUMN SourcePackageRelease.changelog IS 'Changelog text section extracted from the changesfile.';
-COMMENT ON COLUMN SourcePackageRelease.builddepends IS 'DSC builddepends line section.';
-COMMENT ON COLUMN SourcePackageRelease.builddependsindep IS 'DSC builddependsindep line section.';
-COMMENT ON COLUMN SourcePackageRelease.architecturehintlist IS 'DSC arch line';
-COMMENT ON COLUMN SourcePackageRelease.dsc IS 'Original DSC text.';
-COMMENT ON COLUMN SourcePackageRelease.section IS 'This integer field references the Section which the source package claims to be in';
-COMMENT ON COLUMN SourcePackageRelease.maintainer IS 'Reference to the person noted as source package maintainer in the DSC.';
-COMMENT ON COLUMN SourcePackageRelease.sourcepackagename IS 'Reference to a SourcePackageName.';
-COMMENT ON COLUMN SourcePackageRelease.upload_distroseries IS 'DistroSeries to where the source was originally uploaded.';
-COMMENT ON COLUMN SourcePackageRelease.format IS 'Source package format constant, SourcePackageReleaseFormat.';
-COMMENT ON COLUMN SourcePackageRelease.dsc_maintainer_rfc822 IS 'The original maintainer line in RFC-822 format, to be used in archive indexes.';
-COMMENT ON COLUMN SourcePackageRelease.dsc_standards_version IS 'DSC standards version (such as "3.6.2", "3.5.9", etc) used to build this source.';
-COMMENT ON COLUMN SourcePackageRelease.dsc_format IS 'DSC format version (such as "1.0").';
-COMMENT ON COLUMN SourcePackageRelease.dsc_binaries IS 'DSC binary line, claimed binary-names produce by this source.';
-COMMENT ON COLUMN SourcePackageRelease.copyright IS 'The copyright associated with this sourcepackage. Often in the case of debian packages and will be found after the installation in /usr/share/doc/<binarypackagename>/copyright';
-COMMENT ON COLUMN SourcePackageRelease.build_conflicts IS 'The list of packages that will conflict with this source while building, as mentioned in the control file "Build-Conflicts:" field.';
-COMMENT ON COLUMN SourcePackageRelease.build_conflicts_indep IS 'The list of packages that will conflict with this source while building in architecture independent environment, as mentioned in the control file "Build-Conflicts-Indep:" field.';
-
 
 -- SecureBinaryPackagePublishingHistory
 COMMENT ON TABLE SecureBinaryPackagePublishingHistory IS 'PackagePublishingHistory: The history of a BinaryPackagePublishing record. This table represents the lifetime of a publishing record from inception to deletion. Records are never removed from here and in time the publishing table may become a view onto this table. A column being NULL indicates there''s no data for that state transition. E.g. a package which is removed without being superseded won''t have datesuperseded or supersededby filled in.';
@@ -956,7 +946,6 @@ COMMENT ON COLUMN Person.teamowner IS 'id of the team owner. Team owners will ha
 COMMENT ON COLUMN Person.teamdescription IS 'Informative description of the team. Format and restrictions are as yet undefined.';
 COMMENT ON COLUMN Person.name IS 'Short mneumonic name uniquely identifying this person or team. Useful for url traversal or in places where we need to unambiguously refer to a person or team (as displayname is not unique).';
 COMMENT ON COLUMN Person.language IS 'Preferred language for this person (unset for teams). UI should be displayed in this language wherever possible.';
-COMMENT ON COLUMN Person.timezone IS 'The name of the time zone this person prefers (if unset, UTC is used).  UI should display dates and times in this time zone wherever possible.';
 COMMENT ON COLUMN Person.homepage_content IS 'A home page for this person in the Launchpad. In short, this is like a personal wiki page. The person will get to edit their own page, and it will be published on /people/foo/. Note that this is in text format, and will migrate to being in Moin format as a sort of mini-wiki-homepage.';
 COMMENT ON COLUMN Person.icon IS 'The library file alias to a small image to be used as an icon whenever we are referring to that person.';
 COMMENT ON COLUMN Person.mugshot IS 'The library file alias of a hackermugshot image to display as the "face" of a person, on their home page.';
@@ -970,6 +959,7 @@ COMMENT ON COLUMN Person.mail_resumption_date IS 'A NULL resumption date or a da
 COMMENT ON COLUMN Person.mailing_list_auto_subscribe_policy IS 'The auto-subscription policy for the person, i.e. whether and how the user is automatically subscribed to mailing lists for teams they join.  Values are described in dbschema.MailingListAutoSubscribePolicy.';
 COMMENT ON COLUMN Person.mailing_list_receive_duplicates IS 'True means the user wants to receive list copies of messages on which they are explicitly named as a recipient.';
 COMMENT ON COLUMN Person.visibility IS 'person.PersonVisibility enumeration which can be set to Public, Public with Private Membership, or Private.';
+COMMENT ON COLUMN Person.verbose_bugnotifications  IS 'If true, all bugnotifications sent to this Person will include the bug description.';
 
 COMMENT ON TABLE ValidPersonOrTeamCache IS 'A materialized view listing the Person.ids of all valid people and teams.';
 
@@ -977,6 +967,14 @@ COMMENT ON TABLE ValidPersonOrTeamCache IS 'A materialized view listing the Pers
 COMMENT ON TABLE PersonLanguage IS 'PersonLanguage: This table stores the preferred languages that a Person has, it''s used in Rosetta to select the languages that should be showed to be translated.';
 COMMENT ON COLUMN PersonLanguage.person IS 'This field is a reference to a Person object that has this preference.';
 COMMENT ON COLUMN PersonLanguage.language IS 'This field is a reference to a Language object that says that the Person associated to this row knows how to translate/understand this language.';
+
+-- PersonLocation
+COMMENT ON TABLE PersonLocation IS 'The geographical coordinates and time zone for a person.';
+COMMENT ON COLUMN PersonLocation.time_zone IS 'The name of the time zone this person prefers (if unset, UTC is used).  UI should display dates and times in this time zone wherever possible.';
+COMMENT ON COLUMN PersonLocation.latitude IS 'The latitude this person has given for their default location.';
+COMMENT ON COLUMN PersonLocation.longitude IS 'The longitude this person has given for their default location.';
+COMMENT ON COLUMN PersonLocation.last_modified_by IS 'The person who last updated this record. We allow people to provide location and time zone information for other users, when those users have not specified their own location. This allows people to garden the location information for their teams, for example, like a wiki.';
+COMMENT ON COLUMN PersonLocation.date_last_modified IS 'The date this record was last modified.';
 
 -- Bounty
 COMMENT ON TABLE Bounty IS 'A set of bounties for work to be done by the open source community. These bounties will initially be offered only by Canonical, but later we will create the ability for people to offer the bounties themselves, using us as a clearing house.';
@@ -1048,8 +1046,7 @@ this sourcepackagerelease is intended (by the uploader) to reside. E.g.
 main, universe, restricted. Note that the distribution managers will often
 override this data and publish the package in an entirely different
 component.';
-COMMENT ON COLUMN SourcePackageRelease.changelog IS 'The changelog of this
-source package release.';
+COMMENT ON COLUMN SourcePackageRelease.changelog_entry IS 'Changelog text section extracted from the changesfile.';
 COMMENT ON COLUMN SourcePackageRelease.builddepends IS 'The build
 dependencies for this source package release.';
 COMMENT ON COLUMN SourcePackageRelease.builddependsindep IS 'The
@@ -1071,6 +1068,16 @@ development Ubuntu release into which this package was uploaded. For a
 package which was unchanged between warty and hoary, this would show Warty.
 For a package which was uploaded into Hoary, this would show Hoary.';
 COMMENT ON COLUMN SourcePackageRelease.upload_archive IS 'The archive into which this sourcepackagerelese was originally uploaded.';
+COMMENT ON COLUMN SourcePackageRelease.section IS 'This integer field references the Section which the source package claims to be in';
+COMMENT ON COLUMN SourcePackageRelease.maintainer IS 'Reference to the person noted as source package maintainer in the DSC.';
+COMMENT ON COLUMN SourcePackageRelease.sourcepackagename IS 'Reference to a SourcePackageName.';
+COMMENT ON COLUMN SourcePackageRelease.dsc_maintainer_rfc822 IS 'The original maintainer line in RFC-822 format, to be used in archive indexes.';
+COMMENT ON COLUMN SourcePackageRelease.dsc_standards_version IS 'DSC standards version (such as "3.6.2", "3.5.9", etc) used to build this source.';
+COMMENT ON COLUMN SourcePackageRelease.dsc_format IS 'DSC format version (such as "1.0").';
+COMMENT ON COLUMN SourcePackageRelease.dsc_binaries IS 'DSC binary line, claimed binary-names produce by this source.';
+COMMENT ON COLUMN SourcePackageRelease.copyright IS 'The copyright associated with this sourcepackage. Often in the case of debian packages and will be found after the installation in /usr/share/doc/<binarypackagename>/copyright';
+COMMENT ON COLUMN SourcePackageRelease.build_conflicts IS 'The list of packages that will conflict with this source while building, as mentioned in the control file "Build-Conflicts:" field.';
+COMMENT ON COLUMN SourcePackageRelease.build_conflicts_indep IS 'The list of packages that will conflict with this source while building in architecture independent environment, as mentioned in the control file "Build-Conflicts-Indep:" field.';
 
 
 -- SourcePackageName
@@ -1292,6 +1299,7 @@ COMMENT ON COLUMN Builder.trusted IS 'Whether or not the builder is able to buil
 COMMENT ON COLUMN Builder.url IS 'The url to the build slave. There may be more than one build slave on a given host so this url includes the port number to use. The default port number for a build slave is 8221';
 COMMENT ON COLUMN Builder.manual IS 'Whether or not builder was manual mode, i.e., collect any result from the it, but do not dispach anything to it automatically.';
 COMMENT ON COLUMN Builder.vm_host IS 'The virtual machine host associated to this builder. It should be empty for "native" builders (old fashion or architectures not yet supported by XEN).';
+COMMENT ON COLUMN Builder.active IS 'Whether to present or not the builder in the public list of builders avaialble. It is used to hide transient or defunct builders while they get fixed.';
 
 -- BuildQueue
 COMMENT ON TABLE BuildQueue IS 'BuildQueue: The queue of builds in progress/scheduled to run. This table is the core of the build daemon master. It lists all builds in progress or scheduled to start.';
@@ -1610,10 +1618,18 @@ COMMENT ON TABLE Archive IS 'A package archive. Commonly either a distribution''
 COMMENT ON COLUMN Archive.owner IS 'Identifies the PPA owner when it has one.';
 COMMENT ON COLUMN Archive.description IS 'Allow users to describe their PPAs content.';
 COMMENT ON COLUMN Archive.enabled IS 'Whether or not the PPA is enabled for accepting uploads.';
-COMMENT ON COLUMN Archive.authorized_size IS 'Size in bytes allowed for this PPA.';
+COMMENT ON COLUMN Archive.authorized_size IS 'Size, in MiB, allowed for this PPA.';
 COMMENT ON COLUMN Archive.whiteboard IS 'Administrator comments about interventions made in the PPA configuration.';
 COMMENT ON COLUMN Archive.distribution IS 'The distribution that uses this archive.';
 COMMENT ON COLUMN Archive.purpose IS 'The purpose of this archive, e.g. COMMERCIAL.  See the ArchivePurpose DBSchema item.';
+COMMENT ON COLUMN Archive.private IS 'Whether or not the archive is private. This affects the global visibility of the archive.';
+
+
+-- ArchiveDependency
+COMMENT ON TABLE ArchiveDependency IS 'This table maps a given archive to all other archives it should depend on.';
+COMMENT ON COLUMN ArchiveDependency.date_created IS 'Instant when the dependency was created.';
+COMMENT ON COLUMN ArchiveDependency.archive IS 'The archive where the dependency should be applied.';
+COMMENT ON COLUMN ArchiveDependency.dependency IS 'The archive to depend on.';
 
 -- Component
 COMMENT ON TABLE Component IS 'Known components in Launchpad';

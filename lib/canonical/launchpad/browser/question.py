@@ -62,6 +62,7 @@ from canonical.launchpad.webapp import (
     custom_widget, redirection, safe_action, smartquote)
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.interfaces import IAlwaysSubmittedWidget
+from canonical.launchpad.webapp.menu import structured
 from canonical.launchpad.webapp.snapshot import Snapshot
 from canonical.widgets import LaunchpadRadioWidget
 from canonical.widgets.project import ProjectScopeWidget
@@ -564,7 +565,7 @@ class QuestionMakeBugView(LaunchpadFormView):
             owner=self.user, title=data['title'], comment=data['description'])
         bug = question.target.createBug(params)
         question.linkBug(bug)
-        bug.subscribe(question.owner)
+        bug.subscribe(question.owner, self.user)
         bug_added_event = SQLObjectModifiedEvent(
             question, unmodifed_question, ['bugs'])
         notify(bug_added_event)
@@ -714,10 +715,11 @@ class QuestionWorkflowView(LaunchpadFormView):
         # that can be confirmed, suggest to the owner that he use the
         # confirmation button.
         if self.context.can_confirm_answer:
+            msgid = _("Your question is solved. If a particular message "
+                      "helped you solve the problem, use the <em>'This "
+                      "solved my problem'</em> button.")
             self._addNotificationAndHandlePossibleSubscription(
-                _("Your question is solved. If a particular message helped "
-                  "you solve the problem, use the <em>'This solved "
-                  "my problem'</em> button."), data)
+                structured(msgid), data)
 
     def canRequestInfo(self, action):
         """Return if the requestinfo action should be displayed."""

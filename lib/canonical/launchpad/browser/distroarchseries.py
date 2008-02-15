@@ -9,12 +9,11 @@ __all__ = [
     'DistroArchSeriesView',
     'DistroArchSeriesAddView',
     'DistroArchSeriesBinariesView',
-    'DistroArchSeriesDetailsView',
     ]
 
 from canonical.launchpad.webapp import (
     canonical_url, enabled_with_permission, ContextMenu, GetitemNavigation,
-    LaunchpadView, Link, StandardLaunchpadFacets)
+    Link, StandardLaunchpadFacets)
 from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.browser.build import BuildRecordsView
 from canonical.launchpad.browser.addview import SQLObjectAddView
@@ -116,19 +115,3 @@ class DistroArchSeriesAddView(SQLObjectAddView):
         return self._nextURL
 
 
-class DistroArchSeriesDetailsView(LaunchpadView):
-    """Implementing `DistroArchSeries` details presentation."""
-
-    def __call__(self):
-        details = []
-
-        if self.context.official:
-            details.append('official')
-
-        if self.context.ppa_supported:
-            details.append('ppa')
-
-        if details:
-            return "(%s)" % ', '.join(details)
-
-        return ""

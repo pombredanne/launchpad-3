@@ -1,4 +1,4 @@
-# Copyright 2004 Canonical Ltd.  All rights reserved.
+# Copyright 2004-2007 Canonical Ltd.  All rights reserved.
 # pylint: disable-msg=C0103,W0613,R0911
 #
 """Implementation of the lp: htmlform: fmt: namespaces in TALES."""
@@ -93,6 +93,27 @@ class MenuAPI:
             self._request = get_current_browser_request()
             self._selectedfacetname = None
 
+        # Populate all dictionaries for retrieval of individual Links of any
+        # given facet (e.g. context/menu:bugs/subscribe).
+        for facet_entry in self.facet():
+            setattr(
+                self, facet_entry.name, self._getFacetLinks(facet_entry.name))
+
+    def _getFacetLinks(self, facet_name):
+        """Return a dictionary with all links available in the given facet.
+
+        If the facet name is not valid, we raise the TraversalError exception
+        that we get from queryAdapter.
+        """
+        menu = queryAdapter(self._context, IApplicationMenu, facet_name)
+        if menu is None:
+            # There aren't menu entries.
+            return {}
+
+        menu.request = self._request
+        links = list(menu.iterlinks(requesturi=self._requesturi()))
+        return dict((link.name, link) for link in links)
+
     def _nearest_menu(self, menutype):
         try:
             return nearest_adapter(self._context, menutype)
@@ -143,13 +164,15 @@ class MenuAPI:
             menu.request = self._request
             return list(menu.iterlinks(requesturi=self._requesturi()))
 
+    @property
     def context(self):
         menu = IContextMenu(self._context, None)
         if menu is None:
-            return  []
+            return  {}
         else:
             menu.request = self._request
-            return list(menu.iterlinks(requesturi=self._requesturi()))
+            links = list(menu.iterlinks(requesturi=self._requesturi()))
+            return dict((link.name, link) for link in links)
 
 
 class CountAPI:
@@ -525,6 +548,13 @@ class BugTaskImageDisplayAPI(ObjectImageDisplayAPI):
     """
     implements(ITraversable)
 
+    allowed_names = set([
+        'icon',
+        'logo',
+        'mugshot',
+        'badges',
+        ])
+
     icon_template = (
         '<img height="14" width="14" alt="%s" title="%s" src="%s" />')
 
@@ -534,15 +564,13 @@ class BugTaskImageDisplayAPI(ObjectImageDisplayAPI):
 
     def traverse(self, name, furtherPath):
         """Special-case traversal for icons with an optional rootsite."""
-        if name == 'icon':
-            return self.icon()
+        if name in self.allowed_names:
+            return getattr(self, name)()
         elif name.startswith('icon:'):
             rootsite = name.split(':', 1)[1]
             return self.icon(rootsite=rootsite)
-        elif name == 'badges':
-            return self.badges()
         else:
-            return None
+            raise TraversalError, name
 
     def icon(self, rootsite=None):
         """Display the icon dependent on the IBugTask.importance."""
@@ -657,6 +685,7 @@ class KarmaCategoryImageDisplayAPI(ObjectImageDisplayAPI):
 
     icons_for_karma_categories = {
         'bugs': '/@@/bug',
+        'code': '/@@/branch',
         'translations': '/@@/translation',
         'specs': '/@@/blueprint',
         'answers': '/@@/question'}
@@ -766,7 +795,7 @@ class PersonFormatterAPI(ObjectFormatterExtendedAPI):
             url = '%s/%s' % (url, extra_path)
         image_html = ObjectImageDisplayAPI(person).icon(rootsite=rootsite)
         return '<a href="%s">%s&nbsp;%s</a>' % (
-            url, image_html, person.browsername)
+            url, image_html, cgi.escape(person.browsername))
 
 
 class PillarFormatterAPI(ObjectFormatterExtendedAPI):
@@ -857,7 +886,8 @@ class BugFormatterAPI(ObjectFormatterExtendedAPI):
         if extra_path:
             url = '%s/%s' % (url, extra_path)
         return ('<a href="%s"><img src="/@@/bug" alt=""/>'
-                '&nbsp;Bug #%d: %s</a>' % (url, bug.id, bug.title))
+                '&nbsp;Bug #%d: %s</a>' % (
+                    url, bug.id, cgi.escape(bug.title)))
 
 
 class BugTaskFormatterAPI(ObjectFormatterExtendedAPI):
@@ -873,15 +903,29 @@ class BugTaskFormatterAPI(ObjectFormatterExtendedAPI):
             url = '%s/%s' % (url, extra_path)
         image_html = BugTaskImageDisplayAPI(bugtask).icon()
         return '<a href="%s">%s&nbsp;Bug #%d: %s</a>' % (
-            url, image_html, bugtask.bug.id, bugtask.bug.title)
+            url, image_html, bugtask.bug.id, cgi.escape(bugtask.bug.title))
 
 
 class NumberFormatterAPI:
     """Adapter for converting numbers to formatted strings."""
 
+    implements(ITraversable)
+
     def __init__(self, number):
-        assert not float(number) < 0, "Expected a non-negative number."
         self._number = number
+
+    def traverse(self, name, furtherPath):
+        if name == 'float':
+            if len(furtherPath) != 1:
+                raise TraversalError(
+                    "fmt:float requires a single decimal argument")
+            # coerce the argument to float to ensure it's safe
+            format = furtherPath.pop()
+            return self.float(float(format))
+        elif name == 'bytes':
+            return self.bytes()
+        else:
+            raise TraversalError(name)
 
     def bytes(self):
         """Render number as byte contractions according to IEC60027-2."""
@@ -889,6 +933,7 @@ class NumberFormatterAPI:
         # /Binary_prefixes#Specific_units_of_IEC_60027-2_A.2
         # Note that there is a zope.app.size.byteDisplay() function, but
         # it really limited and doesn't work well enough for us here.
+        assert not float(self._number) < 0, "Expected a non-negative number."
         n = int(self._number)
         if n == 1:
             # Handle the singular case.
@@ -903,6 +948,17 @@ class NumberFormatterAPI:
             # If this is less than 1 KiB, no need for rounding.
             return "%s bytes" % n
         return "%.1f %s" % (n / 1024.0 ** exponent, suffixes[exponent - 1])
+
+    def float(self, format):
+        """Use like tal:content="context/foo/fmt:float/.2".
+
+        Will return a string formatted to the specification provided in
+        the manner Python "%f" formatter works. See
+        http://docs.python.org/lib/typesseq-strings.html for details and
+        doc.displaying-numbers for various examples.
+        """
+        value = "%" + str(format) + "f"
+        return value % float(self._number)
 
 
 class DateTimeFormatterAPI:

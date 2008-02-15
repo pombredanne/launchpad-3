@@ -13,7 +13,7 @@ feature in 'DistroArchSeries Actions'.
 
     >>> anon_browser.open('http://launchpad.dev/ubuntu/')
     >>> anon_browser.getLink('4.10 "Warty"').click()
-    >>> anon_browser.getLink('warty i386 (official, ppa)').click()
+    >>> anon_browser.getLink('i386').click()
 
     >>> anon_browser.title
     'The Warty Warthog Release for i386 (x86) in Launchpad'
@@ -69,6 +69,7 @@ page. The builds page is described in 23-builds-page.txt.
 
     >>> print extract_text(find_portlet(anon_browser.contents, 'Actions'))
     Actions
+    Administer (disabled)
     Show builds
 
 Only administrators can edit ('administer', in fact) the
@@ -135,8 +136,9 @@ Since we disabled ppa-support for warty/i386, it's now presented as
 'official' only.
 
     >>> check_arch_list()
-    warty hppa
-    warty i386 (official)
+    i386
+    hppa
+    (unofficial)
 
 Re-enabling the PPA support on warty/i386 has immediate effects in the
 way this distroarchseries is presented.
@@ -145,8 +147,9 @@ way this distroarchseries is presented.
     >>> admin_browser.getControl("Change").click()
 
     >>> check_arch_list()
-    warty hppa
-    warty i386 (official, ppa)
+    i386
+    hppa
+    (unofficial)
 
 The same effect is observed when we make warty/i386 unofficial.
 
@@ -154,8 +157,10 @@ The same effect is observed when we make warty/i386 unofficial.
     >>> admin_browser.getControl("Change").click()
 
     >>> check_arch_list()
-    warty hppa
-    warty i386 (ppa)
+    hppa
+    (unofficial)
+    i386
+    (unofficial)
 
 
 == Creating a new DistroArchSeries ==
@@ -172,8 +177,9 @@ Ubuntu hoary already has i386 & hppa distroarchseries and should not
 allow duplications.
 
     >>> check_arch_list(distroseries='hoary')
-    hoary hppa
-    hoary i386 (official, ppa)
+    i386
+    hppa
+    (unofficial)
 
     >>> admin_browser.getControl("Architecture Tag").value = 'i386'
     >>> admin_browser.getControl("Processor Family").value = ['x86']
@@ -223,6 +229,7 @@ And other users can see the just-created architecture listed in the
 distroseries page.
 
     >>> check_arch_list(distroseries='hoary')
-    hoary amd64 (official, ppa)
-    hoary hppa
-    hoary i386 (official, ppa)
+    amd64
+    i386
+    hppa
+    (unofficial)

@@ -56,6 +56,13 @@ The Answer Tracker
     >>> canonical_url(getUtility(IQuestionSet))
     u'http://answers.launchpad.dev/questions'
 
+The set of mailing lists
+
+    >>> from canonical.launchpad.interfaces import IMailingListSet
+    >>> canonical_url(getUtility(IMailingListSet))
+    u'http://launchpad.dev/+mailinglists'
+
+
 == Persons and Teams ==
 
     >>> from canonical.launchpad.interfaces import (
@@ -235,7 +242,8 @@ private.)
 
     >>> from canonical.launchpad.interfaces import ILaunchBag
     >>> current_user = getUtility(ILaunchBag).user
-    >>> subscription = distro_series_task.bug.subscribe(current_user)
+    >>> subscription = distro_series_task.bug.subscribe(
+    ...     current_user, current_user)
 
     >>> distro_series_task.bug.setPrivate(True, getUtility(ILaunchBag).user)
     True

@@ -196,6 +196,8 @@ k            </description>
             default="50" />
         <key name="branchlisting_batch_size" datatype="integer" required="no"
             default="100" />
+        <key name="branch_dormant_days" datatype="integer" required="no"
+            default="180" />
         <key name="code_homepage_product_cloud_size" datatype="integer"
              required="no" default="120" />
         <key name="max_bug_attachment_size" datatype="integer" required="no"
@@ -229,9 +231,15 @@ k            </description>
             </description>
         </key>
         <key name="max_bug_feed_cache_minutes" required="no"
-            datatype="integer" default="30">
+            datatype="integer" default="60">
             <description>
             The maximum number of minutes that Bug feeds should be cached for.
+            </description>
+        </key>
+        <key name="max_branch_feed_cache_minutes" required="no"
+            datatype="integer" default="60">
+            <description>
+            The maximum number of minutes that Branch feeds should be cached for.
             </description>
         </key>
         <key name="is_bug_search_feed_active" required="no"
@@ -617,7 +625,7 @@ k            </description>
         </description>
         <key name="dbuser" datatype="string" default="shipit" />
         <key name="max_cds_for_auto_approval" datatype="integer"
-             required="no" default="39" />
+             required="no" default="16" />
         <key name="admins_email_address" datatype="string"
              default="info@shipit.ubuntu.com"/>
         <key name="ubuntu_from_email_address" datatype="string"
@@ -1045,6 +1053,30 @@ k            </description>
             </description>
             <example>http://codebrowse.launchpad.net/</example>
         </key>
+
+        <!-- XXX MichaelHudson 2008-02-11: This is copy-pasted from
+             the script_errorreports sectiontype but doesn't mark
+             oops_prefix as required so a config with no codehosting
+             section can still be loaded.  This smelly hack will
+             hopefully go away when we switch to LazrConfig. -->
+
+        <key name="errordir" datatype="string" required="no">
+            <description>
+                Directory to write error reports to.
+            </description>
+        </key>
+        <key name="oops_prefix" datatype="string" required="no">
+            <description>
+                A prefix for "OOPS" codes for this script.
+            </description>
+        </key>
+        <key name="copy_to_zlog" datatype="boolean">
+            <description>
+                Should exceptions be sent to the log as well as being
+                saved to disk?
+            </description>
+        </key>
+
     </sectiontype>
 
     <sectiontype name="authserver" extends="database_options">
@@ -1144,7 +1176,15 @@ k            </description>
         <key name="beta_testers_team" datatype="string"
              default="mailing-list-beta-testers" />
         <key name="archive_url_template" datatype="string"
-             default="http://lists.launchpad.dev/archives/$team_name" />
+             default="http://lists.launchpad.net/$team_name" />
+        <key name="archive_address" datatype="string"
+             default="archive@mail-archive.com" />
+        <key name="list_help_header" datatype="string"
+             default="https://help.launchpad.net/ListHelp" />
+        <key name="list_subscription_headers" datatype="string"
+             default="https://launchpad.net/people/+me/+editemails" />
+        <key name="list_owner_header_template" datatype="string"
+             default="https://launchpad.net/~$team_name" />
     </sectiontype>
 
     <sectiontype name="checkwatches">

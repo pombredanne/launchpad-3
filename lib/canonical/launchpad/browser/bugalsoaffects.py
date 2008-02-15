@@ -26,9 +26,9 @@ from canonical.launchpad.interfaces import (
     UnrecognizedBugTrackerURL, validate_new_distrotask, valid_upstreamtask)
 from canonical.launchpad.event import SQLObjectCreatedEvent
 from canonical.launchpad.validators import LaunchpadValidationError
-
 from canonical.launchpad.webapp import (
     custom_widget, action, canonical_url, LaunchpadFormView, LaunchpadView)
+from canonical.launchpad.webapp.menu import structured
 
 from canonical.widgets.itemswidgets import LaunchpadRadioWidget
 from canonical.widgets import SearchForUpstreamPopupWidget, StrippedTextWidget
@@ -216,11 +216,13 @@ class ChooseProductStep(AlsoAffectsStep):
                     "series.")
                 sourcepackage = series.getSourcePackage(
                     bugtask.sourcepackagename)
-                self.request.response.addWarningNotification(_(dedent("""
+                self.request.response.addWarningNotification(
+                    structured(
+                    _("""
                     This package is linked to an inactive upstream.  You
                     can <a href="%(package_url)s/+edit-packaging">fix it</a>
-                    to avoid this step in the future.""")),
-                    package_url=canonical_url(sourcepackage))
+                    to avoid this step in the future."""),
+                    package_url=canonical_url(sourcepackage)))
                 return
 
             try:
@@ -240,13 +242,19 @@ class ChooseProductStep(AlsoAffectsStep):
         if distroseries is not None:
             sourcepackage = distroseries.getSourcePackage(
                 bugtask.sourcepackagename)
-            self.request.response.addInfoNotification(_(dedent("""
+
+            self.request.response.addInfoNotification(
+                self._needProjectNotice(bugtask, sourcepackage))
+
+    def _needProjectNotice(self, bugtask, sourcepackage):
+        return structured(
+            _("""
                 Please select the appropriate upstream project. This step can
                 be avoided by <a href="%(package_url)s/+edit-packaging"
                 >updating the packaging information for
-                %(full_package_name)s</a>.""")),
-                full_package_name=bugtask.bugtargetdisplayname,
-                package_url=canonical_url(sourcepackage))
+                %(full_package_name)s</a>."""),
+            full_package_name=bugtask.bugtargetdisplayname,
+            package_url=canonical_url(sourcepackage))
 
     def validateStep(self, data):
         if data.get('product'):
@@ -334,6 +342,7 @@ class BugTaskCreationStep(AlsoAffectsStep):
         """
         bug_url = data.get('bug_url', '')
         target = self.getTarget(data)
+        newcontext_escaped = cgi.escape(target.displayname)
         if (not self.request.get('ignore_missing_remote_bug') and 
             not target.official_malone and not bug_url):
             # We have no URL for the remote bug and the target does not use
@@ -346,13 +355,13 @@ class BugTaskCreationStep(AlsoAffectsStep):
             confirm_button = (
                 '<input type="hidden" name="%s" value="1" />'
                 '<input style="font-size: smaller" type="submit"'
-                ' value="Yes, Add Anyway" name="ignore_missing_remote_bug" />'
+                ' value="Add Anyway" name="ignore_missing_remote_bug" />'
                 % self.continue_action.__name__)
             self.notifications.append(_(dedent("""
                 %s doesn't use Launchpad as its bug tracker. Without a bug
-                URL to watch, status will need to be tracked manually.
-                Request a fix anyway?  %s""" %
-                (cgi.escape(self.getTarget().displayname), confirm_button))))
+                URL to watch, the %s status will not update automatically.
+                %s""" % (newcontext_escaped, newcontext_escaped,
+                confirm_button))))
             return None
 
         extracted_bug = None
@@ -393,12 +402,14 @@ class BugTaskCreationStep(AlsoAffectsStep):
             # implementation; most of the time it will be only one bug.
             for other_bug in other_bugs_already_watching:
                 self.request.response.addInfoNotification(
+                    structured(
                     '<a href="%(bug_url)s">Bug #%(bug_id)s</a> also links'
                     ' to the added bug watch'
                     ' (%(bugtracker_name)s #%(remote_bug)s).',
-                    bug_url=canonical_url(other_bug), bug_id=other_bug.id,
+                    bug_url=canonical_url(other_bug),
+                    bug_id=str(other_bug.id),
                     bugtracker_name=extracted_bugtracker.name,
-                    remote_bug=extracted_bug)
+                    remote_bug=extracted_bug))
 
             # Make sure that we don't add duplicate bug watches.
             bug_watch = task_added.bug.getBugWatch(

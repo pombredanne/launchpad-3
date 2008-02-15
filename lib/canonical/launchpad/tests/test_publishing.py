@@ -69,6 +69,7 @@ class SoyuzTestPublisher:
                      filecontent='I do not care about sources.',
                      status=PackagePublishingStatus.PENDING,
                      pocket=PackagePublishingPocket.RELEASE,
+                     urgency=SourcePackageUrgency.LOW,
                      scheduleddeletiondate=None, dateremoved=None,
                      distroseries=None, archive=None, builddepends=None,
                      builddependsindep=None, architecturehintlist='all',
@@ -92,7 +93,7 @@ class SoyuzTestPublisher:
             creator=self.person,
             component=component,
             section=self.section,
-            urgency=SourcePackageUrgency.LOW,
+            urgency=urgency,
             version=version,
             builddepends=builddepends,
             builddependsindep=builddependsindep,
@@ -140,21 +141,27 @@ class SoyuzTestPublisher:
                        status=PackagePublishingStatus.PENDING,
                        pocket=PackagePublishingPocket.RELEASE,
                        scheduleddeletiondate=None, dateremoved=None,
+                       distroseries=None,
+                       archive=None,
                        pub_source=None):
         """Return a list of binary publishing records."""
+        if distroseries is None:
+            distroseries = self.breezy_autotest
         sourcename = "%s" % binaryname.split('-')[0]
         if pub_source is None:
             pub_source = self.getPubSource(
-                sourcename=sourcename, status=status, pocket=pocket)
+                sourcename=sourcename, status=status, pocket=pocket,
+                archive=archive)
 
         # Determine architecture to build.
         from canonical.buildmaster.master import determineArchitecturesToBuild
-        legal_archs = [das for das in self.breezy_autotest.architectures]
+        legal_archs = [das for das in distroseries.architectures]
         archs = determineArchitecturesToBuild(
-            pub_source, legal_archs, self.breezy_autotest)
+            pub_source, legal_archs, distroseries)
 
         # Build and publish binaries.
-        archive = pub_source.archive
+        if archive is None:
+            archive = pub_source.archive
         spr = pub_source.sourcepackagerelease
         published_binaries = []
         for arch in archs:

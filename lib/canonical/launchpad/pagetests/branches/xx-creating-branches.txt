@@ -17,21 +17,21 @@ Hosted branches use Launchpad as their primary location.
     >>> browser.open('http://code.launchpad.dev/redfish')
     >>> browser.getLink('Register branch').click()
 
-    >>> browser.getControl('Branch Type').displayValue = ['Hosted']
+    >>> browser.getControl('Hosted').click()
     >>> browser.getControl('Name').value = 'hosted-branch'
 
 Branch URLs are not valid for hosted branches.
 
     >>> browser.getControl('Branch URL').value = (
     ...     'http://example.com/hosted-branch')
-    >>> browser.getControl('Add Branch').click()
+    >>> browser.getControl('Register Branch').click()
     >>> for message in get_feedback_messages(browser.contents):
     ...     print message
     There is 1 error.
     Branch URLs cannot be set for Hosted branches.
 
     >>> browser.getControl('Branch URL').value = ''
-    >>> browser.getControl('Add Branch').click()
+    >>> browser.getControl('Register Branch').click()
 
     >>> def print_details_table(browser):
     ...     table = find_tag_by_id(browser.contents, 'branch-details-table')
@@ -53,12 +53,16 @@ mirrors the branch.
     >>> browser.open('http://code.launchpad.dev/redfish')
     >>> browser.getLink('Register branch').click()
 
-    >>> browser.getControl('Branch Type').displayValue = ['Mirrored']
+    >>> # Show that mirrored is selected by default.
+    >>> print_radio_button_field(browser.contents, 'branch_type')
+    ( ) Hosted
+    (*) Mirrored
+    ( ) Remote
     >>> browser.getControl('Name').value = 'mirrored-branch'
 
 Branch URLs are required for mirrored branches.
 
-    >>> browser.getControl('Add Branch').click()
+    >>> browser.getControl('Register Branch').click()
     >>> for message in get_feedback_messages(browser.contents):
     ...     print message
     There is 1 error.
@@ -66,13 +70,14 @@ Branch URLs are required for mirrored branches.
 
     >>> browser.getControl('Branch URL').value = (
     ...     'http://example.com/mirrored-branch')
-    >>> browser.getControl('Add Branch').click()
+    >>> browser.getControl('Register Branch').click()
 
     >>> print_details_table(browser)
     Project: Redfish
     Location: http://example.com/mirrored-branch
     Last mirrored: Not mirrored yet
     Next mirror: As soon as possible
+
 
 == Creating a remote branch ==
 
@@ -81,14 +86,14 @@ The contents of Remote branches are not accessible through Launchpad.
     >>> browser.open('http://code.launchpad.dev/redfish')
     >>> browser.getLink('Register branch').click()
 
-    >>> browser.getControl('Branch Type').displayValue = ['Remote']
+    >>> browser.getControl('Remote').click()
     >>> browser.getControl('Name').value = 'remote-branch'
 
 A remote branch may have a URL, but doesn't have to.
 
     >>> browser.getControl('Branch URL').value = (
     ...     'http://example.com/remote-branch')
-    >>> browser.getControl('Add Branch').click()
+    >>> browser.getControl('Register Branch').click()
     >>> print_details_table(browser)
     Project: Redfish
     Location: http://example.com/remote-branch
@@ -138,10 +143,10 @@ can test the context links on the new branch page.
 
     >>> user_browser.getControl('Name').value = 'main'
     >>> user_browser.getControl('Title').value = 'Gnome Panel Applets Mainline'
-    >>> user_browser.getControl('Status').displayValue = ['Development']
+    >>> user_browser.getControl('Development').click()
     >>> user_browser.getControl('Summary').value = (
     ...     'Main branch of development for GNOME Panel Applets.')
-    >>> user_browser.getControl('Add Branch').click()
+    >>> user_browser.getControl('Register Branch').click()
 
 Posting the form should succeed and redirect to the page of the newly
 registered branch. We check that the final slash of the URL was stripped by
@@ -154,6 +159,14 @@ matching for the angle brackets of an enclosing tag.
     Gnome Panel Applets Mainline
     ...http://example.com/applets/main...
 
+    >>> print extract_text(find_portlet(
+    ...     user_browser.contents, 'Current details'))
+    Current details
+    Type: Mirrored
+    ...
+    Status: Development
+
+
 This page includes a link to other branches associated
 with that product, and a link to other branches maintained by that person.
 
@@ -165,13 +178,33 @@ with that product, and a link to other branches maintained by that person.
 
 == Finding person/+addbranch ==
 
-We can also create a branch from a person's page. First, check that the
-+addbranch link is present in the code facet of a person.
+The user is only able to register a branch where either they or a team
+that they are a member of are the owner, so the 'Register branch' option
+is only shown on the code pages for teams that the user is a member of,
+and their own code page.
 
-    >>> user_browser.open('http://launchpad.dev/~lifeless')
-    >>> user_browser.getLink('Code').click()
-    >>> print user_browser.getLink('Register branch').url
-    http://code.launchpad.dev/~lifeless/+addbranch
+Since no-priv is not a member of lifeless, the Register branch link is not
+shown.
+
+    >>> user_browser.open('http://code.launchpad.dev/~lifeless')
+    >>> user_browser.getLink('Register branch')
+    Traceback (most recent call last):
+    ...
+    LinkNotFoundError
+
+    >>> browser.open('http://code.launchpad.dev/~landscape-developers')
+    >>> browser.getLink('Register branch').click()
+    >>> print browser.getControl('Owner').displayValue
+    ['Landscape Developers']
+
+The user is able to change the owner of the branch to any team that
+the user is a member of, or to themselves.
+
+    >>> for option in browser.getControl('Owner').displayOptions:
+    ...     print option
+    Sample Person
+    Landscape Developers
+    Warty Security Team
 
 
 == Adding a branch to a person ==
@@ -192,7 +225,7 @@ stripped.
     >>> user_browser.getControl('Summary').value = (
     ...     'A resource management framework for handling unit '
     ...     'test fixtures in Python.')
-    >>> user_browser.getControl('Add Branch').click()
+    >>> user_browser.getControl('Register Branch').click()
 
 Posting the form should succeed and redirect to the page of the newly created
 junk branch. Because it has no product, it has no link to other product
@@ -218,7 +251,6 @@ owner-product-name is unique for all branches.
 For this example, we will use ~name12/gnome-terminal/main. Check that it
 already exists.
 
-    >>> browser = setupBrowser(auth='Basic test@canonical.com:test')
     >>> browser.open(
     ...     'http://launchpad.dev/~name12/+branch/gnome-terminal/main')
 
@@ -230,7 +262,7 @@ Try a adding a conflicting branch from the product/+addbranch form.
 
 Trying to post the form without filling a name at all should not cause an oops!
 
-    >>> browser.getControl('Add Branch').click()
+    >>> browser.getControl('Register Branch').click()
     >>> browser.url
     'http://launchpad.dev/gnome-terminal/+addbranch'
 
@@ -238,7 +270,7 @@ Now, complete the form, but give a name that is alredy in use for that owner
 and product.
 
     >>> browser.getControl('Name').value = 'main'
-    >>> browser.getControl('Add Branch').click()
+    >>> browser.getControl('Register Branch').click()
 
 That should give us the form back with an error message.
 
@@ -254,12 +286,12 @@ same error message.
     >>> browser.open('http://launchpad.dev/~name12/+addbranch')
     >>> browser.getControl('Branch URL').value = (
     ...     'http://example.com/gnome-terminal/main-dup')
-    >>> browser.getControl('Add Branch').click()
+    >>> browser.getControl('Register Branch').click()
     >>> browser.url
     'http://launchpad.dev/%7Ename12/+addbranch'
     >>> browser.getControl('Name').value = 'main'
     >>> browser.getControl('Project').value = 'gnome-terminal'
-    >>> browser.getControl('Add Branch').click()
+    >>> browser.getControl('Register Branch').click()
     >>> browser.url
     'http://launchpad.dev/%7Ename12/+addbranch'
     >>> soup = find_main_content(browser.contents)
@@ -272,7 +304,7 @@ message about that, but no error about the branch name since we don't
 know if it conflicts or not:
 
     >>> browser.getControl('Project').value = 'no-such-product'
-    >>> browser.getControl('Add Branch').click()
+    >>> browser.getControl('Register Branch').click()
     >>> browser.url
     'http://launchpad.dev/%7Ename12/+addbranch'
     >>> soup = find_main_content(browser.contents)
@@ -287,7 +319,7 @@ URL validation should check that the entered URL is not the root of a site.
     >>> user_browser.getLink('Register branch').click()
     >>> user_browser.getControl('Branch URL').value = 'http://example.com'
     >>> user_browser.getControl('Name').value = 'unique-name'
-    >>> user_browser.getControl('Add Branch').click()
+    >>> user_browser.getControl('Register Branch').click()
     >>> messages = find_tags_by_class(user_browser.contents, 'message')
     >>> for element in messages:
     ...     print element.renderContents()
@@ -302,7 +334,7 @@ URL validation should check that the entered URL is not from Launchpad.
     >>> user_browser.getControl('Branch URL').value = (
     ...     'http://code.launchpad.dev/~testuser/')
     >>> user_browser.getControl('Name').value = 'unique-name'
-    >>> user_browser.getControl('Add Branch').click()
+    >>> user_browser.getControl('Register Branch').click()
     >>> for message in get_feedback_messages(user_browser.contents):
     ...     print message
     There is 1 error.
@@ -324,7 +356,7 @@ so errors are set at the page level.
     >>> user_browser.getLink('Register branch').click()
     >>> user_browser.getControl('Branch URL').value = 'http://foo.com/bar'
     >>> user_browser.getControl('Name').value = 'landscape1'
-    >>> user_browser.getControl('Add Branch').click()
+    >>> user_browser.getControl('Register Branch').click()
     >>> messages = find_tags_by_class(user_browser.contents, 'message')
     >>> for element in messages:
     ...     print element.renderContents()
@@ -339,7 +371,7 @@ product widget, so the error is associated with the product widget.
     >>> user_browser.getControl('Project').value = 'landscape'
     >>> user_browser.getControl('Branch URL').value = 'http://foo.com/bar'
     >>> user_browser.getControl('Name').value = 'landscape1'
-    >>> user_browser.getControl('Add Branch').click()
+    >>> user_browser.getControl('Register Branch').click()
     >>> messages = find_tags_by_class(user_browser.contents, 'message')
     >>> for element in messages:
     ...     print element.renderContents()

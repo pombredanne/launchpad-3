@@ -425,16 +425,32 @@ class IMailingList(Interface):
             not own the given email address.
         """
 
-    def getAddresses():
-        """Return the set of subscribed email addresses.
+    def getSubscribedAddresses():
+        """Return the set of subscribed email addresses for members.
 
-        :return: an iterator over the IEmailAddresses for all subscribed
-            members of the mailing list, in no particular order.
+        :return: an iterator over the subscribed IEmailAddresses for all
+            subscribed members of the mailing list, in no particular order.
+            This represents all the addresses which will receive messages
+            posted to the mailing list.
+        """
+
+    def getSenderAddresses():
+        """Return the set of all email addresses for members.
+
+        :return: an iterator over the all the registered and validated
+            IEmailAddresses for all subscribed members of the mailing list, in
+            no particular order.  These represent all the addresses which are
+            allowed to post to the mailing list.
         """
 
 
 class IMailingListSet(Interface):
     """A set of mailing lists."""
+
+    title = TextLine(
+        title=_('Title'),
+        description=_('The hard coded title.'),
+        readonly=True)
 
     def new(team, registrant=None):
         """Register a new team mailing list.

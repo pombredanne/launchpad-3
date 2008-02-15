@@ -67,11 +67,12 @@ from canonical.launchpad.webapp import (
     redirection, stepthrough)
 from canonical.launchpad.webapp.uri import URI
 from canonical.launchpad.interfaces import (
-    BugAttachmentType, BugNominationStatus, BugTaskImportance,
-    BugTaskSearchParams, BugTaskStatus, BugTaskStatusSearchDisplay, IBug,
-    IBugAttachmentSet, IBugBranchSet, IBugNominationSet, IBugSet, IBugTask,
-    IBugTaskSearch, IBugTaskSet, ICreateQuestionFromBugTaskForm, ICveSet,
-    IDistribution, IDistributionSourcePackage, IDistroBugTask, IDistroSeries,
+    BugAttachmentType, BugNominationStatus, BugTagsSearchCombinator,
+    BugTaskImportance, BugTaskSearchParams, BugTaskStatus,
+    BugTaskStatusSearchDisplay, IBug, IBugAttachmentSet, IBugBranchSet,
+    IBugNominationSet, IBugSet, IBugTask, IBugTaskSearch, IBugTaskSet,
+    ICreateQuestionFromBugTaskForm, ICveSet, IDistribution,
+    IDistributionSourcePackage, IDistroBugTask, IDistroSeries,
     IDistroSeriesBugTask, IFrontPageBugTaskSearch, ILaunchBag,
     INominationsReviewTableBatchNavigator, INullBugTask, IPerson,
     IPersonBugTaskSearch, IProduct, IProductSeries, IProductSeriesBugTask,
@@ -80,7 +81,7 @@ from canonical.launchpad.interfaces import (
     RESOLVED_BUGTASK_STATUSES, UNRESOLVED_BUGTASK_STATUSES,
     UnexpectedFormData, valid_upstreamtask, validate_distrotask)
 
-from canonical.launchpad.searchbuilder import any, NULL
+from canonical.launchpad.searchbuilder import all, any, NULL
 
 from canonical.launchpad import helpers
 
@@ -89,13 +90,13 @@ from canonical.launchpad.event.sqlobjectevent import SQLObjectModifiedEvent
 from canonical.launchpad.browser.bug import BugContextMenu, BugTextView
 from canonical.launchpad.browser.bugcomment import build_comments_from_chunks
 from canonical.launchpad.browser.feeds import (
-    BugFeedLink, BugTargetLatestBugsFeedLink, FeedsMixin,
-    PersonLatestBugsFeedLink)
+    BugTargetLatestBugsFeedLink, FeedsMixin, PersonLatestBugsFeedLink)
 from canonical.launchpad.browser.mentoringoffer import CanBeMentoredView
 from canonical.launchpad.browser.launchpad import StructuralObjectPresentation
 
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.batching import TableBatchNavigator
+from canonical.launchpad.webapp.menu import structured
 from canonical.launchpad.webapp.snapshot import Snapshot
 from canonical.launchpad.webapp.tales import PersonFormatterAPI
 from canonical.launchpad.webapp.vocabulary import vocab_factory
@@ -510,7 +511,7 @@ class BugTaskView(LaunchpadView, CanBeMentoredView, FeedsMixin):
 
     def _handleSubscribe(self):
         """Handle a subscribe request."""
-        self.context.bug.subscribe(self.user)
+        self.context.bug.subscribe(self.user, self.user)
         self.notices.append("You have been subscribed to this bug.")
 
     def _handleUnsubscribe(self, user):
@@ -535,7 +536,8 @@ class BugTaskView(LaunchpadView, CanBeMentoredView, FeedsMixin):
         self.context.bug.unsubscribe(self.user)
 
         self.request.response.addNotification(
-            self._getUnsubscribeNotification(self.user, unsubed_dupes))
+            structured(
+                self._getUnsubscribeNotification(self.user, unsubed_dupes)))
 
         if not check_permission("launchpad.View", self.context.bug):
             # Redirect the user to the bug listing, because they can no
@@ -554,7 +556,8 @@ class BugTaskView(LaunchpadView, CanBeMentoredView, FeedsMixin):
         self.context.bug.unsubscribe(user)
         unsubed_dupes = self.context.bug.unsubscribeFromDupes(user)
         self.request.response.addNotification(
-            self._getUnsubscribeNotification(user, unsubed_dupes))
+            structured(
+                self._getUnsubscribeNotification(user, unsubed_dupes)))
 
     def _getUnsubscribeNotification(self, user, unsubed_dupes):
         """Construct and return the unsubscribe-from-bug feedback message.
@@ -621,8 +624,8 @@ class BugTaskView(LaunchpadView, CanBeMentoredView, FeedsMixin):
         """Nominate the bug for the series and redirect to the bug page."""
         self.context.bug.addNomination(self.user, series)
         self.request.response.addInfoNotification(
-            'This bug has been nominated to be fixed in %(target)s.',
-            target=series.bugtargetdisplayname)
+            'This bug has been nominated to be fixed in %s.' %
+                series.bugtargetdisplayname)
         self.request.response.redirect(canonical_url(self.context))
 
     def reportBugInContext(self):
@@ -1044,7 +1047,7 @@ class BugTaskEditView(LaunchpadEditFormView):
         bugtask = context
 
         if self.request.form.get('subscribe', False):
-            bugtask.bug.subscribe(self.user)
+            bugtask.bug.subscribe(self.user, self.user)
             self.request.response.addNotification(
                 "You have been subscribed to this bug.")
 
@@ -1144,6 +1147,7 @@ class BugTaskEditView(LaunchpadEditFormView):
                     # contributor in this pillar, we display a warning
                     # to the user, in case they made a mistake.
                     self.request.response.addWarningNotification(
+                        structured(
                         """<a href="%s">%s</a>
                         did not previously have any assigned bugs in
                         <a href="%s">%s</a>.
@@ -1155,7 +1159,7 @@ class BugTaskEditView(LaunchpadEditFormView):
                         new_assignee.displayname,
                         canonical_url(bugtask.pillar),
                         bugtask.pillar.title,
-                        canonical_url(bugtask)))
+                        canonical_url(bugtask))))
 
         if bugtask_before_modification.bugwatch != bugtask.bugwatch:
             if bugtask.bugwatch is None:
@@ -1550,6 +1554,7 @@ class BugTaskSearchListingView(LaunchpadFormView, FeedsMixin):
     custom_widget('searchtext', NewLineToSpacesWidget)
     custom_widget('status_upstream', LabeledMultiCheckBoxWidget)
     custom_widget('tag', BugTagsWidget)
+    custom_widget('tags_combinator', RadioWidget)
     custom_widget('component', LabeledMultiCheckBoxWidget)
 
     @property
@@ -1744,11 +1749,34 @@ class BugTaskSearchListingView(LaunchpadFormView, FeedsMixin):
         # "Normalize" the form data into search arguments.
         form_values = {}
         for key, value in data.items():
+            if key in ('tag'):
+                # Skip tag-related parameters, they
+                # are handled later on.
+                continue
             if zope_isinstance(value, (list, tuple)):
                 if len(value) > 0:
                     form_values[key] = any(*value)
             else:
                 form_values[key] = value
+
+        if 'tag' in data:
+            # Tags require special handling, since they can be used
+            # to search either inclusively or exclusively.
+            # We take a look at the `tags_combinator` field, and wrap
+            # the tag list in the appropriate search directive (either
+            # `any` or `all`). If no value is supplied, we assume `any`,
+            # in order to remain compatible with old saved search URLs.
+            tags = data['tag']
+            tags_combinator_all = (
+                'tags_combinator' in data and
+                data['tags_combinator'] == BugTagsSearchCombinator.ALL)
+            if zope_isinstance(tags, (list, tuple)) and len(tags) > 0:
+                if tags_combinator_all:
+                    form_values['tag'] = all(*tags)
+                else:
+                    form_values['tag'] = any(*tags)
+            else:
+                form_values['tag'] = tags
 
         search_params = self._getDefaultSearchParams()
         for name, value in form_values.items():
@@ -1887,6 +1915,10 @@ class BugTaskSearchListingView(LaunchpadFormView, FeedsMixin):
 
     def shouldShowReporterWidget(self):
         """Should the reporter widget be shown on the advanced search page?"""
+        return True
+
+    def shouldShowTagsCombinatorWidget(self):
+        """Should the tags combinator widget show on the search page?"""
         return True
 
     def shouldShowReleaseCriticalPortlet(self):
@@ -2165,7 +2197,7 @@ class BugTaskSearchListingView(LaunchpadFormView, FeedsMixin):
             return None
         bugtaskset = getUtility(IBugTaskSet)
         expirable_bugtasks = bugtaskset.findExpirableBugTasks(
-            0, target=self.context)
+            0, user=self.user, target=self.context)
         count = len(expirable_bugtasks)
         label = self._bugOrBugs(count)
         url = "%s/+expirable-bugs" % canonical_url(self.context)
@@ -2584,11 +2616,14 @@ class BugTaskRemoveQuestionView(LaunchpadFormView):
         # The question.owner was implicitly unsubscribed when the bug
         # was unlinked. We resubscribe the owner if he was subscribed.
         if owner_is_subscribed is True:
-            self.context.bug.subscribe(question.owner)
+            self.context.bug.subscribe(question.owner, self.user)
         self.request.response.addNotification(
-            'Removed Question #%s: <a href="%s">%s<a>.'
-            % (question.id, canonical_url(question),
-               cgi.escape(question.title)))
+            structured(
+                'Removed Question #%s: <a href="%s">%s<a>.',
+                str(question.id),
+                canonical_url(question),
+                question.title))
+
         comment = data.get('comment', None)
         if comment is not None:
             self.context.bug.newMessage(
@@ -2622,7 +2657,8 @@ class BugTaskExpirableListingView(LaunchpadView):
     def search(self):
         """Return an `ITableBatchNavigator` for the expirable bugtasks."""
         bugtaskset = getUtility(IBugTaskSet)
-        bugtasks = bugtaskset.findExpirableBugTasks(0, target=self.context)
+        bugtasks = bugtaskset.findExpirableBugTasks(
+            0, user=self.user, target=self.context)
         return BugListingBatchNavigator(
             bugtasks, self.request, columns_to_show=self.columns_to_show,
             size=config.malone.buglist_batch_size)

@@ -307,5 +307,14 @@ class LaunchpadScriptTestCase(BaseTestCase):
         self.assertEqual(user, 'librarian')
 
 
+class TestNameTestCase(unittest.TestCase):
+    layer = BaseLayer
+    def testTestName(self):
+        self.failUnlessEqual(
+                BaseLayer.test_name,
+                "testTestName "
+                "(canonical.testing.ftests.test_layers.TestNameTestCase)")
+
+
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)

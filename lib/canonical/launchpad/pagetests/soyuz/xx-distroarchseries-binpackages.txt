@@ -146,7 +146,7 @@ Then we get to the DistroSeries page:
 
 Then the DistroArchSeries page:
 
-    >>> browser.getLink('breezy-autotest i386 (official, ppa)').click()
+    >>> browser.getLink('i386').click()
 
 Now we are able to use the search box in this page:
 

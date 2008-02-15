@@ -479,9 +479,10 @@ class Bugzilla:
 
         # subscribe QA contact and CC's
         if bug.qa_contact:
-            lp_bug.subscribe(self.person(bug.qa_contact))
+            lp_bug.subscribe(
+                self.person(bug.qa_contact), self.person(bug.reporter))
         for cc in bug.ccs:
-            lp_bug.subscribe(self.person(cc))
+            lp_bug.subscribe(self.person(cc), self.person(bug.reporter))
 
         # translate bugzilla status and severity to LP equivalents
         task = lp_bug.bugtasks[0]

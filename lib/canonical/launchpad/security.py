@@ -8,24 +8,23 @@ from zope.interface import implements, Interface
 from zope.component import getUtility
 
 from canonical.launchpad.interfaces import (
-    IAnnouncement, IBazaarApplication, IBranch, IBranchMergeProposal,
-    IBranchSubscription, IBug, IBugAttachment, IBugBranch, IBugNomination,
-    IBugTracker, IBuild, IBuilder, IBuilderSet, ICodeImport,
-    ICodeImportJob, ICodeImportJobSet, ICodeImportJobWorkflow,
-    ICodeImportMachine, ICodeImportMachineSet, ICodeImportSet,
-    IDistribution, IDistributionMirror, IDistroSeries,
-    IDistroSeriesLanguage, IEntitlement, IFAQ, IFAQTarget, IHasBug,
-    IHasDrivers, IHasOwner, IHWSubmission, ILanguage, ILanguagePack,
-    ILanguageSet, ILaunchpadCelebrities, IMilestone, IPackageUpload,
-    IPackageUploadQueue, IPerson, IPOFile, IPoll, IPollSubset, IPollOption,
-    IPOTemplate, IPOTemplateSubset, IProduct, IProductRelease,
+    IAnnouncement, IArchive, IBazaarApplication, IBranch,
+    IBranchMergeProposal, IBranchSubscription, IBug, IBugAttachment,
+    IBugBranch, IBugNomination, IBugTracker, IBuild, IBuilder, IBuilderSet,
+    ICodeImport, ICodeImportJob, ICodeImportJobSet, ICodeImportJobWorkflow,
+    ICodeImportMachine, ICodeImportMachineSet, ICodeImportSet, IDistribution,
+    IDistributionMirror, IDistroSeries, IDistroSeriesLanguage, IEntitlement,
+    IFAQ, IFAQTarget, IHWSubmission, IHasBug, IHasDrivers, IHasOwner,
+    ILanguage, ILanguagePack, ILanguageSet, ILaunchpadCelebrities,
+    IMailingListSet, IMilestone, IPOFile, IPOTemplate, IPOTemplateSubset,
+    IPackageUpload, IPackageUploadQueue, IPackaging, IPerson, IPoll,
+    IPollOption, IPollSubset, IProduct, IProductRelease, IProductReleaseFile,
     IProductSeries, IQuestion, IQuestionTarget, IRequestedCDs,
     IShipItApplication, IShippingRequest, IShippingRequestSet, IShippingRun,
-    ISpecification, ISpecificationSubscription, ISprint,
-    ISprintSpecification, IStandardShipItRequest, IStandardShipItRequestSet,
-    ITeam, ITeamMembership, ITranslationGroup, ITranslationGroupSet,
-    ITranslationImportQueue, ITranslationImportQueueEntry, ITranslator,
-    PackageUploadStatus, IPackaging, IProductReleaseFile, PersonVisibility)
+    ISpecification, ISpecificationSubscription, ISprint, ISprintSpecification,
+    IStandardShipItRequest, IStandardShipItRequestSet, ITeam, ITeamMembership,
+    ITranslationGroup, ITranslationGroupSet, ITranslationImportQueue,
+    ITranslationImportQueueEntry, ITranslator, PersonVisibility)
 
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.interfaces import IAuthorization
@@ -1022,31 +1021,8 @@ class EditPackageUploadQueue(AdminByAdminsTeam):
         return user.inTeam(self.obj.distroseries.distribution.upload_admin)
 
 
-class ViewPackageUploadQueue(EditPackageUploadQueue):
-    permission = 'launchpad.View'
-    usedfor = IPackageUploadQueue
-
-    def checkAuthenticated(self, user):
-        """Allow only members of the admin team to view unapproved entries.
-
-        Any logged in user can view entries in other state.
-        """
-        if EditPackageUploadQueue.checkAuthenticated(self, user):
-            return True
-        # deny access to non-admin on unapproved records
-        if self.obj.status == PackageUploadStatus.UNAPPROVED:
-            return False
-
-        return True
-
-
 class EditPackageUpload(EditPackageUploadQueue):
     permission = 'launchpad.Edit'
-    usedfor = IPackageUpload
-
-
-class ViewPackageUpload(ViewPackageUploadQueue):
-    permission = 'launchpad.View'
     usedfor = IPackageUpload
 
 
@@ -1227,6 +1203,30 @@ class BranchSubscriptionEdit(AuthorizationBase):
         return user.inTeam(self.obj.person) or user.inTeam(admins)
 
 
+class BranchMergeProposalView(AuthorizationBase):
+    permission = 'launchpad.View'
+    usedfor = IBranchMergeProposal
+
+    def checkAuthenticated(self, user):
+        """Is the user able to view the branch merge proposal?
+
+        The user can see a merge proposal between two branches
+        that the user can see.
+        """
+        return (AccessBranch(self.obj.source_branch).checkAuthenticated(user)
+                and
+                AccessBranch(self.obj.target_branch).checkAuthenticated(user))
+
+    def checkUnauthenticated(self):
+        """Is anyone able to view the branch merge proposal?
+
+        Anyone can see a merge proposal between two public branches.
+        """
+        return (AccessBranch(self.obj.source_branch).checkUnauthenticated()
+                and
+                AccessBranch(self.obj.target_branch).checkUnauthenticated())
+
+
 class BranchMergeProposalEdit(AuthorizationBase):
     permission = 'launchpad.Edit'
     usedfor = IBranchMergeProposal
@@ -1238,12 +1238,14 @@ class BranchMergeProposalEdit(AuthorizationBase):
           * the registrant of the merge proposal
           * the owner of the source_branch
           * the owner of the target_branch
+          * the reviewer for the target_branch
           * an administrator
         """
         admins = getUtility(ILaunchpadCelebrities).admin
         return (user.inTeam(self.obj.registrant) or
                 user.inTeam(self.obj.source_branch.owner) or
                 user.inTeam(self.obj.target_branch.owner) or
+                user.inTeam(self.obj.target_branch.reviewer) or
                 user.inTeam(admins))
 
 
@@ -1330,3 +1332,42 @@ class ViewHWSubmission(AuthorizationBase):
 
     def checkUnauthenticated(self):
         return not self.obj.private
+
+
+class ViewArchive(AuthorizationBase):
+    """Restrict viewing of private PPAs.
+
+    Only admins or members of a team with a private membership can
+    view the PPA.
+    """
+    permission = 'launchpad.View'
+    usedfor = IArchive
+
+    def checkAuthenticated(self, user):
+        """Verify that the user can view the PPA.
+
+        Anyone can see a public PPA.
+
+        Only a team member or a Launchpad admin can view a
+        private PPA.
+        """
+        # No further checks are required if the archive is not private.
+        if not self.obj.private:
+            return True
+
+        # Admins and this archive's owner or team members are allowed.
+        admins = getUtility(ILaunchpadCelebrities).admin
+        return user.inTeam(self.obj.owner) or user.inTeam(admins)
+
+    def checkUnauthenticated(self):
+        """Unauthenticated users can see the PPA if it's not private."""
+        return not self.obj.private
+
+
+class MailingListApprovalByExperts(AuthorizationBase):
+    permission = 'launchpad.Admin'
+    usedfor = IMailingListSet
+
+    def checkAuthenticated(self, user):
+        experts = getUtility(ILaunchpadCelebrities).mailing_list_experts
+        return user.inTeam(experts)

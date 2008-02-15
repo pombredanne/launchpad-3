@@ -47,6 +47,7 @@ from canonical.launchpad.interfaces import (
 from canonical.launchpad.webapp import (
     ApplicationMenu, canonical_url, LaunchpadView, Link, urlparse)
 from canonical.launchpad.webapp.batching import BatchNavigator
+from canonical.launchpad.webapp.menu import structured
 
 #
 # Translation-related formatting functions
@@ -401,7 +402,8 @@ class BaseTranslationView(LaunchpadView):
             # This POFile needs administrator setup.
             # XXX: kiko 2006-10-18:
             # This should refer people to +addticket, right?
-            self.request.response.addErrorNotification("""
+            self.request.response.addErrorNotification(
+                structured("""
             <p>
             Launchpad can&#8217;t handle the plural items in this file,
             because it doesn&#8217;t yet know how plural forms work for %s.
@@ -419,7 +421,7 @@ class BaseTranslationView(LaunchpadView):
             This only needs to be done once per language. Thanks for helping
             Launchpad Translations.
             </p>
-            """ % self.pofile.language.englishname)
+            """ % self.pofile.language.englishname))
             return
 
         self._initializeAltLanguage()
@@ -561,6 +563,7 @@ class BaseTranslationView(LaunchpadView):
             # user.
             return unicode(e)
         else:
+            self._observeTranslationUpdate(potmsgset)
             return None
 
     def _prepareView(self, view_class, current_translation_message, error):
@@ -816,6 +819,14 @@ class BaseTranslationView(LaunchpadView):
         else:
             raise AssertionError('More than %d plural forms were submitted!'
                                  % self.MAX_PLURAL_FORMS)
+
+    def _observeTranslationUpdate(self, potmsgset):
+        """Observe that a translation was updated for the potmsgset.
+
+        Subclasses should redefine this method if they need to watch the
+        successful calls to `potmsgset.updateTranslation`.
+        """
+        pass
 
     #
     # Redirection

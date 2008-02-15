@@ -23,9 +23,10 @@
 
   <div metal:use-macro="context/@@launchpad_form/form">
     <p metal:fill-slot="extra_info" tal:condition="not:view/errors">
-      Once you enter the details of the revision control system you use for
-      this release series, Launchpad Administrators will attempt to import that
-      code and publish it as a Bazaar branch.
+      For more details on importing source code into Launchpad,
+      see the help wiki page
+      <a href="https://help.launchpad.net/VcsImports">
+          VcsImports</a>.
     </p>
 
     <metal:formbody fill-slot="widgets">
@@ -37,8 +38,8 @@
       <fieldset>
         <legend>
           <label>
-            <input tal:replace="structure view/rcstype_none" />
-            No revision control system, or Bazaar
+            <input tal:replace="structure view/rcstype_bzr" />
+            Bazaar
           </label>
         </legend>
         <table class="form">
@@ -83,6 +84,15 @@
         </table>
       </fieldset>
 
+      <fieldset>
+        <legend>
+          <label>
+            <input tal:replace="structure view/rcstype_none" />
+            No revision control system or not specifed here
+          </label>
+        </legend>
+      </fieldset>
+
       <input tal:replace="structure view/rcstype_emptymarker" />
 
       <tal:has-import-status condition="context/importstatus">
@@ -104,10 +114,14 @@
               break;
             }
           }
-          form['field.cvsroot'].disabled = (rcstype != 'CVS');
-          form['field.cvsbranch'].disabled = (rcstype != 'CVS');
-          form['field.cvsmodule'].disabled = (rcstype != 'CVS');
-          form['field.svnrepository'].disabled = (rcstype != 'SVN');
+          // BZR
+          updateField(form['field.user_branch'], rcstype == 'BZR');
+          // CVS
+          updateField(form['field.cvsroot'], rcstype == 'CVS');
+          updateField(form['field.cvsbranch'], rcstype == 'CVS');
+          updateField(form['field.cvsmodule'], rcstype == 'CVS');
+          // SVN
+          updateField(form['field.svnrepository'], rcstype == 'SVN');
         }
         updateWidgets();
         //]]>

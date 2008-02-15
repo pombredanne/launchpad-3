@@ -1,4 +1,4 @@
-# Copyright 2007 Canonical Ltd.  All rights reserved.
+ # Copyright 2007 Canonical Ltd.  All rights reserved.
 
 """Testing infrastructure for the Launchpad application.
 
@@ -8,12 +8,56 @@ This module should not have any actual tests.
 __metaclass__ = type
 __all__ = [
     'LaunchpadObjectFactory',
+    'time_counter',
     ]
 
+from datetime import datetime, timedelta
+import pytz
+
 from zope.component import getUtility
+from canonical.database.sqlbase import connect, sqlvalues
 from canonical.launchpad.interfaces import (
-    BranchType, CreateBugParams, IBranchSet, IBugSet, IPersonSet, IProductSet,
-    License, PersonCreationRationale, UnknownBranchTypeError)
+    BranchType,
+    CodeImportMachineState,
+    CodeImportReviewStatus,
+    CreateBugParams,
+    EmailAddressStatus,
+    IBranchSet,
+    IBugSet,
+    ICodeImportJobWorkflow,
+    ICodeImportMachineSet,
+    ICodeImportSet,
+    ILaunchpadCelebrities,
+    IPersonSet,
+    IProductSet,
+    IRevisionSet,
+    License,
+    PersonCreationRationale,
+    RevisionControlSystems,
+    UnknownBranchTypeError,
+    )
+
+
+def time_counter(origin=None, delta=timedelta(seconds=5)):
+    """A generator for yielding datetime values.
+
+    Each time the generator yields a value, the origin is incremented
+    by the delta.
+
+    >>> now = time_counter(datetime(2007, 12, 1), timedelta(days=1))
+    >>> now.next()
+    datetime.datetime(2007, 12, 1, 0, 0)
+    >>> now.next()
+    datetime.datetime(2007, 12, 2, 0, 0)
+    >>> now.next()
+    datetime.datetime(2007, 12, 3, 0, 0)
+    """
+    if origin is None:
+        origin = datetime.now(pytz.UTC)
+    now = origin
+    while True:
+        yield now
+        now += delta
 
 
 # NOTE:
@@ -22,12 +66,6 @@ from canonical.launchpad.interfaces import (
 # is by no means complete for Launchpad objects.  If you need to create
 # anonymous objects for your tests then add methods to the factory.
 #
-# All factory methods should be callable with no parameters.  If you
-# add a keyword argument to a method, please be considerate of the other
-# users of the factory and make it behave at least as good as it was
-# before.
-
-
 class LaunchpadObjectFactory:
     """Factory methods for creating Launchpad objects.
 
@@ -64,14 +102,46 @@ class LaunchpadObjectFactory:
         return 'http://%s.example.com/%s' % (
             self.getUniqueString('domain'), self.getUniqueString('path'))
 
-    def makePerson(self, email=None, name=None):
-        """Create and return a new, arbitrary Person."""
+    def makePerson(self, email=None, name=None, password=None,
+                   email_address_status=None):
+        """Create and return a new, arbitrary Person.
+
+        :param email: The email address for the new person.
+        :param name: The name for the new person.
+        :param password: The password for the person.
+            This password can be used in setupBrowser in combination
+            with the email address to create a browser for this new
+            person.
+        :param email_address_status: If specified, the status of the email
+            address is set to the email_address_status.
+        """
         if email is None:
             email = self.getUniqueString('email')
         if name is None:
             name = self.getUniqueString('person-name')
-        return getUtility(IPersonSet).createPersonAndEmail(
-            email, rationale=PersonCreationRationale.UNKNOWN, name=name)[0]
+        if password is None:
+            password = self.getUniqueString('password')
+        else:
+            # If a password was specified, validate the email address,
+            # unless told otherwise.
+            if email_address_status is None:
+                email_address_status = EmailAddressStatus.VALIDATED
+        # Set the password to test in order to allow people that have
+        # been created this way can be logged in.
+        person, email = getUtility(IPersonSet).createPersonAndEmail(
+            email, rationale=PersonCreationRationale.UNKNOWN, name=name,
+            password=password)
+        # To make the person someone valid in Launchpad, validate the
+        # email.
+        if email_address_status == EmailAddressStatus.VALIDATED:
+            person.validateAndEnsurePreferredEmail(email)
+        elif email_address_status is not None:
+            email.status = email_address_status
+            email.syncUpdate()
+        else:
+            # Leave the email as NEW.
+            pass
+        return person
 
     def makeProduct(self, name=None):
         """Create and return a new, arbitrary Product."""
@@ -87,7 +157,8 @@ class LaunchpadObjectFactory:
             licenses=[License.GPL])
 
     def makeBranch(self, branch_type=None, owner=None, name=None,
-                   product=None, url=None, **optional_branch_args):
+                   product=None, url=None, registrant=None,
+                   **optional_branch_args):
         """Create and return a new, arbitrary Branch of the given type.
 
         Any parameters for IBranchSet.new can be specified to override the
@@ -97,6 +168,8 @@ class LaunchpadObjectFactory:
             branch_type = BranchType.HOSTED
         if owner is None:
             owner = self.makePerson()
+        if registrant is None:
+            registrant = owner
         if name is None:
             name = self.getUniqueString('branch')
         if product is None:
@@ -104,15 +177,55 @@ class LaunchpadObjectFactory:
 
         if branch_type in (BranchType.HOSTED, BranchType.IMPORTED):
             url = None
-        elif (branch_type in (BranchType.MIRRORED, BranchType.REMOTE)
-              and url is None):
-            url = self.getUniqueURL()
+        elif branch_type in (BranchType.MIRRORED, BranchType.REMOTE):
+            if url is None:
+                url = self.getUniqueURL()
         else:
             raise UnknownBranchTypeError(
                 'Unrecognized branch type: %r' % (branch_type,))
         return getUtility(IBranchSet).new(
-            branch_type, name, owner, owner, product, url,
+            branch_type, name, registrant, owner, product, url,
             **optional_branch_args)
+
+    def makeRevisionsForBranch(self, branch, count=5, author=None,
+                               date_generator=None):
+        """Add `count` revisions to the revision history of `branch`.
+
+        :param branch: The branch to add the revisions to.
+        :param count: The number of revisions to add.
+        :param author: A string for the author name.
+        :param date_generator: A `time_counter` instance, defaults to starting
+                               from 1-Jan-2007 if not set.
+        """
+        if date_generator is None:
+            date_generator = time_counter(
+                datetime(2007, 1, 1, tzinfo=pytz.UTC),
+                delta=timedelta(days=1))
+        sequence = branch.revision_count
+        parent = branch.getTipRevision()
+        if parent is None:
+            parent_ids = []
+        else:
+            parent_ids = [parent.revision_id]
+
+        revision_set = getUtility(IRevisionSet)
+        if author is None:
+            author = self.getUniqueString('author')
+        # All revisions are owned by the admin user.  Don't ask.
+        admin_user = getUtility(ILaunchpadCelebrities).admin
+        for index in range(count):
+            revision = revision_set.new(
+                revision_id = self.getUniqueString('revision-id'),
+                log_body=self.getUniqueString('log-body'),
+                revision_date=date_generator.next(),
+                revision_author=author,
+                parent_ids=parent_ids,
+                properties={})
+            sequence += 1
+            branch.createBranchRevision(sequence, revision)
+            parent = revision
+            parent_ids = [parent.revision_id]
+        branch.updateScannedDetails(parent.revision_id, sequence)
 
     def makeBug(self):
         """Create and return a new, arbitrary Bug.
@@ -126,3 +239,37 @@ class LaunchpadObjectFactory:
             owner, title, comment=self.getUniqueString())
         create_bug_params.setBugTarget(product=self.makeProduct())
         return getUtility(IBugSet).createBug(create_bug_params)
+
+    def makeCodeImport(self, url=None):
+        """Create and return a new, arbitrary code import.
+
+        The code import will be an import from a Subversion repository located
+        at `url`, or an arbitrary unique url if the parameter is not supplied.
+        """
+        if url is None:
+            url = self.getUniqueURL()
+        vcs_imports = getUtility(ILaunchpadCelebrities).vcs_imports
+        branch = self.makeBranch(
+            BranchType.IMPORTED, owner=vcs_imports)
+        registrant = self.makePerson()
+        return getUtility(ICodeImportSet).new(
+            registrant, branch, rcs_type=RevisionControlSystems.SVN,
+            svn_branch_url=url)
+
+    def makeCodeImportJob(self, code_import):
+        """Create and return a new code import job for the given import.
+
+        This implies setting the import's review_status to REVIEWED.
+        """
+        code_import.updateFromData(
+            {'review_status': CodeImportReviewStatus.REVIEWED},
+            code_import.registrant)
+        workflow = getUtility(ICodeImportJobWorkflow)
+        return workflow.newJob(code_import)
+
+    def makeCodeImportMachine(self):
+        """Return a new CodeImportMachine.
+
+        The machine will be in the OFFLINE state."""
+        hostname = self.getUniqueString('machine-')
+        return getUtility(ICodeImportMachineSet).new(hostname)

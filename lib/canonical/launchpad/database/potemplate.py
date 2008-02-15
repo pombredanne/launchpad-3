@@ -77,7 +77,6 @@ class POTemplate(SQLBase, RosettaStats):
     translation_domain = StringCol(dbName='translation_domain', notNull=True)
     description = StringCol(dbName='description', notNull=False, default=None)
     copyright = StringCol(dbName='copyright', notNull=False, default=None)
-    license = IntCol(dbName='license', notNull=False, default=None)
     datecreated = UtcDateTimeCol(dbName='datecreated', default=DEFAULT)
     path = StringCol(dbName='path', notNull=False, default=None)
     source_file = ForeignKey(foreignKey='LibraryFileAlias',
@@ -96,7 +95,7 @@ class POTemplate(SQLBase, RosettaStats):
         notNull=False, default=None)
     distroseries = ForeignKey(foreignKey='DistroSeries',
         dbName='distroseries', notNull=False, default=None)
-    header = StringCol(dbName='header', notNull=False)
+    header = StringCol(dbName='header', notNull=True)
     binarypackagename = ForeignKey(foreignKey='BinaryPackageName',
         dbName='binarypackagename', notNull=False, default=None)
     languagepack = BoolCol(dbName='languagepack', notNull=True, default=False)
@@ -629,11 +628,6 @@ class POTemplate(SQLBase, RosettaStats):
         return self.createPOTMsgSetFromMsgIDs(msgid_singular, msgid_plural,
                                               context)
 
-    def invalidateCache(self):
-        """See `IPOTemplate`."""
-        for pofile in self.pofiles:
-            pofile.invalidateCache()
-
     def importFromQueue(self, entry_to_import, logger=None):
         """See `IPOTemplate`."""
         assert entry_to_import is not None, "Attempt to import None entry."
@@ -655,13 +649,16 @@ class POTemplate(SQLBase, RosettaStats):
         try:
             translation_importer.importFile(entry_to_import, logger)
         except (TranslationFormatSyntaxError,
-                TranslationFormatInvalidInputError):
+                TranslationFormatInvalidInputError), exception:
             if logger:
-                logger.warning(
+                logger.info(
                     'We got an error importing %s', self.title, exc_info=1)
             subject = 'Import problem - %s' % self.displayname
             template_mail = 'poimport-syntax-error.txt'
             entry_to_import.status = RosettaImportStatus.FAILED
+            error_text = str(exception)
+        else:
+            error_text = None
 
         replacements = {
             'dateimport': entry_to_import.dateimported.strftime('%F %R%z'),
@@ -671,6 +668,9 @@ class POTemplate(SQLBase, RosettaStats):
             'importer': entry_to_import.importer.displayname,
             'template': self.displayname,
             }
+
+        if error_text is not None:
+            replacements['error'] = error_text
 
         if entry_to_import.status != RosettaImportStatus.FAILED:
             entry_to_import.status = RosettaImportStatus.IMPORTED

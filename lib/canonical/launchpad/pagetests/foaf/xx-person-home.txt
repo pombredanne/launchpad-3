@@ -119,7 +119,7 @@ A person's homepage also lists timezone, Karma and status information:
     >>> print extract_text(find_tag_by_id(browser.contents, 'portlet-details'))
     Summary
     Karma: 130
-    Timezone: UTC
+    Timezone: None given
     Member since: 2005-06-06
     SSH Keys:
       Private key in lib/canonical/codehosting/tests/id_dsa

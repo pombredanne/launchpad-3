@@ -9,8 +9,6 @@
   <h2>Meeting details</h2>
 
   <div class="portletBody portletContent">
-    
-    <b tal:content="context/title">Ubuntu Below Zero</b><br />
     <tal:has_home_page condition="context/home_page">
       <img src="/@@/link" />
       <a tal:attributes="href context/home_page">
@@ -29,9 +27,12 @@
     <b>Ends:</b><br />
     <span tal:replace="python:view.formatDateTime(context.time_ends)">
       08:00 12 Nov 2005</span><br />
-    <b>Address:</b><br />
-    <span tal:replace="context/address" />
-    <br />
+    <tal:tz replace="context/time_zone" /> time zone.<br />
+    <tal:has_address condition="context/address">
+      <b>Address:</b><br />
+      <span tal:replace="context/address" />
+      <br />
+    </tal:has_address>
 
   </div>
 

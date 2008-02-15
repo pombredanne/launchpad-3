@@ -26,7 +26,7 @@ from canonical.launchpad.interfaces import (
     BranchType, IBranchSet, IPersonSet, IRevisionSet)
 from canonical.codehosting.scanner.bzrsync import (
     BzrSync, RevisionModifiedError)
-from canonical.launchpad.scripts.importd.tests.helpers import (
+from canonical.codehosting.codeimport.tests.helpers import (
     instrument_method, InstrumentedMethodObserver)
 from canonical.launchpad.scripts.tests.webserver_helper import WebserverHelper
 from canonical.testing import LaunchpadZopelessLayer
@@ -600,9 +600,11 @@ class TestBzrSyncModified(BzrSyncTestCase):
             timestamp = old_timestamp
             timezone = 0
             properties = {}
+            def get_apparent_author(self):
+                return self.committer
 
         # sync the revision
-        self.bzrsync.syncOneRevision(FakeRevision)
+        self.bzrsync.syncOneRevision(FakeRevision())
 
         # Find the revision we just synced and check that it has the correct
         # date.
@@ -620,9 +622,12 @@ class TestBzrSyncModified(BzrSyncTestCase):
             timestamp = 1000000000.0
             timezone = 0
             properties = {}
+            def get_apparent_author(self):
+                return self.committer
+
         # synchronise the fake revision:
         counts = self.getCounts()
-        self.bzrsync.syncOneRevision(FakeRevision)
+        self.bzrsync.syncOneRevision(FakeRevision())
         self.assertCounts(
             counts, new_revisions=1, new_numbers=0,
             new_parents=2, new_authors=0)

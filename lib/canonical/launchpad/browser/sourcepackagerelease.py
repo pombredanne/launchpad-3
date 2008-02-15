@@ -50,12 +50,39 @@ class SourcePackageReleaseView(LaunchpadView):
         # that has named groups "bug" and "bugnum".  The matching text for
         # the "bug" group is used as the link text and "bugnum" forms part
         # of the URL for the link to the bug.
-        matches = re.finditer('(?P<bug>LP:\s*#(?P<bugnum>\d+))?', changelog)
-        for match in matches:
-            replace_text = match.group('bug')
-            if replace_text is not None:
-                changelog = changelog.replace(
-                    replace_text, FormattersAPI._linkify_substitution(match))
+
+        # We need to match bug numbers of the form:
+        # LP: #1, #2, #3
+        #  #4, #5
+        # over multiple lines.
+        #
+        # Writing a single catch-all regex for this has proved rather hard
+        # so I am taking the strategy of matching  LP:(group) first, and
+        # feeding the result into another regex to pull out the bug and
+        # bugnum groups.
+        line_matches = re.finditer(
+            'LP:\s*(?P<buglist>(.+?[^,]))($|\n)', changelog, re.DOTALL)
+        for line_match in line_matches:
+            bug_matches = re.finditer(
+                '\s*((?P<bug>#(?P<bugnum>\d+)),?\s*)',
+                line_match.group('buglist'))
+            for bug_match in bug_matches:
+                replace_text = bug_match.group('bug')
+                if replace_text is not None:
+                    # XXX julian 2008-01-10
+                    # Note that re.sub would be far more efficient to use
+                    # instead of string.replace() but this requires a regex
+                    # that matches everything in one go.  We're also at danger
+                    # of replacing the wrong thing if string.replace() finds
+                    # other matching substrings.  So for example in the
+                    # string:
+                    # "LP: #9, #999"
+                    # replacing #9 with some HTML would also interfere with
+                    # #999.  The liklihood of this happening is very, very
+                    # small, however.
+                    changelog = changelog.replace(
+                        replace_text,
+                        FormattersAPI._linkify_substitution(bug_match))
         return changelog
 
     def _linkify_changelog(self, changelog):
