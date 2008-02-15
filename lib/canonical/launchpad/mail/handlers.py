@@ -11,6 +11,7 @@ from zope.event import notify
 
 from canonical.config import config
 from canonical.database.sqlbase import rollback
+from canonical.launchpad.helpers import get_email_template
 from canonical.launchpad.interfaces import (
     ILaunchBag, IMessageSet, IBugEmailCommand, IBugTaskEmailCommand,
     IBugEditEmailCommand, IBugTaskEditEmailCommand,
@@ -19,10 +20,10 @@ from canonical.launchpad.interfaces import (
     IDistroSeriesBugTask, IWeaklyAuthenticatedPrincipal, IQuestionSet,
     ISpecificationSet, QuestionStatus)
 from canonical.launchpad.mail.commands import emailcommands, get_error_message
-from canonical.launchpad.mail.sendmail import sendmail
+from canonical.launchpad.mail.sendmail import sendmail, simple_sendmail
 from canonical.launchpad.mail.specexploder import get_spec_url_from_moin_mail
 from canonical.launchpad.mailnotification import (
-    send_process_error_notification)
+    MailWrapper, send_process_error_notification)
 from canonical.launchpad.webapp import canonical_url, urlparse
 from canonical.launchpad.webapp.interaction import get_current_principal
 
@@ -189,6 +190,14 @@ class MaloneHandler:
                 # the bug.
                 add_comment_to_bug = True
                 commands.insert(0, emailcommands.get('bug', [user]))
+            elif user.lower() == 'help':
+                from_user = getUtility(ILaunchBag).user
+                if from_user is not None:
+                    preferredemail = from_user.preferredemail
+                    if preferredemail is not None:
+                        to_address = str(preferredemail.email)
+                        self.sendHelpEmail(to_address)
+                return True
             elif user.lower() != 'edit':
                 # Indicate that we didn't handle the mail.
                 return False
@@ -261,6 +270,24 @@ class MaloneHandler:
                 error.message, signed_msg, error.failing_command)
 
         return True
+
+    def sendHelpEmail(self, to_address):
+        """Send usage help to `to_address`."""
+        # Get the help text (formatted as MoinMoin markup)
+        help_text = get_email_template('help.txt')
+        # Strip comments
+        re_comment = re.compile('#.*?$', re.MULTILINE)
+        help_text = re_comment.sub('', help_text)
+        # Strip macros (anchors, TOC, etc'...)
+        re_macro = re.compile('\[\[.*?\]\]')
+        help_text = re_macro.sub('', help_text)
+        # Wrap text
+        mailwrapper = MailWrapper(width=72)
+        help_text = mailwrapper.format(help_text)
+        simple_sendmail(
+            'help@bugs.launchpad.net', to_address,
+            'Launchpad Bug Tracker Email Interface Help',
+            help_text)
 
 
 class AnswerTrackerHandler:
