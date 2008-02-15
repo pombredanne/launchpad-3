@@ -773,6 +773,7 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
         if cache is None:
             log.debug("Creating new source cache entry.")
             cache = DistributionSourcePackageCache(
+                archive=self.main_archive,
                 distribution=self,
                 sourcepackagename=sourcepackagename)
 
