@@ -195,6 +195,32 @@ class PackageUpload(SQLBase):
                 'Queue item already rejected')
         self._SO_set_status(PackageUploadStatus.REJECTED)
 
+    def acceptFromUploader(self, changesfile_path, logger=None):
+        """See `IPackageUpload`."""
+        logger.debug("Setting it to ACCEPTED")
+        self.setAccepted()
+
+        # If it is a pure-source upload we can further process it
+        # in order to have a pending publishing record in place.
+        # This change is based on discussions for bug #77853 and aims
+        # to fix a deficiency on published file lookup system.
+        if not self._isSingleSourceUpload():
+            return
+
+        logger.debug("Creating PENDING publishing record.")
+        self.realiseUpload()
+
+        if self.isPPA():
+            # Do not even try to close bugs for PPA uploads
+            return
+
+        # Closing bugs.
+        logger.debug("Closing bugs.")
+        changesfile_object = open(changesfile_path, 'r')
+        close_bugs_for_queue_item(
+            self, changesfile_object=changesfile_object)
+        changesfile_object.close()
+
     def acceptFromQueue(self, announce_list, logger=None, dry_run=False):
         """See `IPackageUpload`."""
         self.setAccepted()
