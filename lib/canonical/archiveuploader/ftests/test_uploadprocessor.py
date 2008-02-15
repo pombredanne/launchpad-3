@@ -35,6 +35,7 @@ from canonical.launchpad.interfaces import (
     IDistroSeriesSet, PackagePublishingPocket, PackagePublishingStatus,
     PackageUploadStatus)
 from canonical.launchpad.mail import stub
+from canonical.launchpad.tests.mail_helpers import pop_notifications
 
 from canonical.testing import LaunchpadZopelessLayer
 
@@ -704,6 +705,77 @@ class TestUploadProcessor(TestUploadProcessorBase):
         universe.
         """
         self.checkComponentOverride("bar_1.0-1", "universe")
+
+    def testLZMADebUpload(self):
+        """Make sure that data files compressed with lzma in Debs work.
+
+        Each Deb contains a data.tar.xxx file where xxx is one of gz, bz2
+        or lzma.  Here we make sure that lzma works.
+        """
+        # Setup the test.
+        self.setupBreezy()
+        self.layer.txn.commit()
+        self.options.context = 'absolutely-anything'
+        uploadprocessor = UploadProcessor(
+            self.options, self.layer.txn, self.log)
+
+        # Upload the source first to enable the binary later:
+        upload_dir = self.queueUpload("bar_1.0-1_lzma")
+        self.processUpload(uploadprocessor, upload_dir)
+        # Make sure it went ok:
+        from_addr, to_addrs, raw_msg = stub.test_emails.pop()
+        self.assertTrue(
+            "rejected" not in raw_msg,
+            "Failed to upload bar source:\n%s" % raw_msg)
+        self._publishPackage("bar", "1.0-1")
+        # Clear out emails generated during upload.
+        ignore = pop_notifications()
+
+        # To use lzma compression, the binary upload must have a
+        # Pre-Depends header on dpkg (>= 1.14.12ubuntu3).
+
+        # Upload our lzma Deb that has no pre-depends:
+        upload_dir = self.queueUpload("bar_1.0-1_lzma-no-predep_binary")
+        self.processUpload(uploadprocessor, upload_dir)
+
+        # It will fail because it has no pre-depends:
+        from_addr, to_addrs, raw_msg = stub.test_emails.pop()
+        self.assertTrue(
+            "Require Pre-Depends: dpkg" in raw_msg,
+            "Expected error about missing Pre-Depends.  Actually got:\n%s"
+                % raw_msg)
+
+        # Now try uploading one that does have a pre-depends, but it's
+        # a version that's too small:
+        upload_dir = self.queueUpload("bar_1.0-1_lzma-bad-predep_binary")
+        self.processUpload(uploadprocessor, upload_dir)
+
+        # It will fail because of the bad version:
+        from_addr, to_addrs, raw_msg = stub.test_emails.pop()
+        self.assertTrue(
+            "Pre-Depends dpkg version should be" in raw_msg,
+            "Expected error about dpkg Pre-Depends version, actually got:\n%s"
+                % raw_msg)
+
+        # Finally lets upload a good one to make sure it does work.
+        upload_dir = self.queueUpload("bar_1.0-1_lzma_binary")
+        self.processUpload(uploadprocessor, upload_dir)
+
+        # Successful binary uploads won't generate any email.
+        if len(stub.test_emails) != 0:
+            from_addr, to_addrs, raw_msg = stub.test_emails.pop()
+        self.assertEqual(
+            len(stub.test_emails), 0,
+            "Expected no emails!  Actually got:\n%s" % raw_msg)
+
+        # Check in the queue to see if it really made it:
+        queue_items = self.breezy.getQueueItems(
+            status=PackageUploadStatus.NEW, name="bar",
+            version="1.0-1", exact_match=True)
+        self.assertEqual(
+            queue_items.count(), 1,
+            "Expected one 'bar' item in the queue, actually got %d."
+                % queue_items.count())
 
 
 def test_suite():
