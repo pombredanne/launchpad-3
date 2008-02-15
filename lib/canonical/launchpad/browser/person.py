@@ -2677,34 +2677,56 @@ class TeamJoinView(PersonView):
 
         user = self.user
         context = self.context
+        notify_user = self.request.response.addInfoNotification
 
-        notification = None
         if 'join' in request.form and self.userCanRequestToJoin():
             policy = context.subscriptionpolicy
             user.join(context)
-            if policy == TeamSubscriptionPolicy.MODERATED:
-                notification = _('Subscription request pending approval.')
-            else:
-                notification = _(
-                    'Successfully joined %s.' % context.displayname)
 
-            if 'mailinglist_subscribe' in request.form and \
-                    self.userMaySubscribeToList():
-                context.mailing_list.subscribe(user)
+            if policy == TeamSubscriptionPolicy.MODERATED:
+                notify_user(_('Subscription request pending approval.'))
+            else:
+                notify_user(_('Successfully joined ${team}.',
+                        mapping={'team': context.displayname}))
+
+            if 'mailinglist_subscribe' in request.form:
+                self._doListSubscription()
 
         elif 'join' in request.form:
-            notification = _('You cannot join %s.' % context.displayname)
+            notify_user(_('You cannot join ${team}.',
+                          mapping={'team': context.displayname}))
         elif 'goback' in request.form:
             # User clicked on the 'Go back' button, so we'll simply redirect.
             pass
         else:
             raise UnexpectedFormData(
                 "Couldn't find any of the expected actions.")
-        if notification is not None:
-            request.response.addInfoNotification(notification)
+
         self.request.response.redirect(canonical_url(context))
 
-    def userMaySubscribeToList(self):
+    def _doListSubscription(self):
+        response = self.request.response
+
+        if not self.userMaySubscribeToList(self.user):
+            response.addErrorNotification(
+                _('Mailing list subscription failed.'))
+
+        try:
+            context.mailing_list.subscribe(self.user)
+        except CannotSubscribe, error:
+            response.addErrorNotification(
+                _('You could not be subscribed to the team mailing '
+                  'list: ${reason}',
+                  mapping={'reason': unicode(error)}))
+
+            policy = context.subscriptionpolicy
+
+            if policy == TeamSubscriptionPolicy.MODERATED:
+                response.addInfoNotification(
+                    _('Your mailing list subscription is awaiting '
+                      'approval.'))
+
+    def userMaySubscribeToList(self, user):
         """Return True if the user may subscribe to the mailing list."""
         mailing_list = self.context.mailing_list
         if not mailing_list:
@@ -2712,7 +2734,7 @@ class TeamJoinView(PersonView):
         if not mailing_list.isUsable():
             return False
 
-        has_subscription = bool(mailing_list.getSubscription(self.user))
+        has_subscription = bool(mailing_list.getSubscription(user))
         return not has_subscription
 
 
