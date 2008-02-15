@@ -161,7 +161,7 @@ class TestBranchDeletion(TestCase):
         revision = RevisionSet().new(
             revision_id='some-unique-id', log_body='commit message',
             revision_date=None, revision_author='ddaa@localhost',
-            owner=self.user, parent_ids=[], properties=None)
+            parent_ids=[], properties=None)
         self.branch.createBranchRevision(0, revision)
         transaction.commit()
         LaunchpadZopelessLayer.switchDbUser(config.launchpad.dbuser)
@@ -465,6 +465,18 @@ class BranchAddLandingTarget(TestCase):
 
         self.assertRaises(
             InvalidBranchMergeProposal, self.source.addLandingTarget,
+            self.user, self.target, self.dependent)
+
+    def test_existingRejectedMergeProposal(self):
+        """If there is an existing rejected merge proposal for the source and
+        target branch pair, then another landing target specifying the same
+        pair is fine.
+        """
+        proposal = self.source.addLandingTarget(
+            self.user, self.target, self.dependent)
+        proposal.rejectBranch(self.user, 'some_revision')
+        syncUpdate(proposal)
+        new_proposal = self.source.addLandingTarget(
             self.user, self.target, self.dependent)
 
     def test_attributeAssignment(self):

@@ -118,6 +118,13 @@ class BugTrackerType(DBEnumeratedType):
         Bugs are tracked by email, perhaps on a mailing list.
         """)
 
+    SAVANNAH = DBItem(9, """
+        GNU / NoGNU Savannah
+
+        Savannah is a web-based project hosting system which includes
+        bug, support and request tracking.
+        """)
+
 
 class IBugTracker(Interface):
     """A remote bug system."""

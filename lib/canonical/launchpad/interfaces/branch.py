@@ -505,6 +505,9 @@ class IBranch(IHasOwner):
             merge request.
         """
 
+    def getMergeQueue():
+        """The proposals that are QUEUED to land on this branch."""
+
     def revisions_since(timestamp):
         """Revisions in the history that are more recent than timestamp."""
 

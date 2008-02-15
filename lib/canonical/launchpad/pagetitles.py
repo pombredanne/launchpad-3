@@ -181,6 +181,8 @@ branchmergeproposal_index = 'Proposal to merge branch'
 
 branchmergeproposal_request_review = ViewLabel()
 
+branchmergeproposal_resubmit = ViewLabel()
+
 branchmergeproposal_review = ViewLabel()
 
 branchmergeproposal_work_in_progress = ViewLabel()
@@ -1333,6 +1335,8 @@ standardshipitrequest_new = 'Create a new standard option'
 standardshipitrequest_edit = 'Edit standard option'
 
 team_addmember = ContextBrowsername('Add members to %s')
+
+team_add_my_teams = 'Propose/add one of your teams to another one'
 
 team_contactaddress = ContextDisplayName('%s contact address')
 
