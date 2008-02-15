@@ -100,6 +100,9 @@ class ITranslationImporter(Interface):
         title=u'List of file extensions we have imports for.',
         required=True, readonly=True)
 
+    # Filename suffixes that identify templates.  These do not have to be
+    # CP/M-style "filename extensions" separated from the base file name by a
+    # dot; any suffix will do.
     template_suffixes = TextLine(
         title=u'Filename endings that identify templates.', required=True,
         readonly=True)
