@@ -35,7 +35,7 @@
   </ul>
   </tal:deletetable>
   <tal:breaktable condition="view/branch_deletion_actions/break_link">
-  <div>The links will be <em>broken</em>:</div>
+  <div>The following links will be <em>broken</em>:</div>
   <ul>
   <tal:actions repeat="row view/branch_deletion_actions/break_link">
   <li>
