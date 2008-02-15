@@ -120,7 +120,7 @@ class TestFilesystem(ServerTestCase, TestCaseWithTransport):
     @deferToThread
     def test_make_team_branch_directory(self):
         # You can make a branch directory under a team directory that you are
-        # a member of (so long as it's a real product), though.
+        # a member of (so long as it's a real product).
         transport = self.getTransport()
         transport.mkdir('~testteam/firefox/shiny-new-thing')
         self.assertTrue(
@@ -261,8 +261,8 @@ class TestFilesystem(ServerTestCase, TestCaseWithTransport):
     @deferToThread
     @wait_for_disconnect
     def test_make_directory_twice(self):
-        # Let's see what happens if we try to make the same directory twice!
-        # 'rename dir1 dir2' succeeds if 'dir2' doesn't exist.
+        # The transport raises a `FileExists` error if we try to make a
+        # directory that already exists.
         transport = self.getTransport('~testuser/+junk')
         transport.mkdir('branch')
         transport.mkdir('branch/.bzr')
