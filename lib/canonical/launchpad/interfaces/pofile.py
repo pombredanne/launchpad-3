@@ -4,7 +4,6 @@
 __metaclass__ = type
 
 __all__ = [
-    'ZeroLengthPOExportError',
     'IPOFileSet',
     'IPOFile',
     'IPOFileTranslator',
@@ -21,16 +20,11 @@ from zope.schema.vocabulary import (
 
 from canonical.launchpad import _
 from canonical.launchpad.interfaces import ILaunchBag
-from canonical.launchpad.interfaces.librarian import ILibraryFileAlias
 from canonical.launchpad.interfaces.person import IPerson
 from canonical.launchpad.interfaces.potemplate import IPOTemplate
 from canonical.launchpad.interfaces.rosettastats import IRosettaStats
 from canonical.launchpad.interfaces.translationgroup import (
     TranslationPermission)
-
-
-class ZeroLengthPOExportError(Exception):
-    """An exception raised when a PO file export generated an empty file."""
 
 
 class IPOFile(IRosettaStats):
@@ -90,15 +84,6 @@ class IPOFile(IRosettaStats):
     path = TextLine(
         title=_('The path to the file that was imported'),
         required=True)
-
-    exportfile = Object(
-        title=_('Last cached export file'),
-        required=True, schema=ILibraryFileAlias)
-
-    is_cached_export_valid = Bool(
-        title=_(
-            "Whether this translation file have an up to date cached export"),
-        readonly=True, required=True)
 
     datecreated = Datetime(
         title=_('When this translation file was created.'), required=True)
@@ -231,23 +216,14 @@ class IPOFile(IRosettaStats):
     def getPOTMsgSetWithErrors():
         """Get message sets that have translations imported with errors."""
 
-    def updateExportCache(contents):
-        """Update this PO file's export cache with a string."""
-
-    def export():
-        """Export this PO file as a string."""
-
-    def uncachedExport(ignore_obsolete=False, export_utf8=False):
-        """Export this PO file as string without using any cache.
+    def export(ignore_obsolete=False, export_utf8=False):
+        """Export this PO file as string.
 
         :param ignore_obsolete: Whether the exported PO file does not have
             obsolete entries.
         :param export_utf8: Whether the exported PO file should be exported as
             UTF-8.
         """
-
-    def invalidateCache():
-        """Invalidate the cached export."""
 
     def prepareTranslationCredits(potmsgset):
         """Add Launchpad contributors to translation credit strings.

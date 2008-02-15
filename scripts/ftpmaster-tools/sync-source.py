@@ -49,8 +49,7 @@ re_changelog_header = re.compile(
     r"^\S+ \((?P<version>.*)\) .*;.*urgency=(?P<urgency>\w+).*")
 re_closes = re.compile(
     r"closes:\s*(?:bug)?\#?\s?\d+(?:,\s*(?:bug)?\#?\s?\d+)*", re.I)
-re_lp_closes = re.compile(
-    r"LP:\s*(?:bug)?\#?\s?\d+(?:,\s*(?:bug)?\#?\s?\d+)*")
+re_lp_closes = re.compile(r"lp:\s+\#\d+(?:,\s*\#\d+)*", re.I)
 re_bug_numbers = re.compile(r"\#?\s?(\d+)")
 
 
@@ -157,7 +156,7 @@ def generate_changes(dsc, dsc_files, suite, changelog, urgency, closes,
     if closes:
         changes += "Closes: %s\n" % (" ".join(closes))
     if lp_closes:
-        changes += "Launchpad-Bugs-Closed: %s\n" % (" ".join(lp_closes))
+        changes += "Launchpad-Bugs-Fixed: %s\n" % (" ".join(lp_closes))
     changes += "Changes: \n"
     changes += changelog
     changes += "Files: \n"

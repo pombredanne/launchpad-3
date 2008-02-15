@@ -183,7 +183,8 @@ class IBuildSet(Interface):
 class IHasBuildRecords(Interface):
     """An Object that has build records"""
 
-    def getBuildRecords(build_state=None, name=None, pocket=None):
+    def getBuildRecords(build_state=None, name=None, pocket=None,
+                        user=None):
         """Return build records owned by the object.
 
         The optional 'build_state' argument selects build records in a specific
@@ -195,6 +196,8 @@ class IHasBuildRecords(Interface):
         sourcepackagename matches (SQL LIKE).
         If pocket is specified return only builds for this pocket, otherwise
         return all.
+        "user" is the requesting user and if specified can be used in
+        permission checks to see if he is allowed to view the build.
         """
 
 
