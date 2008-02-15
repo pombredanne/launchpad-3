@@ -290,7 +290,7 @@ class SourcePackageRelease(SQLBase):
 
         # If there was published binary we can use its original build.
         # This case covers the situations when both, source and binaries
-        # got copied from other location.
+        # got copied from another location.
         if build_from_published_binaries is not None:
             return build_from_published_binaries
 

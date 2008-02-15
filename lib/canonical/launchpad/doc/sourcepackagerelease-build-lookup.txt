@@ -1,18 +1,24 @@
-== Creating & Looking for Build records ==
+= Creating & Looking for Build records =
 
 ISourcePackageRelease has the ability to create Build records,
-however it needs fully support to treat architecturehintlist and P-a-s
-information, see further information in buildd-queuebuilder.txt.
+however it needs external support to treat architecturehintlist and
+Package-architecture-specific (P-a-s) information, see further
+information in buildd-queuebuilder.txt.
 
 ISourcePackageRelease also provides a 'getBuildByArch' method which
-allow the applications to lookup for Build records in a given
+allows the application to lookup for Build records in a given
 DistroArchSeries and Archive.
+
+To demonstrate this we need to define some variables.
 
     >>> from zope.component import getUtility
     >>> from canonical.launchpad.interfaces import IDistributionSet
 
-    >>> ubuntu = getUtility(IDistributionSet)['ubuntu']
-    >>> hoary = ubuntu['hoary']
+    >>> ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
+    >>> hoary = ubuntu.getSeries('hoary')
+
+Retrieve hoary/i386 and hoary/hppa `DistroArchSeries.
+
     >>> hoary_i386 = hoary['i386']
     >>> hoary_hppa = hoary['hppa']
 
@@ -23,17 +29,17 @@ DistroArchSeries and Archive.
     ...    PackagePublishingPocket)
     >>> pocket_release = PackagePublishingPocket.RELEASE
 
-The base method createBuild() is able to create build to a given
+The base method createBuild() is able to create a build to a given
 distroarchseries, pocket and archive.
 
 Build.buildstate, by default is set to NEEDSBUILD, but you can
 optionally provide another status.
 
-    >>> hoary_evo_sp = hoary.getSourcePackage('evolution')
-    >>> evo_spr = hoary_evo_sp['1.0'].sourcepackagerelease
+    >>> hoary_evo_source = hoary.getSourcePackage('evolution')
+    >>> evo_release = hoary_evo_source['1.0'].sourcepackagerelease
 
     >>> from canonical.launchpad.interfaces import BuildStatus
-    >>> evo_build_i386 = evo_spr.createBuild(
+    >>> evo_build_i386 = evo_release.createBuild(
     ...     hoary_i386, pocket_release, ubuntu.main_archive,
     ...     status=BuildStatus.FULLYBUILT)
 
@@ -49,14 +55,14 @@ optionally provide another status.
 The build record can be retrieved via getBuildByArch on hoary/i386
 architecture.
 
-    >>> test_build_i386 = evo_spr.getBuildByArch(
+    >>> test_build_i386 = evo_release.getBuildByArch(
     ...     hoary_i386, ubuntu.main_archive)
     >>> test_build_i386 == evo_build_i386
     True
 
-However a hoary/hppa is not available.
+However a hoary/hppa build is not available.
 
-    >>> test_build_hppa = evo_spr.getBuildByArch(
+    >>> test_build_hppa = evo_release.getBuildByArch(
     ...     hoary_hppa, ubuntu.main_archive)
     >>> print test_build_hppa
     None
@@ -67,19 +73,20 @@ However a hoary/hppa is not available.
 We will copy the evolution source to ubuntu/breezy-autotest as if it
 was inherited in the initialization.
 
-    >>> breezy_autotest = ubuntu['breezy-autotest']
+    >>> breezy_autotest = ubuntu.getSeries('breezy-autotest')
     >>> breezy_autotest_i386 = breezy_autotest['i386']
 
     >>> print breezy_autotest.parent_series.title
     The Hoary Hedgehog Release
 
-    >>> hoary_evo_dsspr = hoary_evo_sp['1.0']
-    >>> copied_pub = hoary_evo_dsspr.current_published.copyTo(
+    >>> hoary_evo_release = hoary_evo_source['1.0']
+    >>> copied_pub = hoary_evo_release.current_published.copyTo(
     ...     breezy_autotest, pocket_release, breezy_autotest.main_archive)
 
-    >>> breezy_autotest_evo_sp = breezy_autotest.getSourcePackage('evolution')
-    >>> breezy_autotest_evo_dsspr = breezy_autotest_evo_sp['1.0']
-    >>> evo_spr == breezy_autotest_evo_dsspr.sourcepackagerelease
+    >>> breezy_autotest_evo_source = breezy_autotest.getSourcePackage(
+    ...     'evolution')
+    >>> breezy_autotest_evo_release = breezy_autotest_evo_source['1.0']
+    >>> evo_release == breezy_autotest_evo_release.sourcepackagerelease
     True
 
 Since evolution source was already built on ubuntu/hoary/i386, the
@@ -89,7 +96,7 @@ ubuntu/breezy-autotest/i386.
 In practical terms it means that another build is not necessary in
 this context.
 
-    >>> breezy_autotest_build = evo_spr.getBuildByArch(
+    >>> breezy_autotest_build = evo_release.getBuildByArch(
     ...     breezy_autotest_i386, ubuntu.main_archive)
     >>> print breezy_autotest_build.title
     i386 build of evolution 1.0 in ubuntu hoary RELEASE
@@ -97,13 +104,13 @@ this context.
 
 == Sources with architecture-independent and specific binaries ==
 
-Even if the source package builds a architecture-independent package,
+Even if the source package builds an architecture-independent package,
 no Build record will be returned by getBuildByArch() if arch-specific
 binary packages were not built (see bug #65712 for further
 information).
 
 In order to be independent of the sampledata we will use the
-SoyuzTestPublisher helper to create fake but complete publications for
+SoyuzTestPublisher helper to create fake but complete publication for
 this test.
 
     >>> from canonical.launchpad.interfaces import (
@@ -159,7 +166,7 @@ where they are published.
 
 Let's start by copying a PRIMARY archive source to Celso's PPA.
 
-    >>> copy = hoary_evo_sp['1.0'].current_published.copyTo(
+    >>> copy = hoary_evo_source['1.0'].current_published.copyTo(
     ...    hoary, pocket_release, cprov.archive)
 
 No suitable build will be found for it.
@@ -169,7 +176,7 @@ No suitable build will be found for it.
     >>> print test_build_i386_ppa
     None
 
-Then we can creating a build record representing the intent to build
+Then we can create a build record representing the intent to build
 the copied source using the current PPA context. The PPA build context
 is a merge between the PRIMARY archive context and the differences
 introduced by the PPA itself, like new package or new dependency
@@ -212,7 +219,7 @@ to be missing in the PRIMARY archive context.
     >>> print test_build_hppa_ppa.title
     hppa build of evolution 1.0 in ubuntu hoary RELEASE
 
-    >>> test_build_hppa = evo_spr.getBuildByArch(
+    >>> test_build_hppa = evo_release.getBuildByArch(
     ...     hoary_hppa, ubuntu.main_archive)
     >>> print test_build_hppa
     None
@@ -220,9 +227,9 @@ to be missing in the PRIMARY archive context.
 
 == Build lookup for sources & binaries copied across PPAs ==
 
-Launchpad also allow copies from published sources including
+Launchpad also allows copies from published sources including
 corresponding binaries from PRIMARY archive to PPA or from one PPA to
-other.
+another.
 
 We will create a foo_1.0 source, build and i386 binary published in
 hoary PRIMARY archive.
@@ -259,7 +266,7 @@ Then we can copy source and binary from PRIMARY archive to Celso's PPA:
 
 A build record is clearly not required here, since both, source and
 binary got copied from PRIMARY archive, thus the system is able to
-identify this situation and locate the the original build. See the
+identify this situation and locate the original build. See the
 bug #181736 report for previous mistakes in this area.
 
     >>> cprov_spr = cprov_src.sourcepackagerelease
@@ -278,20 +285,20 @@ breezy-autotest in his PPA.
 
     >>> cprov_foo_src = cprov.archive.getPublishedSources(name='foo')[0]
 
-    >>> breezy_autotest = ubuntu['breezy-autotest']
-    >>> bt_cprov_src = cprov_foo_src.copyTo(
+    >>> breezy_autotest = ubuntu.getSeries('breezy-autotest')
+    >>> copy = cprov_foo_src.copyTo(
     ...    breezy_autotest, pocket_release, cprov.archive)
-    >>> bt_cprov_src.status = PackagePublishingStatus.PUBLISHED
+    >>> copy.status = PackagePublishingStatus.PUBLISHED
     >>> flush_database_updates()
 
 When only the source is copied we do want to rebuild, so it's correct
 when the build lookup returns None.
 
-    >>> bt_cprov_spr = bt_cprov_src.sourcepackagerelease
+    >>> copied_release = copy.sourcepackagerelease
     >>> breezy_autotest_i386 = breezy_autotest['i386']
-    >>> bt_cprov_build = bt_cprov_spr.getBuildByArch(
+    >>> copied_build_candidate = copied_release.getBuildByArch(
     ...     breezy_autotest_i386, cprov.archive)
-    >>> print bt_cprov_build
+    >>> print copied_build_candidate
     None
 
 It's even possible to copy source and binaries from hoary to warty
@@ -301,27 +308,27 @@ suite in Celso's PPA.
     ...    name='foo', distroseries=hoary)[0]
     >>> cprov_foo_bin = cprov_foo_src.getPublishedBinaries()[0]
 
-    >>> warty = ubuntu['warty']
-    >>> warty_cprov_src = cprov_foo_src.copyTo(
+    >>> warty = ubuntu.getSeries('warty')
+    >>> copied_source = cprov_foo_src.copyTo(
     ...    warty, pocket_release, cprov.archive)
-    >>> warty_cprov_bin = cprov_foo_bin.copyTo(
+    >>> copied_binary = cprov_foo_bin.copyTo(
     ...    warty, pocket_release, cprov.archive)
-    >>> warty_cprov_src.status = PackagePublishingStatus.PUBLISHED
-    >>> warty_cprov_bin.status = PackagePublishingStatus.PUBLISHED
+    >>> copied_source.status = PackagePublishingStatus.PUBLISHED
+    >>> copied_binary.status = PackagePublishingStatus.PUBLISHED
     >>> flush_database_updates()
 
 In this case the system is also able to locate the original build by
 following the build path of the corresponding published binaries.
 
-    >>> warty_cprov_spr = warty_cprov_src.sourcepackagerelease
+    >>> copied_source_release = copied_source.sourcepackagerelease
     >>> warty_i386 = warty['i386']
-    >>> warty_cprov_build = warty_cprov_spr.getBuildByArch(
+    >>> copied_build_candidate = copied_source_release.getBuildByArch(
     ...     warty_i386, cprov.archive)
 
-    >>> print warty_cprov_build.title
+    >>> print copied_build_candidate.title
     i386 build of foo 0.1 in ubuntu hoary RELEASE
 
-    >>> print warty_cprov_build.archive.title
+    >>> print copied_build_candidate.archive.title
     Primary Archive for Ubuntu Linux
 
 Now we can also copy the hoary source and its binary from Celso's PPA

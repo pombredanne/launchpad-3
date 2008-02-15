@@ -23,10 +23,10 @@ from canonical.launchpad.database.publishing import (
     BinaryPackagePublishingHistory, SecureBinaryPackagePublishingHistory)
 from canonical.launchpad.database.processor import ProcessorFamily
 from canonical.launchpad.interfaces import (
-    BinaryPackageFormat, ILibraryFileAliasSet, IDistributionSet, IPersonSet,
-    ISectionSet, IComponentSet, ISourcePackageNameSet, IBinaryPackageNameSet,
-    PackagePublishingStatus, PackagePublishingPocket,
-    PackagePublishingPriority, SourcePackageUrgency)
+    BinaryPackageFormat, IBinaryPackageNameSet, IComponentSet,
+    IDistributionSet, ILibraryFileAliasSet, IPersonSet, ISectionSet,
+    ISourcePackageNameSet, PackagePublishingPocket, PackagePublishingPriority,
+    PackagePublishingStatus, SourcePackageUrgency)
 from canonical.launchpad.scripts import FakeLogger
 
 from canonical.librarian.client import LibrarianClient
