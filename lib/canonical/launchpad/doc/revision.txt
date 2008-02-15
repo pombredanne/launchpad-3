@@ -26,13 +26,6 @@ True
 
 == Creating revisions ==
 
-XXX: Revisions have an owner attribute. As a convention, the owner of a
-Revision is always the Launchpad Admins team. The Revision.owner attribute will
-be removed soon. -- DavidAllouche 2005-10-08
-
->>> from canonical.launchpad.database import Person
->>> admins = Person.selectOneBy(name='admins')
-
 The creator of a revision is identified by a RevisionAuthor. A RevisionAuthor
 is not a person because that is only an informational attribute, and even if we
 trust it, there's really no simple way to map that reliably to persons.
@@ -61,7 +54,7 @@ while the date_created is the time when the database record was created.
 >>> from pytz import UTC
 >>> date = datetime(2005, 3, 8, 12, 0, tzinfo=UTC)
 >>> from canonical.launchpad.database import Revision
->>> revision_1 = Revision(owner=admins, log_body=log_body_1,
+>>> revision_1 = Revision(log_body=log_body_1,
 ...     revision_author=author, revision_id=revision_id_1, revision_date=date)
 
 == Parents ==
@@ -73,7 +66,7 @@ record merges. All revisions except initial imports have at least one parent.
 Parents are accessed through their revision_id without using a foreign key so
 we can represent revisions whose at least one parent is a ghost revision.
 
->>> revision_2 = Revision(owner=admins, log_body=log_body_2,
+>>> revision_2 = Revision(log_body=log_body_2,
 ...     revision_author=author, revision_id=revision_id_2, revision_date=date)
 
 >>> from canonical.launchpad.database import RevisionParent
@@ -234,7 +227,6 @@ as needed.
   ...     log_body='commit message',
   ...     revision_date=date,
   ...     revision_author='ddaa@localhost',
-  ...     owner=admins,
   ...     parent_ids=['rev-1', 'rev-2'],
   ...     properties={u'key': u'value'})
   >>> print revision.revision_id
