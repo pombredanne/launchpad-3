@@ -1868,6 +1868,18 @@ email too. Just send an email to `help@bugs.launchpad.net`.
     This document describes the email interface to the bug tracker...
     ...
 
+Only mail coming from verified Launchpad users is answered.
+
+    >>> submit_mail = """From: Not a User <nobody@nowhere.com>
+    ... To: help@bugs.canonical.com
+    ... Date: Fri Jun 17 10:20:23 BST 2006
+    ... Subject: help
+    ...
+    ... help
+    ... """
+    >>> process_email(submit_mail)
+    >>> 'nobody@nowhere.com' in stub.test_emails[-1][2]
+    False
 
 XXX: Add tests for non-ascii mails.
      -- Bjorn Tillenius, 2005-05-20

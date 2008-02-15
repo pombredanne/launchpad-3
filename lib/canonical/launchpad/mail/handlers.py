@@ -107,8 +107,9 @@ def guess_bugtask(bug, person):
                     return bugtask
                 else:
                     # Is the person one of the package bug contacts?
-                    distro_sourcepackage = bugtask.distribution.getSourcePackage(
-                        bugtask.sourcepackagename)
+                    distro = bugtask.distribution
+                    distro_sourcepackage = (
+                        distro.getSourcePackage(bugtask.sourcepackagename))
                     if distro_sourcepackage.isBugContact(person):
                         return bugtask
 
@@ -162,11 +163,12 @@ class MaloneHandler:
         try:
             if len(commands) > 0:
                 current_principal = get_current_principal()
-                # The security machinery doesn't know about
-                # IWeaklyAuthenticatedPrincipal yet, so do a manual
-                # check. Later we can rely on the security machinery to
-                # cause Unauthorized errors.
-                if IWeaklyAuthenticatedPrincipal.providedBy(current_principal):
+                if IWeaklyAuthenticatedPrincipal.providedBy(
+                    current_principal):
+                    # The security machinery doesn't know about
+                    # IWeaklyAuthenticatedPrincipal yet, so do a manual
+                    # check. Later we can rely on the security machinery to
+                    # cause Unauthorized errors.
                     if signed_msg.signature is None:
                         error_message = get_error_message('not-signed.txt')
                     else:
@@ -215,7 +217,8 @@ class MaloneHandler:
                             notify(bug_event)
                             bug_event = None
 
-                        bug, bug_event = command.execute(signed_msg, filealias)
+                        bug, bug_event = command.execute(
+                            signed_msg, filealias)
                         if add_comment_to_bug:
                             messageset = getUtility(IMessageSet)
                             message = messageset.fromEmail(
@@ -406,11 +409,13 @@ class SpecificationHandler:
             # We handle only spec-changes at the moment.
             return False
         our_address = "notifications@%s" % config.launchpad.specs_domain
-        # Check for emails that we sent.
-        if signed_msg['X-Loop'] and our_address in signed_msg.get_all('X-Loop'):
+        if (signed_msg['X-Loop'] and
+            our_address in signed_msg.get_all('X-Loop')):
+            # Check for emails that we sent.
             if log and filealias:
                 log.warning(
-                    'Got back a notification we sent: %s' % filealias.http_url)
+                    'Got back a notification we sent: %s' %
+                    filealias.http_url)
             return True
         # Check for emails that Launchpad sent us.
         if signed_msg['Sender'] == config.bounce_address:
@@ -442,7 +447,8 @@ class SpecificationHandler:
                 sendmail(signed_msg, to_addrs=notification_addresses)
 
             elif log is not None:
-                log.debug("Didn't find a corresponding spec for %s" % spec_url)
+                log.debug(
+                    "Didn't find a corresponding spec for %s" % spec_url)
         elif log is not None:
             log.debug("Didn't find a specification URL")
         return True
