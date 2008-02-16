@@ -101,10 +101,6 @@ class BugEntry(Entry):
 
     parent_collection_name = 'bugs'
 
-    def fragment(self):
-        """See `IEntry`."""
-        return str(self.context.id)
-
     @property
     def duplicate_of(self):
         """See `IBug`."""
@@ -118,6 +114,10 @@ class BugEntry(Entry):
 
 class BugCollection(Collection):
     """A collection of bugs, as exposed through the web service."""
+
+    def getEntryPath(self, entry):
+        """See `ICollection`."""
+        return str(entry.id)
 
     def lookupEntry(self, name_or_id):
         """Find a Bug by name or ID."""

@@ -340,6 +340,7 @@ class IBranch(IHasOwner):
         default=False)
 
     # People attributes
+    registrant = Attribute("The user that registered the branch.")
     owner = Choice(
         title=_('Owner'), required=True,
         vocabulary='PersonActiveMembershipPlusSelf',
@@ -493,6 +494,9 @@ class IBranch(IHasOwner):
         :param date_created: Used to specify the date_created value of the
             merge request.
         """
+
+    def getMergeQueue():
+        """The proposals that are QUEUED to land on this branch."""
 
     def revisions_since(timestamp):
         """Revisions in the history that are more recent than timestamp."""

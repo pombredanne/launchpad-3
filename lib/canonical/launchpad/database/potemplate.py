@@ -77,7 +77,6 @@ class POTemplate(SQLBase, RosettaStats):
     translation_domain = StringCol(dbName='translation_domain', notNull=True)
     description = StringCol(dbName='description', notNull=False, default=None)
     copyright = StringCol(dbName='copyright', notNull=False, default=None)
-    license = IntCol(dbName='license', notNull=False, default=None)
     datecreated = UtcDateTimeCol(dbName='datecreated', default=DEFAULT)
     path = StringCol(dbName='path', notNull=False, default=None)
     source_file = ForeignKey(foreignKey='LibraryFileAlias',
@@ -628,11 +627,6 @@ class POTemplate(SQLBase, RosettaStats):
 
         return self.createPOTMsgSetFromMsgIDs(msgid_singular, msgid_plural,
                                               context)
-
-    def invalidateCache(self):
-        """See `IPOTemplate`."""
-        for pofile in self.pofiles:
-            pofile.invalidateCache()
 
     def importFromQueue(self, entry_to_import, logger=None):
         """See `IPOTemplate`."""

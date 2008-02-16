@@ -12,11 +12,11 @@
     <content class="canonical.launchpad.database.PackageUpload">
       <implements
           interface="canonical.launchpad.interfaces.IPackageUpload" />
-      <allow 
+      <allow
           attributes="status"
           />
       <require
-          permission="launchpad.View"
+          permission="zope.Public"
           attributes="id distroseries pocket changesfile
                       signing_key archive sources builds customfiles
                       datecreated sourcepackagerelease
