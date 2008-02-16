@@ -253,7 +253,8 @@ contact.
 
     >>> login("foo.bar@canonical.com")
     >>> ubuntu = getUtility(IDistributionSet).getByName("ubuntu")
-    >>> ubuntu.bugcontact = getUtility(IPersonSet).getByName("no-priv")
+    >>> no_priv = getUtility(IPersonSet).getByName("no-priv")
+    >>> ubuntu.setBugContact(no_priv, no_priv)
 
 Unlike before, no-priv can now edit the milestone.
 

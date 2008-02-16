@@ -25,7 +25,7 @@ for Firefox:
 
     >>> for tag in find_tags_by_class(admin_browser.contents, 'message'):
     ...     print tag.renderContents()
-    Successfully changed the bug contact to no-priv@canonical.com
+    Successfully changed the bug contact to...No Privileges Person...
 
     >>> user_browser.reload()
 

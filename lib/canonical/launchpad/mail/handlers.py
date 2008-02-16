@@ -13,12 +13,11 @@ from canonical.config import config
 from canonical.database.sqlbase import rollback
 from canonical.launchpad.helpers import get_email_template
 from canonical.launchpad.interfaces import (
-    ILaunchBag, IMessageSet, IBugEmailCommand, IBugTaskEmailCommand,
-    IBugEditEmailCommand, IBugTaskEditEmailCommand,
-    IMailHandler, CreatedBugWithNoBugTasksError,
-    EmailProcessingError, IUpstreamBugTask, IDistroBugTask,
-    IDistroSeriesBugTask, IWeaklyAuthenticatedPrincipal, IQuestionSet,
-    ISpecificationSet, QuestionStatus)
+    BugNotificationLevel, CreatedBugWithNoBugTasksError, EmailProcessingError,
+    IBugEditEmailCommand, IBugEmailCommand, IBugTaskEditEmailCommand,
+    IBugTaskEmailCommand, IDistroBugTask, IDistroSeriesBugTask, ILaunchBag,
+    IMailHandler, IMessageSet, IQuestionSet, ISpecificationSet,
+    IUpstreamBugTask, IWeaklyAuthenticatedPrincipal, QuestionStatus)
 from canonical.launchpad.mail.commands import emailcommands, get_error_message
 from canonical.launchpad.mail.sendmail import sendmail, simple_sendmail
 from canonical.launchpad.mail.specexploder import get_spec_url_from_moin_mail
@@ -106,13 +105,14 @@ def guess_bugtask(bug, person):
                 if person.inTeam(bugtask.distribution.members):
                     return bugtask
                 else:
-                    # Is the person one of the package bug contacts?
-                    distro = bugtask.distribution
-                    distro_sourcepackage = (
-                        distro.getSourcePackage(bugtask.sourcepackagename))
-                    if distro_sourcepackage.isBugContact(person):
-                        return bugtask
-
+                    # Is the person one of the package subscribers?
+                    bug_sub = bugtask.target.getSubscription(person)
+                    if bug_sub is not None:
+                        if (bug_sub.bug_notification_level >
+                            BugNotificationLevel.NOTHING):
+                            # The user is subscribed to bug notifications
+                            # for this package
+                            return bugtask
     return None
 
 
@@ -120,6 +120,7 @@ class IncomingEmailError(Exception):
     """Indicates that something went wrong processing the mail."""
 
     def __init__(self, message, failing_command=None):
+        Exception.__init__(self, message)
         self.message = message
         self.failing_command = failing_command
 
@@ -162,13 +163,12 @@ class MaloneHandler:
 
         try:
             if len(commands) > 0:
-                current_principal = get_current_principal()
-                if IWeaklyAuthenticatedPrincipal.providedBy(
-                    current_principal):
-                    # The security machinery doesn't know about
-                    # IWeaklyAuthenticatedPrincipal yet, so do a manual
-                    # check. Later we can rely on the security machinery to
-                    # cause Unauthorized errors.
+                cur_principal = get_current_principal()
+                # The security machinery doesn't know about
+                # IWeaklyAuthenticatedPrincipal yet, so do a manual
+                # check. Later we can rely on the security machinery to
+                # cause Unauthorized errors.
+                if IWeaklyAuthenticatedPrincipal.providedBy(cur_principal):
                     if signed_msg.signature is None:
                         error_message = get_error_message('not-signed.txt')
                     else:
@@ -409,9 +409,9 @@ class SpecificationHandler:
             # We handle only spec-changes at the moment.
             return False
         our_address = "notifications@%s" % config.launchpad.specs_domain
-        if (signed_msg['X-Loop'] and
-            our_address in signed_msg.get_all('X-Loop')):
-            # Check for emails that we sent.
+        # Check for emails that we sent.
+        xloop = signed_msg['X-Loop']
+        if xloop and our_address in signed_msg.get_all('X-Loop'):
             if log and filealias:
                 log.warning(
                     'Got back a notification we sent: %s' %

@@ -181,6 +181,8 @@ branchmergeproposal_index = 'Proposal to merge branch'
 
 branchmergeproposal_request_review = ViewLabel()
 
+branchmergeproposal_resubmit = ViewLabel()
+
 branchmergeproposal_review = ViewLabel()
 
 branchmergeproposal_work_in_progress = ViewLabel()
@@ -441,8 +443,6 @@ distribution_allpackages = ContextTitle('All packages in %s')
 
 distribution_upstream_bug_report = ContextTitle('Upstream Bug Report for %s')
 
-distribution_bugcontact = ContextTitle('Change bug contact for %s')
-
 distribution_change_mirror_admin = 'Change mirror administrator'
 
 distribution_cvereport = ContextTitle('CVE reports for %s')
@@ -486,8 +486,8 @@ distributionsourcepackage_index = ContextTitle('%s')
 distributionsourcepackage_publishinghistory = ContextTitle(
     'Publishing history of %s')
 
-distributionsourcepackage_manage_bugcontacts = ContextTitle(
-    'Bug contacts for %s')
+structural_subscriptions_manage = ContextTitle(
+    'Bug subscriptions for %s')
 
 distributionsourcepackagerelease_index = ContextTitle('%s')
 
@@ -544,6 +544,8 @@ distroserieslanguage_index = ContextTitle('%s')
 distroseriessourcepackagerelease_index = ContextTitle('%s')
 
 distros_index = 'Distributions registered in Launchpad'
+
+edit_bugcontact = ContextTitle('Edit bug contact for %s')
 
 errorservice_config = 'Configure error log'
 
@@ -700,6 +702,8 @@ logintoken_validatesignonlygpg = 'Confirm sign-only OpenPGP key'
 
 logintoken_validateteamemail = 'Confirm e-mail address'
 
+mailinglists_review = 'Pending mailing lists requests'
+
 # main_template has the code to insert one of these titles.
 
 malone_about = 'About Launchpad Bugs'
@@ -842,7 +846,7 @@ def person_branches(context, view):
     """Return the view's heading."""
     return view.heading
 
-person_branch_add = ContextDisplayName('Register a new branch for %s')
+person_branch_add = 'Register a branch'
 
 person_changepassword = 'Change your password'
 
@@ -962,8 +966,6 @@ potemplate_export = ContextTitle(smartquote('Download translations for "%s"'))
 product_add = 'Register a project in Launchpad'
 
 product_admin = ContextTitle('Administer %s in Launchpad')
-
-product_bugcontact = ContextTitle('Edit bug contact for %s')
 
 product_bugs = ContextDisplayName('Bugs in %s')
 
@@ -1088,7 +1090,7 @@ rosetta_index = 'Launchpad Translations'
 
 rosetta_products = 'Projects with Translations in Launchpad'
 
-product_branch_add = ContextDisplayName('Register a new %s branch')
+product_branch_add = 'Register a branch'
 
 def productseries_edit(context, view):
     """Return the page title for changing a product series details."""
@@ -1331,6 +1333,8 @@ standardshipitrequest_new = 'Create a new standard option'
 standardshipitrequest_edit = 'Edit standard option'
 
 team_addmember = ContextBrowsername('Add members to %s')
+
+team_add_my_teams = 'Propose/add one of your teams to another one'
 
 team_contactaddress = ContextDisplayName('%s contact address')
 

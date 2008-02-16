@@ -335,13 +335,6 @@ class TestPPAUploadProcessor(TestPPAUploadProcessorBase):
         """
         hoary = self.ubuntu['hoary']
 
-        # Temporarily allow uploads to component 'universe' in ubuntu/hoary
-        # which only allow main & restricted in the sampledata.
-        from canonical.launchpad.interfaces import IComponentSet
-        from canonical.launchpad.database import ComponentSelection
-        universe = getUtility(IComponentSet)['universe']
-        ComponentSelection(distroseries=hoary, component=universe)
-
         upload_dir = self.queueUpload(
             "bar_1.0-1", "~name16/ubuntu/hoary")
         self.processUpload(self.uploadprocessor, upload_dir)

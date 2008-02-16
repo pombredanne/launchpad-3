@@ -1,4 +1,4 @@
-# Copyright 2007 Canonical Ltd.  All rights reserved.
+# Copyright 2007, 2008 Canonical Ltd.  All rights reserved.
 """Tests of the HWDB submissions parser."""
 
 from datetime import datetime
@@ -203,15 +203,29 @@ class TestHWDBSubmissionRelaxNGValidation(TestCase):
     # Moreover, many lines of the messages are more than 80 characters
     # long.
 
-    def assertErrorMessage(self, submission, result, message, test):
-        """Search for `message` in the log entry for `submission`."""
-        self.assertEqual(result, None, 'test %s failed' % test)
+    def assertErrorMessage(self, submission_key, result, message, test):
+        """Search for message in the log entries for submission_key.
+
+        assertErrorMessage requires that
+        (a) a log message starts with "Parsing submisson <submission_key>:"
+        (b) the error message passed as the parameter message appears
+            in a log string that matches (a)
+        (c) result, which is supposed to contain an object representing
+            the result of parsing a submission, is None.
+
+        If all three criteria match, assertErrormessage does not raise any
+        exception.
+        """
+        self.assertEqual(
+            result, None,
+            'The test %s failed: The parsing result is not None.' % test)
         last_log_messages = []
         for r in self.handler.records:
             if r.levelno != logging.ERROR:
                 continue
             candidate = r.getMessage()
-            if candidate.startswith('Parsing submission %s:' % submission):
+            if candidate.startswith('Parsing submission %s:'
+                                    % submission_key):
                 # It seems that lxml currently (version 1.3.3) interprets
                 # error codes from the Relax NG validator as xmlParserErrors
                 # and inserts corresponding texts into the message.
@@ -223,10 +237,9 @@ class TestHWDBSubmissionRelaxNGValidation(TestCase):
                     return
                 else:
                     last_log_messages.append(candidate)
-
         failmsg = [
             "No error log message for submission %s (testing %s) contained %s"
-                % (submission, test, message)]
+                % (submission_key, test, message)]
         if last_log_messages:
             failmsg.append('Log messages for the submission:')
             failmsg.extend(last_log_messages)
@@ -234,6 +247,51 @@ class TestHWDBSubmissionRelaxNGValidation(TestCase):
             failmsg.append('No messages logged for this submission')
 
         self.fail('\n'.join(failmsg))
+
+    def testAssertErrorMessage(self):
+        """Test the assertErrorMessage method."""
+        log_template = ('Parsing submission %s:\n'
+                        '<string>:%i:ERROR:RELAXNGV:NONSENSE: %s')
+        self.log.error(log_template % ('assert_test_1', 123, 'log message 1'))
+        self.log.error(log_template % ('assert_test_1', 234, 'log message 2'))
+        self.log.error(log_template % ('assert_test_2', 345, 'log message 2'))
+        self.log.error(log_template % ('assert_test_2', 456, 'log message 3'))
+
+        # assertErrorMessage requires that
+        # (a) a log message starts with "Parsing submisson <submission-key>:"
+        # (b) the error message passed as the parameter message appears
+        #     in a log string that matches (a)
+        # (c) result, which is supposed to contain an object representing
+        #     the result of parsing a submission, is None.
+
+        # If all three criteria match, assertErrorMessage does not raise any
+        # exception
+        self.assertErrorMessage('assert_test_1', None, 'log message 1',
+                                'assertErrorMessage test 1')
+
+        # If a log message does not exist for a given submission,
+        # assertErrorMessage raises failureExeception.
+        try:
+            self.assertErrorMessage(
+                'assert_test_1', None, 'log message 3',
+                'assertErrorMessage test 2')
+        except TestCase.failureException:
+            pass
+        else:
+            self.fail('assertErrorMessage did not fail for a non-existing '
+                      'error message.')
+
+        # If the parameter result is not None, assertErrorMessage 
+        # assertErrorMessage raises failureExeception.
+        try:
+            self.assertErrorMessage(
+                'assert_test_1', {}, 'log message 1',
+                'assertErrorMessage test 3')
+        except TestCase.failureException:
+            pass
+        else:
+            self.fail('assertErrorMessage did not fail for a non-None '
+                      'submission result.')
 
     def testSubtagsOfSystem(self):
         """The root node <system> requires a fixed set of sub-tags."""
@@ -1208,9 +1266,9 @@ class TestHWDBSubmissionRelaxNGValidation(TestCase):
             ('dbus.UInt64', 'unsignedLong', 0, 2**64-1),
             ('int', 'int', -2**31, 2**31-1),
             ('long', 'integer', None, None))
-        for value_type, relax_ng_type, min_allowd, max_allowed in int_types:
-            self._testIntegerValueTag(property_type, value_type, relax_ng_type,
-                                      min_allowd, max_allowed)
+        for value_type, relax_ng_type, min_allowed, max_allowed in int_types:
+            self._testIntegerValueTag(property_type, value_type,
+                                      relax_ng_type, min_allowed, max_allowed)
 
     def _testFloatValueTag(self, property_type, value_type):
         """Validation of a <value> tag with float-number content."""
@@ -1347,7 +1405,8 @@ class TestHWDBSubmissionRelaxNGValidation(TestCase):
 
     def testListAndDictProperties(self):
         """Validation of dbus.Array and list properties."""
-        for property_type in ('dbus.Array', 'list', 'dbus.Dictionary', 'dict'):
+        for property_type in ('dbus.Array', 'list', 'dbus.Dictionary',
+                              'dict'):
             self._testListOrDictProperty(property_type)
 
     def testProcessorsTag(self):
@@ -1582,6 +1641,841 @@ class TestHWDBSubmissionRelaxNGValidation(TestCase):
             submission_id, result,
             'Extra element aliases in interleave',
             'invalid sub-tag of <alias>')
+
+    def testSoftwareTagAttributes(self):
+        """Test the attribute validation of the <software> tag."""
+        # <software> has no attributes.
+        sample_data = self.sample_data.replace(
+            '<software>', '<software foo="bar">')
+        result, submission_id = self.runValidator(sample_data)
+        self.assertErrorMessage(
+            submission_id, result,
+            'Invalid attribute foo for element software',
+            'detection of invalid attribute of <software>')
+
+    def testAllowedSubtagsOfSoftware(self):
+        """Test the validation of allowed sub-tags of <software>."""
+        # <software> has three allowed sub-tags: <lsbrelease>, <packages>
+        # <xorg>.
+        # <lsbrelease> is required.
+        sample_data = self.replaceSampledata(
+            data=self.sample_data,
+            replace_text='',
+            from_text='<lsbrelease',
+            to_text='</lsbrelease>')
+        result, submission_id = self.runValidator(sample_data)
+        self.assertErrorMessage(
+            submission_id, result,
+            'Expecting an element lsbrelease, got nothing',
+            'omission of required tag <lsbrelease> not detected')
+
+        # <packages> is optional.
+        sample_data = self.replaceSampledata(
+            data=self.sample_data,
+            replace_text='',
+            from_text='<packages',
+            to_text='</packages>')
+        result, submission_id = self.runValidator(sample_data)
+        self.assertNotEqual(
+            result, None,
+            'omission of optional tag <packages> treated as invalid')
+
+        # <xorg> is optional.
+        sample_data = self.replaceSampledata(
+            data=self.sample_data,
+            replace_text='',
+            from_text='<xorg',
+            to_text='</xorg>')
+        result, submission_id = self.runValidator(sample_data)
+        self.assertNotEqual(
+            result, None,
+            'omission of required tag <xorg> treated as invalid')
+
+    def testInvalidContentOfSoftwareTag(self):
+        """Test the validation of invalid content of <software>."""
+        # Sub-tags other than <lsbrelease>, <packages>, <xorg> are
+        # rejected.
+        sample_data = self.insertSampledata(
+            data=self.sample_data,
+            insert_text = '<nonsense/>',
+            where='</software>')
+        result, submission_id = self.runValidator(sample_data)
+        self.assertErrorMessage(
+            submission_id, result,
+            'Element software has extra content: nonsense',
+            'detection invalid sub-tag of <software>')
+
+        # CDATA content is not allowed
+        sample_data = self.insertSampledata(
+            data=self.sample_data,
+            insert_text='nonsense',
+            where='</software>')
+        result, submission_id = self.runValidator(sample_data)
+        self.assertErrorMessage(
+            submission_id, result,
+            'Element software has extra content: text',
+            'invalid CDATA content of <software>')
+
+    def testLsbreleaseTagAttributes(self):
+        """Test the validation of the <lsbrelease> attributes."""
+        # <lsbrelease> has no attributes.
+        sample_data = self.sample_data.replace(
+            '<lsbrelease>', '<lsbrelease foo="bar">')
+        result, submission_id = self.runValidator(sample_data)
+        self.assertErrorMessage(
+            submission_id, result,
+            'Invalid attribute foo for element lsbrelease',
+            'detection of invalid attribute of <lsbrelease>')
+
+    def testLsbreleaseTagValidSubtag(self):
+        """Test the validation of <lsbrelease> sub-tags."""
+        # <lsbrelease> requires at least one <property> sub-tag,
+        sample_data = self.replaceSampledata(
+            data=self.sample_data,
+            replace_text='<lsbrelease/>',
+            from_text='<lsbrelease>',
+            to_text='</lsbrelease>')
+        result, submission_id = self.runValidator(sample_data)
+        self.assertErrorMessage(
+            submission_id, result,
+            'Expecting an element property, got nothing',
+            'omission of required sub-tag <property> of <lsbrelease> '
+                'not detected')
+
+    def testLsbreleaseTagInvalidContent(self):
+        """Test of the validation of invalid <lsbrelease> content."""
+        # Sub-tags other than <property> are not allowed.
+        sample_data = self.insertSampledata(
+            data=self.sample_data,
+            insert_text='<nonsense/>',
+            where='</lsbrelease>')
+        result, submission_id = self.runValidator(sample_data)
+        self.assertErrorMessage(
+            submission_id, result,
+            'Expecting element property, got nonsense',
+            'detection of invalid sub-tag of <lsbrelease>')
+
+        # CDATA content is not allowed.
+        sample_data = self.insertSampledata(
+            data=self.sample_data,
+            insert_text='nonsense',
+            where='</lsbrelease>')
+        result, submission_id = self.runValidator(sample_data)
+        self.assertErrorMessage(
+            submission_id, result,
+            'Expecting an element got text',
+            'detection of invalid CDATA content of <lsbrelease>')
+
+    def testPackagesTagAttributes(self):
+        """Test of the validation of <packages> tag attributes."""
+        # This tag has no attributes.
+        sample_data = self.sample_data.replace(
+            '<packages>', '<packages foo="bar">')
+        result, submission_id = self.runValidator(sample_data)
+        self.assertErrorMessage(
+            submission_id, result,
+            'Extra element packages in interleave',
+            'detection of invalid attribute of <packages>')
+
+    def testEmptyPackagesTag(self):
+        """Test of the validation of <packages> tag attributes."""
+        # <packages> may be empty.
+        sample_data = self.replaceSampledata(
+            data=self.sample_data,
+            replace_text='',
+            from_text='<package name=',
+            to_text='</package>')
+        result, submission_id = self.runValidator(sample_data)
+        self.assertNotEqual(result, None,
+                            'empty <packages> tag treated as invalid')
+
+    def testPackagesTagWithInvalidContent(self):
+        """Test the validation of <packages> tag attributes."""
+        # Any sub-tag except <package> is invalid.
+        sample_data = self.insertSampledata(
+            data=self.sample_data,
+            insert_text='<nonsense/>',
+            where='</packages>')
+        result, submission_id = self.runValidator(sample_data)
+        self.assertErrorMessage(
+            submission_id, result,
+            'Extra element packages in interleave',
+            'detection of invalid sub-tag of <packages>')
+
+        # CDATA content is invalid.
+        sample_data = self.insertSampledata(
+            data=self.sample_data,
+            insert_text='nonsense',
+            where='</packages>')
+        result, submission_id = self.runValidator(sample_data)
+        self.assertErrorMessage(
+            submission_id, result,
+            'Extra element packages in interleave',
+            'detection of invalid CDATA in <packages>')
+
+    def testPackageTagAttributes(self):
+        """Test the validation of <package> tag attributes."""
+        # The attribute "name" is required.
+        sample_data = self.sample_data.replace(
+            '<package name="metacity">', '<package>')
+        result, submission_id = self.runValidator(sample_data)
+        self.assertErrorMessage(
+            submission_id, result,
+            'Extra element packages in interleave',
+            'detection missing required attribute name in <package>')
+
+        # Other attributes are not allowed.
+        sample_data = self.sample_data.replace(
+            '<package name="metacity">',
+            '<package name="metacity" foo="bar">')
+        result, submission_id = self.runValidator(sample_data)
+        self.assertErrorMessage(
+            submission_id, result,
+            'Extra element packages in interleave',
+            'detection of invalid attributes in <package>')
+
+    def testPackageTagSubtags(self):
+        """Test the validation of sub-tags of <package>."""
+        # Sub-tags other than <property> are not allowed.
+        sample_data = self.insertSampledata(
+            data=self.sample_data,
+            insert_text='<nonsense/>',
+            where='</package>')
+        result, submission_id = self.runValidator(sample_data)
+        self.assertErrorMessage(
+            submission_id, result,
+            'Extra element packages in interleave',
+            'detection of invalid sub-tags of <package>')
+
+        # At least one <property> tag is required
+        sample_data = self.replaceSampledata(
+            data=self.sample_data,
+            replace_text='<package name="metacity"/>',
+            from_text='<package name="metacity">',
+            to_text='</package>')
+        result, submission_id = self.runValidator(sample_data)
+        self.assertErrorMessage(
+            submission_id, result,
+            'Extra element packages in interleave',
+            'detection of invalid empty <package> tag')
+
+    def testPackageTagCData(self):
+        """Test the validation of CDATA content in <package>."""
+        # CDATA content is not allowed.
+        sample_data = self.insertSampledata(
+            data=self.sample_data,
+            insert_text='<nonsense/>',
+            where='</package>')
+        result, submission_id = self.runValidator(sample_data)
+        self.assertErrorMessage(
+            submission_id, result,
+            'Extra element packages in interleave',
+            'detection of invalid CDATA in <package>')
+
+    def testXorgTagAttributes(self):
+        """Test the validation of <xorg> attributes."""
+        # The <xorg> tag requires an attribute name.
+        sample_data = self.sample_data.replace(
+            '<xorg version="1.3.0">', '<xorg>')
+        result, submission_id = self.runValidator(sample_data)
+        self.assertErrorMessage(
+            submission_id, result,
+            'Extra element xorg in interleave',
+            'detection of missing attribute version of <xorg>')
+
+        # other attributes are invalid.
+        sample_data = self.sample_data.replace(
+            '<xorg version="1.3.0">', '<xorg version="1.3.0" foo="bar">')
+        result, submission_id = self.runValidator(sample_data)
+        self.assertErrorMessage(
+            submission_id, result,
+            'Extra element xorg in interleave',
+            'detection of invalid attribute of <xorg>')
+        
+    def testXorgTagSubTags(self):
+        """Test the validation of <xorg> sub-tags."""
+        # the only allowed sub-tag is <driver>.
+        sample_data = self.insertSampledata(
+            data=self.sample_data,
+            insert_text='<nonsense/>',
+            where='</xorg>')
+        result, submission_id = self.runValidator(sample_data)
+        self.assertErrorMessage(
+            submission_id, result,
+            'Extra element xorg in interleave',
+            'detection of invalid sub-tag of <xorg>')
+        
+        # <xorg> may be empty
+        sample_data = self.replaceSampledata(
+            data=self.sample_data,
+            replace_text='<xorg version="1.2.3"/>',
+            from_text='<xorg',
+            to_text='</xorg>')
+        result, submission_id = self.runValidator(sample_data)
+        self.assertNotEqual(result, None,
+                            'invalid empty <xorg> tag not detected')
+
+    def testXorgTagCData(self):
+        """Test the validation of <xorg> CDATA content."""
+        # CDATA content is not allowed.
+        sample_data = self.insertSampledata(
+            data=self.sample_data,
+            insert_text='nonsense',
+            where='</xorg>')
+        result, submission_id = self.runValidator(sample_data)
+        self.assertErrorMessage(
+            submission_id, result,
+            'Extra element xorg in interleave',
+            'detection of invalid CDATA content of <xorg>')
+
+    def _getXorgDriverTag(self, attributes):
+        """Build a <driver> tag with attributes specified in "attributes." """
+        attributes = attributes.items()
+        attributes = [
+            '%s="%s"' % attribute for attribute in attributes]
+        attributes = ' '.join(attributes)
+        return '<driver %s/>' % attributes
+        
+
+    def testXorgDriverTagRequiredAttributes(self):
+        """Test the validation of attributes of <driver> within <xorg>.
+
+        The attributes "name" and "class" are required.
+        """
+        all_attributes = {
+            'name': 'fglrx',
+            'version': '1.23',
+            'class': 'X.Org Video Driver',
+            'device': '12'}
+        for omit in ('name', 'class'):
+            # Remove a required attribute from the attribute dictionary
+            # and build a <driver> tag with these attributes.
+            test_attributes = all_attributes.copy()
+            del test_attributes[omit]
+            driver_tag = self._getXorgDriverTag(test_attributes)
+            sample_data = self.replaceSampledata(
+                data=self.sample_data,
+                replace_text=driver_tag,
+                from_text='<driver name="fglrx"',
+                to_text='/>')
+            result, submission_id = self.runValidator(sample_data)
+            self.assertErrorMessage(
+                submission_id, result,
+                'Extra element xorg in interleave',
+                'detection of missing required attribute %s of <driver> '
+                    'in <xorg>' % omit)
+
+    def testXorgDriverTagOptionalAttributes(self):
+        """Test the validation of attributes of <driver> within <xorg>.
+
+        The attributes "device" and "version" are optional.
+        """
+        all_attributes = {
+            'name': 'fglrx',
+            'version': '1.23',
+            'class': 'X.Org Video Driver',
+            'device': '12'}
+        for omit in ('version', 'device'):
+            # Remove an optional attribute from the attribute dictionary
+            # and build a <driver> tag with these attributes.
+            test_attributes = all_attributes.copy()
+            del test_attributes[omit]
+            driver_tag = self._getXorgDriverTag(test_attributes)
+            sample_data = self.replaceSampledata(
+                data=self.sample_data,
+                replace_text=driver_tag,
+                from_text='<driver name="fglrx"',
+                to_text='/>')
+            result, submission_id = self.runValidator(sample_data)
+            self.assertNotEqual(
+                submission_id, result,
+                'omitted optional attribute %s of <driver> in <xorg> '
+                    'treated as invalid' % omit)
+        
+    def testXorgDriverTagInvalidAttributes(self):
+        """Test the validation of attributes of <driver> within <xorg>.
+
+        Attributes other than name, version, class, device are invalid.
+        """
+        sample_data = self.replaceSampledata(
+            data=self.sample_data,
+            replace_text='<driver name="fglrx" version="1.23" foo="bar"/>',
+            from_text='<driver name="fglrx"',
+            to_text='/>')
+        result, submission_id = self.runValidator(sample_data)
+        self.assertErrorMessage(
+            submission_id, result,
+            'Extra element xorg in interleave',
+            'detection of invalid attribute for <driver> in <xorg>')
+
+    def testXorgDriverTagSubtags(self):
+        """Test the validation of sub-tags of <driver> within <xorg>."""
+        # Sub-tags are not allowed.
+        driver_tag = ('<driver device="12" version="1.23" name="fglrx" '
+                      'class="X.Org Video Driver"><nonsense/></driver>')
+        sample_data = self.replaceSampledata(
+            data=self.sample_data,
+            replace_text=driver_tag,
+            from_text='<driver name="fglrx"',
+            to_text='/>')
+        result, submission_id = self.runValidator(sample_data)
+        self.assertErrorMessage(
+            submission_id, result,
+            'Extra element xorg in interleave',
+            'detection of invalid sub-tag of <driver> in <xorg>')
+
+    def testXorgDriverTagCData(self):
+        """Test the validation of sub-tags of <driver> within <xorg>."""
+        # CDATA is not allowed.
+        driver_tag = ('<driver device="12" version="1.23" name="fglrx" '
+                      'class="X.Org Video Driver">nonsense</driver>')
+        sample_data = self.replaceSampledata(
+            data=self.sample_data,
+            replace_text=driver_tag,
+            from_text='<driver name="fglrx"',
+            to_text='/>')
+        result, submission_id = self.runValidator(sample_data)
+        self.assertErrorMessage(
+            submission_id, result,
+            'Extra element xorg in interleave',
+            'detection of invalid CDATA content of <driver> in <xorg>')
+
+    def testQuestionsTagAttributes(self):
+        """Test the validation of <questions> tag attributes."""
+        # This tag has no attributes.
+        sample_data = self.sample_data.replace(
+            '<questions>', '<questions foo="bar">')
+        result, submission_id = self.runValidator(sample_data)
+        self.assertErrorMessage(
+            submission_id, result,
+            'Invalid attribute foo for element questions',
+            'detection of invalid attributes of <questions>')
+
+    def testQuestionsTagAttributesSubTags(self):
+        """Test the validation of the <questions> sub-tags."""
+        # The only allowed sub-tag is <question>
+        sample_data = self.insertSampledata(
+            data = self.sample_data,
+            insert_text='<nonsense/>',
+            where='</questions>')
+        result, submission_id = self.runValidator(sample_data)
+        self.assertErrorMessage(
+            submission_id, result,
+            'Expecting element question, got nonsense',
+            'invalid sub-tag of <questions>')
+
+        # <questions> may be empty
+        sample_data = self.replaceSampledata(
+            data = self.sample_data,
+            replace_text='<questions/>',
+            from_text='<questions>',
+            to_text='</questions>')
+        result, submission_id = self.runValidator(sample_data)
+        self.assertNotEqual(result, None,
+                            'Empty tag <questions> not treated as valid.')
+
+    def testQuestionsTagCData(self):
+        """Test the validation of CDATA in <questions> tag."""
+        # CDATA content is not allowed.
+        sample_data = self.insertSampledata(
+            data = self.sample_data,
+            insert_text='nonsense',
+            where='</questions>')
+        result, submission_id = self.runValidator(sample_data)
+        self.assertErrorMessage(
+            submission_id, result,
+            'Expecting an element got text',
+             'detection of invalid CDATA content of <questions>')
+
+    def testQuestionTagValidAttributes(self):
+        """Test the validation of valid <question> tag attributes."""
+        # The attribute "name" is required.
+        sample_data = self.replaceSampledata(
+            data=self.sample_data,
+            replace_text='<question plugin="foo">',
+            from_text='<question name',
+            to_text='>')
+        result, submission_id = self.runValidator(sample_data)
+        self.assertErrorMessage(
+            submission_id, result,
+            'Element questions has extra content: question',
+            'detection of missing attribute "name" in <question>')
+
+        # The attribute "plugin" is optional.
+        sample_data = self.replaceSampledata(
+            data=self.sample_data,
+            replace_text='<question name="foo">',
+            from_text='<question name',
+            to_text='>')
+        result, submission_id = self.runValidator(sample_data)
+        self.assertNotEqual(
+            result, None, 
+            '<question> tag without attribute "plugin" was treated as '
+                'invalid')
+
+    def testQuestionTagInvalidAttributes(self):
+        """Test the validation of invalid <question> tag attributes."""
+        # Other attributes are not allowed.
+        sample_data = self.replaceSampledata(
+            data=self.sample_data,
+            replace_text='<question plugin="foo" bar="baz">',
+            from_text='<question name',
+            to_text='>')
+        result, submission_id = self.runValidator(sample_data)
+        self.assertErrorMessage(
+            submission_id, result,
+            'Invalid attribute bar for element question',
+            'detection of invalid attribute in <question>.')
+
+    def testQuestionTagValidSubtags(self):
+        """Test the validation of valid <question> tag sub-tags."""
+        # The sub-tag <command> is optional.
+        sample_data = self.replaceSampledata(
+            data=self.sample_data,
+            replace_text='<question name="foo">',
+            from_text='<question name',
+            to_text='>')
+        result, submission_id = self.runValidator(sample_data)
+        self.assertNotEqual(
+            result, None, 
+            'Omitting sub-tag <command> of <question> was treated as invalid')
+
+        # The sub-tag <answer> is required; <answer_choices>, which follows
+        # the first <answer> tag in the sample data, is invalid without
+        # an accompanying <answer> tag.
+        sample_data = self.replaceSampledata(
+            data=self.sample_data,
+            replace_text='',
+            from_text='<answer type',
+            to_text='</answer>')
+        result, submission_id = self.runValidator(sample_data)
+        self.assertErrorMessage(
+            submission_id, result,
+            'Expecting element answer, got answer_choices',
+            'detection of omitted sub-tag <answer> of <question> (1)')
+
+        # Omitting both <answer> and <answer_choice> is invalid too, but
+        # results in a different error message.
+        sample_data = self.replaceSampledata(
+            data=self.sample_data,
+            replace_text='',
+            from_text='<answer type',
+            to_text='</answer_choices>')
+        result, submission_id = self.runValidator(sample_data)
+        self.assertErrorMessage(
+            submission_id, result,
+            'Expecting an element answer, got nothing',
+            'detection of omitted sub-tag <answer> of <question> (2)')
+
+        # A tag <answer type="multiple_choice"> must have an accompanying
+        # <answer_choices> tag.
+        sample_data = self.replaceSampledata(
+            data=self.sample_data,
+            replace_text='',
+            from_text='<answer_choices>',
+            to_text='</answer_choices>')
+        result, submission_id = self.runValidator(sample_data)
+        self.assertErrorMessage(
+            submission_id, result,
+            'Expecting an element answer_choices, got nothing',
+            'detection of omitted sub-tag <answer_choices> of <question>')
+
+        # The sub-tag <target> is optional; it may appear more than once.
+        sample_data = self.replaceSampledata(
+            data=self.sample_data,
+            replace_text='',
+            from_text='<target>',
+            to_text='</target>')
+        sample_data = self.replaceSampledata(
+            data=sample_data,
+            replace_text='',
+            from_text='<target>',
+            to_text='</target>')
+        result, submission_id = self.runValidator(sample_data)
+        self.assertNotEqual(
+            result, None,
+            'Omitting sub-tag <target> of <anwser> treated as invalid.')
+
+        # The sub-tag <comment> is optional.
+        sample_data = self.replaceSampledata(
+            data=self.sample_data,
+            replace_text='',
+            from_text='<comment>',
+            to_text='</comment>')
+        result, submission_id = self.runValidator(sample_data)
+        self.assertNotEqual(
+            result, None,
+            'Omitting sub-tag <comment> of <anwser> treated as invalid.')
+
+    def testQuestionTagInValidSubtags(self):
+        """Test the validation of invalid <question> tag sub-tags."""
+        # other sub-tags are invalid.
+        sample_data = self.insertSampledata(
+            data=self.sample_data,
+            insert_text='<nonsense/>',
+            where='</question>')
+        result, submission_id = self.runValidator(sample_data)
+        self.assertErrorMessage(
+            submission_id, result,
+            'Element question has extra content: nonsense',
+            'detection of omitted sub-tag <answer_choices> of <question>')
+
+    def testAnswerCommandTag(self):
+        """Test the validation of the <command> tag."""
+        # No attributes are allowed.
+        sample_data = self.sample_data.replace(
+            '<command/>', '<command foo="bar"/>')
+        result, submission_id = self.runValidator(sample_data)
+        self.assertErrorMessage(
+            submission_id, result,
+            'Extra element command in interleave',
+            'detection of invalid attributes of <command>')
+
+        # No sub-tags are allowed.
+        sample_data = self.sample_data.replace(
+            '<command/>', '<command><nonsense/></command>')
+        result, submission_id = self.runValidator(sample_data)
+        self.assertErrorMessage(
+            submission_id, result,
+            'Extra element command in interleave',
+             'detection of invalid sub-tags of <command>')
+
+    def testAnswerTagAttributes(self):
+        """Test the validation of <answer> tag attributes."""
+        # The attribute "type" is required.
+        sample_data = self.replaceSampledata(
+            data=self.sample_data,
+            replace_text='<answer>',
+            from_text='<answer',
+            to_text='>')
+        result, submission_id = self.runValidator(sample_data)
+        self.assertErrorMessage(
+            submission_id, result,
+            'Element answer failed to validate content',
+             'detection of <answer> element without required attribute')
+
+        # The only allowed values for the attribute type are:
+        # "multiple_choice" and "measurement"
+        sample_data = self.replaceSampledata(
+            data=self.sample_data,
+            replace_text='<answer type="nonsense">',
+            from_text='<answer',
+            to_text='>')
+        result, submission_id = self.runValidator(sample_data)
+        self.assertErrorMessage(
+            submission_id, result,
+            'Element answer failed to validate content',
+            'detection of <answer> with wrong value of attribute type')
+
+        # Tags of type measurement have the optional attribute unit.
+        # The parser must check if the value of unit is reasonable
+        # for a particular test or if the attribute may be omitted for
+        # a particular test.
+        sample_data = self.sample_data.replace(
+            '<answer type="measurement" unit="MB/sec">38.4</answer>',
+            '<answer type="measurement">38.4</answer>')
+        result, submission_id = self.runValidator(sample_data)
+        self.assertNotEqual(
+            result, None,
+            'measurement answer without required attribute unit treated '
+                'as valid')
+
+        # Other attributes are invalid.
+        sample_data = self.replaceSampledata(
+            data=self.sample_data,
+            replace_text='<answer type="multiple_choice" foo="bar">',
+            from_text='<answer',
+            to_text='>')
+        result, submission_id = self.runValidator(sample_data)
+        self.assertErrorMessage(
+            submission_id, result,
+            'Element answer failed to validate attributes',
+            'detection of <answer> with invalid attribute "foo"')
+
+    def testAnswerTagContent(self):
+        """Test the validation of <answer> content."""
+        # Tags of type multiple_choice can have any text content. The
+        # consistency check, if the text matches one of the
+        # <answer_choices>, must be done by class SubmissionParser at
+        # a later stage than the Relax NG validation.
+        sample_data = self.replaceSampledata(
+            data=self.sample_data,
+            replace_text='<answer type="multiple_choice">nonsense</answer>',
+            from_text='<answer',
+            to_text='</answer>')
+        result, submission_id = self.runValidator(sample_data)
+        self.assertNotEqual(
+            result, None,
+            'Multiple choice answer with wrong content unexpctedly treated '
+                'as invalid.')
+
+        # Tags of type measurement must have numerical content.
+        sample_data = self.sample_data.replace(
+            '<answer type="measurement" unit="MB/sec">38.4</answer>',
+            '<answer type="measurement" unit="MB/sec">nonsense</answer>')
+        result, submission_id = self.runValidator(sample_data)
+        self.assertErrorMessage(
+            submission_id, result,
+            "Type decimal doesn't allow value 'nonsense'",
+            'detection of <answer> with invalid attribute')
+
+        # Sub-tags are not allowed.
+        sample_data = self.replaceSampledata(
+            data=self.sample_data,
+            replace_text='<answer type="multiple_choice">'
+                             'pass<nonsense/></answer>',
+            from_text='<answer',
+            to_text='</answer>')
+        result, submission_id = self.runValidator(sample_data)
+        self.assertErrorMessage(
+            submission_id, result,
+            'Datatype element answer has child elements',
+            'detection of <answer> with invalid attribute')
+
+    def testAnswerChoicesTagAttributes(self):
+        """Test the validation of <answer_choices> attributes."""
+        # This tag has no attributes.
+        sample_data = self.replaceSampledata(
+            data=self.sample_data,
+            replace_text='<answer_choices foo="bar">',
+            from_text='<answer_choices',
+            to_text='>')
+        result, submission_id = self.runValidator(sample_data)
+        self.assertErrorMessage(
+            submission_id, result,
+            'Invalid attribute foo for element answer_choices',
+            'detection of invalid <answer_choices> attributes')
+
+    def testAnswerChoicesTagCData(self):
+        """Test the validation of <answer_choices> CDATA content."""
+        # CDATA content is invalid.
+        sample_data = self.insertSampledata(
+            data=self.sample_data,
+            insert_text='nonsense',
+            where='</answer_choices>')
+        result, submission_id = self.runValidator(sample_data)
+        self.assertErrorMessage(
+            submission_id, result,
+            'Expecting an element got text',
+            'detection of invalid CDATA in <answer_choices>')
+
+    def testAnswerChoicesTagSubTags(self):
+        """Test the validation of <answer_choices> sub-tags."""
+        # The only allowed sub-tag is <value>
+        sample_data = self.insertSampledata(
+            data=self.sample_data,
+            insert_text='<nonsense/>',
+            where='</answer_choices>')
+        result, submission_id = self.runValidator(sample_data)
+        self.assertErrorMessage(
+            submission_id, result,
+            'Expecting element value, got nonsense',
+            'detection of invalid sub-tag of <answer_choices>')
+        
+
+    def testTargetTagAttributes(self):
+        """Test the validation of <target> tag attributes."""
+        # This tag has no attributes.
+        sample_data = self.replaceSampledata(
+            data=self.sample_data,
+            replace_text='<target foo="bar">',
+            from_text='<target',
+            to_text='>')
+        result, submission_id = self.runValidator(sample_data)
+        self.assertErrorMessage(
+            submission_id, result,
+            'Invalid attribute foo for element target',
+             'detection of invalid <target> attribute')
+
+    def testTargetTagCData(self):
+        """Test the validation of <target> tag CDATA content."""
+        # The consistency of the CDATA content is not validated.
+        # While this tag is supposed to contain IDs assigned to other
+        # tags, it is neither checked, if the content is numeric,
+        # nor if another tag with this ID exists. This check must be
+        # done by the parser.
+        sample_data = self.replaceSampledata(
+            data=self.sample_data,
+            replace_text='<target>no_id</target>',
+            from_text='<target',
+            to_text='</target>')
+        result, submission_id = self.runValidator(sample_data)
+        self.assertNotEqual(
+            result, None,
+            'Inconsistent content of <target> unexpectedly treated as '
+                'invalid')
+
+    def testTargetTagValidSubtag(self):
+        """Test the validation of the valid <target> sub-tag <driver>."""
+        # The only allowed sub-tag is <driver>.
+        sample_data = self.replaceSampledata(
+            data=self.sample_data,
+            replace_text='<target>42<driver>foo</driver></target>',
+            from_text='<target',
+            to_text='</target>')
+        result, submission_id = self.runValidator(sample_data)
+        self.assertNotEqual(
+            result, None,
+            'Valid <driver> sub-tag of <target> treated as invalid')
+        
+    def testTargetTagInvalidSubtag(self):
+        """Test the validation of an invalid <target> sub-tag."""
+        sample_data = self.replaceSampledata(
+            data=self.sample_data,
+            replace_text='<target>42<nonsense/></target>',
+            from_text='<target',
+            to_text='</target>')
+        result, submission_id = self.runValidator(sample_data)
+        self.assertErrorMessage(
+            submission_id, result,
+            'Element target has extra content: nonsense',
+            'detection of invalid sub-tag <nonsense> of <target>')
+
+    def testTargetDriverTag(self):
+        """Test the validation of the <driver> sub-tag of <target>."""
+        # This tag has no attributes.
+        sample_data = self.replaceSampledata(
+            data=self.sample_data,
+            replace_text='<target>42<driver bar="baz">foo</driver></target>',
+            from_text='<target',
+            to_text='</target>')
+        result, submission_id = self.runValidator(sample_data)
+        self.assertErrorMessage(
+            submission_id, result,
+            'Invalid attribute bar for element driver',
+            'detection of invalid attribute of <driver> in <target>')
+
+        # Sub-tags are not allowed.
+        sample_data = self.replaceSampledata(
+            data=self.sample_data,
+            replace_text='<target>42<driver>foo<nonsense/></driver></target>',
+            from_text='<target',
+            to_text='</target>')
+        result, submission_id = self.runValidator(sample_data)
+        self.assertErrorMessage(
+            submission_id, result,
+            'Element driver has extra content: nonsense',
+            'detection of invalid sub-tag <nonsense> of <driver> in <target>')
+
+    def testCommentTag(self):
+        """Validation of the <comment> tag."""
+        # This tag has no attributes.
+        sample_data = self.sample_data.replace(
+            '<comment>', '<comment foo="bar">')
+        result, submission_id = self.runValidator(sample_data)
+        self.assertErrorMessage(
+            submission_id, result,
+            'Invalid attribute foo for element comment',
+            'detection of invalid attribute of <comment>')
+
+        # Sub-tags are not allowed.
+        sample_data = self.sample_data.replace(
+            '<comment>', '<comment><nonsense/>')
+        result, submission_id = self.runValidator(sample_data)
+        self.assertErrorMessage(
+            submission_id, result,
+            'Element comment has extra content: nonsense',
+            'detection of invalid sub-tag <nonsense> of <comment>')
 
 
 def test_suite():

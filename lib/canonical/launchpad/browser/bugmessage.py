@@ -90,7 +90,7 @@ class BugMessageAddFormView(LaunchpadFormView):
                 comment=message, is_patch=data['patch'])
 
             self.request.response.addNotification(
-                "Attachment %(filename)s added to bug.", filename=filename)
+                "Attachment %s added to bug." % filename)
 
         self.next_url = canonical_url(self.context)
 
