@@ -13,7 +13,7 @@ from zope.schema import Datetime, Object, Text, TextLine
 
 from canonical.lazr import decorates
 from canonical.lazr.interfaces import IEntry
-from canonical.lazr.rest import Entry, Collection
+from canonical.lazr.rest import Entry
 from canonical.launchpad.interfaces import IMessage, IPerson
 
 
