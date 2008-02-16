@@ -605,6 +605,21 @@ SET search_path = public, pg_catalog;
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 ALTER TABLE announcement DISABLE TRIGGER ALL;
 
 INSERT INTO announcement (id, date_created, date_announced, registrant, product, distribution, project, title, summary, url, active, date_updated) VALUES (1, '2007-11-25 00:44:32.186178', '2007-11-20 03:00:00', 1, NULL, 1, NULL, 'Every Macedonian Student to Use Ubuntu-Powered Computer Workstations', 'The Macedonia Ministry of Education and Science will deploy more than 180,000 workstations running Canonical’s Edubuntu 7.04 as part of its "Computer for Every Child" project.', 'http://www.ubuntu.com/news/macedonia-school-computers', true, NULL);
@@ -675,18 +690,18 @@ ALTER TABLE answercontact ENABLE TRIGGER ALL;
 
 ALTER TABLE archive DISABLE TRIGGER ALL;
 
-INSERT INTO archive (id, "owner", description, enabled, authorized_size, whiteboard, distribution, purpose, private, fti) VALUES (1, NULL, NULL, true, NULL, NULL, 1, 1, false, NULL);
-INSERT INTO archive (id, "owner", description, enabled, authorized_size, whiteboard, distribution, purpose, private, fti) VALUES (2, NULL, NULL, true, NULL, NULL, 2, 1, false, NULL);
-INSERT INTO archive (id, "owner", description, enabled, authorized_size, whiteboard, distribution, purpose, private, fti) VALUES (3, NULL, NULL, true, NULL, NULL, 3, 1, false, NULL);
-INSERT INTO archive (id, "owner", description, enabled, authorized_size, whiteboard, distribution, purpose, private, fti) VALUES (4, NULL, NULL, true, NULL, NULL, 4, 1, false, NULL);
-INSERT INTO archive (id, "owner", description, enabled, authorized_size, whiteboard, distribution, purpose, private, fti) VALUES (5, NULL, NULL, true, NULL, NULL, 5, 1, false, NULL);
-INSERT INTO archive (id, "owner", description, enabled, authorized_size, whiteboard, distribution, purpose, private, fti) VALUES (7, NULL, NULL, true, NULL, NULL, 7, 1, false, NULL);
-INSERT INTO archive (id, "owner", description, enabled, authorized_size, whiteboard, distribution, purpose, private, fti) VALUES (8, NULL, NULL, true, NULL, NULL, 8, 1, false,  NULL);
-INSERT INTO archive (id, "owner", description, enabled, authorized_size, whiteboard, distribution, purpose, private, fti) VALUES (9, 28, 'packages to help my friends.', true, 1024, 'It is not my fault.', 1, 2, false, NULL);
-INSERT INTO archive (id, "owner", description, enabled, authorized_size, whiteboard, distribution, purpose, private, fti) VALUES (10, 1, 'packages to help the humanity (you know, ubuntu)', true, 1024, NULL, 1, 2, false, NULL);
-INSERT INTO archive (id, "owner", description, enabled, authorized_size, whiteboard, distribution, purpose, private, fti) VALUES (11, 52, 'I am not allowed to say, I have no privs.', true, 1024, NULL, 1, 2, false, NULL);
-INSERT INTO archive (id, "owner", description, enabled, authorized_size, whiteboard, distribution, purpose, private, fti) VALUES (12, NULL, 'Partner archive', true, NULL, NULL, 1, 4, false, NULL);
-INSERT INTO archive (id, "owner", description, enabled, authorized_size, whiteboard, distribution, purpose, private, fti) VALUES (13, NULL, 'Partner archive', true, NULL, NULL, 8, 4, false, NULL);
+INSERT INTO archive (id, "owner", description, enabled, authorized_size, whiteboard, distribution, purpose, private, sources_cached, binaries_cached, package_description_cache, fti) VALUES (1, NULL, NULL, true, NULL, NULL, 1, 1, false, NULL, NULL, NULL, NULL);
+INSERT INTO archive (id, "owner", description, enabled, authorized_size, whiteboard, distribution, purpose, private, sources_cached, binaries_cached, package_description_cache, fti) VALUES (2, NULL, NULL, true, NULL, NULL, 2, 1, false, NULL, NULL, NULL, NULL);
+INSERT INTO archive (id, "owner", description, enabled, authorized_size, whiteboard, distribution, purpose, private, sources_cached, binaries_cached, package_description_cache, fti) VALUES (3, NULL, NULL, true, NULL, NULL, 3, 1, false, NULL, NULL, NULL, NULL);
+INSERT INTO archive (id, "owner", description, enabled, authorized_size, whiteboard, distribution, purpose, private, sources_cached, binaries_cached, package_description_cache, fti) VALUES (4, NULL, NULL, true, NULL, NULL, 4, 1, false, NULL, NULL, NULL, NULL);
+INSERT INTO archive (id, "owner", description, enabled, authorized_size, whiteboard, distribution, purpose, private, sources_cached, binaries_cached, package_description_cache, fti) VALUES (5, NULL, NULL, true, NULL, NULL, 5, 1, false, NULL, NULL, NULL, NULL);
+INSERT INTO archive (id, "owner", description, enabled, authorized_size, whiteboard, distribution, purpose, private, sources_cached, binaries_cached, package_description_cache, fti) VALUES (7, NULL, NULL, true, NULL, NULL, 7, 1, false, NULL, NULL, NULL, NULL);
+INSERT INTO archive (id, "owner", description, enabled, authorized_size, whiteboard, distribution, purpose, private, sources_cached, binaries_cached, package_description_cache, fti) VALUES (8, NULL, NULL, true, NULL, NULL, 8, 1, false, NULL, NULL, NULL, NULL);
+INSERT INTO archive (id, "owner", description, enabled, authorized_size, whiteboard, distribution, purpose, private, sources_cached, binaries_cached, package_description_cache, fti) VALUES (9, 28, 'packages to help my friends.', true, 1024, 'It is not my fault.', 1, 2, false, NULL, NULL, NULL, NULL);
+INSERT INTO archive (id, "owner", description, enabled, authorized_size, whiteboard, distribution, purpose, private, sources_cached, binaries_cached, package_description_cache, fti) VALUES (10, 1, 'packages to help the humanity (you know, ubuntu)', true, 1024, NULL, 1, 2, false, NULL, NULL, NULL, NULL);
+INSERT INTO archive (id, "owner", description, enabled, authorized_size, whiteboard, distribution, purpose, private, sources_cached, binaries_cached, package_description_cache, fti) VALUES (11, 52, 'I am not allowed to say, I have no privs.', true, 1024, NULL, 1, 2, false, NULL, NULL, NULL, NULL);
+INSERT INTO archive (id, "owner", description, enabled, authorized_size, whiteboard, distribution, purpose, private, sources_cached, binaries_cached, package_description_cache, fti) VALUES (12, NULL, 'Partner archive', true, NULL, NULL, 1, 4, false, NULL, NULL, NULL, NULL);
+INSERT INTO archive (id, "owner", description, enabled, authorized_size, whiteboard, distribution, purpose, private, sources_cached, binaries_cached, package_description_cache, fti) VALUES (13, NULL, 'Partner archive', true, NULL, NULL, 8, 4, false, NULL, NULL, NULL, NULL);
 
 
 ALTER TABLE archive ENABLE TRIGGER ALL;
@@ -1335,6 +1350,13 @@ ALTER TABLE codeimportresult DISABLE TRIGGER ALL;
 
 
 ALTER TABLE codeimportresult ENABLE TRIGGER ALL;
+
+
+ALTER TABLE codereviewmessage DISABLE TRIGGER ALL;
+
+
+
+ALTER TABLE codereviewmessage ENABLE TRIGGER ALL;
 
 
 ALTER TABLE component DISABLE TRIGGER ALL;
@@ -3835,6 +3857,34 @@ INSERT INTO nameblacklist (id, regexp, "comment") VALUES (2, '^admin', NULL);
 
 
 ALTER TABLE nameblacklist ENABLE TRIGGER ALL;
+
+
+ALTER TABLE oauthaccesstoken DISABLE TRIGGER ALL;
+
+
+
+ALTER TABLE oauthaccesstoken ENABLE TRIGGER ALL;
+
+
+ALTER TABLE oauthconsumer DISABLE TRIGGER ALL;
+
+
+
+ALTER TABLE oauthconsumer ENABLE TRIGGER ALL;
+
+
+ALTER TABLE oauthnonce DISABLE TRIGGER ALL;
+
+
+
+ALTER TABLE oauthnonce ENABLE TRIGGER ALL;
+
+
+ALTER TABLE oauthrequesttoken DISABLE TRIGGER ALL;
+
+
+
+ALTER TABLE oauthrequesttoken ENABLE TRIGGER ALL;
 
 
 ALTER TABLE officialbugtag DISABLE TRIGGER ALL;
