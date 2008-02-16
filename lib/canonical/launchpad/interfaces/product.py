@@ -112,13 +112,6 @@ class IProduct(IBugTarget, IHasAppointedDriver, IHasBranchVisibilityPolicy,
         description=_("""Project owner, it can either a valid Person or Team
             inside Launchpad context."""))
 
-    bugcontact = Choice(
-        title=_("Bug Contact"),
-        description=_(
-            "The person or team who will receive all bugmail for this "
-            "project"),
-        required=False, vocabulary='ValidPersonOrTeam')
-
     driver = Choice(
         title=_("Driver"),
         description=_(

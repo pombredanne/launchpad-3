@@ -181,6 +181,8 @@ branchmergeproposal_index = 'Proposal to merge branch'
 
 branchmergeproposal_request_review = ViewLabel()
 
+branchmergeproposal_resubmit = ViewLabel()
+
 branchmergeproposal_review = ViewLabel()
 
 branchmergeproposal_work_in_progress = ViewLabel()
@@ -441,8 +443,6 @@ distribution_allpackages = ContextTitle('All packages in %s')
 
 distribution_upstream_bug_report = ContextTitle('Upstream Bug Report for %s')
 
-distribution_bugcontact = ContextTitle('Change bug contact for %s')
-
 distribution_change_mirror_admin = 'Change mirror administrator'
 
 distribution_cvereport = ContextTitle('CVE reports for %s')
@@ -486,8 +486,8 @@ distributionsourcepackage_index = ContextTitle('%s')
 distributionsourcepackage_publishinghistory = ContextTitle(
     'Publishing history of %s')
 
-distributionsourcepackage_manage_bugcontacts = ContextTitle(
-    'Bug contacts for %s')
+structural_subscriptions_manage = ContextTitle(
+    'Bug subscriptions for %s')
 
 distributionsourcepackagerelease_index = ContextTitle('%s')
 
@@ -544,6 +544,8 @@ distroserieslanguage_index = ContextTitle('%s')
 distroseriessourcepackagerelease_index = ContextTitle('%s')
 
 distros_index = 'Distributions registered in Launchpad'
+
+edit_bugcontact = ContextTitle('Edit bug contact for %s')
 
 errorservice_config = 'Configure error log'
 
@@ -964,8 +966,6 @@ potemplate_export = ContextTitle(smartquote('Download translations for "%s"'))
 product_add = 'Register a project in Launchpad'
 
 product_admin = ContextTitle('Administer %s in Launchpad')
-
-product_bugcontact = ContextTitle('Edit bug contact for %s')
 
 product_bugs = ContextDisplayName('Bugs in %s')
 

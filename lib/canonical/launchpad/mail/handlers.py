@@ -13,12 +13,12 @@ from zope.event import notify
 from canonical.config import config
 from canonical.database.sqlbase import rollback
 from canonical.launchpad.interfaces import (
-    BugAttachmentType, CreatedBugWithNoBugTasksError, EmailProcessingError,
-    IBugAttachmentSet, IBugEditEmailCommand, IBugEmailCommand,
-    IBugTaskEditEmailCommand, IBugTaskEmailCommand, IDistroBugTask,
-    IDistroSeriesBugTask, ILaunchBag, ILibraryFileAliasSet, IMailHandler,
-    IMessageSet, IQuestionSet, ISpecificationSet, IUpstreamBugTask,
-    IWeaklyAuthenticatedPrincipal, QuestionStatus)
+    BugAttachmentType, BugNotificationLevel, CreatedBugWithNoBugTasksError,
+    EmailProcessingError, IBugAttachmentSet, IBugEditEmailCommand,
+    IBugEmailCommand, IBugTaskEditEmailCommand, IBugTaskEmailCommand,
+    IDistroBugTask, IDistroSeriesBugTask, ILaunchBag, ILibraryFileAliasSet,
+    IMailHandler, IMessageSet, IQuestionSet, ISpecificationSet,
+    IUpstreamBugTask, IWeaklyAuthenticatedPrincipal, QuestionStatus)
 from canonical.launchpad.mail.commands import emailcommands, get_error_message
 from canonical.launchpad.mail.sendmail import sendmail
 from canonical.launchpad.mail.specexploder import get_spec_url_from_moin_mail
@@ -106,12 +106,14 @@ def guess_bugtask(bug, person):
                 if person.inTeam(bugtask.distribution.members):
                     return bugtask
                 else:
-                    # Is the person one of the package bug contacts?
-                    distribution = bugtask.distribution
-                    distro_sourcepackage = distribution.getSourcePackage(
-                        bugtask.sourcepackagename)
-                    if distro_sourcepackage.isBugContact(person):
-                        return bugtask
+                    # Is the person one of the package subscribers?
+                    bug_sub = bugtask.target.getSubscription(person)
+                    if bug_sub is not None:
+                        if (bug_sub.bug_notification_level >
+                            BugNotificationLevel.NOTHING):
+                            # The user is subscribed to bug notifications
+                            # for this package
+                            return bugtask
 
     return None
 
@@ -120,7 +122,7 @@ class IncomingEmailError(Exception):
     """Indicates that something went wrong processing the mail."""
 
     def __init__(self, message, failing_command=None):
-        Exception.__init__(self, message, failing_command)
+        Exception.__init__(self, message)
         self.message = message
         self.failing_command = failing_command
 
@@ -163,13 +165,12 @@ class MaloneHandler:
 
         try:
             if len(commands) > 0:
-                current_principal = get_current_principal()
+                cur_principal = get_current_principal()
                 # The security machinery doesn't know about
                 # IWeaklyAuthenticatedPrincipal yet, so do a manual
                 # check. Later we can rely on the security machinery to
                 # cause Unauthorized errors.
-                if IWeaklyAuthenticatedPrincipal.providedBy(
-                    current_principal):
+                if IWeaklyAuthenticatedPrincipal.providedBy(cur_principal):
                     if signed_msg.signature is None:
                         error_message = get_error_message('not-signed.txt')
                     else:
@@ -210,8 +211,8 @@ class MaloneHandler:
                             notify(bug_event)
                             bug_event = None
 
-                        bug, bug_event = command.execute(signed_msg,
-                                                         filealias)
+                        bug, bug_event = command.execute(
+                            signed_msg, filealias)
                         if add_comment_to_bug:
                             messageset = getUtility(IMessageSet)
                             message = messageset.fromEmail(
@@ -450,12 +451,12 @@ class SpecificationHandler:
             return False
         our_address = "notifications@%s" % config.launchpad.specs_domain
         # Check for emails that we sent.
-        if (signed_msg['X-Loop']
-            and our_address in signed_msg.get_all('X-Loop')):
+        xloop = signed_msg['X-Loop']
+        if xloop and our_address in signed_msg.get_all('X-Loop'):
             if log and filealias:
                 log.warning(
-                    'Got back a notification we sent: %s'
-                    % filealias.http_url)
+                    'Got back a notification we sent: %s' %
+                    filealias.http_url)
             return True
         # Check for emails that Launchpad sent us.
         if signed_msg['Sender'] == config.bounce_address:
@@ -487,8 +488,8 @@ class SpecificationHandler:
                 sendmail(signed_msg, to_addrs=notification_addresses)
 
             elif log is not None:
-                log.debug("Didn't find a corresponding spec for %s"
-                          % spec_url)
+                log.debug(
+                    "Didn't find a corresponding spec for %s" % spec_url)
         elif log is not None:
             log.debug("Didn't find a specification URL")
         return True

@@ -7,6 +7,7 @@ __metaclass__ = type
 __all__ = [
     'BadStateTransition',
     'BranchMergeProposalStatus',
+    'BRANCH_MERGE_PROPOSAL_FINAL_STATES',
     'InvalidBranchMergeProposal',
     'IBranchMergeProposal',
     'UserNotBranchReviewer',
@@ -16,7 +17,7 @@ from zope.interface import Attribute, Interface
 from zope.schema import Choice, Datetime, Int
 
 from canonical.launchpad import _
-from canonical.launchpad.fields import Whiteboard
+from canonical.launchpad.fields import Summary, Whiteboard
 from canonical.lazr import DBEnumeratedType, DBItem
 
 
@@ -85,6 +86,26 @@ class BranchMergeProposalStatus(DBEnumeratedType):
         target branch for some reason.
         """)
 
+    QUEUED = DBItem(7, """
+        Queued
+
+        The changes from the source branch are queued to be merged into the
+        target branch.
+        """)
+
+    SUPERSEDED = DBItem(10, """
+        Superseded
+
+        This proposal has been superseded by anther proposal to merge.
+        """)
+
+
+BRANCH_MERGE_PROPOSAL_FINAL_STATES = (
+    BranchMergeProposalStatus.REJECTED,
+    BranchMergeProposalStatus.MERGED,
+    BranchMergeProposalStatus.SUPERSEDED,
+    )
+
 
 class IBranchMergeProposal(Interface):
     """Branch merge proposals show intent of landing one branch on another."""
@@ -127,6 +148,24 @@ class IBranchMergeProposal(Interface):
     reviewed_revision_id = Attribute(
         _("The revision id that has been approved by the reviewer."))
 
+
+    commit_message = Summary(
+        title=_("Commit Message"), required=False,
+        description=_("The commit message that should be used when merging "
+                      "the source branch."))
+
+    queue_position = Int(
+        title=_("Queue Position"), required=False, readonly=True,
+        description=_("The position in the queue."))
+
+    queuer = Choice(
+        title=_('Queuer'), vocabulary='ValidPerson',
+        required=False, readonly=True,
+        description=_("The person that queued up the branch."))
+
+    queued_revision_id = Attribute(
+        _("The revision id that has been queued for landing."))
+
     merged_revno = Int(
         title=_("Merged Revision Number"), required=False,
         description=_("The revision number on the target branch which "
@@ -140,12 +179,19 @@ class IBranchMergeProposal(Interface):
     merge_reporter = Attribute(
         "The user that marked the branch as merged.")
 
+    supersedes = Attribute(
+        "The branch merge proposal that this one supersedes.")
+    superseded_by = Attribute(
+        "The branch merge proposal that supersedes this one.")
+
     date_created = Datetime(
         title=_('Date Created'), required=True, readonly=True)
     date_review_requested = Datetime(
         title=_('Date Review Requested'), required=False, readonly=True)
     date_reviewed = Datetime(
         title=_('Date Reviewed'), required=False, readonly=True)
+    date_queued = Datetime(
+        title=_('Date Queued'), required=False, readonly=True)
 
     def setAsWorkInProgress():
         """Set the state of the merge proposal to 'Work in progress'.
@@ -187,6 +233,24 @@ class IBranchMergeProposal(Interface):
                  the branch reviewer for the target branch.
         """
 
+    def enqueue(queuer, revision_id):
+        """Put the proposal into the merge queue for the target branch.
+
+        If the proposal is not in the Approved state before this method
+        is called, approveBranch is called with the reviewer and revision_id
+        specified.
+        """
+
+    def dequeue():
+        """Take the proposal out of the merge queue of the target branch.
+
+        :raises: BadStateTransition if the proposal is not in the queued
+                 state.
+        """
+
+    def moveToFrontOfQueue():
+        """Move the queue proposal to the front of the queue."""
+
     def mergeFailed(merger):
         """Mark the proposal as 'Code failed to merge'."""
 
@@ -215,6 +279,13 @@ class IBranchMergeProposal(Interface):
         :type merge_reporter: ``Person``
         """
 
+    def resubmit(registrant):
+        """Mark the branch merge proposal as superseded and return a new one.
+
+        The new proposal is created as work-in-progress, and copies across
+        user-entered data like the whiteboard.
+        """
+
     def isPersonValidReviewer(reviewer):
         """Return true if the `reviewer` is able to review the proposal.
 
@@ -225,11 +296,11 @@ class IBranchMergeProposal(Interface):
         as the authorised user.
         """
 
-    def isReviewable():
-        """Is the proposal is in a state condusive to being reviewed?
+    def isMergable():
+        """Is the proposal in a state that allows it to being merged?
 
-        As long as the source branch hasn't been merged into the target
-        the proposal is able to be reviewed.
+        As long as the proposal isn't in one of the end states, it is valid
+        to be merged.
         """
 
     def getUnlandedSourceBranchRevisions():
@@ -240,3 +311,6 @@ class IBranchMergeProposal(Interface):
         branch.  These are the revisions that have been committed to the
         source branch since it branched off the target branch.
         """
+
+    def deleteProposal():
+        """Delete the proposal to merge."""

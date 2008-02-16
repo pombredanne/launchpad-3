@@ -44,26 +44,31 @@ from canonical.launchpad.database.specification import (
 from canonical.launchpad.database.sprint import HasSprintsMixin
 from canonical.launchpad.database.translationimportqueue import (
     HasTranslationImportsMixin)
+from canonical.launchpad.database.structuralsubscription import (
+    StructuralSubscriptionTargetMixin)
 from canonical.launchpad.helpers import shortlist
 from canonical.launchpad.interfaces import (
-    DEFAULT_BRANCH_STATUS_IN_LISTING, BranchType, IFAQTarget, IHasIcon,
-    IHasLogo, IHasMugshot, ILaunchpadCelebrities,
+    BranchType, DEFAULT_BRANCH_STATUS_IN_LISTING, IFAQTarget, IHasBugContact,
+    IHasIcon, IHasLogo, IHasMugshot, ILaunchpadCelebrities,
     ILaunchpadStatisticSet, ILaunchpadUsage, IPersonSet, IProduct,
-    IProductSet, IQuestionTarget, License, NotFoundError,
-    QUESTION_STATUS_DEFAULT_SEARCH, SpecificationSort, SpecificationFilter,
-    SpecificationDefinitionStatus, SpecificationImplementationStatus,
+    IProductSet, IQuestionTarget, IStructuralSubscriptionTarget, License,
+    NotFoundError, QUESTION_STATUS_DEFAULT_SEARCH,
+    SpecificationDefinitionStatus, SpecificationFilter,
+    SpecificationImplementationStatus, SpecificationSort,
     TranslationPermission)
 
 
 class Product(SQLBase, BugTargetBase, MakesAnnouncements,
               HasSpecificationsMixin, HasSprintsMixin, KarmaContextMixin,
               BranchVisibilityPolicyMixin, QuestionTargetMixin,
-              HasTranslationImportsMixin):
+              HasTranslationImportsMixin, StructuralSubscriptionTargetMixin):
 
     """A Product."""
 
-    implements(IFAQTarget, IHasLogo, IHasMugshot, IHasIcon,
-               ILaunchpadUsage, IProduct, IQuestionTarget)
+    implements(
+        IFAQTarget, IHasIcon, IHasLogo, IHasMugshot, ILaunchpadUsage,
+        IProduct, IQuestionTarget, IStructuralSubscriptionTarget,
+        IHasBugContact)
 
     _table = 'Product'
 
@@ -608,6 +613,12 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
                 return None
         ProductBounty(product=self, bounty=bounty)
         return None
+
+    def setBugContact(self, bugcontact, user):
+        """See `IHasBugContact`."""
+        self.bugcontact = bugcontact
+        if bugcontact is not None:
+            subscription = self.addBugSubscription(bugcontact, user)
 
 
 class ProductSet:
