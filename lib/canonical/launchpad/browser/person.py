@@ -2705,26 +2705,31 @@ class TeamJoinView(PersonView):
         self.request.response.redirect(canonical_url(context))
 
     def _doListSubscription(self):
-        response = self.request.response
+        notify_info  = self.request.response.addInfoNotification
+        notify_error = self.request.response.addErrorNotification
 
         if not self.userMaySubscribeToList(self.user):
-            response.addErrorNotification(
-                _('Mailing list subscription failed.'))
+            notify_error(_('Mailing list subscription failed.'))
+            return
 
         try:
             context.mailing_list.subscribe(self.user)
         except CannotSubscribe, error:
-            response.addErrorNotification(
+            notify_error(
                 _('You could not be subscribed to the team mailing '
                   'list: ${reason}',
                   mapping={'reason': unicode(error)}))
-
+        else:
             policy = context.subscriptionpolicy
 
             if policy == TeamSubscriptionPolicy.MODERATED:
-                response.addInfoNotification(
+                notify_info(
                     _('Your mailing list subscription is awaiting '
                       'approval.'))
+            else:
+                notify_info(
+                    _("You have been subscribed to this team's "
+                      "mailing list"))
 
     def userMaySubscribeToList(self, user):
         """Return True if the user may subscribe to the mailing list."""
