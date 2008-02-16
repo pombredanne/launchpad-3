@@ -1,6 +1,10 @@
 # Copyright 2004 Canonical Ltd.  All rights reserved.
 
+from canonical.authserver.interfaces import IBranchDetailsStorage
+from canonical.authserver.tthreading import defer_methods_to_threads
+
 from twisted.web import xmlrpc
+
 
 class UserDetailsResource(xmlrpc.XMLRPC):
 
@@ -123,6 +127,7 @@ class BranchDetailsResource(xmlrpc.XMLRPC):
     def __init__(self, storage, debug=False):
         xmlrpc.XMLRPC.__init__(self)
         self.storage = storage
+        defer_methods_to_threads(self.storage, IBranchDetailsStorage)
         self.debug = debug
 
     def xmlrpc_getBranchPullQueue(self, branch_type):

@@ -459,12 +459,8 @@ class DatabaseBranchDetailsStorage:
                 'Remote branches should never be in the pull queue.')
         return (branch.id, branch.getPullURL(), branch.unique_name[1:])
 
-    def getBranchPullQueue(self, branch_type):
-        """See `IBranchDetailsStorage`."""
-        return deferToThread(self._getBranchPullQueueInteraction, branch_type)
-
     @read_only_transaction
-    def _getBranchPullQueueInteraction(self, branch_type):
+    def getBranchPullQueue(self, branch_type):
         """The synchronous implementation for `getBranchPullQueue`.
 
         See `IBranchDetailsStorage`.
@@ -477,12 +473,8 @@ class DatabaseBranchDetailsStorage:
         branches = getUtility(IBranchSet).getPullQueue(branch_type)
         return [self._getBranchPullInfo(branch) for branch in branches]
 
-    def startMirroring(self, branchID):
-        """See `IBranchDetailsStorage`."""
-        return deferToThread(self._startMirroringInteraction, branchID)
-
     @writing_transaction
-    def _startMirroringInteraction(self, branchID):
+    def startMirroring(self, branchID):
         """The synchronous implementation of `startMirroring`.
 
         See `IBranchDetailsStorage`.
@@ -495,13 +487,8 @@ class DatabaseBranchDetailsStorage:
         removeSecurityProxy(branch).startMirroring()
         return True
 
-    def mirrorComplete(self, branchID, lastRevisionID):
-        """See `IBranchDetailsStorage`."""
-        return deferToThread(
-            self._mirrorCompleteInteraction, branchID, lastRevisionID)
-
     @writing_transaction
-    def _mirrorCompleteInteraction(self, branchID, lastRevisionID):
+    def mirrorComplete(self, branchID, lastRevisionID):
         """The synchronous implementation of `mirrorComplete`.
 
         See `IBranchDetailsStorage`.
@@ -513,12 +500,8 @@ class DatabaseBranchDetailsStorage:
         removeSecurityProxy(branch).mirrorComplete(lastRevisionID)
         return True
 
-    def mirrorFailed(self, branchID, reason):
-        """See `IBranchDetailsStorage`."""
-        return deferToThread(self._mirrorFailedInteraction, branchID, reason)
-
     @writing_transaction
-    def _mirrorFailedInteraction(self, branchID, reason):
+    def mirrorFailed(self, branchID, reason):
         """The synchronous implementation of `mirrorFailed`.
 
         See `IBranchDetailsStorage`.
@@ -530,15 +513,8 @@ class DatabaseBranchDetailsStorage:
         removeSecurityProxy(branch).mirrorFailed(reason)
         return True
 
-    def recordSuccess(self, name, hostname, date_started, date_completed):
-        """See `IBranchDetailsStorage`."""
-        return deferToThread(
-            self._recordSuccessInteraction, name, hostname, date_started,
-            date_completed)
-
     @writing_transaction
-    def _recordSuccessInteraction(self, name, hostname, started_tuple,
-                                  completed_tuple):
+    def recordSuccess(self, name, hostname, started_tuple, completed_tuple):
         """The synchronous implementation of `recordSuccess`.
 
         See `IBranchDetailsStorage`.

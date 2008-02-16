@@ -688,8 +688,8 @@ class HostedBranchStorageTest(DatabaseTest, XMLRPCTestHelper):
         # Simulate successfully mirroring branch 25
         storage = DatabaseBranchDetailsStorage(None)
         cur = cursor()
-        storage._startMirroringInteraction(hosted_branch_id)
-        storage._mirrorCompleteInteraction(hosted_branch_id, 'rev-1')
+        storage.startMirroring(hosted_branch_id)
+        storage.mirrorComplete(hosted_branch_id, 'rev-1')
 
         self.assertEqual(None, self.getNextMirrorTime(hosted_branch_id))
 
@@ -806,7 +806,7 @@ class BranchDetailsStorageTest(DatabaseTest):
         self.assertEqual(row[0], None)
         self.assertEqual(row[1], None)
 
-        success = self.storage._startMirroringInteraction(1)
+        success = self.storage.startMirroring(1)
         self.assertEqual(success, True)
 
         # verify that last_mirror_attempt is set
@@ -823,7 +823,7 @@ class BranchDetailsStorageTest(DatabaseTest):
             SELECT id FROM branch WHERE id = -1""")
         self.assertEqual(self.cursor.rowcount, 0)
 
-        success = self.storage._startMirroringInteraction(-11)
+        success = self.storage.startMirroring(-11)
         self.assertEqual(success, False)
 
     def test_mirrorFailed(self):
@@ -837,9 +837,9 @@ class BranchDetailsStorageTest(DatabaseTest):
         self.assertEqual(row[2], 0)
         self.assertEqual(row[3], None)
 
-        success = self.storage._startMirroringInteraction(1)
+        success = self.storage.startMirroring(1)
         self.assertEqual(success, True)
-        success = self.storage._mirrorFailedInteraction(1, "failed")
+        success = self.storage.mirrorFailed(1, "failed")
         self.assertEqual(success, True)
 
         self.cursor.execute("""
@@ -861,9 +861,9 @@ class BranchDetailsStorageTest(DatabaseTest):
         self.assertEqual(row[1], None)
         self.assertEqual(row[2], 0)
 
-        success = self.storage._startMirroringInteraction(1)
+        success = self.storage.startMirroring(1)
         self.assertEqual(success, True)
-        success = self.storage._mirrorCompleteInteraction(1, 'rev-1')
+        success = self.storage.mirrorComplete(1, 'rev-1')
         self.assertEqual(success, True)
 
         self.cursor.execute("""
@@ -880,9 +880,9 @@ class BranchDetailsStorageTest(DatabaseTest):
         # this increments the failure count ...
         self.test_mirrorFailed()
 
-        success = self.storage._startMirroringInteraction(1)
+        success = self.storage.startMirroring(1)
         self.assertEqual(success, True)
-        success = self.storage._mirrorCompleteInteraction(1, 'rev-1')
+        success = self.storage.mirrorComplete(1, 'rev-1')
         self.assertEqual(success, True)
 
         self.cursor.execute("""
@@ -899,7 +899,7 @@ class BranchDetailsStorageTest(DatabaseTest):
         completed = datetime.datetime(2007, 07, 05, 19, 34, 24, tzinfo=UTC)
         started_tuple = tuple(started.utctimetuple())
         completed_tuple = tuple(completed.utctimetuple())
-        success = self.storage._recordSuccessInteraction(
+        success = self.storage.recordSuccess(
             'test-recordsuccess', 'vostok', started_tuple, completed_tuple)
         self.assertEqual(success, True, '_recordSuccessInteraction failed')
 
@@ -929,15 +929,15 @@ class BranchPullQueueTest(BranchTestCase):
         login(ANONYMOUS)
         self.assertEqual(
             map(self.storage._getBranchPullInfo, hosted),
-            self.storage._getBranchPullQueueInteraction('HOSTED'))
+            self.storage.getBranchPullQueue('HOSTED'))
         login(ANONYMOUS)
         self.assertEqual(
             map(self.storage._getBranchPullInfo, mirrored),
-            self.storage._getBranchPullQueueInteraction('MIRRORED'))
+            self.storage.getBranchPullQueue('MIRRORED'))
         login(ANONYMOUS)
         self.assertEqual(
             map(self.storage._getBranchPullInfo, imported),
-            self.storage._getBranchPullQueueInteraction('IMPORTED'))
+            self.storage.getBranchPullQueue('IMPORTED'))
 
     def test_pullQueuesEmpty(self):
         """getBranchPullQueue returns an empty list when there are no branches

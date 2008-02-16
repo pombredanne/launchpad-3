@@ -220,6 +220,7 @@ class BranchAPITestCase(XMLRPCAuthServerTestCase):
             in results)
 
     def testStartMirroring(self):
+        import pdb; pdb.set_trace()
         self.server.startMirroring(18)
         # The branch puller script will pull private branches. We need to
         # confirm that it can do so without triggering Zope security
