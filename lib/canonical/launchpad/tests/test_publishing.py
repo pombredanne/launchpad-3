@@ -42,7 +42,7 @@ class SoyuzTestPublisher:
         """
         self.ubuntutest = getUtility(IDistributionSet)['ubuntutest']
         self.breezy_autotest = self.ubuntutest['breezy-autotest']
-        self.person = getUtility(IPersonSet).getByName('sabdfl')
+        self.person = getUtility(IPersonSet).getByName('name16')
         self.breezy_autotest_i386 = self.breezy_autotest.newArch(
             'i386', ProcessorFamily.get(1), False, self.person,
             ppa_supported=True)
