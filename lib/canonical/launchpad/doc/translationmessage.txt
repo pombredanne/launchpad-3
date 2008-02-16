@@ -191,6 +191,7 @@ and last current translation is not hidden either.
 
 
 == destroySelf ==
+
 (Note: keep this test last because of tearDown())
 
 With this method, we allow to remove a submission, it comes from SQLObject,

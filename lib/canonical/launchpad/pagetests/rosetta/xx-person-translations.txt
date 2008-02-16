@@ -13,7 +13,8 @@ on five files.
     >>> extract_text(find_tag_by_id(anon_browser.contents, 'top-navigation'))
     u'1...5...of...5...results...'
 
-The users a table with four columns with headings.
+The user sees a table with four columns with headings, with five POFiles
+listed which Carlos has contributed to.
 
     # Prints a heading and formatted list of POFiles and latest submissions.
     >>> def print_list_of_contributions(listing):
@@ -37,8 +38,6 @@ The users a table with four columns with headings.
     ...         print "%-24s %-10s %-26s %-10s" % (
     ...             product, language, message, date)
 
-User will see five POFiles listed which Carlos has contributed to.
-
     >>> listing = find_tags_by_class(anon_browser.contents, 'listing')[0]
     >>> print_list_of_contributions(listing)
     Application              Language   Latest Translation         When
@@ -53,4 +52,4 @@ all translations done by Carlos in this file.
 
     >>> anon_browser.getLink('alsa-utils in alsa-utils trunk').click()
     >>> anon_browser.title
-    'Translations by Carlos Perell\xc3\xb3 Mar\xc3\xadn in \xe2\x80\x9cSpanish (es) translation of alsa-utils in alsa-utils trunk\xe2\x80\x9d'
+    'Translations by Carlos...of alsa-utils...'

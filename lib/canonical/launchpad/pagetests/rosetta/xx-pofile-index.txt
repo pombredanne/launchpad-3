@@ -19,7 +19,7 @@ appearing among contributors), by choosing the 'filter' link:
 
     >>> anon_browser.getLink('filter').click()
     >>> anon_browser.title
-    'Translations by Carlos Perell\xc3\xb3 Mar\xc3\xadn in \xe2\x80\x9cSpanish (es) translation of evolution-2.2 in Evolution trunk\xe2\x80\x9d'
+    'Translations by Carlos...of evolution-2.2...'
 
 To display all the translations submitted by Carlos, and allow easier
 debugging and problem catching when changes are introduced, we define
