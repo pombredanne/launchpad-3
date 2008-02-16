@@ -129,7 +129,6 @@ class XMLRPCv1TestCase(XMLRPCAuthServerTestCase, SSHKeysTestMixin):
 
         loginId = r1['id']
         salt = r1['salt'].decode('base64')
-        import pdb; pdb.set_trace()
         r2 = self.server.authUser(
             loginId, SSHADigestEncryptor().encrypt('test', salt))
         self.failUnlessEqual(r2['displayname'], 'Sample Person')

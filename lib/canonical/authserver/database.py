@@ -213,8 +213,7 @@ class DatabaseUserDetailsStorage(UserDetailsStorageMixin):
             # The user has no password, which means they can't login.
             return {}
 
-        if (person.password.rstrip()
-            != sshaDigestedPassword.encode('base64').rstrip()):
+        if person.password.rstrip() != sshaDigestedPassword.rstrip():
             # Wrong password
             return {}
 

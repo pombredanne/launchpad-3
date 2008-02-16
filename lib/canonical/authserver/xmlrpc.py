@@ -64,8 +64,7 @@ class UserDetailsResource(xmlrpc.XMLRPC):
         """
         if self.debug:
             print 'authUser(%r, %r)' % (loginID, sshaDigestedPassword)
-        return self.storage.authUser(
-            loginID, sshaDigestedPassword.decode('base64'))
+        return self.storage.authUser(loginID, sshaDigestedPassword)
 
     def xmlrpc_getSSHKeys(self, loginID):
         """Retrieve SSH public keys for a given user
