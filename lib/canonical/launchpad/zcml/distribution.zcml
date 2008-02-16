@@ -13,7 +13,7 @@
       permission="launchpad.Edit"
       set_attributes="displayname title summary description
                       translationgroup translationpermission
-                      driver members owner bugcontact
+                      driver members owner
                       security_contact upload_admin upload_sender
                       mirror_admin homepage_content icon logo
                       mugshot bug_reporting_guidelines"
@@ -47,6 +47,19 @@
       permission="launchpad.Moderate"
       attributes="newFAQ"
       />
+    <!-- IStructuralSubscriptionTarget -->
+    <allow attributes="bug_subscriptions getSubscriptions
+                       getSubscription getBugNotificationsRecipients
+                       parent_subscription_target" />
+    <require
+        permission="launchpad.AnyPerson"
+        attributes="addSubscription addBugSubscription
+                    removeBugSubscription" />
+    <!-- IHasBugcontact -->
+    <allow attributes="bugcontact" />
+    <require
+        permission="launchpad.Edit"
+        attributes="setBugContact" />
   </content>
 
   <browser:menus
@@ -396,15 +409,6 @@
     fields="mirror_admin"
     permission="launchpad.Edit"
     template="../templates/distribution-change-mirror-admin.pt"
-    />
-
-  <browser:page
-    name="+bugcontact"
-    for="canonical.launchpad.interfaces.IDistribution"
-    class="canonical.launchpad.browser.distribution.DistributionBugContactEditView"
-    facet="bugs"
-    permission="launchpad.Edit"
-    template="../templates/distribution-bugcontact.pt"
     />
 
   <browser:page
