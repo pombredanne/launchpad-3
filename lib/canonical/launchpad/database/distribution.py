@@ -56,6 +56,8 @@ from canonical.launchpad.database.sourcepackagename import (
     SourcePackageName)
 from canonical.launchpad.database.sourcepackagerelease import (
     SourcePackageRelease)
+from canonical.launchpad.database.structuralsubscription import (
+    StructuralSubscriptionTargetMixin)
 from canonical.launchpad.database.publishing import (
     SourcePackageFilePublishing, BinaryPackageFilePublishing,
     SourcePackagePublishingHistory)
@@ -65,15 +67,15 @@ from canonical.launchpad.helpers import shortlist
 from canonical.launchpad.webapp.url import urlparse
 
 from canonical.launchpad.interfaces import (
-    ArchivePurpose, BugTaskStatus, DistroSeriesStatus, IArchiveSet,
-    IBuildSet, IDistribution, IDistributionSet, IFAQTarget,
-    IHasBuildRecords, IHasIcon, IHasLogo, IHasMugshot,
-    ILaunchpadCelebrities, ILaunchpadUsage, IQuestionTarget,
-    ISourcePackageName, MirrorContent, MirrorStatus, PackagePublishingStatus,
-    PackageUploadStatus, NotFoundError, QUESTION_STATUS_DEFAULT_SEARCH,
-    SpecificationDefinitionStatus, SpecificationFilter,
-    SpecificationImplementationStatus, SpecificationSort,
-    TranslationPermission, PackagingType, UNRESOLVED_BUGTASK_STATUSES)
+    ArchivePurpose, BugTaskStatus, DistroSeriesStatus, IArchiveSet, IBuildSet,
+    IDistribution, IDistributionSet, IFAQTarget, IHasBugContact,
+    IHasBuildRecords, IHasIcon, IHasLogo, IHasMugshot, ILaunchpadCelebrities,
+    ILaunchpadUsage, IQuestionTarget, ISourcePackageName,
+    IStructuralSubscriptionTarget, MirrorContent, MirrorStatus, NotFoundError,
+    PackagePublishingStatus, PackageUploadStatus, PackagingType,
+    QUESTION_STATUS_DEFAULT_SEARCH, SpecificationDefinitionStatus,
+    SpecificationFilter, SpecificationImplementationStatus, SpecificationSort,
+    TranslationPermission, UNRESOLVED_BUGTASK_STATUSES)
 
 from canonical.archivepublisher.debversion import Version
 
@@ -83,12 +85,13 @@ from canonical.launchpad.validators.name import sanitize_name, valid_name
 class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
                    HasSpecificationsMixin, HasSprintsMixin,
                    HasTranslationImportsMixin, KarmaContextMixin,
-                   QuestionTargetMixin):
+                   QuestionTargetMixin, StructuralSubscriptionTargetMixin):
     """A distribution of an operating system, e.g. Debian GNU/Linux."""
     implements(
         IDistribution, IFAQTarget, IHasBuildRecords,
         IHasIcon, IHasLogo, IHasMugshot, ILaunchpadUsage,
-        IQuestionTarget)
+        IQuestionTarget, IStructuralSubscriptionTarget,
+        IHasBugContact)
 
     _table = 'Distribution'
     _defaultOrder = 'name'
@@ -1153,6 +1156,12 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
                             count['bugs_affecting_upstream'],
                             count['bugs_with_upstream_bugwatch']))
         return results
+
+    def setBugContact(self, bugcontact, user):
+        """See `IHasBugContact`."""
+        self.bugcontact = bugcontact
+        if bugcontact is not None:
+            subscription = self.addBugSubscription(bugcontact, user)
 
 
 class DistributionSet:
