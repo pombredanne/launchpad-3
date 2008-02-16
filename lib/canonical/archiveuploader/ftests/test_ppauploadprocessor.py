@@ -228,7 +228,8 @@ class TestPPAUploadProcessor(TestPPAUploadProcessorBase):
         self.assertEmail(contents)
 
         # Source publication and build record for breezy-i386
-        # distroarchseries were created as expected.
+        # distroarchseries were created as expected. The source is ready
+        # to receive the binary upload.
         pub_sources = self.name16.archive.getPublishedSources(name='bar')
         [pub_bar] = pub_sources
         self.assertEqual(pub_bar.sourcepackagerelease.version, u'1.0-1')

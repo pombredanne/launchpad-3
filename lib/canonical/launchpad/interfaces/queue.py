@@ -137,11 +137,9 @@ class IPackageUpload(Interface):
     def acceptFromUploader(changesfile_path, logger=None):
         """Perform upload acceptance during upload-time.
 
-        Move the upload to accepted queue in all cases.
-
-        Publish and close bugs for 'single-source' uploads.
-
-        Skip bug-closing for PPA uploads.
+         * Move the upload to accepted queue in all cases;
+         * Publish and close bugs for 'single-source' uploads;
+         * Skip bug-closing for PPA uploads.
         """
 
     def acceptFromQueue(announce_list, logger=None, dry_run=False):
