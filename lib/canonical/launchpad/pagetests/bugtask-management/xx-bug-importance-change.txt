@@ -49,7 +49,7 @@ product or distro, can edit Importance.
 For a product bug contact.
 
     >>> login("foo.bar@canonical.com")
-    >>> firefox.bugcontact = no_priv
+    >>> firefox.setBugContact(no_priv, no_priv)
     >>> flush_database_updates()
     >>> logout()
 
@@ -76,7 +76,7 @@ For someone else. We'll unset no_priv as the bug contact, and note that
 he can no longer see the widget.
 
     >>> login("foo.bar@canonical.com")
-    >>> firefox.bugcontact = None
+    >>> firefox.setBugContact(None, None)
     >>> flush_database_updates()
     >>> logout()
 
@@ -88,7 +88,7 @@ he can no longer see the widget.
 For a distribution bug contact.
 
     >>> login("foo.bar@canonical.com")
-    >>> ubuntu.bugcontact = no_priv
+    >>> ubuntu.setBugContact(no_priv, no_priv)
     >>> flush_database_updates()
     >>> logout()
 
@@ -112,7 +112,7 @@ For a distribution owner.
 For someone else, on Ubuntu.
 
     >>> login("foo.bar@canonical.com")
-    >>> ubuntu.bugcontact = None
+    >>> ubuntu.setBugContact(None, None)
     >>> flush_database_updates()
     >>> logout()
 

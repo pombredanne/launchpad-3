@@ -135,7 +135,7 @@ def set_up_logging(configure_oops_reporting=False):
         log.addHandler(handler)
 
     # Don't log 'codehosting' messages to stderr.
-    if trace._stderr_handler is not None:
+    if getattr(trace, '_stderr_handler', None) is not None:
         trace._stderr_handler.addFilter(_NotFilter('codehosting'))
 
     log.setLevel(logging.DEBUG)
