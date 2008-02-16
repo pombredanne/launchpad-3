@@ -27,7 +27,7 @@ from canonical.launchpad.interfaces import (
     IMailingListApplication, IMaloneApplication, IMessageSet,
     IOpenIdApplication, IPersonSet, IProductSet, IRegistryApplication,
     IRosettaApplication, IShipItApplication, ITranslationGroupSet,
-    IWebServiceApplication)
+    ITranslationsOverview, IWebServiceApplication)
 from canonical.lazr.rest import ServiceRootResource
 
 class AuthServerApplication:
@@ -156,8 +156,8 @@ class RosettaApplication:
 
     def featured_products(self):
         """See IRosettaApplication."""
-        products = getUtility(IProductSet)
-        return products.featuredTranslatables()
+        projects = getUtility(ITranslationsOverview)
+        return projects.getMostTranslatedPillars()
 
     def translatable_distroseriess(self):
         """See IRosettaApplication."""
