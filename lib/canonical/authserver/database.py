@@ -108,11 +108,8 @@ class UserDetailsStorageMixin:
             [person.preferredemail.email] +
             [email.email for email in person.validatedemails])
 
-    def getSSHKeys(self, loginID):
-        return deferToThread(self._getSSHKeysInteraction, loginID)
-
     @read_only_transaction
-    def _getSSHKeysInteraction(self, loginID):
+    def getSSHKeys(self, loginID):
         """The synchronous implementation of `getSSHKeys`.
 
         See `IUserDetailsStorage`.
@@ -179,11 +176,8 @@ class UserDetailsStorageMixin:
             'salt': salt,
         }
 
-    def getUser(self, loginID):
-        return deferToThread(self._getUserInteraction, loginID)
-
     @read_only_transaction
-    def _getUserInteraction(self, loginID):
+    def getUser(self, loginID):
         """The interaction for getUser."""
         return self._getPersonDict(self._getPerson(loginID))
 
@@ -204,14 +198,8 @@ class DatabaseUserDetailsStorage(UserDetailsStorageMixin):
         self.connectionPool = connectionPool
         self.encryptor = SSHADigestEncryptor()
 
-    def authUser(self, loginID, sshaDigestedPassword):
-        """See `IUserDetailsStorage`."""
-        return deferToThread(
-            self._authUserInteraction, loginID,
-            sshaDigestedPassword.encode('base64'))
-
     @read_only_transaction
-    def _authUserInteraction(self, loginID, sshaDigestedPassword):
+    def authUser(self, loginID, sshaDigestedPassword):
         """Synchronous implementation of `authUser`.
 
         See `IUserDetailsStorage`.
@@ -225,7 +213,8 @@ class DatabaseUserDetailsStorage(UserDetailsStorageMixin):
             # The user has no password, which means they can't login.
             return {}
 
-        if person.password.rstrip() != sshaDigestedPassword.rstrip():
+        if (person.password.rstrip()
+            != sshaDigestedPassword.encode('base64').rstrip()):
             # Wrong password
             return {}
 
@@ -279,12 +268,8 @@ class DatabaseUserDetailsStorageV2(UserDetailsStorageMixin):
         person_dict['teams'] = self._getTeams(person)
         return person_dict
 
-    def authUser(self, loginID, password):
-        """See `IUserDetailsStorageV2`."""
-        return deferToThread(self._authUserInteraction, loginID, password)
-
     @read_only_transaction
-    def _authUserInteraction(self, loginID, password):
+    def authUser(self, loginID, password):
         """Synchronous implementation of `authUser`.
 
         See `IUserDetailsStorageV2`.
@@ -299,13 +284,9 @@ class DatabaseUserDetailsStorageV2(UserDetailsStorageMixin):
 
         return self._getPersonDict(person)
 
-    def getBranchesForUser(self, personID):
-        """See `IHostedBranchStorage`."""
-        return deferToThread(self._getBranchesForUserInteraction, personID)
-
     @read_only_transaction
     @run_as_requester
-    def _getBranchesForUserInteraction(self, person):
+    def getBranchesForUser(self, person):
         """Synchronous implementation of `getBranchesForUser`.
 
         See `IHostedBranchStorage`.
@@ -325,12 +306,8 @@ class DatabaseUserDetailsStorageV2(UserDetailsStorageMixin):
         return [(person_id, by_product.items())
                 for person_id, by_product in branches_summary.iteritems()]
 
-    def fetchProductID(self, productName):
-        """See `IHostedBranchStorage`."""
-        return deferToThread(self._fetchProductIDInteraction, productName)
-
     @read_only_transaction
-    def _fetchProductIDInteraction(self, productName):
+    def fetchProductID(self, productName):
         """The synchronous implementation of `fetchProductID`.
 
         See `IHostedBranchStorage`.
@@ -341,16 +318,9 @@ class DatabaseUserDetailsStorageV2(UserDetailsStorageMixin):
         else:
             return product.id
 
-    def createBranch(self, loginID, personName, productName, branchName):
-        """See `IHostedBranchStorage`."""
-        return deferToThread(
-            self._createBranchInteraction, loginID, personName, productName,
-            branchName)
-
     @writing_transaction
     @run_as_requester
-    def _createBranchInteraction(self, requester, personName, productName,
-                                 branchName):
+    def createBranch(self, requester, personName, productName, branchName):
         """The synchronous implementation of `createBranch`.
 
         See `IHostedBranchStorage`.
@@ -380,14 +350,9 @@ class DatabaseUserDetailsStorageV2(UserDetailsStorageMixin):
         else:
             return branch.id
 
-    def requestMirror(self, requester, branchID):
-        """See `IHostedBranchStorage`."""
-        return deferToThread(
-            self._requestMirrorInteraction, requester, branchID)
-
     @writing_transaction
     @run_as_requester
-    def _requestMirrorInteraction(self, requester, branchID):
+    def requestMirror(self, requester, branchID):
         """The synchronous implementation of `requestMirror`.
 
         See `IHostedBranchStorage`.
@@ -397,17 +362,10 @@ class DatabaseUserDetailsStorageV2(UserDetailsStorageMixin):
         branch.requestMirror()
         return True
 
-    def getBranchInformation(self, loginID, userName, productName,
-                             branchName):
-        """See `IHostedBranchStorage`."""
-        return deferToThread(
-            self._getBranchInformationInteraction, loginID, userName,
-            productName, branchName)
-
     @read_only_transaction
     @run_as_requester
-    def _getBranchInformationInteraction(self, requester, userName,
-                                         productName, branchName):
+    def getBranchInformation(self, requester, userName, productName,
+                             branchName):
         """The synchronous implementation of `getBranchInformation`.
 
         See `IHostedBranchStorage`.

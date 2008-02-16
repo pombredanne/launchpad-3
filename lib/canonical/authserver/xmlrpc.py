@@ -8,7 +8,8 @@ from twisted.web import xmlrpc
 
 from zope.interface.interface import Method
 
-from canonical.authserver.interfaces import IBranchDetailsStorage
+from canonical.authserver.interfaces import (
+    IBranchDetailsStorage, IUserDetailsStorage, IUserDetailsStorageV2)
 
 
 def get_method_names_in_interface(interface):
@@ -44,6 +45,7 @@ class UserDetailsResource(xmlrpc.XMLRPC):
     def __init__(self, storage, debug=False):
         xmlrpc.XMLRPC.__init__(self)
         self.storage = storage
+        defer_methods_to_threads(self.storage, IUserDetailsStorage)
         self.debug = debug
 
     def xmlrpc_getUser(self, loginID):
@@ -62,8 +64,8 @@ class UserDetailsResource(xmlrpc.XMLRPC):
         """
         if self.debug:
             print 'authUser(%r, %r)' % (loginID, sshaDigestedPassword)
-        return self.storage.authUser(loginID,
-                                     sshaDigestedPassword.decode('base64'))
+        return self.storage.authUser(
+            loginID, sshaDigestedPassword.decode('base64'))
 
     def xmlrpc_getSSHKeys(self, loginID):
         """Retrieve SSH public keys for a given user
@@ -85,6 +87,7 @@ class UserDetailsResourceV2(xmlrpc.XMLRPC):
     def __init__(self, storage, debug=False):
         xmlrpc.XMLRPC.__init__(self)
         self.storage = storage
+        defer_methods_to_threads(self.storage, IUserDetailsStorageV2)
         self.debug = debug
 
     def xmlrpc_getUser(self, loginID):
