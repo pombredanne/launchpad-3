@@ -25,15 +25,14 @@ from sqlobject import SQLMultipleJoin, SQLRelatedJoin
 from sqlobject import SQLObjectNotFound
 
 from canonical.launchpad.interfaces import (
-    BugAttachmentType, BugTaskStatus, BugTrackerType,
-    DistroSeriesStatus, IBug, IBugAttachmentSet,
-    IBugBecameQuestionEvent, IBugBranch, IBugSet, IBugTaskSet,
-    IBugWatchSet, ICveSet, IDistribution, IDistroBugTask, IDistroSeries,
-    IDistroSeriesBugTask, ILaunchpadCelebrities, ILibraryFileAliasSet,
-    IMessage, IProduct, IProductSeries, IProductSeriesBugTask,
-    IQuestionTarget, ISourcePackage, IUpstreamBugTask, NominationError,
-    NominationSeriesObsoleteError, NotFoundError,
-    UNRESOLVED_BUGTASK_STATUSES)
+    BugAttachmentType, BugTaskStatus, BugTrackerType, DistroSeriesStatus,
+    IBug, IBugAttachmentSet, IBugBecameQuestionEvent, IBugBranch, IBugSet,
+    IBugTaskSet, IBugWatchSet, ICveSet, IDistribution, IDistroBugTask,
+    IDistroSeries, IDistroSeriesBugTask, ILaunchpadCelebrities,
+    ILibraryFileAliasSet, IMessage, IProduct, IProductSeries,
+    IProductSeriesBugTask, IQuestionTarget, ISourcePackage,
+    IStructuralSubscriptionTarget, IUpstreamBugTask, NominationError,
+    NominationSeriesObsoleteError, NotFoundError, UNRESOLVED_BUGTASK_STATUSES)
 from canonical.launchpad.helpers import shortlist
 from canonical.database.sqlbase import cursor, SQLBase, sqlvalues
 from canonical.database.constants import UTC_NOW
@@ -473,44 +472,23 @@ class Bug(SQLBase):
                 if recipients is not None:
                     recipients.addAssignee(bugtask.assignee)
 
-            # Bug contacts are indirect subscribers.
-            if (IDistroBugTask.providedBy(bugtask) or
-                IDistroSeriesBugTask.providedBy(bugtask)):
-                if bugtask.distribution is not None:
-                    distribution = bugtask.distribution
-                else:
-                    distribution = bugtask.distroseries.distribution
+            if IStructuralSubscriptionTarget.providedBy(bugtask.target):
+                also_notified_subscribers.update(
+                    bugtask.target.getBugNotificationsRecipients(recipients))
 
-                if distribution.bugcontact:
-                    also_notified_subscribers.add(distribution.bugcontact)
-                    if recipients is not None:
-                        recipients.addDistroBugContact(
-                            distribution.bugcontact, distribution)
+            if bugtask.milestone is not None:
+                also_notified_subscribers.update(
+                    bugtask.milestone.getBugNotificationsRecipients(
+                    recipients))
 
-                if bugtask.sourcepackagename:
-                    sourcepackage = distribution.getSourcePackage(
-                        bugtask.sourcepackagename)
-                    for pbc in sourcepackage.bugcontacts:
-                        also_notified_subscribers.add(pbc.bugcontact)
-                        if recipients is not None:
-                            recipients.addPackageBugContact(pbc.bugcontact,
-                                                           sourcepackage)
-            else:
-                if IUpstreamBugTask.providedBy(bugtask):
-                    product = bugtask.product
-                else:
-                    assert IProductSeriesBugTask.providedBy(bugtask)
-                    product = bugtask.productseries.product
-                if product.bugcontact:
-                    also_notified_subscribers.add(product.bugcontact)
-                    if recipients is not None:
-                        recipients.addUpstreamBugContact(
-                            product.bugcontact, product)
-                else:
-                    also_notified_subscribers.add(product.owner)
-                    if recipients is not None:
-                        recipients.addUpstreamRegistrant(
-                            product.owner, product)
+            # If the target's bug contact isn't set,
+            # we add the owner as a subscriber.
+            pillar = bugtask.pillar
+            if pillar.bugcontact is None:
+                also_notified_subscribers.add(pillar.owner)
+                if recipients is not None:
+                    recipients.addRegistrant(
+                        pillar.owner, pillar)
 
         # Direct subscriptions always take precedence over indirect
         # subscriptions.
