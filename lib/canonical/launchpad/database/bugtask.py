@@ -1261,6 +1261,15 @@ class BugTaskSet:
                 extra_clauses.append(tags_clause)
                 clauseTables.append('BugTag')
 
+        # XXX Tom Berger 2008-02-14:
+        # We use StructuralSubscription to determine
+        # the bug contact relation for distribution source
+        # packages, following a conversion to use this object.
+        # We know that the behaviour remains the same, but we
+        # should change the terminology, or re-instate
+        # PackageBugContact, since the use of this relation here
+        # is not for subscription to notifications.
+        # See bug #191809
         if params.bug_contact:
             bug_contact_clause = """BugTask.id IN (
                 SELECT BugTask.id FROM BugTask, Product
@@ -1268,11 +1277,11 @@ class BugTaskSet:
                     AND Product.bugcontact = %(bug_contact)s
                 UNION ALL
                 SELECT BugTask.id
-                FROM BugTask, PackageBugContact
-                WHERE BugTask.distribution = PackageBugContact.distribution
+                FROM BugTask, StructuralSubscription
+                WHERE BugTask.distribution = StructuralSubscription.distribution
                     AND BugTask.sourcepackagename =
-                        PackageBugContact.sourcepackagename
-                    AND PackageBugContact.bugcontact = %(bug_contact)s
+                        StructuralSubscription.sourcepackagename
+                    AND StructuralSubscription.subscriber = %(bug_contact)s
                 UNION ALL
                 SELECT BugTask.id FROM BugTask, Distribution
                 WHERE BugTask.distribution = Distribution.id
