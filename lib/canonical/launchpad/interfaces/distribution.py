@@ -104,12 +104,6 @@ class IDistribution(IBugTarget, IHasAppointedDriver, IHasDrivers,
         title=_("Owner"),
         description=_("The distro's owner."), required=True)
     date_created = Attribute("The date this distribution was registered.")
-    bugcontact = Choice(
-        title=_("Bug Contact"),
-        description=_(
-            "The person or team who will receive all bugmail for this "
-            "distribution"),
-        required=False, vocabulary='ValidPersonOrTeam')
     driver = Choice(
         title=_("Driver"),
         description=_(

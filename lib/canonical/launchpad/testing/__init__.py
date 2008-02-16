@@ -17,6 +17,7 @@ import pytz
 from zope.component import getUtility
 from canonical.database.sqlbase import connect, sqlvalues
 from canonical.launchpad.interfaces import (
+    BranchMergeProposalStatus,
     BranchType,
     CodeImportMachineState,
     CodeImportReviewStatus,
@@ -186,6 +187,43 @@ class LaunchpadObjectFactory:
         return getUtility(IBranchSet).new(
             branch_type, name, registrant, owner, product, url,
             **optional_branch_args)
+
+    def makeBranchMergeProposal(self, target_branch=None, registrant=None,
+                                set_state=None, dependent_branch=None):
+        """Create a proposal to merge based on anonymous branches."""
+        if target_branch is None:
+            target_branch = self.makeBranch()
+        if registrant is None:
+            registrant = self.makePerson()
+        source_branch = self.makeBranch(product=target_branch.product)
+        proposal = source_branch.addLandingTarget(
+            registrant, target_branch, dependent_branch=dependent_branch)
+
+        if (set_state is None or
+            set_state == BranchMergeProposalStatus.WORK_IN_PROGRESS):
+            # The initial state is work in progress, so do nothing.
+            pass
+        elif set_state == BranchMergeProposalStatus.NEEDS_REVIEW:
+            proposal.requestReview()
+        elif set_state == BranchMergeProposalStatus.CODE_APPROVED:
+            proposal.approveBranch(
+                proposal.target_branch.owner, 'some_revision')
+        elif set_state == BranchMergeProposalStatus.REJECTED:
+            proposal.rejectBranch(
+                proposal.target_branch.owner, 'some_revision')
+        elif set_state == BranchMergeProposalStatus.MERGED:
+            proposal.markAsMerged()
+        elif set_state == BranchMergeProposalStatus.MERGE_FAILED:
+            proposal.mergeFailed(proposal.target_branch.owner)
+        elif set_state == BranchMergeProposalStatus.QUEUED:
+            proposal.enqueue(
+                proposal.target_branch.owner, 'some_revision')
+        elif set_state == BranchMergeProposalStatus.SUPERSEDED:
+            proposal.resubmit(proposal.registrant)
+        else:
+            raise AssertionError('Unknown status: %s' % set_state)
+
+        return proposal
 
     def makeRevisionsForBranch(self, branch, count=5, author=None,
                                date_generator=None):

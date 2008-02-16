@@ -14,6 +14,14 @@
         <require
             permission="launchpad.Admin"
             set_attributes="productseries distroseries" />
+        <!-- IStructuralSubscriptionTarget -->
+        <allow attributes="bug_subscriptions getSubscriptions
+                           getSubscription getBugNotificationsRecipients
+                           parent_subscription_target" />
+        <require
+            permission="launchpad.AnyPerson"
+            attributes="addSubscription addBugSubscription
+                        removeBugSubscription" />
     </content>
 
     <browser:navigation

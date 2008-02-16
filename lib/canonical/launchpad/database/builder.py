@@ -420,7 +420,6 @@ class Builder(SQLBase):
                 archive_name = current_build.archive.owner.name
                 return '%s [%s] (%s)' % (msg, archive_name, mode)
             return '%s (%s)' % (msg, mode)
-
         return 'IDLE (%s)' % mode
 
     def failbuilder(self, reason):
@@ -428,10 +427,10 @@ class Builder(SQLBase):
         self.builderok = False
         self.failnotes = reason
 
-    def getBuildRecords(self, build_state=None, name=None):
+    def getBuildRecords(self, build_state=None, name=None, user=None):
         """See IHasBuildRecords."""
         return getUtility(IBuildSet).getBuildsForBuilder(
-            self.id, build_state, name)
+            self.id, build_state, name, user)
 
     def slaveStatus(self):
         """See IBuilder."""

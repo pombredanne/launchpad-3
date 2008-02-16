@@ -277,7 +277,7 @@ class TestSyncSourceScript(TestCase):
         """
         returncode, out, err = self.runSyncSource(
             extra_args=['-b', 'cprov', '-D', 'debian', '-C', 'main',
-                        '-S', 'incoming', 'etherwake'])
+                        '-S', 'incoming', 'bar'])
 
         self.assertEqual(
             0, returncode, "\nScript Failed:%s\nStdout:\n%s\nStderr\n%s\n"
@@ -290,13 +290,13 @@ class TestSyncSourceScript(TestCase):
         self.assertEqual(
             out.splitlines(),
             ['Getting binaries for hoary...',
-             '[Updating] etherwake (0 [Ubuntu] < 1.08-1 [Debian])',
-             ' * Trying to add etherwake...',
-             '  - <etherwake_1.08-1.diff.gz: cached>',
-             '  - <etherwake_1.08.orig.tar.gz: cached>',
-             '  - <etherwake_1.08-1.dsc: cached>'])
+             '[Updating] bar (0 [Ubuntu] < 1.0-1 [Debian])',
+             ' * Trying to add bar...',
+             '  - <bar_1.0-1.diff.gz: cached>',
+             '  - <bar_1.0.orig.tar.gz: cached>',
+             '  - <bar_1.0-1.dsc: cached>'])
 
-        expected_changesfile = 'etherwake_1.08-1_source.changes'
+        expected_changesfile = 'bar_1.0-1_source.changes'
         self.assertTrue(
             os.path.exists(expected_changesfile),
             "Couldn't find %s." % expected_changesfile)
@@ -306,18 +306,23 @@ class TestSyncSourceScript(TestCase):
             expected_changesfile, allow_unsigned=True)
 
         # It refers to the right source/version.
-        self.assertEqual(parsed_changes['source'], 'etherwake')
-        self.assertEqual(parsed_changes['version'], '1.08-1')
+        self.assertEqual(parsed_changes['source'], 'bar')
+        self.assertEqual(parsed_changes['version'], '1.0-1')
 
         # It includes the correct 'origin' and 'target' information.
         self.assertEqual(parsed_changes['origin'], 'Debian/incoming')
         self.assertEqual(parsed_changes['distribution'], 'hoary')
 
+        # 'closes' and 'launchpad-bug-fixed' are filled according to
+        # what is listed in the debian/changelog.
+        self.assertEqual(parsed_changes['closes'], '1 2 1234 4321')
+        self.assertEqual(parsed_changes['launchpad-bugs-fixed'], '1234 4321')
+
         # And finally, 'maintainer' role was preserved and 'changed-by'
         # role was assigned as specified in the sync-source command-line.
         self.assertEqual(
             parsed_changes['maintainer'],
-            'Alain Schroeder <alain@debian.org>')
+            'Launchpad team <launchpad@lists.canonical.com>')
         self.assertEqual(
             parsed_changes['changed-by'],
             'Celso Providelo <celso.providelo@canonical.com>')
