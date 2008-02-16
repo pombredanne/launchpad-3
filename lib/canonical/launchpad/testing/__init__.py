@@ -15,10 +15,28 @@ from datetime import datetime, timedelta
 import pytz
 
 from zope.component import getUtility
+from canonical.database.sqlbase import connect, sqlvalues
 from canonical.launchpad.interfaces import (
-    BranchType, CreateBugParams, IBranchSet, IBugSet, ILaunchpadCelebrities,
-    IPersonSet, IProductSet, IRevisionSet, License, PersonCreationRationale,
-    UnknownBranchTypeError)
+    BranchMergeProposalStatus,
+    BranchType,
+    CodeImportMachineState,
+    CodeImportReviewStatus,
+    CreateBugParams,
+    EmailAddressStatus,
+    IBranchSet,
+    IBugSet,
+    ICodeImportJobWorkflow,
+    ICodeImportMachineSet,
+    ICodeImportSet,
+    ILaunchpadCelebrities,
+    IPersonSet,
+    IProductSet,
+    IRevisionSet,
+    License,
+    PersonCreationRationale,
+    RevisionControlSystems,
+    UnknownBranchTypeError,
+    )
 
 
 def time_counter(origin=None, delta=timedelta(seconds=5)):
@@ -85,14 +103,46 @@ class LaunchpadObjectFactory:
         return 'http://%s.example.com/%s' % (
             self.getUniqueString('domain'), self.getUniqueString('path'))
 
-    def makePerson(self, email=None, name=None):
-        """Create and return a new, arbitrary Person."""
+    def makePerson(self, email=None, name=None, password=None,
+                   email_address_status=None):
+        """Create and return a new, arbitrary Person.
+
+        :param email: The email address for the new person.
+        :param name: The name for the new person.
+        :param password: The password for the person.
+            This password can be used in setupBrowser in combination
+            with the email address to create a browser for this new
+            person.
+        :param email_address_status: If specified, the status of the email
+            address is set to the email_address_status.
+        """
         if email is None:
             email = self.getUniqueString('email')
         if name is None:
             name = self.getUniqueString('person-name')
-        return getUtility(IPersonSet).createPersonAndEmail(
-            email, rationale=PersonCreationRationale.UNKNOWN, name=name)[0]
+        if password is None:
+            password = self.getUniqueString('password')
+        else:
+            # If a password was specified, validate the email address,
+            # unless told otherwise.
+            if email_address_status is None:
+                email_address_status = EmailAddressStatus.VALIDATED
+        # Set the password to test in order to allow people that have
+        # been created this way can be logged in.
+        person, email = getUtility(IPersonSet).createPersonAndEmail(
+            email, rationale=PersonCreationRationale.UNKNOWN, name=name,
+            password=password)
+        # To make the person someone valid in Launchpad, validate the
+        # email.
+        if email_address_status == EmailAddressStatus.VALIDATED:
+            person.validateAndEnsurePreferredEmail(email)
+        elif email_address_status is not None:
+            email.status = email_address_status
+            email.syncUpdate()
+        else:
+            # Leave the email as NEW.
+            pass
+        return person
 
     def makeProduct(self, name=None):
         """Create and return a new, arbitrary Product."""
@@ -108,7 +158,8 @@ class LaunchpadObjectFactory:
             licenses=[License.GPL])
 
     def makeBranch(self, branch_type=None, owner=None, name=None,
-                   product=None, url=None, **optional_branch_args):
+                   product=None, url=None, registrant=None,
+                   **optional_branch_args):
         """Create and return a new, arbitrary Branch of the given type.
 
         Any parameters for IBranchSet.new can be specified to override the
@@ -118,6 +169,8 @@ class LaunchpadObjectFactory:
             branch_type = BranchType.HOSTED
         if owner is None:
             owner = self.makePerson()
+        if registrant is None:
+            registrant = owner
         if name is None:
             name = self.getUniqueString('branch')
         if product is None:
@@ -125,15 +178,52 @@ class LaunchpadObjectFactory:
 
         if branch_type in (BranchType.HOSTED, BranchType.IMPORTED):
             url = None
-        elif (branch_type in (BranchType.MIRRORED, BranchType.REMOTE)
-              and url is None):
-            url = self.getUniqueURL()
+        elif branch_type in (BranchType.MIRRORED, BranchType.REMOTE):
+            if url is None:
+                url = self.getUniqueURL()
         else:
             raise UnknownBranchTypeError(
                 'Unrecognized branch type: %r' % (branch_type,))
         return getUtility(IBranchSet).new(
-            branch_type, name, owner, owner, product, url,
+            branch_type, name, registrant, owner, product, url,
             **optional_branch_args)
+
+    def makeBranchMergeProposal(self, target_branch=None, registrant=None,
+                                set_state=None, dependent_branch=None):
+        """Create a proposal to merge based on anonymous branches."""
+        if target_branch is None:
+            target_branch = self.makeBranch()
+        if registrant is None:
+            registrant = self.makePerson()
+        source_branch = self.makeBranch(product=target_branch.product)
+        proposal = source_branch.addLandingTarget(
+            registrant, target_branch, dependent_branch=dependent_branch)
+
+        if (set_state is None or
+            set_state == BranchMergeProposalStatus.WORK_IN_PROGRESS):
+            # The initial state is work in progress, so do nothing.
+            pass
+        elif set_state == BranchMergeProposalStatus.NEEDS_REVIEW:
+            proposal.requestReview()
+        elif set_state == BranchMergeProposalStatus.CODE_APPROVED:
+            proposal.approveBranch(
+                proposal.target_branch.owner, 'some_revision')
+        elif set_state == BranchMergeProposalStatus.REJECTED:
+            proposal.rejectBranch(
+                proposal.target_branch.owner, 'some_revision')
+        elif set_state == BranchMergeProposalStatus.MERGED:
+            proposal.markAsMerged()
+        elif set_state == BranchMergeProposalStatus.MERGE_FAILED:
+            proposal.mergeFailed(proposal.target_branch.owner)
+        elif set_state == BranchMergeProposalStatus.QUEUED:
+            proposal.enqueue(
+                proposal.target_branch.owner, 'some_revision')
+        elif set_state == BranchMergeProposalStatus.SUPERSEDED:
+            proposal.resubmit(proposal.registrant)
+        else:
+            raise AssertionError('Unknown status: %s' % set_state)
+
+        return proposal
 
     def makeRevisionsForBranch(self, branch, count=5, author=None,
                                date_generator=None):
@@ -167,7 +257,6 @@ class LaunchpadObjectFactory:
                 log_body=self.getUniqueString('log-body'),
                 revision_date=date_generator.next(),
                 revision_author=author,
-                owner=admin_user,
                 parent_ids=parent_ids,
                 properties={})
             sequence += 1
@@ -188,3 +277,37 @@ class LaunchpadObjectFactory:
             owner, title, comment=self.getUniqueString())
         create_bug_params.setBugTarget(product=self.makeProduct())
         return getUtility(IBugSet).createBug(create_bug_params)
+
+    def makeCodeImport(self, url=None):
+        """Create and return a new, arbitrary code import.
+
+        The code import will be an import from a Subversion repository located
+        at `url`, or an arbitrary unique url if the parameter is not supplied.
+        """
+        if url is None:
+            url = self.getUniqueURL()
+        vcs_imports = getUtility(ILaunchpadCelebrities).vcs_imports
+        branch = self.makeBranch(
+            BranchType.IMPORTED, owner=vcs_imports)
+        registrant = self.makePerson()
+        return getUtility(ICodeImportSet).new(
+            registrant, branch, rcs_type=RevisionControlSystems.SVN,
+            svn_branch_url=url)
+
+    def makeCodeImportJob(self, code_import):
+        """Create and return a new code import job for the given import.
+
+        This implies setting the import's review_status to REVIEWED.
+        """
+        code_import.updateFromData(
+            {'review_status': CodeImportReviewStatus.REVIEWED},
+            code_import.registrant)
+        workflow = getUtility(ICodeImportJobWorkflow)
+        return workflow.newJob(code_import)
+
+    def makeCodeImportMachine(self):
+        """Return a new CodeImportMachine.
+
+        The machine will be in the OFFLINE state."""
+        hostname = self.getUniqueString('machine-')
+        return getUtility(ICodeImportMachineSet).new(hostname)

@@ -54,7 +54,8 @@ from canonical.launchpad.interfaces import (
     IJabberID, IJabberIDSet, ILaunchBag, ILaunchpadCelebrities,
     ILaunchpadStatisticSet, ILoginTokenSet, IMailingListSet,
     INACTIVE_ACCOUNT_STATUSES, IPasswordEncryptor, IPerson, IPersonSet,
-    IPillarNameSet, IProduct, ISSHKey, ISSHKeySet, ISignedCodeOfConductSet,
+    IPillarNameSet, IProduct, IRevisionSet,
+    ISSHKey, ISSHKeySet, ISignedCodeOfConductSet,
     ISourcePackageNameSet, ITeam, ITranslationGroupSet, IWikiName,
     IWikiNameSet, JoinNotAllowed, LoginTokenType,
     PersonCreationRationale, PersonVisibility,
@@ -619,26 +620,21 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
                              prejoins=["product"])
 
 
+    # XXX Tom Berger 2008-02-14:
+    # The name (and possibly the implementation) of these functions
+    # is no longer appropriate, since it now relies on subscriptions,
+    # rather than package bug contacts.
+    # See bug #191799
     def getBugContactPackages(self):
         """See `IPerson`."""
-        package_bug_contacts = shortlist(
-            PackageBugContact.selectBy(bugcontact=self),
-            longest_expected=25)
-
-        packages_for_bug_contact = [
-            package_bug_contact.distribution.getSourcePackage(
-                package_bug_contact.sourcepackagename)
-            for package_bug_contact in package_bug_contacts]
-
-        packages_for_bug_contact.sort(key=lambda x: x.name)
-
-        return packages_for_bug_contact
+        packages = [sub.target for sub in self.structural_subscriptions
+                    if (sub.distribution is not None and
+                        sub.sourcepackagename is not None)]
+        packages.sort(key=lambda x: x.name)
+        return packages
 
     def getBugContactOpenBugCounts(self, user):
         """See `IPerson`."""
-        # We could use IBugTask.search() to get all the counts, but
-        # that's slow, since we'd need to issue one query per package
-        # and count we want.
         open_bugs_cond = (
             'BugTask.status %s' % search_value_to_where_condition(
                 any(*UNRESOLVED_BUGTASK_STATUSES)))
@@ -658,9 +654,9 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
         conditions = [
             'Bug.id = BugTask.bug',
             open_bugs_cond,
-            'PackageBugContact.bugcontact = %s' % sqlvalues(self),
-            'BugTask.sourcepackagename = PackageBugContact.sourcepackagename',
-            'BugTask.distribution = PackageBugContact.distribution',
+            'StructuralSubscription.subscriber = %s' % sqlvalues(self),
+            'BugTask.sourcepackagename = StructuralSubscription.sourcepackagename',
+            'BugTask.distribution = StructuralSubscription.distribution',
             'Bug.duplicateof is NULL']
         privacy_filter = get_bug_privacy_filter(user)
         if privacy_filter:
@@ -669,7 +665,7 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
         query = """SELECT BugTask.distribution,
                           BugTask.sourcepackagename,
                           %(sums)s
-                   FROM BugTask, Bug, PackageBugContact
+                   FROM BugTask, Bug, StructuralSubscription
                    WHERE %(conditions)s
                    GROUP BY BugTask.distribution, BugTask.sourcepackagename"""
         cur = cursor()
@@ -1097,14 +1093,15 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
 
         tm.setStatus(TeamMembershipStatus.DEACTIVATED, self)
 
-    def join(self, team):
+    def join(self, team, requester=None):
         """See `IPerson`."""
-        assert not self.isTeam(), (
-            "Teams take no actions in Launchpad, thus they can't join() "
-            "another team. Instead, you have to addMember() them.")
-
         if self in team.activemembers:
             return
+
+        if requester is None:
+            assert not self.isTeam(), (
+                "You need to specify a reviewer when a team joins another.")
+            requester = self
 
         expired = TeamMembershipStatus.EXPIRED
         proposed = TeamMembershipStatus.PROPOSED
@@ -1128,7 +1125,8 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
         # security configuration will verify that the logged in user
         # has the right permission to add the specified person to the team.
         naked_team = removeSecurityProxy(team)
-        naked_team.addMember(self, reviewer=self, status=status)
+        naked_team.addMember(
+            self, reviewer=requester, status=status, force_team_add=True)
 
     def clearInTeamCache(self):
         """See `IPerson`."""
@@ -1688,6 +1686,9 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
         else:
             email.status = EmailAddressStatus.VALIDATED
             getUtility(IHWSubmissionSet).setOwnership(email)
+        # Now that we have validated the email, see if this can be
+        # matched to an existing RevisionAuthor.
+        getUtility(IRevisionSet).checkNewVerifiedEmail(email)
 
     def setContactAddress(self, email):
         """See `IPerson`."""
@@ -2087,7 +2088,8 @@ class PersonSet:
         """See `IPersonSet`."""
         if orderBy is None:
             orderBy = Person.sortingColumns
-        return Person.select(Person.q.teamownerID!=None, orderBy=orderBy)
+        query = AND(Person.q.teamownerID!=None, Person.q.mergedID==None)
+        return Person.select(query, orderBy=orderBy)
 
     def find(self, text, orderBy=None):
         """See `IPersonSet`."""

@@ -120,9 +120,6 @@ fi
 publish-distro.py -v -v --partner -d $DISTRONAME -R ${DISTSROOT_PARTNER}.new
 publish-distro.py -v -v -d $DISTRONAME -R ${DISTSROOT}.new
 
-# Process death row for all archives (except PPA).
-process-death-row.py -v -v -d $DISTRONAME
-
 set +x
 # Find all the Release files for which the Release.GPG is missing/too-old
 # We use -maxdepth 2 to only sign Release files for distroreleases,

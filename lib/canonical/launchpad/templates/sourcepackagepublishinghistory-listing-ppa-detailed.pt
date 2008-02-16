@@ -41,7 +41,22 @@
                   view/published_source_and_binary_files"
       style="display: none">
     <td colspan="5">
-      <tal:block replace="structure context/@@+record-details" />
+      <h3>Publishing details</h3>
+        <tal:block replace="structure context/@@+record-details" />
+      <h3>Changelog</h3>
+        <tal:changelog
+           replace="structure context/sourcepackagerelease/@@+changelog"/>
+      <tal:built-packages condition="view/built_packages" omit-tag="">
+        <h3>Built Packages</h3>
+        <ul tal:repeat="package view/built_packages"
+            style="margin-top: 0; margin-bottom: 0">
+          <li>
+            <b><tal:name replace="package/binarypackagename"/></b>
+            <tal:summary replace="package/summary"/>
+          </li>
+        </ul>
+      </tal:built-packages>
+      <h3>Files</h3>
       <span tal:condition="not: published_source_and_binary_files"
          style="padding-left: 1em">No files published for this package.</span>
       <ul tal:repeat="file published_source_and_binary_files"

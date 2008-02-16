@@ -29,6 +29,9 @@ create and populate some teams to demonstrate.
     >>> gwen = new_person('Gwen')
     >>> hank = new_person('Hank')
     >>> people = [anne, bart, cris, dirk, elle, fred, gwen, hank]
+
+    # login() as an admin so that we can call join() on all the people above.
+    >>> login('foo.bar@canonical.com')
     >>> for person in people:
     ...     person.join(team_one)
     ...     list_one.subscribe(person)

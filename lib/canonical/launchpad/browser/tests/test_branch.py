@@ -41,7 +41,7 @@ class TestBranchView(unittest.TestCase):
         self.assertEqual(
             truncate_text(branch.mirror_status_message,
                           branch_view.MAXIMUM_STATUS_MESSAGE_LENGTH) + ' ...',
-            branch_view.mirror_status_message())
+            branch_view.mirror_status_message)
 
     def testMirrorStatusMessage(self):
         """mirror_status_message on the view is the same as on the branch."""
@@ -54,10 +54,10 @@ class TestBranchView(unittest.TestCase):
             "branch.mirror_status_message longer than expected: %r"
             % (branch.mirror_status_message,))
         self.assertEqual(
-            branch.mirror_status_message, branch_view.mirror_status_message())
+            branch.mirror_status_message, branch_view.mirror_status_message)
         self.assertEqual(
             "This is a short error message.",
-            branch_view.mirror_status_message())
+            branch_view.mirror_status_message)
 
     def testBranchAddRequestsMirror(self):
         """Registering a mirrored branch requests a mirror."""
@@ -76,6 +76,7 @@ class TestBranchView(unittest.TestCase):
                 'lifecycle_status': BranchLifecycleStatus.NEW,
                 'home_page': 'http://example.com',
                 'whiteboard': '',
+                'owner': arbitrary_person,
                 'author': arbitrary_person,
                 'product': arbitrary_product
                 }
