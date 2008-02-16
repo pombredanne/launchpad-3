@@ -124,3 +124,12 @@ automatically adjust as well.
     Evolution: 21
     Ubuntu: 24
     Upstart: 20
+
+If we pass the `limit` parameter to getMostTranslatedPillars method,
+we change the default maximum number of returned entries.
+
+    >>> display_pillars(overview.getMostTranslatedPillars(3))
+    alsa-utils: 22
+    Evolution: 20
+    Ubuntu: 24
+
