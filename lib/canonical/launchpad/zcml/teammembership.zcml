@@ -76,9 +76,4 @@
         <allow attributes="__call__" />
     </content>
 
-    <adapter
-        for="canonical.launchpad.interfaces.ITeamMembership"
-        provides="canonical.launchpad.interfaces.IPerson"
-        factory="canonical.launchpad.fields.TeamMembershipToPerson" />
-
 </configure>

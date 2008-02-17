@@ -42,7 +42,6 @@ __all__ = [
     'PillarNameField',
     'ProductBugTracker',
     'ProductNameField',
-    'PublicOrPrivatePersonChoice',
     'PublicPersonChoice',
     'ShipItAddressline1',
     'ShipItAddressline2',
@@ -668,28 +667,7 @@ def is_valid_public_person_link(person, other):
     else:
         return True
 
-def is_valid_public_or_private_person_link(person, other):
-    from canonical.launchpad.interfaces import IPerson, PersonVisibility
-    assert IPerson.providedBy(person)
-    if person.visibility in (PersonVisibility.PRIVATE,
-                             PersonVisibility.PRIVATE_MEMBERSHIP):
-        if IPerson.providedBy(other) and other.visibility in (
-            PersonVisibility.PRIVATE, PersonVisibility.PRIVATE_MEMBERSHIP):
-            # Private to private person links are allowed.
-            return True
-        else:
-            # Private to public person links are forbidden.
-            return False
-    else:
-        # Public to public person links are allowed.
-        return True
-
 
 class PublicPersonChoice(Choice):
     def constraint(self, value):
         return is_valid_public_person_link(value, self.context)
-
-
-class PublicOrPrivatePersonChoice(Choice):
-    def constraint(self, value):
-        return is_valid_public_or_private_person_link(value, self.context)

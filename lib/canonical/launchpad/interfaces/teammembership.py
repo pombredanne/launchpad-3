@@ -12,7 +12,7 @@ from zope.schema import Choice, Int, Text
 from zope.interface import Interface, Attribute
 
 from canonical.launchpad import _
-from canonical.launchpad.fields import PublicOrPrivatePersonChoice
+from canonical.launchpad.fields import PublicPersonChoice
 
 # One week before a membership expires we send a notification to the member,
 # either inviting him to renew his own membership or asking him to get a team
@@ -143,7 +143,7 @@ class ITeamMembershipSet(Interface):
 class ITeamMember(Interface):
     """The interface used in the form to add a new member to a team."""
 
-    newmember = PublicOrPrivatePersonChoice(
+    newmember = PublicPersonChoice(
         title=_('New member'), required=True,
         vocabulary='ValidTeamMember',
         description=_("The user or team which is going to be "

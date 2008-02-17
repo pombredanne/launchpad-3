@@ -7,13 +7,12 @@ can be connect to.
 """
 
 __metaclass__ = type
-__all__ = ['public_or_private_person_validator', 'public_person_validator']
+__all__ = ['public_person_validator']
 
 from sqlobject.include.validators import Validator, InvalidField
 
 from canonical.launchpad.interfaces import IPerson
-from canonical.launchpad.fields import (
-    is_valid_public_person_link, is_valid_public_or_private_person_link)
+from canonical.launchpad.fields import is_valid_public_person_link
 
 class PersonValidatorBase(Validator):
     def isValidPersonLink(self, person, state_object):
@@ -47,15 +46,9 @@ class PersonValidatorBase(Validator):
         return value
 
 
-class PublicOrPrivatePersonValidatorClass(PersonValidatorBase):
-    def isValidPersonLink(self, person, state_object):
-        return is_valid_public_or_private_person_link(person, state_object)
-
-
 class PublicPersonValidatorClass(PersonValidatorBase):
     def isValidPersonLink(self, person, state_object):
         return is_valid_public_person_link(person, state_object)
 
 
-public_or_private_person_validator = PublicOrPrivatePersonValidatorClass()
 public_person_validator = PublicPersonValidatorClass()

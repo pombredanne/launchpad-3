@@ -466,21 +466,6 @@ BugSubscription.subscribed_by attributes.
     InvalidField: Cannot link person
     (name=myteam, visibility=PRIVATE_MEMBERSHIP) to <BugSubscription...
 
-myteam is a private-membership team, and guadamen is a public
-team, so public_or_private_person_validator will not allow
-myteam to become a member of guadamen.
-
-    >>> from canonical.launchpad.interfaces import (
-    ...     PersonVisibility, TeamMembershipStatus)
-    >>> guadamen.addMember(myteam, reviewer=guadamen)
-    Traceback (most recent call last):
-    ...
-    InvalidField: Cannot link person
-    (name=myteam, visibility=PRIVATE_MEMBERSHIP) to <TeamMembership...
-    >>> guadamen.visibility = PersonVisibility.PRIVATE_MEMBERSHIP
-    >>> guadamen.addMember(myteam, reviewer=guadamen)
-    >>> other_team = person_set.getByName('otherteam')
-    >>> guadamen.addMember(myteam, reviewer=guadamen)
 
 == Deactivating user accounts ==
 
