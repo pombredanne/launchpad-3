@@ -162,6 +162,8 @@ class TestErrorReportingUtility(unittest.TestCase):
     def tearDown(self):
         shutil.rmtree(config.launchpad.errorreports.errordir,
                       ignore_errors=True)
+        config.launchpad.errorreports.copy_to_zlog = (
+            self.current_copy_to_zlog)
         config.launchpad.errorreports.errordir = self.saved_errordir
         reset_logging()
 
