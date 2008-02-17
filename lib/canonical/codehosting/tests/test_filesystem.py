@@ -12,7 +12,7 @@ from bzrlib.tests import TestCaseWithTransport
 
 from canonical.codehosting import branch_id_to_path
 from canonical.codehosting.tests.helpers import (
-    adapt_suite, deferToThreadCode, HostingTestProviderAdapter,
+    adapt_suite, deferToThread, CodeHostingTestProviderAdapter,
     ServerTestCase)
 from canonical.codehosting.tests.servers import (
     make_launchpad_server, make_sftp_server)
