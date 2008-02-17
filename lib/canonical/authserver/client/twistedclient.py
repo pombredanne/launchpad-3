@@ -1,5 +1,9 @@
-
 from twisted.web.xmlrpc import Proxy
+
+
+def get_twisted_client(url):
+    return TwistedAuthServer(url)
+
 
 class TwistedAuthServer:
     """Twisted client for the authserver.
