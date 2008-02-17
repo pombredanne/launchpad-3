@@ -18,7 +18,7 @@ from twisted.python.util import sibpath
 
 from twisted.trial.unittest import TestCase as TrialTestCase
 
-from canonical.authserver.client.twistedclient import get_twisted_client
+from canonical.authserver.client.twistedclient import TwistedAuthServer
 from canonical.codehosting import sshserver
 from canonical.codehosting.tests.servers import AuthserverWithKeysInProcess
 from canonical.config import config
@@ -315,7 +315,7 @@ class TestPublicKeyFromLaunchpadChecker(TrialTestCase):
         self.authserver = AuthserverWithKeysInProcess(
             self.valid_login, 'testteam')
         self.authserver.setUp()
-        self.authserver_client = get_twisted_client(
+        self.authserver_client = TwistedAuthServer(
             config.codehosting.authserver)
         self.checker = sshserver.PublicKeyFromLaunchpadChecker(
             self.authserver_client)
