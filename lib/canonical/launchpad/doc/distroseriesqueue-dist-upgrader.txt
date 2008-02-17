@@ -172,7 +172,7 @@ Do the publish, i.e process the CustomUpload writing the tarball in
 the archive.  The umask must be 022 in order to perform the upload.
 
   >>> old_mask = os.umask(022)
-  >>> queue_item.realiseUpload()
+  >>> pub_records = queue_item.realiseUpload()
   >>> print '%03o' % os.umask(old_mask)
   022
 
@@ -248,7 +248,7 @@ Check current archive status:
 
 Publish the custom upload:
 
-  >>> upload.queue_root.realiseUpload(mock_logger)
+  >>> pub_records = upload.queue_root.realiseUpload(mock_logger)
   DEBUG: Publishing custom dist-upgrader_20070219.1234_all.tar.gz to ubuntutest/breezy-autotest
   ERROR: Queue item ignored: bad version found in '.../dist-upgrader_20070219.1234_all.tar.gz': ('Bad upstream version format', 'foobar')
 
@@ -315,7 +315,7 @@ The upload task requires that the umask be 022, otherwise things will end up
 with the wrong permission.
 
   >>> old_mask = os.umask(022)
-  >>> ppa_upload.queue_root.realiseUpload(mock_logger)
+  >>> pub_records = ppa_upload.queue_root.realiseUpload(mock_logger)
   DEBUG: Publishing custom dist-upgrader_20060302.0120_all.tar.gz to ubuntutest/breezy-autotest
   >>> ignore = os.umask(old_mask)
 

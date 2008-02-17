@@ -15,6 +15,7 @@ explicit. There are two implicit subscribers.
     Steve Alexander (Subscribed by Launchpad Janitor)
 
     >>> print_indirect_subscribers(browser.contents)
+    Mark Shuttleworth
     Sample Person
     Ubuntu Team
 
@@ -33,6 +34,7 @@ anyway, because he is an admin.
 All the implicit subscribers have been made explicit.
 
   >>> print_direct_subscribers(browser.contents)
+  Mark Shuttleworth (Subscribed by Foo Bar)
   Sample Person (Subscribed by Foo Bar)
   Steve Alexander (Subscribed by Launchpad Janitor)
   Ubuntu Team (Subscribed by Foo Bar)

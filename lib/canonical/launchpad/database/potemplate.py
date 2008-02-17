@@ -628,11 +628,6 @@ class POTemplate(SQLBase, RosettaStats):
         return self.createPOTMsgSetFromMsgIDs(msgid_singular, msgid_plural,
                                               context)
 
-    def invalidateCache(self):
-        """See `IPOTemplate`."""
-        for pofile in self.pofiles:
-            pofile.invalidateCache()
-
     def importFromQueue(self, entry_to_import, logger=None):
         """See `IPOTemplate`."""
         assert entry_to_import is not None, "Attempt to import None entry."

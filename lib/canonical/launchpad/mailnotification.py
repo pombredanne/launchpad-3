@@ -311,15 +311,15 @@ class BugNotificationRecipients(NotificationRecipientSet):
             text = "are the bug contact for %s" % distro.displayname
         self._addReason(person, text, reason)
 
-    def addPackageBugContact(self, person, package):
-        """Registers a package bug contact for this bug."""
-        reason = "Bug Contact (%s)" % package.displayname
+    def addStructuralSubscriber(self, person, target):
+        """Registers a structural subscriber to this bug's target."""
+        reason = "Subscriber (%s)" % target.displayname
         if person.isTeam():
-            text = ("are a member of %s, which is a bug contact for %s" %
-                (person.displayname, package.displayname))
+            text = ("are a member of %s, which is subscribed to %s" %
+                (person.displayname, target.displayname))
             reason += " @%s" % person.name
         else:
-            text = "are a bug contact for %s" % package.displayname
+            text = "are subscribed to %s" % target.displayname
         self._addReason(person, text, reason)
 
     def addUpstreamBugContact(self, person, upstream):
@@ -333,7 +333,7 @@ class BugNotificationRecipients(NotificationRecipientSet):
             text = "are the bug contact for %s" % upstream.displayname
         self._addReason(person, text, reason)
 
-    def addUpstreamRegistrant(self, person, upstream):
+    def addRegistrant(self, person, upstream):
         """Registers an upstream product registrant for this bug."""
         reason = "Registrant (%s)" % upstream.displayname
         if person.isTeam():
@@ -372,6 +372,14 @@ def construct_bug_notification(bug, from_address, address, body, subject,
     # Add X-Launchpad-Bug headers.
     for bugtask in bug.bugtasks:
         msg.add_header('X-Launchpad-Bug', bugtask.asEmailHeaderValue())
+
+    # Add X-Launchpad-Bug-Private and ...-Bug-Security-Vulnerability
+    # headers. These are simple yes/no values denoting privacy and
+    # security for the bug.
+    msg.add_header('X-Launchpad-Bug-Private',
+                   (bug.private and 'yes' or 'no'))
+    msg.add_header('X-Launchpad-Bug-Security-Vulnerability',
+                   (bug.security_related and 'yes' or 'no'))
 
     if rationale_header is not None:
         msg.add_header('X-Launchpad-Message-Rationale', rationale_header)
@@ -550,6 +558,7 @@ def generate_bug_add_email(bug, new_recipients=False, reason=None):
     it's just a notification of a new bug report.
     """
     subject = u"[Bug %d] [NEW] %s" % (bug.id, bug.title)
+    contents = ''
 
     if bug.private:
         # This is a confidential bug.
@@ -557,6 +566,10 @@ def generate_bug_add_email(bug, new_recipients=False, reason=None):
     else:
         # This is a public bug.
         visibility = u"Public"
+
+    if bug.security_related:
+        visibility += ' security'
+        contents += '*** This bug is a security vulnerability ***\n\n'
 
     bug_info = []
     # Add information about the affected upstreams and packages.
@@ -574,10 +587,9 @@ def generate_bug_add_email(bug, new_recipients=False, reason=None):
     if bug.tags:
         bug_info.append('\n** Tags: %s' % ' '.join(bug.tags))
 
-    mailwrapper = MailWrapper(width=72)
     if new_recipients:
-        contents = ("You have been subscribed to a %(visibility)s bug:\n\n"
-                    "%(description)s\n\n%(bug_info)s")
+        contents += ("You have been subscribed to a %(visibility)s bug:\n\n"
+                     "%(description)s\n\n%(bug_info)s")
         # The visibility appears mid-phrase so.. hack hack.
         visibility = visibility.lower()
         # XXX: kiko, 2007-03-21:
@@ -587,9 +599,10 @@ def generate_bug_add_email(bug, new_recipients=False, reason=None):
         contents += (
             "\n-- \n%(bug_title)s\n%(bug_url)s\n%(notification_rationale)s")
     else:
-        contents = ("%(visibility)s bug reported:\n\n"
-                    "%(description)s\n\n%(bug_info)s")
+        contents += ("%(visibility)s bug reported:\n\n"
+                     "%(description)s\n\n%(bug_info)s")
 
+    mailwrapper = MailWrapper(width=72)
     contents = contents % {
         'visibility' : visibility, 'bug_url' : canonical_url(bug),
         'bug_info': "\n".join(bug_info), 'bug_title': bug.title,
@@ -1153,9 +1166,14 @@ def notify_team_join(event):
             'new-member-notification-for-admins.txt')
         subject = '%s joined %s' % (person.name, team.name)
     elif membership.status == proposed:
-        template = get_email_template('pending-membership-approval.txt')
+        if person.isTeam():
+            headers = {"Reply-To": reviewer.preferredemail.email}
+            template = get_email_template(
+                'pending-membership-approval-for-teams.txt')
+        else:
+            headers = {"Reply-To": person.preferredemail.email}
+            template = get_email_template('pending-membership-approval.txt')
         subject = "%s wants to join" % person.name
-        headers = {"Reply-To": person.preferredemail.email}
     else:
         raise AssertionError(
             "Unexpected membership status: %s" % membership.status)
