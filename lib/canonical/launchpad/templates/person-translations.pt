@@ -20,7 +20,7 @@
 
     <tal:block condition="history">
 
-      <div class="lesser">
+      <div class="lesser" id="top-navigation">
         <tal:navigation content="structure view/batchnav/@@+navigation-links-upper" />
       </div>
 
@@ -37,7 +37,7 @@
           <tr tal:repeat="record history">
             <tal:block define="translationmessage record/latest_message">
             <td><a tal:content="record/pofile/potemplate/displayname"
-                   tal:attributes="href record/pofile/fmt:url">foo bar in package bla</a>
+                   tal:attributes="href string:${record/pofile/fmt:url}/+filter?person=${context/name}">foo bar in package bla</a>
             </td>
             <td tal:content="record/pofile/language/englishname">Spanish</td>
             <td tal:content="translationmessage/potmsgset/singular_text" />
