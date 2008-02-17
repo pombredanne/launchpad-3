@@ -13,6 +13,12 @@
         set_attributes="fixed_in_revision_id status whiteboard" />
   </content>
 
+  <subscriber
+      for="canonical.launchpad.interfaces.IBugBranch
+           canonical.launchpad.event.interfaces.ISQLObjectCreatedEvent"
+      handler="canonical.launchpad.subscribers.karma.bug_branch_created"
+      />
+
   <browser:url
       for="canonical.launchpad.interfaces.IBugBranch"
       path_expression="string:+bug/${bug/id}"
