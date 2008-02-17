@@ -825,3 +825,103 @@ AttributeError.
     Traceback (most recent call last):
       ...
     AttributeError: No section key named non_key.
+
+
+== Implicit data typing ==
+
+The ImplicitTypeSchema can be used to create configs that support
+implicit datatypes. The value of a Section key is automatically
+converted from str to the type the value appears to be. Implicit
+typing does not add any validation support; it adds type casting
+conveniences for the developer.
+
+An ImplicitTypeSchema can be used to parse the same schema and conf
+files that Schema uses.
+
+    >>> from canonical.lazr.config import ImplicitTypeSchema
+
+    >>> implicit_schema = ImplicitTypeSchema(base_conf)
+    >>> verifyObject(IConfigSchema, implicit_schema)
+    True
+
+The config loaded by ImplicitTypeSchema is the same class with the same
+sections as is made by Schema.
+
+    >>> implicit_config = implicit_schema.load(local_conf)
+    >>> implicit_config.__name__
+    'Config'
+    >>> config.__name__
+    'Config'
+
+    >>> sections = sorted(section.name for section in config)
+    >>> implicit_sections = sorted(
+    ...     section.name for section in implicit_config)
+    >>> implicit_sections == sections
+    True
+
+    >>> verifyObject(ISection, implicit_config['section_3.app_b'])
+    True
+
+But the type of sections in the config support implicit typing.
+
+    >>> implicit_config['section_3.app_b'].__name__
+    'ImplicitTypeSection'
+
+
+    >>> config['section_3.app_b']['key1']
+    '17'
+    >>> implicit_config['section_3.app_b']['key1']
+    17
+
+    >>> config['section-2.app-b']['key1']
+    'True'
+    >>> implicit_config['section-2.app-b']['key1']
+    True
+
+Implicit typing uses a private method that employs heuristic rules to
+convert strings into simple types. It may return a str, bool, or int.
+
+When the argument is the word 'true' or 'false' (in any case), a bool is
+returned. Values like 'yes', 'no', '0', and '1' are not converted to
+bool.
+
+    >>> implied = implicit_config._implied()
+
+    >>> implied('false')
+    False
+    >>> implied('TRUE')
+    True
+    >>> implied('tRue')
+
+    >>> implied('yes')
+    'yes'
+    >>> implied('1')
+    1
+    >>> implied('True or False')
+    'True or False'
+
+When the argument is an unbroken sequence of numbers, an int is
+returned. The number may have a leading plus or minus, and may start
+with an octal or hex prefix.
+
+    >>> implied('0')
+    0
+    >>> implied('2001')
+    2001
+    >>> implied('-55')
+    -55
+    >>> implied('+404')
+    404
+    >>> implied('0100')
+    64
+    >>> implied('0x100')
+    256
+
+    >>> implied('2001-01-01')
+    '2001-01-01'
+    >>> implied('1000*60*5')
+    '1000*60*5'
+    >>> implied('1,024')
+    '1,024'
+    >>> implied('0.5')
+    '0.5'
