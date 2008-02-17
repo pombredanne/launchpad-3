@@ -33,7 +33,6 @@ __all__ = [
     'IURIField',
     'IWhiteboard',
     'IconImageUpload',
-    'is_valid_public_or_private_person_link',
     'is_valid_public_person_link',
     'KEEP_SAME_IMAGE',
     'LogoImageUpload',
