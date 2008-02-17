@@ -29,6 +29,7 @@ from bzrlib.workingtree import WorkingTree
 
 from paramiko import SSHClient, SSHException, MissingHostKeyPolicy
 
+from canonical.authserver.twistedclient import get_blocking_client
 from canonical.codehosting.tests.helpers import (
     adapt_suite, deferToThread, ServerTestCase)
 from canonical.codehosting.tests.servers import (
@@ -159,7 +160,7 @@ class SSHTestCase(ServerTestCase, TestCaseWithTransport):
         Used to create branches that the test user is not able to create, and
         might not even be able to view.
         """
-        authserver = xmlrpclib.ServerProxy(self.server.authserver.get_url())
+        authserver = get_blocking_client(self.server.authserver.get_url())
         if creator is None:
             creator_id = authserver.getUser(user)['id']
         else:

@@ -1,8 +1,14 @@
+import xmlrpclib
+
 from twisted.web.xmlrpc import Proxy
 
 
 def get_twisted_client(url):
     return TwistedAuthServer(url)
+
+
+def get_blocking_client(url):
+    return xmlrpclib.ServerProxy(url)
 
 
 class TwistedAuthServer:

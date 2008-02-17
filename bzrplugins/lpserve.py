@@ -20,6 +20,7 @@ from bzrlib import urlutils, ui
 from bzrlib.smart import medium, server
 from bzrlib.transport import chroot, get_transport, remote
 
+from canonical.authserver.twistedclient import get_blocking_client
 from canonical.config import config
 
 
@@ -125,7 +126,7 @@ class cmd_launchpad_server(Command):
 
         upload_url = urlutils.local_path_to_url(upload_directory)
         mirror_url = urlutils.local_path_to_url(mirror_directory)
-        authserver = xmlrpclib.ServerProxy(authserver_url)
+        authserver = get_blocking_client(authserver_url)
 
         lp_server = self.get_lp_server(
             authserver, user_id, upload_url, mirror_url)
