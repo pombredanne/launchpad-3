@@ -63,6 +63,13 @@ def set_bug_branch_status(bug, branch, status):
 
 
 def get_diff(bzr_branch, bzr_revision):
+    """Return the diff for `bzr_revision` on `bzr_branch`.
+
+    :param bzr_branch: A `bzrlib.branch.Branch` object.
+    :param bzr_revision: A Bazaar `Revision` object.
+    :return: A byte string that is the diff of the changes introduced by
+        `bzr_revision` on `bzr_branch`.
+    """
     repo = bzr_branch.repository
     if bzr_revision.parent_ids:
         ids = (bzr_revision.revision_id, bzr_revision.parent_ids[0])
@@ -79,6 +86,12 @@ def get_diff(bzr_branch, bzr_revision):
 
 
 def get_revision_message(bzr_branch, bzr_revision):
+    """Return the log message for `bzr_revision` on `bzr_branch`.
+
+    :param bzr_branch: A `bzrlib.branch.Branch` object.
+    :param bzr_revision: A Bazaar `Revision` object.
+    :return: The commit message entered for `bzr_revision`.
+    """
     outf = StringIO()
     lf = log_formatter('long', to_file=outf)
     rev_id = bzr_revision.revision_id
@@ -91,8 +104,7 @@ def get_revision_message(bzr_branch, bzr_revision):
              lf,
              start_revision=rev1,
              end_revision=rev2,
-             verbose=True
-             )
+             verbose=True)
     return outf.getvalue()
 
 
