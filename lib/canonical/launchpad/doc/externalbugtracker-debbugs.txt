@@ -228,7 +228,7 @@ If we pass in a malformed status string, we map it to 'Unknown' and
 log an error.
 
     >>> print external_debbugs.convertRemoteStatus('open').title
-    ERROR:...:Malformed debbugs status: 'open'.
+    WARNING:...:Malformed debbugs status: 'open'.
     Unknown
 
 UNKNOWN_REMOTE_STATUS maps to Unknown.
@@ -526,8 +526,8 @@ by forcing importBugComments to fail on our Test DebBugs bugtracker.
 
     >>> external_debbugs.debbugs_db.fail_on_load_log = True
     >>> external_debbugs.importBugComments(bug_watch)
-    WARNING:...:Unable to import comments for DebBugs bug #1234.
-    Could not parse comment log...No such file or directory...
+    ERROR:...:Unable to import comments for DebBugs bug #1234.
+    Could not parse comment log.
 
 Comments for bugs in the archive can also be imported:
 
