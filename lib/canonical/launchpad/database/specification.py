@@ -449,9 +449,8 @@ class Specification(SQLBase, BugLinkTargetMixin):
         delta.recordNewValues(("title", "summary", "whiteboard",
                                "specurl", "productseries",
                                "distroseries", "milestone"))
-        delta.recordNewAndOld(("name", "priority",
-                               "definition_status", "target",
-                               "approver", "assignee", "drafter"))
+        delta.recordNewAndOld(("name", "priority", "definition_status",
+                               "target", "approver", "assignee", "drafter"))
         delta.recordListAddedAndRemoved("bugs",
                                         "bugs_linked",
                                         "bugs_unlinked")
@@ -501,8 +500,8 @@ class Specification(SQLBase, BugLinkTargetMixin):
                 # only the essential attribute changed, but we know
                 # that we can get away with not examining the attribute
                 # at all - it's a boolean!
-                notify(
-                    SQLObjectModifiedEvent(sub, sub, ['essential'], user=user))
+                notify(SQLObjectModifiedEvent(
+                        sub, sub, ['essential'], user=user))
             return sub
         # since no previous subscription existed, create and return a new one
         sub = SpecificationSubscription(specification=self,
@@ -629,9 +628,8 @@ class Specification(SQLBase, BugLinkTargetMixin):
     def all_blocked(self):
         blocked = set()
         self._find_all_blocked(blocked)
-        return sorted(
-            blocked,
-            key=lambda s: (s.definition_status, s.priority, s.title))
+        return sorted(blocked, key=lambda s: (s.definition_status,
+                                              s.priority, s.title))
 
     # branches
     def getBranchLink(self, branch):
@@ -639,14 +637,15 @@ class Specification(SQLBase, BugLinkTargetMixin):
             specificationID=self.id, branchID=branch.id)
 
     def linkBranch(self, branch, registrant, summary=None):
-        branchlink = self.getBranchLink(branch)
-        if branchlink is not None:
-            return branchlink
+        branch_link = self.getBranchLink(branch)
+        if branch_link is not None:
+            return branch_link
         branch.date_last_modified = UTC_NOW
-        return SpecificationBranch(specification=self,
-                                   branch=branch,
-                                   summary=summary,
-                                   registrant=registrant)
+        branch_link = SpecificationBranch(
+            specification=self, branch=branch, summary=summary,
+            registrant=registrant)
+        notify(SQLObjectCreatedEvent(branch_link))
+        return branch_link
 
 
 class HasSpecificationsMixin:
@@ -734,11 +733,8 @@ class SpecificationSet(HasSpecificationsMixin):
 
         # sort by priority descending, by default
         if sort is None or sort == SpecificationSort.PRIORITY:
-            order = [
-                '-priority',
-                'Specification.definition_status',
-                'Specification.name',
-                ]
+            order = ['-priority', 'Specification.definition_status',
+                     'Specification.name']
         elif sort == SpecificationSort.DATE:
             if SpecificationFilter.COMPLETE in filter:
                 # if we are showing completed, we care about date completed
@@ -780,7 +776,8 @@ class SpecificationSet(HasSpecificationsMixin):
         # exclude all OBSOLETE or SUPERSEDED specs
         if SpecificationFilter.VALID in filter:
             # XXX: this is untested and was broken. -- kiko 2007-02-07
-            query += (' AND Specification.definition_status NOT IN ( %s, %s ) ' %
+            query += (
+                ' AND Specification.definition_status NOT IN ( %s, %s ) ' %
                 sqlvalues(SpecificationDefinitionStatus.OBSOLETE,
                           SpecificationDefinitionStatus.SUPERSEDED))
 

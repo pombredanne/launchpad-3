@@ -15,8 +15,9 @@ import os
 
 import pytz
 
-from zope.interface import implements
 from zope.component import getUtility
+from zope.event import notify
+from zope.interface import implements
 
 from sqlobject import (
     ForeignKey, IntCol, StringCol, BoolCol, SQLMultipleJoin, SQLRelatedJoin,
@@ -48,6 +49,7 @@ from canonical.launchpad.database.branchrevision import BranchRevision
 from canonical.launchpad.database.branchsubscription import BranchSubscription
 from canonical.launchpad.validators.person import public_person_validator
 from canonical.launchpad.database.revision import Revision
+from canonical.launchpad.event import SQLObjectCreatedEvent
 from canonical.launchpad.mailnotification import NotificationRecipientSet
 from canonical.launchpad.webapp import urlappend
 
@@ -763,6 +765,7 @@ class BranchSet:
                 BranchSubscriptionNotificationLevel.NOEMAIL,
                 BranchSubscriptionDiffSize.NODIFF)
 
+        notify(SQLObjectCreatedEvent(branch))
         return branch
 
     def delete(self, branch):
