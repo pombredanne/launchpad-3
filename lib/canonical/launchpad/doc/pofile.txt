@@ -953,6 +953,35 @@ And when we submit another translation that is fuzzy...
     %d foo     0     something  True      True
     %d foo     1     None       True      True
 
+== getTranslationsFilteredBy ==
+
+This method returns a list of TranslationMessages in a given POFile
+created by a certain person.
+
+    >>> carlos = person_set.getByName('carlos')
+    >>> translationmessages = evolution_es.getTranslationsFilteredBy(carlos)
+    >>> for translationmessage in translationmessages:
+    ...     print translationmessage.translations
+    [u'libreta de direcciones de Evolution']
+    [u'carpeta de libretas de direcciones actual']
+    [u'lalalala']
+    [u'tiene ']
+    [u' tarjetas']
+    [u'boohoo']
+    [u'La ubicaci\xf3n y jerarqu\xeda de las carpetas de contactos de Evolution ha cambiado desde Evolution 1.x.\n\nTenga paciencia mientras Evolution migra sus carpetas...']
+    [u'%d contacto', u'%d contactos']
+    [u'Abrir %d contacto abrir\xe1 %d ventanas nuevas tambi\xe9n.\n\xbfQuiere realmente mostrar este contacto?', u'Abrir %d contactos abrir\xe1 %d ventanas nuevas tambi\xe9n.\n\xbfQuiere realmente mostrar todos estos contactos?']
+    [u'something', None]
+    [u'%d foo', None]
+    [u'Contrase\xf1a de EncFS: ']
+    [u'_A\xf1adir grupo']
+
+If the passed person is None, the call fails with an assertion.
+
+    >>> translationmessages = evolution_es.getTranslationsFilteredBy(None)
+    Traceback (most recent call last):
+    ...
+    AssertionError: You must provide a person to filter by.
 
 == Translation credits ==
 

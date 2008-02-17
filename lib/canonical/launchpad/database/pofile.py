@@ -389,6 +389,20 @@ class POFile(SQLBase, POFileMixIn):
         else:
             return translation_message
 
+    def getTranslationsFilteredBy(self, person):
+        """See `IPOFile`."""
+        # We are displaying translations grouped by POTMsgSets,
+        # but since the most common case will be having a single
+        # TranslationMessage per POTMsgSet, we are issuing a slightly
+        # faster SQL query by avoiding a join with POTMsgSet.
+        assert person is not None, "You must provide a person to filter by."
+        return TranslationMessage.select(
+            """
+            TranslationMessage.pofile = %s AND
+            TranslationMessage.submitter = %s
+            """ % sqlvalues(self, person),
+            orderBy=['potmsgset', '-date_created'])
+
     def getPOTMsgSetTranslated(self):
         """See `IPOFile`."""
         query = [
@@ -583,6 +597,7 @@ class POFile(SQLBase, POFileMixIn):
             query.append(
                 '(POTMsgSet.msgid_plural IS NULL OR (%s))' % plurals_query)
         return query
+
 
     def updateStatistics(self):
         """See `IPOFile`."""
@@ -933,6 +948,10 @@ class DummyPOFile(POFileMixIn):
 
     def emptySelectResults(self):
         return POFile.select("1=2")
+
+    def getTranslationsFilteredBy(self, person):
+        """See `IPOFile`."""
+        return None
 
     def getPOTMsgSetTranslated(self):
         """See `IPOFile`."""
