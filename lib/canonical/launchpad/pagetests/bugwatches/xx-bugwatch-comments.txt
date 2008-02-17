@@ -122,4 +122,3 @@ be visible to him:
     >>> sabdfl_browser.open(
     ...     'http://launchpad.dev/redfish/+bug/15/comments/1')
     >>> print_comments(sabdfl_browser.contents)
-

@@ -311,15 +311,15 @@ class BugNotificationRecipients(NotificationRecipientSet):
             text = "are the bug contact for %s" % distro.displayname
         self._addReason(person, text, reason)
 
-    def addPackageBugContact(self, person, package):
-        """Registers a package bug contact for this bug."""
-        reason = "Bug Contact (%s)" % package.displayname
+    def addStructuralSubscriber(self, person, target):
+        """Registers a structural subscriber to this bug's target."""
+        reason = "Subscriber (%s)" % target.displayname
         if person.isTeam():
-            text = ("are a member of %s, which is a bug contact for %s" %
-                (person.displayname, package.displayname))
+            text = ("are a member of %s, which is subscribed to %s" %
+                (person.displayname, target.displayname))
             reason += " @%s" % person.name
         else:
-            text = "are a bug contact for %s" % package.displayname
+            text = "are subscribed to %s" % target.displayname
         self._addReason(person, text, reason)
 
     def addUpstreamBugContact(self, person, upstream):
@@ -333,7 +333,7 @@ class BugNotificationRecipients(NotificationRecipientSet):
             text = "are the bug contact for %s" % upstream.displayname
         self._addReason(person, text, reason)
 
-    def addUpstreamRegistrant(self, person, upstream):
+    def addRegistrant(self, person, upstream):
         """Registers an upstream product registrant for this bug."""
         reason = "Registrant (%s)" % upstream.displayname
         if person.isTeam():

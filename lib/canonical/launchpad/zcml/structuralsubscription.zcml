@@ -13,4 +13,19 @@
         />
     </content>
 
+    <browser:page
+        for="canonical.launchpad.interfaces.IStructuralSubscriptionTarget"
+        name="+subscribe"
+        permission="launchpad.AnyPerson"
+        facet="bugs"
+        class="canonical.launchpad.browser.structuralsubscription.StructuralSubscriptionView"
+        template="../templates/structural-subscriptions-manage.pt" />
+
+    <browser:page
+	for="canonical.launchpad.interfaces.IStructuralSubscriptionTarget"
+	name="+portlet-structural-subscribers"
+	facet="bugs"
+	permission="zope.Public"
+	template="../templates/structural-subscription-target-portlet-subscribers.pt" />
+
 </configure>
