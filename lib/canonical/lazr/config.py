@@ -36,6 +36,13 @@ def read_content(filename):
         source_file.close()
     return raw_data
 
+def normalized_stringio(text):
+    """Return a StringIO object with leading whitespace removed."""
+    lines = []
+    for line in text.splitlines():
+        lines.append(line.lstrip())
+    text = '\n'.join(lines)
+    return StringIO.StringIO(text)
 
 class SectionSchema:
     """See `ISectionSchema`."""
@@ -121,7 +128,7 @@ class ConfigSchema:
     """See `IConfigSchema`."""
     implements(IConfigSchema, IConfigLoader)
 
-    section_factory = Section
+    _section_factory = Section
 
     def __init__(self, filename):
         """Load a configuration schema from the provided filename.
@@ -161,7 +168,7 @@ class ConfigSchema:
                 raise RedefinedSectionError(section_name)
             else:
                 section_names.append(section_name)
-        return StringIO.StringIO(raw_schema)
+        return normalized_stringio(raw_schema)
 
     def _setSectionSchemasAndCategoryNames(self, parser):
         """Set the SectionSchemas and category_names from the config."""
@@ -218,6 +225,11 @@ class ConfigSchema:
             raise InvalidSectionNameError(
                 '[%s] name does not match [\w.-]+.' % name)
         return (section_name, category_name,  is_template, is_optional)
+
+    @property
+    def section_factory(self):
+        """See `IConfigSchema`."""
+        return self._section_factory
 
     @property
     def category_names(self):
@@ -303,6 +315,14 @@ class ConfigData:
             if '.' in section_name:
                 category_names.add(section_name.split('.')[0])
         return tuple(category_names)
+
+    @property
+    def section_factory(self):
+        """See `IConfigSchema`.
+
+        :return: None. ConfigData cannot manipulate data.
+        """
+        return None
 
     @property
     def category_names(self):
@@ -414,7 +434,7 @@ class Config:
             confs = []
         encoding_errors = self._verifyEncoding(conf_data)
         parser = SafeConfigParser()
-        parser.readfp(StringIO.StringIO(conf_data), conf_filename)
+        parser.readfp(normalized_stringio(conf_data), conf_filename)
         confs.append((conf_filename, parser, encoding_errors))
         if parser.has_option('meta', 'extends'):
             base_path = dirname(conf_filename)

@@ -222,21 +222,21 @@ UnicodeDecodeError.
 
     >>> testfiles_dir = path.normpath(path.join(
     ...     path.dirname(__file__), '..', 'ftests', 'testfiles'))
-    >>> ConfigSchema('%s/%s' % (testfiles_dir, 'bad-nonascii.conf'))
+    >>> ConfigSchema(path.join(testfiles_dir, 'bad-nonascii.conf'))
     Traceback (most recent call last):
       ...
     UnicodeDecodeError: ...
 
 Keys without sections raise MissingSectionHeaderError.
 
-    >>> ConfigSchema('%s/%s' % (testfiles_dir, 'bad-sectionless.conf'))
+    >>> ConfigSchema(path.join(testfiles_dir, 'bad-sectionless.conf'))
     Traceback (most recent call last):
       ...
     MissingSectionHeaderError: File contains no section headers. ...
 
 Redefining a section in a config file will raise a RedefinedSectionError.
 
-    >>> ConfigSchema('%s/%s' % (testfiles_dir, 'bad-redefined-section.conf'))
+    >>> ConfigSchema(path.join(testfiles_dir, 'bad-redefined-section.conf'))
     Traceback (most recent call last):
       ...
     RedefinedSectionError: ...
@@ -248,8 +248,7 @@ Redefining a section in a config file will raise a RedefinedSectionError.
 Defining a section that belongs to many categories will raise
 a InvalidSectionNameError.
 
-    >>> ConfigSchema('%s/%s' % (
-    ...     testfiles_dir, 'bad-invalid-name.conf'))
+    >>> ConfigSchema(path.join(testfiles_dir, 'bad-invalid-name.conf'))
     Traceback (most recent call last):
       ...
     InvalidSectionNameError: [category.other_category.name.optional] ...
@@ -257,8 +256,7 @@ a InvalidSectionNameError.
 As does using non word characters other than a dot or dash in the
 section name.
 
-    >>> ConfigSchema('%s/%s' % (
-    ...     testfiles_dir, 'bad-invalid-name-chars.conf'))
+    >>> ConfigSchema(path.join(testfiles_dir, 'bad-invalid-name-chars.conf'))
     Traceback (most recent call last):
       ...
     InvalidSectionNameError: [$category.name_part.optional] ...
@@ -276,7 +274,7 @@ methods to return a Config instance.
 
 The load() method accepts a filename.
 
-    >>> local_conf = '%s/%s' % (testfiles_dir,  'local.conf')
+    >>> local_conf = path.join(testfiles_dir,  'local.conf')
     >>> config = schema.load(local_conf)
 
 Passing a filename to a non-existent file will raise an IOError.
@@ -291,16 +289,16 @@ keyword arg. The filename arg must be passed if the file-like object
 does not have a name attribute.
 
     >>> import StringIO
-    >>> bad_data = '\n'.join([
-    ...     "[meta]",
-    ...     "metakey: unsupported",
-    ...     "[unknown-section]",
-    ...     "key1 = value1",
-    ...     "[section_1]",
-    ...     "keyn: unknown key",
-    ...     "key1: bad character in caf\xc3)",
-    ...     "[section_3.template]",
-    ...     "key1: schema suffixes are not permitted"])
+    >>> bad_data = """
+    ...     [meta]
+    ...     metakey: unsupported
+    ...     [unknown-section]
+    ...     key1 = value1
+    ...     [section_1]
+    ...     keyn: unknown key
+    ...     key1: bad character in caf\xc3)
+    ...     [section_3.template]
+    ...     key1: schema suffixes are not permitted"""
     >>> schema.loadFile(StringIO.StringIO(bad_data))
     Traceback (most recent call last):
       ...
@@ -353,7 +351,7 @@ schema. This config was loaded before local.conf because its sections
 and values are required to be in place before local.conf applies its
 changes.
 
-    >>> shared_conf = '%s/%s' % (testfiles_dir,  'shared.conf')
+    >>> shared_conf = path.join(testfiles_dir,  'shared.conf')
     >>> shared_file = open(shared_conf, 'r')
     >>> raw_conf = shared_file.read()
     >>> shared_file.close()
@@ -474,6 +472,13 @@ from above....
 
     >>> section_1.name
     'section_1'
+
+The Section's type is the same type as the ConfigSchema.section_factory.
+
+    >>> section_1
+    <canonical.lazr.config.Section object at ...>
+    >>> config.schema.section_factory
+    <class 'canonical.lazr.config.Section'>
 
 A key can be verified to be in a Section.
 
@@ -602,10 +607,10 @@ updated when the unparsed data is pushed onto the config.
     key4 : F&#028c;k yeah!
     key5 : local value
 
-    >>> test_data = '\n'.join([
-    ...     "[section_1]",
-    ...     "key1: test1",
-    ...     "key5:"])
+    >>> test_data = """
+    ...     [section_1]
+    ...     key1: test1
+    ...     key5:"""
     >>> config.push('test config', test_data)
 
     >>> for key in sorted(config['section_1']):
@@ -679,9 +684,9 @@ values in the config to the schema's default values.
     >>> extender_conf_name = path.normpath(path.join(
     ...     path.dirname(__file__), '..', 'ftests', 'testfiles',
     ...     'extender.conf'))
-    >>> extender_conf_data = '\n'.join([
-    ...     "[meta]",
-    ...     "extends: base.conf"])
+    >>> extender_conf_data = """
+    ...     [meta]
+    ...     extends: base.conf"""
     >>> config.push(extender_conf_name, extender_conf_data)
     >>> for config_data in config.overlays:
     ...     print config_data.name
