@@ -911,7 +911,6 @@ class DebBugs(ExternalBugTracker):
                 commit()
                 return message
 
-
 #
 # Mantis
 #

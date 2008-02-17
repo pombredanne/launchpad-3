@@ -265,7 +265,7 @@ contact any external servers.
     INFO    No watches to update on http://bugs.example.com
     INFO    No watches to update on http://bugs.example.com/ni
     INFO    No watches to update on http://bugs.debian.org
-    INFO    ExternalBugtracker for BugTrackerType 'EMAILADDRESS' is not
+    WARNING ExternalBugtracker for BugTrackerType 'EMAILADDRESS' is not
             known.
     INFO    ExternalBugtracker for BugTrackerType 'SAVANNAH' is not known.
     INFO    No watches to update on http://bugzilla.gnome.org/bugs
