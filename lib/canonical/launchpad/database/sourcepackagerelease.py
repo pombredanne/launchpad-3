@@ -285,18 +285,34 @@ class SourcePackageRelease(SQLBase):
             BinaryPackagePublishingHistory.archive = %s
         """ % sqlvalues(self, distroarchseries, archive)
 
-        build_from_published_binaries = Build.selectOne(
-            query, clauseTables=clauseTables)
+        select_results = Build.select(
+            query, clauseTables=clauseTables, distinct=True,
+            orderBy='-Build.id')
 
-        # If there was published binary we can use its original build.
-        # This case covers the situations when both, source and binaries
-        # got copied from another location.
-        if build_from_published_binaries is not None:
-            return build_from_published_binaries
+        # XXX cprov 20080216: this if/elif/else block could be avoided or,
+        # at least, simplified if SelectOne accepts 'distinct' argument.
+        # The query above results in multiple identical builds for ..
+        results = list(select_results)
+        if len(results) == 1:
+            # If there was any published binary we can use its original build.
+            # This case covers the situations when both, source and binaries
+            # got copied from another location.
+            return results[0]
+        elif len(results) > 1:
+            # If more than one distinct build was found we have a problem.
+            # A build was created when it shouldn't, possible due to bug
+            # #181736. The broken build should be manually removed.
+            raise AssertionError(
+                    "Found more than one build candidate: %s. It possibly "
+                    "means we have a serious problem in out DB model, "
+                    "further investigation is required." %
+                    [build.id for build in results])
+        else:
+            # If there was no published binary we have to try to find a
+            # suitable build in all possible location across the distroseries
+            # inheritance tree. See bellow.
+            pass
 
-        # If there was no published binary we have to try to find a suitable
-        # build in all possible location across the distroseries inheritance
-        # tree.
         queries = ["Build.sourcepackagerelease = %s" % sqlvalues(self)]
 
         # Find out all the possible parent DistroArchSeries
