@@ -14,6 +14,7 @@ import unittest
 
 import CVS
 import pysvn
+import svn_oo
 
 from bzrlib.urlutils import local_path_to_url, join as urljoin
 from bzrlib.transport import Server
@@ -22,6 +23,19 @@ from bzrlib.tests.treeshape import build_tree_contents
 
 from canonical.codehosting.codeimport.foreigntree import (
     CVSWorkingTree, SubversionWorkingTree)
+
+
+def _make_silent_logger():
+    """Create a logger that prints nothing."""
+
+    class SilentLogHandler(logging.Handler):
+        def emit(self, record):
+            pass
+
+    logger = logging.Logger("collector")
+    handler = SilentLogHandler()
+    logger.addHandler(handler)
+    return logger
 
 
 def run_in_temporary_directory(function):
@@ -48,25 +62,13 @@ def run_in_temporary_directory(function):
 
 class SubversionServer(Server):
 
-    class _SilentLogHandler(logging.Handler):
-        def emit(self, record):
-            pass
-
     def __init__(self, repository_path):
         self.repository_path = os.path.abspath(repository_path)
-
-    def _makeSilentLogger(self):
-        """Create a logger that prints nothing."""
-        logger = logging.Logger("collector")
-        handler = self._SilentLogHandler()
-        logger.addHandler(handler)
-        return logger
 
     def createRepository(self, path):
         """Create a Subversion repository at `path`."""
         # XXX: This should be a class method probably.
-        import svn_oo
-        svn_oo.Repository.Create(path, self._makeSilentLogger())
+        svn_oo.Repository.Create(path, _make_silent_logger())
 
     def get_url(self):
         """Return a URL to the Subversion repository."""
@@ -171,10 +173,6 @@ class TestSubversionWorkingTree(TestCaseWithTransport):
 class CVSServer(Server):
     """A CVS server for testing."""
 
-    class _SilentLogHandler(logging.Handler):
-        def emit(self, record):
-            pass
-
     def __init__(self, repository_path):
         """Construct a `CVSServer`.
 
@@ -183,20 +181,13 @@ class CVSServer(Server):
         """
         self._repository_path = os.path.abspath(repository_path)
 
-    def _makeSilentLogger(self):
-        """Create a logger that prints nothing."""
-        logger = logging.Logger("collector")
-        handler = self._SilentLogHandler()
-        logger.addHandler(handler)
-        return logger
-
     def createRepository(self, path):
         """Create a CVS repository at `path`.
 
         :param path: The local path to create a repository in.
         :return: A CVS.Repository`.
         """
-        return CVS.init(path, self._makeSilentLogger())
+        return CVS.init(path, _make_silent_logger())
 
     def getRoot(self):
         """Return the CVS root for this server."""
