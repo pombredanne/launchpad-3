@@ -1248,3 +1248,98 @@ always listed in the same, predictable order.
     BLOCKED:
     ubuntu/grumpy       Grumpy
 
+
+== cleanUpQueue ==
+
+The queue is cleaned up regularly.  This removes entries that are either
+DELETED or IMPORTED and get too old.
+
+We start with a situation where there is nothing on the queue that needs
+cleaning up.
+
+    >>> # Clean up any entries from sample data that should be purged
+    >>> dummy = translationimportqueue.cleanUpQueue()
+    >>> # cleanUpQueue() returns the number of requests that were purged.
+    >>> translationimportqueue.cleanUpQueue()
+    0
+
+
+=== Deleted Entries ===
+
+The user requests an upload, then marks the request as DELETED.
+
+    >>> entry = translationimportqueue.addOrUpdateEntry(
+    ...     u'po/nl.po', 'hoi', True, rosetta_experts,
+    ...      productseries=evolution_productseries)
+    >>> entry.status = RosettaImportStatus.DELETED
+
+
+The entry stays on the queue long enough to make it a candidate for
+purging.
+
+    >>> now = datetime.datetime.now(UTC)
+    >>> stale = now - datetime.timedelta(4)
+    >>> entry.date_status_changed = stale
+    >>> flush_database_updates()
+
+
+The entry is deleted as part of the next cleanup.
+
+    >>> translationimportqueue.cleanUpQueue()
+    1
+
+
+=== Imported Entries ===
+
+The user re-uploads the file after fixing some problem.  This time it is
+imported successfully, ending up in the IMPORTED state.
+
+    >>> entry = translationimportqueue.addOrUpdateEntry(
+    ...     u'po/nl.po', 'hoi', True, rosetta_experts,
+    ...      productseries=evolution_productseries)
+    >>> entry.status = RosettaImportStatus.IMPORTED
+
+
+This request, too, is deleted when left in this state for longer than a
+few days.
+
+    >>> entry.date_status_changed = stale
+    >>> flush_database_updates()
+    >>> translationimportqueue.cleanUpQueue()
+    1
+
+
+=== Deactivated Products ===
+
+A user sets up Jokosher for translation, and uploads a template.
+
+    >>> jokosher = productset['jokosher']
+    >>> jokosher_trunk = jokosher.getSeries('trunk')
+    >>> jokosher.official_rosetta = True
+    >>> jokosher_subset = potemplateset.getSubset(productseries=jokosher_trunk)
+    >>> template = jokosher_subset.new(
+    ...     'jokosher', 'jokosher', 'jokosher.pot', rosetta_experts)
+    >>> flush_database_updates()
+    >>> entry = create_product_request('jokosher', 'jokosher')
+    >>> flush_database_updates()
+
+
+The entry sits on the queue; there is no reason for anyone to purge it.
+
+    >>> translationimportqueue.cleanUpQueue()
+    0
+
+
+An administrator finds that this registration of the Jokosher project
+does not satisfy Launchpad policy, and disables it.
+
+    >>> jokosher.active = False
+    >>> flush_database_updates()
+
+
+The request is now eligible for purging.  Since the Jokosher product is
+no longer usable, there is no point in keeping the entry on the queue.
+
+    >>> translationimportqueue.cleanUpQueue()
+    1
+
