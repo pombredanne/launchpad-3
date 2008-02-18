@@ -150,15 +150,6 @@ td.error {
 .debugging.message, .debugging .message {
   background-image: url(/@@/info);
 }
-/* Guidelines, e.g. bug reporting guidelines. Content is typically
- * provided by users, and rendered by text-to-html. Child elements
- * are thus expected to be paragraphs.
- */
-.guidelines {
-  font-weight: bold;
-  background-color: #fafca9; border: 1px solid #999;
-  margin: 0; padding: 0 1em;
-}
 .whiteboard {
   color: #666;
 }
