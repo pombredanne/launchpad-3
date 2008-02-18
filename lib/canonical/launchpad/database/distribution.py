@@ -1085,7 +1085,7 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
                   RelatedBugTask.bug END) AS bugs_affecting_upstream,
             COUNT(DISTINCT CASE WHEN Bugtask.status = %(triaged)s AND
                   (RelatedBugTask.bugwatch IS NOT NULL OR
-                  RelatedProduct.official_malone = 'T') THEN
+                  RelatedProduct.official_malone IS TRUE) THEN
                   RelatedBugTask.bug END) AS bugs_with_upstream_bugwatch
             FROM
                 SourcePackageName AS SPN
@@ -1145,7 +1145,7 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
                    Packaging.productseries = ProductSeries.id AND
                    Packaging.sourcepackagename IN %s AND
                    Packaging.packaging = %s AND
-                   Product.active = 'T'
+                   Product.active IS TRUE
                    ORDER BY Packaging.id
         """ % sqlvalues(self.id, spn_ids, PackagingType.PRIME))
         sources_to_products = dict(cur.fetchall())

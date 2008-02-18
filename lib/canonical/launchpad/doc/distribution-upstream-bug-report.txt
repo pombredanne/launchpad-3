@@ -9,7 +9,7 @@ to allow a distribution to focus on and improve this process.
     >>> from canonical.launchpad.ftests import login
     >>> from canonical.launchpad.ftests.bug import (
     ...     create_bug_from_strings)
-    >>> from canonical.database.sqlbase import flush_database_updates
+    >>> from canonical.launchpad.ftests import sync
     >>> from canonical.launchpad.interfaces import (
     ...     ISourcePackageNameSet, IDistributionSet, IProductSet,
     ...     IPackagingUtil, IPersonSet, PackagingType, IBugTaskSet,
@@ -54,9 +54,10 @@ the counts update:
     >>> sabdfl = getUtility(IPersonSet).getByName('sabdfl')
     >>> ls_bug = getUtility(IBugTaskSet).get(23)
     >>> ls_bug.transitionToStatus(BugTaskStatus.TRIAGED, sabdfl)
+    >>> sync(ls_bug)
     >>> mf_bug = getUtility(IBugTaskSet).get(17)
     >>> mf_bug.transitionToStatus(BugTaskStatus.TRIAGED, sabdfl)
-    >>> flush_database_updates()
+    >>> sync(mf_bug)
     >>> print_report(ubuntu.getPackagesAndPublicUpstreamBugCounts())
     linux-source-2.6.15 None    1 0 0 0
     mozilla-firefox     firefox 1 1 1 1
@@ -75,7 +76,6 @@ popped off the list:
     ...     summary='pmount has issues', description='fix it again',
     ...     status=BugTaskStatus.TRIAGED)
     >>> ubuntu_pmount_task = bug.bugtasks[0]
-    >>> flush_database_updates()
     >>> print_report(ubuntu.getPackagesAndPublicUpstreamBugCounts(limit=3))
     pmount              None    2 2 0 0
     linux-source-2.6.15 None    1 0 0 0
@@ -109,7 +109,7 @@ Linking that task to a bugwatch makes the watch counts update:
     >>> url = "http://bugs.debian.org/cgi-bin/bugreport.cgi?bug=666"
     >>> [watch] = getUtility(IBugWatchSet).fromText(url, bug, name12)
     >>> task.bugwatch = watch
-    >>> flush_database_updates()
+    >>> sync(task)
     >>> print_report(ubuntu.getPackagesAndPublicUpstreamBugCounts(limit=3))
     pmount              pmount  2 2 1 1
     linux-source-2.6.15 None    1 0 0 0

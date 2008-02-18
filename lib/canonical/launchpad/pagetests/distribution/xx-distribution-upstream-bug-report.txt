@@ -48,21 +48,22 @@ So let's check out the actual table:
     thunderbird          Missing corresponding product.  (find) (link)
         1    1   100.00  0  1    100.00    0    1  100.00  0
 
-XXX: One thing to note from the counts above is that while the
-linux-source/tomcat task is counted as pending a bugwatch, the
-mozilla-firefox one is not -- and the reason for that is that
-mozilla-firefox's linked upstream, firefox, officially uses malone. We
-count it as "watched" even though it's really native.
+XXX kiko 2008-02-01 bug=188020: One thing to note from the counts above
+is that while the linux-source/tomcat task is counted as pending a
+bugwatch, the mozilla-firefox one is not -- and the reason for that is
+that mozilla-firefox's linked upstream, firefox, officially uses malone.
+We count it as "watched" even though it's really native. The problem
+becomes clearer as you look at the totals:
 
     >>> table = find_tag_by_id(browser.contents, 'upstream-report-totals')
     >>> print extract_text(table)
         Totals:  4  4  100.00   0  4  100.00   0  3  75.00  1
 
-XXX: This 3 in the watched column is caused by a problem similar to the
+This 3 in the watched column is caused by a problem similar to the
 above; if you do a count of the values in the cells it would be 2, of
 course. Reason is that watch counts against mozilla-firefox are not
 rendered, but totalized as if they were watched, and the total line
-doesn't add up. 
+doesn't add up.
 
 This and the display problem above should be fixed. We could avoid
 totalizing the watched bugs for native upstreams, but then we'd have a
