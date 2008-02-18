@@ -35,6 +35,7 @@ from canonical.launchpad.interfaces import (
 
 from canonical.launchpad.database.build import Build
 from canonical.launchpad.database.files import SourcePackageReleaseFile
+from canonical.launchpad.validators.person import public_person_validator
 from canonical.launchpad.database.publishing import (
     SourcePackagePublishingHistory)
 from canonical.launchpad.database.queue import PackageUpload
@@ -46,12 +47,15 @@ class SourcePackageRelease(SQLBase):
     _table = 'SourcePackageRelease'
 
     section = ForeignKey(foreignKey='Section', dbName='section')
-    creator = ForeignKey(foreignKey='Person', dbName='creator', notNull=True)
+    creator = ForeignKey(
+        dbName='creator', foreignKey='Person',
+        validator=public_person_validator, notNull=True)
     component = ForeignKey(foreignKey='Component', dbName='component')
     sourcepackagename = ForeignKey(foreignKey='SourcePackageName',
         dbName='sourcepackagename', notNull=True)
-    maintainer = ForeignKey(foreignKey='Person', dbName='maintainer',
-        notNull=True)
+    maintainer = ForeignKey(
+        dbName='maintainer', foreignKey='Person',
+        validator=public_person_validator, notNull=True)
     dscsigningkey = ForeignKey(foreignKey='GPGKey', dbName='dscsigningkey')
     urgency = EnumCol(dbName='urgency', schema=SourcePackageUrgency,
         default=SourcePackageUrgency.LOW, notNull=True)

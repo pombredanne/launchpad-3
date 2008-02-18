@@ -22,6 +22,7 @@ from canonical.database.enumcol import EnumCol
 from canonical.launchpad.event import SQLObjectCreatedEvent
 from canonical.launchpad.interfaces import (
     BugBranchStatus, IBugBranch, IBugBranchSet, ILaunchpadCelebrities)
+from canonical.launchpad.validators.person import public_person_validator
 
 
 class BugBranch(SQLBase):
@@ -38,7 +39,8 @@ class BugBranch(SQLBase):
     whiteboard = StringCol(notNull=False, default=None)
 
     registrant = ForeignKey(
-        dbName='registrant', foreignKey='Person', notNull=True)
+        dbName='registrant', foreignKey='Person',
+        validator=public_person_validator, notNull=True)
 
     @property
     def bug_task(self):

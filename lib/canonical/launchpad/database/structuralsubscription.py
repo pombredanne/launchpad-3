@@ -18,7 +18,7 @@ from canonical.launchpad.interfaces import (
     IDistribution, IDistributionSourcePackage, IDistroSeries, IMilestone,
     IProduct, IProductSeries, IStructuralSubscription,
     IStructuralSubscriptionTarget)
-
+from canonical.launchpad.validators.person import public_person_validator
 
 class StructuralSubscription(SQLBase):
     """A subscription to a Launchpad structure."""
@@ -47,9 +47,11 @@ class StructuralSubscription(SQLBase):
         dbName='sourcepackagename', foreignKey='SourcePackageName',
         notNull=False, default=None)
     subscriber = ForeignKey(
-        dbName='subscriber', foreignKey='Person', notNull=True)
+        dbName='subscriber', foreignKey='Person',
+        validator=public_person_validator, notNull=True)
     subscribed_by = ForeignKey(
-        dbName='subscribed_by', foreignKey='Person', notNull=True)
+        dbName='subscribed_by', foreignKey='Person',
+        validator=public_person_validator, notNull=True)
     bug_notification_level = EnumCol(
         enum=BugNotificationLevel,
         default=BugNotificationLevel.NOTHING,
