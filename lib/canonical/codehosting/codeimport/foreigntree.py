@@ -10,6 +10,8 @@ import os
 import CVS
 import pysvn
 
+import svn_oo
+
 
 # Importer
 # - Checkout
@@ -69,5 +71,5 @@ class SubversionWorkingTree(ForeignWorkingTree):
             self.remote_url, self.local_path, ignore_externals=True)
 
     def update(self):
-        svn_client = pysvn.Client()
-        svn_client.update(self.local_path)
+        tree = svn_oo.WorkingTree(self.local_path)
+        tree.update()
