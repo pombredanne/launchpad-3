@@ -1123,6 +1123,12 @@ k            </description>
             Where the Bazaar imports are stored.
           </description>
         </key>
+        <key name="foreign_branch_store" datatype="string"
+             required="no" default="sftp://hoover@escudero/srv/importd/sources/">
+          <description>
+            Where the tarballs of foreign branches are uploaded for storage.
+          </description>
+        </key>
     </sectiontype>
 
     <sectiontype name="personalpackagearchive">

@@ -4,24 +4,31 @@
 
 __metaclass__ = type
 
+import os
 import shutil
 import tempfile
 import unittest
 
 from bzrlib.bzrdir import BzrDir
+from bzrlib.errors import NoSuchFile
 from bzrlib.tests import TestCaseWithTransport
 from bzrlib.transport import get_transport
 from bzrlib.urlutils import join as urljoin
 
 from canonical.cachedproperty import cachedproperty
 from canonical.codehosting.codeimport.worker import (
-    BazaarBranchStore, get_default_bazaar_branch_store)
+    BazaarBranchStore, ForeignBranchStore, get_default_bazaar_branch_store,
+    get_default_foreign_branch_store)
 from canonical.codehosting.tests.helpers import (
     create_branch_with_one_revision)
 from canonical.config import config
-from canonical.launchpad.interfaces import BranchType, BranchTypeError
+from canonical.launchpad.interfaces import (
+    BranchType, BranchTypeError, ICodeImportSet, ILaunchpadCelebrities,
+    RevisionControlSystems)
 from canonical.launchpad.testing import LaunchpadObjectFactory
 from canonical.testing import LaunchpadScriptLayer
+
+from zope.component import getUtility
 
 
 class WorkerTest(TestCaseWithTransport):
@@ -36,6 +43,26 @@ class WorkerTest(TestCaseWithTransport):
     @cachedproperty
     def factory(self):
         return LaunchpadObjectFactory()
+
+    def makeCodeImport(self, svn_branch_url=None, cvs_root=None,
+                       cvs_module=None):
+        if svn_branch_url is cvs_root is cvs_module is None:
+            svn_branch_url = self.factory.getUniqueURL()
+
+        vcs_imports = getUtility(ILaunchpadCelebrities).vcs_imports
+        branch = self.factory.makeBranch(
+            BranchType.IMPORTED, owner=vcs_imports)
+        registrant = self.factory.makePerson()
+
+        code_import_set = getUtility(ICodeImportSet)
+        if svn_branch_url is not None:
+            return code_import_set.new(
+                registrant, branch, rcs_type=RevisionControlSystems.SVN,
+                svn_branch_url=svn_branch_url)
+        else:
+            return code_import_set.new(
+                registrant, branch, rcs_type=RevisionControlSystems.CVS,
+                cvs_root=cvs_root, cvs_module=cvs_module)
 
     def makeTemporaryDirectory(self):
         directory = tempfile.mkdtemp()
@@ -155,6 +182,146 @@ class TestBazaarBranchStore(WorkerTest):
         self.assertEqual(
             store._getMirrorURL(self.branch),
             sftp_prefix_noslash + '/' + '%08x' % self.branch.id)
+
+
+class MockForeignWorkingTree:
+
+    def __init__(self, local_path):
+        self.local_path = local_path
+        self.log = []
+
+    def checkout(self):
+        self.log.append('checkout')
+
+    def update(self):
+        self.log.append('update')
+
+
+class TestForeignBranchStore(WorkerTest):
+
+    def assertCheckedOut(self, tree):
+        self.assertEqual(['checkout'], tree.log)
+
+    def assertDirectoryTreesEqual(self, directory1, directory2):
+        """Assert that `directory1` has the same structure as `directory2`.
+
+        That is, assert that all of the files and directories beneath
+        `directory1` are laid out in the same way as `directory2`.
+        """
+        def list_files(directory):
+            return [
+                path[len(directory1):] for path, _, _ in os.walk(directory1)]
+        self.assertEqual(list_files(directory1), list_files(directory2))
+
+    def assertUpdated(self, tree):
+        self.assertEqual(['update'], tree.log)
+
+    def setUp(self):
+        """Set up a code import job to import a SVN branch."""
+        WorkerTest.setUp(self)
+        self.code_import = self.makeCodeImport()
+        self.temp_dir = self.makeTemporaryDirectory()
+        self._log = []
+
+    def makeForeignBranchStore(self, transport=None):
+        """Make a foreign branch store.
+
+        The store is in a different directory to the local working directory.
+        """
+        def _getForeignBranch(code_import, target_path):
+            return MockForeignWorkingTree(target_path)
+        if transport is None:
+            transport = self.get_transport('remote')
+        store = ForeignBranchStore(transport)
+        store._getForeignBranch = _getForeignBranch
+        return store
+
+    def test_getForeignBranchSubversion(self):
+        # _getForeignBranch() returns a Subversion working tree for Subversion
+        # code imports.
+        store = ForeignBranchStore(None)
+        svn_import = self.makeCodeImport(
+            svn_branch_url=self.factory.getUniqueURL())
+        working_tree = store._getForeignBranch(svn_import, 'path')
+        self.assertIsSameRealPath(working_tree.local_path, 'path')
+        self.assertEqual(working_tree.remote_url, svn_import.svn_branch_url)
+
+    def test_getForeignBranchCVS(self):
+        # _getForeignBranch() returns a CVS working tree for CVS code imports.
+        store = ForeignBranchStore(None)
+        cvs_import = self.makeCodeImport(cvs_root='root', cvs_module='module')
+        working_tree = store._getForeignBranch(cvs_import, 'path')
+        self.assertIsSameRealPath(working_tree.local_path, 'path')
+        self.assertEqual(working_tree.root, cvs_import.cvs_root)
+        self.assertEqual(working_tree.module, cvs_import.cvs_module)
+
+    def test_defaultStore(self):
+        # The default store is at config.codeimport.foreign_branch_store.
+        store = get_default_foreign_branch_store()
+        self.assertEqual(
+            store.transport.base.rstrip('/'),
+            config.codeimport.foreign_branch_store.rstrip('/'))
+
+    def test_getNewBranch(self):
+        # If the branch store doesn't have an archive of the foreign branch,
+        # then fetching the branch actually pulls in from the original site.
+        store = self.makeForeignBranchStore()
+        tree = store.fetchFromSource(self.code_import, self.temp_dir)
+        self.assertCheckedOut(tree)
+
+    def test_archiveBranch(self):
+        # Once we have a checkout of a foreign branch, we can archive it so
+        # that we can retrieve it more reliably in the future.
+        store = self.makeForeignBranchStore()
+        foreign_branch = store.fetchFromSource(
+            self.code_import, self.temp_dir)
+        store.archive(self.code_import, foreign_branch)
+        self.assertTrue(
+            store.transport.has('%08x.tar.gz' % self.code_import.branch.id),
+            "Couldn't find '%08x.tar.gz'" % self.code_import.branch.id)
+
+    def test_makeDirectories(self):
+        # archive() tries to create the base directory of the branch store if
+        # it doesn't already exist.
+        store = self.makeForeignBranchStore(self.get_transport('doesntexist'))
+        foreign_branch = store.fetchFromSource(
+            self.code_import, self.temp_dir)
+        store.archive(self.code_import, foreign_branch)
+        self.assertIsDirectory('doesntexist', self.get_transport())
+
+    def test_fetchFromArchiveFailure(self):
+        # If a branch has not been archived yet, but we try to retrieve it
+        # from the archive, then we get a NoSuchFile error.
+        store = self.makeForeignBranchStore()
+        self.assertRaises(
+            NoSuchFile,
+            store.fetchFromArchive, self.code_import, self.temp_dir)
+
+    def test_fetchFromArchive(self):
+        # After archiving a branch, we can retrieve it from the store -- the
+        # tarball gets downloaded and extracted.
+        store = self.makeForeignBranchStore()
+        foreign_branch = store.fetchFromSource(
+            self.code_import, self.temp_dir)
+        store.archive(self.code_import, foreign_branch)
+        new_temp_dir = self.makeTemporaryDirectory()
+        foreign_branch2 = store.fetchFromArchive(
+            self.code_import, new_temp_dir)
+        # XXX: Assert that the branches target the same repository.
+        self.assertEqual(new_temp_dir, foreign_branch2.local_path)
+        self.assertDirectoryTreesEqual(self.temp_dir, new_temp_dir)
+
+    def test_fetchFromArchiveUpdates(self):
+        # The local working tree is updated with changes from the remote
+        # branch after it has been fetched from the archive.
+        store = self.makeForeignBranchStore()
+        foreign_branch = store.fetchFromSource(
+            self.code_import, self.temp_dir)
+        store.archive(self.code_import, foreign_branch)
+        new_temp_dir = self.makeTemporaryDirectory()
+        foreign_branch2 = store.fetchFromArchive(
+            self.code_import, new_temp_dir)
+        self.assertUpdated(foreign_branch2)
 
 
 def test_suite():
