@@ -58,6 +58,10 @@ class SubversionWorkingTree:
         svn_client.checkout(
             self.remote_url, self.local_path, ignore_externals=True)
 
+    def commit(self):
+        client = pysvn.Client()
+        client.checkin(self.local_path, 'Log message', recurse=True)
+
     def update(self):
         tree = svn_oo.WorkingTree(self.local_path)
         tree.update()

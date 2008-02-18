@@ -4,7 +4,6 @@
 
 __metaclass__ = type
 
-
 import logging
 import os
 import shutil
@@ -162,8 +161,7 @@ class TestSubversionWorkingTree(TestCaseWithTransport):
         # XXX - "README" is a mystery guest.
         new_content = 'Comfort ye\n'
         self.build_tree_contents([('tree/README', new_content)])
-        client = pysvn.Client()
-        client.checkin('tree', 'Make a change', recurse=True)
+        tree.commit()
 
         tree2.update()
         readme_path = os.path.join(tree2.local_path, 'README')
