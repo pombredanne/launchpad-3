@@ -4,6 +4,16 @@ The BugWatchUpdater class can be instructed to update only a subset of
 bugtrackers. This is acheived by passing a list of bug tracker names to
 the updateBugTrackers() method.
 
+We'll update all bugtrackers so that the test doesn't try to make any
+external connections.
+
+    >>> from canonical.database.sqlbase import cursor
+    >>> from canonical.database.constants import UTC_NOW
+    >>> cur = cursor()
+    >>> cur.execute("UPDATE BugWatch SET lastchecked=%s" % UTC_NOW)
+    >>> import transaction
+    >>> transaction.commit()
+
     >>> from canonical.database.sqlbase import (
     ...     ZopelessTransactionManager)
     >>> from canonical.launchpad.scripts import FakeLogger
@@ -13,13 +23,8 @@ the updateBugTrackers() method.
     >>> updater = BugWatchUpdater(transactionmgr, log=FakeLogger())
     >>> updater._login()
     >>> updater.updateBugTrackers(['debbugs', 'gnome-bugzilla'])
-    INFO...Updating 5 watches on http://bugs.debian.org
-    INFO...Imported 7 comments for remote bug...
-    INFO...Imported 4 comments for remote bug...
-    INFO...Imported 7 comments for remote bug...
-    INFO...Imported 2 comments for remote bug...
-    INFO...Updating 2 watches on http://bugzilla.gnome.org/bugs
-    ERROR http://bugzilla.gnome.org/bugs: HTTP Error 404: Not Found
+    INFO...No watches to update on http://bugs.debian.org
+    INFO...No watches to update on http://bugzilla.gnome.org/bugs
 
 This functionality can also be used with the checkwatches cronscript,
 allowing a user to pass a list of bugtrackers to check at the command
@@ -39,7 +44,7 @@ line.
     >>> print err
     INFO    creating lockfile
     INFO    No watches to update on http://bugs.debian.org
-    INFO    Updating 4 watches on https://bugzilla.mozilla.org
+    INFO    No watches to update on https://bugzilla.mozilla.org/
     INFO    Time for this run: ... seconds.
     <BLANKLINE>
 
