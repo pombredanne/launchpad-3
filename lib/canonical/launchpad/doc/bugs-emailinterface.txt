@@ -1764,6 +1764,7 @@ The first part is the error message, explaining what went wrong.
     --
     For more information about using Malone by e-mail, see
     https://help.launchpad.net/BugTrackerEmailInterface
+    or send an email to help@launchpad.net
 
 The second part is the message that the user sent, which caused the
 error to happen.
@@ -1841,6 +1842,44 @@ Launchpad username.
     >>> print get_bug_edit_notification_texts(bug_delta)[0]
     **...
     ...Assignee: Warty Gnome Team (warty-gnome)...
+
+
+== Requesting help ==
+
+It's possible to ask for the help document for the email interface via
+email too. Just send an email to `help@bugs.launchpad.net`.
+
+    >>> submit_mail = """From: Sample Person <test@canonical.com>
+    ... To: help@bugs.canonical.com
+    ... Date: Fri Jun 17 10:20:23 BST 2006
+    ... Subject: help
+    ...
+    ... help
+    ... """
+    >>> process_email(submit_mail)
+    >>> from_addr, to_addrs, raw_message = stub.test_emails[-1]
+    >>> print raw_message
+    Content-Type: text/plain; charset="utf-8"
+    ...
+    To: test@canonical.com
+    From: help@bugs.launchpad.net
+    Subject: Launchpad Bug Tracker Email Interface Help
+    ...
+    This document describes the email interface to the bug tracker...
+    ...
+
+Only mail coming from verified Launchpad users is answered.
+
+    >>> submit_mail = """From: Not a User <nobody@nowhere.com>
+    ... To: help@bugs.canonical.com
+    ... Date: Fri Jun 17 10:20:23 BST 2006
+    ... Subject: help
+    ...
+    ... help
+    ... """
+    >>> process_email(submit_mail)
+    >>> 'nobody@nowhere.com' in stub.test_emails[-1][2]
+    False
 
 
 == Email attachments ==
@@ -2226,6 +2265,7 @@ not changed.
     >>> print_attachments(get_latest_added_bug().attachments)
     LibraryFileAlias logfile text/plain UNSPECIFIED
     LibraryFileAlias logfile text/plain UNSPECIFIED
+
 
 XXX: Add tests for non-ascii mails.
      -- Bjorn Tillenius, 2005-05-20
