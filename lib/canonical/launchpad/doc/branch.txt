@@ -644,7 +644,7 @@ used to identify when a scan is needed for a branch.
 == Codebrowse and branches ==
 
 Most branches are able to be browsed using the loggerhead codebrowse
-instance at http://codebrowse.launchpad.net.  Branches that have no
+instance at http://bazaar.launchpad.net.  Branches that have no
 revisions or private branches are not able to be viewed using code
 browse.
 
