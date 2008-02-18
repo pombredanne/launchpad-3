@@ -51,7 +51,7 @@ via email.
 
 
 When a new email list becomes active, an email notification is sent to
-all team members.
+all active team members.
 
     >>> from canonical.launchpad.ftests.mailinglists_helper import (
     ...		new_team, new_person, new_list_for_team)
@@ -69,7 +69,6 @@ all team members.
     # This will take our team through the entire list creation
     # process, generating notification emails along the way.
     >>> list_one = new_list_for_team(team_one)
-
     >>> len(stub.test_emails)
     2
     >>> print_distinct_messages_and_recipients(include_reply_to=True)
@@ -80,8 +79,18 @@ That notification is also sent to the individual members of all sub-teams.
     >>> from canonical.launchpad.interfaces import IPersonSet
     >>> salgado = getUtility(IPersonSet).getByName('salgado')
 
-    >>> pass
+    >>> super_team = new_team('super-team', with_list=False)
+    >>> sub_team = new_team('sub-team', with_list=False)
+    >>> super_team.addMember(sub_team, salgado, force_team_add=True)
+    >>> anne.join(super_team)
+    >>> lars = new_person('Lars')
+    >>> lars.join(sub_team)
+    >>> cris = new_person('Cris')
+    >>> cris.join(super_team)
+    >>> cris.join(sub_team)
 
-If a list has been de-activated, then the team members are already
-subscribed to it's list.  In this case the notification will not be
-sent out again.
+    >>> super_list = new_list_for_team(super_team)
+    >>> len(stub.test_emails)
+    3
+    >>> print_distinct_messages_and_recipients(include_reply_to=True)
+
