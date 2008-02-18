@@ -622,7 +622,7 @@ class TestPPAUploadProcessor(TestPPAUploadProcessorBase):
         contents = [
             "Subject: bar_1.0-1_i386.changes rejected",
             "Upload rejected because it contains binary packages. "
-            "Ensure you are using `debuild -S` command, or similar, "
+            "Ensure you are using `debuild -S`, or an equivalent command, "
             "to generate only the source package before re-uploading. "
             "See https://help.launchpad.net/PPAQuickStart/ for more "
             "information."]

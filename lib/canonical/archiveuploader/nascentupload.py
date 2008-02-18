@@ -161,8 +161,9 @@ class NascentUpload:
             elif self.binaryful and not self.policy.can_upload_binaries:
                 messages = [
                     "Upload rejected because it contains binary packages.",
-                    "Ensure you are using `debuild -S` command, or similar,",
-                    "to generate only the source package before re-uploading."
+                    "Ensure you are using `debuild -S`, or an equivalent",
+                    "command, to generate only the source package before",
+                    "re-uploading."
                     ]
                 if self.is_ppa:
                     messages.append(
