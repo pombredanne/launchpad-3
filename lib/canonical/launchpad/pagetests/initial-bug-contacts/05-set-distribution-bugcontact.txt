@@ -41,14 +41,12 @@ Ubuntu.
 
 And then we're redirected to the distribution page.
 
-  >>> from canonical.launchpad.ftests.test_pages import find_tags_by_class
-
   >>> browser.url
   'http://launchpad.dev/ubuntu'
 
   >>> for tag in find_tags_by_class(browser.contents, "informational message"):
   ...     print tag
-  <div...Successfully changed the distribution bug contact to carlos@canonical.com...
+  <div...Successfully changed the bug contact to ...Carlos Perelló Marín...
 
 Now that the bug contact is set, there's a link to him on the
 distribution page.
@@ -61,9 +59,9 @@ When the bug contact doesn't have an email address, the displayname is
 shown instead in the feedback message.
 
   >>> browser.open("http://launchpad.dev/ubuntu/+bugcontact")
-  >>> browser.getControl("Bug Contact").value = 'landscape-developers'
+  >>> browser.getControl("Bug Contact").value = 'ubuntu-team'
   >>> browser.getControl("Change").click()
 
   >>> for tag in find_tags_by_class(browser.contents, "informational message"):
   ...     print tag
-  <div...Successfully changed the distribution bug contact to Landscape Developers...
+  <div...Successfully changed the bug contact to ...Ubuntu Team...

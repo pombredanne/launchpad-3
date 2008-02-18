@@ -50,16 +50,46 @@ The currently published component is provided via the 'current_component'
 property.  It looks over the publishing records and finds the current
 publication of the source in question.
 
-    >>> firefox_build.current_component.name
-    u'main'
+    >>> print firefox_build.current_component.name
+    main
 
 It is not necessarily the same as:
 
-    >>> firefox_build.sourcepackagerelease.component.name
-    u'main'
+    >>> print firefox_build.sourcepackagerelease.component.name
+    main
 
 which is the component the source was originally uploaded to, before
 any overriding action.
+
+`IBuild.component_dependencies` is a dictionary mapping the available
+components and a list of components it can depend of.
+
+    >>> def printComponentDependencies(build):
+    ...     print " Component | Dependency"
+    ...     print "-----------+---------------"
+    ...     components = sorted(build.component_dependencies)
+    ...     for component in components:
+    ...         dependencies = " ".join(
+    ...             build.component_dependencies[component])
+    ...	        print '%10s | %s' % (component, dependencies)
+
+    >>> printComponentDependencies(firefox_build)
+     Component | Dependency
+    -----------+---------------
+          main | main
+    multiverse | main restricted universe multiverse
+       partner | partner
+    restricted | main restricted
+      universe | main restricted universe
+
+`IBuild.ogre_components` is the list of allowed components for
+building this source. It simply submits the `IBuild.current_component`
+to the `IBuild.components_dependencies` table.
+
+    >>> print firefox_build.ogre_components
+    ['main']
+
+See further information about 'Ogre Components' in a section below.
 
 The build can report any corresponding uploads using the package_upload
 property:
@@ -79,7 +109,6 @@ If the build does not have any uploads, None is returned:
     >>> at_build = getUtility(IBuildSet).getByBuildID(15)
     >>> print at_build.package_upload
     None
-
 
 Test "retry" functionality:
 
@@ -118,7 +147,6 @@ retried.
     >>> login('foo.bar@canonical.com')
     >>> warty.status = DistroSeriesStatus.DEVELOPMENT
     >>> flush_database_updates()
-    >>> logout()
     >>> login(ANONYMOUS)
 
     >>> active_build.can_be_retried
@@ -146,7 +174,6 @@ it won't interfere in the next tests.
     >>> login('foo.bar@canonical.com')
     >>> warty.status = DistroSeriesStatus.SUPPORTED
     >>> flush_database_updates()
-    >>> logout()
     >>> login(ANONYMOUS)
 
 Initialize all the required arguments to create a binary package for a
@@ -251,6 +278,7 @@ Rollback transaction to no disturb the other tests:
     >>> transaction.abort()
 
 
+== The BuildSet Class ==
 
 The BuildSet class gives us some useful ways to consider the
 collection of builds.
@@ -319,6 +347,8 @@ primary archive.
     [('PARTNER', u'i386 build of commercialpackage 1.0-1 in ubuntu breezy-autotest RELEASE')]
 
 
+== IHadBuildRecords.getBuildRecords() Implementations ==
+
 We can find recent and pending builds for a given distroseries.
 
     >>> hoary.getBuildRecords().count()
@@ -350,7 +380,7 @@ Exercises IHasBuildRecords abilities for distroarchseriess
     0
 
 
-    Same for distroseriess:
+Same for distroseries:
 
     >>> hoary.getBuildRecords().count()
     5
@@ -465,26 +495,91 @@ or using optional pocket argument:
     ...    pocket=PackagePublishingPocket.SECURITY).count()
     0
 
-Check IHasBuildRecords when implemented by Builder:
+IHasBuildRecords is implemented by Builder.  It can filter on build state
+and name.  A user can also be passed for security checks on private builds;
+if user is not passed then the query runs anonymously which means private
+builds are excluded from anything returned.
+
+Let's make cprov's archive private (and hence its builds become private):
+
+    >>> from canonical.launchpad.interfaces import IPersonSet
+    >>> cprov = getUtility(IPersonSet).getByName('cprov')
+    >>> removeSecurityProxy(cprov).archive.private = True
+    >>> flush_database_updates()
+
+Now define a helper function to print out build details:
+
+    >>> def print_build_details(builds):
+    ...     for build in builds:
+    ...         if build.archive.owner:
+    ...             print "%s: %s" % (build.archive.owner.name, build.title)
+    ...         else:
+    ...             print "main: %s" % (build.title)
+
+The default set of builds with no user specified excludes private builds:
 
     >>> from canonical.launchpad.interfaces import IBuilderSet
     >>> bob = getUtility(IBuilderSet)['bob']
-
     >>> bob_builds = bob.getBuildRecords()
+    >>> print_build_details(bob_builds)
+    main: hppa build of mozilla-firefox 0.9 in ubuntu warty RELEASE
+    no-priv: i386 build of cdrkit 1.0 in ubuntu warty RELEASE
+    main: i386 build of cdrkit 1.0 in ubuntu breezy-autotest RELEASE
+    ...
+    main: i386 build of mozilla-firefox 0.9 in ubuntu warty RELEASE
+
+    >>> bob_builds.count()
+    13
+
+If we include an admin user, we can see all the builds.  Here, we get
+three additional private builds for cprov:
+
+    >>> from canonical.launchpad.interfaces import ILaunchpadCelebrities
+    >>> admin = getUtility(ILaunchpadCelebrities).admin
+    >>> bob_builds = bob.getBuildRecords(user=admin)
+    >>> print_build_details(bob_builds)
+    main: hppa build of mozilla-firefox 0.9 in ubuntu warty RELEASE
+    cprov: hppa build of mozilla-firefox 0.9 in ubuntu warty RELEASE
+    cprov: i386 build of pmount 0.1-1 in ubuntu warty RELEASE
+    cprov: i386 build of cdrkit 1.0 in ubuntu warty RELEASE
+    no-priv: i386 build of cdrkit 1.0 in ubuntu warty RELEASE
+    main: i386 build of cdrkit 1.0 in ubuntu breezy-autotest RELEASE
+    ...
+    main: i386 build of mozilla-firefox 0.9 in ubuntu warty RELEASE
+
     >>> bob_builds.count()
     16
 
+Cprov can also see his own builds of course:
+
+    >>> bob_builds = bob.getBuildRecords(user=cprov)
+    >>> print_build_details(bob_builds)
+    main: hppa build of mozilla-firefox 0.9 in ubuntu warty RELEASE
+    cprov: hppa build of mozilla-firefox 0.9 in ubuntu warty RELEASE
+    cprov: i386 build of pmount 0.1-1 in ubuntu warty RELEASE
+    cprov: i386 build of cdrkit 1.0 in ubuntu warty RELEASE
+    no-priv: i386 build of cdrkit 1.0 in ubuntu warty RELEASE
+    main: i386 build of cdrkit 1.0 in ubuntu breezy-autotest RELEASE
+    ...
+    main: i386 build of mozilla-firefox 0.9 in ubuntu warty RELEASE
+
+You can filter on build state:
+
     >>> bob_failed_builds = bob.getBuildRecords(
-    ...     build_state=BuildStatus.FAILEDTOBUILD)
+    ...     build_state=BuildStatus.FAILEDTOBUILD, user=admin)
     >>> bob_failed_builds.count()
     3
 
-    >>> bob_pmount_builds = bob.getBuildRecords(name='pmount')
+You can filter on package name:
+
+    >>> bob_pmount_builds = bob.getBuildRecords(name='pmount', user=admin)
     >>> bob_pmount_builds.count()
     4
 
+You can filter on build state and package name:
+
     >>> bob_pmount_ok_builds = bob.getBuildRecords(
-    ...    build_state=BuildStatus.FULLYBUILT, name='pmount')
+    ...    build_state=BuildStatus.FULLYBUILT, name='pmount', user=admin)
     >>> bob_pmount_ok_builds.count()
     4
 
@@ -552,12 +647,66 @@ The build can now be re-tried:
 Similarly to PPA builds, they can be retried for release pockets since
 they will happen in another archive.
 
-    >>> from canonical.launchpad.interfaces import IPersonSet
-    >>> cprov = getUtility(IPersonSet).getByName('cprov')
     >>> removeSecurityProxy(failed_build).archive = cprov.archive
 
     >>> failed_build.can_be_retried
     True
+
+
+== 'Ogre' components ==
+
+The ubuntu 'ogre-model' ensures that build dependencies are
+consistently spread according the source target component, i.e. a
+source published in 'main' component is only allowed to depend on
+binaries also published in 'main', on the other hand a source
+published in 'universe' is allowed to depend on binaries published in
+'main', 'restricted' and 'universe' components.
+
+A proper name for this "model" would be 'cross-component-dependency'.
+
+    >>> from canonical.launchpad.interfaces import IComponentSet
+    >>> from canonical.launchpad.ftests import syncUpdate
+    >>> from canonical.database.sqlbase import flush_database_caches
+
+    >>> login('foo.bar@canonical.com')
+
+    >>> build = getUtility(IBuildSet).getByBuildID(12)
+
+    >>> source_pub = hoary.getSourcePackage(
+    ...     'libstdc++').currentrelease.current_published
+
+    >>> ubuntu_components = [
+    ...     'main', 'restricted', 'universe', 'multiverse', 'partner']
+
+    >>> def testOgreComponents():
+    ...     print " Component | Ogre-Model"
+    ...     print "-----------+---------------"
+    ...     for component in ubuntu_components:
+    ...         component = getUtility(IComponentSet)[component]
+    ...         source_pub.secure_record.component = component
+    ...         syncUpdate(source_pub.secure_record)
+    ...         flush_database_caches()
+    ...         print '%10s | %s' % (build.current_component.name,
+    ...                              " ".join(build.ogre_components))
+
+    >>> testOgreComponents()
+     Component | Ogre-Model
+    -----------+---------------
+          main | main
+    restricted | main restricted
+      universe | main restricted universe
+    multiverse | main restricted universe multiverse
+       partner | partner
+
+Restoring the original target component to the source used in this
+section, so there won't be any unexpected effects in subsequent
+tests.
+
+    >>> main_component = getUtility(IComponentSet)['main']
+    >>> source_pub.secure_record.component = main_component
+    >>> syncUpdate(source_pub.secure_record)
+    >>> flush_database_caches()
+    >>> login(ANONYMOUS)
 
 
 == Updating build-dependencies line ==
@@ -583,13 +732,59 @@ depwait_build, the 'dependencies' field remains the same.
     >>> depwait_build.dependencies == old_dep
     True
 
-But if the dependencies mentioned can be satisfied, they will be
-removed from the field.
+A dependency can only be used if it is an a component allowed in our
+context (see above on 'Ogre' components). If we do a build using a
+dependency available in the sample data but published in an unreachable
+component, we will see that the dependency is considered to be unsatisfied.
+See also bug 177827.
+
+    >>> depwait_build.dependencies = 'pmount'
+    >>> flush_database_updates()
+
+'pmount' in hoary/i386 is published in the 'universe' component:
+
+    >>> hoary_i386 = depwait_build.distroarchseries
+    >>> pmount_pub = hoary_i386[
+    ...     'pmount'].currentrelease.current_publishing_record
+    >>> print pmount_pub.component.name
+    universe
+
+The build is only allowed to depend on packages published in 'main':
+
+    >>> print depwait_build.current_component.name
+    main
+
+    >>> print depwait_build.ogre_components
+    ['main']
+
+Thus the 'pmount' dependency remains unsatisfied.
+
+    >>> depwait_build.updateDependencies()
+    >>> print depwait_build.dependencies
+    pmount
+
+If we make pmount in hoary/i386 reachable, by moving it to the 'main'
+component, we can see that it will be excluded from the dependencies
+list.
+
+    >>> login('foo.bar@canonical.com')
+    >>> pmount_pub.secure_record.component = main_component
+    >>> from canonical.database.sqlbase import flush_database_caches
+    >>> flush_database_caches()
+    >>> login(ANONYMOUS)
 
     >>> depwait_build.dependencies = 'mozilla-firefox, pmount'
+    >>> flush_database_updates()
+
+Note that only the satisfied dependencies are removed the build
+dependency list.
+
     >>> depwait_build.updateDependencies()
     >>> print depwait_build.dependencies
     mozilla-firefox
+
+
+=== Retrying DEPWAIT builds ===
 
 It depends on the callsite to decide whether or not to 'retry' a
 build after calling updateDependencies, to encapsulate such decision
@@ -602,7 +797,7 @@ in IBuildSet called retryDepWaiting().
     The Hoary Hedgehog Release for i386 (x86)
 
 In order to allow depwait_build to be retried we will forge a
-'satisfiable' dependencies field.
+'fully-satisfiable' dependencies field.
 
     >>> depwait_build.dependencies = 'pmount'
     >>> flush_database_updates()

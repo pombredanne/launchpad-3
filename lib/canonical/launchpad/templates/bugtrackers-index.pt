@@ -6,17 +6,10 @@
   xml:lang="en"
   lang="en"
   dir="ltr"
-  metal:use-macro="context/@@main_template/master"
-  i18n:domain="malone"
+  metal:use-macro="view/macro:page/onecolumn"
 >
-  <body>
-    <metal:heading fill-slot="pageheading">
-      <h1>Bug trackers</h1>
-    </metal:heading>
 
-<metal:leftportlets fill-slot="portlets_one">
-    <div tal:replace="structure context/@@+portlet-info" />
-</metal:leftportlets>
+<body>
 
 <div metal:fill-slot="help">
   <p>
@@ -60,6 +53,17 @@
       </tr>
     </tbody>
   </table>
+
+      <div
+        class="action"
+        tal:define="link context/menu:context/newbugtracker"
+        tal:condition="link/enabled"
+      >
+        <p>
+          <img alt="" src="/@@/add" />
+          <tal:link replace="structure link/@@+link" />
+        </p>
+      </div>
 
 </div>
 

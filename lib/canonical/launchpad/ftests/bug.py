@@ -10,7 +10,7 @@ from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.launchpad.ftests import sync
-from canonical.launchpad.ftests.test_pages import (
+from canonical.launchpad.testing.pages import (
     extract_text, find_main_content, find_portlet, find_tag_by_id,
     find_tags_by_class)
 from canonical.launchpad.interfaces import (

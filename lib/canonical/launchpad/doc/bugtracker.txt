@@ -50,6 +50,58 @@ The watches needing updating should the ones with old statuses, 2000 and 42:
     42 1
 
 
+== Auto-creating bug trackers ==
+
+The bugtracker module contains a method, make_bugtracker_name() which
+can be used to generate a bug tracker name when a bugtracker is
+automatically created. make_bugtracker_name() accepts a single
+parameter, uri, which is used as the basis for the auto-generated name.
+
+Passing a URL in the URI parameter will produce a name based on the host
+name of that URL.
+
+    >>> from canonical.launchpad.database.bugtracker import (
+    ...     make_bugtracker_name)
+    >>> make_bugtracker_name('http://bugs.example.com/shrubbery')
+    'auto-bugs.example.com'
+
+Passing a mailto:URI will produce a name based on the local part of the
+email address.
+
+    >>> make_bugtracker_name('mailto:foo.bar@canonical.com')
+    'auto-foo.bar'
+
+The IBugTrackerSet interface provides a method, ensureBugTracker(),
+which will retrieve or create a bug tracker for the parameters passed to
+it. If this method is not passed a name parameter when it creates a new
+bugtracker it will use make_bugtracker_name() to generate a name for the
+bug tracker.
+
+    >>> from canonical.launchpad.interfaces import (
+    ...     BugTrackerType, IPersonSet)
+    >>> sample_person = getUtility(IPersonSet).getByEmail(
+    ...     'test@canonical.com')
+    >>> a_bugtracker = bugtracker_set.ensureBugTracker(
+    ...     baseurl='http://bugs.example.com', owner=sample_person,
+    ...     bugtrackertype=BugTrackerType.BUGZILLA,
+    ...     title=None, summary=None, contactdetails=None, name=None)
+    >>> a_bugtracker.name
+    u'auto-bugs.example.com'
+
+ensureBugTracker() also performs collision-avoidance on the names which
+it generates using make_bugtracker_name(). If another bug tracker is
+created with the same hostname as a_bugtracker above but different URLs,
+the new bugtracker's name will be mutated so that the two names do not
+collide.
+
+    >>> a_bugtracker = bugtracker_set.ensureBugTracker(
+    ...     baseurl='http://bugs.example.com/ni', owner=sample_person,
+    ...     bugtrackertype=BugTrackerType.BUGZILLA,
+    ...     title=None, summary=None, contactdetails=None, name=None)
+    >>> a_bugtracker.name
+    u'auto-bugs.example.com-1'
+
+
 == Top Bug Trackers ==
 
 The Malone front page shows a list of the top Malone bug trackers, as
@@ -210,7 +262,12 @@ contact any external servers.
 
     >>> print err
     INFO    creating lockfile
+    INFO    No watches to update on http://bugs.example.com
+    INFO    No watches to update on http://bugs.example.com/ni
     INFO    No watches to update on http://bugs.debian.org
+    WARNING ExternalBugtracker for BugTrackerType 'EMAILADDRESS' is not
+            known.
+    WARNING ExternalBugtracker for BugTrackerType 'SAVANNAH' is not known.
     INFO    No watches to update on http://bugzilla.gnome.org/bugs
     INFO    No watches to update on http://sourceforge.net/
     INFO    No watches to update on https://bugzilla.mozilla.org/
@@ -226,11 +283,9 @@ First, we create some bug watches to test with:
 
     >>> from canonical.launchpad.database import BugTracker
     >>> from canonical.launchpad.interfaces import (
-    ...     BugTrackerType, IBugSet, IPersonSet)
+    ...     BugTrackerType, IBugSet)
     >>> from canonical.launchpad.scripts.checkwatches import (
     ...     BugWatchUpdater)
-
-    >>> sample_person = getUtility(IPersonSet).getByEmail('test@canonical.com')
 
     >>> example_bug_tracker = BugTracker(
     ...     name="example-bugs",
@@ -251,6 +306,11 @@ First, we create some bug watches to test with:
 
 Next, we monkey-patch urllib2.urlopen so that it always times out.
 
+The timeout will also produce an OOPS report.
+
+    >>> from canonical.launchpad.ftests.externalbugtracker import oops_hook
+    >>> oops_hook.install()
+
     >>> import socket
     >>> import urllib2
     >>> urlopen = urllib2.urlopen
@@ -262,9 +322,15 @@ Next, we monkey-patch urllib2.urlopen so that it always times out.
     ...     updater = BugWatchUpdater(transaction)
     ...     updater._login()
     ...     updater.updateBugTracker(example_bug_tracker)
+    ...     print oops_hook.formatted_oops_info
     ... finally:
     ...     urllib2.urlopen = urlopen
     ERROR:root:Connection timed out when updating http://bugs.example.com
+    OOPS-...
+    baseurl=u'http://bugs.example.com'
+    bugtracker=u'example-bugs'
+
+    >>> oops_hook.uninstall()
 
 Errors that occur when updating a bug watch are recorded against that
 bug watch. The timeout will be recorded against the bug watch we just
@@ -317,6 +383,8 @@ reset.
     ... finally:
     ...     externalbugtracker.get_external_bugtracker = (
     ...         real_get_external_bugtracker)
+    WARNING:...:ExternalBugtracker for BugTrackerType 'ROUNDUP' is not
+    known.
 
 The bug watch's last error type field will have been updated to reflect
 the error that was raised:

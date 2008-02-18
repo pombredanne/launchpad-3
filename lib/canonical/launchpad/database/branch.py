@@ -15,8 +15,9 @@ import os
 
 import pytz
 
-from zope.interface import implements
 from zope.component import getUtility
+from zope.event import notify
+from zope.interface import implements
 
 from sqlobject import (
     ForeignKey, IntCol, StringCol, BoolCol, SQLMultipleJoin, SQLRelatedJoin,
@@ -32,9 +33,11 @@ from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
 
 from canonical.launchpad.interfaces import (
+    BRANCH_MERGE_PROPOSAL_FINAL_STATES,
     BranchCreationForbidden, BranchCreationNoTeamOwnedJunkBranches,
     BranchCreatorNotMemberOfOwnerTeam, BranchCreatorNotOwner,
-    BranchLifecycleStatus, BranchListingSort, BranchSubscriptionDiffSize,
+    BranchLifecycleStatus, BranchListingSort, BranchMergeProposalStatus,
+    BranchSubscriptionDiffSize,
     BranchSubscriptionNotificationLevel, BranchType, BranchTypeError,
     BranchVisibilityRule, CannotDeleteBranch,
     DEFAULT_BRANCH_STATUS_IN_LISTING, IBranch, IBranchSet,
@@ -44,7 +47,9 @@ from canonical.launchpad.database.branchmergeproposal import (
     BranchMergeProposal)
 from canonical.launchpad.database.branchrevision import BranchRevision
 from canonical.launchpad.database.branchsubscription import BranchSubscription
+from canonical.launchpad.validators.person import public_person_validator
 from canonical.launchpad.database.revision import Revision
+from canonical.launchpad.event import SQLObjectCreatedEvent
 from canonical.launchpad.mailnotification import NotificationRecipientSet
 from canonical.launchpad.webapp import urlappend
 
@@ -67,10 +72,18 @@ class Branch(SQLBase):
 
     private = BoolCol(default=False, notNull=True)
 
-    owner = ForeignKey(dbName='owner', foreignKey='Person', notNull=True)
-    author = ForeignKey(dbName='author', foreignKey='Person', default=None)
+    registrant = ForeignKey(
+        dbName='registrant', foreignKey='Person',
+        validator=public_person_validator, notNull=True)
+    owner = ForeignKey(
+        dbName='owner', foreignKey='Person',
+        validator=public_person_validator, notNull=True)
+    author = ForeignKey(
+        dbName='author', foreignKey='Person',
+        validator=public_person_validator, default=None)
     reviewer = ForeignKey(
-        dbName='reviewer', foreignKey='Person', default=None)
+        dbName='reviewer', foreignKey='Person',
+        validator=public_person_validator, default=None)
 
     product = ForeignKey(dbName='product', foreignKey='Product', default=None)
 
@@ -124,14 +137,18 @@ class Branch(SQLBase):
     @property
     def landing_candidates(self):
         """See `IBranch`."""
-        return BranchMergeProposal.selectBy(
-            target_branch=self, date_merged=None)
+        return BranchMergeProposal.select("""
+            BranchMergeProposal.target_branch = %s AND
+            BranchMergeProposal.queue_status NOT IN %s
+            """ % sqlvalues(self, BRANCH_MERGE_PROPOSAL_FINAL_STATES))
 
     @property
     def dependent_branches(self):
         """See `IBranch`."""
-        return BranchMergeProposal.selectBy(
-            dependent_branch=self, date_merged=None)
+        return BranchMergeProposal.select("""
+            BranchMergeProposal.dependent_branch = %s AND
+            BranchMergeProposal.queue_status NOT IN %s
+            """ % sqlvalues(self, BRANCH_MERGE_PROPOSAL_FINAL_STATES))
 
     def addLandingTarget(self, registrant, target_branch,
                          dependent_branch=None, whiteboard=None,
@@ -165,12 +182,16 @@ class Branch(SQLBase):
                 raise InvalidBranchMergeProposal(
                     'Target and dependent branches must be different.')
 
-        target = BranchMergeProposal.selectOneBy(
-            source_branch=self, target_branch=target_branch, date_merged=None)
-        if target is not None:
+        target = BranchMergeProposal.select("""
+            BranchMergeProposal.source_branch = %s AND
+            BranchMergeProposal.target_branch = %s AND
+            BranchMergeProposal.queue_status NOT IN %s
+            """ % sqlvalues(self, target_branch,
+                            BRANCH_MERGE_PROPOSAL_FINAL_STATES))
+        if target.count() > 0:
             raise InvalidBranchMergeProposal(
                 'There is already a branch merge proposal registered for '
-                'branch %s to land on %s'
+                'branch %s to land on %s that is still active.'
                 % (self.unique_name, target_branch.unique_name))
 
         if date_created is None:
@@ -185,7 +206,13 @@ class Branch(SQLBase):
             target_branch=target_branch, dependent_branch=dependent_branch,
             whiteboard=whiteboard, date_created=date_created)
 
-    next_mirror_time = UtcDateTimeCol(default=None)
+    def getMergeQueue(self):
+        """See `IBranch`."""
+        return BranchMergeProposal.select("""
+            BranchMergeProposal.target_branch = %s AND
+            BranchMergeProposal.queue_status = %s
+            """ % sqlvalues(self, BranchMergeProposalStatus.QUEUED),
+            orderBy="queue_position")
 
     @property
     def code_is_browseable(self):
@@ -700,7 +727,8 @@ class BranchSet:
         else:
             return PRIVATE_BRANCH
 
-    def new(self, branch_type, name, creator, owner, product, url, title=None,
+    def new(self, branch_type, name, creator, owner, product,
+            url, title=None,
             lifecycle_status=BranchLifecycleStatus.NEW, author=None,
             summary=None, home_page=None, whiteboard=None, date_created=None):
         """See `IBranchSet`."""
@@ -721,6 +749,7 @@ class BranchSet:
         IBranch['name'].validate(unicode(name))
 
         branch = Branch(
+            registrant=creator,
             name=name, owner=owner, author=author, product=product, url=url,
             title=title, lifecycle_status=lifecycle_status, summary=summary,
             home_page=home_page, whiteboard=whiteboard, private=private,
@@ -736,6 +765,7 @@ class BranchSet:
                 BranchSubscriptionNotificationLevel.NOEMAIL,
                 BranchSubscriptionDiffSize.NODIFF)
 
+        notify(SQLObjectCreatedEvent(branch))
         return branch
 
     def delete(self, branch):
