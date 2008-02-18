@@ -72,6 +72,9 @@ and remote watched, but I don't know how to fix this right now.  See
 https://bugs.edge.launchpad.net/malone/+bug/188020 
     -- kiko, 2008-02-01
 
+
+== Useful links ==
+
 The table includes a number of convenience links:
 
     >>> table = find_tag_by_id(browser.contents, 'upstream-report-content')
@@ -95,6 +98,9 @@ The table includes a number of convenience links:
     0 **/+source/linux-source-2.6.15?field.status_upstream=hide_upstream...
     1 **/+source/linux-source-2.6.15?field.status_upstream=pending_bugwatch...
     ...
+
+
+=== Links to bug queries ===
 
 Let's look more carefully at the above six links associated with counts.
 
@@ -154,7 +160,7 @@ Link 5: Triaged bugs that haven't been marked upstream (0)
     >>> print table
     None
 
-Link 5: Triaged bugs marked upstream lacking a watch (1)
+Link 6: Triaged bugs marked upstream lacking a watch (1)
 
     >>> browser.open(watch_delta_url)
     >>> browser.title
@@ -164,6 +170,8 @@ Link 5: Triaged bugs marked upstream lacking a watch (1)
     Summary             Importance  Status
     10 another test bug Medium      Triaged
 
+
+=== Links to fix registration data ===
 
 As you saw before, we also offer links to find products and connect packages
 with no packaging links (though you need to be logged in to actually see or
@@ -240,6 +248,27 @@ change to account for the fact that firefox no longer uses_malone.
         1    1   100.00  0  1    100.00    0    0    0.00  1
     thunderbird          Missing corresponding product.  (find) (link)
         1    1   100.00  0  1    100.00    0    1  100.00  0
+
+Finally, you can associate default branches to products. This is done by
+specifying a user_branch for the product's main_series:
+
+    >>> admin_browser.open("http://launchpad.dev/firefox/trunk/+source")
+    >>> admin_browser.getControl("Bazaar").click()
+    >>> branch_control = admin_browser.getControl(name="field.user_branch")
+    >>> branch_control.value = "~name12/firefox/main"
+    >>> admin_browser.getControl("Update Details").click()
+    >>> admin_browser.url
+    'http://launchpad.dev/firefox/trunk'
+
+The report now renders an icon and a link to the branch page:
+
+    >>> browser.open("http://bugs.launchpad.dev/ubuntu/+upstreamreport")
+    >>> browser.getLink('branch').click()
+    >>> browser.url
+    'http://code.launchpad.dev/~name12/firefox/main'
+
+(This means that anyone can use bzr branch lp:firefox to pull this code.)
+
 
 == Empty distributions ==
 

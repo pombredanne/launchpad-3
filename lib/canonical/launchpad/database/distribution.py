@@ -1155,7 +1155,9 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
             # database hard for each product rendered.
             list(Product.select("Product.id IN %s" % 
                  sqlvalues(sources_to_products.values()),
-                 prejoins=["bugcontact", "bugtracker", "project"]))
+                 prejoins=["bugcontact", "bugtracker", "project",
+                           "development_focus.user_branch",
+                           "development_focus.import_branch"]))
 
         # Okay, we have all the information good to go, so assemble it
         # in a reasonable data structure.

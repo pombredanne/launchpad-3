@@ -19,7 +19,6 @@ from canonical.launchpad.webapp import (
 # TODO  A fourth potential count could be a count of open distribution
 #       bugs that are fixed upstream, which would imply closing the loop
 #       of upstream fixes back to the distribution.
-# TODO  Display the product.development_focus.series_branch
 
 
 class BugReportData:
@@ -136,6 +135,8 @@ class PackageBugReportData(BugReportData):
         dsp_url = canonical_url(dsp)
         self.open_bugs_url = dsp_url
         self.official_malone = bool(product and product.official_malone)
+        self.series_branch = (
+            product and product.development_focus.series_branch)
 
         # If a product is specified, build some convenient links to
         # pages which allow filling out required information. The
