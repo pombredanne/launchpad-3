@@ -20,6 +20,7 @@ from canonical.launchpad.interfaces import (
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.sqlbase import SQLBase, sqlvalues
+from canonical.launchpad.validators.person import public_person_validator
 
 
 class Announcement(SQLBase):
@@ -36,7 +37,8 @@ class Announcement(SQLBase):
     date_last_modified = UtcDateTimeCol(
         dbName='date_updated', default=None)
     registrant = ForeignKey(
-        dbName='registrant', foreignKey='Person', notNull=True)
+        dbName='registrant', foreignKey='Person',
+        validator=public_person_validator, notNull=True)
     product = ForeignKey(dbName='product', foreignKey='Product')
     project = ForeignKey(dbName='project', foreignKey='Project')
     distribution = ForeignKey(
@@ -161,7 +163,8 @@ class HasAnnouncements:
                     (SELECT id FROM Product WHERE project = %s))
                     """ % sqlvalues (self.id, self.id)
         elif IDistribution.providedBy(self):
-            query += ' AND Announcement.distribution = %s' % sqlvalues(self.id)
+            query += (' AND Announcement.distribution = %s'
+                % sqlvalues(self.id))
         elif IAnnouncementSet.providedBy(self):
             # There is no need to filter for pillar if we are looking for
             # all announcements.

@@ -55,28 +55,83 @@ We are able to search languages with this method.
 
   >>> languages = language_set.search('Spanish')
   >>> for language in languages:
-  ...     print language.code
-  es
-  es_AR
-  es_BO
-  es_CL
-  es_CO
-  es_CR
-  es_DO
-  es_EC
-  es_SV
-  es_GT
-  es_HN
-  es_MX
-  es_NI
-  es_PA
-  es_PY
-  es_PE
-  es_PR
-  es_ES
-  es_US
-  es_UY
-  es_VE
+  ...     print language.code, language.englishname
+  es Spanish
+  es_AR Spanish (Argentina)
+  es_BO Spanish (Bolivia)
+  es_CL Spanish (Chile)
+  es_CO Spanish (Colombia)
+  es_CR Spanish (Costa Rica)
+  es_DO Spanish (Dominican Republic)
+  es_EC Spanish (Ecuador)
+  es_SV Spanish (El Salvador)
+  es_GT Spanish (Guatemala)
+  es_HN Spanish (Honduras)
+  es_MX Spanish (Mexico)
+  es_NI Spanish (Nicaragua)
+  es_PA Spanish (Panama)
+  es_PY Spanish (Paraguay)
+  es_PE Spanish (Peru)
+  es_PR Spanish (Puerto Rico)
+  es_ES Spanish (Spain)
+  es_US Spanish (United States)
+  es_UY Spanish (Uruguay)
+  es_VE Spanish (Venezuela)
+
+It's case insensitive:
+
+  >>> languages = language_set.search('spanish')
+  >>> for language in languages:
+  ...     print language.code, language.englishname
+  es Spanish
+  es_AR Spanish (Argentina)
+  es_BO Spanish (Bolivia)
+  es_CL Spanish (Chile)
+  es_CO Spanish (Colombia)
+  es_CR Spanish (Costa Rica)
+  es_DO Spanish (Dominican Republic)
+  es_EC Spanish (Ecuador)
+  es_SV Spanish (El Salvador)
+  es_GT Spanish (Guatemala)
+  es_HN Spanish (Honduras)
+  es_MX Spanish (Mexico)
+  es_NI Spanish (Nicaragua)
+  es_PA Spanish (Panama)
+  es_PY Spanish (Paraguay)
+  es_PE Spanish (Peru)
+  es_PR Spanish (Puerto Rico)
+  es_ES Spanish (Spain)
+  es_US Spanish (United States)
+  es_UY Spanish (Uruguay)
+  es_VE Spanish (Venezuela)
+
+And it even does substring searching!
+
+  >>> languages = language_set.search('panis')
+  >>> for language in languages:
+  ...     print language.code, language.englishname
+  es Spanish
+  es_AR Spanish (Argentina)
+  es_BO Spanish (Bolivia)
+  es_CL Spanish (Chile)
+  es_CO Spanish (Colombia)
+  es_CR Spanish (Costa Rica)
+  es_DO Spanish (Dominican Republic)
+  es_EC Spanish (Ecuador)
+  es_SV Spanish (El Salvador)
+  es_GT Spanish (Guatemala)
+  es_HN Spanish (Honduras)
+  es_MX Spanish (Mexico)
+  es_NI Spanish (Nicaragua)
+  es_PA Spanish (Panama)
+  es_PY Spanish (Paraguay)
+  es_PE Spanish (Peru)
+  es_PR Spanish (Puerto Rico)
+  es_ES Spanish (Spain)
+  es_US Spanish (United States)
+  es_UY Spanish (Uruguay)
+  es_VE Spanish (Venezuela)
+
 
 = Language =
 

@@ -24,6 +24,24 @@ implementation of ExternalBugTracker, RequestTracker.
     ...     RequestTracker(txn, new_bugtracker(BugTrackerType.RT)))
     True
 
+The RequestTracker class offers an _opener property, an instance of
+urllib2.OpenerDirector which will handle cookies and so allow the
+RequestTracker instance to work correctly with RT cookies.
+
+We can demonstrate this by creating a test class which contains a stub
+method for RequestTracker._logIn().
+
+    >>> class NoLogInRequestTracker(RequestTracker):
+    ...     def _logIn(self, opener):
+    ...         """This method does nothing but say it's been called."""
+    ...         print "_logIn() has been called."
+
+    >>> request_tracker = NoLogInRequestTracker(
+    ...     txn, new_bugtracker(BugTrackerType.RT))
+    >>> request_tracker._opener
+    _logIn() has been called.
+    <urllib2.OpenerDirector...>
+
 
 == Status Conversion ==
 

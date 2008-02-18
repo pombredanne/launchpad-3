@@ -508,6 +508,9 @@ class TestDebianBug(debbugs.Bug):
         self._emails = []
 
     def __getattr__(self, name):
+        # We redefine this method here to as to avoid some of the
+        # behaviour of debbugs.Bug from raising spurious errors during
+        # testing.
         return getattr(self, name, None)
 
 

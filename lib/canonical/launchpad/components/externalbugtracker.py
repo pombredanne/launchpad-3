@@ -365,13 +365,15 @@ class ExternalBugTracker:
         """See `ISupportsCommentImport`."""
         imported_comments = 0
         for comment_id in self.getCommentIds(bug_watch):
-            displayname, email = self.getPosterForComment(bug_watch, comment_id)
+            displayname, email = self.getPosterForComment(
+                bug_watch, comment_id)
 
             poster = getUtility(IPersonSet).ensurePerson(
                 email, displayname, PersonCreationRationale.BUGIMPORT,
                 comment='when importing comments for %s.' % bug_watch.title)
 
-            comment_message = self._getComment(bug_watch, comment_id, poster)
+            comment_message = self.getMessageForComment(
+                bug_watch, comment_id, poster)
             if not bug_watch.hasComment(comment_id):
                 bug_watch.addComment(comment_id, comment_message)
                 imported_comments += 1
@@ -887,7 +889,7 @@ class DebBugs(ExternalBugTracker):
         return comment_ids
 
     def getPosterForComment(self, bug_watch, comment_id):
-        """Return a tuple of (displayname, email_address) for a comment's poster."""
+        """Return a tuple of (name, emailaddress) for a comment's poster."""
         debian_bug = self._findBug(bug_watch.remotebug)
         self._loadLog(debian_bug)
 
@@ -896,7 +898,7 @@ class DebBugs(ExternalBugTracker):
             if parsed_comment['message-id'] == comment_id:
                 return parseaddr(parsed_comment['from'])
 
-    def _getComment(self, bug_watch, comment_id, poster):
+    def getMessageForComment(self, bug_watch, comment_id, poster):
         """Return a Message object for a comment."""
         debian_bug = self._findBug(bug_watch.remotebug)
         self._loadLog(debian_bug)
@@ -909,7 +911,6 @@ class DebBugs(ExternalBugTracker):
 
                 commit()
                 return message
-
 
 #
 # Mantis
@@ -2027,6 +2028,24 @@ class RequestTracker(ExternalBugTracker):
         except KeyError:
             return {'user': 'guest', 'pass': 'guest'}
 
+    def _logIn(self, opener):
+        """Attempt to log in to the remote RT service.
+
+        :param opener: An instance of urllib2.OpenerDirector
+            to be used to connect to the remote server.
+
+        If HTTPError or URLErrors are encountered at any point in this
+        process, they will be raised to be caught at the callsite.
+
+        This method is separate from the _opener property so as to allow
+        us to test the _opener property without having to connect to a
+        remote server.
+        """
+        # To log in to an RT instance we must pass a username and
+        # password to its login form, as a user would from the web.
+        opener.open('%s/' % self.baseurl, urllib.urlencode(
+            self.credentials))
+
     @cachedproperty
     def _opener(self):
         """Return a urllib2.OpenerDirector for the remote RT instance.
@@ -2035,17 +2054,19 @@ class RequestTracker(ExternalBugTracker):
         the opener is returned. If logging in is not successful a
         BugTrackerConnectError will be raised
         """
-        # To log in to an RT instance we must pass a username and
-        # password to its login form, as a user would from the web.
         opener = urllib2.build_opener(urllib2.HTTPCookieProcessor())
+
+        # Attempt to log in to the remote system. Raise an error if we
+        # can't.
         try:
-            opener.open('%s/' % self.baseurl, urllib.urlencode(
-                self.credentials))
+            self._logIn(opener)
         except (urllib2.HTTPError, urllib2.URLError), error:
             raise BugTrackerConnectError('%s/' % self.baseurl,
                 "Unable to authenticate with remote RT service: "
                 "Could not submit login form: " +
                 error.message)
+
+        return opener
 
     def urlopen(self, request, data=None):
         """Return a handle to a remote resource.

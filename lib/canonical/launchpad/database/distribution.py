@@ -52,10 +52,13 @@ from canonical.launchpad.database.distributionsourcepackagerelease import (
     DistributionSourcePackageRelease)
 from canonical.launchpad.database.distributionsourcepackagecache import (
     DistributionSourcePackageCache)
+from canonical.launchpad.validators.person import public_person_validator
 from canonical.launchpad.database.sourcepackagename import (
     SourcePackageName)
 from canonical.launchpad.database.sourcepackagerelease import (
     SourcePackageRelease)
+from canonical.launchpad.database.structuralsubscription import (
+    StructuralSubscriptionTargetMixin)
 from canonical.launchpad.database.publishing import (
     SourcePackageFilePublishing, BinaryPackageFilePublishing,
     SourcePackagePublishingHistory)
@@ -65,15 +68,15 @@ from canonical.launchpad.helpers import shortlist
 from canonical.launchpad.webapp.url import urlparse
 
 from canonical.launchpad.interfaces import (
-    ArchivePurpose, BugTaskStatus, DistroSeriesStatus, IArchiveSet,
-    IBuildSet, IDistribution, IDistributionSet, IFAQTarget,
-    IHasBuildRecords, IHasIcon, IHasLogo, IHasMugshot,
-    ILaunchpadCelebrities, ILaunchpadUsage, IQuestionTarget,
-    ISourcePackageName, MirrorContent, MirrorStatus, PackagePublishingStatus,
-    PackageUploadStatus, NotFoundError, QUESTION_STATUS_DEFAULT_SEARCH,
-    SpecificationDefinitionStatus, SpecificationFilter,
-    SpecificationImplementationStatus, SpecificationSort,
-    TranslationPermission, PackagingType, UNRESOLVED_BUGTASK_STATUSES)
+    ArchivePurpose, BugTaskStatus, DistroSeriesStatus, IArchiveSet, IBuildSet,
+    IDistribution, IDistributionSet, IFAQTarget, IHasBugContact,
+    IHasBuildRecords, IHasIcon, IHasLogo, IHasMugshot, ILaunchpadCelebrities,
+    ILaunchpadUsage, IQuestionTarget, ISourcePackageName,
+    IStructuralSubscriptionTarget, MirrorContent, MirrorStatus, NotFoundError,
+    PackagePublishingStatus, PackageUploadStatus, PackagingType,
+    QUESTION_STATUS_DEFAULT_SEARCH, SpecificationDefinitionStatus,
+    SpecificationFilter, SpecificationImplementationStatus, SpecificationSort,
+    TranslationPermission, UNRESOLVED_BUGTASK_STATUSES)
 
 from canonical.archivepublisher.debversion import Version
 
@@ -83,12 +86,13 @@ from canonical.launchpad.validators.name import sanitize_name, valid_name
 class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
                    HasSpecificationsMixin, HasSprintsMixin,
                    HasTranslationImportsMixin, KarmaContextMixin,
-                   QuestionTargetMixin):
+                   QuestionTargetMixin, StructuralSubscriptionTargetMixin):
     """A distribution of an operating system, e.g. Debian GNU/Linux."""
     implements(
         IDistribution, IFAQTarget, IHasBuildRecords,
         IHasIcon, IHasLogo, IHasMugshot, ILaunchpadUsage,
-        IQuestionTarget)
+        IQuestionTarget, IStructuralSubscriptionTarget,
+        IHasBugContact)
 
     _table = 'Distribution'
     _defaultOrder = 'name'
@@ -106,18 +110,26 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
     mugshot = ForeignKey(
         dbName='mugshot', foreignKey='LibraryFileAlias', default=None)
     domainname = StringCol(notNull=True)
-    owner = ForeignKey(dbName='owner', foreignKey='Person', notNull=True)
+    owner = ForeignKey(
+        dbName='owner', foreignKey='Person',
+        validator=public_person_validator, notNull=True)
     bugcontact = ForeignKey(
-        dbName='bugcontact', foreignKey='Person', notNull=False, default=None)
+        dbName='bugcontact', foreignKey='Person',
+        validator=public_person_validator, notNull=False, default=None)
     bug_reporting_guidelines = StringCol(default=None)
     security_contact = ForeignKey(
-        dbName='security_contact', foreignKey='Person', notNull=False,
+        dbName='security_contact', foreignKey='Person',
+        validator=public_person_validator, notNull=False,
         default=None)
     driver = ForeignKey(
-        foreignKey="Person", dbName="driver", notNull=False, default=None)
-    members = ForeignKey(dbName='members', foreignKey='Person', notNull=True)
+        dbName="driver", foreignKey="Person",
+        validator=public_person_validator, notNull=False, default=None)
+    members = ForeignKey(
+        dbName='members', foreignKey='Person',
+        validator=public_person_validator, notNull=True)
     mirror_admin = ForeignKey(
-        dbName='mirror_admin', foreignKey='Person', notNull=True)
+        dbName='mirror_admin', foreignKey='Person',
+        validator=public_person_validator, notNull=True)
     translationgroup = ForeignKey(
         dbName='translationgroup', foreignKey='TranslationGroup',
         notNull=False, default=None)
@@ -129,7 +141,8 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
     upload_sender = StringCol(
         dbName='upload_sender', notNull=False, default=None)
     upload_admin = ForeignKey(
-        dbName='upload_admin', foreignKey='Person', default=None,
+        dbName='upload_admin', foreignKey='Person',
+        validator=public_person_validator, default=None,
         notNull=False)
     bounties = SQLRelatedJoin(
         'Bounty', joinColumn='distribution', otherColumn='bounty',
@@ -151,8 +164,9 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
                                             orderBy="name",
                                             prejoins=['sourcepackagename'])
     date_created = UtcDateTimeCol(notNull=False, default=UTC_NOW)
-    language_pack_admin = ForeignKey(dbName='language_pack_admin',
-        foreignKey='Person', notNull=False, default=None)
+    language_pack_admin = ForeignKey(
+        dbName='language_pack_admin', foreignKey='Person',
+        validator=public_person_validator, notNull=False, default=None)
 
     @cachedproperty
     def main_archive(self):
@@ -666,15 +680,20 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
 
         raise NotFoundError(filename)
 
-    def getBuildRecords(self, build_state=None, name=None, pocket=None):
+    def getBuildRecords(self, build_state=None, name=None, pocket=None,
+                        user=None):
         """See `IHasBuildRecords`"""
-        # Find out the distroarchseriess in question.
+        # Ignore "user", since it would not make any difference to the
+        # records returned here (private builds are only in PPA right
+        # now).
+
+        # Find out the distroarchseries in question.
         arch_ids = []
-        # concatenate architectures list since they are distinct.
+        # Concatenate architectures list since they are distinct.
         for series in self.serieses:
             arch_ids += [arch.id for arch in series.architectures]
 
-        # use facility provided by IBuildSet to retrieve the records
+        # Use the facility provided by IBuildSet to retrieve the records.
         return getUtility(IBuildSet).getBuildsByArchIds(
             arch_ids, build_state, name, pocket)
 
@@ -765,6 +784,7 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
         if cache is None:
             log.debug("Creating new source cache entry.")
             cache = DistributionSourcePackageCache(
+                archive=self.main_archive,
                 distribution=self,
                 sourcepackagename=sourcepackagename)
 
@@ -1147,6 +1167,12 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
                             count['bugs_affecting_upstream'],
                             count['bugs_with_upstream_bugwatch']))
         return results
+
+    def setBugContact(self, bugcontact, user):
+        """See `IHasBugContact`."""
+        self.bugcontact = bugcontact
+        if bugcontact is not None:
+            subscription = self.addBugSubscription(bugcontact, user)
 
 
 class DistributionSet:

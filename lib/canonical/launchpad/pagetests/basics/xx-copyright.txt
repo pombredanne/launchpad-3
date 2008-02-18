@@ -4,14 +4,14 @@ The login page for the OpenID workflow.
 
   >>> browser.open('http://openid.launchpad.dev/')
   >>> print extract_text(find_tag_by_id(browser.contents, 'footer'))
-  Copyright &copy; 2004-2008 Canonical Ltd.
+  &copy; 2004-2008 Canonical Ltd.
 
 The tour pages.
 
   >>> browser.open('http://launchpad.dev/')
   >>> browser.getLink('Take a tour').click()
   >>> print extract_text(find_tag_by_id(browser.contents, 'footer'))
-  Copyright 2004-2008 Canonical Ltd.
+  &copy; 2004-2008 Canonical Ltd.
   ...
 
 Shipit sites.
@@ -35,5 +35,5 @@ The main template.
 
   >>> browser.open('http://launchpad.dev')
   >>> print extract_text(find_tag_by_id(browser.contents, 'copyright'))
-  Copyright 2004-2008 Canonical Ltd.
+  &copy; 2004-2008 Canonical Ltd.
   ...

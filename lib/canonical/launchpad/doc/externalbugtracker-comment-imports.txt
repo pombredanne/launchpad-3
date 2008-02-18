@@ -6,6 +6,7 @@ remote bug tracker into Launchpad.
 In order to demonstrate this we need to create example Bug, BugTracker
 and BugWatch instances with which to work.
 
+    >>> from zope.interface import implements
     >>> from canonical.config import config
     >>> from canonical.database.sqlbase import commit
     >>> from canonical.launchpad.ftests.externalbugtracker import (
@@ -37,7 +38,7 @@ ISupportsCommentImport interface only defines one method,
 importBugComments(). This method is implemented in the
 ExternalBugTracker base class and in turn requires that bug trackers
 supporting comment imports provide the methods getCommentIds(),
-getPosterForComment() and _getComment().
+getPosterForComment() and getMessageForComment().
 
 In order to test the importing of comments we will create a new
 ExternalBugTracker class which implements the three methods listed
@@ -45,7 +46,10 @@ above.
 
     >>> from canonical.launchpad.components.externalbugtracker import (
     ...     ExternalBugTracker)
+    >>> from canonical.launchpad.interfaces import (
+    ...     ISupportsCommentImport)
     >>> class CommentImportingExternalBugTracker(ExternalBugTracker):
+    ...     implements(ISupportsCommentImport)
     ...
     ...     comment_dict = {
     ...         '1': "Example comment the first",
@@ -59,7 +63,7 @@ above.
     ...         """Return a tuple of (displayname, email)."""
     ...         return "Joe Bloggs", "joe.bloggs@example.com"
     ...
-    ...     def _getComment(self, bug_watch, comment_id, poster):
+    ...     def getMessageForComment(self, bug_watch, comment_id, poster):
     ...         """Return a Message object for a comment."""
     ...         message = getUtility(IMessageSet).fromText(
     ...             "Some subject or other",

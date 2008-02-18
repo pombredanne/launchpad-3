@@ -21,7 +21,8 @@ from zope.schema import Datetime, Int, Choice, Text, TextLine
 
 from canonical.launchpad import _
 from canonical.launchpad.fields import (
-    ContentNameField, IconImageUpload, LogoImageUpload, MugshotImageUpload)
+    ContentNameField, IconImageUpload, LogoImageUpload, MugshotImageUpload,
+    PublicPersonChoice)
 from canonical.launchpad.validators.name import name_validator
 from canonical.launchpad.interfaces import (
     IHasOwner, IHasSpecifications, IHasDrivers)
@@ -58,7 +59,8 @@ class ISprint(IHasOwner, IHasDrivers, IHasSpecifications):
         title=_('Summary'), required=True, description=_("A one-paragraph "
         "summary of the meeting plans and goals. Put the rest in a web "
         "page and link to it using the field below."))
-    driver = Choice(title=_('Meeting Driver'), required=False,
+    driver = PublicPersonChoice(
+        title=_('Meeting Driver'), required=False,
         description=_('The person or team that will manage the agenda of '
         'this meeting. Use this if you want to delegate the approval of '
         'agenda items to somebody else.'), vocabulary='ValidPersonOrTeam')
@@ -95,7 +97,8 @@ class ISprint(IHasOwner, IHasDrivers, IHasSpecifications):
             "The content of this meeting's home page. Edit this and it "
             "will be displayed for all the world to see. It is NOT a wiki "
             "so you cannot undo changes."))
-    owner = Choice(title=_('Owner'), required=True, readonly=True,
+    owner = PublicPersonChoice(
+        title=_('Owner'), required=True, readonly=True,
         vocabulary='ValidPersonOrTeam')
     time_zone = Choice(
         title=_('Timezone'), required=True, description=_('The time '
