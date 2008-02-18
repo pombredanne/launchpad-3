@@ -11,7 +11,7 @@ import xmlrpclib
 
 import zope.app.testing.functional
 from zope.app.testing.functional import (
-    FunctionalTestSetup, HTTPCaller, ZopePublication)
+    FunctionalTestSetup, HTTPCaller)
 from zope.security.management import endInteraction, queryInteraction
 
 from zope.testing import doctest
@@ -86,68 +86,34 @@ class StdoutHandler(Handler):
                     )
 
 
-class MockRootFolder:
-    """Implement the minimum functionality required by Z3 ZODB dependancies
-
-    Installed as part of the FunctionalDocFileSuite to allow the http()
-    method (zope.app.testing.functional.HTTPCaller) to work.
-    """
-    @property
-    def _p_jar(self):
-        return self
-    def sync(self):
-        pass
-
-
-def setUpMockRootFolder():
-    """Install a mock ZODB in the ZopePublication root."""
-
-    # Fake a root folder to keep Z3 ZODB dependencies happy.
-    fs = FunctionalTestSetup()
-    if not fs.connection:
-        fs.connection = fs.db.open()
-    root = fs.connection.root()
-    root[ZopePublication.root_name] = MockRootFolder()
-
-
 def FunctionalDocFileSuite(*paths, **kw):
-    kwsetUp = kw.get('setUp')
-
     # Set stdout_logging keyword argument to True to make
     # logging output be sent to stdout, forcing doctests to deal with it.
-    if kw.has_key('stdout_logging'):
-        stdout_logging = kw.get('stdout_logging')
-        del kw['stdout_logging']
-    else:
-        stdout_logging = True
-
-    if kw.has_key('stdout_logging_level'):
-        stdout_logging_level = kw.get('stdout_logging_level')
-        del kw['stdout_logging_level']
-    else:
-        stdout_logging_level = logging.INFO
+    stdout_logging = kw.pop('stdout_logging', True)
+    stdout_logging_level = kw.pop('stdout_logging_level', logging.INFO)
 
     # Make sure that paths are resolved relative to our caller
     kw['package'] = doctest._normalize_module(kw.get('package'))
 
-    if kw.has_key('layer'):
-        layer = kw.pop('layer')
-    else:
-        layer = FunctionalLayer
+    if 'optionflags' not in kw:
+        old = doctest.set_unittest_reportflags(0)
+        doctest.set_unittest_reportflags(old)
+        kw['optionflags'] = (old
+                             | doctest.ELLIPSIS
+                             | doctest.REPORT_NDIFF
+                             | doctest.NORMALIZE_WHITESPACE)
 
+    kwsetUp = kw.get('setUp')
     def setUp(test):
         if kwsetUp is not None:
             kwsetUp(test)
-
-        setUpMockRootFolder()
-
         if stdout_logging:
             log = StdoutHandler('')
             log.setLoggerLevel(stdout_logging_level)
             log.install()
             test.globs['log'] = log
-            # Store here as well in case test overwrites 'log' global
-            test.globs['_functional_log'] = log
+            # Store as instance attribute so we can uninstall it.
+            test._stdout_logger = log
     kw['setUp'] = setUp
 
     kwtearDown = kw.get('tearDown')
@@ -155,10 +121,11 @@ def FunctionalDocFileSuite(*paths, **kw):
         if kwtearDown is not None:
             kwtearDown(test)
         if stdout_logging:
-            test.globs['_functional_log'].uninstall()
+            test._stdout_logger.uninstall()
     kw['tearDown'] = tearDown
 
-    suite = zope.app.testing.functional.FunctionalDocFileSuite(*paths, **kw)
+    layer = kw.pop('layer', FunctionalLayer)
+    suite = doctest.DocFileSuite(*paths, **kw)
     suite.layer = layer
     return suite
 
