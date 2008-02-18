@@ -61,6 +61,7 @@ def run_in_temporary_directory(function):
 
 
 class SubversionServer(Server):
+    """A controller for an Subversion repository, used for testing."""
 
     def __init__(self, repository_path):
         self.repository_path = os.path.abspath(repository_path)
@@ -101,6 +102,7 @@ class SubversionServer(Server):
         return branch_url
 
     def makeDirectory(self, directory_name, commit_message=None):
+        """Make a directory on the repository."""
         if commit_message is None:
             commit_message = 'Make %r' % (directory_name,)
         url = urljoin(self.get_url(), directory_name)
@@ -181,14 +183,18 @@ class TestSubversionWorkingTree(TestCaseWithTransport):
             'trunk', [('README', 'original')])
 
     def test_path(self):
+        # The local path is passed to the constructor is available as
+        # 'local_path'.
         tree = SubversionWorkingTree('url', 'path')
         self.assertEqual(tree.local_path, 'path')
 
     def test_url(self):
+        # The URL of the repository is available as 'remote_url'.
         tree = SubversionWorkingTree('url', 'path')
         self.assertEqual(tree.remote_url, 'url')
 
     def test_checkout(self):
+        # checkout() checks out an up-to-date working tree to the local path.
         tree = SubversionWorkingTree(self.svn_branch_url, 'tree')
         tree.checkout()
         self.assertIsUpToDate(self.svn_branch_url, tree.local_path)
@@ -220,12 +226,14 @@ class TestCVSWorkingTree(TestCaseWithTransport):
     layer = BaseLayer
 
     def assertIsUpToDate(self, cvs_working_tree):
+        """Assert that `cvs_working_tree` is up to date."""
         tree = CVS.tree(os.path.abspath(cvs_working_tree.local_path))
         repository = tree.repository()
         self.assertEqual(repository.root, cvs_working_tree.root)
         self.assertEqual(tree.module().name(), cvs_working_tree.module)
 
     def makeCVSWorkingTree(self, local_path):
+        """Make a CVS working tree for testing."""
         return CVSWorkingTree(
             self.cvs_server.getRoot(), self.module_name, local_path)
 
@@ -239,18 +247,23 @@ class TestCVSWorkingTree(TestCaseWithTransport):
         self.addCleanup(self.cvs_server.tearDown)
 
     def test_path(self):
+        # The local path is passed to the constructor and available as
+        # 'local_path'.
         tree = CVSWorkingTree('root', 'module', 'path')
         self.assertEqual(tree.local_path, os.path.abspath('path'))
 
     def test_module(self):
+        # The module is passed to the constructor and available as 'module'.
         tree = CVSWorkingTree('root', 'module', 'path')
         self.assertEqual(tree.module, 'module')
 
     def test_root(self):
+        # The root is passed to the constructor and available as 'root'.
         tree = CVSWorkingTree('root', 'module', 'path')
         self.assertEqual(tree.root, 'root')
 
     def test_checkout(self):
+        # checkout() checks out an up-to-date working tree.
         tree = self.makeCVSWorkingTree('working_tree')
         tree.checkout()
         self.assertIsUpToDate(tree)
