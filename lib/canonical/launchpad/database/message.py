@@ -131,9 +131,12 @@ class MessageSet:
             raise NotFoundError(rfc822msgid)
         return messages
 
-    def fromText(self, subject, content, owner=None, datecreated=UTC_NOW):
+    def fromText(self, subject, content, owner=None, datecreated=UTC_NOW,
+        rfc822msgid=None):
         """See IMessageSet."""
-        rfc822msgid = make_msgid("launchpad")
+        if rfc822msgid is None:
+            rfc822msgid = make_msgid("launchpad")
+
         message = Message(
             subject=subject, rfc822msgid=rfc822msgid, owner=owner,
             datecreated=datecreated)

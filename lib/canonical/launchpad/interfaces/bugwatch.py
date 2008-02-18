@@ -136,6 +136,22 @@ class IBugWatch(IHasBug):
     def getLastErrorMessage():
         """Return a string describing the contents of last_error_type."""
 
+    def hasComment(comment_id):
+        """Return True if a comment has been imported for the BugWatch.
+
+        If the comment has not been imported, return False.
+
+        :param comment_id: The remote ID of the comment.
+        """
+
+    def addComment(comment_id, message):
+        """Link and imported comment to the BugWatch.
+
+        :param comment_id: The remote ID of the comment.
+
+        :param message: The imported comment as a Launchpad Message object.
+        """
+
 
 class IBugWatchSet(Interface):
     """The set of IBugWatch's."""
