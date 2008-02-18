@@ -600,6 +600,13 @@ special = {
                 tearDown=tearDown,
                 optionflags=default_optionflags, layer=LaunchpadZopelessLayer
                 ),
+    'externalbugtracker-comment-imports.txt':
+            LayeredDocFileSuite(
+                '../doc/externalbugtracker-comment-imports.txt',
+                setUp=checkwatchesSetUp,
+                tearDown=tearDown,
+                optionflags=default_optionflags, layer=LaunchpadZopelessLayer
+                ),
     'externalbugtracker-debbugs.txt':
             LayeredDocFileSuite(
                 '../doc/externalbugtracker-debbugs.txt',

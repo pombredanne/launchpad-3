@@ -16,11 +16,12 @@ from zope.component import getUtility
 from sqlobject import (ForeignKey, StringCol, SQLObjectNotFound,
     SQLMultipleJoin)
 
-from canonical.database.sqlbase import SQLBase
+from canonical.database.sqlbase import SQLBase, sqlvalues
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
 
+from canonical.launchpad.database.bugmessage import BugMessage
 from canonical.launchpad.database.bugset import BugSetBase
 from canonical.launchpad.event import SQLObjectModifiedEvent
 from canonical.launchpad.interfaces import (
@@ -182,6 +183,27 @@ class BugWatch(SQLBase):
             'bugtrackertype': self.bugtracker.bugtrackertype.title}
 
         return message % error_data
+
+    def hasComment(self, comment_id):
+        """See `IBugWatch`."""
+        query = """
+            BugMessage.message = Message.id
+            AND Message.rfc822msgid = %s
+            AND BugMessage.bugwatch = %s
+        """ % sqlvalues(comment_id, self)
+
+        # XXX 2008-02-13 gmb:
+        #     This might be more efficient if we used an EXISTS query.
+        comment = BugMessage.selectOne(query, clauseTables=['Message'])
+
+        return comment is not None
+
+    def addComment(self, comment_id, message):
+        """See `IBugWatch`."""
+        assert not self.hasComment(comment_id), ("Comment with ID %s has "
+            "already been imported for %s." % (comment_id, self.title))
+
+        bug_message = self.bug.linkMessage(message, bugwatch=self)
 
 
 class BugWatchSet(BugSetBase):

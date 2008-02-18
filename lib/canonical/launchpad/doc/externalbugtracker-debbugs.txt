@@ -442,7 +442,7 @@ them if they didn't exist already:
     u'Teun Vink'
 
     >>> print message.owner.creation_comment
-    when the comments for debbugs #1234 were imported into Launchpad.
+    when importing comments for Debian Bug tracker #1234.
 
 No notifications will be generated for the imported comments:
 
@@ -519,15 +519,6 @@ message - the comment will be linked to the bug.
 
     >>> from canonical.database.sqlbase import commit
     >>> commit()
-
-If we try to import the comments from a bug whose comments log doesn't
-exist or can't be parsed we will get a warning. We can demonstrate this
-by forcing importBugComments to fail on our Test DebBugs bugtracker.
-
-    >>> external_debbugs.debbugs_db.fail_on_load_log = True
-    >>> external_debbugs.importBugComments(bug_watch)
-    ERROR:...:Unable to import comments for DebBugs bug #1234.
-    Could not parse comment log.
 
 Comments for bugs in the archive can also be imported:
 
