@@ -260,7 +260,7 @@ them, though:
     >>> table = find_tag_by_id(browser.contents, 'upstream-report')
     >>> print table
     None
-    >>> content = find_tag_by_id(browser.contents, 'maincontent')
+    >>> content = find_main_content(browser.contents)
     >>> print extract_text(content)
     Upstream bug report for Kubuntu
     Kubuntu has no bugs filed against it.
