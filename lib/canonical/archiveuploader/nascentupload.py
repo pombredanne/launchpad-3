@@ -158,18 +158,30 @@ class NascentUpload:
                 self.reject("Upload is sourceful, but policy refuses "
                             "sourceful uploads.")
 
-            if self.binaryful and not self.policy.can_upload_binaries:
-                self.reject("Upload is binaryful, but policy refuses "
-                            "binaryful uploads.")
+            elif self.binaryful and not self.policy.can_upload_binaries:
+                messages = [
+                    "Upload rejected because it contains binary packages.",
+                    "Ensure you are using `debuild -S` command, or similar,",
+                    "to generate only the source package before re-uploading."
+                    ]
+                if self.is_ppa:
+                    messages.append(
+                    "See https://help.launchpad.net/PPAQuickStart/ for more "
+                    "information.")
+                self.reject(" ".join(messages))
 
-            if (self.sourceful and self.binaryful and
-                not self.policy.can_upload_mixed):
+            elif (self.sourceful and self.binaryful and
+                  not self.policy.can_upload_mixed):
                 self.reject("Upload is source/binary but policy refuses "
                             "mixed uploads.")
 
-            if self.sourceful and not self.changes.dsc:
+            elif self.sourceful and not self.changes.dsc:
                 self.reject(
-                    "Unable to find the dsc file in the sourceful upload?")
+                    "Unable to find the DSC file in the source upload.")
+
+            else:
+                # Upload content are consistent with the current policy.
+                pass
 
             # Apply the overrides from the database. This needs to be done
             # before doing component verifications because the component
