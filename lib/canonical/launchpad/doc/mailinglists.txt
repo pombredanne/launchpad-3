@@ -573,7 +573,7 @@ of the SQLObjectModifiedEvent.
 Changing the list status to 'available for subscription' triggers an event.
 
     >>> list_six.transitionToStatus(MailingListStatus.ACTIVE)
-    Received SQLObjectModifiedEvent on Question
+    Received SQLObjectModifiedEvent on MailingList
     >>> list_six.status.name
     'ACTIVE'
 

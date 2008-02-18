@@ -13,7 +13,8 @@ from string import Template
 
 from sqlobject import ForeignKey, StringCol
 from zope.component import getUtility
-from zope.interface import implements
+from zope.event import notify
+from zope.interface import implements, providedBy
 
 from canonical.config import config
 from canonical.database.constants import UTC_NOW
@@ -21,11 +22,40 @@ from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import SQLBase, sqlvalues
 from canonical.launchpad import _
+from canonical.launchpad.event import SQLObjectModifiedEvent
 from canonical.launchpad.interfaces import (
     CannotChangeSubscription, CannotSubscribe, CannotUnsubscribe,
     EmailAddressStatus, IEmailAddressSet, ILaunchpadCelebrities, IMailingList,
     IMailingListSet, IMailingListSubscription, MailingListStatus)
 from canonical.launchpad.validators.person import public_person_validator
+from canonical.launchpad.webapp.snapshot import Snapshot
+
+
+class notify_mailinglist_modified:
+    """Decorator that sends a SQLObjectModifiedEvent after a workflow action.
+
+    This decorator will take a snapshot of the object before the call to
+    the decorated workflow_method. It will fire an
+    SQLObjectModifiedEvent after the method returns.
+
+    The list of edited_fields will be computed by comparing the snapshot
+    with the modified mailinglist.
+
+    The 'status' field is checked for modifications.
+    """
+
+    def __call__(self, func):
+        """Return the SQLObjectModifiedEvent decorator."""
+        def notify_mailinglist_modified(self, *args, **kwargs):
+            """Create the SQLObjectModifiedEvent decorator."""
+            old_mailinglist = Snapshot(self, providing=providedBy(self))
+            msg = func(self, *args, **kwargs)
+            notify(SQLObjectModifiedEvent(
+                    self,
+                    object_before_modification=old_mailinglist,
+                    edited_fields=['status']))
+            return msg
+        return notify_mailinglist_modified
 
 
 class MailingList(SQLBase):
@@ -120,6 +150,7 @@ class MailingList(SQLBase):
             'Only modified mailing lists may be updated')
         self.status = MailingListStatus.UPDATING
 
+    @notify_mailinglist_modified()
     def transitionToStatus(self, target_state):
         """See `IMailingList`."""
         # State: From CONSTRUCTING to either ACTIVE or FAILED

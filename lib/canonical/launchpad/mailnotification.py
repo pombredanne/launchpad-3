@@ -1933,3 +1933,8 @@ def notify_specification_subscription_modified(specsub, event):
          'blueprint_url' : canonical_url(spec)})
     for address in contactEmailAddresses(person):
         simple_sendmail_from_person(user, address, subject, body)
+
+def notify_mailinglist_activated(mailinglist, event):
+    """Notify the members of a team and subteams that a mailing list
+    is available."""
+    pass
