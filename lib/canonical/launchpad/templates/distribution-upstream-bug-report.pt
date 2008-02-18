@@ -6,7 +6,7 @@
   xml:lang="en"
   lang="en"
   dir="ltr"
-  metal:use-macro="context/@@main_template/master"
+  metal:use-macro="view/macro:page/onecolumn"
   i18n:domain="launchpad"
 >
 
@@ -75,7 +75,8 @@
         against it.
       </tal:no-bugs>
 
-      <p class="warning message" tal:condition="view/data">
+      <p class="warning message" tal:condition="view/data"
+         style="width: 40%">
         This report is an alpha release and has accounting limitations.
         You can use it to guide your work, but do not take the
         percentages too literally. See the Help tab for information on

@@ -13,7 +13,6 @@ from canonical.launchpad.webapp import (
     canonical_url, LaunchpadView)
 
 
-# TODO: make the page one-column. Blocked on a proper template to use.
 # TODO: fix column sorting to work for the different colspans, or
 #       alternatively implement a sort option box.
 # TODO: make the totals column also link to bug listings.
