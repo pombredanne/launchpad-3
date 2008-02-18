@@ -132,6 +132,25 @@ And it even does substring searching!
   es_UY Spanish (Uruguay)
   es_VE Spanish (Venezuela)
 
+We escape special characters like '%', which is an SQL wildcard
+matching any string:
+
+  >>> languages = language_set.search('%')
+  >>> for language in languages:
+  ...     print language.code, language.englishname
+
+Or '_', which means any character match, but we only get strings
+that contain the 'e_' substring:
+
+  >>> languages = language_set.search('e_')
+  >>> for language in languages:
+  ...     print language.code, language.englishname
+  de_AT German (Austria)
+  de_BE German (Belgium)
+  de_DE German (Germany)
+  de_LU German (Luxembourg)
+  de_CH German (Switzerland)
+
 
 = Language =
 
