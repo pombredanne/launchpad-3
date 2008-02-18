@@ -176,9 +176,9 @@ Here are the helper URLs we construct:
     pmount
     http://launchpad.dev/pmount/+bugcontact
     http://launchpad.dev/pmount/+edit
-    **pmount?field.status%3Alist=TRIAGED&field.status_upstream=open_upstream
-    **pmount?field.status%3Alist=TRIAGED&field.status_upstream=hide_upstream
-    **pmount?field.status%3Alist=TRIAGED&field.status_upstream=pending_bugwatch
+    **pmount?field.status_upstream=open_upstream&field.status%3Alist=TRIAGED
+    **pmount?field.status_upstream=hide_upstream&field.status%3Alist=TRIAGED
+    **pmount?field.status_upstream=pending_bugwatch&field.status%3Alist=TRIAGED
     --
     linux-source-2.6.15 ubuntu hoary
     NO PRODUCT
