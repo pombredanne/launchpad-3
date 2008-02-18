@@ -1059,10 +1059,14 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
         cur.execute("""
             SELECT SPN.name, SPN.id,
             COUNT(DISTINCT Bugtask.bug) AS total_bugs,
-            COUNT(DISTINCT RelatedBugTask.bug) AS bugs_affecting_upstream,
-            COUNT(DISTINCT CASE WHEN RelatedBugTask.bugwatch IS NOT NULL
-                  OR RelatedProduct.official_malone = 'T'
-                  THEN RelatedBugTask.bug END) AS bugs_with_upstream_bugwatch
+            COUNT(DISTINCT CASE WHEN Bugtask.status = %(triaged)s THEN
+                  Bugtask.bug END) AS bugs_triaged,
+            COUNT(DISTINCT CASE WHEN Bugtask.status = %(triaged)s THEN
+                  RelatedBugTask.bug END) AS bugs_affecting_upstream,
+            COUNT(DISTINCT CASE WHEN Bugtask.status = %(triaged)s AND
+                  (RelatedBugTask.bugwatch IS NOT NULL OR
+                  RelatedProduct.official_malone = 'T') THEN
+                  RelatedBugTask.bug END) AS bugs_with_upstream_bugwatch
             FROM
                 SourcePackageName AS SPN
                 JOIN Bugtask ON SPN.id = Bugtask.sourcepackagename
@@ -1086,6 +1090,7 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
             GROUP BY SPN.name, SPN.id
             ORDER BY total_bugs DESC, SPN.name LIMIT %(limit)s
         """ % {'invalid': quote(BugTaskStatus.INVALID),
+               'triaged': quote(BugTaskStatus.TRIAGED),
                'limit': limit,
                'distro': self.id,
                'unresolved': quote(UNRESOLVED_BUGTASK_STATUSES)})
@@ -1119,7 +1124,8 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
                    Packaging.distroseries = DistroSeries.id AND
                    Packaging.productseries = ProductSeries.id AND
                    Packaging.sourcepackagename IN %s AND
-                   Packaging.packaging = %s
+                   Packaging.packaging = %s AND
+                   Product.active = 'T'
                    ORDER BY Packaging.id
         """ % sqlvalues(self.id, spn_ids, PackagingType.PRIME))
         sources_to_products = dict(cur.fetchall())
@@ -1129,7 +1135,7 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
             # database hard for each product rendered.
             list(Product.select("Product.id IN %s" % 
                  sqlvalues(sources_to_products.values()),
-                 prejoins=["bugcontact", "bugtracker"]))
+                 prejoins=["bugcontact", "bugtracker", "project"]))
 
         # Okay, we have all the information good to go, so assemble it
         # in a reasonable data structure.
@@ -1144,6 +1150,7 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
             else:
                 product = None
             results.append((dsp, product, count['total_bugs'],
+                            count['bugs_triaged'],
                             count['bugs_affecting_upstream'],
                             count['bugs_with_upstream_bugwatch']))
         return results
@@ -1210,3 +1217,4 @@ class DistributionSet:
         archive = getUtility(IArchiveSet).new(distribution=distro,
             purpose=ArchivePurpose.PRIMARY)
         return distro
+

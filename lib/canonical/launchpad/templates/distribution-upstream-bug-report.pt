@@ -41,23 +41,29 @@
       </p>
 
       <dl>
-        <dt>Open</dt><dd>Counts unfixed bugs open on that package.</dd>
-        <dt>Upstream</dt><dd>Of those bugs open, how many indicate they
+        <dt>Open</dt><dd>Counts unfixed bugs on that package.</dd>
+        <dt>Triaged</dt><dd>Counts unfixed bugs that have been marked as
+        triaged by the official distribution triage team.</dd>
+        <dt>Upstream</dt><dd>Of those bugs triaged, how many indicate they
         also affect an upstream project. Note that not all bugs filed
         against a distribution apply to an upstream project, so this
         percentage will rarely reach 100%.</dd>
-        <dt>Watch</dt><dd>Of the bugs affecting an upstream project, how
-        many have bug watches pointing to remote bug trackers. It is a
-        measure of how well we can monitor progress in the upstream
-        project.  The watch column is blank for projects which use
-        Launchpad for bug tracking since it implies that there is
-        already direct communication between distribution and
+        <dt>Watch</dt><dd>Of the triaged bugs affecting an upstream
+        project, how many have bug watches pointing to remote bug
+        trackers. It is a measure of how well we can monitor progress in
+        the upstream project.  The watch column is blank for projects
+        which use Launchpad for bug tracking since it implies that there
+        is already direct communication between distribution and
         upstream.</dd>
         <dt>&Delta;</dt><dd>Deltas and percentages are relative to
         numbers in the previous category; for instance, the delta for
         watches is the number of upstreamed bugs minus the number of
         bugs with watches linked.</dd>
       </dl>
+
+      The colour green implies healthy activity for that specific value;
+      so a green cell for Triaged means that a good rate of open bugs
+      for that source package have been triaged.
     </div>
 
     <div metal:fill-slot="main">
@@ -85,6 +91,9 @@
             <th>Bug Tracker</th>
             <th>Upstream Contact</th>
             <th class="numeric">Open</th>
+            <th class="numeric">Triaged</th>
+            <th class="numeric">%</th>
+            <th class="numeric">&Delta;</th>
             <th class="numeric">Upstream</th>
             <th class="numeric">%</th>
             <th class="numeric">&Delta;</th>
@@ -146,6 +155,18 @@
                  tal:attributes="href item/open_bugs_url"
                  tal:content="item/open_bugs"></a>
             </td>
+            <td align="right" tal:attributes="class item/triaged_bugs_class">
+              <a class="numeric"
+                 tal:attributes="href item/triaged_bugs_url"
+                 tal:content="item/triaged_bugs"></a>
+            </td>
+            <td align="right" tal:attributes="class item/triaged_bugs_class"
+                tal:content="item/triaged_bugs_percentage/fmt:float/.2" />
+            <td align="right" tal:attributes="class item/triaged_bugs_class">
+              <a class="numeric"
+                 tal:attributes="href item/triaged_bugs_delta_url"
+                 tal:content="item/triaged_bugs_delta"></a>
+            </td>
             <td align="right" tal:attributes="class item/upstream_bugs_class">
               <a class="numeric"
                  tal:attributes="href item/upstream_bugs_url"
@@ -181,6 +202,12 @@
             <td colspan="4" align="right"><b>Totals:</b></td>
             <td align="right"
                 tal:content="view/total/open_bugs" />
+            <td align="right"
+                tal:content="view/total/triaged_bugs" />
+            <td align="right"
+                tal:content="view/total/triaged_bugs_percentage/fmt:float/.2" />
+            <td align="right"
+                tal:content="view/total/triaged_bugs_delta" />
             <td align="right"
                 tal:content="view/total/upstream_bugs" />
             <td align="right"
