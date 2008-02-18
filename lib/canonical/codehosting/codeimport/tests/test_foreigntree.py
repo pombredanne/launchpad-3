@@ -108,6 +108,50 @@ class SubversionServer(Server):
         return url
 
 
+class CVSServer(Server):
+    """A CVS server for testing."""
+
+    def __init__(self, repository_path):
+        """Construct a `CVSServer`.
+
+        :param repository_path: The path to the directory that will contain
+            the CVS repository.
+        """
+        self._repository_path = os.path.abspath(repository_path)
+
+    def createRepository(self, path):
+        """Create a CVS repository at `path`.
+
+        :param path: The local path to create a repository in.
+        :return: A CVS.Repository`.
+        """
+        return CVS.init(path, _make_silent_logger())
+
+    def getRoot(self):
+        """Return the CVS root for this server."""
+        return self._repository_path
+
+    @run_in_temporary_directory
+    def makeModule(self, module_name, tree_contents):
+        """Create a module on the CVS server called `module_name`.
+
+        A 'module' in CVS roughly corresponds to a project.
+
+        :param module_name: The name of the module to create.
+        :param tree_contents: The contents of the module. This is a list of
+            tuples of (relative filename, file contents).
+        """
+        build_tree_contents(tree_contents)
+        self._repository.Import(
+            module=module_name, log="import", vendor="vendor",
+            release=['release'], dir='.')
+
+    def setUp(self):
+        # Initialize the repository.
+        Server.setUp(self)
+        self._repository = self.createRepository(self._repository_path)
+
+
 class TestSubversionWorkingTree(TestCaseWithTransport):
 
     def assertIsUpToDate(self, original_url, new_path):
@@ -166,50 +210,6 @@ class TestSubversionWorkingTree(TestCaseWithTransport):
         tree2.update()
         readme_path = os.path.join(tree2.local_path, 'README')
         self.assertFileEqual(new_content, readme_path)
-
-
-class CVSServer(Server):
-    """A CVS server for testing."""
-
-    def __init__(self, repository_path):
-        """Construct a `CVSServer`.
-
-        :param repository_path: The path to the directory that will contain
-            the CVS repository.
-        """
-        self._repository_path = os.path.abspath(repository_path)
-
-    def createRepository(self, path):
-        """Create a CVS repository at `path`.
-
-        :param path: The local path to create a repository in.
-        :return: A CVS.Repository`.
-        """
-        return CVS.init(path, _make_silent_logger())
-
-    def getRoot(self):
-        """Return the CVS root for this server."""
-        return self._repository_path
-
-    @run_in_temporary_directory
-    def makeModule(self, module_name, tree_contents):
-        """Create a module on the CVS server called `module_name`.
-
-        A 'module' in CVS roughly corresponds to a project.
-
-        :param module_name: The name of the module to create.
-        :param tree_contents: The contents of the module. This is a list of
-            tuples of (relative filename, file contents).
-        """
-        build_tree_contents(tree_contents)
-        self._repository.Import(
-            module=module_name, log="import", vendor="vendor",
-            release=['release'], dir='.')
-
-    def setUp(self):
-        # Initialize the repository.
-        Server.setUp(self)
-        self._repository = self.createRepository(self._repository_path)
 
 
 class TestCVSWorkingTree(TestCaseWithTransport):
