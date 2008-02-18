@@ -330,3 +330,4 @@ class BugWatchUpdater(object):
                     properties=[
                         ('bug_id', bug_id),
                         ('local_ids', local_ids)])
+
