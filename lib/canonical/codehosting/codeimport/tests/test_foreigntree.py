@@ -22,6 +22,7 @@ from bzrlib.tests.treeshape import build_tree_contents
 
 from canonical.codehosting.codeimport.foreigntree import (
     CVSWorkingTree, SubversionWorkingTree)
+from canonical.testing import BaseLayer
 
 
 def _make_silent_logger():
@@ -154,6 +155,8 @@ class CVSServer(Server):
 
 class TestSubversionWorkingTree(TestCaseWithTransport):
 
+    layer = BaseLayer
+
     def assertIsUpToDate(self, original_url, new_path):
         """Assert that a Subversion working tree is up to date.
 
@@ -213,6 +216,8 @@ class TestSubversionWorkingTree(TestCaseWithTransport):
 
 
 class TestCVSWorkingTree(TestCaseWithTransport):
+
+    layer = BaseLayer
 
     def assertIsUpToDate(self, cvs_working_tree):
         tree = CVS.tree(os.path.abspath(cvs_working_tree.local_path))
