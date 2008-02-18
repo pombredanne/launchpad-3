@@ -17,7 +17,7 @@ from zope.interface import (
 
 from canonical.launchpad import _
 from canonical.launchpad.fields import (
-    Title, Summary, Description)
+    Description, PublicPersonChoice, Summary, Title)
 from canonical.launchpad.interfaces.archive import IArchive
 from canonical.launchpad.interfaces.karma import IKarmaContext
 from canonical.launchpad.interfaces.mentoringoffer import IHasMentoringOffers
@@ -104,7 +104,7 @@ class IDistribution(IBugTarget, IHasAppointedDriver, IHasDrivers,
         title=_("Owner"),
         description=_("The distro's owner."), required=True)
     date_created = Attribute("The date this distribution was registered.")
-    driver = Choice(
+    driver = PublicPersonChoice(
         title=_("Driver"),
         description=_(
             "The person or team responsible for decisions about features "
@@ -116,11 +116,11 @@ class IDistribution(IBugTarget, IHasAppointedDriver, IHasDrivers,
     drivers = Attribute(
         "Presents the distro driver as a list for consistency with "
         "IProduct.drivers where the list might include a project driver.")
-    members = Choice(
+    members = PublicPersonChoice(
         title=_("Members"),
         description=_("The distro's members team."), required=True,
         vocabulary='ValidPersonOrTeam')
-    mirror_admin = Choice(
+    mirror_admin = PublicPersonChoice(
         title=_("Mirror Administrator"),
         description=_("The person or team that has the rights to administer "
                       "this distribution's mirrors"),
@@ -150,7 +150,7 @@ class IDistribution(IBugTarget, IHasAppointedDriver, IHasDrivers,
         title=_("Uploader sender"),
         description=_("The default upload processor sender name."),
         required=False)
-    upload_admin = Choice(
+    upload_admin = PublicPersonChoice(
         title=_("Upload Manager"),
         description=_("The distribution upload admin."),
         required=False, vocabulary='ValidPersonOrTeam')

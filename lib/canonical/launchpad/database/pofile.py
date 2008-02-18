@@ -28,6 +28,7 @@ from canonical.database.sqlbase import (
     SQLBase, flush_database_updates, quote, sqlvalues)
 from canonical.launchpad import helpers
 from canonical.launchpad.components.rosettastats import RosettaStats
+from canonical.launchpad.validators.person import public_person_validator
 from canonical.launchpad.database.potmsgset import POTMsgSet
 from canonical.launchpad.database.translationmessage import (
     DummyTranslationMessage, TranslationMessage)
@@ -213,10 +214,9 @@ class POFile(SQLBase, POFileMixIn):
                        default=None)
     fuzzyheader = BoolCol(dbName='fuzzyheader',
                           notNull=True)
-    lasttranslator = ForeignKey(foreignKey='Person',
-                                dbName='lasttranslator',
-                                notNull=False,
-                                default=None)
+    lasttranslator = ForeignKey(
+        dbName='lasttranslator', foreignKey='Person',
+        validator=public_person_validator, notNull=False, default=None)
 
     date_changed = UtcDateTimeCol(
         dbName='date_changed', notNull=True, default=UTC_NOW)
@@ -236,9 +236,9 @@ class POFile(SQLBase, POFileMixIn):
     lastparsed = UtcDateTimeCol(dbName='lastparsed',
                                 notNull=False,
                                 default=None)
-    owner = ForeignKey(foreignKey='Person',
-                       dbName='owner',
-                       notNull=True)
+    owner = ForeignKey(
+        dbName='owner', foreignKey='Person',
+        validator=public_person_validator, notNull=True)
     variant = StringCol(dbName='variant',
                         notNull=False,
                         default=None)
@@ -1160,7 +1160,9 @@ class POFileTranslator(SQLBase):
 
     implements(IPOFileTranslator)
     pofile = ForeignKey(foreignKey='POFile', dbName='pofile', notNull=True)
-    person = ForeignKey(foreignKey='Person', dbName='person', notNull=True)
+    person = ForeignKey(
+        dbName='person', foreignKey='Person',
+        validator=public_person_validator, notNull=True)
     latest_message = ForeignKey(foreignKey='TranslationMessage',
         dbName='latest_message', notNull=True)
     date_last_touched = UtcDateTimeCol(dbName='date_last_touched',

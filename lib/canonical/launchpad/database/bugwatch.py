@@ -29,6 +29,7 @@ from canonical.launchpad.interfaces import (
     IBugWatchSet, ILaunchpadCelebrities, NoBugTrackerFound,
     NotFoundError, UnrecognizedBugTrackerURL)
 from canonical.launchpad.validators.email import valid_email
+from canonical.launchpad.validators.person import public_person_validator
 from canonical.launchpad.webapp import urlappend, urlsplit
 from canonical.launchpad.webapp.snapshot import Snapshot
 from canonical.launchpad.webapp.uri import find_uris_in_text
@@ -48,7 +49,9 @@ class BugWatch(SQLBase):
     lastchecked = UtcDateTimeCol(notNull=False, default=None)
     last_error_type = EnumCol(schema=BugWatchErrorType, default=None)
     datecreated = UtcDateTimeCol(notNull=True, default=UTC_NOW)
-    owner = ForeignKey(dbName='owner', foreignKey='Person', notNull=True)
+    owner = ForeignKey(
+        dbName='owner', foreignKey='Person',
+        validator=public_person_validator, notNull=True)
 
     # useful joins
     bugtasks = SQLMultipleJoin('BugTask', joinColumn='bugwatch',
