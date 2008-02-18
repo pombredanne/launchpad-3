@@ -15,6 +15,16 @@ from canonical.launchpad.scripts.checkwatches import BugWatchUpdater
 
 
 class CheckWatches(LaunchpadCronScript):
+
+    def add_my_options(self):
+        """See `LaunchpadScript`."""
+        self.parser.add_option('-t', '--bug-tracker', action='append',
+            dest='bug_trackers', metavar="BUG_TRACKER",
+            help="Only check a given bug tracker. Specifying more than "
+                "one bugtracker using this option will check all the "
+                "bugtrackers specified.")
+
+
     def main(self):
         start_time = time.time()
 
@@ -26,7 +36,7 @@ class CheckWatches(LaunchpadCronScript):
         config.launchpad.errorreports.copy_to_zlog = False
 
         updater = BugWatchUpdater(self.txn, self.logger)
-        updater.updateBugTrackers()
+        updater.updateBugTrackers(self.options.bug_trackers)
 
         run_time = time.time() - start_time
         self.logger.info("Time for this run: %.3f seconds." % run_time)
