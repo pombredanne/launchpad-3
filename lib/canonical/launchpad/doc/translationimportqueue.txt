@@ -1313,15 +1313,17 @@ few days.
 
 A user sets up Jokosher for translation, and uploads a template.
 
+    >>> from canonical.launchpad.ftests import sync, syncUpdate
     >>> jokosher = productset['jokosher']
     >>> jokosher_trunk = jokosher.getSeries('trunk')
     >>> jokosher.official_rosetta = True
+    >>> syncUpdate(jokosher)
     >>> jokosher_subset = potemplateset.getSubset(productseries=jokosher_trunk)
     >>> template = jokosher_subset.new(
     ...     'jokosher', 'jokosher', 'jokosher.pot', rosetta_experts)
-    >>> flush_database_updates()
+    >>> syncUpdate(template)
     >>> entry = create_product_request('jokosher', 'jokosher')
-    >>> flush_database_updates()
+    >>> syncUpdate(entry)
 
 
 The entry sits on the queue; there is no reason for anyone to purge it.
@@ -1334,7 +1336,7 @@ An administrator finds that this registration of the Jokosher project
 does not satisfy Launchpad policy, and disables it.
 
     >>> jokosher.active = False
-    >>> flush_database_updates()
+    >>> syncUpdate(jokosher)
 
 
 The request is now eligible for purging.  Since the Jokosher product is
