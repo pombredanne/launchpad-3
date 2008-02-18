@@ -1,0 +1,87 @@
+= Email notifications =
+
+Notifications about changes to a mailing list's status are sent out
+via email.
+
+    >>> import email
+    >>> from canonical.launchpad.mail import stub
+
+    >>> def by_to_addrs(a, b):
+    ...     return cmp(a[1], b[1])
+
+    >>> def pop_notifications():
+    ...     stub.test_emails.sort(by_to_addrs)
+    ...     notifications = [
+    ...         email.message_from_string(raw_message)
+    ...         for fromaddr, toaddrs, raw_message in stub.test_emails]
+    ...     stub.test_emails = []
+    ...     return notifications
+
+    >>> def print_distinct_messages_and_recipients(include_reply_to=False):
+    ...     """Pop all messages from stub.test_emails and print them with
+    ...      their recipients.
+    ...
+    ...     Since the same message may be sent more than once (for different
+    ...     recipients), we print each distinct message only once and group
+    ...     all recipients of that message together.
+    ...     """
+    ...     distinct_bodies = {}
+    ...     for message in pop_notifications():
+    ...         recipients = set(
+    ...             recipient.strip()
+    ...             for recipient in message['To'].split(','))
+    ...         body = message.get_payload()
+    ...         # Strip the first line as it's different for each recipient.
+    ...         body = body[body.find('\n')+1:]
+    ...         if body not in distinct_bodies:
+    ...             distinct_bodies[body] = (message, recipients)
+    ...         else:
+    ...             message, existing_recipients = distinct_bodies[body]
+    ...             distinct_bodies[body] = (
+    ...                 message, existing_recipients.union(recipients))
+    ...     for body in sorted(distinct_bodies):
+    ...         message, recipients = distinct_bodies[body]
+    ...         print 'From:', message['From']
+    ...         print 'To:', ", ".join(sorted(recipients))
+    ...         if include_reply_to:
+    ...             print 'Reply-To:', message['Reply-To']
+    ...         print 'Subject:', message['Subject'] #doctest: -NORMALIZE_WHITESPACE
+    ...         print body #doctest: -NORMALIZE_WHITESPACE
+    ...         print "-"*40
+
+
+When a new email list becomes active, an email notification is sent to
+all team members.
+
+    >>> from canonical.launchpad.ftests.mailinglists_helper import (
+    ...		new_team, new_person, new_list_for_team)
+
+    >>> team_one = new_team('team-one', with_list=False)
+    >>> anne = new_person('Anne')
+    >>> john = new_person('John')
+
+    # login() as an admin so that we can call IPerson.join() on any
+    # person/team we want.
+    >>> login('foo.bar@canonical.com')
+    >>> anne.join(team_one)
+    >>> john.join(team_one)
+
+    # This will take our team through the entire list creation
+    # process, generating notification emails along the way.
+    >>> list_one = new_list_for_team(team_one)
+
+    >>> len(stub.test_emails)
+    2
+    >>> print_distinct_messages_and_recipients(include_reply_to=True)
+
+
+That notification is also sent to the individual members of all sub-teams.
+
+    >>> from canonical.launchpad.interfaces import IPersonSet
+    >>> salgado = getUtility(IPersonSet).getByName('salgado')
+
+    >>> pass
+
+If a list has been de-activated, then the team members are already
+subscribed to it's list.  In this case the notification will not be
+sent out again.
