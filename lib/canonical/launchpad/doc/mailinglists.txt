@@ -542,3 +542,40 @@ mailing list could have an archive and archives are never deleted.
     'INACTIVE'
     >>> list_one.archive_url
     u'http://lists.launchpad.dev/team-one'
+
+
+== Events ==
+
+Transitions from one mailing list state to another will fire instances
+of the SQLObjectModifiedEvent.
+
+    # Register an event listener that will print event it receives.
+    >>> from canonical.launchpad.event.interfaces import (
+    ...     ISQLObjectModifiedEvent)
+    >>> from canonical.launchpad.interfaces import IMailingList
+    >>> from canonical.launchpad.ftests.event import TestEventListener
+    >>> def print_event(object, event):
+    ...     print "Received %s on %s" % (
+    ...         event.__class__.__name__.split('.')[-1],
+    ...         object.__class__.__name__.split('.')[-1])
+    >>> mailinglist_event_listener = TestEventListener(
+    ...     IMailingList, ISQLObjectModifiedEvent, print_event)
+
+
+    # We need to build a new mailing list to use in our tests
+    >>> list_six = list_set.new(team_six)
+    >>> list_six.review(dirk, MailingListStatus.APPROVED)
+    >>> syncUpdate(list_six)
+    >>> list_six.startConstructing()
+    >>> list_six.status.name
+    'CONSTRUCTING'
+
+Changing the list status to 'available for subscription' triggers an event.
+
+    >>> list_six.transitionToStatus(MailingListStatus.ACTIVE)
+    Received SQLObjectModifiedEvent on Question
+    >>> list_six.status.name
+    'ACTIVE'
+
+    # Cleanup
+    >>> mailinglist_event_listener.unregister()
