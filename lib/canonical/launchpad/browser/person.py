@@ -199,12 +199,8 @@ class RestrictedMembershipsPersonView(LaunchpadView):
         The user must be an administrator of the team, and the team must
         be public.
         """
-        # XXX Edwin Grubbs 2007-12-14 bug=175758
-        # Checking if the team.visibility is None can be removed
-        # after a notnull constraint has been added.
         return [team for team in self.context.getAdministratedTeams()
-                if team.visibility is None
-                or team.visibility == PersonVisibility.PUBLIC]
+                if team.visibility == PersonVisibility.PUBLIC]
 
     def userCanViewMembership(self):
         """Return true if the user can view a team's membership.

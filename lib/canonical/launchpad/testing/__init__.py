@@ -163,11 +163,15 @@ class LaunchpadObjectFactory:
 
     def makeBranch(self, branch_type=None, owner=None, name=None,
                    product=None, url=None, registrant=None,
+                   explicit_junk=False,
                    **optional_branch_args):
         """Create and return a new, arbitrary Branch of the given type.
 
         Any parameters for IBranchSet.new can be specified to override the
         default ones.
+
+        :param explicit_junk: If set to True, a product is not created
+            if the product parameter is None.
         """
         if branch_type is None:
             branch_type = BranchType.HOSTED
@@ -177,7 +181,7 @@ class LaunchpadObjectFactory:
             registrant = owner
         if name is None:
             name = self.getUniqueString('branch')
-        if product is None:
+        if product is None and not explicit_junk:
             product = self.makeProduct()
 
         if branch_type in (BranchType.HOSTED, BranchType.IMPORTED):
@@ -275,49 +279,40 @@ class LaunchpadObjectFactory:
             parent_ids = [parent.revision_id]
         branch.updateScannedDetails(parent.revision_id, sequence)
 
-    def makeBug(self):
+    def makeBug(self, product=None):
         """Create and return a new, arbitrary Bug.
 
         The bug returned uses default values where possible. See
         `IBugSet.new` for more information.
+
+        :param product: If the product is not set, one is created
+            and this is used as the primary bug target.
         """
+        if product is None:
+            product = self.makeProduct()
         owner = self.makePerson()
         title = self.getUniqueString()
         create_bug_params = CreateBugParams(
             owner, title, comment=self.getUniqueString())
-        create_bug_params.setBugTarget(product=self.makeProduct())
+        create_bug_params.setBugTarget(product=product)
         return getUtility(IBugSet).createBug(create_bug_params)
 
-    def makeSpec(self):
-        """Create a new, arbitrary Specification.
+    def makeBlueprint(self, product=None):
+        """Create and return a new, arbitrary Blueprint.
 
-        :param branch: if supplied, this will be linked to the spec.
+        :param product: The product to make the blueprint on.  If one is
+            not specified, an arbitrary product is created.
         """
-        spec = getUtility(ISpecificationSet).new(
-            self.getUniqueString(),
-            self.getUniqueString(),
-            self.getUniqueURL(),
-            self.getUniqueString(),
-            SpecificationDefinitionStatus.APPROVED,
-            self.makePerson(),
-            product=self.makeProduct(),
-            )
-        return spec
-
-    def makeSeries(self, user_branch=None, import_branch=None):
-        """Create a new, arbitrary ProductSeries.
-
-        :param user_branch: If supplied, the branch to set as
-            ProductSeries.user_branch.
-        :param import_branch: If supplied, the branch to set as
-            ProductSeries.import_branch.
-        """
-        product = self.makeProduct()
-        series = product.newSeries(product.owner, self.getUniqueString(),
-            self.getUniqueString(), user_branch)
-        series.import_branch = import_branch
-        syncUpdate(series)
-        return series
+        if product is None:
+            product = self.makeProduct()
+        return getUtility(ISpecificationSet).new(
+            name=self.getUniqueString('name'),
+            title=self.getUniqueString('title'),
+            specurl=None,
+            summary=self.getUniqueString('summary'),
+            definition_status=SpecificationDefinitionStatus.NEW,
+            owner=self.makePerson(),
+            product=product)
 
     def makeCodeImport(self, url=None):
         """Create and return a new, arbitrary code import.
@@ -352,3 +347,34 @@ class LaunchpadObjectFactory:
         The machine will be in the OFFLINE state."""
         hostname = self.getUniqueString('machine-')
         return getUtility(ICodeImportMachineSet).new(hostname)
+
+    def makeSeries(self, user_branch=None, import_branch=None):
+        """Create a new, arbitrary ProductSeries.
+
+        :param user_branch: If supplied, the branch to set as
+            ProductSeries.user_branch.
+        :param import_branch: If supplied, the branch to set as
+            ProductSeries.import_branch.
+        """
+        product = self.makeProduct()
+        series = product.newSeries(product.owner, self.getUniqueString(),
+            self.getUniqueString(), user_branch)
+        series.import_branch = import_branch
+        syncUpdate(series)
+        return series
+
+    def makeSpec(self):
+        """Create a new, arbitrary Specification.
+
+        :param branch: if supplied, this will be linked to the spec.
+        """
+        spec = getUtility(ISpecificationSet).new(
+            self.getUniqueString(),
+            self.getUniqueString(),
+            self.getUniqueURL(),
+            self.getUniqueString(),
+            SpecificationDefinitionStatus.APPROVED,
+            self.makePerson(),
+            product=self.makeProduct(),
+            )
+        return spec

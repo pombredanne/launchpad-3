@@ -111,7 +111,7 @@ Make the modification real in the DB (XXX cprov 20051209: see bug #3889)
   >>> for item in accepted_queue:
   ...     for source in item.sources:
   ...         print source.sourcepackagerelease.name
-  ...     item.realiseUpload(mock_logger)
+  ...     pub_records = item.realiseUpload(mock_logger)
   ed
   DEBUG: Publishing source ed/0.2-20 to ubuntu/hoary
   DEBUG: Publishing build to ubuntu/hoary/i386

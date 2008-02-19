@@ -17,6 +17,7 @@ from zope.interface import Interface
 from zope.schema import Choice, List, Set, TextLine
 
 from canonical.launchpad import _
+from canonical.launchpad.fields import PublicPersonChoice
 from canonical.launchpad.interfaces.questioncollection import (
     ISearchableByQuestionOwner, QUESTION_STATUS_DEFAULT_SEARCH)
 from canonical.launchpad.interfaces.questionenums import (
@@ -128,7 +129,7 @@ class IQuestionTarget(ISearchableByQuestionOwner):
             "Persons that are willing to provide support for this target. "
             "They receive email notifications about each new question as "
             "well as for changes to any questions related to this target."),
-        value_type=Choice(vocabulary="ValidPersonOrTeam"))
+        value_type=PublicPersonChoice(vocabulary="ValidPersonOrTeam"))
 
     direct_answer_contacts = List(
         title=_("Direct Answer Contacts"),
@@ -136,7 +137,7 @@ class IQuestionTarget(ISearchableByQuestionOwner):
             "IPersons that registered as answer contacts explicitely on "
             "this target. (answer_contacts may include answer contacts "
             "inherited from other context.)"),
-        value_type=Choice(vocabulary="ValidPersonOrTeam"))
+        value_type=PublicPersonChoice(vocabulary="ValidPersonOrTeam"))
 
 
 # These schemas are only used by browser/questiontarget.py and should really

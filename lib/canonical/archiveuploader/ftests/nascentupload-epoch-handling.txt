@@ -54,7 +54,7 @@ Upload and publish 'non-epoched' version:
     >>> bar_src_queue_noepoch.status.name
     'NEW'
     >>> bar_src_queue_noepoch.setAccepted()
-    >>> bar_src_queue_noepoch.realiseUpload()
+    >>> pub_records = bar_src_queue_noepoch.realiseUpload()
     >>> bar_src_queue_noepoch.status.name
     'DONE'
 
@@ -134,7 +134,7 @@ Accept all bar sources:
 
 Published the 'non-epoched' bar source version as the base package:
 
-    >>> bar_src_queue_noepoch.realiseUpload()
+    >>> pub_records = bar_src_queue_noepoch.realiseUpload()
     >>> bar_src_queue_noepoch.status.name
     'DONE'
 

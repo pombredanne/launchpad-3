@@ -602,8 +602,7 @@ class UserTeamsParticipationVocabulary(SQLObjectVocabularyBase):
         if launchbag.user:
             user = launchbag.user
             for team in user.teams_participated_in:
-                if (team.visibility is None
-                    or team.visibility == PersonVisibility.PUBLIC):
+                if team.visibility == PersonVisibility.PUBLIC:
                     yield self.toTerm(team)
 
     def getTermByToken(self, token):
@@ -732,24 +731,18 @@ class ValidPersonOrTeamVocabulary(
             extra_clause = ""
 
         if not text:
-            # XXX Edwin Grubbs 2007-12-11 bug=175758
-            # Checking if visibility is None is only
-            # necessary until next cycle.
             query = """
                 Person.id = ValidPersonOrTeamCache.id
-                AND (Person.visibility IS NULL OR Person.visibility = %s)
+                AND Person.visibility = %s
                 """ % quote(PersonVisibility.PUBLIC)
             query += extra_clause
             return Person.select(
                 query, clauseTables=['ValidPersonOrTeamCache'])
 
-        # XXX Edwin Grubbs 2007-12-11 bug=175758
-        # Checking if visibility is None is only
-        # necessary until next cycle.
         name_match_query = """
             Person.id = ValidPersonOrTeamCache.id
             AND Person.fti @@ ftq(%s)
-            AND (Person.visibility IS NULL OR Person.visibility = %s)
+            AND Person.visibility = %s
             """ % (quote(text), quote(PersonVisibility.PUBLIC))
         name_match_query += extra_clause
         name_matches = Person.select(
@@ -758,15 +751,12 @@ class ValidPersonOrTeamVocabulary(
         # Note that we must use lower(email) LIKE rather than ILIKE
         # as ILIKE no longer appears to be hitting the index under PG8.0
 
-        # XXX Edwin Grubbs 2007-12-11 bug=175758
-        # Checking if visibility is None is only
-        # necessary until next cycle.
         email_match_query = """
             EmailAddress.person = Person.id
             AND EmailAddress.person = ValidPersonOrTeamCache.id
             AND EmailAddress.status IN %s
             AND lower(email) LIKE %s || '%%'
-            AND (Person.visibility IS NULL OR Person.visibility = %s)
+            AND Person.visibility = %s
             """ % (sqlvalues(EmailAddressStatus.VALIDATED,
                              EmailAddressStatus.PREFERRED),
                    quote_like(text),
@@ -776,14 +766,11 @@ class ValidPersonOrTeamVocabulary(
             email_match_query,
             clauseTables=['ValidPersonOrTeamCache', 'EmailAddress'])
 
-        # XXX Edwin Grubbs 2007-12-11 bug=175758
-        # Checking if visibility is None is only
-        # necessary until next cycle.
         ircid_match_query = """
             IRCId.person = Person.id
             AND IRCId.person = ValidPersonOrTeamCache.id
             AND lower(IRCId.nickname) = %s
-            AND (Person.visibility IS NULL OR Person.visibility = %s)
+            AND Person.visibility = %s
             """ % (quote(text), quote(PersonVisibility.PUBLIC))
         ircid_match_query += extra_clause
         ircid_matches = Person.select(

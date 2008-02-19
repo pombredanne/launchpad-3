@@ -52,14 +52,14 @@ from canonical.launchpad import _
 
 from canonical.launchpad.fields import (
     BlacklistableContentNameField, IconImageUpload, LogoImageUpload,
-    MugshotImageUpload, PasswordField, StrippedTextLine)
+    MugshotImageUpload, PasswordField, PublicPersonChoice, StrippedTextLine)
 from canonical.launchpad.validators.name import name_validator
 from canonical.launchpad.interfaces.mentoringoffer import (
     IHasMentoringOffers)
 from canonical.launchpad.interfaces.specificationtarget import (
     IHasSpecifications)
 from canonical.launchpad.interfaces.launchpad import (
-    IHasLogo, IHasMugshot, IHasIcon)
+    IHasIcon, IHasLogo, IHasMugshot)
 from canonical.launchpad.interfaces.questioncollection import (
     IQuestionCollection, QUESTION_STATUS_DEFAULT_SEARCH)
 from canonical.launchpad.interfaces.validation import (
@@ -646,8 +646,9 @@ class IPersonPublic(IHasSpecifications, IHasMentoringOffers,
         "Specifications this person has subscribed to, sorted newest first.")
     team_mentorships = Attribute(
         "All the offers of mentoring which are relevant to this team.")
-    teamowner = Choice(title=_('Team Owner'), required=False, readonly=False,
-                       vocabulary='ValidTeamOwner')
+    teamowner = PublicPersonChoice(
+        title=_('Team Owner'), required=False, readonly=False,
+        vocabulary='ValidTeamOwner')
     teamownerID = Int(title=_("The Team Owner's ID or None"), required=False,
                       readonly=True)
     teamdescription = Text(
@@ -1570,13 +1571,14 @@ class IAdminTeamMergeSchema(Interface):
 class IObjectReassignment(Interface):
     """The schema used by the object reassignment page."""
 
-    owner = Choice(title=_('Owner'), vocabulary='ValidOwner', required=True)
+    owner = PublicPersonChoice(title=_('Owner'), vocabulary='ValidOwner', 
+                               required=True)
 
 
 class ITeamReassignment(Interface):
     """The schema used by the team reassignment page."""
 
-    owner = Choice(
+    owner = PublicPersonChoice(
         title=_('Owner'), vocabulary='ValidTeamOwner', required=True)
 
 
