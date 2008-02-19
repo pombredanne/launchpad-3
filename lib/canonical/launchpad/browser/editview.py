@@ -25,8 +25,7 @@ from zope.event import notify
 from zope.interface import providedBy
 
 from canonical.launchpad import _
-from canonical.launchpad.event.sqlobjectevent import (
-        SQLObjectModifiedEvent,  SQLObjectToBeModifiedEvent)
+from canonical.launchpad.event import SQLObjectModifiedEvent
 from canonical.launchpad.webapp.generalform import NoRenderingOnRedirect
 from canonical.launchpad.webapp.snapshot import Snapshot
 
@@ -69,7 +68,8 @@ class SQLObjectEditView(EditView, NoRenderingOnRedirect):
             was_changed = False
             new_values = None
             try:
-                new_values = getWidgetsData(self, self.schema, self.fieldNames)
+                new_values = getWidgetsData(
+                    self, self.schema, self.fieldNames)
             except WidgetsError, errors:
                 self.errors = errors
                 transaction.abort()
@@ -81,18 +81,6 @@ class SQLObjectEditView(EditView, NoRenderingOnRedirect):
                 self.top_of_page_errors = errors
                 transaction.abort()
                 return self.update_status
-
-            # This is a really important event for handling bug
-            # privacy.  If we can see that a bug is about to be
-            # set private, we need to ensure that all implicit
-            # subscriptions are turned explicit before any more
-            # processing is done, otherwise implicit subscribers
-            # can never set a bug private. Once bug.private ==
-            # True, any further access to the bug attributes are
-            # prevented to all but explicit subscribers!
-            #
-            # -- Brad Bollenbach, 2005-03-22
-            notify(SQLObjectToBeModifiedEvent(content, new_values))
 
             # a little bit of hocus pocus to be able to take a
             # (good enough, for our purposes) snapshot of what

@@ -1,0 +1,37 @@
+= Product Set Page =
+
+Under "/projects" there are several pages for various administration tasks.
+
+The pages are "+review", "+new", and "+all".
+
+A logged in, unprivileged person cannot see the "+review" page.
+
+    >>> user_browser.open('http://launchpad.dev/projects/+review')
+    Traceback (most recent call last):
+      ...
+    Unauthorized:...
+
+However, the unprivileged user can see "+all" and "+new".
+
+    >>> user_browser.open('http://launchpad.dev/projects/+all')
+    >>> user_browser.title
+    'Upstream projects registered in Launchpad'
+
+    >>> user_browser.open('http://launchpad.dev/projects/+new')
+    >>> user_browser.title
+    'Register a project in Launchpad'
+
+An administrator may successfully access all of these pages.
+
+    >>> admin_browser.open('http://launchpad.dev/projects/+review')
+    >>> admin_browser.title
+    'Review Launchpad items'
+
+    >>> admin_browser.open('http://launchpad.dev/projects/+all')
+    >>> admin_browser.title
+    'Upstream projects registered in Launchpad'
+
+    >>> admin_browser.open('http://launchpad.dev/projects/+new')
+    >>> admin_browser.title
+    'Register a project in Launchpad'
+

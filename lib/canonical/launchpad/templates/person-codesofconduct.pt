@@ -1,7 +1,13 @@
-<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
-      lang="en"
-      metal:use-macro="context/@@main_template/master"
-    i18n:domain="launchpad"
+<html
+  xmlns="http://www.w3.org/1999/xhtml"
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  xml:lang="en"
+  lang="en"
+  dir="ltr"
+  metal:use-macro="context/@@main_template/master"
+  i18n:domain="launchpad"
 >
 <body>
 
@@ -57,7 +63,7 @@
                   >SIGNATURE</div>
                 </td>
               </tr>
-            <tbody>
+            </tbody>
           </table>
           <input type="submit" value="Deactivate"/>
         </form>
@@ -70,7 +76,7 @@
 
         <p>
           Once <dfn>Inactive</dfn>, a signature can only be reactivated by a
-          <a href="/~admins">Launchpad Administrator<a>.
+          <a href="/~admins">Launchpad Administrator</a>.
         </p>
       <ul> 
          <li tal:repeat="sig context/inactivesignatures"

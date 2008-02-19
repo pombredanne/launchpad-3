@@ -1,7 +1,14 @@
-<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
-      lang="en"
-      metal:use-macro="context/@@main_template/master"
-      i18n:domain="launchpad">
+<html
+  xmlns="http://www.w3.org/1999/xhtml"
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  xml:lang="en"
+  lang="en"
+  dir="ltr"
+  metal:use-macro="context/@@main_template/master"
+  i18n:domain="launchpad"
+>
 
 <body>
 
@@ -40,9 +47,12 @@
   <div class="left" tal:condition="direct/count">
     <div class="portlet">
       <h2>Direct membership</h2>
-      <table>
-        <tr tal:repeat="membership context/myactivememberships"
-            tal:replace="structure membership/@@+listing-simple" />
+      <table id="participation">
+        <tal:loop repeat="membership context/myactivememberships">
+          <tr tal:replace="structure membership/@@+listing-simple"
+              tal:condition="membership/team/@@+restricted-membership/userCanViewMembership"
+              />
+        </tal:loop>
       </table>
     </div>
   </div>

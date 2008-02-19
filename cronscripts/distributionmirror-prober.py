@@ -1,5 +1,6 @@
 #!/usr/bin/python2.4
 # Copyright 2006 Canonical Ltd.  All rights reserved.
+# pylint: disable-msg=C0103,W0403
 
 """Script to probe distribution mirrors and check how up-to-date they are."""
 
@@ -138,10 +139,12 @@ class DistroMirrorProber(LaunchpadCronScript):
         expected_iso_images_count = len(get_expected_cdimage_paths())
         notify_owner = not self.options.no_owner_notification
         for mirror in probed_mirrors:
-            self._create_probe_record(mirror, logfiles[mirror.id])
+            log = logfiles[mirror.id]
+            self._create_probe_record(mirror, log)
             if mirror.shouldDisable(expected_iso_images_count):
                 if mirror.enabled:
-                    mirror.disable(notify_owner)
+                    log.seek(0)
+                    mirror.disable(notify_owner, log.getvalue())
                     disabled_mirrors.append(canonical_url(mirror))
             else:
                 # Ensure the mirror is enabled, so that it shows up on public

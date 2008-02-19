@@ -14,6 +14,12 @@
       tal:content="comment/datecreated/fmt:displaydate">
       7 minutes ago
     </span>:
+    <span tal:condition="comment/bugwatch">
+      imported from
+      <a tal:attributes="href comment/bugwatch/url">
+        <tal:block replace="comment/bugwatch/title" />
+      </a>
+    </span>
     <a tal:attributes="href comment/fmt:url">
       <strong tal:condition="comment/display_title"
               tal:content="comment/title" />

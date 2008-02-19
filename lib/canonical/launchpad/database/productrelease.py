@@ -1,4 +1,5 @@
 # Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# pylint: disable-msg=E0611,W0212
 
 __metaclass__ = type
 __all__ = ['ProductRelease', 'ProductReleaseSet', 'ProductReleaseFile']
@@ -15,6 +16,7 @@ from canonical.database.enumcol import EnumCol
 from canonical.launchpad.interfaces import (
     IProductRelease, IProductReleaseFile, IProductReleaseSet,
     NotFoundError, UpstreamFileType)
+from canonical.launchpad.validators.person import public_person_validator
 
 
 class ProductRelease(SQLBase):
@@ -32,7 +34,9 @@ class ProductRelease(SQLBase):
     changelog = StringCol(notNull=False, default=None)
     datecreated = UtcDateTimeCol(
         dbName='datecreated', notNull=True, default=UTC_NOW)
-    owner = ForeignKey(dbName="owner", foreignKey="Person", notNull=True)
+    owner = ForeignKey(
+        dbName="owner", foreignKey="Person",
+        validator=public_person_validator, notNull=True)
     productseries = ForeignKey(dbName='productseries',
                                foreignKey='ProductSeries', notNull=True)
 
@@ -50,24 +54,26 @@ class ProductRelease(SQLBase):
 
     @property
     def title(self):
-        """See IProductRelease."""
+        """See `IProductRelease`."""
         thetitle = self.displayname
         if self.codename:
             thetitle += ' "' + self.codename + '"'
         return thetitle
 
-    def addFileAlias(self, alias, uploader,
+    def addFileAlias(self, alias, signature,
+                     uploader,
                      file_type=UpstreamFileType.CODETARBALL,
                      description=None):
-        """See IProductRelease."""
+        """See `IProductRelease`."""
         return ProductReleaseFile(productrelease=self,
                                   libraryfile=alias,
+                                  signature=signature,
                                   filetype=file_type,
                                   description=description,
                                   uploader=uploader)
 
     def deleteFileAlias(self, alias):
-        """See IProductRelease."""
+        """See `IProductRelease`."""
         for f in self.files:
             if f.libraryfile.id == alias.id:
                 f.destroySelf()
@@ -75,11 +81,14 @@ class ProductRelease(SQLBase):
         raise NotFoundError(alias.filename)
 
     def getFileAliasByName(self, name):
-        """See IProductRelase."""
-        for f in self.files:
-            if f.libraryfile.filename == name:
-                return f.libraryfile
+        """See `IProductRelease`."""
+        for file_ in self.files:
+            if file_.libraryfile.filename == name:
+                return file_.libraryfile
+            elif file_.signature and file_.signature.filename == name:
+                return file_.signature
         raise NotFoundError(name)
+
 
 class ProductReleaseFile(SQLBase):
     """A file of a product release."""
@@ -89,26 +98,32 @@ class ProductReleaseFile(SQLBase):
 
     productrelease = ForeignKey(dbName='productrelease',
                                 foreignKey='ProductRelease', notNull=True)
+
     libraryfile = ForeignKey(dbName='libraryfile',
                              foreignKey='LibraryFileAlias', notNull=True)
+
+    signature = ForeignKey(dbName='signature',
+                           foreignKey='LibraryFileAlias')
 
     filetype = EnumCol(dbName='filetype', enum=UpstreamFileType,
                        notNull=True, default=UpstreamFileType.CODETARBALL)
 
     description = StringCol(notNull=False, default=None)
 
-    uploader = ForeignKey(dbName="uploader", foreignKey='Person',
-                          notNull=True)
+    uploader = ForeignKey(
+        dbName="uploader", foreignKey='Person',
+        validator=public_person_validator, notNull=True)
 
     date_uploaded = UtcDateTimeCol(notNull=True, default=UTC_NOW)
 
+
 class ProductReleaseSet(object):
-    """See IProductReleaseSet"""
+    """See `IProductReleaseSet`."""
     implements(IProductReleaseSet)
 
     def new(self, version, productseries, owner, codename=None, summary=None,
             description=None, changelog=None):
-        """See IProductReleaseSet"""
+        """See `IProductReleaseSet`."""
         return ProductRelease(version=version,
                               productseries=productseries,
                               owner=owner,
@@ -119,7 +134,7 @@ class ProductReleaseSet(object):
 
 
     def getBySeriesAndVersion(self, productseries, version, default=None):
-        """See IProductReleaseSet"""
+        """See `IProductReleaseSet`."""
         query = AND(ProductRelease.q.version==version,
                     ProductRelease.q.productseriesID==productseries.id)
         productrelease = ProductRelease.selectOne(query)

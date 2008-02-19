@@ -1,4 +1,5 @@
 # Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# pylint: disable-msg=E0211,E0213
 
 """Bug watch interfaces."""
 
@@ -22,6 +23,13 @@ from canonical.lazr import DBEnumeratedType, DBItem
 
 class BugWatchErrorType(DBEnumeratedType):
     """An enumeration of possible BugWatch errors."""
+
+    UNKNOWN = DBItem(999, """
+        Unknown
+
+        Launchpad encountered an unexpected error when trying to
+        retrieve the bug from the remote server.
+        """)
 
     BUG_NOT_FOUND = DBItem(1, """
         Bug Not Found
@@ -63,10 +71,10 @@ class BugWatchErrorType(DBEnumeratedType):
         """)
 
     UNSUPPORTED_BUG_TRACKER = DBItem(7, """
-        Unsupported Bugtracker Version
+        Unsupported Bugtracker
 
-        The remote server is using a version of its bug tracker software
-        which Launchpad does not currently support.
+        The remote server is using bug tracker software which Launchpad
+        does not currently support.
         """)
 
 
@@ -82,13 +90,14 @@ class IBugWatch(IHasBug):
         readonly=False, description=_("The bug number of this bug in the "
         "remote bug tracker."))
     remotestatus = TextLine(title=_('Remote Status'))
+    remote_importance = TextLine(title=_('Remote Importance'))
     lastchanged = Datetime(title=_('Last Changed'))
     lastchecked = Datetime(title=_('Last Checked'))
+    last_error_type = Choice(title=_('Last Error Type'),
+        vocabulary=BugWatchErrorType)
     datecreated = Datetime(
             title=_('Date Created'), required=True, readonly=True)
     owner = Int(title=_('Owner'), required=True, readonly=True)
-    last_error_type = Choice(title=_('Last Error Type'),
-        vocabulary=BugWatchErrorType)
 
     # useful joins
     bugtasks = Attribute('The tasks which this watch will affect. '
@@ -106,7 +115,14 @@ class IBugWatch(IHasBug):
     # required for launchpad pages
     title = Text(title=_('Bug watch title'), readonly=True)
 
-    url = Text(title=_('The URL at which to view the remote bug.'), readonly=True)
+    url = Text(title=_('The URL at which to view the remote bug.'),
+        readonly=True)
+
+    def updateImportance(remote_importance, malone_importance):
+        """Update the importance of the bug watch and any linked bug task.
+
+        The lastchanged attribute gets set to the current time.
+        """
 
     def updateStatus(remote_status, malone_status):
         """Update the status of the bug watch and any linked bug task.
@@ -119,6 +135,22 @@ class IBugWatch(IHasBug):
 
     def getLastErrorMessage():
         """Return a string describing the contents of last_error_type."""
+
+    def hasComment(comment_id):
+        """Return True if a comment has been imported for the BugWatch.
+
+        If the comment has not been imported, return False.
+
+        :param comment_id: The remote ID of the comment.
+        """
+
+    def addComment(comment_id, message):
+        """Link and imported comment to the BugWatch.
+
+        :param comment_id: The remote ID of the comment.
+
+        :param message: The imported comment as a Launchpad Message object.
+        """
 
 
 class IBugWatchSet(Interface):

@@ -28,13 +28,11 @@ import pytz
 
 from zope.component import getUtility
 from canonical.launchpad.interfaces import (
-    BugTaskStatus, IPersonSet, IEmailAddressSet, IBugSet, IBugTaskSet,
-    IBugAttachmentSet, IMessageSet, ILibraryFileAliasSet,
-    ICveSet, IBugWatchSet, PersonCreationRationale, ILaunchpadCelebrities,
-    NotFoundError, CreateBugParams)
+    BugAttachmentType, BugTaskImportance, BugTaskStatus, CreateBugParams,
+    IBugAttachmentSet, IBugSet, IBugTaskSet, IBugWatchSet, ICveSet,
+    IEmailAddressSet, ILaunchpadCelebrities, ILibraryFileAliasSet,
+    IMessageSet, IPersonSet, NotFoundError, PersonCreationRationale)
 from canonical.launchpad.webapp import canonical_url
-from canonical.lp.dbschema import (
-    BugTaskImportance, BugAttachmentType)
 
 logger = logging.getLogger('canonical.launchpad.scripts.bugzilla')
 
@@ -481,9 +479,10 @@ class Bugzilla:
 
         # subscribe QA contact and CC's
         if bug.qa_contact:
-            lp_bug.subscribe(self.person(bug.qa_contact))
+            lp_bug.subscribe(
+                self.person(bug.qa_contact), self.person(bug.reporter))
         for cc in bug.ccs:
-            lp_bug.subscribe(self.person(cc))
+            lp_bug.subscribe(self.person(cc), self.person(bug.reporter))
 
         # translate bugzilla status and severity to LP equivalents
         task = lp_bug.bugtasks[0]

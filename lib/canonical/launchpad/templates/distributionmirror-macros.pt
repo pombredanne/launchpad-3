@@ -8,16 +8,21 @@
   This macro expects the following variables defined:
     :mirrors_by_country: A list of dictionaries containing country names
                          and the list of IDistributionMirrors to be listed
-    :show_status: A boolean saying whether there should be an extra column
-                  with the mirror's status or not.
+    :show_freshness: A boolean saying whether there should be an extra column
+                     with the mirror's freshness or not.
   </tal:comment>
 
   <table class="listing" id="mirrors_list">
   <tbody>
     <tal:country_and_mirrors repeat="country_and_mirrors mirrors_by_country">
       <tr class="highlighted">
-        <th colspan="5" style="text-align: left">
-          <strong tal:content="country_and_mirrors/country" />
+        <th colspan="2" style="text-align: left"
+            tal:content="country_and_mirrors/country" />
+        <th style="text-align: left"
+            tal:content="country_and_mirrors/throughput"/>
+        <th style="text-align: left">
+          <tal:count replace="country_and_mirrors/number" />
+          mirrors
         </th>
       </tr>
       <tr tal:repeat="mirror country_and_mirrors/mirrors">
@@ -34,9 +39,9 @@
              tal:attributes="href mirror/rsync_base_url">rsync</a>
         </td>
         <td><span tal:replace="mirror/speed/title" /></td>
-        <td tal:condition="show_status"
-            tal:define="status mirror/getOverallStatus">
-          <span tal:replace="status/title" />
+        <td tal:condition="show_freshness"
+            tal:define="freshness mirror/getOverallFreshness">
+          <span tal:replace="freshness/title" />
         </td>
       </tr>
     <tr tal:condition="not: repeat/country_and_mirrors/end" class="note">
@@ -76,7 +81,7 @@
     <tr tal:repeat="arch_series arch_serieses">
       <td tal:content="arch_series/distro_arch_series/distroseries/title" />
       <td tal:content="arch_series/distro_arch_series/architecturetag" />
-      <td tal:content="arch_series/status/title" />
+      <td tal:content="arch_series/freshness/title" />
     </tr>
   </tbody>
   </table>
@@ -98,7 +103,7 @@
   <tbody>
     <tr tal:repeat="source_series source_serieses">
       <td tal:content="source_series/distroseries/title" />
-      <td tal:content="source_series/status/title" />
+      <td tal:content="source_series/freshness/title" />
     </tr>
   </tbody>
   </table>

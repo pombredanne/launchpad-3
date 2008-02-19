@@ -1,4 +1,5 @@
 # Copyright 2004-2007 Canonical Ltd.  All rights reserved.
+# pylint: disable-msg=E0611,W0212
 
 __metaclass__ = type
 __all__ = ['Milestone',
@@ -12,13 +13,16 @@ from sqlobject import (
     SQLMultipleJoin)
 
 from canonical.launchpad.interfaces import (
-    IMilestone, IMilestoneSet, IProjectMilestone, NotFoundError)
+    IMilestone, IMilestoneSet, IProjectMilestone,
+    IStructuralSubscriptionTarget, NotFoundError)
 from canonical.database.sqlbase import SQLBase, sqlvalues
 from canonical.launchpad.database.specification import Specification
+from canonical.launchpad.database.structuralsubscription import (
+    StructuralSubscriptionTargetMixin)
 
 
-class Milestone(SQLBase):
-    implements(IMilestone)
+class Milestone(SQLBase, StructuralSubscriptionTargetMixin):
+    implements(IMilestone, IStructuralSubscriptionTarget)
 
     # XXX: Guilherme Salgado 2007-03-27 bug=40978:
     # Milestones should be associated with productseries/distroseriess
@@ -30,7 +34,7 @@ class Milestone(SQLBase):
 
     productseries = ForeignKey(dbName='productseries',
         foreignKey='ProductSeries', default=None)
-    distroseries = ForeignKey(dbName='distrorelease',
+    distroseries = ForeignKey(dbName='distroseries',
         foreignKey='DistroSeries', default=None)
     name = StringCol(notNull=True)
     dateexpected = DateCol(notNull=False, default=None)

@@ -57,7 +57,7 @@ class.
     >>> review_request_view = create_view(
     ...     jordis_request, '+edit', layer=ShipItUbuntuLayer)
     >>> [flavour.title for flavour in review_request_view.ordered_flavours]
-    ['Ubuntu', 'Kubuntu', 'Edubuntu']
+    ['Ubuntu', 'Kubuntu', 'Edubuntu', 'Server']
 
     >>> [arch.title for arch in review_request_view.ordered_architectures]
     ['PC', '64-bit PC']
@@ -76,6 +76,7 @@ And this is the order we use when generating the widgets matrix.
     ['Ubuntu', u'PC', u'64-bit PC']
     ['Kubuntu', u'PC', u'64-bit PC']
     ['Edubuntu', u'PC', None]
+    ['Server', u'PC', u'64-bit PC']
 
 Similarly to the quantity widgets, we use a table to display the quantities
 requested by the user. But in this case, the shipit admins are not supposed to
@@ -98,7 +99,8 @@ widgets.
     >>> review_request_view.initial_values
     {'highpriority': True, 'kubuntu_quantityamd64approved': 0,
      'ubuntu_quantityx86approved': 0, 'kubuntu_quantityx86approved': 5,
-     'edubuntu_quantityx86approved': 5, 'ubuntu_quantityamd64approved': 0}
+     'edubuntu_quantityx86approved': 5, 'ubuntu_quantityamd64approved': 0,
+     'server_quantityamd64approved': 0, 'server_quantityx86approved': 0}
 
     >>> pending_approval_request = ShippingRequest.get(12)
     >>> review_request_view = create_view(
@@ -113,5 +115,6 @@ widgets.
     >>> review_request_view.initial_values
     {'highpriority': False, 'kubuntu_quantityamd64approved': 0,
      'ubuntu_quantityx86approved': 10, 'kubuntu_quantityx86approved': 0,
-     'edubuntu_quantityx86approved': 0, 'ubuntu_quantityamd64approved': 0}
+     'edubuntu_quantityx86approved': 0, 'ubuntu_quantityamd64approved': 0,
+     'server_quantityamd64approved': 0, 'server_quantityx86approved': 0}
 

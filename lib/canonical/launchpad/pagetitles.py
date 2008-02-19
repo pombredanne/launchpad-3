@@ -70,6 +70,17 @@ class ContextDisplayName(SubstitutionHelper):
         return self.text % context.displayname
 
 
+class FilteredTranslationsTitle(SubstitutionHelper):
+    """Return the formatted string with context's title and view's person."""
+    def __call__(self, context, view):
+        if view.person is not None:
+            person = view.person.displayname
+        else:
+            person = 'unknown'
+        return self.text % {'title' : context.title,
+                            'person' : person }
+
+
 class ContextId(SubstitutionHelper):
     """Return the formatted string with context's id."""
     def __call__(self, context, view):
@@ -117,6 +128,8 @@ archive_builds = ContextTitle('Builds for %s')
 archive_edit = ContextTitle('Edit %s')
 
 archive_index = ContextTitle('%s')
+
+archive_delete_packages = ContextTitle('Delete packages from %s')
 
 bazaar_all_branches = 'All branches in the Launchpad Bazaar'
 
@@ -171,9 +184,21 @@ def branch_listing_cross_product(context, view):
 branch_landing_candidates = ContextDisplayName(smartquote(
     'Landing candidates for "%s"'))
 
-branchmergeproposal_edit = 'Edit branch merge proposal'
+branchmergeproposal_delete = 'Delete proposal to merge branch'
 
-branch_register_merge_proposal = 'Register branch merge proposal'
+branchmergeproposal_edit = 'Edit proposal to merge branch'
+
+branchmergeproposal_index = 'Proposal to merge branch'
+
+branchmergeproposal_request_review = ViewLabel()
+
+branchmergeproposal_resubmit = ViewLabel()
+
+branchmergeproposal_review = ViewLabel()
+
+branchmergeproposal_work_in_progress = ViewLabel()
+
+branch_register_merge_proposal = 'Propose branch for merging'
 
 branch_subscription = ContextDisplayName(smartquote(
     'Subscription to branch "%s"'))
@@ -227,6 +252,12 @@ bug_secrecy = ContextBugId('Bug #%d - Set visibility')
 
 bug_subscription = LaunchbagBugID('Bug #%d - Subscription options')
 
+bug_create_question = LaunchbagBugID(
+    'Bug #%d - Convert this bug to a question')
+
+bug_remove_question = LaunchbagBugID(
+    'Bug #%d - Convert this question back to a bug')
+
 bug_watch_add = LaunchbagBugID('Bug #%d - Add external bug watch')
 
 bugbranch_edit = "Edit branch fix status"
@@ -248,6 +279,8 @@ def buglisting_embedded_advanced_search(context, view):
     """Return the view's page heading."""
     return view.getSearchPageHeading()
 
+bug_listing_expirable = ContextTitle("Bugs that can expire in %s")
+
 def bugnomination_edit(context, view):
     """Return the title for the page to manage bug nominations."""
     return 'Manage nomination for bug #%d in %s' % (
@@ -256,6 +289,11 @@ def bugnomination_edit(context, view):
 def bugwatch_editform(context, view):
     """Return the title for the page to edit an external bug watch."""
     return 'Bug #%d - Edit external bug watch (%s in %s)' % (
+        context.bug.id, context.remotebug, context.bugtracker.title)
+
+def bugwatch_comments(context, view):
+    """Return the title for a page of imported comments for a bug watch."""
+    return "Bug #%d - Comments imported from bug watch %s on %s" % (
         context.bug.id, context.remotebug, context.bugtracker.title)
 
 # bugpackageinfestations_index is a redirect
@@ -287,8 +325,10 @@ bugtarget_filebug_search = bugtarget_filebug_advanced
 
 bugtarget_filebug_submit_bug = bugtarget_filebug_advanced
 
-bugtask_choose_affected_product = LaunchbagBugID(
+bugtask_affects_new_product = LaunchbagBugID(
     'Bug #%d - Record as affecting another project')
+
+bugtask_choose_affected_product = bugtask_affects_new_product
 
 # This page is used for both projects/distros so we have to say 'software'
 # rather than distro or project here.
@@ -305,6 +345,8 @@ bugtask_requestfix = LaunchbagBugID(
 bugtask_requestfix_upstream = LaunchbagBugID('Bug #%d - Confirm project')
 
 bugtask_view = BugTaskPageTitle()
+
+bugtask_non_contributor_assignee_confirm = 'Confirm bug assignment'
 
 # bugtask_macros_buglisting contains only macros
 # bugtasks_index is a redirect
@@ -328,19 +370,19 @@ build_retry = ContextTitle('Retry %s')
 
 build_rescore = ContextTitle('Rescore %s')
 
+builder_admin = ContextTitle('Administer %s builder')
+
+builder_cancel = ContextTitle('Cancel job for %s')
+
+builder_edit = ContextTitle('Edit build machine %s')
+
+builder_history = ContextTitle('Build history for %s')
+
+builder_index = ContextTitle('Build machine %s')
+
+builder_mode = ContextTitle('Change mode for %s')
+
 builders_index = 'Launchpad build farm'
-
-builder_edit = ContextTitle(smartquote('Edit build machine "%s"'))
-
-builder_index = ContextTitle(smartquote('Build machine "%s"'))
-
-builder_cancel = ContextTitle(smartquote('Cancel job for "%s"'))
-
-builder_mode = ContextTitle(smartquote('Change mode for "%s"'))
-
-builder_admin = ContextTitle(smartquote('Administer "%s" builder'))
-
-builder_history = ContextTitle(smartquote('Build History for "%s"'))
 
 calendar_index = ContextTitle('%s')
 
@@ -402,15 +444,15 @@ distributionmirror_edit = ContextTitle('Edit mirror %s')
 
 distributionmirror_index = ContextTitle('Mirror %s')
 
-distributionmirror_mark_official = ContextTitle('Mark mirror %s as official')
-
 distributionmirror_prober_logs = ContextTitle('%s mirror prober logs')
+
+distributionmirror_review = ContextTitle('Review mirror %s')
 
 distribution_add = 'Register a new distribution'
 
 distribution_allpackages = ContextTitle('All packages in %s')
 
-distribution_bugcontact = ContextTitle('Change bug contact for %s')
+distribution_upstream_bug_report = ContextTitle('Upstream Bug Report for %s')
 
 distribution_change_mirror_admin = 'Change mirror administrator'
 
@@ -455,8 +497,8 @@ distributionsourcepackage_index = ContextTitle('%s')
 distributionsourcepackage_publishinghistory = ContextTitle(
     'Publishing history of %s')
 
-distributionsourcepackage_manage_bugcontacts = ContextTitle(
-    'Bug contacts for %s')
+structural_subscriptions_manage = ContextTitle(
+    'Bug subscriptions for %s')
 
 distributionsourcepackagerelease_index = ContextTitle('%s')
 
@@ -514,6 +556,8 @@ distroseriessourcepackagerelease_index = ContextTitle('%s')
 
 distros_index = 'Distributions registered in Launchpad'
 
+edit_bugcontact = ContextTitle('Edit bug contact for %s')
+
 errorservice_config = 'Configure error log'
 
 errorservice_entry = 'Error log entry'
@@ -546,6 +590,8 @@ def hasmentoringoffers_mentoring(context, view):
                     context.displayname)
     else:
         return 'Mentoring available in %s' % context.displayname
+
+hasannouncements_index = ContextDisplayName('%s news and announcements')
 
 def hasspecifications_specs(context, view):
     """Return the secifications title for the context."""
@@ -649,6 +695,8 @@ loginservice_resetpassword = 'Reset your password'
 
 logintoken_claimprofile = 'Claim Launchpad profile'
 
+logintoken_claimteam = 'Claim Launchpad team'
+
 logintoken_index = 'Launchpad: redirect to the logintoken page'
 
 logintoken_mergepeople = 'Merge Launchpad accounts'
@@ -664,6 +712,8 @@ logintoken_validategpg = 'Confirm OpenPGP key'
 logintoken_validatesignonlygpg = 'Confirm sign-only OpenPGP key'
 
 logintoken_validateteamemail = 'Confirm e-mail address'
+
+mailinglists_review = 'Pending mailing lists requests'
 
 # main_template has the code to insert one of these titles.
 
@@ -725,6 +775,23 @@ milestone_index = ContextTitle('%s')
 
 milestone_edit = ContextTitle('Edit %s')
 
+announcement_add = 'Make an announcement'
+
+announcement_delete = 'Permanently delete this announcement'
+
+announcement_edit = 'Modify this announcement'
+
+def announcement_index(context, view):
+    return '%s announcement' % context.target.displayname
+
+announcement_publish = 'Publish this announcement'
+
+announcement_retarget = 'Move this announcement to a different project'
+
+announcement_retract = 'Retract this announcement'
+
+announcements_all = 'Announcements from all projects hosted in Launchpad'
+
 notification_test = 'Notification test'
 
 object_branding = ContextDisplayName('Change the images used to represent '
@@ -735,8 +802,6 @@ object_driver = ContextTitle('Appoint the driver for %s')
 object_milestones = ContextTitle(smartquote("%s's milestones"))
 
 # object_pots is a fragment.
-
-object_potemplatenames = ContextDisplayName('Template names for %s')
 
 object_reassignment = ContextTitle('Reassign %s')
 
@@ -753,6 +818,13 @@ openid_index = 'Launchpad OpenID Server'
 def openid_invalid_identity(context, view):
     """Return the page title to the invalid identity page."""
     return 'Invalid OpenID identity %s' % view.openid_request.identity
+
+openidrpconfig_add = 'Add an OpenID Relying Party Configuration'
+
+openidrpconfig_edit = ContextDisplayName(
+    'Edit Relying Party Configuration for %s')
+
+openidrpconfigset_index = 'OpenID Relying Party Configurations'
 
 def package_bugs(context, view):
     """Return the page title bug in a package."""
@@ -782,14 +854,16 @@ person_answer_contact_for = ContextDisplayName(
 person_bounties = ContextDisplayName('Bounties for %s')
 
 def person_branches(context, view):
-    """Return the view's page_title."""
-    return view.page_title
+    """Return the view's heading."""
+    return view.heading
 
-person_branch_add = ContextDisplayName('Register a new branch for %s')
+person_branch_add = 'Register a branch'
 
 person_changepassword = 'Change your password'
 
 person_claim = 'Claim account'
+
+person_claim_team = 'Claim team'
 
 person_deactivate_account = 'Deactivate your Launchpad account'
 
@@ -859,6 +933,9 @@ pofile_edit = ContextTitle(smartquote('Edit "%s" details'))
 
 pofile_export = ContextTitle(smartquote('Download translation for "%s"'))
 
+pofile_filter = FilteredTranslationsTitle(
+    smartquote('Translations by %(person)s in "%(title)s"'))
+
 pofile_index = ContextTitle(smartquote('Translation overview for "%s"'))
 
 def pofile_translate(context, view):
@@ -890,10 +967,6 @@ poll_vote_condorcet = ContextTitle(smartquote('Vote in poll "%s"'))
 
 poll_vote_simple = ContextTitle(smartquote('Vote in poll "%s"'))
 
-def pomsgset_translate(context, view):
-    """Return the page title for editing a PO file."""
-    return smartquote('Edit "%s"' % context.pofile.title)
-
 # potemplate_chart is a fragment
 
 potemplate_edit = ContextTitle(smartquote('Edit "%s" details'))
@@ -904,24 +977,16 @@ potemplate_upload = ContextTitle(smartquote('Upload files for "%s"'))
 
 potemplate_export = ContextTitle(smartquote('Download translations for "%s"'))
 
-potemplatename_add = 'Add a new template name to Launchpad'
-
-potemplatename_edit = ContextTitle(smartquote('Edit "%s" in Launchpad'))
-
-potemplatename_index = ContextTitle(smartquote('"%s" in Launchpad'))
-
-potemplatenames_index = 'Template names in Launchpad'
-
 product_add = 'Register a project in Launchpad'
 
 product_admin = ContextTitle('Administer %s in Launchpad')
-
-product_bugcontact = ContextTitle('Edit bug contact for %s')
 
 product_bugs = ContextDisplayName('Bugs in %s')
 
 product_branches = ContextDisplayName(
     smartquote("%s's Bazaar branches registered in Launchpad"))
+
+product_branch_overview = ContextDisplayName("Code overview for %s")
 
 product_distros = ContextDisplayName(
     '%s packages: Comparison of distributions')
@@ -960,6 +1025,8 @@ productrelease_index = ContextDisplayName('%s in Launchpad')
 products_index = 'Projects registered in Launchpad'
 
 productseries_export = ContextTitle('Download translations for "%s"')
+
+productseries_linkbranch = ContextTitle('Link an existing branch to %s')
 
 productseries_index = ContextTitle('Overview of %s')
 
@@ -1027,6 +1094,8 @@ related_bounties = ContextDisplayName('Bounties for %s')
 
 remotebug_index = ContextTitle('%s')
 
+root_featuredprojects = 'Manage featured projects in Launchpad'
+
 root_index = 'Launchpad'
 
 rosetta_about = 'About Launchpad Translations'
@@ -1035,7 +1104,7 @@ rosetta_index = 'Launchpad Translations'
 
 rosetta_products = 'Projects with Translations in Launchpad'
 
-product_branch_add = ContextDisplayName('Register a new %s branch')
+product_branch_add = 'Register a branch'
 
 def productseries_edit(context, view):
     """Return the page title for changing a product series details."""
@@ -1279,6 +1348,8 @@ standardshipitrequest_edit = 'Edit standard option'
 
 team_addmember = ContextBrowsername('Add members to %s')
 
+team_add_my_teams = 'Propose/add one of your teams to another one'
+
 team_contactaddress = ContextDisplayName('%s contact address')
 
 team_edit = 'Edit team information'
@@ -1292,6 +1363,8 @@ team_invitations = ContextBrowsername("Invitations sent to %s")
 team_join = ContextBrowsername('Join %s')
 
 team_leave = ContextBrowsername('Leave %s')
+
+team_mailinglist = 'Configure mailing list'
 
 team_members = ContextBrowsername(smartquote('"%s" members'))
 
@@ -1351,6 +1424,12 @@ translationimportqueueentry_index = 'Translation import queue entry'
 translationimportqueue_index = 'Translation import queue'
 
 translationimportqueue_blocked = 'Translation import queue - Blocked'
+
+def translationmessage_translate(context, view):
+    """Return the page to translate a template into a language per message."""
+    return 'Translating %s into %s' % (
+        context.pofile.potemplate.displayname,
+        context.pofile.language.englishname)
 
 def translator_edit(context, view):
     """Return the page title for editing a translator in a group."""

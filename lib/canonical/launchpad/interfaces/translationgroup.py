@@ -1,4 +1,5 @@
 # Copyright 2005-2007 Canonical Ltd.  All rights reserved.
+# pylint: disable-msg=E0211,E0213
 
 """Interfaces for groups of translators."""
 
@@ -16,7 +17,7 @@ from zope.schema import Choice, Datetime, Int, TextLine
 from zope.app.form.browser.interfaces import IAddFormCustomization
 
 from canonical.launchpad import _
-from canonical.launchpad.fields import Summary, Title
+from canonical.launchpad.fields import PublicPersonChoice, Summary, Title
 from canonical.launchpad.validators.name import name_validator
 from canonical.launchpad.interfaces.launchpad import IHasOwner
 from canonical.lazr import DBEnumeratedType, DBItem
@@ -95,7 +96,7 @@ class IHasTranslationGroup(Interface):
             " then only the designated translation group will be able to"
             " touch the translation files at all."),
         required=True,
-        vocabulary='TranslationPermission')
+        vocabulary=TranslationPermission)
 
 
 class ITranslationGroup(IHasOwner):
@@ -126,7 +127,8 @@ class ITranslationGroup(IHasOwner):
     datecreated = Datetime(
             title=_('Date Created'), required=True, readonly=True,
             )
-    owner = Choice(title=_('Owner'), required=True, vocabulary='ValidOwner',
+    owner = PublicPersonChoice(
+            title=_('Owner'), required=True, vocabulary='ValidOwner',
             description=_("The owner's IPerson"))
     # joins
     translators = Attribute('The set of translators for this group.')

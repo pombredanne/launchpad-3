@@ -1,4 +1,5 @@
 # Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# pylint: disable-msg=E0611,W0212
 
 __metaclass__ = type
 __all__ = ['DistroArchSeries',
@@ -25,6 +26,7 @@ from canonical.launchpad.interfaces import (
 from canonical.launchpad.database.binarypackagename import BinaryPackageName
 from canonical.launchpad.database.distroarchseriesbinarypackage import (
     DistroArchSeriesBinaryPackage)
+from canonical.launchpad.validators.person import public_person_validator
 from canonical.launchpad.database.publishing import (
     BinaryPackagePublishingHistory)
 from canonical.launchpad.database.publishedpackage import PublishedPackage
@@ -35,17 +37,20 @@ from canonical.launchpad.helpers import shortlist
 
 class DistroArchSeries(SQLBase):
     implements(IDistroArchSeries, IHasBuildRecords, ICanPublishPackages)
-    _table = 'DistroArchRelease'
+    _table = 'DistroArchSeries'
     _defaultOrder = 'id'
 
-    distroseries = ForeignKey(dbName='distrorelease',
+    distroseries = ForeignKey(dbName='distroseries',
         foreignKey='DistroSeries', notNull=True)
     processorfamily = ForeignKey(dbName='processorfamily',
         foreignKey='ProcessorFamily', notNull=True)
     architecturetag = StringCol(notNull=True)
     official = BoolCol(notNull=True)
-    owner = ForeignKey(dbName='owner', foreignKey='Person', notNull=True)
+    owner = ForeignKey(
+        dbName='owner', foreignKey='Person',
+        validator=public_person_validator, notNull=True)
     package_count = IntCol(notNull=True, default=DEFAULT)
+    ppa_supported = BoolCol(notNull=False, default=False)
 
     packages = SQLRelatedJoin('BinaryPackageRelease',
         joinColumn='distroarchseries',
@@ -86,7 +91,7 @@ class DistroArchSeries(SQLBase):
     def updatePackageCount(self):
         """See IDistroArchSeries """
         query = """
-            BinaryPackagePublishingHistory.distroarchrelease = %s AND
+            BinaryPackagePublishingHistory.distroarchseries = %s AND
             BinaryPackagePublishingHistory.archive IN %s AND
             BinaryPackagePublishingHistory.status = %s AND
             BinaryPackagePublishingHistory.pocket = %s
@@ -140,7 +145,7 @@ class DistroArchSeries(SQLBase):
         """See IDistroArchSeries."""
         archives = self.distroseries.distribution.getArchiveIDList()
         bprs = BinaryPackageRelease.select("""
-            BinaryPackagePublishingHistory.distroarchrelease = %s AND
+            BinaryPackagePublishingHistory.distroarchseries = %s AND
             BinaryPackagePublishingHistory.archive IN %s AND
             BinaryPackagePublishingHistory.binarypackagerelease =
                 BinaryPackageRelease.id AND
@@ -176,9 +181,14 @@ class DistroArchSeries(SQLBase):
         return DistroArchSeriesBinaryPackage(
             self, name)
 
-    def getBuildRecords(self, build_state=None, name=None, pocket=None):
+    def getBuildRecords(self, build_state=None, name=None, pocket=None,
+                        user=None):
         """See IHasBuildRecords"""
-        # use facility provided by IBuildSet to retrieve the records
+        # Ignore "user", since it would not make any difference to the
+        # records returned here (private builds are only in PPA right
+        # now).
+
+        # Use the facility provided by IBuildSet to retrieve the records.
         return getUtility(IBuildSet).getBuildsByArchIds(
             [self.id], build_state, name, pocket)
 
@@ -194,7 +204,7 @@ class DistroArchSeries(SQLBase):
         queries.append("""
         binarypackagerelease=binarypackagerelease.id AND
         binarypackagerelease.binarypackagename=%s AND
-        distroarchrelease = %s
+        distroarchseries = %s
         """ % sqlvalues(binary_name, self))
 
         if pocket is not None:
@@ -231,7 +241,7 @@ class DistroArchSeries(SQLBase):
     def getPendingPublications(self, archive, pocket, is_careful):
         """See ICanPublishPackages."""
         queries = [
-            "distroarchrelease = %s AND archive = %s"
+            "distroarchseries = %s AND archive = %s"
             % sqlvalues(self, archive)
             ]
 
@@ -296,7 +306,7 @@ class PocketChroot(SQLBase):
     implements(IPocketChroot)
     _table = "PocketChroot"
 
-    distroarchseries = ForeignKey(dbName='distroarchrelease',
+    distroarchseries = ForeignKey(dbName='distroarchseries',
                                    foreignKey='DistroArchSeries',
                                    notNull=True)
 

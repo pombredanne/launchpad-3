@@ -1,4 +1,5 @@
 # Copyright 2007 Canonical Ltd.  All rights reserved.
+# pylint: disable-msg=E0211,E0213
 
 """Code import interfaces."""
 
@@ -16,7 +17,7 @@ from zope.schema import Datetime, Choice, Int, TextLine, Timedelta
 from canonical.lazr import DBEnumeratedType, DBItem
 
 from canonical.launchpad import _
-from canonical.launchpad.fields import URIField
+from canonical.launchpad.fields import PublicPersonChoice, URIField
 from canonical.launchpad.interfaces.productseries import (
     validate_cvs_module, validate_cvs_root, RevisionControlSystems)
 
@@ -57,26 +58,21 @@ class ICodeImport(Interface):
     date_created = Datetime(
         title=_("Date Created"), required=True, readonly=True)
 
-    # XXX DavidAllouche 2007-07-04:
-    # Branch should really be readonly, but there is a corner case of the
-    # code-import-sync script where we have a need to change it. The readonly
-    # parameter should be set back to True after the transition to the new
-    # code import system is complete.
     branch = Choice(
-        title=_('Branch'), required=True, readonly=False, vocabulary='Branch',
+        title=_('Branch'), required=True, readonly=True, vocabulary='Branch',
         description=_("The Bazaar branch produced by the import system."))
 
-    registrant = Choice(
+    registrant = PublicPersonChoice(
         title=_('Registrant'), required=True, readonly=True,
         vocabulary='ValidPersonOrTeam',
         description=_("The person who initially requested this import."))
 
-    owner = Choice(
+    owner = PublicPersonChoice(
         title=_('Owner'), required=True, readonly=False,
         vocabulary='ValidPersonOrTeam',
         description=_("The community contact for this import."))
 
-    assignee = Choice(
+    assignee = PublicPersonChoice(
         title=_('Assignee'), required=False, readonly=False,
         vocabulary='ValidPersonOrTeam',
         description=_("The person in charge of handling this import."))
@@ -100,11 +96,13 @@ class ICodeImport(Interface):
 
     rcs_type = Choice(title=_("Type of RCS"),
         required=True, vocabulary=RevisionControlSystems,
-        description=_("The revision control system used by the import source. "
-        "Can be CVS or Subversion."))
+        description=_(
+            "The version control system to import from. "
+            "Can be CVS or Subversion."))
 
     svn_branch_url = URIField(title=_("Branch"), required=False,
-        description=_("The URL of a Subversion branch, starting with svn:// or"
+        description=_(
+            "The URL of a Subversion branch, starting with svn:// or"
             " http(s)://. Only trunk branches are imported."),
         allowed_schemes=["http", "https", "svn"],
         allow_userinfo=False, # Only anonymous access is supported.
@@ -123,7 +121,8 @@ class ICodeImport(Interface):
         description=_("The path to import within the repository."
             " Usually, it is the name of the project."))
 
-    date_last_successful = Datetime(title=_("Last successful"), required=False)
+    date_last_successful = Datetime(
+        title=_("Last successful"), required=False)
 
     update_interval = Timedelta(
         title=_("Update interval"), required=False, description=_(
@@ -136,7 +135,13 @@ class ICodeImport(Interface):
         description=_(
         "The effective time between automatic updates of this import. "
         "If the user did not specify an update interval, this is a default "
-        "value selected by Launchpad adminstrators."))
+        "value selected by Launchpad administrators."))
+
+    import_job = Choice(
+        title=_("Current job"),
+        readonly=True, vocabulary='CodeImportJob',
+        description=_(
+            "The current job for this import, either pending or running."))
 
     def updateFromData(data, user):
         """Modify attributes of the `CodeImport`.
@@ -156,17 +161,6 @@ class ICodeImportSet(Interface):
     def new(registrant, branch, rcs_type, svn_branch_url=None,
             cvs_root=None, cvs_module=None):
         """Create a new CodeImport."""
-
-    # XXX DavidAllouche 2007-07-05:
-    # newWithId is only needed for code-import-sync-script. This method
-    # should be removed after the transition to the new code import system is
-    # complete.
-
-    def newWithId(id, registrant, branch, rcs_type,
-            review_status=CodeImportReviewStatus.NEW,
-            date_last_successful=None,
-            svn_branch_url=None, cvs_root=None, cvs_module=None):
-        """Create a new CodeImport with a specified database id."""
 
     def getAll():
         """Return an iterable of all CodeImport objects."""

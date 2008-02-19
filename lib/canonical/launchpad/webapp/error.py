@@ -11,6 +11,7 @@ from zope.component import getUtility
 from zope.app.exception.interfaces import ISystemErrorView
 from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 
+from canonical.cachedproperty import cachedproperty
 from canonical.config import config
 import canonical.launchpad.layers
 from canonical.launchpad.webapp.interfaces import ILaunchBag
@@ -54,8 +55,9 @@ class SystemErrorView:
         self.computeDebugOutput()
         if config.show_tracebacks:
             self.show_tracebacks = True
-        if canonical.launchpad.layers.PageTestLayer.providedBy(self.request):
-            self.pagetesting = True
+        # if canonical.launchpad.layers.PageTestLayer.providedBy(self.request):
+        #     self.pagetesting = True
+        # XXX 20080109 mpt: We don't use this any more. See bug 181472.
         if canonical.launchpad.layers.DebugLayer.providedBy(self.request):
             self.debugging = True
         self.specialuser = getUtility(ILaunchBag).developer
@@ -92,7 +94,7 @@ class SystemErrorView:
             del tb
 
     def inside_div(self, html):
-        """Returns the given html text inside a div of an appropriate class."""
+        """Returns the given HTML inside a div of an appropriate class."""
 
         return ('<div class="highlighted" '
                 'style="font-family: monospace; font-size: smaller;">'
@@ -130,12 +132,40 @@ class SystemErrorView:
             return self.index()
 
 
+class ProtocolErrorView(SystemErrorView):
+    """View for protocol errors.
+
+    Problems to do with an HTTP request that need to be handled more
+    subtly than with a 500 response code. Used to handle a
+    `ProtocolErrorException`.
+    """
+
+    def __call__(self):
+        """Set the appropriate status code and headers."""
+        exception = self.context
+        self.request.response.setStatus(exception.status)
+        for header, value in exception.headers.items():
+            self.request.response.setHeader(header, value)
+        return self.index()
+
 class NotFoundView(SystemErrorView):
 
     response_code = 404
 
     def __call__(self):
         return self.index()
+
+    @cachedproperty
+    def referrer(self):
+        """If there is a referring page, return its URL.
+        
+        Otherwise return None.
+        """
+        referrer = self.request.get('HTTP_REFERER')
+        if referrer:
+            return referrer
+        else:
+            return None
 
 
 class RequestExpiredView(SystemErrorView):

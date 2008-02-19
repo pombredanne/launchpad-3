@@ -59,6 +59,7 @@
   <browser:page
     name="+portlet-related-questions"
     for="canonical.launchpad.interfaces.IFAQ"
+    class="canonical.launchpad.webapp.LaunchpadView"
     permission="zope.Public"
     template="../templates/faq-portlet-related-questions.pt"
     />

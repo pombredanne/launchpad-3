@@ -24,4 +24,14 @@
       interface="canonical.launchpad.interfaces.ICodeImportJobSet" />
   </securedutility>
 
+  <!-- CodeImportJobWorkflow -->
+
+  <securedutility
+    class="canonical.launchpad.database.CodeImportJobWorkflow"
+    provides="canonical.launchpad.interfaces.ICodeImportJobWorkflow" >
+    <require
+      permission="launchpad.Edit"
+      interface="canonical.launchpad.interfaces.ICodeImportJobWorkflow" />
+  </securedutility>
+
 </configure>

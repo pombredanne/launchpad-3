@@ -1,0 +1,51 @@
+= Introduction =
+
+The Launchpad web service exposes a collection of people and teams,
+which responds to GET.
+
+  >>> people_collection = webservice(r"""
+  ... GET /people HTTP/1.1
+  ... Host: api.launchpad.dev
+  ... """).jsonBody()
+
+  >>> people_collection[0]['name']
+  u'andrelop'
+  >>> people_collection[0]['self_link']
+  u'http://api.launchpad.dev/people/andrelop'
+  >>> people_collection[-1]['name']
+  u'ubuntu-team'
+
+The elements of a collection can be looked up by unique identifier:
+
+  >>> admins_team = webservice(r"""
+  ... GET /people/admins HTTP/1.1
+  ... Host: api.launchpad.dev
+  ... """).jsonBody()
+  >>> sorted(admins_team.items())
+  [(u'members_collection_link',
+      u'http://api.launchpad.dev/people/admins/members'),
+   (u'name', u'admins'),
+   (u'self_link', u'http://api.launchpad.dev/people/admins'),
+   (u'teamowner_link', u'http://api.launchpad.dev/people/sabdfl')]
+
+A collection may be scoped to an element:
+
+  >>> team_members = webservice(r"""
+  ... GET /people/admins/members HTTP/1.1
+  ... Host: api.launchpad.dev
+  ... """).jsonBody()
+  >>> len(team_members)
+  11
+  >>> team_members[0]['name']
+  u'carlos'
+  >>> team_members[-1]['name']
+  u'stub'
+
+But not every element may have that collection scoped to it:
+
+  >>> print webservice(r"""
+  ... GET /people/spiv/members HTTP/1.1
+  ... Host: api.launchpad.dev
+  ... """).getStatus()
+  404
+

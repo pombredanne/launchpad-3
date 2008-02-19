@@ -238,6 +238,13 @@
         />
 
     <adapter
+        for="float"
+        provides="zope.app.traversing.interfaces.IPathAdapter"
+        factory="canonical.launchpad.webapp.tales.NumberFormatterAPI"
+        name="fmt"
+        />
+
+    <adapter
         for="types.NoneType"
         provides="zope.app.traversing.interfaces.IPathAdapter"
         factory="canonical.launchpad.webapp.tales.NoneFormatter"
@@ -255,6 +262,27 @@
         for="canonical.launchpad.interfaces.IPerson"
         provides="zope.app.traversing.interfaces.IPathAdapter"
         factory="canonical.launchpad.webapp.tales.PersonFormatterAPI"
+        name="fmt"
+        />
+
+    <adapter
+        for="canonical.launchpad.interfaces.IProduct"
+        provides="zope.app.traversing.interfaces.IPathAdapter"
+        factory="canonical.launchpad.webapp.tales.PillarFormatterAPI"
+        name="fmt"
+        />
+
+    <adapter
+        for="canonical.launchpad.interfaces.IProject"
+        provides="zope.app.traversing.interfaces.IPathAdapter"
+        factory="canonical.launchpad.webapp.tales.PillarFormatterAPI"
+        name="fmt"
+        />
+
+    <adapter
+        for="canonical.launchpad.interfaces.IDistribution"
+        provides="zope.app.traversing.interfaces.IPathAdapter"
+        factory="canonical.launchpad.webapp.tales.PillarFormatterAPI"
         name="fmt"
         />
 
@@ -298,26 +326,6 @@
         component="canonical.launchpad.webapp.authentication.authService"
         provides="canonical.launchpad.webapp.interfaces.IPlacelessAuthUtility"
         permission="zope.Public"
-        />
-
-    <subscriber
-        for="canonical.launchpad.webapp.interfaces.IAfterTraverseEvent"
-        handler="canonical.launchpad.webapp.authentication.handle"
-        />
-
-    <subscriber
-        for="zope.app.publication.interfaces.IBeforeTraverseEvent"
-        handler="canonical.launchpad.webapp.authentication.handle"
-        />
-
-    <subscriber
-        for="canonical.launchpad.webapp.interfaces.ILoggedInEvent"
-        handler="canonical.launchpad.webapp.authentication.handle"
-        />
-
-    <subscriber
-        for="canonical.launchpad.webapp.interfaces.ILoggedOutEvent"
-        handler="canonical.launchpad.webapp.authentication.handle"
         />
 
     <subscriber
@@ -419,17 +427,6 @@
             />
     </content>
 -->
-    <!-- Launchpad publication machinery. We have customized publication
-    and requests that need to be hooked up.
-    -->
-    <publisher
-        name="BROWSER"
-        factory="canonical.launchpad.webapp.servers.LaunchpadRequestPublicationFactory"
-        methods="GET POST HEAD"
-        mimetypes="*"
-        priority="15"
-        />
-
     <!-- LaunchpadBrowserResponse needs to be able to find the session -->
     <adapter
         for="canonical.launchpad.webapp.servers.LaunchpadBrowserResponse"

@@ -1,4 +1,5 @@
 # Copyright 2004-2007 Canonical Ltd.  All rights reserved.
+# pylint: disable-msg=E0211,E0213
 
 """Interfaces including and related to IDistroSeries."""
 
@@ -130,7 +131,7 @@ class IDistroSeries(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
         title=_("Status"), required=True,
         vocabulary=DistroSeriesStatus)
     datereleased = Attribute("The datereleased.")
-    parentseries = Choice(
+    parent_series = Choice(
         title=_("Parent series"),
         description=_("The series from which this one was branched."),
         required=True,
@@ -160,9 +161,11 @@ class IDistroSeries(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
 
     architecturecount = Attribute("The number of architectures in this "
         "series.")
-    architectures = Attribute("The architectures in this series.")
+    architectures = Attribute("All architectures in this series.")
+    ppa_architectures = Attribute(
+        "All architectures in this series where PPA is supported.")
     nominatedarchindep = Attribute(
-        "DistroArchRelease designed to build architecture-independent "
+        "DistroArchSeries designed to build architecture-independent "
         "packages whithin this distroseries context.")
     milestones = Attribute(_(
         "The visible milestones associated with this series, "
@@ -261,7 +264,7 @@ class IDistroSeries(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
         "or obsolete.")
 
     def isUnstable():
-        """Return True if in unstable (or "development") phase, False otherwise.
+        """Whether or not a distroseries is unstable.
 
         The distribution is "unstable" until it is released; after that
         point, all development on the Release pocket is stopped and
@@ -281,8 +284,9 @@ class IDistroSeries(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
                 warty-updates -> ALLOW
                 edgy-security -> DENY
 
-        Note that FROZEN is not considered either 'stable' or 'unstable' state.
-        Uploads to a FROZEN distroseries will end up in UNAPPROVED queue.
+        Note that FROZEN is not considered either 'stable' or 'unstable'
+        state.  Uploads to a FROZEN distroseries will end up in the
+        UNAPPROVED queue.
 
         Return True if the upload is allowed and False if denied.
         """
@@ -357,6 +361,18 @@ class IDistroSeries(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
         otherwise respect the given value.
         """
 
+    def getAllPublishedSources():
+        """Return all currently published sources for the distroseries.
+
+        Return publications in the main archives only.
+        """
+
+    def getAllPublishedBinaries():
+        """Return all currently published binaries for the distroseries.
+
+        Return publications in the main archives only.
+        """
+
     def getSourcesPublishedForAllArchives():
         """Return all sourcepackages published across all the archives.
 
@@ -393,38 +409,42 @@ class IDistroSeries(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
     def createUploadedSourcePackageRelease(
         sourcepackagename, version, maintainer, builddepends,
         builddependsindep, architecturehintlist, component, creator, urgency,
-        changelog, dsc, dscsigningkey, section, dsc_maintainer_rfc822,
+        changelog_entry, dsc, dscsigningkey, section, dsc_maintainer_rfc822,
         dsc_standards_version, dsc_format, dsc_binaries, archive, copyright,
-        dateuploaded=None):
-        """Create an uploads SourcePackageRelease
+        build_conflicts, build_conflicts_indep, dateuploaded=None):
+        """Create an uploads `SourcePackageRelease`.
 
         Set this distroseries set to be the uploadeddistroseries.
 
         All arguments are mandatory, they are extracted/built when
         processing and uploaded source package:
 
-         * dateuploaded: timestamp, if not provided will be UTC_NOW
-         * sourcepackagename: ISourcePackageName
-         * version: string, a debian valid version
-         * maintainer: IPerson designed as package maintainer
-         * creator: IPerson, package uploader
-         * component: IComponent
-         * section: ISection
-         * urgency: dbschema.SourcePackageUrgency
-         * dscsigningkey: IGPGKey used to sign the DSC file
-         * dsc: string, original content of the dsc file
-         * copyright: string, the original debian/copyright content
-         * changelog: string, changelog extracted from the changesfile
-         * architecturehintlist: string, DSC architectures
-         * builddepends: string, DSC build dependencies
-         * builddependsindep: string, DSC architecture independent build
-           dependencies.
-         * dsc_maintainer_rfc822: string, DSC maintainer field
-         * dsc_standards_version: string, DSC standards version field
-         * dsc_format: string, DSC format version field
-         * dsc_binaries:  string, DSC binaries field
-         * archive: IArchive to where the upload was targeted
-         * dateuploaded: optional datetime, if omitted assumed nowUTC
+         :param dateuploaded: timestamp, if not provided will be UTC_NOW
+         :param sourcepackagename: `ISourcePackageName`
+         :param version: string, a debian valid version
+         :param maintainer: IPerson designed as package maintainer
+         :param creator: IPerson, package uploader
+         :param component: IComponent
+         :param section: ISection
+         :param urgency: dbschema.SourcePackageUrgency
+         :param dscsigningkey: IGPGKey used to sign the DSC file
+         :param dsc: string, original content of the dsc file
+         :param copyright: string, the original debian/copyright content
+         :param changelog: string, changelog extracted from the changesfile
+         :param architecturehintlist: string, DSC architectures
+         :param builddepends: string, DSC build dependencies
+         :param builddependsindep: string, DSC architecture independent build
+                                   dependencies.
+         :param build_conflicts: string, DSC Build-Conflicts content
+         :param build_conflicts_indep: string, DSC Build-Conflicts-Indep
+                                       content
+         :param dsc_maintainer_rfc822: string, DSC maintainer field
+         :param dsc_standards_version: string, DSC standards version field
+         :param dsc_format: string, DSC format version field
+         :param dsc_binaries:  string, DSC binaries field
+         :param archive: IArchive to where the upload was targeted
+         :param dateuploaded: optional datetime, if omitted assumed nowUTC
+         :return: the just creates `SourcePackageRelease`
         """
 
     def getComponentByName(name):
@@ -515,7 +535,8 @@ class IDistroSeries(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
         the changesfile is unsigned.
         """
 
-    def newArch(architecturetag, processorfamily, official, owner):
+    def newArch(architecturetag, processorfamily, official, owner,
+                ppa_supported=False):
         """Create a new port or DistroArchSeries for this DistroSeries."""
 
     def newMilestone(name, dateexpected=None, description=None):
@@ -606,5 +627,5 @@ class IDistroSeriesSet(Interface):
         """
 
     def new(distribution, name, displayname, title, summary, description,
-            version, parentseries, owner):
+            version, parent_series, owner):
         """Creates a new distroseries"""

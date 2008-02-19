@@ -1,8 +1,17 @@
-<html metal:use-macro="view/macro:page/freeform" i18n:domain="launchpad">
+<html
+  xmlns="http://www.w3.org/1999/xhtml"
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  xml:lang="en"
+  lang="en"
+  dir="ltr"
+  metal:use-macro="view/macro:page/freeform"
+  i18n:domain="launchpad">
   <body>
     <div metal:fill-slot="main">
 
-  <div class="informational message" tal:condition="view/isBetaUser">
+  <div class="informational message" tal:condition="view/canRedirect">
     <tal:redirect_inhibited condition="view/isRedirectInhibited">
       <p>As a member of the Launchpad Beta Testers team, you would
       normally be redirected to the beta site when viewing Launchpad
@@ -42,8 +51,7 @@
           <p id="application-summary">
             Launchpad is a free software hosting and development
             website. We make it easy to <strong>collaborate
-            across multiple projects</strong>
-            in the free software world.
+            across multiple projects</strong>.
             <br />
             <center>
               <a href="/+about">
@@ -56,46 +64,88 @@
           </p>
         </div>
         <div class="three column middle">
-          <h2 style="margin-bottom: 0">What&#8217;s new in 1.1.10</h2>
-          <ul class="news">
-            <li>
-              <a href="https://help.launchpad.net/FasterTranslationsImports">
-                <strong>Faster translation imports:</strong> shorter queues,
-                even at busy times.</a>
-            </li>
-            <li>
-              <a
-                href="http://news.launchpad.net/general/zope-2-switches-to-launchpad">
-                <strong>Zope 2 switches to Launchpad:</strong> &#8220;Launchpad works
-                great ... allows us to focus on creating a great Zope
-                plataform&#8221;.</a>
-            </li>
-            <li>
-              <a
-                href="http://news.launchpad.net/general/come-and-learn-more-about-launchpad">
-                <strong>Come learn more:</strong> introductory IRC tutorial
-                sessions about Launchpad.</a>
-            </li>
-            <li>
-              <a href="https://help.launchpad.net/JoiningLaunchpadBetaTesters">
-                <strong>Launchpad Beta:</strong> participate in our beta program
-                and get access to pre-release features.</a>
-            </li>
-          </ul>
+          <h2>What&#8217;s new here?</h2>
+          <table>
+            <tbody>
+            <tr>
+             <td><img src="/@@/news" alt="" /></td>
+             <td>
+              <a href="https://help.launchpad.net/PPAQuickStart#delete">
+                <strong>Delete packages from your PPA</strong><br />
+                You can now delete packages from your PPAs using Launchpad's web interface.
+               </a>
+              </td>
+             </tr>
+             <tr>
+               <td><img src="/@@/news" alt="" /></td>
+               <td>
+                 <a href="https://help.launchpad.net/Feeds#branches">
+                   <strong>Branch feeds</strong><br />
+                   Follow the latest commits to a branch in your feed reader.
+                   Also receive updates on commits to branches associated with
+                   specific people, teams and projects.
+                 </a>
+               </td>
+             </tr>
+             <tr>
+               <td><img src="/@@/news" alt="" /></td>
+               <td>
+                 <a href="https://help.launchpad.net/logo">
+                   <strong>Logo competition!</strong><br />
+                   Submit your design for the new Launchpad logo for
+                   the chance to win an Ubuntu Messenger bag.
+                 </a>
+                </td>
+             </tr>
+              <tr>
+                <td><img src="/@@/news" alt="" /></td>
+                <td>
+                  <a href="https://help.launchpad.net/Feeds">
+                    <strong>Bug feeds</strong><br />
+                    Subscribe to all bugs relating to a distribution, project,
+                    team or person.
+                  </a>
+                </td>
+              </tr>
+              <tr>
+                <td><img src="/@@/news" alt="" /></td>
+                <td>
+                  <a href="https://help.launchpad.net/ProjectAnnouncements">
+                    <strong>Project announcements</strong><br />
+                    Publish your news in Launchpad and via Atom feeds.</a>
+                    <a href="http://feeds.launchpad.net/announcements.atom">
+                      <img src="/@@/rss" alt="RSS" />
+                    </a>
+                </td>
+              </tr>
+            </tbody>
+          </table>
           <div class="discreet" style="text-align: right">
-            Updated 2007-10-24.
+            Updated 2008-01-24.
             <a href="http://news.launchpad.net">More...</a>
           </div>
         </div>
-        <div class="three column right">
+        <div class="three column right" id="featured-projects">
           <h2>Featured projects</h2>
-          <ul>
+          <table>
+            <tr tal:repeat="project view/featured_projects">
+              <td tal:content="structure project/fmt:link" />
+            </tr>
+          </table>
+          <ul tal:condition="not: view/featured_projects">
+            <li class="product"><a href="/exaile">Exaile Media Player</a></li>
+            <li class="product"><a href="/deluge">Deluge Torrent Client</a></li>
             <li class="distro"><a href="/ubuntu">Ubuntu</a></li>
-            <li class="product"><a href="/bzr">Bazaar</a></li>
+            <li class="product"><a href="/bzr">Bazaar Version Control</a></li>
+            <li class="product"><a href="/democracy">Miro TV Player</a></li>
             <li class="product"><a href="/awn">Avant Window Navigator</a></li>
             <li class="product"><a href="/schooltool">SchoolTool</a></li>
             <li class="product"><a href="/tangocms">TangoCMS</a></li>
           </ul>
+          <p>
+            <a tal:condition="context/required:launchpad.Admin"
+               href="+featuredprojects">&raquo; Manage featured project list</a>
+          </p>
         </div>
     </div><!--main-->
     <div metal:fill-slot="help">

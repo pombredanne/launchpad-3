@@ -1,4 +1,5 @@
 # Copyright 2004-2006 Canonical Ltd. All rights reserved.
+# pylint: disable-msg=E0211,E0213
 
 __metaclass__ = type
 
@@ -39,7 +40,6 @@ from zope.app.form.interfaces import WidgetsError
 from canonical.launchpad import _
 from canonical.launchpad.interfaces import NotFoundError
 from canonical.launchpad.interfaces.launchpad import ILaunchBag
-from canonical.launchpad.interfaces.bugtask import BugTaskSearchParams
 from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.validators.email import valid_email
 from canonical.launchpad.validators.cve import valid_cve
@@ -154,11 +154,13 @@ validate_shipit_city = ShipItAddressValidator('city name', 30)
 
 custom_msg = ("Address (first line) can't have more than 30 characters. "
               "You should use the second line if your address is too long.")
-validate_shipit_addressline1 = ShipItAddressValidator('address', 30, custom_msg)
+validate_shipit_addressline1 = (
+    ShipItAddressValidator('address', 30, custom_msg))
 
 custom_msg = ("Address (second line) can't have more than 30 characters. "
               "You should use the first line if your address is too long.")
-validate_shipit_addressline2 = ShipItAddressValidator('address', 30, custom_msg)
+validate_shipit_addressline2 = (
+    ShipItAddressValidator('address', 30, custom_msg))
 
 validate_shipit_phone = ShipItAddressValidator('phone number', 16)
 
@@ -289,7 +291,8 @@ def valid_bug_number(value):
 
 
 def valid_cve_sequence(value):
-    """Check if the given value is a valid CVE otherwise raise an exception."""
+    """Check if the given value is a valid CVE otherwise raise an exception.
+    """
     if valid_cve(value):
         return True
     else:
@@ -361,11 +364,12 @@ def validate_new_distrotask(bug, distribution, sourcepackagename=None):
                     'specified. You should fill in a package name for the '
                     'existing bug.') % (distribution.displayname))
     else:
-        # Prevent having a task on only the distribution if there's at least one
-        # task already on the distribution, whether or not that task also has a
-        # source package.
+        # Prevent having a task on only the distribution if there's at
+        # least one task already on the distribution, whether or not
+        # that task also has a source package.
         distribution_tasks_for_bug = [
-            bugtask for bugtask in shortlist(bug.bugtasks, longest_expected=50)
+            bugtask for bugtask
+            in shortlist(bug.bugtasks, longest_expected=50)
             if bugtask.distribution == distribution]
 
         if len(distribution_tasks_for_bug) > 0:
@@ -381,8 +385,16 @@ def validate_distrotask(bug, distribution, sourcepackagename=None):
 
     If validation fails, a LaunchpadValidationError will be raised.
     """
+    if sourcepackagename is not None and len(distribution.serieses) > 0:
+        # If the distribution has at least one series, check that the
+        # source package has been published in the distribution.
+        try:
+            distribution.guessPackageNames(sourcepackagename.name)
+        except NotFoundError, e:
+            raise LaunchpadValidationError(unicode(e))
     new_source_package = distribution.getSourcePackage(sourcepackagename)
-    if sourcepackagename and bug.getBugTask(new_source_package) is not None:
+    if sourcepackagename is not None and (
+        bug.getBugTask(new_source_package) is not None):
         # Ensure this distribution/sourcepackage task is unique.
         raise LaunchpadValidationError(_(
                 'This bug has already been reported on %s (%s).') % (
@@ -403,6 +415,8 @@ def valid_upstreamtask(bug, product):
 
     If it exists, WidgetsError will be raised.
     """
+    # Local import to avoid circular imports.
+    from canonical.launchpad.interfaces.bugtask import BugTaskSearchParams
     errors = []
     user = getUtility(ILaunchBag).user
     params = BugTaskSearchParams(user, bug=bug)
@@ -551,7 +565,7 @@ def valid_password(password):
 
     """
     assert isinstance(password, unicode)
-    valid_chars = [chr(x) for x in range(32,127)]
+    valid_chars = [chr(x) for x in range(32, 127)]
     invalid = set(password) - set(valid_chars)
     if invalid:
         return False

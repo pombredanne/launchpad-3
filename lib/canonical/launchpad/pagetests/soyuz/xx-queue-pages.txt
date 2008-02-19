@@ -1,0 +1,279 @@
+= Upload Queue Pages =
+
+Upload queue pages are designed to offer the ability to perform
+control and visualisation over the current uploads queue.
+
+Currently the queue page is only available for DistroSeries context.
+
+
+== Controlling the upload-admin role ==
+
+Change ubuntu's upload manager to be Carlos so we can check if we are
+granting the appropriate permission to this role.
+
+  >>> admin_browser.open("http://launchpad.dev/ubuntu")
+  >>> admin_browser.getLink("Change upload manager").click()
+  >>> admin_browser.getControl(name="field.upload_admin").value = 'carlos'
+  >>> admin_browser.getControl("Change").click()
+
+We are at "Distribution Overview" page, let's verify that Carlos is
+now the upload manager:
+
+  >>> admin_browser.url
+  'http://launchpad.dev/ubuntu'
+  >>> admin_browser.getLink("Change upload manager").click()
+  >>> admin_browser.getControl(name="field.upload_admin").value
+  'carlos'
+
+Let's setup a browser with the defined upload-admin for future use.
+
+  >>> upload_manager_browser = setupBrowser(
+  ...       auth="Basic carlos@canonical.com:test")
+
+
+== Accessing the queues ==
+
+The link "View Uploads" is presented in Distrorelease page.
+
+Viewing the current queue, by default the NEW queue.
+
+  >>> anon_browser.open(
+  ...     "http://launchpad.dev/ubuntu/breezy-autotest/")
+  >>> anon_browser.getLink("Show uploads").click()
+
+  >>> anon_browser.getControl(name="queue_state").displayValue
+  ['New']
+
+  >>> def print_queue(contents):
+  ...     queue_rows = find_tags_by_class(contents, "queue-row")
+  ...     for row in queue_rows:
+  ...         print extract_text(row)
+
+  >>> print_queue(anon_browser.contents)
+  Package                         Version         Pocket  When       Changes
+  netapplet... (raw-ddtp-tarball) -               Release 2005-04-07 [view]
+  netapplet...(raw-dist-upgrader) -               Release 2005-04-07 [view]
+  alsa-utils (source)             1.0.9a-4ubuntu1 Release 2005-04-07 [view]
+  netapplet (source)              0.99.6-1        Release 2005-04-07 [view]
+  pmount (i386)                   0.1-1           Release 2005-04-07 [view]
+  mozilla-firefox (i386)          0.9             Release 2006-05-24 [view]
+
+We grant public access to all available queues, including the
+UNAPPROVED one.
+
+  >>> anon_browser.getControl(
+  ...     name="queue_state").displayValue = ['Unapproved']
+  >>> anon_browser.getControl("Update").click()
+  >>> print_queue(anon_browser.contents)
+  Package                         Version       Pocket    When       Changes
+  language-pack-de (source)       1.0           Proposed  2005-04-07 [view]
+  netapplet... (raw-ddtp-tarball) -             Backports 2005-04-07 [view]
+  cnews (source)                  1.0           Release   2005-04-07 [view]
+  cnews (source)                  1.0           Release   2005-04-07 [view]
+  netapplet... (raw-translations) -             Updates   2005-04-07 [view]
+
+The results can be filtered matching source name, binary name or
+custom-upload filename.
+
+  >>> anon_browser.getControl(name="queue_text").value = 'language'
+  >>> anon_browser.getControl("Update").click()
+  >>> print_queue(anon_browser.contents)
+  Package                         Version       Pocket    When       Changes
+  language-pack-de (source)       1.0           Proposed  2005-04-07 [view]
+
+  >>> anon_browser.getControl(name="queue_text").value = 'netapplet'
+  >>> anon_browser.getControl("Update").click()
+  >>> print_queue(anon_browser.contents)
+  Package                         Version       Pocket    When       Changes
+  netapplet... (raw-translations) -             Updates   2005-04-07 [view]
+  netapplet... (raw-ddtp-tarball) -             Backports 2005-04-07 [view]
+
+  >>> anon_browser.getControl(
+  ...     name="queue_state").displayValue = ['New']
+  >>> anon_browser.getControl(name="queue_text").value = 'pmount'
+  >>> anon_browser.getControl("Update").click()
+  >>> print_queue(anon_browser.contents)
+  Package                         Version       Pocket    When       Changes
+  pmount (i386)                   0.1-1         Release   2005-04-07 [view]
+
+
+== Queue item filelist ==
+
+Each queue item has a hidden 'filelist' section which is
+toggled via javascript by clicking in the 'expand' arrow
+image:
+
+  >>> anon_browser.getControl(
+  ...     name="queue_state").displayValue = ['New']
+  >>> anon_browser.getControl(name="queue_text").value = ''
+  >>> anon_browser.getControl("Update").click()
+
+  >>> print find_tag_by_id(anon_browser.contents, 'queue4-filelist-arrow')
+  <img width="14" height="14" src="/@@/treeCollapsed" alt="view files" id="queue4-filelist-arrow" />
+
+The 'filelist' is a expanded as another table row, right below the
+clicked item:
+
+  >>> filelist = find_tag_by_id(anon_browser.contents, 'queue4-filelist')
+
+It contains a list of files related to the queue item clicked, followed
+by its size, one file per line:
+
+  >>> print extract_text(filelist)
+  alsa-utils_1.0.9a-4ubuntu1.dsc (3 bytes)
+
+Each filename links to its respective librarian URL:
+
+  >>> print filelist.find('a')
+  <a href="http://localhost:58000/43/alsa-utils_1.0.9a-4ubuntu1.dsc">alsa-utils_1.0.9a-4ubuntu1.dsc</a>
+
+On binary queue items we also present the stamp 'NEW' for files never
+published in the archive (it helps archive admins when reviewing
+candidates):
+
+  >>> filelist = find_tag_by_id(anon_browser.contents, 'queue2-filelist')
+  >>> print extract_text(filelist)
+  pmount_1.9-1_all.deb (3 bytes) NEW
+
+XXX cprov 20070726: we should extend the test when we are able to
+probe javascripts events.
+
+
+== Accepting items ==
+
+Inspect the ACCEPTED queue:
+
+  >>> anon_browser.getControl(name="queue_state").displayValue=['Accepted']
+  >>> anon_browser.getControl("Update").click()
+  >>> for message in get_feedback_messages(anon_browser.contents):
+  ...     print message
+  The Accepted queue is empty.
+
+Now we act on the queue, which requires admin or upload_manager permission.
+First, we need to add fake librarian files so that email notifications work:
+
+  >>> from canonical.archiveuploader.tests import (
+  ...     insertFakeChangesFileForAllPackageUploads)
+  >>> insertFakeChangesFileForAllPackageUploads()
+
+Upload a new "bar" source so we can accept it later.  We need to login to
+upload.
+
+  >>> from canonical.launchpad.ftests import login, logout
+  >>> login('foo.bar@canonical.com')
+  >>> from canonical.launchpad.scripts.ftests.test_queue import (
+  ...     upload_bar_source)
+  >>> bar_src = upload_bar_source()
+  >>> import transaction
+  >>> transaction.commit()
+  >>> logout()
+
+Swallow any email generated at the upload:
+
+  >>> from canonical.launchpad.mail import stub
+  >>> from canonical.launchpad.tests.mail_helpers import pop_notifications
+  >>> swallow = pop_notifications()
+
+Go back to the "new" queue and accept "bar":
+
+  >>> upload_manager_browser.open(
+  ...    "http://localhost/ubuntu/breezy-autotest/+queue")
+  >>> upload_manager_browser.getControl(name="QUEUE_ID").value=['15']
+  >>> upload_manager_browser.getControl(name="Accept").click()
+  >>> print_queue(upload_manager_browser.contents)
+  Package                         Version         Pocket  When       Changes
+  netapplet... (raw-ddtp-tarball) -               Release 2005-04-07 [view]
+  netapplet...(raw-dist-upgrader) -               Release 2005-04-07 [view]
+  alsa-utils (source)             1.0.9a-4ubuntu1 Release 2005-04-07 [view]
+  netapplet (source)              0.99.6-1        Release 2005-04-07 [view]
+  pmount (i386)                   0.1-1           Release 2005-04-07 [view]
+  mozilla-firefox (i386)          0.9             Release 2006-05-24 [view]
+
+Accepting queue items results in an email to the uploader and (usually) an
+email to the distroseries' announcement list (see
+nascentupload-announcements.txt).
+
+  >>> [notification, announcement] = pop_notifications()
+  >>> notification['To']
+  'Daniel Silverstone <daniel.silverstone@canonical.com>'
+  >>> announcement['To']
+  'autotest_changes@ubuntu.com'
+
+Forcing a duplicated submission on a queue item is recognised:
+
+  >>> upload_manager_browser.reload()
+  >>> message = 'FAILED: bar (The source bar - 1.0-1 is already accepted'
+  >>> message in upload_manager_browser.contents
+  True
+
+No emails are sent in this case:
+
+  >>> len(stub.test_emails)
+  0
+
+Because it's a single source upload, accepting bar will not put it in the
+accepted queue since it skips that state and goes straight to being published.
+Let's accept mozilla-firefox so we can see it in the accepted queue:
+
+  >>> upload_manager_browser.open(
+  ...    "http://localhost/ubuntu/breezy-autotest/+queue")
+  >>> upload_manager_browser.getControl(name="QUEUE_ID").value=['1']
+  >>> upload_manager_browser.getControl(name="Accept").click()
+  >>> for message in get_feedback_messages(upload_manager_browser.contents):
+  ...     print message
+  Accepting Results:
+  OK: mozilla-firefox
+
+The item is moved to the ACCEPTED queue:
+
+  >>> upload_manager_browser.getControl(
+  ...    name="queue_state").displayValue=['Accepted']
+  >>> upload_manager_browser.getControl("Update").click()
+  >>> print_queue(upload_manager_browser.contents)
+  Package                         Version         Pocket  When       Changes
+  mozilla-firefox (i386)          0.9             Release 2006-05-24 [view]
+
+Going back to the "new" queue, we can see our item has gone:
+
+  >>> upload_manager_browser.getControl(
+  ...    name="queue_state").displayValue=['New']
+  >>> upload_manager_browser.getControl("Update").click()
+  >>> print_queue(upload_manager_browser.contents)
+  Package                         Version         Pocket  When       Changes
+  netapplet... (raw-ddtp-tarball) -               Release 2005-04-07 [view]
+  netapplet...(raw-dist-upgrader) -               Release 2005-04-07 [view]
+  alsa-utils (source)             1.0.9a-4ubuntu1 Release 2005-04-07 [view]
+  netapplet (source)              0.99.6-1        Release 2005-04-07 [view]
+  pmount (i386)                   0.1-1           Release 2005-04-07 [view]
+
+
+== Rejecting items ==
+
+Rejecting 'netapplet' source:
+
+  >>> upload_manager_browser.getControl(name="QUEUE_ID").value = ['3']
+  >>> upload_manager_browser.getControl(name="Reject").click()
+  >>> for message in get_feedback_messages(upload_manager_browser.contents):
+  ...     print message
+  Rejecting Results:
+  OK: netapplet
+
+  >>> print_queue(upload_manager_browser.contents)
+  Package                         Version         Pocket  When       Changes
+  netapplet... (raw-ddtp-tarball) -               Release 2005-04-07 [view]
+  netapplet...(raw-dist-upgrader) -               Release 2005-04-07 [view]
+  alsa-utils (source)             1.0.9a-4ubuntu1 Release 2005-04-07 [view]
+  pmount (i386)                   0.1-1           Release 2005-04-07 [view]
+
+One rejection email is generated:
+
+  >>> [rejection] = pop_notifications()
+  >>> rejection['Subject']
+  'netapplet-1.0.0.tar.gz rejected'
+
+
+== Clean up ==
+
+  >>> from canonical.librarian.ftests.harness import cleanupLibrarianFiles
+  >>> cleanupLibrarianFiles()
+

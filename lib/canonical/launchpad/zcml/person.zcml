@@ -29,8 +29,17 @@
     />
 
   <content class="canonical.launchpad.database.Person">
-    <allow interface="canonical.launchpad.interfaces.IPerson" />
+    <allow interface="canonical.launchpad.interfaces.IPersonPublic"/>
     <allow interface="canonical.launchpad.interfaces.IHasTranslationImports"/>
+
+    <require
+      permission="launchpad.View"
+      interface="canonical.launchpad.interfaces.IPersonViewRestricted"
+      />
+    <require
+      permission="launchpad.Edit"
+      interface="canonical.launchpad.interfaces.IPersonEditRestricted"
+      />
     <require
       permission="launchpad.Edit"
       set_schema="canonical.launchpad.interfaces.IPerson"
@@ -108,6 +117,14 @@
   </browser:editform>
 
   <browser:page
+    name="+claimteam"
+    for="canonical.launchpad.interfaces.IPerson"
+    class="canonical.launchpad.browser.BeginTeamClaimView"
+    permission="launchpad.AnyPerson"
+    template="../templates/person-claim-team.pt"
+    />
+
+  <browser:page
     name="+claim"
     for="canonical.launchpad.interfaces.IPerson"
     class="canonical.launchpad.browser.PersonClaimView"
@@ -159,10 +176,7 @@
     for="canonical.launchpad.interfaces.IPerson"
     permission="zope.Public"
     class="canonical.launchpad.browser.PersonView">
-    <browser:page
-      name="+index"
-      template="../templates/person-index.pt"
-      />
+
     <browser:page
       name="+ask-a-question-button"
       template="../templates/null.pt"
@@ -184,11 +198,6 @@
       attribute="showSSHKeys"
       />
     <browser:page
-      name="+bounties"
-      facet="bounties"
-      template="../templates/person-bounties.pt"
-      />
-    <browser:page
       name="+portlet-emails"
       template="../templates/person-portlet-emails.pt"
       />
@@ -200,11 +209,41 @@
       name="+portlet-details"
       template="../templates/person-portlet-details.pt"
       />
+    <browser:page
+      name="+portlet-contact-details"
+      template="../templates/person-portlet-contact-details.pt"
+      />
     <!-- this should be on IPerson because we don't always know if it is a
     team or a person -->
     <browser:page
       name="+teamlist"
       template="../templates/team-listing.pt"
+      />
+  </browser:pages>
+
+  <!-- The bounty system is kept maintained but not available for users.
+  This is achieved by putting it on the PageTestLayer. -->
+  <browser:page
+    class="canonical.launchpad.browser.PersonView"
+    facet="bounties"
+    for="canonical.launchpad.interfaces.IPerson"
+    layer="canonical.launchpad.layers.PageTestLayer"
+    name="+bounties"
+    permission="zope.Public"
+    template="../templates/person-bounties.pt"
+    />
+
+  <browser:pages
+    for="canonical.launchpad.interfaces.IPerson"
+    permission="zope.Public"
+    class="canonical.launchpad.browser.PersonIndexView">
+    <browser:page
+      name="+index"
+      template="../templates/person-index.pt"
+      />
+    <browser:page
+      name="+xrds"
+      attribute="xrds"
       />
   </browser:pages>
 
@@ -524,6 +563,14 @@
   <browser:page
     for="canonical.launchpad.interfaces.ITeam"
     permission="launchpad.Edit"
+    class="canonical.launchpad.browser.TeamMailingListConfigurationView"
+    name="+mailinglist"
+    template="../templates/team-mailinglist.pt"
+    />
+
+  <browser:page
+    for="canonical.launchpad.interfaces.ITeam"
+    permission="launchpad.Edit"
     class="canonical.launchpad.browser.PersonLanguagesView"
     name="+editlanguages"
     template="../templates/person-editlanguages.pt"
@@ -551,6 +598,14 @@
     class="canonical.launchpad.browser.TeamReassignmentView"
     name="+reassign"
     template="../templates/object-reassignment.pt"
+    />
+
+  <browser:page
+    for="canonical.launchpad.interfaces.ITeam"
+    permission="launchpad.AnyPerson"
+    class="canonical.launchpad.browser.TeamAddMyTeamsView"
+    name="+add-my-teams"
+    template="../templates/team-add-my-teams.pt"
     />
 
   <browser:page
@@ -882,6 +937,12 @@
   <browser:menus
     module="canonical.launchpad.browser"
     classes="PersonAnswersMenu"
+    />
+  <browser:page
+    for="canonical.launchpad.interfaces.IPerson"
+    class="canonical.launchpad.browser.RestrictedMembershipsPersonView"
+    name="+restricted-membership"
+    permission="zope.Public"
     />
 </facet>
 

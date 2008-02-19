@@ -17,6 +17,7 @@ __all__ = [
     'ProductBranchesMenu',
     'ProductTranslationsMenu',
     'ProductView',
+    'ProductDownloadFileMixin',
     'ProductDownloadFilesView',
     'ProductAddView',
     'ProductAddViewBase',
@@ -25,7 +26,6 @@ __all__ = [
     'ProductChangeTranslatorsView',
     'ProductReviewView',
     'ProductAddSeriesView',
-    'ProductBugContactEditView',
     'ProductReassignmentView',
     'ProductRdfView',
     'ProductSetFacets',
@@ -33,11 +33,11 @@ __all__ = [
     'ProductSetNavigation',
     'ProductSetContextMenu',
     'ProductSetView',
+    'ProductBranchOverviewView',
     'ProductBranchesView',
     'PillarSearchItem',
     ]
 
-import cgi
 from operator import attrgetter
 
 import zope.security.interfaces
@@ -52,17 +52,20 @@ from canonical.cachedproperty import cachedproperty
 from canonical.config import config
 from canonical.launchpad import _
 from canonical.launchpad.interfaces import (
-    IBranchSet, ICountry, IDistribution, IHasIcon, ILaunchBag,
-    ILaunchpadCelebrities, IPillarNameSet, IProduct, IProductSeries,
-    IProductSet, IProject, ITranslationImportQueue, BranchListingSort, License,
+    BranchListingSort, IBranchSet, IBugTracker, ICountry, IDistribution,
+    IHasIcon, ILaunchBag, ILaunchpadCelebrities, IPillarNameSet, IProduct,
+    IProductSeries, IProductSet, IProject, ITranslationImportQueue, License,
     NotFoundError, RESOLVED_BUGTASK_STATUSES, UnsafeFormGetSubmissionError)
 from canonical.launchpad import helpers
+from canonical.launchpad.browser.announcement import HasAnnouncementsView
 from canonical.launchpad.browser.branding import BrandingChangeView
 from canonical.launchpad.browser.branchlisting import BranchListingView
 from canonical.launchpad.browser.branchref import BranchRef
 from canonical.launchpad.browser.bugtask import (
     BugTargetTraversalMixin, get_buglisting_search_filter_url)
 from canonical.launchpad.browser.faqtarget import FAQTargetNavigationMixin
+from canonical.launchpad.browser.feeds import (
+    FeedsMixin, ProductBranchesFeedLink)
 from canonical.launchpad.browser.launchpad import (
     StructuralObjectPresentation, DefaultShortLink)
 from canonical.launchpad.browser.objectreassignment import (
@@ -114,6 +117,10 @@ class ProductNavigation(
     def traverse_release(self, name):
         return self.context.getRelease(name)
 
+    @stepthrough('+announcement')
+    def traverse_announcement(self, name):
+        return self.context.getAnnouncement(name)
+
     def traverse(self, name):
         return self.context.getSeries(name)
 
@@ -157,23 +164,23 @@ class ProductLicenseMixin:
             not license_widget.allow_pending_license):
             # License is optional on +edit page if not already set.
             self.setFieldError(
-                'licenses', 
+                'licenses',
                 'Select all licenses for this software or select '
                 'Other/Proprietary or Other/Open Source.')
         elif License.OTHER_PROPRIETARY in licenses:
             if not data.get('license_info'):
                 self.setFieldError(
-                    'license_info', 
+                    'license_info',
                     'A description of the "Other/Proprietary" '
                     'license you checked is required.')
         elif License.OTHER_OPEN_SOURCE in licenses:
             if not data.get('license_info'):
                 self.setFieldError(
-                    'license_info', 
+                    'license_info',
                     'A description of the "Other/Open Source" '
                     'license you checked is required.')
         else:
-            # Launchpad is ok with all licenses used in this project
+            # Launchpad is ok with all licenses used in this project.
             pass
 
     def notifyFeedbackMailingList(self):
@@ -181,7 +188,8 @@ class ProductLicenseMixin:
         if (License.OTHER_PROPRIETARY in self.product.licenses
                 or License.OTHER_OPEN_SOURCE in self.product.licenses):
             user = getUtility(ILaunchBag).user
-            subject = 'Project License Submitted'
+            subject = "Project License Submitted for %s by %s" % (
+                    self.product.name, user.name)
             fromaddress = format_address("Launchpad",
                                          config.noreply_from_address)
             license_titles = '\n'.join(
@@ -200,9 +208,12 @@ class ProductLicenseMixin:
                 license_titles=indent(license_titles),
                 license_info=indent(self.product.license_info))
 
+            reply_to = format_address(user.displayname,
+                                      user.preferredemail.email)
             simple_sendmail(fromaddress,
                             'feedback@launchpad.net',
-                            subject, message)
+                            subject, message,
+                            headers={'Reply-To': reply_to})
 
             self.request.response.addInfoNotification(_(
                 "Launchpad is free to use for software under approved "
@@ -275,7 +286,8 @@ class ProductOverviewMenu(ApplicationMenu):
     links = [
         'edit', 'branding', 'driver', 'reassign', 'top_contributors',
         'mentorship', 'distributions', 'packages', 'files', 'branch_add',
-        'series_add', 'administer', 'branch_visibility', 'rdf']
+        'series_add', 'announce', 'announcements', 'administer',
+        'branch_visibility', 'rdf', 'subscribe']
 
     @enabled_with_permission('launchpad.Edit')
     def edit(self):
@@ -318,9 +330,21 @@ class ProductOverviewMenu(ApplicationMenu):
         text = 'Download project files'
         return Link('+download', text, icon='info')
 
+    @enabled_with_permission('launchpad.Edit')
     def series_add(self):
         text = 'Register a series'
         return Link('+addseries', text, icon='add')
+
+    @enabled_with_permission('launchpad.Edit')
+    def announce(self):
+        text = 'Make announcement'
+        summary = 'Publish an item of news for this project'
+        return Link('+announce', text, summary, icon='add')
+
+    def announcements(self):
+        text = 'Show announcements'
+        enabled = bool(self.context.announcements().count())
+        return Link('+announcements', text, enabled=enabled)
 
     def branch_add(self):
         text = 'Register branch'
@@ -341,6 +365,10 @@ class ProductOverviewMenu(ApplicationMenu):
     def branch_visibility(self):
         text = 'Define branch visibility'
         return Link('+branchvisibility', text, icon='edit')
+
+    def subscribe(self):
+        text = 'Subscribe to bug mail'
+        return Link('+subscribe', text, icon='edit')
 
 
 class ProductBugsMenu(ApplicationMenu):
@@ -367,12 +395,17 @@ class ProductBranchesMenu(ApplicationMenu):
 
     usedfor = IProduct
     facet = 'branches'
-    links = ['branch_add', ]
+    links = ['branch_add', 'list_branches']
 
     def branch_add(self):
         text = 'Register branch'
         summary = 'Register a new Bazaar branch for this project'
         return Link('+addbranch', text, summary, icon='add')
+
+    def list_branches(self):
+        text = 'List branches'
+        summary = 'List the branches for this project'
+        return Link('+branches', text, summary, icon='add')
 
 
 class ProductSpecificationsMenu(ApplicationMenu):
@@ -428,7 +461,7 @@ class ProductTranslationsMenu(ApplicationMenu):
 
     usedfor = IProduct
     facet = 'translations'
-    links = ['translators', 'edit', 'imports', 'translationdownload']
+    links = ['translators', 'imports', 'translationdownload']
 
     def imports(self):
         text = 'See import queue'
@@ -438,15 +471,12 @@ class ProductTranslationsMenu(ApplicationMenu):
         text = 'Change translators'
         return Link('+changetranslators', text, icon='edit')
 
-    @enabled_with_permission('launchpad.Admin')
-    def edit(self):
-        text = 'Edit template names'
-        return Link('+potemplatenames', text, icon='edit')
-
+    @enabled_with_permission('launchpad.AnyPerson')
     def translationdownload(self):
         text = 'Download translations'
         preferred_series = self.context.primary_translatable
-        enabled = (preferred_series is not None)
+        enabled = (self.context.official_rosetta and
+            preferred_series is not None)
         link = ''
         if enabled:
             link = '%s/+export' % preferred_series.name
@@ -516,17 +546,65 @@ class ProductSetContextMenu(ContextMenu):
         return Link('/sprints/', 'View meetings')
 
 
-class ProductView(LaunchpadView):
+class SortSeriesMixin:
+    """Provide access to helpers for series."""
+
+    @property
+    def sorted_series_list(self):
+        """Return a sorted list of series.
+
+        The series list is sorted by version in reverse order.
+        The development focus is always first in the list.
+        """
+        series_list = list(self.context.serieses)
+        series_list.remove(self.context.development_focus)
+        # Now sort the list by name with newer versions before older.
+        series_list = sorted_version_numbers(series_list,
+                                             key=attrgetter('name'))
+        series_list.insert(0, self.context.development_focus)
+        return series_list
+
+
+class ProductView(HasAnnouncementsView, SortSeriesMixin, FeedsMixin):
 
     __used_for__ = IProduct
 
     def __init__(self, context, request):
-        LaunchpadView.__init__(self, context, request)
+        HasAnnouncementsView.__init__(self, context, request)
         self.form = request.form_ng
 
     def initialize(self):
         self.product = self.context
         self.status_message = None
+
+    @property
+    def freshmeat_url(self):
+        if self.context.freshmeatproject:
+            return ("http://freshmeat.net/projects/%s"
+                % self.context.freshmeatproject)
+        return None
+
+    @property
+    def sourceforge_url(self):
+        if self.context.sourceforgeproject:
+            return ("http://sourceforge.net/projects/%s"
+                % self.context.sourceforgeproject)
+        return None
+
+    @property
+    def has_external_links(self):
+        return (self.context.homepageurl or
+                self.context.sourceforgeproject or
+                self.context.freshmeatproject or
+                self.context.wikiurl or
+                self.context.screenshotsurl or
+                self.context.downloadurl)
+
+    @property
+    def should_display_homepage(self):
+        return (self.context.homepageurl and
+                self.context.homepageurl not in
+                    [self.freshmeat_url, self.sourceforge_url])
 
     @cachedproperty
     def uses_translations(self):
@@ -604,25 +682,6 @@ class ProductView(LaunchpadView):
         return [product for product in self.context.project.products
                         if product.id != self.context.id]
 
-    def potemplatenames(self):
-        potemplatenames = set([])
-
-        for series in self.context.serieses:
-            for potemplate in series.getTranslationTemplates():
-                potemplatenames.add(potemplate.potemplatename)
-
-        return sorted(potemplatenames, key=lambda item: item.name)
-
-    def sorted_serieses(self):
-        """Return the series list of the product with the dev focus first."""
-        series_list = list(self.context.serieses)
-        series_list.remove(self.context.development_focus)
-        # now sort the list by name with newer versions before older
-        series_list = sorted_version_numbers(series_list,
-                                             key=attrgetter('name'))
-        series_list.insert(0, self.context.development_focus)
-        return series_list
-
     def getClosedBugsURL(self, series):
         status = [status.title for status in RESOLVED_BUGTASK_STATUSES]
         url = canonical_url(series) + '/+bugs'
@@ -632,18 +691,52 @@ class ProductView(LaunchpadView):
         return self.context.getLatestBranches(visible_by_user=self.user)
 
 
-class ProductDownloadFilesView(LaunchpadView):
+class ProductDownloadFileMixin:
+    """Provides methods for managing download files."""
 
-    __used_for__ = IProduct
+    def deleteFiles(self, releases):
+        """Delete the selected files from the set of releases.
 
-    def initialize(self):
-        self.form = self.request.form
-        self.product = self.context
+        :param releases: A set of releases in the view.
+        :return: The number of files deleted.
+        """
+        del_count = 0
+        for release in releases:
+            for release_file in release.files:
+                if release_file.libraryfile.id in self.delete_ids:
+                    release.deleteFileAlias(release_file.libraryfile)
+                    self.delete_ids.remove(release_file.libraryfile.id)
+                    del_count += 1
+        return del_count
+
+    def getReleases(self):
+        """Find the releases with download files for view."""
+        raise NotImplementedError
+
+    def fileURL(self, file_, release=None):
+        """Create a download URL for the `LibraryFileAlias`."""
+        if release is None:
+            release = self.context
+        return "%s/+download/%s" % (canonical_url(release),
+                                    file_.filename)
+
+    def md5URL(self, file_, release=None):
+        """Create a URL for the MD5 digest."""
+        if release is None:
+            release = self.context
+        return "%s/+download/%s/+md5" % (canonical_url(release),
+                                         file_.filename)
+
+    def processDeleteFiles(self):
+        """If the 'delete_files' button was pressed, process the deletions."""
         del_count = None
+        self.delete_ids = [int(value) for key, value in self.form.items()
+                           if key.startswith('checkbox')]
         if 'delete_files' in self.form:
             if self.request.method == 'POST':
                 del(self.form['delete_files'])
-                del_count = self.delete_files(self.form)
+                releases = self.getReleases()
+                del_count = self.deleteFiles(releases)
             else:
                 # If there is a form submission and it is not a POST then
                 # raise an error.  This is to protect against XSS exploits.
@@ -660,23 +753,44 @@ class ProductDownloadFilesView(LaunchpadView):
                     "%d files have been deleted." %
                     del_count)
 
-    def delete_files(self, data):
-        del_keys = [int(v) for k, v in data.items()
-                    if k.startswith('checkbox')]
-        del_count = 0
+
+class ProductDownloadFilesView(LaunchpadView,
+                               SortSeriesMixin,
+                               ProductDownloadFileMixin):
+    """View class for the product's file downloads page."""
+    __used_for__ = IProduct
+
+    def initialize(self):
+        self.form = self.request.form
+        self.product = self.context
+        self.processDeleteFiles()
+
+    def getReleases(self):
+        """See `ProductDownloadFileMixin`."""
+        releases = set()
+        for series in self.product.serieses:
+            releases.update(series.releases)
+        return releases
+
+    @cachedproperty
+    def has_download_files(self):
+        """Across series and releases do any download files exist?"""
         for series in self.product.serieses:
             for release in series.releases:
-                for f in release.files:
-                    if f.libraryfile.id in del_keys:
-                        release.deleteFileAlias(f.libraryfile)
-                        del_keys.remove(f.libraryfile.id)
-                        del_count += 1
-        return del_count
+                if release.files.count() > 0:
+                    return True
+        return False
 
-    def file_url(self, series, release, file_):
-        """Create a download URL for the file."""
-        return "%s/+download/%s" % (canonical_url(release),
-                                    file_.libraryfile.filename)
+    @cachedproperty
+    def any_download_files_with_signatures(self):
+        """Across series and releases do any download files have signatures?
+        """
+        for series in self.product.serieses:
+            for release in series.releases:
+                for file in release.files:
+                    if file.signature:
+                        return True
+        return False
 
     @cachedproperty
     def milestones(self):
@@ -707,23 +821,36 @@ class ProductEditView(ProductLicenseMixin, LaunchpadEditFormView):
     schema = IProduct
     label = "Change project details"
     field_names = [
-        "displayname", "title", "summary", "description", "project",
-        "bugtracker", "official_rosetta", "official_answers",
-        "homepageurl", "sourceforgeproject",
-        "freshmeatproject", "wikiurl", "screenshotsurl", "downloadurl",
-        "programminglang", "development_focus", "licenses", "license_info"]
+        "displayname", "title", "summary", "description",
+        "bug_reporting_guidelines", "project", "bugtracker",
+        "enable_bug_expiration", "official_rosetta", "official_answers",
+        "homepageurl", "sourceforgeproject", "freshmeatproject", "wikiurl",
+        "screenshotsurl", "downloadurl", "programminglang",
+        "development_focus", "licenses", "license_info"]
     custom_widget(
         'licenses', LicenseWidget, column_count=3, orientation='vertical')
     custom_widget('bugtracker', ProductBugTrackerWidget)
 
     def setUpWidgets(self):
         super(ProductEditView, self).setUpWidgets()
-        # Licenses are optional on +edit page if they have not already 
+        # Licenses are optional on +edit page if they have not already
         # been set. Subclasses may not have 'licenses' widget.
         # ('licenses' in self.widgets) is broken.
         if (len(self.context.licenses) == 0 and
             self.widgets.get('licenses') is not None):
             self.widgets['licenses'].allow_pending_license = True
+
+    def validate(self, data):
+        """Constrain bug expiration to Launchpad Bugs tracker."""
+        # enable_bug_expiration is disabled by JavaScript when bugtracker
+        # is not 'In Launchpad'. The contraint is enforced here in case the
+        # JavaScript fails to activate or run. Note that the bugtracker
+        # name : values are {'In Launchpad' : object, 'Somewhere else' : None
+        # 'In a registered bug tracker' : IBugTracker}.
+        bugtracker = data.get('bugtracker', None)
+        if bugtracker is None or IBugTracker.providedBy(bugtracker):
+            data['enable_bug_expiration'] = False
+        ProductLicenseMixin.validate(self, data)
 
     @action("Change", name='change')
     def change_action(self, action, data):
@@ -949,7 +1076,7 @@ class ProductSetView(LaunchpadView):
 class ProductAddViewBase(ProductLicenseMixin, LaunchpadFormView):
     """Abstract class for adding a new product.
 
-    ProductLicenseMixin requires the "product" attribute be set in the 
+    ProductLicenseMixin requires the "product" attribute be set in the
     child classes' action handler.
     """
 
@@ -975,7 +1102,7 @@ class ProductAddViewBase(ProductLicenseMixin, LaunchpadFormView):
 
 class ProductAddView(ProductAddViewBase):
 
-    field_names = (ProductAddViewBase.field_names 
+    field_names = (ProductAddViewBase.field_names
                    + ['owner', 'project', 'reviewed'])
 
     label = "Register an upstream open source project"
@@ -1030,88 +1157,6 @@ class ProductAddView(ProductAddViewBase):
         notify(ObjectCreatedEvent(self.product))
 
 
-class ProductBugContactEditView(LaunchpadEditFormView):
-    """Browser view class for editing the product bug contact."""
-
-    schema = IProduct
-    field_names = ['bugcontact']
-
-    @action('Change', name='change')
-    def change_action(self, action, data):
-        """Redirect to the product page with a success message."""
-        self.updateContextFromData(data)
-
-        product = self.context
-
-        bugcontact = product.bugcontact
-        if bugcontact:
-            contact_display_value = None
-            if bugcontact.preferredemail:
-                # The bug contact was set to a new person or team.
-                contact_display_value = bugcontact.preferredemail.email
-            else:
-                # The bug contact doesn't have a preferred email address,
-                # so it must be a team.
-                assert bugcontact.isTeam(), (
-                    "Expected bug contact with no email address "
-                    "to be a team.")
-                contact_display_value = bugcontact.browsername
-
-            self.request.response.addNotification(
-                "Successfully changed the bug contact to %s" %
-                contact_display_value)
-        else:
-            # The bug contact was set to noone.
-            self.request.response.addNotification(
-                "Successfully cleared the bug contact. There is no longer a "
-                "contact address that will receive all bugmail for this "
-                "project. You can set the bug contact again at any time.")
-
-        self.request.response.redirect(canonical_url(product))
-
-    def validate(self, data):
-        """Validates the new bug contact for the product.
-
-        The following values are valid as bug contacts:
-            * None, indicating that the bug contact field for the product
-              should be cleard in change_action().
-            * A valid Person (email address or launchpad id).
-            * A valid Team of which the current user is an administrator.
-
-        If the the bug contact entered does not meet any of the above criteria
-        then the submission will fail and the user will be notified of the
-        error.
-        """
-        # data will not have a bugcontact entry in cases where the bugcontact
-        # the user entered is valid according to the ValidPersonOrTeam
-        # vocabulary (i.e. is not a Person, Team or None).
-        if not data.has_key('bugcontact'):
-            self.setFieldError(
-                'bugcontact',
-                'You must choose a valid person or team to be the bug contact'
-                ' for %s.' %
-                cgi.escape(self.context.displayname))
-
-            return
-
-        contact = data['bugcontact']
-
-        if (contact is not None and contact.isTeam() and
-            contact not in self.user.getAdministratedTeams()):
-            error = (
-                "You cannot set %(team)s as the bug contact for "
-                "%(project)s because you are not an administrator of that "
-                "team.<br />If you believe that %(team)s should be the bug"
-                " contact for %(project)s, please notify one of the "
-                "<a href=\"%(url)s\">%(team)s administrators</a>."
-
-                % {'team': cgi.escape(contact.displayname),
-                   'project': cgi.escape(self.context.displayname),
-                   'url': canonical_url(contact, rootsite='mainsite')
-                          + '/+members'})
-            self.setFieldError('bugcontact', error)
-
-
 class ProductReassignmentView(ObjectReassignmentView):
     """Reassign product to a new owner."""
 
@@ -1144,22 +1189,66 @@ class ProductShortLink(DefaultShortLink):
         return self.context.displayname
 
 
+class ProductBranchOverviewView(LaunchpadView, SortSeriesMixin, FeedsMixin):
+    """View for the product code overview."""
+
+    __used_for__ = IProduct
+
+    feed_types = (
+        ProductBranchesFeedLink,
+        )
+
+    @cachedproperty
+    def recent_revision_branches(self):
+        """Branches that have the most recent revisions."""
+        branch_set = getUtility(IBranchSet)
+        return branch_set.getBranchesWithRecentRevisionsForProduct(
+            self.context, 5, self.user)
+
+    @property
+    def codebrowse_root(self):
+        """Return the link to codebrowse for this branch."""
+        return config.codehosting.codebrowse_root
+
+    @cachedproperty
+    def recent_revisions(self):
+        """The tip revision for each of the recent revision branches."""
+        return [branch.getBranchRevision(branch.revision_count)
+                for branch in self.recent_revision_branches]
+
+    @cachedproperty
+    def latest_branches(self):
+        """The lastest branches registered for the product."""
+        return self.context.getLatestBranches(visible_by_user=self.user)
+
+
 class ProductBranchesView(BranchListingView):
     """View for branch listing for a product."""
 
     extra_columns = ('author',)
     no_sort_by = (BranchListingSort.PRODUCT,)
 
-    def _branches(self):
+    @cachedproperty
+    def hide_dormant_initial_value(self):
+        """If there are more than one page of branches, hide dormant ones."""
+        page_size = config.launchpad.branchlisting_batch_size
+        return self.context.branches.count() > page_size
+
+    @cachedproperty
+    def development_focus_branch(self):
+        return self.context.development_focus.series_branch
+
+    def _branches(self, lifecycle_status, show_dormant):
         return getUtility(IBranchSet).getBranchesForProduct(
-            self.context, self.selected_lifecycle_status, self.user,
-            self.sort_by)
+            self.context, lifecycle_status, self.user, self.sort_by,
+            show_dormant)
 
     @property
     def no_branch_message(self):
-        if self.selected_lifecycle_status is not None:
+        if (self.selected_lifecycle_status is not None
+            and self.hasAnyBranchesVisibleByUser()):
             message = (
-                'There may be branches registered for %s '
+                'There are branches registered for %s '
                 'but none of them match the current filter criteria '
                 'for this page. Try filtering on "Any Status".')
         else:

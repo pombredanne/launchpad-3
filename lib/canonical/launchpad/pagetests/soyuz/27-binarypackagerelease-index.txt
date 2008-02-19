@@ -29,20 +29,65 @@ When rendering package relationships only existent packages contain
 links to within LP application, not found packages are rendered as
 simple text.
 
-This "Provides" section contains one link to the 'mozilla-firefox'
-binary in the context in question, i.e., 'warty i386':
+'Provides', 'Pre-Depends', 'Enhances' and 'Breaks' sections contain
+links to a binary in the context in question.
 
-  >>> provides_section = find_tag_by_id(browser.contents, 'provides')
-  >>> parse_relationship_section(str(provides_section))
+  >>> def print_relation(id):
+  ...     section = find_tag_by_id(browser.contents, id)
+  ...     parse_relationship_section(str(section))
+
+  >>> print_relation('provides')
   LINK: "mozilla-firefox" -> http://launchpad.dev/ubuntu/warty/i386/mozilla-firefox
 
-This "Depends" section contains only unsatisfied dependencies, which
-is rendered as text:
+  >>> print_relation('predepends')
+  TEXT: "foo"
+  LINK: "pmount" -> http://launchpad.dev/ubuntu/warty/i386/pmount
 
-  >>> depends_section = find_tag_by_id(browser.contents, 'depends')
-  >>> parse_relationship_section(str(depends_section))
+  >>> print_relation('enhances')
+  TEXT: "bar"
+  LINK: "pmount" -> http://launchpad.dev/ubuntu/warty/i386/pmount
+
+
+  >>> print_relation('breaks')
+  TEXT: "baz"
+  LINK: "pmount" -> http://launchpad.dev/ubuntu/warty/i386/pmount
+
+
+'Depends', 'Conflicts', 'Replaces', 'Suggests' and 'Recommends'
+sections contain only unsatisfied dependencies, which are rendered as
+text:
+
+  >>> print_relation('depends')
   TEXT: "gcc-3.4 (&gt;= 3.4.1-4sarge1)"
   TEXT: "gcc-3.4 (&lt;&lt; 3.4.2)"
   TEXT: "gcc-3.4-base"
   TEXT: "libc6 (&gt;= 2.3.2.ds1-4)"
   TEXT: "libstdc++6-dev (&gt;= 3.4.1-4sarge1)"
+
+  >>> print_relation('conflicts')
+  TEXT: "firefox"
+  TEXT: "mozilla-web-browser"
+
+  >>> print_relation('suggests')
+  TEXT: "firefox-gnome-support (= 1.0.7-0ubuntu20)"
+  TEXT: "latex-xft-fonts"
+  TEXT: "xprint"
+
+  >>> print_relation('replaces')
+  TEXT: "gnome-mozilla-browser"
+
+  >>> print_relation('recommends')
+  TEXT: "gcc-3.4 (&gt;= 3.4.1-4sarge1)"
+  TEXT: "gcc-3.4 (&lt;&lt; 3.4.2)"
+  TEXT: "gcc-3.4-base"
+  TEXT: "libc6 (&gt;= 2.3.2.ds1-4)"
+  TEXT: "libstdc++6-dev (&gt;= 3.4.1-4sarge1)"
+
+Even when there is no information to present and the package control
+files don't contain the field, we still present the  corresponding
+relationship section.
+
+  >>> browser.open('http://launchpad.dev/ubuntu/warty/i386/pmount/0.1-1')
+  >>> print_relation('predepends')
+  EMPTY SECTION
+

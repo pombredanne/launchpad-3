@@ -4,7 +4,12 @@
 
 __metaclass__ = type
 
+import codecs
+import logging
 import os
+from StringIO import StringIO
+import shutil
+import sys
 import tempfile
 import unittest
 
@@ -13,13 +18,13 @@ from bzrlib.transport import get_transport, _get_protocol_handlers
 from bzrlib.transport.memory import MemoryServer, MemoryTransport
 from bzrlib.tests import TestCase
 
-from canonical.authserver.interfaces import READ_ONLY, WRITABLE
+from canonical.authserver.interfaces import (
+    NOT_FOUND_FAULT_CODE, PERMISSION_DENIED_FAULT_CODE, READ_ONLY, WRITABLE)
 from canonical.codehosting.tests.helpers import FakeLaunchpad
 from canonical.codehosting.transport import (
     LaunchpadServer, makedirs, set_up_logging)
 from canonical.config import config
-
-from canonical.testing import BaseLayer
+from canonical.testing import BaseLayer, reset_logging
 
 
 class TestLaunchpadServer(TestCase):
@@ -40,17 +45,18 @@ class TestLaunchpadServer(TestCase):
             self.mirror_transport)
 
     def test_construct(self):
-        self.assertEqual(self.backing_transport, self.server.backing_transport)
+        self.assertEqual(
+            self.backing_transport, self.server.backing_transport)
         self.assertEqual(self.user_id, self.server.user_id)
         self.assertEqual('testuser', self.server.user_name)
         self.assertEqual(self.authserver, self.server.authserver)
 
     def test_base_path_translation(self):
-        # Branches are stored on the filesystem by branch ID. This allows users
-        # to rename and re-assign branches without causing unnecessary disk
-        # churn. The ID is converted to four-byte hexadecimal and split into
-        # four path segments, to make sure that the directory tree doesn't get
-        # too wide and cause ext3 to have conniptions.
+        # Branches are stored on the filesystem by branch ID. This allows
+        # users to rename and re-assign branches without causing unnecessary
+        # disk churn. The ID is converted to four-byte hexadecimal and split
+        # into four path segments, to make sure that the directory tree
+        # doesn't get too wide and cause ext3 to have conniptions.
         #
         # However, branches are _accessed_ using their
         # ~person/product/branch-name. The server knows how to map this unique
@@ -89,7 +95,8 @@ class TestLaunchpadServer(TestCase):
             self.server.translate_virtual_path('/~testuser/firefox/baz/.bzr'))
         self.assertEqual(
             ('00/00/00/05/.bzr', READ_ONLY),
-            self.server.translate_virtual_path('/~name12/+junk/junk.dev/.bzr'))
+            self.server.translate_virtual_path(
+                '/~name12/+junk/junk.dev/.bzr'))
 
     def test_setUp(self):
         # Setting up the server registers its schema with the protocol
@@ -103,7 +110,8 @@ class TestLaunchpadServer(TestCase):
         # protocol handlers.
         self.server.setUp()
         self.server.tearDown()
-        self.assertFalse(self.server.scheme in _get_protocol_handlers().keys())
+        self.assertFalse(
+            self.server.scheme in _get_protocol_handlers().keys())
 
     def test_noMirrorsRequestedIfNoBranchesChanged(self):
         # Starting up and shutting down the server will send no mirror
@@ -159,8 +167,8 @@ class TestLaunchpadTransport(TestCase):
             transport.get_bytes('~testuser/firefox/baz/.bzr/hello.txt'))
 
     def test_put_mapped_file(self):
-        # Putting a file from a public branch URL stores the file in the mapped
-        # URL on the base transport.
+        # Putting a file from a public branch URL stores the file in the
+        # mapped URL on the base transport.
         transport = get_transport(self.server.get_url())
         transport.put_bytes(
             '~testuser/firefox/baz/.bzr/goodbye.txt', "Goodbye")
@@ -170,8 +178,8 @@ class TestLaunchpadTransport(TestCase):
 
     def test_cloning_updates_base(self):
         # A transport can be constructed using a path relative to another
-        # transport by using 'clone'. When this happens, it's necessary for the
-        # newly constructed transport to preserve the non-relative path
+        # transport by using 'clone'. When this happens, it's necessary for
+        # the newly constructed transport to preserve the non-relative path
         # information from the transport being cloned. It's necessary because
         # the transport needs to have the '~user/product/branch-name' in order
         # to translate paths.
@@ -216,8 +224,8 @@ class TestLaunchpadTransport(TestCase):
 
     def test_complete_non_existent_path_not_found(self):
         # Bazaar looks for files inside a branch directory before it looks for
-        # the branch itself. If the branch doesn't exist, any files it asks for
-        # are not found. i.e. we raise NoSuchFile
+        # the branch itself. If the branch doesn't exist, any files it asks
+        # for are not found. i.e. we raise NoSuchFile
         transport = get_transport(self.server.get_url())
         self.assertRaises(
             errors.NoSuchFile,
@@ -248,17 +256,68 @@ class TestLaunchpadTransport(TestCase):
         files = list(
             transport.clone('~testuser/firefox/baz').iter_files_recursive())
         backing_transport = self.backing_transport.clone('00/00/00/01')
-        self.assertEqual(list(backing_transport.iter_files_recursive()), files)
+        self.assertEqual(
+            list(backing_transport.iter_files_recursive()), files)
 
     def test_make_two_directories(self):
         # Bazaar doesn't have a makedirs() facility for transports, so we need
-        # to make sure that we can make a directory on the backing transport if
-        # its parents exist and if they don't exist.
+        # to make sure that we can make a directory on the backing transport
+        # if its parents exist and if they don't exist.
         transport = get_transport(self.server.get_url())
         transport.mkdir('~testuser/thunderbird/banana')
         transport.mkdir('~testuser/thunderbird/orange')
         self.assertTrue(transport.has('~testuser/thunderbird/banana'))
         self.assertTrue(transport.has('~testuser/thunderbird/orange'))
+
+    def setFailingBranchDetails(self, name, code, message):
+        """Arrange that calling createBranch with a given branch name fails.
+
+        After calling this, calling self.authserver.createBranch with a
+        branch_name of 'name' with raise a fault with 'code' and 'message' as
+        faultCode and faultString respectively.
+        """
+        self.authserver.failing_branch_name = name
+        self.authserver.failing_branch_code = code
+        self.authserver.failing_branch_string = message
+
+    def assertRaisesWithSubstring(self, exc_type, msg, callable, *args, **kw):
+        """Assert that calling callable(*args, **kw) fails in a certain way.
+
+        This method is like assertRaises() but in addition checks that 'msg'
+        is a substring of the str() of the raise exception."""
+        try:
+            callable(*args, **kw)
+        except exc_type, error:
+            if msg not in str(error):
+                self.fail("%r not found in %r" % (msg, str(error)))
+        else:
+            self.fail("%s(*%r, **%r) did not raise!" % (callable, args, kw))
+
+    def test_createBranch_not_found_error(self):
+        # When createBranch raises an exception with faultCode
+        # NOT_FOUND_FAULT_CODE, the transport should translate this to
+        # a TransportNotPossible exception (see the comment in
+        # transport.py for why we translate to TransportNotPossible
+        # and not NoSuchFile).
+        transport = get_transport(self.server.get_url())
+        message = "Branch exploding, as requested."
+        self.setFailingBranchDetails(
+            'explode!', NOT_FOUND_FAULT_CODE, message)
+        self.assertRaisesWithSubstring(
+            errors.TransportNotPossible, message,
+            transport.mkdir, '~testuser/thunderbird/explode!')
+
+    def test_createBranch_permission_denied_error(self):
+        # When createBranch raises an exception with faultCode
+        # PERMISSION_DENIED_FAULT_CODE, the transport should translate
+        # this to a PermissionDenied exception.
+        transport = get_transport(self.server.get_url())
+        message = "Branch exploding, as requested."
+        self.setFailingBranchDetails(
+            'explode!', PERMISSION_DENIED_FAULT_CODE, message)
+        self.assertRaisesWithSubstring(
+            errors.PermissionDenied, message,
+            transport.mkdir, '~testuser/thunderbird/explode!')
 
     def lockBranch(self, unique_name):
         """Simulate locking a branch."""
@@ -280,7 +339,8 @@ class TestLaunchpadTransport(TestCase):
         # Unlocking a branch requests a mirror.
         self.lockBranch('~testuser/firefox/baz')
         self.unlockBranch('~testuser/firefox/baz')
-        self.assertEqual([1], self.server.authserver._request_mirror_log)
+        self.assertEqual(
+            [(self.user_id, 1)], self.server.authserver._request_mirror_log)
 
 
 class TestLaunchpadTransportReadOnly(TestCase):
@@ -291,78 +351,209 @@ class TestLaunchpadTransportReadOnly(TestCase):
 
     def setUp(self):
         TestCase.setUp(self)
-        _memory_server = MemoryServer()
-        _memory_server.setUp()
-        self.addCleanup(_memory_server.tearDown)
-        mirror_transport = get_transport(_memory_server.get_url())
 
+        memory_server = self._setUpMemoryServer()
+        memory_transport = get_transport(memory_server.get_url())
+        backing_transport = memory_transport.clone('backing')
+        mirror_transport = memory_transport.clone('mirror')
+
+        self.lp_server = self._setUpLaunchpadServer(
+            backing_transport, mirror_transport)
+        self.lp_transport = get_transport(self.lp_server.get_url())
+
+        self.writable_file = '/~testuser/firefox/baz/.bzr/hello.txt'
+        self.file_on_both_transports = '/~name12/+junk/junk.dev/.bzr/README'
+        self.file_on_mirror_only = '/~name12/+junk/junk.dev/.bzr/MIRROR-ONLY'
+
+        self._makeFilesInBranches(
+            backing_transport,
+            [(self.writable_file, 'Hello World!'),
+             (self.file_on_both_transports, 'Hello World!')])
+
+        self._makeFilesInBranches(
+            mirror_transport,
+            [(self.file_on_both_transports, 'Goodbye World!'),
+             (self.file_on_mirror_only, 'ignored')])
+
+    def _setUpMemoryServer(self):
+        memory_server = MemoryServer()
+        memory_server.setUp()
+        self.addCleanup(memory_server.tearDown)
+        return memory_server
+
+    def _setUpLaunchpadServer(self, backing_transport, mirror_transport):
         self.authserver = FakeLaunchpad()
         self.user_id = 1
-        self.backing_transport = MemoryTransport()
-        self.server = LaunchpadServer(
-            self.authserver, self.user_id, self.backing_transport,
+        server = LaunchpadServer(
+            self.authserver, self.user_id, backing_transport,
             mirror_transport)
-        self.server.setUp()
-        self.addCleanup(self.server.tearDown)
-        self.transport = get_transport(self.server.get_url())
-        path = self.server.translate_virtual_path(
-            '/~testuser/firefox/baz/.bzr')[0]
-        makedirs(self.backing_transport, path)
-        self.backing_transport.put_bytes(
-            os.path.join(path, 'hello.txt'), 'Hello World!')
-        path = self.server.translate_virtual_path(
-            '/~name12/+junk/junk.dev/.bzr')[0]
-        makedirs(self.backing_transport, path)
-        t = self.backing_transport.clone(path)
-        t.put_bytes('README', 'Hello World!')
-        makedirs(mirror_transport, path)
-        mirror_transport.clone(path).put_bytes('README', 'Goodbye World!')
+        server.setUp()
+        self.addCleanup(server.tearDown)
+        return server
+
+    def _makeFilesInBranches(self, transport, file_spec):
+        """Write a bunch of files inside branches on the LP codehost.
+
+        :param transport: Either a backing transport or a mirror transport
+            for a Launchpad server.
+        :param file_spec: A list of (filename, contents) tuples.
+            The path in the filename is translated as if it were a virtual
+            path.
+        """
+        for filename, contents in file_spec:
+            path_to_file = self.lp_server.translate_virtual_path(filename)[0]
+            directory = os.path.dirname(path_to_file)
+            makedirs(transport, directory)
+            transport.put_bytes(path_to_file, contents)
 
     def test_mkdir_readonly(self):
         # If we only have READ_ONLY access to a branch then we should not be
         # able to create directories within that branch.
         self.assertRaises(
             errors.TransportNotPossible,
-            self.transport.mkdir, '~name12/+junk/junk.dev/.bzr')
+            self.lp_transport.mkdir, '~name12/+junk/junk.dev/.bzr')
 
     def test_rename_target_readonly(self):
         # Even if we can write to a file, we can't rename it to location which
         # is read-only to us.
-        transport = get_transport(self.server.get_url())
         self.assertRaises(
             errors.TransportNotPossible,
-            self.transport.rename, '/~testuser/firefox/baz/.bzr/hello.txt',
+            self.lp_transport.rename, self.writable_file,
             '/~name12/+junk/junk.dev/.bzr/goodbye.txt')
 
     def test_readonly_refers_to_mirror(self):
         # Read-only operations should get their data from the mirror, not the
         # primary backing transport.
         # XXX: JonathanLange 2007-06-21, Explain more of this.
-        transport = get_transport(self.server.get_url())
         self.assertEqual(
             'Goodbye World!',
-            transport.get_bytes('/~name12/+junk/junk.dev/.bzr/README'))
+            self.lp_transport.get_bytes(self.file_on_both_transports))
+
+    def test_iter_files_refers_to_mirror(self):
+        # iter_files_recursive() gets its data from the mirror if it cannot
+        # write to the branch.
+        read_only_branch_name = '/~name12/+junk/junk.dev/'
+        transport = self.lp_transport.clone(read_only_branch_name)
+        files = list(transport.iter_files_recursive())
+
+        mirror_only = self.file_on_mirror_only[len(read_only_branch_name):]
+        self.assertTrue(
+            mirror_only in files, '%r not in %r' % (mirror_only, files))
+
+    def test_listable_refers_to_mirror(self):
+        # listable() refers to the mirror transport for read-only branches.
+        read_only_branch_name = '/~name12/+junk/junk.dev/'
+        transport = self.lp_transport.clone(read_only_branch_name)
+
+        # listable() returns the same value for both transports. To
+        # distinguish them, we'll monkey patch the mirror and backing
+        # transports.
+        self.lp_server.mirror_transport.listable = lambda: 'mirror'
+        self.lp_server.backing_transport.listable = lambda: 'backing'
+
+        self.assertEqual('mirror', transport.listable())
 
 
 class TestLoggingSetup(TestCase):
 
     def setUp(self):
         TestCase.setUp(self)
+
+        # Configure the debug logfile
         self._real_debug_logfile = config.codehosting.debug_logfile
+        file_handle, filename = tempfile.mkstemp()
+        config.codehosting.debug_logfile = filename
+
+        # Trap stderr.
+        self._real_stderr = sys.stderr
+        sys.stderr = codecs.getwriter('utf8')(StringIO())
+
+        # We want to use Bazaar's default logging -- not its test logging --
+        # so here we disable the testing logging system (which restores
+        # default logging).
+        self._finishLogFile()
 
     def tearDown(self):
+        sys.stderr = self._real_stderr
         config.codehosting.debug_logfile = self._real_debug_logfile
         TestCase.tearDown(self)
+        # We don't use BaseLayer because we want to keep the amount of
+        # pre-configured logging systems to an absolute minimum, in order to
+        # make it easier to test this particular logging system.
+        reset_logging()
 
     def test_loggingSetUpAssertionFailsIfParentDirectoryIsNotADirectory(self):
         # set_up_logging fails with an AssertionError if it cannot create the
         # directory that the log file will go in.
         file_handle, filename = tempfile.mkstemp()
-        config.codehosting.debug_logfile = os.path.join(filename, 'debug.log')
-        try:
-            self.assertRaises(AssertionError, set_up_logging)
-        finally:
+        def remove_file():
             os.unlink(filename)
+        self.addCleanup(remove_file)
+
+        config.codehosting.debug_logfile = os.path.join(filename, 'debug.log')
+        self.assertRaises(AssertionError, set_up_logging)
+
+    def test_makesLogDirectory(self):
+        # If the specified logfile is in a directory that doesn't exist, then
+        # set_up_logging makes that directory.
+        directory = tempfile.mkdtemp()
+        def remove_directory():
+            shutil.rmtree(directory)
+        self.addCleanup(remove_directory)
+
+        config.codehosting.debug_logfile = os.path.join(
+            directory, 'subdir', 'debug.log')
+        set_up_logging()
+        self.failUnless(os.path.isdir(os.path.join(directory, 'subdir')))
+
+    def test_returnsCodehostingLogger(self):
+        # set_up_logging returns the 'codehosting' logger.
+        self.assertIs(set_up_logging(), logging.getLogger('codehosting'))
+
+    def test_codehostingLogGoesToDebugLogfile(self):
+        # Once set_up_logging is called, messages logged to the codehosting
+        # logger are stored in config.codehosting.debug_logfile.
+
+        set_up_logging()
+
+        # Make sure that a logged message goes to the debug logfile
+        logging.getLogger('codehosting').debug('Hello hello')
+        self.failUnless(
+            open(config.codehosting.debug_logfile).read().endswith(
+                'Hello hello\n'))
+
+    def test_codehostingLogDoesntGoToStderr(self):
+        # Once set_up_logging is called, any messages logged to the
+        # codehosting logger should *not* be logged to stderr. If they are,
+        # they will appear on the user's terminal.
+
+        set_up_logging()
+
+        # Make sure that a logged message does not go to stderr.
+        logging.getLogger('codehosting').info('Hello hello')
+        self.assertEqual(sys.stderr.getvalue(), '')
+
+    def test_codehostingLogDoesntGoToStderrEvenWhenNoLogfile(self):
+        # Once set_up_logging is called, any messages logged to the
+        # codehosting logger should *not* be logged to stderr, even if there's
+        # no debug_logfile set.
+
+        config.codehosting.debug_logfile = None
+        set_up_logging()
+
+        # Make sure that a logged message does not go to stderr.
+        logging.getLogger('codehosting').info('Hello hello')
+        self.assertEqual(sys.stderr.getvalue(), '')
+
+    def test_leavesBzrHandlersUnchanged(self):
+        # Bazaar's log handling is untouched by set_up_logging.
+        root_handlers = logging.getLogger('').handlers
+        bzr_handlers = logging.getLogger('bzr').handlers
+
+        set_up_logging()
+
+        self.assertEqual(root_handlers, logging.getLogger('').handlers)
+        self.assertEqual(bzr_handlers, logging.getLogger('bzr').handlers)
 
 
 def test_suite():

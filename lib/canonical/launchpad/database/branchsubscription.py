@@ -1,11 +1,12 @@
 # Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# pylint: disable-msg=E0611,W0212
 
 __metaclass__ = type
 __all__ = ['BranchSubscription']
 
 from zope.interface import implements
 
-from sqlobject import ForeignKey, IntCol
+from sqlobject import ForeignKey
 
 from canonical.database.constants import DEFAULT
 from canonical.database.sqlbase import SQLBase
@@ -14,6 +15,7 @@ from canonical.database.enumcol import EnumCol
 from canonical.launchpad.interfaces import (
     BranchSubscriptionNotificationLevel, BranchSubscriptionDiffSize,
     IBranchSubscription)
+from canonical.launchpad.validators.person import public_person_validator
 
 
 class BranchSubscription(SQLBase):
@@ -23,7 +25,9 @@ class BranchSubscription(SQLBase):
 
     _table = 'BranchSubscription'
 
-    person = ForeignKey(dbName='person', foreignKey='Person', notNull=True)
+    person = ForeignKey(
+        dbName='person', foreignKey='Person',
+        validator=public_person_validator, notNull=True)
     branch = ForeignKey(dbName='branch', foreignKey='Branch', notNull=True)
     notification_level = EnumCol(enum=BranchSubscriptionNotificationLevel,
                                  notNull=True, default=DEFAULT)

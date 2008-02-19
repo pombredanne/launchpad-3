@@ -21,29 +21,34 @@ The new product form contains an example of a normal text widget:
   >>> print content
   <...
   <tr>
-    <th><label for="field.displayname">Display Name:</label></th>
-    <td width="100%">
-      <div>
-        <input ... name="field.displayname" ... />
-      </div>
-      <p class="formHelp">...</p>
-    </td>
+  <th>
+  <label for="field.displayname">Display Name:</label><br />
+  </th>
+  <td width="100%">
+  <div>
+  <input ... name="field.displayname" ... />
+  </div>
+  <p class="formHelp">....</p>
+  </td>
   </tr>
   ...
+
 
 If the text field is optional, then that is noted after the widget:
 
   >>> print content
   <...
   <tr>
-    <th><label for="field.homepageurl">Homepage URL:</label></th>
-    <td width="100%">
-      <div>
-        <input ... name="field.homepageurl" ...  />
-        <span class="fieldRequired">(Optional)</span>
-      </div>
-      <p class="formHelp">...</p>
-    </td>
+  <th>
+  <label for="field.homepageurl">Homepage URL:</label><br />
+  <span class="fieldRequired">(Optional)</span>
+  </th>
+  <td width="100%">
+  <div>
+  <input ... name="field.homepageurl" ... />
+  </div>
+  <p class="formHelp">...</p>
+  </td>
   </tr>
   ...
 

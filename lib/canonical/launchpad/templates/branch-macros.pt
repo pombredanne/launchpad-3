@@ -39,16 +39,14 @@
                class string:branchstatus${branch/lifecycle_status/name}"
                >Experimental</span>)
       </tal:show-lifecycle>
-
-      <a tal:condition="mergeproposal/required:launchpad.Edit"
-         tal:attributes="href mergeproposal/fmt:url">
-        <img alt="" src="/@@/edit"/>
-      </a>
+      -
+      <a tal:attributes="href mergeproposal/fmt:url">
+        view proposal details</a>
     </dt>
     <dd>
-      <tal:whiteboard content="structure mergeproposal/whiteboard/fmt:text-to-html">
+      <div class="whiteboard" tal:content="structure mergeproposal/whiteboard/fmt:text-to-html">
         The whiteboard.
-      </tal:whiteboard>
+      </div>
       <div tal:condition="mergeproposal/show_registrant|nothing">
         Merge proposed by
         <tal:registrant replace="structure mergeproposal/registrant/fmt:link"/>
@@ -59,13 +57,17 @@
           <tal:dependent replace="structure dependent_branch/fmt:link" />
         </div>
       </tal:show-dependent>
-      <div tal:condition="mergeproposal/date_merged" class="branchstatusMERGED">
+      <div tal:condition="not: mergeproposal/queue_status/enumvalue:MERGED">
+        <tal:proposal-status replace="mergeproposal/queue_status/title"/>
+      </div>
+      <div tal:condition="mergeproposal/queue_status/enumvalue:MERGED"
+           class="branchstatusMERGED">
         Merged
         <tal:merged replace="mergeproposal/date_merged/fmt:approximatedate">
           2007-06-04
         </tal:merged>
         <tal:have-revno condition="mergeproposal/merged_revno">
-          as revision <tal:revno replace="mergeproposal/merged_revno"/>
+          at revision <tal:revno replace="mergeproposal/merged_revno"/>
         </tal:have-revno>
       </div>
 
@@ -197,5 +199,73 @@
   </tal:spec-tasks>
 
 </metal:spec-bug-links>
+
+<metal:branch-revisions define-macro="branch-revisions">
+
+  <tal:comment condition="nothing">
+    This macro requires the following defined variables:
+      branch - the branch that has the bug branch links
+      revisions - the revisions to list
+  </tal:comment>
+
+  <dl class="revision">
+    <tal:revision repeat="rev_no revisions"
+                  define="codebrowse view/codebrowse_url">
+      <metal:landing-target use-macro="branch/@@+macros/revision-text"/>
+    </tal:revision>
+  </dl>
+
+</metal:branch-revisions>
+
+<metal:revision-text define-macro="revision-text">
+
+  <tal:comment condition="nothing">
+    This macro requires the following defined variables:
+      rev_no - the branch revision to be displayed.
+      codebrowse - the branch's codebrowse root.
+
+    It is expected that this macro is called from within a definition
+    list (<dl></dl>)
+  </tal:comment>
+  <dt class="revision-details">
+    <tal:comment condition="nothing">
+      The end of the anchor and the start of the next tal expression
+      has no whitespace between the elements as we do not want any
+      space between the number and the fullstop.
+    </tal:comment>
+    <a tal:attributes="href string:${codebrowse}/revision/${rev_no/sequence}"
+       tal:content="rev_no/sequence"
+       tal:condition="rev_no/branch/code_is_browseable">
+      1
+    </a><tal:revno condition="not: rev_no/branch/code_is_browseable"
+                   replace="rev_no/sequence">1</tal:revno>.
+    By
+    <strong>
+      <tal:not-anonymous condition="view/user">
+        <span tal:replace="rev_no/revision/revision_author/name">
+          John Doe &lt;john.doe@example.com&gt;
+        </span>
+      </tal:not-anonymous>
+      <tal:anonymous condition="not:view/user">
+        <span
+            tal:replace="rev_no/revision/revision_author/name_without_email">
+          John Doe
+        </span>
+        &lt;email address hidden&gt;
+      </tal:anonymous>
+    </strong>
+    <tal:revision-date
+        attributes="title rev_no/revision/revision_date/fmt:datetime"
+        content="rev_no/revision/revision_date/fmt:displaydate"
+        >2005-10-05 14:34:22 WST</tal:revision-date>
+  </dt>
+  <dd class="revision-comment">
+    <tal:commit-message
+        replace="structure rev_no/revision/log_body/fmt:text-to-html">
+      The revision commit message.
+    </tal:commit-message>
+  </dd>
+
+</metal:revision-text>
 
 </tal:root>

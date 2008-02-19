@@ -1,4 +1,5 @@
-# Copyright 2005 Canonical Ltd.  All rights reserved.
+# Copyright 2005-2007 Canonical Ltd.  All rights reserved.
+# pylint: disable-msg=E0211,E0213
 
 """Specification interfaces."""
 
@@ -29,8 +30,8 @@ from zope.component import getUtility
 from zope.schema import Datetime, Int, Choice, Text, TextLine, Bool
 
 from canonical.launchpad import _
-from canonical.launchpad.fields import (ContentNameField, Summary,
-    Title)
+from canonical.launchpad.fields import (
+    ContentNameField, PublicPersonChoice, Summary, Title)
 from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.interfaces.launchpad import IHasOwner
 from canonical.launchpad.interfaces.mentoringoffer import ICanBeMentored
@@ -572,13 +573,16 @@ class INewSpecification(Interface):
         description=_(
             "The current status of the process to define the "
             "feature and get approval for the implementation plan."))
-    assignee = Choice(title=_('Assignee'), required=False,
+    assignee = PublicPersonChoice(
+        title=_('Assignee'), required=False,
         description=_("The person responsible for implementing the feature."),
         vocabulary='ValidPersonOrTeam')
-    drafter = Choice(title=_('Drafter'), required=False,
+    drafter = PublicPersonChoice(
+        title=_('Drafter'), required=False,
         description=_("The person responsible for drafting the specification."),
         vocabulary='ValidPersonOrTeam')
-    approver = Choice(title=_('Approver'), required=False,
+    approver = PublicPersonChoice(
+        title=_('Approver'), required=False,
         description=_(
             "The person responsible for approving the specification, "
             "and for reviewing the code when it's ready to be landed."),
@@ -644,7 +648,8 @@ class ISpecification(INewSpecification, INewSpecificationTarget, IHasOwner,
         default=SpecificationPriority.UNDEFINED, required=True)
     datecreated = Datetime(
         title=_('Date Created'), required=True, readonly=True)
-    owner = Choice(title=_('Owner'), required=True, readonly=True,
+    owner = PublicPersonChoice(
+        title=_('Owner'), required=True, readonly=True,
         vocabulary='ValidPersonOrTeam')
     # target
     product = Choice(title=_('Project'), required=False,
@@ -860,8 +865,14 @@ class ISpecification(INewSpecification, INewSpecificationTarget, IHasOwner,
     def getBranchLink(branch):
         """Return the SpecificationBranch link for the branch, or None."""
 
-    def linkBranch(branch, summary=None):
-        """Link the given branch to this specification."""
+    def linkBranch(branch, registrant, summary=None):
+        """Link the given branch to this specification.
+
+        :param branch: The branch to link to this specification.
+        :param registrant: The user making the link.
+        :param summary: Free form text which can be used to describe
+            implementation details.
+        """
 
 
 # Interfaces for containers
@@ -883,9 +894,10 @@ class ISpecificationSet(IHasSpecifications):
     def getByURL(url):
         """Return the specification with the given url."""
 
-    def new(name, title, specurl, summary, priority, status, owner,
-        assignee=None, drafter=None, approver=None, product=None,
-        distribution=None):
+    def new(name, title, specurl, summary, definition_status,
+        owner, approver=None, product=None, distribution=None, assignee=None,
+        drafter=None, whiteboard=None,
+        priority=SpecificationPriority.UNDEFINED):
         """Create a new specification."""
 
 

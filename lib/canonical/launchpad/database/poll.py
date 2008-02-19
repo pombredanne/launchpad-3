@@ -1,4 +1,5 @@
 # Copyright 2004 Canonical Ltd.  All rights reserved.
+# pylint: disable-msg=E0611,W0212
 
 __metaclass__ = type
 __all__ = [
@@ -30,6 +31,7 @@ from canonical.launchpad.interfaces import (
     IPoll, IPollSet, IPollOption, IPollOptionSet, IVote, IVoteCast,
     PollStatus, IVoteCastSet, IVoteSet, PollAlgorithm, PollSecrecy,
     OptionIsNotFromSimplePoll)
+from canonical.launchpad.validators.person import public_person_validator
 
 
 class Poll(SQLBase):
@@ -40,7 +42,9 @@ class Poll(SQLBase):
     sortingColumns = ['title', 'id']
     _defaultOrder = sortingColumns
 
-    team = ForeignKey(dbName='team', foreignKey='Person', notNull=True)
+    team = ForeignKey(
+        dbName='team', foreignKey='Person',
+        validator=public_person_validator, notNull=True)
 
     name = StringCol(dbName='name', notNull=True)
 
@@ -339,7 +343,9 @@ class VoteCast(SQLBase):
     _table = 'VoteCast'
     _defaultOrder = 'id'
 
-    person = ForeignKey(dbName='person', foreignKey='Person', notNull=True)
+    person = ForeignKey(
+        dbName='person', foreignKey='Person',
+        validator=public_person_validator, notNull=True)
 
     poll = ForeignKey(dbName='poll', foreignKey='Poll', notNull=True)
 
@@ -361,7 +367,9 @@ class Vote(SQLBase):
     _table = 'Vote'
     _defaultOrder = ['preference', 'id']
 
-    person = ForeignKey(dbName='person', foreignKey='Person')
+    person = ForeignKey(
+        dbName='person', foreignKey='Person',
+        validator=public_person_validator)
 
     poll = ForeignKey(dbName='poll', foreignKey='Poll', notNull=True)
 

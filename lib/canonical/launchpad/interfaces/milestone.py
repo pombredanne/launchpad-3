@@ -1,4 +1,5 @@
 # Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# pylint: disable-msg=E0211,E0213
 
 """Milestone interfaces."""
 
@@ -12,12 +13,14 @@ __all__ = [
     ]
 
 from zope.interface import Interface, Attribute
-from zope.schema import Bool, Choice, Date, Int, Text
+from zope.schema import Bool, Choice, Date, Int
 
 from canonical.launchpad.interfaces.productseries import IProductSeries
 from canonical.launchpad.interfaces.distroseries import IDistroSeries
 from canonical.launchpad import _
-from canonical.launchpad.fields import ContentNameField
+from canonical.launchpad.fields import (
+    ContentNameField, Description
+    )
 from canonical.launchpad.validators.name import name_validator
 
 
@@ -37,9 +40,9 @@ class MilestoneNameField(ContentNameField):
         else:
             raise AssertionError, 'Editing a milestone from a weird place.'
         if milestone is not None:
-              self.errormessage = _(
-                  "The name %%s is already used by a milestone in %s."
-                  % milestone.target.displayname)
+            self.errormessage = _(
+                "The name %%s is already used by a milestone in %s."
+                % milestone.target.displayname)
         return milestone
 
 
@@ -62,21 +65,21 @@ class IMilestone(Interface):
         description=_("The distribution to which this milestone belongs."),
         vocabulary="Distribution")
     productseries = Choice(
-        title=_("Series"),
-        description=_("The series for which this is a milestone."),
+        title=_("Product Series"),
+        description=_("The product series for which this is a milestone."),
         vocabulary="FilteredProductSeries",
         required=False) # for now
     distroseries = Choice(
-        title=_("Series"),
+        title=_("Distro Series"),
         description=_(
-            "The series for which this is a milestone."),
+            "The distribution series for which this is a milestone."),
         vocabulary="FilteredDistroSeries",
         required=False) # for now
     dateexpected = Date(title=_("Date Targeted"), required=False,
         description=_("Example: 2005-11-24"))
     visible = Bool(title=_("Active"), description=_("Whether or not this "
         "milestone should be shown in web forms for bug targeting."))
-    description = Text(
+    description = Description(
         title=_("Description"), required=False,
         description=_(
             "A detailed description of the features and status of this "

@@ -1,4 +1,5 @@
 # Copyright 2004-2007 Canonical Ltd.  All rights reserved.
+# pylint: disable-msg=E0611,W0212
 """Database classes for implementing distribution items."""
 
 __metaclass__ = type
@@ -10,11 +11,13 @@ from zope.component import getUtility
 from sqlobject import (
     BoolCol, ForeignKey, SQLMultipleJoin, SQLRelatedJoin, StringCol,
     SQLObjectNotFound)
-from sqlobject.sqlbuilder import AND, OR, SQLConstant
+from sqlobject.sqlbuilder import SQLConstant
 
 from canonical.cachedproperty import cachedproperty
 
-from canonical.database.sqlbase import quote, quote_like, SQLBase, sqlvalues
+from canonical.database.sqlbase import (
+    quote, quote_like, SQLBase, sqlvalues, cursor)
+
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
 from canonical.database.constants import UTC_NOW
@@ -29,6 +32,7 @@ from canonical.launchpad.database.bugtask import BugTask, BugTaskSet
 from canonical.launchpad.database.faq import FAQ, FAQSearch
 from canonical.launchpad.database.mentoringoffer import MentoringOffer
 from canonical.launchpad.database.milestone import Milestone
+from canonical.launchpad.database.announcement import MakesAnnouncements
 from canonical.launchpad.database.question import (
     QuestionTargetSearch, QuestionTargetMixin)
 from canonical.launchpad.database.specification import (
@@ -48,10 +52,13 @@ from canonical.launchpad.database.distributionsourcepackagerelease import (
     DistributionSourcePackageRelease)
 from canonical.launchpad.database.distributionsourcepackagecache import (
     DistributionSourcePackageCache)
+from canonical.launchpad.validators.person import public_person_validator
 from canonical.launchpad.database.sourcepackagename import (
     SourcePackageName)
 from canonical.launchpad.database.sourcepackagerelease import (
     SourcePackageRelease)
+from canonical.launchpad.database.structuralsubscription import (
+    StructuralSubscriptionTargetMixin)
 from canonical.launchpad.database.publishing import (
     SourcePackageFilePublishing, BinaryPackageFilePublishing,
     SourcePackagePublishingHistory)
@@ -62,26 +69,30 @@ from canonical.launchpad.webapp.url import urlparse
 
 from canonical.launchpad.interfaces import (
     ArchivePurpose, BugTaskStatus, DistroSeriesStatus, IArchiveSet, IBuildSet,
-    IDistribution, IDistributionSet, IFAQTarget, IHasBuildRecords, IHasIcon,
-    IHasLogo, IHasMugshot, ILaunchpadCelebrities, IQuestionTarget,
-    ISourcePackageName, MirrorContent, PackagePublishingStatus,
-    PackageUploadStatus, NotFoundError, QUESTION_STATUS_DEFAULT_SEARCH,
-    SpecificationDefinitionStatus, SpecificationFilter,
-    SpecificationImplementationStatus, SpecificationSort,
-    TranslationPermission)
+    IDistribution, IDistributionSet, IFAQTarget, IHasBugContact,
+    IHasBuildRecords, IHasIcon, IHasLogo, IHasMugshot, ILaunchpadCelebrities,
+    ILaunchpadUsage, IQuestionTarget, ISourcePackageName,
+    IStructuralSubscriptionTarget, MirrorContent, MirrorStatus, NotFoundError,
+    PackagePublishingStatus, PackageUploadStatus, PackagingType,
+    QUESTION_STATUS_DEFAULT_SEARCH, SpecificationDefinitionStatus,
+    SpecificationFilter, SpecificationImplementationStatus, SpecificationSort,
+    TranslationPermission, UNRESOLVED_BUGTASK_STATUSES)
 
 from canonical.archivepublisher.debversion import Version
 
 from canonical.launchpad.validators.name import sanitize_name, valid_name
 
 
-class Distribution(SQLBase, BugTargetBase, HasSpecificationsMixin,
-                   HasSprintsMixin, HasTranslationImportsMixin,
-                   KarmaContextMixin, QuestionTargetMixin):
+class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
+                   HasSpecificationsMixin, HasSprintsMixin,
+                   HasTranslationImportsMixin, KarmaContextMixin,
+                   QuestionTargetMixin, StructuralSubscriptionTargetMixin):
     """A distribution of an operating system, e.g. Debian GNU/Linux."""
     implements(
-        IDistribution, IFAQTarget, IHasBuildRecords, IQuestionTarget,
-        IHasLogo, IHasMugshot, IHasIcon)
+        IDistribution, IFAQTarget, IHasBuildRecords,
+        IHasIcon, IHasLogo, IHasMugshot, ILaunchpadUsage,
+        IQuestionTarget, IStructuralSubscriptionTarget,
+        IHasBugContact)
 
     _table = 'Distribution'
     _defaultOrder = 'name'
@@ -99,17 +110,26 @@ class Distribution(SQLBase, BugTargetBase, HasSpecificationsMixin,
     mugshot = ForeignKey(
         dbName='mugshot', foreignKey='LibraryFileAlias', default=None)
     domainname = StringCol(notNull=True)
-    owner = ForeignKey(dbName='owner', foreignKey='Person', notNull=True)
+    owner = ForeignKey(
+        dbName='owner', foreignKey='Person',
+        validator=public_person_validator, notNull=True)
     bugcontact = ForeignKey(
-        dbName='bugcontact', foreignKey='Person', notNull=False, default=None)
+        dbName='bugcontact', foreignKey='Person',
+        validator=public_person_validator, notNull=False, default=None)
+    bug_reporting_guidelines = StringCol(default=None)
     security_contact = ForeignKey(
-        dbName='security_contact', foreignKey='Person', notNull=False,
+        dbName='security_contact', foreignKey='Person',
+        validator=public_person_validator, notNull=False,
         default=None)
     driver = ForeignKey(
-        foreignKey="Person", dbName="driver", notNull=False, default=None)
-    members = ForeignKey(dbName='members', foreignKey='Person', notNull=True)
+        dbName="driver", foreignKey="Person",
+        validator=public_person_validator, notNull=False, default=None)
+    members = ForeignKey(
+        dbName='members', foreignKey='Person',
+        validator=public_person_validator, notNull=True)
     mirror_admin = ForeignKey(
-        dbName='mirror_admin', foreignKey='Person', notNull=True)
+        dbName='mirror_admin', foreignKey='Person',
+        validator=public_person_validator, notNull=True)
     translationgroup = ForeignKey(
         dbName='translationgroup', foreignKey='TranslationGroup',
         notNull=False, default=None)
@@ -121,7 +141,8 @@ class Distribution(SQLBase, BugTargetBase, HasSpecificationsMixin,
     upload_sender = StringCol(
         dbName='upload_sender', notNull=False, default=None)
     upload_admin = ForeignKey(
-        dbName='upload_admin', foreignKey='Person', default=None,
+        dbName='upload_admin', foreignKey='Person',
+        validator=public_person_validator, default=None,
         notNull=False)
     bounties = SQLRelatedJoin(
         'Bounty', joinColumn='distribution', otherColumn='bounty',
@@ -134,6 +155,8 @@ class Distribution(SQLBase, BugTargetBase, HasSpecificationsMixin,
         default=False)
     official_rosetta = BoolCol(dbName='official_rosetta', notNull=True,
         default=False)
+    enable_bug_expiration = BoolCol(dbName='enable_bug_expiration',
+        notNull=True, default=False)
     translation_focus = ForeignKey(dbName='translation_focus',
         foreignKey='DistroSeries', notNull=False, default=None)
     source_package_caches = SQLMultipleJoin('DistributionSourcePackageCache',
@@ -141,8 +164,9 @@ class Distribution(SQLBase, BugTargetBase, HasSpecificationsMixin,
                                             orderBy="name",
                                             prejoins=['sourcepackagename'])
     date_created = UtcDateTimeCol(notNull=False, default=UTC_NOW)
-    language_pack_admin = ForeignKey(dbName='language_pack_admin',
-        foreignKey='Person', notNull=False, default=None)
+    language_pack_admin = ForeignKey(
+        dbName='language_pack_admin', foreignKey='Person',
+        validator=public_person_validator, notNull=False, default=None)
 
     @cachedproperty
     def main_archive(self):
@@ -174,42 +198,48 @@ class Distribution(SQLBase, BugTargetBase, HasSpecificationsMixin,
     def all_milestones(self):
         """See `IDistribution`."""
         return Milestone.selectBy(
-            distribution=self, orderBy=['dateexpected', 'name'])
+            distribution=self, orderBy=['-dateexpected', 'name'])
 
     @property
     def milestones(self):
         """See `IDistribution`."""
         return Milestone.selectBy(
-            distribution=self, visible=True, orderBy=['dateexpected', 'name'])
+            distribution=self, visible=True,
+            orderBy=['-dateexpected', 'name'])
 
     @property
     def archive_mirrors(self):
-        """See canonical.launchpad.interfaces.IDistribution."""
+        """See `IDistribution`."""
         return DistributionMirror.selectBy(
-            distribution=self, content=MirrorContent.ARCHIVE,
-            official_approved=True, official_candidate=True, enabled=True)
+            distribution=self, content=MirrorContent.ARCHIVE, enabled=True,
+            status=MirrorStatus.OFFICIAL, official_candidate=True)
 
     @property
     def cdimage_mirrors(self):
-        """See canonical.launchpad.interfaces.IDistribution."""
+        """See `IDistribution`."""
         return DistributionMirror.selectBy(
-            distribution=self, content=MirrorContent.RELEASE,
-            official_approved=True, official_candidate=True, enabled=True)
+            distribution=self, content=MirrorContent.RELEASE, enabled=True,
+            status=MirrorStatus.OFFICIAL, official_candidate=True)
 
     @property
     def disabled_mirrors(self):
-        """See canonical.launchpad.interfaces.IDistribution."""
+        """See `IDistribution`."""
         return DistributionMirror.selectBy(
-            distribution=self, official_approved=True,
+            distribution=self, status=MirrorStatus.OFFICIAL,
             official_candidate=True, enabled=False)
 
     @property
     def unofficial_mirrors(self):
-        """See canonical.launchpad.interfaces.IDistribution."""
-        query = OR(DistributionMirror.q.official_candidate==False,
-                   DistributionMirror.q.official_approved==False)
-        return DistributionMirror.select(
-            AND(DistributionMirror.q.distributionID==self.id, query))
+        """See `IDistribution`."""
+        return DistributionMirror.selectBy(
+            distribution=self, status=MirrorStatus.UNOFFICIAL)
+
+    @property
+    def pending_review_mirrors(self):
+        """See `IDistribution`."""
+        return DistributionMirror.selectBy(
+            distribution=self, status=MirrorStatus.PENDING_REVIEW,
+            official_candidate=True)
 
     @property
     def full_functionality(self):
@@ -247,11 +277,12 @@ class Distribution(SQLBase, BugTargetBase, HasSpecificationsMixin,
             return (2, self.name)
         return (3, self.name)
 
+    # XXX: This is used in a number of places and given it's already
+    # listified, why not spare the trouble of regenerating this as a
+    # cachedproperty? Answer: because it breaks tests. -- kiko, 2008-01-29
     @property
     def serieses(self):
         """See `IDistribution`."""
-        # This is used in a number of places and given it's already
-        # listified, why not spare the trouble of regenerating?
         ret = DistroSeries.selectBy(distribution=self)
         return sorted(ret, key=lambda a: Version(a.version), reverse=True)
 
@@ -490,7 +521,8 @@ class Distribution(SQLBase, BugTargetBase, HasSpecificationsMixin,
         # sort by priority descending, by default
         if sort is None or sort == SpecificationSort.PRIORITY:
             order = (
-                ['-priority', 'Specification.definition_status', 'Specification.name'])
+                ['-priority', 'Specification.definition_status',
+                 'Specification.name'])
         elif sort == SpecificationSort.DATE:
             order = ['-Specification.datecreated', 'Specification.id']
 
@@ -519,9 +551,10 @@ class Distribution(SQLBase, BugTargetBase, HasSpecificationsMixin,
         # Filter for validity. If we want valid specs only then we should
         # exclude all OBSOLETE or SUPERSEDED specs
         if SpecificationFilter.VALID in filter:
-            query += ' AND Specification.definition_status NOT IN ( %s, %s ) ' % \
-                sqlvalues(SpecificationDefinitionStatus.OBSOLETE,
-                          SpecificationDefinitionStatus.SUPERSEDED)
+            query += (' AND Specification.definition_status NOT IN '
+                '( %s, %s ) ' % sqlvalues(
+                    SpecificationDefinitionStatus.OBSOLETE,
+                    SpecificationDefinitionStatus.SUPERSEDED))
 
         # ALL is the trump card
         if SpecificationFilter.ALL in filter:
@@ -647,15 +680,20 @@ class Distribution(SQLBase, BugTargetBase, HasSpecificationsMixin,
 
         raise NotFoundError(filename)
 
-    def getBuildRecords(self, build_state=None, name=None, pocket=None):
+    def getBuildRecords(self, build_state=None, name=None, pocket=None,
+                        user=None):
         """See `IHasBuildRecords`"""
-        # Find out the distroarchseriess in question.
+        # Ignore "user", since it would not make any difference to the
+        # records returned here (private builds are only in PPA right
+        # now).
+
+        # Find out the distroarchseries in question.
         arch_ids = []
-        # concatenate architectures list since they are distinct.
+        # Concatenate architectures list since they are distinct.
         for series in self.serieses:
             arch_ids += [arch.id for arch in series.architectures]
 
-        # use facility provided by IBuildSet to retrieve the records
+        # Use the facility provided by IBuildSet to retrieve the records.
         return getUtility(IBuildSet).getBuildsByArchIds(
             arch_ids, build_state, name, pocket)
 
@@ -664,9 +702,9 @@ class Distribution(SQLBase, BugTargetBase, HasSpecificationsMixin,
 
         # Get the set of source package names to deal with.
         spns = set(SourcePackageName.select("""
-            SourcePackagePublishingHistory.distrorelease =
-                DistroRelease.id AND
-            DistroRelease.distribution = %s AND
+            SourcePackagePublishingHistory.distroseries =
+                DistroSeries.id AND
+            DistroSeries.distribution = %s AND
             SourcePackagePublishingHistory.archive IN %s AND
             SourcePackagePublishingHistory.sourcepackagerelease =
                 SourcePackageRelease.id AND
@@ -675,7 +713,7 @@ class Distribution(SQLBase, BugTargetBase, HasSpecificationsMixin,
             SourcePackagePublishingHistory.dateremoved is NULL
             """ % sqlvalues(self, self.all_distro_archive_ids),
             distinct=True,
-            clauseTables=['SourcePackagePublishingHistory', 'DistroRelease',
+            clauseTables=['SourcePackagePublishingHistory', 'DistroSeries',
                 'SourcePackageRelease']))
 
         # Remove the cache entries for packages we no longer publish.
@@ -690,9 +728,9 @@ class Distribution(SQLBase, BugTargetBase, HasSpecificationsMixin,
         """See `IDistribution`."""
         # Get the set of source package names to deal with.
         spns = list(SourcePackageName.select("""
-            SourcePackagePublishingHistory.distrorelease =
-                DistroRelease.id AND
-            DistroRelease.distribution = %s AND
+            SourcePackagePublishingHistory.distroseries =
+                DistroSeries.id AND
+            DistroSeries.distribution = %s AND
             SourcePackagePublishingHistory.archive IN %s AND
             SourcePackagePublishingHistory.sourcepackagerelease =
                 SourcePackageRelease.id AND
@@ -701,7 +739,7 @@ class Distribution(SQLBase, BugTargetBase, HasSpecificationsMixin,
             SourcePackagePublishingHistory.dateremoved is NULL
             """ % sqlvalues(self, self.all_distro_archive_ids),
             distinct=True,
-            clauseTables=['SourcePackagePublishingHistory', 'DistroRelease',
+            clauseTables=['SourcePackagePublishingHistory', 'DistroSeries',
                 'SourcePackageRelease']))
 
         # Now update, committing every 50 packages.
@@ -723,15 +761,15 @@ class Distribution(SQLBase, BugTargetBase, HasSpecificationsMixin,
             SourcePackageRelease.sourcepackagename = %s AND
             SourcePackageRelease.id =
                 SourcePackagePublishingHistory.sourcepackagerelease AND
-            SourcePackagePublishingHistory.distrorelease =
-                DistroRelease.id AND
-            DistroRelease.distribution = %s AND
+            SourcePackagePublishingHistory.distroseries =
+                DistroSeries.id AND
+            DistroSeries.distribution = %s AND
             SourcePackagePublishingHistory.archive IN %s AND
             SourcePackagePublishingHistory.dateremoved is NULL
             """ % sqlvalues(sourcepackagename, self,
                             self.all_distro_archive_ids),
             orderBy='id',
-            clauseTables=['SourcePackagePublishingHistory', 'DistroRelease'],
+            clauseTables=['SourcePackagePublishingHistory', 'DistroSeries'],
             distinct=True))
 
         if len(sprs) == 0:
@@ -746,6 +784,7 @@ class Distribution(SQLBase, BugTargetBase, HasSpecificationsMixin,
         if cache is None:
             log.debug("Creating new source cache entry.")
             cache = DistributionSourcePackageCache(
+                archive=self.main_archive,
                 distribution=self,
                 sourcepackagename=sourcepackagename)
 
@@ -766,8 +805,8 @@ class Distribution(SQLBase, BugTargetBase, HasSpecificationsMixin,
             log.debug("Considering source version %s" % spr.version)
             # changelog may be empty, in which case we don't want to add it
             # to the set as the join would fail below.
-            if spr.changelog is not None:
-                sprchangelog.add(spr.changelog)
+            if spr.changelog_entry is not None:
+                sprchangelog.add(spr.changelog_entry)
             binpkgs = BinaryPackageRelease.select("""
                 BinaryPackageRelease.build = Build.id AND
                 Build.sourcepackagerelease = %s
@@ -840,9 +879,9 @@ class Distribution(SQLBase, BugTargetBase, HasSpecificationsMixin,
             # the search to the distribution release, making a best
             # effort to find a package.
             publishing = SourcePackagePublishingHistory.selectFirst('''
-                SourcePackagePublishingHistory.distrorelease =
-                    DistroRelease.id AND
-                DistroRelease.distribution = %s AND
+                SourcePackagePublishingHistory.distroseries =
+                    DistroSeries.id AND
+                DistroSeries.distribution = %s AND
                 SourcePackagePublishingHistory.archive IN %s AND
                 SourcePackagePublishingHistory.sourcepackagerelease =
                     SourcePackageRelease.id AND
@@ -852,28 +891,22 @@ class Distribution(SQLBase, BugTargetBase, HasSpecificationsMixin,
                                 self.all_distro_archive_ids,
                                 sourcepackagename,
                                 PackagePublishingStatus.PUBLISHED),
-                clauseTables=['SourcePackageRelease', 'DistroRelease'],
+                clauseTables=['SourcePackageRelease', 'DistroSeries'],
                 distinct=True,
                 orderBy="id")
             if publishing is not None:
                 # Attempt to find a published binary package of the
-                # same name. Try the current release first.
-                publishedpackage = PublishedPackage.selectFirstBy(
-                    sourcepackagename=sourcepackagename.name,
-                    binarypackagename=sourcepackagename.name,
-                    distroseries=self.currentseries,
+                # same name.
+                publishedpackage = PublishedPackage.selectFirst('''
+                    PublishedPackage.sourcepackagename = %s AND
+                    PublishedPackage.binarypackagename = %s AND
+                    PublishedPackage.distribution = %s AND
+                    PublishedPackage.archive IN %s
+                    ''' % sqlvalues(sourcepackagename.name,
+                                    sourcepackagename.name,
+                                    self,
+                                    self.all_distro_archive_ids),
                     orderBy=['-id'])
-                if publishedpackage is None:
-                    # Try any release next.
-                    # XXX Gavin Panella 2007-04-18:
-                    # Could we just do this first? I'm just
-                    # following the pattern that was here before
-                    # (e.g. see the search for a binary package below).
-                    publishedpackage = PublishedPackage.selectFirstBy(
-                        sourcepackagename=sourcepackagename.name,
-                        binarypackagename=sourcepackagename.name,
-                        distribution=self,
-                        orderBy=['-id'])
                 if publishedpackage is not None:
                     binarypackagename = BinaryPackageName.byName(
                         publishedpackage.binarypackagename)
@@ -888,19 +921,17 @@ class Distribution(SQLBase, BugTargetBase, HasSpecificationsMixin,
         binarypackagename = BinaryPackageName.selectOneBy(name=pkgname)
         if binarypackagename:
             # Ok, so we have a binarypackage with that name. Grab its
-            # latest publication -- first in the distribution series
-            # and if that fails, in the distribution (this may be an old
+            # latest publication in the distribution (this may be an old
             # package name the end-user is groping for) -- and then get
             # the sourcepackagename from that.
-            publishing = PublishedPackage.selectFirstBy(
-                binarypackagename=binarypackagename.name,
-                distroseries=self.currentseries,
+            publishing = PublishedPackage.selectFirst('''
+                PublishedPackage.binarypackagename = %s AND
+                PublishedPackage.distribution = %s AND
+                PublishedPackage.archive IN %s
+                ''' % sqlvalues(binarypackagename.name,
+                                self,
+                                self.all_distro_archive_ids),
                 orderBy=['-id'])
-            if publishing is None:
-                publishing = PublishedPackage.selectFirstBy(
-                    binarypackagename=binarypackagename.name,
-                    distribution=self,
-                    orderBy=['-id'])
             if publishing is not None:
                 sourcepackagename = SourcePackageName.byName(
                                         publishing.sourcepackagename)
@@ -919,12 +950,14 @@ class Distribution(SQLBase, BugTargetBase, HasSpecificationsMixin,
             raise NotFoundError('Package %s not published in %s'
                                 % (pkgname, self.displayname))
 
+    # XXX cprov 20071024:  move this API to IArchiveSet, Distribution is
+    # already too long and complicated.
     def getAllPPAs(self):
         """See `IDistribution`"""
         return Archive.selectBy(
             purpose=ArchivePurpose.PPA, distribution=self, orderBy=['id'])
 
-    def searchPPAs(self, text=None, show_inactive=False):
+    def searchPPAs(self, text=None, show_inactive=False, user=None):
         """See `IDistribution`."""
         clauses = ["""
         Archive.purpose = %s AND
@@ -950,6 +983,21 @@ class Distribution(SQLBase, BugTargetBase, HasSpecificationsMixin,
             Archive.description LIKE '%%' || %s || '%%'))
             """ % (quote(text), quote_like(text)))
 
+        if user is not None:
+            if not user.inTeam(getUtility(ILaunchpadCelebrities).admin):
+                clauses.append("""
+                (Archive.private = FALSE OR
+                 Archive.owner = %s OR
+                 %s IN (SELECT TeamParticipation.person
+                        FROM TeamParticipation
+                        WHERE TeamParticipation.person = %s AND
+                              TeamParticipation.team = Archive.owner)
+                )
+                """ % sqlvalues(user, user, user))
+        else:
+            clauses.append("Archive.private = FALSE")
+
+
         query = ' AND '.join(clauses)
         return Archive.select(
             query, orderBy=orderBy, clauseTables=clauseTables)
@@ -974,9 +1022,11 @@ class Distribution(SQLBase, BugTargetBase, HasSpecificationsMixin,
         Archive.purpose = %s AND
         Archive.distribution = %s AND
         SourcePackagePublishingHistory.archive = archive.id AND
-        SourcePackagePublishingHistory.status = %s
+        SourcePackagePublishingHistory.scheduleddeletiondate is null AND
+        SourcePackagePublishingHistory.status IN (%s, %s)
          """ % sqlvalues(ArchivePurpose.PPA, self,
-                         PackagePublishingStatus.PENDING)
+                         PackagePublishingStatus.PENDING,
+                         PackagePublishingStatus.DELETED)
 
         src_archives = Archive.select(
             src_query, clauseTables=['SourcePackagePublishingHistory'],
@@ -986,9 +1036,11 @@ class Distribution(SQLBase, BugTargetBase, HasSpecificationsMixin,
         Archive.purpose = %s AND
         Archive.distribution = %s AND
         BinaryPackagePublishingHistory.archive = archive.id AND
-        BinaryPackagePublishingHistory.status = %s
+        BinaryPackagePublishingHistory.scheduleddeletiondate is null AND
+        BinaryPackagePublishingHistory.status IN (%s, %s)
         """ % sqlvalues(ArchivePurpose.PPA, self,
-                        PackagePublishingStatus.PENDING)
+                        PackagePublishingStatus.PENDING,
+                        PackagePublishingStatus.DELETED)
 
         bin_archives = Archive.select(
             bin_query, clauseTables=['BinaryPackagePublishingHistory'],
@@ -1015,6 +1067,121 @@ class Distribution(SQLBase, BugTargetBase, HasSpecificationsMixin,
         except KeyError:
             # Otherwise we defer to the caller.
             return None
+
+    def getPackagesAndPublicUpstreamBugCounts(self, limit=50):
+        """See `IDistribution`."""
+        from canonical.launchpad.database.product import Product
+        # This method collects three open bug counts for
+        # sourcepackagenames in this distribution first, and then caches
+        # product information before rendering everything into a list of
+        # tuples.
+        cur = cursor()
+        cur.execute("""
+            SELECT SPN.name, SPN.id,
+            COUNT(DISTINCT Bugtask.bug) AS total_bugs,
+            COUNT(DISTINCT CASE WHEN Bugtask.status = %(triaged)s THEN
+                  Bugtask.bug END) AS bugs_triaged,
+            COUNT(DISTINCT CASE WHEN Bugtask.status = %(triaged)s THEN
+                  RelatedBugTask.bug END) AS bugs_affecting_upstream,
+            COUNT(DISTINCT CASE WHEN Bugtask.status = %(triaged)s AND
+                  (RelatedBugTask.bugwatch IS NOT NULL OR
+                  RelatedProduct.official_malone IS TRUE) THEN
+                  RelatedBugTask.bug END) AS bugs_with_upstream_bugwatch
+            FROM
+                SourcePackageName AS SPN
+                JOIN Bugtask ON SPN.id = Bugtask.sourcepackagename
+                JOIN Bug ON Bug.id = Bugtask.bug
+                LEFT OUTER JOIN Bugtask AS RelatedBugtask ON (
+                    RelatedBugtask.bug = Bugtask.bug
+                    AND RelatedBugtask.id != Bugtask.id
+                    AND RelatedBugtask.product IS NOT NULL
+                    AND RelatedBugtask.status != %(invalid)s
+                    )
+                LEFT OUTER JOIN Product AS RelatedProduct ON (
+                    RelatedBugtask.product = RelatedProduct.id
+                )
+            WHERE
+                Bugtask.distribution = %(distro)s
+                AND Bugtask.sourcepackagename = spn.id
+                AND Bugtask.distroseries IS NULL
+                AND Bugtask.status IN %(unresolved)s
+                AND Bug.private = 'F'
+                AND Bug.duplicateof IS NULL
+            GROUP BY SPN.name, SPN.id
+            ORDER BY total_bugs DESC, SPN.name LIMIT %(limit)s
+        """ % {'invalid': quote(BugTaskStatus.INVALID),
+               'triaged': quote(BugTaskStatus.TRIAGED),
+               'limit': limit,
+               'distro': self.id,
+               'unresolved': quote(UNRESOLVED_BUGTASK_STATUSES)})
+        counts = cur.dictfetchall()
+        cur.close()
+        # Filter out packages for which there are no counts.
+        counts = [data for data in counts if data['total_bugs'] > 0]
+        if not counts:
+            # If no counts are returned it means that there are no
+            # source package names in the database -- because the counts
+            # would just return zero if no bugs existed. And if there
+            # are no packages are in the database, all bets are off.
+            return []
+
+        # Next step is to extract which IDs actually show up in the
+        # output we generate, and cache them.
+        spn_ids = [item['id'] for item in counts]
+        list(SourcePackageName.select("SourcePackageName.id IN %s"
+             % sqlvalues(spn_ids)))
+
+        # Finally find out what products are attached to these source
+        # packages (if any) and cache them too. The ordering of the
+        # query by Packaging.id ensures that the dictionary holds the
+        # latest entries for situations where we have multiple entries.
+        cur = cursor()
+        cur.execute("""
+            SELECT Packaging.sourcepackagename, Product.id
+              FROM Product, Packaging, ProductSeries, DistroSeries
+             WHERE ProductSeries.product = Product.id AND
+                   DistroSeries.distribution = %s AND
+                   Packaging.distroseries = DistroSeries.id AND
+                   Packaging.productseries = ProductSeries.id AND
+                   Packaging.sourcepackagename IN %s AND
+                   Packaging.packaging = %s AND
+                   Product.active IS TRUE
+                   ORDER BY Packaging.id
+        """ % sqlvalues(self.id, spn_ids, PackagingType.PRIME))
+        sources_to_products = dict(cur.fetchall())
+        cur.close()
+        if sources_to_products:
+            # Cache some more information to avoid us having to hit the
+            # database hard for each product rendered.
+            list(Product.select("Product.id IN %s" % 
+                 sqlvalues(sources_to_products.values()),
+                 prejoins=["bugcontact", "bugtracker", "project",
+                           "development_focus.user_branch",
+                           "development_focus.import_branch"]))
+
+        # Okay, we have all the information good to go, so assemble it
+        # in a reasonable data structure.
+        results = []
+        for count in counts:
+            spn_id = count['id']
+            sourcepackagename = SourcePackageName.get(spn_id)
+            dsp = self.getSourcePackage(sourcepackagename)
+            if spn_id in sources_to_products:
+                product_id = sources_to_products[spn_id]
+                product = Product.get(product_id)
+            else:
+                product = None
+            results.append((dsp, product, count['total_bugs'],
+                            count['bugs_triaged'],
+                            count['bugs_affecting_upstream'],
+                            count['bugs_with_upstream_bugwatch']))
+        return results
+
+    def setBugContact(self, bugcontact, user):
+        """See `IHasBugContact`."""
+        self.bugcontact = bugcontact
+        if bugcontact is not None:
+            subscription = self.addBugSubscription(bugcontact, user)
 
 
 class DistributionSet:
@@ -1078,3 +1245,4 @@ class DistributionSet:
         archive = getUtility(IArchiveSet).new(distribution=distro,
             purpose=ArchivePurpose.PRIMARY)
         return distro
+

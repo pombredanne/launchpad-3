@@ -1,8 +1,12 @@
 # Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# pylint: disable-msg=E0611,W0212
 
 __metaclass__ = type
 __all__ = ['Build', 'BuildSet']
 
+
+import apt_pkg
+import logging
 
 from zope.interface import implements
 from zope.component import getUtility
@@ -34,7 +38,6 @@ from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.tales import DurationFormatterAPI
 
 
-
 class Build(SQLBase):
     implements(IBuild)
     _table = 'Build'
@@ -43,9 +46,10 @@ class Build(SQLBase):
     datecreated = UtcDateTimeCol(dbName='datecreated', default=UTC_NOW)
     processor = ForeignKey(dbName='processor', foreignKey='Processor',
         notNull=True)
-    distroarchseries = ForeignKey(dbName='distroarchrelease',
+    distroarchseries = ForeignKey(dbName='distroarchseries',
         foreignKey='DistroArchSeries', notNull=True)
-    buildstate = EnumCol(dbName='buildstate', notNull=True, schema=BuildStatus)
+    buildstate = EnumCol(dbName='buildstate', notNull=True,
+                         schema=BuildStatus)
     sourcepackagerelease = ForeignKey(dbName='sourcepackagerelease',
         foreignKey='SourcePackageRelease', notNull=True)
     datebuilt = UtcDateTimeCol(dbName='datebuilt', default=None)
@@ -81,7 +85,7 @@ class Build(SQLBase):
             PackagePublishingStatus.PENDING,
             PackagePublishingStatus.PUBLISHED)
         query = """
-        SourcePackagePublishingHistory.distrorelease = %s AND
+        SourcePackagePublishingHistory.distroseries = %s AND
         SourcePackagePublishingHistory.sourcepackagerelease = %s AND
         SourcePackagePublishingHistory.archive = %s AND
         SourcePackagePublishingHistory.status IN %s
@@ -152,8 +156,8 @@ class Build(SQLBase):
     def distroarchseriesbinarypackages(self):
         """See `IBuild`."""
         # Avoid circular import by importing locally.
-        from canonical.launchpad.database.distroarchseriesbinarypackagerelease\
-            import (DistroArchSeriesBinaryPackageRelease)
+        from canonical.launchpad.database import (
+            DistroArchSeriesBinaryPackageRelease)
         return [DistroArchSeriesBinaryPackageRelease(
             self.distroarchseries, bp)
             for bp in self.binarypackages]
@@ -205,8 +209,7 @@ class Build(SQLBase):
 
     def retry(self):
         """See `IBuild`."""
-        assert self.can_be_retried, "Build %s can not be retried" % self.id
-
+        assert self.can_be_retried, "Build %s cannot be retried" % self.id
         self.buildstate = BuildStatus.NEEDSBUILD
         self.datebuilt = None
         self.buildduration = None
@@ -214,6 +217,129 @@ class Build(SQLBase):
         self.buildlog = None
         self.dependencies = None
         self.createBuildQueueEntry()
+
+    @property
+    def component_dependencies(self):
+        """See `IBuild`."""
+        # XXX cprov 20080204: if a new component is opened/selected for
+        # ubuntu this dictionary will have to be updated. Ideally we
+        # should model ogre in the database, but since a new component
+        # will also require other changes in code, we will simple let this
+        # marked for future reference.
+        return {
+            'main': ['main'],
+            'restricted': ['main', 'restricted'],
+            'universe': ['main', 'restricted',  'universe'],
+            'multiverse': ['main', 'restricted', 'universe', 'multiverse'],
+            'partner' : ['partner'],
+            }
+
+    @property
+    def ogre_components(self):
+        """See `IBuild`."""
+        return self.component_dependencies[self.current_component.name]
+
+    def _parseDependencyToken(self, token):
+        """Parse the given token.
+
+        Raises AssertionError if the given token couldn't be parsed.
+
+        Return a triple containing the corresponding (name, version,
+        relation) for the given dependency token.
+        """
+        # XXX cprov 2006-02-27: it may not work for and'd and or'd syntax.
+        try:
+            name, version, relation = token[0]
+        except ValueError:
+            raise AssertionError(
+                "APT is not dealing correctly with a dependency token "
+                "'%r' from %s (%s) with the following dependencies: %s\n"
+                "It is expected to be a tuple containing only another "
+                "tuple with 3 elements  (name, version, relation)."
+                % (token, self.title, self.id, self.depedencies))
+        return (name, version, relation)
+
+    def _checkDependencyVersion(self, available, required, relation):
+        """Return True if the available version satisfies the context."""
+        # This dict maps the package version relationship syntax in lambda
+        # functions which returns boolean according the results of
+        # apt_pkg.VersionCompare function (see the order above).
+        # For further information about pkg relationship syntax see:
+        #
+        # http://www.debian.org/doc/debian-policy/ch-relationships.html
+        #
+        version_relation_map = {
+            # any version is acceptable if no relationship is given
+            '': lambda x: True,
+            # stricly later
+            '>>': lambda x: x == 1,
+            # later or equal
+            '>=': lambda x: x >= 0,
+            # stricly equal
+            '=': lambda x: x == 0,
+            # earlier or equal
+            '<=': lambda x: x <= 0,
+            # strictly earlier
+            '<<': lambda x: x == -1
+            }
+
+        # Use apt_pkg function to compare versions
+        # it behaves similar to cmp, i.e. returns negative
+        # if first < second, zero if first == second and
+        # positive if first > second.
+        dep_result = apt_pkg.VersionCompare(available, required)
+
+        return version_relation_map[relation](dep_result)
+
+    def _isDependencySatisfied(self, token):
+        """Check if the given dependency token is satisfied.
+
+        Check if the dependency exists, if its version constraint is
+        satisfied and if it is reachable in the build context.
+        """
+        name, version, relation = self._parseDependencyToken(token)
+        dep_candidate = self.distroarchseries.findDepCandidateByName(name)
+
+        if not dep_candidate:
+            return False
+
+        if not self._checkDependencyVersion(
+            dep_candidate.binarypackageversion, version, relation):
+            return False
+
+        if dep_candidate.component not in self.ogre_components:
+            return False
+
+        return True
+
+    def _toAptFormat(self, token):
+        """Rebuild dependencies line in apt format."""
+        name, version, relation = self._parseDependencyToken(token)
+        if relation and version:
+            return '%s (%s %s)' % (name, relation, version)
+        return '%s' % name
+
+    def updateDependencies(self):
+        """See `IBuild`."""
+
+        # apt_pkg requires InitSystem to get VersionCompare working properly.
+        apt_pkg.InitSystem()
+
+        # Check package build dependencies using apt_pkg
+        try:
+            parsed_deps = apt_pkg.ParseDepends(self.dependencies)
+        except (ValueError, TypeError):
+            raise AssertionError(
+                "Build dependencies for %s (%s) could not be parsed: '%s'\n"
+                "It indicates that something is wrong in buildd-slaves."
+                % (self.title, self.id, self.depedencies))
+
+        remaining_deps = [
+            self._toAptFormat(token) for token in parsed_deps
+            if not self._isDependencySatisfied(token)]
+
+        # Update dependencies line
+        self.dependencies = ", ".join(remaining_deps)
 
     def __getitem__(self, name):
         return self.getBinaryPackageRelease(name)
@@ -229,7 +355,8 @@ class Build(SQLBase):
         self, binarypackagename, version, summary, description,
         binpackageformat, component,section, priority, shlibdeps,
         depends, recommends, suggests, conflicts, replaces, provides,
-        essential, installedsize, architecturespecific):
+        pre_depends, enhances, breaks, essential, installedsize,
+        architecturespecific):
         """See IBuild."""
         return BinaryPackageRelease(
             build=self, binarypackagename=binarypackagename, version=version,
@@ -238,7 +365,8 @@ class Build(SQLBase):
             component=component, section=section, priority=priority,
             shlibdeps=shlibdeps, depends=depends, recommends=recommends,
             suggests=suggests, conflicts=conflicts, replaces=replaces,
-            provides=provides, essential=essential, installedsize=installedsize,
+            provides=provides, pre_depends=pre_depends, enhances=enhances,
+            breaks=breaks, essential=essential, installedsize=installedsize,
             architecturespecific=architecturespecific)
 
     def createBuildQueueEntry(self):
@@ -301,6 +429,7 @@ class Build(SQLBase):
             subject = "[Build #%d] %s (%s)" % (
                 self.id, self.title, archive_tag)
             source_url = 'not available'
+            extra_headers['X-Launchpad-PPA'] = self.archive.owner.name
 
         # XXX cprov 2006-08-02: pending security recipients for SECURITY
         # pocket build. We don't build SECURITY yet :(
@@ -309,7 +438,8 @@ class Build(SQLBase):
         # with the state in the build worflow, maybe by having an
         # IBuild.statusReport property, which could also be used in the
         # respective page template.
-        if self.buildstate in [BuildStatus.NEEDSBUILD, BuildStatus.SUPERSEDED]:
+        if self.buildstate in [
+            BuildStatus.NEEDSBUILD, BuildStatus.SUPERSEDED]:
             # untouched builds
             buildduration = 'not available'
             buildlog_url = 'not available'
@@ -363,10 +493,10 @@ class BuildSet:
 
     def getBuildBySRAndArchtag(self, sourcepackagereleaseID, archtag):
         """See `IBuildSet`"""
-        clauseTables = ['DistroArchRelease']
+        clauseTables = ['DistroArchSeries']
         query = ('Build.sourcepackagerelease = %s '
-                 'AND Build.distroarchrelease = DistroArchRelease.id '
-                 'AND DistroArchRelease.architecturetag = %s'
+                 'AND Build.distroarchseries = DistroArchSeries.id '
+                 'AND DistroArchSeries.architecturetag = %s'
                  % sqlvalues(sourcepackagereleaseID, archtag)
                  )
 
@@ -391,7 +521,8 @@ class BuildSet:
                 IN(Build.q.distroarchseriesID, archseries_ids))
             )
 
-    def getBuildsForBuilder(self, builder_id, status=None, name=None):
+    def getBuildsForBuilder(self, builder_id, status=None, name=None,
+                            user=None):
         """See `IBuildSet`."""
         queries = []
         clauseTables = []
@@ -408,6 +539,23 @@ class BuildSet:
                            % quote_like(name))
             clauseTables.append('Sourcepackagerelease')
             clauseTables.append('Sourcepackagename')
+
+        queries.append("Archive.id = Build.archive")
+        clauseTables.append('Archive')
+        if user is not None:
+            if not (user.inTeam(getUtility(ILaunchpadCelebrities).admin)
+                    or
+                    user.inTeam(
+                        getUtility(ILaunchpadCelebrities).buildd_admin)):
+                queries.append("""
+                (Archive.private = FALSE
+                 OR %s IN (SELECT TeamParticipation.person
+                       FROM TeamParticipation
+                       WHERE TeamParticipation.person = %s
+                           AND TeamParticipation.team = Archive.owner)
+                )""" % sqlvalues(user, user))
+        else:
+            queries.append("Archive.private = FALSE")
 
         # Ordering according status
         # * SUPERSEDED & All by -datecreated
@@ -480,10 +628,10 @@ class BuildSet:
 
         # format clause according single/multiple architecture(s) form
         if len(arch_ids) == 1:
-            condition_clauses = [('distroarchrelease=%s'
+            condition_clauses = [('distroarchseries=%s'
                                   % sqlvalues(arch_ids[0]))]
         else:
-            condition_clauses = [('distroarchrelease IN %s'
+            condition_clauses = [('distroarchseries IN %s'
                                   % sqlvalues(arch_ids))]
 
         # XXX cprov 2006-09-25: It would be nice if we could encapsulate
@@ -536,14 +684,14 @@ class BuildSet:
 
         # Only pick builds from the distribution's main archive to
         # exclude PPA builds
-        clauseTables.extend(["DistroArchRelease",
+        clauseTables.extend(["DistroArchSeries",
                              "Archive",
-                             "DistroRelease",
+                             "DistroSeries",
                              "Distribution"])
         condition_clauses.append("""
-            Build.distroarchrelease = DistroArchRelease.id AND
-            DistroArchRelease.distrorelease = DistroRelease.id AND
-            DistroRelease.distribution = Distribution.id AND
+            Build.distroarchseries = DistroArchSeries.id AND
+            DistroArchSeries.distroseries = DistroSeries.id AND
+            DistroSeries.distribution = Distribution.id AND
             Distribution.id = Archive.distribution AND
             Archive.purpose != %s AND
             Archive.id = Build.archive
@@ -552,3 +700,34 @@ class BuildSet:
         return Build.select(' AND '.join(condition_clauses),
                             clauseTables=clauseTables,
                             orderBy=orderBy)
+
+    def retryDepWaiting(self, distroarchseries):
+        """See `IBuildSet`. """
+        # XXX cprov 20071122: use the root logger once bug 164203 is fixed.
+        logger = logging.getLogger('retry-depwait')
+
+        # Get the MANUALDEPWAIT records for all archives.
+        candidates = Build.selectBy(
+            buildstate=BuildStatus.MANUALDEPWAIT,
+            distroarchseries=distroarchseries)
+
+        candidates_count = candidates.count()
+        if candidates_count == 0:
+            logger.info("No MANUALDEPWAIT record found.")
+            return
+
+        logger.info(
+            "Found %d builds in MANUALDEPWAIT state." % candidates_count)
+
+        for build in candidates:
+            if not build.can_be_retried:
+                continue
+            build.updateDependencies()
+            if build.dependencies:
+                logger.info(
+                    "Skipping %s: %s" % (build.title, build.dependencies))
+                continue
+            logger.info("Retrying %s" % build.title)
+            build.retry()
+            build.buildqueue_record.score()
+

@@ -14,10 +14,10 @@
     <content
         class="canonical.launchpad.translationformat.gettext_po_parser.POHeader">
         <allow
-            interface="canonical.launchpad.interfaces.ITranslationHeader" />
+            interface="canonical.launchpad.interfaces.ITranslationHeaderData" />
         <require
             permission="zope.Public"
-            set_schema="canonical.launchpad.interfaces.ITranslationHeader" />
+            set_schema="canonical.launchpad.interfaces.ITranslationHeaderData" />
     </content>
 
     <content
@@ -35,10 +35,10 @@
     <content
         class="canonical.launchpad.translationformat.mozilla_xpi_importer.MozillaHeader">
         <allow
-            interface="canonical.launchpad.interfaces.ITranslationHeader" />
+            interface="canonical.launchpad.interfaces.ITranslationHeaderData" />
         <require
             permission="zope.Public"
-            set_schema="canonical.launchpad.interfaces.ITranslationHeader" />
+            set_schema="canonical.launchpad.interfaces.ITranslationHeaderData" />
     </content>
 
     <content

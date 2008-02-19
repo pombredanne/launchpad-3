@@ -1,4 +1,5 @@
 # Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# pylint: disable-msg=E0211,E0213
 
 """Bug subscription interfaces."""
 
@@ -13,6 +14,7 @@ __all__ = [
 from zope.interface import Interface
 from zope.schema import Choice, Int
 from canonical.launchpad import _
+from canonical.launchpad.fields import PublicPersonChoice
 from canonical.lazr import DBEnumeratedType, DBItem
 
 
@@ -98,7 +100,7 @@ class IBranchSubscription(Interface):
     """The relationship between a person and a branch."""
 
     id = Int(title=_('ID'), readonly=True, required=True)
-    person = Choice(
+    person = PublicPersonChoice(
         title=_('Person'), required=True, vocabulary='ValidPersonOrTeam',
         readonly=True, description=_('Enter the launchpad id, or email '
         'address of the person you wish to subscribe to this branch. '

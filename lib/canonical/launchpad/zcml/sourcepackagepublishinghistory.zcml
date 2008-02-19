@@ -24,12 +24,26 @@
       template="../templates/sourcepackagepublishinghistory-listing-detailed.pt"
       />
     <browser:page
+      name="+listing-summary"
+      template="../templates/sourcepackagepublishinghistory-listing-summary.pt"
+      />
+    <browser:page
       name="+listing-ppa-detailed"
       template="../templates/sourcepackagepublishinghistory-listing-ppa-detailed.pt"
       />
     <browser:page
       name="+record-details"
       template="../templates/packagepublishing-details.pt"
+      />
+  </browser:pages>
+
+  <browser:pages
+    for="canonical.launchpad.interfaces.ISourcePackagePublishingHistory"
+    permission="zope.Public"
+    class="canonical.launchpad.browser.SourcePublishingRecordSelectableView">
+    <browser:page
+      name="+listing-ppa-detailed-selectable"
+      template="../templates/sourcepackagepublishinghistory-listing-ppa-detailed.pt"
       />
   </browser:pages>
 

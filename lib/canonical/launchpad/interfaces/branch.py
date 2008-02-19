@@ -1,4 +1,5 @@
 # Copyright 2005 Canonical Ltd.  All rights reserved.
+# pylint: disable-msg=E0211,E0213
 
 """Branch interfaces."""
 
@@ -7,12 +8,15 @@ __metaclass__ = type
 __all__ = [
     'BranchCreationException',
     'BranchCreationForbidden',
+    'BranchCreationNoTeamOwnedJunkBranches',
     'BranchCreatorNotMemberOfOwnerTeam',
+    'BranchCreatorNotOwner',
     'BranchLifecycleStatus',
     'BranchLifecycleStatusFilter',
     'BranchListingSort',
     'BranchType',
     'BranchTypeError',
+    'BRANCH_NAME_VALIDATION_ERROR_MESSAGE',
     'CannotDeleteBranch',
     'DEFAULT_BRANCH_STATUS_IN_LISTING',
     'IBranch',
@@ -27,6 +31,7 @@ __all__ = [
     ]
 
 from datetime import timedelta
+import re
 from zope.interface import Interface, Attribute
 
 from zope.component import getUtility
@@ -35,9 +40,9 @@ from zope.schema import Bool, Int, Choice, Text, TextLine, Datetime
 from canonical.config import config
 
 from canonical.launchpad import _
-from canonical.launchpad.fields import Title, Summary, URIField, Whiteboard
+from canonical.launchpad.fields import (
+    PublicPersonChoice, Summary, Title, URIField, Whiteboard)
 from canonical.launchpad.validators import LaunchpadValidationError
-from canonical.launchpad.validators.name import name_validator
 from canonical.launchpad.interfaces import IHasOwner
 from canonical.launchpad.webapp.interfaces import ITableBatchNavigator
 from canonical.lazr import (
@@ -53,14 +58,11 @@ class BranchLifecycleStatus(DBEnumeratedType):
     Essentially, this tells us what the author of the branch thinks of the
     code in the branch.
     """
-    sort_order = (
-        'MATURE', 'DEVELOPMENT', 'EXPERIMENTAL', 'MERGED', 'ABANDONED', 'NEW')
 
     NEW = DBItem(1, """
         New
 
-        This branch has just been created, and we know nothing else about
-        it.
+        This branch has just been created.
         """)
 
     EXPERIMENTAL = DBItem(10, """
@@ -113,28 +115,28 @@ class BranchType(DBEnumeratedType):
     HOSTED = DBItem(1, """
         Hosted
 
-        Hosted branches have their main repository on the supermirror.
+        Launchpad is the primary location of this branch.
         """)
 
     MIRRORED = DBItem(2, """
         Mirrored
 
-        Mirrored branches are primarily hosted elsewhere and are
-        periodically pulled from the remote site into the supermirror.
+        Primarily hosted elsewhere and is periodically mirrored
+        from the external location into Launchpad.
         """)
 
     IMPORTED = DBItem(3, """
         Imported
 
-        Imported branches have been converted from some other revision
-        control system into bzr and are made available through the supermirror.
+        Branches that have been converted from some other revision
+        control system into bzr and are made available through Launchpad.
         """)
 
     REMOTE = DBItem(4, """
         Remote
 
-        Remote branches are those that are registered in Launchpad
-        with an external location, but are not to be mirrored.
+        Registered in Launchpad with an external location,
+        but is not to be mirrored, nor available through Launchpad.
         """)
 
 
@@ -185,6 +187,21 @@ class BranchCreatorNotMemberOfOwnerTeam(BranchCreationException):
     """
 
 
+class BranchCreationNoTeamOwnedJunkBranches(BranchCreationException):
+    """We forbid the creation of team-owned +junk branches.
+
+    Raised when a user is attempting to create a team-owned +junk branch.
+    """
+
+
+class BranchCreatorNotOwner(BranchCreationException):
+    """A user cannot create a branch belonging to another user.
+
+    Raised when a user is attempting to create a branch and set the owner of
+    the branch to another user.
+    """
+
+
 class BranchTypeError(Exception):
     """An operation cannot be performed for a particular branch type.
 
@@ -214,8 +231,8 @@ class BranchURIField(URIField):
         launchpad_domain = config.launchpad.vhosts.mainsite.hostname
         if uri.underDomain(launchpad_domain):
             message = _(
-                "For Launchpad to mirror a branch, the original branch cannot "
-                "be on <code>%s</code>." % launchpad_domain)
+                "For Launchpad to mirror a branch, the original branch "
+                "cannot be on <code>%s</code>." % launchpad_domain)
             raise LaunchpadValidationError(message)
 
         if IBranch.providedBy(self.context) and self.context.url == str(uri):
@@ -233,6 +250,37 @@ class BranchURIField(URIField):
                 "with this URL.")
             raise LaunchpadValidationError(
                 message, canonical_url(branch), branch.displayname)
+
+
+BRANCH_NAME_VALIDATION_ERROR_MESSAGE = _(
+    "Branch names must start with a number or letter.  The characters +, -, "
+    "_, . and @ are also allowed after the first character.")
+
+
+# This is a copy of the pattern in database/schema/trusted.sql.  Don't
+# change this without changing that.
+valid_branch_name_pattern = re.compile(r"^(?i)[a-z0-9][a-z0-9+\.\-@_]*\Z")
+
+
+def valid_branch_name(name):
+    """Return True if the name is valid as a branch name, otherwise False.
+
+    The rules for what is a valid branch name are described in
+    BRANCH_NAME_VALIDATION_ERROR_MESSAGE.
+    """
+    if valid_branch_name_pattern.match(name):
+        return True
+    return False
+
+
+def branch_name_validator(name):
+    """Return True if the name is valid, or raise a LaunchpadValidationError.
+    """
+    if not valid_branch_name(name):
+        raise LaunchpadValidationError(
+            _("Invalid branch name '%s'. %s"), name,
+            BRANCH_NAME_VALIDATION_ERROR_MESSAGE)
+    return True
 
 
 class IBranchBatchNavigator(ITableBatchNavigator):
@@ -256,18 +304,13 @@ class IBranch(IHasOwner):
     # Personally I'd like a LAZR way to do number 2.
     branch_type = Choice(
         title=_("Branch Type"), required=True,
-        vocabulary=UICreatableBranchType,
-        description=_("Hosted branches have Launchpad code hosting as the "
-                      "primary location and can be pushed to.  Mirrored "
-                      "branches are pulled from the remote location "
-                      "specified and cannot be pushed to.  Remote branches "
-                      "are not mirrored by Launchpad, nor can they be "
-                      "pushed to."))
+        vocabulary=UICreatableBranchType)
+
     name = TextLine(
         title=_('Name'), required=True, description=_("Keep very "
         "short, unique, and descriptive, because it will be used in URLs. "
         "Examples: main, devel, release-1.0, gnome-vfs."),
-        constraint=name_validator)
+        constraint=branch_name_validator)
     title = Title(
         title=_('Title'), required=False, description=_("Describe the "
         "branch as clearly as possible in up to 70 characters. This "
@@ -283,10 +326,8 @@ class IBranch(IHasOwner):
         allow_query=False,
         allow_fragment=False,
         trailing_slash=False,
-        description=_("The URL where the Bazaar branch is hosted. This is "
-            "the URL used to checkout the branch. The only branch format "
-            "supported is that of the Bazaar revision control system, see "
-            "www.bazaar-vcs.org for more information."))
+        description=_("This is the external location where the Bazaar "
+                      "branch is hosted."))
 
     whiteboard = Whiteboard(title=_('Whiteboard'), required=False,
         description=_('Notes on the current status of the branch.'))
@@ -296,18 +337,27 @@ class IBranch(IHasOwner):
 
     private = Bool(
         title=_("Keep branch confidential"), required=False,
-        description=_("Make this branch visible only to its subscribers"),
+        description=_("Make this branch visible only to its subscribers."),
         default=False)
 
     # People attributes
-    """Product owner, it can either a valid Person or Team
-            inside Launchpad context."""
-    owner = Choice(title=_('Owner'), required=True, vocabulary='ValidOwner',
-        description=_("Branch owner, either a valid Person or Team."))
-    author = Choice(
+    registrant = Attribute("The user that registered the branch.")
+    owner = PublicPersonChoice(
+        title=_('Owner'), required=True,
+        vocabulary='PersonActiveMembershipPlusSelf',
+        description=_("Either yourself or a team you are a member of. "
+                      "This controls who can modify the branch."))
+    author = PublicPersonChoice(
         title=_('Author'), required=False, vocabulary='ValidPersonOrTeam',
         description=_("The author of the branch. Leave blank if the author "
                       "does not have a Launchpad account."))
+    reviewer = PublicPersonChoice(
+        title=_('Reviewer'), required=False, vocabulary='ValidPersonOrTeam',
+        description=_("The reviewer of a branch is the person or team that "
+                      "is responsible for authorising code to be merged."))
+
+    code_reviewer = Attribute(
+        "The reviewer if set, otherwise the owner of the branch.")
 
     # Product attributes
     product = Choice(
@@ -335,15 +385,7 @@ class IBranch(IHasOwner):
     # Stats and status attributes
     lifecycle_status = Choice(
         title=_('Status'), vocabulary=BranchLifecycleStatus,
-        default=BranchLifecycleStatus.NEW,
-        description=_(
-        "The author's assessment of the branch's maturity. "
-        " Mature: recommend for production use."
-        " Development: useful work that is expected to be merged eventually."
-        " Experimental: not recommended for merging yet, and maybe ever."
-        " Merged: integrated into mainline, of historical interest only."
-        " Abandoned: no longer considered relevant by the author."
-        " New: unspecified maturity."))
+        default=BranchLifecycleStatus.NEW)
 
     # Mirroring attributes
     last_mirrored = Datetime(
@@ -363,7 +405,7 @@ class IBranch(IHasOwner):
         description=_("Disable periodic pulling of this branch by Launchpad. "
                       "That will prevent connection attempts to the branch "
                       "URL. Use this if the branch is no longer available."))
-    mirror_request_time = Datetime(
+    next_mirror_time = Datetime(
         title=_("If this value is more recent than the last mirror attempt, "
                 "then the branch will be mirrored on the next mirror run."),
         required=False)
@@ -412,11 +454,14 @@ class IBranch(IHasOwner):
         the revisions that match the revision history from bzrlib for this
         branch.
         """)
-    subscriptions = Attribute("BranchSubscriptions associated to this branch.")
+    subscriptions = Attribute(
+        "BranchSubscriptions associated to this branch.")
     subscribers = Attribute("Persons subscribed to this branch.")
 
     date_created = Datetime(
         title=_('Date Created'), required=True, readonly=True)
+    date_last_modified = Datetime(
+        title=_('Date Last Modified'), required=True, readonly=False)
 
     def latest_revisions(quantity=10):
         """A specific number of the latest revisions in that branch."""
@@ -450,6 +495,9 @@ class IBranch(IHasOwner):
         :param date_created: Used to specify the date_created value of the
             merge request.
         """
+
+    def getMergeQueue():
+        """The proposals that are QUEUED to land on this branch."""
 
     def revisions_since(timestamp):
         """Revisions in the history that are more recent than timestamp."""
@@ -506,16 +554,22 @@ class IBranch(IHasOwner):
         """Remove the person's subscription to this branch."""
 
     def getBranchRevision(sequence):
-        """Gets the BranchRevision for the given sequence number.
+        """Get the `BranchRevision` for the given sequence number.
 
-        If no such BranchRevision exists, None is returned.
+        If no such `BranchRevision` exists, None is returned.
+        """
+
+    def getBranchRevisionByRevisionId(revision_id):
+        """Get the `BranchRevision for the given revision id.
+
+        If no such `BranchRevision` exists, None is returned.
         """
 
     def createBranchRevision(sequence, revision):
-        """Create a new BranchRevision for this branch."""
+        """Create a new `BranchRevision` for this branch."""
 
     def getTipRevision():
-        """Returns the Revision associated with the last_scanned_id.
+        """Return the `Revision` associated with the `last_scanned_id`.
 
         Will return None if last_scanned_id is None, or if the id
         is not found (as in a ghost revision).
@@ -655,7 +709,8 @@ class IBranchSet(Interface):
         """
 
     def getRecentlyChangedBranches(
-        branch_count=None, lifecycle_statuses=DEFAULT_BRANCH_STATUS_IN_LISTING,
+        branch_count=None,
+        lifecycle_statuses=DEFAULT_BRANCH_STATUS_IN_LISTING,
         visible_by_user=None):
         """Return a result set of branches that have been recently updated.
 
@@ -678,7 +733,8 @@ class IBranchSet(Interface):
         """
 
     def getRecentlyImportedBranches(
-        branch_count=None, lifecycle_statuses=DEFAULT_BRANCH_STATUS_IN_LISTING,
+        branch_count=None,
+        lifecycle_statuses=DEFAULT_BRANCH_STATUS_IN_LISTING,
         visible_by_user=None):
         """Return a result set of branches that have been recently imported.
 
@@ -701,7 +757,8 @@ class IBranchSet(Interface):
         """
 
     def getRecentlyRegisteredBranches(
-        branch_count=None, lifecycle_statuses=DEFAULT_BRANCH_STATUS_IN_LISTING,
+        branch_count=None,
+        lifecycle_statuses=DEFAULT_BRANCH_STATUS_IN_LISTING,
         visible_by_user=None):
         """Return a result set of branches that have been recently registered.
 
@@ -729,7 +786,7 @@ class IBranchSet(Interface):
 
     def getBranchesForPerson(
         person, lifecycle_statuses=DEFAULT_BRANCH_STATUS_IN_LISTING,
-        visible_by_user=None, sort_by=None):
+        visible_by_user=None, sort_by=None, hide_dormant=False):
         """Branches associated with person with appropriate lifecycle.
 
         XXX: thumper 2007-03-23:
@@ -760,11 +817,16 @@ class IBranchSet(Interface):
         :param sort_by: What to sort the returned branches by.
         :type sort_by: A value from the `BranchListingSort` enumeration or
             None.
+        :param hide_dormant: A flag to indicate whether or not to show
+            dormant branches.  A branch is dormant if it has not had any
+            activity for a significant period of time.  The dormant time
+            frame is specified in `config.launchpad.branch_dormant_days`.
+        :type hide_dormant: Boolean.
         """
 
     def getBranchesAuthoredByPerson(
         person, lifecycle_statuses=DEFAULT_BRANCH_STATUS_IN_LISTING,
-        visible_by_user=None, sort_by=None):
+        visible_by_user=None, sort_by=None, hide_dormant=False):
         """Branches authored by person with appropriate lifecycle.
 
         Only branches that are authored by the person are returned.
@@ -783,11 +845,16 @@ class IBranchSet(Interface):
         :param sort_by: What to sort the returned branches by.
         :type sort_by: A value from the `BranchListingSort` enumeration or
             None.
+        :param hide_dormant: A flag to indicate whether or not to show
+            dormant branches.  A branch is dormant if it has not had any
+            activity for a significant period of time.  The dormant time
+            frame is specified in `config.launchpad.branch_dormant_days`.
+        :type hide_dormant: Boolean.
         """
 
     def getBranchesRegisteredByPerson(
         person, lifecycle_statuses=DEFAULT_BRANCH_STATUS_IN_LISTING,
-        visible_by_user=None, sort_by=None):
+        visible_by_user=None, sort_by=None, hide_dormant=False):
         """Branches registered by person with appropriate lifecycle.
 
         Only branches registered by the person but *NOT* authored by
@@ -807,11 +874,16 @@ class IBranchSet(Interface):
         :param sort_by: What to sort the returned branches by.
         :type sort_by: A value from the `BranchListingSort` enumeration or
             None.
+        :param hide_dormant: A flag to indicate whether or not to show
+            dormant branches.  A branch is dormant if it has not had any
+            activity for a significant period of time.  The dormant time
+            frame is specified in `config.launchpad.branch_dormant_days`.
+        :type hide_dormant: Boolean.
         """
 
     def getBranchesSubscribedByPerson(
         person, lifecycle_statuses=DEFAULT_BRANCH_STATUS_IN_LISTING,
-        visible_by_user=None, sort_by=None):
+        visible_by_user=None, sort_by=None, hide_dormant=False):
         """Branches subscribed by person with appropriate lifecycle.
 
         All branches where the person has subscribed to the branch
@@ -831,11 +903,16 @@ class IBranchSet(Interface):
         :param sort_by: What to sort the returned branches by.
         :type sort_by: A value from the `BranchListingSort` enumeration or
             None.
+        :param hide_dormant: A flag to indicate whether or not to show
+            dormant branches.  A branch is dormant if it has not had any
+            activity for a significant period of time.  The dormant time
+            frame is specified in `config.launchpad.branch_dormant_days`.
+        :type hide_dormant: Boolean.
         """
 
     def getBranchesForProduct(
         product, lifecycle_statuses=DEFAULT_BRANCH_STATUS_IN_LISTING,
-        visible_by_user=None, sort_by=None):
+        visible_by_user=None, sort_by=None, hide_dormant=False):
         """Branches associated with product with appropriate lifecycle.
 
         If lifecycle_statuses evaluates to False then branches
@@ -852,11 +929,16 @@ class IBranchSet(Interface):
         :param sort_by: What to sort the returned branches by.
         :type sort_by: A value from the `BranchListingSort` enumeration or
             None.
+        :param hide_dormant: A flag to indicate whether or not to show
+            dormant branches.  A branch is dormant if it has not had any
+            activity for a significant period of time.  The dormant time
+            frame is specified in `config.launchpad.branch_dormant_days`.
+        :type hide_dormant: Boolean.
         """
 
     def getBranchesForProject(
         project, lifecycle_statuses=DEFAULT_BRANCH_STATUS_IN_LISTING,
-        visible_by_user=None, sort_by=None):
+        visible_by_user=None, sort_by=None, hide_dormant=False):
         """Branches associated with project with appropriate lifecycle.
 
         If lifecycle_statuses evaluates to False then branches
@@ -873,6 +955,11 @@ class IBranchSet(Interface):
         :param sort_by: What to sort the returned branches by.
         :type sort_by: A value from the `BranchListingSort` enumeration or
             None.
+        :param hide_dormant: A flag to indicate whether or not to show
+            dormant branches.  A branch is dormant if it has not had any
+            activity for a significant period of time.  The dormant time
+            frame is specified in `config.launchpad.branch_dormant_days`.
+        :type hide_dormanty Boolean.
         """
 
     def getHostedBranchesForPerson(person):
@@ -893,15 +980,33 @@ class IBranchSet(Interface):
         :type visible_by_user: `IPerson` or None
         """
 
+    def getBranchesWithRecentRevisionsForProduct(product, quantity,
+                                                 visible_by_user=None):
+        """Return the product's branches that have the most recent revisions.
+
+        :param quantity: At most `quantity` branches are returned.
+        :type quantity: int
+        :param visible_by_user: If a person is not supplied, only public
+            branches are returned.  If a person is supplied both public
+            branches, and the private branches that the person is entitled to
+            see are returned.  Private branches are only visible to the owner
+            and subscribers of the branch, and to LP admins.
+        :type visible_by_user: `IPerson` or None
+        """
+
     def getPullQueue(branch_type):
         """Return a queue of branches to mirror using the puller.
 
         :param branch_type: A value from the `BranchType` enum.
         """
 
+    def getTargetBranchesForUsersMergeProposals(user, product):
+        """Return a sequence of branches the user has targetted before."""
+
 
 class IBranchDelta(Interface):
-    """The quantitative changes made to a branch that was edited or altered."""
+    """The quantitative changes made to a branch that was edited or altered.
+    """
 
     branch = Attribute("The IBranch, after it's been edited.")
     user = Attribute("The IPerson that did the editing.")
@@ -934,13 +1039,13 @@ class BranchLifecycleStatusFilter(EnumeratedType):
         'MERGED', 'ABANDONED')
 
     CURRENT = Item("""
-        New, Experimental, Development or Mature
+        Any active status
 
         Show the currently active branches.
         """)
 
     ALL = Item("""
-        Any Status
+        Any status
 
         Show all the branches.
         """)
@@ -1029,3 +1134,6 @@ class IBranchListingFilter(Interface):
         title=_('ordered by'), vocabulary=BranchListingSort,
         default=BranchListingSort.LIFECYCLE)
 
+    hide_dormant = Bool(
+        title=_("Hide dormant branches"),
+        description=_("Hide dormant branches"))

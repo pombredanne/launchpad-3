@@ -2,94 +2,123 @@
 
 Test that the security setup for IPOTemplateSet is working
 
-  >>> from zope.component import getUtility
-  >>> from canonical.launchpad.interfaces import IPOTemplateSet
-  >>> potemplate_set = getUtility(IPOTemplateSet)
+    >>> from zope.component import getUtility
+    >>> from canonical.launchpad.interfaces import IPOTemplateSet
+    >>> potemplate_set = getUtility(IPOTemplateSet)
 
 == getAllByName ==
 
 This method will return all IPOTemplate that have a given name.
 
-  >>> evolution_templates = potemplate_set.getAllByName('evolution-2.2')
-  >>> len(evolution_templates)
-  2
-  >>> titles = [potemplate.title
-  ...           for potemplate in evolution_templates
-  ...          ]
-  >>> 'Template "evolution-2.2" in Ubuntu Hoary package "evolution"' in titles
-  True
-  >>> 'Template "evolution-2.2" in Evolution trunk' in titles
-  True
+    >>> evolution_templates = potemplate_set.getAllByName('evolution-2.2')
+    >>> titles = [potemplate.title
+    ...           for potemplate in evolution_templates
+    ...          ]
+    >>> ('Template "evolution-2.2" in Ubuntu Hoary package "evolution"'
+    ...  in titles)
+    True
+    >>> 'Template "evolution-2.2" in Evolution trunk' in titles
+    True
 
 == getAllOrderByDateLastUpdated ==
 
 This method will give us all available IPOTemplate sorted by their
 modification date.
 
-  >>> templates = list(potemplate_set.getAllOrderByDateLastUpdated())
-  >>> len(templates)
-  10
-  >>> templates[0].date_last_updated >= templates[5].date_last_updated
-  True
-  >>> templates[1].date_last_updated >= templates[5].date_last_updated
-  True
-  >>> templates[2].date_last_updated >= templates[5].date_last_updated
-  True
-  >>> templates[3].date_last_updated >= templates[5].date_last_updated
-  True
-  >>> templates[4].date_last_updated >= templates[5].date_last_updated
-  True
+    >>> templates = list(potemplate_set.getAllOrderByDateLastUpdated())
+    >>> len(templates)
+    10
+    >>> templates[0].date_last_updated >= templates[5].date_last_updated
+    True
+    >>> templates[1].date_last_updated >= templates[5].date_last_updated
+    True
+    >>> templates[2].date_last_updated >= templates[5].date_last_updated
+    True
+    >>> templates[3].date_last_updated >= templates[5].date_last_updated
+    True
+    >>> templates[4].date_last_updated >= templates[5].date_last_updated
+    True
 
 
-= POTemplateSubset= 
+= POTemplateSubset=
+
+A POTemplateSubset describes the subset of all templates that belong to
+either one product series, or one source package in one distro series.
+
+
+== new ==
+
+When we create a template, it is initialized with a default header.
+
+    >>> from canonical.launchpad.database.product import ProductSet
+    >>> alsa_product = ProductSet().getByName('alsa-utils')
+    >>> alsa_trunk = alsa_product.getSeries('trunk')
+    >>> alsa_subset = potemplate_set.getSubset(productseries=alsa_trunk)
+    >>> from canonical.launchpad.database.person import PersonSet
+    >>> user = PersonSet().getByEmail('test@canonical.com')
+    >>> new_template = alsa_subset.new(
+    ...     'testtemplate', 'testing', 'po/testing.pot', user)
+
+    >>> print new_template.header
+    Project-Id-Version: PACKAGE VERSION
+    Report-Msgid-Bugs-To: FULL NAME <EMAIL@ADDRESS>
+    POT-Creation-Date: ...
+    PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE
+    Last-Translator: FULL NAME <EMAIL@ADDRESS>
+    Language-Team: LANGUAGE <LL@li.org>
+    MIME-Version: 1.0
+    Content-Type: text/plain; charset=UTF-8
+    Content-Transfer-Encoding: 8bit
+
 
 == getPOTemplateByName ==
 
 This method gives us the IPOTemplate that belongs to this subset and its name
 is the given one.
 
-  >>> from canonical.launchpad.database import ProductSeries
-  >>> productseries = ProductSeries.get(3)
-  >>> potemplatesubset = potemplate_set.getSubset(
-  ...     productseries=productseries)
-  >>> potemplate = potemplatesubset.getPOTemplateByName(
-  ...     'evolution-2.2')
-  >>> print potemplate.title
-  Template "evolution-2.2" in Evolution trunk
+    >>> from canonical.launchpad.database import ProductSeries
+    >>> productseries = ProductSeries.get(3)
+    >>> potemplatesubset = potemplate_set.getSubset(
+    ...     productseries=productseries)
+
+    >>> potemplate = potemplatesubset.getPOTemplateByName(
+    ...     'evolution-2.2')
+    >>> print potemplate.title
+    Template "evolution-2.2" in Evolution trunk
 
 == getPOTemplateByPath ==
 
 This method gives us the IPOTemplate that belongs to this subset and its path
 in the source code is the given one.
 
-  >>> potemplate = potemplatesubset.getPOTemplateByPath(
-  ...     'po/evolution-2.2-test.pot')
-  >>> print potemplate.title
-  Template "evolution-2.2-test" in Evolution trunk
+    >>> potemplate = potemplatesubset.getPOTemplateByPath(
+    ...     'po/evolution-2.2-test.pot')
+    >>> print potemplate.title
+    Template "evolution-2.2-test" in Evolution trunk
 
 == getAllOrderByDateLastUpdated ==
 
 This method will give us all available IPOTemplate for this subset sorted
 by their modification date.
 
-  >>> templates = list(potemplatesubset.getAllOrderByDateLastUpdated())
-  >>> len(templates)
-  2
-  >>> templates[0].date_last_updated >= templates[1].date_last_updated
-  True
+    >>> templates = list(potemplatesubset.getAllOrderByDateLastUpdated())
+    >>> len(templates)
+    2
+    >>> templates[0].date_last_updated >= templates[1].date_last_updated
+    True
 
 == getPOTemplateByTranslationDomain ==
 
 This method gives us the IPOTemplate that belongs to this subset and its
 translation domain is the given one.
 
-  >>> productseries = ProductSeries.get(5)
-  >>> potemplatesubset = potemplate_set.getSubset(
-  ...     productseries=productseries)
-  >>> potemplate = potemplatesubset.getPOTemplateByTranslationDomain(
-  ...     'NetApplet')
-  >>> print potemplate.title
-  Template "netapplet" in NetApplet trunk
+    >>> productseries = ProductSeries.get(5)
+    >>> potemplatesubset = potemplate_set.getSubset(
+    ...     productseries=productseries)
+    >>> potemplate = potemplatesubset.getPOTemplateByTranslationDomain(
+    ...     'NetApplet')
+    >>> print potemplate.title
+    Template "netapplet" in NetApplet trunk
 
 == getClosestPOTemplate ==
 
@@ -99,47 +128,62 @@ part of the path in common.
 To do this test, first we check the evolution product, it has two potemplates
 in the same path and thus, this method should not get any value.
 
-  >>> productseries = ProductSeries.get(3)
-  >>> potemplatesubset = potemplate_set.getSubset(
-  ...     productseries=productseries)
+    >>> productseries = ProductSeries.get(3)
+    >>> potemplatesubset = potemplate_set.getSubset(
+    ...     productseries=productseries)
 
-  >>> for template in potemplatesubset:
-  ...    print template.path
-  po/evolution-2.2-test.pot
-  po/evolution-2.2.pot
+    >>> for template in potemplatesubset:
+    ...    print template.path
+    po/evolution-2.2-test.pot
+    po/evolution-2.2.pot
 
-  >>> potemplatesubset.getClosestPOTemplate('po') is None
-  True
+    >>> potemplatesubset.getClosestPOTemplate('po') is None
+    True
 
 Now, we move to the NetApplet product, we should detect it.
 
-  >>> productseries = ProductSeries.get(5)
-  >>> potemplatesubset = potemplate_set.getSubset(
-  ...     productseries=productseries)
+    >>> productseries = ProductSeries.get(5)
+    >>> potemplatesubset = potemplate_set.getSubset(
+    ...     productseries=productseries)
 
-  >>> for template in potemplatesubset:
-  ...    print template.path
-  po/netapplet.pot
+    >>> for template in potemplatesubset:
+    ...    print template.path
+    po/netapplet.pot
 
-  >>> potemplatesubset.getClosestPOTemplate('po') is None
-  False
+    >>> potemplatesubset.getClosestPOTemplate('po') is None
+    False
 
 But if we give the empty string or None, we get nothing
 
-  >>> potemplatesubset.getClosestPOTemplate('') is None
-  True
-  >>> potemplatesubset.getClosestPOTemplate('') is None
-  True
+    >>> potemplatesubset.getClosestPOTemplate('') is None
+    True
+    >>> potemplatesubset.getClosestPOTemplate('') is None
+    True
+
 
 = POTemplate =
 
-Check that we can get IPOFile based on its path.
+POTemplate is an object with all strings that must be translated for a
+concrete context.
 
-  >>> from canonical.launchpad.database import POTemplate
-  >>> potemplate = POTemplate.get(1)
-  >>> pofile = potemplate.getPOFileByPath('es.po')
-  >>> print pofile.title
-  Spanish (es) translation of evolution-2.2 in Evolution trunk
+    >>> from canonical.launchpad.webapp.testing import verifyObject
+    >>> from canonical.launchpad.database import POTemplate
+    >>> from canonical.launchpad.interfaces import IPOTemplate
+    >>> potemplate = POTemplate.get(1)
+
+It implements the IPOTemplate interface.
+
+    >>> verifyObject(IPOTemplate, potemplate)
+    True
+
+
+== getPOFileByPath ==
+
+We can get an IPOFile inside a templage based on its path.
+
+    >>> pofile = potemplate.getPOFileByPath('es.po')
+    >>> print pofile.title
+    Spanish (es) translation of evolution-2.2 in Evolution trunk
 
 
 == newPOFile ==
@@ -148,51 +192,51 @@ The Portuguese translation has not been started yet; therefore,
 when we call IPOTemplate.newPOFile() a POFile instance will
 be created.
 
-  >>> pofile = potemplate.newPOFile('pt')
+    >>> pofile = potemplate.newPOFile('pt')
 
 By default, we should get a path for this pofile, that has some information
 about its potemplate's filename so we don't have conflicts with other pofiles.
 
-  >>> pofile.path
-  u'po/evolution-2.2-pt.po'
+    >>> pofile.path
+    u'po/evolution-2.2-pt.po'
 
 Lets try to access untranslated entries here.
 
-  >>> potmsgsets = list(pofile.getPOTMsgSetUntranslated())
-  >>> len(potmsgsets) == potemplate.getPOTMsgSetsCount(current=True)
-  True
+    >>> potmsgsets = list(pofile.getPOTMsgSetUntranslated())
+    >>> len(potmsgsets) == potemplate.getPOTMsgSetsCount(current=True)
+    True
 
 And there shouldn't be any translated entries
 
-  >>> potmsgsets = list(pofile.getPOTMsgSetTranslated())
-  >>> len(potmsgsets)
-  0
+    >>> potmsgsets = list(pofile.getPOTMsgSetTranslated())
+    >>> len(potmsgsets)
+    0
 
 Or any fuzzy (need-review) entries:
 
-  >>> potmsgsets = list(pofile.getPOTMsgSetFuzzy())
-  >>> len(potmsgsets)
-  0
-  >>> pofile.fuzzy_count
-  0
+    >>> potmsgsets = list(pofile.getPOTMsgSetFuzzy())
+    >>> len(potmsgsets)
+    0
+    >>> pofile.fuzzy_count
+    0
 
 == relatives_by_name ==
 
 This property gives us an iterator of IPOTemplate objects that have the
-same IPOTemplateName and are 'current'.
+same name and are 'current'.
 
 This is the template we are working with:
 
-  >>> potemplate.title
-  u'Template "evolution-2.2" in Evolution trunk'
+    >>> potemplate.title
+    u'Template "evolution-2.2" in Evolution trunk'
 
 And this is the list of templates related with this one based on its
-IPOTemplateName:
+name:
 
-  >>> for relative_potemplate in potemplate.relatives_by_name:
-  ...     assert relative_potemplate.iscurrent
-  ...     print relative_potemplate.title
-  Template "evolution-2.2" in Ubuntu Hoary package "evolution"
+    >>> for relative_potemplate in potemplate.relatives_by_name:
+    ...     assert relative_potemplate.iscurrent
+    ...     print relative_potemplate.title
+    Template "evolution-2.2" in Ubuntu Hoary package "evolution"
 
 == relatives_by_source ==
 
@@ -202,40 +246,40 @@ same context IProductSeries or IDistroSeries/ISourcePackageName and are
 
 First, we can see the relatives in a IProductSeries context.
 
-  >>> for relative_potemplate in potemplate.relatives_by_source:
-  ...     assert relative_potemplate.iscurrent
-  ...     print relative_potemplate.title
-  Template "evolution-2.2-test" in Evolution trunk
+    >>> for relative_potemplate in potemplate.relatives_by_source:
+    ...     assert relative_potemplate.iscurrent
+    ...     print relative_potemplate.title
+    Template "evolution-2.2-test" in Evolution trunk
 
 Let's get a new IPOTemplate that belongs to an IDistroSeries:
 
-  >>> potemplate = POTemplate.get(4)
-  >>> print potemplate.title
-  Template "evolution-2.2" in Ubuntu Hoary package "evolution"
+    >>> potemplate = POTemplate.get(4)
+    >>> print potemplate.title
+    Template "evolution-2.2" in Ubuntu Hoary package "evolution"
 
 And this is the list of templates related with this one based on its
 context:
 
-  >>> for relative_potemplate in potemplate.relatives_by_source:
-  ...     assert relative_potemplate.iscurrent
-  ...     print relative_potemplate.title
-  Template "man" in Ubuntu Hoary package "evolution"
+    >>> for relative_potemplate in potemplate.relatives_by_source:
+    ...     assert relative_potemplate.iscurrent
+    ...     print relative_potemplate.title
+    Template "man" in Ubuntu Hoary package "evolution"
 
 But we can see that there is a third template in this context:
 
-  >>> not_current_template = POTemplate.get(9)
-  >>> not_current_template.productseries == potemplate.productseries
-  True
-  >>> not_current_template.distroseries == potemplate.distroseries
-  True
-  >>> not_current_template.sourcepackagename == potemplate.sourcepackagename
-  True
+    >>> not_current_template = POTemplate.get(9)
+    >>> not_current_template.productseries == potemplate.productseries
+    True
+    >>> not_current_template.distroseries == potemplate.distroseries
+    True
+    >>> not_current_template.sourcepackagename == potemplate.sourcepackagename
+    True
 
 And this is the explanation of not having it in previous lists,
 it's not current.
 
-  >>> not_current_template.iscurrent
-  False
+    >>> not_current_template.iscurrent
+    False
 
 == export() ==
 
@@ -526,7 +570,7 @@ Inspecting the tarball content, we have the list of entries exported.
     >>> from canonical.launchpad.helpers import string_to_tarfile
     >>> tarfile_string = exported_translation_file.read()
     >>> tarfile = string_to_tarfile(tarfile_string)
-    >>> tarfile.getnames()
+    >>> sorted(tarfile.getnames())
     ['evolution-2.2/', 'evolution-2.2/evolution-2.2-es.po',
      'evolution-2.2/evolution-2.2-ja.po', 'evolution-2.2/evolution-2.2-xh.po',
      'po/', 'po/evolution-2.2.pot']
@@ -540,7 +584,9 @@ The *-es.po file is indeed the Spanish translation...
 And GNU tar can cope with it.
 
     >>> from canonical.launchpad.helpers import simple_popen2
-    >>> print simple_popen2('tar ztf -', tarfile_string)
+    >>> contents = simple_popen2('tar ztf -', tarfile_string)
+    >>> for line in sorted(contents.splitlines()):
+    ...     print line
     evolution-2.2/
     evolution-2.2/evolution-2.2-es.po
     evolution-2.2/evolution-2.2-ja.po

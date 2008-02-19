@@ -23,7 +23,7 @@ count:len gives you a number which is len(thing).
    TypeError: len() of unsized object
 
 
-== The fmt: namespace to get strings ==
+== The image: namespace to get image elements ==
 
 To display the icon for a milestone, use image:icon:
 
@@ -62,23 +62,19 @@ an actual launchpad user.
     >>> test_tales("person/image:mugshot", person=spiv)
     '...<img...src="/@@/person-inactive-mugshot" />...'
 
-If you are on feeds.launchpad.net, you need to specify the rootsite, so
-that the links and images are pointing at the right hostname.
-
-    >>> test_tales("person/fmt:link:mainsite/foo/bar", person=spiv)
-    u'<a href="http://launchpad.dev/~spiv/foo/bar"><img...src="http://launchpad.dev/@@/person-inactive"...'
-    >>> test_tales("person/fmt:link:bugs/foo/bar", person=spiv)
-    u'<a href="http://bugs.launchpad.dev/~spiv/foo/bar"><img...src="http://bugs.launchpad.dev/@@/person-inactive"...'
-
 We also have image:icon for KarmaCategory:
 
     >>> from canonical.launchpad.database import KarmaCategory
     >>> for category in KarmaCategory.select(orderBy='title'):
     ...     print test_tales("category/image:icon", category=category)
     <img ... title="Answer Tracker" src="/@@/question" />
+    <img ... title="Bazaar Branches" src="/@@/branch" />
     <img ... title="Bug Management" src="/@@/bug" />
     <img ... title="Specification Tracking" src="/@@/blueprint" />
     <img ... title="Translations in Rosetta" src="/@@/translation" />
+
+
+== The fmt: namespace to get strings ==
 
 datetimes can be formatted with fmt:date, fmt:time, fmt:datetime and
 fmt:rfc822utcdatetime.
@@ -146,11 +142,31 @@ containing the person name and an icon.
     >>> test_tales("person/fmt:link", person=ubuntu_team)
     u'<a ...><img ... src="/@@/team" />&nbsp;Ubuntu Team</a>'
 
+The person's displayname is escaped to prevent markup from being
+interpreted by the browser. For example, a script added to Sample
+Person's displayname will be escaped; averting a XSS vulnerability.
+
+    >>> login('test@canonical.com')
+    >>> sample_person = getUtility(IPersonSet).getByName('name12')
+    >>> sample_person.displayname = (
+    ...     "Sample Person<br/><script>alert('XSS')</script>")
+    >>> test_tales("person/fmt:link", person=sample_person)
+    u'<a ...><img ... />&nbsp;Sample
+      Person&lt;br/&gt;&lt;script&gt;alert(\'XSS\')&lt;/script&gt;</a>'
+
 The fmt:link formatter uses additional path components to extend the
 link:
 
     >>> test_tales("person/fmt:link/foo/bar", person=spiv)
     u'<a href=".../~spiv/foo/bar">...'
+
+If you are on feeds.launchpad.net, you need to specify the rootsite, so
+that the links and images are pointing at the right hostname.
+
+    >>> test_tales("person/fmt:link:mainsite/foo/bar", person=spiv)
+    u'<a href="http://launchpad.dev/~spiv/foo/bar"><img...src="http://launchpad.dev/@@/person-inactive"...'
+    >>> test_tales("person/fmt:link:bugs/foo/bar", person=spiv)
+    u'<a href="http://bugs.launchpad.dev/~spiv/foo/bar"><img...src="http://bugs.launchpad.dev/@@/person-inactive"...'
 
 For branches, fmt:link links to the branch page.
 
@@ -163,15 +179,30 @@ For branches, fmt:link links to the branch page.
 For bugs, fmt:link takes to the bug redirect page.
 
     >>> from canonical.launchpad.interfaces import IBugSet
-    >>> test_tales("bug/fmt:link", bug=getUtility(IBugSet).get(1))
+    >>> bug = getUtility(IBugSet).get(1)
+    >>> test_tales("bug/fmt:link", bug=bug)
     u'<a href=".../bugs/1"><img src="/@@/bug"...>&nbsp;Bug #1: Firefox does not support SVG</a>'
 
 For bugtasks, fmt:link shows the severity bug icon, and links to the
 appropriate project's bug.
 
-    >>> bugtask = getUtility(IBugSet).get(1).bugtasks[0]
+    >>> bugtask = bug.bugtasks[0]
     >>> test_tales("bugtask/fmt:link", bugtask=bugtask)
     u'<a href=".../firefox/+bug/1"><img ...src="/@@/bug-low" />&nbsp;Bug #1: Firefox does not support SVG</a>'
+
+Bug titles may contain markup (when describing issue regarding markup).
+Their titles are escaped so that they display correctly. This also
+prevents a XSS vulnerability where malicious code injected into the
+title might be interpreted by the browser.
+
+    >>> bug.title = "Opps<br/><script>alert('XSS')</script>"
+    >>> test_tales("bug/fmt:link", bug=getUtility(IBugSet).get(1))
+    u'<a href=".../bugs/1"><img src="/@@/bug"...>&nbsp;Bug #1:
+      Opps&lt;br/&gt;&lt;script&gt;alert(\'XSS\')&lt;/script&gt;</a>'
+
+    >>> test_tales("bugtask/fmt:link", bugtask=bugtask)
+    u'<a href=".../firefox/+bug/1"><img ...src="/@@/bug-low" />&nbsp;Bug #1:
+      Opps&lt;br/&gt;&lt;script&gt;alert(\'XSS\')&lt;/script&gt;</a>'
 
 
 == The fmt: namespace to get strings (hiding) ==
@@ -401,6 +432,50 @@ is replaced with the message '<email address hidden>'.
     ...     "...........................................................not")
     >>> test_tales('foo/fmt:obfuscate-email', foo=bad_address)
     'medicalwei@sara:~$ ...'
+
+
+== Linkification of email addresses ==
+
+fmt:linkify-email will recognise email addresses that are registered in
+Launchpad and linkify them to point at the profile page for that person.
+The resulting HTML includes a person icon next to the linked text to
+emphasise the linkage.
+
+    >>> test_tales('foo/fmt:linkify-email',
+    ...    foo='I am the mighty foo.bar@canonical.com hear me roar.')
+    u'...<a href="http://launchpad.dev/~name16"><img ...src="/@@/person"
+    />&nbsp;foo.bar@canonical.com</a>...'
+
+Multiple addresses may be linkified at once:
+
+    >>> test_tales('foo/fmt:linkify-email',
+    ...     foo='foo.bar@canonical.com and cprov@ubuntu.com')
+    u'<a href="http://launchpad.dev/~name16"><img ...src="/@@/person"
+    />&nbsp;foo.bar@canonical.com</a> and
+    <a href="http://launchpad.dev/~cprov"><img ...src="/@@/person"
+    />&nbsp;cprov@ubuntu.com</a>'
+
+Team addresses are linkified with a team icon:
+
+    >>> test_tales('foo/fmt:linkify-email', foo='support@ubuntu.com')
+    u'<a href="http://launchpad.dev/~ubuntu-team"><img ...src="/@@/team"
+    />&nbsp;support@ubuntu.com</a>'
+
+Unknown email addresses are not altered in any way:
+
+    >>> test_tales('foo/fmt:linkify-email', foo='nobody@example.com')
+    'nobody@example.com'
+
+Users who specifiy that their email adresses must be hidden also do not
+get linkified.  test@canonical.com is hidden:
+
+    >>> person_set = getUtility(IPersonSet)
+    >>> discreet_user = person_set.getByEmail('test@canonical.com')
+    >>> discreet_user.hide_email_addresses
+    True
+
+    >>> test_tales('foo/fmt:linkify-email', foo='test@canonical.com')
+    'test@canonical.com'
 
 
 == Test the 'fmt:' namespace where the context is a dict. ==

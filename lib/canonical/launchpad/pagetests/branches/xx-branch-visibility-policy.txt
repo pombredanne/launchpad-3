@@ -60,7 +60,7 @@ specify any branch visibility policy items and there is an inherited branch
 visibility policy, then that policy is used.
 
     >>> print extract_text(find_tag_by_id(admin_browser.contents, 'inherited'))
-    Using inherted policy from the Mozilla Project.
+    Using inherited policy from the Mozilla Project.
 
     >>> print extract_text(find_tag_by_id(admin_browser.contents, 'default-policy'))
     Default branch visibility for all branches in Mozilla Firefox is Public.
@@ -201,4 +201,4 @@ Firefox will go back to inheriting the polices of Mozilla.
     >>> admin_browser.getControl('Remove selected policy items').click()
 
     >>> print extract_text(find_tag_by_id(admin_browser.contents, 'inherited'))
-    Using inherted policy from the Mozilla Project.
+    Using inherited policy from the Mozilla Project.

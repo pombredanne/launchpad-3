@@ -1,7 +1,14 @@
-<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
-      lang="en"
-      metal:use-macro="context/@@main_template/master"
-      i18n:domain="launchpad">
+<html
+  xmlns="http://www.w3.org/1999/xhtml"
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  xml:lang="en"
+  lang="en"
+  dir="ltr"
+  metal:use-macro="context/@@main_template/master"
+  i18n:domain="launchpad"
+>
 
 <body>
 
@@ -52,14 +59,14 @@
     	  <table>
 	  <tr>
           <th tal:condition="prev_url">
-	       <a tal:attributes="href prev_url"><b><< Prev</b></a>
+	       <a tal:attributes="href prev_url"><b>&lt;&lt; Prev</b></a>
 	  </th>
           <th tal:repeat="page_link bn/batchPageURLs">
 	     <a tal:attributes="href python:page_link.values()[0]"
                 tal:content="python:page_link.keys()[0]"></a>
 	  </th>
           <th tal:condition="next_url" >
-	     <a tal:attributes="href next_url"><b>Next >></b></a>
+	     <a tal:attributes="href next_url"><b>Next &gt;&gt;</b></a>
           </th>
           </tr>
 	  </table>

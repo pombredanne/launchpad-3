@@ -8,11 +8,10 @@ __all__ = [
     'QueueItemsView',
     ]
 from zope.component import getUtility
-from zope.security.interfaces import Unauthorized
 
 from canonical.launchpad.interfaces import (
     IHasQueueItems, IPackageUploadSet, QueueInconsistentStateError,
-    UnexpectedFormData, ILaunchpadCelebrities, PackageUploadStatus)
+    UnexpectedFormData, PackageUploadStatus)
 from canonical.launchpad.webapp import LaunchpadView
 from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp.authorization import check_permission
@@ -49,13 +48,9 @@ class QueueItemsView(LaunchpadView):
             self.state = PackageUploadStatus.items[state_value]
         except KeyError:
             raise UnexpectedFormData(
-                'No suitable status found for value "%s"' % state_value
-                )
+                'No suitable status found for value "%s"' % state_value)
 
         self.queue = self.context.getPackageUploadQueue(self.state)
-
-        if not check_permission('launchpad.View', self.queue):
-            raise Unauthorized("User don't have permission to see this queue.")
 
         valid_states = [
             PackageUploadStatus.NEW,
@@ -64,13 +59,6 @@ class QueueItemsView(LaunchpadView):
             PackageUploadStatus.DONE,
             PackageUploadStatus.UNAPPROVED,
             ]
-
-        if not check_permission('launchpad.Edit', self.queue):
-            # Omit the UNAPPROVED status, which the user is unable to
-            # view anyway. If he hand-hacks the URL, all he will get is
-            # a Forbidden which is enforced by the security wrapper for
-            # Upload.
-            valid_states.remove(PackageUploadStatus.UNAPPROVED)
 
         self.filtered_options = []
 
@@ -137,11 +125,12 @@ class QueueItemsView(LaunchpadView):
         if accept:
             header = 'Accepting Results:<br>'
             def queue_action(queue_item):
-                queue_item.setAccepted()
+                queue_item.acceptFromQueue(
+                    announce_list=self.context.changeslist)
         elif reject:
             header = 'Rejecting Results:<br>'
             def queue_action(queue_item):
-                queue_item.setRejected()
+                queue_item.rejectFromQueue()
 
         success = []
         failure = []
@@ -154,8 +143,6 @@ class QueueItemsView(LaunchpadView):
                                (queue_item.displayname, info))
             else:
                 success.append('OK: %s' % queue_item.displayname)
-
-            queue_item.syncUpdate()
 
         report = '%s<br>%s' % (header, ', '.join(success + failure))
         return report

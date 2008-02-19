@@ -25,6 +25,14 @@
 >
   <head>
     <title tal:content="CONTEXTS/fmt:pagetitle">Launchpad</title>
+    <tal:atomfeeds condition="view/feed_links | nothing">
+      <tal:loop repeat="link view/feed_links">
+        <link rel="alternate" type="application/atom+xml"
+              tal:attributes="title link/title;
+                              href link/href"/>
+      </tal:loop>
+    </tal:atomfeeds>
+
     <!-- Launchpad style sheet -->
     <style
       type="text/css"
@@ -36,15 +44,24 @@
       media="screen, print"
       tal:condition="devmode"
       tal:content="string:@import url(${icingroot}/style.css);"/>
-    <style
-      type="text/css"
-      tal:condition="view/isPrivate | CONTEXTS/lp:immediate_object_is_private"
-      id="privatestyle"
-    >#container {background: url(/@@/private-bg) top left repeat-x;}</style>
     <style tal:condition="is_demo" type="text/css"
     >html, body {background-image: url(/@@/demo) !important;}</style>
     <style tal:condition="site_message" type="text/css"
     >#help {top: 47px !important;}</style>
+
+    <tal:XXX condition="nothing">
+      20080131 mpt: We make text fields slightly narrower in IE to avoid the
+      right side being clipped (bug 156202). This should be rechecked post-2.0.
+      The two rules are separate because IE6 ignores the first one, and ignores
+      them both if they're together.
+    </tal:XXX>
+    <!--[if lte IE 7]>
+      <style type="text/css">
+        input[type="text"] {width: 95%}
+        textarea {width: 95%;}
+      </style>
+    <![endif]-->
+
     <!--[if IE 7]>
       <style type="text/css">
         #container {margin-top: 28px; position: static;}
@@ -221,8 +238,28 @@
                           </tal:facet>
                         </ul>
                       </tal:applicationtabs>
-                      <div id="container">
-                        <div id="maincontent">
+                      <div
+                        id="container"
+                        tal:attributes="class python:path('view/isPrivate | CONTEXTS/lp:immediate_object_is_private') and 'private' or None"
+                      >
+                        <tal:noportlets
+                          condition="not: view/macro:pagehas/portlets"
+                        >
+                          <tal:notifications
+                            define="notifications request/notifications"
+                            condition="notifications"
+                          >
+                            <metal:notifications
+                              use-macro=
+                                "context/@@+main-template-macros/notifications"
+                            />
+                          </tal:notifications>
+                          <metal:block define-slot="main" />
+                        </tal:noportlets>
+                        <div
+                          id="maincontent"
+                          tal:condition="view/macro:pagehas/portlets"
+                        >
                            <div class="pageheading"
                                 tal:condition="view/macro:pagehas/pageheading">
                             <metal:block define-slot="pageheading">
@@ -276,10 +313,9 @@
           tal:replace="nothing">
           <a tal:attributes="href vhosts/mainsite/rooturl">Launchpad home</a> |
           <a tal:attributes="href vhosts/code/rooturl">Code</a> |
-        <a tal:attributes="href vhosts/bugs/rooturl">Bugs</a> |
-        <a tal:attributes="href vhosts/blueprints/rooturl">Blueprints</a> |
-        <a tal:attributes="href vhosts/translations/rooturl">Translations</a> |
-  
+          <a tal:attributes="href vhosts/bugs/rooturl">Bugs</a> |
+          <a tal:attributes="href vhosts/blueprints/rooturl">Blueprints</a> |
+          <a tal:attributes="href vhosts/translations/rooturl">Translations</a> |
           <a tal:attributes="href vhosts/answers/rooturl">Answers</a>
         </div>
         <div id="colophon">
@@ -289,7 +325,7 @@
           <a href="https://help.launchpad.net/">Documentation</a>
         </div>
         <div id="copyright">
-            Copyright&nbsp;2004-2007&nbsp;<a
+            &copy;&nbsp;2004-2008&nbsp;<a
                 href="http://canonical.com/">Canonical&nbsp;Ltd.</a>
           <tal:block>
               | build
@@ -353,6 +389,60 @@
         <li class="item"><a href="/sprints">Meetings</a></li>
       </ul>
     </div>
+    <tal:datetimepicker condition="request/needs_datetimepicker_iframe">
+      <script language="Javascript" type="text/javascript">
+          function pickDateTime(field, range) {
+              e = document.getElementById(field);
+              if (e == null) {
+                  alert(field);
+              }
+              if(self.DateTimePicker) {
+                  DateTimePicker.fPopCalendar(e, range);
+                  return false;
+              }
+          }
+      </script>
+      <iframe
+          width="174" height="189"
+          name="gToday:datetimepicker:agenda.js:DateTimePicker:plugins_time.js"
+          id="gToday:datetimepicker:agenda.js:DateTimePicker:plugins_time.js"
+          src="/+popcalxp/ipopeng.htm"
+          scrolling="no"
+          frameborder="0"
+          style="visibility:visible; z-index:999; position:absolute;
+                 top:-500px; left:-500px;">
+        <LAYER name="gToday:datetimepicker:agenda.js"
+               src="/+popcalxp/npopeng.htm"
+               background="/+popcalxp/npopeng.htm">     </LAYER>
+      </iframe>
+    </tal:datetimepicker>
+    <tal:datepicker condition="request/needs_datepicker_iframe">
+      <script language="Javascript" type="text/javascript">
+          function pickDate(field, range) {
+              e = document.getElementById(field);
+              if (e == null) {
+                  alert(field);
+              }
+              if(self.DatePicker) {
+                  DatePicker.fPopCalendar(e, range);
+                  return false;
+              }
+          }
+      </script>
+      <iframe
+          width="174" height="189"
+          name="gToday:datepicker:agenda.js:DatePicker:plugins.js"
+          id="gToday:datepicker:agenda.js:DatePicker:plugins.js"
+          src="/+popcalxp/ipopeng.htm"
+          scrolling="no"
+          frameborder="0"
+          style="visibility:visible; z-index:999; position:absolute;
+                 top:-500px; left:-500px;">
+       <LAYER name="gToday:datepicker:agenda.js"
+              src="/+popcalxp/npopeng.htm"
+              background="/+popcalxp/npopeng.htm">     </LAYER>
+      </iframe>
+    </tal:datepicker>
   </body>
 </html>
 <tal:requestlog

@@ -2,7 +2,7 @@
 
 """Export module for gettext's .po file format.
 
-You can read more about this file format from:
+You can read more about this file format at:
 http://www.gnu.org/software/gettext/manual/html_chapter/gettext_10.html#PO-Files
 """
 
@@ -13,12 +13,14 @@ __all__ = [
     ]
 
 import os
+import tempfile
+
 from cStringIO import StringIO
 from zope.interface import implements
 
 from canonical.launchpad.interfaces import (
     ITranslationFormatExporter, TranslationConstants, TranslationFileFormat)
-from canonical.launchpad.translationformat import TranslationMessage
+from canonical.launchpad.translationformat import TranslationMessageData
 from canonical.launchpad.translationformat.translation_export import (
     ExportedTranslationFile, LaunchpadWriteTarFile)
 
@@ -26,27 +28,27 @@ from canonical.launchpad.translationformat.translation_export import (
 def comments_text_representation(translation_message):
     r'''Return text representation of the comments.
 
-    :param translation_message: An ITranslationMessage that will get comments
-        exported.
+    :param translation_message: An ITranslationMessageData that will get
+        comments exported.
 
-    >>> translation_message = TranslationMessage()
-    >>> translation_message.msgid = u'foo'
+    >>> translation_message = TranslationMessageData()
+    >>> translation_message.msgid_singular = u'foo'
     >>> translation_message.addTranslation(
     ...     TranslationConstants.SINGULAR_FORM, u'bar')
     >>> translation_message.flags = ('fuzzy', )
     >>> comments_text_representation(translation_message)
     u'#, fuzzy'
 
-    >>> translation_message = TranslationMessage()
-    >>> translation_message.msgid = u'a'
+    >>> translation_message = TranslationMessageData()
+    >>> translation_message.msgid_singular = u'a'
     >>> translation_message.addTranslation(
     ...     TranslationConstants.SINGULAR_FORM, u'b')
     >>> translation_message.comment = u' blah\n'
     >>> comments_text_representation(translation_message)
     u'# blah'
 
-    >>> translation_message = TranslationMessage()
-    >>> translation_message.msgid = u'%d foo'
+    >>> translation_message = TranslationMessageData()
+    >>> translation_message.msgid_singular = u'%d foo'
     >>> translation_message.addTranslation(
     ...     TranslationConstants.SINGULAR_FORM, u'%d bar')
     >>> translation_message.flags = ('fuzzy', 'c-format')
@@ -99,53 +101,53 @@ def wrap_text(text, prefix, wrap_width):
         it.
     :param wrap_width: The width where the text should be wrapped.
 
-    >>> translation_message = TranslationMessage()
-    >>> translation_message.msgid = u'abcdefghijkl'
+    >>> translation_message = TranslationMessageData()
+    >>> translation_message.msgid_singular = u'abcdefghijkl'
     >>> translation_message.addTranslation(
     ...     TranslationConstants.SINGULAR_FORM, u'z')
     >>> export_translation_message(translation_message, wrap_width=20)
     u'msgid "abcdefghijkl"\nmsgstr "z"'
 
-    >>> translation_message = TranslationMessage()
-    >>> translation_message.msgid = u'abcdefghijklmnopqr'
+    >>> translation_message = TranslationMessageData()
+    >>> translation_message.msgid_singular = u'abcdefghijklmnopqr'
     >>> translation_message.addTranslation(
     ...     TranslationConstants.SINGULAR_FORM, u'z')
     >>> export_translation_message(translation_message, wrap_width=20)
     u'msgid ""\n"abcdefghijklmnopqr"\nmsgstr "z"'
 
-    >>> translation_message = TranslationMessage()
-    >>> translation_message.msgid = u'abcdef hijklm'
+    >>> translation_message = TranslationMessageData()
+    >>> translation_message.msgid_singular = u'abcdef hijklm'
     >>> translation_message.addTranslation(
     ...     TranslationConstants.SINGULAR_FORM, u'z')
     >>> export_translation_message(translation_message, wrap_width=20)
     u'msgid ""\n"abcdef hijklm"\nmsgstr "z"'
 
-    >>> translation_message = TranslationMessage()
-    >>> translation_message.msgid = u'abcdefghijklmnopqr st'
+    >>> translation_message = TranslationMessageData()
+    >>> translation_message.msgid_singular = u'abcdefghijklmnopqr st'
     >>> translation_message.addTranslation(
     ...     TranslationConstants.SINGULAR_FORM, u'z')
     >>> export_translation_message(translation_message, wrap_width=20)
     u'msgid ""\n"abcdefghijklmnopqr "\n"st"\nmsgstr "z"'
 
     newlines in the text interfere with wrapping.
-    >>> translation_message = TranslationMessage()
-    >>> translation_message.msgid = u'abc\ndef'
+    >>> translation_message = TranslationMessageData()
+    >>> translation_message.msgid_singular = u'abc\ndef'
     >>> translation_message.addTranslation(
     ...     TranslationConstants.SINGULAR_FORM, u'z')
     >>> export_translation_message(translation_message, wrap_width=20)
     u'msgid ""\n"abc\\n"\n"def"\nmsgstr "z"'
 
     but not when it's just a line that ends with a newline char
-    >>> translation_message = TranslationMessage()
-    >>> translation_message.msgid = u'abc\n'
+    >>> translation_message = TranslationMessageData()
+    >>> translation_message.msgid_singular = u'abc\n'
     >>> translation_message.addTranslation(
     ...     TranslationConstants.SINGULAR_FORM, u'def\n')
     >>> export_translation_message(translation_message)
     u'msgid "abc\\n"\nmsgstr "def\\n"'
 
     It's time to test the wrapping with the '-' char:
-    >>> translation_message = TranslationMessage()
-    >>> translation_message.msgid = (
+    >>> translation_message = TranslationMessageData()
+    >>> translation_message.msgid_singular = (
     ...     u"WARNING: unsafe enclosing directory permissions on homedir"
     ...     u" `%s'\n")
     >>> translation_message.addTranslation(
@@ -159,8 +161,8 @@ def wrap_text(text, prefix, wrap_width):
     "Verzeichnisses `%s'\n"
 
     When we changed the wrapping code, we got a bug with this string.
-    >>> translation_message = TranslationMessage()
-    >>> translation_message.msgid = (
+    >>> translation_message = TranslationMessageData()
+    >>> translation_message.msgid_singular = (
     ...     u"The location and hierarchy of the Evolution contact folders has"
     ...         u" changed since Evolution 1.x.\n\n")
     >>> print export_translation_message(translation_message)
@@ -173,8 +175,8 @@ def wrap_text(text, prefix, wrap_width):
     When the wrapping size was exactly gotten past by in the middle of
     escape sequence like \" or \\, it got cut off in there, thus
     creating a broken PO message.  This is the test for bug #46156.
-    >>> translation_message = TranslationMessage()
-    >>> translation_message.msgid = (
+    >>> translation_message = TranslationMessageData()
+    >>> translation_message.msgid_singular = (
     ...     u"1234567890abcde word\"1234567890abcdefghij")
     >>> print export_translation_message(translation_message, wrap_width=20)
     msgid ""
@@ -186,8 +188,8 @@ def wrap_text(text, prefix, wrap_width):
     Lets also make sure that the unconditional break is not occurring
     inside a single long word in the middle of the escape sequence
     like \" or \\:
-    >>> translation_message = TranslationMessage()
-    >>> translation_message.msgid = (
+    >>> translation_message = TranslationMessageData()
+    >>> translation_message.msgid_singular = (
     ...     u"1234567890abcdefghij\\klmno")
     >>> print export_translation_message(translation_message, wrap_width=20)
     msgid ""
@@ -195,8 +197,8 @@ def wrap_text(text, prefix, wrap_width):
     "\\klmno"
     msgstr ""
 
-    >>> translation_message = TranslationMessage()
-    >>> translation_message.msgid = (
+    >>> translation_message = TranslationMessageData()
+    >>> translation_message.msgid_singular = (
     ...     u"1234567890abcdefgh\\ijklmno")
     >>> print export_translation_message(translation_message, wrap_width=20)
     msgid ""
@@ -204,8 +206,8 @@ def wrap_text(text, prefix, wrap_width):
     "ijklmno"
     msgstr ""
 
-    >>> translation_message = TranslationMessage()
-    >>> translation_message.msgid = (
+    >>> translation_message = TranslationMessageData()
+    >>> translation_message.msgid_singular = (
     ...     u"1234567890abcdefg\\\\hijklmno")
     >>> print export_translation_message(translation_message, wrap_width=20)
     msgid ""
@@ -215,8 +217,8 @@ def wrap_text(text, prefix, wrap_width):
 
     For compatibility with msgcat -w, it also wraps on \\ properly.
 
-    >>> translation_message = TranslationMessage()
-    >>> translation_message.msgid = (
+    >>> translation_message = TranslationMessageData()
+    >>> translation_message.msgid_singular = (
     ...     u"\\\\\\\\\\")
     >>> print export_translation_message(translation_message, wrap_width=5)
     msgid ""
@@ -318,7 +320,7 @@ def wrap_text(text, prefix, wrap_width):
 def msgid_text_representation(translation_message, wrap_width):
     """Return text representation of the msgids.
 
-    :param translation_message: An `ITranslationMessage` that will get its
+    :param translation_message: An `ITranslationMessageData` that will get its
         msgids exported.
     :param wrap_width: The width where the text should be wrapped.
     """
@@ -326,7 +328,8 @@ def msgid_text_representation(translation_message, wrap_width):
     if translation_message.context is not None:
         text.extend(
             wrap_text(translation_message.context, u'msgctxt', wrap_width))
-    text.extend(wrap_text(translation_message.msgid, u'msgid', wrap_width))
+    text.extend(
+        wrap_text(translation_message.msgid_singular, u'msgid', wrap_width))
     if translation_message.msgid_plural:
         # This message has a plural form that we must export.
         text.extend(
@@ -341,7 +344,7 @@ def msgid_text_representation(translation_message, wrap_width):
 def translation_text_representation(translation_message, wrap_width):
     """Return text representation of the translations.
 
-    :param translation_message: An `ITranslationMessage` that will get its
+    :param translation_message: An `ITranslationMessageData` that will get its
         translations exported.
     :param wrap_width: The width where the text should be wrapped.
     """
@@ -371,8 +374,8 @@ def translation_text_representation(translation_message, wrap_width):
 def export_translation_message(translation_message, wrap_width=77):
     r'''Return a text representing translation_message.
 
-    >>> translation_message = TranslationMessage()
-    >>> translation_message.msgid = u'foo'
+    >>> translation_message = TranslationMessageData()
+    >>> translation_message.msgid_singular = u'foo'
     >>> translation_message.addTranslation(
     ...     TranslationConstants.SINGULAR_FORM, u'bar')
     >>> export_translation_message(translation_message)
@@ -389,8 +392,8 @@ def export_translation_message(translation_message, wrap_width=77):
     u'#, fuzzy\n#~ msgid "foo"\n#~ msgstr "bar"'
 
     plural forms have its own way to represent translations.
-    >>> translation_message = TranslationMessage()
-    >>> translation_message.msgid = u'foo'
+    >>> translation_message = TranslationMessageData()
+    >>> translation_message.msgid_singular = u'foo'
     >>> translation_message.msgid_plural = u'foos'
     >>> translation_message.addTranslation(
     ...     TranslationConstants.SINGULAR_FORM, u'bar')
@@ -401,24 +404,24 @@ def export_translation_message(translation_message, wrap_width=77):
     u'msgid "foo"\nmsgid_plural "foos"\nmsgstr[0] "bar"\nmsgstr[1] "bars"'
 
     backslashes are escaped (doubled) and quotes are backslashed.
-    >>> translation_message = TranslationMessage()
-    >>> translation_message.msgid = u'foo"bar\\baz'
+    >>> translation_message = TranslationMessageData()
+    >>> translation_message.msgid_singular = u'foo"bar\\baz'
     >>> translation_message.addTranslation(
     ...     TranslationConstants.SINGULAR_FORM, u'z')
     >>> export_translation_message(translation_message)
     u'msgid "foo\\"bar\\\\baz"\nmsgstr "z"'
 
     tabs are backslashed too, with standard C syntax.
-    >>> translation_message = TranslationMessage()
-    >>> translation_message.msgid = u'\tServer name: %s'
+    >>> translation_message = TranslationMessageData()
+    >>> translation_message.msgid_singular = u'\tServer name: %s'
     >>> export_translation_message(translation_message)
     u'msgid "\\tServer name: %s"\nmsgstr ""'
 
     You can have context on messages.
 
-    >>> translation_message = TranslationMessage()
+    >>> translation_message = TranslationMessageData()
     >>> translation_message.context = u'bla'
-    >>> translation_message.msgid = u'foo'
+    >>> translation_message.msgid_singular = u'foo'
     >>> translation_message.addTranslation(
     ...     TranslationConstants.SINGULAR_FORM, u'bar')
     >>> export_translation_message(translation_message)
@@ -429,6 +432,83 @@ def export_translation_message(translation_message, wrap_width=77):
         msgid_text_representation(translation_message, wrap_width),
         translation_text_representation(translation_message, wrap_width),
         ]).strip()
+
+
+class SinglePoFileStorageStrategy:
+    """Store a single file for export.
+
+    Provides a way to store a single PO or POT file, but through the same API
+    that `TarballFileStorageStrategy` offers to store any number of files into
+    a single tarball.  Both classes have an `addFile` operation, though a
+    `SinglePoFileStorageStrategy` instance will only let you add a single
+    file.
+
+    (The type of the stored file matters in this strategy because the storage
+    strategy declares the MIME type of the file it produces).
+    """
+    path = None
+    extension = None
+
+    def addFile(self, path, extension, content):
+        """Add file to be stored.  This type of storage takes exactly 1 file.
+
+        :param path: location and name of this file.
+        :param extension: filename suffix (as found at end of path).
+        :param content: contents of file.
+        """
+        assert path is not None, "Storing file without path."
+        assert self.path is None, "Multiple files added; expected just one."
+        self.path = path
+        self.extension = extension
+        self.content = content
+
+    def export(self):
+        """Export as `ExportedTranslationFile`."""
+        assert self.path is not None, "Exporting empty file."
+        output = ExportedTranslationFile(StringIO(self.content))
+        output.path = self.path
+        # We use x-po for consistency with other .po editors like GTranslator.
+        output.content_type = 'application/x-po'
+        output.file_extension = self.extension
+        return output
+
+
+class TarballFileStorageStrategy:
+    """Store any number of files for export as a tarball.
+
+    Similar to `SinglePoFileStorageStrategy`, but lets you store any number of
+    files using the same API.  Each file is written into the resulting tarball
+    as soon as it is added.  There is no need to keep the full contents of the
+    tarball in memory at any single time.
+    """
+    def __init__(self):
+        self.buffer = tempfile.TemporaryFile()
+        self.tar_writer = LaunchpadWriteTarFile(self.buffer)
+
+    def addFile(self, path, extension, content):
+        """Add file to be stored.
+
+        :param path: location and name of this file, relative to root of tar
+            archive.
+        :param extension: filename suffix (ignored here).
+        :param content: contents of file.
+        """
+        self.tar_writer.add_file(path, content)
+
+    def export(self):
+        """Export as `ExportedTranslationFile`."""
+        self.tar_writer.close()
+        self.buffer.seek(0)
+        output = ExportedTranslationFile(self.buffer)
+
+        # Don't set path; let the caller decide.
+
+        # For tar.gz files, the standard content type is application/x-gtar.
+        # You can see more info on
+        #   http://en.wikipedia.org/wiki/List_of_archive_formats
+        output.content_type = 'application/x-gtar'
+        output.file_extension = 'tar.gz'
+        return output
 
 
 class GettextPOExporter:
@@ -445,8 +525,8 @@ class GettextPOExporter:
             TranslationFileFormat.XPI]
 
     def _getHeaderAsMessage(self, translation_file):
-        """Return an `ITranslationMessage` with the header content."""
-        header_translation_message = TranslationMessage()
+        """Return an `ITranslationMessageData` with the header content."""
+        header_translation_message = TranslationMessageData()
         header_translation_message.addTranslation(
             TranslationConstants.SINGULAR_FORM,
             translation_file.header.getRawContent())
@@ -456,7 +536,7 @@ class GettextPOExporter:
             header_translation_message.flags.update(['fuzzy'])
         return header_translation_message
 
-    def exportTranslationMessage(self, translation_message):
+    def exportTranslationMessageData(self, translation_message):
         """See `ITranslationFormatExporter`."""
         return export_translation_message(translation_message)
 
@@ -466,7 +546,16 @@ class GettextPOExporter:
         assert len(translation_file_list) > 0, (
             'Got an empty list of files to export!')
 
-        exported_files = {}
+        # XXX JeroenVermeulen 2008-02-06: Is there anything here that we can
+        # unify with the language-pack export code?
+
+        if len(translation_file_list) == 1:
+            # Export single file.
+            storage = SinglePoFileStorageStrategy()
+        else:
+            # Export multiple files, wrapped up as a tarball.
+            storage = TarballFileStorageStrategy()
+
         for translation_file in translation_file_list:
             dirname = os.path.dirname(translation_file.path)
             if dirname == '':
@@ -492,14 +581,14 @@ class GettextPOExporter:
                 translation_file.header.charset = 'UTF-8'
             header_translation_message = self._getHeaderAsMessage(
                 translation_file)
-            exported_header = self.exportTranslationMessage(
+            exported_header = self.exportTranslationMessageData(
                 header_translation_message)
             chunks = [exported_header.encode(translation_file.header.charset)]
             for message in translation_file.messages:
                 if (message.is_obsolete and
                     (ignore_obsolete or len(message.translations) == 0)):
                     continue
-                exported_message = self.exportTranslationMessage(message)
+                exported_message = self.exportTranslationMessageData(message)
                 try:
                     encoded_text = exported_message.encode(
                         translation_file.header.charset)
@@ -516,7 +605,7 @@ class GettextPOExporter:
                     # We need to update the header too.
                     header_translation_message = self._getHeaderAsMessage(
                         translation_file)
-                    exported_header = self.exportTranslationMessage(
+                    exported_header = self.exportTranslationMessageData(
                         header_translation_message)
                     chunks[0] = exported_header.encode(old_charset)
                     # Update already exported entries.
@@ -532,27 +621,7 @@ class GettextPOExporter:
             # Gettext .po files are supposed to end with a new line.
             exported_file_content += '\n'
 
-            exported_files[file_path] = exported_file_content
+            storage.addFile(file_path, file_extension, exported_file_content)
 
-        if len(exported_files) == 1:
-            # It's a single file export.
-            exported_file = ExportedTranslationFile(
-                StringIO(exported_file_content))
-            exported_file.path = file_path
-            # We use x-po for consistency with other .po editors like
-            # GTranslator.
-            exported_file.content_type = 'application/x-po'
-            exported_file.file_extension = file_extension
-        else:
-            # There are multiple files being exported. We need to generate an
-            # archive that include all them.
-            exported_file = ExportedTranslationFile(
-                LaunchpadWriteTarFile.files_to_stream(exported_files))
-            # For tar.gz files, the standard content type is
-            # application/x-gtar. You can see more info on
-            # http://en.wikipedia.org/wiki/List_of_archive_formats
-            exported_file.content_type = 'application/x-gtar'
-            exported_file.file_extension = 'tar.gz'
-            # By leaving path set to None, we let the caller decide.
+        return storage.export()
 
-        return exported_file

@@ -1,12 +1,16 @@
 # Copyright 2006 Canonical Ltd.  All rights reserved.
+# pylint: disable-msg=W0702
 
 """Functions related to sending bug notifications."""
 
 __metaclass__ = type
 
+from zope.component import getUtility
+
 from canonical.database.sqlbase import rollback, begin
 from canonical.launchpad.helpers import (
     get_email_template)
+from canonical.launchpad.interfaces import IPersonSet
 from canonical.launchpad.mailnotification import (
     generate_bug_add_email, MailWrapper, construct_bug_notification,
     get_bugmail_from_address)
@@ -45,7 +49,7 @@ def construct_email_notifications(bug_notifications):
 
     if comment is not None:
         if comment == bug.initial_message:
-            dummy, text = generate_bug_add_email(bug)
+            subject, text = generate_bug_add_email(bug)
         else:
             text = comment.text_contents
         text_notifications.append(text)
@@ -80,11 +84,32 @@ def construct_email_notifications(bug_notifications):
     from_address = get_bugmail_from_address(person, bug)
     for address in recipients.getEmails():
         reason, rationale_header = recipients.getReason(address)
-        body = get_email_template('bug-notification.txt') % {
+
+        body_data = {
             'content': mail_wrapper.format(content),
             'bug_title': bug.title,
             'bug_url': canonical_url(bug),
             'notification_rationale': mail_wrapper.format(reason)}
+
+        # If the person we're sending to receives verbose notifications
+        # we include the description and status of the bug in the email
+        # footer.
+        person = getUtility(IPersonSet).getByEmail(address)
+        if person.verbose_bugnotifications:
+            email_template = 'bug-notification-verbose.txt'
+            body_data['bug_description'] = bug.description
+
+            status_base = "Status in %s: %s"
+            status_strings = []
+            for bug_task in bug.bugtasks:
+                status_strings.append(status_base % (bug_task.target.title,
+                    bug_task.status.title))
+
+            body_data['bug_statuses'] = "\n".join(status_strings)
+        else:
+            email_template = 'bug-notification.txt'
+
+        body = get_email_template(email_template) % body_data
         msg = construct_bug_notification(bug, from_address, address, body,
                 subject, email_date, rationale_header, references, msgid)
         messages.append(msg)
@@ -113,6 +138,9 @@ def get_email_notifications(bug_notifications, date_emailed=None):
         - Must be related to the same bug.
         - Must contain at most one comment.
     """
+    # Avoid spurious lint about possibly undefined loop variables.
+    notification = None
+    # Copy bug_notifications because we will modify it as we go.
     bug_notifications = list(bug_notifications)
     while bug_notifications:
         found_comment = False
@@ -128,7 +156,10 @@ def get_email_notifications(bug_notifications, date_emailed=None):
             if notification.is_comment and found_comment:
                 # Oops, found a second comment, stop batching.
                 break
-            if (notification.bug, notification.message.owner) != (bug, person):
+            if notification.bug != bug:
+                # Found a different change, stop batching.
+                break
+            if notification.message.owner != person:
                 # Ah, we've found a change made by somebody else; time
                 # to stop batching too.
                 break
@@ -143,6 +174,8 @@ def get_email_notifications(bug_notifications, date_emailed=None):
         # being sent, so catch and log all exceptions.
         try:
             yield construct_email_notifications(notification_batch)
+        except (KeyboardInterrupt, SystemExit):
+            raise
         except:
             _log_exception_and_restart_transaction()
 

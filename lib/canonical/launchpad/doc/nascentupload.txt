@@ -10,13 +10,27 @@ We need to be logged into the security model in order to get any further
   >>> login('foo.bar@canonical.com')
 
 For the purpose of this test, hoary needs to be an open (development)
-distroseries so that we can upload to it.
+distroseries so that we can upload to it.  It also needs to allow uploads
+to the universe component.
+
+This test normally runs as the "uploader" db user but it does not have
+permission to add a new ComponentSelection, so we temporarily switch to
+"launchpad" to handle this.
 
   >>> from canonical.launchpad.interfaces import (
-  ...     DistroSeriesStatus, IDistributionSet)
+  ...     DistroSeriesStatus, IComponentSet, IDistributionSet)
+  >>> from canonical.launchpad.database import ComponentSelection
   >>> ubuntu = getUtility(IDistributionSet)['ubuntu']
   >>> hoary = ubuntu['hoary']
   >>> hoary.status = DistroSeriesStatus.DEVELOPMENT
+  >>> universe = getUtility(IComponentSet)['universe']
+  >>> from canonical.testing import LaunchpadZopelessLayer
+  >>> from canonical.database.sqlbase import commit
+  >>> commit()
+  >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
+  >>> trash = ComponentSelection(distroseries=hoary, component=universe)
+  >>> commit()
+  >>> LaunchpadZopelessLayer.switchDbUser('uploader')
 
 A NascentUpload is a collection of files in a directory. They
 represent what may turn out to be an acceptable upload to a launchpad
@@ -325,7 +339,7 @@ Retrive the just-inserted SourcePackageRelease correspondent to 'ed'
 Check if we have rebuid the change's author line properly (as
 mentioned in bug # 30621)
 
-  >>> print ed_spr.changelog
+  >>> print ed_spr.changelog_entry
   ed (0.2-20) unstable; urgency=low
   ...
    -- James Troup <james@nocrew.org>  Wed,  2 Apr 2003 17:19:47 +0100
@@ -354,6 +368,20 @@ separated by space:
 
   >>> ed_spr.dsc_binaries
   u'ed'
+
+Other DSC fields are also stored in the SourcePackageRelease record.
+
+  >>> ed_spr.builddepends
+  u'dpatch'
+
+  >>> ed_spr.builddependsindep
+  u''
+
+  >>> ed_spr.build_conflicts
+  u'foo-bar'
+
+  >>> ed_spr.build_conflicts_indep
+  u'biscuit'
 
 The content of 'debian/copyright' is stored as the 'copyright'
 attribute of SourcePackageRelease (note that its content is filtered
@@ -397,6 +425,8 @@ processing log messages, then it can be further checked in Soyuz
 production mailbox.
 
   >>> print nocopyright_src.warning_message
+  <BLANKLINE>
+  Upload Warnings:
   No copyright file found.
 
 Nothing is stored in the SPR.copyright field.
@@ -444,7 +474,9 @@ The upload will be rejected.
 
   >>> success = ed_src_dup.do_accept()
   ERROR: Exception while accepting:
-  This sourcepackagerelease is already accepted in hoary.
+  The source ed - 0.2-20 is already accepted in ubuntu/hoary and you
+  cannot upload the same version within the same distribution. You
+  have to modify the source version and re-upload.
   <BLANKLINE>
   Traceback...
   ...
@@ -454,7 +486,9 @@ The upload will be rejected.
   True
 
   >>> print ed_src_dup.rejection_message
-  This sourcepackagerelease is already accepted in hoary.
+  The source ed - 0.2-20 is already accepted in ubuntu/hoary and you
+  cannot upload the same version within the same distribution. You
+  have to modify the source version and re-upload.
 
 We rely on process-upload transaction rollback to not store bogus
 queue entry in the database.
@@ -509,6 +543,38 @@ A build was created to represent the relationship between ed_src
 
   >>> ed_build.buildstate.name
   'FULLYBUILT'
+
+Binary control file attributes are stored as text in the
+BinaryPackageRelease record.
+
+  >>> ed_bpr = ed_build.binarypackages[0]
+
+  >>> ed_bpr.depends
+  u'libc6 (>= 2.6-1)'
+
+  >>> ed_bpr.suggests
+  u'emacs'
+
+  >>> ed_bpr.conflicts
+  u'vi'
+
+  >>> ed_bpr.replaces
+  u'vim'
+
+  >>> ed_bpr.provides
+  u'ed'
+
+  >>> ed_bpr.essential
+  False
+
+  >>> ed_bpr.pre_depends
+  u'dpkg'
+
+  >>> ed_bpr.enhances
+  u'bash'
+
+  >>> ed_bpr.breaks
+  u'emacs'
 
 
 === Staged Source and Binary upload with multiple binaries ===
@@ -646,7 +712,10 @@ we're using the insecure policy to check everything in it end-to-end. We have
 to set hoary to CURRENT in order to do this because we're not allowed
 to upload to -UPDATES in a DEVELOPMENT series.
 
+  >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
   >>> hoary.status = DistroSeriesStatus.CURRENT
+  >>> commit()
+  >>> LaunchpadZopelessLayer.switchDbUser('uploader')
 
 Note that the policy do not have fixed distroseries, it will be
 overridden by the changesfile:

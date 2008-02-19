@@ -30,8 +30,9 @@ from canonical.launchpad.interfaces import (
     ArchivePurpose, IBinaryPackageNameSet, IDistributionSet,
     ILibraryFileAliasSet, ISourcePackageNameSet, NotFoundError,
     PackagePublishingPocket, QueueInconsistentStateError)
-from canonical.launchpad.scripts.processaccepted import (
-    close_bugs_for_queue_item)
+
+
+PARTNER_COMPONENT_NAME = 'partner'
 
 
 class FatalUploadError(Exception):
@@ -157,18 +158,31 @@ class NascentUpload:
                 self.reject("Upload is sourceful, but policy refuses "
                             "sourceful uploads.")
 
-            if self.binaryful and not self.policy.can_upload_binaries:
-                self.reject("Upload is binaryful, but policy refuses "
-                            "binaryful uploads.")
+            elif self.binaryful and not self.policy.can_upload_binaries:
+                messages = [
+                    "Upload rejected because it contains binary packages.",
+                    "Ensure you are using `debuild -S`, or an equivalent",
+                    "command, to generate only the source package before",
+                    "re-uploading."
+                    ]
+                if self.is_ppa:
+                    messages.append(
+                    "See https://help.launchpad.net/PPAQuickStart/ for more "
+                    "information.")
+                self.reject(" ".join(messages))
 
-            if (self.sourceful and self.binaryful and
-                not self.policy.can_upload_mixed):
+            elif (self.sourceful and self.binaryful and
+                  not self.policy.can_upload_mixed):
                 self.reject("Upload is source/binary but policy refuses "
                             "mixed uploads.")
 
-            if self.sourceful and not self.changes.dsc:
+            elif self.sourceful and not self.changes.dsc:
                 self.reject(
-                    "Unable to find the dsc file in the sourceful upload?")
+                    "Unable to find the DSC file in the source upload.")
+
+            else:
+                # Upload content are consistent with the current policy.
+                pass
 
             # Apply the overrides from the database. This needs to be done
             # before doing component verifications because the component
@@ -177,7 +191,8 @@ class NascentUpload:
 
         signer_components = self.getAutoAcceptedComponents()
         if not self.is_new:
-            # check rights for OLD packages, the NEW ones goes straight to queue
+            # check rights for OLD packages, the NEW ones goes
+            # straight to queue
             self.verify_acl(signer_components)
 
         # Override archive location if necessary.
@@ -248,8 +263,10 @@ class NascentUpload:
                 files_binaryful = files_binaryful or True
             elif isinstance(uploaded_file, BaseBinaryUploadFile):
                 files_binaryful = files_binaryful or True
-                files_archindep = files_archindep or uploaded_file.is_archindep
-                files_archdep = files_archdep or not uploaded_file.is_archindep
+                files_archindep = (
+                    files_archindep or uploaded_file.is_archindep)
+                files_archdep = (
+                    files_archdep or not uploaded_file.is_archindep)
             elif isinstance(uploaded_file, SourceUploadFile):
                 files_sourceful = True
             else:
@@ -337,8 +354,9 @@ class NascentUpload:
         Check if the declared number of architectures corresponds to the
         upload contents.
         """
-        considered_archs = [arch_name for arch_name in self.changes.architectures
-                            if not arch_name.endswith("_translations")]
+        considered_archs = [
+            arch_name for arch_name in self.changes.architectures
+            if not arch_name.endswith("_translations")]
         max = 1
         if self.sourceful:
             # When sourceful, the tools add 'source' to the architecture
@@ -390,7 +408,8 @@ class NascentUpload:
             elif isinstance(error, UploadWarning):
                 self.warn(str(error))
             else:
-                raise AssertionError("Unknown error occurred: %s" % str(error))
+                raise AssertionError(
+                    "Unknown error occurred: %s" % str(error))
 
     def run_and_reject_on_error(self, callable):
         """Run given callable and raise EarlyReturnUploadError on errors."""
@@ -410,13 +429,22 @@ class NascentUpload:
             return False
         return self.policy.archive.purpose == ArchivePurpose.PPA
 
+    def getComponents(self):
+        """Return a set of components present in the uploaded files."""
+        return set(file.component_name for file in self.changes.files)
+
+    @property
+    def is_partner(self):
+        """Return true if this is an upload to the partner archive."""
+        return PARTNER_COMPONENT_NAME in self.getComponents()
+
     def reject(self, msg):
         """Add the provided message to the rejection message."""
         self.rejections.append(msg)
 
     @property
     def rejection_message(self):
-        """Aggregates rejection messages."""
+        """Aggregate rejection messages."""
         return '\n'.join(self.rejections)
 
     @property
@@ -430,8 +458,16 @@ class NascentUpload:
 
     @property
     def warning_message(self):
-        """Aggregates warning messages."""
-        return '\n'.join(self.warnings)
+        """Aggregates warning messages.
+
+        Return a text header containing all the warnings raised during the
+        upload processing or None, if no warnings were issued.
+        """
+        if not self.warnings:
+            return None
+        warning_header = (
+            "\nUpload Warnings:\n%s" % '\n'.join(self.warnings))
+        return warning_header
 
     #
     # Signature and ACL stuff
@@ -630,7 +666,7 @@ class NascentUpload:
         return None
 
     def _checkVersion(self, proposed_version, archive_version, filename):
-        """Check if the proposed version is higher than that in the archive."""
+        """Check if the proposed version is higher than the one in archive."""
         if apt_pkg.VersionCompare(proposed_version, archive_version) < 0:
             self.reject("%s: Version older than that in the archive. %s <= %s"
                         % (filename, proposed_version, archive_version))
@@ -691,6 +727,46 @@ class NascentUpload:
         # That's why we need this conversion here.
         uploaded_file.priority_name = override.priority.name.lower()
 
+    def processUnknownFile(self, uploaded_file):
+        """Apply a set of actions for newly-uploaded (unknown) files.
+
+        Newly-uploaded files have a default set of overrides to be applied.
+        This reduces the amount of work that archive admins have to do
+        since they override the majority of new uploads with the same
+        values.  The rules for overriding are: (See bug #120052)
+            'contrib' -> 'multiverse'
+            'non-free' -> 'multiverse'
+            everything else -> 'universe'
+        This mainly relates to Debian syncs, where the default component
+        is 'main' but should not be in main for Ubuntu.
+
+        In the case of a PPA, files are always overridden to 'main'.
+
+        All files are also marked as new unless it's a PPA file, which are
+        never considered new as they are auto-accepted.
+        """
+        if self.is_ppa:
+            uploaded_file.component_name = 'main'
+            return
+
+        # All newly-uploaded, non-PPA files must be marked as new so that
+        # the upload goes to the correct queue.  PPA uploads are always
+        # auto-accepted so they are never new.
+        uploaded_file.new = True
+
+        if self.is_partner:
+            # Don't override partner uploads.
+            return
+
+        component_override_map = {
+            'contrib' : 'multiverse',
+            'non-free' : 'multiverse',
+            }
+
+        # Apply the component override and default to universe.
+        uploaded_file.component_name = component_override_map.get(
+            uploaded_file.component_name, 'universe')
+
     def find_and_apply_overrides(self):
         """Look for ancestry and overrides information.
 
@@ -715,12 +791,10 @@ class NascentUpload:
                     self.overrideSource(uploaded_file, ancestry)
                     uploaded_file.new = False
                 else:
-                    if self.is_ppa:
-                        uploaded_file.component_name = 'main'
-                    else:
-                        self.logger.debug(
-                            "%s: (source) NEW" % (uploaded_file.package))
-                        uploaded_file.new = True
+                    # If the source is new, then apply default overrides.
+                    self.logger.debug(
+                        "%s: (source) NEW" % (uploaded_file.package))
+                    self.processUnknownFile(uploaded_file)
 
             elif isinstance(uploaded_file, BaseBinaryUploadFile):
                 self.logger.debug(
@@ -748,12 +822,9 @@ class NascentUpload:
                     if ancestry is not None:
                         self.checkBinaryVersion(uploaded_file, ancestry)
                 else:
-                    if self.is_ppa:
-                        uploaded_file.component_name = 'main'
-                    else:
-                        self.logger.debug(
-                            "%s: (binary) NEW" % (uploaded_file.package))
-                        uploaded_file.new = True
+                    self.logger.debug(
+                        "%s: (binary) NEW" % (uploaded_file.package))
+                    self.processUnknownFile(uploaded_file)
 
     #
     # Actually processing accepted or rejected uploads -- and mailing people
@@ -789,6 +860,7 @@ class NascentUpload:
             if notify:
                 changes_file_object = open(self.changes.filepath, "r")
                 self.queue_root.notify(
+                    summary_text=self.warning_message,
                     announce_list=self.policy.announcelist,
                     changes_file_object=changes_file_object,
                     logger=self.logger)
@@ -921,32 +993,17 @@ class NascentUpload:
                     "Upload contains binaries of different sources.")
                 self.queue_root.addBuild(considered_build)
 
-        if not self.is_new:
-            # if it is known (already overridden properly), move it to
-            # ACCEPTED state automatically
-            if self.policy.autoApprove(self):
-                self.logger.debug("Setting it to ACCEPTED")
-                self.queue_root.setAccepted()
-                # If it is a pure-source upload we can further process it
-                # in order to have a pending publishing record in place.
-                # This change is based on discussions for bug #77853 and aims
-                # to fix a deficiency on published file lookup system.
-                if ((self.queue_root.sources.count() == 1) and
-                    (self.queue_root.builds.count() == 0) and
-                    (self.queue_root.customfiles.count() == 0)):
-                    self.logger.debug("Creating PENDING publishing record.")
-                    self.queue_root.realiseUpload()
-                    # Do not even try to close bugs for PPA uploads
-                    if self.is_ppa:
-                        return
-                    # Closing bugs.
-                    changesfile_object = open(self.changes.filepath, 'r')
-                    close_bugs_for_queue_item(
-                        self.queue_root, changesfile_object=changesfile_object)
-                    changesfile_object.close()
-            else:
-                self.logger.debug("Setting it to UNAPPROVED")
-                self.queue_root.setUnapproved()
+        if self.is_new:
+            return
+
+        # If it is known (already overridden properly), move it to
+        # ACCEPTED state automatically
+        if self.policy.autoApprove(self):
+            self.queue_root.acceptFromUploader(
+                self.changes.filepath, logger=self.logger)
+        else:
+            self.logger.debug("Setting it to UNAPPROVED")
+            self.queue_root.setUnapproved()
 
     def overrideArchive(self):
         """Override the archive set on the policy as necessary.
@@ -961,10 +1018,9 @@ class NascentUpload:
         """
 
         # Get a set of the components used in this upload:
-        components = set(file.component_name for file in self.changes.files)
+        components = self.getComponents()
 
-        partner_component_name = 'partner'
-        if partner_component_name in components:
+        if PARTNER_COMPONENT_NAME in components:
             # Reject partner uploads to PPAs.
             if self.is_ppa:
                 self.reject("PPA does not support partner uploads.")
@@ -977,7 +1033,7 @@ class NascentUpload:
             # See if there is an archive to override with.
             distribution = self.policy.distroseries.distribution
             archive = distribution.getArchiveByComponent(
-                partner_component_name
+                PARTNER_COMPONENT_NAME
                 )
 
             # Check for data problems:

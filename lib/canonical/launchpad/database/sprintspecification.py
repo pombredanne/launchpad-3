@@ -1,4 +1,5 @@
 # Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# pylint: disable-msg=E0611,W0212
 
 __metaclass__ = type
 
@@ -15,6 +16,7 @@ from canonical.database.sqlbase import SQLBase
 
 from canonical.launchpad.interfaces import (
     ISprintSpecification, SprintSpecificationStatus)
+from canonical.launchpad.validators.person import public_person_validator
 
 
 class SprintSpecification(SQLBase):
@@ -31,11 +33,13 @@ class SprintSpecification(SQLBase):
     status = EnumCol(schema=SprintSpecificationStatus, notNull=True,
         default=SprintSpecificationStatus.PROPOSED)
     whiteboard = StringCol(notNull=False, default=None)
-    registrant = ForeignKey(dbName='registrant', foreignKey='Person',
-        notNull=True)
+    registrant = ForeignKey(
+        dbName='registrant', foreignKey='Person',
+        validator=public_person_validator, notNull=True)
     date_created = UtcDateTimeCol(notNull=True, default=DEFAULT)
-    decider = ForeignKey(dbName='decider', foreignKey='Person',
-        notNull=False, default=None)
+    decider = ForeignKey(
+        dbName='decider', foreignKey='Person',
+        validator=public_person_validator, notNull=False, default=None)
     date_decided = UtcDateTimeCol(notNull=False, default=None)
 
     @property

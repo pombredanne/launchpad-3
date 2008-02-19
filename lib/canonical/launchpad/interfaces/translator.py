@@ -1,10 +1,12 @@
 # Copyright 2005 Canonical Ltd.  All rights reserved.
+# pylint: disable-msg=E0211,E0213
 
 __metaclass__ = type
 
 __all__ = ['ITranslator', 'ITranslatorSet']
 
 from canonical.launchpad import _
+from canonical.launchpad.fields import PublicPersonChoice
 
 from zope.interface import Interface, Attribute
 
@@ -27,7 +29,8 @@ class ITranslator(Interface):
     language = Choice(title=_('Language'), required=True,
         vocabulary='Language', description=_("The language of the "
         "translator."))
-    translator = Choice(title=_('Translator'), required=True,
+    translator = PublicPersonChoice(
+        title=_('Translator'), required=True,
         vocabulary='ValidPersonOrTeam',
         description=_("The translator who will be responsible for the "
                       "language in this group."))

@@ -13,6 +13,7 @@ import unittest
 
 from bzrlib.bzrdir import BzrDir
 from bzrlib.branch import Branch
+from bzrlib.revision import NULL_REVISION
 from bzrlib.urlutils import local_path_to_url
 from zope.component import getUtility
 
@@ -22,7 +23,7 @@ from importd import Job
 from importd.bzrmanager import BzrManager
 from importd.tests.helpers import SandboxHelper, ZopelessUtilitiesHelper
 from importd.tests.testutil import makeSilentLogger
-from canonical.launchpad.scripts.importd.publish import ImportdPublisher
+from canonical.codehosting.codeimport.publish import ImportdPublisher
 
 class NoopJob(object):
     """Fake job object to make BzrManager.__init__ happy.
@@ -110,7 +111,7 @@ class TestCreateImportTarget(BzrManagerTestCase):
         # the resulting repository must be empty
         self.assertEqual(repository.all_revision_ids(), [])
         # the branch must have no history
-        self.assertEqual(branch.last_revision(), None)
+        self.assertEqual(branch.last_revision(), NULL_REVISION)
         # and the working tree must be empty
         workingtree.lock_read()
         try:

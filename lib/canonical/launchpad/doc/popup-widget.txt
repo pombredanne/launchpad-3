@@ -1,4 +1,4 @@
-=== The SinglePopupWidget ===
+= The SinglePopupWidget =
 
 There's a widget, SinglePopupWidget, for selecting a single value from a
 huge vocabulary. It provides a simple text input line, and a popup
@@ -88,61 +88,41 @@ vocabulary search returns a few matches, we don't have a valid input:
     ConversionError: ('Invalid value',
         token u'shipit' not found in vocabulary)
 
-== Error handling ==
 
-There are a few situations which we need to be careful about.
+== The SearchForUpstreamPopupWidget ==
 
-1. When somebody hits that page directly, without any form arguments:
+This is a specialized version of SinglePopupWidget whose 'Choose' link opens
+a different page (popup-search-upstream) and is used when searching for an
+upstream that is also affected by a given bug. The page linked from the
+widget includes a link which allows the user to register the upstream if
+it doesn't exist.
 
-    >>> from canonical.widgets.popup import SinglePopupView
-    >>> from canonical.launchpad.webapp.publisher import rootObject
-    >>> request = LaunchpadTestRequest(
-    ...     SERVER_URL='http://127.0.0.1/@@popup-window', form={})
-    >>> SinglePopupView(rootObject, request)
-    Traceback (most recent call last):
+    >>> from canonical.widgets import SearchForUpstreamPopupWidget
+    >>> from canonical.launchpad.interfaces import (
+    ...     IAddBugTaskForm, IBugSet)
+    >>> product_field = IAddBugTaskForm['product']
+    >>> bug = getUtility(IBugSet).get(1)
+    >>> product_field = product_field.bind(bug)
+
+    >>> popup_widget = SearchForUpstreamPopupWidget(
+    ...     product_field,  product_field.vocabulary, LaunchpadTestRequest())
+    >>> print popup_widget()
+    <input type="text" value="" id="field.product"...
+    <BLANKLINE>
+    (<a href="javascript:popup_window('@@popup-search-upstream...
+    <BLANKLINE>
     ...
-    NotFound: ...
 
-2. When someone tries using that page for a vocabulary which doesn't
-implement IHugeVocabulary.
 
-    >>> from canonical.widgets.popup import SinglePopupView
-    >>> from canonical.launchpad.webapp.publisher import rootObject
-    >>> from canonical.launchpad.vocabularies.dbobjects import (
-    ...     DistributionVocabulary)
-    >>> form = {
-    ...     'vocabulary': 'Distribution', 'field':'field.distribution'}
-    >>> request = LaunchpadTestRequest(
-    ...     SERVER_URL='http://127.0.0.1/@@popup-window', form=form)
-    >>> popup_view = SinglePopupView(rootObject, request)
-    >>> popup_view.vocabulary()
-    Traceback (most recent call last):
-    ...
-    UnexpectedFormData: Non-huge vocabulary Distribution
+== Escaping HTML entities ==
 
-3. When someone specifies an unknown vocabulary name.
+Just in case someone tries to XSS us.
 
-    >>> form = {
-    ...     'vocabulary': 'FooBar', 'field':'field.distribution'}
-    >>> request = LaunchpadTestRequest(
-    ...     SERVER_URL='http://127.0.0.1/@@popup-window', form=form)
-    >>> popup_view = SinglePopupView(rootObject, request)
-    >>> popup_view.vocabulary()
-    Traceback (most recent call last):
-    ...
-    UnexpectedFormData: Unknown vocabulary FooBar
-
-4. When someone specifies an empty vocabulary name.
-
-    >>> form = {
-    ...     'vocabulary': '', 'field':'field.distribution'}
-    >>> request = LaunchpadTestRequest(
-    ...     SERVER_URL='http://127.0.0.1/@@popup-window', form=form)
-    >>> popup_view = SinglePopupView(rootObject, request)
-    >>> popup_view.vocabulary()
-    Traceback (most recent call last):
-    ...
-    UnexpectedFormData: No vocabulary specified
-
-Bullet-proof!
+    >>> form = {'field.owner': u'"><script>alert(Y0u @r3 0wn3d!!!);</script>'}
+    >>> popup_widget = SinglePopupWidget(
+    ...     owner_field,  owner_field.vocabulary,
+    ...     LaunchpadTestRequest(form=form))
+    >>> print popup_widget()
+    <input type="text" value="&quot;&gt;&lt;script&gt;alert(Y0u 
+    @r3 0wn3d!!!);&lt;/script&gt;" id="field.owner"...
 

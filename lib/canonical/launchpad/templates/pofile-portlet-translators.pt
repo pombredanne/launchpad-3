@@ -1,3 +1,9 @@
+<tal:root
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  omit-tag="">
+
 <div class="portlet" id="portlet-translators">
   <h2><span tal:replace="context/language/englishname">Spanish</span>
   translators</h2>
@@ -34,3 +40,4 @@
 
   </div>
 </div>
+</tal:root>

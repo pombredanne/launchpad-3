@@ -123,7 +123,10 @@
 
           <tal:signin_reason condition="description">
             <h2>Why do we ask you to sign in?</h2>
-            <p tal:content="description">Reason</p>
+            <tal:description
+                replace="structure description/fmt:text-to-html">
+              Reason
+            </tal:description>
           </tal:signin_reason>
         </metal:block></div>
         <div id="auth"><metal:block define-slot="auth">
@@ -141,7 +144,8 @@
       </metal:block></div>
       <div style="clear: both;">&nbsp;</div>
     </div>
-    <div id="footer">Copyright &copy; 2007 Canonical Ltd.</div>
+    <div id="footer">&copy;&nbsp;2004-2008&nbsp;<a
+        href="http://canonical.com/">Canonical&nbsp;Ltd.</a></div>
   </body>
 </html>
 </metal:page>

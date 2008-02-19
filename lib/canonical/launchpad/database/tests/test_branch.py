@@ -5,10 +5,11 @@
 __metaclass__ = type
 
 from datetime import datetime
-import pytz
+from pytz import UTC
 import transaction
 from unittest import TestCase, TestLoader
 
+from canonical.codehosting.tests.helpers import BranchTestCase
 from canonical.config import config
 from canonical.launchpad.ftests import ANONYMOUS, login, logout, syncUpdate
 from canonical.launchpad.interfaces import (
@@ -35,8 +36,8 @@ class TestBranchDeletion(TestCase):
 
     def setUp(self):
         login('test@canonical.com')
-        # Getting database classes directly where necessary to avoid the hastle
-        # of worrying about the security contexts.
+        # Getting database classes directly where necessary to avoid the
+        # hastle of worrying about the security contexts.
         self.product = ProductSet().getByName('firefox')
         self.user = getUtility(IPersonSet).getByEmail('test@canonical.com')
         self.branch_set = BranchSet()
@@ -87,7 +88,7 @@ class TestBranchDeletion(TestCase):
             owner=self.user, title='Firefox bug', comment='blah')
         params.setBugTarget(product=self.product)
         bug = getUtility(IBugSet).createBug(params)
-        bug.addBranch(self.branch)
+        bug.addBranch(self.branch, self.user)
         self.assertEqual(self.branch.canBeDeleted(), False,
                          "A branch linked to a bug is not deletable.")
         self.assertRaises(CannotDeleteBranch, BranchSet().delete, self.branch)
@@ -98,7 +99,7 @@ class TestBranchDeletion(TestCase):
             name='some-spec', title='Some spec', product=self.product,
             owner=self.user, summary='', specurl=None,
             definition_status=SpecificationDefinitionStatus.NEW)
-        spec.linkBranch(self.branch)
+        spec.linkBranch(self.branch, self.user)
         self.assertEqual(self.branch.canBeDeleted(), False,
                          "A branch linked to a spec is not deletable.")
         self.assertRaises(CannotDeleteBranch, BranchSet().delete, self.branch)
@@ -110,8 +111,8 @@ class TestBranchDeletion(TestCase):
         self.product.development_focus.user_branch = self.branch
         syncUpdate(self.product.development_focus)
         self.assertEqual(self.branch.canBeDeleted(), False,
-                         "A branch that is a user branch for a product series "
-                         "is not deletable.")
+                         "A branch that is a user branch for a product series"
+                         " is not deletable.")
         self.assertRaises(CannotDeleteBranch, BranchSet().delete, self.branch)
 
     def test_associatedProductSeriesImportBranchDisablesDeletion(self):
@@ -134,7 +135,7 @@ class TestBranchDeletion(TestCase):
         revision = RevisionSet().new(
             revision_id='some-unique-id', log_body='commit message',
             revision_date=None, revision_author='ddaa@localhost',
-            owner=self.user, parent_ids=[], properties=None)
+            parent_ids=[], properties=None)
         self.branch.createBranchRevision(0, revision)
         transaction.commit()
         LaunchpadZopelessLayer.switchDbUser(config.launchpad.dbuser)
@@ -162,7 +163,8 @@ class TestBranchDeletion(TestCase):
             self.product, None)
         source_branch.addLandingTarget(self.user, self.branch)
         self.assertEqual(self.branch.canBeDeleted(), False,
-                         "A branch with a landing candidate is not deletable.")
+                         "A branch with a landing candidate is not deletable."
+                         )
         self.assertRaises(CannotDeleteBranch, BranchSet().delete, self.branch)
 
     def test_dependentBranchDisablesDeletion(self):
@@ -278,6 +280,18 @@ class BranchAddLandingTarget(TestCase):
             InvalidBranchMergeProposal, self.source.addLandingTarget,
             self.user, self.target, self.dependent)
 
+    def test_existingRejectedMergeProposal(self):
+        """If there is an existing rejected merge proposal for the source and
+        target branch pair, then another landing target specifying the same
+        pair is fine.
+        """
+        proposal = self.source.addLandingTarget(
+            self.user, self.target, self.dependent)
+        proposal.rejectBranch(self.user, 'some_revision')
+        syncUpdate(proposal)
+        new_proposal = self.source.addLandingTarget(
+            self.user, self.target, self.dependent)
+
     def test_attributeAssignment(self):
         """Smoke test to make sure the assignments are there."""
         whiteboard = u"Some whiteboard"
@@ -288,6 +302,63 @@ class BranchAddLandingTarget(TestCase):
         self.assertEqual(proposal.target_branch, self.target)
         self.assertEqual(proposal.dependent_branch, self.dependent)
         self.assertEqual(proposal.whiteboard, whiteboard)
+
+
+class BranchDateLastModified(BranchTestCase):
+    """Exercies the situations where date_last_modifed is udpated."""
+    layer = LaunchpadFunctionalLayer
+
+    def setUp(self):
+        BranchTestCase.setUp(self)
+        login('test@canonical.com')
+
+    def tearDown(self):
+        logout()
+        BranchTestCase.tearDown(self)
+
+    def test_initialValue(self):
+        """Initially the date_last_modifed is the date_created."""
+        branch = self.makeBranch()
+        self.assertEqual(branch.date_last_modified, branch.date_created)
+
+    def test_bugBranchLinkUpdates(self):
+        """Linking a branch to a bug updates the last modified time."""
+        date_created = datetime(2000, 1, 1, 12, tzinfo=UTC)
+        branch = self.makeBranch(date_created=date_created)
+        self.assertEqual(branch.date_last_modified, date_created)
+
+        params = CreateBugParams(
+            owner=branch.owner, title='A bug', comment='blah')
+        params.setBugTarget(product=branch.product)
+        bug = getUtility(IBugSet).createBug(params)
+
+        bug.addBranch(branch, branch.owner)
+        self.assertTrue(branch.date_last_modified > date_created,
+                        "Date last modified was not updated.")
+
+    def test_specBranchLinkUpdates(self):
+        """Linking a branch to a spec updates the last modified time."""
+        date_created = datetime(2000, 1, 1, 12, tzinfo=UTC)
+        branch = self.makeBranch(date_created=date_created)
+        self.assertEqual(branch.date_last_modified, date_created)
+
+        spec = getUtility(ISpecificationSet).new(
+            name='some-spec', title='Some spec', product=branch.product,
+            owner=branch.owner, summary='', specurl=None,
+            definition_status=SpecificationDefinitionStatus.NEW)
+        spec.linkBranch(branch, branch.owner)
+        self.assertTrue(branch.date_last_modified > date_created,
+                        "Date last modified was not updated.")
+
+    def test_updateScannedDetailsUpdateModifedTime(self):
+        """A branch that has been scanned is considered modified."""
+        date_created = datetime(2000, 1, 1, 12, tzinfo=UTC)
+        branch = self.makeBranch(date_created=date_created)
+        self.assertEqual(branch.date_last_modified, date_created)
+
+        branch.updateScannedDetails("hello world", 42)
+        self.assertTrue(branch.date_last_modified > date_created,
+                        "Date last modified was not updated.")
 
 
 class BranchSorting(TestCase):
@@ -322,7 +393,6 @@ class BranchSorting(TestCase):
 
     def xmas(self, year):
         """Create a UTC datetime for Christmas of the given year."""
-        UTC = pytz.timezone("UTC")
         return datetime(year=year, month=12, day=25, tzinfo=UTC)
 
     def test_sortByRecentChanges(self):

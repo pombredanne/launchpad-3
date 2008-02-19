@@ -5,6 +5,7 @@
     xmlns:i18n="http://namespaces.zope.org/i18n">
 
     <!-- Content class configuration -->
+    <include file="announcement.zcml" />
     <include file="batchnavigator.zcml" />
     <include file="binarypackagepublishinghistory.zcml" />
     <include file="binarypackagerelease.zcml" />
@@ -22,6 +23,7 @@
     <include file="bugattachment.zcml" />
     <include file="bugbranch.zcml" />
     <include file="bugcomment.zcml" />
+    <include file="bugcontact.zcml" />
     <include file="bugcve.zcml" />
     <include file="buglinktarget.zcml" />
     <include file="buginfestation.zcml" />
@@ -95,11 +97,8 @@
     <include file="pofile.zcml" />
     <include file="poll.zcml" />
     <include file="pomsgid.zcml" />
-    <include file="pomsgset.zcml" />
     <include file="potemplate.zcml" />
-    <include file="potemplatename.zcml" />
     <include file="potmsgset.zcml" />
-    <include file="posubmission.zcml" />
     <include file="potranslation.zcml" />
     <include file="processor.zcml" />
     <include file="productrelease.zcml" />
@@ -128,12 +127,14 @@
     <include file="sprintattendance.zcml" />
     <include file="sprintspecification.zcml" />
     <include file="sshkey.zcml" />
+    <include file="structuralsubscription.zcml" />
     <include file="teammembership.zcml" />
     <include file="teamparticipation.zcml" />
     <include file="team-subscriptions.zcml" />
     <include file="temporaryblobstorage.zcml" />
     <include file="translationexport.zcml" />
     <include file="translationimport.zcml" />
+    <include file="translationmessage.zcml" />
     <include file="question.zcml" />
     <include file="question-events.zcml" />
     <include file="questionreopening.zcml" />
@@ -149,6 +150,7 @@
     <include file="vpoexport.zcml" />
     <include file="vpotexport.zcml" />
     <include file="archive.zcml" />
+    <include file="webservice.zcml" />
 
     <include file="fields.zcml" />
     <include file="resources.zcml" />

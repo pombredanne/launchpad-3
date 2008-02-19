@@ -175,9 +175,13 @@
       template="../templates/portlet-aboutcve.pt"
       />
     <browser:page
+      name="+portlet-architectures"
+      template="../templates/distroseries-portlet-architectures.pt"
+      />
+    <browser:page
       name="+portlet-details"
       facet="overview"
-      template="../templates/distroseries-portlet-details.pt"
+      template="../templates/distroseries-details.pt"
       />
     <browser:page
       name="+portlet-lifecycle"
@@ -209,7 +213,7 @@
   <browser:pages
     for="canonical.launchpad.interfaces.IDistroSeries"
     class="canonical.launchpad.browser.DistroSeriesView"
-    permission="launchpad.AnyPerson">
+    permission="zope.Public">
     <browser:page
       name="+queue"
       facet="overview"
@@ -312,25 +316,22 @@
     template="../templates/launchpad-editform.pt"
     />
 
-  <browser:addform
+  <browser:page
     name="+addmilestone"
     for="canonical.launchpad.interfaces.IDistroSeries"
-    schema="canonical.launchpad.interfaces.IMilestone"
     class="canonical.launchpad.browser.milestone.MilestoneAddView"
     facet="overview"
-    fields="name dateexpected description"
-    keyword_arguments="name dateexpected description"
     permission="launchpad.Edit"
     template="../templates/milestone-add.pt"
-    >
-  </browser:addform>
+    />
 
   <browser:addform
     name="+addport"
     for="canonical.launchpad.interfaces.IDistroSeries"
     schema="canonical.launchpad.interfaces.IDistroArchSeries"
-    fields="architecturetag processorfamily official owner"
+    fields="architecturetag processorfamily official owner ppa_supported"
     arguments="architecturetag processorfamily official owner"
+    keyword_arguments="ppa_supported"
     class="canonical.launchpad.browser.DistroArchSeriesAddView"
     facet="overview"
     permission="launchpad.Admin"

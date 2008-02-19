@@ -1,4 +1,5 @@
 # Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# pylint: disable-msg=E0211,E0213
 
 __metaclass__ = type
 
@@ -73,7 +74,8 @@ class IMessageSet(Interface):
         If no such messages exist, raise NotFoundError.
         """
 
-    def fromText(subject, content, owner=None, datecreated=None):
+    def fromText(subject, content, owner=None, datecreated=None,
+        rfc822msgid=None):
         """Construct a Message from a text string and return it."""
 
     def fromEmail(email_message, owner=None, filealias=None,

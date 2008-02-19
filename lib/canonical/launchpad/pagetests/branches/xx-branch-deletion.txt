@@ -10,7 +10,7 @@ branches that have been created in error.
     >>> browser.getControl('Project').value = 'firefox'
     >>> browser.getControl('Branch URL').value = 'http://foo.bar.com/oops'
     >>> browser.getControl('Name').value = 'to-delete'
-    >>> browser.getControl('Add Branch').click()
+    >>> browser.getControl('Register Branch').click()
     >>> browser.title
     '...~name12/firefox/to-delete... branch by Sample Person in Launchpad'
 
@@ -58,6 +58,6 @@ the branch has been deleted.
 
     >>> print browser.url
     http://code.launchpad.dev/~name12
-    >>> for message in get_feedback_messages(browser):
+    >>> for message in get_feedback_messages(browser.contents):
     ...     print message
     Branch ~name12/firefox/to-delete deleted.

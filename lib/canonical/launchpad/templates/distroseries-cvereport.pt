@@ -14,10 +14,9 @@
       <h1>CVEs related to bugs in <span tal:replace="context/fullseriesname" /></h1>
     </metal:heading>
 
-<metal:leftportlets fill-slot="portlets_one">
-  <div tal:replace="structure context/@@+portlet-details" />
-  <div tal:replace="structure context/@@+portlet-aboutcve" />
-</metal:leftportlets>
+    <metal:portlets fill-slot="portlets">
+      <div tal:replace="structure context/@@+portlet-aboutcve" />
+    </metal:portlets>
 
 <div metal:fill-slot="main">
 

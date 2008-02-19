@@ -1,4 +1,5 @@
 # Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# pylint: disable-msg=E0611,W0212
 
 __metaclass__ = type
 __all__ = ['Bounty', 'BountySet']
@@ -24,6 +25,7 @@ from canonical.database.enumcol import EnumCol
 from canonical.launchpad.database.message import Message, MessageChunk
 from canonical.launchpad.database.bountymessage import BountyMessage
 from canonical.launchpad.database.bountysubscription import BountySubscription
+from canonical.launchpad.validators.person import public_person_validator
 
 
 class Bounty(SQLBase):
@@ -44,9 +46,13 @@ class Bounty(SQLBase):
         default=BountyStatus.OPEN)
     difficulty = EnumCol(enum=BountyDifficulty, notNull=True,
         default=BountyDifficulty.NORMAL)
-    reviewer = ForeignKey(dbName='reviewer', notNull=True, foreignKey='Person')
+    reviewer = ForeignKey(
+        dbName='reviewer', foreignKey='Person',
+        validator=public_person_validator, notNull=True)
     datecreated = UtcDateTimeCol(notNull=True, default=DEFAULT)
-    owner = ForeignKey(dbName='owner', foreignKey='Person', notNull=True)
+    owner = ForeignKey(
+        dbName='owner', foreignKey='Person',
+        validator=public_person_validator, notNull=True)
 
     # useful joins
     subscriptions = SQLMultipleJoin('BountySubscription', joinColumn='bounty',

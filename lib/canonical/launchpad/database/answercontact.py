@@ -1,4 +1,5 @@
 # Copyright 2006-2007 Canonical Ltd.  All rights reserved.
+# pylint: disable-msg=E0611,W0212
 
 """SQLBase implementation of  IAnswerContact."""
 
@@ -12,6 +13,7 @@ from sqlobject import ForeignKey
 
 from canonical.database.sqlbase import SQLBase
 from canonical.launchpad.interfaces import IAnswerContact
+from canonical.launchpad.validators.person import public_person_validator
 
 
 class AnswerContact(SQLBase):
@@ -23,7 +25,8 @@ class AnswerContact(SQLBase):
     _table = 'AnswerContact'
 
     person = ForeignKey(
-        dbName='person', notNull=True, foreignKey='Person')
+        dbName='person', notNull=True, foreignKey='Person',
+        validator=public_person_validator)
     product = ForeignKey(
         dbName='product', notNull=False, foreignKey='Product')
     distribution = ForeignKey(

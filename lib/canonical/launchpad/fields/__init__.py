@@ -1,18 +1,80 @@
 # Copyright 2004-2006 Canonical Ltd.  All rights reserved.
+# pylint: disable-msg=E0211,W0401
+
+__metaclass__ = type
+__all__ = [
+    'AnnouncementDate',
+    'BaseImageUpload',
+    'BlacklistableContentNameField',
+    'BugField',
+    'ContentNameField',
+    'Description',
+    'DuplicateBug',
+    'FieldNotBoundError',
+    'IAnnouncementDate',
+    'IBaseImageUpload',
+    'IBugField',
+    'IDescription',
+    'IPasswordField',
+    'IShipItAddressline1',
+    'IShipItAddressline2',
+    'IShipItCity',
+    'IShipItOrganization',
+    'IShipItPhone',
+    'IShipItProvince',
+    'IShipItQuantity',
+    'IShipItReason',
+    'IShipItRecipientDisplayname',
+    'IStrippedTextLine',
+    'ISummary',
+    'ITag',
+    'ITimeInterval',
+    'ITitle',
+    'IURIField',
+    'IWhiteboard',
+    'IconImageUpload',
+    'is_valid_public_person_link',
+    'KEEP_SAME_IMAGE',
+    'LogoImageUpload',
+    'MugshotImageUpload',
+    'PasswordField',
+    'PillarNameField',
+    'ProductBugTracker',
+    'ProductNameField',
+    'PublicPersonChoice',
+    'ShipItAddressline1',
+    'ShipItAddressline2',
+    'ShipItCity',
+    'ShipItOrganization',
+    'ShipItPhone',
+    'ShipItProvince',
+    'ShipItQuantity',
+    'ShipItReason',
+    'ShipItRecipientDisplayname',
+    'StrippedTextLine',
+    'Summary',
+    'Tag',
+    'TimeInterval',
+    'Title',
+    'URIField',
+    'UniqueField',
+    'Whiteboard',
+    ]
 
 from StringIO import StringIO
 from textwrap import dedent
 
 from zope.component import getUtility
 from zope.schema import (
-    Bool, Bytes, Choice, Field, Int, Text, TextLine, Password, Tuple)
+    Bool, Bytes, Choice, Datetime, Field, Int, Text, TextLine, Password,
+    Tuple)
 from zope.schema.interfaces import (
-    IBytes, IField, IInt, IPassword, IText, ITextLine)
+    IBytes, IDatetime, IField, IInt, IPassword, IText, ITextLine)
 from zope.interface import implements
 from zope.security.interfaces import ForbiddenAttribute
 
-from canonical.database.sqlbase import cursor
 from canonical.launchpad import _
+from canonical.launchpad.interfaces.pillar import IPillarNameSet
 from canonical.launchpad.webapp.interfaces import ILaunchBag
 from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.validators.name import valid_name, name_validator
@@ -48,6 +110,15 @@ class IBugField(IField):
 class IPasswordField(IPassword):
     """A field that ensures we only use http basic authentication safe
     ascii characters."""
+
+class IAnnouncementDate(IDatetime):
+    """Marker interface for AnnouncementDate fields.
+
+    This is used in cases where we either want to publish something
+    immediately, or come back in future to publish it, or set a date for
+    publication in advance. Essentially this amounts to a Datetime that can
+    be None.
+    """
 
 class IShipItRecipientDisplayname(ITextLine):
     """A field used for the recipientdisplayname attribute on shipit forms.
@@ -182,6 +253,10 @@ class Whiteboard(Text):
     implements(IWhiteboard)
 
 
+class AnnouncementDate(Datetime):
+    implements(IDatetime)
+
+
 # TimeInterval
 # A field to capture an interval in time, such as X days, Y hours, Z
 # minutes.
@@ -276,7 +351,8 @@ class UniqueField(TextLine):
         raise NotImplementedError
 
     def _isValueTaken(self, value):
-        """Returns true if and only if the specified value is already taken."""
+        """Returns true if and only if the specified value is already taken.
+        """
         return self._getByAttribute(value) is not None
 
     def _validate(self, input):
@@ -481,6 +557,7 @@ class BaseImageUpload(Bytes):
 
     implements(IBaseImageUpload)
 
+    exact_dimensions = True
     dimensions = ()
     max_size = 0
 
@@ -516,10 +593,17 @@ class BaseImageUpload(Bytes):
                 check it and retry.""")))
         width, height = pil_image.size
         required_width, required_height = self.dimensions
-        if width != required_width or height != required_height:
-            raise LaunchpadValidationError(_(dedent("""
-                This image is not exactly %dx%d pixels in size.""" % (
-                required_width, required_height))))
+        if self.exact_dimensions:
+            if width != required_width or height != required_height:
+                raise LaunchpadValidationError(_(dedent("""
+                    This image is not exactly %dx%d pixels in size.""" % (
+                    required_width, required_height))))
+        else:
+            if width > required_width or height > required_height:
+                raise LaunchpadValidationError(_(dedent("""
+                    This image is larger than %dx%d pixels in size.""" % (
+                    required_width, required_height))))
+
         return True
 
     def validate(self, value):
@@ -554,3 +638,35 @@ class MugshotImageUpload(BaseImageUpload):
     default_image_resource = '/@@/nyet-mugshot'
 
 
+class PillarNameField(BlacklistableContentNameField):
+    """Base field used for names of distros/projects/products."""
+
+    errormessage = _("%s is already used by another project")
+
+    def _getByName(self, name):
+        return getUtility(IPillarNameSet).getByName(name)
+
+
+class ProductNameField(PillarNameField):
+    """Field used by IProduct.name."""
+
+    @property
+    def _content_iface(self):
+        # Local import to avoid circular dependencies.
+        from canonical.launchpad.interfaces.product import IProduct
+        return IProduct
+
+
+def is_valid_public_person_link(person, other):
+    from canonical.launchpad.interfaces import IPerson, PersonVisibility
+    assert IPerson.providedBy(person)
+    if person.visibility in (PersonVisibility.PRIVATE,
+                             PersonVisibility.PRIVATE_MEMBERSHIP):
+        return False
+    else:
+        return True
+
+
+class PublicPersonChoice(Choice):
+    def constraint(self, value):
+        return is_valid_public_person_link(value, self.context)

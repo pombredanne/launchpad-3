@@ -1,3 +1,9 @@
+<tal:root
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  omit-tag="">
+
 <img src="/@@/product" />
 <a tal:attributes="href context/fmt:url"
    tal:content="context/title">Project Title Here</a>
@@ -8,3 +14,4 @@
   </div>
 </div>
 <br />
+</tal:root>

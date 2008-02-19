@@ -13,18 +13,25 @@ person:
 
     >>> beta_browser = setupBrowser(auth='Basic beta-admin@launchpad.net:test')
 
+Normally, we run the development system (launchpad.dev) with no beta
+redirection host. For the purposes of this test, however, we will set it to
+beta.launchpad.dev:
+
+    >>> from canonical.config import config
+    >>> config.launchpad.beta_testers_redirection_host = "beta.launchpad.dev"
+
 XXX 20070131 jamesh:
 zope.testbrowser does not handle redirects to remote sites, so we
-disable the redireciton handling at the mechanize layer.  We then need
+disable the redirection handling at the mechanize layer.  We then need
 to check the HTTPError directly.
       http://www.zope.org/Collectors/Zope3-dev/755
 
     >>> user_browser.mech_browser.set_handle_redirect(False)
     >>> beta_browser.mech_browser.set_handle_redirect(False)
     >>> from urllib2 import HTTPError
-    >>> def check(function, *args):
+    >>> def check(function, *args, **kwargs):
     ...     try:
-    ...         function(*args)
+    ...         function(*args, **kwargs)
     ...     except HTTPError, exc:
     ...         print str(exc)
     ...         location = exc.headers.getheader('Location')
@@ -47,7 +54,6 @@ In contrast, members of the beta testers get redirected:
 The redirection is controlled by the beta_testers_redirection_host
 config item.  If it is set to None, no redirection occurs:
 
-    >>> from canonical.config import config
     >>> print config.launchpad.beta_testers_redirection_host
     beta.launchpad.dev
     >>> config.launchpad.beta_testers_redirection_host = None
@@ -70,7 +76,17 @@ parameters:
     Location: http://beta.launchpad.dev/ubuntu/+search?text=foo
 
 
-The redirection also works for other Launchpad subdomains:
+However, HTTP POST requests to the normal site are not redirected:
+
+    >>> from urllib import urlencode
+    >>> check(beta_browser.open,
+    ...       'http://launchpad.dev/ubuntu/+search',
+    ...       data=urlencode({'text': 'foo'}))
+    >>> print beta_browser.url
+    http://launchpad.dev/ubuntu/+search
+
+
+The redirection works for other Launchpad subdomains:
 
     >>> check(beta_browser.open,
     ...     'http://bugs.launchpad.dev/launchpad/+bugs?orderby=-datecreated')

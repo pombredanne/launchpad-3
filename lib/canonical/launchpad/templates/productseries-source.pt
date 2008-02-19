@@ -1,13 +1,19 @@
-<html metal:use-macro="view/macro:page/default" i18n:domain="bazaar">
+<html
+  xmlns="http://www.w3.org/1999/xhtml"
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  xml:lang="en"
+  lang="en"
+  dir="ltr"
+  metal:use-macro="view/macro:page/default"
+  i18n:domain="bazaar"
+>
 <body>
 
-<metal:leftportlets fill-slot="portlets_one">
-  <div tal:replace="structure context/@@+portlet-details" />
-  <div tal:replace="structure context/product/@@+portlet-details" />
-</metal:leftportlets>
-
-<metal:rightportlets fill-slot="portlets_two">
-</metal:rightportlets>
+    <metal:portlets fill-slot="portlets">
+      <div tal:replace="structure context/@@+portlet-details" />
+    </metal:portlets>
 
 <metal:heading fill-slot="pageheading">
   <h1>Upstream source details</h1>
@@ -17,9 +23,10 @@
 
   <div metal:use-macro="context/@@launchpad_form/form">
     <p metal:fill-slot="extra_info" tal:condition="not:view/errors">
-      Once you enter the details of the revision control system you use for
-      this release series, Launchpad Administrators will attempt to import that
-      code and publish it as a Bazaar branch.
+      For more details on importing source code into Launchpad,
+      see the help wiki page
+      <a href="https://help.launchpad.net/VcsImports">
+          VcsImports</a>.
     </p>
 
     <metal:formbody fill-slot="widgets">
@@ -31,8 +38,8 @@
       <fieldset>
         <legend>
           <label>
-            <input tal:replace="structure view/rcstype_none" />
-            No revision control system, or Bazaar
+            <input tal:replace="structure view/rcstype_bzr" />
+            Bazaar
           </label>
         </legend>
         <table class="form">
@@ -77,6 +84,15 @@
         </table>
       </fieldset>
 
+      <fieldset>
+        <legend>
+          <label>
+            <input tal:replace="structure view/rcstype_none" />
+            No revision control system or not specifed here
+          </label>
+        </legend>
+      </fieldset>
+
       <input tal:replace="structure view/rcstype_emptymarker" />
 
       <tal:has-import-status condition="context/importstatus">
@@ -86,6 +102,7 @@
       </tal:has-import-status>
 
       <script type="text/javascript">
+        //<![CDATA[
         function updateWidgets() {
           /* which rcs type radio button has been selected? */
           var rcstypes = document.getElementsByName('field.rcstype');
@@ -97,12 +114,17 @@
               break;
             }
           }
-          form['field.cvsroot'].disabled = (rcstype != 'CVS');
-          form['field.cvsbranch'].disabled = (rcstype != 'CVS');
-          form['field.cvsmodule'].disabled = (rcstype != 'CVS');
-          form['field.svnrepository'].disabled = (rcstype != 'SVN');
+          // BZR
+          updateField(form['field.user_branch'], rcstype == 'BZR');
+          // CVS
+          updateField(form['field.cvsroot'], rcstype == 'CVS');
+          updateField(form['field.cvsbranch'], rcstype == 'CVS');
+          updateField(form['field.cvsmodule'], rcstype == 'CVS');
+          // SVN
+          updateField(form['field.svnrepository'], rcstype == 'SVN');
         }
         updateWidgets();
+        //]]>
       </script>
 
     </metal:formbody>

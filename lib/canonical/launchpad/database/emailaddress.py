@@ -1,4 +1,5 @@
 # Copyright 2006 Canonical Ltd.  All rights reserved.
+# pylint: disable-msg=E0611,W0212
 
 __metaclass__ = type
 __all__ = ['EmailAddress', 'EmailAddressSet']
@@ -10,6 +11,7 @@ from sqlobject import ForeignKey, StringCol
 from canonical.database.sqlbase import quote, SQLBase
 from canonical.database.enumcol import EnumCol
 
+from canonical.launchpad.database.mailinglist import MailingListSubscription
 from canonical.launchpad.interfaces import (
     EmailAddressAlreadyTaken, IEmailAddress, IEmailAddressSet,
     EmailAddressStatus)
@@ -28,6 +30,13 @@ class EmailAddress(SQLBase):
     @property
     def statusname(self):
         return self.status.title
+
+    def destroySelf(self):
+        """Destroy this email address and any associated subscriptions."""
+        for subscription in MailingListSubscription.selectBy(
+            email_address=self):
+            subscription.destroySelf()
+        super(EmailAddress, self).destroySelf()
 
 
 class EmailAddressSet:

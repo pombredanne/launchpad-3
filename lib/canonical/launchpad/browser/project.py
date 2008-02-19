@@ -18,11 +18,13 @@ __all__ = [
     'ProjectSOP',
     'ProjectFacets',
     'ProjectOverviewMenu',
+    'ProjectSeriesSpecificationsMenu',
     'ProjectSpecificationsMenu',
     'ProjectBountiesMenu',
     'ProjectAnswersMenu',
     'ProjectTranslationsMenu',
     'ProjectSetContextMenu',
+    'ProjectView',
     'ProjectEditView',
     'ProjectAddProductView',
     'ProjectSetView',
@@ -40,10 +42,13 @@ from zope.security.interfaces import Unauthorized
 
 from canonical.launchpad import _
 from canonical.launchpad.interfaces import (
-    IBranchSet, IProductSet, IProject, IProjectSet, NotFoundError)
+    IBranchSet, IProductSet, IProject, IProjectSeries, IProjectSet,
+    NotFoundError)
+from canonical.launchpad.browser.announcement import HasAnnouncementsView
 from canonical.launchpad.browser.product import ProductAddViewBase
 from canonical.launchpad.browser.branchlisting import BranchListingView
 from canonical.launchpad.browser.branding import BrandingChangeView
+from canonical.launchpad.browser.feeds import FeedsMixin
 from canonical.launchpad.browser.launchpad import StructuralObjectPresentation
 from canonical.launchpad.browser.question import QuestionAddView
 from canonical.launchpad.browser.questiontarget import (
@@ -69,6 +74,14 @@ class ProjectNavigation(Navigation):
     @stepthrough('+milestone')
     def traverse_milestone(self, name):
         return self.context.getMilestone(name)
+
+    @stepthrough('+announcement')
+    def traverse_announcement(self, name):
+        return self.context.getAnnouncement(name)
+
+    @stepthrough('+series')
+    def traverse_series(self, series_name):
+        return self.context.getSeries(series_name)
 
 
 class ProjectDynMenu(DynMenu):
@@ -215,7 +228,8 @@ class ProjectOverviewMenu(ApplicationMenu):
     facet = 'overview'
     links = [
         'edit', 'branding', 'driver', 'reassign', 'top_contributors',
-        'mentorship', 'administer', 'branch_visibility', 'rdf']
+        'mentorship', 'announce', 'announcements', 'administer',
+        'branch_visibility', 'rdf']
 
     @enabled_with_permission('launchpad.Edit')
     def edit(self):
@@ -250,6 +264,17 @@ class ProjectOverviewMenu(ApplicationMenu):
         # circumstances.
         return Link('+mentoring', text, icon='info',
                     enabled=self.context.hasProducts())
+
+    @enabled_with_permission('launchpad.Edit')
+    def announce(self):
+        text = 'Make announcement'
+        summary = 'Publish an item of news for this project'
+        return Link('+announce', text, summary, icon='add')
+
+    def announcements(self):
+        text = 'Show announcements'
+        enabled = bool(self.context.announcements().count())
+        return Link('+announcements', text, enabled=enabled)
 
     def rdf(self):
         text = structured(
@@ -311,6 +336,7 @@ class ProjectSpecificationsMenu(ApplicationMenu):
         summary = 'Register a new blueprint for %s' % self.context.title
         return Link('+addspec', text, summary, icon='add')
 
+
 class ProjectAnswersMenu(QuestionCollectionAnswersMenu):
     """Menu for the answers facet of projects."""
 
@@ -334,6 +360,10 @@ class ProjectTranslationsMenu(ApplicationMenu):
         return Link('+changetranslators', text, icon='edit')
 
 
+class ProjectView(HasAnnouncementsView, FeedsMixin):
+    pass
+
+
 class ProjectEditView(LaunchpadEditFormView):
     """View class that lets you edit a Project object."""
 
@@ -341,8 +371,8 @@ class ProjectEditView(LaunchpadEditFormView):
     schema = IProject
     field_names = [
         'name', 'displayname', 'title', 'summary', 'description',
-        'homepageurl', 'bugtracker', 'sourceforgeproject',
-        'freshmeatproject', 'wikiurl']
+        'bug_reporting_guidelines', 'homepageurl', 'bugtracker',
+        'sourceforgeproject', 'freshmeatproject', 'wikiurl']
 
 
     @action('Change Details', name='change')
@@ -563,16 +593,17 @@ class ProjectBranchesView(BranchListingView):
 
     extra_columns = ('author', 'product')
 
-    def _branches(self):
+    def _branches(self, lifecycle_status, show_dormant):
         return getUtility(IBranchSet).getBranchesForProject(
-            self.context, self.selected_lifecycle_status, self.user,
-            self.sort_by)
+            self.context, lifecycle_status, self.user, self.sort_by,
+            show_dormant)
 
     @property
     def no_branch_message(self):
-        if self.selected_lifecycle_status is not None:
+        if (self.selected_lifecycle_status is not None
+            and self.hasAnyBranchesVisibleByUser()):
             message = (
-                'There may be branches registered for %s '
+                'There are branches registered for %s '
                 'but none of them match the current filter criteria '
                 'for this page. Try filtering on "Any Status".')
         else:
@@ -584,3 +615,27 @@ class ProjectBranchesView(BranchListingView):
                 'revision control system to improve community participation '
                 'in this project group.')
         return message % self.context.displayname
+
+
+class ProjectSeriesSpecificationsMenu(ApplicationMenu):
+
+    usedfor = IProjectSeries
+    facet = 'specifications'
+    links = ['listall', 'doc', 'roadmap', 'assignments']
+
+    def listall(self):
+        text = 'List all blueprints'
+        return Link('+specs?show=all', text, icon='info')
+
+    def doc(self):
+        text = 'List documentation'
+        summary = 'Show all completed informational specifications'
+        return Link('+documentation', text, summary, icon="info")
+
+    def roadmap(self):
+        text = 'Roadmap'
+        return Link('+roadmap', text, icon='info')
+
+    def assignments(self):
+        text = 'Assignments'
+        return Link('+assignments', text, icon='info')

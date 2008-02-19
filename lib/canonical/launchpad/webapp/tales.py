@@ -1,9 +1,8 @@
-# Copyright 2004 Canonical Ltd.  All rights reserved.
-# pylint: disable-msg=W0613,E0201,R0911
+# Copyright 2004-2007 Canonical Ltd.  All rights reserved.
+# pylint: disable-msg=C0103,W0613,R0911
 #
-"""Implementation of the lp: htmlform: fmt: namespaces in TALES.
+"""Implementation of the lp: htmlform: fmt: namespaces in TALES."""
 
-"""
 __metaclass__ = type
 
 import bisect
@@ -35,10 +34,12 @@ from canonical.launchpad.interfaces import (
     IBugAttachment,
     IBugNomination,
     IBugSet,
+    IFAQSet,
     IHasIcon,
     IHasLogo,
     IHasMugshot,
     IPerson,
+    IPersonSet,
     IProduct,
     IProject,
     ISprint,
@@ -50,7 +51,6 @@ from canonical.launchpad.webapp.interfaces import (
     IFacetMenu, IApplicationMenu, IContextMenu, NoCanonicalUrl, ILaunchBag)
 from canonical.launchpad.webapp.vhosts import allvhosts
 import canonical.launchpad.pagetitles
-from canonical.lp import dbschema
 from canonical.launchpad.webapp import (
     canonical_url, nearest_context_with_adapter, nearest_adapter)
 from canonical.launchpad.webapp.uri import URI
@@ -92,6 +92,33 @@ class MenuAPI:
             self._context = context
             self._request = get_current_browser_request()
             self._selectedfacetname = None
+
+    def __getattr__(self, attribute_name):
+        """Return a dictionary for retrieval of individual Links.
+
+        It's used with expressions like context/menu:bugs/subscribe.
+        """
+        for facet_entry in self.facet():
+            if attribute_name == facet_entry.name:
+                menu = self._getFacetLinks(facet_entry.name)
+                object.__setattr__(self, facet_entry.name, menu)
+                return menu
+        raise AttributeError(attribute_name)
+
+    def _getFacetLinks(self, facet_name):
+        """Return a dictionary with all links available in the given facet.
+
+        If the facet name is not valid, we raise the TraversalError exception
+        that we get from queryAdapter.
+        """
+        menu = queryAdapter(self._context, IApplicationMenu, facet_name)
+        if menu is None:
+            # There aren't menu entries.
+            return {}
+
+        menu.request = self._request
+        links = list(menu.iterlinks(requesturi=self._requesturi()))
+        return dict((link.name, link) for link in links)
 
     def _nearest_menu(self, menutype):
         try:
@@ -143,13 +170,15 @@ class MenuAPI:
             menu.request = self._request
             return list(menu.iterlinks(requesturi=self._requesturi()))
 
+    @property
     def context(self):
         menu = IContextMenu(self._context, None)
         if menu is None:
-            return  []
+            return  {}
         else:
             menu.request = self._request
-            return list(menu.iterlinks(requesturi=self._requesturi()))
+            links = list(menu.iterlinks(requesturi=self._requesturi()))
+            return dict((link.name, link) for link in links)
 
 
 class CountAPI:
@@ -167,7 +196,7 @@ class CountAPI:
 
 
 class EnumValueAPI:
-    """Namespace to test whether an EnumeratedType Item has a particular value.
+    """Namespace to test the value of an EnumeratedType Item.
 
     The value is given in the next path step.
 
@@ -184,7 +213,8 @@ class EnumValueAPI:
         if self.item.name == name:
             return True
         else:
-            # Check whether this was an allowed value for this enumerated type.
+            # Check whether this was an allowed value for this
+            # enumerated type.
             enum = self.item.enum
             try:
                 enum.getTermByToken(name)
@@ -314,6 +344,7 @@ class NoneFormatter:
         'date',
         'datetime',
         'displaydate',
+        'isodate',
         'email-to-html',
         'exactduration',
         'lower',
@@ -382,8 +413,8 @@ class ObjectFormatterExtendedAPI(ObjectFormatterAPI):
             raise TraversalError, name
 
     def link(self, extra_path):
-        """Return an HTML link to the person's page containing an icon
-        followed by the person's name.
+        """Return an HTML link to the object's page containing an icon
+        followed by the object's name.
         """
         raise NotImplemented
 
@@ -523,20 +554,29 @@ class BugTaskImageDisplayAPI(ObjectImageDisplayAPI):
     """
     implements(ITraversable)
 
+    allowed_names = set([
+        'icon',
+        'logo',
+        'mugshot',
+        'badges',
+        ])
+
     icon_template = (
         '<img height="14" width="14" alt="%s" title="%s" src="%s" />')
 
+    linked_icon_template = (
+        '<a href="%s"><img height="14" width="14"'
+        ' alt="%s" title="%s" src="%s" /></a>')
+
     def traverse(self, name, furtherPath):
         """Special-case traversal for icons with an optional rootsite."""
-        if name == 'icon':
-            return self.icon()
+        if name in self.allowed_names:
+            return getattr(self, name)()
         elif name.startswith('icon:'):
             rootsite = name.split(':', 1)[1]
             return self.icon(rootsite=rootsite)
-        elif name == 'badges':
-            return self.badges()
         else:
-            return None
+            raise TraversalError, name
 
     def icon(self, rootsite=None):
         """Display the icon dependent on the IBugTask.importance."""
@@ -563,24 +603,33 @@ class BugTaskImageDisplayAPI(ObjectImageDisplayAPI):
 
     def badges(self):
 
-        badges = ''
+        badges = []
         if self._context.bug.private:
-            badges += self.icon_template % (
-                "private", "Private","/@@/private")
+            badges.append(self.icon_template % (
+                "private", "Private","/@@/private"))
 
         if self._context.bug.mentoring_offers.count() > 0:
-            badges += self.icon_template % (
-                "mentoring", "Mentoring offered", "/@@/mentoring")
+            badges.append(self.icon_template % (
+                "mentoring", "Mentoring offered", "/@@/mentoring"))
 
         if self._context.bug.bug_branches.count() > 0:
-            badges += self.icon_template % (
-                "branch", "Branch exists", "/@@/branch")
+            badges.append(self.icon_template % (
+                "branch", "Branch exists", "/@@/branch"))
 
         if self._context.bug.specifications.count() > 0:
-            badges += self.icon_template % (
-                "blueprint", "Related to a blueprint", "/@@/blueprint")
+            badges.append(self.icon_template % (
+                "blueprint", "Related to a blueprint", "/@@/blueprint"))
 
-        return badges
+        if self._context.milestone:
+            milestone_text = "milestone %s" % self._context.milestone.name
+            badges.append(self.linked_icon_template % (
+                canonical_url(self._context.milestone),
+                milestone_text , "Linked to %s" % milestone_text,
+                "/@@/milestone"))
+
+        # Join with spaces to avoid the icons smashing into each other
+        # when multiple ones are presented.
+        return " ".join(badges)
 
 
 class SpecificationImageDisplayAPI(ObjectImageDisplayAPI):
@@ -642,6 +691,7 @@ class KarmaCategoryImageDisplayAPI(ObjectImageDisplayAPI):
 
     icons_for_karma_categories = {
         'bugs': '/@@/bug',
+        'code': '/@@/branch',
         'translations': '/@@/translation',
         'specs': '/@@/blueprint',
         'answers': '/@@/question'}
@@ -751,22 +801,83 @@ class PersonFormatterAPI(ObjectFormatterExtendedAPI):
             url = '%s/%s' % (url, extra_path)
         image_html = ObjectImageDisplayAPI(person).icon(rootsite=rootsite)
         return '<a href="%s">%s&nbsp;%s</a>' % (
-            url, image_html, person.browsername)
+            url, image_html, cgi.escape(person.browsername))
+
+
+class PillarFormatterAPI(ObjectFormatterExtendedAPI):
+    """Adapter for IProduct, IDistribution and IProject objects to a
+    formatted string."""
+
+    def link(self, extra_path):
+        """Return an HTML link to the pillar page containing an icon
+        followed by the pillar's display name.
+        """
+        pillar = self._context
+        url = canonical_url(pillar)
+        icon_html = ObjectImageDisplayAPI(pillar).icon()
+        if extra_path:
+            url = '%s/%s' % (url, extra_path)
+        return ('<a href="%s">%s&nbsp;%s</a>' % (
+                          url, icon_html, pillar.displayname))
 
 
 class BranchFormatterAPI(ObjectFormatterExtendedAPI):
     """Adapter for IBranch objects to a formatted string."""
 
-    def link(self, extra_path):
-        """Return an HTML link to the branch page containing an icon
-        followed by the branch's unique name.
-        """
+    def traverse(self, name, furtherPath):
+        """Special case traversal to support multiple link formats."""
+        if name == 'project-link':
+            extra_path = '/'.join(reversed(furtherPath))
+            del furtherPath[:]
+            return self.projectLink(extra_path)
+        if name == 'title-link':
+            extra_path = '/'.join(reversed(furtherPath))
+            del furtherPath[:]
+            return self.titleLink(extra_path)
+        return ObjectFormatterExtendedAPI.traverse(self, name, furtherPath)
+
+    def _args(self, extra_path):
+        """Generate a dict of attributes for string template expansion."""
         branch = self._context
         url = canonical_url(branch)
         if extra_path:
             url = '%s/%s' % (url, extra_path)
-        return ('<a href="%s" title="%s"><img src="/@@/branch" alt=""/>'
-                '&nbsp;%s</a>' % (url, branch.displayname, branch.unique_name))
+        if branch.title is not None:
+            title = branch.title
+        else:
+            title = "(no title)"
+        if branch.author is not None:
+            author = branch.author.name
+        else:
+            author = branch.owner.name
+        return {
+            'author': author,
+            'display_name': branch.displayname,
+            'name': branch.name,
+            'title': title,
+            'unique_name' : branch.unique_name,
+            'url': url,
+            }
+
+    def link(self, extra_path):
+        """A hyperlinked branch icon with the unique name."""
+        return (
+            '<a href="%(url)s" title="%(display_name)s">'
+            '<img src="/@@/branch" alt=""/>'
+            '&nbsp;%(unique_name)s</a>' % self._args(extra_path))
+
+    def projectLink(self, extra_path):
+        """A hyperlinked branch icon with the name and title."""
+        return (
+            '<a href="%(url)s" title="%(display_name)s">'
+            '<img src="/@@/branch" alt=""/>'
+            '&nbsp;%(name)s</a>: %(title)s' % self._args(extra_path))
+
+    def titleLink(self, extra_path):
+        """A hyperlinked branch name with following title."""
+        return (
+            '<a href="%(url)s" title="%(display_name)s">'
+            '%(name)s</a>: %(title)s' % self._args(extra_path))
 
 
 class SpecificationFormatterAPI(ObjectFormatterExtendedAPI):
@@ -797,7 +908,8 @@ class BugFormatterAPI(ObjectFormatterExtendedAPI):
         if extra_path:
             url = '%s/%s' % (url, extra_path)
         return ('<a href="%s"><img src="/@@/bug" alt=""/>'
-                '&nbsp;Bug #%d: %s</a>' % (url, bug.id, bug.title))
+                '&nbsp;Bug #%d: %s</a>' % (
+                    url, bug.id, cgi.escape(bug.title)))
 
 
 class BugTaskFormatterAPI(ObjectFormatterExtendedAPI):
@@ -813,15 +925,29 @@ class BugTaskFormatterAPI(ObjectFormatterExtendedAPI):
             url = '%s/%s' % (url, extra_path)
         image_html = BugTaskImageDisplayAPI(bugtask).icon()
         return '<a href="%s">%s&nbsp;Bug #%d: %s</a>' % (
-            url, image_html, bugtask.bug.id, bugtask.bug.title)
+            url, image_html, bugtask.bug.id, cgi.escape(bugtask.bug.title))
 
 
 class NumberFormatterAPI:
     """Adapter for converting numbers to formatted strings."""
 
+    implements(ITraversable)
+
     def __init__(self, number):
-        assert not float(number) < 0, "Expected a non-negative number."
         self._number = number
+
+    def traverse(self, name, furtherPath):
+        if name == 'float':
+            if len(furtherPath) != 1:
+                raise TraversalError(
+                    "fmt:float requires a single decimal argument")
+            # coerce the argument to float to ensure it's safe
+            format = furtherPath.pop()
+            return self.float(float(format))
+        elif name == 'bytes':
+            return self.bytes()
+        else:
+            raise TraversalError(name)
 
     def bytes(self):
         """Render number as byte contractions according to IEC60027-2."""
@@ -829,6 +955,7 @@ class NumberFormatterAPI:
         # /Binary_prefixes#Specific_units_of_IEC_60027-2_A.2
         # Note that there is a zope.app.size.byteDisplay() function, but
         # it really limited and doesn't work well enough for us here.
+        assert not float(self._number) < 0, "Expected a non-negative number."
         n = int(self._number)
         if n == 1:
             # Handle the singular case.
@@ -843,6 +970,17 @@ class NumberFormatterAPI:
             # If this is less than 1 KiB, no need for rounding.
             return "%s bytes" % n
         return "%.1f %s" % (n / 1024.0 ** exponent, suffixes[exponent - 1])
+
+    def float(self, format):
+        """Use like tal:content="context/foo/fmt:float/.2".
+
+        Will return a string formatted to the specification provided in
+        the manner Python "%f" formatter works. See
+        http://docs.python.org/lib/typesseq-strings.html for details and
+        doc.displaying-numbers for various examples.
+        """
+        value = "%" + str(format) + "f"
+        return value % float(self._number)
 
 
 class DateTimeFormatterAPI:
@@ -864,27 +1002,24 @@ class DateTimeFormatterAPI:
             value = value.astimezone(getUtility(ILaunchBag).timezone)
         return value.strftime('%Y-%m-%d')
 
-    def displaydate(self):
+    def _now(self):
+        # This method exists to be overridden in tests.
         if self._datetime.tzinfo:
             # datetime is offset-aware
-            now = datetime.now(pytz.timezone('UTC'))
+            return datetime.now(pytz.timezone('UTC'))
         else:
             # datetime is offset-naive
-            now = datetime.utcnow()
-        delta = abs(now - self._datetime)
+            return datetime.utcnow()
+
+    def displaydate(self):
+        delta = abs(self._now() - self._datetime)
         if delta > timedelta(1, 0, 0):
             # far in the past or future, display the date
             return 'on ' + self.date()
         return self.approximatedate()
 
     def approximatedate(self):
-        if self._datetime.tzinfo:
-            # datetime is offset-aware
-            now = datetime.now(pytz.timezone('UTC'))
-        else:
-            # datetime is offset-naive
-            now = datetime.utcnow()
-        delta = now - self._datetime
+        delta = self._now() - self._datetime
         if abs(delta) > timedelta(1, 0, 0):
             # far in the past or future, display the date
             return self.date()
@@ -895,20 +1030,23 @@ class DateTimeFormatterAPI:
         minutes = (delta.seconds - (3600*hours)) / 60
         seconds = delta.seconds % 60
         result = ''
-        comma = ''
         if future:
             result += 'in '
         if days != 0:
-            result += '%d days' % days
-            comma = ', '
-        if days == 0 and hours != 0:
-            result += '%s%d hours' % (comma, hours)
-            comma = ', '
-        if days == 0 and hours == 0 and minutes != 0:
-            result += '%s%d minutes' % (comma, minutes)
-            comma = ', '
-        if days == 0 and hours == 0 and minutes == 0:
-            result += '%s%d seconds' % (comma, seconds)
+            amount = days
+            unit = 'day'
+        elif hours != 0:
+            amount = hours
+            unit = 'hour'
+        elif minutes != 0:
+            amount = minutes
+            unit = 'minute'
+        else:
+            amount = seconds
+            unit = 'second'
+        if amount != 1:
+            unit += 's'
+        result += '%s %s' % (amount, unit)
         if not future:
             result += ' ago'
         return result
@@ -919,6 +1057,9 @@ class DateTimeFormatterAPI:
     def rfc822utcdatetime(self):
         return formatdate(
             rfc822.mktime_tz(self._datetime.utctimetuple() + (0,)))
+
+    def isodate(self):
+        return self._datetime.isoformat()
 
 
 class DurationFormatterAPI:
@@ -1331,10 +1472,23 @@ class FormattersAPI:
                 url = url[:-len(trailers)]
             else:
                 trailers = ''
+            # We use nofollow for these links to reduce the value of
+            # adding spam URLs to our comments; it's a way of moderately
+            # devaluing the return on effort for spammers that consider
+            # using Launchpad.
             return '<a rel="nofollow" href="%s">%s</a>%s' % (
                 cgi.escape(url, quote=True),
                 add_word_breaks(cgi.escape(url)),
                 cgi.escape(trailers))
+        elif match.group('faq') is not None:
+            text = match.group('faq')
+            faqnum = match.group('faqnum')
+            faqset = getUtility(IFAQSet)
+            faq = faqset.getFAQ(faqnum)
+            if not faq:
+                return text
+            url = canonical_url(faq)
+            return '<a href="%s">%s</a>' % (url, text)
         elif match.group('oops') is not None:
             text = match.group('oops')
 
@@ -1347,7 +1501,7 @@ class FormattersAPI:
                 root_url += '/'
 
             url = root_url + match.group('oopscode')
-            return '<a rel="nofollow" href="%s">%s</a>' % (url, text)
+            return '<a href="%s">%s</a>' % (url, text)
         else:
             raise AssertionError("Unknown pattern matched.")
 
@@ -1457,6 +1611,10 @@ class FormattersAPI:
       (?P<bug>
         \bbug(?:\s|<br\s*/>)*(?:\#|report|number\.?|num\.?|no\.?)?(?:\s|<br\s*/>)*
         0*(?P<bugnum>\d+)
+      ) |
+      (?P<faq>
+        \bfaq(?:\s|<br\s*/>)*(?:\#|item|number\.?|num\.?|no\.?)?(?:\s|<br\s*/>)*
+        0*(?P<faqnum>\d+)
       ) |
       (?P<oops>
         \boops\s*-?\s*
@@ -1607,7 +1765,8 @@ class FormattersAPI:
                 # This line is a paragraph with a signature or PGP inclusion.
                 # Start a foldable paragraph.
                 in_fold = True
-                line = '<p>%s%s' % (start_fold_markup, strip_leading_p_tag(line))
+                line = '<p>%s%s' % (start_fold_markup,
+                                    strip_leading_p_tag(line))
             elif (not in_fold and line.startswith('<p>')
                 and is_quoted(strip_leading_p_tag(line))):
                 # The paragraph starts with quoted marks.
@@ -1703,6 +1862,31 @@ class FormattersAPI:
             "<<email address hidden>>", "<email address hidden>")
         return text
 
+    def linkify_email(self):
+        """Linkify any email address recognised in Launchpad.
+
+        If an email address is recognised as one registered in Launchpad,
+        it is linkified to point to the profile page for that person.
+
+        Note that someone could theoretically register any old email
+        address in Launchpad and then have it linkified.  This may or not
+        may be a concern but is noted here for posterity anyway.
+        """
+        text = self._stringtoformat
+
+        matches = re.finditer(self._re_email, text)
+        for match in matches:
+            address = match.group()
+            person = getUtility(IPersonSet).getByEmail(address)
+            # Only linkify if person exists and does not want to hide
+            # their email addresses.
+            if person is not None and not person.hide_email_addresses:
+                person_formatter = PersonFormatterAPI(person)
+                image_html = ObjectImageDisplayAPI(person).icon()
+                text = text.replace(address, '<a href="%s">%s&nbsp;%s</a>' % (
+                    canonical_url(person), image_html, address))
+        return text
+
     def lower(self):
         """Return the string in lowercase"""
         return self._stringtoformat.lower()
@@ -1729,6 +1913,8 @@ class FormattersAPI:
             return self.email_to_html()
         elif name == 'obfuscate-email':
             return self.obfuscate_email()
+        elif name == 'linkify-email':
+            return self.linkify_email()
         elif name == 'shorten':
             if len(furtherPath) == 0:
                 raise TraversalError(
@@ -1763,6 +1949,7 @@ class PageMacroDispatcher:
     """Selects a macro, while storing information about page layout.
 
         view/macro:page
+        view/macro:page/onecolumn
         view/macro:page/applicationhome
         view/macro:page/pillarindex
         view/macro:page/freeform
@@ -1860,6 +2047,14 @@ class PageMacroDispatcher:
                 applicationtabs=True,
                 globalsearch=True,
                 portlets=True,
+                structuralheaderobject=True),
+        'onecolumn':
+            # XXX 20080130 mpt: Should eventually become the new 'default'.
+            LayoutElements(
+                applicationborder=True,
+                applicationtabs=True,
+                globalsearch=True,
+                portlets=False,
                 structuralheaderobject=True),
         'applicationhome':
             LayoutElements(

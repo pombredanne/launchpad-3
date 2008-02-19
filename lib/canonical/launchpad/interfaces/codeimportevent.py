@@ -1,4 +1,5 @@
 # Copyright 2007 Canonical Ltd.  All rights reserved.
+# pylint: disable-msg=E0211,E0213
 
 """Code import audit trail interfaces."""
 
@@ -15,6 +16,7 @@ from zope.interface import Attribute, Interface
 from zope.schema import Datetime, Choice, Int
 
 from canonical.launchpad import _
+from canonical.launchpad.fields import PublicPersonChoice
 from canonical.lazr import DBEnumeratedType, DBItem
 
 
@@ -124,6 +126,13 @@ class CodeImportEventDataType(DBEnumeratedType):
     item associated to an event has a type from this enumeration.
     """
 
+    # Generic data
+
+    MESSAGE = DBItem(10, """Message
+
+    User-provided message.
+    """)
+
     # CodeImport attributes
 
     CODE_IMPORT = DBItem(110, """
@@ -225,6 +234,13 @@ class CodeImportEventDataType(DBEnumeratedType):
         Previous Subversion URL, when recording an import source change.
         """)
 
+    # Data related to machine events
+
+    OFFLINE_REASON = DBItem(410, """Offline Reason
+
+    Reason why a code import machine went offline.
+    """)
+
 
 class ICodeImportEvent(Interface):
     """One event in the code-import audit trail."""
@@ -241,7 +257,7 @@ class ICodeImportEvent(Interface):
         title=_("Code Import"), required=False, readonly=True,
         vocabulary='CodeImport',
         description=_("The code import affected by this event."""))
-    person = Choice(
+    person = PublicPersonChoice(
         title=_("Person"), required=False, readonly=True,
         vocabulary='Person',
         description=_("The person that triggered this event."""))
@@ -305,6 +321,59 @@ class ICodeImportEventSet(Interface):
         :param person: `Person` who requested the change.
         :param token: `CodeImportEventToken` created by `beginModify`.
         :return: `CodeImportEvent` of MODIFY type, or None.
+        """
+
+    def newRequest(code_import, person):
+        """Record that user requested an immediate run of this import.
+
+        Only called by `CodeImportJobWorkflow.requestJob`.
+
+        :param code_import: `CodeImport` for which an immediate run was
+            requested.
+        :param person: `Person` who requested the code import to run.
+        :return: `CodeImportEvent` of REQUEST type.
+        """
+
+    def newOnline(machine):
+        """Record that an import machine went online.
+
+        :param machine: `CodeImportMachine` whose state changed to ONLINE.
+        :return: `CodeImportEvent` of ONLINE type.
+        """
+
+    def newOffline(machine, reason):
+        """Record that an import machine went offline.
+
+        :param machine: `CodeImportMachine` whose state changed to OFFLINE.
+        :param reason: `CodeImportMachineOfflineReason` enum value.
+        :return: `CodeImportEvent` of OFFLINE type.
+        """
+
+    def newQuiesce(machine, user, message):
+        """Record that user requested the machine to quiesce for maintenance.
+
+        :param machine: `CodeImportMachine` whose state changed to QUIESCING.
+        :param user: `Person` that requested quiescing.
+        :param message: User-provided message.
+        :return: `CodeImportEvent` of QUIESCE type.
+        """
+
+    def newStart(code_import, machine):
+        """Record that a machine is about to start working on a code import.
+
+        :param code_import: The `CodeImport` which is about to be worked on.
+        :param machine: `CodeImportMachine` which is about to start the job.
+        :return: `CodeImportEvent` of START type.
+        """
+
+    def newFinish(code_import, machine):
+        """Record that a machine has finished working on a code import.
+
+        :param code_import: The `CodeImport` which is no longer being worked
+                            on.
+        :param machine: `CodeImportMachine` which is no longer working on this
+                        import.
+        :return: `CodeImportEvent` of FINISH type.
         """
 
 

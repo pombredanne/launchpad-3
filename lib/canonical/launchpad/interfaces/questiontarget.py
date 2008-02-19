@@ -1,4 +1,5 @@
 # Copyright 2005-2007 Canonical Ltd.  All rights reserved.
+# pylint: disable-msg=E0211,E0213
 
 """Interfaces for things which have Questions."""
 
@@ -16,6 +17,7 @@ from zope.interface import Interface
 from zope.schema import Choice, List, Set, TextLine
 
 from canonical.launchpad import _
+from canonical.launchpad.fields import PublicPersonChoice
 from canonical.launchpad.interfaces.questioncollection import (
     ISearchableByQuestionOwner, QUESTION_STATUS_DEFAULT_SEARCH)
 from canonical.launchpad.interfaces.questionenums import (
@@ -41,6 +43,21 @@ class IQuestionTarget(ISearchableByQuestionOwner):
                  is assumed to be created in English.
         :datecreated:  A datetime object that will be used for the datecreated
                 attribute. Defaults to canonical.database.constants.UTC_NOW.
+        """
+
+    def createQuestionFromBug(bug):
+        """Create and return a Question from a Bug.
+
+        The bug's title and description are used as the question title and
+        description. The bug owner is the question owner. The question
+        is automatically linked to the bug.
+
+        Note that bug messages are copied to the question, but attachments
+        are not. The question is the same age as the bug, though its
+        datelastresponse attribute is current to signify the question is
+        active.
+
+        :bug: An IBug.
         """
 
     def getQuestion(question_id):
@@ -112,7 +129,7 @@ class IQuestionTarget(ISearchableByQuestionOwner):
             "Persons that are willing to provide support for this target. "
             "They receive email notifications about each new question as "
             "well as for changes to any questions related to this target."),
-        value_type=Choice(vocabulary="ValidPersonOrTeam"))
+        value_type=PublicPersonChoice(vocabulary="ValidPersonOrTeam"))
 
     direct_answer_contacts = List(
         title=_("Direct Answer Contacts"),
@@ -120,7 +137,7 @@ class IQuestionTarget(ISearchableByQuestionOwner):
             "IPersons that registered as answer contacts explicitely on "
             "this target. (answer_contacts may include answer contacts "
             "inherited from other context.)"),
-        value_type=Choice(vocabulary="ValidPersonOrTeam"))
+        value_type=PublicPersonChoice(vocabulary="ValidPersonOrTeam"))
 
 
 # These schemas are only used by browser/questiontarget.py and should really

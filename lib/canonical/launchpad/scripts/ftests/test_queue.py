@@ -3,6 +3,8 @@
 
 __metaclass__ = type
 
+__all__ = ['upload_bar_source']
+
 import os
 import shutil
 import tempfile
@@ -12,14 +14,19 @@ from sha import sha
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.archiveuploader.tests import datadir
+
+
+from canonical.archiveuploader.tests import (
+    datadir, getPolicy, insertFakeChangesFileForAllPackageUploads,
+    mock_logger_quiet)
+from canonical.archiveuploader.nascentupload import NascentUpload
 from canonical.config import config
 from canonical.database.sqlbase import READ_COMMITTED_ISOLATION
 from canonical.launchpad.database import PackageUploadBuild
 from canonical.launchpad.interfaces import (
-    ArchivePurpose, DistroSeriesStatus, IArchiveSet, IDistributionSet,
-    IPackageUploadSet, PackagePublishingStatus, PackagePublishingPocket,
-    PackageUploadStatus)
+    ArchivePurpose, DistroSeriesStatus, IArchiveSet, IBugSet, IBugTaskSet,
+    IDistributionSet, IPackageUploadSet, IPersonSet, PackagePublishingPocket,
+    PackagePublishingStatus, PackageUploadStatus)
 from canonical.launchpad.mail import stub
 from canonical.launchpad.scripts.queue import (
     CommandRunner, CommandRunnerError, name_queue_map)
@@ -27,6 +34,18 @@ from canonical.librarian.ftests.harness import (
     fillLibrarianFile, cleanupLibrarianFiles)
 from canonical.testing import LaunchpadZopelessLayer
 from canonical.librarian.utils import filechunks
+
+
+def upload_bar_source():
+    """Convenience function to upload a source, 'bar'."""
+    sync_policy = getPolicy(
+        name='sync', distro='ubuntu', distroseries='breezy-autotest')
+    bar_src = NascentUpload(
+        datadir('suite/bar_1.0-1/bar_1.0-1_source.changes'),
+        sync_policy, mock_logger_quiet)
+    bar_src.process()
+    bar_src.do_accept()
+    return bar_src
 
 
 class TestQueueBase(TestCase):
@@ -82,16 +101,27 @@ class TestQueueTool(TestQueueBase):
         # the /wrong/ changes file for the package in the upload queue,
         # but that doesn't matter as only email addresses are parsed out
         # of it.
-        changes_file_obj = open(
-            datadir('ed-0.2-21/ed_0.2-21_source.changes'), 'r')
-        self.test_changes_file = changes_file_obj.read()
-        changes_file_obj.close()
-        fillLibrarianFile(1, content=self.test_changes_file)
+        insertFakeChangesFileForAllPackageUploads()
         TestQueueBase.setUp(self)
 
     def tearDown(self):
         """Remove test contents from disk."""
         cleanupLibrarianFiles()
+
+    def uploadPackage(self,
+            changesfile="suite/bar_1.0-1/bar_1.0-1_source.changes"):
+        """Helper function to upload a package."""
+        LaunchpadZopelessLayer.switchDbUser("testadmin")
+        sync_policy = getPolicy(
+            name='sync', distro='ubuntu', distroseries='breezy-autotest')
+        bar_src = NascentUpload(
+            datadir(changesfile),
+            sync_policy, mock_logger_quiet)
+        bar_src.process()
+        bar_src.do_accept()
+        LaunchpadZopelessLayer.txn.commit()
+        LaunchpadZopelessLayer.switchDbUser('launchpad')
+        return bar_src
 
     def testBrokenAction(self):
         """Check if an unknown action raises CommandRunnerError."""
@@ -113,7 +143,8 @@ class TestQueueTool(TestQueueBase):
             ['Running: "help"',
              '\tinfo : Present the Queue item including its contents. ',
              '\taccept : Accept the contents of a queue item. ',
-             '\treport : Present a report about the size of available queues ',
+             '\treport : Present a report about the size of available '
+                  'queues ',
              '\treject : Reject the contents of a queue item. ',
              '\toverride : Override information in a queue item content. ',
              '\tfetch : Fetch the contents of a queue item. '],
@@ -208,12 +239,22 @@ class TestQueueTool(TestQueueBase):
 
     def testAcceptingSourceGeneratesEmail(self):
         """Check if accepting a source package generates an email."""
-        queue_action = self.execute_command('accept alsa-utils', no_mail=False)
+        # We need to upload a new source package to do this because the
+        # sample data is horribly broken with published sources also in
+        # the NEW queue.  Doing it this way guarantees a nice set of data.
+        LaunchpadZopelessLayer.switchDbUser("testadmin")
+        upload_bar_source()
+        # Swallow email generated at the upload stage.
+        stub.test_emails.pop()
+        LaunchpadZopelessLayer.txn.commit()
+
+        LaunchpadZopelessLayer.switchDbUser("queued")
+        queue_action = self.execute_command(
+            'accept bar', no_mail=False)
         self.assertEqual(1, queue_action.items_size)
         self.assertEqual(2, len(stub.test_emails))
-        # Second email sent (first to pop from queue) is the announcement:
+        # Emails sent are the announcement and the uploader's notification:
         self.assertEmail(['autotest_changes@ubuntu.com'])
-        # First email sent (second to pop) is the uploader's notification:
         self.assertEmail(
             ['Daniel Silverstone <daniel.silverstone@canonical.com>'])
 
@@ -223,6 +264,66 @@ class TestQueueTool(TestQueueBase):
             'accept mozilla-firefox', no_mail=False)
         self.assertEqual(1, queue_action.items_size)
         self.assertEqual(0, len(stub.test_emails))
+
+    def testAcceptingSourceClosesBug(self):
+        """Check that accepting a source will close bugs appropriately."""
+        # To speed up the publication process, single source uploads
+        # are automatically published when they are accepted to avoid
+        # another publisher cycle's worth of delay.  When the source is
+        # published, any bugs mentioned in the upload must be closed.
+
+        # First we must upload the first version of 'bar' in Ubuntu Hoary.
+        bar_src = self.uploadPackage()
+        bar_src.queue_root.setAccepted()
+        bar_src.queue_root.realiseUpload()
+
+        # Now make a new bugtask for the "bar" package.
+        the_bug_id = 6
+        bugtask_owner = getUtility(IPersonSet).getByName('kinnison')
+        ubuntu = getUtility(IDistributionSet)['ubuntu']
+        ubuntu_bar = ubuntu.getSourcePackage('bar')
+        the_bug = getUtility(IBugSet).get(the_bug_id)
+        bugtask = getUtility(IBugTaskSet).createTask(
+            bug=the_bug, owner=bugtask_owner, distribution=ubuntu,
+            sourcepackagename=ubuntu_bar.sourcepackagename)
+        LaunchpadZopelessLayer.txn.commit()
+
+        # The bugtask starts life as NEW.
+        the_bug = getUtility(IBugSet).get(the_bug_id)
+        bugtask = the_bug.getBugTask(ubuntu_bar)
+        bug_status = bugtask.status.name
+        self.assertEqual(
+            bug_status, 'NEW',
+            'Bug status is %s, expected NEW' % bug_status)
+
+        # Now, make an upload for the next version of "bar".
+        bar2_src = self.uploadPackage(
+            changesfile="suite/bar_1.0-2/bar_1.0-2_source.changes")
+
+        # Now accept the new bar upload with the queue tool.
+        queue_action = self.execute_command('accept bar', no_mail=False)
+
+        # The upload wants to close bug 6:
+        bugs_fixed_header = bar2_src.changes._dict['launchpad-bugs-fixed']
+        self.assertEqual(
+            bugs_fixed_header, str(the_bug_id),
+            'Expected bug %s in launchpad-bugs-fixed, got %s'
+                % (the_bug_id, bugs_fixed_header))
+
+        # The upload should be in the DONE state:
+        item_status = bar2_src.queue_root.status.name
+        self.assertEqual(
+            item_status, 'DONE',
+            'Upload status is %s, expected DONE' % item_status)
+
+        # The bug should now be marked as fix released for the "bar"
+        # bugtask:
+        the_bug = getUtility(IBugSet).get(the_bug_id)
+        bugtask = the_bug.getBugTask(ubuntu_bar)
+        bug_status = bugtask.status.name
+        self.assertEqual(
+            bug_status, 'FIXRELEASED',
+            'Bug status is %s, expected FIXRELEASED')
 
     def testAcceptActionWithMultipleIDs(self):
         """Check if accepting multiple items at once works.
@@ -375,8 +476,8 @@ class TestQueueTool(TestQueueBase):
         # Only one item considered.
         self.assertEqual(1, queue_action.items_size)
 
-        # Previously stored reference should have new state now
-        self.assertEqual('ACCEPTED', target_queue.status.name)
+        # Previously stored reference should have new state now.
+        self.assertEqual('DONE', target_queue.status.name)
 
         # No email was sent.
         self.assertEqual(0, len(stub.test_emails))
@@ -385,6 +486,14 @@ class TestQueueTool(TestQueueBase):
         self.assertEqual(
             expected_length,
             distro_series.getQueueItems(status=status, name=name).count())
+
+    def assertErrorAcceptingDuplicate(self):
+        self.assertTrue(
+            '** cnews could not be accepted due to '
+            'The source cnews - 1.0 is already accepted in ubuntu/'
+            'breezy-autotest and you cannot upload the same version '
+            'within the same distribution. You have to modify the source '
+            'version and re-upload.' in self.test_output)
 
     def testAcceptanceWorkflowForDuplications(self):
         """Check how queue tool behaves dealing with duplicated entries.
@@ -410,24 +519,21 @@ class TestQueueTool(TestQueueBase):
         breezy_autotest = getUtility(
             IDistributionSet)['ubuntu']['breezy-autotest']
 
-        # certify we have a 'cnews' upload duplication in UNAPPROVED
+        # Certify we have a 'cnews' upload duplication in UNAPPROVED.
         self.assertQueueLength(
             2, breezy_autotest, PackageUploadStatus.UNAPPROVED, "cnews")
 
-        # Step 1: try to accept both
+        # Step 1: try to accept both.
         queue_action = self.execute_command(
             'accept cnews', queue_name='unapproved',
             suite_name='breezy-autotest')
 
-        # the first is in accepted.
+        # The first is in accepted.
         self.assertQueueLength(
             1, breezy_autotest, PackageUploadStatus.ACCEPTED, "cnews")
 
-        # the last can't be accepted and remains in UNAPPROVED
-        self.assertTrue(
-            ('** cnews could not be accepted due This '
-             'sourcepackagerelease is already accepted in breezy-autotest.')
-            in self.test_output)
+        # The last can't be accepted and remains in UNAPPROVED.
+        self.assertErrorAcceptingDuplicate()
         self.assertQueueLength(
             1, breezy_autotest, PackageUploadStatus.UNAPPROVED, "cnews")
 
@@ -435,36 +541,27 @@ class TestQueueTool(TestQueueBase):
         queue_action = self.execute_command(
             'accept cnews', queue_name='unapproved',
             suite_name='breezy-autotest')
-        self.assertTrue(
-            ('** cnews could not be accepted due This '
-             'sourcepackagerelease is already accepted in breezy-autotest.')
-            in self.test_output)
+        self.assertErrorAcceptingDuplicate()
         self.assertQueueLength(
             1, breezy_autotest, PackageUploadStatus.UNAPPROVED, "cnews")
 
-        # simulate a publication of the accepted item, now it is in DONE
-        accepted_item = breezy_autotest.getQueueItems(
-            status=PackageUploadStatus.ACCEPTED, name="cnews")[0]
-
-        accepted_item.setDone()
-        accepted_item.syncUpdate()
+        # The item, being a single source upload, is automatically published
+        # when it's accepted.
+        LaunchpadZopelessLayer.txn.commit()
         self.assertQueueLength(
             1, breezy_autotest, PackageUploadStatus.DONE, "cnews")
 
         # Step 3: try to accept the remaining item in UNAPPROVED with the
-        # duplication already in DONE
+        # duplication already in DONE.
         queue_action = self.execute_command(
             'accept cnews', queue_name='unapproved',
             suite_name='breezy-autotest')
-        # it failed and te item remains in UNAPPROVED
-        self.assertTrue(
-            ('** cnews could not be accepted due This '
-             'sourcepackagerelease is already accepted in breezy-autotest.')
-            in self.test_output)
+        # It failed and te item remains in UNAPPROVED.
+        self.assertErrorAcceptingDuplicate()
         self.assertQueueLength(
             1, breezy_autotest, PackageUploadStatus.UNAPPROVED, "cnews")
 
-        # Step 4: The only possible destiny for the remaining item it REJECT
+        # Step 4: The only possible destiny for the remaining item it REJECT.
         queue_action = self.execute_command(
             'reject cnews', queue_name='unapproved',
             suite_name='breezy-autotest')
@@ -490,15 +587,20 @@ class TestQueueTool(TestQueueBase):
         self.assertEmail(
             ['Daniel Silverstone <daniel.silverstone@canonical.com>'])
 
+    def testRejectLangpackSendsNoEmail(self):
+        """Check that rejecting a language pack sends no email."""
+        queue_action = self.execute_command(
+            'reject language-pack-de', queue_name='unapproved',
+            suite_name='breezy-autotest-proposed')
+        self.assertEqual(1, queue_action.items_size)
+        self.assertEqual(0, len(stub.test_emails))
+
     def testRejectWithMultipleIDs(self):
         """Check if rejecting multiple items at once works.
 
         We can specify multiple items to reject, even mixing IDs and names.
         e.g. queue reject alsa-utils 1 3
         """
-        # An additional librarian file is needed for queue item with ID 1
-        # because in the sample data it points to library file alias 52.
-        fillLibrarianFile(52, content=self.test_changes_file)
         breezy_autotest = getUtility(
             IDistributionSet)['ubuntu']['breezy-autotest']
 
@@ -716,8 +818,8 @@ class TestQueueTool(TestQueueBase):
             IDistributionSet)['ubuntu']['breezy-autotest']
         # Test that it changes to partner when required.
         self.assertRaises(
-            CommandRunnerError, self.execute_command, 'override binary pmount',
-            component_name='partner')
+            CommandRunnerError, self.execute_command,
+            'override binary pmount', component_name='partner')
 
 
 class TestQueueToolInJail(TestQueueBase):

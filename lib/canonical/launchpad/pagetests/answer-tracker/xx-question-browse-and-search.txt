@@ -107,14 +107,9 @@ description appears in a small pop-up:
     >>> print question_link.findParent('tr')['title']
     How do you play DVDs in Totem..........?
 
-    >>> question_link = soup.first('a', text=re.compile('mailto:'))
+    >>> question_link = soup.first('a', text=re.compile('Slow system'))
     >>> print question_link.findParent('tr')['title']
-    I am not able to open my email client if i click on a mailto: link in a
-    webpage in Firefox 1.5.0.4 (ubuntu dapper).
-    <BLANKLINE>
-    Earlier I could do this but since balsa was installed and then uninstalled,
-    things have not been the same. balsa used to start when a mailto: link was
-    clicked on a webpage. balsa i...
+    I get really poor hard drive performance.
 
 He clicks on the question title to obtain the question page where the
 details of the question are available.

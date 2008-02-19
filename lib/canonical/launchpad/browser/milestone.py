@@ -15,16 +15,18 @@ __all__ = [
 
 from zope.component import getUtility
 
+from canonical.launchpad import _
+from canonical.cachedproperty import cachedproperty
+
 from canonical.launchpad.interfaces import (ILaunchBag, IMilestone,
     IMilestoneSet, IBugTaskSet, BugTaskSearchParams, IProjectMilestone)
 
-from canonical.cachedproperty import cachedproperty
-
-from canonical.launchpad.browser.editview import SQLObjectEditView
-
 from canonical.launchpad.webapp import (
-    StandardLaunchpadFacets, ContextMenu, Link, LaunchpadView,
-    enabled_with_permission, GetitemNavigation, Navigation)
+    action, canonical_url, custom_widget, StandardLaunchpadFacets,
+    ContextMenu, Link, LaunchpadEditFormView, LaunchpadFormView,
+    LaunchpadView, enabled_with_permission, GetitemNavigation, Navigation)
+
+from canonical.widgets import DateWidget
 
 
 class MilestoneSetNavigation(GetitemNavigation):
@@ -59,7 +61,7 @@ class MilestoneContextMenu(ContextMenu):
 
     usedfor = IMilestone
 
-    links = ['edit', 'admin']
+    links = ['edit', 'admin', 'subscribe']
 
     @enabled_with_permission('launchpad.Edit')
     def edit(self):
@@ -76,6 +78,11 @@ class MilestoneContextMenu(ContextMenu):
         # that can/must be administrated.
         enabled = not IProjectMilestone.providedBy(self.context)
         return Link('+admin', text, icon='edit', enabled=enabled)
+
+    def subscribe(self):
+        enabled = not IProjectMilestone.providedBy(self.context)
+        return Link('+subscribe', 'Subscribe to bug mail',
+                    icon='edit', enabled=enabled)
 
 
 class MilestoneView(LaunchpadView):
@@ -128,24 +135,63 @@ class MilestoneView(LaunchpadView):
         return self.bugtasks or self.specifications
 
 
-class MilestoneAddView:
-    def create(self, name, dateexpected=None, description=None):
-        """We will use the newMilestone method on the ProductSeries or
-        DistroSeries context to make the milestone."""
-        return self.context.newMilestone(
-            name, dateexpected=dateexpected, description=description)
+class MilestoneAddView(LaunchpadFormView):
+    """A view for creating a new Milestone."""
 
-    def add(self, content):
-        """Skipping 'adding' this content to a container, because
-        this is a placeless system."""
-        return content
+    schema = IMilestone
+    field_names = ['name', 'dateexpected', 'description']
+    label = "Register a new milestone"
 
-    def nextURL(self):
-        return '.'
+    custom_widget('dateexpected', DateWidget)
+
+    @action(_('Register milestone'), name='register')
+    def register_action(self, action, data):
+        """Use the newMilestone method on the context to make a milestone."""
+        milestone = self.context.newMilestone(
+            name=data.get('name'),
+            dateexpected=data.get('dateexpected'),
+            description=data.get('description'))
+        self.next_url = canonical_url(self.context)
+
+    @property
+    def action_url(self):
+        return "%s/+addmilestone" % canonical_url(self.context)
 
 
-class MilestoneEditView(SQLObjectEditView):
+class MilestoneEditView(LaunchpadEditFormView):
+    """A view for editing milestone properties.
 
-    def changed(self):
-        self.request.response.redirect('../..')
+    This view supports editing of properties such as the name, the date it is
+    expected to complete, the milestone description, and whether or not it is
+    visible (i.e. active).
+    """
+
+    schema = IMilestone
+    field_names = ['name', 'visible', 'dateexpected', 'description']
+    label = "Modify milestone details"
+
+    custom_widget('dateexpected', DateWidget)
+
+    @action(_('Update'), name='update')
+    def update_action(self, action, data):
+        self.updateContextFromData(data)
+        self.next_url = canonical_url(self.context)
+
+
+class MilestoneAdminEditView(LaunchpadEditFormView):
+    """A view for administering the milestone.
+
+    This view allows an administrator to change the productseries and
+    distroseries.
+    """
+
+    schema = IMilestone
+    field_names = ['productseries', 'distroseries']
+    label = "Modify milestone details"
+
+    @action(_('Update'), name='update')
+    def update_action(self, action, data):
+        self.updateContextFromData(data)
+        self.next_url = canonical_url(self.context)
+
 

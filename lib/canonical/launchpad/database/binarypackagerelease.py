@@ -1,4 +1,5 @@
 # Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# pylint: disable-msg=E0611,W0212
 
 __metaclass__ = type
 __all__ = ['BinaryPackageRelease', 'BinaryPackageReleaseSet']
@@ -47,6 +48,9 @@ class BinaryPackageRelease(SQLBase):
     conflicts = StringCol(dbName='conflicts')
     replaces = StringCol(dbName='replaces')
     provides = StringCol(dbName='provides')
+    pre_depends = StringCol(dbName='pre_depends')
+    enhances = StringCol(dbName='enhances')
+    breaks = StringCol(dbName='breaks')
     essential = BoolCol(dbName='essential', default=False)
     installedsize = IntCol(dbName='installedsize')
     architecturespecific = BoolCol(dbName='architecturespecific',
@@ -119,7 +123,7 @@ class BinaryPackageRelease(SQLBase):
         BinaryPackageRelease.binarypackagename =
             BinaryPackageName.id AND
         BinaryPackageName.id = %s AND
-        BinaryPackagePublishingHistory.distroarchrelease = %s AND
+        BinaryPackagePublishingHistory.distroarchseries = %s AND
         BinaryPackagePublishingHistory.archive IN %s AND
         BinaryPackagePublishingHistory.status = %s
         """ % sqlvalues(
@@ -176,7 +180,7 @@ class BinaryPackageReleaseSet:
         queries.append(match_query)
 
         if archtag:
-            queries.append('DistroArchRelease.architecturetag=%s'
+            queries.append('DistroArchSeries.architecturetag=%s'
                            % sqlvalues(archtag))
 
         query = " AND ".join(queries)
@@ -204,7 +208,7 @@ class BinaryPackageReleaseSet:
                          % sqlvalues(status_published))
 
         if archtag:
-            queries.append('DistroArchRelease.architecturetag = %s'
+            queries.append('DistroArchSeries.architecturetag = %s'
                          % sqlvalues(archtag))
 
         query = " AND ".join(queries)
@@ -216,10 +220,10 @@ class BinaryPackageReleaseSet:
         query = """
         BinaryPackagePublishingHistory.binarypackagerelease =
            BinaryPackageRelease.id AND
-        BinaryPackagePublishingHistory.distroarchrelease =
-           DistroArchRelease.id AND
+        BinaryPackagePublishingHistory.distroarchseries =
+           DistroArchSeries.id AND
         BinaryPackagePublishingHistory.archive IN %s AND
-        DistroArchRelease.distrorelease = %s AND
+        DistroArchSeries.distroseries = %s AND
         BinaryPackageRelease.binarypackagename =
            BinaryPackageName.id AND
         BinaryPackagePublishingHistory.dateremoved is NULL
@@ -227,7 +231,7 @@ class BinaryPackageReleaseSet:
                          distroseries.distribution.all_distro_archives],
                         distroseries)
 
-        clauseTables = ['BinaryPackagePublishingHistory', 'DistroArchRelease',
+        clauseTables = ['BinaryPackagePublishingHistory', 'DistroArchSeries',
                         'BinaryPackageRelease', 'BinaryPackageName']
 
         return query, clauseTables

@@ -116,10 +116,10 @@ def run_gina(options, ztm, target_section):
     package_root = target_section.root
     keyrings_root = target_section.keyrings
     distro = target_section.distro
-    # XXX kiko 2005-10-23: I honestly think having a separate distrorelease
-    # bit silly. Can't we construct this based on `distrorelease-pocket`?
-    pocket_distrorelease = target_section.pocketrelease
-    distrorelease = target_section.distrorelease
+    # XXX kiko 2005-10-23: I honestly think having a separate distroseries
+    # bit silly. Can't we construct this based on `distroseries-pocket`?
+    pocket_distroseries = target_section.pocketrelease
+    distroseries = target_section.distroseries
     components = [c.strip() for c in target_section.components.split(",")]
     archs = [a.strip() for a in target_section.architectures.split(",")]
     pocket = target_section.pocket
@@ -138,7 +138,7 @@ def run_gina(options, ztm, target_section):
     LIBRPORT = config.librarian.upload_port
 
     log.info("")
-    log.info("=== Processing %s/%s/%s ===" % (distro, distrorelease, pocket))
+    log.info("=== Processing %s/%s/%s ===" % (distro, distroseries, pocket))
     log.debug("Packages read from: %s" % package_root)
     log.debug("Keyrings read from: %s" % keyrings_root)
     log.info("Components to import: %s" % ", ".join(components))
@@ -171,19 +171,19 @@ def run_gina(options, ztm, target_section):
     kdb = None
     keyrings = None
     if KTDB:
-        kdb = Katie(KTDB, distrorelease, dry_run)
+        kdb = Katie(KTDB, distroseries, dry_run)
         keyrings = _get_keyring(keyrings_root)
 
     try:
         arch_component_items = ArchiveComponentItems(package_root,
-                                                     pocket_distrorelease,
+                                                     pocket_distroseries,
                                                      components, archs)
     except MangledArchiveError:
-        log.exception("Failed to analyze archive for %s" % pocket_distrorelease)
+        log.exception("Failed to analyze archive for %s" % pocket_distroseries)
         sys.exit(1)
 
     packages_map = PackagesMap(arch_component_items)
-    importer_handler = ImporterHandler(ztm, distro, distrorelease,
+    importer_handler = ImporterHandler(ztm, distro, distroseries,
                                        dry_run, kdb, package_root, keyrings,
                                        pocket, component_override)
 

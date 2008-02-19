@@ -1,14 +1,14 @@
 # Copyright 2004-2007 Canonical Ltd.  All rights reserved.
+# pylint: disable-msg=E0611,W0212
 
 __metaclass__ = type
 __all__ = ['SourcePackageRelease']
 
-import sets
-import tarfile
-from StringIO import StringIO
 import datetime
 import pytz
+from StringIO import StringIO
 import re
+import tarfile
 
 from zope.interface import implements
 from zope.component import getUtility
@@ -27,14 +27,18 @@ from canonical.librarian.interfaces import ILibrarianClient
 from canonical.launchpad.helpers import shortlist
 from canonical.launchpad.searchbuilder import any
 from canonical.launchpad.interfaces import (
-    ArchivePurpose, BugTaskSearchParams, BuildStatus, ILaunchpadCelebrities,
-    ISourcePackageRelease, ITranslationImportQueue, PackagePublishingStatus,
+    ArchivePurpose, BugTaskSearchParams, BuildStatus, IArchiveSet,
+    ILaunchpadCelebrities, ISourcePackageRelease, ITranslationImportQueue,
+    PackagePublishingStatus, PackageUploadStatus, NotFoundError,
     SourcePackageFileType, SourcePackageFormat, SourcePackageUrgency,
-    UNRESOLVED_BUGTASK_STATUSES, NotFoundError)
+    UNRESOLVED_BUGTASK_STATUSES)
+
 from canonical.launchpad.database.build import Build
 from canonical.launchpad.database.files import SourcePackageReleaseFile
+from canonical.launchpad.validators.person import public_person_validator
 from canonical.launchpad.database.publishing import (
     SourcePackagePublishingHistory)
+from canonical.launchpad.database.queue import PackageUpload
 from canonical.launchpad.scripts.queue import QueueActionError
 
 
@@ -43,12 +47,15 @@ class SourcePackageRelease(SQLBase):
     _table = 'SourcePackageRelease'
 
     section = ForeignKey(foreignKey='Section', dbName='section')
-    creator = ForeignKey(foreignKey='Person', dbName='creator', notNull=True)
+    creator = ForeignKey(
+        dbName='creator', foreignKey='Person',
+        validator=public_person_validator, notNull=True)
     component = ForeignKey(foreignKey='Component', dbName='component')
     sourcepackagename = ForeignKey(foreignKey='SourcePackageName',
         dbName='sourcepackagename', notNull=True)
-    maintainer = ForeignKey(foreignKey='Person', dbName='maintainer',
-        notNull=True)
+    maintainer = ForeignKey(
+        dbName='maintainer', foreignKey='Person',
+        validator=public_person_validator, notNull=True)
     dscsigningkey = ForeignKey(foreignKey='GPGKey', dbName='dscsigningkey')
     urgency = EnumCol(dbName='urgency', schema=SourcePackageUrgency,
         default=SourcePackageUrgency.LOW, notNull=True)
@@ -57,22 +64,24 @@ class SourcePackageRelease(SQLBase):
     dsc = StringCol(dbName='dsc')
     copyright = StringCol(dbName='copyright', notNull=True)
     version = StringCol(dbName='version', notNull=True)
-    changelog = StringCol(dbName='changelog')
+    changelog_entry = StringCol(dbName='changelog_entry')
     builddepends = StringCol(dbName='builddepends')
     builddependsindep = StringCol(dbName='builddependsindep')
+    build_conflicts = StringCol(dbName='build_conflicts')
+    build_conflicts_indep = StringCol(dbName='build_conflicts_indep')
     architecturehintlist = StringCol(dbName='architecturehintlist')
     format = EnumCol(dbName='format', schema=SourcePackageFormat,
         default=SourcePackageFormat.DPKG, notNull=True)
-    uploaddistroseries = ForeignKey(foreignKey='DistroSeries',
-        dbName='uploaddistrorelease')
+    upload_distroseries = ForeignKey(foreignKey='DistroSeries',
+        dbName='upload_distroseries')
     upload_archive = ForeignKey(
         foreignKey='Archive', dbName='upload_archive', notNull=True)
 
     # XXX cprov 2006-09-26: Those fields are set as notNull and required in
     # ISourcePackageRelease, however they can't be not NULL in DB since old
     # records doesn't satisfy this condition. We will sort it before using
-    # landing 'NoMoreAptFtparchive' implementation for main archive. For
-    # PPA (primary target) we don't need populate old records.
+    # 'NoMoreAptFtparchive' implementation for PRIMARY archive. For PPA
+    # (primary target) we don't need to populate old records.
     dsc_maintainer_rfc822 = StringCol(dbName='dsc_maintainer_rfc822')
     dsc_standards_version = StringCol(dbName='dsc_standards_version')
     dsc_format = StringCol(dbName='dsc_format')
@@ -141,7 +150,7 @@ class SourcePackageRelease(SQLBase):
         """See ISourcePackageRelease."""
         # By supplying the sourcepackagename instead of its string name,
         # we avoid doing an extra query doing getSourcepackage
-        series = self.uploaddistroseries
+        series = self.upload_distroseries
         return series.getSourcePackage(self.sourcepackagename)
 
     @property
@@ -149,7 +158,7 @@ class SourcePackageRelease(SQLBase):
         """See ISourcePackageRelease."""
         # By supplying the sourcepackagename instead of its string name,
         # we avoid doing an extra query doing getSourcepackage
-        distribution = self.uploaddistroseries.distribution
+        distribution = self.upload_distroseries.distribution
         return distribution.getSourcePackage(self.sourcepackagename)
 
     @property
@@ -206,7 +215,7 @@ class SourcePackageRelease(SQLBase):
 
     def countOpenBugsInUploadedDistro(self, user):
         """See ISourcePackageRelease."""
-        upload_distro = self.uploaddistroseries.distribution
+        upload_distro = self.upload_distroseries.distribution
         params = BugTaskSearchParams(sourcepackagename=self.sourcepackagename,
             user=user, status=any(*UNRESOLVED_BUGTASK_STATUSES))
         # XXX: kiko 2006-03-07:
@@ -223,30 +232,6 @@ class SourcePackageRelease(SQLBase):
             import DistroSeriesSourcePackageRelease
         return [DistroSeriesSourcePackageRelease(pub.distroseries, self)
                 for pub in self.publishings]
-
-    def architecturesReleased(self, distroseries):
-        # The import is here to avoid a circular import. See top of module.
-        from canonical.launchpad.database.soyuz import DistroArchSeries
-        clauseTables = ['BinaryPackagePublishingHistory',
-                        'BinaryPackageRelease',
-                        'Build']
-        # XXX cprov 2006-08-23: Will distinct=True help us here?
-        archSerieses = sets.Set(DistroArchSeries.select(
-            """
-            BinaryPackagePublishingHistory.distroarchrelease =
-               DistroArchRelease.id AND
-            DistroArchRelease.distrorelease = %d AND
-            BinaryPackagePublishingHistory.archive IN %s AND
-            BinaryPackagePublishingHistory.binarypackagerelease =
-               BinaryPackageRelease.id AND
-            BinaryPackageRelease.build = Build.id AND
-            Build.sourcepackagerelease = %d
-            """ % (distroseries,
-                   distroseries.distribution.all_distro_archive_ids,
-                   self),
-            clauseTables=clauseTables))
-
-        return archSerieses
 
     def addFile(self, file):
         """See ISourcePackageRelease."""
@@ -288,14 +273,49 @@ class SourcePackageRelease(SQLBase):
 
     def getBuildByArch(self, distroarchseries, archive):
         """See ISourcePackageRelease."""
-        # XXX cprov 20070720: this code belongs to IDistroSeries content
-        # class as 'parent_series' property. Other parts of the system
-        # can benefit of this, like SP.packagings, for instance.
-        parent_series = []
-        candidate = distroarchseries.distroseries
-        while candidate is not None:
-            parent_series.append(candidate)
-            candidate = candidate.parentseries
+        # First we try to follow any possibly published architecture-specific
+        # binaries for this source in the given (distroarchseries, archive)
+        # location.
+        clauseTables = [
+            'BinaryPackagePublishingHistory', 'BinaryPackageRelease']
+
+        query = """
+            BinaryPackageRelease.build = Build.id AND
+            BinaryPackagePublishingHistory.binarypackagerelease =
+                BinaryPackageRelease.id AND
+            BinaryPackageRelease.architecturespecific = true AND
+            Build.sourcepackagerelease = %s AND
+            BinaryPackagePublishingHistory.distroarchseries = %s AND
+            BinaryPackagePublishingHistory.archive = %s
+        """ % sqlvalues(self, distroarchseries, archive)
+
+        select_results = Build.select(
+            query, clauseTables=clauseTables, distinct=True,
+            orderBy='-Build.id')
+
+        # XXX cprov 20080216: this if/elif/else block could be avoided or,
+        # at least, simplified if SelectOne accepts 'distinct' argument.
+        # The query above results in multiple identical builds for ..
+        results = list(select_results)
+        if len(results) == 1:
+            # If there was any published binary we can use its original build.
+            # This case covers the situations when both, source and binaries
+            # got copied from another location.
+            return results[0]
+        elif len(results) > 1:
+            # If more than one distinct build was found we have a problem.
+            # A build was created when it shouldn't, possible due to bug
+            # #181736. The broken build should be manually removed.
+            raise AssertionError(
+                    "Found more than one build candidate: %s. It possibly "
+                    "means we have a serious problem in out DB model, "
+                    "further investigation is required." %
+                    [build.id for build in results])
+        else:
+            # If there was no published binary we have to try to find a
+            # suitable build in all possible location across the distroseries
+            # inheritance tree. See bellow.
+            pass
 
         queries = ["Build.sourcepackagerelease = %s" % sqlvalues(self)]
 
@@ -303,6 +323,16 @@ class SourcePackageRelease(SQLBase):
         # a build could be issued (then inherited).
         parent_architectures = []
         archtag = distroarchseries.architecturetag
+
+        # XXX cprov 20070720: this code belongs to IDistroSeries content
+        # class as 'parent_series' property. Other parts of the system
+        # can benefit of this, like SP.packagings, for instance.
+        parent_series = []
+        candidate = distroarchseries.distroseries
+        while candidate is not None:
+            parent_series.append(candidate)
+            candidate = candidate.parent_series
+
         for series in parent_series:
             try:
                 candidate = series[archtag]
@@ -310,18 +340,25 @@ class SourcePackageRelease(SQLBase):
                 pass
             else:
                 parent_architectures.append(candidate)
+        # end-of-XXX.
 
         architectures = [
             architecture.id for architecture in parent_architectures]
         queries.append(
-            "Build.distroarchrelease IN %s" % sqlvalues(architectures))
+            "Build.distroarchseries IN %s" % sqlvalues(architectures))
 
-        # Follow archive inheritance across PRIMARY archives, for example:
-        # guadalinex/foobar was initialised from ubuntu/dapper
+        # Follow archive inheritance across distribution offical archives,
+        # for example:
+        # guadalinex/foobar/PRIMARY was initialised from ubuntu/dapper/PRIMARY
+        # guadalinex/foobar/PARTNER was initialised from ubuntu/dapper/PARTNER
+        # and so on
         if archive.purpose != ArchivePurpose.PPA:
             parent_archives = set()
+            archive_set = getUtility(IArchiveSet)
             for series in parent_series:
-                parent_archives.add(series.main_archive)
+                target_archive = archive_set.getByDistroPurpose(
+                    series.distribution, archive.purpose)
+                parent_archives.add(target_archive)
             archives = [archive.id for archive in parent_archives]
         else:
             archives = [archive.id, ]
@@ -329,19 +366,10 @@ class SourcePackageRelease(SQLBase):
         queries.append(
             "Build.archive IN %s" % sqlvalues(archives))
 
-        # Query ONE only allowed build record for this sourcerelease
+        # Query only the last build record for this sourcerelease
         # across all possible locations.
         query = " AND ".join(queries)
 
-        # XXX cprov 20070924: the SelectFirst hack is only required because
-        # sampledata has duplicated (broken) build records. Once we are in
-        # position to clean up the sampledata and install a proper constraint
-        # on Build table:
-        # UNIQUE(distribution, architecturetag, sourcepackagerelease, archive)
-        # we should use SelectOne (and, obviously, remove the orderBy).
-        # One detail that might influence in this strategy is automatic-rebuild
-        # when we may have to consider rebuild_index in the constraint.
-        # See more information on bug #148195.
         return Build.selectFirst(query, orderBy=['-datecreated'])
 
     def override(self, component=None, section=None, urgency=None):
@@ -349,7 +377,7 @@ class SourcePackageRelease(SQLBase):
         if component is not None:
             self.component = component
             # See if the new component requires a new archive:
-            distribution = self.uploaddistroseries.distribution
+            distribution = self.upload_distroseries.distribution
             new_archive = distribution.getArchiveByComponent(component.name)
             if new_archive is not None:
                 self.upload_archive = new_archive
@@ -362,12 +390,34 @@ class SourcePackageRelease(SQLBase):
             self.urgency = urgency
 
     @property
+    def upload_changesfile(self):
+        """See ISourcePackageRelease."""
+        clauseTables = [
+            'PackageUpload',
+            'PackageUploadSource',
+            ]
+        query = """
+        PackageUpload.id = PackageUploadSource.packageupload AND
+        PackageUpload.distroseries = %s AND
+        PackageUploadSource.sourcepackagerelease = %s AND
+        PackageUpload.status = %s
+        """ % sqlvalues(self.upload_distroseries, self,
+                        PackageUploadStatus.DONE)
+        queue_record = PackageUpload.selectOne(
+            query, clauseTables=clauseTables)
+
+        if not queue_record:
+            return None
+
+        return queue_record.changesfile
+
+    @property
     def change_summary(self):
         """See ISourcePackageRelease"""
         # this regex is copied from apt-listchanges.py courtesy of MDZ
         new_stanza_line = re.compile(
             '^\S+ \((?P<version>.*)\) .*;.*urgency=(?P<urgency>\w+).*')
-        logfile = StringIO(self.changelog)
+        logfile = StringIO(self.changelog_entry)
         change = ''
         top_stanza = False
         for line in logfile.readlines():
@@ -389,13 +439,13 @@ class SourcePackageRelease(SQLBase):
         tarball = tarfile.open('', 'r', StringIO(tarball_file.read()))
 
         # Get the list of files to attach.
-        filenames = [name for name in tarball.getnames()
-                     if name.startswith('source/') or name.startswith('./source/')
-                     if name.endswith('.pot') or name.endswith('.po')
-                     ]
+        filenames = [
+            name for name in tarball.getnames()
+            if name.startswith('source/') or name.startswith('./source/')
+            if name.endswith('.pot') or name.endswith('.po')]
 
         if importer is None:
-            importer = getUtility(ILaunchpadCelebrities).rosetta_expert
+            importer = getUtility(ILaunchpadCelebrities).rosetta_experts
 
         translation_import_queue_set = getUtility(ITranslationImportQueue)
 
@@ -416,5 +466,5 @@ class SourcePackageRelease(SQLBase):
             translation_import_queue_set.addOrUpdateEntry(
                 filename, content, is_published, importer,
                 sourcepackagename=self.sourcepackagename,
-                distroseries=self.uploaddistroseries)
+                distroseries=self.upload_distroseries)
 

@@ -6,6 +6,7 @@ __metaclass__ = type
 
 __all__ = [
     'SourcePublishingRecordView',
+    'SourcePublishingRecordSelectableView',
     'BinaryPublishingRecordView',
     ]
 
@@ -67,10 +68,28 @@ class BasePublishingRecordView(LaunchpadView):
         """
         return self.context.dateremoved is not None
 
+    @property
+    def js_connector(self):
+        """Return the javascript glue for expandable rows mechanism."""
+        return """
+        <script type="text/javascript">
+           registerLaunchpadFunction(function() {
+               connect('pub%s-expander', 'onclick', function (e) {
+                   toggleExpandableTableRow('pub%s');
+                   });
+               });
+        </script>
+        """ % (self.context.id, self.context.id)
+
 
 class SourcePublishingRecordView(BasePublishingRecordView):
     """View class for `ISourcePackagePublishingHistory`."""
     __used_for__ = ISourcePackagePublishingHistory
+
+    @property
+    def allow_selection(self):
+        """Do not render the checkbox corresponding to this record."""
+        return False
 
     @property
     def published_source_and_binary_files(self):
@@ -84,20 +103,52 @@ class SourcePublishingRecordView(BasePublishingRecordView):
         urls = set()
         for f in files:
             d = {}
-            if f.archive_url in urls:
+            url = f.libraryfilealias.http_url
+            if url in urls:
                 # Don't print out the same file multiple times. This
                 # actually happens for arch-all builds, and is
                 # particularly irritating for PPAs.
                 continue
-            urls.add(f.archive_url)
-            d["archive_url"] = f.archive_url
+            urls.add(url)
+            d["url"] = url
             d["filename"] = f.libraryfilealias.filename
             d["filesize"] = f.libraryfilealias.content.filesize
             ret.append(d)
         return ret
 
+    @property
+    def built_packages(self):
+        """Return a list of dictionaries with package names and their summary.
+
+        For each built package from this published source, return a
+        dictionary with keys "binarypackagename" and "summary", where
+        the binarypackagename is unique (i.e. it ignores the same package
+        published in more than one place/architecture.)
+        """
+        results = []
+        packagenames = set()
+        for pub in self.context.getPublishedBinaries():
+            package = pub.binarypackagerelease
+            packagename = package.binarypackagename.name
+            if packagename not in packagenames:
+                entry = {
+                    "binarypackagename" : packagename,
+                    "summary" : package.summary,
+                    }
+                results.append(entry)
+                packagenames.add(packagename)
+        return results
+
+
+class SourcePublishingRecordSelectableView(SourcePublishingRecordView):
+    """View class for a selectable `ISourcePackagePublishingHistory`."""
+
+    @property
+    def allow_selection(self):
+        """Allow the checkbox corresponding to this record to be rendered."""
+        return True
+
 
 class BinaryPublishingRecordView(BasePublishingRecordView):
     """View class for `IBinaryPackagePublishingHistory`."""
     __used_for__ = IBinaryPackagePublishingHistory
-

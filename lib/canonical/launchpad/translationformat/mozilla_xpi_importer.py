@@ -17,16 +17,16 @@ from zope.component import getUtility
 from zope.interface import implements
 
 from canonical.launchpad.interfaces import (
-    ITranslationFormatImporter, ITranslationHeader, TranslationConstants,
+    ITranslationFormatImporter, ITranslationHeaderData, TranslationConstants,
     TranslationFileFormat, TranslationFormatInvalidInputError,
     TranslationFormatSyntaxError)
 from canonical.launchpad.translationformat.translation_common_format import (
-    TranslationFile, TranslationMessage)
+    TranslationFileData, TranslationMessageData)
 from canonical.librarian.interfaces import ILibrarianClient
 
 
 class MozillaHeader:
-    implements(ITranslationHeader)
+    implements(ITranslationHeaderData)
 
     def __init__(self, header_content):
         self._raw_content = header_content
@@ -42,16 +42,16 @@ class MozillaHeader:
         self.comment = None
 
     def getRawContent(self):
-        """See `ITranslationHeader.`"""
+        """See `ITranslationHeaderData`."""
         return self._raw_content
 
     def updateFromTemplateHeader(self, template_header):
-        """See `ITranslationHeader.`"""
+        """See `ITranslationHeaderData`."""
         # Nothing to do for this format.
         return
 
     def getLastTranslator(self):
-        """See `ITranslationHeader.`"""
+        """See `ITranslationHeaderData`."""
         name = None
         email = None
         for event, elem in cElementTree.iterparse(StringIO(self._raw_content)):
@@ -124,14 +124,15 @@ class MozillaZipFile:
             self.filename is not None and
             self.filename.startswith('en-US.xpi') and
             message.translations and (
-                message.msgid.endswith('.accesskey') or
-                message.msgid.endswith('.commandkey')))
+                message.msgid_singular.endswith('.accesskey') or
+                message.msgid_singular.endswith('.commandkey')))
 
     def extend(self, newdata):
         """Append 'newdata' messages to self.messages."""
         for message in newdata:
-            if message.msgid in self._msgids:
-                logging.info("Duplicate message ID '%s'." % message.msgid)
+            if message.msgid_singular in self._msgids:
+                logging.info(
+                    "Duplicate message ID '%s'." % message.msgid_singular)
                 continue
 
             self._updateMessageFileReferences(message)
@@ -144,7 +145,7 @@ class MozillaZipFile:
                     message.translations[TranslationConstants.SINGULAR_FORM])
                 message.resetAllTranslations()
 
-            self._msgids.append(message.msgid)
+            self._msgids.append(message.msgid_singular)
             self.messages.append(message)
 
 
@@ -187,8 +188,8 @@ class MozillaDtdConsumer (xmldtd.WFCDTD):
         if not self.started:
             return
 
-        message = TranslationMessage()
-        message.msgid = name
+        message = TranslationMessageData()
+        message.msgid_singular = name
         # CarlosPerelloMarin 20070326: xmldtd parser does an inline
         # parsing which means that the content is all in a single line so we
         # don't have a way to show the line number with the source reference.
@@ -258,7 +259,7 @@ class PropertyFile:
         """Parse given content as a property file.
 
         Once the parse is done, self.messages has a list of the available
-        ITranslationMessages.
+        `ITranslationMessageData`s.
         """
 
         # .properties files are supposed to be unicode-escaped, but we know
@@ -388,8 +389,8 @@ class PropertyFile:
                     last_comment = None
                     ignore_comment = False
 
-                message = TranslationMessage()
-                message.msgid = key
+                message = TranslationMessageData()
+                message.msgid_singular = key
                 message.file_references_list = [
                     "%s:%d(%s)" % (self.filename, line_num, key)]
                 message.addTranslation(
@@ -435,7 +436,7 @@ class MozillaXpiImporter:
 
     def parse(self, translation_import_queue_entry):
         """See `ITranslationFormatImporter`."""
-        self._translation_file = TranslationFile()
+        self._translation_file = TranslationFileData()
         self.basepath = translation_import_queue_entry.path
         self.productseries = translation_import_queue_entry.productseries
         self.distroseries = translation_import_queue_entry.distroseries

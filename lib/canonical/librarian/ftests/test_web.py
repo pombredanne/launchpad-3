@@ -74,6 +74,52 @@ class LibrarianWebTestCase(unittest.TestCase):
             self.assertEqual(sampleData, fileObj.read())
             fileObj.close()
 
+    def test_checkGzipEncoding(self):
+        # Files that end in ".txt.gz" are treated special and are returned
+        # with an encoding of "gzip" or "x-gzip" to accomodate requirements of
+        # displaying Ubuntu build logs in the browser.  The mimetype should be
+        # "text/plain" for these files.
+        client = LibrarianClient()
+        from cStringIO import StringIO
+        contents = 'Build log...'
+        build_log = StringIO(contents)
+        alias_id = client.addFile(name="build_log.txt.gz",
+                                  size=len(contents),
+                                  file=build_log,
+                                  contentType="text/plain")
+
+        self.commit()
+
+        url = client.getURLForAlias(alias_id)
+        fileObj = urlopen(url)
+        mimetype = fileObj.headers['content-type']
+        encoding = fileObj.headers['content-encoding']
+        self.failUnless(mimetype == "text/plain",
+                        "Wrong mimetype. %s != 'text/plain'." % mimetype)
+        self.failUnless(encoding == "gzip",
+                        "Wrong encoding. %s != 'gzip'." % encoding)
+
+    def test_checkNoEncoding(self):
+        # Other files should have no encoding.
+        client = LibrarianClient()
+        from cStringIO import StringIO
+        contents = 'Build log...'
+        build_log = StringIO(contents)
+        alias_id = client.addFile(name="build_log.tgz",
+                                  size=len(contents),
+                                  file=build_log,
+                                  contentType="application/x-tar")
+
+        self.commit()
+
+        url = client.getURLForAlias(alias_id)
+        fileObj = urlopen(url)
+        mimetype = fileObj.headers['content-type']
+        self.assertRaises(KeyError, fileObj.headers.__getitem__,
+                          'content-encoding')
+        self.failUnless(mimetype == "application/x-tar",
+                        "Wrong mimetype. %s != 'application/x-tar'." % mimetype)
+
     def test_aliasNotFound(self):
         client = LibrarianClient()
         self.assertRaises(DownloadFailed, client.getURLForAlias, 99)
@@ -262,4 +308,3 @@ def test_suite():
     suite.addTest(unittest.makeSuite(LibrarianZopelessWebTestCase))
     suite.addTest(unittest.makeSuite(DeletedContentTestCase))
     return suite
-

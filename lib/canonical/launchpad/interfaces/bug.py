@@ -1,4 +1,5 @@
 # Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# pylint: disable-msg=E0211,E0213
 
 """Interfaces related to bugs."""
 
@@ -8,6 +9,7 @@ __all__ = [
     'CreateBugParams',
     'CreatedBugWithNoBugTasksError',
     'IBug',
+    'IBugBecameQuestionEvent',
     'IBugSet',
     'IBugDelta',
     'IBugAddForm',
@@ -18,16 +20,18 @@ __all__ = [
 from zope.component import getUtility
 from zope.interface import Interface, Attribute
 from zope.schema import (
-    Bool, Choice, Datetime, Int, List, Object, Text, TextLine)
+    Bool, Bytes, Choice, Datetime, Int, List, Object, Text, TextLine)
 
 from canonical.launchpad import _
 from canonical.launchpad.fields import (
-    ContentNameField, Title, DuplicateBug, Tag)
+    ContentNameField, DuplicateBug, PublicPersonChoice, Title, Tag)
 from canonical.launchpad.interfaces.bugtarget import IBugTarget
 from canonical.launchpad.interfaces.launchpad import NotFoundError
 from canonical.launchpad.interfaces.messagetarget import IMessageTarget
 from canonical.launchpad.interfaces.mentoringoffer import ICanBeMentored
 from canonical.launchpad.validators.name import name_validator
+from canonical.launchpad.validators.bugattachment import (
+    bug_attachment_size_constraint)
 
 
 class CreateBugParams:
@@ -109,6 +113,13 @@ class BugNameField(ContentNameField):
         except NotFoundError:
             return None
 
+class IBugBecameQuestionEvent(Interface):
+    """A bug became a question."""
+
+    bug = Attribute("The bug that was changed into a question.")
+    question = Attribute("The question that the bug became.")
+    user = Attribute("The user that changed the bug into a question.")
+
 
 class CreatedBugWithNoBugTasksError(Exception):
     """Raised when a bug is created with no bug tasks."""
@@ -135,7 +146,8 @@ class IBug(IMessageTarget, ICanBeMentored):
     description = Text(
         title=_('Description'), required=True,
         description=_("""A detailed description of the problem,
-        including the steps required to reproduce it."""))
+        including the steps required to reproduce it."""), 
+        max_length=50000)
     ownerID = Int(title=_('Owner'), required=True, readonly=True)
     owner = Attribute("The owner's IPerson")
     duplicateof = DuplicateBug(title=_('Duplicate Of'), required=False)
@@ -144,6 +156,12 @@ class IBug(IMessageTarget, ICanBeMentored):
         description=_(
             "Private bug reports are visible only to their subscribers."),
         default=False)
+    date_made_private = Datetime(
+        title=_('Date Made Private'), required=False)
+    who_made_private = PublicPersonChoice(
+        title=_('Who Made Private'), required=False,
+        vocabulary='ValidPersonOrTeam',
+        description=_("The person who set this bug private."))
     security_related = Bool(
         title=_("This bug is a security vulnerability"), required=False,
         default=False)
@@ -177,16 +195,36 @@ class IBug(IMessageTarget, ICanBeMentored):
         "True or False depending on whether this bug is considered "
         "completely addressed. A bug is Launchpad is completely addressed "
         "when there are no tasks that are still open for the bug.")
+    permits_expiration = Bool(
+        title=_("Does the bug's state permit expiration? "
+        "Expiration is permitted when the bug is not valid anywhere, "
+        "a message was sent to the bug reporter, and the bug is associated "
+        "with pillars that have enabled bug expiration."))
+    can_expire = Bool(
+        title=_("Can the Incomplete bug expire if it becomes inactive? "
+        "Expiration may happen when the bug permits expiration, and a "
+        "bugtask cannot be confirmed."))
     date_last_message = Datetime(
         title=_('Date of last bug message'), required=False, readonly=True)
+    number_of_duplicates = Int(
+        title=_('The number of bugs marked as duplicates of this bug'),
+        required=True, readonly=True)
+    message_count = Int(
+        title=_('The number of comments on this bug'),
+        required=True, readonly=True)
 
 
     def followup_subject():
         """Return a candidate subject for a followup message."""
 
     # subscription-related methods
-    def subscribe(person):
-        """Subscribe person to the bug. Returns an IBugSubscription."""
+    def subscribe(person, subscribed_by):
+        """Subscribe `person` to the bug.
+
+        :param person: the subscriber.
+        :param subscribed_by: the person who created the subscription.
+        :return: an `IBugSubscription`.
+        """
 
     def unsubscribe(person):
         """Remove this person's subscription to this bug."""
@@ -210,6 +248,9 @@ class IBug(IMessageTarget, ICanBeMentored):
         duplicate of this bug, otherwise False.
         """
 
+    def getDirectSubscriptions():
+        """A sequence of IBugSubscriptions directly linked to this bug."""
+
     def getDirectSubscribers():
         """A list of IPersons that are directly subscribed to this bug.
 
@@ -231,9 +272,11 @@ class IBug(IMessageTarget, ICanBeMentored):
         from duplicates.
         """
 
+    def getSubscriptionsFromDuplicates():
+        """Return IBugSubscriptions subscribed from dupes of this bug."""
+
     def getSubscribersFromDuplicates():
-        """Return IPersons subscribed from dupes of this bug.
-        """
+        """Return IPersons subscribed from dupes of this bug."""
 
     def getBugNotificationRecipients(duplicateof=None):
         """Return a complete INotificationRecipientSet instance.
@@ -268,8 +311,13 @@ class IBug(IMessageTarget, ICanBeMentored):
     def hasBranch(branch):
         """Is this branch linked to this bug?"""
 
-    def addBranch(branch, whiteboard=None, status=None):
+    def addBranch(branch, registrant, whiteboard=None, status=None):
         """Associate a branch with this bug.
+
+        :param branch: The branch being linked to the bug
+        :param registrant: The user making the link.
+        :param whiteboard: A space where people can write about the bug fix
+        :param status: The status of the fix in the branch
 
         Returns an IBugBranch.
         """
@@ -300,6 +348,37 @@ class IBug(IMessageTarget, ICanBeMentored):
 
         The user is the one linking to the CVE.
         """
+
+    def canBeAQuestion():
+        """Return True of False if a question can be created from this bug.
+
+        A Question can be created from a bug if:
+        1. There is only one bugtask with a status of New, Incomplete,
+           Confirmed, or Wont Fix. Any other bugtasks must be Invalid.
+        2. The bugtask's target uses Launchpad to track bugs.
+        3. The bug was not made into a question previously.
+        """
+
+    def convertToQuestion(person, comment=None):
+        """Create and return a Question from this Bug.
+
+        Bugs that are also in external bug trackers cannot be converted
+        to questions. This is also true for bugs that are being developed.
+
+        The `IQuestionTarget` is provided by the `IBugTask` that is not
+        Invalid and is not a conjoined slave. Only one question can be
+        made from a bug.
+
+        An AssertionError is raised if the bug has zero or many BugTasks
+        that can provide a QuestionTarget. It will also be raised if a
+        question was previously created from the bug.
+
+        :person: The `IPerson` creating a question from this bug
+        :comment: A string. An explanation of why the bug is a question.
+        """
+
+    def getQuestionCreatedFromBug():
+        """Return the question created from this Bug, or None."""
 
     def getMessageChunks():
         """Return MessageChunks corresponding to comments made on this bug"""
@@ -367,6 +446,15 @@ class IBug(IMessageTarget, ICanBeMentored):
         Return None if no bugtask was edited.
         """
 
+    def setPrivate(private, who):
+        """Set bug privacy.
+
+            :private: True/False.
+            :who: The IPerson who is making the change.
+
+        Return True if a change is made, False otherwise.
+        """
+
     def getBugTask(target):
         """Return the bugtask with the specified target.
 
@@ -432,12 +520,17 @@ class IBugAddForm(IBug):
             vocabulary="DistributionUsingMalone")
     owner = Int(title=_("Owner"), required=True)
     comment = Text(
-        title=_('Further information, steps to reproduce,'
-                ' version information, etc.'),
+        title=_('Further information'),
         required=False)
     bug_already_reported_as = Choice(
         title=_("This bug has already been reported as ..."), required=False,
         vocabulary="Bug")
+    filecontent = Bytes(
+        title=u"Attachment", required=False,
+        constraint=bug_attachment_size_constraint)
+    patch = Bool(title=u"This attachment is a patch", required=False,
+        default=False)
+    attachment_description = Title(title=u'Description', required=False)
 
 
 class IProjectBugAddForm(IBugAddForm):

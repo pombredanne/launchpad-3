@@ -4,7 +4,6 @@ __metaclass__ = type
 __all__ = ['emailcommands', 'get_error_message']
 
 import os.path
-import re
 
 from zope.component import getUtility
 from zope.event import notify
@@ -13,7 +12,7 @@ from zope.schema import ValidationError
 
 from canonical.launchpad.vocabularies import ValidPersonOrTeamVocabulary
 from canonical.launchpad.interfaces import (
-        IProduct, IDistribution, IDistroSeries, IBug,
+        BugTaskImportance, IProduct, IDistribution, IDistroSeries, IBug,
         IBugEmailCommand, IBugTaskEmailCommand, IBugEditEmailCommand,
         IBugTaskEditEmailCommand, IBugSet, ICveSet, ILaunchBag,
         IBugTaskSet, IMessageSet, IDistroBugTask,
@@ -22,14 +21,13 @@ from canonical.launchpad.interfaces import (
         BugTargetNotFound, IProject, ISourcePackage, IProductSeries,
         BugTaskStatus)
 from canonical.launchpad.event import (
-    SQLObjectModifiedEvent, SQLObjectToBeModifiedEvent, SQLObjectCreatedEvent)
+    SQLObjectModifiedEvent, SQLObjectCreatedEvent)
 from canonical.launchpad.event.interfaces import (
     ISQLObjectCreatedEvent, ISQLObjectModifiedEvent)
 
+from canonical.launchpad.validators.name import valid_name
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.snapshot import Snapshot
-
-from canonical.lp.dbschema import BugTaskImportance
 
 
 def get_error_message(filename, **interpolation_items):
@@ -138,7 +136,7 @@ class BugEmailCommand(EmailCommand):
                 filealias=filealias,
                 parsed_message=parsed_msg)
             if message.text_contents.strip() == '':
-                 raise EmailProcessingError(
+                raise EmailProcessingError(
                     get_error_message('no-affects-target-on-submit.txt'))
 
             params = CreateBugParams(
@@ -177,10 +175,9 @@ class EditEmailCommand(EmailCommand):
             context_snapshot = current_event.object_before_modification
             edited_fields.update(current_event.edited_fields)
         else:
-            context_snapshot = Snapshot(context, providing=providedBy(context))
+            context_snapshot = Snapshot(
+                context, providing=providedBy(context))
 
-        if not ISQLObjectCreatedEvent.providedBy(current_event):
-            notify(SQLObjectToBeModifiedEvent(context, args))
         edited = False
         for attr_name, attr_value in args.items():
             if getattr(context, attr_name) != attr_value:
@@ -198,42 +195,105 @@ class EditEmailCommand(EmailCommand):
         setattr(context, attr_name, attr_value)
 
 
-class PrivateEmailCommand(EditEmailCommand):
-    """Marks a bug public or private."""
+class PrivateEmailCommand(EmailCommand):
+    """Marks a bug public or private.
+
+    We do not subclass `EditEmailCommand` because we must call
+    `IBug.setPrivate` to update privacy settings, rather than just
+    updating an attribute.
+    """
 
     implements(IBugEditEmailCommand)
 
     _numberOfArguments = 1
 
-    def convertArguments(self, context):
-        """See EmailCommand."""
+    def execute(self, context, current_event):
+        """See `IEmailCommand`. Much of this method has been lifted from
+        `EditEmailCommand.execute`.
+        """
+        # Parse args.
+        self._ensureNumberOfArguments()
         private_arg = self.string_args[0]
         if private_arg == 'yes':
-            return {'private': True}
+            private = True
         elif private_arg == 'no':
-            return {'private': False}
+            private = False
         else:
             raise EmailProcessingError(
                 get_error_message('private-parameter-mismatch.txt'))
 
+        # Snapshot.
+        edited_fields = set()
+        if ISQLObjectModifiedEvent.providedBy(current_event):
+            context_snapshot = current_event.object_before_modification
+            edited_fields.update(current_event.edited_fields)
+        else:
+            context_snapshot = Snapshot(
+                context, providing=providedBy(context))
 
-class SecurityEmailCommand(EditEmailCommand):
+        # Apply requested changes.
+        edited = context.setPrivate(private, getUtility(ILaunchBag).user)
+
+        # Update the current event.
+        if edited and not ISQLObjectCreatedEvent.providedBy(current_event):
+            edited_fields.add('private')
+            current_event = SQLObjectModifiedEvent(
+                context, context_snapshot, list(edited_fields))
+
+        return context, current_event
+
+
+class SecurityEmailCommand(EmailCommand):
     """Marks a bug as security related."""
 
     implements(IBugEditEmailCommand)
 
     _numberOfArguments = 1
 
-    def convertArguments(self, context):
-        """See EmailCommand."""
+    def execute(self, context, current_event):
+        """See `IEmailCommand`.
+
+        Much of this method was lifted from
+        `EditEmailCommand.execute`.
+        """
+        # Parse args.
+        self._ensureNumberOfArguments()
         [security_flag] = self.string_args
         if security_flag == 'yes':
-            return {'security_related': True, 'private': True}
+            security_related = True
         elif security_flag == 'no':
-            return {'security_related': False}
+            security_related = False
         else:
             raise EmailProcessingError(
                 get_error_message('security-parameter-mismatch.txt'))
+
+        # Take a snapshot.
+        edited = False
+        edited_fields = set()
+        if ISQLObjectModifiedEvent.providedBy(current_event):
+            context_snapshot = current_event.object_before_modification
+            edited_fields.update(current_event.edited_fields)
+        else:
+            context_snapshot = Snapshot(
+                context, providing=providedBy(context))
+
+        # Apply requested changes.
+        if security_related:
+            user = getUtility(ILaunchBag).user
+            if context.setPrivate(True, user):
+                edited = True
+                edited_fields.add('private')
+        if context.security_related != security_related:
+            context.security_related = security_related
+            edited = True
+            edited_fields.add('security_related')
+
+        # Update the current event.
+        if edited and not ISQLObjectCreatedEvent.providedBy(current_event):
+            current_event = SQLObjectModifiedEvent(
+                context, context_snapshot, list(edited_fields))
+
+        return context, current_event
 
 
 class SubscribeEmailCommand(EmailCommand):
@@ -249,6 +309,8 @@ class SubscribeEmailCommand(EmailCommand):
         if len(string_args) == 2:
             subscription_name = string_args.pop()
 
+        user = getUtility(ILaunchBag).user
+
         if len(string_args) == 1:
             person_name_or_email = string_args.pop()
             valid_person_vocabulary = ValidPersonOrTeamVocabulary()
@@ -263,7 +325,7 @@ class SubscribeEmailCommand(EmailCommand):
             person = person_term.value
         elif len(string_args) == 0:
             # Subscribe the sender of the email.
-            person = getUtility(ILaunchBag).user
+            person = user
         else:
             raise EmailProcessingError(
                 get_error_message('subscribe-too-many-arguments.txt'))
@@ -275,7 +337,7 @@ class SubscribeEmailCommand(EmailCommand):
                     break
 
         else:
-            bugsubscription = bug.subscribe(person)
+            bugsubscription = bug.subscribe(person, user)
             notify(SQLObjectCreatedEvent(bugsubscription))
 
         return bug, current_event
@@ -768,7 +830,8 @@ class TagEmailCommand(EmailCommand):
 
     def execute(self, bug, current_event):
         """See `IEmailCommand`."""
-        string_args = list(self.string_args)
+        # Tags are always lowercase.
+        string_args = [arg.lower() for arg in self.string_args]
         # Bug.tags returns a Zope List, which does not support Python list
         # operations so we need to convert it.
         tags = list(bug.tags)
@@ -787,8 +850,8 @@ class TagEmailCommand(EmailCommand):
             else:
                 remove = False
                 tag = arg
-            # Tag must contain only alphanumeric characters
-            if re.search('[^a-zA-Z0-9]', tag):
+            # Tag must be a valid name.
+            if not valid_name(tag):
                 raise EmailProcessingError(
                     get_error_message('invalid-tag.txt', tag=tag))
             if remove:

@@ -12,7 +12,7 @@ with adding a Debian bug watch to bug #8.
     ...     '+bug/8/')
     >>> user_browser.getLink(url='+distrotask').click()
     >>> user_browser.getControl('Distribution').value = ['debian']
-    >>> user_browser.getControl('Source Package Name').value = 'thunderbird'
+    >>> user_browser.getControl('Source Package Name').value = 'alsa-utils'
     >>> user_browser.getControl('URL').value = debian_bug
     >>> user_browser.getControl('Continue').click()
 
@@ -29,7 +29,7 @@ will be used; i.e., another one won't be added.
 
     >>> user_browser.getLink(url='+distrotask').click()
     >>> user_browser.getControl('Distribution').value = ['debian']
-    >>> user_browser.getControl('Source Package Name').value = 'evolution'
+    >>> user_browser.getControl('Source Package Name').value = 'pmount'
     >>> user_browser.getControl('URL').value = debian_bug
     >>> user_browser.getControl('Continue').click()
     >>> for tag in find_tags_by_class(user_browser.contents, 'message'):
@@ -47,20 +47,12 @@ same bug watch.
     >>> user_browser.open(
     ...     'http://launchpad.dev/debian/+source/mozilla-firefox/'
     ...     '+bug/8/')
-    >>> affects_table = find_tags_by_class(user_browser.contents, 'listing')[0]
-    >>> task_rows = [
-    ...     row for row in affects_table.tbody.fetch('tr', recursive=False)
-    ...     if row.get('style') != 'display: none']
-    >>> for row in task_rows:
-    ...     target_td, bugwatch_td = row('td')[0], row('td')[-2]
-    ...     if bugwatch_td.img:
-    ...         bugwatch = bugwatch_td.img.nextSibling
-    ...     else:
-    ...         bugwatch = '-'
-    ...     print "%s: %s" % (target_td.a.string, bugwatch)
-    evolution (Debian): debbugs #42
-    mozilla-firefox (Debian): Foo Bar
-    thunderbird (Debian): debbugs #42
+
+    >>> from canonical.launchpad.ftests.bug import print_bug_affects_table
+    >>> print_bug_affects_table(user_browser.contents)
+    alsa-utils (Debian)   Unknown Unknown   debbugs #42
+    ...
+    pmount (Debian) Unknown Unknown   debbugs #42
 
 
 == Adding the same bug watch to two different bugs ==
@@ -76,7 +68,7 @@ duplicates.
     ...     'mozilla-firefox')
     >>> user_browser.getControl('URL').value = debian_bug
     >>> user_browser.getControl('Continue').click()
-    >>> for message in get_feedback_messages(user_browser):
+    >>> for message in get_feedback_messages(user_browser.contents):
     ...   print message
     Bug #8 also links to the added bug watch (debbugs #42).
     This bug has 1 duplicate

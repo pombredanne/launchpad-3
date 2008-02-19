@@ -1,5 +1,4 @@
-Monitoring External Bug Trackers in Malone
-==========================================
+= Monitoring External Bug Trackers in Malone =
 
 Malone allows you to monitor bugs in external bug tracking systems. This
 document discusses the API of external bug trackers. To learn more about
@@ -51,8 +50,59 @@ The watches needing updating should the ones with old statuses, 2000 and 42:
     42 1
 
 
-Top Bug Trackers
-================
+== Auto-creating bug trackers ==
+
+The bugtracker module contains a method, make_bugtracker_name() which
+can be used to generate a bug tracker name when a bugtracker is
+automatically created. make_bugtracker_name() accepts a single
+parameter, uri, which is used as the basis for the auto-generated name.
+
+Passing a URL in the URI parameter will produce a name based on the host
+name of that URL.
+
+    >>> from canonical.launchpad.database.bugtracker import (
+    ...     make_bugtracker_name)
+    >>> make_bugtracker_name('http://bugs.example.com/shrubbery')
+    'auto-bugs.example.com'
+
+Passing a mailto:URI will produce a name based on the local part of the
+email address.
+
+    >>> make_bugtracker_name('mailto:foo.bar@canonical.com')
+    'auto-foo.bar'
+
+The IBugTrackerSet interface provides a method, ensureBugTracker(),
+which will retrieve or create a bug tracker for the parameters passed to
+it. If this method is not passed a name parameter when it creates a new
+bugtracker it will use make_bugtracker_name() to generate a name for the
+bug tracker.
+
+    >>> from canonical.launchpad.interfaces import (
+    ...     BugTrackerType, IPersonSet)
+    >>> sample_person = getUtility(IPersonSet).getByEmail(
+    ...     'test@canonical.com')
+    >>> a_bugtracker = bugtracker_set.ensureBugTracker(
+    ...     baseurl='http://bugs.example.com', owner=sample_person,
+    ...     bugtrackertype=BugTrackerType.BUGZILLA,
+    ...     title=None, summary=None, contactdetails=None, name=None)
+    >>> a_bugtracker.name
+    u'auto-bugs.example.com'
+
+ensureBugTracker() also performs collision-avoidance on the names which
+it generates using make_bugtracker_name(). If another bug tracker is
+created with the same hostname as a_bugtracker above but different URLs,
+the new bugtracker's name will be mutated so that the two names do not
+collide.
+
+    >>> a_bugtracker = bugtracker_set.ensureBugTracker(
+    ...     baseurl='http://bugs.example.com/ni', owner=sample_person,
+    ...     bugtrackertype=BugTrackerType.BUGZILLA,
+    ...     title=None, summary=None, contactdetails=None, name=None)
+    >>> a_bugtracker.name
+    u'auto-bugs.example.com-1'
+
+
+== Top Bug Trackers ==
 
 The Malone front page shows a list of the top Malone bug trackers, as
 ordered by the number of bugs being monitored by Malone in each of
@@ -61,12 +111,11 @@ them. Use IBugTrackerSet.getMostActiveBugTrackers to get this list.
     >>> top_trackers = bugtracker_set.getMostActiveBugTrackers(limit=4)
     >>> sorted([(tracker.watches.count(), tracker.name)
     ...         for tracker in top_trackers])
-    [(1, u'gnome-bugzilla'), (1, u'ubuntu-bugzilla'),
-     (4, u'debbugs'), (4, u'mozilla.org')]
+    [(1, u'ubuntu-bugzilla'), (2, u'gnome-bugzilla'),
+     (4, u'mozilla.org'), (5, u'debbugs')]
 
 
-Getting Bug Trackers
-====================
+== Getting Bug Trackers ==
 
 You can get a specific bug tracker from the database by querying by its
 base URL.
@@ -84,14 +133,109 @@ It's necessary to specify the exact URL, differences in the schema
     >>> mozilla_bugzilla.baseurl
     u'https://bugzilla.mozilla.org/'
 
+If the exact bugtracker isn't found but a the url searched for
+is a substring of an existing bugtracker, we use the first match.
+
+    >>> mozilla_bugzilla = bugtracker_set.queryByBaseURL(
+    ...     u'zilla.mozilla.org')
+    >>> mozilla_bugzilla.baseurl
+    u'https://bugzilla.mozilla.org/'
+
 If no bug tracker can be found None is returned.
 
     >>> bugtracker_set.queryByBaseURL('http://no/such/bugtracker') is None
     True
 
 
-checkwatches.py
-===============
+=== Aliases ===
+
+A bug tracker can have a number of alias URLs associated with it.
+
+    >>> from canonical.launchpad.interfaces import IBugTrackerAliasSet
+    >>> bugtrackeralias_set = getUtility(IBugTrackerAliasSet)
+
+The most natural way to work with aliases is via the aliases attribute
+present on IBugTracker. This can be used to query, set or remove
+aliases.
+
+    >>> mozilla_bugzilla.aliases = [
+    ...     'https://norwich.example.com/',
+    ...     'http://cambridge.example.com/']
+
+    >>> mozilla_bugzilla.aliases
+    (u'http://cambridge.example.com/',
+     u'https://norwich.example.com/')
+
+    >>> mozilla_bugzilla.aliases = []
+    >>> mozilla_bugzilla.aliases
+    ()
+
+You can assign any iterable (of URL strings) to the aliases attribute,
+but, when accessed, aliases is always a regular tuple.
+
+Because this attribute is computed on each access, an immutable object
+- a tuple - is returned. This defends against mutations of aliases
+where the expectation is that the aliases in the database are changed,
+but silently are not. For example, if a plain list were returned, it
+might be tempting to append() another alias to it. But this would not
+be reflected in the database.
+
+You can also assign None to aliases to remove all aliases. This has
+the same effect as assigning an empty list.
+
+    >>> mozilla_bugzilla.aliases = None
+    >>> mozilla_bugzilla.aliases
+    ()
+
+    >>> mozilla_bugzilla.aliases = set(['http://set.example.com/'])
+    >>> mozilla_bugzilla.aliases
+    (u'http://set.example.com/',)
+
+    >>> mozilla_bugzilla.aliases = (u'http://tuple.example.com/',)
+    >>> mozilla_bugzilla.aliases
+    (u'http://tuple.example.com/',)
+
+Your ordering is not preserved; aliases are sorted using Python's
+standard unicode ordering.
+
+    >>> mozilla_bugzilla.aliases = (
+    ...     'http://%s.example.com/' % domain
+    ...     for domain in '111 zzz ccc ZZZ'.split())
+    >>> mozilla_bugzilla.aliases
+    (u'http://111.example.com/',
+     u'http://ZZZ.example.com/',
+     u'http://ccc.example.com/',
+     u'http://zzz.example.com/')
+
+BugTrackerAliases can also be looked up by bug tracker.
+
+    >>> mozilla_bugzilla.aliases = [
+    ...     'http://just.example.com/',
+    ...     'http://magic.example.com/']
+
+Query by bug tracker:
+
+    >>> sorted(alias.base_url for alias in
+    ...        bugtrackeralias_set.queryByBugTracker(mozilla_bugzilla))
+    [u'http://just.example.com/',
+     u'http://magic.example.com/']
+
+The aliases attribute never contains the current baseurl. For example,
+if BugTracker.baseurl is changed to an existing alias of itself, the
+aliases attribute hides the baseurl, although it is still recorded as
+an alias.
+
+    >>> mozilla_bugzilla.baseurl = 'http://magic.example.com/'
+    >>> mozilla_bugzilla.aliases
+    (u'http://just.example.com/',)
+
+    >>> sorted(alias.base_url for alias in
+    ...        bugtrackeralias_set.queryByBugTracker(mozilla_bugzilla))
+    [u'http://just.example.com/',
+     u'http://magic.example.com/']
+
+
+== checkwatches.py ==
 
 The updating and syncing of bug watches is done by a cronscript. We
 can't test it properly, since we don't yet have a mock HTTP server we
@@ -118,9 +262,14 @@ contact any external servers.
 
     >>> print err
     INFO    creating lockfile
+    INFO    No watches to update on http://bugs.example.com
+    INFO    No watches to update on http://bugs.example.com/ni
     INFO    No watches to update on http://bugs.debian.org
+    WARNING ExternalBugtracker for BugTrackerType 'EMAILADDRESS' is not
+            known.
+    WARNING ExternalBugtracker for BugTrackerType 'SAVANNAH' is not known.
     INFO    No watches to update on http://bugzilla.gnome.org/bugs
-    INFO    ExternalBugtracker for BugTrackerType 'SOURCEFORGE' is not known.
+    INFO    No watches to update on http://sourceforge.net/
     INFO    No watches to update on https://bugzilla.mozilla.org/
     INFO    Skipping updating Ubuntu Bugzilla watches.
     INFO    Time for this run: ... seconds.
@@ -133,12 +282,10 @@ timeout and call the checkwatches cronscript machinery directly.
 First, we create some bug watches to test with:
 
     >>> from canonical.launchpad.database import BugTracker
-    >>> from canonical.launchpad.interfaces import IBugSet, IPersonSet
-    >>> from canonical.lp.dbschema import BugTrackerType
+    >>> from canonical.launchpad.interfaces import (
+    ...     BugTrackerType, IBugSet)
     >>> from canonical.launchpad.scripts.checkwatches import (
     ...     BugWatchUpdater)
-
-    >>> sample_person = getUtility(IPersonSet).getByEmail('test@canonical.com')
 
     >>> example_bug_tracker = BugTracker(
     ...     name="example-bugs",
@@ -159,6 +306,11 @@ First, we create some bug watches to test with:
 
 Next, we monkey-patch urllib2.urlopen so that it always times out.
 
+The timeout will also produce an OOPS report.
+
+    >>> from canonical.launchpad.ftests.externalbugtracker import oops_hook
+    >>> oops_hook.install()
+
     >>> import socket
     >>> import urllib2
     >>> urlopen = urllib2.urlopen
@@ -170,9 +322,15 @@ Next, we monkey-patch urllib2.urlopen so that it always times out.
     ...     updater = BugWatchUpdater(transaction)
     ...     updater._login()
     ...     updater.updateBugTracker(example_bug_tracker)
+    ...     print oops_hook.formatted_oops_info
     ... finally:
     ...     urllib2.urlopen = urlopen
     ERROR:root:Connection timed out when updating http://bugs.example.com
+    OOPS-...
+    baseurl=u'http://bugs.example.com'
+    bugtracker=u'example-bugs'
+
+    >>> oops_hook.uninstall()
 
 Errors that occur when updating a bug watch are recorded against that
 bug watch. The timeout will be recorded against the bug watch we just
@@ -181,3 +339,100 @@ created in its last_error_type field.
     >>> from canonical.launchpad.interfaces import BugWatchErrorType
     >>> example_bugwatch.last_error_type == BugWatchErrorType.TIMEOUT
     True
+
+Another error which may occur and which checkwatches is responsible for
+handling is UnknownBugTrackerTypeError, which is raised when
+checkwatches attempts to instantiate the ExternalBugtracker descendant
+for a bugtracker which Launchpad doesn't support.
+
+We can demonstrate this by altering the get_external_bugtracker method
+of the externalbugtracker module to ensure that it raises this error.
+
+    >>> from canonical.launchpad.components import externalbugtracker
+    >>> real_get_external_bugtracker = (
+    ...     externalbugtracker.get_external_bugtracker)
+
+    >>> def broken_get_external_bugtracker(txn, bugtracker):
+    ...     bugtrackertype = bugtracker.bugtrackertype
+    ...     raise externalbugtracker.UnknownBugTrackerTypeError(
+    ...         bugtrackertype.name, bugtracker.name)
+
+We need to re-create the example bugtracker, bug and watch, since they
+were destroyed when the timeout error above caused the transaction to be
+reset.
+
+    >>> example_bug_tracker = BugTracker(
+    ...     name="example-bugs",
+    ...     title="Example.com Roundup",
+    ...     bugtrackertype=BugTrackerType.ROUNDUP,
+    ...     baseurl="http://bugs.example.com",
+    ...     summary="Contains bugs for Example.com",
+    ...     contactdetails="foo.bar@example.com",
+    ...     owner=sample_person)
+
+    >>> example_bug = getUtility(IBugSet).get(10)
+    >>> example_bugwatch = example_bug.addWatch(
+    ...     example_bug_tracker, 1235, sample_person)
+
+    >>> try:
+    ...     externalbugtracker.get_external_bugtracker = (
+    ...         broken_get_external_bugtracker)
+    ...     updater = BugWatchUpdater(transaction)
+    ...     updater._login()
+    ...     updater.updateBugTracker(example_bug_tracker)
+    ... finally:
+    ...     externalbugtracker.get_external_bugtracker = (
+    ...         real_get_external_bugtracker)
+    WARNING:...:ExternalBugtracker for BugTrackerType 'ROUNDUP' is not
+    known.
+
+The bug watch's last error type field will have been updated to reflect
+the error that was raised:
+
+    >>> example_bugwatch.last_error_type.title
+    'Unsupported Bugtracker'
+
+
+== Batched Bugwatch Updating ==
+
+checkwatches.py will only update those bugs that need updating, but
+there is a further limit on the amount of bugs which will be updated for
+a given ExternalBugTracker in each checkwatches run: the batch size.
+
+We need to add some bug watches again since
+BugWatchUpdate.updateBugTracker() automatically rolls back the
+transaction if something goes wrong.
+
+    >>> login('test@canonical.com')
+    >>> for bug_id in range(1, 10):
+    ...     example_bugwatch = example_bug.addWatch(
+    ...         example_bug_tracker, bug_id, sample_person)
+
+Since we know how many bugwatches example_bug has we will be able to see
+when checkwatches only updates a subset of them.
+
+    >>> example_bug.watches.count()
+    10
+
+Since our example bug tracker is a Roundup bug tracker we can
+monkey-patch the Roundup ExternalBugTrackerClass in order to set its
+batch size. We will also monkey-patch urllib2.urlopen again so that no
+requests are actually made.
+
+    >>> from canonical.launchpad.components import externalbugtracker
+    >>> from canonical.launchpad.scripts import FakeLogger
+    >>> original_log = externalbugtracker.log
+    >>> batch_size = externalbugtracker.Roundup.batch_size
+    >>> try:
+    ...     updater = BugWatchUpdater(transaction)
+    ...     updater._login()
+    ...     urllib2.urlopen = do_not_urlopen
+    ...     externalbugtracker.Roundup.batch_size = 5
+    ...     externalbugtracker.log = FakeLogger()
+    ...     updater.updateBugTracker(example_bug_tracker)
+    ... finally:
+    ...     externalbugtracker.log = original_log
+    ...     externalbugtracker.Roundup.batch_size = batch_size
+    ...     urllib2.urlopen = urlopen
+    INFO Updating 5 watches on http://bugs.example.com
+    ERROR:root:Connection timed out when updating http://bugs.example.com

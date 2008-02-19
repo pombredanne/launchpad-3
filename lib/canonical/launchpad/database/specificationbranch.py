@@ -1,4 +1,5 @@
 # Copyright 2006 Canonical Ltd.  All rights reserved.
+# pylint: disable-msg=E0611,W0212
 
 """Database classes for linking specifications and branches."""
 
@@ -18,6 +19,7 @@ from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.sqlbase import SQLBase
 from canonical.launchpad.interfaces import (
     ISpecificationBranch, ISpecificationBranchSet)
+from canonical.launchpad.validators.person import public_person_validator
 
 
 class SpecificationBranch(SQLBase):
@@ -29,6 +31,10 @@ class SpecificationBranch(SQLBase):
                                foreignKey="Specification", notNull=True)
     branch = ForeignKey(dbName="branch", foreignKey="Branch", notNull=True)
     summary = StringCol(dbName="summary", notNull=False, default=None)
+
+    registrant = ForeignKey(
+        dbName='registrant', foreignKey='Person',
+        validator=public_person_validator, notNull=True)
 
 
 class SpecificationBranchSet:

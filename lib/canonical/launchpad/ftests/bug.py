@@ -1,25 +1,38 @@
-# Copyright 2006 Canonical Ltd.  All rights reserved.
+# Copyright 2006-2007 Canonical Ltd.  All rights reserved.
 
-"""Helper functions for bug-related pagetests."""
+"""Helper functions for bug-related doctests and pagetests."""
 
-import re
-from canonical.launchpad.ftests.test_pages import (
-    extract_text, find_main_content, find_portlet, find_tag_by_id)
+from datetime import datetime, timedelta
+from operator import attrgetter
+from pytz import UTC
+
+from zope.component import getUtility
+from zope.security.proxy import removeSecurityProxy
+
+from canonical.launchpad.ftests import sync
+from canonical.launchpad.testing.pages import (
+    extract_text, find_main_content, find_portlet, find_tag_by_id,
+    find_tags_by_class)
+from canonical.launchpad.interfaces import (
+    BugTaskStatus, IDistributionSet, IBugTaskSet, IPersonSet, IProductSet,
+    ISourcePackageNameSet, IBugSet, IBugWatchSet, CreateBugParams)
+
 
 DIRECT_SUBS_PORTLET_INDEX = 0
 INDIRECT_SUBS_PORTLET_INDEX = 1
 
 def print_direct_subscribers(bug_page):
+    """Print the direct subscribers listed in a portlet."""
     print_subscribers(bug_page, DIRECT_SUBS_PORTLET_INDEX)
 
 
 def print_indirect_subscribers(bug_page):
+    """Print the indirect subscribers listed in a portlet."""
     print_subscribers(bug_page, INDIRECT_SUBS_PORTLET_INDEX)
 
 
 def print_subscribers(bug_page, subscriber_portlet_index):
     """Print the subscribers listed in the subscriber portlet."""
-    bug_id = re.search(r"bug #(\d+)", bug_page, re.IGNORECASE).group(1)
     subscriber_portlet = find_portlet(bug_page, 'Subscribers')
     try:
         portlet = subscriber_portlet.fetch(
@@ -31,7 +44,43 @@ def print_subscribers(bug_page, subscriber_portlet_index):
     else:
         for li in portlet.fetch('li'):
             if li.a:
-                print li.a.renderContents()
+                sub_display = li.a.renderContents()
+                if li.a.has_key('title'):
+                    sub_display += (' (%s)' % li.a['title'])
+                print sub_display
+
+
+def print_bug_affects_table(content, highlighted_only=False):
+    """Print information about all the bug tasks in the 'affects' table.
+
+        :param highlighted_only: Only print the highlighted row
+    """
+    main_content = find_main_content(content)
+    affects_table = main_content.first('table', {'class': 'listing'})
+    if highlighted_only:
+        tr_attrs = {'class': 'highlight'}
+    else:
+        tr_attrs = {}
+    tr_tags = affects_table.tbody.findAll(
+        'tr', attrs=tr_attrs, recursive=False)
+    for tr in tr_tags:
+        if tr.td.table:
+            # Don't print the bugtask edit form.
+            continue
+        print extract_text(tr)
+
+
+def print_remote_bugtasks(content):
+    """Print the remote bugtasks of this bug.
+
+    For each remote bugtask, print the target and the bugwatch.
+    """
+    affects_table = find_tags_by_class(content, 'listing')[0]
+    for img in affects_table.findAll('img'):
+        for key, value in img.attrs:
+            if '@@/bug-remote' in value:
+                target = extract_text(img.findAllPrevious('td')[-2])
+                print target, extract_text(img.findPrevious('a'))
 
 
 def print_bugs_table(content, table_id):
@@ -75,3 +124,101 @@ def extract_bugtasks(text):
     if table is None:
         return []
     return [extract_text(tr) for tr in table('tr') if tr.td is not None]
+
+
+def create_task_from_strings(bug, owner, product, watchurl=None):
+    """Create a task, optionally linked to a watch."""
+    bug = getUtility(IBugSet).get(bug)
+    product = getUtility(IProductSet).getByName(product)
+    owner = getUtility(IPersonSet).getByName(owner)
+    task = getUtility(IBugTaskSet).createTask(bug, owner, product=product)
+    if watchurl:
+        [watch] = getUtility(IBugWatchSet).fromText(watchurl, bug, owner)
+        task.bugwatch = watch
+    return task
+
+
+def create_bug_from_strings(
+    distribution, sourcepackagename, owner, summary, description,
+    status=None):
+    """Create and return a bug."""
+    distroset = getUtility(IDistributionSet)
+    distribution = distroset.getByName(distribution)
+
+    # XXX: would be really great if spnset consistently offered getByName.
+    spnset = getUtility(ISourcePackageNameSet)
+    sourcepackagename = spnset.queryByName(sourcepackagename)
+
+    personset = getUtility(IPersonSet)
+    owner = personset.getByName(owner)
+
+    bugset = getUtility(IBugSet)
+    params = CreateBugParams(owner, summary, description, status=status)
+    params.setBugTarget(distribution=distribution,
+                        sourcepackagename=sourcepackagename)
+    return bugset.createBug(params)
+
+
+def update_task_status(task_id, person, status):
+    """Update a bugtask status."""
+    task = getUtility(IBugTaskSet).get(task_id)
+    person = getUtility(IPersonSet).getByName(person)
+    task.transitionToStatus(status, person)
+
+
+def create_old_bug(
+    title, days_old, target, status=BugTaskStatus.INCOMPLETE,
+    with_message=True):
+    """Create an aged bug.
+
+    :title: A string. The bug title for testing.
+    :days_old: An int. The bug's age in days.
+    :target: A BugTarkget. The bug's target.
+    :status: A BugTaskStatus. The status of the bug's single bugtask.
+    :with_message: A Bool. Whether to create a reply message.
+    """
+    no_priv = getUtility(IPersonSet).getByEmail('no-priv@canonical.com')
+    params = CreateBugParams(
+        owner=no_priv, title=title, comment='Something is broken.')
+    bug = target.createBug(params)
+    sample_person = getUtility(IPersonSet).getByEmail('test@canonical.com')
+    if with_message is True:
+        bug.newMessage(
+            owner=sample_person, subject='Something is broken.',
+            content='Can you provide more information?')
+    bugtask = bug.bugtasks[0]
+    bugtask.transitionToStatus(
+        status, sample_person)
+    date = datetime.now(UTC) - timedelta(days=days_old)
+    removeSecurityProxy(bug).date_last_updated = date
+    return bugtask
+
+
+def summarize_bugtasks(bugtasks):
+    """Summarize a sequence of bugtasks."""
+    print 'ROLE  EXPIRE  AGE  STATUS  ASSIGNED  DUP  MILE  REPLIES'
+    for bugtask in sorted(set(bugtasks), key=attrgetter('id')):
+        if len(bugtask.bug.bugtasks) == 1:
+            title = bugtask.bug.title
+        else:
+            title = bugtask.target.name
+        print '%s  %s  %s  %s  %s  %s  %s  %s' % (
+            title,
+            bugtask.pillar.enable_bug_expiration,
+            (datetime.now(UTC) - bugtask.bug.date_last_updated).days,
+            bugtask.status.title,
+            bugtask.assignee is not None,
+            bugtask.bug.duplicateof is not None,
+            bugtask.milestone is not None,
+            bugtask.bug.messages.count() == 1)
+
+
+def sync_bugtasks(bugtasks):
+    """Sync the bugtask and its bug to the database."""
+    if not isinstance(bugtasks, list):
+        bugtasks = [bugtasks]
+    for bugtask in bugtasks:
+        sync(bugtask)
+        sync(bugtask.bug)
+
+

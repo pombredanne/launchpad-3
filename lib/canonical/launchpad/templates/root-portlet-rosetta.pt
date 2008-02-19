@@ -1,3 +1,9 @@
+<tal:root
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  omit-tag="">
+
   <div class="portlet" id="portlet-translations">
     <h2>Translating applications</h2>
 
@@ -23,3 +29,4 @@
       </tal:block>
     </div>
   </div>
+</tal:root>

@@ -1,4 +1,5 @@
 # Copyright 2004-2006 Canonical Ltd.  All rights reserved.
+# pylint: disable-msg=E0611,W0212
 
 __metaclass__ = type
 
@@ -9,6 +10,7 @@ __all__ = [
 
 import httplib
 import gzip
+import logging
 import os
 import socket
 import subprocess
@@ -24,15 +26,18 @@ from sqlobject import (
 
 from canonical.cachedproperty import cachedproperty
 from canonical.config import config
+from canonical.buildd.slave import BuilderStatus
 from canonical.buildmaster.master import BuilddMaster
-from canonical.database.constants import UTC_NOW
-from canonical.database.sqlbase import SQLBase
+from canonical.database.sqlbase import cursor, SQLBase, sqlvalues
+from canonical.launchpad.database.buildqueue import BuildQueue
+from canonical.launchpad.validators.person import public_person_validator
 from canonical.launchpad.helpers import filenameToContentType
 from canonical.launchpad.interfaces import (
     ArchivePurpose, BuildDaemonError, BuildSlaveFailure, BuildStatus,
-    CannotBuild, CannotResetHost, IBuildQueueSet, IBuildSet, IBuilder,
-    IBuilderSet, IDistroArchSeriesSet, IHasBuildRecords, NotFoundError,
-    PackagePublishingPocket, ProtocolVersionMismatch, pocketsuffix)
+    CannotBuild, CannotResumeHost, IBuildQueueSet, IBuildSet,
+    IBuilder, IBuilderSet, IDistroArchSeriesSet, IHasBuildRecords,
+    NotFoundError, PackagePublishingPocket, ProtocolVersionMismatch,
+    pocketsuffix)
 from canonical.launchpad.webapp import urlappend
 from canonical.librarian.interfaces import ILibrarianClient
 from canonical.librarian.utils import copy_and_close
@@ -80,7 +85,7 @@ class Builder(SQLBase):
     implements(IBuilder, IHasBuildRecords)
     _table = 'Builder'
 
-    _defaultOrder = ['name']
+    _defaultOrder = ['processor', '-trusted', 'name']
 
     processor = ForeignKey(dbName='processor', foreignKey='Processor',
                            notNull=True)
@@ -88,12 +93,16 @@ class Builder(SQLBase):
     name = StringCol(dbName='name', notNull=True)
     title = StringCol(dbName='title', notNull=True)
     description = StringCol(dbName='description', notNull=True)
-    owner = ForeignKey(dbName='owner', foreignKey='Person', notNull=True)
+    owner = ForeignKey(
+        dbName='owner', foreignKey='Person',
+        validator=public_person_validator, notNull=True)
     builderok = BoolCol(dbName='builderok', notNull=True)
     failnotes = StringCol(dbName='failnotes', default=None)
     trusted = BoolCol(dbName='trusted', default=False, notNull=True)
     speedindex = IntCol(dbName='speedindex', default=0)
     manual = BoolCol(dbName='manual', default=False)
+    vm_host = StringCol(dbName='vm_host', default=None)
+    active = BoolCol(dbName='active', default=True)
 
     def cacheFileOnSlave(self, logger, libraryfilealias):
         """See IBuilder."""
@@ -158,27 +167,29 @@ class Builder(SQLBase):
         """See IBuilder."""
         return self.slave.abort()
 
-    def resetSlaveHost(self, logger):
+    def resumeSlaveHost(self):
         """See IBuilder."""
+        logger = self._getSlaveScannerLogger()
         if self.trusted:
-            # currently trusted builders cannot reset their host environment.
-            raise CannotResetHost
-        # XXX cprov 2007-05-10: Please FIX ME ASAP !
-        # The ssh command line should be in the respective configuration
-        # file. The builder XEN-host should be stored in DB (Builder.vmhost)
-        # and not be calculated on the fly (this is gross).
+            raise CannotResumeHost('Builder is trusted.')
+
+        if not self.vm_host:
+            raise CannotResumeHost('Undefined vm_host.')
+
         logger.debug("Resuming %s", self.url)
-        hostname = self.url.split(':')[1][2:].split('.')[0]
-        host_url = '%s-host.ppa' % hostname
-        key_path = os.path.expanduser('~/.ssh/ppa-reset-builder')
-        resume_argv = [
-            'ssh', '-i' , key_path, 'ppa@%s' % host_url]
+        resume_command = config.builddmaster.vm_resume_command % {
+            'vm_host': self.vm_host}
+        resume_argv = resume_command.split()
+
         logger.debug('Running: %s', resume_argv)
         resume_process = subprocess.Popen(
             resume_argv, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        # XXX cprov 2007-06-15: If the reset command fails, we should raise
-        # an error rather than assuming it reset ok.
-        resume_process.communicate()
+        stdout, stderr = resume_process.communicate()
+
+        if resume_process.returncode != 0:
+            raise CannotResumeHost(
+                "Resuming failed:\nOUT:\n%s\nERR:\n%s\n" % (stdout, stderr))
+        return stdout, stderr
 
     @cachedproperty
     def slave(self):
@@ -225,26 +236,9 @@ class Builder(SQLBase):
                  PackagePublishingPocket.PROPOSED),
             }
 
-    @property
-    def component_dependencies(self):
-        """A dictionary of component to component dependencies.
-
-        Return a dictionary that maps a component to a string of
-        components that it is allowed to depend on for a build. This
-        string can be used directly at the end of sources.list lines.
-        """
-        return {
-            'main': 'main',
-            'restricted': 'main restricted',
-            'universe': 'main restricted universe',
-            'multiverse': 'main restricted universe multiverse',
-            'partner' : 'partner',
-            }
-
     def _determineArchivesForBuild(self, build_queue_item):
-        """Work out what sources.list lines should be passed to the builder."""
-        ogre_components = self.component_dependencies[
-            build_queue_item.build.current_component.name]
+        """Work out what sources.list lines should be passed to builder."""
+        ogre_components = " ".join(build_queue_item.build.ogre_components)
         dist_name = build_queue_item.archseries.distroseries.name
         archive_url = build_queue_item.build.archive.archive_url
         ubuntu_source_lines = []
@@ -291,21 +285,32 @@ class Builder(SQLBase):
          * Ensure that the build pocket allows builds for the current
            distroseries state.
         """
-        if self.trusted:
-            assert build_queue_item.is_trusted, (
-                "Attempt to build untrusted item on a trusted-only builder.")
+        assert not (self.trusted and not build_queue_item.is_trusted), (
+            "Attempt to build untrusted item on a trusted-only builder.")
+
+        # Assert that we are not silently building SECURITY jobs.
+        # See findBuildCandidates. Once we start building SECURITY
+        # correctly from EMBARGOED archive this assertion can be removed.
+        # XXX 2007-18-12 Julian. This is being addressed in the work on the
+        # blueprint:
+        # https://blueprints.launchpad.net/soyuz/+spec/security-in-soyuz
+        target_pocket = build_queue_item.build.pocket
+        assert target_pocket != PackagePublishingPocket.SECURITY, (
+            "Soyuz is not yet capable of building SECURITY uploads.")
+
         # Ensure build has the needed chroot
         chroot = build_queue_item.archseries.getChroot()
         if chroot is None:
-            logger.debug("Missing CHROOT for %s/%s/%s",
+            raise CannotBuild(
+                "Missing CHROOT for %s/%s/%s",
                 build_queue_item.build.distroseries.distribution.name,
                 build_queue_item.build.distroseries.name,
                 build_queue_item.build.distroarchseries.architecturetag)
-            raise CannotBuild
-        # The main distribution has policies prevent uploads to some pockets
-        # (e.g. security) during different parts of the distribution series
-        # lifecycle. These do not apply to PPA builds (which are untrusted)
-        # nor any archive that allows release pocket updates.
+
+        # The main distribution has policies to prevent uploads to some
+        # pockets (e.g. security) during different parts of the distribution
+        # series lifecycle. These do not apply to PPA builds (which are
+        # untrusted) nor any archive that allows release pocket updates.
 
         # XXX julian 2007-09-14
         # Currently is_trusted is being overloaded to also mean "is not a
@@ -350,9 +355,10 @@ class Builder(SQLBase):
             logger.info(message)
         except (xmlrpclib.Fault, socket.error), info:
             # Mark builder as 'failed'.
-            self._logger.debug(
+            logger.debug(
                 "Disabling builder: %s" % self.url, exc_info=1)
-            self.failbuilder("Exception (%s) when setting up to new job" % info)
+            self.failbuilder(
+                "Exception (%s) when setting up to new job" % info)
             raise BuildSlaveFailure
 
     def startBuild(self, build_queue_item, logger):
@@ -364,9 +370,9 @@ class Builder(SQLBase):
         # Make sure the request is valid; an exception is raised if it's not.
         self._verifyBuildRequest(build_queue_item, logger)
 
-        # If we are building untrusted source reset the entire machine.
+        # If we are building untrusted source resume the virtual machine.
         if not self.trusted:
-            self.resetSlaveHost(logger)
+            self.resumeSlaveHost()
 
         # Build extra arguments.
         args = {}
@@ -417,7 +423,6 @@ class Builder(SQLBase):
                 archive_name = current_build.archive.owner.name
                 return '%s [%s] (%s)' % (msg, archive_name, mode)
             return '%s (%s)' % (msg, mode)
-
         return 'IDLE (%s)' % mode
 
     def failbuilder(self, reason):
@@ -425,10 +430,10 @@ class Builder(SQLBase):
         self.builderok = False
         self.failnotes = reason
 
-    def getBuildRecords(self, build_state=None, name=None):
+    def getBuildRecords(self, build_state=None, name=None, user=None):
         """See IHasBuildRecords."""
         return getUtility(IBuildSet).getBuildsForBuilder(
-            self.id, build_state, name)
+            self.id, build_state, name, user)
 
     def slaveStatus(self):
         """See IBuilder."""
@@ -464,7 +469,7 @@ class Builder(SQLBase):
 
     def transferSlaveFileToLibrarian(self, file_sha1, filename):
         """See IBuilder."""
-        out_file_fd, out_file_name = tempfile.mkstemp(suffix=".tmp")
+        out_file_fd, out_file_name = tempfile.mkstemp(suffix=".buildlog")
         out_file = os.fdopen(out_file_fd, "r+")
         try:
             slave_file = self.slave.getFile(file_sha1)
@@ -477,6 +482,7 @@ class Builder(SQLBase):
                 out_file_name += '.gz'
                 gz_file = gzip.GzipFile(out_file_name, mode='wb')
                 copy_and_close(out_file, gz_file)
+                os.remove(out_file_name.replace('.gz', ''))
 
             # Reopen the file, seek to its end position, count and seek
             # to beginning, ready for adding to the Librarian.
@@ -492,6 +498,103 @@ class Builder(SQLBase):
             # Finally, remove the temporary file
             out_file.close()
             os.remove(out_file_name)
+
+    @property
+    def is_available(self):
+        """See `IBuilder`."""
+        if not self.builderok:
+            return False
+        try:
+            slavestatus = self.slaveStatusSentence()
+        except (xmlrpclib.Fault, socket.error), info:
+            return False
+        if slavestatus[0] != BuilderStatus.IDLE:
+            return False
+        return True
+
+    # XXX cprov 20071116: It should become part of the public
+    # findBuildCandidate once we start to detect superseded builds
+    # at build creation time.
+    def _findBuildCandidate(self):
+        """Return the highest priority build candidate for this builder.
+
+        Returns a pending IBuildQueue record queued for this builder
+        processorfamily with the highest lastscore or None if there
+        is no one available.
+        """
+        clauses = ["""
+            buildqueue.build = build.id AND
+            build.distroarchseries = distroarchseries.id AND
+            build.archive = archive.id AND
+            build.buildstate = %s AND
+            distroarchseries.processorfamily = %s AND
+            buildqueue.builder IS NULL
+        """ % sqlvalues(BuildStatus.NEEDSBUILD, self.processor.family)]
+
+        clauseTables = ['Build', 'DistroArchSeries', 'Archive']
+
+        if self.trusted:
+            clauses.append("""
+                archive.purpose IN %s
+            """ % sqlvalues([ArchivePurpose.PRIMARY, ArchivePurpose.PARTNER]))
+        else:
+            clauses.append("""
+                archive.purpose = %s
+            """ % sqlvalues(ArchivePurpose.PPA))
+
+        query = " AND ".join(clauses)
+
+        candidate = BuildQueue.selectFirst(
+            query, clauseTables=clauseTables, prejoins=['build'],
+            orderBy=['-buildqueue.lastscore'])
+
+        return candidate
+
+    def _getSlaveScannerLogger(self):
+        """Return the logger instance from buildd-slave-scanner.py."""
+        # XXX cprov 20071120: Ideally the Launchpad logging system
+        # should be able to configure the root-logger instead of creating
+        # a new object, then the logger lookups won't require the specific
+        # name argument anymore. See bug 164203.
+        logger = logging.getLogger('slave-scanner')
+        return logger
+
+    def findBuildCandidate(self):
+        """See `IBuilder`."""
+        logger = self._getSlaveScannerLogger()
+        candidate = self._findBuildCandidate()
+
+        # Mark build records targeted to old source versions as SUPERSEDED
+        # and build records target to SECURITY pocket as FAILEDTOBUILD.
+        # Builds in those situation should not be built because they will
+        # be wasting build-time, the former case already has a newer source
+        # and the latter could not be built in DAK.
+        while candidate is not None:
+            if candidate.build.pocket == PackagePublishingPocket.SECURITY:
+                logger.debug(
+                    "Build %s FAILEDTOBUILD, queue item %s REMOVED"
+                    % (candidate.build.id, candidate.id))
+                candidate.build.buildstate = BuildStatus.FAILEDTOBUILD
+            elif candidate.is_last_version:
+                return candidate
+            else:
+                logger.debug(
+                    "Build %s SUPERSEDED, queue item %s REMOVED"
+                    % (candidate.build.id, candidate.id))
+                candidate.build.buildstate = BuildStatus.SUPERSEDED
+            candidate.destroySelf()
+            candidate = self._findBuildCandidate()
+
+        # No candidate was found
+        return None
+
+    def dispatchBuildCandidate(self, candidate):
+        """See `IBuilder`."""
+        logger = self._getSlaveScannerLogger()
+        try:
+            self.startBuild(candidate, logger)
+        except (BuildSlaveFailure, CannotBuild), err:
+            logger.warn('Could not build: %s' % err)
 
 
 class BuilderSet(object):
@@ -511,11 +614,11 @@ class BuilderSet(object):
             raise NotFoundError(name)
 
     def new(self, processor, url, name, title, description, owner,
-            builderok=True, failnotes=None, trusted=False):
+            builderok=True, failnotes=None, trusted=False, vm_host=None):
         """See IBuilderSet."""
         return Builder(processor=processor, url=url, name=name, title=title,
                        description=description, owner=owner, trusted=trusted,
-                       builderok=builderok, failnotes=failnotes)
+                       builderok=builderok, failnotes=failnotes, vm_host=None)
 
     def get(self, builder_id):
         """See IBuilderSet."""
@@ -527,7 +630,7 @@ class BuilderSet(object):
 
     def getBuilders(self):
         """See IBuilderSet."""
-        return Builder.select()
+        return Builder.selectBy(active=True)
 
     def getBuildersByArch(self, arch):
         """See IBuilderSet."""
@@ -535,6 +638,20 @@ class BuilderSet(object):
                               'AND processor.family = %d'
                               % arch.processorfamily.id,
                               clauseTables=("Processor",))
+
+    def getBuildQueueDepthByArch(self):
+        """See `IBuilderSet`."""
+        query = """
+            SELECT distroarchseries.architecturetag, COUNT(*) FROM
+                Build INNER JOIN DistroArchSeries
+                  ON Build.distroarchseries=DistroArchSeries.id
+            WHERE Build.buildstate=0
+            GROUP BY distroarchseries.architecturetag
+            ORDER BY distroarchseries.architecturetag
+            """
+        cur = cursor()
+        cur.execute(query)
+        return cur.fetchall()
 
     def pollBuilders(self, logger, txn):
         """See IBuilderSet."""
@@ -553,15 +670,3 @@ class BuilderSet(object):
         # builds where they are completed
         buildMaster.scanActiveBuilders()
         return buildMaster
-
-    def dispatchBuilds(self, logger, buildMaster):
-        """See IBuilderSet."""
-        buildCandidatesSortedByProcessor = buildMaster.sortAndSplitByProcessor()
-
-        logger.info("Dispatching Jobs.")
-        # Now that we've gathered in all the builds, dispatch the pending ones
-        for candidate_proc in buildCandidatesSortedByProcessor.iteritems():
-            processor, buildCandidates = candidate_proc
-            buildMaster.dispatchByProcessor(processor, buildCandidates)
-
-        logger.info("Slave Scan Process Finished.")

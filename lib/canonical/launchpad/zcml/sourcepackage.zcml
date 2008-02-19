@@ -18,7 +18,8 @@
       />
     <require
       permission="launchpad.AnyPerson"
-      attributes="newQuestion addAnswerContact removeAnswerContact"
+      attributes="newQuestion createQuestionFromBug addAnswerContact
+                  removeAnswerContact"
       />
   </content>
   <adapter
@@ -172,16 +173,6 @@
       />
     />
   </browser:pages>
-
-  <browser:page
-    for="canonical.launchpad.interfaces.ISourcePackage"
-    permission="launchpad.Admin"
-    class="canonical.launchpad.browser.sourcepackage.SourcePackageView"
-    name="+potemplatenames"
-    facet="translations"
-    template="../templates/object-potemplatenames.pt"
-    layer="canonical.launchpad.layers.TranslationsLayer"
-    />
 
   <browser:page
     for="canonical.launchpad.interfaces.ISourcePackage"

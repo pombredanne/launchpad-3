@@ -1,4 +1,5 @@
 # Copyright 2004-2007 Canonical Ltd.  All rights reserved.
+# pylint: disable-msg=E0611,W0212
 
 """Question models."""
 
@@ -12,7 +13,10 @@ __all__ = [
     'QuestionTargetMixin',
     ]
 
+from datetime import datetime
 import operator
+import pytz
+
 from email.Utils import make_msgid
 
 from zope.component import getUtility
@@ -31,6 +35,7 @@ from canonical.launchpad.interfaces import (
     IProductSet, IQuestion, IQuestionSet, IQuestionTarget, ISourcePackage,
     QUESTION_STATUS_DEFAULT_SEARCH, QuestionAction, QuestionParticipation,
     QuestionPriority, QuestionSort, QuestionStatus)
+from canonical.launchpad.validators.person import public_person_validator
 
 from canonical.database.sqlbase import cursor, quote, SQLBase, sqlvalues
 from canonical.database.constants import DEFAULT, UTC_NOW
@@ -99,7 +104,9 @@ class Question(SQLBase, BugLinkTargetMixin):
     _defaultOrder = ['-priority', 'datecreated']
 
     # db field names
-    owner = ForeignKey(dbName='owner', foreignKey='Person', notNull=True)
+    owner = ForeignKey(
+        dbName='owner', foreignKey='Person',
+        validator=public_person_validator, notNull=True)
     title = StringCol(notNull=True)
     description = StringCol(notNull=True)
     language = ForeignKey(
@@ -110,9 +117,11 @@ class Question(SQLBase, BugLinkTargetMixin):
         schema=QuestionPriority, notNull=True,
         default=QuestionPriority.NORMAL)
     assignee = ForeignKey(
-        dbName='assignee', notNull=False, foreignKey='Person', default=None)
+        dbName='assignee', notNull=False, foreignKey='Person',
+        validator=public_person_validator, default=None)
     answerer = ForeignKey(
-        dbName='answerer', notNull=False, foreignKey='Person', default=None)
+        dbName='answerer', notNull=False, foreignKey='Person',
+        validator=public_person_validator, default=None)
     answer = ForeignKey(dbName='answer', notNull=False,
         foreignKey='QuestionMessage', default=None)
     datecreated = UtcDateTimeCol(notNull=True, default=DEFAULT)
@@ -512,7 +521,7 @@ class Question(SQLBase, BugLinkTargetMixin):
     def linkBug(self, bug):
         """See `IBugLinkTarget`."""
         # Subscribe the question's owner to the bug.
-        bug.subscribe(self.owner)
+        bug.subscribe(self.owner, self.owner)
         return BugLinkTargetMixin.linkBug(self, bug)
 
     def unlinkBug(self, bug):
@@ -993,12 +1002,31 @@ class QuestionTargetMixin:
         return {}
 
     def newQuestion(self, owner, title, description, language=None,
-                  datecreated=None):
+        datecreated=None):
         """See `IQuestionTarget`."""
-        return QuestionSet.new(
+        question = QuestionSet.new(
             title=title, description=description, owner=owner,
             datecreated=datecreated, language=language,
             **self.getTargetTypes())
+        notify(SQLObjectCreatedEvent(question))
+        return question
+
+    def createQuestionFromBug(self, bug):
+        """See `IQuestionTarget`."""
+        question = self.newQuestion(
+            bug.owner, bug.title, bug.description,
+            datecreated=bug.datecreated)
+        # Give the datelastresponse a current datetime, otherwise the
+        # Launchpad Janitor would quickly expire questions made from old bugs.
+        question.datelastresponse = datetime.now(pytz.timezone('UTC'))
+        question.linkBug(bug)
+        for message in bug.messages[1:]:
+            # Bug.message[0] is the original message, and probably a duplicate
+            # of Bug.description.
+            question.addComment(
+                message.owner, message.text_contents,
+                datecreated=message.datecreated)
+        return question
 
     def getQuestion(self, question_id):
         """See `IQuestionTarget`."""

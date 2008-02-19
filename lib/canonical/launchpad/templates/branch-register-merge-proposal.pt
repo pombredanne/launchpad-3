@@ -20,7 +20,7 @@
   <tal:branch-link define="branch context">
     <metal:branch-link use-macro="context/@@+macros/branch-heading-link"/>
   </tal:branch-link>
-  <h1>Register merge proposal</h1>
+  <h1>Propose branch for merging</h1>
 
   <div metal:use-macro="context/@@launchpad_form/form">
   </div>

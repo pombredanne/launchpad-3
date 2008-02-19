@@ -1,4 +1,5 @@
 # Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# pylint: disable-msg=E0611,W0212
 
 __metaclass__ = type
 __all__ = ['BugWatch', 'BugWatchSet']
@@ -12,26 +13,26 @@ from zope.interface import implements, providedBy
 from zope.component import getUtility
 
 # SQL imports
-from sqlobject import ForeignKey, StringCol, SQLObjectNotFound, SQLMultipleJoin
+from sqlobject import (ForeignKey, StringCol, SQLObjectNotFound,
+    SQLMultipleJoin)
 
-from canonical.lp.dbschema import BugTrackerType, BugTaskImportance
-
-from canonical.database.sqlbase import SQLBase
+from canonical.database.sqlbase import SQLBase, sqlvalues
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
 
+from canonical.launchpad.database.bugmessage import BugMessage
+from canonical.launchpad.database.bugset import BugSetBase
 from canonical.launchpad.event import SQLObjectModifiedEvent
-
+from canonical.launchpad.interfaces import (
+    BugTrackerType, BugWatchErrorType, IBugTrackerSet, IBugWatch,
+    IBugWatchSet, ILaunchpadCelebrities, NoBugTrackerFound,
+    NotFoundError, UnrecognizedBugTrackerURL)
+from canonical.launchpad.validators.email import valid_email
+from canonical.launchpad.validators.person import public_person_validator
 from canonical.launchpad.webapp import urlappend, urlsplit
 from canonical.launchpad.webapp.snapshot import Snapshot
 from canonical.launchpad.webapp.uri import find_uris_in_text
-
-from canonical.launchpad.interfaces import (
-    BugWatchErrorType, IBugWatch, IBugWatchSet, IBugTrackerSet,
-    ILaunchpadCelebrities, NoBugTrackerFound, NotFoundError,
-    UnrecognizedBugTrackerURL)
-from canonical.launchpad.database.bugset import BugSetBase
 
 
 class BugWatch(SQLBase):
@@ -43,11 +44,14 @@ class BugWatch(SQLBase):
                 foreignKey='BugTracker', notNull=True)
     remotebug = StringCol(notNull=True)
     remotestatus = StringCol(notNull=False, default=None)
+    remote_importance = StringCol(notNull=False, default=None)
     lastchanged = UtcDateTimeCol(notNull=False, default=None)
     lastchecked = UtcDateTimeCol(notNull=False, default=None)
-    datecreated = UtcDateTimeCol(notNull=True, default=UTC_NOW)
-    owner = ForeignKey(dbName='owner', foreignKey='Person', notNull=True)
     last_error_type = EnumCol(schema=BugWatchErrorType, default=None)
+    datecreated = UtcDateTimeCol(notNull=True, default=UTC_NOW)
+    owner = ForeignKey(
+        dbName='owner', foreignKey='Person',
+        validator=public_person_validator, notNull=True)
 
     # useful joins
     bugtasks = SQLMultipleJoin('BugTask', joinColumn='bugwatch',
@@ -62,12 +66,14 @@ class BugWatch(SQLBase):
     def url(self):
         """See canonical.launchpad.interfaces.IBugWatch."""
         url_formats = {
-            BugTrackerType.BUGZILLA:    'show_bug.cgi?id=%s',
-            BugTrackerType.TRAC:        'ticket/%s',
-            BugTrackerType.DEBBUGS:     'cgi-bin/bugreport.cgi?bug=%s',
-            BugTrackerType.ROUNDUP:     'issue%s',
+            BugTrackerType.BUGZILLA: 'show_bug.cgi?id=%s',
+            BugTrackerType.TRAC: 'ticket/%s',
+            BugTrackerType.DEBBUGS: 'cgi-bin/bugreport.cgi?bug=%s',
+            BugTrackerType.ROUNDUP: 'issue%s',
+            BugTrackerType.RT: 'Ticket/Display.html?id=%s',
             BugTrackerType.SOURCEFORGE: 'support/tracker.php?aid=%s',
-            BugTrackerType.MANTIS:      'view.php?id=%s',
+            BugTrackerType.MANTIS: 'view.php?id=%s',
+            BugTrackerType.SAVANNAH: 'bugs/?%s',
         }
         bt = self.bugtracker.bugtrackertype
         if not url_formats.has_key(bt):
@@ -80,8 +86,33 @@ class BugWatch(SQLBase):
         """See canonical.launchpad.interfaces.IBugWatch."""
         return True
 
+    def updateImportance(self, remote_importance, malone_importance):
+        """See `IBugWatch`."""
+        if self.remote_importance != remote_importance:
+            self.remote_importance = remote_importance
+            self.lastchanged = UTC_NOW
+            # Sync the object in order to convert the UTC_NOW sql
+            # constant to a datetime value.
+            self.sync()
+
+        for linked_bugtask in self.bugtasks:
+            # We don't updated conjoined bug tasks; they must be updated
+            # through their conjoined masters.
+            if linked_bugtask._isConjoinedBugTask():
+                continue
+
+            old_bugtask = Snapshot(
+                linked_bugtask, providing=providedBy(linked_bugtask))
+            linked_bugtask.importance = malone_importance
+
+            if linked_bugtask.importance != old_bugtask.importance:
+                event = SQLObjectModifiedEvent(
+                    linked_bugtask, old_bugtask, ['importance'],
+                    user=getUtility(ILaunchpadCelebrities).bug_watch_updater)
+                notify(event)
+
     def updateStatus(self, remote_status, malone_status):
-        """See IBugWatch."""
+        """See `IBugWatch`."""
         if self.remotestatus != remote_status:
             self.remotestatus = remote_status
             self.lastchanged = UTC_NOW
@@ -89,13 +120,17 @@ class BugWatch(SQLBase):
             # constant to a datetime value.
             self.sync()
         for linked_bugtask in self.bugtasks:
+            # We don't updated conjoined bug tasks; they must be updated
+            # through their conjoined masters.
+            if linked_bugtask._isConjoinedBugTask():
+                continue
+
             old_bugtask = Snapshot(
                 linked_bugtask, providing=providedBy(linked_bugtask))
             linked_bugtask.transitionToStatus(
                 malone_status,
                 getUtility(ILaunchpadCelebrities).bug_watch_updater)
-            # We don't yet support updating the following values.
-            linked_bugtask.importance = BugTaskImportance.UNKNOWN
+            # We don't yet support updating the assignee of bug watches.
             linked_bugtask.transitionToAssignee(None)
             if linked_bugtask.status != old_bugtask.status:
                 event = SQLObjectModifiedEvent(
@@ -125,6 +160,8 @@ class BugWatch(SQLBase):
                 "correct.",
             BugWatchErrorType.TIMEOUT: "Launchpad's connection to "
                 "%(bugtracker)s timed out.",
+            BugWatchErrorType.UNKNOWN: "Launchpad couldn't import bug "
+                "#%(bug)s from " "%(bugtracker)s.",
             BugWatchErrorType.UNPARSABLE_BUG: "Launchpad couldn't "
                 "extract a status from %(bug)s on %(bugtracker)s.",
             BugWatchErrorType.UNPARSABLE_BUG_TRACKER: "Launchpad "
@@ -147,6 +184,27 @@ class BugWatch(SQLBase):
 
         return message % error_data
 
+    def hasComment(self, comment_id):
+        """See `IBugWatch`."""
+        query = """
+            BugMessage.message = Message.id
+            AND Message.rfc822msgid = %s
+            AND BugMessage.bugwatch = %s
+        """ % sqlvalues(comment_id, self)
+
+        # XXX 2008-02-13 gmb:
+        #     This might be more efficient if we used an EXISTS query.
+        comment = BugMessage.selectOne(query, clauseTables=['Message'])
+
+        return comment is not None
+
+    def addComment(self, comment_id, message):
+        """See `IBugWatch`."""
+        assert not self.hasComment(comment_id), ("Comment with ID %s has "
+            "already been imported for %s." % (comment_id, self.title))
+
+        bug_message = self.bug.linkMessage(message, bugwatch=self)
+
 
 class BugWatchSet(BugSetBase):
     """A set for BugWatch"""
@@ -160,10 +218,13 @@ class BugWatchSet(BugSetBase):
         self.bugtracker_parse_functions = {
             BugTrackerType.BUGZILLA: self.parseBugzillaURL,
             BugTrackerType.DEBBUGS:  self.parseDebbugsURL,
+            BugTrackerType.EMAILADDRESS: self.parseEmailAddressURL,
+            BugTrackerType.MANTIS: self.parseMantisURL,
             BugTrackerType.ROUNDUP: self.parseRoundupURL,
+            BugTrackerType.RT: self.parseRTURL,
+            BugTrackerType.SAVANNAH: self.parseSavannahURL,
             BugTrackerType.SOURCEFORGE: self.parseSourceForgeURL,
             BugTrackerType.TRAC: self.parseTracURL,
-            BugTrackerType.MANTIS: self.parseMantisURL,
         }
 
     def get(self, watch_id):
@@ -188,11 +249,22 @@ class BugWatchSet(BugSetBase):
             try:
                 bugtracker, remotebug = self.extractBugTrackerAndBug(str(url))
             except NoBugTrackerFound, error:
+                # We don't want to auto-create EMAILADDRESS bug trackers
+                # based on mailto: URIs in comments.
+                if error.bugtracker_type == BugTrackerType.EMAILADDRESS:
+                    continue
+
                 bugtracker = getUtility(IBugTrackerSet).ensureBugTracker(
                     error.base_url, owner, error.bugtracker_type)
                 remotebug = error.remote_bug
             except UnrecognizedBugTrackerURL:
                 # It doesn't look like a bug URL, so simply ignore it.
+                continue
+
+            # We don't create bug watches for EMAILADDRESS bug trackers
+            # from mailto: URIs in comments, so in those cases we give
+            # up.
+            if bugtracker.bugtrackertype == BugTrackerType.EMAILADDRESS:
                 continue
 
             if bug.getBugWatch(bugtracker, remotebug) is None:
@@ -293,6 +365,31 @@ class BugWatchSet(BugSetBase):
         base_url = urlunsplit((scheme, host, base_path, '', ''))
         return base_url, remote_bug
 
+    def parseRTURL(self, scheme, host, path, query):
+        """Extract the RT base URL and bug ID."""
+
+        # We use per-host regular expressions to account for those RT
+        # hosts that we know use non-standard URLs for their tickets,
+        # allowing us to parse them properly.
+        host_expressions = {
+            'default': r'(.*/)(Bug|Ticket)/Display.html',
+            'rt.cpan.org': r'(.*/)Public/(Bug|Ticket)/Display.html'}
+
+        if host in host_expressions:
+            expression = host_expressions[host]
+        else:
+            expression = host_expressions['default']
+
+        match = re.match(expression, path)
+        if not match:
+            return None
+
+        base_path = match.group(1)
+        remote_bug = query['id']
+
+        base_url = urlunsplit((scheme, host, base_path, '', ''))
+        return base_url, remote_bug
+
     def parseTracURL(self, scheme, host, path, query):
         """Extract the Trac base URL and bug ID."""
         match = re.match(r'(.*/)ticket/(\d+)', path)
@@ -323,9 +420,49 @@ class BugWatchSet(BugSetBase):
 
         return sf_tracker.baseurl, remote_bug
 
+    def parseSavannahURL(self, scheme, host, path, query):
+        """Extract GNU Savannah base URL and bug ID."""
+        # GNU Savannah bugs URLs are in the form /bugs/?<bug-id>, so we
+        # exclude any path that isn't '/bugs/'. We also exclude query
+        # string that have a length of more or less than one, since in
+        # such cases we'd be taking a guess at the bug ID, which would
+        # probably be wrong.
+        if path != '/bugs/' or len(query) != 1:
+            return None
+
+        # The remote bug is actually a key in the query dict rather than
+        # a value, so we simply use the first and only key we come
+        # across as a best-effort guess.
+        remote_bug = query.popitem()[0]
+
+        # There's only one global Savannah bugtracker registered with
+        # Launchpad.
+        savannah_tracker = getUtility(ILaunchpadCelebrities).savannah_tracker
+
+        return savannah_tracker.baseurl, remote_bug
+
+    def parseEmailAddressURL(self, scheme, host, path, query):
+        """Extract an email address from a bug URL.
+
+        This method will return (mailto:<email_address>, '') since email
+        address bug trackers cannot have bug numbers. We return an empty
+        string for the remote bug since BugWatch.remotebug cannot be
+        None.
+        """
+        # We ignore anything that isn't a mailto URL.
+        if scheme != 'mailto':
+            return None
+
+        # We also reject invalid email addresses.
+        if not valid_email(path):
+            return None
+
+        return '%s:%s' % (scheme, path), ''
+
     def extractBugTrackerAndBug(self, url):
         """See IBugWatchSet."""
-        for trackertype, parse_func in self.bugtracker_parse_functions.items():
+        for trackertype, parse_func in (
+            self.bugtracker_parse_functions.items()):
             scheme, host, path, query_string, frag = urlsplit(url)
             query = {}
             for query_part in query_string.split('&'):
@@ -346,3 +483,4 @@ class BugWatchSet(BugSetBase):
                 raise NoBugTrackerFound(base_url, remote_bug, trackertype)
 
         raise UnrecognizedBugTrackerURL(url)
+

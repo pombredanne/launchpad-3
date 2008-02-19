@@ -49,8 +49,8 @@
     />
 
   <browser:url
-    for="canonical.launchpad.interfaces.IPOTemplateNameSet"
-    path_expression="string:potemplatenames"
+    for="canonical.launchpad.interfaces.IMailingListSet"
+    path_expression="string:+mailinglists"
     parent_utility="canonical.launchpad.interfaces.ILaunchpadRoot"
     />
 

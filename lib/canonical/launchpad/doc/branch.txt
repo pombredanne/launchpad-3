@@ -105,7 +105,7 @@ If it doesn't exist an exception NotFoundError is raised
     >>> personset = getUtility(IPersonSet)
     >>> ddaa = personset.getByName('ddaa')
 
-    >>> from canonical.launchpad.ftests import time_counter
+    >>> from canonical.launchpad.testing import time_counter
     >>> now = time_counter()
 
 The time_counter is used to create nicely ordered 'fake' date_created
@@ -127,18 +127,30 @@ date_created values from the database.
     >>> gterm_dev.url
     u'http://example.com/~ddaa/gterm.dev'
 
-Branches must implement the IBranch interface.
+The registrant of the branch is the user that originally registered
+the branch, whereas the owner is the current owner of the branch.
+A user can create a branch where the owner is either themselves,
+or a team that they are a member of.  The registrant is not writable,
+whereas the owner is.
 
-    >>> from canonical.launchpad.interfaces import IBranch
-    >>> verifyObject(IBranch, gterm_dev)
-    True
+    >>> login('foo.bar@canonical.com')
+    >>> import_team = personset.getByName('vcs-imports')
+    >>> gterm_dev.registrant = import_team
+    Traceback (most recent call last):
+    ForbiddenAttribute: ('registrant', <Branch ...>)
+
+    >>> gterm_dev.owner = import_team
+    >>> print gterm_dev.registrant.name
+    ddaa
+    >>> print gterm_dev.owner.name
+    vcs-imports
+    >>> gterm_dev.owner = ddaa
 
 Branch may or may not be associated to a product, and may have no home_page,
 no title, and no summary, and even no URL.
 
 Branches with no URL are primarily hosted on the supermirror.
 
-    >>> url = 'http://example.com/~ddaa/junkcode'
     >>> junkcode = branchset.new(
     ...     BranchType.HOSTED, 'junkcode', ddaa, ddaa, None, None,
     ...     date_created=now.next())
@@ -160,12 +172,15 @@ A branch that is not associated with a product may not be owned by a
 team, however.
 
     >>> team = personset.getByName('simple-team')
+    >>> member = personset.getByName('one-membership')
+    >>> member.inTeam(team)
+    True
     >>> teamjunkcode = branchset.new(
-    ...     BranchType.HOSTED, 'junkcode', ddaa, team, None, None,
+    ...     BranchType.HOSTED, 'junkcode', member, team, None, None,
     ...     date_created=now.next())
     Traceback (most recent call last):
       ...
-    AssertionError: Cannot create team-owned junk branches.
+    BranchCreationNoTeamOwnedJunkBranches: Cannot create team-owned junk ...
 
 The ~vcs-imports celebrity team is exempt from this restriction to
 allow the creation of code import branches without an associated
@@ -180,6 +195,16 @@ product.
     None
     >>> print vcs_imports_junkcode.owner.name
     vcs-imports
+
+Branch names must start with a number or a letter (upper or lower
+case) and -, +, _ and @ are allowed after that.
+
+    >>> branchset.new(
+    ...     BranchType.HOSTED, 'invalid name!', ddaa, ddaa, None, None,
+    ...     date_created=now.next())
+    Traceback (most recent call last):
+      ...
+    LaunchpadValidationError: Invalid branch name 'invalid name!'.  Branch ...
 
 
 == Determining the number of branches ==
@@ -238,7 +263,6 @@ interesting results.
     >>> list(branchset.getRecentlyImportedBranches(5))
     []
 
-    >>> login('foo.bar@canonical.com')
     >>> from datetime import datetime, timedelta
     >>> import pytz
     >>> today = datetime.now(pytz.timezone('UTC'))
@@ -611,8 +635,6 @@ used to identify when a scan is needed for a branch.
 
     >>> branch.last_scanned_id = 'test@canonical.com-20051031165248-6f1bb97973c2b4f4'
     >>> rev = branch.getTipRevision()
-    >>> print rev.owner.name
-    admins
     >>> print rev.date_created
     2005-10-31 17:21:47.381770+00:00
     >>> print rev.log_body
@@ -622,7 +644,7 @@ used to identify when a scan is needed for a branch.
 == Codebrowse and branches ==
 
 Most branches are able to be browsed using the loggerhead codebrowse
-instance at http://codebrowse.launchpad.net.  Branches that have no
+instance at http://bazaar.launchpad.net.  Branches that have no
 revisions or private branches are not able to be viewed using code
 browse.
 

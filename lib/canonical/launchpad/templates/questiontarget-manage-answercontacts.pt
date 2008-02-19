@@ -1,9 +1,14 @@
 <html
   xmlns="http://www.w3.org/1999/xhtml"
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
   xml:lang="en"
   lang="en"
+  dir="ltr"
   metal:use-macro="context/@@main_template/master"
-  i18n:domain="launchpad">
+  i18n:domain="launchpad"
+>
 
 <body>
 
@@ -12,10 +17,6 @@
   <div tal:condition="context/distribution|nothing"
        tal:replace="structure context/distribution/@@+portlet-answercontacts" />
 </metal:leftportlets>
-
-<metal:rightportlets fill-slot="portlets_two">
-  <div tal:replace="structure context/@@+portlet-details" />
-</metal:rightportlets>
 
 <div metal:fill-slot="main">
 
@@ -49,11 +50,16 @@
       <div class="row"
            tal:condition="view/widgets/answer_contact_teams/vocabulary">
 
-        <div class="field">
+        <div tal:define="error view/widgets/answer_contact_teams/error"
+             tal:attributes="class python:error and 'error' or 'field'">
           <label>Let the following teams be an answer contact for
           <span tal:replace="context/displayname">Mozilla
           Firefox</span>:</label>
-          <div tal:content="structure view/widgets/answer_contact_teams" />
+          <div id="answer-contact-teams"
+               tal:content="structure view/widgets/answer_contact_teams" />
+          <div tal:condition="error" class="message"
+            tal:content="structure error"
+          >An error message.</div>
         </div>
 
       </div>

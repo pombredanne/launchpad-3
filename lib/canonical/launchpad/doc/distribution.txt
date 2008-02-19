@@ -131,6 +131,24 @@ Raises NotFoundError for following conditions:
     ...
     NotFoundError: 'Unknown package: 1234'
 
+Packages only published in PPAs will not be found in the Ubuntu archive.
+Here, 'at' is published in sabdfl's PPA only:
+
+    >>> from canonical.launchpad.ftests.ppa import publishToPPA
+    >>> from canonical.launchpad.interfaces import PackagePublishingStatus
+    >>> ubuntutest = distroset.getByName("ubuntutest")
+    >>> publishToPPA(
+    ...     person_name='cprov',
+    ...     sourcepackage_name='at', sourcepackage_version='0.00',
+    ...     binarypackage_version='3.14156',
+    ...     distribution_name='ubuntutest',
+    ...     distroseries_name='hoary-test',
+    ...     publishing_status=PackagePublishingStatus.PUBLISHED)
+    >>> name_tuple = ubuntutest.guessPackageNames('at')
+    Traceback (most recent call last):
+    ...
+    NotFoundError: u'Package at not published in ubuntutest'
+
 It also raises NotFoundError on distributions with no series:
 
     >>> source_name, bin_name = gentoo.guessPackageNames('pmount')
@@ -196,6 +214,7 @@ name even if it differs:
     >>> print_guessed_names('linux-2.6.12')
     source: u'linux-source-2.6.15'
     binary: u'linux-2.6.12'
+
 
 == Distribution Sorting ==
 
@@ -317,7 +336,7 @@ incomplete source is uploaded).
 
 === Launchpad Usage ===
 
-A distribution can specify if it uses Malone, Rosetta, or Answers 
+A distribution can specify if it uses Malone, Rosetta, or Answers
 officially. Ubuntu uses all of them:
 
     >>> ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
@@ -327,7 +346,7 @@ officially. Ubuntu uses all of them:
     True
     >>> ubuntu.official_answers
     True
-    
+
 While Debian uses none:
 
     >>> debian.official_malone
@@ -435,6 +454,7 @@ We can get only valid specs (those that are not obsolete or superseded):
  ...     print spec.name
  kde-desktopfile-langpacks
 
+
 == Milestones ==
 
 We can use IDistribution.milestones to get all milestones associated with any
@@ -442,7 +462,7 @@ series of a distribution.
 
     >>> from datetime import datetime
     >>> [milestone.name for milestone in debian.milestones]
-    [u'3.1-rc1', u'3.1']
+    [u'3.1', u'3.1-rc1']
 
     >>> woody = debian['woody']
     >>> debian_milestone = woody.newMilestone(
@@ -452,8 +472,7 @@ They're ordered by dateexpected.
 
     >>> [(milestone.name, milestone.dateexpected.strftime('%Y-%m-%d'))
     ...  for milestone in debian.milestones]
-    [(u'woody-rc1', '2028-10-01'), (u'3.1-rc1', '2056-02-16'),
-     (u'3.1', '2056-05-16')]
+    [(u'3.1', '2056-05-16'), (u'3.1-rc1', '2056-02-16'), (u'woody-rc1', '2028-10-01')]
 
 Only milestones which have visible=True are returned by the .milestones
 property.
@@ -461,12 +480,12 @@ property.
     >>> debian_milestone.visible = False
     >>> flush_database_updates()
     >>> [milestone.name for milestone in debian.milestones]
-    [u'3.1-rc1', u'3.1']
+    [u'3.1', u'3.1-rc1']
 
 To get all milestones of a given distro we have the .all_milestones property.
 
     >>> [milestone.name for milestone in debian.all_milestones]
-    [u'woody-rc1', u'3.1-rc1', u'3.1']
+    [u'3.1', u'3.1-rc1', u'woody-rc1']
 
 
 == Handling Personal Package Archives ==
@@ -505,30 +524,30 @@ active/inactive (whether the PPA contains or not valid publications):
 There is only one 'active' PPA:
 
     >>> cprov.archive.getPublishedSources().count()
-    3
+    4
     >>> sabdfl.archive.getPublishedSources().count()
     1
     >>> no_priv.archive.getPublishedSources().count()
     0
-  
+
     >>> result = ubuntu.searchPPAs()
     >>> [archive.owner.name for archive in result]
     [u'cprov', u'sabdfl']
-  
+
 PPAs can be reached passing a filter matching (substring) its
 description or the person string indexes:
 
     >>> print cprov.archive.description
     packages to help my friends.
-  
+
     >>> result = ubuntu.searchPPAs(text='friend')
     >>> [archive.owner.name for archive in result]
     [u'cprov']
-  
+
     >>> result = ubuntu.searchPPAs(text='celso')
     >>> [archive.owner.name for archive in result]
     [u'cprov']
-  
+
     >>> result = ubuntu.searchPPAs(text='oink')
     >>> [archive.owner.name for archive in result]
     []
@@ -538,14 +557,14 @@ Incluing 'inactive' PPAs:
     >>> result = ubuntu.searchPPAs(show_inactive=True)
     >>> [archive.owner.name for archive in result]
     [u'cprov', u'no-priv', u'sabdfl']
-  
+
     >>> result = ubuntu.searchPPAs(text='priv', show_inactive=True)
     >>> [archive.owner.name for archive in result]
     [u'no-priv']
-  
+
     >>> print sabdfl.archive.description
     packages to help the humanity (you know, ubuntu)
-  
+
     >>> result = ubuntu.searchPPAs(text='ubuntu', show_inactive=True)
     >>> [archive.owner.name for archive in result]
     [u'sabdfl']
@@ -607,13 +626,12 @@ Records in DONE also do not trigger pending-acceptance state in PPAs:
       >>> syncUpdate(queue)
       >>> queue.status.name
       'DONE'
-      
+
       >>> ubuntu.getPendingAcceptancePPAs().count()
       0
 
 
 == Retrieving only pending-acceptance PPAs ==
-
 
 'getPendingPublicationPPAs'lookup will only return PPA which have
 PENDING publishing records, it's used in 'publish-distro' in '--ppa'
@@ -624,66 +642,80 @@ Nothing is pending-publication in sampledata:
       >>> ubuntu.getPendingPublicationPPAs().count()
       0
 
-Making cprov PPA pending publication by creating a new source
-publishing record: 
+We can make Celso's PPA pending publication by copying a published
+source to another location within the PPA.
 
-      >>> from canonical.database.constants import UTC_NOW
-      >>> from canonical.launchpad.database.publishing import (
-      ...     SecureSourcePackagePublishingHistory, 
-      ...     SecureBinaryPackagePublishingHistory) 
-      >>> from canonical.launchpad.interfaces import PackagePublishingStatus
+      >>> cprov_src = cprov.archive.getPublishedSources()[0]
 
-      >>> pmount = hoary.getSourcePackage('pmount')
-      >>> pmount_spr = pmount.currentrelease.sourcepackagerelease
+      >>> warty = ubuntu['warty']
+      >>> pocket_release = PackagePublishingPocket.RELEASE
+      >>> src_pub = cprov_src.copyTo(warty, pocket_release, cprov.archive)
+      >>> print src_pub.status.name
+      PENDING
 
-      >>> src_pub = SecureSourcePackagePublishingHistory(
-      ...     distroseries=hoary, sourcepackagerelease=pmount_spr,
-      ...     component=pmount_spr.component, section=pmount_spr.section,
-      ...     embargo=False, datecreated=UTC_NOW,
-      ...     status=PackagePublishingStatus.PENDING,
-      ...     pocket=PackagePublishingPocket.RELEASE,
-      ...     archive=cprov.archive)
-
-      >>> pending_ppas = ubuntu.getPendingPublicationPPAs()
-      >>> [pending_ppa] = pending_ppas
+      >>> [pending_ppa] = ubuntu.getPendingPublicationPPAs()
       >>> pending_ppa.id == cprov.archive.id
       True
 
-Publishing the record removing cprov PPA from pending-publication
-state: 
+Publishing the record will exclude Celso's PPA from
+pending-publication state:
 
+      >>> from canonical.launchpad.interfaces import PackagePublishingStatus
       >>> src_pub.status = PackagePublishingStatus.PUBLISHED
       >>> syncUpdate(src_pub)
 
       >>> ubuntu.getPendingPublicationPPAs().count()
       0
 
-Binary pending publications also moves PPA to the pending-publication
-state: 
+We can also make Celso's PPA pending publication by deleting a published
+source.
 
-      >>> hoary_i386 = hoary['i386']
-      >>> pmount_bin = hoary_i386.getBinaryPackage('pmount')
-      >>> pmount_bpr = pmount_bin.currentrelease.binarypackagerelease
+      >>> src_pub = cprov_src.requestDeletion(cprov, 'go away !')
+      >>> syncUpdate(src_pub)
 
-      >>> bin_pub = SecureBinaryPackagePublishingHistory(
-      ...     binarypackagerelease=pmount_bpr,
-      ...     distroarchseries=hoary_i386, priority=pmount_bpr.priority,
-      ...     component=pmount_bpr.component, section=pmount_bpr.section,
-      ...     datecreated=UTC_NOW, embargo=False, archive=cprov.archive,
-      ...     status=PackagePublishingStatus.PENDING,
-      ...     pocket=PackagePublishingPocket.RELEASE)
-
-      >>> pending_ppas = ubuntu.getPendingPublicationPPAs()
-      >>> [pending_ppa] = pending_ppas
+      >>> [pending_ppa] = ubuntu.getPendingPublicationPPAs()
       >>> pending_ppa.id == cprov.archive.id
       True
 
-Similarly to sources, binary publishing the record removes the PPA
-from pending-publication state:
+      >>> from canonical.database.constants import UTC_NOW
+      >>> src_pub.scheduleddeletiondate = UTC_NOW
+      >>> syncUpdate(src_pub)
+      >>> ubuntu.getPendingPublicationPPAs().count()
+      0
+
+Binary pending publications also moves PPA to the pending-publication
+state:
+
+      >>> cprov_bin = cprov.archive.getAllPublishedBinaries()[0]
+      >>> bin_pub = cprov_bin.copyTo(warty, pocket_release, cprov.archive)
+      >>> print bin_pub.status.name
+      PENDING
+
+      >>> [pending_ppa] = ubuntu.getPendingPublicationPPAs()
+      >>> pending_ppa.id == cprov.archive.id
+      True
+
+Similarly to sources, publishing the binary will exclude Celso's PPA from
+pending-publication state:
 
       >>> bin_pub.status = PackagePublishingStatus.PUBLISHED
       >>> syncUpdate(bin_pub)
 
+      >>> ubuntu.getPendingPublicationPPAs().count()
+      0
+
+A binary deletion will also make Celso's PPA pending publication.
+
+      >>> bin_pub = cprov_bin.requestDeletion(cprov, 'go away !')
+      >>> syncUpdate(bin_pub)
+
+      >>> [pending_ppa] = ubuntu.getPendingPublicationPPAs()
+      >>> pending_ppa.id == cprov.archive.id
+      True
+
+      >>> from canonical.database.constants import UTC_NOW
+      >>> bin_pub.scheduleddeletiondate = UTC_NOW
+      >>> syncUpdate(bin_pub)
       >>> ubuntu.getPendingPublicationPPAs().count()
       0
 
