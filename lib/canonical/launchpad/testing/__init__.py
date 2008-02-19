@@ -240,21 +240,29 @@ class LaunchpadObjectFactory:
         create_bug_params.setBugTarget(product=self.makeProduct())
         return getUtility(IBugSet).createBug(create_bug_params)
 
-    def makeCodeImport(self, url=None):
+    def makeCodeImport(self, svn_branch_url=None, cvs_root=None,
+                       cvs_module=None):
         """Create and return a new, arbitrary code import.
 
         The code import will be an import from a Subversion repository located
         at `url`, or an arbitrary unique url if the parameter is not supplied.
         """
-        if url is None:
-            url = self.getUniqueURL()
+        if svn_branch_url is cvs_root is cvs_module is None:
+            svn_branch_url = self.getUniqueURL()
+
         vcs_imports = getUtility(ILaunchpadCelebrities).vcs_imports
-        branch = self.makeBranch(
-            BranchType.IMPORTED, owner=vcs_imports)
+        branch = self.makeBranch(BranchType.IMPORTED, owner=vcs_imports)
         registrant = self.makePerson()
-        return getUtility(ICodeImportSet).new(
-            registrant, branch, rcs_type=RevisionControlSystems.SVN,
-            svn_branch_url=url)
+
+        code_import_set = getUtility(ICodeImportSet)
+        if svn_branch_url is not None:
+            return code_import_set.new(
+                registrant, branch, rcs_type=RevisionControlSystems.SVN,
+                svn_branch_url=svn_branch_url)
+        else:
+            return code_import_set.new(
+                registrant, branch, rcs_type=RevisionControlSystems.CVS,
+                cvs_root=cvs_root, cvs_module=cvs_module)
 
     def makeCodeImportJob(self, code_import):
         """Create and return a new code import job for the given import.
