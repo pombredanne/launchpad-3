@@ -29,8 +29,8 @@ from canonical.launchpad.interfaces import (
     BranchSubscriptionDiffSize, BranchSubscriptionNotificationLevel, IBranch,
     IBugTask, IEmailAddressSet, ILaunchpadCelebrities,
     INotificationRecipientSet, IPerson, IPersonSet, ISpecification,
-    ITeamMembershipSet, IUpstreamBugTask, QuestionAction,
-    TeamMembershipStatus, UnknownRecipientError)
+    ITeamMembershipSet, IUpstreamBugTask, MailingListStatus,
+    QuestionAction, TeamMembershipStatus, UnknownRecipientError)
 from canonical.launchpad.mail import (
     sendmail, simple_sendmail, simple_sendmail_from_person, format_address)
 from canonical.launchpad.components.bug import BugDelta
@@ -1935,6 +1935,29 @@ def notify_specification_subscription_modified(specsub, event):
         simple_sendmail_from_person(user, address, subject, body)
 
 def notify_mailinglist_activated(mailinglist, event):
-    """Notify the members of a team and subteams that a mailing list
-    is available."""
-    pass
+    """Notify the active members of a team and subteams that a mailing
+    list is available.
+    """
+    old_status = event.object_before_modification.status
+
+    # We will use the state transition from CONSTRUCTING as a hint
+    # that this list is new, and that noboby has subscribed yet.  See
+    # `MailingList.transitionToStatus()` for the state transition
+    # details.
+    list_looks_new = (old_status == MailingListStatus.CONSTRUCTING)
+
+    if not (mailinglist.isUsable() and list_looks_new):
+        return
+
+    team = mailinglist.team
+    from_address = format_address(
+        team.displayname, config.noreply_from_address)
+    headers = {}
+    subject = "The %s team has a New Mailing List" % team.displayname
+    template = get_email_template('new-mailing-list.txt')
+
+    for to_address in contactEmailAddresses(
+        team, include_subteam_members=True):
+        replacements = {}
+        body = MailWrapper().format(template % replacements, force_wrap=True)
+        simple_sendmail(from_address, to_address, subject, body, headers)
