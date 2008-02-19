@@ -10,8 +10,6 @@ import tempfile
 import time
 import unittest
 
-from zope.component import getUtility
-
 from bzrlib.bzrdir import BzrDir
 from bzrlib.errors import NoSuchFile
 from bzrlib.tests import TestCaseWithTransport
@@ -27,9 +25,7 @@ from canonical.codehosting.codeimport.tests.test_foreigntree import (
 from canonical.codehosting.tests.helpers import (
     create_branch_with_one_revision)
 from canonical.config import config
-from canonical.launchpad.interfaces import (
-    BranchType, BranchTypeError, CodeImportReviewStatus,
-    ICodeImportJobWorkflow)
+from canonical.launchpad.interfaces import BranchType, BranchTypeError
 from canonical.launchpad.testing import LaunchpadObjectFactory
 from canonical.testing import LaunchpadScriptLayer
 
@@ -69,11 +65,7 @@ class WorkerTest(TestCaseWithTransport):
     def makeCodeImportJob(self, code_import):
         # I'm not sure, is this how we spell "reviewed"?
         # I still hate this API. (jml)
-        code_import.updateFromData(
-            {'review_status': CodeImportReviewStatus.REVIEWED},
-            code_import.registrant)
-        workflow = getUtility(ICodeImportJobWorkflow)
-        return workflow.newJob(code_import)
+        return self.factory.makeCodeImportJob(code_import)
 
     def makeTemporaryDirectory(self):
         directory = tempfile.mkdtemp()
@@ -466,7 +458,6 @@ class TestSubversionImport(WorkerTest):
         To do this, we need to remove the database constraint
         """
         import psycopg
-        from canonical.ftests.pgsql import ConnectionWrapper
         from canonical.launchpad.ftests.harness import LaunchpadTestSetup
 
         con = psycopg.connect(
