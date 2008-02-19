@@ -1,0 +1,20 @@
+Hello %(user),
+
+The %(team)s team has just created a new mailing list.  If you would
+like to subscribe to the list, please use the link below, or visit the
+team's home page at %(team_url)s.
+
+  Subscribe to the list:
+
+      %(subscribe_url)s
+
+
+You can manage your mailing list subscriptions here:
+
+  My subscriptions:
+
+      %(manage_url)s
+
+
+Regards,
+The Launchpad team

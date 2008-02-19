@@ -1935,7 +1935,7 @@ def notify_specification_subscription_modified(specsub, event):
         simple_sendmail_from_person(user, address, subject, body)
 
 def notify_mailinglist_activated(mailinglist, event):
-    """Notify the active members of a team and subteams that a mailing
+    """Notify the active members of a team and its subteams that a mailing
     list is available.
     """
     old_status = event.object_before_modification.status
@@ -1956,8 +1956,27 @@ def notify_mailinglist_activated(mailinglist, event):
     subject = "The %s team has a New Mailing List" % team.displayname
     template = get_email_template('new-mailing-list.txt')
 
-    for to_address in contactEmailAddresses(
-        team, include_subteam_members=True):
-        replacements = {}
+    def contacts_for(person):
+        # Recursively gather all of the active members of a team and
+        # of every sub-team.
+        if person.isTeam():
+            members = set()
+            [ members.update(contacts_for(member))
+              for member in person.activemembers ]
+            return members
+        elif person.preferredemail is not None:
+            return set(person)
+        else:
+            return set()
+
+    for person in contacts_for(team):
+        to_address = person.preferredemail
+        replacements = {
+            'user': person.displayname,
+            'team': team.displayname,
+            'team_url': canonical_url(team),
+            'subscribe_url': "XXX",
+            'manage_url': "XXX",
+            }
         body = MailWrapper().format(template % replacements, force_wrap=True)
         simple_sendmail(from_address, to_address, subject, body, headers)
