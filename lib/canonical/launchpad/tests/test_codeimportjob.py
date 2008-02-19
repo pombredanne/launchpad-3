@@ -10,14 +10,17 @@ from datetime import datetime
 from pytz import UTC
 import unittest
 
+from sqlobject.sqlbuilder import SQLConstant
+
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.database.constants import UTC_NOW
-from canonical.database.sqlbase import sqlvalues
+from canonical.database.sqlbase import flush_database_updates, sqlvalues
 from canonical.launchpad.database import (
     CodeImportMachine, CodeImportResult)
 
+from canonical.launchpad.database import CodeImportJob
 from canonical.launchpad.interfaces import (
     CodeImportJobState, CodeImportResultStatus, CodeImportEventType,
     CodeImportReviewStatus, ICodeImportEventSet, ICodeImportJobSet,
@@ -56,6 +59,132 @@ class TestCodeImportJobSet(unittest.TestCase):
         # with the specified id.
         no_job = getUtility(ICodeImportJobSet).getById(-1)
         self.assertEqual(no_job, None)
+
+
+class TestCodeImportSetGetJobForMachine(unittest.TestCase):
+    """Tests for the CodeImportJobSet.getJobForMachine method.
+
+    For brevity, these test cases describe jobs using specs: a 2- or 3-tuple:
+
+       (<job state>, <date_due time delta>, <requesting user, if present>).
+
+    The time delta is measured in seconds relative to the present, so using a
+    value of -1 creates a job with a date_due of 1 second ago.  The instance
+    method makeJob() creates actual CodeImportJob objects from these specs.
+    """
+
+    layer = LaunchpadFunctionalLayer
+
+    def setUp(self):
+        # Login so we can access the code import system, delete all jobs in
+        # the sample data and set up some objects.
+        login_for_code_imports()
+        for d in CodeImportJob.select():
+            d.destroySelf()
+        self.factory = LaunchpadObjectFactory()
+        self.machine = self.factory.makeCodeImportMachine()
+        self.machine.setOnline()
+
+    def makeJob(self, state, date_due_delta, requesting_user=None):
+        """Create a CodeImportJob object from a spec."""
+        code_import = self.factory.makeCodeImport()
+        job = self.factory.makeCodeImportJob(code_import)
+        naked_job = removeSecurityProxy(job)
+        if state == CodeImportJobState.RUNNING:
+            getUtility(ICodeImportJobWorkflow).startJob(naked_job, self.machine)
+        naked_job.date_due = SQLConstant(
+            "CURRENT_TIMESTAMP AT TIME ZONE 'UTC' + '%d seconds'"
+            % date_due_delta)
+        naked_job.requesting_user = requesting_user
+        return job
+
+    def assertJobIsSelected(self, selectedjobspec, otherjobspecs):
+        """Assert that the expected job is chosen by getJobForMachine.
+
+        Jobs are created for the selectedjobspec and each item of
+        otherjobspecs, getJobForMachine is called and the result checked that
+        it is what is expected."""
+        should_be_selected_job = self.makeJob(*selectedjobspec)
+        otherjob2spec = {}
+        for spec in otherjobspecs:
+            otherjob = self.makeJob(*spec)
+            otherjob2spec[otherjob] = spec
+        #flush_database_updates()
+        was_selected_job = getUtility(ICodeImportJobSet).getJobForMachine(
+            self.machine)
+        if was_selected_job != should_be_selected_job:
+            if was_selected_job is None:
+                self.fail(
+                    "No job was selected, expecting job with spec %s."
+                    % (selectedjobspec,))
+            else:
+                self.fail(
+                    "Job with spec %s was not selected, expecting job with "
+                    "spec %s." % (selectedjobspec, otherjobs[did_win_job]))
+
+    def assertNoJobSelected(self, jobspecs):
+        """Assert that no job is selected from the given specs."""
+        job2spec = {}
+        for spec in jobspecs:
+            job = self.makeJob(*spec)
+            job2spec[job] = spec
+        flush_database_updates()
+        selected_job = getUtility(ICodeImportJobSet).getJobForMachine(
+            self.machine)
+        if selected_job is not None:
+            self.fail(
+                "Job with spec %s was selectedm no job was expected."
+                % (job2spec[did_win_job],))
+
+    def test_nothingSelectedIfNothingCreated(self):
+        # There are no due jobs pending if we don't create any (this
+        # is mostly a test of setUp() above).
+        self.assertNoJobSelected(
+            jobspecs=[])
+
+    def test_simple(self):
+        # The simplest case: there is one job, which is due.
+        self.assertJobIsSelected(
+            selectedjobspec=(CodeImportJobState.PENDING, -1),
+            otherjobspecs=[])
+
+    def test_nothingDue(self):
+        # When there is a PENDING job but it is due in the future, no
+        # job should be returned.
+        self.assertNoJobSelected(
+            jobspecs=[(CodeImportJobState.PENDING, +1)])
+
+    def test_ignoreNonPendingJobs(self):
+        # A RUNNING job is not returned.
+        self.assertNoJobSelected(
+            jobspecs=[(CodeImportJobState.RUNNING, -1)])
+
+    def test_mostOverdueJobsFirst(self):
+        # The job that was due longest ago should be selected.
+        self.assertJobIsSelected(
+            selectedjobspec=(CodeImportJobState.PENDING, -10),
+            otherjobspecs=[(CodeImportJobState.PENDING, -5),
+                          (CodeImportJobState.PENDING, -2)])
+
+    def test_requestedJobWins(self):
+        # A job that is requested by a user is selected over ones that
+        # are not, even over jobs that are more overdue.
+        person = self.factory.makePerson()
+        self.assertJobIsSelected(
+            selectedjobspec=(CodeImportJobState.PENDING, -1, person),
+            otherjobspecs=[(CodeImportJobState.PENDING, -5),
+                          (CodeImportJobState.PENDING, -2)])
+
+    def test_mostOverdueRequestedJob(self):
+        # When multiple jobs are requested by users, we go back to the
+        # "most overdue wins" behaviour.
+        person_a = self.factory.makePerson()
+        person_b = self.factory.makePerson()
+        person_c = self.factory.makePerson()
+        self.assertJobIsSelected(
+            selectedjobspec=(CodeImportJobState.PENDING, -10, person_c),
+            otherjobspecs=[(CodeImportJobState.PENDING, -5, person_b),
+                          (CodeImportJobState.PENDING, -2, person_a)])
 
 
 class AssertFailureMixin:

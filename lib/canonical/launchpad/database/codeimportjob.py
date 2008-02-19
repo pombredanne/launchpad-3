@@ -94,9 +94,11 @@ class CodeImportJobSet(object):
     def getJobForMachine(self, machine):
         """See `ICodeImportJobSet`."""
         results = CodeImportJob.select(
-            "date_due >= %s AND state = %s"
-            % sqlvalues(UTC_NOW, CodeImportJobState.PENDING),
-            orderBy=['ordering', 'requesting_user', 'date_due'])
+            """id IN (SELECT id FROM CodeImportJob
+               WHERE date_due <= %s AND state = %s
+               ORDER BY requesting_user IS NULL, date_due
+               LIMIT 1)"""
+            % sqlvalues(UTC_NOW, CodeImportJobState.PENDING))
         try:
             job = iter(results).next()
         except StopIteration:
