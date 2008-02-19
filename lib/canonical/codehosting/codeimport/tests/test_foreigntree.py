@@ -221,8 +221,8 @@ class TestCVSWorkingTree(TestCaseWithTransport):
 
     layer = BaseLayer
 
-    def assertIsUpToDate(self, cvs_working_tree):
-        """Assert that `cvs_working_tree` is up to date."""
+    def assertHasCheckout(self, cvs_working_tree):
+        """Assert that `cvs_working_tree` has a checkout of its CVS module."""
         tree = CVS.tree(os.path.abspath(cvs_working_tree.local_path))
         repository = tree.repository()
         self.assertEqual(repository.root, cvs_working_tree.root)
@@ -262,7 +262,7 @@ class TestCVSWorkingTree(TestCaseWithTransport):
         # checkout() checks out an up-to-date working tree.
         tree = self.makeCVSWorkingTree('working_tree')
         tree.checkout()
-        self.assertIsUpToDate(tree)
+        self.assertHasCheckout(tree)
 
     def test_commit(self):
         # commit() makes local changes available to other checkouts.
