@@ -13,6 +13,7 @@ __all__ = [
 
 from zope.event import notify
 
+from canonical.launchpad import _
 from canonical.launchpad.event import SQLObjectDeletedEvent
 from canonical.launchpad.interfaces import IBugBranch
 from canonical.launchpad.webapp import (
@@ -32,7 +33,7 @@ class BugBranchAddView(LaunchpadFormView):
 
     field_names = ['branch', 'status', 'whiteboard']
 
-    @action('Continue', name='continue')
+    @action(_('Continue'), name='continue')
     def continue_action(self, action, data):
         branch = data['branch']
         status = data['status']
@@ -43,6 +44,10 @@ class BugBranchAddView(LaunchpadFormView):
         self.request.response.addNotification(
             "Successfully registered branch %s for this bug." %
             branch.name)
+
+    @action(_('Cancel'), name='cancel', validator='validate_cancel')
+    def cancel_action(self, action, data):
+        """Do nothing and go back to the bug page."""
 
     @property
     def next_url(self):
@@ -124,13 +129,20 @@ class BranchLinkToBugView(LaunchpadFormView):
 
     field_names = ['bug', 'status', 'whiteboard']
 
-    @action('Link', name='link')
-    def link_action(self, action, data):
+    @property
+    def next_url(self):
+        return canonical_url(self.context)
+
+    @action(_('Continue'), name='continue')
+    def continue_action(self, action, data):
         bug = data['bug']
         bug_branch = bug.addBranch(
             branch=self.context, whiteboard=data['whiteboard'],
             status=data['status'], registrant=self.user)
-        self.next_url = canonical_url(self.context)
+
+    @action(_('Cancel'), name='cancel', validator='validate_cancel')
+    def cancel_action(self, action, data):
+        """Do nothing and go back to the branch page."""
 
     def validate(self, data):
         """Make sure that this bug isn't already linked to the branch."""

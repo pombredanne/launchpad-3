@@ -24,7 +24,7 @@ class ISpecificationBranch(IHasDateCreated):
 
     id = Int(title=_("Specification Branch #"))
     specification = Choice(
-        title=_("Specification"), vocabulary="Specification")
+        title=_("Blueprint"), vocabulary="Specification")
     branch = Choice(
         title=_("Branch"), vocabulary="Branch")
     summary = Summary(title=_("Summary"), required=False)

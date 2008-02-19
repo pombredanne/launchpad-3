@@ -245,7 +245,7 @@ class BranchContextMenu(ContextMenu):
         text = 'Link to blueprint'
         # Since the blueprints are only related to products, there is no
         # point showing this link if the branch is junk.
-        enabled = branch.product is not None
+        enabled = self.context.product is not None
         return Link('+linkblueprint', text, icon='edit', enabled=enabled)
 
 

@@ -10,6 +10,8 @@ __all__ = [
     'SpecificationBranchBranchInlineEditView',
     ]
 
+import cgi
+
 from canonical.launchpad import _
 from canonical.launchpad.interfaces import ISpecificationBranch
 from canonical.launchpad.webapp import (
@@ -35,11 +37,11 @@ class SpecificationBranchStatusView(LaunchpadEditFormView):
     def next_url(self):
         return canonical_url(self.specification)
 
-    @action(_('Change Summary'), name='change')
+    @action(_('Update'), name='change')
     def change_action(self, action, data):
         self.updateContextFromData(data)
 
-    @action(_('Delete Link'), name='delete')
+    @action(_('Delete'), name='delete')
     def delete_action(self, action, data):
         self.context.destroySelf()
 
@@ -71,20 +73,27 @@ class BranchLinkToSpecView(LaunchpadFormView):
     """The view to create spec-branch links."""
 
     schema = ISpecificationBranch
-    # In order to have the bug field rendered using the appropriate
+    # In order to have the specification field rendered using the appropriate
     # widget, we set the LaunchpadFormView attribute for_input to True
     # to get the read only fields rendered as input widgets.
     for_input=True
 
     field_names = ['specification', 'summary']
 
-    @action('Link', name='link')
-    def link_action(self, action, data):
+    @property
+    def next_url(self):
+        return canonical_url(self.context)
+
+    @action(_('Continue'), name='continue')
+    def continue_action(self, action, data):
         spec = data['specification']
         spec_branch = spec.linkBranch(
             branch=self.context, summary=data['summary'],
             registrant=self.user)
-        self.next_url = canonical_url(self.context)
+
+    @action(_('Cancel'), name='cancel', validator='validate_cancel')
+    def cancel_action(self, action, data):
+        """Do nothing and go back to the branch page."""
 
     def validate(self, data):
         """Make sure that this bug isn't already linked to the branch."""
@@ -97,4 +106,4 @@ class BranchLinkToSpecView(LaunchpadFormView):
                 self.setFieldError(
                     'specification',
                     'The blueprint "%s" is already linked to this branch'
-                    % link_spec.name)
+                    % cgi.escape(link_spec.title))
