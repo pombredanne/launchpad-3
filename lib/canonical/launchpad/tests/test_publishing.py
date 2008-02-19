@@ -23,10 +23,10 @@ from canonical.launchpad.database.publishing import (
     BinaryPackagePublishingHistory, SecureBinaryPackagePublishingHistory)
 from canonical.launchpad.database.processor import ProcessorFamily
 from canonical.launchpad.interfaces import (
-    BinaryPackageFormat, ILibraryFileAliasSet, IDistributionSet, IPersonSet,
-    ISectionSet, IComponentSet, ISourcePackageNameSet, IBinaryPackageNameSet,
-    IGPGKeySet, PackagePublishingStatus, PackagePublishingPocket,
-    PackagePublishingPriority, SourcePackageUrgency)
+    BinaryPackageFormat, IBinaryPackageNameSet, IComponentSet,
+    IDistributionSet, ILibraryFileAliasSet, IPersonSet, ISectionSet,
+    ISourcePackageNameSet, PackagePublishingPocket, PackagePublishingPriority,
+    PackagePublishingStatus, SourcePackageUrgency)
 from canonical.launchpad.scripts import FakeLogger
 
 from canonical.librarian.client import LibrarianClient
@@ -42,15 +42,13 @@ class SoyuzTestPublisher:
         """
         self.ubuntutest = getUtility(IDistributionSet)['ubuntutest']
         self.breezy_autotest = self.ubuntutest['breezy-autotest']
-        self.person = getUtility(IPersonSet).getByName('sabdfl')
+        self.person = getUtility(IPersonSet).getByName('name16')
         self.breezy_autotest_i386 = self.breezy_autotest.newArch(
             'i386', ProcessorFamily.get(1), False, self.person,
             ppa_supported=True)
         self.breezy_autotest_hppa = self.breezy_autotest.newArch(
             'hppa', ProcessorFamily.get(4), False, self.person)
         self.breezy_autotest.nominatedarchindep = self.breezy_autotest_i386
-        self.signingkey = getUtility(IGPGKeySet).get(1)
-        self.section = getUtility(ISectionSet)['base']
 
     def addMockFile(self, filename, filecontent='nothing'):
         """Add a mock file in Librarian.
@@ -65,7 +63,7 @@ class SoyuzTestPublisher:
         return getUtility(ILibraryFileAliasSet)[alias_id]
 
     def getPubSource(self, sourcename='foo', version='666', component='main',
-                     filename=None,
+                     filename=None, section='base',
                      filecontent='I do not care about sources.',
                      status=PackagePublishingStatus.PENDING,
                      pocket=PackagePublishingPocket.RELEASE,
@@ -81,6 +79,7 @@ class SoyuzTestPublisher:
         spn = getUtility(ISourcePackageNameSet).getOrCreateByName(sourcename)
 
         component = getUtility(IComponentSet)[component]
+        section = getUtility(ISectionSet)[section]
 
         if distroseries is None:
             distroseries = self.breezy_autotest
@@ -92,7 +91,7 @@ class SoyuzTestPublisher:
             maintainer=self.person,
             creator=self.person,
             component=component,
-            section=self.section,
+            section=section,
             urgency=urgency,
             version=version,
             builddepends=builddepends,
@@ -103,7 +102,7 @@ class SoyuzTestPublisher:
             changelog_entry=None,
             dsc=None,
             copyright='placeholder ...',
-            dscsigningkey=self.signingkey,
+            dscsigningkey=self.person.gpgkeys[0],
             dsc_maintainer_rfc822=dsc_maintainer_rfc822,
             dsc_standards_version=dsc_standards_version,
             dsc_format=dsc_format,

@@ -21,7 +21,8 @@ from canonical.database.enumcol import EnumCol
 
 from canonical.launchpad.interfaces import (
     IFAQCollection, IHasIcon, IHasLogo, IHasMugshot,
-    IProduct, IProject, IProjectSeries, IProjectSet, ISearchableByQuestionOwner,
+    IProduct, IProject, IProjectSeries, IProjectSet,
+    ISearchableByQuestionOwner,
     ImportStatus, NotFoundError, QUESTION_STATUS_DEFAULT_SEARCH,
     SpecificationFilter, SpecificationImplementationStatus,
     SpecificationSort, SprintSpecificationStatus, TranslationPermission)
@@ -38,6 +39,7 @@ from canonical.launchpad.database.language import Language
 from canonical.launchpad.database.mentoringoffer import MentoringOffer
 from canonical.launchpad.database.milestone import ProjectMilestone
 from canonical.launchpad.database.announcement import MakesAnnouncements
+from canonical.launchpad.validators.person import public_person_validator
 from canonical.launchpad.database.product import Product
 from canonical.launchpad.database.productseries import ProductSeries
 from canonical.launchpad.database.projectbounty import ProjectBounty
@@ -59,7 +61,9 @@ class Project(SQLBase, BugTargetBase, HasSpecificationsMixin,
     _table = "Project"
 
     # db field names
-    owner = ForeignKey(foreignKey='Person', dbName='owner', notNull=True)
+    owner = ForeignKey(
+        dbName='owner', foreignKey='Person',
+        validator=public_person_validator, notNull=True)
     name = StringCol(dbName='name', notNull=True)
     displayname = StringCol(dbName='displayname', notNull=True)
     title = StringCol(dbName='title', notNull=True)
@@ -68,7 +72,8 @@ class Project(SQLBase, BugTargetBase, HasSpecificationsMixin,
     datecreated = UtcDateTimeCol(dbName='datecreated', notNull=True,
         default=UTC_NOW)
     driver = ForeignKey(
-        foreignKey="Person", dbName="driver", notNull=False, default=None)
+        dbName="driver", foreignKey="Person",
+        validator=public_person_validator, notNull=False, default=None)
     homepageurl = StringCol(dbName='homepageurl', notNull=False, default=None)
     homepage_content = StringCol(default=None)
     icon = ForeignKey(

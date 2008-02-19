@@ -579,6 +579,13 @@ special = {
             optionflags=default_optionflags,
             layer=LaunchpadFunctionalLayer,
             ),
+    'checkwatches-cli-switches.txt':
+            LayeredDocFileSuite(
+                '../doc/checkwatches-cli-switches.txt',
+                setUp=checkwatchesSetUp,
+                tearDown=tearDown,
+                optionflags=default_optionflags, layer=LaunchpadZopelessLayer
+                ),
     'externalbugtracker-bugzilla.txt':
             LayeredDocFileSuite(
                 '../doc/externalbugtracker-bugzilla.txt',
@@ -596,6 +603,13 @@ special = {
     'externalbugtracker-checkwatches.txt':
             LayeredDocFileSuite(
                 '../doc/externalbugtracker-checkwatches.txt',
+                setUp=checkwatchesSetUp,
+                tearDown=tearDown,
+                optionflags=default_optionflags, layer=LaunchpadZopelessLayer
+                ),
+    'externalbugtracker-comment-imports.txt':
+            LayeredDocFileSuite(
+                '../doc/externalbugtracker-comment-imports.txt',
                 setUp=checkwatchesSetUp,
                 tearDown=tearDown,
                 optionflags=default_optionflags, layer=LaunchpadZopelessLayer
@@ -710,6 +724,10 @@ special = {
             ),
     'publishing.txt': LayeredDocFileSuite(
             '../doc/publishing.txt',
+            layer=LaunchpadZopelessLayer, optionflags=default_optionflags
+            ),
+    'sourcepackagerelease-build-lookup.txt': LayeredDocFileSuite(
+            '../doc/sourcepackagerelease-build-lookup.txt',
             layer=LaunchpadZopelessLayer, optionflags=default_optionflags
             ),
     'notification-text-escape.txt': DocFileSuite(

@@ -26,9 +26,6 @@ UNKNOWN_REMOTE_IMPORTANCE = 'UNKNOWN'
 class IExternalBugTracker(Interface):
     """A class used to talk with an external bug tracker."""
 
-    def updateBugWatches(bug_watches):
-        """Update the given bug watches."""
-
     def convertRemoteStatus(remote_status):
         """Convert a remote status string to a BugTaskStatus item."""
 
@@ -38,6 +35,3 @@ class IExternalBugTracker(Interface):
 
 class ISupportsCommentImport(IExternalBugTracker):
     """A an external bug tracker that supports comment imports."""
-
-    def importBugComments(bug_watch):
-        """Import the comments for a given bug watch."""

@@ -13,6 +13,7 @@ __all__ = [
 from zope.interface import Interface, Attribute
 from zope.schema import Choice, Int, Text, Datetime
 from canonical.launchpad import _
+from canonical.launchpad.fields import PublicPersonChoice
 from canonical.lazr import DBEnumeratedType, DBItem
 
 
@@ -40,13 +41,15 @@ class ISprintSpecification(Interface):
             "this is purely related to whether this spec is approved for "
             "the agenda of this meeting, not a commentary of "
             "the specification in general."))
-    registrant = Choice(title=_('Nominated by'), required=False,
+    registrant = PublicPersonChoice(
+        title=_('Nominated by'), required=False,
         vocabulary='ValidPersonOrTeam')
     date_created = Datetime(
         title=_('Date nominated'),
         description=_("The date this topic was nominated for the sprint "
         "agenda."))
-    decider = Choice(title=_('Decided by'), required=False,
+    decider = PublicPersonChoice(
+        title=_('Decided by'), required=False,
         vocabulary='ValidPersonOrTeam')
     date_decided = Datetime(
         title=_('Date decided'),

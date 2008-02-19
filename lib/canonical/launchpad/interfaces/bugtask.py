@@ -45,7 +45,8 @@ from sqlos.interfaces import ISelectResults
 
 from canonical.launchpad import _
 from canonical.launchpad.fields import (
-    ProductNameField, StrippedTextLine, Summary, Tag)
+    ProductNameField, PublicPersonChoice,
+    StrippedTextLine, Summary, Tag)
 from canonical.launchpad.interfaces.component import IComponent
 from canonical.launchpad.interfaces.launchpad import IHasDateCreated, IHasBug
 from canonical.launchpad.interfaces.mentoringoffer import ICanBeMentored
@@ -323,7 +324,7 @@ class IBugTask(IHasDateCreated, IHasBug, ICanBeMentored):
         default=BugTaskImportance.UNDECIDED)
     statusexplanation = Text(
         title=_("Status notes (optional)"), required=False)
-    assignee = Choice(
+    assignee = PublicPersonChoice(
         title=_('Assigned to'), required=False, vocabulary='ValidAssignee')
     bugtargetdisplayname = Text(
         title=_("The short, descriptive name of the target"), readonly=True)

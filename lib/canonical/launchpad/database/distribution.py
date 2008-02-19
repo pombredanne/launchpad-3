@@ -52,10 +52,13 @@ from canonical.launchpad.database.distributionsourcepackagerelease import (
     DistributionSourcePackageRelease)
 from canonical.launchpad.database.distributionsourcepackagecache import (
     DistributionSourcePackageCache)
+from canonical.launchpad.validators.person import public_person_validator
 from canonical.launchpad.database.sourcepackagename import (
     SourcePackageName)
 from canonical.launchpad.database.sourcepackagerelease import (
     SourcePackageRelease)
+from canonical.launchpad.database.structuralsubscription import (
+    StructuralSubscriptionTargetMixin)
 from canonical.launchpad.database.publishing import (
     SourcePackageFilePublishing, BinaryPackageFilePublishing,
     SourcePackagePublishingHistory)
@@ -65,15 +68,15 @@ from canonical.launchpad.helpers import shortlist
 from canonical.launchpad.webapp.url import urlparse
 
 from canonical.launchpad.interfaces import (
-    ArchivePurpose, BugTaskStatus, DistroSeriesStatus, IArchiveSet,
-    IBuildSet, IDistribution, IDistributionSet, IFAQTarget,
-    IHasBuildRecords, IHasIcon, IHasLogo, IHasMugshot,
-    ILaunchpadCelebrities, ILaunchpadUsage, IQuestionTarget,
-    ISourcePackageName, MirrorContent, MirrorStatus, PackagePublishingStatus,
-    PackageUploadStatus, NotFoundError, QUESTION_STATUS_DEFAULT_SEARCH,
-    SpecificationDefinitionStatus, SpecificationFilter,
-    SpecificationImplementationStatus, SpecificationSort,
-    TranslationPermission, PackagingType, UNRESOLVED_BUGTASK_STATUSES)
+    ArchivePurpose, BugTaskStatus, DistroSeriesStatus, IArchiveSet, IBuildSet,
+    IDistribution, IDistributionSet, IFAQTarget, IHasBugContact,
+    IHasBuildRecords, IHasIcon, IHasLogo, IHasMugshot, ILaunchpadCelebrities,
+    ILaunchpadUsage, IQuestionTarget, ISourcePackageName,
+    IStructuralSubscriptionTarget, MirrorContent, MirrorStatus, NotFoundError,
+    PackagePublishingStatus, PackageUploadStatus, PackagingType,
+    QUESTION_STATUS_DEFAULT_SEARCH, SpecificationDefinitionStatus,
+    SpecificationFilter, SpecificationImplementationStatus, SpecificationSort,
+    TranslationPermission, UNRESOLVED_BUGTASK_STATUSES)
 
 from canonical.archivepublisher.debversion import Version
 
@@ -83,12 +86,13 @@ from canonical.launchpad.validators.name import sanitize_name, valid_name
 class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
                    HasSpecificationsMixin, HasSprintsMixin,
                    HasTranslationImportsMixin, KarmaContextMixin,
-                   QuestionTargetMixin):
+                   QuestionTargetMixin, StructuralSubscriptionTargetMixin):
     """A distribution of an operating system, e.g. Debian GNU/Linux."""
     implements(
         IDistribution, IFAQTarget, IHasBuildRecords,
         IHasIcon, IHasLogo, IHasMugshot, ILaunchpadUsage,
-        IQuestionTarget)
+        IQuestionTarget, IStructuralSubscriptionTarget,
+        IHasBugContact)
 
     _table = 'Distribution'
     _defaultOrder = 'name'
@@ -106,18 +110,26 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
     mugshot = ForeignKey(
         dbName='mugshot', foreignKey='LibraryFileAlias', default=None)
     domainname = StringCol(notNull=True)
-    owner = ForeignKey(dbName='owner', foreignKey='Person', notNull=True)
+    owner = ForeignKey(
+        dbName='owner', foreignKey='Person',
+        validator=public_person_validator, notNull=True)
     bugcontact = ForeignKey(
-        dbName='bugcontact', foreignKey='Person', notNull=False, default=None)
+        dbName='bugcontact', foreignKey='Person',
+        validator=public_person_validator, notNull=False, default=None)
     bug_reporting_guidelines = StringCol(default=None)
     security_contact = ForeignKey(
-        dbName='security_contact', foreignKey='Person', notNull=False,
+        dbName='security_contact', foreignKey='Person',
+        validator=public_person_validator, notNull=False,
         default=None)
     driver = ForeignKey(
-        foreignKey="Person", dbName="driver", notNull=False, default=None)
-    members = ForeignKey(dbName='members', foreignKey='Person', notNull=True)
+        dbName="driver", foreignKey="Person",
+        validator=public_person_validator, notNull=False, default=None)
+    members = ForeignKey(
+        dbName='members', foreignKey='Person',
+        validator=public_person_validator, notNull=True)
     mirror_admin = ForeignKey(
-        dbName='mirror_admin', foreignKey='Person', notNull=True)
+        dbName='mirror_admin', foreignKey='Person',
+        validator=public_person_validator, notNull=True)
     translationgroup = ForeignKey(
         dbName='translationgroup', foreignKey='TranslationGroup',
         notNull=False, default=None)
@@ -129,7 +141,8 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
     upload_sender = StringCol(
         dbName='upload_sender', notNull=False, default=None)
     upload_admin = ForeignKey(
-        dbName='upload_admin', foreignKey='Person', default=None,
+        dbName='upload_admin', foreignKey='Person',
+        validator=public_person_validator, default=None,
         notNull=False)
     bounties = SQLRelatedJoin(
         'Bounty', joinColumn='distribution', otherColumn='bounty',
@@ -151,8 +164,9 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
                                             orderBy="name",
                                             prejoins=['sourcepackagename'])
     date_created = UtcDateTimeCol(notNull=False, default=UTC_NOW)
-    language_pack_admin = ForeignKey(dbName='language_pack_admin',
-        foreignKey='Person', notNull=False, default=None)
+    language_pack_admin = ForeignKey(
+        dbName='language_pack_admin', foreignKey='Person',
+        validator=public_person_validator, notNull=False, default=None)
 
     @cachedproperty
     def main_archive(self):
@@ -1065,10 +1079,14 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
         cur.execute("""
             SELECT SPN.name, SPN.id,
             COUNT(DISTINCT Bugtask.bug) AS total_bugs,
-            COUNT(DISTINCT RelatedBugTask.bug) AS bugs_affecting_upstream,
-            COUNT(DISTINCT CASE WHEN RelatedBugTask.bugwatch IS NOT NULL
-                  OR RelatedProduct.official_malone = 'T'
-                  THEN RelatedBugTask.bug END) AS bugs_with_upstream_bugwatch
+            COUNT(DISTINCT CASE WHEN Bugtask.status = %(triaged)s THEN
+                  Bugtask.bug END) AS bugs_triaged,
+            COUNT(DISTINCT CASE WHEN Bugtask.status = %(triaged)s THEN
+                  RelatedBugTask.bug END) AS bugs_affecting_upstream,
+            COUNT(DISTINCT CASE WHEN Bugtask.status = %(triaged)s AND
+                  (RelatedBugTask.bugwatch IS NOT NULL OR
+                  RelatedProduct.official_malone IS TRUE) THEN
+                  RelatedBugTask.bug END) AS bugs_with_upstream_bugwatch
             FROM
                 SourcePackageName AS SPN
                 JOIN Bugtask ON SPN.id = Bugtask.sourcepackagename
@@ -1092,6 +1110,7 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
             GROUP BY SPN.name, SPN.id
             ORDER BY total_bugs DESC, SPN.name LIMIT %(limit)s
         """ % {'invalid': quote(BugTaskStatus.INVALID),
+               'triaged': quote(BugTaskStatus.TRIAGED),
                'limit': limit,
                'distro': self.id,
                'unresolved': quote(UNRESOLVED_BUGTASK_STATUSES)})
@@ -1125,7 +1144,8 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
                    Packaging.distroseries = DistroSeries.id AND
                    Packaging.productseries = ProductSeries.id AND
                    Packaging.sourcepackagename IN %s AND
-                   Packaging.packaging = %s
+                   Packaging.packaging = %s AND
+                   Product.active IS TRUE
                    ORDER BY Packaging.id
         """ % sqlvalues(self.id, spn_ids, PackagingType.PRIME))
         sources_to_products = dict(cur.fetchall())
@@ -1135,7 +1155,9 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
             # database hard for each product rendered.
             list(Product.select("Product.id IN %s" % 
                  sqlvalues(sources_to_products.values()),
-                 prejoins=["bugcontact", "bugtracker"]))
+                 prejoins=["bugcontact", "bugtracker", "project",
+                           "development_focus.user_branch",
+                           "development_focus.import_branch"]))
 
         # Okay, we have all the information good to go, so assemble it
         # in a reasonable data structure.
@@ -1150,9 +1172,16 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
             else:
                 product = None
             results.append((dsp, product, count['total_bugs'],
+                            count['bugs_triaged'],
                             count['bugs_affecting_upstream'],
                             count['bugs_with_upstream_bugwatch']))
         return results
+
+    def setBugContact(self, bugcontact, user):
+        """See `IHasBugContact`."""
+        self.bugcontact = bugcontact
+        if bugcontact is not None:
+            subscription = self.addBugSubscription(bugcontact, user)
 
 
 class DistributionSet:
@@ -1216,3 +1245,4 @@ class DistributionSet:
         archive = getUtility(IArchiveSet).new(distribution=distro,
             purpose=ArchivePurpose.PRIMARY)
         return distro
+

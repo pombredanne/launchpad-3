@@ -6,12 +6,13 @@ __all__ = ['BugActivity', 'BugActivitySet']
 
 from zope.interface import implements
 
-from sqlobject import ForeignKey, IntCol, StringCol
+from sqlobject import ForeignKey, StringCol
 
 from canonical.launchpad.interfaces import IBugActivity, IBugActivitySet
 
 from canonical.database.sqlbase import SQLBase
 from canonical.database.datetimecol import UtcDateTimeCol
+from canonical.launchpad.validators.person import public_person_validator
 
 class BugActivity(SQLBase):
     """Bug activity log entry."""
@@ -21,7 +22,9 @@ class BugActivity(SQLBase):
     _table = 'BugActivity'
     bug = ForeignKey(foreignKey='BugActivity', dbName='bug', notNull=True)
     datechanged = UtcDateTimeCol(notNull=True)
-    person = ForeignKey(dbName='person', foreignKey='Person', notNull=True)
+    person = ForeignKey(
+        dbName='person', foreignKey='Person',
+        validator=public_person_validator, notNull=True)
     whatchanged = StringCol(notNull=True)
     oldvalue = StringCol(default=None)
     newvalue = StringCol(default=None)

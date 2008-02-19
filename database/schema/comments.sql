@@ -1544,9 +1544,6 @@ COMMENT ON COLUMN Language.pluralexpression IS 'The plural expression for this l
 COMMENT ON COLUMN Language.visible IS 'Whether this language should usually be visible or not';
 COMMENT ON COLUMN Language.direction IS 'The direction that text is written in this language';
 
--- PackageBugContact
-COMMENT ON TABLE PackageBugContact IS 'Defines the bug contact for a given sourcepackage in a given distribution. The bug contact will be automatically subscribed to every bug filed on this sourcepackage in this distribution.';
-
 -- ShipItReport
 COMMENT ON TABLE ShipItReport IS 'A report generated with the ShipIt data.';
 COMMENT ON COLUMN ShipItReport.datecreated IS 'The date this report run was created.';
@@ -1619,10 +1616,6 @@ COMMENT ON COLUMN TranslationImportQueueEntry.potemplate IS 'Link to the POTempl
 COMMENT ON COLUMN TranslationImportQueueEntry.date_status_changed IS 'The date when the status of this entry was changed.';
 COMMENT ON COLUMN TranslationImportQueueEntry.status IS 'The status of the import: 1 Approved, 2 Imported, 3 Deleted, 4 Failed, 5 Needs Review, 6 Blocked.';
 
--- SupportContact
-COMMENT ON TABLE PackageBugContact IS 'Defines the support contact for a given ticket target. The support contact will be automatically subscribed to every support request filed on the ticket target.';
-
-
 -- Archive
 COMMENT ON TABLE Archive IS 'A package archive. Commonly either a distribution''s main_archive or a ppa''s archive.';
 COMMENT ON COLUMN Archive.owner IS 'Identifies the PPA owner when it has one.';
@@ -1668,6 +1661,7 @@ COMMENT ON COLUMN SectionSelection.section IS 'Refers to the section in question
 
 -- PillarName
 COMMENT ON TABLE PillarName IS 'A cache of the names of our "Pillar''s" (distribution, product, project) to ensure uniqueness in this shared namespace. This is a materialized view maintained by database triggers.';
+COMMENT ON COLUMN PillarName.alias_for IS 'An alias for another pillarname. Rows with this column set are not maintained by triggers.';
 
 -- POFileTranslator
 COMMENT ON TABLE POFileTranslator IS 'A materialized view caching who has translated what pofile.';
@@ -1711,6 +1705,9 @@ COMMENT ON COLUMN Entitlement.amount_used IS 'Quantity of this entitlement alloc
 COMMENT ON COLUMN Entitlement.whiteboard IS 'A place for administrator notes.';
 COMMENT ON COLUMN Entitlement.state IS 'The state (REQUESTED, ACTIVE, INACTIVE) of the entitlement.';
 COMMENT ON COLUMN Entitlement.is_dirty IS 'This entitlement has been modified and the state needst to be updated on the external system.';
+COMMENT ON COLUMN Entitlement.distribution IS 'The distribution to which this entitlement applies.';
+COMMENT ON COLUMN Entitlement.product IS 'The product to which this entitlement applies.';
+COMMENT ON COLUMN Entitlement.project IS 'The project to which this entitlement applies.';
 
 -- OpenIdRealmConfig
 COMMENT ON TABLE OpenIdRPConfig IS 'Configuration information for OpenID Relying Parties';

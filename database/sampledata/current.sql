@@ -605,6 +605,21 @@ SET search_path = public, pg_catalog;
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 ALTER TABLE announcement DISABLE TRIGGER ALL;
 
 INSERT INTO announcement (id, date_created, date_announced, registrant, product, distribution, project, title, summary, url, active, date_updated) VALUES (1, '2007-11-25 00:44:32.186178', '2007-11-20 03:00:00', 1, NULL, 1, NULL, 'Every Macedonian Student to Use Ubuntu-Powered Computer Workstations', 'The Macedonia Ministry of Education and Science will deploy more than 180,000 workstations running Canonical’s Edubuntu 7.04 as part of its "Computer for Every Child" project.', 'http://www.ubuntu.com/news/macedonia-school-computers', true, NULL);
@@ -675,18 +690,18 @@ ALTER TABLE answercontact ENABLE TRIGGER ALL;
 
 ALTER TABLE archive DISABLE TRIGGER ALL;
 
-INSERT INTO archive (id, "owner", description, enabled, authorized_size, whiteboard, distribution, purpose, private, fti) VALUES (1, NULL, NULL, true, NULL, NULL, 1, 1, false, NULL);
-INSERT INTO archive (id, "owner", description, enabled, authorized_size, whiteboard, distribution, purpose, private, fti) VALUES (2, NULL, NULL, true, NULL, NULL, 2, 1, false, NULL);
-INSERT INTO archive (id, "owner", description, enabled, authorized_size, whiteboard, distribution, purpose, private, fti) VALUES (3, NULL, NULL, true, NULL, NULL, 3, 1, false, NULL);
-INSERT INTO archive (id, "owner", description, enabled, authorized_size, whiteboard, distribution, purpose, private, fti) VALUES (4, NULL, NULL, true, NULL, NULL, 4, 1, false, NULL);
-INSERT INTO archive (id, "owner", description, enabled, authorized_size, whiteboard, distribution, purpose, private, fti) VALUES (5, NULL, NULL, true, NULL, NULL, 5, 1, false, NULL);
-INSERT INTO archive (id, "owner", description, enabled, authorized_size, whiteboard, distribution, purpose, private, fti) VALUES (7, NULL, NULL, true, NULL, NULL, 7, 1, false, NULL);
-INSERT INTO archive (id, "owner", description, enabled, authorized_size, whiteboard, distribution, purpose, private, fti) VALUES (8, NULL, NULL, true, NULL, NULL, 8, 1, false,  NULL);
-INSERT INTO archive (id, "owner", description, enabled, authorized_size, whiteboard, distribution, purpose, private, fti) VALUES (9, 28, 'packages to help my friends.', true, 1024, 'It is not my fault.', 1, 2, false, NULL);
-INSERT INTO archive (id, "owner", description, enabled, authorized_size, whiteboard, distribution, purpose, private, fti) VALUES (10, 1, 'packages to help the humanity (you know, ubuntu)', true, 1024, NULL, 1, 2, false, NULL);
-INSERT INTO archive (id, "owner", description, enabled, authorized_size, whiteboard, distribution, purpose, private, fti) VALUES (11, 52, 'I am not allowed to say, I have no privs.', true, 1024, NULL, 1, 2, false, NULL);
-INSERT INTO archive (id, "owner", description, enabled, authorized_size, whiteboard, distribution, purpose, private, fti) VALUES (12, NULL, 'Partner archive', true, NULL, NULL, 1, 4, false, NULL);
-INSERT INTO archive (id, "owner", description, enabled, authorized_size, whiteboard, distribution, purpose, private, fti) VALUES (13, NULL, 'Partner archive', true, NULL, NULL, 8, 4, false, NULL);
+INSERT INTO archive (id, "owner", description, enabled, authorized_size, whiteboard, distribution, purpose, private, sources_cached, binaries_cached, package_description_cache, fti) VALUES (1, NULL, NULL, true, NULL, NULL, 1, 1, false, NULL, NULL, NULL, NULL);
+INSERT INTO archive (id, "owner", description, enabled, authorized_size, whiteboard, distribution, purpose, private, sources_cached, binaries_cached, package_description_cache, fti) VALUES (2, NULL, NULL, true, NULL, NULL, 2, 1, false, NULL, NULL, NULL, NULL);
+INSERT INTO archive (id, "owner", description, enabled, authorized_size, whiteboard, distribution, purpose, private, sources_cached, binaries_cached, package_description_cache, fti) VALUES (3, NULL, NULL, true, NULL, NULL, 3, 1, false, NULL, NULL, NULL, NULL);
+INSERT INTO archive (id, "owner", description, enabled, authorized_size, whiteboard, distribution, purpose, private, sources_cached, binaries_cached, package_description_cache, fti) VALUES (4, NULL, NULL, true, NULL, NULL, 4, 1, false, NULL, NULL, NULL, NULL);
+INSERT INTO archive (id, "owner", description, enabled, authorized_size, whiteboard, distribution, purpose, private, sources_cached, binaries_cached, package_description_cache, fti) VALUES (5, NULL, NULL, true, NULL, NULL, 5, 1, false, NULL, NULL, NULL, NULL);
+INSERT INTO archive (id, "owner", description, enabled, authorized_size, whiteboard, distribution, purpose, private, sources_cached, binaries_cached, package_description_cache, fti) VALUES (7, NULL, NULL, true, NULL, NULL, 7, 1, false, NULL, NULL, NULL, NULL);
+INSERT INTO archive (id, "owner", description, enabled, authorized_size, whiteboard, distribution, purpose, private, sources_cached, binaries_cached, package_description_cache, fti) VALUES (8, NULL, NULL, true, NULL, NULL, 8, 1, false, NULL, NULL, NULL, NULL);
+INSERT INTO archive (id, "owner", description, enabled, authorized_size, whiteboard, distribution, purpose, private, sources_cached, binaries_cached, package_description_cache, fti) VALUES (9, 28, 'packages to help my friends.', true, 1024, 'It is not my fault.', 1, 2, false, NULL, NULL, NULL, NULL);
+INSERT INTO archive (id, "owner", description, enabled, authorized_size, whiteboard, distribution, purpose, private, sources_cached, binaries_cached, package_description_cache, fti) VALUES (10, 1, 'packages to help the humanity (you know, ubuntu)', true, 1024, NULL, 1, 2, false, NULL, NULL, NULL, NULL);
+INSERT INTO archive (id, "owner", description, enabled, authorized_size, whiteboard, distribution, purpose, private, sources_cached, binaries_cached, package_description_cache, fti) VALUES (11, 52, 'I am not allowed to say, I have no privs.', true, 1024, NULL, 1, 2, false, NULL, NULL, NULL, NULL);
+INSERT INTO archive (id, "owner", description, enabled, authorized_size, whiteboard, distribution, purpose, private, sources_cached, binaries_cached, package_description_cache, fti) VALUES (12, NULL, 'Partner archive', true, NULL, NULL, 1, 4, false, NULL, NULL, NULL, NULL);
+INSERT INTO archive (id, "owner", description, enabled, authorized_size, whiteboard, distribution, purpose, private, sources_cached, binaries_cached, package_description_cache, fti) VALUES (13, NULL, 'Partner archive', true, NULL, NULL, 8, 4, false, NULL, NULL, NULL, NULL);
 
 
 ALTER TABLE archive ENABLE TRIGGER ALL;
@@ -734,7 +749,7 @@ ALTER TABLE binarypackagerelease DISABLE TRIGGER ALL;
 
 INSERT INTO binarypackagerelease (id, binarypackagename, version, summary, description, build, binpackageformat, component, section, priority, shlibdeps, depends, recommends, suggests, conflicts, replaces, provides, essential, installedsize, architecturespecific, fti, datecreated, pre_depends, enhances, breaks) VALUES (6, 6, '1.0', 'foobar is bad', 'foobar should be removed', 6, 1, 1, 1, 40, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, NULL, false, NULL, '2006-12-01 17:50:10.878712', NULL, NULL, NULL);
 INSERT INTO binarypackagerelease (id, binarypackagename, version, summary, description, build, binpackageformat, component, section, priority, shlibdeps, depends, recommends, suggests, conflicts, replaces, provides, essential, installedsize, architecturespecific, fti, datecreated, pre_depends, enhances, breaks) VALUES (12, 8, '0.9', 'Mozilla Firefox Web Browser', 'Mozilla Firefox Web Browser is .....', 2, 1, 1, 1, 10, NULL, 'gcc-3.4-base, libc6 (>= 2.3.2.ds1-4), gcc-3.4 (>= 3.4.1-4sarge1), gcc-3.4 (<< 3.4.2), libstdc++6-dev (>= 3.4.1-4sarge1)', 'gcc-3.4-base, libc6 (>= 2.3.2.ds1-4), gcc-3.4 (>= 3.4.1-4sarge1), gcc-3.4 (<< 3.4.2), libstdc++6-dev (>= 3.4.1-4sarge1)', 'firefox-gnome-support (= 1.0.7-0ubuntu20), latex-xft-fonts, xprint', 'firefox, mozilla-web-browser', 'gnome-mozilla-browser', 'mozilla-firefox', false, NULL, true, NULL, '2005-10-19 17:50:10.874189', 'pmount, foo', 'pmount, bar', 'pmount, baz');
-INSERT INTO binarypackagerelease (id, binarypackagename, version, summary, description, build, binpackageformat, component, section, priority, shlibdeps, depends, recommends, suggests, conflicts, replaces, provides, essential, installedsize, architecturespecific, fti, datecreated, pre_depends, enhances, breaks) VALUES (15, 13, '0.1-1', 'pmount shortdesc', 'pmount description', 7, 1, 1, 1, 40, NULL, 'at (>= 3.14156), linux-2.6.12, tramp-package', NULL, NULL, NULL, NULL, NULL, false, NULL, true, NULL, '2005-10-19 17:50:10.878712', NULL, NULL, NULL);
+INSERT INTO binarypackagerelease (id, binarypackagename, version, summary, description, build, binpackageformat, component, section, priority, shlibdeps, depends, recommends, suggests, conflicts, replaces, provides, essential, installedsize, architecturespecific, fti, datecreated, pre_depends, enhances, breaks) VALUES (15, 13, '0.1-1', 'pmount shortdesc', 'pmount description', 7, 1, 1, 1, 40, NULL, 'at (>= 3.14156), linux-2.6.12, tramp-package', NULL, NULL, NULL, NULL, NULL, false, NULL, false, NULL, '2005-10-19 17:50:10.878712', NULL, NULL, NULL);
 INSERT INTO binarypackagerelease (id, binarypackagename, version, summary, description, build, binpackageformat, component, section, priority, shlibdeps, depends, recommends, suggests, conflicts, replaces, provides, essential, installedsize, architecturespecific, fti, datecreated, pre_depends, enhances, breaks) VALUES (16, 14, '2.6.12.20', 'the kernel of boom', 'this kernel is like the crystal method: a temple of boom', 14, 1, 1, 1, 40, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, NULL, false, NULL, '2005-10-19 17:50:10.878712', NULL, NULL, NULL);
 INSERT INTO binarypackagerelease (id, binarypackagename, version, summary, description, build, binpackageformat, component, section, priority, shlibdeps, depends, recommends, suggests, conflicts, replaces, provides, essential, installedsize, architecturespecific, fti, datecreated, pre_depends, enhances, breaks) VALUES (17, 15, '3.14156', 'at the mountains of madness', 'lovecraft long before enunciated that the mountains were not safe, but you did not believe him', 15, 1, 1, 1, 40, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, NULL, false, NULL, '2005-10-19 17:50:10.878712', NULL, NULL, NULL);
 INSERT INTO binarypackagerelease (id, binarypackagename, version, summary, description, build, binpackageformat, component, section, priority, shlibdeps, depends, recommends, suggests, conflicts, replaces, provides, essential, installedsize, architecturespecific, fti, datecreated, pre_depends, enhances, breaks) VALUES (18, 13, '2:1.9-1', 'pmount shortdesc', 'pmount description', 16, 1, 1, 1, 40, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, NULL, true, NULL, '2005-10-19 17:50:10.878712', NULL, NULL, NULL);
@@ -1335,6 +1350,13 @@ ALTER TABLE codeimportresult DISABLE TRIGGER ALL;
 
 
 ALTER TABLE codeimportresult ENABLE TRIGGER ALL;
+
+
+ALTER TABLE codereviewmessage DISABLE TRIGGER ALL;
+
+
+
+ALTER TABLE codereviewmessage ENABLE TRIGGER ALL;
 
 
 ALTER TABLE component DISABLE TRIGGER ALL;
@@ -3837,6 +3859,34 @@ INSERT INTO nameblacklist (id, regexp, "comment") VALUES (2, '^admin', NULL);
 ALTER TABLE nameblacklist ENABLE TRIGGER ALL;
 
 
+ALTER TABLE oauthaccesstoken DISABLE TRIGGER ALL;
+
+
+
+ALTER TABLE oauthaccesstoken ENABLE TRIGGER ALL;
+
+
+ALTER TABLE oauthconsumer DISABLE TRIGGER ALL;
+
+
+
+ALTER TABLE oauthconsumer ENABLE TRIGGER ALL;
+
+
+ALTER TABLE oauthnonce DISABLE TRIGGER ALL;
+
+
+
+ALTER TABLE oauthnonce ENABLE TRIGGER ALL;
+
+
+ALTER TABLE oauthrequesttoken DISABLE TRIGGER ALL;
+
+
+
+ALTER TABLE oauthrequesttoken ENABLE TRIGGER ALL;
+
+
 ALTER TABLE officialbugtag DISABLE TRIGGER ALL;
 
 
@@ -3867,8 +3917,6 @@ ALTER TABLE openidrpconfig ENABLE TRIGGER ALL;
 
 ALTER TABLE packagebugcontact DISABLE TRIGGER ALL;
 
-INSERT INTO packagebugcontact (id, distribution, sourcepackagename, bugcontact, date_created) VALUES (1, 1, 1, 16, '2006-10-16 18:31:44.328897');
-INSERT INTO packagebugcontact (id, distribution, sourcepackagename, bugcontact, date_created) VALUES (2, 1, 14, 16, '2006-10-16 18:31:44.330261');
 
 
 ALTER TABLE packagebugcontact ENABLE TRIGGER ALL;
@@ -8254,6 +8302,10 @@ ALTER TABLE standardshipitrequest ENABLE TRIGGER ALL;
 
 ALTER TABLE structuralsubscription DISABLE TRIGGER ALL;
 
+INSERT INTO structuralsubscription (id, product, productseries, project, milestone, distribution, distroseries, sourcepackagename, subscriber, subscribed_by, bug_notification_level, blueprint_notification_level, date_created, date_last_updated) VALUES (1, NULL, NULL, NULL, NULL, 1, NULL, 1, 16, 16, 40, 10, '2008-01-29 15:12:34.581468', '2008-01-29 15:12:34.581468');
+INSERT INTO structuralsubscription (id, product, productseries, project, milestone, distribution, distroseries, sourcepackagename, subscriber, subscribed_by, bug_notification_level, blueprint_notification_level, date_created, date_last_updated) VALUES (2, NULL, NULL, NULL, NULL, 1, NULL, 14, 16, 16, 40, 10, '2008-01-29 15:12:34.581468', '2008-01-29 15:12:34.581468');
+INSERT INTO structuralsubscription (id, product, productseries, project, milestone, distribution, distroseries, sourcepackagename, subscriber, subscribed_by, bug_notification_level, blueprint_notification_level, date_created, date_last_updated) VALUES (3, 22, NULL, NULL, NULL, NULL, NULL, NULL, 64, 64, 40, 10, '2008-02-06 12:17:13.030376', '2008-02-06 12:17:13.030376');
+INSERT INTO structuralsubscription (id, product, productseries, project, milestone, distribution, distroseries, sourcepackagename, subscriber, subscribed_by, bug_notification_level, blueprint_notification_level, date_created, date_last_updated) VALUES (4, 16, NULL, NULL, NULL, NULL, NULL, NULL, 64, 64, 40, 10, '2008-02-06 12:17:13.030376', '2008-02-06 12:17:13.030376');
 
 
 ALTER TABLE structuralsubscription ENABLE TRIGGER ALL;

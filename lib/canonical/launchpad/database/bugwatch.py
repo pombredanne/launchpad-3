@@ -16,11 +16,12 @@ from zope.component import getUtility
 from sqlobject import (ForeignKey, StringCol, SQLObjectNotFound,
     SQLMultipleJoin)
 
-from canonical.database.sqlbase import SQLBase
+from canonical.database.sqlbase import SQLBase, sqlvalues
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
 
+from canonical.launchpad.database.bugmessage import BugMessage
 from canonical.launchpad.database.bugset import BugSetBase
 from canonical.launchpad.event import SQLObjectModifiedEvent
 from canonical.launchpad.interfaces import (
@@ -28,6 +29,7 @@ from canonical.launchpad.interfaces import (
     IBugWatchSet, ILaunchpadCelebrities, NoBugTrackerFound,
     NotFoundError, UnrecognizedBugTrackerURL)
 from canonical.launchpad.validators.email import valid_email
+from canonical.launchpad.validators.person import public_person_validator
 from canonical.launchpad.webapp import urlappend, urlsplit
 from canonical.launchpad.webapp.snapshot import Snapshot
 from canonical.launchpad.webapp.uri import find_uris_in_text
@@ -47,7 +49,9 @@ class BugWatch(SQLBase):
     lastchecked = UtcDateTimeCol(notNull=False, default=None)
     last_error_type = EnumCol(schema=BugWatchErrorType, default=None)
     datecreated = UtcDateTimeCol(notNull=True, default=UTC_NOW)
-    owner = ForeignKey(dbName='owner', foreignKey='Person', notNull=True)
+    owner = ForeignKey(
+        dbName='owner', foreignKey='Person',
+        validator=public_person_validator, notNull=True)
 
     # useful joins
     bugtasks = SQLMultipleJoin('BugTask', joinColumn='bugwatch',
@@ -179,6 +183,27 @@ class BugWatch(SQLBase):
             'bugtrackertype': self.bugtracker.bugtrackertype.title}
 
         return message % error_data
+
+    def hasComment(self, comment_id):
+        """See `IBugWatch`."""
+        query = """
+            BugMessage.message = Message.id
+            AND Message.rfc822msgid = %s
+            AND BugMessage.bugwatch = %s
+        """ % sqlvalues(comment_id, self)
+
+        # XXX 2008-02-13 gmb:
+        #     This might be more efficient if we used an EXISTS query.
+        comment = BugMessage.selectOne(query, clauseTables=['Message'])
+
+        return comment is not None
+
+    def addComment(self, comment_id, message):
+        """See `IBugWatch`."""
+        assert not self.hasComment(comment_id), ("Comment with ID %s has "
+            "already been imported for %s." % (comment_id, self.title))
+
+        bug_message = self.bug.linkMessage(message, bugwatch=self)
 
 
 class BugWatchSet(BugSetBase):
