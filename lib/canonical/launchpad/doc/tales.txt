@@ -205,6 +205,16 @@ title might be interpreted by the browser.
       Opps&lt;br/&gt;&lt;script&gt;alert(\'XSS\')&lt;/script&gt;</a>'
 
 
+Branch subscriptions show the person and branch name:
+
+    >>> from canonical.launchpad.testing import LaunchpadObjectFactory
+    >>> factory = LaunchpadObjectFactory()
+    >>> subscription = factory.makeBranchSubscription('My Branch',
+    ...     'My Person')
+    >>> test_tales("subscription/fmt:link", subscription=subscription)
+    u'Subscription of My Person to My Branch'
+
+
 == The fmt: namespace to get strings (hiding) ==
 
 PGP blocks, signatures and full-quoted parts of a message can be

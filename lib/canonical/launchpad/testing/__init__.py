@@ -108,7 +108,7 @@ class LaunchpadObjectFactory:
             self.getUniqueString('domain'), self.getUniqueString('path'))
 
     def makePerson(self, email=None, name=None, password=None,
-                   email_address_status=None):
+                   email_address_status=None, displayname=None):
         """Create and return a new, arbitrary Person.
 
         :param email: The email address for the new person.
@@ -135,7 +135,7 @@ class LaunchpadObjectFactory:
         # been created this way can be logged in.
         person, email = getUtility(IPersonSet).createPersonAndEmail(
             email, rationale=PersonCreationRationale.UNKNOWN, name=name,
-            password=password)
+            password=password, displayname=displayname)
         # To make the person someone valid in Launchpad, validate the
         # email.
         if email_address_status == EmailAddressStatus.VALIDATED:
@@ -233,10 +233,12 @@ class LaunchpadObjectFactory:
 
         return proposal
 
-    def makeBranchSubscription(self):
+    def makeBranchSubscription(self, branch_title=None,
+                               person_displayname=None):
         """Create a BranchSubscription."""
-        branch = self.makeBranch()
-        return branch.subscribe(self.makePerson(),
+        branch = self.makeBranch(title=branch_title)
+        return branch.subscribe(self.makePerson(
+            displayname=person_displayname),
             BranchSubscriptionNotificationLevel.NOEMAIL, None)
 
     def makeRevisionsForBranch(self, branch, count=5, author=None,
