@@ -237,8 +237,9 @@ class LaunchpadObjectFactory:
                                person_displayname=None):
         """Create a BranchSubscription."""
         branch = self.makeBranch(title=branch_title)
-        return branch.subscribe(self.makePerson(
-            displayname=person_displayname),
+        person = self.makePerson(displayname=person_displayname,
+            email_address_status=EmailAddressStatus.VALIDATED)
+        return branch.subscribe(person,
             BranchSubscriptionNotificationLevel.NOEMAIL, None)
 
     def makeRevisionsForBranch(self, branch, count=5, author=None,

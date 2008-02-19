@@ -549,6 +549,12 @@ class PillarSearchItemAPI(ObjectImageDisplayAPI):
         raise NotImplementedError("A PillarSearchItem doesn't have a logo")
 
 
+class BugImageDisplayAPI(ObjectImageDisplayAPI):
+
+    def icon(self):
+        return '<img src="/@@/bug" alt=""/>'
+
+
 class BugTaskImageDisplayAPI(ObjectImageDisplayAPI):
     """Adapter for IBugTask objects to a formatted string. This inherits
     from the generic ObjectImageDisplayAPI and overrides the icon
@@ -846,16 +852,18 @@ class ConvenientFormatter(ObjectFormatterExtendedAPI):
         for the icon, self._should_link to determine whether to link, and
         self.url() to generate the url.
         """
-        html = self._make_summary()
+        html = self._get_icon()
+        if html is None:
+            html = ''
+        else:
+            html += '&nbsp;'
+        html += self._make_summary()
         if self._should_link():
             url = self.url(extra_path)
         else:
             url = ''
         if url:
             html = '<a href="%s">%s</a>' % (url, html)
-        icon = self._get_icon()
-        if icon is not None:
-            html = icon + ' ' + html
         return html
 
 
