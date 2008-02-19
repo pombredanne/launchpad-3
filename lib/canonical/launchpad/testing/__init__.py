@@ -15,11 +15,9 @@ from datetime import datetime, timedelta
 import pytz
 
 from zope.component import getUtility
-from canonical.database.sqlbase import connect, sqlvalues
 from canonical.launchpad.interfaces import (
     BranchMergeProposalStatus,
     BranchType,
-    CodeImportMachineState,
     CodeImportReviewStatus,
     CreateBugParams,
     EmailAddressStatus,
@@ -319,6 +317,7 @@ class LaunchpadObjectFactory:
         vcs_imports = getUtility(ILaunchpadCelebrities).vcs_imports
         branch = self.makeBranch(BranchType.IMPORTED, owner=vcs_imports)
         registrant = self.makePerson()
+
 
         code_import_set = getUtility(ICodeImportSet)
         if svn_branch_url is not None:
