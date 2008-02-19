@@ -14,15 +14,21 @@ Here we have some imports and utility fetch.
     >>> import transaction
     >>> from zope.component import getUtility
     >>> from canonical.database.sqlbase import flush_database_updates
-    >>> from canonical.launchpad.interfaces import ITranslationImportQueue
-    >>> from canonical.launchpad.interfaces import ILaunchpadCelebrities
-    >>> from canonical.launchpad.interfaces import RosettaImportStatus
-    >>> from canonical.launchpad.database import ProductSeries
-    >>> from canonical.launchpad.database import DistroSeries
-    >>> from canonical.launchpad.database import SourcePackageName
-    >>> from canonical.launchpad.ftests import login
+    >>> from canonical.launchpad.interfaces import (
+    ...     IDistributionSet, IDistroSeries, ILaunchpadCelebrities,
+    ...     IProductSet, ITranslationImportQueue, ISourcePackageNameSet,
+    ...     RosettaImportStatus)
+    >>> from canonical.launchpad.database import (
+    ...     DistroSeries, ProductSeries, SourcePackageName)
+    >>> from canonical.launchpad.ftests import login, sync, syncUpdate
+
     >>> translationimportqueue = getUtility(ITranslationImportQueue)
     >>> rosetta_experts = getUtility(ILaunchpadCelebrities).rosetta_experts
+
+    >>> distroset = getUtility(IDistributionSet)
+    >>> packageset = getUtility(ISourcePackageNameSet)
+    >>> productset = getUtility(IProductSet)
+
 
 Login as a user without privileges.
 
@@ -893,9 +899,8 @@ This method returns all objects which have entries in the translation
 import queue waiting to be imported.  Object can be a Product or
 a DistroSeries.
 
-To test it, we need to add a few items to the queue first, so lets
-start with adding a single item to a source package inside Hoary
-distroseries:
+The queue contains an import request for a source package inside the
+Hoary distroseries:
 
     >>> from canonical.launchpad.interfaces.distribution import IDistributionSet
     >>> ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
@@ -907,8 +912,10 @@ distroseries:
     ...      distroseries=hoary_distroseries,
     ...      sourcepackagename=evolution_sourcepackagename)
 
-Now, lets add another which will be ignored since we are setting this
-distroseries with defer_translation_imports = True.
+
+An administrator has blocked translation imports for the Warty distro
+series.  A user uploads a translation for Warty, which we will later see
+is ignored while Warty imports are blocked.
 
     >>> warty_distroseries = ubuntu.getSeries('warty')
     >>> entry3 = translationimportqueue.addOrUpdateEntry(
@@ -919,13 +926,15 @@ distroseries with defer_translation_imports = True.
     NEEDS_REVIEW
     >>> warty_distroseries.defer_translation_imports = True
 
-Next, lets add one item to a ProductSeries as well:
 
-    >>> productseries = ProductSeries.get(1)
+There is also an import request for Firefox trunk.
+
+    >>> firefox = productset['firefox']
+    >>> productseries = firefox.getSeries('trunk')
     >>> entry2 = translationimportqueue.addOrUpdateEntry(
     ...     'foo/bar.pot', 'foo content', True,
     ...     rosetta_experts, productseries=productseries)
-    >>> transaction.commit()
+    >>> flush_database_updates()
 
 The list of objects with approved entries should still be empty, since
 we haven't approved any.
@@ -1141,14 +1150,6 @@ TranslationImportQueue.getPillarObjectsWithImports first lists distro
 series (ordered by distro name and series name), followed by products
 (ordered by name).
 
-    >>> from canonical.launchpad.interfaces import (
-    ...     IDistributionSet, IDistroSeries, IProductSet,
-    ...     ISourcePackageNameSet)
-
-    >>> distroset = getUtility(IDistributionSet)
-    >>> packageset = getUtility(ISourcePackageNameSet)
-    >>> productset = getUtility(IProductSet)
-
     >>> def list_target_names(status=None):
     ...     """Print names returned by getPillarObjectsWithImports.
     ...     """
@@ -1313,7 +1314,6 @@ few days.
 
 A user sets up Jokosher for translation, and uploads a template.
 
-    >>> from canonical.launchpad.ftests import sync, syncUpdate
     >>> jokosher = productset['jokosher']
     >>> jokosher_trunk = jokosher.getSeries('trunk')
     >>> jokosher.official_rosetta = True
