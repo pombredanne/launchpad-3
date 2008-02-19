@@ -809,8 +809,8 @@ class TranslationImportQueue:
 
         query = [
             'ProductSeries.product = Product.id',
-            'TranslationImportQueueEntry.productseries = ProductSeries.id'
-            ]
+            'TranslationImportQueueEntry.productseries = ProductSeries.id',
+            'Product.active IS TRUE']
         if status is not None:
             query.append(status_clause)
 

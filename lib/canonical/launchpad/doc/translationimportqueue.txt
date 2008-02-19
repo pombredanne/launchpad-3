@@ -990,6 +990,20 @@ review.
     NEEDS_REVIEW
 
 
+An admin can disable a product.  If that happens for Firefox, for
+example, Firefox will no longer show up as an object with pending
+imports.
+
+    >>> firefox.active = False
+    >>> syncUpdate(firefox)
+    >>> importqueues = translationimportqueue.getPillarObjectsWithImports(
+    ...     RosettaImportStatus.APPROVED)
+    >>> len(importqueues)
+    1
+
+    >>> firefox.active = True
+    >>> syncUpdate(firefox)
+
 == addOrUpdateEntry() ==
 
 addOrUpdateEntry adds a new entry to the import queue so we can handle it
