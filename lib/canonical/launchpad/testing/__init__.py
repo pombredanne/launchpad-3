@@ -17,6 +17,7 @@ import pytz
 from zope.component import getUtility
 from canonical.database.sqlbase import connect, sqlvalues
 from canonical.launchpad.interfaces import (
+    BranchMergeProposalStatus,
     BranchType,
     CodeImportMachineState,
     CodeImportReviewStatus,
@@ -31,9 +32,11 @@ from canonical.launchpad.interfaces import (
     IPersonSet,
     IProductSet,
     IRevisionSet,
+    ISpecificationSet,
     License,
     PersonCreationRationale,
     RevisionControlSystems,
+    SpecificationDefinitionStatus,
     UnknownBranchTypeError,
     )
 
@@ -158,11 +161,15 @@ class LaunchpadObjectFactory:
 
     def makeBranch(self, branch_type=None, owner=None, name=None,
                    product=None, url=None, registrant=None,
+                   explicit_junk=False,
                    **optional_branch_args):
         """Create and return a new, arbitrary Branch of the given type.
 
         Any parameters for IBranchSet.new can be specified to override the
         default ones.
+
+        :param explicit_junk: If set to True, a product is not created
+            if the product parameter is None.
         """
         if branch_type is None:
             branch_type = BranchType.HOSTED
@@ -172,7 +179,7 @@ class LaunchpadObjectFactory:
             registrant = owner
         if name is None:
             name = self.getUniqueString('branch')
-        if product is None:
+        if product is None and not explicit_junk:
             product = self.makeProduct()
 
         if branch_type in (BranchType.HOSTED, BranchType.IMPORTED):
@@ -186,6 +193,43 @@ class LaunchpadObjectFactory:
         return getUtility(IBranchSet).new(
             branch_type, name, registrant, owner, product, url,
             **optional_branch_args)
+
+    def makeBranchMergeProposal(self, target_branch=None, registrant=None,
+                                set_state=None, dependent_branch=None):
+        """Create a proposal to merge based on anonymous branches."""
+        if target_branch is None:
+            target_branch = self.makeBranch()
+        if registrant is None:
+            registrant = self.makePerson()
+        source_branch = self.makeBranch(product=target_branch.product)
+        proposal = source_branch.addLandingTarget(
+            registrant, target_branch, dependent_branch=dependent_branch)
+
+        if (set_state is None or
+            set_state == BranchMergeProposalStatus.WORK_IN_PROGRESS):
+            # The initial state is work in progress, so do nothing.
+            pass
+        elif set_state == BranchMergeProposalStatus.NEEDS_REVIEW:
+            proposal.requestReview()
+        elif set_state == BranchMergeProposalStatus.CODE_APPROVED:
+            proposal.approveBranch(
+                proposal.target_branch.owner, 'some_revision')
+        elif set_state == BranchMergeProposalStatus.REJECTED:
+            proposal.rejectBranch(
+                proposal.target_branch.owner, 'some_revision')
+        elif set_state == BranchMergeProposalStatus.MERGED:
+            proposal.markAsMerged()
+        elif set_state == BranchMergeProposalStatus.MERGE_FAILED:
+            proposal.mergeFailed(proposal.target_branch.owner)
+        elif set_state == BranchMergeProposalStatus.QUEUED:
+            proposal.enqueue(
+                proposal.target_branch.owner, 'some_revision')
+        elif set_state == BranchMergeProposalStatus.SUPERSEDED:
+            proposal.resubmit(proposal.registrant)
+        else:
+            raise AssertionError('Unknown status: %s' % set_state)
+
+        return proposal
 
     def makeRevisionsForBranch(self, branch, count=5, author=None,
                                date_generator=None):
@@ -227,18 +271,40 @@ class LaunchpadObjectFactory:
             parent_ids = [parent.revision_id]
         branch.updateScannedDetails(parent.revision_id, sequence)
 
-    def makeBug(self):
+    def makeBug(self, product=None):
         """Create and return a new, arbitrary Bug.
 
         The bug returned uses default values where possible. See
         `IBugSet.new` for more information.
+
+        :param product: If the product is not set, one is created
+            and this is used as the primary bug target.
         """
+        if product is None:
+            product = self.makeProduct()
         owner = self.makePerson()
         title = self.getUniqueString()
         create_bug_params = CreateBugParams(
             owner, title, comment=self.getUniqueString())
-        create_bug_params.setBugTarget(product=self.makeProduct())
+        create_bug_params.setBugTarget(product=product)
         return getUtility(IBugSet).createBug(create_bug_params)
+
+    def makeBlueprint(self, product=None):
+        """Create and return a new, arbitrary Blueprint.
+
+        :param product: The product to make the blueprint on.  If one is
+            not specified, an arbitrary product is created.
+        """
+        if product is None:
+            product = self.makeProduct()
+        return getUtility(ISpecificationSet).new(
+            name=self.getUniqueString('name'),
+            title=self.getUniqueString('title'),
+            specurl=None,
+            summary=self.getUniqueString('summary'),
+            definition_status=SpecificationDefinitionStatus.NEW,
+            owner=self.makePerson(),
+            product=product)
 
     def makeCodeImport(self, svn_branch_url=None, cvs_root=None,
                        cvs_module=None):
