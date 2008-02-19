@@ -262,15 +262,12 @@ Link a private branch to this blueprint.
     >>> landscape_dev_browser.getLink('Link branch').click()
     >>> landscape_dev_browser.getControl('Branch').value = (
     ...     '~landscape-developers/landscape/trunk')
-    >>> landscape_dev_browser.getControl('Link to Specification').click()
-
-XXX: thumper 2007-06-12
-Specification text should be changed to blueprints.
+    >>> landscape_dev_browser.getControl('Link to Blueprint').click()
 
     >>> portlet = find_portlet(landscape_dev_browser.contents, 'Branches')
     >>> print extract_text(portlet)
     Branches
-    Landscape trunk
+    trunk: Landscape trunk
 
 The portlet is not shown at all to users that cannot see the associated
 branches.

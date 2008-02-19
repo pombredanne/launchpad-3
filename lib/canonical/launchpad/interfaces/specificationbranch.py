@@ -23,7 +23,8 @@ class ISpecificationBranch(IHasDateCreated):
     """A branch linked to a specification."""
 
     id = Int(title=_("Specification Branch #"))
-    specification = Int(title=_("Specification"))
+    specification = Choice(
+        title=_("Specification"), vocabulary="Specification")
     branch = Choice(
         title=_("Branch"), vocabulary="Branch")
     summary = Summary(title=_("Summary"), required=False)

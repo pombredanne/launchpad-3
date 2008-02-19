@@ -150,7 +150,7 @@
 
 </metal:branch-bug-links>
 
-<metal:spec-bug-links define-macro="spec-branch-links">
+<metal:spec-branch-links define-macro="spec-branch-links">
 
   <tal:comment condition="nothing">
     This macro requires the following defined variables:
@@ -198,7 +198,7 @@
     </div>
   </tal:spec-tasks>
 
-</metal:spec-bug-links>
+</metal:spec-branch-links>
 
 <metal:branch-revisions define-macro="branch-revisions">
 

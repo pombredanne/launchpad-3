@@ -163,7 +163,8 @@ class BranchContextMenu(ContextMenu):
     links = ['whiteboard', 'edit', 'delete_branch', 'browse_code',
              'browse_revisions',
              'reassign', 'subscription', 'addsubscriber', 'associations',
-             'registermerge', 'landingcandidates', 'linkbug']
+             'registermerge', 'landingcandidates', 'linkbug',
+             'linkblueprint']
 
     def whiteboard(self):
         text = 'Edit whiteboard'
@@ -239,6 +240,10 @@ class BranchContextMenu(ContextMenu):
     def linkbug(self):
         text = 'Link to bug report'
         return Link('+linkbug', text, icon='edit')
+
+    def linkblueprint(self):
+        text = 'Link to blueprint'
+        return Link('+linkblueprint', text, icon='edit')
 
 
 class BranchView(LaunchpadView, FeedsMixin):

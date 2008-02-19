@@ -1040,7 +1040,7 @@ class SpecificationLinkBranchView(LaunchpadFormView):
                 self.setFieldError('branch', 'This branch has already '
                                    'been linked to the specification')
 
-    @action(_('Link to Specification'), name='link')
+    @action(_('Link to Blueprint'), name='link')
     def link_action(self, action, data):
         self.context.linkBranch(branch=data['branch'],
                                 registrant=self.user,

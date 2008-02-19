@@ -213,6 +213,14 @@
     template="../templates/branch-link-to-bug.pt" />
 
   <browser:page
+    name="+linkblueprint"
+    for="canonical.launchpad.interfaces.IBranch"
+    class="canonical.launchpad.browser.BranchLinkToSpecView"
+    facet="branches"
+    permission="launchpad.AnyPerson"
+    template="../templates/branch-link-to-spec.pt" />
+
+  <browser:page
     name="+addsubscriber"
     for="canonical.launchpad.interfaces.IBranch"
     class="canonical.launchpad.browser.BranchSubscriptionAddOtherView"

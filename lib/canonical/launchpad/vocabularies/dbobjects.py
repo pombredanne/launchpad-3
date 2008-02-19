@@ -1288,6 +1288,7 @@ class SpecificationVocabulary(NamedSQLObjectVocabulary):
 
     def __iter__(self):
         launchbag = getUtility(ILaunchBag)
+        target = None
         product = launchbag.product
         if product is not None:
             target = product
@@ -1295,6 +1296,12 @@ class SpecificationVocabulary(NamedSQLObjectVocabulary):
         distribution = launchbag.distribution
         if distribution is not None:
             target = distribution
+
+        if target is None:
+            # If the context is a branch, use the product of the branch
+            # as the target
+            if IBranch.providedBy(self.context):
+                target = self.context.product
 
         if target is not None:
             for spec in sorted(

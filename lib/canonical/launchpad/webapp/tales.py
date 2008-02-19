@@ -852,9 +852,9 @@ class BranchFormatterAPI(ObjectFormatterExtendedAPI):
             author = branch.owner.name
         return {
             'author': author,
-            'display_name': branch.displayname,
+            'display_name': cgi.escape(branch.displayname),
             'name': branch.name,
-            'title': title,
+            'title': cgi.escape(title),
             'unique_name' : branch.unique_name,
             'url': url,
             }
@@ -893,7 +893,7 @@ class SpecificationFormatterAPI(ObjectFormatterExtendedAPI):
             url = '%s/%s' % (url, extra_path)
         image_html = SpecificationImageDisplayAPI(spec).icon()
         return ('<a href="%s">%s&nbsp;%s</a>' % (
-                url, image_html, spec.title))
+                url, image_html, cgi.escape(spec.title)))
 
 
 class BugFormatterAPI(ObjectFormatterExtendedAPI):
