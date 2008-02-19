@@ -7,10 +7,11 @@ to confirm that the environment hasn't been corrupted by tests
 __metaclass__ = type
 
 from cStringIO import StringIO
-import psycopg
+import os
 from urllib import urlopen
 import unittest
 
+import psycopg
 from zope.component import getUtility, ComponentLookupError
 
 from canonical.config import config, dbconfig
@@ -124,6 +125,15 @@ class BaseTestCase(unittest.TestCase):
                 self.want_launchpad_database,
                 'Launchpad database should be available but is not.'
                 )
+
+    def testWorkingDirectoryRestored(self):
+        # This test is run twice to detect if the current working
+        # directory is reset as expected.
+        self.failIfEqual(os.getcwd(), '/var/tmp')
+        os.chdir('/var/tmp')
+        self.failUnlessEqual(os.getcwd(), '/var/tmp')
+
+    testWorkingDirectoryRestored2 = testWorkingDirectoryRestored
 
 
 class LibrarianTestCase(BaseTestCase):

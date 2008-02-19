@@ -136,6 +136,8 @@ class BaseLayer:
     def testSetUp(cls):
         cls.check()
 
+        BaseLayer.original_working_directory = os.getcwd()
+
         # Tests and test infrastruture sometimes needs to know the test
         # name.  The testrunner doesn't provide this, so we have to do
         # some snooping.
@@ -151,6 +153,8 @@ class BaseLayer:
     @classmethod
     @profiled
     def testTearDown(cls):
+        # Reset the working directory in case a test didn't restore it
+        os.chdir(BaseLayer.original_working_directory)
         reset_logging()
         del canonical.launchpad.mail.stub.test_emails[:]
         BaseLayer.test_name = None
