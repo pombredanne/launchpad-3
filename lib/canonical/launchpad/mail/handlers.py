@@ -335,7 +335,7 @@ class MaloneHandler:
                 or not content_disposition.startswith('attachment')):
                 continue
 
-            content = part.get_payload()
+            content = part.get_payload(decode=True)
             if len(content) == 0:
                 # storing empty files is pointless.
                 continue
