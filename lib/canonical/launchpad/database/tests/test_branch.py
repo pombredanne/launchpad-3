@@ -293,14 +293,16 @@ class TestBranchDeletionConsequences(TestCase):
 
     def test_branchWithBugRequirements(self):
         """Deletion requirements for a branch with a bug are right."""
-        bug = self.factory.makeBug(self.branch)
+        bug = self.factory.makeBug()
+        bug.addBranch(self.branch, self.branch.owner)
         self.assertEqual({bug.bug_branches[0]:
             ('delete', _('This branch is associated with a bug.'))},
             self.branch.deletionRequirements())
 
     def test_branchWithBugDeletion(self):
         """break_links allows deleting a branch with a bug."""
-        bug = self.factory.makeBug(self.branch)
+        bug = self.factory.makeBug()
+        bug.addBranch(self.branch, self.branch.owner)
         bug_branch = bug.bug_branches[0]
         bug_branch_id = bug_branch.id
         self.branch.destroySelf(break_references=True)
@@ -308,7 +310,8 @@ class TestBranchDeletionConsequences(TestCase):
 
     def test_branchWithSpecRequirements(self):
         """Deletion requirements for a branch with a spec are right."""
-        spec = self.factory.makeSpec(branch=self.branch)
+        spec = self.factory.makeSpec()
+        spec.linkBranch(self.branch, self.branch.owner)
         self.assertEqual({self.branch.spec_links[0]:
             ('delete', _(
                 'This associates this branch with a specification.'))},
@@ -316,7 +319,8 @@ class TestBranchDeletionConsequences(TestCase):
 
     def test_branchWithSpecDeletion(self):
         """break_links allows deleting a branch with a spec."""
-        spec = self.factory.makeSpec(branch=self.branch)
+        spec = self.factory.makeSpec()
+        spec.linkBranch(self.branch, self.branch.owner)
         spec_branch_id = self.branch.spec_links[0].id
         self.branch.destroySelf(break_references=True)
         self.assertRaises(SQLObjectNotFound, SpecificationBranch.get,

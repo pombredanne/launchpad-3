@@ -275,25 +275,20 @@ class LaunchpadObjectFactory:
             parent_ids = [parent.revision_id]
         branch.updateScannedDetails(parent.revision_id, sequence)
 
-    def makeBug(self, branch=None):
+    def makeBug(self):
         """Create and return a new, arbitrary Bug.
 
         The bug returned uses default values where possible. See
         `IBugSet.new` for more information.
-
-        :param branch: if supplied, this branch will be linked to the bug.
         """
         owner = self.makePerson()
         title = self.getUniqueString()
         create_bug_params = CreateBugParams(
             owner, title, comment=self.getUniqueString())
         create_bug_params.setBugTarget(product=self.makeProduct())
-        bug = getUtility(IBugSet).createBug(create_bug_params)
-        if branch is not None:
-            bug.addBranch(branch, branch.owner)
-        return bug
+        return getUtility(IBugSet).createBug(create_bug_params)
 
-    def makeSpec(self, branch=None):
+    def makeSpec(self):
         """Create a new, arbitrary Specification.
 
         :param branch: if supplied, this will be linked to the spec.
@@ -307,8 +302,6 @@ class LaunchpadObjectFactory:
             self.makePerson(),
             product=self.makeProduct(),
             )
-        if branch is not None:
-            spec.linkBranch(branch, branch.owner)
         return spec
 
     def makeSeries(self, user_branch=None, import_branch=None):
