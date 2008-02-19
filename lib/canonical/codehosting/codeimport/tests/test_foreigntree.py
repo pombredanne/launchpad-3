@@ -165,10 +165,10 @@ class TestSubversionWorkingTree(TestCaseWithTransport):
         :param new_path: The path of the checkout.
         """
         client = pysvn.Client()
-        local_info = client.info(new_path)
-        # XXX - this test doesn't actually show that the original_url has been
-        # checked out to new_path. It's good enough though.
-        self.assertEqual(original_url, local_info.url)
+        [(path, local_info)] = client.info2(new_path, recurse=False)
+        [(path, remote_info)] = client.info2(original_url, recurse=False)
+        self.assertEqual(original_url, local_info['URL'])
+        self.assertEqual(remote_info['rev'].number, local_info['rev'].number)
 
     def setUp(self):
         TestCaseWithTransport.setUp(self)
