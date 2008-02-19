@@ -1297,12 +1297,6 @@ class SpecificationVocabulary(NamedSQLObjectVocabulary):
         if distribution is not None:
             target = distribution
 
-        if target is None:
-            # If the context is a branch, use the product of the branch
-            # as the target
-            if IBranch.providedBy(self.context):
-                target = self.context.product
-
         if target is not None:
             for spec in sorted(
                 target.specifications(), key=attrgetter('title')):

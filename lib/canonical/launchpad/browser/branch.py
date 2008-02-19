@@ -243,7 +243,10 @@ class BranchContextMenu(ContextMenu):
 
     def linkblueprint(self):
         text = 'Link to blueprint'
-        return Link('+linkblueprint', text, icon='edit')
+        # Since the blueprints are only related to products, there is no
+        # point showing this link if the branch is junk.
+        enabled = branch.product is not None
+        return Link('+linkblueprint', text, icon='edit', enabled=enabled)
 
 
 class BranchView(LaunchpadView, FeedsMixin):
