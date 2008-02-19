@@ -1938,14 +1938,14 @@ def notify_mailinglist_activated(mailinglist, event):
     """Notify the active members of a team and its subteams that a mailing
     list is available.
     """
-    # We will use the state transition from CONSTRUCTING as a hint
+    # We will use the setting of the date_activated field as a hint
     # that this list is new, and that noboby has subscribed yet.  See
-    # `MailingList.transitionToStatus()` for the state transition
-    # details.
-    old_status = event.object_before_modification.status
-    list_looks_new = (old_status == MailingListStatus.CONSTRUCTING)
+    # `MailingList.transitionToStatus()` for the details.
+    old_date = event.object_before_modification.date_activated
+    new_date = event.object.date_activated
+    list_looks_new = (old_date is None) and (new_date is not None)
 
-    if not (mailinglist.isUsable() and list_looks_new):
+    if not (list_looks_new and mailinglist.isUsable()):
         return
 
     team = mailinglist.team
