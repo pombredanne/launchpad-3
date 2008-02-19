@@ -1967,7 +1967,7 @@ def notify_mailinglist_activated(mailinglist, event):
         return members
 
     for person in contacts_for(team):
-        to_address = person.preferredemail
+        to_address = [str(person.preferredemail.email)]
         replacements = {
             'user': person.displayname,
             'team': team.displayname,

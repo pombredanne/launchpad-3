@@ -9,13 +9,7 @@ via email.
     >>> def by_to_addrs(a, b):
     ...     return cmp(a[1], b[1])
 
-    >>> def pop_notifications():
-    ...     stub.test_emails.sort(by_to_addrs)
-    ...     notifications = [
-    ...         email.message_from_string(raw_message)
-    ...         for fromaddr, toaddrs, raw_message in stub.test_emails]
-    ...     stub.test_emails = []
-    ...     return notifications
+    >>> from canonical.launchpad.tests.mail_helpers import pop_notifications
 
     >>> def print_distinct_messages_and_recipients(include_reply_to=False):
     ...     """Pop all messages from stub.test_emails and print them with
@@ -58,17 +52,21 @@ all active team members.
 
     >>> team_one = new_team('team-one', with_list=False)
     >>> anne = new_person('Anne')
-    >>> john = new_person('John')
 
     # login() as an admin so that we can call IPerson.join() on any
     # person/team we want.
     >>> login('foo.bar@canonical.com')
     >>> anne.join(team_one)
-    >>> john.join(team_one)
+    >>> pop_notifications()
+    [...]
 
     # This will take our team through the entire list creation
     # process, generating notification emails along the way.
     >>> list_one = new_list_for_team(team_one)
+    >>> list_one.status.name
+    'ACTIVE'
+
+    >>> transaction.commit()
     >>> len(stub.test_emails)
     2
     >>> print_distinct_messages_and_recipients(include_reply_to=True)
@@ -88,9 +86,14 @@ That notification is also sent to the individual members of all sub-teams.
     >>> cris = new_person('Cris')
     >>> cris.join(super_team)
     >>> cris.join(sub_team)
+    >>> pop_notifications()
+    [...]
 
     >>> super_list = new_list_for_team(super_team)
-    >>> len(stub.test_emails)
-    3
-    >>> print_distinct_messages_and_recipients(include_reply_to=True)
+    >>> super_list.status.name
+    'ACTIVE'
 
+    >>> transaction.commit()
+    >>> len(stub.test_emails)
+    4
+    >>> print_distinct_messages_and_recipients(include_reply_to=True)

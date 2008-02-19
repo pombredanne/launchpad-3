@@ -1,4 +1,4 @@
-Hello %(user),
+Hello %(user)s,
 
 The %(team)s team has just created a new mailing list.  If you would
 like to subscribe to the list, please use the link below, or visit the
