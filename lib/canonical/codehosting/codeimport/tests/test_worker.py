@@ -22,13 +22,9 @@ from canonical.codehosting.codeimport.worker import (
 from canonical.codehosting.tests.helpers import (
     create_branch_with_one_revision)
 from canonical.config import config
-from canonical.launchpad.interfaces import (
-    BranchType, BranchTypeError, ICodeImportSet, ILaunchpadCelebrities,
-    RevisionControlSystems)
+from canonical.launchpad.interfaces import BranchType, BranchTypeError
 from canonical.launchpad.testing import LaunchpadObjectFactory
 from canonical.testing import LaunchpadScriptLayer
-
-from zope.component import getUtility
 
 
 class WorkerTest(TestCaseWithTransport):
@@ -60,7 +56,7 @@ class TestBazaarBranchStore(WorkerTest):
     """Tests for `BazaarBranchStore`."""
 
     def setUp(self):
-        WorkerTest.setUp(self)
+        super(TestBazaarBranchStore, self).setUp()
         code_import = self.factory.makeCodeImport()
         self.temp_dir = self.makeTemporaryDirectory()
         self.branch = code_import.branch
@@ -171,6 +167,7 @@ class TestBazaarBranchStore(WorkerTest):
 
 
 class MockForeignWorkingTree:
+    """Working tree that records calls to checkout and update."""
 
     def __init__(self, local_path):
         self.local_path = local_path
@@ -195,16 +192,17 @@ class TestForeignBranchStore(WorkerTest):
         `directory1` are laid out in the same way as `directory2`.
         """
         def list_files(directory):
-            return [
-                path[len(directory1):] for path, _, _ in os.walk(directory1)]
-        self.assertEqual(list_files(directory1), list_files(directory2))
+            for path, ignored, ignored in os.walk(directory):
+                yield path[len(directory):]
+        self.assertEqual(
+            list(list_files(directory1)), list(list_files(directory2)))
 
     def assertUpdated(self, tree):
         self.assertEqual(['update'], tree.log)
 
     def setUp(self):
         """Set up a code import job to import a SVN branch."""
-        WorkerTest.setUp(self)
+        super(TestForeignBranchStore, self).setUp()
         self.code_import = self.makeCodeImport()
         self.temp_dir = self.makeTemporaryDirectory()
         self._log = []
@@ -293,7 +291,6 @@ class TestForeignBranchStore(WorkerTest):
         new_temp_dir = self.makeTemporaryDirectory()
         foreign_branch2 = store.fetchFromArchive(
             self.code_import, new_temp_dir)
-        # XXX: Assert that the branches target the same repository.
         self.assertEqual(new_temp_dir, foreign_branch2.local_path)
         self.assertDirectoryTreesEqual(self.temp_dir, new_temp_dir)
 

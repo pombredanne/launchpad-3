@@ -64,6 +64,7 @@ class SubversionServer(Server):
     """A controller for an Subversion repository, used for testing."""
 
     def __init__(self, repository_path):
+        super(SubversionServer, self).__init__()
         self.repository_path = os.path.abspath(repository_path)
 
     def createRepository(self, path):
@@ -75,7 +76,7 @@ class SubversionServer(Server):
         return local_path_to_url(self.repository_path)
 
     def setUp(self):
-        Server.setUp(self)
+        super(SubversionServer, self).setUp()
         self.createRepository(self.repository_path)
 
     @run_in_temporary_directory
@@ -119,6 +120,7 @@ class CVSServer(Server):
         :param repository_path: The path to the directory that will contain
             the CVS repository.
         """
+        super(CVSServer, self).__init__()
         self._repository_path = os.path.abspath(repository_path)
 
     def createRepository(self, path):
@@ -150,7 +152,7 @@ class CVSServer(Server):
 
     def setUp(self):
         # Initialize the repository.
-        Server.setUp(self)
+        super(CVSServer, self).setUp()
         self._repository = self.createRepository(self._repository_path)
 
 
