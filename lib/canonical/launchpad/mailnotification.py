@@ -1938,12 +1938,11 @@ def notify_mailinglist_activated(mailinglist, event):
     """Notify the active members of a team and its subteams that a mailing
     list is available.
     """
-    old_status = event.object_before_modification.status
-
     # We will use the state transition from CONSTRUCTING as a hint
     # that this list is new, and that noboby has subscribed yet.  See
     # `MailingList.transitionToStatus()` for the state transition
     # details.
+    old_status = event.object_before_modification.status
     list_looks_new = (old_status == MailingListStatus.CONSTRUCTING)
 
     if not (mailinglist.isUsable() and list_looks_new):
@@ -1959,15 +1958,13 @@ def notify_mailinglist_activated(mailinglist, event):
     def contacts_for(person):
         # Recursively gather all of the active members of a team and
         # of every sub-team.
+        members = set()
         if person.isTeam():
-            members = set()
             [ members.update(contacts_for(member))
               for member in person.activemembers ]
-            return members
         elif person.preferredemail is not None:
-            return set(person)
-        else:
-            return set()
+            members.add(person)
+        return members
 
     for person in contacts_for(team):
         to_address = person.preferredemail
@@ -1978,5 +1975,6 @@ def notify_mailinglist_activated(mailinglist, event):
             'subscribe_url': "XXX",
             'manage_url': "XXX",
             }
-        body = MailWrapper().format(template % replacements, force_wrap=True)
+        body = MailWrapper(72).format(template % replacements,
+                                      force_wrap=True)
         simple_sendmail(from_address, to_address, subject, body, headers)
