@@ -1,19 +1,13 @@
 Hello %(user)s,
 
-The %(team)s team has just created a new mailing list.  If you would
-like to subscribe to the list, please use the link below, or visit the
-team's home page at %(team_url)s.
+%(team)s has a new team mailing list.
 
-  Subscribe to the list:
+If you would like to subscribe to the list, please use the link below
+to update your Mailing List Subscription preferences.
+
+  To subscribe:
 
       %(subscribe_url)s
-
-
-You can manage your mailing list subscriptions here:
-
-  My subscriptions:
-
-      %(manage_url)s
 
 
 Regards,

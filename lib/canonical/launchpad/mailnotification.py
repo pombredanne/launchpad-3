@@ -1952,8 +1952,9 @@ def notify_mailinglist_activated(mailinglist, event):
     from_address = format_address(
         team.displayname, config.noreply_from_address)
     headers = {}
-    subject = "The %s team has a New Mailing List" % team.displayname
+    subject = "New Mailing List for %s" % team.displayname
     template = get_email_template('new-mailing-list.txt')
+    editemails_url = '%s/+editemails'
 
     def contacts_for(person):
         # Recursively gather all of the active members of a team and
@@ -1972,8 +1973,7 @@ def notify_mailinglist_activated(mailinglist, event):
             'user': person.displayname,
             'team': team.displayname,
             'team_url': canonical_url(team),
-            'subscribe_url': "XXX",
-            'manage_url': "XXX",
+            'subscribe_url': editemails_url % canonical_url(person),
             }
         body = MailWrapper(72).format(template % replacements,
                                       force_wrap=True)

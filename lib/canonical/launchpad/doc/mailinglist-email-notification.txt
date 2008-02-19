@@ -70,6 +70,40 @@ all active team members.
     >>> len(stub.test_emails)
     2
     >>> print_distinct_messages_and_recipients(include_reply_to=True)
+    From: Team One <noreply@launchpad.net>
+    To: anne.person@example.com
+    Reply-To: Team One <noreply@launchpad.net>
+    Subject: New Mailing List for Team One
+    <BLANKLINE>
+    Team One has a new team mailing list.
+    <BLANKLINE>
+    If you would like to subscribe to the list, please use the link below
+    to update your Mailing List Subscription preferences.
+    <BLANKLINE>
+      To subscribe:
+    <BLANKLINE>
+          http://launchpad.dev/~anne/+editemails
+    <BLANKLINE>
+    Regards,
+    The Launchpad team
+    ----------------------------------------
+    From: Team One <noreply@launchpad.net>
+    To: no-priv@canonical.com
+    Reply-To: Team One <noreply@launchpad.net>
+    Subject: New Mailing List for Team One
+    <BLANKLINE>
+    Team One has a new team mailing list.
+    <BLANKLINE>
+    If you would like to subscribe to the list, please use the link below
+    to update your Mailing List Subscription preferences.
+    <BLANKLINE>
+      To subscribe:
+    <BLANKLINE>
+          http://launchpad.dev/~no-priv/+editemails
+    <BLANKLINE>
+    Regards,
+    The Launchpad team
+    ----------------------------------------
 
 
 That notification is also sent to the individual members of all sub-teams.
@@ -83,6 +117,9 @@ That notification is also sent to the individual members of all sub-teams.
     >>> anne.join(super_team)
     >>> lars = new_person('Lars')
     >>> lars.join(sub_team)
+
+    # Cris should only receive a single email, even though she is a
+    # member of both teams.
     >>> cris = new_person('Cris')
     >>> cris.join(super_team)
     >>> cris.join(sub_team)
@@ -97,3 +134,71 @@ That notification is also sent to the individual members of all sub-teams.
     >>> len(stub.test_emails)
     4
     >>> print_distinct_messages_and_recipients(include_reply_to=True)
+    From: Super Team <noreply@launchpad.net>
+    To: anne.person@example.com
+    Reply-To: Super Team <noreply@launchpad.net>
+    Subject: New Mailing List for Super Team
+    <BLANKLINE>
+    Super Team has a new team mailing list.
+    <BLANKLINE>
+    If you would like to subscribe to the list, please use the link below
+    to update your Mailing List Subscription preferences.
+    <BLANKLINE>
+      To subscribe:
+    <BLANKLINE>
+          http://launchpad.dev/~anne/+editemails
+    <BLANKLINE>
+    Regards,
+    The Launchpad team
+    ----------------------------------------
+    From: Super Team <noreply@launchpad.net>
+    To: cris.person@example.com
+    Reply-To: Super Team <noreply@launchpad.net>
+    Subject: New Mailing List for Super Team
+    <BLANKLINE>
+    Super Team has a new team mailing list.
+    <BLANKLINE>
+    If you would like to subscribe to the list, please use the link below
+    to update your Mailing List Subscription preferences.
+    <BLANKLINE>
+      To subscribe:
+    <BLANKLINE>
+          http://launchpad.dev/~cris/+editemails
+    <BLANKLINE>
+    Regards,
+    The Launchpad team
+    ----------------------------------------
+    From: Super Team <noreply@launchpad.net>
+    To: lars.person@example.com
+    Reply-To: Super Team <noreply@launchpad.net>
+    Subject: New Mailing List for Super Team
+    <BLANKLINE>
+    Super Team has a new team mailing list.
+    <BLANKLINE>
+    If you would like to subscribe to the list, please use the link below
+    to update your Mailing List Subscription preferences.
+    <BLANKLINE>
+      To subscribe:
+    <BLANKLINE>
+          http://launchpad.dev/~lars/+editemails
+    <BLANKLINE>
+    Regards,
+    The Launchpad team
+    ----------------------------------------
+    From: Super Team <noreply@launchpad.net>
+    To: no-priv@canonical.com
+    Reply-To: Super Team <noreply@launchpad.net>
+    Subject: New Mailing List for Super Team
+    <BLANKLINE>
+    Super Team has a new team mailing list.
+    <BLANKLINE>
+    If you would like to subscribe to the list, please use the link below
+    to update your Mailing List Subscription preferences.
+    <BLANKLINE>
+      To subscribe:
+    <BLANKLINE>
+          http://launchpad.dev/~no-priv/+editemails
+    <BLANKLINE>
+    Regards,
+    The Launchpad team
+    ----------------------------------------
