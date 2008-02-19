@@ -68,7 +68,6 @@ class SubversionServer(Server):
 
     def createRepository(self, path):
         """Create a Subversion repository at `path`."""
-        # XXX: This should be a class method probably.
         svn_oo.Repository.Create(path, _make_silent_logger())
 
     def get_url(self):
@@ -166,13 +165,10 @@ class TestSubversionWorkingTree(TestCaseWithTransport):
         :param new_path: The path of the checkout.
         """
         client = pysvn.Client()
-        remote_info = client.info2(original_url)
         local_info = client.info(new_path)
         # XXX - this test doesn't actually show that the original_url has been
         # checked out to new_path. It's good enough though.
-        self.assertEqual(
-            original_url,
-            local_info.repos + '/' + os.path.basename(original_url))
+        self.assertEqual(original_url, local_info.url)
 
     def setUp(self):
         TestCaseWithTransport.setUp(self)
@@ -211,7 +207,7 @@ class TestSubversionWorkingTree(TestCaseWithTransport):
         tree2.checkout()
 
         # Make a change.
-        # XXX - "README" is a mystery guest.
+        # XXX: JonathanLange 2008-02-19: "README" is a mystery guest.
         new_content = 'Comfort ye\n'
         self.build_tree_contents([('tree/README', new_content)])
         tree.commit()
