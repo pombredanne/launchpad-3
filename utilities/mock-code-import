@@ -1,0 +1,102 @@
+#!/usr/bin/python2.4
+# Copyright 2008 Canonical Ltd.  All rights reserved.
+
+"""Make a Subversion repostiory and then make a CodeImportJob for it."""
+
+# XXX: JonathanLange 2008-01-03: This is deliberately horrible.
+# You can make it nicer if you want.
+
+import _pythonpath
+
+import os
+import shutil
+from subprocess import PIPE, Popen
+import tempfile
+import transaction
+
+from zope.component import getUtility
+
+from canonical.launchpad.interfaces import (
+    BranchType, CodeImportReviewStatus, ICodeImportSet,
+    ICodeImportJobWorkflow, ILaunchpadCelebrities, RevisionControlSystems)
+from canonical.launchpad.scripts import execute_zcml_for_scripts
+from canonical.launchpad.testing import LaunchpadObjectFactory
+
+
+def shell(*args):
+    print ' '.join(args)
+    return Popen(args, stdout=PIPE).communicate()[0]
+
+
+def make_temp_svn_repo():
+    directory = tempfile.mkdtemp()
+    repo = os.path.join(directory, 'repo')
+    os.mkdir(repo)
+    shell('svnadmin', 'create', repo)
+    return os.path.abspath(repo)
+
+
+def in_temp_dir(function):
+    def new_function(*args, **kwargs):
+        curr_dir = os.getcwd()
+        temp_dir = tempfile.mkdtemp()
+        os.chdir(temp_dir)
+        try:
+            return function(*args, **kwargs)
+        finally:
+            os.chdir(curr_dir)
+            shutil.rmtree(temp_dir)
+    return new_function
+
+
+@in_temp_dir
+def populate_repo(url):
+    url = '/'.join([url, 'trunk'])
+    shell('svn', 'mkdir', '-m', '"Make trunk"', url)
+    shell('svn', 'co', url)
+    os.chdir('trunk')
+    file = open('README', 'w')
+    file.write('No real content\n')
+    file.close()
+    shell('svn', 'add', 'README')
+    shell('svn', 'commit', '-m', '"Add a file."')
+    return os.path.abspath(os.getcwd())
+
+
+def make_import_job(svn_url):
+    factory = LaunchpadObjectFactory()
+    vcs_imports = getUtility(ILaunchpadCelebrities).vcs_imports
+    branch = factory.makeBranch(
+        BranchType.IMPORTED, owner=vcs_imports)
+    registrar = factory.makePerson()
+    code_import = getUtility(ICodeImportSet).new(
+        registrar, branch, RevisionControlSystems.SVN,
+        svn_branch_url=svn_url)
+    workflow = getUtility(ICodeImportJobWorkflow)
+    code_import.updateFromData(
+        {'review_status': CodeImportReviewStatus.REVIEWED}, registrar)
+    job = workflow.newJob(code_import)
+    return job
+
+
+def main():
+    execute_zcml_for_scripts(use_web_security=False)
+    repo_path = make_temp_svn_repo()
+    working_path = populate_repo('file://' + repo_path)
+    job = make_import_job(
+        'svn://localhost:8083/' + os.path.basename(repo_path) + '/'
+        + os.path.basename(working_path))
+    transaction.commit()
+    print
+    print "REPOSITORY:", repo_path
+    print "ID:", job.id
+    print "URL:", job.code_import.svn_branch_url
+    print
+    print "RUNNING Subversion server. Press Ctrl-C to terminate."
+    shell('svnserve', '-d', '--foreground', '--listen-port', '8083', '--root',
+          os.path.dirname(repo_path))
+    print
+
+
+if __name__ == '__main__':
+    main()
