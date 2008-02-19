@@ -68,7 +68,6 @@ class SubversionServer(Server):
 
     def createRepository(self, path):
         """Create a Subversion repository at `path`."""
-        # XXX: This should be a class method probably.
         svn_oo.Repository.Create(path, _make_silent_logger())
 
     def get_url(self):
@@ -166,13 +165,10 @@ class TestSubversionWorkingTree(TestCaseWithTransport):
         :param new_path: The path of the checkout.
         """
         client = pysvn.Client()
-        remote_info = client.info2(original_url)
-        local_info = client.info(new_path)
-        # XXX - this test doesn't actually show that the original_url has been
-        # checked out to new_path. It's good enough though.
-        self.assertEqual(
-            original_url,
-            local_info.repos + '/' + os.path.basename(original_url))
+        [(path, local_info)] = client.info2(new_path, recurse=False)
+        [(path, remote_info)] = client.info2(original_url, recurse=False)
+        self.assertEqual(original_url, local_info['URL'])
+        self.assertEqual(remote_info['rev'].number, local_info['rev'].number)
 
     def setUp(self):
         TestCaseWithTransport.setUp(self)
@@ -211,7 +207,7 @@ class TestSubversionWorkingTree(TestCaseWithTransport):
         tree2.checkout()
 
         # Make a change.
-        # XXX - "README" is a mystery guest.
+        # XXX: JonathanLange 2008-02-19: "README" is a mystery guest.
         new_content = 'Comfort ye\n'
         self.build_tree_contents([('tree/README', new_content)])
         tree.commit()
@@ -225,8 +221,8 @@ class TestCVSWorkingTree(TestCaseWithTransport):
 
     layer = BaseLayer
 
-    def assertIsUpToDate(self, cvs_working_tree):
-        """Assert that `cvs_working_tree` is up to date."""
+    def assertHasCheckout(self, cvs_working_tree):
+        """Assert that `cvs_working_tree` has a checkout of its CVS module."""
         tree = CVS.tree(os.path.abspath(cvs_working_tree.local_path))
         repository = tree.repository()
         self.assertEqual(repository.root, cvs_working_tree.root)
@@ -266,7 +262,7 @@ class TestCVSWorkingTree(TestCaseWithTransport):
         # checkout() checks out an up-to-date working tree.
         tree = self.makeCVSWorkingTree('working_tree')
         tree.checkout()
-        self.assertIsUpToDate(tree)
+        self.assertHasCheckout(tree)
 
     def test_commit(self):
         # commit() makes local changes available to other checkouts.

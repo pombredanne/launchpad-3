@@ -52,8 +52,9 @@ class SubversionWorkingTree:
         self.local_path = path
 
     def checkout(self):
-        # XXX: Can't do this with cscvs yet because its Repository class
-        # assumes that the repository lives on the local filesystem.
+        # XXX: JonathanLange 2008-02-19: Can't do this with cscvs yet because
+        # its Repository class assumes that the repository lives on the local
+        # filesystem.
         svn_client = pysvn.Client()
         svn_client.checkout(
             self.remote_url, self.local_path, ignore_externals=True)

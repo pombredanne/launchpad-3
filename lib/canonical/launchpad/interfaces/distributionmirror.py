@@ -23,7 +23,8 @@ from zope.interface.exceptions import Invalid
 from zope.interface.interface import invariant
 from zope.component import getUtility
 
-from canonical.launchpad.fields import ContentNameField, URIField, Whiteboard
+from canonical.launchpad.fields import (
+    ContentNameField, PublicPersonChoice, URIField, Whiteboard)
 from canonical.launchpad.validators.name import name_validator
 from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad import _
@@ -276,10 +277,12 @@ class IDistributionMirror(Interface):
     """A mirror of a given distribution."""
 
     id = Int(title=_('The unique id'), required=True, readonly=True)
-    owner = Choice(title=_('Owner'), required=False, readonly=True,
-                   vocabulary='ValidOwner')
-    reviewer = Choice(title=_('Reviewer'), required=False, readonly=False,
-                      vocabulary='ValidPersonOrTeam')
+    owner = PublicPersonChoice(
+        title=_('Owner'), required=False, readonly=True,
+        vocabulary='ValidOwner')
+    reviewer = PublicPersonChoice(
+        title=_('Reviewer'), required=False, readonly=False,
+        vocabulary='ValidPersonOrTeam')
     distribution = Attribute(_("The distribution that is mirrored"))
     name = DistributionMirrorNameField(
         title=_('Name'), required=True, readonly=False,
