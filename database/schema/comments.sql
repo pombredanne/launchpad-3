@@ -21,6 +21,7 @@ COMMENT ON COLUMN AnswerContact.date_created IS 'The date the answer contact was
 
 -- Branch 
 COMMENT ON TABLE Branch IS 'Bzr branch';
+COMMENT ON COLUMN Branch.registrant IS 'The user that registered the branch.';
 COMMENT ON COLUMN Branch.branch_type IS 'Branches are currently one of HOSTED (1), MIRRORED (2), or IMPORTED (3).';
 COMMENT ON COLUMN Branch.whiteboard IS 'Notes on the current status of the branch';
 COMMENT ON COLUMN Branch.summary IS 'A single paragraph description of the branch';
@@ -65,6 +66,7 @@ COMMENT ON COLUMN BranchMergeProposal.merged_revision_id IS 'The Bazaar revision
 COMMENT ON COLUMN BranchMergeProposal.date_merge_started IS 'If the merge is performed by a bot the time the merge was started is recorded otherwise it is NULL.';
 COMMENT ON COLUMN BranchMergeProposal.date_merge_finished IS 'If the merge is performed by a bot the time the merge was finished is recorded otherwise it is NULL.';
 COMMENT ON COLUMN BranchMergeProposal.merge_log_file IS 'If the merge is performed by a bot the log file is accessible from the librarian.';
+COMMENT ON COLUMN BranchMergeProposal.superseded_by IS 'The proposal to merge has been superceded by this one.';
 
 
 -- BranchMergeRobot
@@ -293,6 +295,13 @@ COMMENT ON COLUMN CodeImportMachine.state IS 'Whether the controller daemon on t
 --COMMENT ON COLUMN CodeImportMachine.quiescing_message IS 'The reason for the quiescing request.';
 --COMMENT ON COLUMN CodeImportMachine.offline_reason IS 'The reason the machine was taken offline, from the CodeImportMachineOfflineReason enumeration.';
 
+-- CodeReviewMessage
+
+COMMENT ON TABLE CodeReviewMessage IS 'A message that is part of a code review discussion.';
+COMMENT ON COLUMN CodeReviewMessage.branch_merge_proposal IS 'The merge proposal that is being discussed.';
+COMMENT ON COLUMN CodeReviewMessage.message IS 'The actual message.';
+COMMENT ON COLUMN CodeReviewMessage.vote IS 'The reviewer''s vote for this message.';
+
 -- CVE
 
 COMMENT ON TABLE CVE IS 'A CVE Entry. The formal database of CVE entries is available at http://cve.mitre.org/ and we sync that database into Launchpad on a regular basis.';
@@ -320,6 +329,7 @@ COMMENT ON COLUMN DistributionSourcePackageCache.binpkgnames IS 'The binary pack
 COMMENT ON COLUMN DistributionSourcePackageCache.binpkgsummaries IS 'The aggregated summaries of all the binary packages generated from these source packages in this distribution.';
 COMMENT ON COLUMN DistributionSourcePackageCache.binpkgdescriptions IS 'The aggregated description of all the binary packages generated from these source packages in this distribution.';
 COMMENT ON COLUMN DistributionSourcePackageCache.changelog IS 'A concatenation of the source package release changelogs for this source package, where the status is not REMOVED.';
+COMMENT ON COLUMN DistributionSourcePackageCache.archive IS 'The archive where the source is published.';
 
 
 -- DistroSeriesPackageCache
@@ -331,7 +341,7 @@ COMMENT ON COLUMN DistroSeriesPackageCache.name IS 'The binary package name itse
 COMMENT ON COLUMN DistroSeriesPackageCache.summary IS 'A single summary for one of the binary packages of this name in this distroseries. We could potentially have binary packages in different architectures with the same name and different summaries, so this is a way of collapsing to one arbitrarily-chosen one, for display purposes. The chances of actually having different summaries and descriptions is pretty small. It could happen, though, because of the way package superseding works when a package does not build on a specific architecture.';
 COMMENT ON COLUMN DistroSeriesPackageCache.summaries IS 'The aggregated summaries of all the binary packages with this name in this distroseries.';
 COMMENT ON COLUMN DistroSeriesPackageCache.descriptions IS 'The aggregated description of all the binary packages with this name in this distroseries.';
-
+COMMENT ON COLUMN DistroSeriesPackageCache.archive IS 'The archive where the binary is published.';
 
 -- EmailAddress
 
@@ -396,6 +406,7 @@ COMMENT ON COLUMN MessageApproval.mailing_list IS 'The mailing list to which the
 COMMENT ON COLUMN MessageApproval.posted_message IS 'Foreign key to libraryfilealias table pointing to where the posted message\'s text lives.';
 COMMENT ON COLUMN MessageApproval.posted_date IS 'The date the message was posted.';
 COMMENT ON COLUMN MessageApproval.status IS 'The status of the posted message.  Values are described in dbschema.PostedMessageStatus.';
+COMMENT ON COLUMN MessageApproval.reason IS 'The reason for the current status if any. This information will be displayed to the end user and mailing list moderators need to be aware of this - not a private whiteboard.';
 COMMENT ON COLUMN MessageApproval.disposed_by IS 'The person who disposed of (i.e. approved or rejected) the message, or NULL if no disposition has yet been made.';
 COMMENT ON COLUMN MessageApproval.disposal_date IS 'The date on which this message was disposed, or NULL if no disposition has yet been made.';
 
@@ -599,12 +610,16 @@ COMMENT ON COLUMN POTemplate.translation_domain IS 'The translation domain for t
 
 -- POFile
 COMMENT ON TABLE POFile IS 'This table stores a PO file for a given PO template.';
-COMMENT ON COLUMN POFile.exportfile IS 'The Library file alias of an export of this PO file.';
-COMMENT ON COLUMN POFile.exporttime IS 'The time at which the file referenced by exportfile was generated.';
 COMMENT ON COLUMN POFile.path IS 'The path (included the filename) inside the tree from where the content was imported.';
 COMMENT ON COLUMN POFile.from_sourcepackagename IS 'The sourcepackagename from where the last .po file came (only if it\'s different from POFile.potemplate.sourcepackagename)';
 COMMENT ON COLUMN POFile.unreviewed_count IS 'Number of POTMsgSets with new,
 unreviewed TranslationMessages for this POFile.';
+
+-- RevisionAuthor
+COMMENT ON TABLE RevisionAuthor IS 'All distinct authors for revisions.';
+COMMENT ON COLUMN RevisionAuthor.name IS 'The exact text extracted from the branch revision.';
+COMMENT ON COLUMN RevisionAuthor.email IS 'A valid email address extracted from the name.  This email address may or may not be associated with a Launchpad user at this stage.';
+COMMENT ON COLUMN RevisionAuthor.person IS 'The Launchpad person that has a verified email address that matches the email address of the revision author.';
 
 -- Sprint
 COMMENT ON TABLE Sprint IS 'A meeting, sprint or conference. This is a convenient way to keep track of a collection of specs that will be discussed, and the people that will be attending.';
@@ -1529,9 +1544,6 @@ COMMENT ON COLUMN Language.pluralexpression IS 'The plural expression for this l
 COMMENT ON COLUMN Language.visible IS 'Whether this language should usually be visible or not';
 COMMENT ON COLUMN Language.direction IS 'The direction that text is written in this language';
 
--- PackageBugContact
-COMMENT ON TABLE PackageBugContact IS 'Defines the bug contact for a given sourcepackage in a given distribution. The bug contact will be automatically subscribed to every bug filed on this sourcepackage in this distribution.';
-
 -- ShipItReport
 COMMENT ON TABLE ShipItReport IS 'A report generated with the ShipIt data.';
 COMMENT ON COLUMN ShipItReport.datecreated IS 'The date this report run was created.';
@@ -1604,10 +1616,6 @@ COMMENT ON COLUMN TranslationImportQueueEntry.potemplate IS 'Link to the POTempl
 COMMENT ON COLUMN TranslationImportQueueEntry.date_status_changed IS 'The date when the status of this entry was changed.';
 COMMENT ON COLUMN TranslationImportQueueEntry.status IS 'The status of the import: 1 Approved, 2 Imported, 3 Deleted, 4 Failed, 5 Needs Review, 6 Blocked.';
 
--- SupportContact
-COMMENT ON TABLE PackageBugContact IS 'Defines the support contact for a given ticket target. The support contact will be automatically subscribed to every support request filed on the ticket target.';
-
-
 -- Archive
 COMMENT ON TABLE Archive IS 'A package archive. Commonly either a distribution''s main_archive or a ppa''s archive.';
 COMMENT ON COLUMN Archive.owner IS 'Identifies the PPA owner when it has one.';
@@ -1618,6 +1626,9 @@ COMMENT ON COLUMN Archive.whiteboard IS 'Administrator comments about interventi
 COMMENT ON COLUMN Archive.distribution IS 'The distribution that uses this archive.';
 COMMENT ON COLUMN Archive.purpose IS 'The purpose of this archive, e.g. COMMERCIAL.  See the ArchivePurpose DBSchema item.';
 COMMENT ON COLUMN Archive.private IS 'Whether or not the archive is private. This affects the global visibility of the archive.';
+COMMENT ON COLUMN Archive.package_description_cache IS 'Text blob containing all source and binary names and descriptions concatenated. Used to to build the tsearch indexes on this table.';
+COMMENT ON COLUMN Archive.sources_cached IS 'Number of sources already cached for this archive.';
+COMMENT ON COLUMN Archive.binaries_cached IS 'Number of binaries already cached for this archive.';
 
 
 -- ArchiveDependency
@@ -1650,6 +1661,7 @@ COMMENT ON COLUMN SectionSelection.section IS 'Refers to the section in question
 
 -- PillarName
 COMMENT ON TABLE PillarName IS 'A cache of the names of our "Pillar''s" (distribution, product, project) to ensure uniqueness in this shared namespace. This is a materialized view maintained by database triggers.';
+COMMENT ON COLUMN PillarName.alias_for IS 'An alias for another pillarname. Rows with this column set are not maintained by triggers.';
 
 -- POFileTranslator
 COMMENT ON TABLE POFileTranslator IS 'A materialized view caching who has translated what pofile.';
@@ -1693,6 +1705,9 @@ COMMENT ON COLUMN Entitlement.amount_used IS 'Quantity of this entitlement alloc
 COMMENT ON COLUMN Entitlement.whiteboard IS 'A place for administrator notes.';
 COMMENT ON COLUMN Entitlement.state IS 'The state (REQUESTED, ACTIVE, INACTIVE) of the entitlement.';
 COMMENT ON COLUMN Entitlement.is_dirty IS 'This entitlement has been modified and the state needst to be updated on the external system.';
+COMMENT ON COLUMN Entitlement.distribution IS 'The distribution to which this entitlement applies.';
+COMMENT ON COLUMN Entitlement.product IS 'The product to which this entitlement applies.';
+COMMENT ON COLUMN Entitlement.project IS 'The project to which this entitlement applies.';
 
 -- OpenIdRealmConfig
 COMMENT ON TABLE OpenIdRPConfig IS 'Configuration information for OpenID Relying Parties';
@@ -1815,3 +1830,37 @@ COMMENT ON COLUMN StructuralSubscription.bug_notification_level IS 'The volume a
 COMMENT ON COLUMN StructuralSubscription.blueprint_notification_level IS 'The volume and type of blueprint notifications this subscription will generate. The value is an item of the enumeration `BugNotificationLevel`.';
 COMMENT ON COLUMN StructuralSubscription.date_created IS 'The date on which this subscription was created.';
 COMMENT ON COLUMN StructuralSubscription.date_last_updated IS 'The date on which this subscription was last updated.';
+
+-- OAuth
+COMMENT ON TABLE OAuthConsumer IS 'A third part application that will access Launchpad on behalf of one of our users.';
+COMMENT ON COLUMN OAuthConsumer.key IS 'The unique key for this consumer.';
+COMMENT ON COLUMN OAuthConsumer.secret IS 'The secret used by this consumer (together with its key) to identify itself with Launchpad.';
+COMMENT ON COLUMN OAuthConsumer.date_created IS 'The creation date.';
+COMMENT ON COLUMN OAuthConsumer.disabled IS 'Is this consumer disabled?';
+
+COMMENT ON TABLE OAuthRequestToken IS 'A request token which, once authorized by the user, is exchanged for an access token.';
+COMMENT ON COLUMN OAuthRequestToken.consumer IS 'The consumer which is going to access the protected resources.';
+COMMENT ON COLUMN OAuthRequestToken.person IS 'The person who authorized this token.';
+COMMENT ON COLUMN OAuthRequestToken.permission IS 'The permission given by the
+person to the consumer.';
+COMMENT ON COLUMN OAuthRequestToken.key IS 'This token\'s unique key.';
+COMMENT ON COLUMN OAuthRequestToken.secret IS 'The secret used by the consumer (together with the token\'s key) to get an access token once the user has authorized its use.';
+COMMENT ON COLUMN OAuthRequestToken.date_created IS 'The date/time in which the token was created.';
+COMMENT ON COLUMN OAuthRequestToken.date_expires IS 'When the authorization is to expire.';
+COMMENT ON COLUMN OAuthRequestToken.date_reviewed IS 'When the authorization request was authorized or rejected by the person.';
+
+COMMENT ON TABLE OAuthAccessToken IS 'An access token used by the consumer to act on behalf of one of our users.';
+COMMENT ON COLUMN OAuthAccessToken.consumer IS 'The consumer which is going to access the protected resources.';
+COMMENT ON COLUMN OAuthAccessToken.person IS 'The person on whose behalf the
+consumer will access Launchpad.';
+COMMENT ON COLUMN OAuthAccessToken.permission IS 'The permission given by that person to the consumer.';
+COMMENT ON COLUMN OAuthAccessToken.key IS 'This token\'s unique key.';
+COMMENT ON COLUMN OAuthAccessToken.secret IS 'The secret used by the consumer (together with the token\'s key) to access Launchpad on behalf of the person.';
+COMMENT ON COLUMN OAuthAccessToken.date_created IS 'The date/time in which the token was created.';
+COMMENT ON COLUMN OAuthAccessToken.date_expires IS 'The date/time in which this token will stop being accepted by Launchpad.';
+
+COMMENT ON TABLE OAuthNonce IS 'The unique nonce for any request with a
+given timestamp. This is generated by the consumer.';
+COMMENT ON COLUMN OAuthNonce.consumer IS 'The consumer which is going to access the protected resources.';
+COMMENT ON COLUMN OAuthNonce.nonce IS 'The nonce itself.';
+COMMENT ON COLUMN OAuthNonce.request_timestamp IS 'The date and time (as a timestamp) in which the request was made.';

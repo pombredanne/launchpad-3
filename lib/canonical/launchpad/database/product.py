@@ -31,6 +31,7 @@ from canonical.launchpad.database.karma import KarmaContextMixin
 from canonical.launchpad.database.faq import FAQ, FAQSearch
 from canonical.launchpad.database.mentoringoffer import MentoringOffer
 from canonical.launchpad.database.milestone import Milestone
+from canonical.launchpad.validators.person import public_person_validator
 from canonical.launchpad.database.announcement import MakesAnnouncements
 from canonical.launchpad.database.packaging import Packaging
 from canonical.launchpad.database.productbounty import ProductBounty
@@ -44,40 +45,49 @@ from canonical.launchpad.database.specification import (
 from canonical.launchpad.database.sprint import HasSprintsMixin
 from canonical.launchpad.database.translationimportqueue import (
     HasTranslationImportsMixin)
+from canonical.launchpad.database.structuralsubscription import (
+    StructuralSubscriptionTargetMixin)
 from canonical.launchpad.helpers import shortlist
 from canonical.launchpad.interfaces import (
-    DEFAULT_BRANCH_STATUS_IN_LISTING, BranchType, IFAQTarget, IHasIcon,
-    IHasLogo, IHasMugshot, ILaunchpadCelebrities,
+    BranchType, DEFAULT_BRANCH_STATUS_IN_LISTING, IFAQTarget, IHasBugContact,
+    IHasIcon, IHasLogo, IHasMugshot, ILaunchpadCelebrities,
     ILaunchpadStatisticSet, ILaunchpadUsage, IPersonSet, IProduct,
-    IProductSet, IQuestionTarget, License, NotFoundError,
-    QUESTION_STATUS_DEFAULT_SEARCH, SpecificationSort, SpecificationFilter,
-    SpecificationDefinitionStatus, SpecificationImplementationStatus,
+    IProductSet, IQuestionTarget, IStructuralSubscriptionTarget, License,
+    NotFoundError, QUESTION_STATUS_DEFAULT_SEARCH,
+    SpecificationDefinitionStatus, SpecificationFilter,
+    SpecificationImplementationStatus, SpecificationSort,
     TranslationPermission)
 
 
 class Product(SQLBase, BugTargetBase, MakesAnnouncements,
               HasSpecificationsMixin, HasSprintsMixin, KarmaContextMixin,
               BranchVisibilityPolicyMixin, QuestionTargetMixin,
-              HasTranslationImportsMixin):
+              HasTranslationImportsMixin, StructuralSubscriptionTargetMixin):
 
     """A Product."""
 
-    implements(IFAQTarget, IHasLogo, IHasMugshot, IHasIcon,
-               ILaunchpadUsage, IProduct, IQuestionTarget)
+    implements(
+        IFAQTarget, IHasIcon, IHasLogo, IHasMugshot, ILaunchpadUsage,
+        IProduct, IQuestionTarget, IStructuralSubscriptionTarget,
+        IHasBugContact)
 
     _table = 'Product'
 
     project = ForeignKey(
         foreignKey="Project", dbName="project", notNull=False, default=None)
     owner = ForeignKey(
-        foreignKey="Person", dbName="owner", notNull=True)
+        foreignKey="Person",
+        validator=public_person_validator, dbName="owner", notNull=True)
     bugcontact = ForeignKey(
-        dbName='bugcontact', foreignKey='Person', notNull=False, default=None)
+        dbName='bugcontact', foreignKey='Person',
+        validator=public_person_validator, notNull=False, default=None)
     security_contact = ForeignKey(
-        dbName='security_contact', foreignKey='Person', notNull=False,
+        dbName='security_contact', foreignKey='Person',
+        validator=public_person_validator, notNull=False,
         default=None)
     driver = ForeignKey(
-        foreignKey="Person", dbName="driver", notNull=False, default=None)
+        dbName="driver", foreignKey="Person",
+        validator=public_person_validator, notNull=False, default=None)
     name = StringCol(
         dbName='name', notNull=True, alternateID=True, unique=True)
     displayname = StringCol(dbName='displayname', notNull=True)
@@ -609,6 +619,12 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
                 return None
         ProductBounty(product=self, bounty=bounty)
         return None
+
+    def setBugContact(self, bugcontact, user):
+        """See `IHasBugContact`."""
+        self.bugcontact = bugcontact
+        if bugcontact is not None:
+            subscription = self.addBugSubscription(bugcontact, user)
 
 
 class ProductSet:

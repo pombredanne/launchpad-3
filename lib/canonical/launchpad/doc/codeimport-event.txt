@@ -392,3 +392,48 @@ why quiescing was requested.
     ddaa
     >>> print_items(quiesce_event)
     MESSAGE u'Production rollout.'
+
+
+=== START ===
+
+When a job is allocated to a machine, a START event should be created
+to record which code import is starting and on which machine.
+
+    >>> fail_if_argument_is_none(
+    ...     event_set.newStart, None, machine)
+    >>> fail_if_argument_is_none(
+    ...     event_set.newStart, svn_import, None)
+
+    >>> start_event = event_set.newStart(
+    ...     svn_import, machine)
+    >>> verify_event(start_event)
+    START
+    >>> print start_event.machine.hostname
+    bazaar-importer
+    >>> print start_event.code_import == svn_import
+    True
+    >>> start_event.items()
+    []
+
+
+=== FINISH ===
+
+When a machine finishes a job, successfully or otherwise, a FINISH
+event should be created to record that the job has been finished.
+
+    >>> fail_if_argument_is_none(
+    ...     event_set.newFinish, None, machine)
+    >>> fail_if_argument_is_none(
+    ...     event_set.newFinish, svn_import, None)
+
+    >>> finish_event = event_set.newFinish(
+    ...     svn_import, machine)
+    >>> verify_event(finish_event)
+    FINISH
+    >>> print finish_event.machine.hostname
+    bazaar-importer
+    >>> print finish_event.code_import == svn_import
+    True
+    >>> finish_event.items()
+    []
+
