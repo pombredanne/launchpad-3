@@ -264,6 +264,10 @@ def liverebuild(con):
 
 def setup(con, configuration=DEFAULT_CONFIG):
     """Setup and install tsearch2 if isn't already"""
+
+    # tsearch2 is out-of-the-box in 8.3+
+    v83 = get_pgversion(con).startswith('8.3')
+
     try:
         execute(con, 'SET search_path = ts2, public;')
     except psycopg.ProgrammingError:
@@ -485,8 +489,9 @@ def setup(con, configuration=DEFAULT_CONFIG):
             sql = []
             for i in range(0, len(args), 2):
                 sql.append(
-                        "setweight(to_tsvector(''default'', coalesce("
-                        "substring(ltrim($%d) from 1 for 2500),'''')),$%d)" % (
+                        "ts2.setweight(ts2.to_tsvector(''default'', coalesce("
+                        "substring(ltrim($%d) from 1 for 2500),'''')),"
+                        "CAST($%d AS \\"char\\"))" % (
                             i + 1, i + 2
                             )
                         )
@@ -529,13 +534,23 @@ def setup(con, configuration=DEFAULT_CONFIG):
     else:
         assert len(r) == 1, 'Invalid database locale %s' % repr(locale)
 
-    execute(con, r"""
-            UPDATE ts2.pg_ts_cfg SET locale=(
-                SELECT setting FROM pg_settings
-                WHERE context='internal' AND name='lc_ctype'
-                )
-            WHERE ts_name='default'
-            """)
+    if v83:
+        r = execute(con,
+                "SELECT COUNT(*) FROM pg_ts_config WHERE cfgname='default'",
+                results=True)
+        if r[0][0] == 0:
+            execute(con, """
+                CREATE TEXT SEARCH CONFIGURATION ts2.default (
+                    COPY = pg_catalog.english)""")
+    else:
+        # Remove block when running 8.3 everywhere.
+        execute(con, r"""
+                UPDATE ts2.pg_ts_cfg SET locale=(
+                    SELECT setting FROM pg_settings
+                    WHERE context='internal' AND name='lc_ctype'
+                    )
+                WHERE ts_name='default'
+                """)
 
     # Don't bother with this - the setting is not exported with dumps
     # or propogated  when duplicating the database. Only reliable
@@ -543,6 +558,7 @@ def setup(con, configuration=DEFAULT_CONFIG):
     #
     # Set the default schema search path so this stuff can be found
     #execute(con, 'ALTER DATABASE %s SET search_path = public,ts2;' % dbname)
+
     con.commit()
 
 
@@ -596,6 +612,8 @@ def get_tsearch2_sql_path(con):
         path = os.path.join(PGSQL_BASE, '8.1', 'contrib', 'tsearch2.sql')
     elif pgversion.startswith('8.2.'):
         path = os.path.join(PGSQL_BASE, '8.2', 'contrib', 'tsearch2.sql')
+    elif pgversion.startswith('8.3.'):
+        path = os.path.join(PGSQL_BASE, '8.3', 'contrib', 'tsearch2.sql')
     elif pgversion.startswith('7.4.'):
         path = os.path.join(PGSQL_BASE, '7.4', 'contrib', 'tsearch2.sql')
         if not os.path.exists(path):
