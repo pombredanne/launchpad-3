@@ -41,8 +41,8 @@ DAYS_TO_KEEP = 3
 
 def is_gettext_name(path):
     """Does given file name indicate it's in gettext (PO or POT) format?"""
-    base_name, suffix = os.path.splitext(path)
-    return suffix in GettextPOImporter().file_extensions
+    base_name, extension = os.path.splitext(path)
+    return extension in GettextPOImporter().file_extensions
 
 
 class TranslationImportQueueEntry(SQLBase):
@@ -323,7 +323,7 @@ class TranslationImportQueueEntry(SQLBase):
         # Let's try to guess the language.
         if not importer.isTranslationName(self.path):
             # Don't recognize this as a translation file with name consisting
-            # of language code and format suffix.  Look for existing
+            # of language code and format extension.  Look for existing
             # translation file based on path match.
             return self._guessed_pofile_from_path
 
@@ -783,8 +783,8 @@ class TranslationImportQueue:
             queries.append('status = %s' % sqlvalues(status))
         if file_extensions is not None and len(file_extensions) > 0:
             extension_clauses = [
-                "path LIKE '%%' || %s" % quote_like(suffix)
-                for suffix in file_extensions]
+                "path LIKE '%%' || %s" % quote_like(extension)
+                for extension in file_extensions]
             queries.append("(%s)" % " OR ".join(extension_clauses))
 
         return queries, clause_tables
