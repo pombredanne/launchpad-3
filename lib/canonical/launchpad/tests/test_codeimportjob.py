@@ -79,8 +79,8 @@ class TestCodeImportSetGetJobForMachine(unittest.TestCase):
         # Login so we can access the code import system, delete all jobs in
         # the sample data and set up some objects.
         login_for_code_imports()
-        for d in CodeImportJob.select():
-            d.destroySelf()
+        for job in CodeImportJob.select():
+            job.destroySelf()
         self.factory = LaunchpadObjectFactory()
         self.machine = self.factory.makeCodeImportMachine()
         self.machine.setOnline()
@@ -89,91 +89,68 @@ class TestCodeImportSetGetJobForMachine(unittest.TestCase):
         """Create a CodeImportJob object from a spec."""
         code_import = self.factory.makeCodeImport()
         job = self.factory.makeCodeImportJob(code_import)
-        naked_job = removeSecurityProxy(job)
         if state == CodeImportJobState.RUNNING:
-            getUtility(ICodeImportJobWorkflow).startJob(naked_job, self.machine)
+            getUtility(ICodeImportJobWorkflow).startJob(job, self.machine)
+        naked_job = removeSecurityProxy(job)
         naked_job.date_due = SQLConstant(
             "CURRENT_TIMESTAMP AT TIME ZONE 'UTC' + '%d seconds'"
             % date_due_delta)
         naked_job.requesting_user = requesting_user
         return job
 
-    def assertJobIsSelected(self, selectedjobspec, otherjobspecs):
-        """Assert that the expected job is chosen by getJobForMachine.
-
-        Jobs are created for the selectedjobspec and each item of
-        otherjobspecs, getJobForMachine is called and the result checked that
-        it is what is expected."""
-        should_be_selected_job = self.makeJob(*selectedjobspec)
-        otherjob2spec = {}
-        for spec in otherjobspecs:
-            otherjob = self.makeJob(*spec)
-            otherjob2spec[otherjob] = spec
-        #flush_database_updates()
-        was_selected_job = getUtility(ICodeImportJobSet).getJobForMachine(
-            self.machine)
-        if was_selected_job != should_be_selected_job:
-            if was_selected_job is None:
-                self.fail(
-                    "No job was selected, expecting job with spec %s."
-                    % (selectedjobspec,))
-            else:
-                self.fail(
-                    "Job with spec %s was not selected, expecting job with "
-                    "spec %s." % (selectedjobspec, otherjobs[did_win_job]))
-
-    def assertNoJobSelected(self, jobspecs):
-        """Assert that no job is selected from the given specs."""
-        job2spec = {}
-        for spec in jobspecs:
-            job = self.makeJob(*spec)
-            job2spec[job] = spec
+    def assertJobIsSelected(self, desired_job):
+        """Assert that the expected job is chosen by getJobForMachine."""
         flush_database_updates()
-        selected_job = getUtility(ICodeImportJobSet).getJobForMachine(
+        observed_job = getUtility(ICodeImportJobSet).getJobForMachine(
             self.machine)
-        if selected_job is not None:
-            self.fail(
-                "Job with spec %s was selectedm no job was expected."
-                % (job2spec[did_win_job],))
+        self.assert_(observered_job is not None, "No job was selected.")
+        self.assertEqual(desired_job, observed_job,
+                         "Expected job not selected.")
+
+    def assertNoJobSelected(self):
+        """Assert that no job is selected."""
+        flush_database_updates()
+        observed_job = getUtility(ICodeImportJobSet).getJobForMachine(
+            self.machine)
+        self.assert_(observed_job is None, "Job unexpectedly selected.")
 
     def test_nothingSelectedIfNothingCreated(self):
         # There are no due jobs pending if we don't create any (this
         # is mostly a test of setUp() above).
-        self.assertNoJobSelected(
-            jobspecs=[])
+        self.assertNoJobSelected()
 
     def test_simple(self):
         # The simplest case: there is one job, which is due.
         self.assertJobIsSelected(
-            selectedjobspec=(CodeImportJobState.PENDING, -1),
-            otherjobspecs=[])
+            self.makeJob(CodeImportJobState.PENDING, -1))
 
     def test_nothingDue(self):
         # When there is a PENDING job but it is due in the future, no
         # job should be returned.
-        self.assertNoJobSelected(
-            jobspecs=[(CodeImportJobState.PENDING, +1)])
+        self.makeJob(CodeImportJobState.PENDING, +1)
+        self.assertNoJobSelected()
 
     def test_ignoreNonPendingJobs(self):
-        # A RUNNING job is not returned.
-        self.assertNoJobSelected(
-            jobspecs=[(CodeImportJobState.RUNNING, -1)])
+        # Only PENDING jobs are returned -- it doesn't make sense to allocate
+        # a job that is already RUNNING to a machine.
+        self.makeJob(CodeImportJobState.RUNNING, -1)
+        self.assertNoJobSelected()
 
     def test_mostOverdueJobsFirst(self):
         # The job that was due longest ago should be selected.
+        self.makeJob(CodeImportJobState.PENDING, -5)
+        self.makeJob(CodeImportJobState.PENDING, -2)
         self.assertJobIsSelected(
-            selectedjobspec=(CodeImportJobState.PENDING, -10),
-            otherjobspecs=[(CodeImportJobState.PENDING, -5),
-                          (CodeImportJobState.PENDING, -2)])
+            self.makeJob(CodeImportJobState.PENDING, -10))
 
     def test_requestedJobWins(self):
         # A job that is requested by a user is selected over ones that
         # are not, even over jobs that are more overdue.
         person = self.factory.makePerson()
+        self.makeJob(CodeImportJobState.PENDING, -5)
+        self.makeJob(CodeImportJobState.PENDING, -2)
         self.assertJobIsSelected(
-            selectedjobspec=(CodeImportJobState.PENDING, -1, person),
-            otherjobspecs=[(CodeImportJobState.PENDING, -5),
-                          (CodeImportJobState.PENDING, -2)])
+            self.makeJob(CodeImportJobState.PENDING, -1, person))
 
     def test_mostOverdueRequestedJob(self):
         # When multiple jobs are requested by users, we go back to the
@@ -181,10 +158,19 @@ class TestCodeImportSetGetJobForMachine(unittest.TestCase):
         person_a = self.factory.makePerson()
         person_b = self.factory.makePerson()
         person_c = self.factory.makePerson()
+        self.makeJob(CodeImportJobState.PENDING, -5, person_b),
+        self.makeJob(CodeImportJobState.PENDING, -2, person_a)
         self.assertJobIsSelected(
-            selectedjobspec=(CodeImportJobState.PENDING, -10, person_c),
-            otherjobspecs=[(CodeImportJobState.PENDING, -5, person_b),
-                          (CodeImportJobState.PENDING, -2, person_a)])
+            self.makeJob(CodeImportJobState.PENDING, -10, person_c))
+
+    def test_independentOfCreationOrder(self):
+        # The order the jobs are created doesn't affect the outcome (the way
+        # the other tests are written, an implementation that returned the
+        # most recently created due job would pass).
+        desired_job = self.makeJob(CodeImportJobState.PENDING, -10)
+        self.makeJob(CodeImportJobState.PENDING, -5)
+        self.makeJob(CodeImportJobState.PENDING, -2)
+        self.assertJobIsSelected(desired_job)
 
 
 class AssertFailureMixin:
