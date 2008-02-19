@@ -296,7 +296,7 @@ class TestBranchDeletionConsequences(TestCase):
         bug = self.factory.makeBug()
         bug.addBranch(self.branch, self.branch.owner)
         self.assertEqual({bug.bug_branches[0]:
-            ('delete', _('This branch is associated with a bug.'))},
+            ('delete', _('This bug is linked to this branch.'))},
             self.branch.deletionRequirements())
 
     def test_branchWithBugDeletion(self):
@@ -314,7 +314,7 @@ class TestBranchDeletionConsequences(TestCase):
         spec.linkBranch(self.branch, self.branch.owner)
         self.assertEqual({self.branch.spec_links[0]:
             ('delete', _(
-                'This associates this branch with a specification.'))},
+                'This blueprint is linked to this branch.'))},
              self.branch.deletionRequirements())
 
     def test_branchWithSpecDeletion(self):
