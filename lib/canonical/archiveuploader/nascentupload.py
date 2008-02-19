@@ -30,8 +30,6 @@ from canonical.launchpad.interfaces import (
     ArchivePurpose, IBinaryPackageNameSet, IDistributionSet,
     ILibraryFileAliasSet, ISourcePackageNameSet, NotFoundError,
     PackagePublishingPocket, QueueInconsistentStateError)
-from canonical.launchpad.scripts.processaccepted import (
-    close_bugs_for_queue_item)
 
 
 PARTNER_COMPONENT_NAME = 'partner'
@@ -982,33 +980,17 @@ class NascentUpload:
                     "Upload contains binaries of different sources.")
                 self.queue_root.addBuild(considered_build)
 
-        if not self.is_new:
-            # if it is known (already overridden properly), move it to
-            # ACCEPTED state automatically
-            if self.policy.autoApprove(self):
-                self.logger.debug("Setting it to ACCEPTED")
-                self.queue_root.setAccepted()
-                # If it is a pure-source upload we can further process it
-                # in order to have a pending publishing record in place.
-                # This change is based on discussions for bug #77853 and aims
-                # to fix a deficiency on published file lookup system.
-                if ((self.queue_root.sources.count() == 1) and
-                    (self.queue_root.builds.count() == 0) and
-                    (self.queue_root.customfiles.count() == 0)):
-                    self.logger.debug("Creating PENDING publishing record.")
-                    self.queue_root.realiseUpload()
-                    # Do not even try to close bugs for PPA uploads
-                    if self.is_ppa:
-                        return
-                    # Closing bugs.
-                    changesfile_object = open(self.changes.filepath, 'r')
-                    close_bugs_for_queue_item(
-                        self.queue_root,
-                        changesfile_object=changesfile_object)
-                    changesfile_object.close()
-            else:
-                self.logger.debug("Setting it to UNAPPROVED")
-                self.queue_root.setUnapproved()
+        if self.is_new:
+            return
+
+        # If it is known (already overridden properly), move it to
+        # ACCEPTED state automatically
+        if self.policy.autoApprove(self):
+            self.queue_root.acceptFromUploader(
+                self.changes.filepath, logger=self.logger)
+        else:
+            self.logger.debug("Setting it to UNAPPROVED")
+            self.queue_root.setUnapproved()
 
     def overrideArchive(self):
         """Override the archive set on the policy as necessary.

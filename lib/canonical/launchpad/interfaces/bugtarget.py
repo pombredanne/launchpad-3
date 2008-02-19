@@ -33,10 +33,11 @@ class IBugTarget(Interface):
     all_bugtasks = Attribute("A list of all BugTasks ever reported for this target.")
 
     bug_reporting_guidelines = Text(
-        title=u"Bug reporting guidelines",
+        title=(
+            u"If I\N{right single quotation mark}m reporting a bug, "
+            u"I should include, if possible"),
         description=(
-            u"A paragraph or two displayed to users to help them file good "
-            u"bug reports."),
+            u"These guidelines will be shown to anyone reporting a bug."),
         required=False, max_length=50000)
 
     def searchTasks(search_params):

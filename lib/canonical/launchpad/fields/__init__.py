@@ -1,6 +1,66 @@
 # Copyright 2004-2006 Canonical Ltd.  All rights reserved.
 # pylint: disable-msg=E0211,W0401
 
+__metaclass__ = type
+__all__ = [
+    'AnnouncementDate',
+    'BaseImageUpload',
+    'BlacklistableContentNameField',
+    'BugField',
+    'ContentNameField',
+    'Description',
+    'DuplicateBug',
+    'FieldNotBoundError',
+    'IAnnouncementDate',
+    'IBaseImageUpload',
+    'IBugField',
+    'IDescription',
+    'IPasswordField',
+    'IShipItAddressline1',
+    'IShipItAddressline2',
+    'IShipItCity',
+    'IShipItOrganization',
+    'IShipItPhone',
+    'IShipItProvince',
+    'IShipItQuantity',
+    'IShipItReason',
+    'IShipItRecipientDisplayname',
+    'IStrippedTextLine',
+    'ISummary',
+    'ITag',
+    'ITimeInterval',
+    'ITitle',
+    'IURIField',
+    'IWhiteboard',
+    'IconImageUpload',
+    'is_valid_public_person_link',
+    'KEEP_SAME_IMAGE',
+    'LogoImageUpload',
+    'MugshotImageUpload',
+    'PasswordField',
+    'PillarNameField',
+    'ProductBugTracker',
+    'ProductNameField',
+    'PublicPersonChoice',
+    'ShipItAddressline1',
+    'ShipItAddressline2',
+    'ShipItCity',
+    'ShipItOrganization',
+    'ShipItPhone',
+    'ShipItProvince',
+    'ShipItQuantity',
+    'ShipItReason',
+    'ShipItRecipientDisplayname',
+    'StrippedTextLine',
+    'Summary',
+    'Tag',
+    'TimeInterval',
+    'Title',
+    'URIField',
+    'UniqueField',
+    'Whiteboard',
+    ]
+
 from StringIO import StringIO
 from textwrap import dedent
 
@@ -291,7 +351,8 @@ class UniqueField(TextLine):
         raise NotImplementedError
 
     def _isValueTaken(self, value):
-        """Returns true if and only if the specified value is already taken."""
+        """Returns true if and only if the specified value is already taken.
+        """
         return self._getByAttribute(value) is not None
 
     def _validate(self, input):
@@ -595,3 +656,17 @@ class ProductNameField(PillarNameField):
         from canonical.launchpad.interfaces.product import IProduct
         return IProduct
 
+
+def is_valid_public_person_link(person, other):
+    from canonical.launchpad.interfaces import IPerson, PersonVisibility
+    assert IPerson.providedBy(person)
+    if person.visibility in (PersonVisibility.PRIVATE,
+                             PersonVisibility.PRIVATE_MEMBERSHIP):
+        return False
+    else:
+        return True
+
+
+class PublicPersonChoice(Choice):
+    def constraint(self, value):
+        return is_valid_public_person_link(value, self.context)

@@ -59,7 +59,7 @@ Ubuntu needs a Bug Contact first of all:
 
     >>> for tag in find_tags_by_class(admin_browser.contents, 'message'):
     ...     print tag.renderContents()
-    Successfully changed the distribution bug contact to test@canonical.com
+    Successfully changed the bug contact to...Sample Person...
 
 The new Bug Contact for Ubuntu can change the status to Won't Fix:
 

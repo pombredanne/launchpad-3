@@ -139,7 +139,8 @@ def create_task_from_strings(bug, owner, product, watchurl=None):
 
 
 def create_bug_from_strings(
-    distribution, sourcepackagename, owner, summary, description):
+    distribution, sourcepackagename, owner, summary, description,
+    status=None):
     """Create and return a bug."""
     distroset = getUtility(IDistributionSet)
     distribution = distroset.getByName(distribution)
@@ -152,10 +153,17 @@ def create_bug_from_strings(
     owner = personset.getByName(owner)
 
     bugset = getUtility(IBugSet)
-    params = CreateBugParams(owner, summary, description)
+    params = CreateBugParams(owner, summary, description, status=status)
     params.setBugTarget(distribution=distribution,
                         sourcepackagename=sourcepackagename)
     return bugset.createBug(params)
+
+
+def update_task_status(task_id, person, status):
+    """Update a bugtask status."""
+    task = getUtility(IBugTaskSet).get(task_id)
+    person = getUtility(IPersonSet).getByName(person)
+    task.transitionToStatus(status, person)
 
 
 def create_old_bug(
