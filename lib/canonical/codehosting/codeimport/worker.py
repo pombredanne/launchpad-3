@@ -10,6 +10,13 @@ __all__ = [
     'get_default_foreign_branch_store']
 
 
+import logging
+import os
+import shutil
+import tempfile
+
+from zope.component import getUtility
+
 from bzrlib.branch import Branch
 from bzrlib.builtins import _create_prefix as create_prefix
 from bzrlib.bzrdir import BzrDir
@@ -24,7 +31,12 @@ from canonical.codehosting.codeimport.tarball import (
     create_tarball, extract_tarball)
 from canonical.config import config
 from canonical.launchpad.interfaces import (
-    BranchType, BranchTypeError, RevisionControlSystems)
+    BranchType, BranchTypeError, ICodeImportJobSet, RevisionControlSystems)
+
+from cscvs.cmds import totla
+import cscvs
+import CVS
+import SCM
 
 
 def ensure_base(transport):
@@ -189,3 +201,71 @@ def get_default_foreign_branch_store():
     """Get the default `ForeignBranchStore`."""
     return ForeignBranchStore(
         get_transport(config.codeimport.foreign_branch_store))
+
+
+class ImportWorker:
+    """Oversees the actual work of a code import."""
+
+    # Where the Bazaar working tree will be stored.
+    BZR_WORKING_TREE_PATH = 'bzr_working_tree'
+
+    # Where the foreign branch checkout will be stored.
+    FOREIGN_WORKING_TREE_PATH = 'foreign_working_tree'
+
+    def __init__(self, job_id, foreign_branch_store, bazaar_branch_store,
+                 log_level=2):
+        self.job = getUtility(ICodeImportJobSet).getById(job_id)
+        self.foreign_branch_store = foreign_branch_store
+        self.bazaar_branch_store = bazaar_branch_store
+        self.working_directory = tempfile.mkdtemp()
+        self._foreign_branch = None
+        self._logger = logging.Logger("importd", 50 - log_level * 10)
+        self._bazaar_working_tree_path = os.path.join(
+            self.working_directory, self.BZR_WORKING_TREE_PATH)
+        self._foreign_working_tree_path = os.path.join(
+            self.working_directory, self.FOREIGN_WORKING_TREE_PATH)
+
+    def getBazaarWorkingTree(self):
+        if os.path.isdir(self._bazaar_working_tree_path):
+            shutil.rmtree(self._bazaar_working_tree_path)
+        return self.bazaar_branch_store.pull(
+            self.job.code_import.branch, self._bazaar_working_tree_path)
+
+    def getForeignBranch(self):
+        if os.path.isdir(self._foreign_working_tree_path):
+            shutil.rmtree(self._foreign_working_tree_path)
+        os.mkdir(self._foreign_working_tree_path)
+        return self.foreign_branch_store.fetch(
+            self.job.code_import, self._foreign_working_tree_path)
+
+    def importToBazaar(self, foreign_branch, bazaar_tree):
+        source_directory = foreign_branch.local_path
+        target_directory = str(bazaar_tree.basedir)
+
+        branch = SCM.branch(target_directory)
+        last_commit = cscvs.findLastCscvsCommit(branch)
+
+        if last_commit is None:
+            self._runToBaz(
+                source_directory, "-SI", "MAIN.1", target_directory)
+
+        last_commit = cscvs.findLastCscvsCommit(branch)
+        self._runToBaz(
+            source_directory, "-SC", "%s::" % last_commit, target_directory)
+
+    def _runToBaz(self, source_dir, flags, revisions, bazpath):
+        config = CVS.Config(source_dir)
+        config.args = ["--strict", "-b", bazpath,
+                       flags, revisions, bazpath]
+        totla.totla(config, self._logger, config.args, SCM.tree(source_dir))
+
+    def run(self):
+        foreign_branch = self.getForeignBranch()
+        bazaar_tree = self.getBazaarWorkingTree()
+        self.importToBazaar(foreign_branch, bazaar_tree)
+        self.bazaar_branch_store.push(
+            self.job.code_import.branch, bazaar_tree)
+        self.foreign_branch_store.archive(
+            self.job.code_import, foreign_branch)
+        shutil.rmtree(bazaar_tree.basedir)
+        shutil.rmtree(foreign_branch.local_path)
