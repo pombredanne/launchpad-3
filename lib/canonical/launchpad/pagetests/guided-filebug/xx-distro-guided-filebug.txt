@@ -55,7 +55,7 @@ back...
     >>> user_browser.getControl("Summary").value = "a new ubuntu bug"
     >>> user_browser.getControl("Further information").value = "test"
 
-The comment field ("Further information, ...") is not optional when
+The comment field ("Further information") is not optional when
 filing a bug, but it is optional when subscribing to a similar
 bug. Nevertheless, we don't show an "(Optional)" hint next to the
 description.
@@ -67,7 +67,7 @@ description.
     ...     'label', text=re.compile('Further information'))
     >>> for field_label in field_labels:
     ...     print extract_text(field_label.parent)
-    Further information, steps to reproduce, version information, etc.:
+    Further information:
 
 Finally, let's submit the bug.
 

@@ -1,6 +1,10 @@
 # Copyright 2004-2007 Canonical Ltd.  All rights reserved.
 
-"""Launchpad code-hosting system."""
+"""Launchpad code-hosting system.
+
+NOTE: Importing this package will load any system Bazaar plugins, as well as
+all plugins in the bzrplugins/ directory underneath the rocketfuel checkout.
+"""
 
 __metaclass__ = type
 __all__ = [
@@ -9,7 +13,7 @@ __all__ = [
 
 
 import os.path
-from bzrlib.plugin import set_plugins_path
+from bzrlib.plugin import load_plugins
 from bzrlib.progress import ProgressBarStack
 from bzrlib.ui import SilentUIFactory
 
@@ -64,4 +68,7 @@ def get_bzr_plugins_path():
 
 
 os.environ['BZR_PLUGIN_PATH'] = get_bzr_plugins_path()
-set_plugins_path()
+
+# We want to have full access to Launchpad's Bazaar plugins throughout the
+# codehosting package.
+load_plugins()

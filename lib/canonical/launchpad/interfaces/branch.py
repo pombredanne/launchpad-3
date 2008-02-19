@@ -40,7 +40,8 @@ from zope.schema import Bool, Int, Choice, Text, TextLine, Datetime
 from canonical.config import config
 
 from canonical.launchpad import _
-from canonical.launchpad.fields import Title, Summary, URIField, Whiteboard
+from canonical.launchpad.fields import (
+    PublicPersonChoice, Summary, Title, URIField, Whiteboard)
 from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.interfaces import IHasOwner
 from canonical.launchpad.webapp.interfaces import ITableBatchNavigator
@@ -341,16 +342,16 @@ class IBranch(IHasOwner):
 
     # People attributes
     registrant = Attribute("The user that registered the branch.")
-    owner = Choice(
+    owner = PublicPersonChoice(
         title=_('Owner'), required=True,
         vocabulary='PersonActiveMembershipPlusSelf',
         description=_("Either yourself or a team you are a member of. "
                       "This controls who can modify the branch."))
-    author = Choice(
+    author = PublicPersonChoice(
         title=_('Author'), required=False, vocabulary='ValidPersonOrTeam',
         description=_("The author of the branch. Leave blank if the author "
                       "does not have a Launchpad account."))
-    reviewer = Choice(
+    reviewer = PublicPersonChoice(
         title=_('Reviewer'), required=False, vocabulary='ValidPersonOrTeam',
         description=_("The reviewer of a branch is the person or team that "
                       "is responsible for authorising code to be merged."))

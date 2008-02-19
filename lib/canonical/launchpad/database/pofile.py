@@ -28,6 +28,7 @@ from canonical.database.sqlbase import (
     SQLBase, flush_database_updates, quote, sqlvalues)
 from canonical.launchpad import helpers
 from canonical.launchpad.components.rosettastats import RosettaStats
+from canonical.launchpad.validators.person import public_person_validator
 from canonical.launchpad.database.potmsgset import POTMsgSet
 from canonical.launchpad.database.translationmessage import (
     DummyTranslationMessage, TranslationMessage)
@@ -213,10 +214,9 @@ class POFile(SQLBase, POFileMixIn):
                        default=None)
     fuzzyheader = BoolCol(dbName='fuzzyheader',
                           notNull=True)
-    lasttranslator = ForeignKey(foreignKey='Person',
-                                dbName='lasttranslator',
-                                notNull=False,
-                                default=None)
+    lasttranslator = ForeignKey(
+        dbName='lasttranslator', foreignKey='Person',
+        validator=public_person_validator, notNull=False, default=None)
 
     date_changed = UtcDateTimeCol(
         dbName='date_changed', notNull=True, default=UTC_NOW)
@@ -236,9 +236,9 @@ class POFile(SQLBase, POFileMixIn):
     lastparsed = UtcDateTimeCol(dbName='lastparsed',
                                 notNull=False,
                                 default=None)
-    owner = ForeignKey(foreignKey='Person',
-                       dbName='owner',
-                       notNull=True)
+    owner = ForeignKey(
+        dbName='owner', foreignKey='Person',
+        validator=public_person_validator, notNull=True)
     variant = StringCol(dbName='variant',
                         notNull=False,
                         default=None)
@@ -388,6 +388,20 @@ class POFile(SQLBase, POFileMixIn):
             raise NotFoundError(msgid_text)
         else:
             return translation_message
+
+    def getTranslationsFilteredBy(self, person):
+        """See `IPOFile`."""
+        # We are displaying translations grouped by POTMsgSets,
+        # but since the most common case will be having a single
+        # TranslationMessage per POTMsgSet, we are issuing a slightly
+        # faster SQL query by avoiding a join with POTMsgSet.
+        assert person is not None, "You must provide a person to filter by."
+        return TranslationMessage.select(
+            """
+            TranslationMessage.pofile = %s AND
+            TranslationMessage.submitter = %s
+            """ % sqlvalues(self, person),
+            orderBy=['potmsgset', '-date_created'])
 
     def getPOTMsgSetTranslated(self):
         """See `IPOFile`."""
@@ -583,6 +597,7 @@ class POFile(SQLBase, POFileMixIn):
             query.append(
                 '(POTMsgSet.msgid_plural IS NULL OR (%s))' % plurals_query)
         return query
+
 
     def updateStatistics(self):
         """See `IPOFile`."""
@@ -934,6 +949,10 @@ class DummyPOFile(POFileMixIn):
     def emptySelectResults(self):
         return POFile.select("1=2")
 
+    def getTranslationsFilteredBy(self, person):
+        """See `IPOFile`."""
+        return None
+
     def getPOTMsgSetTranslated(self):
         """See `IPOFile`."""
         return self.emptySelectResults()
@@ -1141,7 +1160,9 @@ class POFileTranslator(SQLBase):
 
     implements(IPOFileTranslator)
     pofile = ForeignKey(foreignKey='POFile', dbName='pofile', notNull=True)
-    person = ForeignKey(foreignKey='Person', dbName='person', notNull=True)
+    person = ForeignKey(
+        dbName='person', foreignKey='Person',
+        validator=public_person_validator, notNull=True)
     latest_message = ForeignKey(foreignKey='TranslationMessage',
         dbName='latest_message', notNull=True)
     date_last_touched = UtcDateTimeCol(dbName='date_last_touched',

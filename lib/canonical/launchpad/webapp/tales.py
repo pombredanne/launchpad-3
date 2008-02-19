@@ -94,11 +94,17 @@ class MenuAPI:
             self._request = get_current_browser_request()
             self._selectedfacetname = None
 
-        # Populate all dictionaries for retrieval of individual Links of any
-        # given facet (e.g. context/menu:bugs/subscribe).
+    def __getattr__(self, attribute_name):
+        """Return a dictionary for retrieval of individual Links.
+
+        It's used with expressions like context/menu:bugs/subscribe.
+        """
         for facet_entry in self.facet():
-            setattr(
-                self, facet_entry.name, self._getFacetLinks(facet_entry.name))
+            if attribute_name == facet_entry.name:
+                menu = self._getFacetLinks(facet_entry.name)
+                object.__setattr__(self, facet_entry.name, menu)
+                return menu
+        raise AttributeError(attribute_name)
 
     def _getFacetLinks(self, facet_name):
         """Return a dictionary with all links available in the given facet.
@@ -2054,6 +2060,7 @@ class PageMacroDispatcher:
     """Selects a macro, while storing information about page layout.
 
         view/macro:page
+        view/macro:page/onecolumn
         view/macro:page/applicationhome
         view/macro:page/pillarindex
         view/macro:page/freeform
@@ -2151,6 +2158,14 @@ class PageMacroDispatcher:
                 applicationtabs=True,
                 globalsearch=True,
                 portlets=True,
+                structuralheaderobject=True),
+        'onecolumn':
+            # XXX 20080130 mpt: Should eventually become the new 'default'.
+            LayoutElements(
+                applicationborder=True,
+                applicationtabs=True,
+                globalsearch=True,
+                portlets=False,
                 structuralheaderobject=True),
         'applicationhome':
             LayoutElements(
