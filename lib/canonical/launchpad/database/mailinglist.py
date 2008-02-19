@@ -174,6 +174,7 @@ class MailingList(SQLBase):
                 % (self.status, target_state))
         self.status = target_state
         if target_state == MailingListStatus.ACTIVE:
+            self.date_activated = UTC_NOW
             email_set = getUtility(IEmailAddressSet)
             email = email_set.getByEmail(self.address)
             if email is None:
