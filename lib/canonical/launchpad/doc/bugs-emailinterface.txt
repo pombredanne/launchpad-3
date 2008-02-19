@@ -1852,10 +1852,12 @@ match the criteria described below).
     ...     if attachments.count() == 0:
     ...         print "No attachments"
     ...         return
+    ...     commit()
     ...     for attachment in attachments:
     ...         lib = attachment.libraryfile
     ...         print lib.__class__.__name__, lib.filename, lib.mimetype,
     ...         print attachment.type.name
+    ...         print lib.read()
     >>> login('test@canonical.com')
     >>> submit_mail = """From: Sample Person <test@canonical.com>
     ... To: new@bugs.canonical.com
@@ -1882,6 +1884,9 @@ match the criteria described below).
     >>> process_email(submit_mail)
     >>> print_attachments(get_latest_added_bug().attachments)
     LibraryFileAlias firefox.log text/plain UNSPECIFIED
+    debug text line 1
+    debug text line 2
+    debug text line 3
 
 An email may contain more than one attachment; all of them are stored.
 
@@ -1915,7 +1920,11 @@ An email may contain more than one attachment; all of them are stored.
     >>> process_email(submit_mail)
     >>> print_attachments(get_latest_added_bug().attachments)
     LibraryFileAlias firefox1.log text/plain UNSPECIFIED
+    debug text line 1
+    debug text line 2
+    debug text line 3
     LibraryFileAlias sample.html text/html UNSPECIFIED
+    <html></html>
 
 If the content disposition header of a mail attachment does not start with
 "attachment", the attachment is not stored as a bug attachment.
@@ -2061,6 +2070,7 @@ text/x-vcard, it is not stored.
     >>> bug = get_latest_added_bug()
     >>> print_attachments(get_latest_added_bug().attachments)
     LibraryFileAlias sampledata text/plain UNSPECIFIED
+    some text
 
 Attachments sent in replies to existing bugs are stored too.
 
@@ -2090,6 +2100,7 @@ Attachments sent in replies to existing bugs are stored too.
     True
     >>> print_attachments(new_message.bugattachments)
     LibraryFileAlias attachment.txt text/plain UNSPECIFIED
+    blahhh
 
 If an attachment has the content type text/x-diff or text/x-patch,
 it is considered to contain a patch.
@@ -2121,14 +2132,17 @@ it is considered to contain a patch.
     ... Content-type: text/plain
     ... Content-disposition: attachment; filename="logfile"
     ...
-    ... this should be diff output.
+    ... this should be log data.
     ... --BOUNDARY"""
     >>>
     >>> process_email(submit_mail)
     >>> print_attachments(get_latest_added_bug().attachments)
     LibraryFileAlias sourcefile1.diff text/x-diff PATCH
+    this should be diff output.
     LibraryFileAlias sourcefile2.diff text/x-patch PATCH
+    this should be another diff output.
     LibraryFileAlias logfile text/plain UNSPECIFIED
+    this should be log data.
 
 A mail attachment without a filename is named "unnamed".
 
@@ -2155,6 +2169,7 @@ A mail attachment without a filename is named "unnamed".
     >>> process_email(submit_mail)
     >>> print_attachments(get_latest_added_bug().attachments)
     LibraryFileAlias unnamed text/plain UNSPECIFIED
+    this could be some log data.
 
 Two or more unnamed attachments are sequentially numbered.
 
@@ -2191,8 +2206,11 @@ Two or more unnamed attachments are sequentially numbered.
     >>> process_email(submit_mail)
     >>> print_attachments(get_latest_added_bug().attachments)
     LibraryFileAlias unnamed text/plain UNSPECIFIED
+    this could be some log data.
     LibraryFileAlias unnamed-1 text/plain UNSPECIFIED
+    this could be logfile 2.
     LibraryFileAlias unnamed-2 text/plain UNSPECIFIED
+    this could be logfile 3.
 
 If an email has two attachments with the same filename, the names are
 not changed.
@@ -2225,7 +2243,40 @@ not changed.
     >>> process_email(submit_mail)
     >>> print_attachments(get_latest_added_bug().attachments)
     LibraryFileAlias logfile text/plain UNSPECIFIED
+    this could be some log data.
     LibraryFileAlias logfile text/plain UNSPECIFIED
+    this could be some other log data.
+
+Base64 encoded attachments are decoded before being stored.
+
+    >>> submit_mail = """From: Sample Person <test@canonical.com>
+    ... To: new@bugs.canonical.com
+    ... Date: Fri Jun 17 10:20:23 BST 2005
+    ... Subject: Another bug in Firefox
+    ... Content-type: multipart/mixed; boundary="BOUNDARY"
+    ...
+    ... --BOUNDARY
+    ... Content-type: text/plain
+    ... Content-transfer-encoding: 7bit
+    ...
+    ... Found bug N+10 in Firefox. Attached image file not properly
+    ... displayed.
+    ...
+    ...  affects firefox
+    ... --BOUNDARY
+    ... Content-Type: image/jpeg; name=image.jpg
+    ... Content-Transfer-Encoding: base64
+    ... X-Attachment-Id: f_fcuhv1fz0
+    ... Content-Disposition: attachment; filename=image.jpg
+    ... 
+    ... dGhpcyBpcyBub3QgYSByZWFsIEpQRyBmaWxl==
+    ... --BOUNDARY"""
+    >>>
+    >>> process_email(submit_mail)
+    >>> print_attachments(get_latest_added_bug().attachments)
+    LibraryFileAlias image.jpg image/jpeg UNSPECIFIED
+    this is not a real JPG file
+
 
 XXX: Add tests for non-ascii mails.
      -- Bjorn Tillenius, 2005-05-20
