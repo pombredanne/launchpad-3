@@ -16,6 +16,7 @@ instance here:
     >>> from canonical.launchpad.components.externalbugtracker import Bugzilla
 
     >>> from canonical.launchpad.ftests.externalbugtracker import TestIssuezilla
+    >>> from canonical.launchpad.scripts.checkwatches import BugWatchUpdater
     >>> from canonical.testing import LaunchpadZopelessLayer
     >>> txn = LaunchpadZopelessLayer.txn
     >>> mozilla_bugzilla = getUtility(IBugTrackerSet).getByName('mozilla.org')
@@ -28,7 +29,9 @@ instance here:
     123543:
     42: FUBAR
     42: FUBAR
-    >>> issuezilla.updateBugWatches(mozilla_bugzilla.watches)
+    >>> bug_watch_updater = BugWatchUpdater(txn)
+    >>> bug_watch_updater.updateBugWatches(
+    ...     issuezilla, mozilla_bugzilla.watches)
     INFO:...:Updating 4 watches on https://bugzilla.mozilla.org
     WARNING:...:Didn't find bug u'42' on https://bugzilla.mozilla.org
     (local bugs: 1, 2).
@@ -64,7 +67,8 @@ Mozilla.org's using this old version. Here's the scoop:
 
 We support them just fine:
 
-    >>> old_bugzilla.updateBugWatches(mozilla_bugzilla.watches)
+    >>> bug_watch_updater.updateBugWatches(
+    ...     old_bugzilla, mozilla_bugzilla.watches)
     INFO:...:Updating 4 watches on https://bugzilla.mozilla.org
     WARNING:...:Didn't find bug u'2000' on https://bugzilla.mozilla.org
     (local bugs: 1).
@@ -102,7 +106,8 @@ Some Bugzillas have some weird properties that we need to cater for:
 
 Yet everything still works as expected:
 
-    >>> weird_bugzilla.updateBugWatches(mozilla_bugzilla.watches)
+    >>> bug_watch_updater.updateBugWatches(
+    ...     weird_bugzilla, mozilla_bugzilla.watches)
     INFO:...:Updating 4 watches on https://bugzilla.mozilla.org
     WARNING:...:Didn't find bug u'42' on https://bugzilla.mozilla.org
     (local bugs: 1, 2).
@@ -127,7 +132,8 @@ invalid XML:
     (2, 20)
     >>> "</foobar>" in broken_bugzilla._readBugItemFile()
     True
-    >>> broken_bugzilla.updateBugWatches(mozilla_bugzilla.watches)
+    >>> bug_watch_updater.updateBugWatches(
+    ...     broken_bugzilla, mozilla_bugzilla.watches)
     Traceback (most recent call last):
     ...
     UnparseableBugData: Failed to parse XML description...

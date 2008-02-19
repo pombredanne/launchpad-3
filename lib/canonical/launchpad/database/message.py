@@ -24,6 +24,7 @@ from canonical.launchpad.interfaces import (
     ILibraryFileAliasSet, IMessage, IMessageChunk, IMessageSet, IPersonSet,
     InvalidEmailMessage, NotFoundError, PersonCreationRationale,
     UnknownSender)
+from canonical.launchpad.validators.person import public_person_validator
 
 from canonical.database.sqlbase import SQLBase
 from canonical.database.constants import UTC_NOW
@@ -44,7 +45,9 @@ class Message(SQLBase):
     _defaultOrder = '-id'
     datecreated = UtcDateTimeCol(notNull=True, default=UTC_NOW)
     subject = StringCol(notNull=False, default=None)
-    owner = ForeignKey(foreignKey='Person', dbName='owner', notNull=True)
+    owner = ForeignKey(
+        dbName='owner', foreignKey='Person',
+        validator=public_person_validator, notNull=True)
     parent = ForeignKey(foreignKey='Message', dbName='parent',
         notNull=False, default=None)
     distribution = ForeignKey(foreignKey='Distribution',
@@ -131,9 +134,12 @@ class MessageSet:
             raise NotFoundError(rfc822msgid)
         return messages
 
-    def fromText(self, subject, content, owner=None, datecreated=UTC_NOW):
+    def fromText(self, subject, content, owner=None, datecreated=UTC_NOW,
+        rfc822msgid=None):
         """See IMessageSet."""
-        rfc822msgid = make_msgid("launchpad")
+        if rfc822msgid is None:
+            rfc822msgid = make_msgid("launchpad")
+
         message = Message(
             subject=subject, rfc822msgid=rfc822msgid, owner=owner,
             datecreated=datecreated)

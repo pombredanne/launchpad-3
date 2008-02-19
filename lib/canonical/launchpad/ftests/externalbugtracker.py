@@ -4,6 +4,7 @@
 
 __metaclass__ = type
 
+import email
 import os
 import re
 import urlparse
@@ -488,7 +489,7 @@ class TestSourceForge(SourceForge):
         return open(file_path, 'r')
 
 
-class TestDebianBug:
+class TestDebianBug(debbugs.Bug):
     """A debbugs bug that doesn't require the debbugs db."""
 
     def __init__(self, reporter_email='foo@example.com', package='evolution',
@@ -504,6 +505,13 @@ class TestDebianBug:
         self.severity = severity
         self.tags = tags
         self.id = id
+        self._emails = []
+
+    def __getattr__(self, name):
+        # We redefine this method here to as to avoid some of the
+        # behaviour of debbugs.Bug from raising spurious errors during
+        # testing.
+        return getattr(self, name, None)
 
 
 class TestDebBugsDB:
@@ -526,6 +534,7 @@ class TestDebBugsDB:
                 'debbugs-log.pl exited with code 512')
 
         comment_data = open(self.data_file).read()
+        bug._emails = []
         bug.comments = [comment.strip() for comment in
             comment_data.split('--\n')]
 
@@ -546,5 +555,8 @@ class TestDebBugs(DebBugs):
     def _findBug(self, bug_id):
         if bug_id not in self.bugs:
             raise BugNotFound(bug_id)
-        return self.bugs[bug_id]
+
+        bug = self.bugs[bug_id]
+        self.debbugs_db.load_log(bug)
+        return bug
 

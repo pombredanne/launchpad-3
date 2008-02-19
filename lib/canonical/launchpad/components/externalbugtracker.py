@@ -29,7 +29,6 @@ from zope.interface import implements
 from canonical.cachedproperty import cachedproperty
 from canonical.config import config
 from canonical import encoding
-from canonical.database.constants import UTC_NOW
 from canonical.database.sqlbase import flush_database_updates, commit
 from canonical.launchpad.scripts import log, debbugs
 from canonical.launchpad.interfaces import (
@@ -362,139 +361,31 @@ class ExternalBugTracker:
         # Also put it in the log.
         log.error(message, exc_info=info)
 
-    def updateBugWatches(self, bug_watches):
-        """Update the given bug watches."""
-        # Save the url for later, since we might need it to report an
-        # error after a transaction has been aborted.
-        bug_tracker_url = self.baseurl
+    def importBugComments(self, bug_watch):
+        """See `ISupportsCommentImport`."""
+        imported_comments = 0
+        for comment_id in self.getCommentIds(bug_watch):
+            displayname, email = self.getPosterForComment(
+                bug_watch, comment_id)
 
-        # Some tests pass a list of bug watches whilst checkwatches.py
-        # will pass a SelectResults instance. We convert bug_watches to a
-        # list here to ensure that were're doing sane things with it
-        # later on.
-        bug_watches = list(bug_watches)
+            poster = getUtility(IPersonSet).ensurePerson(
+                email, displayname, PersonCreationRationale.BUGIMPORT,
+                comment='when importing comments for %s.' % bug_watch.title)
 
-        # We limit the number of watches we're updating by the
-        # ExternalBugTracker's batch_size. In an ideal world we'd just
-        # slice the bug_watches list but for the sake of testing we need
-        # to ensure that the list of bug watches is ordered by remote
-        # bug id before we do so.
-        remote_ids = sorted(
-            [bug_watch.remotebug for bug_watch in bug_watches])
-        if self.batch_size is not None:
-            remote_ids = remote_ids[:self.batch_size]
+            comment_message = self.getMessageForComment(
+                bug_watch, comment_id, poster)
+            if not bug_watch.hasComment(comment_id):
+                bug_watch.addComment(comment_id, comment_message)
+                imported_comments += 1
 
-            for bug_watch in list(bug_watches):
-                if bug_watch.remotebug not in remote_ids:
-                    bug_watches.remove(bug_watch)
-
-        self.info("Updating %i watches on %s" %
-                  (len(bug_watches), bug_tracker_url))
-
-        bug_watch_ids = [bug_watch.id for bug_watch in bug_watches]
-        bug_watches_by_remote_bug = self._getBugWatchesByRemoteBug(
-            bug_watch_ids)
-
-        # Do things in a fixed order, mainly to help with testing.
-        bug_ids_to_update = sorted(bug_watches_by_remote_bug)
-
-        try:
-            self.initializeRemoteBugDB(bug_ids_to_update)
-        except Exception, error:
-            # We record the error against all the bugwatches that should
-            # have been updated before re-raising it. We also update the
-            # bug watches' lastchecked dates so that checkwatches
-            # doesn't keep trying to update them every time it runs.
-            errortype = get_bugwatcherrortype_for_error(error)
-            for bugwatch in bug_watches:
-                bugwatch.lastchecked = UTC_NOW
-                bugwatch.last_error_type = errortype
-            raise
-
-        # Again, fixed order here to help with testing.
-        bug_ids = sorted(bug_watches_by_remote_bug.keys())
-        for bug_id in bug_ids:
-            bug_watches = bug_watches_by_remote_bug[bug_id]
-            local_ids = ", ".join(str(watch.bug.id) for watch in bug_watches)
-            try:
-                new_remote_status = None
-                new_malone_status = None
-                new_remote_importance = None
-                new_malone_importance = None
-                error = None
-
-                # XXX: 2007-10-17 Graham Binns
-                #      This nested set of try:excepts isn't really
-                #      necessary and can be refactored out when bug
-                #      136391 is dealt with.
-                try:
-                    new_remote_status = self.getRemoteStatus(bug_id)
-                    new_malone_status = self.convertRemoteStatus(
-                        new_remote_status)
-
-                    new_remote_importance = self.getRemoteImportance(bug_id)
-                    new_malone_importance = self.convertRemoteImportance(
-                        new_remote_importance)
-                except InvalidBugId:
-                    error = BugWatchErrorType.INVALID_BUG_ID
-                    self.warning(
-                        "Invalid bug %r on %s (local bugs: %s)." % (
-                            bug_id, self.baseurl, local_ids),
-                        properties=[
-                            ('bug_id', bug_id),
-                            ('local_ids', local_ids)],
-                        info=sys.exc_info())
-                except BugNotFound:
-                    error = BugWatchErrorType.BUG_NOT_FOUND
-                    self.warning(
-                        "Didn't find bug %r on %s (local bugs: %s)." % (
-                            bug_id, self.baseurl, local_ids),
-                        properties=[
-                            ('bug_id', bug_id),
-                            ('local_ids', local_ids)],
-                        info=sys.exc_info())
-
-                for bug_watch in bug_watches:
-                    bug_watch.lastchecked = UTC_NOW
-                    bug_watch.last_error_type = error
-                    if new_malone_status is not None:
-                        bug_watch.updateStatus(new_remote_status,
-                            new_malone_status)
-                    if new_malone_importance is not None:
-                        bug_watch.updateImportance(new_remote_importance,
-                            new_malone_importance)
-                    if (ISupportsCommentImport.providedBy(self) and
-                        self.import_comments):
-                        self.importBugComments(bug_watch)
-
-            except (KeyboardInterrupt, SystemExit):
-                # We should never catch KeyboardInterrupt or SystemExit.
-                raise
-            except Exception, error:
-                # If something unexpected goes wrong, we shouldn't break the
-                # updating of the other bugs.
-
-                # Restart the transaction so that subsequent
-                # bug watches will get recorded.
-                self.txn.abort()
-                self.txn.begin()
-                bug_watches_by_remote_bug = self._getBugWatchesByRemoteBug(
-                    bug_watch_ids)
-
-                # We record errors against the bug watches and update
-                # their lastchecked dates so that we don't try to
-                # re-check them every time checkwatches runs.
-                errortype = get_bugwatcherrortype_for_error(error)
-                for bugwatch in bug_watches:
-                    bugwatch.lastchecked = UTC_NOW
-                    bugwatch.last_error_type = errortype
-
-                self.error(
-                    "Failure updating bug %r on %s (local bugs: %s)." % (
-                        bug_id, bug_tracker_url, local_ids),
-                    properties=[
-                        ('bug_id', bug_id),
-                        ('local_ids', local_ids)])
+        if imported_comments > 0:
+            self.info("Imported %(count)i comments for remote bug "
+                "%(remotebug)s on %(bugtracker_url)s into Launchpad bug "
+                "%(bug_id)s." %
+                {'count': imported_comments,
+                 'remotebug': bug_watch.remotebug,
+                 'bugtracker_url': self.baseurl,
+                 'bug_id': bug_watch.bug.id})
 
 
 #
@@ -982,99 +873,44 @@ class DebBugs(ExternalBugTracker):
         # Need to flush databse updates, so that the bug watch knows it
         # is linked from a bug task.
         flush_database_updates()
-        self.updateBugWatches([bug_watch])
 
         return bug
 
-    def importBugComments(self, bug_watch):
-        """Import the comments from a DebBugs bug."""
+    def getCommentIds(self, bug_watch):
+        """Return all the comment IDs for a given remote bug."""
         debian_bug = self._findBug(bug_watch.remotebug)
+        self._loadLog(debian_bug)
 
-        try:
-            self._loadLog(debian_bug)
-        except debbugs.LogParseFailed, error:
-            self.error(
-                "Unable to import comments for DebBugs bug #%s. "
-                "Could not parse comment log." % bug_watch.remotebug)
-            return
-
-        imported_comments = []
+        comment_ids = []
         for comment in debian_bug.comments:
-            bug_message = self._importDebBugsComment(comment, bug_watch)
+            parsed_comment = email.message_from_string(comment)
+            comment_ids.append(parsed_comment['message-id'])
 
-            if bug_message is not None:
-                imported_comments.append(bug_message)
+        return comment_ids
 
-        if len(imported_comments) > 0:
-            self.info(
-                "Imported %(count)i comments for remote bug %(remotebug)s "
-                "on %(bugtracker_url)s into Launchpad bug %(bug_id)s." % {
-                    'count': len(imported_comments),
-                    'remotebug': bug_watch.remotebug,
-                    'bugtracker_url': self.baseurl,
-                    'bug_id': bug_watch.bug.id})
+    def getPosterForComment(self, bug_watch, comment_id):
+        """Return a tuple of (name, emailaddress) for a comment's poster."""
+        debian_bug = self._findBug(bug_watch.remotebug)
+        self._loadLog(debian_bug)
 
-    def _importDebBugsComment(self, comment, bug_watch):
-        """Import a debbugs comment and link it to a bug watch.
+        for comment in debian_bug.comments:
+            parsed_comment = email.message_from_string(comment)
+            if parsed_comment['message-id'] == comment_id:
+                return parseaddr(parsed_comment['from'])
 
-        Return the BugMessage produced by the link or None if a comment
-        wasn't imported.
-        """
-        # Debian comments are all rfc822 compliant, so we can use
-        # the email module to parse them. We do this rather than
-        # simply passing the raw message to MessageSet.fromEmail()
-        # so that we can have finer control over the rationale for
-        # any new Persons that we create.
-        parsed_comment = email.message_from_string(comment)
+    def getMessageForComment(self, bug_watch, comment_id, poster):
+        """Return a Message object for a comment."""
+        debian_bug = self._findBug(bug_watch.remotebug)
+        self._loadLog(debian_bug)
 
-        # We only link those messages which aren't already linked to to
-        # the bug.
-        bug_messages = [bug_message.rfc822msgid for bug_message
-            in bug_watch.bug.messages]
-        if parsed_comment['message-id'] not in bug_messages:
-            # We need to assign this comment to an owner, so we look for
-            # a From header to the email or, failing that, a Reply-to
-            # header.
-            if 'from' in parsed_comment:
-                owner_email = parsed_comment['from']
-            else:
-                # If we can't find an owner for the comment we can't
-                # carry on.
-                self.warning(
-                    "Unable to parse comment %s on Debian bug %s: "
-                    "No valid sender address found." % (
-                        parsed_comment.get('message-id', ''),
-                        bug_watch.remotebug))
-                return None
+        for comment in debian_bug.comments:
+            parsed_comment = email.message_from_string(comment)
+            if parsed_comment['message-id'] == comment_id:
+                message = getUtility(IMessageSet).fromEmail(comment, poster,
+                    parsed_message=parsed_comment)
 
-            display_name, email_addr = parseaddr(owner_email)
-
-            owner = getUtility(IPersonSet).ensurePerson(email_addr.lower(),
-                display_name, PersonCreationRationale.BUGWATCH,
-                "when the comments for debbugs #%s were imported into "
-                "Launchpad." % bug_watch.remotebug,
-                getUtility(ILaunchpadCelebrities).bug_watch_updater)
-
-            message = getUtility(IMessageSet).fromEmail(comment, owner,
-                parsed_message=parsed_comment)
-
-            bug_message = bug_watch.bug.linkMessage(message, bug_watch)
-
-            # XXX 2008-01-22 gmb:
-            #     We should be using self.txn.commit() here, however,
-            #     bug 3989 (ztm.commit() only works once pers zopeless
-            #     run) prevents us from doing so. Using commit()
-            #     directly is the best available workaround, but we need
-            #     to change this once the bug is resolved.
-            # We deliberately commit here since we don't want a later
-            # error to end up rolling back sucessfully imported
-            # comments.
-            commit()
-        else:
-            bug_message = None
-
-        return bug_message
-
+                commit()
+                return message
 
 #
 # Mantis
