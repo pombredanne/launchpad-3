@@ -24,6 +24,7 @@ __all__ = [
     'TOP',
     'create_transaction_manager',
     'make_browser',
+    'num_requests_pending',
     'review_list',
     'run_mailman',
     'transactionmgr',
@@ -297,3 +298,21 @@ def collect_archive_message_ids(team_name):
                 message_ids.append(mo.group('id'))
                 break
     return message_ids
+
+
+def num_requests_pending(list_name):
+    """Return the number of requests pending for the list.
+
+    We do it this way in order to be totally safe, so that there's no
+    possibility of leaving a locked list floating around.  doctest doesn't
+    always do the right thing.
+    """
+    # Import this here because paths aren't set up correctly in the module
+    # globals.
+    from Mailman.MailList import MailList
+    # The list must be locked to make this query.
+    mailing_list = MailList(list_name)
+    try:
+        return mailing_list.NumRequestsPending()
+    finally:
+        mailing_list.Unlock()

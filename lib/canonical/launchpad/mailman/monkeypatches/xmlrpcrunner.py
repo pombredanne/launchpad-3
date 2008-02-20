@@ -328,8 +328,8 @@ class XMLRPCRunner(Runner):
                        COMMASPACE.join(modifications.keys()))
                 continue
             try:
+                mlist = MailList(team_name)
                 try:
-                    mlist = MailList(team_name)
                     for key, value in list_settings.items():
                         setattr(mlist, key, value)
                     mlist.Save()

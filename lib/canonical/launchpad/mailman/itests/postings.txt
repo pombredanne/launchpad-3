@@ -314,12 +314,9 @@ However, once she validates this address, she can post from it.
 
 There should also be no held requests pending.
 
-    # The mailing list must be locked to make this query.
-    >>> from Mailman.MailList import MailList
-    >>> mailing_list = MailList('itest-one')
-    >>> mailing_list.NumRequestsPending()
+    # Use a helper for complete safety.
+    >>> itest_helper.num_requests_pending('itest-one')
     0
-    >>> mailing_list.Unlock()
 
 
 == Preventing archiver forgeries ==
