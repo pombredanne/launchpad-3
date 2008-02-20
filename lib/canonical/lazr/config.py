@@ -117,6 +117,51 @@ class Section:
         return copy.deepcopy(self)
 
 
+class ImplicitTypeSection(Section):
+    """See `ISection`.
+
+    ImplicitTypeSection supports implicit conversion of key values to
+    simple datatypes. It accepts the same section data as Section; the
+    datatype information is not embedded in the schema or the config file.
+    """
+    re_types = re.compile(r'''
+        (?P<false> ^false$) |
+        (?P<true> ^true$) |
+        (?P<int> ^[+-]?\d+$) |
+        (?P<str> ^.*$)
+        ''', re.IGNORECASE | re.VERBOSE)
+
+    def _implicit(self, value):
+        """Return the value as the datatype the str appears to be.
+
+        Conversion rules:
+        * bool: a single word, 'true' or 'false', case insensitive.
+        * int: a single word that is a number. Signed is supported,
+            hex and octal numbers are not.
+        * str: anything else.
+        """
+        match = self.re_types.match(value)
+        if match.group('false'):
+            return False
+        elif match.group('true'):
+            return True
+        elif match.group('int'):
+            return int(value)
+        else:
+            # match.group('str'); just return the value.
+            return value
+
+    def __getitem__(self, key):
+        """See `ISection`."""
+        value = super(ImplicitTypeSection, self).__getitem__(key)
+        return self._implicit(value)
+
+    def __getattr__(self, name):
+        """See `ISection`."""
+        value = super(ImplicitTypeSection, self).__getattr__(name)
+        return self._implicit(value)
+
+
 class ConfigSchema:
     """See `IConfigSchema`."""
     implements(IConfigSchema, IConfigLoader)
@@ -283,6 +328,16 @@ class ConfigSchema:
         config = Config(self)
         config.push(filename, conf_data)
         return config
+
+
+class ImplicitTypeSchema(ConfigSchema):
+    """See `IConfigSchema`.
+
+    ImplicitTypeSchema creates a config that supports implicit datatyping
+    of section key values.
+    """
+
+    _section_factory = ImplicitTypeSection
 
 
 class ConfigData:

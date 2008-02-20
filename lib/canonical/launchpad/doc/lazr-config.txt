@@ -783,6 +783,7 @@ a bad name.
 
 Sections appear to be attributes of the config.
 
+    >>> config = schema.load(local_conf)
     >>> config.section_1 is config['section_1']
     True
 
@@ -815,7 +816,7 @@ have a section that matches the identifier name.
 Section keys can be accessed directly as members.
 
     >>> config.section_1.key2
-    'bar and baz'
+    'sharing is fun'
     >>> config.section_3.app_b.key2
     'changed'
 
@@ -827,3 +828,114 @@ AttributeError.
       ...
     AttributeError: No section key named non_key.
 
+
+== Implicit data typing ==
+
+The ImplicitTypeSchema can create configs that support implicit
+datatypes. The value of a Section key is automatically converted from
+str to the type the value appears to be. Implicit typing does not add
+any validation support; it adds type casting conveniences for the
+developer.
+
+An ImplicitTypeSchema can be used to parse the same schema and conf
+files that Schema uses.
+
+    >>> from canonical.lazr.config import ImplicitTypeSchema
+
+    >>> implicit_schema = ImplicitTypeSchema(base_conf)
+    >>> verifyObject(IConfigSchema, implicit_schema)
+    True
+
+The config loaded by ImplicitTypeSchema is the same class with the same
+sections as is made by Schema.
+
+    >>> implicit_config = implicit_schema.load(local_conf)
+    >>> implicit_config
+    <canonical.lazr.config.Config object at ...>
+    >>> config
+    <canonical.lazr.config.Config object at ...>
+
+    >>> sections = sorted(section.name for section in config)
+    >>> implicit_sections = sorted(
+    ...     section.name for section in implicit_config)
+    >>> implicit_sections == sections
+    True
+
+    >>> verifyObject(ISection, implicit_config['section_3.app_b'])
+    True
+
+But the type of sections in the config support implicit typing.
+
+    >>> implicit_config['section_3.app_b']
+    <canonical.lazr.config.ImplicitTypeSection object at ...>
+
+ImplicitTypeSection, in contrast to Section, converting values that
+appear to be integer or boolean into ints and bools.
+
+    >>> config['section_3.app_b']['key1']
+    '17'
+    >>> implicit_config['section_3.app_b']['key1']
+    17
+
+    >>> config['section-2.app-b']['key1']
+    'True'
+    >>> implicit_config['section-2.app-b']['key1']
+    True
+
+The value is also converted when it is accessed as an attribute.
+
+    >>> implicit_config.section_3.app_b.key1
+    17
+
+    >>> implicit_config['section-2.app-b'].key1
+    True
+
+ImplicitTypeSection uses a private method that employs heuristic rules
+to convert strings into simple types. It may return a str, bool, or int.
+When the argument is the word 'true' or 'false' (in any case), a bool is
+returned. Values like 'yes', 'no', '0', and '1' are not converted to
+bool.
+
+    >>> implicit = implicit_config['section_1']._implicit
+
+    >>> implicit('false')
+    False
+    >>> implicit('TRUE')
+    True
+    >>> implicit('tRue')
+    True
+
+    >>> implicit('yes')
+    'yes'
+    >>> implicit('1')
+    1
+    >>> implicit('True or False')
+    'True or False'
+
+When the argument is an unbroken sequence of numbers, an int is
+returned. The number may have a leading positive or negative. Octal and
+hex notation is not supported.
+
+    >>> implicit('0')
+    0
+    >>> implicit('2001')
+    2001
+    >>> implicit('-55')
+    -55
+    >>> implicit('+404')
+    404
+    >>> implicit('0100')
+    100
+
+    >>> implicit('2001-01-01')
+    '2001-01-01'
+    >>> implicit('1000*60*5')
+    '1000*60*5'
+    >>> implicit('1000 * 60 * 5')
+    '1000 * 60 * 5'
+    >>> implicit('1,024')
+    '1,024'
+    >>> implicit('0.5')
+    '0.5'
+    >>> implicit('0x100')
+    '0x100'
