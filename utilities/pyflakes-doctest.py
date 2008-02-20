@@ -96,9 +96,9 @@ def check_doctest(filename):
         (lineno, offset, line) = exc[1][1:]
         if line.endswith("\n"):
             line = line[:-1]
-        print >>sys.stderr, 'could not compile %r:%d' % (filename, lineno)
-        print >>sys.stderr, line
-        print >>sys.stderr, " " * (offset-1), "^"
+        print >> sys.stderr, 'could not compile %r:%d' % (filename, lineno)
+        print >> sys.stderr, line
+        print >> sys.stderr, " " * (offset-1), "^"
     else:
         w = pyflakes.Checker(tree, filename)
         for warning in sorted(w.messages, key=operator.attrgetter('lineno')):
