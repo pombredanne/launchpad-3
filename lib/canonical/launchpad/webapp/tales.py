@@ -448,6 +448,8 @@ class ObjectImageDisplayAPI:
             return '/@@/distribution'
         elif ISprint.providedBy(context):
             return '/@@/meeting'
+        elif IBug.providedBy(context):
+            return '/@@/bug'
         return '/@@/nyet-icon'
 
     def default_logo_resource(self, context):
@@ -547,12 +549,6 @@ class PillarSearchItemAPI(ObjectImageDisplayAPI):
 
     def logo(self):
         raise NotImplementedError("A PillarSearchItem doesn't have a logo")
-
-
-class BugImageDisplayAPI(ObjectImageDisplayAPI):
-
-    def icon(self):
-        return '<img src="/@@/bug" alt=""/>'
 
 
 class BugTaskImageDisplayAPI(ObjectImageDisplayAPI):
