@@ -207,8 +207,7 @@ individual team members.
 
 == Reactivated lists ==
 
-Reactivating a mailing list will not cause notification messages to
-be sent out again.
+Notification messages are not sent out when a list is reactivated.
 
     >>> renewed_team, renewed_list = new_team('renewed-team', with_list=True)
     >>> anne.join(renewed_team)
