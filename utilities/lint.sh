@@ -137,6 +137,7 @@ if [ ! -z "$xmllint_notices" ]; then
     group_lines_by_file "$xmllint_notices"
 fi
 
+
 doctestfiles=`echo "$files" | grep -E '/(doc|pagetests|f?tests)/.*txt$'`
 if [ ! -z "$doctestfiles" ]; then
     pyflakes_doctest_notices=`$utilitiesdir/pyflakes-doctest.py $doctestfiles`
@@ -147,6 +148,7 @@ if [ ! -z "$doctestfiles" ]; then
         group_lines_by_file "$pyflakes_doctest_notices"
     fi
 fi
+
 
 pyfiles=`echo "$files" | grep '.py$'`
 if [ -z "$pyfiles" ]; then
