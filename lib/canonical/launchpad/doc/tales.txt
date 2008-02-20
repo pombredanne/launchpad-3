@@ -181,14 +181,16 @@ For bugs, fmt:link takes to the bug redirect page.
     >>> from canonical.launchpad.interfaces import IBugSet
     >>> bug = getUtility(IBugSet).get(1)
     >>> test_tales("bug/fmt:link", bug=bug)
-    u'<a href=".../bugs/1/"><img src="/@@/bug"...>&nbsp;Bug #1: Firefox does not support SVG</a>'
+    u'<a href=".../bugs/1/"><img ...src="/@@/bug" />&nbsp;Bug #1: Firefox does
+    not support SVG</a>'
 
 For bugtasks, fmt:link shows the severity bug icon, and links to the
 appropriate project's bug.
 
     >>> bugtask = bug.bugtasks[0]
     >>> test_tales("bugtask/fmt:link", bugtask=bugtask)
-    u'<a href=".../firefox/+bug/1/"><img ...src="/@@/bug-low" />&nbsp;Bug #1: Firefox does not support SVG</a>'
+    u'<a href=".../firefox/+bug/1/"><img ...src="/@@/bug-low" />&nbsp;Bug #1:
+    Firefox does not support SVG</a>'
 
 Bug titles may contain markup (when describing issue regarding markup).
 Their titles are escaped so that they display correctly. This also
@@ -197,7 +199,7 @@ title might be interpreted by the browser.
 
     >>> bug.title = "Opps<br/><script>alert('XSS')</script>"
     >>> test_tales("bug/fmt:link", bug=getUtility(IBugSet).get(1))
-    u'<a href=".../bugs/1/"><img src="/@@/bug"...>&nbsp;Bug #1:
+    u'<a href=".../bugs/1/"><img ...src="/@@/bug" />&nbsp;Bug #1:
       Opps&lt;br/&gt;&lt;script&gt;alert(\'XSS\')&lt;/script&gt;</a>'
 
     >>> test_tales("bugtask/fmt:link", bugtask=bugtask)
@@ -239,6 +241,34 @@ BugBranches also have a formatter.
     >>> test_tales("bugbranch/fmt:link", bugbranch=bugbranch)
     u'<a href="...+bug..."><img .../>&nbsp;Bug #...</a>'
 
+ICodeImport providers have a formatter.
+
+    >>> login('foo.bar@canonical.com')
+    >>> code_import = factory.makeCodeImport()
+    >>> test_tales("code_import/fmt:link", code_import=code_import)
+    u'<a href="...+code-import/">Import of...</a>'
+
+IProductSeries providers have a formatter.
+
+    >>> product_series = factory.makeSeries()
+    >>> test_tales("product_series/fmt:link", product_series=product_series)
+    u'... Series: ...'
+
+ISpecification providers have a formatter.
+
+    >>> login('test@canonical.com')
+    >>> specification = factory.makeSpec()
+    >>> test_tales("specification/fmt:link", specification=specification)
+    u'...<img ... src="/@@/blueprint-undefined" />&nbsp;...'
+
+ISpecificationBranch providers have a formatter.
+
+    >>> specification = factory.makeSpec()
+    >>> branch = factory.makeBranch()
+    >>> specification_branch = specification.linkBranch(branch, branch.owner)
+    >>> test_tales("specification_branch/fmt:link",
+    ...     specification_branch=specification_branch)
+    u'...<img ... src="/@@/blueprint-undefined" />&nbsp;...'
 
 
 == The fmt: namespace to get strings (hiding) ==

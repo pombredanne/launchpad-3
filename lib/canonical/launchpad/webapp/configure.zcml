@@ -126,16 +126,16 @@
         />
 
     <adapter
-        for="canonical.launchpad.interfaces.IKarmaCategory"
+        for="canonical.launchpad.interfaces.IBug"
         provides="zope.app.traversing.interfaces.IPathAdapter"
-        factory="canonical.launchpad.webapp.tales.KarmaCategoryImageDisplayAPI"
+        factory="canonical.launchpad.webapp.tales.ObjectImageDisplayAPI"
         name="image"
         />
 
     <adapter
-        for="canonical.launchpad.interfaces.IBug"
+        for="canonical.launchpad.interfaces.IKarmaCategory"
         provides="zope.app.traversing.interfaces.IPathAdapter"
-        factory="canonical.launchpad.webapp.tales.BugImageDisplayAPI"
+        factory="canonical.launchpad.webapp.tales.KarmaCategoryImageDisplayAPI"
         name="image"
         />
 
