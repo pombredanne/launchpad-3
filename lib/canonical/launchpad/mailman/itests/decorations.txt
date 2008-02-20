@@ -152,7 +152,7 @@ This url should exactly match the link given on the team's overview page.
 
     >>> browser.open('http://launchpad.dev/~itest-one/')
     >>> browser.getLink(id='mailing-list-archive')
-    <Link text='http://lists.launchpad.dev/itest-one'
+    <Link text='Mailing list archive'
           url='http://lists.launchpad.dev/itest-one'>
     >>> message['list-archive']
     '<http://lists.launchpad.dev/itest-one>'
