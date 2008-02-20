@@ -158,7 +158,7 @@ class TestCodeImportSetGetJobForMachine(unittest.TestCase):
         person_a = self.factory.makePerson()
         person_b = self.factory.makePerson()
         person_c = self.factory.makePerson()
-        self.makeJob(CodeImportJobState.PENDING, -5, person_b),
+        self.makeJob(CodeImportJobState.PENDING, -5, person_b)
         self.makeJob(CodeImportJobState.PENDING, -2, person_a)
         self.assertJobIsSelected(
             self.makeJob(CodeImportJobState.PENDING, -10, person_c))
