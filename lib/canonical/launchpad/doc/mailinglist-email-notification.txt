@@ -18,8 +18,6 @@ via email.
     ...     """
     ...     for message in pop_notifications():
     ...         body = message.get_payload()
-    ...         # Strip the first line as it's different for each recipient.
-    ...         body = body[body.find('\n')+1:]
     ...         print 'From:', message['From']
     ...         print 'To:', message['To']
     ...         if include_reply_to:
@@ -60,6 +58,7 @@ all active team members.
     To: anne.person@example.com
     Reply-To: Team One <noreply@launchpad.net>
     Subject: New Mailing List for Team One
+    Hello Anne Person,
     <BLANKLINE>
     Team One has a new team mailing list.
     <BLANKLINE>
@@ -77,6 +76,7 @@ all active team members.
     To: no-priv@canonical.com
     Reply-To: Team One <noreply@launchpad.net>
     Subject: New Mailing List for Team One
+    Hello No Privileges Person,
     <BLANKLINE>
     Team One has a new team mailing list.
     <BLANKLINE>
@@ -139,6 +139,7 @@ individual team members.
     To: anne.person@example.com
     Reply-To: Super Team <noreply@launchpad.net>
     Subject: New Mailing List for Super Team
+    Hello Anne Person,
     <BLANKLINE>
     Super Team has a new team mailing list.
     <BLANKLINE>
@@ -156,6 +157,7 @@ individual team members.
     To: cris.person@example.com
     Reply-To: Super Team <noreply@launchpad.net>
     Subject: New Mailing List for Super Team
+    Hello Cris Person,
     <BLANKLINE>
     Super Team has a new team mailing list.
     <BLANKLINE>
@@ -173,6 +175,7 @@ individual team members.
     To: lars.person@example.com
     Reply-To: Super Team <noreply@launchpad.net>
     Subject: New Mailing List for Super Team
+    Hello Lars Person,
     <BLANKLINE>
     Super Team has a new team mailing list.
     <BLANKLINE>
@@ -190,6 +193,7 @@ individual team members.
     To: no-priv@canonical.com
     Reply-To: Super Team <noreply@launchpad.net>
     Subject: New Mailing List for Super Team
+    Hello No Privileges Person,
     <BLANKLINE>
     Super Team has a new team mailing list.
     <BLANKLINE>
