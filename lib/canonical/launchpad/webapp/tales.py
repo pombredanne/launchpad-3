@@ -20,7 +20,7 @@ from zope.component import getUtility, queryAdapter
 from zope.app import zapi
 from zope.publisher.interfaces import IApplicationRequest
 from zope.publisher.interfaces.browser import IBrowserApplicationRequest
-from zope.app.traversing.interfaces import ITraversable
+from zope.app.traversing.interfaces import ITraversable, IPathAdapter
 from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 from zope.security.interfaces import Unauthorized
 from zope.security.proxy import isinstance as zope_isinstance
@@ -28,12 +28,14 @@ from zope.security.proxy import isinstance as zope_isinstance
 import pytz
 
 from canonical.config import config
+from canonical.launchpad import _
 from canonical.launchpad.interfaces import (
     BuildStatus,
     IBug,
     IBugAttachment,
     IBugNomination,
     IBugSet,
+    IDistribution,
     IFAQSet,
     IHasIcon,
     IHasLogo,
@@ -43,7 +45,6 @@ from canonical.launchpad.interfaces import (
     IProduct,
     IProject,
     ISprint,
-    IDistribution,
     IStructuralHeaderPresentation,
     NotFoundError,
     )
@@ -384,10 +385,13 @@ class ObjectFormatterAPI:
     def __init__(self, context):
         self._context = context
 
-    def url(self):
+    def url(self, extra_path=None):
         request = get_current_browser_request()
-        return canonical_url(
+        url = canonical_url(
             self._context, request, path_only_if_possible=True)
+        if extra_path is not None:
+            url = '%s/%s' % (url, extra_path)
+        return url
 
 
 class ObjectFormatterExtendedAPI(ObjectFormatterAPI):
@@ -543,6 +547,12 @@ class PillarSearchItemAPI(ObjectImageDisplayAPI):
 
     def logo(self):
         raise NotImplementedError("A PillarSearchItem doesn't have a logo")
+
+
+class BugImageDisplayAPI(ObjectImageDisplayAPI):
+
+    def icon(self):
+        return '<img src="/@@/bug" alt=""/>'
 
 
 class BugTaskImageDisplayAPI(ObjectImageDisplayAPI):
@@ -804,21 +814,67 @@ class PersonFormatterAPI(ObjectFormatterExtendedAPI):
             url, image_html, cgi.escape(person.browsername))
 
 
-class PillarFormatterAPI(ObjectFormatterExtendedAPI):
+class ConvenientFormatter(ObjectFormatterExtendedAPI):
+    """A ObjectFormatterExtendedAPI that is easy to customize"""
+
+    _permission = 'launchpad.View'
+
+    def _should_link(self):
+        """Return True if a link should be shown, False otherwise"""
+        return check_permission(self._permission, self._context)
+
+    def _values(self):
+        """Return a dict of values to use for template substitution"""
+        raise NotImplementedError(self._values)
+
+    def _make_summary(self):
+        """Create a summary from _template and _values()"""
+        values = {}
+        for key, value in self._values().iteritems():
+            if value is None:
+                values[key] = ''
+            else:
+                values[key] = cgi.escape(value)
+        return self._template % values
+
+    def _get_icon(self):
+        icon = queryAdapter(self._context, IPathAdapter, 'image').icon()
+        if 'src="/@@/nyet-icon"' in icon:
+            return None
+        else:
+            return icon
+
+    def link(self, extra_path):
+        """Return html including a link, description and icon.
+
+        Icon and link are optional, depending on type and permissions.
+        Uses self._make_summary for the summary, self._get_icon
+        for the icon, self._should_link to determine whether to link, and
+        self.url() to generate the url.
+        """
+        html = self._get_icon()
+        if html is None:
+            html = ''
+        else:
+            html += '&nbsp;'
+        html += self._make_summary()
+        if self._should_link():
+            url = self.url(extra_path)
+        else:
+            url = ''
+        if url:
+            html = '<a href="%s">%s</a>' % (url, html)
+        return html
+
+
+class PillarFormatterAPI(ConvenientFormatter):
     """Adapter for IProduct, IDistribution and IProject objects to a
     formatted string."""
 
-    def link(self, extra_path):
-        """Return an HTML link to the pillar page containing an icon
-        followed by the pillar's display name.
-        """
-        pillar = self._context
-        url = canonical_url(pillar)
-        icon_html = ObjectImageDisplayAPI(pillar).icon()
-        if extra_path:
-            url = '%s/%s' % (url, extra_path)
-        return ('<a href="%s">%s&nbsp;%s</a>' % (
-                          url, icon_html, pillar.displayname))
+    _template = '%(displayname)s'
+
+    def _values(self):
+        return {'displayname': self._context.displayname}
 
 
 class BranchFormatterAPI(ObjectFormatterExtendedAPI):
@@ -880,36 +936,115 @@ class BranchFormatterAPI(ObjectFormatterExtendedAPI):
             '%(name)s</a>: %(title)s' % self._args(extra_path))
 
 
-class BugFormatterAPI(ObjectFormatterExtendedAPI):
+class BranchSubscriptionFormatterAPI(ConvenientFormatter):
+    """Adapter for IBranchSubscription objects to a formatted string."""
+
+    _template = _('Subscription of %(person)s to %(branch)s')
+
+    def _values(self):
+        """Provide values for template substitution"""
+        return {
+            'person': self._context.person.displayname,
+            'branch': self._context.branch.title,
+        }
+
+
+class BranchMergeProposalFormatterAPI(ConvenientFormatter):
+
+    _template = _('Proposed merge of %(source)s into %(target)s')
+
+    def _values(self):
+        merge_proposal = self._context
+        return {
+            'source': merge_proposal.source_branch.title,
+            'target': merge_proposal.target_branch.title,
+            }
+
+
+class BugBranchFormatterAPI(ConvenientFormatter):
+    """Adapter providing fmt support for BugBranch objects"""
+
+    def _get_task_formatter(self):
+        task = self._context.bug.getBugTask(self._context.branch.product)
+        if task is None:
+            task = self._context.bug.bugtasks[0]
+        return BugTaskFormatterAPI(task)
+
+    def _make_summary(self):
+        """Return the summary of the related product's bug task"""
+        return self._get_task_formatter()._make_summary()
+
+    def _get_icon(self):
+        """Return the icon of the related product's bugtask"""
+        return self._get_task_formatter()._get_icon()
+
+
+class BugFormatterAPI(ConvenientFormatter):
     """Adapter for IBug objects to a formatted string."""
 
-    def link(self, extra_path):
-        """Return an HTML link to the bug page containing an icon
-        followed by the bug's title.
-        """
+    _template = 'Bug #%(id)s: %(title)s'
+
+    def _values(self):
+        """See ConvenientFormatter._values."""
         bug = self._context
-        url = canonical_url(bug)
-        if extra_path:
-            url = '%s/%s' % (url, extra_path)
-        return ('<a href="%s"><img src="/@@/bug" alt=""/>'
-                '&nbsp;Bug #%d: %s</a>' % (
-                    url, bug.id, cgi.escape(bug.title)))
+        return {'id': str(bug.id), 'title': bug.title}
 
 
-class BugTaskFormatterAPI(ObjectFormatterExtendedAPI):
+class BugTaskFormatterAPI(ConvenientFormatter):
     """Adapter for IBugTask objects to a formatted string."""
 
-    def link(self, extra_path):
-        """Return an HTML link to the bug task's page containing an icon
-        appropriate to the importance of the bug task.
-        """
-        bugtask = self._context
-        url = canonical_url(bugtask)
-        if extra_path:
-            url = '%s/%s' % (url, extra_path)
-        image_html = BugTaskImageDisplayAPI(bugtask).icon()
-        return '<a href="%s">%s&nbsp;Bug #%d: %s</a>' % (
-            url, image_html, bugtask.bug.id, cgi.escape(bugtask.bug.title))
+    def _make_summary(self):
+        return BugFormatterAPI(self._context.bug)._make_summary()
+
+
+class CodeImportFormatterAPI(ConvenientFormatter):
+    """Adapter providing fmt support for CodeImport objects"""
+
+    _template = _('Import of %(product)s: %(branch)s')
+
+    def _values(self):
+        """See ConvenientFormatter._values."""
+        branch_title = self._context.branch.title
+        if branch_title is None:
+            branch_title = _('(no title)')
+        return {'product': self._context.product.displayname,
+                'branch': branch_title,
+               }
+
+
+class ProductSeriesFormatterAPI(ConvenientFormatter):
+    """Adapter providing fmt support for ProductSeries objects"""
+
+    _template = _('%(product)s Series: %(series)s')
+
+    def _values(self):
+        """See ConvenientFormatter._values."""
+        return {'series': self._context.name,
+                'product': self._context.product.displayname}
+
+
+class SpecificationFormatterAPI(ConvenientFormatter):
+    """Adapter providing fmt support for Specification objects"""
+
+    _template = _('%(title)s')
+
+    def _values(self):
+        """See ConvenientFormatter._values."""
+        return {'title': self._context.title}
+
+
+class SpecificationBranchFormatterAPI(ConvenientFormatter):
+    """Adapter for ISpecificationBranch objects to a formatted string."""
+
+    def _make_summary(self):
+        """Provide the summary of the linked spec"""
+        formatter = SpecificationFormatterAPI(self._context.specification)
+        return formatter._make_summary()
+
+    def _get_icon(self):
+        """Provide the icon of the linked spec"""
+        formatter = SpecificationFormatterAPI(self._context.specification)
+        return formatter._get_icon()
 
 
 class NumberFormatterAPI:
