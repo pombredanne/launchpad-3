@@ -325,14 +325,5 @@ class IBranchMergeProposal(Interface):
             unspecified, the root message is used.
         """
 
-    def createSubscription(subscriber, registrant=None):
-        """Create a subscription associated with this `BranchMergeProposal`.
-
-        :param subscriber: The person who is being subscribed to this
-            `BranchMergeProposal`
-        :param registrant: The person who is subscribing the subscriber to
-            this `BranchMergeProposal`.  Defaults to subscriber.
-        """
-
     def deleteProposal():
         """Delete the proposal to merge."""

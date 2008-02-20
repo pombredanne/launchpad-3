@@ -22,9 +22,6 @@ from canonical.database.sqlbase import SQLBase, sqlvalues
 
 from canonical.launchpad.database.branchrevision import BranchRevision
 from canonical.launchpad.database.codereviewmessage import CodeReviewMessage
-from canonical.launchpad.database.codereviewsubscription import (
-    CodeReviewSubscription,
-    )
 from canonical.launchpad.database.message import Message, MessageChunk
 from canonical.launchpad.interfaces import (
     BadStateTransition,
@@ -323,10 +320,3 @@ class BranchMergeProposal(SQLBase):
         if self.conversation is None:
             self.conversation = crmsg
         return crmsg
-
-    def createSubscription(self, subscriber, registrant=None):
-        if registrant is None:
-            registrant = subscriber
-        return CodeReviewSubscription(
-            branch_merge_proposal=self, person=subscriber,
-            registrant=registrant)
