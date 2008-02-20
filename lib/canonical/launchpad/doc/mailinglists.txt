@@ -308,7 +308,8 @@ team's contact address.
     >>> email_set = getUtility(IEmailAddressSet)
     >>> print email_set.getByEmail(list_one.address)
     None
-    >>> list_one.date_activated
+    >>> print list_one.date_activated
+    None
 
     >>> list_one.transitionToStatus(MailingListStatus.ACTIVE)
     >>> list_three.transitionToStatus(MailingListStatus.ACTIVE)

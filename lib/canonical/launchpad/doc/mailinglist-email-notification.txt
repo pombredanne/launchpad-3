@@ -8,7 +8,7 @@ via email.
 
     >>> from canonical.launchpad.tests.mail_helpers import pop_notifications
 
-    >>> def print_distinct_messages_and_recipients(include_reply_to=False):
+    >>> def print_messages_and_recipients(include_reply_to=False):
     ...     """Pop all messages from stub.test_emails and print them with
     ...      their recipients.
     ...
@@ -40,7 +40,8 @@ all active team members.
     # person/team we want.
     >>> login('foo.bar@canonical.com')
     >>> anne.join(team_one)
-    >>> # Clear out the team-membership status emails.
+
+    # Clear out the team-membership status emails.
     >>> pop_notifications()
     [...]
 
@@ -50,10 +51,10 @@ all active team members.
     >>> list_one.status.name
     'ACTIVE'
 
-    >>> transaction.commit()	# Commit the emails.
+    >>> transaction.commit()	# Send the emails.
     >>> len(stub.test_emails)
     2
-    >>> print_distinct_messages_and_recipients(include_reply_to=True)
+    >>> print_messages_and_recipients(include_reply_to=True)
     From: Team One <noreply@launchpad.net>
     To: anne.person@example.com
     Reply-To: Team One <noreply@launchpad.net>
@@ -112,7 +113,8 @@ individual team members.
     >>> cris = new_person('Cris')
     >>> cris.join(super_team)
     >>> cris.join(sub_team)
-    >>> # Clear out the team-membership status emails.
+
+    # Clear out the team-membership status emails.
     >>> pop_notifications()
     [...]
 
@@ -131,10 +133,10 @@ individual team members.
     >>> super_list.status.name
     'ACTIVE'
 
-    >>> transaction.commit()	# Commit the emails.
+    >>> transaction.commit()	# Send the emails.
     >>> len(stub.test_emails)
     4
-    >>> print_distinct_messages_and_recipients(include_reply_to=True)
+    >>> print_messages_and_recipients(include_reply_to=True)
     From: Super Team <noreply@launchpad.net>
     To: anne.person@example.com
     Reply-To: Super Team <noreply@launchpad.net>
@@ -215,8 +217,9 @@ Notification messages are not sent out when a list is reactivated.
 
     >>> renewed_team, renewed_list = new_team('renewed-team', with_list=True)
     >>> anne.join(renewed_team)
-    >>> # Clear out the team-membership status emails, and the new
-    >>> # list invitation emails.
+
+    # Clear out the team-membership status emails, and the new
+    # list invitation emails.
     >>> pop_notifications()
     [...]
 
@@ -230,6 +233,6 @@ Notification messages are not sent out when a list is reactivated.
     >>> renewed_list.status.name
     'ACTIVE'
 
-    >>> transaction.commit()	# Commit any outstanding emails.
+    >>> transaction.commit()	# Send any outstanding emails.
     >>> len(stub.test_emails)
     0
