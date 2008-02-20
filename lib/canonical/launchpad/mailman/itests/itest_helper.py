@@ -39,7 +39,7 @@ TOP = os.path.normpath(os.path.join(HERE, '../../../..'))
 MAILMAN_BIN = os.path.normpath(os.path.join(
     os.path.dirname(sys.argv[0]), '../../../../', 'mailman', 'bin'))
 
-MAX_CYCLES = 2
+MAX_CYCLES = 4
 LOG_GROWTH_WAIT_INTERVAL = datetime.timedelta(seconds=30)
 SECONDS_TO_SNOOZE = 0.1
 

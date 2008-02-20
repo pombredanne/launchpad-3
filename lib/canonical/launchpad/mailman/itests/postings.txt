@@ -319,6 +319,68 @@ There should also be no held requests pending.
     0
 
 
+== Leaving and re-joining the team ==
+
+Anne now leaves the team, but she does not unsubscribe from the mailing list.
+
+    >>> login('foo.bar@canonical.com')
+    >>> anne.leave(team_one)
+    >>> logout()
+    >>> commit()
+    >>> itest_helper.wait_for_mailman()
+
+Because she is not a team member, she cannot post to the mailing list.
+
+    >>> smtp_watcher.resync()
+    >>> smtpd.reset()
+    >>> inject('itest-one', """\
+    ... From: aperson@example.org
+    ... To: itest-one@lists.launchpad.dev
+    ... Subject: A non-team member post
+    ... Message-ID: <eighth-injection>
+    ...
+    ... Hi, I am not a team member.
+    ... """)
+    >>> vette_watcher.wait_for_growth()
+    >>> len(smtpd.getMessages())
+    0
+    >>> smtpd.getMailboxSize() <= 0
+    True
+
+Anne re-joins the team and once again can post to the mailing list.  She does
+not need to re-subscribe to the mailing list.
+
+    >>> login('foo.bar@canonical.com')
+    >>> anne.join(team_one)
+    >>> logout()
+    >>> commit()
+    >>> itest_helper.wait_for_mailman()
+
+    >>> smtp_watcher.resync()
+    >>> smtpd.reset()
+    >>> inject('itest-one', """\
+    ... From: aperson@example.org
+    ... To: itest-one@lists.launchpad.dev
+    ... Subject: A non-team member post
+    ... Message-ID: <ninth-injection>
+    ...
+    ... Hi, I am not a team member.
+    ... """)
+    >>> smtp_watcher.wait_for_growth()
+
+    >>> messages = smtpd.getMessages()
+    >>> len(messages)
+    2
+    >>> messages.sort(key=itemgetter('sender'))
+    >>> for message in sorted(messages, key=itemgetter('sender')):
+    ...     print message['sender']
+    ...     print message['subject']
+    itest-one-bounces+anne.person=example.com@lists.launchpad.dev
+    [Itest-one] A non-team member post
+    itest-one-bounces+archive=mail-archive.com@lists.launchpad.dev
+    [Itest-one] A non-team member post
+
+
 == Preventing archiver forgeries ==
 
 We archive messages by sending them to a special address owned by the Mail
