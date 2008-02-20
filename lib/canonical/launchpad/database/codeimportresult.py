@@ -15,6 +15,7 @@ from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import SQLBase
 from canonical.launchpad.interfaces import (
     CodeImportResultStatus, ICodeImportResult, ICodeImportResultSet)
+from canonical.launchpad.validators.person import public_person_validator
 
 class CodeImportResult(SQLBase):
     """See `ICodeImportResult`."""
@@ -30,7 +31,8 @@ class CodeImportResult(SQLBase):
         dbName='machine', foreignKey='CodeImportMachine', notNull=True)
 
     requesting_user = ForeignKey(
-        dbName='requesting_user', foreignKey='Person', default=None)
+        dbName='requesting_user', foreignKey='Person',
+        validator=public_person_validator, default=None)
 
     log_excerpt = StringCol(default=None)
 

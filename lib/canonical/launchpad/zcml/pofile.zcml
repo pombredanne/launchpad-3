@@ -115,6 +115,15 @@
         layer="canonical.launchpad.layers.TranslationsLayer"
         />
 
+    <browser:page
+        name="+filter"
+        for="canonical.launchpad.interfaces.IPOFile"
+        permission="zope.Public"
+        template="../templates/pofile-filter.pt"
+        class="canonical.launchpad.browser.POFileFilteredView"
+        layer="canonical.launchpad.layers.TranslationsLayer"
+        />
+
     <!-- Note: This is a TranslationMessage page. This registration is
       duplicated in translationmessage.zcml, so that they can work on
       pages where IPOFile is the context.) -->

@@ -125,7 +125,8 @@ fi
 xmlfiles=`echo "$files" | grep -E '(xml|zcml|pt)$'`
 xmllint_notices=""
 if [ ! -z "$xmlfiles" ]; then
-    xmllint_notices=`xmllint --noout $xmlfiles 2>&1 | sed -e '/Entity/,+2d'`
+    xmllint_notices=`xmllint --noout $xmlfiles 2>&1 |
+        sed -e '/Entity/,+2d; {/StartTag/N; /define-slot="doctype"/,+1d}'`
 fi
 if [ ! -z "$xmllint_notices" ]; then
     echo ""

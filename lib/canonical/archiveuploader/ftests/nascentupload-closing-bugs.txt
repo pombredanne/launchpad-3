@@ -21,7 +21,7 @@ of 'bar' source package in ubuntu/hoary.
     'NEW'
 
     >>> bar_src.queue_root.setAccepted()
-    >>> bar_src.queue_root.realiseUpload()
+    >>> pub_records = bar_src.queue_root.realiseUpload()
 
     >>> from canonical.database.sqlbase import commit
     >>> commit()

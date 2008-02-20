@@ -29,7 +29,8 @@ from canonical.launchpad import _
 from canonical.launchpad.interfaces import (
     ILaunchpadOpenIdStoreFactory, ILoginServiceAuthorizeForm,
     ILoginServiceLoginForm, ILoginTokenSet, IOpenIdAuthorizationSet,
-    IOpenIDRPConfigSet, IPersonSet, LoginTokenType, UnexpectedFormData)
+    IOpenIDRPConfigSet, IPersonSet, LoginTokenType, PersonVisibility,
+    UnexpectedFormData)
 from canonical.launchpad.validators.email import valid_email
 from canonical.launchpad.webapp import (
     action, custom_widget, LaunchpadFormView, LaunchpadView)
@@ -239,10 +240,17 @@ class OpenIdMixin:
             team = person_set.getByName(team_name)
             if team is None or not team.isTeam():
                 continue
-            # XXX jamesh 2007-12-05 bug=174076:
-            # When private membership teams are added, this method
-            # needs to be updated to not disclose membership of such
-            # teams.
+            # Control access to private teams
+            if team.visibility != PersonVisibility.PUBLIC:
+                # XXX jamesh 2008-02-14 bug=174076:
+
+                # We should have fine grained control of which RPs can
+                # query for which teams, but for now we will let any
+                # RP with an OpenIDRPconfig perform such queries.
+                rpconfig = getUtility(IOpenIDRPConfigSet).getByTrustRoot(
+                    self.openid_request.trust_root)
+                if rpconfig is None:
+                    continue
             if self.user.inTeam(team):
                 memberships.append(team_name)
         openid_response.fields.namespaces.addAlias(LAUNCHPAD_TEAMS_NS, 'lp')

@@ -30,6 +30,7 @@ from canonical.buildd.slave import BuilderStatus
 from canonical.buildmaster.master import BuilddMaster
 from canonical.database.sqlbase import cursor, SQLBase, sqlvalues
 from canonical.launchpad.database.buildqueue import BuildQueue
+from canonical.launchpad.validators.person import public_person_validator
 from canonical.launchpad.helpers import filenameToContentType
 from canonical.launchpad.interfaces import (
     ArchivePurpose, BuildDaemonError, BuildSlaveFailure, BuildStatus,
@@ -92,7 +93,9 @@ class Builder(SQLBase):
     name = StringCol(dbName='name', notNull=True)
     title = StringCol(dbName='title', notNull=True)
     description = StringCol(dbName='description', notNull=True)
-    owner = ForeignKey(dbName='owner', foreignKey='Person', notNull=True)
+    owner = ForeignKey(
+        dbName='owner', foreignKey='Person',
+        validator=public_person_validator, notNull=True)
     builderok = BoolCol(dbName='builderok', notNull=True)
     failnotes = StringCol(dbName='failnotes', default=None)
     trusted = BoolCol(dbName='trusted', default=False, notNull=True)
@@ -420,7 +423,6 @@ class Builder(SQLBase):
                 archive_name = current_build.archive.owner.name
                 return '%s [%s] (%s)' % (msg, archive_name, mode)
             return '%s (%s)' % (msg, mode)
-
         return 'IDLE (%s)' % mode
 
     def failbuilder(self, reason):
@@ -428,10 +430,10 @@ class Builder(SQLBase):
         self.builderok = False
         self.failnotes = reason
 
-    def getBuildRecords(self, build_state=None, name=None):
+    def getBuildRecords(self, build_state=None, name=None, user=None):
         """See IHasBuildRecords."""
         return getUtility(IBuildSet).getBuildsForBuilder(
-            self.id, build_state, name)
+            self.id, build_state, name, user)
 
     def slaveStatus(self):
         """See IBuilder."""
