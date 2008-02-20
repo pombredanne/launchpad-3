@@ -1,0 +1,164 @@
+= Displaying Similar Bugs =
+
+Up to 10 similar bugs can be displayed during the guided bug filing
+process. For each similar bug found, a relevant bugtask is selected
+and used to enrich the presentation and information displayed to the
+user, hopefully helping them choose accurately and thus reducing
+duplicates.
+
+    >>> def print_similar_bugs(content):
+    ...     bugs_list = find_tag_by_id(
+    ...         content, 'similar-bugs').findAll(
+    ...             None, {'class': 'similar-bug'})
+    ...     for node in bugs_list:
+    ...         icon = node.img
+    ...         icon_alt = icon['alt'].lstrip('(').rstrip(')') or '-'
+    ...         icon_src = icon['src']
+    ...         text_lines = [line.strip() for line in
+    ...                       extract_text(node).splitlines()]
+    ...         summary = ' '.join(text_lines[:2])
+    ...         status = ' '.join(text_lines[2:])
+    ...         # All this trouble is worth it when you see ndiff output
+    ...         # from a failing test, and it *makes sense* :)
+    ...         print '(icon %s src=%s)\n  %s\n  %s' % (
+    ...             icon_alt, icon_src, summary, status)
+
+
+== Products ==
+
+    >>> user_browser.open("http://bugs.launchpad.dev/firefox/+filebug")
+    >>> user_browser.getControl("Summary").value = 'a'
+    >>> user_browser.getControl("Continue").click()
+
+All of the similar bugs have relevant bugtasks:
+
+    >>> print_similar_bugs(user_browser.contents)
+    (icon low src=/@@/bug-low)
+      #1 Firefox does not support SVG
+      New, last updated 2006-05-19
+    (icon medium src=/@@/bug-medium)
+      #4 Reflow problems with complex page layouts
+      New, last updated 2006-07-14
+    (icon critical src=/@@/bug-critical)
+      #5 Firefox install instructions should be complete
+      New, last updated 2006-07-14
+
+However, what if relevant bug tasks can't be found? This is unlikely,
+but possible, because a similar bug might actually be a duplicate of a
+bug that has no bugtask for the product.
+
+When a similar bug is found that is also a duplicate bug, we display
+the duplicated bug instead. If the duplicated bug has no bugtask
+relating to the product we're trying to file a bug against, we just
+show basic non-bugtask information.
+
+We shall make bug 4 a duplicate of bug 8, which has no bugtask for
+firefox.
+
+    >>> user_browser.open(
+    ...     "http://bugs.launchpad.dev/firefox/+bug/4/+duplicate")
+    >>> user_browser.getControl('Duplicate Of').value = '8'
+    >>> user_browser.getControl('Change').click()
+
+Then, if we match bug 1, only basic details of bug 8 are displayed:
+
+    >>> user_browser.open("http://bugs.launchpad.dev/firefox/+filebug")
+    >>> user_browser.getControl("Summary").value = 'reflow'
+    >>> user_browser.getControl("Continue").click()
+
+    >>> print_similar_bugs(user_browser.contents)
+    (icon - src=/@@/bug)
+      #8 Printing doesn't work
+      Closed, last updated 2006-05-19
+
+
+== Projects ==
+
+    >>> user_browser.open("http://bugs.launchpad.dev/gnome/+filebug")
+    >>> user_browser.getControl("Project").value = ['evolution']
+    >>> user_browser.getControl("Summary").value = 'a'
+    >>> user_browser.getControl("Continue").click()
+
+    >>> print_similar_bugs(user_browser.contents)
+    (icon medium src=/@@/bug-medium)
+      #7 A test bug
+      New, last updated 2006-05-19
+
+As with products above, when no relevant bugtask can be found, only
+basic bug information is displayed:
+
+    >>> user_browser.open(
+    ...     "http://bugs.launchpad.dev/evolution/+bug/7/+duplicate")
+    >>> user_browser.getControl('Duplicate Of').value = '8'
+    >>> user_browser.getControl('Change').click()
+
+    >>> user_browser.open("http://bugs.launchpad.dev/gnome/+filebug")
+    >>> user_browser.getControl("Project").value = ['evolution']
+    >>> user_browser.getControl("Summary").value = 'a'
+    >>> user_browser.getControl("Continue").click()
+
+    >>> print_similar_bugs(user_browser.contents)
+    (icon - src=/@@/bug)
+      #8 Printing doesn't work
+      Closed, last updated 2006-05-19
+
+
+== Distributions ==
+
+    >>> user_browser.open("http://launchpad.dev/ubuntu/+filebug")
+    >>> user_browser.getControl("Summary").value = 'crashes'
+    >>> user_browser.getControl("Continue").click()
+
+    >>> print_similar_bugs(user_browser.contents)
+    (icon medium src=/@@/bug-medium)
+      #9 Thunderbird crashes
+      Confirmed, last updated 2006-07-14
+
+Only basic details are given when no relevant bugtask exists:
+
+    >>> user_browser.open(
+    ...     "http://bugs.launchpad.dev/ubuntu/+source/"
+    ...     "thunderbird/+bug/9/+duplicate")
+    >>> user_browser.getControl('Duplicate Of').value = '8'
+    >>> user_browser.getControl('Change').click()
+
+    >>> user_browser.open("http://launchpad.dev/ubuntu/+filebug")
+    >>> user_browser.getControl("Summary").value = 'crashes'
+    >>> user_browser.getControl("Continue").click()
+
+    >>> print_similar_bugs(user_browser.contents)
+    (icon - src=/@@/bug)
+      #8 Printing doesn't work
+      Closed, last updated 2006-05-19
+
+
+== Distribution Source Packages ==
+
+    >>> user_browser.open(
+    ...     "http://launchpad.dev/ubuntu/+source/"
+    ...     "mozilla-firefox/+filebug")
+    >>> user_browser.getControl("Summary").value = 'a'
+    >>> user_browser.getControl("Continue").click()
+
+    >>> print_similar_bugs(user_browser.contents)
+    (icon medium src=/@@/bug-medium)
+      #1 Firefox does not support SVG
+      New, last updated 2006-05-19
+
+Only basic details are given when no relevant bugtask exists:
+
+    >>> user_browser.open(
+    ...     "http://bugs.launchpad.dev/firefox/+bug/1/+duplicate")
+    >>> user_browser.getControl('Duplicate Of').value = '8'
+    >>> user_browser.getControl('Change').click()
+
+    >>> user_browser.open(
+    ...     "http://launchpad.dev/ubuntu/+source/"
+    ...     "mozilla-firefox/+filebug")
+    >>> user_browser.getControl("Summary").value = 'a'
+    >>> user_browser.getControl("Continue").click()
+
+    >>> print_similar_bugs(user_browser.contents)
+    (icon - src=/@@/bug)
+      #8 Printing doesn't work
+      Closed, last updated 2006-05-19
