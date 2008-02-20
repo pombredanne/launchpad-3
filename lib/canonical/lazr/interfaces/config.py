@@ -134,7 +134,6 @@ class IConfigSchema(Interface):
     name = Attribute('The basename of the config filename.')
     filename = Attribute('The path to config file')
     category_names = Attribute('The list of section category names.')
-    section_factory = Attribute('The factory used to make new sections.')
 
     def __iter__():
         """Iterate over the `ISectionSchema`s."""

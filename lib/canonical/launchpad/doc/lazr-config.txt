@@ -289,7 +289,8 @@ keyword arg. The filename arg must be passed if the file-like object
 does not have a name attribute.
 
     >>> import StringIO
-    >>> bad_data = """
+    >>> from textwrap import dedent
+    >>> bad_data = dedent("""
     ...     [meta]
     ...     metakey: unsupported
     ...     [unknown-section]
@@ -298,7 +299,7 @@ does not have a name attribute.
     ...     keyn: unknown key
     ...     key1: bad character in caf\xc3)
     ...     [section_3.template]
-    ...     key1: schema suffixes are not permitted"""
+    ...     key1: schema suffixes are not permitted""")
     >>> schema.loadFile(StringIO.StringIO(bad_data))
     Traceback (most recent call last):
       ...
@@ -607,10 +608,10 @@ updated when the unparsed data is pushed onto the config.
     key4 : F&#028c;k yeah!
     key5 : local value
 
-    >>> test_data = """
+    >>> test_data = dedent("""
     ...     [section_1]
     ...     key1: test1
-    ...     key5:"""
+    ...     key5:""")
     >>> config.push('test config', test_data)
 
     >>> for key in sorted(config['section_1']):
@@ -684,9 +685,9 @@ values in the config to the schema's default values.
     >>> extender_conf_name = path.normpath(path.join(
     ...     path.dirname(__file__), '..', 'ftests', 'testfiles',
     ...     'extender.conf'))
-    >>> extender_conf_data = """
+    >>> extender_conf_data = dedent("""
     ...     [meta]
-    ...     extends: base.conf"""
+    ...     extends: base.conf""")
     >>> config.push(extender_conf_name, extender_conf_data)
     >>> for config_data in config.overlays:
     ...     print config_data.name
