@@ -31,32 +31,6 @@ from canonical.launchpad.validators.person import public_person_validator
 from canonical.launchpad.webapp.snapshot import Snapshot
 
 
-class notify_date_activated_modified:
-    """Decorator that sends a SQLObjectModifiedEvent after an object's
-    list's date_activated field changes.
-
-    This decorator will take a snapshot of the object before the call
-    to the decorated workflow_method. It will fire an
-    SQLObjectModifiedEvent after the method returns, if the
-    date_activated field has changed.
-    """
-
-    def __call__(self, func):
-        """Return the SQLObjectModifiedEvent decorator."""
-        def notify_date_activated_modified(self, *args, **kwargs):
-            """Create the SQLObjectModifiedEvent decorator."""
-            old_mailinglist = Snapshot(self, providing=providedBy(self))
-            msg = func(self, *args, **kwargs)
-            attr = 'date_activated'
-            if getattr(old_mailinglist, attr) != getattr(self, attr):
-                notify(SQLObjectModifiedEvent(
-                        self,
-                        object_before_modification=old_mailinglist,
-                        edited_fields=['date_activated']))
-            return msg
-        return notify_date_activated_modified
-
-
 class MailingList(SQLBase):
     """The mailing list for a team.
 
@@ -149,7 +123,6 @@ class MailingList(SQLBase):
             'Only modified mailing lists may be updated')
         self.status = MailingListStatus.UPDATING
 
-    @notify_date_activated_modified()
     def transitionToStatus(self, target_state):
         """See `IMailingList`."""
         # State: From CONSTRUCTING to either ACTIVE or FAILED
@@ -173,7 +146,7 @@ class MailingList(SQLBase):
                 % (self.status, target_state))
         self.status = target_state
         if target_state == MailingListStatus.ACTIVE:
-            self.date_activated = UTC_NOW
+            self._setAndNotifyDateActivated()
             email_set = getUtility(IEmailAddressSet)
             email = email_set.getByEmail(self.address)
             if email is None:
@@ -190,6 +163,22 @@ class MailingList(SQLBase):
                 email.status = EmailAddressStatus.VALIDATED
             assert email.person == self.team, (
                 "Email already associated with another team.")
+
+    def _setAndNotifyDateActivated(self):
+        """Set the date_activated field and fire a
+        SQLObjectModified event.
+
+        The event only fires the first time that the field is set.
+        """
+        if self.date_activated is not None:
+            return
+
+        old_mailinglist = Snapshot(self, providing=providedBy(self))
+        self.date_activated = UTC_NOW
+        notify(SQLObjectModifiedEvent(
+                self,
+                object_before_modification=old_mailinglist,
+                edited_fields=['date_activated']))
 
     def deactivate(self):
         """See `IMailingList`."""
