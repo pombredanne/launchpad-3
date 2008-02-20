@@ -554,8 +554,8 @@ mailing list could have an archive and archives are never deleted.
 
 == Events ==
 
-Transitions from one mailing list state to another will fire instances
-of the SQLObjectModifiedEvent.
+Activating the mailing list (changing it's status to 'available for
+subscription') will fire an instance of the SQLObjectModifiedEvent.
 
     # Register an event listener that will print event it receives.
     >>> from canonical.launchpad.event.interfaces import (
@@ -577,9 +577,6 @@ of the SQLObjectModifiedEvent.
     >>> list_six.startConstructing()
     >>> list_six.status.name
     'CONSTRUCTING'
-
-
-Changing the list status to 'available for subscription' triggers an event.
 
     >>> list_six.transitionToStatus(MailingListStatus.ACTIVE)
     Received SQLObjectModifiedEvent on MailingList
