@@ -127,6 +127,31 @@ class IncomingEmailError(Exception):
         self.failing_command = failing_command
 
 
+def reformat_wiki_text(wiki_text):
+    """Transform moin formatted raw text to readable text."""
+
+    # XXX Tom Berger 2008-02-20:
+    # This implementation is neither correct nor complete.
+    # See https://bugs.launchpad.net/launchpad/+bug/193646
+
+    plain_text = wiki_text
+
+    # Strip macros (anchors, TOC, etc'...)
+    re_macro = re.compile('\[\[.*?\]\]')
+    plain_text = re_macro.sub('', plain_text)
+
+    # sterilize links
+    re_link = re.compile('\[(.*?)\]')
+    plain_text = re_link.sub(
+        lambda match: ' '.join(match.group(1).split(' ')[1:]), plain_text)
+
+    # Strip comments
+    re_comment = re.compile('#.*?$', re.MULTILINE)
+    plain_text = re_comment.sub('', plain_text)
+
+    return plain_text
+
+
 class MaloneHandler:
     """Handles emails sent to Malone.
 
@@ -283,12 +308,7 @@ class MaloneHandler:
         """Send usage help to `to_address`."""
         # Get the help text (formatted as MoinMoin markup)
         help_text = get_email_template('help.txt')
-        # Strip comments
-        re_comment = re.compile('#.*?$', re.MULTILINE)
-        help_text = re_comment.sub('', help_text)
-        # Strip macros (anchors, TOC, etc'...)
-        re_macro = re.compile('\[\[.*?\]\]')
-        help_text = re_macro.sub('', help_text)
+        help_text = reformat_wiki_text(help_text)
         # Wrap text
         mailwrapper = MailWrapper(width=72)
         help_text = mailwrapper.format(help_text)
