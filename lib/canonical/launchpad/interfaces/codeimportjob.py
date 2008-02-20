@@ -119,7 +119,10 @@ class ICodeImportJob(Interface):
 
 
 class ICodeImportJobPublic(Interface):
-    """XXX."""
+    """Parts of the CodeImportJob interface that need to be public.
+
+    These are accessed by the getJobForMachine XML-RPC method, requests to
+    which are not authenticated."""
 
     id = Int(readonly=True, required=True)
 
@@ -134,7 +137,10 @@ class ICodeImportJobSet(Interface):
         """
 
 class ICodeImportJobSetPublic(Interface):
-    """XXX."""
+    """Parts of the CodeImportJobSet interface that need to be public.
+
+    These are accessed by the getJobForMachine XML-RPC method, requests to
+    which are not authenticated."""
 
     def getJobForMachine(machine):
         """XXX."""

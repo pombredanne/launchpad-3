@@ -173,6 +173,9 @@ class TestCodeImportSetGetJobForMachine(unittest.TestCase):
         self.assertJobIsSelected(desired_job)
 
     def test_notReturnedTwice(self):
+        # Once a job has been selected by getJobForMachine, it should not be
+        # selected again (NB: without the flush_database_updates() chicken
+        # bones in the helper methods, this test would fail).
         self.assertJobIsSelected(
             self.makeJob(CodeImportJobState.PENDING, -1))
         self.assertNoJobSelected()

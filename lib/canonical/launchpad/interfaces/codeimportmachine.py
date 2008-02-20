@@ -119,7 +119,10 @@ class ICodeImportMachine(Interface):
 
 
 class ICodeImportMachinePublic(Interface):
-    """XXX."""
+    """Parts of the CodeImportMachine interface that need to be public.
+
+    These are accessed by the getJobForMachine XML-RPC method, requests to
+    which are not authenticated."""
 
     id = Int(readonly=True, required=True)
 
@@ -147,7 +150,10 @@ class ICodeImportMachineSet(Interface):
 
 
 class ICodeImportMachineSetPublic(Interface):
-    """XXX."""
+    """Parts of the CodeImportMachineSet interface that need to be public.
+
+    These are accessed by the getJobForMachine XML-RPC method, requests to
+    which are not authenticated."""
 
     def getByHostname(hostname):
         """Retrieve the code import machine for a hostname.
