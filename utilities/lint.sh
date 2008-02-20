@@ -21,7 +21,7 @@ elif ! which pyflakes >/dev/null; then
     exit 1
 fi
 
-function bzr {
+bzr() {
     # For pylint to operate properly, PYTHONPATH must point to the ./lib
     # directory in the launchpad tree. This directory includes a bzrlib. When
     # this script calls bzr, we want it to use the system bzrlib, not the one
@@ -50,9 +50,6 @@ if [ -z "$1" ]; then
         # No uncommitted changes in the tree, lint changes relative to the
         # parent.
         rev=`bzr info | sed '/parent branch:/!d; s/ *parent branch: /ancestor:/'`
-        # XXX sinzui 2007-11-18 bug=163612:
-        # The bzr+ssh protocol causes an exception; fallback to sftp.
-        rev=`echo $rev | sed 's/bzr+ssh:/sftp:/'`
         rev_option="-r $rev"
     elif [ $diff_status -eq 1 ] ; then
         # Uncommitted changes in the tree, lint those changes.
