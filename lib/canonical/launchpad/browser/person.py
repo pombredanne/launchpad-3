@@ -2713,14 +2713,14 @@ class TeamJoinView(PersonView):
             return
 
         try:
-            context.mailing_list.subscribe(self.user)
+            self.context.mailing_list.subscribe(self.user)
         except CannotSubscribe, error:
             notify_error(
                 _('You could not be subscribed to the team mailing '
                   'list: ${reason}',
                   mapping={'reason': unicode(error)}))
         else:
-            policy = context.subscriptionpolicy
+            policy = self.context.subscriptionpolicy
 
             if policy == TeamSubscriptionPolicy.MODERATED:
                 notify_info(
