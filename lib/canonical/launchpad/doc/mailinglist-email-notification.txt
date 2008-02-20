@@ -203,3 +203,30 @@ individual team members.
     Regards,
     The Launchpad team
     ----------------------------------------
+
+
+== Reactivated lists ==
+
+Reactivating a mailing list will not cause notification messages to
+be sent out again.
+
+    >>> renewed_team, renewed_list = new_team('renewed-team', with_list=True)
+    >>> anne.join(renewed_team)
+    >>> # Clear out the team-membership status emails, and the new
+    >>> # list invitation emails.
+    >>> pop_notifications()
+    [...]
+
+    # Fully rebuild our list from the ground up.
+    >>> renewed_list.deactivate()
+    >>> from canonical.launchpad.interfaces import MailingListStatus
+    >>> renewed_list.transitionToStatus(MailingListStatus.INACTIVE)
+    >>> renewed_list.reactivate()
+    >>> renewed_list.startConstructing()
+    >>> renewed_list.transitionToStatus(MailingListStatus.ACTIVE)
+    >>> renewed_list.status.name
+    'ACTIVE'
+
+    >>> transaction.commit()	# Commit any outstanding emails.
+    >>> len(stub.test_emails)
+    0
