@@ -163,26 +163,33 @@ class ErrorReport:
         url = msg.getheader('url')
         duration = int(msg.getheader('duration', '-1'))
 
+        # Explicitely use an iterator so we can process the file
+        # sequentially. In most instances the iterator will actually
+        # be the file object passed in because file objects should
+        # support iteration.
+        lines = iter(msg.fp)
+
+        # Request variables until the first blank line.
         req_vars = []
-        lines = msg.fp.readlines()
-        for linenum, line in enumerate(lines):
+        for line in lines:
             line = line.strip()
-            if not line:
+            if line == '':
                 break
             key, value = line.split('=', 1)
             req_vars.append((urllib.unquote(key), urllib.unquote(value)))
 
+        # Statements until the next blank line.
         statements = []
-        lines = lines[linenum+1:]
-        for linenum, line in enumerate(lines):
+        for line in lines:
             line = line.strip()
-            if not line:
+            if line == '':
                 break
             startend, statement = line.split(' ', 1)
             start, end = startend.split('-')
             statements.append((int(start), int(end), statement))
 
-        tb_text = ''.join(lines[linenum+1:])
+        # The rest is traceback.
+        tb_text = ''.join(lines)
 
         return cls(id, exc_type, exc_value, date, pageid, tb_text,
                    username, url, duration, req_vars, statements)
@@ -192,13 +199,11 @@ class ErrorReportingUtility:
     implements(IErrorReportingUtility)
 
     _ignored_exceptions = set(['Unauthorized', 'TranslationUnavailable'])
-    copy_to_zlog = False
 
-    lasterrordate = None
+    lasterrordir = None
     lastid = 0
 
     def __init__(self):
-        self.copy_to_zlog = config.launchpad.errorreports.copy_to_zlog
         self.lastid_lock = threading.Lock()
 
     def _findLastOopsIdFilename(self, directory):
@@ -282,10 +287,10 @@ class ErrorReportingUtility:
             now = datetime.datetime.now(UTC)
         date = now.strftime('%Y-%m-%d')
         errordir = os.path.join(config.launchpad.errorreports.errordir, date)
-        if date != self.lasterrordate:
+        if errordir != self.lasterrordir:
             self.lastid_lock.acquire()
             try:
-                self.lasterrordate = date
+                self.lasterrordir = errordir
                 # make sure the directory exists
                 try:
                     os.makedirs(errordir)
@@ -421,7 +426,7 @@ class ErrorReportingUtility:
             if request:
                 request.oopsid = oopsid
 
-            if self.copy_to_zlog:
+            if config.launchpad.errorreports.copy_to_zlog:
                 self._do_copy_to_zlog(now, strtype, strurl, info, oopsid)
         finally:
             info = None

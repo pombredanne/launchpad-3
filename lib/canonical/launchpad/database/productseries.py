@@ -25,6 +25,7 @@ from canonical.launchpad.database.bug import (
 from canonical.launchpad.database.bugtask import BugTaskSet
 from canonical.launchpad.database.milestone import Milestone
 from canonical.launchpad.database.packaging import Packaging
+from canonical.launchpad.validators.person import public_person_validator
 from canonical.launchpad.database.potemplate import POTemplate
 from canonical.launchpad.database.specification import (
     HasSpecificationsMixin, Specification)
@@ -70,9 +71,11 @@ class ProductSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
     summary = StringCol(notNull=True)
     datecreated = UtcDateTimeCol(notNull=True, default=UTC_NOW)
     owner = ForeignKey(
-        foreignKey="Person", dbName="owner", notNull=True)
+        dbName="owner", foreignKey="Person",
+        validator=public_person_validator, notNull=True)
     driver = ForeignKey(
-        foreignKey="Person", dbName="driver", notNull=False, default=None)
+        dbName="driver", foreignKey="Person",
+        validator=public_person_validator, notNull=False, default=None)
     import_branch = ForeignKey(foreignKey='Branch', dbName='import_branch',
                                default=None)
     user_branch = ForeignKey(foreignKey='Branch', dbName='user_branch',

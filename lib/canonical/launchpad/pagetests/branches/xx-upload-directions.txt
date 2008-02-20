@@ -149,8 +149,8 @@ owner is a team.
   Developers</a> can upload to this branch. <a href="+login">Log in</a> for
   directions.
 
-If the user is authenticated and is not a member of the team, we can display a
-link to easily join.
+If the user is authenticated and is not a member of the team, we provide
+a link to the team.
 
   >>> ddaa_browser.open(branch_page)
   >>> content = ddaa_browser.contents
@@ -158,13 +158,7 @@ link to easily join.
   >>> print instructions.renderContents()
   You cannot upload to this branch. Members of <a
   href="/~landscape-developers">Landscape
-  Developers</a> can upload to this branch.  You may want to
-  <a href="/~landscape-developers/+join">join the
-  team</a>.
-
-Check that the "Join the team" link is not broken.
-
-  >>> ddaa_browser.getLink("join the team").click()
+  Developers</a> can upload to this branch.
 
 Finally, if the user is a member of the team, we display the same "you can
 upload" message as before. Of course the upload URL looks different, in

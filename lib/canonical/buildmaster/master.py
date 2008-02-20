@@ -239,18 +239,13 @@ class BuilddMaster:
         creating a new one.
         The Build record is created for the archseries 'default_processor'.
         """
-        header = ("build record %s-%s for '%s' " %
-                  (pubrec.sourcepackagerelease.name,
-                   pubrec.sourcepackagerelease.version,
-                   pubrec.sourcepackagerelease.architecturehintlist))
-
         for archseries in build_archs:
             # Dismiss if there is no processor available for the
             # archseries in question.
             if not archseries.processors:
                 self._logger.debug(
                     "No processors defined for %s: skipping %s"
-                    % (archseries.title, header))
+                    % (archseries.title, pubrec.displayname))
                 continue
 
             build_candidate = pubrec.sourcepackagerelease.getBuildByArch(
@@ -266,9 +261,6 @@ class BuilddMaster:
 
             # Create new Build record, its corresponding BuildQueue and
             # score it, so it will be ready for dispatching.
-            self._logger.debug(
-                header + "Creating %s (%s)"
-                % (archseries.architecturetag, pubrec.pocket.title))
             build = pubrec.sourcepackagerelease.createBuild(
                 distroarchseries=archseries,
                 pocket=pubrec.pocket,
@@ -276,6 +268,10 @@ class BuilddMaster:
                 archive=pubrec.archive)
             build_queue = build.createBuildQueueEntry()
             build_queue.score()
+            self._logger.debug(
+                "Created %s [%d] in %s (%d)" % (
+                    build.title, build.id, build.archive.title,
+                    build_queue.lastscore))
 
     def addMissingBuildQueueEntries(self):
         """Create missing Buildd Jobs. """

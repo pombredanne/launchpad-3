@@ -18,16 +18,6 @@ ALTER TABLE BranchSubscription
   ALTER COLUMN review_level SET DEFAULT 0;
 
 
-CREATE TABLE CodeReviewMessage (
--- CodeReviewMessage does not need a date_created, because it's always created
--- at the same time as a Message, which has one.
-    id SERIAL PRIMARY KEY,
-    branch_merge_proposal INTEGER NOT NULL REFERENCES BranchMergeProposal(id),
-    message INTEGER NOT NULL UNIQUE REFERENCES Message(id),
-    vote INTEGER
-    );
-
-
 ALTER TABLE BranchMergeProposal
     ADD COLUMN conversation INTEGER REFERENCES CodeReviewMessage;
 

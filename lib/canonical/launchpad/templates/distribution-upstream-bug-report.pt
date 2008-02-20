@@ -6,7 +6,7 @@
   xml:lang="en"
   lang="en"
   dir="ltr"
-  metal:use-macro="context/@@main_template/master"
+  metal:use-macro="view/macro:page/onecolumn"
   i18n:domain="launchpad"
 >
 
@@ -41,23 +41,38 @@
       </p>
 
       <dl>
-        <dt>Open</dt><dd>Counts unfixed bugs open on that package.</dd>
-        <dt>Upstream</dt><dd>Of those bugs open, how many indicate they
+        <dt>Open</dt><dd>Counts unfixed bugs on that package.</dd>
+        <dt>Triaged</dt><dd>Counts unfixed bugs that have been marked as
+        triaged by the official distribution triage team.</dd>
+        <dt>Upstream</dt><dd>Of those bugs triaged, how many indicate they
         also affect an upstream project. Note that not all bugs filed
         against a distribution apply to an upstream project, so this
         percentage will rarely reach 100%.</dd>
-        <dt>Watch</dt><dd>Of the bugs affecting an upstream project, how
-        many have bug watches pointing to remote bug trackers. It is a
-        measure of how well we can monitor progress in the upstream
-        project.  The watch column is blank for projects which use
-        Launchpad for bug tracking since it implies that there is
-        already direct communication between distribution and
+        <dt>Watch</dt><dd>Of the triaged bugs affecting an upstream
+        project, how many have bug watches pointing to remote bug
+        trackers. It is a measure of how well we can monitor progress in
+        the upstream project.  The watch column is blank for projects
+        which use Launchpad for bug tracking since it implies that there
+        is already direct communication between distribution and
         upstream.</dd>
         <dt>&Delta;</dt><dd>Deltas and percentages are relative to
         numbers in the previous category; for instance, the delta for
         watches is the number of upstreamed bugs minus the number of
         bugs with watches linked.</dd>
       </dl>
+
+      <p>
+      The colour green implies healthy activity for that specific value;
+      so a green cell for Triaged means that a good rate of open bugs
+      for that source package have been triaged.
+      </p>
+      <p>
+      The colour red implies data that needs to be filled out in the
+      project registration to allow the upstream bug submission process
+      to work effectively. Links are provided to fix them for users with
+      the appropriate permissions.
+      </p>
+
     </div>
 
     <div metal:fill-slot="main">
@@ -69,7 +84,8 @@
         against it.
       </tal:no-bugs>
 
-      <p class="warning message" tal:condition="view/data">
+      <p class="warning message" tal:condition="view/data"
+         style="width: 40%">
         This report is an alpha release and has accounting limitations.
         You can use it to guide your work, but do not take the
         percentages too literally. See the Help tab for information on
@@ -81,10 +97,13 @@
         <thead>
           <tr>
             <th>Package</th>
-            <th>Project</th>
+            <th colspan="2">Project</th>
             <th>Bug Tracker</th>
             <th>Upstream Contact</th>
             <th class="numeric">Open</th>
+            <th class="numeric">Triaged</th>
+            <th class="numeric">%</th>
+            <th class="numeric">&Delta;</th>
             <th class="numeric">Upstream</th>
             <th class="numeric">%</th>
             <th class="numeric">&Delta;</th>
@@ -104,16 +123,23 @@
                 <a tal:attributes="href item/product/fmt:url"
                    tal:content="item/product/title"></a>
               </td>
+              <td>
+                <a tal:attributes="href item/series_branch/fmt:url;
+                   title string:You can use `bzr branch lp:${item/product/name}' to fetch this project's code"
+                   tal:condition="item/series_branch">
+                  <img alt="(branch)" src="/@@/branch" />
+                </a>
+              </td>
               <tal:has-bugtracker condition="item/bugtracker">
                 <td>
                   <a tal:attributes="href item/bugtracker/fmt:url"
                      tal:content="item/bugtracker/title"></a></td>
               </tal:has-bugtracker>
               <tal:has-no-bugtracker condition="not: item/bugtracker">
-                <td tal:condition="item/product/official_malone" class="good">
+                <td tal:condition="item/official_malone" class="good">
                     Launchpad
                 </td>
-                <td tal:condition="not: item/product/official_malone"
+                <td tal:condition="not: item/official_malone"
                     align="center" class="bad">
                     Unknown
                     <a tal:condition="item/product/required:launchpad.Edit"
@@ -133,7 +159,7 @@
               </tal:has-no-bugcontact>
             </tal:has-product>
             <tal:has-no-product condition="not: item/product">
-                <td align="center" class="bad" colspan="3">
+                <td align="center" class="bad" colspan="4">
                     Missing corresponding product.
                     <a href="/projects"><small>(find)</small></a>
                     <a tal:condition="item/dssp"
@@ -145,6 +171,18 @@
               <a class="numeric"
                  tal:attributes="href item/open_bugs_url"
                  tal:content="item/open_bugs"></a>
+            </td>
+            <td align="right" tal:attributes="class item/triaged_bugs_class">
+              <a class="numeric"
+                 tal:attributes="href item/triaged_bugs_url"
+                 tal:content="item/triaged_bugs"></a>
+            </td>
+            <td align="right" tal:attributes="class item/triaged_bugs_class"
+                tal:content="item/triaged_bugs_percentage/fmt:float/.2" />
+            <td align="right" tal:attributes="class item/triaged_bugs_class">
+              <a class="numeric"
+                 tal:attributes="href item/triaged_bugs_delta_url"
+                 tal:content="item/triaged_bugs_delta"></a>
             </td>
             <td align="right" tal:attributes="class item/upstream_bugs_class">
               <a class="numeric"
@@ -178,9 +216,15 @@
         </tbody>
         <tfoot id="upstream-report-totals">
           <tr>
-            <td colspan="4" align="right"><b>Totals:</b></td>
+            <td colspan="5" align="right"><b>Totals:</b></td>
             <td align="right"
                 tal:content="view/total/open_bugs" />
+            <td align="right"
+                tal:content="view/total/triaged_bugs" />
+            <td align="right"
+                tal:content="view/total/triaged_bugs_percentage/fmt:float/.2" />
+            <td align="right"
+                tal:content="view/total/triaged_bugs_delta" />
             <td align="right"
                 tal:content="view/total/upstream_bugs" />
             <td align="right"
