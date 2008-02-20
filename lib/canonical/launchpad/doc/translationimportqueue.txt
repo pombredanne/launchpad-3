@@ -918,8 +918,8 @@ getPillarObjectsWithImports() returns all objects that have entries in
 the translation import queue waiting to be imported.  Object can be a
 Product or a DistroSeries.
 
-Here, the queue happens to contain an import request for a source
-package inside the Hoary distroseries.
+The user uploads two translations into Hoary and Warty respectively, as
+well as one for the Firefox trunk series.
 
     >>> from canonical.launchpad.interfaces.distribution import (
     ...     IDistributionSet)
@@ -932,10 +932,6 @@ package inside the Hoary distroseries.
     ...      distroseries=hoary_distroseries,
     ...      sourcepackagename=evolution_sourcepackagename)
 
-An administrator has blocked translation imports for the Warty distro
-series.  A user uploads a translation for Warty, which we will later see
-is ignored while Warty imports are blocked.
-
     >>> warty_distroseries = ubuntu.getSeries('warty')
     >>> entry3 = translationimportqueue.addOrUpdateEntry(
     ...     u'po/sr.po', 'foo', True, rosetta_experts,
@@ -943,9 +939,6 @@ is ignored while Warty imports are blocked.
     ...      sourcepackagename=evolution_sourcepackagename)
     >>> print entry3.status.name
     NEEDS_REVIEW
-    >>> warty_distroseries.defer_translation_imports = True
-
-There is also an import request for Firefox trunk.
 
     >>> firefox = productset['firefox']
     >>> productseries = firefox.getSeries('trunk')
@@ -1006,19 +999,51 @@ review.
     >>> print entry3.status.name
     NEEDS_REVIEW
 
-An admin can disable a product.  If that happens for Firefox, for
-example, Firefox will no longer show up as an object with pending
+    >>> print_list(sorted(get_target_names()))
+    evolution       Evolution
+    firefox         Mozilla Firefox
+    ubuntu/hoary    Hoary
+    ubuntu/warty    Warty
+
+Administrators temporarily block translation imports to Warty.
+
+    >>> warty_distroseries.defer_translation_imports = True
+    >>> syncUpdate(warty_distroseries)
+
+While imports are blocked, Warty does not show up as having pending
 imports.
+
+    >>> print_list(sorted(get_target_names()))
+    evolution       Evolution
+    firefox         Mozilla Firefox
+    ubuntu/hoary    Hoary
+
+An administrator deactivates Firefox, thinking that the proejct is being
+run in violation of Launchpad policies.
 
     >>> firefox.active = False
     >>> syncUpdate(firefox)
+
+Now that Firefox is inactive, it no longer shows up as having pending
+imports.
+
     >>> print_list(sorted(get_target_names()))
     evolution       Evolution
     ubuntu/hoary    Hoary
 
+The administrator realizes that there has been a mistake, and makes
+Firefox active again.
+
     >>> firefox.active = True
     >>> syncUpdate(firefox)
 
+The import request for Firefox was not removed, so Firefox is listed as
+having pending imports again.
+
+    >>> print_list(sorted(get_target_names()))
+    evolution       Evolution
+    firefox         Mozilla Firefox
+    ubuntu/hoary    Hoary
 
 == addOrUpdateEntry() ==
 
