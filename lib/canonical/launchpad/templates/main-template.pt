@@ -48,6 +48,20 @@
     >html, body {background-image: url(/@@/demo) !important;}</style>
     <style tal:condition="site_message" type="text/css"
     >#help {top: 47px !important;}</style>
+
+    <tal:XXX condition="nothing">
+      20080131 mpt: We make text fields slightly narrower in IE to avoid the
+      right side being clipped (bug 156202). This should be rechecked post-2.0.
+      The two rules are separate because IE6 ignores the first one, and ignores
+      them both if they're together.
+    </tal:XXX>
+    <!--[if lte IE 7]>
+      <style type="text/css">
+        input[type="text"] {width: 95%}
+        textarea {width: 95%;}
+      </style>
+    <![endif]-->
+
     <!--[if IE 7]>
       <style type="text/css">
         #container {margin-top: 28px; position: static;}

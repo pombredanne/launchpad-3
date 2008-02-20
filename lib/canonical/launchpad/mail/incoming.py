@@ -18,7 +18,8 @@ from canonical.uuid import generate_uuid
 from canonical.launchpad.interfaces import (
     GPGVerificationError, IGPGHandler, ILibraryFileAliasSet, IMailBox,
     IPerson, IWeaklyAuthenticatedPrincipal)
-from canonical.launchpad.webapp import errorlog
+from canonical.launchpad.webapp.errorlog import (
+    ErrorReportingUtility, ScriptRequest)
 from canonical.launchpad.webapp.interaction import get_current_principal
 from canonical.launchpad.webapp.interfaces import IPlacelessAuthUtility
 from canonical.launchpad.webapp.interaction import setupInteraction
@@ -104,15 +105,24 @@ def authenticateEmail(mail):
     return principal
 
 
+class MailErrorUtility(ErrorReportingUtility):
+    """An error utility that doesn't ignore exceptions."""
+
+    _ignored_exceptions = set()
+
+
 def report_oops(file_alias_url=None):
     """Record an OOPS for the current exception and return the OOPS ID."""
     info = sys.exc_info()
     properties = []
     if file_alias_url is not None:
         properties.append(('Sent message', file_alias_url))
-    request = errorlog.ScriptRequest(properties)
+    request = ScriptRequest(properties)
     request.principal = get_current_principal()
-    errorlog.globalErrorUtility.raising(info, request)
+    errorUtility = MailErrorUtility()
+    errorUtility.raising(info, request)
+    assert request.oopsid is not None, (
+        'MailErrorUtility failed to generate an OOPS.')
     return request.oopsid
 
 
@@ -276,7 +286,7 @@ def handleMail(trans=transaction):
                     msg['From'],
                     'Submit Request Failure',
                     get_error_message('oops.txt', oops_id=oops_id),
-                    msg)
+                        msg)
                 log = getLogger('canonical.launchpad.mail')
                 if file_alias_url is not None:
                     email_info = file_alias_url

@@ -150,15 +150,6 @@ td.error {
 .debugging.message, .debugging .message {
   background-image: url(/@@/info);
 }
-/* Guidelines, e.g. bug reporting guidelines. Content is typically
- * provided by users, and rendered by text-to-html. Child elements
- * are thus expected to be paragraphs.
- */
-.guidelines {
-  font-weight: bold;
-  background-color: #fafca9; border: 1px solid #999;
-  margin: 0; padding: 0 1em;
-}
 .whiteboard {
   color: #666;
 }
@@ -193,7 +184,7 @@ table.listing div.actions {
 /* XXX 20080110 mpt: We make textareas slightly narrower in IE to avoid the
 right side being clipped (bug 156202). This should be rechecked post-2.0. */
 textarea {width: 100%;}
-* html textarea {width: 95%;}
+/* This is currently overridden for Internet Explorer in main-template.pt. */
 
 table.form {margin-top: 1em; margin-bottom: 1em; width: 100%;}
 /* XXX: this is just to make tables look more consistent when used in a
