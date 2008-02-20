@@ -67,25 +67,41 @@
           <h2>What&#8217;s new here?</h2>
           <table>
             <tbody>
-            <tr>
-             <td><img src="/@@/news" alt="" /></td>
-             <td>
-              <a href="https://help.launchpad.net/PPAQuickStart#delete">
-                <strong>Delete packages from your PPA</strong><br />
-                You can now delete packages from your PPAs using Launchpad's web interface.
+             <tr>
+              <td><img src="/@@/news" alt="" /></td>
+              <td>
+              <a href="https://help.launchpad.net/BugSubscriptions">
+                <strong>Improved bug subscriptions</strong><br />
+                Get email notifications of bugs associated with a milestone, project, package or distribution.
                </a>
               </td>
              </tr>
              <tr>
-               <td><img src="/@@/news" alt="" /></td>
-               <td>
-                 <a href="https://help.launchpad.net/Feeds#branches">
-                   <strong>Branch feeds</strong><br />
-                   Follow the latest commits to a branch in your feed reader.
-                   Also receive updates on commits to branches associated with
-                   specific people, teams and projects.
-                 </a>
-               </td>
+              <td><img src="/@@/news" alt="" /></td>
+              <td>
+               <a href="https://help.launchpad.net/BugTrackerEmailInterface#attachments">
+                <strong>Bug attachments by email</strong><br />
+                You can now attach files to bug reports using the Bug Tracker's email interface.
+               </a>
+              </td>
+             </tr>
+             <tr>
+              <td><img src="/@@/news" alt="" /></td>
+              <td>
+               <a href="https://help.launchpad.net/BranchMergeProposals">
+                <strong>Approve branch merge proposals</strong><br />
+                Mark branch merge proposals as approved or rejected.
+               </a>
+              </td>
+             </tr>
+             <tr>
+              <td><img src="/@@/news" alt="" /></td>
+              <td>
+               <a href="https://help.launchpad.net/PPAQuickStart#delete">
+                <strong>Delete packages from your PPA</strong><br />
+                You can now delete packages from your PPAs using Launchpad's web interface.
+               </a>
+              </td>
              </tr>
              <tr>
                <td><img src="/@@/news" alt="" /></td>
@@ -95,33 +111,12 @@
                    Submit your design for the new Launchpad logo for
                    the chance to win an Ubuntu Messenger bag.
                  </a>
-                </td>
+               </td>
              </tr>
-              <tr>
-                <td><img src="/@@/news" alt="" /></td>
-                <td>
-                  <a href="https://help.launchpad.net/Feeds">
-                    <strong>Bug feeds</strong><br />
-                    Subscribe to all bugs relating to a distribution, project,
-                    team or person.
-                  </a>
-                </td>
-              </tr>
-              <tr>
-                <td><img src="/@@/news" alt="" /></td>
-                <td>
-                  <a href="https://help.launchpad.net/ProjectAnnouncements">
-                    <strong>Project announcements</strong><br />
-                    Publish your news in Launchpad and via Atom feeds.</a>
-                    <a href="http://feeds.launchpad.net/announcements.atom">
-                      <img src="/@@/rss" alt="RSS" />
-                    </a>
-                </td>
-              </tr>
             </tbody>
           </table>
           <div class="discreet" style="text-align: right">
-            Updated 2008-01-24.
+            Updated 2008-02-20.
             <a href="http://news.launchpad.net">More...</a>
           </div>
         </div>
@@ -156,7 +151,7 @@
       <p>
       You can browse our dedicated help site, <a
       href="https://help.launchpad.net/">help.launchpad.net</a>, for a
-      complete set of documents about Launchpad 
+      complete set of documents about Launchpad
       </p>
       <p>
       You can also find help on the <a
