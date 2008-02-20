@@ -235,6 +235,34 @@ BugBranches also have a formatter.
     >>> test_tales("bugbranch/fmt:link", bugbranch=bugbranch)
     u'<a href="...+bug..."><img .../>&nbsp;Bug #...</a>'
 
+ICodeImport providers have a formatter.
+
+    >>> login('foo.bar@canonical.com')
+    >>> code_import = factory.makeCodeImport()
+    >>> test_tales("code_import/fmt:link", code_import=code_import)
+    u'<a href="...+code-import/">Import of...</a>'
+
+IProductSeries providers have a formatter.
+
+    >>> product_series = factory.makeSeries()
+    >>> test_tales("product_series/fmt:link", product_series=product_series)
+    u'... Series: ...'
+
+ISpecification providers have a formatter.
+
+    >>> login('test@canonical.com')
+    >>> specification = factory.makeSpec()
+    >>> test_tales("specification/fmt:link", specification=specification)
+    u'...<img ... src="/@@/blueprint-undefined" />&nbsp;...'
+
+ISpecificationBranch providers have a formatter.
+
+    >>> specification = factory.makeSpec()
+    >>> branch = factory.makeBranch()
+    >>> specification_branch = specification.linkBranch(branch, branch.owner)
+    >>> test_tales("specification_branch/fmt:link",
+    ...     specification_branch=specification_branch)
+    u'...<img ... src="/@@/blueprint-undefined" />&nbsp;...'
 
 
 == The fmt: namespace to get strings (hiding) ==
