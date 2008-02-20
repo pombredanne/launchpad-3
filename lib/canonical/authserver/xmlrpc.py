@@ -9,7 +9,8 @@ from twisted.web import xmlrpc
 from zope.interface.interface import Method
 
 from canonical.authserver.interfaces import (
-    IBranchDetailsStorage, IUserDetailsStorage, IUserDetailsStorageV2)
+    IBranchDetailsStorage, IHostedBranchStorage, IUserDetailsStorage,
+    IUserDetailsStorageV2)
 
 
 def get_method_names_in_interface(interface):
@@ -18,9 +19,14 @@ def get_method_names_in_interface(interface):
             yield attribute_name
 
 
-def defer_methods_to_threads(obj, interface):
-    for name in get_method_names_in_interface(interface):
-        setattr(obj, name, defer_to_thread(getattr(obj, name)))
+def defer_methods_to_threads(obj, *interfaces):
+    used_names = set()
+    for interface in interfaces:
+        for name in get_method_names_in_interface(interface):
+            if name in used_names:
+                continue
+            setattr(obj, name, defer_to_thread(getattr(obj, name)))
+            used_names.add(name)
 
 
 def defer_to_thread(function):
@@ -86,7 +92,8 @@ class UserDetailsResourceV2(xmlrpc.XMLRPC):
     def __init__(self, storage, debug=False):
         xmlrpc.XMLRPC.__init__(self)
         self.storage = storage
-        defer_methods_to_threads(self.storage, IUserDetailsStorageV2)
+        defer_methods_to_threads(
+            self.storage, IUserDetailsStorageV2, IHostedBranchStorage)
         self.debug = debug
 
     def xmlrpc_getUser(self, loginID):
