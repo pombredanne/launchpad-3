@@ -134,20 +134,22 @@ def reformat_wiki_text(wiki_text):
     # This implementation is neither correct nor complete.
     # See https://bugs.launchpad.net/launchpad/+bug/193646
 
+    plain_text = wiki_text
+
     # Strip macros (anchors, TOC, etc'...)
     re_macro = re.compile('\[\[.*?\]\]')
-    wiki_text = re_macro.sub('', wiki_text)
+    plain_text = re_macro.sub('', plain_text)
 
     # sterilize links
     re_link = re.compile('\[(.*?)\]')
-    wiki_text = re_link.sub(
-        lambda match: ' '.join(match.group(1).split(' ')[1:]), wiki_text)
+    plain_text = re_link.sub(
+        lambda match: ' '.join(match.group(1).split(' ')[1:]), plain_text)
 
     # Strip comments
     re_comment = re.compile('#.*?$', re.MULTILINE)
-    wiki_text = re_comment.sub('', wiki_text)
+    plain_text = re_comment.sub('', plain_text)
 
-    return wiki_text
+    return plain_text
 
 
 class MaloneHandler:
