@@ -23,6 +23,7 @@
     <include file="bugattachment.zcml" />
     <include file="bugbranch.zcml" />
     <include file="bugcomment.zcml" />
+    <include file="bugcontact.zcml" />
     <include file="bugcve.zcml" />
     <include file="buglinktarget.zcml" />
     <include file="buginfestation.zcml" />

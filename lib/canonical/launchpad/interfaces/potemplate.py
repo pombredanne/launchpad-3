@@ -373,9 +373,6 @@ class IPOTemplate(IRosettaStats):
         """Test whether this template has any message sets which are plural
         message sets."""
 
-    def invalidateCache():
-        """Invalidate the cached export for all pofiles."""
-
     def export():
         """Return a serialized version as a string using its native format."""
 

@@ -985,4 +985,3 @@ However, this one doesn't show up as external suggestion for Spanish.
     []
     >>> new_credits.getExternallySuggestedTranslationMessages(spanish)
     []
-

@@ -8,10 +8,9 @@ from zope.interface import implements
 from zope.component import getUtility
 
 from sqlobject import (
-    StringCol, IntCol, BoolCol, SQLRelatedJoin, SQLObjectNotFound, OR,
-    CONTAINSSTRING)
+    BoolCol, IntCol, SQLObjectNotFound, SQLRelatedJoin, StringCol)
 
-from canonical.database.sqlbase import SQLBase
+from canonical.database.sqlbase import SQLBase, quote_like
 from canonical.database.enumcol import EnumCol
 from canonical.launchpad.interfaces import (
     ILanguageSet, ILanguage, IPersonSet, NotFoundError, TextDirection)
@@ -199,14 +198,11 @@ class LanguageSet:
     def search(self, text):
         """See `ILanguageSet`."""
         if text:
-            text.lower()
-            results = Language.select(
-                OR (
-                    CONTAINSSTRING(Language.q.code, text),
-                    CONTAINSSTRING(Language.q.englishname, text)
-                    ),
-                orderBy='englishname'
-                )
+            results = Language.select('''
+                code ILIKE '%%' || %(pattern)s || '%%' OR
+                englishname ILIKE '%%' || %(pattern)s || '%%'
+                ''' % { 'pattern': quote_like(text) },
+                orderBy='englishname')
         else:
             results = None
 

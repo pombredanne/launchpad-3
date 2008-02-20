@@ -16,6 +16,7 @@ from zope.interface import Attribute, Interface
 from zope.schema import Datetime, Choice, Int
 
 from canonical.launchpad import _
+from canonical.launchpad.fields import PublicPersonChoice
 from canonical.lazr import DBEnumeratedType, DBItem
 
 
@@ -256,7 +257,7 @@ class ICodeImportEvent(Interface):
         title=_("Code Import"), required=False, readonly=True,
         vocabulary='CodeImport',
         description=_("The code import affected by this event."""))
-    person = Choice(
+    person = PublicPersonChoice(
         title=_("Person"), required=False, readonly=True,
         vocabulary='Person',
         description=_("The person that triggered this event."""))
