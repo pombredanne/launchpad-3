@@ -103,6 +103,7 @@ class SubversionServer(Server):
 
     def makeDirectory(self, directory_name, commit_message=None):
         """Make a directory on the repository."""
+        import pdb; pdb.set_trace()
         if commit_message is None:
             commit_message = 'Make %r' % (directory_name,)
         url = urljoin(self.get_url(), directory_name)
