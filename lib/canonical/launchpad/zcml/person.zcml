@@ -198,11 +198,6 @@
       attribute="showSSHKeys"
       />
     <browser:page
-      name="+bounties"
-      facet="bounties"
-      template="../templates/person-bounties.pt"
-      />
-    <browser:page
       name="+portlet-emails"
       template="../templates/person-portlet-emails.pt"
       />
@@ -225,6 +220,18 @@
       template="../templates/team-listing.pt"
       />
   </browser:pages>
+
+  <!-- The bounty system is kept maintained but not available for users.
+  This is achieved by putting it on the PageTestLayer. -->
+  <browser:page
+    class="canonical.launchpad.browser.PersonView"
+    facet="bounties"
+    for="canonical.launchpad.interfaces.IPerson"
+    layer="canonical.launchpad.layers.PageTestLayer"
+    name="+bounties"
+    permission="zope.Public"
+    template="../templates/person-bounties.pt"
+    />
 
   <browser:pages
     for="canonical.launchpad.interfaces.IPerson"
@@ -591,6 +598,14 @@
     class="canonical.launchpad.browser.TeamReassignmentView"
     name="+reassign"
     template="../templates/object-reassignment.pt"
+    />
+
+  <browser:page
+    for="canonical.launchpad.interfaces.ITeam"
+    permission="launchpad.AnyPerson"
+    class="canonical.launchpad.browser.TeamAddMyTeamsView"
+    name="+add-my-teams"
+    template="../templates/team-add-my-teams.pt"
     />
 
   <browser:page

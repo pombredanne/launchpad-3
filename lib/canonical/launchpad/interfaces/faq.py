@@ -12,10 +12,10 @@ __all__ = [
 
 from zope.interface import Attribute
 from zope.schema import (
-     Choice, Datetime,  Int, Object, Text, TextLine)
+     Datetime,  Int, Object, Text, TextLine)
 
 from canonical.launchpad import _
-from canonical.launchpad.fields import Title
+from canonical.launchpad.fields import PublicPersonChoice, Title
 from canonical.launchpad.interfaces.faqcollection import IFAQCollection
 from canonical.launchpad.interfaces.faqtarget import IFAQTarget
 from canonical.launchpad.interfaces.launchpad import IHasOwner
@@ -54,7 +54,7 @@ class IFAQ(IHasOwner):
 
     date_created = Datetime(title=_('Created'), required=True, readonly=True)
 
-    last_updated_by = Choice(
+    last_updated_by = PublicPersonChoice(
         title=_('Last Updated By'),
         description=_('The last person who modified the document.'),
         vocabulary='ValidPersonOrTeam', required=False)

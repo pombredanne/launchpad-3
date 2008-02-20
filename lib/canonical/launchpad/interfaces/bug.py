@@ -24,7 +24,7 @@ from zope.schema import (
 
 from canonical.launchpad import _
 from canonical.launchpad.fields import (
-    ContentNameField, Title, DuplicateBug, Tag)
+    ContentNameField, DuplicateBug, PublicPersonChoice, Title, Tag)
 from canonical.launchpad.interfaces.bugtarget import IBugTarget
 from canonical.launchpad.interfaces.launchpad import NotFoundError
 from canonical.launchpad.interfaces.messagetarget import IMessageTarget
@@ -158,7 +158,7 @@ class IBug(IMessageTarget, ICanBeMentored):
         default=False)
     date_made_private = Datetime(
         title=_('Date Made Private'), required=False)
-    who_made_private = Choice(
+    who_made_private = PublicPersonChoice(
         title=_('Who Made Private'), required=False,
         vocabulary='ValidPersonOrTeam',
         description=_("The person who set this bug private."))
@@ -520,8 +520,7 @@ class IBugAddForm(IBug):
             vocabulary="DistributionUsingMalone")
     owner = Int(title=_("Owner"), required=True)
     comment = Text(
-        title=_('Further information, steps to reproduce,'
-                ' version information, etc.'),
+        title=_('Further information'),
         required=False)
     bug_already_reported_as = Choice(
         title=_("This bug has already been reported as ..."), required=False,

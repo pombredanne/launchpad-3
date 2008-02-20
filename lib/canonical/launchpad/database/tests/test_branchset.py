@@ -197,6 +197,7 @@ class TestMirroringForHostedBranches(BranchTestCase):
 
     def setUp(self):
         BranchTestCase.setUp(self)
+        self.branch_set = getUtility(IBranchSet)
         login(ANONYMOUS)
         self.emptyPullQueues()
         # The absolute minimum value for any time field set to 'now'.

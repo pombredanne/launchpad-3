@@ -10,7 +10,7 @@ trackers Launchpad knows about is accessible from the Bugs front page.
 
 Anyone logged in is able to register a new bug tracker.
 
-  >>> user_browser.getLink('Register bug tracker').click()
+  >>> user_browser.getLink('Register another bug tracker').click()
   >>> user_browser.url
   'http://bugs.launchpad.dev/bugs/bugtrackers/+newbugtracker'
 

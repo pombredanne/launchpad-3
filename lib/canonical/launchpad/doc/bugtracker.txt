@@ -265,8 +265,9 @@ contact any external servers.
     INFO    No watches to update on http://bugs.example.com
     INFO    No watches to update on http://bugs.example.com/ni
     INFO    No watches to update on http://bugs.debian.org
-    INFO    ExternalBugtracker for BugTrackerType 'EMAILADDRESS' is not
+    WARNING ExternalBugtracker for BugTrackerType 'EMAILADDRESS' is not
             known.
+    WARNING ExternalBugtracker for BugTrackerType 'SAVANNAH' is not known.
     INFO    No watches to update on http://bugzilla.gnome.org/bugs
     INFO    No watches to update on http://sourceforge.net/
     INFO    No watches to update on https://bugzilla.mozilla.org/
@@ -305,6 +306,11 @@ First, we create some bug watches to test with:
 
 Next, we monkey-patch urllib2.urlopen so that it always times out.
 
+The timeout will also produce an OOPS report.
+
+    >>> from canonical.launchpad.ftests.externalbugtracker import oops_hook
+    >>> oops_hook.install()
+
     >>> import socket
     >>> import urllib2
     >>> urlopen = urllib2.urlopen
@@ -316,9 +322,15 @@ Next, we monkey-patch urllib2.urlopen so that it always times out.
     ...     updater = BugWatchUpdater(transaction)
     ...     updater._login()
     ...     updater.updateBugTracker(example_bug_tracker)
+    ...     print oops_hook.formatted_oops_info
     ... finally:
     ...     urllib2.urlopen = urlopen
     ERROR:root:Connection timed out when updating http://bugs.example.com
+    OOPS-...
+    baseurl=u'http://bugs.example.com'
+    bugtracker=u'example-bugs'
+
+    >>> oops_hook.uninstall()
 
 Errors that occur when updating a bug watch are recorded against that
 bug watch. The timeout will be recorded against the bug watch we just
@@ -371,6 +383,8 @@ reset.
     ... finally:
     ...     externalbugtracker.get_external_bugtracker = (
     ...         real_get_external_bugtracker)
+    WARNING:...:ExternalBugtracker for BugTrackerType 'ROUNDUP' is not
+    known.
 
 The bug watch's last error type field will have been updated to reflect
 the error that was raised:

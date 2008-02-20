@@ -21,8 +21,10 @@ from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import SQLBase, sqlvalues
 from canonical.launchpad.database.codeimportresult import CodeImportResult
 from canonical.launchpad.interfaces import (
-    CodeImportJobState, CodeImportReviewStatus, ICodeImportEventSet,
-    ICodeImportJob, ICodeImportJobSet, ICodeImportJobWorkflow)
+    CodeImportJobState, CodeImportMachineState, CodeImportReviewStatus,
+    ICodeImportEventSet, ICodeImportJob, ICodeImportJobSet,
+    ICodeImportJobWorkflow)
+from canonical.launchpad.validators.person import public_person_validator
 
 
 class CodeImportJob(SQLBase):
@@ -47,6 +49,7 @@ class CodeImportJob(SQLBase):
 
     requesting_user = ForeignKey(
         dbName='requesting_user', foreignKey='Person',
+        validator=public_person_validator,
         notNull=False, default=None)
 
     ordering = IntCol(notNull=False, default=None)
@@ -158,3 +161,39 @@ class CodeImportJobWorkflow:
         removeSecurityProxy(import_job).requesting_user = user
         getUtility(ICodeImportEventSet).newRequest(
             import_job.code_import, user)
+
+    def startJob(self, import_job, machine):
+        """See `ICodeImportJobWorkflow`."""
+        assert import_job.state == CodeImportJobState.PENDING, (
+            "The CodeImportJob associated with %s is %s."
+            % (import_job.code_import.branch.unique_name,
+               import_job.state.name))
+        assert machine.state == CodeImportMachineState.ONLINE, (
+            "The machine %s is %s."
+            % (machine.hostname, machine.state.name))
+        # CodeImportJobWorkflow is the only class that is allowed to set the
+        # date_created, heartbeat, logtail, machine and state attributes of
+        # CodeImportJob, they are not settable through ICodeImportJob. So we
+        # must use removeSecurityProxy here.
+        naked_job = removeSecurityProxy(import_job)
+        naked_job.date_started = UTC_NOW
+        naked_job.heartbeat = UTC_NOW
+        naked_job.logtail = u''
+        naked_job.machine = machine
+        naked_job.state = CodeImportJobState.RUNNING
+        getUtility(ICodeImportEventSet).newStart(
+            import_job.code_import, machine)
+
+    def updateHeartbeat(self, import_job, logtail):
+        """See `ICodeImportJobWorkflow`."""
+        assert import_job.state == CodeImportJobState.RUNNING, (
+            "The CodeImportJob associated with %s is %s."
+            % (import_job.code_import.branch.unique_name,
+               import_job.state.name))
+        # CodeImportJobWorkflow is the only class that is allowed to
+        # set the heartbeat and logtail attributes of CodeImportJob,
+        # they are not settable through ICodeImportJob. So we must use
+        # removeSecurityProxy here.
+        naked_job = removeSecurityProxy(import_job)
+        naked_job.heartbeat = UTC_NOW
+        naked_job.logtail = logtail

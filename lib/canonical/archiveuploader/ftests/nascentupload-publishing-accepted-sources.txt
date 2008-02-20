@@ -20,7 +20,7 @@ Let's start a new series of ed (0.2-20) and publish it:
     'NEW'
 
     >>> ed_src.queue_root.setAccepted()
-    >>> ed_src.queue_root.realiseUpload()
+    >>> pub_records = ed_src.queue_root.realiseUpload()
 
 Check if the publication is available through the Soyuz package stack:
 

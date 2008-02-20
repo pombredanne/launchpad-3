@@ -18,6 +18,7 @@ from zope.schema import Int, Datetime, Choice, Set
 from zope.interface import Interface, Attribute
 
 from canonical.launchpad import _
+from canonical.launchpad.fields import PublicPersonChoice
 from canonical.launchpad.interfaces import (
     IHasBug, IHasDateCreated, IHasOwner, can_be_nominated_for_serieses)
 
@@ -88,10 +89,10 @@ class IBugNomination(IHasBug, IHasOwner, IHasDateCreated):
     productseries = Choice(
         title=_("Series"), required=False,
         vocabulary="ProductSeries")
-    owner = Choice(
+    owner = PublicPersonChoice(
         title=_('Submitter'), required=True, readonly=True,
         vocabulary='ValidPersonOrTeam')
-    decider = Choice(
+    decider = PublicPersonChoice(
         title=_('Decided By'), required=False, readonly=True,
         vocabulary='ValidPersonOrTeam')
     target = Attribute(
