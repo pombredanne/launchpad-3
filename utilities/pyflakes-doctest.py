@@ -1,4 +1,5 @@
 #!/usr/bin/python
+# Copyright 2008 Canonical Ltd.  All rights reserved.
 """Perform pyflakes checks on doctests."""
 
 import compiler
