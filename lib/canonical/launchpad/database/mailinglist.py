@@ -168,7 +168,11 @@ class MailingList(SQLBase):
         """Set the date_activated field and fire a
         SQLObjectModified event.
 
-        The event only fires the first time that the field is set.
+        The date_activated field is only set once - repeated calls
+        will not change the field's value.
+
+        Similarly, the modification event only fires the first time
+        that the field is set.
         """
         if self.date_activated is not None:
             return
