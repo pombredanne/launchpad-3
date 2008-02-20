@@ -47,12 +47,7 @@ from canonical.launchpad.webapp import canonical_url
 
 
 class ListeningSubversionServer(SubversionServer):
-    """A Subversion server that runs svnserve on a port.
-
-    Unlike other bzrlib.transport.Server subclasses, this does not actually
-    run the server on setUp(). You need to call runServer() after setUp() in
-    order to actually run the server.
-    """
+    """A Subversion server that runs svnserve on a port."""
 
     def __init__(self, repository_path, port_number):
         super(ListeningSubversionServer, self).__init__(repository_path)
