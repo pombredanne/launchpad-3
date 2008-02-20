@@ -364,10 +364,7 @@ class LaunchpadObjectFactory:
         return series
 
     def makeSpec(self):
-        """Create a new, arbitrary Specification.
-
-        :param branch: if supplied, this will be linked to the spec.
-        """
+        """Create a new, arbitrary Specification."""
         spec = getUtility(ISpecificationSet).new(
             self.getUniqueString(),
             self.getUniqueString(),
