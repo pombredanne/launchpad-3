@@ -52,7 +52,7 @@ all active team members.
     >>> list_one.status.name
     'ACTIVE'
 
-    >>> transaction.commit()	# Send the emails.
+    >>> transaction.commit()	# Commit the emails.
     >>> len(stub.test_emails)
     2
     >>> print_distinct_messages_and_recipients(include_reply_to=True)
@@ -131,7 +131,7 @@ individual team members.
     >>> super_list.status.name
     'ACTIVE'
 
-    >>> transaction.commit()	# Send the emails.
+    >>> transaction.commit()	# Commit the emails.
     >>> len(stub.test_emails)
     4
     >>> print_distinct_messages_and_recipients(include_reply_to=True)
