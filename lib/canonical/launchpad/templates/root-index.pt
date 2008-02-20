@@ -61,6 +61,11 @@
                 />
               </a>
             </center>
+           </p>
+           <h2>Join the Launchpad beta team</h2>
+           <p id="beta-test">
+             Get first access to new features and take part in the Launchpad development process.
+             Join the <a href="https://help.launchpad.net/BetaTesting">beta team</a> today!
           </p>
         </div>
         <div class="three column middle">
@@ -91,15 +96,6 @@
                <a href="https://help.launchpad.net/BranchMergeProposals">
                 <strong>Approve branch merge proposals</strong><br />
                 Mark branch merge proposals as approved or rejected.
-               </a>
-              </td>
-             </tr>
-             <tr>
-              <td><img src="/@@/news" alt="" /></td>
-              <td>
-               <a href="https://help.launchpad.net/BetaTesting">
-                <strong>Join the Launchpad beta team</strong><br />
-                Get first access to new features and take part in the Launchpad development process.
                </a>
               </td>
              </tr>
