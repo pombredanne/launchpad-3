@@ -3,6 +3,8 @@
 # Runs xmlint, pyflakes and pylint on files changed from parent branch.
 # Use '-v' to run pylint under stricter conditions with additional messages.
 
+utilitiesdir=`dirname $0`
+[ -z "$utilitiesdir" ] && utilitiesdir=.
 
 # Fail if any of the required tools are not installed.
 if ! which pylint >/dev/null; then
@@ -135,6 +137,16 @@ if [ ! -z "$xmllint_notices" ]; then
     group_lines_by_file "$xmllint_notices"
 fi
 
+doctestfiles=`echo "$files" | grep -E '/(doc|pagetests|f?tests)/.*txt$'`
+if [ ! -z "$doctestfiles" ]; then
+    pyflakes_doctest_notices=`$utilitiesdir/pyflakes-doctest.py $doctestfiles`
+    if [ ! -z "$pyflakes_doctest_notices" ]; then
+        echo ""
+        echo ""
+        echo "== Pyflakes Doctest notices =="
+        group_lines_by_file "$pyflakes_doctest_notices"
+    fi
+fi
 
 pyfiles=`echo "$files" | grep '.py$'`
 if [ -z "$pyfiles" ]; then
