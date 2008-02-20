@@ -101,8 +101,9 @@ def check_doctest(filename):
     else:
         w = pyflakes.Checker(tree, filename)
         for warning in sorted(w.messages, key=operator.attrgetter('lineno')):
-            if not suppress_warning(warning):
-                print warning
+            if suppress_warning(warning):
+                continue
+            print warning
 
 
 def main(argv):
