@@ -16,46 +16,44 @@ branches that have been created in error.
 
 The newly created branch has an action 'Delete branch'.
 
-    >>> print browser.getLink('Delete branch').url
+    >>> delete_link = browser.getLink('Delete branch')
+    >>> print delete_link.url
     http://code.launchpad.dev/~name12/firefox/to-delete/+delete
 
-If the user subscribes to the branch, then the branch is no longer deletable.
+The branch deletion page does not say that items must be deleted.
+
+    >>> delete_link.click()
+    >>> content = extract_text(find_main_content(browser.contents))
+    >>> 'The following items must be deleted' not in content
+    True
+
+If the user subscribes to the branch, then the branch is still deletable.
 
     >>> browser.getLink('Subscribe').click()
     >>> # Just use the default settings since we don't care.
     >>> browser.getControl('Subscribe').click()
-    >>> browser.getLink('Delete branch')
-    Traceback (most recent call last):
-    ...
-    LinkNotFoundError
+    >>> delete_link = browser.getLink('Delete branch')
 
-If the user attempts to delete the branch by hacking the URL, they
-are informed that the branch cannot be deleted.
+When the user clicks on the link, they are informed what will happen if they
+delete the branch.
 
-    >>> browser.open(
-    ...     'http://code.launchpad.dev/~name12/firefox/to-delete/+delete')
+    >>> delete_link.click()
     >>> print extract_text(find_main_content(browser.contents))
-    ~name12/firefox/to-delete for the Mozilla Firefox project
+    ~name12/firefox/to-delete
+    for the
+    Mozilla Firefox
+    project
     Delete branch
-    This branch cannot be deleted at this time.
-    A branch cannot be deleted if it is linked to any bugs or blueprints,
-    or if it has subscribers.
-    A branch also cannot be deleted if it has already been pushed to
-    or mirrored.
-
-If the user unsubscribes, the branch can be deleted.
-
-    >>> browser.open(
-    ...     'http://code.launchpad.dev/~name12/firefox/to-delete')
-    >>> browser.getLink('Edit subscription').click()
-    >>> browser.getControl('Unsubscribe').click()
-    >>> browser.getLink('Delete branch').click()
-    >>> browser.getControl('Delete Branch').click()
+    The following items must be deleted:
+    Subscription of Sample Person to
+    (This is a subscription to this branch.)
+    Branch deletion is permanent.
 
 Once the branch has been deleted, the user is taken back to the code
 listing for the owner of the branch, and a message is shown saying that
 the branch has been deleted.
 
+    >>> browser.getControl('Delete Branch').click()
     >>> print browser.url
     http://code.launchpad.dev/~name12
     >>> for message in get_feedback_messages(browser.contents):
