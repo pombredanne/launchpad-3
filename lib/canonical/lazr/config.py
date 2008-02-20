@@ -36,13 +36,6 @@ def read_content(filename):
         source_file.close()
     return raw_data
 
-def normalized_stringio(text):
-    """Return a StringIO object with leading whitespace removed."""
-    lines = []
-    for line in text.splitlines():
-        lines.append(line.lstrip())
-    text = '\n'.join(lines)
-    return StringIO.StringIO(text)
 
 class SectionSchema:
     """See `ISectionSchema`."""
@@ -168,7 +161,7 @@ class ConfigSchema:
                 raise RedefinedSectionError(section_name)
             else:
                 section_names.append(section_name)
-        return normalized_stringio(raw_schema)
+        return StringIO.StringIO(raw_schema)
 
     def _setSectionSchemasAndCategoryNames(self, parser):
         """Set the SectionSchemas and category_names from the config."""
@@ -317,14 +310,6 @@ class ConfigData:
         return tuple(category_names)
 
     @property
-    def section_factory(self):
-        """See `IConfigSchema`.
-
-        :return: None. ConfigData cannot manipulate data.
-        """
-        return None
-
-    @property
     def category_names(self):
         """See `IConfigData`."""
         return self._category_names
@@ -434,7 +419,7 @@ class Config:
             confs = []
         encoding_errors = self._verifyEncoding(conf_data)
         parser = SafeConfigParser()
-        parser.readfp(normalized_stringio(conf_data), conf_filename)
+        parser.readfp(StringIO.StringIO(conf_data), conf_filename)
         confs.append((conf_filename, parser, encoding_errors))
         if parser.has_option('meta', 'extends'):
             base_path = dirname(conf_filename)
