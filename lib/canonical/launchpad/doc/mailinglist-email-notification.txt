@@ -6,9 +6,6 @@ via email.
     >>> import email
     >>> from canonical.launchpad.mail import stub
 
-    >>> def by_to_addrs(a, b):
-    ...     return cmp(a[1], b[1])
-
     >>> from canonical.launchpad.tests.mail_helpers import pop_notifications
 
     >>> def print_distinct_messages_and_recipients(include_reply_to=False):
@@ -19,28 +16,16 @@ via email.
     ...     recipients), we print each distinct message only once and group
     ...     all recipients of that message together.
     ...     """
-    ...     distinct_bodies = {}
     ...     for message in pop_notifications():
-    ...         recipients = set(
-    ...             recipient.strip()
-    ...             for recipient in message['To'].split(','))
     ...         body = message.get_payload()
     ...         # Strip the first line as it's different for each recipient.
     ...         body = body[body.find('\n')+1:]
-    ...         if body not in distinct_bodies:
-    ...             distinct_bodies[body] = (message, recipients)
-    ...         else:
-    ...             message, existing_recipients = distinct_bodies[body]
-    ...             distinct_bodies[body] = (
-    ...                 message, existing_recipients.union(recipients))
-    ...     for body in sorted(distinct_bodies):
-    ...         message, recipients = distinct_bodies[body]
     ...         print 'From:', message['From']
-    ...         print 'To:', ", ".join(sorted(recipients))
+    ...         print 'To:', message['To']
     ...         if include_reply_to:
     ...             print 'Reply-To:', message['Reply-To']
-    ...         print 'Subject:', message['Subject'] #doctest: -NORMALIZE_WHITESPACE
-    ...         print body #doctest: -NORMALIZE_WHITESPACE
+    ...         print 'Subject:', message['Subject']
+    ...         print body
     ...         print "-"*40
 
 
@@ -57,6 +42,7 @@ all active team members.
     # person/team we want.
     >>> login('foo.bar@canonical.com')
     >>> anne.join(team_one)
+    >>> # Clear out the team-membership status emails.
     >>> pop_notifications()
     [...]
 
@@ -66,7 +52,7 @@ all active team members.
     >>> list_one.status.name
     'ACTIVE'
 
-    >>> transaction.commit()
+    >>> transaction.commit()	# Send the emails.
     >>> len(stub.test_emails)
     2
     >>> print_distinct_messages_and_recipients(include_reply_to=True)
@@ -106,7 +92,10 @@ all active team members.
     ----------------------------------------
 
 
-That notification is also sent to the individual members of all sub-teams.
+That notification is also sent to the individual members of all
+sub-teams.  If a sub-team has a primary contact email address, that
+address will be ignored, and the message will be sent to the
+individual team members.
 
     >>> from canonical.launchpad.interfaces import IPersonSet
     >>> salgado = getUtility(IPersonSet).getByName('salgado')
@@ -118,19 +107,31 @@ That notification is also sent to the individual members of all sub-teams.
     >>> lars = new_person('Lars')
     >>> lars.join(sub_team)
 
-    # Cris should only receive a single email, even though she is a
-    # member of both teams.
+    # Cris should receive a single email, even though she is a member
+    # of both teams.
     >>> cris = new_person('Cris')
     >>> cris.join(super_team)
     >>> cris.join(sub_team)
+    >>> # Clear out the team-membership status emails.
     >>> pop_notifications()
     [...]
 
+    # Make sure the sub-team has a preferred email, so we can show
+    # that it is being bypassed.
+    >>> from canonical.launchpad.interfaces import IEmailAddressSet
+    >>> emailset = getUtility(IEmailAddressSet)
+    >>> email = emailset.new('foo@baz.com', sub_team)
+    >>> sub_team.setContactAddress(email)
+    >>> sub_team.preferredemail.email
+    u'foo@baz.com'
+
+    # This will take our team through the entire list creation
+    # process, generating notification emails along the way.
     >>> super_list = new_list_for_team(super_team)
     >>> super_list.status.name
     'ACTIVE'
 
-    >>> transaction.commit()
+    >>> transaction.commit()	# Send the emails.
     >>> len(stub.test_emails)
     4
     >>> print_distinct_messages_and_recipients(include_reply_to=True)
