@@ -22,8 +22,7 @@ from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 
 from canonical.config import config
 from canonical.cachedproperty import cachedproperty
-from canonical.launchpad.helpers import (
-    intOrZero, get_email_template, shortlist)
+from canonical.launchpad.helpers import intOrZero, shortlist
 from canonical.launchpad.webapp.error import SystemErrorView
 from canonical.launchpad.webapp.login import LoginOrRegister
 from canonical.launchpad.webapp.publisher import LaunchpadView
@@ -31,7 +30,6 @@ from canonical.launchpad.webapp.generalform import GeneralFormView
 from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp import (
     canonical_url, Navigation, stepto, redirection)
-from canonical.launchpad.mail.sendmail import simple_sendmail
 from canonical.database.sqlbase import flush_database_updates
 from canonical.launchpad.interfaces.validation import shipit_postcode_required
 from canonical.launchpad.interfaces import (
@@ -545,11 +543,6 @@ class ShipItRequestView(GeneralFormView):
             # request pending in the code above, we need to clear them out.
             current_order.clearApprovedQuantities()
 
-        if current_order.isAwaitingApproval():
-            # This request needs manual approval, so we need to notify the
-            # shipit admins.
-            self._notifyShipItAdmins(current_order)
-
         return msg
 
     def userAlreadyRequestedFlavours(self, flavours):
@@ -586,22 +579,6 @@ class ShipItRequestView(GeneralFormView):
 
         if errors:
             raise WidgetsError(errors)
-
-    def _notifyShipItAdmins(self, order):
-        """Notify the shipit admins by email that there's a new request."""
-        subject = '[ShipIt] New Request Pending Approval (#%d)' % order.id
-        recipient = order.recipient
-        headers = {'Reply-To': order.recipient_email}
-        shipped_requests = recipient.shippedShipItRequestsOfCurrentSeries()
-        replacements = {'recipientname': order.recipientdisplayname,
-                        'recipientemail': order.recipient_email,
-                        'requesturl': canonical_url(order),
-                        'shipped_requests': shipped_requests.count(),
-                        'reason': order.reason}
-        message = get_email_template('shipit-custom-request.txt') % replacements
-        shipit_admins = config.shipit.admins_email_address
-        simple_sendmail(
-            self.from_email_address, shipit_admins, subject, message, headers)
 
 
 class _SelectMenuOption:

@@ -570,7 +570,7 @@ Inspecting the tarball content, we have the list of entries exported.
     >>> from canonical.launchpad.helpers import string_to_tarfile
     >>> tarfile_string = exported_translation_file.read()
     >>> tarfile = string_to_tarfile(tarfile_string)
-    >>> tarfile.getnames()
+    >>> sorted(tarfile.getnames())
     ['evolution-2.2/', 'evolution-2.2/evolution-2.2-es.po',
      'evolution-2.2/evolution-2.2-ja.po', 'evolution-2.2/evolution-2.2-xh.po',
      'po/', 'po/evolution-2.2.pot']
@@ -584,7 +584,9 @@ The *-es.po file is indeed the Spanish translation...
 And GNU tar can cope with it.
 
     >>> from canonical.launchpad.helpers import simple_popen2
-    >>> print simple_popen2('tar ztf -', tarfile_string)
+    >>> contents = simple_popen2('tar ztf -', tarfile_string)
+    >>> for line in sorted(contents.splitlines()):
+    ...     print line
     evolution-2.2/
     evolution-2.2/evolution-2.2-es.po
     evolution-2.2/evolution-2.2-ja.po

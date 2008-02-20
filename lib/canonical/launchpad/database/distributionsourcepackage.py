@@ -14,8 +14,8 @@ from sqlobject.sqlbuilder import SQLConstant
 from zope.interface import implements
 
 from canonical.launchpad.interfaces import (
-    IDistributionSourcePackage, IQuestionTarget, DuplicateBugContactError,
-    DeleteBugContactError, PackagePublishingStatus)
+    IDistributionSourcePackage, IQuestionTarget,
+    IStructuralSubscriptionTarget, PackagePublishingStatus)
 from canonical.database.sqlbase import sqlvalues
 from canonical.launchpad.database.bug import BugSet, get_bug_tags_open_count
 from canonical.launchpad.database.bugtarget import BugTargetBase
@@ -24,17 +24,19 @@ from canonical.launchpad.database.distributionsourcepackagecache import (
     DistributionSourcePackageCache)
 from canonical.launchpad.database.distributionsourcepackagerelease import (
     DistributionSourcePackageRelease)
-from canonical.launchpad.database.packagebugcontact import PackageBugContact
 from canonical.launchpad.database.publishing import (
     SourcePackagePublishingHistory)
 from canonical.launchpad.database.sourcepackagerelease import (
     SourcePackageRelease)
 from canonical.launchpad.database.sourcepackage import (
     SourcePackage, SourcePackageQuestionTargetMixin)
+from canonical.launchpad.database.structuralsubscription import (
+    StructuralSubscriptionTargetMixin)
 
 
 class DistributionSourcePackage(BugTargetBase,
-                                SourcePackageQuestionTargetMixin):
+                                SourcePackageQuestionTargetMixin,
+                                StructuralSubscriptionTargetMixin):
     """This is a "Magic Distribution Source Package". It is not an
     SQLObject, but instead it represents a source package with a particular
     name in a particular distribution. You can then ask it all sorts of
@@ -42,7 +44,9 @@ class DistributionSourcePackage(BugTargetBase,
     or current release, etc.
     """
 
-    implements(IDistributionSourcePackage, IQuestionTarget)
+    implements(
+        IDistributionSourcePackage, IQuestionTarget,
+        IStructuralSubscriptionTarget)
 
     def __init__(self, distribution, sourcepackagename):
         self.distribution = distribution
@@ -144,59 +148,6 @@ class DistributionSourcePackage(BugTargetBase,
                             self.sourcepackagename.id),
             orderBy='-datecreated',
             limit=quantity)
-
-    @property
-    def bugcontacts(self):
-        """See IDistributionSourcePackage."""
-        # Use "list" here because it's possible that this list will be longer
-        # than a "shortlist", though probably uncommon.
-        query = """
-            PackageBugContact.distribution=%s
-            AND PackageBugContact.sourcepackagename = %s
-            AND PackageBugContact.bugcontact = Person.id
-            """ % sqlvalues(self.distribution, self.sourcepackagename)
-        contacts = PackageBugContact.select(
-            query,
-            orderBy='Person.displayname',
-            clauseTables=['Person'])
-        contacts.prejoin(["bugcontact"])
-        return list(contacts)
-
-    def addBugContact(self, person):
-        """See IDistributionSourcePackage."""
-        contact_already_exists = self.isBugContact(person)
-
-        if contact_already_exists:
-            raise DuplicateBugContactError(
-                "%s is already one of the bug contacts for %s." %
-                (person.name, self.displayname))
-        else:
-            PackageBugContact(
-                distribution=self.distribution,
-                sourcepackagename=self.sourcepackagename,
-                bugcontact=person)
-
-    def removeBugContact(self, person):
-        """See IDistributionSourcePackage."""
-        contact_to_remove = self.isBugContact(person)
-
-        if not contact_to_remove:
-            raise DeleteBugContactError(
-                "%s is not a bug contact for this package.")
-        else:
-            contact_to_remove.destroySelf()
-
-    def isBugContact(self, person):
-        """See IDistributionSourcePackage."""
-        package_bug_contact = PackageBugContact.selectOneBy(
-            distribution=self.distribution,
-            sourcepackagename=self.sourcepackagename,
-            bugcontact=person)
-
-        if package_bug_contact:
-            return package_bug_contact
-        else:
-            return False
 
     @property
     def binary_package_names(self):

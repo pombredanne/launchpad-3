@@ -22,6 +22,7 @@ from canonical.launchpad.interfaces import (
     IRevision, IRevisionAuthor, IRevisionParent, IRevisionProperty,
     IRevisionSet)
 from canonical.launchpad.helpers import shortlist
+from canonical.launchpad.validators.person import public_person_validator
 
 
 class Revision(SQLBase):
@@ -80,7 +81,7 @@ class RevisionAuthor(SQLBase):
 
     email = StringCol(notNull=False, default=None)
     person = ForeignKey(dbName='person', foreignKey='Person', notNull=False,
-                        default=None)
+                        validator=public_person_validator, default=None)
 
     def linkToLaunchpadPerson(self):
         """See `IRevisionAuthor`."""

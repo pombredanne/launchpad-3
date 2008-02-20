@@ -61,7 +61,7 @@ class MilestoneContextMenu(ContextMenu):
 
     usedfor = IMilestone
 
-    links = ['edit', 'admin']
+    links = ['edit', 'admin', 'subscribe']
 
     @enabled_with_permission('launchpad.Edit')
     def edit(self):
@@ -78,6 +78,11 @@ class MilestoneContextMenu(ContextMenu):
         # that can/must be administrated.
         enabled = not IProjectMilestone.providedBy(self.context)
         return Link('+admin', text, icon='edit', enabled=enabled)
+
+    def subscribe(self):
+        enabled = not IProjectMilestone.providedBy(self.context)
+        return Link('+subscribe', 'Subscribe to bug mail',
+                    icon='edit', enabled=enabled)
 
 
 class MilestoneView(LaunchpadView):
