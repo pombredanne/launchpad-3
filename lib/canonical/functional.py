@@ -9,7 +9,6 @@ import sys
 import unittest
 import xmlrpclib
 
-import zope.app.testing.functional
 from zope.app.testing.functional import (
     FunctionalTestSetup, HTTPCaller)
 from zope.security.management import endInteraction, queryInteraction
@@ -29,7 +28,7 @@ class NewFunctionalTestSetup(FunctionalTestSetup):
        from tests specifying a valid Layer.
     """
     def __init__(self, *args, **kw):
-        from canonical.testing import FunctionalLayer, ZopelessLayer
+        from canonical.testing import ZopelessLayer
         assert FunctionalLayer.isSetUp or ZopelessLayer.isSetUp, """
                 FunctionalTestSetup invoked at an inappropriate time.
                 May only be invoked in the FunctionalLayer or ZopelessLayer
@@ -58,10 +57,10 @@ class FunctionalTestCase(unittest.TestCase):
         #return FunctionalTestSetup().getRootFolder()
 
     def commit(self):
-        commit()
+        raise NotImplementedError('commit')
 
     def abort(self):
-        abort()
+        raise NotImplementedError('abort')
 
 
 class StdoutWrapper:
@@ -87,6 +86,9 @@ class StdoutHandler(Handler):
 
 
 def FunctionalDocFileSuite(*paths, **kw):
+    globs = kw.setdefault('globs', {})
+    globs['http'] = HTTPCaller()
+
     # Set stdout_logging keyword argument to True to make
     # logging output be sent to stdout, forcing doctests to deal with it.
     stdout_logging = kw.pop('stdout_logging', True)

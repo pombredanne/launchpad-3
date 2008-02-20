@@ -234,6 +234,8 @@ an alias.
     [u'http://just.example.com/',
      u'http://magic.example.com/']
 
+    >>> mozilla_bugzilla.baseurl = 'https://bugzilla.mozilla.org/'
+
 
 == checkwatches.py ==
 

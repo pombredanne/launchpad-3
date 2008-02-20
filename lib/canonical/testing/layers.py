@@ -60,7 +60,7 @@ orig__call__ = zope.app.testing.functional.HTTPCaller.__call__
 
 
 class MockRootFolder:
-    """Implement the minimum functionality required by Z3 ZODB dependancies
+    """Implement the minimum functionality required by Z3 ZODB dependencies
 
     Installed as part of the FunctionalDocFileSuite to allow the http()
     method (zope.app.testing.functional.HTTPCaller) to work.
