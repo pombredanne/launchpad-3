@@ -217,7 +217,7 @@ without adequate permissions, a link is not generated.
     >>> test_tales("subscription/fmt:link", subscription=subscription)
     u'Subscription of My Person to My Branch'
 
-But if we log in as the subscriber, a link presented.
+But if we log in as the subscriber, a link is presented.
 
     >>> login(subscription.person.preferredemail.email)
     >>> test_tales("subscription/fmt:link", subscription=subscription)
