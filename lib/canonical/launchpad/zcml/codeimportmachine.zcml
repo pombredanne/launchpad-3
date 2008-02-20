@@ -29,7 +29,7 @@
     <require
       permission="launchpad.View"
       interface="canonical.launchpad.interfaces.ICodeImportMachineSet" />
-    <allow interface="canonical.launchpad.interfaces.ICodeImportMachineSetScheduling" />
+    <allow interface="canonical.launchpad.interfaces.ICodeImportMachineSetPublic" />
   </securedutility>
 
 </configure>

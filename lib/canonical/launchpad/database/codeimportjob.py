@@ -22,14 +22,15 @@ from canonical.database.sqlbase import SQLBase, sqlvalues
 from canonical.launchpad.database.codeimportresult import CodeImportResult
 from canonical.launchpad.interfaces import (
     CodeImportJobState, CodeImportMachineState, CodeImportReviewStatus,
-    ICodeImportEventSet, ICodeImportJob, ICodeImportJobSet,
-    ICodeImportJobSetScheduling, ICodeImportJobWorkflow)
+    ICodeImportEventSet, ICodeImportJob, ICodeImportJobPublic,
+    ICodeImportJobSet, ICodeImportJobSetPublic, ICodeImportJobWorkflow,
+    ICodeImportJobWorkflowPublic)
 
 
 class CodeImportJob(SQLBase):
     """See `ICodeImportJob`."""
 
-    implements(ICodeImportJob)
+    implements(ICodeImportJob, ICodeImportJobPublic)
 
     date_created = UtcDateTimeCol(notNull=True, default=UTC_NOW)
 
@@ -79,7 +80,7 @@ class CodeImportJob(SQLBase):
 class CodeImportJobSet(object):
     """See `ICodeImportJobSet`."""
 
-    implements(ICodeImportJobSet, ICodeImportJobSetScheduling)
+    implements(ICodeImportJobSet, ICodeImportJobSetPublic)
 
     # CodeImportJob database objects are created using
     # CodeImportJobWorkflow.newJob.
@@ -111,7 +112,7 @@ class CodeImportJobSet(object):
 class CodeImportJobWorkflow:
     """See `ICodeImportJobWorkflow`."""
 
-    implements(ICodeImportJobWorkflow)
+    implements(ICodeImportJobWorkflow, ICodeImportJobWorkflowPublic)
 
     def newJob(self, code_import):
         """See `ICodeImportJobWorkflow`."""

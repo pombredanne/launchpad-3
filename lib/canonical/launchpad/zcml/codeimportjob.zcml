@@ -12,6 +12,8 @@
       permission="launchpad.View"
       interface="canonical.launchpad.interfaces.ICodeImportJob"
       />
+    <allow
+      interface="canonical.launchpad.interfaces.ICodeImportJobPublic" />
   </content>
 
   <!-- CodeImportJobSet -->
@@ -23,7 +25,7 @@
       permission="launchpad.View"
       interface="canonical.launchpad.interfaces.ICodeImportJobSet" />
     <allow
-      interface="canonical.launchpad.interfaces.ICodeImportJobSetScheduling" />
+      interface="canonical.launchpad.interfaces.ICodeImportJobSetPublic" />
   </securedutility>
 
   <!-- CodeImportJobWorkflow -->
@@ -34,6 +36,8 @@
     <require
       permission="launchpad.Edit"
       interface="canonical.launchpad.interfaces.ICodeImportJobWorkflow" />
+    <allow
+      interface="canonical.launchpad.interfaces.ICodeImportJobWorkflowPublic" />
   </securedutility>
 
 </configure>

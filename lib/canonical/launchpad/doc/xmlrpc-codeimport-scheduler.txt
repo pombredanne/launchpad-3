@@ -31,7 +31,10 @@ getJobForMachine(), that returns the id of the job that the code
 import slave should next run.
 
     >>> codeimportscheduler_api.getJobForMachine('bazaar-importer')
-    0
+    1
+
+    >>> from canonical.database.sqlbase import flush_database_updates
+    >>> flush_database_updates()
 
 If you pass a bogus hostname, you get a NoSuchCodeImportMachine Fault.
 

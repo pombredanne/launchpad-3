@@ -103,7 +103,7 @@ class TestCodeImportSetGetJobForMachine(unittest.TestCase):
         flush_database_updates()
         observed_job = getUtility(ICodeImportJobSet).getJobForMachine(
             self.machine)
-        self.assert_(observered_job is not None, "No job was selected.")
+        self.assert_(observed_job is not None, "No job was selected.")
         self.assertEqual(desired_job, observed_job,
                          "Expected job not selected.")
 
@@ -171,6 +171,11 @@ class TestCodeImportSetGetJobForMachine(unittest.TestCase):
         self.makeJob(CodeImportJobState.PENDING, -5)
         self.makeJob(CodeImportJobState.PENDING, -2)
         self.assertJobIsSelected(desired_job)
+
+    def test_notReturnedTwice(self):
+        self.assertJobIsSelected(
+            self.makeJob(CodeImportJobState.PENDING, -1))
+        self.assertNoJobSelected()
 
 
 class AssertFailureMixin:

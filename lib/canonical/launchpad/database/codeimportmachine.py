@@ -22,7 +22,7 @@ from canonical.database.sqlbase import SQLBase
 from canonical.launchpad.interfaces import (
     CodeImportMachineState, ICodeImportEventSet, ICodeImportMachine,
     ICodeImportMachinePublic, ICodeImportMachineSet,
-    ICodeImportMachineSetScheduling)
+    ICodeImportMachineSetPublic)
 
 
 class CodeImportMachine(SQLBase):
@@ -69,7 +69,7 @@ class CodeImportMachine(SQLBase):
 class CodeImportMachineSet(object):
     """See `ICodeImportMachineSet`."""
 
-    implements(ICodeImportMachineSet, ICodeImportMachineSetScheduling)
+    implements(ICodeImportMachineSet, ICodeImportMachineSetPublic)
 
     def getAll(self):
         """See `ICodeImportMachineSet`."""

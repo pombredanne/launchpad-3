@@ -9,7 +9,7 @@ __all__ = [
     'ICodeImportMachine',
     'ICodeImportMachinePublic',
     'ICodeImportMachineSet',
-    'ICodeImportMachineSetScheduling',
+    'ICodeImportMachineSetPublic',
     'CodeImportMachineOfflineReason',
     'CodeImportMachineState',
     ]
@@ -86,15 +86,9 @@ class CodeImportMachineOfflineReason(DBEnumeratedType):
 class ICodeImportMachine(Interface):
     """A machine that can perform imports."""
 
-    id = Int(readonly=True, required=True)
-
     date_created = Datetime(
         title=_("Date Created"), required=True, readonly=True)
 
-    state = Choice(
-        title=_('State'), required=True, vocabulary=CodeImportMachineState,
-        default=CodeImportMachineState.OFFLINE,
-        description=_("The state of the controller daemon on this machine."))
     heartbeat = Datetime(
         title=_("Heartbeat"),
         description=_("When the controller deamon last recorded it was"
@@ -127,6 +121,13 @@ class ICodeImportMachine(Interface):
 class ICodeImportMachinePublic(Interface):
     """XXX."""
 
+    id = Int(readonly=True, required=True)
+
+    state = Choice(
+        title=_('State'), required=True, vocabulary=CodeImportMachineState,
+        default=CodeImportMachineState.OFFLINE,
+        description=_("The state of the controller daemon on this machine."))
+
     hostname = TextLine(
         title=_('Host name'), required=True,
         description=_('The hostname of the machine.'))
@@ -145,7 +146,7 @@ class ICodeImportMachineSet(Interface):
         """
 
 
-class ICodeImportMachineSetScheduling(Interface):
+class ICodeImportMachineSetPublic(Interface):
     """XXX."""
 
     def getByHostname(hostname):
