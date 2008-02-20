@@ -119,6 +119,7 @@ class LaunchpadObjectFactory:
             person.
         :param email_address_status: If specified, the status of the email
             address is set to the email_address_status.
+        :param displayname: The display name to use for the person.
         """
         if email is None:
             email = self.getUniqueString('email')
@@ -235,7 +236,11 @@ class LaunchpadObjectFactory:
 
     def makeBranchSubscription(self, branch_title=None,
                                person_displayname=None):
-        """Create a BranchSubscription."""
+        """Create a BranchSubscription.
+
+        :param branch_title: The title to use for the created Branch
+        :param person_displayname: The displayname for the created Person
+        """
         branch = self.makeBranch(title=branch_title)
         person = self.makePerson(displayname=person_displayname,
             email_address_status=EmailAddressStatus.VALIDATED)
@@ -367,10 +372,7 @@ class LaunchpadObjectFactory:
         return series
 
     def makeSpec(self):
-        """Create a new, arbitrary Specification.
-
-        :param branch: if supplied, this will be linked to the spec.
-        """
+        """Create a new, arbitrary Specification."""
         spec = getUtility(ISpecificationSet).new(
             self.getUniqueString(),
             self.getUniqueString(),

@@ -216,7 +216,6 @@ Branch subscriptions show the person and branch name.
     >>> test_tales("subscription/fmt:link", subscription=subscription)
     u'Subscription of My Person to My Branch'
 
-
 Merge proposals also have a link formatter, which displays branch titles:
 
     >>> login('foo.bar@canonical.com')
