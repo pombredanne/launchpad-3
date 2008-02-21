@@ -299,7 +299,7 @@ k            </description>
         </key>
         <key name="is_edge" datatype="boolean" default="false">
             <description>
-                If true, the main template will display "EDGE" in the 
+                If true, the main template will display "EDGE" in the
                 footer. This, along with the displayed version number which
                 is one level ahead of the current production version, will
                 further alert users that the server is running pre-production
