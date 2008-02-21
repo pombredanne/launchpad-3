@@ -1,4 +1,4 @@
-# Copyright 2004 Canonical Ltd.  All rights reserved.
+# Copyright 2004-2008 Canonical Ltd.  All rights reserved.
 '''
 Test harness for tests needing a PostgreSQL backend.
 '''
@@ -6,25 +6,11 @@ Test harness for tests needing a PostgreSQL backend.
 __metaclass__ = type
 
 import unittest
-import os, os.path, sys
-import re
 import time
-from warnings import warn
 
 import psycopg
-from zope.app.rdb.interfaces import DatabaseException
 from canonical.database.postgresql import resetSequences
 
-def _caller_debug(lvl=1):
-    return
-    f1 = sys._getframe(lvl)
-    f2 = sys._getframe(lvl+2)
-    print '%s - %s (%s line %s)' % (
-            f1.f_code.co_name,
-            f2.f_code.co_name,
-            f2.f_globals['__file__'],
-            f2.f_lineno,
-            )
 
 class ConnectionWrapper(object):
     real_connection = None
@@ -33,11 +19,12 @@ class ConnectionWrapper(object):
     dirty = False
 
     def __init__(self, real_connection):
+        assert not isinstance(real_connection, ConnectionWrapper), \
+                "Wrapped the wrapper!"
         self.__dict__['real_connection'] = real_connection
         PgTestSetup.connections.append(self)
 
     def close(self):
-        _caller_debug()
         if self in PgTestSetup.connections:
             PgTestSetup.connections.remove(self)
             self.__dict__['real_connection'].close()
@@ -90,15 +77,21 @@ class CursorWrapper:
     record_sql = False
 
     def __init__(self, real_cursor):
+        assert not isinstance(real_cursor, CursorWrapper), \
+                "Wrapped the wrapper!"
         self.__dict__['real_cursor'] = real_cursor
 
     def execute(self, *args, **kwargs):
         # Detect if DML has been executed. This method isn't perfect,
         # but should be good enough.
-        mutating_commands = ['INSERT', 'UPDATE', 'DELETE', 'CREATE', 'DROP']
+        mutating_commands = [
+                'INSERT', 'UPDATE', 'DELETE', 'CREATE', 'DROP', 'INTO',
+                'TRUNCATE', 'REPLACE',
+                ]
         for command in mutating_commands:
             if command in args[0].upper():
                 ConnectionWrapper.dirty = True
+                break
 
         # Record the last query executed.
         if CursorWrapper.record_sql:
@@ -199,15 +192,16 @@ class PgTestSetup(object):
         # Create the database from the template. We might need to keep
         # trying for a few seconds in case there are connections to the
         # template database that are slow in dropping off.
-        con = psycopg.connect(self._connectionString(self.template))
-        try:
-            con.set_isolation_level(0)
-            cur = con.cursor()
-            attempts = 60
-            for counter in range(0, attempts):
+        attempts = 60
+        for counter in range(0, attempts):
+            con = psycopg.connect(self._connectionString(self.template))
+            try:
+                con.set_isolation_level(0)
+                cur = con.cursor()
                 try:
                     cur.execute(
-                        "CREATE DATABASE %s TEMPLATE=%s ENCODING='UNICODE'" % (
+                        "CREATE DATABASE %s TEMPLATE=%s "
+                        "ENCODING='UNICODE'" % (
                             self.dbname, self.template))
                     break
                 except psycopg.ProgrammingError, x:
@@ -216,13 +210,13 @@ class PgTestSetup(object):
                     x = str(x)
                     if 'being accessed by other users' not in x:
                         raise
-                time.sleep(0.5)
-            ConnectionWrapper.committed = False
-            ConnectionWrapper.dirty = False
-            PgTestSetup._last_db = (self.template, self.dbname)
-            PgTestSetup._reset_db = False
-        finally:
-            con.close()
+            finally:
+                con.close()
+            time.sleep(1)
+        ConnectionWrapper.committed = False
+        ConnectionWrapper.dirty = False
+        PgTestSetup._last_db = (self.template, self.dbname)
+        PgTestSetup._reset_db = False
 
     def tearDown(self):
         '''Close all outstanding connections and drop the database'''
@@ -243,7 +237,10 @@ class PgTestSetup(object):
         con = psycopg.connect(
             self._connectionString(self.dbname, self.dbuser)
             )
-        return ConnectionWrapper(con)
+        if isinstance(con, ConnectionWrapper):
+            return con
+        else:
+            return ConnectionWrapper(con)
 
     def dropDb(self):
         '''Drop the database if it exists.

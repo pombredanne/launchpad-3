@@ -77,7 +77,7 @@ class CveLinkView(GeneralFormView):
             return '%s is not a known CVE sequence number.' % sequence
         user = getUtility(ILaunchBag).user
         self.context.bug.linkCVE(cve, user)
-        return 'CVE-%s added to bug #%d' % (sequence, self.context.id)
+        return 'CVE-%s added.' % sequence
 
 
 class CveUnlinkView(GeneralFormView):
@@ -93,7 +93,7 @@ class CveUnlinkView(GeneralFormView):
             return '%s is not a known CVE sequence number.' % sequence
         user = getUtility(ILaunchBag).user
         self.context.bug.unlinkCVE(cve, user)
-        return 'CVE-%s removed from bug #%d' % (sequence, self.context.id)
+        return 'CVE-%s removed.' % sequence
 
 
 class CveSetView:

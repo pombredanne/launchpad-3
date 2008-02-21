@@ -16,10 +16,6 @@ __all__ = [
 import os
 import threading
 import atexit
-import sys
-import re
-import time
-from optparse import OptionParser
 
 import zope.app.appsetup
 import zope.app.mail.delivery

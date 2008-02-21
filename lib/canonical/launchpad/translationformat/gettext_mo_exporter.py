@@ -16,11 +16,10 @@ from zope.component import getUtility
 from zope.interface import implements
 
 from canonical.launchpad.interfaces import (
-    ITranslationExporter, ITranslationFormatExporter,
+    ITranslationExporter, ITranslationFormatExporter, TranslationFileFormat,
     UnknownTranslationExporterError)
 from canonical.launchpad.translationformat.translation_export import (
     ExportedTranslationFile, LaunchpadWriteTarFile)
-from canonical.lp.dbschema import TranslationFileFormat
 
 
 class POCompiler:
@@ -55,7 +54,7 @@ class GettextMOExporter:
         self.format = TranslationFileFormat.MO
         self.supported_source_formats = [TranslationFileFormat.PO]
 
-    def exportTranslationMessage(self, translation_message):
+    def exportTranslationMessageData(self, translation_message):
         """See `ITranslationFormatExporter`."""
         raise NotImplementedError(
             "This file format doesn't allow to export a single message.")

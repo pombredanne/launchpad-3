@@ -10,16 +10,14 @@ __all__ = [
 from cStringIO import StringIO
 
 from zope.component import getUtility
-from zope.interface import implements
 
-from canonical.lp.dbschema import BugAttachmentType
 from canonical.launchpad.webapp import canonical_url, GetitemNavigation
 from canonical.launchpad.interfaces import (
-    IBugAttachmentSet, ILibraryFileAliasSet,
+    BugAttachmentType, IBugAttachmentSet, ILibraryFileAliasSet,
     IBugAttachmentEditForm, ILaunchBag)
-from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.launchpadform import (
     action, LaunchpadFormView)
+from canonical.launchpad.webapp.menu import structured
 
 
 class BugAttachmentSetNavigation(GetitemNavigation):
@@ -69,11 +67,11 @@ class BugAttachmentEditView(LaunchpadFormView):
 
     @action('Delete attachment', name='delete')
     def delete_action(self, action, data):
-        self.request.response.addInfoNotification(
+        self.request.response.addInfoNotification(structured(
             'Attachment "<a href="%(url)s">%(name)s</a>" has been deleted.'
             ' It will be possible to download it until it has been'
             ' automatically removed from the server.',
-            url=self.context.libraryfile.http_url, name=self.context.title)
+            url=self.context.libraryfile.http_url, name=self.context.title))
         self.context.removeFromBug()
         self.next_url = canonical_url(self.current_bugtask)
 

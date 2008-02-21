@@ -1,0 +1,37 @@
+= Project Set Page =
+
+Under "/projectgroups" there are several pages for various administration tasks.
+
+The pages are "+review", "+new", and "+all".
+
+A logged in, unprivileged person cannot see any of these pages.
+
+    >>> user_browser.open('http://launchpad.dev/projectgroups/+review')
+    Traceback (most recent call last):
+      ...
+    Unauthorized:...
+
+    >>> user_browser.open('http://launchpad.dev/projectgroups/+all')
+    Traceback (most recent call last):
+      ...
+    Unauthorized:...
+
+    >>> user_browser.open('http://launchpad.dev/projectgroups/+new')
+    Traceback (most recent call last):
+      ...
+    Unauthorized:...
+
+An administrator may successfully access all of these pages.
+
+    >>> admin_browser.open('http://launchpad.dev/projectgroups/+review')
+    >>> admin_browser.title
+    'Review Launchpad items'
+
+    >>> admin_browser.open('http://launchpad.dev/projectgroups/+all')
+    >>> admin_browser.title
+    'Project groups registered in Launchpad'
+
+    >>> admin_browser.open('http://launchpad.dev/projectgroups/+new')
+    >>> admin_browser.title
+    'Register a project group with Launchpad'
+

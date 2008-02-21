@@ -11,8 +11,7 @@ from zope.component import getUtility
 
 from canonical.launchpad.interfaces import (BugTaskSearchParams,
     BugTaskStatus, CreateBugParams, IBugTaskSet, IPersonSet,
-    IProductSet, IProjectSet, ISpecificationSet)
-from canonical.lp.dbschema import (SpecificationPriority,
+    IProductSet, IProjectSet, ISpecificationSet, SpecificationPriority,
     SpecificationDefinitionStatus)
 from canonical.launchpad.ftests import login, syncUpdate
 from canonical.testing import LaunchpadFunctionalLayer

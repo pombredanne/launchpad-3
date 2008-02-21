@@ -223,4 +223,12 @@
     permission="launchpad.AnyPerson"
     template="../templates/sprint-new.pt" />
 
+  <browser:page
+    for="canonical.launchpad.interfaces.ISprint"
+    name="+attendees-csv"
+    class="canonical.launchpad.browser.sprint.SprintAttendeesCsvExportView"
+    permission="launchpad.AnyPerson"
+    attribute="__call__"
+    />
+
 </configure>

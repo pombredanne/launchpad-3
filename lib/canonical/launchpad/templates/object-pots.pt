@@ -1,9 +1,15 @@
+<tal:root
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  omit-tag="">
+
 <tal:comment condition="nothing">
   Indicates if no templates are registered for this object, and
   redirects to the mailing lists in case that is incorrect.
 </tal:comment>
 
-<tal:content define="potemplates context/currentpotemplates">
+<tal:content define="potemplates context/getCurrentTranslationTemplates">
 
   <tal:block condition="not: potemplates">
 
@@ -17,9 +23,9 @@
     </p>
   </tal:block>
 
-  <tal:block condition="context/currentpotemplates">
+  <tal:block condition="potemplates">
 
-    <tal:block tal:condition="python:len(potemplates) > 5">
+    <tal:block tal:condition="python:len(potemplates) &gt; 5">
       <!-- Listing of MANY templates -->
 
       <p>
@@ -33,7 +39,7 @@
           </tr>
         </thead>
         <tbody>
-          <tr tal:repeat="potemplate context/currentpotemplates"
+          <tr tal:repeat="potemplate potemplates"
               tal:attributes="onclick
                  string:window.location='${potemplate/fmt:url}'">
             <td><a tal:attributes="href potemplate/fmt:url"
@@ -46,12 +52,12 @@
 
     </tal:block>
 
-    <tal:listing tal:condition="python:len(potemplates) <= 5">
+    <tal:listing tal:condition="python:len(potemplates) &lt;= 5">
       <!-- Listing of FEW templates -->
 
       <div tal:condition="not: view/translatable_languages">
         <ul>
-          <li tal:repeat="potemplate context/currentpotemplates">
+          <li tal:repeat="potemplate potemplates">
             <a tal:attributes="href potemplate/fmt:url"
               tal:content="potemplate/title">template</a>
           </li>
@@ -59,7 +65,7 @@
       </div>
 
       <div tal:condition="view/translatable_languages"
-           tal:repeat="potemplate context/currentpotemplates"
+           tal:repeat="potemplate potemplates"
            tal:omit-tag=""> <!-- PO Template Details -->
 
         <h2><span tal:replace="potemplate/title">Template Title</span></h2>
@@ -88,3 +94,4 @@
   </tal:block>
 
 </tal:content>
+</tal:root>

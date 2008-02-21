@@ -1,7 +1,14 @@
-<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
-      lang="en"
-      metal:use-macro="context/@@main_template/master"
-      i18n:domain="launchpad">
+<html
+  xmlns="http://www.w3.org/1999/xhtml"
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  xml:lang="en"
+  lang="en"
+  dir="ltr"
+  metal:use-macro="context/@@main_template/master"
+  i18n:domain="launchpad"
+>
 
 <body>
 
@@ -136,9 +143,18 @@
         </tr>
       </thead>
       <tbody>
+        <tal:question repeat="question questions/batch">
+          <tal:user condition="view/user">
+            <tal:description
+              define="global description question/description/fmt:shorten/300" />
+          </tal:user>
+          <tal:not-user condition="not:view/user">
+            <tal:description
+              define="global description question/description/fmt:obfuscate-email/fmt:shorten/300" />
+          </tal:not-user>
+
         <tr xml:lang="en" lang="en" dir="ltr"
-            tal:repeat="question questions/batch"
-            tal:attributes="title question/description/fmt:shorten/300;
+            tal:attributes="title description;
                             xml:lang question/language/dashedcode;
                             lang question/language/dashedcode;
                             dir question/language/abbreviated_text_dir">
@@ -181,6 +197,7 @@
               tal:attributes="class string:questionstatus${question/status/name}"
               >Open</td>
         </tr>
+        </tal:question>
       </tbody>
     </table>
     <div class="results"

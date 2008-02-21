@@ -1,0 +1,274 @@
+= PPA package deletion =
+
+The PPA 'Delete packages' view allows users to delete packages form
+their PPAs via the web UI. Only the owner of the PPA and Launchpad
+administrators may access this page.
+
+Anonymous and an ordinary user cannot access Celso's PPA package
+console, even if they try the URL directly.
+
+    >>> anon_browser.open('http://launchpad.dev/~cprov/+archive')
+    >>> anon_browser.getLink('Delete packages').click()
+    Traceback (most recent call last):
+    ...
+    LinkNotFoundError
+
+    >>> anon_browser.open(
+    ...     'http://launchpad.dev/~cprov/+archive/+delete-packages')
+    Traceback (most recent call last):
+    ...
+    Unauthorized: ..., 'launchpad.Edit')
+
+    >>> user_browser.open('http://launchpad.dev/~cprov/+archive')
+    >>> user_browser.getLink('Delete packages').click()
+    Traceback (most recent call last):
+    ...
+    LinkNotFoundError
+
+    >>> user_browser.open(
+    ...    'http://launchpad.dev/~cprov/+archive/+delete-packages')
+    Traceback (most recent call last):
+    ...
+    Unauthorized: ..., 'launchpad.Edit')
+
+Only Celso and Foo bar can access the 'Delete packages' page for
+Celso's PPA.
+
+    >>> cprov_browser = setupBrowser(
+    ...     auth="Basic celso.providelo@canonical.com:cprov")
+    >>> cprov_browser.open('http://launchpad.dev/~cprov/+archive')
+    >>> cprov_browser.getLink('Delete packages').click()
+    >>> cprov_browser.title
+    'Delete packages from PPA for Celso Providelo'
+
+    >>> admin_browser.open('http://launchpad.dev/~cprov/+archive')
+    >>> admin_browser.getLink('Delete packages').click()
+    >>> admin_browser.title
+    'Delete packages from PPA for Celso Providelo'
+
+Once accessed the page provides a way to search for published package
+sources and optionally delete one or more matching packages via POST
+form.
+
+    >>> def print_ppa_packages(contents):
+    ...     packages = find_tags_by_class(contents, 'ppa_package_row')
+    ...     for pkg in packages:
+    ...         print extract_text(pkg)
+    ...     empty_section = find_tag_by_id(
+    ...         admin_browser.contents, 'empty-result')
+    ...     if empty_section is not None:
+    ...         print extract_text(empty_section)
+
+When the 'Delete packages' page is loaded a list of all published
+sources is presented,
+
+    >>> print_ppa_packages(admin_browser.contents)
+    Source           Published   Status     Series          Section
+    cdrkit - 1.0     2007-07-09  Published  Breezy-autotest Editors
+    iceweasel - 1.0  2007-07-09  Published  Warty           Editors
+    pmount - 0.1-1   2007-07-09  Published  Warty           Editors
+
+The user can update the form to only list published sources with name
+matching the given text.
+
+    >>> admin_browser.getControl(
+    ...     name='field.name_filter').value = 'nonexistentpackage'
+    >>> admin_browser.getControl("Update").click()
+    >>> print_ppa_packages(admin_browser.contents)
+    No matching source packages for 'nonexistentpackage'.
+
+    >>> admin_browser.getControl(
+    ...     name='field.name_filter').value = 'pmount'
+    >>> admin_browser.getControl("Update").click()
+    >>> print_ppa_packages(admin_browser.contents)
+    Source           Published   Status     Series          Section
+    pmount - 0.1-1   2007-07-09  Published  Warty           Editors
+
+Foo Bar can select one or more sources to be deleted and the
+'deletion_comment' field is mandatory.
+
+    >>> admin_browser.getControl('Deletion comment').value
+    ''
+
+    >>> admin_browser.getControl(
+    ...     name='field.name_filter').value = ''
+    >>> admin_browser.getControl(
+    ...    name='field.selected_sources').value = ['27']
+    >>> admin_browser.getControl("Delete Packages").click()
+    >>> messages = get_feedback_messages(admin_browser.contents)
+    >>> for msg in messages:
+    ...     print msg
+    There is 1 error.
+    Deletion comment is required.
+
+    >>> print_ppa_packages(admin_browser.contents)
+    Source           Published   Status     Series          Section
+    cdrkit - 1.0     2007-07-09  Published  Breezy-autotest Editors
+    iceweasel - 1.0  2007-07-09  Published  Warty           Editors
+    pmount - 0.1-1   2007-07-09  Published  Warty           Editors
+
+Deletion requires, at least, one selected a source, otherwise an error
+is issued.
+
+    >>> admin_browser.getControl("Deletion comment").value = "DO IT"
+    >>> admin_browser.getControl("Delete Packages").click()
+    >>> messages = get_feedback_messages(admin_browser.contents)
+    >>> for msg in messages:
+    ...     print msg
+    There is 1 error.
+    No sources selected.
+
+Once the deletion is successfully requested, Foo Bar sees an
+informational message containing the summary of the action
+performed. The results should not include the just-deleted source.
+
+    >>> admin_browser.getControl("Update").click()
+    >>> admin_browser.getControl(
+    ...    name='field.selected_sources').value = ['27']
+    >>> admin_browser.getControl("Deletion comment").value = "DO IT"
+    >>> admin_browser.getControl("Delete Packages").click()
+
+    >>> messages = get_feedback_messages(admin_browser.contents)
+    >>> for msg in messages:
+    ...     print msg
+    Source and binaries deleted by Foo Bar request:
+    cdrkit 1.0 in breezy-autotest
+    Deletion comment: DO IT
+
+    >>> print_ppa_packages(admin_browser.contents)
+    Source           Published   Status     Series          Section
+    iceweasel - 1.0  2007-07-09  Published  Warty           Editors
+    pmount - 0.1-1   2007-07-09  Published  Warty           Editors
+
+Here we can check for maliciously submitted forms containing
+invalid data.
+
+An already deleted source:
+
+    >>> admin_browser.getControl(
+    ...    name='field.selected_sources').value = ['27']
+    Traceback (most recent call last):
+    ...
+    ItemNotFoundError: insufficient items with name '27'
+
+An nonexistent source:
+
+    >>> admin_browser.getControl(
+    ...    name='field.selected_sources').value = ['100']
+    Traceback (most recent call last):
+    ...
+    ItemNotFoundError: insufficient items with name '100'
+
+An invalid value.
+
+    >>> admin_browser.getControl(
+    ...    name='field.selected_sources').value = ['blah']
+    Traceback (most recent call last):
+    ...
+    ItemNotFoundError: insufficient items with name 'blah'
+
+The deleted record is now presented accordingly in the +index page. We
+will use another browser to inspect the results of our deletions.
+
+    >>> cprov_browser.open('http://launchpad.dev/~cprov/+archive')
+    >>> print_ppa_packages(cprov_browser.contents)
+    Source           Published   Status     Series          Section
+    iceweasel - 1.0  2007-07-09  Published  Warty           Editors
+    pmount - 0.1-1   2007-07-09  Published  Warty           Editors
+
+    >>> cprov_browser.getControl(
+    ...    name='field.status_filter').value = ['superseded']
+    >>> cprov_browser.getControl("Search").click()
+    >>> print_ppa_packages(cprov_browser.contents)
+    Source           Published   Status     Series          Section
+    cdrkit - 1.0     2007-07-09  Deleted    Breezy-autotest Editors
+
+    >>> cprov_browser.getControl(
+    ...    name='field.status_filter').value = ['any']
+    >>> cprov_browser.getControl("Search").click()
+    >>> print_ppa_packages(cprov_browser.contents)
+    Source           Published   Status     Series          Section
+    cdrkit - 1.0     2007-07-09  Deleted    Breezy-autotest Editors
+    iceweasel - 1.0  2007-07-09  Published  Warty           Editors
+    pmount - 0.1-1   2007-07-09  Published  Warty           Editors
+
+Before deleting the remaining sources we will save a in this state for
+the form re-submission tests.
+
+    >>> re_post_browser = setupBrowser(
+    ...     auth="Basic foo.bar@canonical.com:test")
+    >>> re_post_browser.open('http://launchpad.dev/~cprov/+archive')
+    >>> re_post_browser.getLink('Delete packages').click()
+
+Multiple packages can be deleted in one single batch.
+
+    >>> admin_browser.getControl("Update").click()
+
+    >>> admin_browser.getControl(
+    ...    name='field.selected_sources').value = ['28', '29']
+    >>> admin_browser.getControl(
+    ...    "Deletion comment").value = "DO IT AGAIN !"
+    >>> admin_browser.getControl("Delete Packages").click()
+
+    >>> messages = get_feedback_messages(admin_browser.contents)
+    >>> for msg in messages:
+    ...     print msg
+    Source and binaries deleted by Foo Bar request:
+    iceweasel 1.0 in warty
+    pmount 0.1-1 in warty
+    Deletion comment: DO IT AGAIN !
+
+The page doesn't present the form anymore, since there are no sources
+available for deletion.
+
+    >>> print extract_text(find_main_content(admin_browser.contents))
+    Source and binaries deleted by Foo Bar request:
+    iceweasel 1.0 in warty
+    pmount 0.1-1 in warty
+    Deletion comment: DO IT AGAIN !
+    Delete packages from PPA for Celso Providelo
+    This PPA does not contain any source packages published.
+
+All the packages were deleted via the admin_browser, now we will
+re-POST the same deletion request via the browser saved in the
+previous state to check if the bug 185922 is really fixed.
+
+    >>> re_post_browser.getControl(
+    ...    name='field.selected_sources').value = ['28', '29']
+    >>> re_post_browser.getControl(
+    ...    "Deletion comment").value = "DO IT AGAIN !"
+    >>> re_post_browser.getControl("Delete Packages").click()
+
+    >>> print extract_text(find_main_content(re_post_browser.contents))
+    Delete packages from PPA for Celso Providelo
+    This PPA does not contain any source packages published.
+    There is 1 error.
+
+Any user can see that all packages present in Celso's PPA are deleted.
+
+    >>> cprov_browser.getControl(
+    ...    name='field.status_filter').value = ['any']
+    >>> cprov_browser.getControl("Search").click()
+    >>> print_ppa_packages(cprov_browser.contents)
+    Source           Published   Status     Series          Section
+    cdrkit - 1.0     2007-07-09  Deleted    Breezy-autotest Editors
+    iceweasel - 1.0  2007-07-09  Deleted    Warty           Editors
+    pmount - 0.1-1   2007-07-09  Deleted    Warty           Editors
+
+A clear message is presented for PPAs that don't contain any
+published source packages.
+
+    >>> admin_browser.open('http://launchpad.dev/~no-priv/+archive')
+    >>> admin_browser.getLink('Delete packages').click()
+    >>> admin_browser.title
+    'Delete packages from PPA for No Privileges Person'
+
+    >>> print extract_text(find_main_content(admin_browser.contents))
+    Delete packages from PPA for No Privileges Person
+    This PPA does not contain any source packages published.
+
+The user can go back to the PPA index page using the breadcrumb link.
+
+    >>> admin_browser.getLink('PPA for No Privileges Person').click()
+    >>> admin_browser.title
+    'PPA for No Privileges Person'

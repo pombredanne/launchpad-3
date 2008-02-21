@@ -1,4 +1,5 @@
 # Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# pylint: disable-msg=E0211,E0213
 
 """Interfaces including and related to IDistribution."""
 
@@ -10,37 +11,40 @@ __all__ = [
     ]
 
 from zope.schema import (
-    Object, Choice, Int, Text, TextLine, Bool)
+    Object, Choice, Int, Text, TextLine)
 from zope.interface import (
     Interface, Attribute)
 
 from canonical.launchpad import _
 from canonical.launchpad.fields import (
-    Title, Summary, Description)
+    Description, PublicPersonChoice, Summary, Title)
 from canonical.launchpad.interfaces.archive import IArchive
 from canonical.launchpad.interfaces.karma import IKarmaContext
 from canonical.launchpad.interfaces.mentoringoffer import IHasMentoringOffers
 from canonical.launchpad.interfaces import (
     IBugTarget, IHasAppointedDriver, IHasDrivers, IHasOwner,
-    IHasSecurityContact, ISpecificationTarget, PillarNameField)
+    IHasSecurityContact, ILaunchpadUsage, ISpecificationTarget)
 from canonical.launchpad.interfaces.milestone import IHasMilestones
+from canonical.launchpad.interfaces.announcement import IMakesAnnouncements
 from canonical.launchpad.interfaces.sprint import IHasSprints
 from canonical.launchpad.interfaces.translationgroup import (
     IHasTranslationGroup)
 from canonical.launchpad.validators.name import name_validator
 from canonical.launchpad.fields import (
-    IconImageUpload, LogoImageUpload, MugshotImageUpload)
+    IconImageUpload, LogoImageUpload, MugshotImageUpload, PillarNameField)
 
 
 class DistributionNameField(PillarNameField):
-
+    """The pillar for a distribution."""
     @property
     def _content_iface(self):
+        """Return the interface of this pillar object."""
         return IDistribution
 
 class IDistribution(IBugTarget, IHasAppointedDriver, IHasDrivers,
-    IHasMentoringOffers, IHasMilestones, IHasOwner, IHasSecurityContact,
-    IHasSprints, IHasTranslationGroup, IKarmaContext, ISpecificationTarget):
+    IHasMentoringOffers, IHasMilestones, IMakesAnnouncements, IHasOwner,
+    IHasSecurityContact, IHasSprints, IHasTranslationGroup, IKarmaContext,
+    ILaunchpadUsage, ISpecificationTarget):
     """An operating system distribution."""
 
     id = Attribute("The distro's unique number.")
@@ -100,13 +104,7 @@ class IDistribution(IBugTarget, IHasAppointedDriver, IHasDrivers,
         title=_("Owner"),
         description=_("The distro's owner."), required=True)
     date_created = Attribute("The date this distribution was registered.")
-    bugcontact = Choice(
-        title=_("Bug Contact"),
-        description=_(
-            "The person or team who will receive all bugmail for this "
-            "distribution"),
-        required=False, vocabulary='ValidPersonOrTeam')
-    driver = Choice(
+    driver = PublicPersonChoice(
         title=_("Driver"),
         description=_(
             "The person or team responsible for decisions about features "
@@ -118,11 +116,11 @@ class IDistribution(IBugTarget, IHasAppointedDriver, IHasDrivers,
     drivers = Attribute(
         "Presents the distro driver as a list for consistency with "
         "IProduct.drivers where the list might include a project driver.")
-    members = Choice(
+    members = PublicPersonChoice(
         title=_("Members"),
         description=_("The distro's members team."), required=True,
         vocabulary='ValidPersonOrTeam')
-    mirror_admin = Choice(
+    mirror_admin = PublicPersonChoice(
         title=_("Mirror Administrator"),
         description=_("The person or team that has the rights to administer "
                       "this distribution's mirrors"),
@@ -138,6 +136,8 @@ class IDistribution(IBugTarget, IHasAppointedDriver, IHasDrivers,
         "All disabled and official mirrors of this Distribution.")
     unofficial_mirrors = Attribute(
         "All unofficial mirrors of this Distribution.")
+    pending_review_mirrors = Attribute(
+        "All mirrors of this Distribution that haven't been reviewed yet.")
     serieses = Attribute("DistroSeries'es inside this Distribution")
     bounties = Attribute(_("The bounties that are related to this distro."))
     bugCounter = Attribute("The distro bug counter")
@@ -150,21 +150,12 @@ class IDistribution(IBugTarget, IHasAppointedDriver, IHasDrivers,
         title=_("Uploader sender"),
         description=_("The default upload processor sender name."),
         required=False)
-    upload_admin = Choice(
+    upload_admin = PublicPersonChoice(
         title=_("Upload Manager"),
         description=_("The distribution upload admin."),
         required=False, vocabulary='ValidPersonOrTeam')
     uploaders = Attribute(_(
         "DistroComponentUploader records associated with this distribution."))
-    official_answers = Bool(
-        title=_('People can ask questions in Launchpad Answers'),
-        required=True)
-    official_malone = Bool(
-        title=_('Bugs in this distribution are tracked in Launchpad'),
-        required=True)
-    official_rosetta = Bool(
-        title=_('Translations for this distribution are done in Launchpad'),
-        required=True)
 
     # properties
     currentseries = Attribute(
@@ -200,7 +191,7 @@ class IDistribution(IBugTarget, IHasAppointedDriver, IHasDrivers,
     all_distro_archive_ids = Attribute(
         "A list containing the IDs of all the non-PPA archives.")
 
-    def archiveIdList(archive=None):
+    def getArchiveIDList(archive=None):
         """Return a list of archive IDs suitable for sqlvalues() or quote().
 
         If the archive param is supplied, just its ID will be returned in
@@ -325,7 +316,11 @@ class IDistribution(IBugTarget, IHasAppointedDriver, IHasDrivers,
         """Return only pending acceptance PPAs in this distribution."""
 
     def getPendingPublicationPPAs():
-        """Return only pending publication PPAs in this distribution."""
+        """Return all PPAs in this distribution that are pending publication.
+
+        A PPA is said to be pending publication if it has publishing records
+        in the pending state or if it had packages deleted from it.
+        """
 
     def getArchiveByComponent(component_name):
         """Return the archive most appropriate for the component name.
@@ -334,6 +329,20 @@ class IDistribution(IBugTarget, IHasAppointedDriver, IHasDrivers,
         partner), this method will return the archive for that component.
 
         If the component_name supplied is unknown, None is returned.
+        """
+
+    def getPackagesAndPublicUpstreamBugCounts(limit=50):
+        """Return list of tuples of packages, upstreams and public bug counts.
+
+        Returns: [(IDistroSourcePackage, IProduct, int, int, int, int), ...]
+
+        This API is quite specialized; it returns a list of up to limit
+        tuples containing IProducts and three different bug counts:
+            - open bugs
+            - triaged bugs
+            - triaged bugs with an upstream task
+            - triaged bugs with upstream tasks that are either linked to
+              bug watches or to products that use_malone.
         """
 
 

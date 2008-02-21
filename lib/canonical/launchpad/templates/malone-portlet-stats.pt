@@ -1,3 +1,8 @@
+<tal:root
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  omit-tag="">
 <div>
   <strong tal:content="context/bug_count">5</strong> bugs reported across
   <strong tal:content="context/projects_with_bugs_count">5</strong> projects
@@ -16,3 +21,4 @@
   and <strong tal:content="view/getCveBugLinkCount">5</strong>
   bugs are related to <a href="/bugs/cve">CVE entries</a>
 </div>
+</tal:root>

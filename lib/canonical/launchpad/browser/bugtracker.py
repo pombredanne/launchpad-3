@@ -15,17 +15,33 @@ __all__ = [
     'RemoteBug',
     ]
 
+from itertools import chain
+
 from zope.interface import implements
 from zope.component import getUtility
-from zope.app.form.browser.editview import EditView
+from zope.app.form.browser import TextAreaWidget
+from zope.formlib import form
+from zope.schema import Choice
 
+from canonical.launchpad import _
+from canonical.launchpad.helpers import shortlist
 from canonical.launchpad.interfaces import (
-    IProject, IBugTracker, IBugTrackerSet, IRemoteBug, ILaunchBag)
+    BugTrackerType, IBugTracker, IBugTrackerSet, IRemoteBug, ILaunchBag)
 from canonical.launchpad.webapp import (
-    canonical_url, ContextMenu, Link, Navigation, GetitemNavigation,
-    redirection, LaunchpadView)
+    ContextMenu, GetitemNavigation, LaunchpadEditFormView, LaunchpadFormView,
+    LaunchpadView, Link, Navigation, action, canonical_url, custom_widget,
+    redirection)
 from canonical.launchpad.webapp.batching import BatchNavigator
+from canonical.widgets import DelimitedListWidget
 
+# A set of bug tracker types for which there can only ever be one bug
+# tracker.
+SINGLE_INSTANCE_TRACKERS = (
+    BugTrackerType.DEBBUGS,
+    BugTrackerType.EMAILADDRESS,
+    BugTrackerType.SAVANNAH,
+    BugTrackerType.SOURCEFORGE,
+    )
 
 class BugTrackerSetNavigation(GetitemNavigation):
 
@@ -53,33 +69,49 @@ class BugTrackerSetContextMenu(ContextMenu):
     links = ['newbugtracker']
 
     def newbugtracker(self):
-        text = 'Register bug tracker'
+        text = 'Register another bug tracker'
         return Link('+newbugtracker', text, icon='add')
 
 
-class BugTrackerAddView:
+class BugTrackerAddView(LaunchpadFormView):
 
-    def create(self, name, bugtrackertype, title, summary, baseurl,
-               contactdetails):
+    schema = IBugTracker
+    label = "Register an external bug tracker"
+    field_names = ['name', 'bugtrackertype', 'title', 'summary',
+                   'baseurl', 'contactdetails']
+
+    def setUpWidgets(self, context=None):
+        # We only show those bug tracker types for which there can be
+        # multiple instances in the bugtrackertype Choice widget.
+        vocab_items = [
+            item for item in BugTrackerType.items.items
+                if item not in SINGLE_INSTANCE_TRACKERS]
+        fields = []
+        for field_name in self.field_names:
+            if field_name == 'bugtrackertype':
+                fields.append(form.FormField(
+                    Choice(__name__='bugtrackertype',
+                           title=_('Bug Tracker Type'),
+                           values=vocab_items,
+                           default=BugTrackerType.BUGZILLA)))
+            else:
+                fields.append(self.form_fields[field_name])
+        self.form_fields = form.Fields(*fields)
+        super(BugTrackerAddView, self).setUpWidgets(context=context)
+
+    @action(_('Add'), name='add')
+    def add(self, action, data):
         """Create the IBugTracker."""
         btset = getUtility(IBugTrackerSet)
         bugtracker = btset.ensureBugTracker(
-            name=name,
-            bugtrackertype=bugtrackertype,
-            title=title,
-            summary=summary,
-            baseurl=baseurl,
-            contactdetails=contactdetails,
+            name=data['name'],
+            bugtrackertype=data['bugtrackertype'],
+            title=data['title'],
+            summary=data['summary'],
+            baseurl=data['baseurl'],
+            contactdetails=data['contactdetails'],
             owner=getUtility(ILaunchBag).user)
-        # keep track of the new one
-        self._newtracker_ = bugtracker
-        return bugtracker
-
-    def add(self, content):
-        return content
-
-    def nextURL(self):
-        return canonical_url(self._newtracker_)
+        self.next_url = canonical_url(bugtracker)
 
 
 class BugTrackerView(LaunchpadView):
@@ -89,13 +121,62 @@ class BugTrackerView(LaunchpadView):
     def initialize(self):
         self.batchnav = BatchNavigator(self.context.watches, self.request)
 
+    @property
+    def related_projects(self):
+        """Return all project groups and projects.
 
-class BugTrackerEditView(EditView):
+        This property was created for the Related projects portlet in
+        the bug tracker's page.
+        """
+        return shortlist(chain(self.context.projects,
+                               self.context.products), 100)
 
-    usedfor = IBugTracker
 
-    def changed(self):
-        self.request.response.redirect(canonical_url(self.context))
+class BugTrackerEditView(LaunchpadEditFormView):
+
+    schema = IBugTracker
+    field_names = ['name', 'title', 'bugtrackertype',
+                   'summary', 'baseurl', 'aliases', 'contactdetails']
+
+    custom_widget('summary', TextAreaWidget, width=30, height=5)
+    custom_widget('aliases', DelimitedListWidget, height=3)
+
+    def validate(self, data):
+        """See `LaunchpadFormView`."""
+        # Normalise aliases to an empty list if it's None.
+        if data.get('aliases') is None:
+            data['aliases'] = []
+
+        # Check that none of the new aliases are used elsewhere.
+        current_aliases = set(self.context.aliases)
+        requested_aliases = set(data['aliases'])
+        new_aliases = requested_aliases - current_aliases
+        bugtracker_set = getUtility(IBugTrackerSet)
+        used_alias_errors = []
+        for alias_url in new_aliases:
+            bugtracker = bugtracker_set.queryByBaseURL(alias_url)
+            if bugtracker is not None and bugtracker != self.context:
+                used_alias_errors.append(
+                    "%s already refers to %s" % (
+                        alias_url, bugtracker.title))
+        if len(used_alias_errors) > 0:
+            self.setFieldError('aliases', '; '.join(used_alias_errors))
+
+    @action('Change', name='change')
+    def change_action(self, action, data):
+        # If the baseurl is going to change, save the current baseurl
+        # as an alias. Users attempting to use this URL, which is
+        # presumably incorrect or out-of-date, will be captured.
+        current_baseurl = self.context.baseurl
+        requested_baseurl = data['baseurl']
+        if requested_baseurl != current_baseurl:
+            data['aliases'].append(current_baseurl)
+
+        self.updateContextFromData(data)
+
+    @property
+    def next_url(self):
+        return canonical_url(self.context)
 
 
 class BugTrackerNavigation(Navigation):

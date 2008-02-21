@@ -1,4 +1,5 @@
 # Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# pylint: disable-msg=E0611,W0212
 """Launchpad Bug-related Database Table Objects."""
 
 __metaclass__ = type
@@ -20,11 +21,11 @@ from canonical.database.enumcol import EnumCol
 from sqlobject import ForeignKey, IntCol
 
 from canonical.launchpad.interfaces import (
-    IBugProductInfestationSet, IBugPackageInfestationSet,
-    IBugProductInfestation, IBugPackageInfestation, NotFoundError)
+    BugInfestationStatus, IBugPackageInfestation, IBugPackageInfestationSet, 
+    IBugProductInfestation, IBugProductInfestationSet, NotFoundError)
 
 from canonical.launchpad.database.bugset import BugSetBase
-from canonical.lp import dbschema
+from canonical.launchpad.validators.person import public_person_validator
 
 
 class BugProductInfestation(SQLBase):
@@ -38,15 +39,19 @@ class BugProductInfestation(SQLBase):
     productrelease = ForeignKey(dbName="productrelease",
         foreignKey='ProductRelease', notNull=False, default=None)
     infestationstatus = EnumCol(
-        notNull=False, default=None, schema=dbschema.BugInfestationStatus)
+        notNull=False, default=None, schema=BugInfestationStatus)
     datecreated = UtcDateTimeCol(notNull=True)
-    creator = ForeignKey(dbName="creator", foreignKey='Person', notNull=True)
+    creator = ForeignKey(
+        dbName="creator", foreignKey='Person',
+        validator=public_person_validator, notNull=True)
     dateverified = UtcDateTimeCol(notNull=False)
     verifiedby = ForeignKey(
-        dbName="verifiedby", foreignKey='Person', notNull=False, default=None)
+        dbName="verifiedby", foreignKey='Person',
+        validator=public_person_validator, notNull=False, default=None)
     lastmodified = UtcDateTimeCol(notNull=True)
     lastmodifiedby = ForeignKey(
-        dbName="lastmodifiedby", foreignKey='Person', notNull=True)
+        dbName="lastmodifiedby", foreignKey='Person',
+        validator=public_person_validator, notNull=True)
 
     # used for launchpad pages
     def _title(self):
@@ -68,13 +73,19 @@ class BugPackageInfestation(SQLBase):
     sourcepackagerelease = ForeignKey(dbName='sourcepackagerelease',
         foreignKey='SourcePackageRelease', notNull=True)
     infestationstatus = EnumCol(dbName='infestationstatus', notNull=True,
-        schema=dbschema.BugInfestationStatus)
+        schema=BugInfestationStatus)
     datecreated = UtcDateTimeCol(dbName='datecreated', notNull=True)
-    creator = ForeignKey(dbName='creator', foreignKey='Person', notNull=True)
+    creator = ForeignKey(
+        dbName='creator', foreignKey='Person',
+        validator=public_person_validator, notNull=True)
     dateverified = UtcDateTimeCol(dbName='dateverified')
-    verifiedby = ForeignKey(dbName='verifiedby', foreignKey='Person')
+    verifiedby = ForeignKey(
+        dbName='verifiedby', foreignKey='Person',
+        validator=public_person_validator)
     lastmodified = UtcDateTimeCol(dbName='lastmodified')
-    lastmodifiedby = ForeignKey(dbName='lastmodifiedby', foreignKey='Person')
+    lastmodifiedby = ForeignKey(
+        dbName='lastmodifiedby', foreignKey='Person',
+        validator=public_person_validator)
 
     # used for launchpad pages
     def title(self):

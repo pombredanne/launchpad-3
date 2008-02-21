@@ -1,0 +1,9 @@
+= Distribution series main page =
+
+In the main page for a distribution we have a link to help translating this
+distribution series.
+
+    >>> user_browser.open('http://launchpad.dev/ubuntu/hoary')
+    >>> user_browser.getLink('Help translate').click()
+    >>> print user_browser.title
+    Translations of The Hoary Hedgehog Release in Launchpad

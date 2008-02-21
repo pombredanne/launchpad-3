@@ -1,4 +1,5 @@
 # Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# pylint: disable-msg=E0611,W0212
 
 __metaclass__ = type
 __all__ = [
@@ -16,20 +17,19 @@ from sqlobject import (
 
 from canonical.launchpad.interfaces import (
     IHasLogo, IHasMugshot, IHasIcon, ILaunchpadCelebrities,
-    ISprint, ISprintSet)
+    ISprint, ISprintSet, SpecificationFilter,
+    SpecificationImplementationStatus, SpecificationSort,
+    SprintSpecificationStatus)
 
 from canonical.database.sqlbase import (
     SQLBase, flush_database_updates, quote)
 from canonical.database.constants import DEFAULT
 from canonical.database.datetimecol import UtcDateTimeCol
 
+from canonical.launchpad.validators.person import public_person_validator
 from canonical.launchpad.database.sprintattendance import SprintAttendance
 from canonical.launchpad.database.sprintspecification import (
     SprintSpecification)
-
-from canonical.lp.dbschema import (
-    SprintSpecificationStatus, SpecificationFilter, SpecificationSort,
-    SpecificationImplementationStatus)
 
 
 class Sprint(SQLBase):
@@ -40,11 +40,15 @@ class Sprint(SQLBase):
     _defaultOrder = ['name']
 
     # db field names
-    owner = ForeignKey(dbName='owner', foreignKey='Person', notNull=True)
+    owner = ForeignKey(
+        dbName='owner', foreignKey='Person',
+        validator=public_person_validator, notNull=True)
     name = StringCol(notNull=True, alternateID=True)
     title = StringCol(notNull=True)
     summary = StringCol(notNull=True)
-    driver = ForeignKey(dbName='driver', foreignKey='Person')
+    driver = ForeignKey(
+        dbName='driver', foreignKey='Person',
+        validator=public_person_validator)
     home_page = StringCol(notNull=False, default=None)
     homepage_content = StringCol(default=None)
     icon = ForeignKey(
@@ -278,7 +282,8 @@ class Sprint(SQLBase):
     @property
     def attendances(self):
         ret = SprintAttendance.selectBy(sprint=self)
-        return sorted(ret.prejoin(['attendee']), key=lambda a: a.attendee.name)
+        return sorted(ret.prejoin(['attendee']),
+                      key=lambda a: a.attendee.name)
 
     # linking to specifications
     def linkSpecification(self, spec):

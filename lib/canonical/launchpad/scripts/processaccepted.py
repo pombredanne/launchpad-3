@@ -9,9 +9,8 @@ from zope.component import getUtility
 
 from canonical.archiveuploader.tagfiles import parse_tagfile_lines
 from canonical.launchpad.interfaces import (
-    BugTaskStatus, IBugSet, IPackageUploadSet, NotFoundError)
-from canonical.lp.dbschema import (
-    ArchivePurpose, PackagePublishingPocket)
+    ArchivePurpose, BugTaskStatus, IBugSet, ILaunchpadCelebrities,
+    IPackageUploadSet, NotFoundError, PackagePublishingPocket)
 
 def get_bugs_from_changes_file(changes_file):
     """Parse the changes file and return a list of bugs referenced by it.
@@ -81,17 +80,23 @@ def close_bugs_for_queue_item(queue_item, changesfile_object=None):
     if not bugs_to_close:
         return
 
+    janitor = getUtility(ILaunchpadCelebrities).janitor
+
     for source_queue_item in queue_item.sources:
         source_release = source_queue_item.sourcepackagerelease
         for bug in bugs_to_close:
             edited_task = bug.setStatus(
                 target=source_release.sourcepackage,
                 status=BugTaskStatus.FIXRELEASED,
-                user=source_release.creator)
+                user=janitor)
             if edited_task is not None:
-                assert source_release.changelog is not None, (
+                assert source_release.changelog_entry is not None, (
                     "New source uploads should have a changelog.")
+                content = (
+                    "This bug was fixed in the package %s"
+                    "\n\n---------------\n%s" % (
+                    source_release.title, source_release.changelog_entry,))
                 bug.newMessage(
-                    owner=source_release.creator,
+                    owner=janitor,
                     subject=bug.followup_subject(),
-                    content=source_release.changelog)
+                    content=content)

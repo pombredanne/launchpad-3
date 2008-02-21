@@ -1,40 +1,39 @@
 <html
-    xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
-    lang="en"
-    metal:use-macro="context/@@main_template/master"
-    i18n:domain="launchpad"
+  xmlns="http://www.w3.org/1999/xhtml"
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  xml:lang="en"
+  lang="en"
+  dir="ltr"
+  metal:use-macro="context/@@main_template/master"
+  i18n:domain="launchpad"
 >
 <body>
 
-<metal:leftportlets fill-slot="portlets_one">
-</metal:leftportlets>
-
-<metal:rightportlets fill-slot="portlets_two">
-  <div tal:condition="not: context/potemplates" class="portlet">
-    <h2>No templates yet for <span tal:replace="context/name">1.0</span></h2>
-    <div class="portletBody portletContent">
-
-      <img src="/@@/info" />
-      At this stage there are no translation templates in place for 
-      <span tal:replace="context/title">Mozilla Firefox Series: 1.0</span>.
-      You should make sure that you upload a PO Template (.pot) rather than
-      a translation file (.po). We will review the template and if approved,
-      you can upload additional translations.
-    
+<metal:portlets fill-slot="portlets">
+  <tal:current-translation-templates
+    define="templates context/getCurrentTranslationTemplates">
+    <div tal:condition="not: templates" class="portlet">
+      <h2>No templates yet for <span tal:replace="context/name">1.0</span></h2>
+      <div class="portletBody portletContent">
+        <img src="/@@/info" />
+        At this stage there are no translation templates in place for 
+        <span tal:replace="context/title">Mozilla Firefox Series: 1.0</span>.
+        You should make sure that you upload a PO Template (.pot) rather than
+        a translation file (.po). We will review the template and if approved,
+        you can upload additional translations.
+      </div>
     </div>
-  </div>
-  <tal:per_template repeat="template context/potemplates">
-    <div tal:replace="structure template/@@+portlet-langstats" />
-  </tal:per_template>
-</metal:rightportlets>
-
-<metal:heading fill-slot="pageheading">
-  <h1>Upload new translation resources</h1>
-</metal:heading>
-
+    <tal:per_template repeat="template templates">
+      <div tal:replace="structure template/@@+portlet-langstats" />
+    </tal:per_template>
+  </tal:current-translation-templates>
+</metal:portlets>
 
 <div metal:fill-slot="main">
 
+  <h1>Upload new translation resources</h1>
   <p>
     Upload either a single file (<code>.pot</code> /
     <code>.po</code>) or a tar file containing a PO template and a set of PO

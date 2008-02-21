@@ -1,4 +1,5 @@
 # Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# pylint: disable-msg=E0611,W0212
 
 __metaclass__ = type
 __all__ = [
@@ -19,19 +20,19 @@ from canonical.launchpad.interfaces import (
     IProductSeries,
     ISpecification,
     ISpecificationSet,
+    SpecificationDefinitionStatus,
+    SpecificationFilter,
+    SpecificationGoalStatus,
+    SpecificationImplementationStatus,
+    SpecificationLifecycleStatus,
+    SpecificationPriority,
+    SpecificationSort,
     )
 
 from canonical.database.sqlbase import SQLBase, quote, sqlvalues
 from canonical.database.constants import DEFAULT, UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
-
-from canonical.lp.dbschema import (
-    SpecificationImplementationStatus, SpecificationSort,
-    SpecificationFilter, SpecificationGoalStatus,
-    SpecificationLifecycleStatus,
-    SpecificationPriority, SpecificationDefinitionStatus,
-    )
 
 from canonical.launchpad.helpers import (
     contactEmailAddresses, shortlist)
@@ -41,6 +42,7 @@ from canonical.launchpad.event.sqlobjectevent import (
 
 from canonical.launchpad.database.buglinktarget import BugLinkTargetMixin
 from canonical.launchpad.database.mentoringoffer import MentoringOffer
+from canonical.launchpad.validators.person import public_person_validator
 from canonical.launchpad.database.specificationdependency import (
     SpecificationDependency)
 from canonical.launchpad.database.specificationbranch import (
@@ -76,12 +78,17 @@ class Specification(SQLBase, BugLinkTargetMixin):
     priority = EnumCol(schema=SpecificationPriority, notNull=True,
         default=SpecificationPriority.UNDEFINED)
     assignee = ForeignKey(dbName='assignee', notNull=False,
-        foreignKey='Person', default=None)
+        foreignKey='Person',
+        validator=public_person_validator, default=None)
     drafter = ForeignKey(dbName='drafter', notNull=False,
-        foreignKey='Person', default=None)
+        foreignKey='Person',
+        validator=public_person_validator, default=None)
     approver = ForeignKey(dbName='approver', notNull=False,
-        foreignKey='Person', default=None)
-    owner = ForeignKey(dbName='owner', foreignKey='Person', notNull=True)
+        foreignKey='Person',
+        validator=public_person_validator, default=None)
+    owner = ForeignKey(
+        dbName='owner', foreignKey='Person',
+        validator=public_person_validator, notNull=True)
     datecreated = UtcDateTimeCol(notNull=True, default=DEFAULT)
     product = ForeignKey(dbName='product', foreignKey='Product',
         notNull=False, default=None)
@@ -89,15 +96,17 @@ class Specification(SQLBase, BugLinkTargetMixin):
         foreignKey='ProductSeries', notNull=False, default=None)
     distribution = ForeignKey(dbName='distribution',
         foreignKey='Distribution', notNull=False, default=None)
-    distroseries = ForeignKey(dbName='distrorelease',
+    distroseries = ForeignKey(dbName='distroseries',
         foreignKey='DistroSeries', notNull=False, default=None)
     goalstatus = EnumCol(schema=SpecificationGoalStatus, notNull=True,
         default=SpecificationGoalStatus.PROPOSED)
     goal_proposer = ForeignKey(dbName='goal_proposer', notNull=False,
-        foreignKey='Person', default=None)
+        foreignKey='Person',
+        validator=public_person_validator, default=None)
     date_goal_proposed = UtcDateTimeCol(notNull=False, default=None)
     goal_decider = ForeignKey(dbName='goal_decider', notNull=False,
-        foreignKey='Person', default=None)
+        foreignKey='Person',
+        validator=public_person_validator, default=None)
     date_goal_decided = UtcDateTimeCol(notNull=False, default=None)
     milestone = ForeignKey(dbName='milestone',
         foreignKey='Milestone', notNull=False, default=None)
@@ -111,10 +120,12 @@ class Specification(SQLBase, BugLinkTargetMixin):
     superseded_by = ForeignKey(dbName='superseded_by',
         foreignKey='Specification', notNull=False, default=None)
     completer = ForeignKey(dbName='completer', notNull=False,
-        foreignKey='Person', default=None)
+        foreignKey='Person',
+        validator=public_person_validator, default=None)
     date_completed = UtcDateTimeCol(notNull=False, default=None)
     starter = ForeignKey(dbName='starter', notNull=False,
-        foreignKey='Person', default=None)
+        foreignKey='Person',
+        validator=public_person_validator, default=None)
     date_started = UtcDateTimeCol(notNull=False, default=None)
 
     # useful joins
@@ -133,8 +144,8 @@ class Specification(SQLBase, BugLinkTargetMixin):
     sprints = SQLRelatedJoin('Sprint', orderBy='name',
         joinColumn='specification', otherColumn='sprint',
         intermediateTable='SprintSpecification')
-    bug_links = SQLMultipleJoin('SpecificationBug', joinColumn='specification',
-        orderBy='id')
+    bug_links = SQLMultipleJoin(
+        'SpecificationBug', joinColumn='specification', orderBy='id')
     bugs = SQLRelatedJoin('Bug',
         joinColumn='specification', otherColumn='bug',
         intermediateTable='SpecificationBug', orderBy='id')
@@ -438,8 +449,8 @@ class Specification(SQLBase, BugLinkTargetMixin):
         delta.recordNewValues(("title", "summary", "whiteboard",
                                "specurl", "productseries",
                                "distroseries", "milestone"))
-        delta.recordNewAndOld(("name", "priority", "definition_status", "target",
-                               "approver", "assignee", "drafter"))
+        delta.recordNewAndOld(("name", "priority", "definition_status",
+                               "target", "approver", "assignee", "drafter"))
         delta.recordListAddedAndRemoved("bugs",
                                         "bugs_linked",
                                         "bugs_unlinked")
@@ -489,8 +500,8 @@ class Specification(SQLBase, BugLinkTargetMixin):
                 # only the essential attribute changed, but we know
                 # that we can get away with not examining the attribute
                 # at all - it's a boolean!
-                notify(
-                    SQLObjectModifiedEvent(sub, sub, ['essential'], user=user))
+                notify(SQLObjectModifiedEvent(
+                        sub, sub, ['essential'], user=user))
             return sub
         # since no previous subscription existed, create and return a new one
         sub = SpecificationSubscription(specification=self,
@@ -617,20 +628,24 @@ class Specification(SQLBase, BugLinkTargetMixin):
     def all_blocked(self):
         blocked = set()
         self._find_all_blocked(blocked)
-        return sorted(blocked, key=lambda s: (s.definition_status, s.priority, s.title))
+        return sorted(blocked, key=lambda s: (s.definition_status,
+                                              s.priority, s.title))
 
     # branches
     def getBranchLink(self, branch):
         return SpecificationBranch.selectOneBy(
             specificationID=self.id, branchID=branch.id)
 
-    def linkBranch(self, branch, summary=None):
-        branchlink = self.getBranchLink(branch)
-        if branchlink is not None:
-            return branchlink
-        return SpecificationBranch(specification=self,
-                                   branch=branch,
-                                   summary=summary)
+    def linkBranch(self, branch, registrant, summary=None):
+        branch_link = self.getBranchLink(branch)
+        if branch_link is not None:
+            return branch_link
+        branch.date_last_modified = UTC_NOW
+        branch_link = SpecificationBranch(
+            specification=self, branch=branch, summary=summary,
+            registrant=registrant)
+        notify(SQLObjectCreatedEvent(branch_link))
+        return branch_link
 
 
 class HasSpecificationsMixin:
@@ -675,10 +690,17 @@ class SpecificationSet(HasSpecificationsMixin):
         self.title = 'Specifications registered in Launchpad'
         self.displayname = 'All Specifications'
 
+    @property
+    def all_specifications(self):
+        return Specification.select()
+
     def __iter__(self):
         """See ISpecificationSet."""
-        for row in Specification.select():
-            yield row
+        return iter(self.all_specifications)
+
+    @property
+    def has_any_specifications(self):
+        return self.all_specifications.count() != 0
 
     def specifications(self, sort=None, quantity=None, filter=None):
         """See IHasSpecifications."""
@@ -711,7 +733,8 @@ class SpecificationSet(HasSpecificationsMixin):
 
         # sort by priority descending, by default
         if sort is None or sort == SpecificationSort.PRIORITY:
-            order = ['-priority', 'Specification.definition_status', 'Specification.name']
+            order = ['-priority', 'Specification.definition_status',
+                     'Specification.name']
         elif sort == SpecificationSort.DATE:
             if SpecificationFilter.COMPLETE in filter:
                 # if we are showing completed, we care about date completed
@@ -753,7 +776,8 @@ class SpecificationSet(HasSpecificationsMixin):
         # exclude all OBSOLETE or SUPERSEDED specs
         if SpecificationFilter.VALID in filter:
             # XXX: this is untested and was broken. -- kiko 2007-02-07
-            query += (' AND Specification.definition_status NOT IN ( %s, %s ) ' %
+            query += (
+                ' AND Specification.definition_status NOT IN ( %s, %s ) ' %
                 sqlvalues(SpecificationDefinitionStatus.OBSOLETE,
                           SpecificationDefinitionStatus.SUPERSEDED))
 

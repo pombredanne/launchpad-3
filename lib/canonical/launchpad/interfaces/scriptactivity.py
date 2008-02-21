@@ -1,4 +1,6 @@
 # Copyright 2007 Canonical Ltd.  All rights reserved.
+# pylint: disable-msg=E0211,E0213
+
 """Interfaces for Script activity records"""
 
 __metaclass__ = type

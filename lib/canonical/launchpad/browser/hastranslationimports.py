@@ -23,13 +23,11 @@ from canonical.cachedproperty import cachedproperty
 from canonical.launchpad import _
 from canonical.launchpad.interfaces import (
     IDistribution, IHasTranslationImports, IPillarNameSet,
-    ITranslationImportQueue, UnexpectedFormData)
+    ITranslationImportQueue, RosettaImportStatus, UnexpectedFormData)
 from canonical.launchpad.webapp import (
     LaunchpadFormView, action, custom_widget, safe_action)
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.batching import TableBatchNavigator
-
-from canonical.lp.dbschema import RosettaImportStatus
 
 
 class HasTranslationImportsView(LaunchpadFormView):

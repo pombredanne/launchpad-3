@@ -20,8 +20,10 @@ __all__ = [
     'POTemplateViewPreferred',
     ]
 
+import datetime
 import operator
 import os.path
+import pytz
 from zope.component import getUtility
 from zope.interface import implements
 from zope.publisher.browser import FileUpload
@@ -32,7 +34,7 @@ from canonical.launchpad.browser.launchpad import StructuralObjectPresentation
 from canonical.launchpad.browser.poexportrequest import BaseExportView
 from canonical.launchpad.browser.productseries import (
     ProductSeriesSOP, ProductSeriesFacets)
-from canonical.launchpad.browser.rosetta import TranslationsMixin
+from canonical.launchpad.browser.translations import TranslationsMixin
 from canonical.launchpad.browser.sourcepackage import (
     SourcePackageSOP, SourcePackageFacets)
 from canonical.launchpad.interfaces import (
@@ -42,7 +44,9 @@ from canonical.launchpad.interfaces import (
 from canonical.launchpad.webapp import (
     StandardLaunchpadFacets, Link, canonical_url, enabled_with_permission,
     GetitemNavigation, Navigation, LaunchpadView, ApplicationMenu)
+from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.interfaces import ICanonicalUrlData
+from canonical.launchpad.webapp.menu import structured
 
 
 class POTemplateNavigation(Navigation):
@@ -138,7 +142,9 @@ class POTemplateFacets(StandardLaunchpadFacets):
 
     def branches(self):
         branches_link = self.target_facets.branches()
-        branches_link.target = self.target
+        # XXX thumper: 2008-01-16
+        # See bug 183433 about changing the target.
+        # branches_link.target = self.target
         return branches_link
 
 
@@ -215,8 +221,8 @@ class POTemplateSubsetView:
 class POTemplateView(LaunchpadView, TranslationsMixin):
 
     def initialize(self):
-        self.description = self.context.description
         """Get the requested languages and submit the form."""
+        self.description = self.context.description
         self.submitForm()
 
     def requestPoFiles(self):
@@ -329,10 +335,11 @@ class POTemplateView(LaunchpadView, TranslationsMixin):
                 potemplate=self.context)
 
             self.request.response.addInfoNotification(
+                structured(
                 'Thank you for your upload. The file content will be imported'
                 ' soon into Launchpad. You can track its status from the'
                 ' <a href="%s/+imports">Translation Import Queue</a>' %
-                    canonical_url(self.context.translationtarget))
+                    canonical_url(self.context.translationtarget)))
 
         elif helpers.is_tar_filename(filename):
             # Add the whole tarball to the import queue.
@@ -345,13 +352,14 @@ class POTemplateView(LaunchpadView, TranslationsMixin):
 
             if num > 0:
                 self.request.response.addInfoNotification(
+                    structured(
                     'Thank you for your upload. %d files from the tarball'
                     ' will be imported soon into Launchpad. You can track its'
                     ' status from the <a href="%s/+imports">Translation'
                     ' Import Queue<a>' % (
                         num, canonical_url(self.context.translationtarget)
                         )
-                    )
+                    ))
             else:
                 self.request.response.addWarningNotification(
                     "Nothing has happened. The tarball you uploaded does not"
@@ -371,6 +379,7 @@ class POTemplateEditView(SQLObjectEditView):
 
     def __init__(self, context, request):
         self.old_description = context.description
+        self.old_translation_domain = context.translation_domain
         self.user = getUtility(ILaunchBag).user
 
         SQLObjectEditView.__init__(self, context, request)
@@ -382,6 +391,12 @@ class POTemplateEditView(SQLObjectEditView):
                 'translationtemplatedescriptionchanged',
                 product=context.product, distribution=context.distribution,
                 sourcepackagename=context.sourcepackagename)
+        if self.old_translation_domain != context.translation_domain:
+            # We only update date_last_updated when translation_domain field
+            # is changed because is the only significative change that,
+            # somehow, affects the content of the potemplate.
+            UTC = pytz.timezone('UTC')
+            context.date_last_updated = datetime.datetime.now(UTC)
 
         # We need this because when potemplate name changes, canonical_url
         # for it changes as well.
@@ -527,7 +542,36 @@ class POTemplateSetNavigation(GetitemNavigation):
     usedfor = IPOTemplateSet
 
 
-class POTemplateSubsetNavigation(GetitemNavigation):
+class POTemplateSubsetNavigation(Navigation):
 
     usedfor = IPOTemplateSubset
 
+    def traverse(self, name):
+        """Return the IPOTemplate associated with the given name."""
+
+        assert self.request.method in ['GET', 'HEAD', 'POST'], (
+            'We only know about GET, HEAD, and POST')
+
+        # Get the requested potemplate.
+        potemplate = self.context.getPOTemplateByName(name)
+        if potemplate is None:
+            # The template doesn't exist.
+            raise NotFoundError(name)
+
+        # Get whether the target for the requested template is officially
+        # using Launchpad Translations.
+        if potemplate.distribution is not None:
+            official_rosetta = potemplate.distribution.official_rosetta
+        elif potemplate.product is not None:
+            official_rosetta = potemplate.product.official_rosetta
+        else:
+            raise AssertionError('Unknown context for %s' % potemplate.title)
+
+        if ((official_rosetta and potemplate.iscurrent) or
+            check_permission('launchpad.Admin', self.context)):
+            # The target is using officially Launchpad Translations and the
+            # template is available to be translated, or the user is a is a
+            # Launchpad administrator in which case we show everything.
+            return potemplate
+        else:
+            raise NotFoundError(name)

@@ -92,8 +92,6 @@ All custom requests with less than $max_size_for_auto_approval CDs are
 automatically approved.
 
   >>> max_cds = ShipItConstants.max_size_for_auto_approval
-  >>> max_cds
-  16
 
   >>> from canonical.launchpad.database import Person
   >>> from canonical.launchpad.ftests import login, logout, ANONYMOUS
@@ -120,15 +118,6 @@ be approved before they can be shipped.
   >>> Person.byName('name16').currentShipItRequest().reason
   u'foo'
   >>> logout()
-
-And for custom requests that are not automatically approved, we send an
-email to info@shipit.ubuntu.com, notifying that a new request is waiting for
-approval.
-
-  >>> from canonical.launchpad.mail import stub
-  >>> from_addr, to_addrs, raw_msg = stub.test_emails.pop()
-  >>> to_addrs
-  ['info@shipit.ubuntu.com']
 
 
 If later the user asks for standard quantities of CDs of a different flavour,

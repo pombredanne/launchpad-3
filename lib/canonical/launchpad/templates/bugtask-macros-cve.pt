@@ -1,4 +1,7 @@
-<metal:header define-macro="table-listing">
+<metal:header
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  define-macro="table-listing">
   <tal:comment replace="nothing">
   This macro expects the following variables defined:
       :bugtasks: A list of IBugTasks's to be listed

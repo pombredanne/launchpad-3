@@ -1,14 +1,18 @@
 <div
-    xmlns="http://www.w3.org/1999/xhtml"
-    xmlns:tal="http://xml.zope.org/namespaces/tal"
-    xmlns:metal="http://xml.zope.org/namespaces/metal"
-    xmlns:i18n="http://xml.zope.org/namespaces/i18n"
-    i18n:domain="launchpad" xml:lang="en">
+  xmlns="http://www.w3.org/1999/xhtml"
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  xml:lang="en"
+  lang="en"
+  dir="ltr"
+  i18n:domain="launchpad">
 
   <div metal:define-macro="form">
 
-    <form action="." 
+    <form action="."
           tal:attributes="action view/action_url"
+          name="launchpadform"
           method="post"
           enctype="multipart/form-data"
           accept-charset="UTF-8">
@@ -82,19 +86,20 @@
 
   <metal:macro define-macro="widget_row"
       tal:define="field_name widget/context/__name__;
-                  error python:view.getWidgetError(field_name);
+                  error python:view.getFieldError(field_name);
                   error_class python:error and 'error' or None;
                   show_optional python:view.showOptionalMarker(field_name)">
     <tal:is-visible condition="widget/visible">
       <tr tal:condition="python: view.isSingleLineLayout(field_name)">
-        <th><label tal:attributes="for widget/name"
-                   tal:content="string:${widget/label}:">
-          Label</label></th>
+        <th tal:condition="display_label|widget/display_label|python:True">
+          <label tal:attributes="for widget/name"
+                 tal:content="string:${widget/label}:">Label</label><br />
+          <span tal:condition="show_optional"
+                class="fieldRequired">(Optional)</span>
+        </th>
         <td tal:attributes="class error_class" width="100%">
           <div>
             <input tal:replace="structure widget" />
-            <span tal:condition="show_optional"
-                  class="fieldRequired">(Optional)</span>
           </div>
           <div class="message" tal:condition="error"
                tal:content="structure error">Error message</div>
@@ -105,7 +110,7 @@
         </td>
       </tr>
       <tal:block condition="python: view.isMultiLineLayout(field_name)">
-        <tr>
+        <tr tal:condition="display_label|widget/display_label|python:True">
           <th colspan="2" style="text-align: left"><label
               tal:attributes="for widget/name"
               tal:content="string:${widget/label}:">Label:</label>

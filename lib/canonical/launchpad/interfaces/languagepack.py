@@ -1,4 +1,5 @@
 # Copyright 2007 Canonical Ltd.  All rights reserved.
+# pylint: disable-msg=E0211,E0213
 
 """Language pack store."""
 
@@ -46,7 +47,7 @@ class ILanguagePack(Interface):
         required=True)
 
     distroseries = Choice(
-        title=_('The distribution series from where it was exported.'),
+        title=_('The distribution series from which it was exported.'),
         required=True, vocabulary='FilteredDistroSeries')
 
     type = Choice(

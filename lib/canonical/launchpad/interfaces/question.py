@@ -1,4 +1,5 @@
 # Copyright 2005-2007 Canonical Ltd.  All rights reserved.
+# pylint: disable-msg=E0211,E0213
 
 """Interfaces for a Question."""
 
@@ -17,6 +18,7 @@ from zope.schema import (
      Bool, Choice, Datetime,  Int, List, Object, Text, TextLine)
 
 from canonical.launchpad import _
+from canonical.launchpad.fields import PublicPersonChoice
 from canonical.launchpad.interfaces import IHasOwner
 from canonical.launchpad.interfaces.faq import IFAQ
 from canonical.launchpad.interfaces.questionenums import (
@@ -58,15 +60,15 @@ class IQuestion(IHasOwner):
     language = Choice(
         title=_('Language'), vocabulary='Language',
         description=_('The language in which this question is written.'))
-    owner = Choice(
+    owner = PublicPersonChoice(
         title=_('Owner'), required=True, readonly=True,
         vocabulary='ValidPersonOrTeam')
-    assignee = Choice(
+    assignee = PublicPersonChoice(
         title=_('Assignee'), required=False,
         description=_("The person responsible for helping to resolve the "
         "question."),
         vocabulary='ValidPersonOrTeam')
-    answerer = Choice(
+    answerer = PublicPersonChoice(
         title=_('Answered By'), required=False,
         description=_("The person who last provided a response intended to "
         "resolve the question."),

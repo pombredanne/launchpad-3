@@ -1,7 +1,11 @@
 <html
   xmlns="http://www.w3.org/1999/xhtml"
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
   xml:lang="en"
   lang="en"
+  dir="ltr"
   metal:define-macro="master"
   metal:extend-macro="context/@@main_template/master"
   i18n:domain="launchpad">
@@ -35,7 +39,7 @@
         <metal:heading fill-slot="heading">
           <metal:slot define-slot="heading">
             <h1 tal:condition="view/label"
-              Tal:content="view/label">Heading from ZCML label="xxx"</h1>
+              tal:content="view/label">Heading from ZCML label="xxx"</h1>
           </metal:slot>
         </metal:heading>
 

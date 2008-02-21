@@ -1,8 +1,17 @@
 # Copyright 2004 Canonical Ltd.  All rights reserved.
+# pylint: disable-msg=E0611,W0212
 
 __metaclass__ = type
-__all__ = ['Poll', 'PollSet', 'PollOption', 'PollOptionSet',
-           'VoteCast', 'Vote', 'VoteSet', 'VoteCastSet']
+__all__ = [
+    'Poll',
+    'PollOption',
+    'PollOptionSet',
+    'PollSet',
+    'VoteCast',
+    'Vote',
+    'VoteSet',
+    'VoteCastSet',
+    ]
 
 import pytz
 import random
@@ -14,15 +23,15 @@ from zope.component import getUtility
 from sqlobject import (
     ForeignKey, StringCol, BoolCol, SQLObjectNotFound, IntCol, AND)
 
-from canonical.lp.dbschema import PollSecrecy, PollAlgorithm
-
 from canonical.database.sqlbase import SQLBase, sqlvalues
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
 
 from canonical.launchpad.interfaces import (
     IPoll, IPollSet, IPollOption, IPollOptionSet, IVote, IVoteCast,
-    PollStatus, IVoteCastSet, IVoteSet, OptionIsNotFromSimplePoll)
+    PollStatus, IVoteCastSet, IVoteSet, PollAlgorithm, PollSecrecy,
+    OptionIsNotFromSimplePoll)
+from canonical.launchpad.validators.person import public_person_validator
 
 
 class Poll(SQLBase):
@@ -33,7 +42,9 @@ class Poll(SQLBase):
     sortingColumns = ['title', 'id']
     _defaultOrder = sortingColumns
 
-    team = ForeignKey(dbName='team', foreignKey='Person', notNull=True)
+    team = ForeignKey(
+        dbName='team', foreignKey='Person',
+        validator=public_person_validator, notNull=True)
 
     name = StringCol(dbName='name', notNull=True)
 
@@ -45,12 +56,12 @@ class Poll(SQLBase):
 
     proposition = StringCol(dbName='proposition',  notNull=True)
 
-    type = EnumCol(dbName='type', schema=PollAlgorithm,
+    type = EnumCol(dbName='type', enum=PollAlgorithm,
                    default=PollAlgorithm.SIMPLE)
 
     allowspoilt = BoolCol(dbName='allowspoilt', default=True, notNull=True)
 
-    secrecy = EnumCol(dbName='secrecy', schema=PollSecrecy,
+    secrecy = EnumCol(dbName='secrecy', enum=PollSecrecy,
                       default=PollSecrecy.SECRET)
 
     def newOption(self, name, title, active=True):
@@ -332,7 +343,9 @@ class VoteCast(SQLBase):
     _table = 'VoteCast'
     _defaultOrder = 'id'
 
-    person = ForeignKey(dbName='person', foreignKey='Person', notNull=True)
+    person = ForeignKey(
+        dbName='person', foreignKey='Person',
+        validator=public_person_validator, notNull=True)
 
     poll = ForeignKey(dbName='poll', foreignKey='Poll', notNull=True)
 
@@ -354,7 +367,9 @@ class Vote(SQLBase):
     _table = 'Vote'
     _defaultOrder = ['preference', 'id']
 
-    person = ForeignKey(dbName='person', foreignKey='Person')
+    person = ForeignKey(
+        dbName='person', foreignKey='Person',
+        validator=public_person_validator)
 
     poll = ForeignKey(dbName='poll', foreignKey='Poll', notNull=True)
 

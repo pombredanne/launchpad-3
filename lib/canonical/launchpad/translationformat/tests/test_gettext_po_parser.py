@@ -1,6 +1,7 @@
 # Copyright 2004-2006 Canonical Ltd.  All rights reserved.
 
 import doctest
+import re
 import unittest
 
 from canonical.launchpad.interfaces import (
@@ -26,7 +27,7 @@ class POBasicTestCase(unittest.TestCase):
             '%smsgid "foo"\nmsgstr "bar"\n' % DEFAULT_HEADER)
         messages = translation_file.messages
         self.assertEqual(len(messages), 1, "incorrect number of messages")
-        self.assertEqual(messages[0].msgid, "foo", "incorrect msgid")
+        self.assertEqual(messages[0].msgid_singular, "foo", "incorrect msgid")
         self.assertEqual(
             messages[0].translations[TranslationConstants.SINGULAR_FORM],
             "bar", "incorrect msgstr")
@@ -37,7 +38,7 @@ class POBasicTestCase(unittest.TestCase):
         translation_file = self.parser.parse(
             '%smsgid "foo"\nmsgstr "bar"' % DEFAULT_HEADER)
         messages = translation_file.messages
-        self.assertEqual(messages[0].msgid, "foo", "incorrect msgid")
+        self.assertEqual(messages[0].msgid_singular, "foo", "incorrect msgid")
         self.assertEqual(
             messages[0].translations[TranslationConstants.SINGULAR_FORM],
             "bar", "incorrect translation")
@@ -92,7 +93,7 @@ class POBasicTestCase(unittest.TestCase):
             '%smsgid "foo\\"bar\\nbaz\\\\xyzzy"\nmsgstr"z"\n' % (
                 DEFAULT_HEADER))
         messages = translation_file.messages
-        self.assertEqual(messages[0].msgid, 'foo"bar\nbaz\\xyzzy')
+        self.assertEqual(messages[0].msgid_singular, 'foo"bar\nbaz\\xyzzy')
 
     # Lalo doesn't agree with this test
     # def badEscapeTest(self):
@@ -110,7 +111,7 @@ class POBasicTestCase(unittest.TestCase):
             msgstr[0] "bar"
             msgstr[1] "bars"''' % DEFAULT_HEADER)
         messages = translation_file.messages
-        self.assertEqual(messages[0].msgid, "foo", "incorrect msgid")
+        self.assertEqual(messages[0].msgid_singular, "foo", "incorrect msgid")
         self.assertEqual(messages[0].msgid_plural, "foos",
             "incorrect msgid_plural")
         assert messages[0].translations, "missing translations."
@@ -126,7 +127,7 @@ class POBasicTestCase(unittest.TestCase):
         translation_file = self.parser.parse(
             '%s#, fuzzy\n#~ msgid "foo"\n#~ msgstr "bar"\n' % DEFAULT_HEADER)
         messages = translation_file.messages
-        self.assertEqual(messages[0].msgid, "foo", "incorrect msgid")
+        self.assertEqual(messages[0].msgid_singular, "foo", "incorrect msgid")
         self.assertEqual(
             messages[0].translations[TranslationConstants.SINGULAR_FORM],
             "bar", "incorrect msgstr")
@@ -137,7 +138,7 @@ class POBasicTestCase(unittest.TestCase):
         translation_file = self.parser.parse(
             '%s#~ msgid "foo"\n#~ msgstr ""\n#~ "bar"\n' % DEFAULT_HEADER)
         messages = translation_file.messages
-        self.assertEqual(messages[0].msgid, "foo")
+        self.assertEqual(messages[0].msgid_singular, "foo")
         self.assertEqual(
             messages[0].translations[TranslationConstants.SINGULAR_FORM],
             "bar")
@@ -204,6 +205,57 @@ class POBasicTestCase(unittest.TestCase):
             else:
                 self.assertEqual(lines[index], expected[index])
 
+    def testEscapedNewline(self):
+        """Test escaped newline."""
+        # Escaped newlines are not currently supported.
+
+        # This string will parse just fine:
+        easy_string = """
+            %s
+            msgid "foo"
+            msgstr "barf"
+            """ % DEFAULT_HEADER
+        translation_file = self.parser.parse(easy_string)
+
+        # If we add an escaped newline, this breaks with a syntax error.
+        (hard_string, changes) = re.subn("barf", "bar\\\nf", easy_string)
+        self.assertEqual(changes, 1,
+            "Failed to add 1 escaped newline to test string.")
+
+        translation_file = self.parser.parse(hard_string)
+        messages = translation_file.messages
+        self.assertEqual(len(messages), 1, "Expected exactly 1 message.")
+        self.assertEqual(
+            messages[0].translations[TranslationConstants.SINGULAR_FORM],
+                "barf", "Escaped newline not processed properly.")
+
+        # Test escaped newlines at beginning and end of string, and check for
+        # interaction with multiple strings on a line.
+        hard_string = re.sub("barf", "\\\nb" "a\\\nr\\\nf\\\n", easy_string)
+        translation_file = self.parser.parse(hard_string)
+        messages = translation_file.messages
+        self.assertEqual(
+            messages[0].translations[TranslationConstants.SINGULAR_FORM],
+                "barf", "Problem with complex escaped newline situations.")
+
+        # After an escaped newline, any indentation on the continued line is
+        # removed.
+        hard_string = re.sub("barf", "bar\\\n  f", easy_string)
+        translation_file = self.parser.parse(hard_string)
+        messages = translation_file.messages
+        self.assertEqual(
+            messages[0].translations[TranslationConstants.SINGULAR_FORM],
+                "barf", "Problem with complex escaped newline situations.")
+
+        # Escaped newlines inside a string do not interfere with the ability
+        # to continue the string on the next line.
+        hard_string = re.sub("barf", 'b\\\n"\n"arf', easy_string)
+        translation_file = self.parser.parse(hard_string)
+        messages = translation_file.messages
+        self.assertEqual(
+            messages[0].translations[TranslationConstants.SINGULAR_FORM],
+                "barf", "Problem with complex escaped newline situations.")
+
     def testMultipartString(self):
         """Test concatenated message strings on the same line.
 
@@ -253,11 +305,13 @@ class POBasicTestCase(unittest.TestCase):
             ''' % DEFAULT_HEADER)
         messages = translation_file.messages
         self.assertEqual(len(messages), foos, "incorrect number of messages")
-        for n in range(1,foos):
+        for n in range(1, foos):
             msgidn = "foo%d" % n
-            self.assertEqual(messages[n-1].msgid, msgidn, "incorrect msgid")
             self.assertEqual(
-                messages[n-1].translations[TranslationConstants.SINGULAR_FORM],
+                messages[n-1].msgid_singular, msgidn, "incorrect msgid")
+            self.assertEqual(
+                messages[n-1].translations[
+                    TranslationConstants.SINGULAR_FORM],
                 "bar", "incorrect msgstr")
 
     def testGetLastTranslator(self):

@@ -1,4 +1,5 @@
 # Copyright 2005 Canonical Ltd.  All rights reserved.
+# pylint: disable-msg=E0611,W0212
 
 __metaclass__ = type
 __all__ = ['TranslationGroup', 'TranslationGroupSet']
@@ -12,11 +13,14 @@ from sqlobject import (
 
 from canonical.launchpad.interfaces import (
     ILanguageSet, ITranslationGroup, ITranslationGroupSet, NotFoundError)
+from canonical.launchpad.database.product import Product
+from canonical.launchpad.database.project import Project
 
 from canonical.database.sqlbase import SQLBase, sqlvalues
 from canonical.database.constants import DEFAULT
 from canonical.database.datetimecol import UtcDateTimeCol
 
+from canonical.launchpad.validators.person import public_person_validator
 from canonical.launchpad.database.translator import Translator
 
 
@@ -33,16 +37,17 @@ class TranslationGroup(SQLBase):
     title = StringCol(notNull=True)
     summary = StringCol(notNull=True)
     datecreated = UtcDateTimeCol(notNull=True, default=DEFAULT)
-    owner = ForeignKey(dbName='owner', foreignKey='Person', notNull=True)
+    owner = ForeignKey(
+        dbName='owner', foreignKey='Person',
+        validator=public_person_validator, notNull=True)
 
     # useful joins
-    products = SQLMultipleJoin('Product', joinColumn='translationgroup')
-    projects = SQLMultipleJoin('Project', joinColumn='translationgroup')
     distributions = SQLMultipleJoin('Distribution',
         joinColumn='translationgroup')
     languages = SQLRelatedJoin('Language', joinColumn='translationgroup',
         intermediateTable='Translator', otherColumn='language')
-    translators = SQLMultipleJoin('Translator', joinColumn='translationgroup')
+    translators = SQLMultipleJoin('Translator',
+                                  joinColumn='translationgroup')
 
     # used to note additions
     def add(self, content):
@@ -57,7 +62,16 @@ class TranslationGroup(SQLBase):
     # get a translator by language or code
     def query_translator(self, language):
         """See ITranslationGroup."""
-        return Translator.selectOneBy(language=language, translationgroup=self)
+        return Translator.selectOneBy(language=language,
+                                      translationgroup=self)
+
+    @property
+    def products(self):
+        return Product.selectBy(translationgroup=self.id, active=True)
+
+    @property
+    def projects(self):
+        return Project.selectBy(translationgroup=self.id, active=True)
 
     # get a translator by code
     def __getitem__(self, code):
@@ -122,3 +136,4 @@ class TranslationGroupSet:
     def getGroupsCount(self):
         """See ITranslationGroupSet."""
         return TranslationGroup.select().count()
+

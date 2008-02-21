@@ -1,3 +1,13 @@
+= The Launchpad Code front page =
+
+First we manually set the Bazaar version, so that this document will not need
+updating when Launchpad upgrades Bazaar.
+
+    >>> import bzrlib
+    >>> bzrlib_version = bzrlib.__version__
+    >>> bzrlib.__version__ = '0.92.0'
+
+
 Check that the Bazaar home page works.
 
     >>> browser.open('http://code.launchpad.dev/')
@@ -8,6 +18,13 @@ Check that the Bazaar home page works.
     6 projects
     3 imported branches
     2 branches associated with bug reports
+    Launchpad uses Bazaar 0.92.0.
+
+
+Restore the original Bazaar version:
+
+    >>> bzrlib.__version__ = bzrlib_version
+
 
 The main code home page now has a subset of the project tag cloud,
 with a link to the complete listing.

@@ -1,4 +1,5 @@
 # Copyright 2006 Canonical Ltd.  All rights reserved.
+# pylint: disable-msg=E0611,W0212
 
 """Launchpad Pillars share a namespace.
 
@@ -20,6 +21,8 @@ from canonical.launchpad.interfaces import (
         IProduct, IDistribution,
         IDistributionSet, IProductSet, IProjectSet,
         )
+
+from canonical.launchpad.database.featuredproject import FeaturedProject
 
 __all__ = [
     'pillar_sort_key',
@@ -51,7 +54,9 @@ class PillarNameSet:
     implements(IPillarNameSet)
 
     def __contains__(self, name):
-        """See IPillarNameSet."""
+        """See `IPillarNameSet`."""
+        # XXX flacoste 20071009 Workaround bug #90983.
+        name = name.encode('ASCII')
         cur = cursor()
         cur.execute("""
             SELECT TRUE
@@ -64,7 +69,9 @@ class PillarNameSet:
             return True
 
     def __getitem__(self, name):
-        """See IPillarNameSet."""
+        """See `IPillarNameSet`."""
+        # XXX flacoste 20071009 Workaround bug #90983.
+        name = name.encode('ASCII')
         pillar = self.getByName(name, ignore_inactive=True)
         if pillar is None:
             raise NotFoundError(name)
@@ -81,6 +88,9 @@ class PillarNameSet:
         # expect that doing two queries will be faster that OUTER JOINing
         # the Project, Product and Distribution tables (and this approach
         # works better with SQLObject too.
+
+        # XXX flacoste 20071009 Workaround bug #90983.
+        name = name.encode('ASCII')
 
         # Retrieve information out of the PillarName table.
         cur = cursor()
@@ -177,7 +187,7 @@ class PillarNameSet:
         return cur.fetchone()[0]
 
     def search(self, text, limit):
-        """See IPillarSet."""
+        """See `IPillarSet`."""
         if limit is None:
             limit = config.launchpad.default_batch_size
         query = self.build_search_query(text) + """
@@ -196,16 +206,52 @@ class PillarNameSet:
             [dict(zip(keys, values)) for values in cur.fetchall()],
             longest_expected=longest_expected)
 
+    def add_featured_project(self, project):
+        """See `IPillarSet`."""
+        query = """
+            PillarName.name = %s
+            AND PillarName.id = FeaturedProject.pillar_name
+            """ % sqlvalues(project.name)
+        existing = FeaturedProject.selectOne(
+            query, clauseTables=['PillarName'])
+        if existing is None:
+            pillar_name = PillarName.selectOneBy(name=project.name)
+            return FeaturedProject(pillar_name=pillar_name.id)
+
+    def remove_featured_project(self, project):
+        """See `IPillarSet`."""
+        query = """
+            PillarName.name = %s
+            AND PillarName.id = FeaturedProject.pillar_name
+            """ % sqlvalues(project.name)
+        existing = FeaturedProject.selectOne(
+            query, clauseTables=['PillarName'])
+        if existing is not None:
+            existing.destroySelf()
+
+    @property
+    def featured_projects(self):
+        """See `IPillarSet`."""
+
+        query = "PillarName.id = FeaturedProject.pillar_name"
+        return [pillar_name.pillar for pillar_name in PillarName.select(
+                    query, clauseTables=['FeaturedProject'])]
+
 
 class PillarName(SQLBase):
     implements(IPillarName)
 
     _table = 'PillarName'
+    _defaultOrder = 'name'
 
-    name = StringCol(dbName='name', notNull=True, unique=True, alternateID=True)
-    product = ForeignKey(foreignKey='Product', dbName='product')
-    project = ForeignKey(foreignKey='Project', dbName='project')
-    distribution = ForeignKey(foreignKey='Distribution', dbName='distribution')
+    name = StringCol(
+        dbName='name', notNull=True, unique=True, alternateID=True)
+    product = ForeignKey(
+        foreignKey='Product', dbName='product')
+    project = ForeignKey(
+        foreignKey='Project', dbName='project')
+    distribution = ForeignKey(
+        foreignKey='Distribution', dbName='distribution')
     active = BoolCol(dbName='active', notNull=True, default=True)
 
     @property

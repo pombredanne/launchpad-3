@@ -11,11 +11,8 @@ no-priv accessing the site from another window. Working with the same
 form in different browser windows or tabs can sometimes trigger edge
 case errors, and we'll give an example of one shortly.
 
-    >>> from zope.testbrowser.testing import Browser
-    >>> nopriv_other_browser = Browser()
-    >>> nopriv_other_browser.handleErrors = False
-    >>> nopriv_other_browser.addHeader(
-    ...     "Authorization", "Basic no-priv@canonical.com:test")
+    >>> nopriv_other_browser = setupBrowser(
+    ...     auth="Basic no-priv@canonical.com:test")
     >>> nopriv_other_browser.open(
     ...     "http://launchpad.dev/distros/ubuntu/+source/mozilla-firefox/"
     ...     "+bug/1/+nominate")

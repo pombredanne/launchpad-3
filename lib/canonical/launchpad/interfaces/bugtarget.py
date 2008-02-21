@@ -1,4 +1,5 @@
 # Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# pylint: disable-msg=E0211,E0213
 
 """Interfaces related to bugs."""
 
@@ -10,6 +11,7 @@ __all__ = [
     'BugDistroSeriesTargetDetails']
 
 from zope.interface import Interface, Attribute
+from zope.schema import Text
 
 
 class IBugTarget(Interface):
@@ -29,6 +31,14 @@ class IBugTarget(Interface):
     new_bugtasks = Attribute("A list of New BugTasks for this target.")
     unassigned_bugtasks = Attribute("A list of unassigned BugTasks for this target.")
     all_bugtasks = Attribute("A list of all BugTasks ever reported for this target.")
+
+    bug_reporting_guidelines = Text(
+        title=(
+            u"If I\N{right single quotation mark}m reporting a bug, "
+            u"I should include, if possible"),
+        description=(
+            u"These guidelines will be shown to anyone reporting a bug."),
+        required=False, max_length=50000)
 
     def searchTasks(search_params):
         """Search the IBugTasks reported on this entity.

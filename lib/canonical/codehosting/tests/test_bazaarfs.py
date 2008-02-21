@@ -18,6 +18,7 @@ class FakeLaunchpad:
 
     def __init__(self, test):
         self.test = test
+        self._request_mirror_log = []
 
     def fetchProductID(self, productName):
         """Return a fake product ID.
@@ -43,6 +44,9 @@ class FakeLaunchpad:
         self.test.assertEqual('mozilla-firefox', productName)
         self.test.assertEqual('new-branch', branchName)
         return defer.succeed(0xabcdef12)
+
+    def requestMirror(self, loginID, branch_id):
+        self._request_mirror_log.append((loginID, branch_id))
 
 
 class TestTopLevelDir(AvatarTestCase):
@@ -87,7 +91,8 @@ class TestTopLevelDir(AvatarTestCase):
     def testTeamDirPlusJunk(self):
         root = self.bob.makeFileSystem().root
         userDir = root.child('~test-team')
-        self.assertNotIn('+junk', [name for name, child in userDir.children()])
+        self.assertNotIn(
+            '+junk', [name for name, child in userDir.children()])
 
 
 class UserDirsTestCase(AvatarTestCase):
@@ -157,8 +162,9 @@ class UserDirsTestCase(AvatarTestCase):
             set(['.', '..', '+junk', 'mozilla-firefox', 'product-x']))
 
         # The team dir will have just 'thing'.
+        children = root.child('~test-team').children()
         self.assertEqual(
-            set([name for name, child in root.child('~test-team').children()]),
+            set([name for name, child in children]),
             set(['.', '..', 'thing']))
 
 
@@ -301,7 +307,8 @@ class ProductPlaceholderTestCase(AvatarTestCase):
         # Test that we get an error if we try to create a branch
         # inside a product placeholder for a non-existant product.
         noproduct = self.filesystem.fetch('/~alice/no-such-product')
-        self.failUnless(isinstance(noproduct, SFTPServerProductDirPlaceholder))
+        self.failUnless(
+            isinstance(noproduct, SFTPServerProductDirPlaceholder))
         return self.assertFailure(defer.maybeDeferred(
             noproduct.createDirectory, 'new-branch'), PermissionError)
 
@@ -310,10 +317,11 @@ class TestSFTPServerBranch(AvatarTestCase):
 
     def setUp(self):
         AvatarTestCase.setUp(self)
-        avatar = LaunchpadAvatar('alice', self.tmpdir, self.aliceUserDict,
-                                 FakeLaunchpad(self))
+        self.authserver = FakeLaunchpad(self)
+        avatar = LaunchpadAvatar(
+            'alice', self.tmpdir, self.aliceUserDict, self.authserver)
+        self.login_id = avatar.lpid
         root = avatar.makeFileSystem().root
-        root.setListenerFactory(lambda branch_id: (lambda: None))
         userDir = root.child('~alice')
         deferred = defer.maybeDeferred(
             userDir.createDirectory, 'mozilla-firefox')
@@ -367,6 +375,26 @@ class TestSFTPServerBranch(AvatarTestCase):
         """
         d = defer.maybeDeferred(self.server_branch.createFile, '.bzr')
         return self.assertFailure(d, PermissionError)
+
+    def testUnlockRequestsMirror(self):
+        """Unlocking a branch requests that branch be mirrored."""
+
+        # Create a branch lock directory
+        bzr_dir = self.server_branch.createDirectory('.bzr')
+        branch_dir = bzr_dir.createDirectory('branch')
+        lock_dir = branch_dir.createDirectory('lock')
+
+        # Simulate locking the branch by renaming something to 'held'.
+        actual_lock = lock_dir.createDirectory('temporary')
+        # For some insane reason, we need to pass the absolute path to rename.
+        actual_lock.rename(os.path.join(lock_dir.getAbsolutePath(), 'held'))
+
+        # Simulate unlocking by renaming 'held' to something else.
+        actual_lock.rename(
+            os.path.join(lock_dir.getAbsolutePath(), 'temporary'))
+        self.assertEqual(
+            [(self.login_id, self.server_branch.branchID)],
+            self.authserver._request_mirror_log)
 
 
 def test_suite():

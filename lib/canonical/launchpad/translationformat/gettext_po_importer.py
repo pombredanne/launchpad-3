@@ -9,11 +9,11 @@ __all__ = [
 from zope.component import getUtility
 from zope.interface import implements
 
-from canonical.launchpad.interfaces import ITranslationFormatImporter
+from canonical.launchpad.interfaces import (
+    ITranslationFormatImporter, TranslationFileFormat)
 from canonical.launchpad.translationformat.gettext_po_parser import (
     POParser, POHeader)
 from canonical.librarian.interfaces import ILibrarianClient
-from canonical.lp.dbschema import TranslationFileFormat
 
 
 class GettextPOImporter:
@@ -53,7 +53,12 @@ class GettextPOImporter:
         self.content = librarian_client.getFileByAlias(
             translation_import_queue_entry.content.id)
 
-        parser = POParser()
+        if translation_import_queue_entry.pofile is not None:
+            pluralformula = (
+                translation_import_queue_entry.pofile.language.pluralexpression)
+        else:
+            pluralformula = None
+        parser = POParser(pluralformula)
         return parser.parse(self.content.read())
 
     def getHeaderFromString(self, header_string):

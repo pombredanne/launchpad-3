@@ -8,6 +8,7 @@ from optparse import OptionParser
 from zope.component import getUtility
 
 from canonical.launchpad.interfaces import IDistributionSet
+from canonical.config import config
 from canonical.launchpad.scripts import (
     execute_zcml_for_scripts, logger, logger_options)
 from canonical.lp import initZopeless
@@ -36,8 +37,7 @@ def main():
 
     log.debug("Initialising zopeless.")
 
-    # XXX kiko 2006-08-23: Change this when we fix up db security
-    txn = initZopeless(dbuser='lucille')
+    txn = initZopeless(dbuser=config.archivepublisher.dbuser)
     execute_zcml_for_scripts()
 
     distribution = getUtility(IDistributionSet).getByName(

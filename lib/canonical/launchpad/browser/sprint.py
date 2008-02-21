@@ -5,6 +5,7 @@
 __metaclass__ = type
 __all__ = [
     'SprintAddView',
+    'SprintAttendeesCsvExportView',
     'SprintBrandingView',
     'SprintEditView',
     'SprintFacets',
@@ -22,7 +23,9 @@ __all__ = [
     'SprintView',
     ]
 
+import csv
 import pytz
+from StringIO import StringIO
 
 from zope.component import getUtility
 from zope.app.form.browser import TextAreaWidget
@@ -32,7 +35,9 @@ from canonical.cachedproperty import cachedproperty
 from canonical.launchpad.browser.branding import BrandingChangeView
 from canonical.launchpad.browser.specificationtarget import (
     HasSpecificationsView)
-from canonical.launchpad.interfaces import ISprint, ISprintSet
+from canonical.launchpad.interfaces import (
+    ISprint, ISprintSet, SpecificationDefinitionStatus, SpecificationFilter,
+    SpecificationPriority, SpecificationSort)
 from canonical.launchpad.webapp import (
     ApplicationMenu, ContextMenu, GetitemNavigation, LaunchpadEditFormView,
     LaunchpadFormView, LaunchpadView, Link, Navigation,
@@ -43,10 +48,7 @@ from canonical.launchpad.webapp.dynmenu import neverempty
 from canonical.launchpad.helpers import shortlist
 from canonical.launchpad.browser.launchpad import (
     StructuralObjectPresentation)
-from canonical.lp.dbschema import (
-    SpecificationFilter, SpecificationPriority, SpecificationSort,
-    SpecificationDefinitionStatus)
-from canonical.widgets.textwidgets import LocalDateTimeWidget
+from canonical.widgets.date import DateTimeWidget
 
 
 class SprintFacets(StandardLaunchpadFacets):
@@ -87,7 +89,8 @@ class SprintOverviewMenu(ApplicationMenu):
 
     usedfor = ISprint
     facet = 'overview'
-    links = ['attendance', 'registration', 'edit', 'branding']
+    links = ['attendance', 'registration', 'attendee_export', 'edit',
+             'branding']
 
     def attendance(self):
         text = 'Register yourself'
@@ -98,6 +101,12 @@ class SprintOverviewMenu(ApplicationMenu):
         text = 'Register someone else'
         summary = 'Register someone else to attend the meeting'
         return Link('+register', text, summary, icon='add')
+
+    @enabled_with_permission('launchpad.View')
+    def attendee_export(self):
+        text = 'Export attendees to CSV'
+        summary = 'Export attendee contact information to CSV format'
+        return Link('+attendees-csv', text, summary, icon='info')
 
     @enabled_with_permission('launchpad.Edit')
     def edit(self):
@@ -244,12 +253,27 @@ class SprintView(HasSpecificationsView, LaunchpadView):
     def formatDateTime(self, dt):
         """Format a datetime value according to the sprint's time zone"""
         dt = dt.astimezone(self.tzinfo)
-        return dt.strftime('%Y-%m-%d %H:%M:%S %Z')
+        return dt.strftime('%Y-%m-%d %H:%M %Z')
 
     def formatDate(self, dt):
         """Format a date value according to the sprint's time zone"""
         dt = dt.astimezone(self.tzinfo)
         return dt.strftime('%Y-%m-%d')
+
+    _local_timeformat = '%H:%M on %A, %Y-%m-%d'
+    @property
+    def local_start(self):
+        """The sprint start time, in the local time zone, as text."""
+        tz = pytz.timezone(self.context.time_zone)
+        return self.context.time_starts.astimezone(tz).strftime(
+                    self._local_timeformat)
+
+    @property
+    def local_end(self):
+        """The sprint end time, in the local time zone, as text."""
+        tz = pytz.timezone(self.context.time_zone)
+        return self.context.time_ends.astimezone(tz).strftime(
+                    self._local_timeformat)
 
 
 class SprintAddView(LaunchpadFormView):
@@ -261,19 +285,22 @@ class SprintAddView(LaunchpadFormView):
                    'time_zone', 'time_starts', 'time_ends', 'address',
                    ]
     custom_widget('summary', TextAreaWidget, height=5)
-    custom_widget('time_starts', LocalDateTimeWidget)
-    custom_widget('time_ends', LocalDateTimeWidget)
+    custom_widget('time_starts', DateTimeWidget, display_zone=False)
+    custom_widget('time_ends', DateTimeWidget, display_zone=False)
     custom_widget('address', TextAreaWidget, height=3)
 
     sprint = None
 
     def setUpWidgets(self):
         LaunchpadFormView.setUpWidgets(self)
+        timeformat = '%Y-%m-%d %H:%M'
+        self.widgets['time_starts'].timeformat = timeformat
+        self.widgets['time_ends'].timeformat = timeformat
         time_zone_widget = self.widgets['time_zone']
         if time_zone_widget.hasValidInput():
-            tz = time_zone_widget.getInputValue()
-            self.widgets['time_starts'].timeZoneName = tz
-            self.widgets['time_ends'].timeZoneName = tz
+            tz = pytz.timezone(time_zone_widget.getInputValue())
+            self.widgets['time_starts'].required_timezone = tz
+            self.widgets['time_ends'].required_timezone = tz
 
     def validate(self, data):
         time_starts = data.get('time_starts')
@@ -321,20 +348,23 @@ class SprintEditView(LaunchpadEditFormView):
                    'time_zone', 'time_starts', 'time_ends', 'address',
                    ]
     custom_widget('summary', TextAreaWidget, height=5)
-    custom_widget('time_starts', LocalDateTimeWidget)
-    custom_widget('time_ends', LocalDateTimeWidget)
+    custom_widget('time_starts', DateTimeWidget, display_zone=False)
+    custom_widget('time_ends', DateTimeWidget, display_zone=False)
     custom_widget('address', TextAreaWidget, height=3)
 
     def setUpWidgets(self):
         LaunchpadEditFormView.setUpWidgets(self)
+        timeformat = '%Y-%m-%d %H:%M'
+        self.widgets['time_starts'].timeformat = timeformat
+        self.widgets['time_ends'].timeformat = timeformat
         time_zone_widget = self.widgets['time_zone']
         # What time zone are the start and end values relative to?
         if time_zone_widget.hasValidInput():
-            tz = time_zone_widget.getInputValue()
+            tz = pytz.timezone(time_zone_widget.getInputValue())
         else:
-            tz = self.context.time_zone
-        self.widgets['time_starts'].timeZoneName = tz
-        self.widgets['time_ends'].timeZoneName = tz
+            tz = pytz.timezone(self.context.time_zone)
+        self.widgets['time_starts'].required_timezone = tz
+        self.widgets['time_ends'].required_timezone = tz
 
     def validate(self, data):
         time_starts = data.get('time_starts')
@@ -452,7 +482,7 @@ class SprintMeetingExportView(LaunchpadView):
 
             # skip sprints with no priority or less than low:
             if (spec.priority is None or
-                spec.priority < SpecificationPriority.LOW):
+                spec.priority < SpecificationPriority.UNDEFINED):
                 continue
 
             if (spec.definition_status not in
@@ -491,3 +521,54 @@ class SprintSetView(LaunchpadView):
     def all_batched(self):
         return BatchNavigator(self.context.all, self.request)
 
+
+class SprintAttendeesCsvExportView(LaunchpadView):
+    """View for exporting the attendees for a sprint as CSV."""
+
+    def encode_value(self, value):
+        """Encode a value for CSV.
+
+        Return the string representation of `value` encoded as UTF-8,
+        or the empty string if value is None."""
+        if value is not None:
+            return unicode(value).encode('utf-8')
+        else:
+            return ''
+
+    def render(self):
+        """Render a CSV output of all the attendees for a sprint."""
+        rows = [('Launchpad username',
+                 'Display name',
+                 'Email',
+                 'Phone',
+                 'Organization',
+                 'City',
+                 'Country',
+                 'Timezone',
+                 'Arriving',
+                 'Leaving')]
+        for attendance in self.context.attendances:
+            rows.append(
+                (attendance.attendee.name,
+                 attendance.attendee.displayname,
+                 attendance.attendee.safe_email_or_blank,
+                 attendance.attendee.phone,
+                 attendance.attendee.organization,
+                 attendance.attendee.city,
+                 attendance.attendee.country,
+                 attendance.attendee.timezone,
+                 attendance.time_starts.strftime('%Y-%m-%dT%H:%M:%SZ'),
+                 attendance.time_ends.strftime('%Y-%m-%dT%H:%M:%SZ')))
+        # CSV can't handle unicode, so we force encoding
+        # everything as UTF-8
+        rows = [[self.encode_value(column)
+                 for column in row]
+                for row in rows]
+        self.request.response.setHeader('Content-type', 'text/csv')
+        self.request.response.setHeader(
+            'Content-disposition',
+            'attachment; filename=%s-attendees.csv' % self.context.name)
+        output = StringIO()
+        writer = csv.writer(output)
+        writer.writerows(rows)
+        return output.getvalue()

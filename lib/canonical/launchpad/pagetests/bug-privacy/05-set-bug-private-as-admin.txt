@@ -1,6 +1,6 @@
 Foo Bar, an LP admin, is about to make bug #2 private.
 
-    >>> browser.addHeader("Authorization", "Basic foo.bar@canonical.com:test")
+    >>> browser = setupBrowser(auth="Basic foo.bar@canonical.com:test")
     >>> browser.open(
     ...     "http://bugs.launchpad.dev/debian/+source/mozilla-firefox/"
     ...     "+bug/2/+secrecy")
@@ -12,9 +12,10 @@ explicit. There are two implicit subscribers.
     ...     print_direct_subscribers, print_indirect_subscribers)
 
     >>> print_direct_subscribers(browser.contents)
-    Steve Alexander
+    Steve Alexander (Subscribed by Launchpad Janitor)
 
     >>> print_indirect_subscribers(browser.contents)
+    Mark Shuttleworth
     Sample Person
     Ubuntu Team
 
@@ -33,8 +34,9 @@ anyway, because he is an admin.
 All the implicit subscribers have been made explicit.
 
   >>> print_direct_subscribers(browser.contents)
-  Sample Person
-  Steve Alexander
-  Ubuntu Team
+  Mark Shuttleworth (Subscribed by Foo Bar)
+  Sample Person (Subscribed by Foo Bar)
+  Steve Alexander (Subscribed by Launchpad Janitor)
+  Ubuntu Team (Subscribed by Foo Bar)
 
   >>> print_indirect_subscribers(browser.contents)

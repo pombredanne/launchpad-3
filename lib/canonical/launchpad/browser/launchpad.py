@@ -5,6 +5,7 @@ __metaclass__ = type
 __all__ = [
     'AppFrontPageSearchView',
     'Breadcrumbs',
+    'LinkView',
     'LoginStatus',
     'MaintenanceMessage',
     'MenuBox',
@@ -12,7 +13,6 @@ __all__ = [
     'LaunchpadRootNavigation',
     'MaloneApplicationNavigation',
     'SoftTimeoutView',
-    'LaunchpadRootIndexView',
     'OneZeroTemplateStatus',
     'IcingFolder',
     'StructuralHeaderPresentationView',
@@ -24,8 +24,8 @@ __all__ = [
     ]
 
 import cgi
-import errno
 import urllib
+import operator
 import os
 import re
 import time
@@ -36,19 +36,16 @@ from zope.component import getUtility
 from zope.interface import implements
 from zope.publisher.interfaces.xmlrpc import IXMLRPCRequest
 from zope.security.interfaces import Unauthorized
-from zope.app.content_types import guess_content_type
 from zope.app.traversing.interfaces import ITraversable
-from zope.app.publisher.browser.fileresource import setCacheControl
-from zope.app.datetimeutils import rfc1123_date
-from zope.publisher.interfaces.browser import IBrowserPublisher
-from zope.publisher.interfaces import NotFound
 
 from BeautifulSoup import BeautifulStoneSoup, Comment
 
 import canonical.launchpad.layers
 from canonical.config import config
+from canonical.lazr import ExportedFolder
 from canonical.launchpad.helpers import intOrZero
 from canonical.launchpad.interfaces import (
+    IAnnouncementSet,
     IAppFrontPageSearchForm,
     IBazaarApplication,
     IBinaryPackageNameSet,
@@ -60,6 +57,7 @@ from canonical.launchpad.interfaces import (
     ICodeOfConductSet,
     ICveSet,
     IDistributionSet,
+    IHWDBApplication,
     IKarmaActionSet,
     ILanguageSet,
     ILaunchBag,
@@ -67,11 +65,11 @@ from canonical.launchpad.interfaces import (
     ILaunchpadRoot,
     ILaunchpadStatisticSet,
     ILoginTokenSet,
+    IMailingListSet,
     IMaloneApplication,
     IMentoringOfferSet,
     IPersonSet,
     IPillarNameSet,
-    IPOTemplateNameSet,
     IProductSet,
     IProjectSet,
     IQuestionSet,
@@ -84,12 +82,12 @@ from canonical.launchpad.interfaces import (
     IStructuralHeaderPresentation,
     ITranslationGroupSet,
     ITranslationImportQueue,
-    NotFoundError,
     )
-from canonical.launchpad.components.cal import MergedCalendar
 from canonical.launchpad.webapp import (
-    StandardLaunchpadFacets, ContextMenu, Link, LaunchpadView,
-    LaunchpadFormView, Navigation, stepto, canonical_url, custom_widget)
+    StandardLaunchpadFacets, ContextMenu, Link,
+    LaunchpadView, LaunchpadFormView, Navigation, stepto, canonical_name,
+    canonical_url, custom_widget)
+from canonical.launchpad.webapp.interfaces import POSTToNonCanonicalURL
 from canonical.launchpad.webapp.publisher import RedirectionView
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.uri import URI
@@ -159,16 +157,37 @@ class MenuBox(LaunchpadView):
 
     def initialize(self):
         menuapi = MenuAPI(self.context)
-        self.contextmenuitems = [
-            link for link in menuapi.context() if link.enabled]
-        self.applicationmenuitems = [
-            link for link in menuapi.application() if link.enabled]
+        # We are only interested on enabled links in non development mode.
+        context_menu_links = menuapi.context
+        self.contextmenuitems = sorted([
+            link for link in context_menu_links.values() if (link.enabled or
+                                                             config.devmode)],
+            key=operator.attrgetter('sort_key'))
+        self.applicationmenuitems = sorted([
+            link for link in menuapi.application() if (link.enabled or
+                                                       config.devmode)],
+            key=operator.attrgetter('sort_key'))
 
     def render(self):
         if not self.contextmenuitems and not self.applicationmenuitems:
             return ''
         else:
             return self.template()
+
+
+class LinkView(LaunchpadView):
+    """View class that helps its template render a menu link.
+
+    The link is not rendered if it's not enabled and we are not in development
+    mode.
+    """
+
+    def render(self):
+        """Render the menu link if it's enabled or we're in dev mode."""
+        if self.context.enabled or config.devmode:
+            return self.template()
+        else:
+            return ''
 
 
 class Breadcrumbs(LaunchpadView):
@@ -303,11 +322,6 @@ class LaunchpadRootFacets(StandardLaunchpadFacets):
         summary = 'The Code Bazaar'
         return Link(target, text, summary)
 
-    def calendar(self):
-        target = 'calendar'
-        text = 'Calendar'
-        return Link(target, text)
-
 
 class MaloneContextMenu(ContextMenu):
     # XXX mpt 2006-03-27: No longer visible on Bugs front page.
@@ -399,11 +413,30 @@ class LaunchpadRootNavigation(Navigation):
     @stepto('support')
     def redirect_support(self):
         """Redirect /support to Answers root site."""
-        target_url= canonical_url(
+        target_url = canonical_url(
             getUtility(ILaunchpadRoot), rootsite='answers')
         return self.redirectSubTree(target_url + 'questions', status=301)
 
+    @stepto('legal')
+    def redirect_legal(self):
+        """Redirect /legal to help.launchpad.net/Legal site."""
+        return self.redirectSubTree(
+            'https://help.launchpad.net/Legal', status=301)
+
+    @stepto('faq')
+    def redirect_faq(self):
+        """Redirect /faq to help.launchpad.net/FAQ site."""
+        return self.redirectSubTree(
+            'https://help.launchpad.net/FAQ', status=301)
+
+    @stepto('feedback')
+    def redirect_feedback(self):
+        """Redirect /feedback to help.launchpad.net/Feedback site."""
+        return self.redirectSubTree(
+            'https://help.launchpad.net/Feedback', status=301)
+
     stepto_utilities = {
+        '+announcements': IAnnouncementSet,
         'binarypackagenames': IBinaryPackageNameSet,
         'bounties': IBountySet,
         'bugs': IMaloneApplication,
@@ -412,12 +445,13 @@ class LaunchpadRootNavigation(Navigation):
         '+code-imports': ICodeImportSet,
         'codeofconduct': ICodeOfConductSet,
         'distros': IDistributionSet,
+        '+hwdb': IHWDBApplication,
         'karmaaction': IKarmaActionSet,
         '+imports': ITranslationImportQueue,
         '+languages': ILanguageSet,
+        '+mailinglists': IMailingListSet,
         '+mentoring': IMentoringOfferSet,
         'people': IPersonSet,
-        'potemplatenames': IPOTemplateNameSet,
         'projects': IProductSet,
         'projectgroups': IProjectSet,
         'registry': IRegistryApplication,
@@ -447,8 +481,16 @@ class LaunchpadRootNavigation(Navigation):
 
         # Allow traversal to ~foo for People
         if name.startswith('~'):
-            person = getUtility(IPersonSet).getByName(name[1:].lower())
-            return person
+            # account for common typing mistakes
+            if canonical_name(name) != name:
+                if self.request.method == 'POST':
+                    raise POSTToNonCanonicalURL
+                return self.redirectSubTree(
+                    canonical_url(self.context) + canonical_name(name),
+                    status=301)
+            else:
+                person = getUtility(IPersonSet).getByName(name[1:])
+                return person
 
         # Dapper and Edgy shipped with https://launchpad.net/bazaar hard coded
         # into the Bazaar Launchpad plugin (part of Bazaar core). So in theory
@@ -459,23 +501,36 @@ class LaunchpadRootNavigation(Navigation):
         if name == 'bazaar' and IXMLRPCRequest.providedBy(self.request):
             return getUtility(IBazaarApplication)
 
-        try:
-            return getUtility(IPillarNameSet)[name.lower()]
-        except NotFoundError:
-            return None
+        # account for common typing mistakes
+        if canonical_name(name) != name:
+            if self.request.method == 'POST':
+                raise POSTToNonCanonicalURL
+            return self.redirectSubTree(
+                canonical_url(self.context) + canonical_name(name),
+                status=301)
 
-    @stepto('calendar')
-    def calendar(self):
-        # XXX SteveAlexander 2005-10-06: permission=launchpad.AnyPerson
-        return MergedCalendar()
+        admins = getUtility(ILaunchpadCelebrities).admin
+        user = getUtility(ILaunchBag).user
+        ignore_inactive = True
+        if user and user.inTeam(admins):
+            # Admins should be able to access deactivated projects too.
+            ignore_inactive = False
+        pillar = getUtility(IPillarNameSet).getByName(
+            name, ignore_inactive=ignore_inactive)
+        return pillar
 
     def _getBetaRedirectionView(self):
-        # If the inhibit_beta_redirect cookie is set, don't redirect:
+        # If the inhibit_beta_redirect cookie is set, don't redirect.
         if self.request.cookies.get('inhibit_beta_redirect', '0') == '1':
             return None
 
-        # If we are looking at the front page, don't redirect:
+        # If we are looking at the front page, don't redirect.
         if self.request['PATH_INFO'] == '/':
+            return None
+
+        # If this is a HTTP POST, we don't want to issue a redirect.
+        # Doing so would go against the HTTP standard.
+        if self.request.method == 'POST':
             return None
 
         # If no redirection host is set, don't redirect.
@@ -496,10 +551,10 @@ class LaunchpadRootNavigation(Navigation):
             getUtility(ILaunchpadCelebrities).launchpad_beta_testers):
             return None
 
-        # Alter the host name to point at the redirection target:
+        # Alter the host name to point at the redirection target.
         new_host = uri.host[:-len(mainsite_host)] + redirection_host
         uri = uri.replace(host=new_host)
-        # Complete the URL from the environment:
+        # Complete the URL from the environment.
         uri = uri.replace(path=self.request['PATH_INFO'])
         query_string = self.request.get('QUERY_STRING')
         if query_string:
@@ -543,22 +598,6 @@ class SoftTimeoutView(LaunchpadView):
         return (
             'Soft timeout threshold is set to %s ms. This page took'
             ' %s ms to render.' % (soft_timeout, time_to_generate_page))
-
-
-class LaunchpadRootIndexView(LaunchpadView):
-    """An view for the default view of the LaunchpadRoot."""
-
-    def isRedirectInhibited(self):
-        """Returns True if redirection has been inhibited."""
-        return self.request.cookies.get('inhibit_beta_redirect', '0') == '1'
-
-    def isBetaUser(self):
-        """Return True if the user is in the beta testers team."""
-        if config.launchpad.beta_testers_redirection_host is None:
-            return False
-
-        return self.user is not None and self.user.inTeam(
-            getUtility(ILaunchpadCelebrities).launchpad_beta_testers)
 
 
 class ObjectForTemplate:
@@ -654,96 +693,11 @@ class OneZeroTemplateStatus(LaunchpadView):
         self.excluded_from_run = sorted(excluded)
 
 
-class File:
-    # Copied from zope.app.publisher.fileresource, which
-    # unbelievably throws away the file data, and isn't
-    # useful extensible.
-    #
-    def __init__(self, path, name):
-        self.path = path
+class IcingFolder(ExportedFolder):
+    """Export the Launchpad icing."""
 
-        f = open(path, 'rb')
-        self.data = f.read()
-        f.close()
-        self.content_type, enc = guess_content_type(path, self.data)
-        self.__name__ = name
-        self.lmt = float(os.path.getmtime(path)) or time()
-        self.lmh = rfc1123_date(self.lmt)
-
-here = os.path.dirname(os.path.realpath(__file__))
-
-class IcingFolder:
-    """View that gives access to the files in a folder.
-
-    The URL to the folder can start with an optional path step like
-    /revNNN/ where NNN is one or more digits.  This path step will
-    be ignored.  It is useful for having a different path for
-    all resources being served, to ensure that we don't use cached
-    files in browsers.
-    """
-
-    implements(IBrowserPublisher)
-
-    folder = '../icing/'
-    rev_part_re = re.compile('rev\d+$')
-
-    def __init__(self, context, request):
-        """Initialize with context and request."""
-        self.context = context
-        self.request = request
-        self.names = []
-
-    def __call__(self):
-        names = list(self.names)
-        if names and self.rev_part_re.match(names[0]):
-            # We have a /revNNN/ path step, so remove it.
-            names = names[1:]
-
-        if not names:
-            # Just the icing directory, so make this a 404.
-            raise NotFound(self, '')
-        elif len(names) > 1:
-            # Too many path elements, so make this a 404.
-            raise NotFound(self, self.names[-1])
-        else:
-            # Actually serve up the resource.
-            [name] = names
-            return self.prepareDataForServing(name)
-
-    def prepareDataForServing(self, name):
-        """Set the response headers and return the data for this resource."""
-        if os.path.sep in name:
-            raise ValueError(
-                'os.path.sep appeared in the resource name: %s' % name)
-        filename = os.path.join(here, self.folder, name)
-        try:
-            fileobj = File(filename, name)
-        except IOError, ioerror:
-            if ioerror.errno == errno.ENOENT: # No such file or directory
-                raise NotFound(self, name)
-            else:
-                # Some other IOError that we're not expecting.
-                raise
-
-        # TODO: Set an appropriate charset too.  There may be zope code we
-        #       can reuse for this.
-        response = self.request.response
-        response.setHeader('Content-Type', fileobj.content_type)
-        response.setHeader('Last-Modified', fileobj.lmh)
-        setCacheControl(response)
-        return fileobj.data
-
-    # The following two zope methods publishTraverse and browserDefault
-    # allow this view class to take control of traversal from this point
-    # onwards.  Traversed names just end up in self.names.
-
-    def publishTraverse(self, request, name):
-        """Traverse to the given name."""
-        self.names.append(name)
-        return self
-
-    def browserDefault(self, request):
-        return self, ()
+    folder = os.path.join(
+        os.path.dirname(os.path.realpath(__file__)), '../icing/')
 
 
 class StructuralHeaderPresentationView(LaunchpadView):
@@ -953,7 +907,7 @@ class AppFrontPageSearchView(LaunchpadFormView):
     @property
     def scope_error(self):
         """The error message for the scope widget."""
-        return self.getWidgetError('scope')
+        return self.getFieldError('scope')
 
 
 class BrowserWindowDimensions(LaunchpadView):

@@ -50,5 +50,5 @@ class ListTeamMembersScript(LaunchpadScript):
         return 0
 
 if __name__ == '__main__':
-    script = ListTeamMembersScript('canonical.launchpad.scripts.listteammembers')
+    script = ListTeamMembersScript('canonical.launchpad.scripts.listteammembers', dbuser='listteammembers')
     script.run()

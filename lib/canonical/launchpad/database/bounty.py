@@ -1,4 +1,5 @@
 # Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# pylint: disable-msg=E0611,W0212
 
 __metaclass__ = type
 __all__ = ['Bounty', 'BountySet']
@@ -13,18 +14,18 @@ from sqlobject import ForeignKey, StringCol
 from sqlobject import CurrencyCol
 from sqlobject import SQLMultipleJoin, SQLRelatedJoin
 
-from canonical.launchpad.interfaces import IBounty, IBountySet, NotFoundError
+from canonical.launchpad.interfaces import (
+    BountyDifficulty, BountyStatus, IBounty, IBountySet, NotFoundError)
 
 from canonical.database.sqlbase import SQLBase
 from canonical.database.constants import DEFAULT
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
 
-from canonical.lp.dbschema import BountyDifficulty, BountyStatus
-
 from canonical.launchpad.database.message import Message, MessageChunk
 from canonical.launchpad.database.bountymessage import BountyMessage
 from canonical.launchpad.database.bountysubscription import BountySubscription
+from canonical.launchpad.validators.person import public_person_validator
 
 
 class Bounty(SQLBase):
@@ -41,13 +42,17 @@ class Bounty(SQLBase):
     summary = StringCol(notNull=True)
     description = StringCol( notNull=True)
     usdvalue = CurrencyCol(notNull=True)
-    bountystatus = EnumCol(schema=BountyStatus, notNull=True,
+    bountystatus = EnumCol(enum=BountyStatus, notNull=True,
         default=BountyStatus.OPEN)
-    difficulty = EnumCol(schema=BountyDifficulty, notNull=True,
+    difficulty = EnumCol(enum=BountyDifficulty, notNull=True,
         default=BountyDifficulty.NORMAL)
-    reviewer = ForeignKey(dbName='reviewer', notNull=True, foreignKey='Person')
+    reviewer = ForeignKey(
+        dbName='reviewer', foreignKey='Person',
+        validator=public_person_validator, notNull=True)
     datecreated = UtcDateTimeCol(notNull=True, default=DEFAULT)
-    owner = ForeignKey(dbName='owner', foreignKey='Person', notNull=True)
+    owner = ForeignKey(
+        dbName='owner', foreignKey='Person',
+        validator=public_person_validator, notNull=True)
 
     # useful joins
     subscriptions = SQLMultipleJoin('BountySubscription', joinColumn='bounty',

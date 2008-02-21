@@ -4,15 +4,21 @@
     xmlns:i18n="http://namespaces.zope.org/i18n"
     i18n_domain="launchpad">
 
-  <facet facet="specifications">
+  <!-- ISpecificationBranch -->
+  <content class="canonical.launchpad.database.SpecificationBranch">
+    <allow interface="canonical.launchpad.interfaces.ISpecificationBranch" />
+    <require
+        permission="launchpad.AnyPerson"
+        set_attributes="summary" />
+  </content>
 
-    <!-- ISpecificationBranch -->
-    <content class="canonical.launchpad.database.SpecificationBranch">
-      <allow interface="canonical.launchpad.interfaces.ISpecificationBranch" />
-      <require
-          permission="launchpad.AnyPerson"
-          set_attributes="summary" />
-    </content>
+  <subscriber
+      for="canonical.launchpad.interfaces.ISpecificationBranch
+           canonical.launchpad.event.interfaces.ISQLObjectCreatedEvent"
+      handler="canonical.launchpad.subscribers.karma.spec_branch_created"
+      />
+
+  <facet facet="specifications">
 
     <browser:url
         for="canonical.launchpad.interfaces.ISpecificationBranch"
@@ -31,5 +37,12 @@
         template="../templates/specificationbranch-status.pt" />
 
   </facet>
+
+  <!-- SpecificationBranchSet -->
+  <securedutility
+    class="canonical.launchpad.database.SpecificationBranchSet"
+    provides="canonical.launchpad.interfaces.ISpecificationBranchSet" >
+      <allow interface="canonical.launchpad.interfaces.ISpecificationBranchSet" />
+  </securedutility>
 
 </configure>

@@ -22,10 +22,13 @@ from canonical.archivepublisher.diskpool import DiskPool
 from canonical.archivepublisher.config import LucilleConfigError
 from canonical.archivepublisher.domination import Dominator
 from canonical.archivepublisher.ftparchive import FTPArchiveHandler
-from canonical.launchpad.interfaces import IComponentSet, pocketsuffix
+from canonical.database.sqlbase import sqlvalues
+from canonical.launchpad.database.publishing import (
+    SourcePackagePublishingHistory, BinaryPackagePublishingHistory)
+from canonical.launchpad.interfaces import (
+    ArchivePurpose, IComponentSet, pocketsuffix, PackagePublishingPocket,
+    PackagePublishingStatus)
 from canonical.librarian.client import LibrarianClient
-from canonical.lp.dbschema import (
-    ArchivePurpose, PackagePublishingPocket, PackagePublishingStatus)
 
 suffixpocket = dict((v, k) for (k, v) in pocketsuffix.items())
 
@@ -199,6 +202,56 @@ class Publisher(object):
 
                 self.dirty_pockets.update(more_dirt)
 
+    def A2_markPocketsWithDeletionsDirty(self):
+        """An intermediate step in publishing to detect deleted packages.
+
+        Mark pockets containing deleted packages (status DELETED or
+        OBSOLETE), scheduledeletiondate NULL and dateremoved NULL as
+        dirty, to ensure that they are processed in death row.
+        """
+        self.log.debug("* Step A2: Mark pockets with deletions as dirty")
+
+        # Query part that is common to both queries below.
+        base_query = """
+            archive = %s AND
+            status = %s AND
+            scheduleddeletiondate IS NULL AND
+            dateremoved is NULL
+            """ % sqlvalues(self.archive,
+                            PackagePublishingStatus.DELETED)
+
+        # We need to get a set of (distroseries, pocket) tuples that have
+        # publications that are waiting to be deleted.  Each tuple is
+        # added to the dirty_pockets set.
+
+        # Loop for each pocket in each distroseries:
+        for distroseries in self.distro.serieses:
+            for pocket, suffix in pocketsuffix.items():
+                clauses = [base_query]
+                clauses.append("pocket = %s" % sqlvalues(pocket))
+                clauses.append("distroseries = %s" % sqlvalues(distroseries))
+
+                # Make the source publications query.
+                source_query = " AND ".join(clauses)
+                sources = SourcePackagePublishingHistory.select(source_query)
+                if sources.count() > 0:
+                    self.dirty_pockets.add((distroseries.name, pocket))
+                    # No need to check binaries if the pocket is already
+                    # dirtied from a source.
+                    continue
+
+                # Make the binary publications query.
+                clauses = [base_query]
+                clauses.append("pocket = %s" % sqlvalues(pocket))
+                clauses.append("DistroArchSeries = DistroArchSeries.id")
+                clauses.append("DistroArchSeries.distroseries = %s" %
+                    sqlvalues(distroseries))
+                binary_query = " AND ".join(clauses)
+                binaries = BinaryPackagePublishingHistory.select(binary_query,
+                    clauseTables=['DistroArchSeries'])
+                if binaries.count() > 0:
+                    self.dirty_pockets.add((distroseries.name, pocket))
+
     def B_dominate(self, force_domination):
         """Second step in publishing: domination."""
         self.log.debug("* Step B: dominating packages")
@@ -210,14 +263,7 @@ class Publisher(object):
                         self.log.debug("Skipping domination for %s/%s" %
                                    (distroseries.name, pocket.name))
                         continue
-                    if (not distroseries.isUnstable() and
-                        not self.archive.allowUpdatesToReleasePocket):
-                        # We're not doing a full run and the
-                        # distroseries is now 'stable': if we try to
-                        # write a release file for it, we're doing
-                        # something wrong.
-                        assert pocket != PackagePublishingPocket.RELEASE,(
-                            "Oops, dominating stable distroseries.")
+                    self.checkDirtySuiteBeforePublishing(distroseries, pocket)
                 judgejudy.judgeAndDominate(distroseries, pocket, self._config)
 
     def C_doFTPArchive(self, is_careful):
@@ -238,11 +284,7 @@ class Publisher(object):
                         self.log.debug("Skipping index generation for %s/%s" %
                                        (distroseries.name, pocket.name))
                         continue
-                    if (not distroseries.isUnstable() and
-                        not self.archive.allowUpdatesToReleasePocket):
-                        # See comment in B_dominate
-                        assert pocket != PackagePublishingPocket.RELEASE, (
-                            "Oops, indexing stable distroseries.")
+                    self.checkDirtySuiteBeforePublishing(distroseries, pocket)
                 # Retrieve components from the publisher config because
                 # it gets overridden in IArchive.getPubConfig to set the
                 # correct components for the archive being used.
@@ -268,12 +310,8 @@ class Publisher(object):
                         self.log.debug("Skipping release files for %s/%s" %
                                        (distroseries.name, pocket.name))
                         continue
-                    if (not distroseries.isUnstable() and
-                        not self.archive.allowUpdatesToReleasePocket):
-                        # See comment in B_dominate
-                        assert pocket != PackagePublishingPocket.RELEASE, (
-                            "Oops, indexing stable distroseries.")
-                self._writeDistroRelease(distroseries, pocket)
+                    self.checkDirtySuiteBeforePublishing(distroseries, pocket)
+                self._writeDistroSeries(distroseries, pocket)
 
     def isDirty(self, distroseries, pocket):
         """True if a publication has happened in this release and pocket."""
@@ -282,9 +320,9 @@ class Publisher(object):
         return True
 
     def _makeFileGroupWriteableAndWorldReadable(self, file_path):
-        """Make the file group writable and world readable."""
+        """Make the file group readable/writable and world readable."""
         mode = stat.S_IMODE(os.stat(file_path).st_mode)
-        os.chmod(file_path, mode | stat.S_IWGRP | stat.S_IROTH)
+        os.chmod(file_path, mode | stat.S_IWGRP | stat.S_IRGRP | stat.S_IROTH)
 
     def _writeComponentIndexes(self, distroseries, pocket, component):
         """Write Index files for single distroseries + pocket + component.
@@ -299,9 +337,20 @@ class Publisher(object):
                        % (suite_name, component.name))
 
         self.log.debug("Generating Sources")
-        fd_gz, temp_index_gz = tempfile.mkstemp(prefix='source-index_')
+
+        source_index_basepath = os.path.join(
+            self._config.distsroot, suite_name, component.name, 'source')
+        if os.path.exists(source_index_basepath):
+            assert os.access(source_index_basepath, os.W_OK), \
+                    "%s not writeable!" % source_index_basepath
+        else:
+            os.makedirs(source_index_basepath)
+
+        fd_gz, temp_index_gz = tempfile.mkstemp(
+            dir=self._config.temproot, prefix='source-index-gz_')
         source_index_gz = gzip.GzipFile(fileobj=open(temp_index_gz, 'wb'))
-        fd, temp_index = tempfile.mkstemp(prefix='source-index_')
+        fd, temp_index = tempfile.mkstemp(
+            dir=self._config.temproot, prefix='source-index_')
         source_index = open(temp_index, 'wb')
 
         for spp in distroseries.getSourcePackagePublishing(
@@ -314,17 +363,18 @@ class Publisher(object):
         source_index.close()
         source_index_gz.close()
 
-        source_index_basepath = os.path.join(
-            self._config.distsroot, suite_name, component.name, 'source')
-        if not os.path.exists(source_index_basepath):
-            os.makedirs(source_index_basepath)
-        source_index_gz_path = os.path.join(source_index_basepath, "Sources.gz")
+        source_index_gz_path = os.path.join(
+            source_index_basepath, "Sources.gz")
         source_index_path = os.path.join(source_index_basepath, "Sources")
 
         # Move the the archive index files to the right place.
         os.rename(temp_index, source_index_path)
         os.rename(temp_index_gz, source_index_gz_path)
 
+        # XXX julian 2007-10-03
+        # This is kinda papering over a problem somewhere that causes the
+        # files to get created with permissions that don't allow group/world
+        # read access.  See https://bugs.launchpad.net/soyuz/+bug/148471
         self._makeFileGroupWriteableAndWorldReadable(source_index_path)
         self._makeFileGroupWriteableAndWorldReadable(source_index_gz_path)
 
@@ -332,10 +382,20 @@ class Publisher(object):
             arch_path = 'binary-%s' % arch.architecturetag
             self.log.debug("Generating Packages for %s" % arch_path)
 
-            temp_prefix = '%s-index_' % arch_path
-            fd_gz, temp_index_gz = tempfile.mkstemp(prefix=temp_prefix)
-            fd, temp_index = tempfile.mkstemp(prefix=temp_prefix)
-            package_index_gz = gzip.GzipFile(fileobj=open(temp_index_gz, "wb"))
+            package_index_basepath = os.path.join(
+                self._config.distsroot, suite_name, component.name, arch_path)
+            if os.path.exists(package_index_basepath):
+                assert os.access(package_index_basepath, os.W_OK), \
+                        "%s not writeable!" % package_index_basepath
+            else:
+                os.makedirs(package_index_basepath)
+
+            fd_gz, temp_index_gz = tempfile.mkstemp(
+                dir=self._config.temproot, prefix='%s-index-gz_' % arch_path)
+            fd, temp_index = tempfile.mkstemp(
+                dir=self._config.temproot, prefix='%s-index_' % arch_path)
+            package_index_gz = gzip.GzipFile(
+                fileobj=open(temp_index_gz, "wb"))
             package_index = open(temp_index, "wb")
 
             for bpp in distroseries.getBinaryPackagePublishing(
@@ -348,10 +408,6 @@ class Publisher(object):
             package_index.close()
             package_index_gz.close()
 
-            package_index_basepath = os.path.join(
-                self._config.distsroot, suite_name, component.name, arch_path)
-            if not os.path.exists(package_index_basepath):
-                os.makedirs(package_index_basepath)
             package_index_gz_path = os.path.join(
                 package_index_basepath, "Packages.gz")
             package_index_path = os.path.join(
@@ -363,7 +419,8 @@ class Publisher(object):
 
             # Make the files group writable and world readable.
             self._makeFileGroupWriteableAndWorldReadable(package_index_path)
-            self._makeFileGroupWriteableAndWorldReadable(package_index_gz_path)
+            self._makeFileGroupWriteableAndWorldReadable(
+                package_index_gz_path)
 
         # Inject static requests for Release files into self.apt_handler
         # in a way which works for NoMoreAptFtpArchive without changing
@@ -388,7 +445,20 @@ class Publisher(object):
             return False
         return True
 
-    def _writeDistroRelease(self, distroseries, pocket):
+    def checkDirtySuiteBeforePublishing(self, distroseries, pocket):
+        """Last check before publishing a dirty suite.
+
+        If the distroseries is stable and the archive doesn't allow updates
+        in RELEASE pocket (primary archives) we certainly have a problem,
+        better stop.
+        """
+        if (not distroseries.isUnstable() and
+            not self.archive.allowUpdatesToReleasePocket
+            and pocket == PackagePublishingPocket.RELEASE):
+            raise AssertionError(
+                "Oops, tainting RELEASE pocket of %s." % distroseries)
+
+    def _writeDistroSeries(self, distroseries, pocket):
         """Write out the Release files for the provided distroseries."""
         # XXX: kiko 2006-08-24: Untested method.
 
@@ -406,13 +476,13 @@ class Publisher(object):
         all_components = set()
         all_architectures = set()
         all_files = set()
-        for component, architectures in release_files_needed[full_name].items():
-
+        release_files_needed_items = release_files_needed[full_name].items()
+        for component, architectures in release_files_needed_items:
             all_components.add(component)
             for architecture in architectures:
                 # XXX malcc 2006-09-20: We don't like the way we build this
                 # all_architectures list. Make this better code.
-                clean_architecture = self._writeDistroArchRelease(
+                clean_architecture = self._writeDistroArchSeries(
                     distroseries, pocket, component, architecture, all_files)
                 if clean_architecture != "source":
                     all_architectures.add(clean_architecture)
@@ -451,7 +521,7 @@ class Publisher(object):
 
         f.close()
 
-    def _writeDistroArchRelease(self, distroseries, pocket, component,
+    def _writeDistroArchSeries(self, distroseries, pocket, component,
                                 architecture, all_files):
         """Write out a Release file for a DAR."""
         # XXX kiko 2006-08-24: Untested method.
@@ -461,12 +531,13 @@ class Publisher(object):
         # Only the primary archive has uncompressed and bz2 archives.
         if self.archive.purpose == ArchivePurpose.PRIMARY:
             index_suffixes = ('', '.gz', '.bz2')
-        elif self.archive.purpose == ArchivePurpose.PARTNER:
-            # The partner archive needs uncompressed files for
-            # compatibility with signed Release files.
-            index_suffixes = ('', '.gz')
         else:
-            index_suffixes = ('.gz',)
+            # We don't generate bz2 indexes for other archives for
+            # simplicity (they use NoMoreAptFtparchive approach).
+            # The plain index has to be listed in the Release, but not
+            # necessarily has to be on disk, its checksum is used for
+            # verification in client applications like dpkg/apt/smart.
+            index_suffixes = ('', '.gz')
 
         self.log.debug("Writing Release file for %s/%s/%s" % (
             full_name, component, architecture))

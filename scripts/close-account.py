@@ -1,7 +1,7 @@
 #!/usr/bin/python2.4
 # Copyright 2007 Canonical Ltd.  All rights reserved.
 
-"""Remove personal details of a user from the database, leaving just a stub."""
+"""Remove personal details of a user from the database, leaving a stub."""
 
 __metaclass__ = type
 __all__ = []
@@ -18,18 +18,18 @@ from canonical.launchpad.interfaces import (
 
 def close_account(con, log, username):
     """Close a person's account.
-    
+
     Return True on success, or log an error message and return False
     """
     cur = con.cursor()
     cur.execute("""
-        SELECT Person.id, name, calendar, teamowner
+        SELECT Person.id, name, teamowner
         FROM Person LEFT OUTER JOIN EmailAddress
             ON Person.id = EmailAddress.person
         WHERE name=%(username)s or lower(email)=lower(%(username)s)
         """, vars())
     try:
-        person_id, username, calendar_id, teamowner = cur.fetchone()
+        person_id, username, teamowner = cur.fetchone()
     except TypeError:
         log.fatal("User %s does not exist" % username)
         return False
@@ -54,7 +54,7 @@ def close_account(con, log, username):
     cur.execute("""
         UPDATE Person
         SET displayname='Removed by request', password=NULL,
-            name=%(new_name)s, language=NULL, calendar=NULL, timezone='UTC',
+            name=%(new_name)s, language=NULL, 
             addressline1=NULL, addressline2=NULL, organization=NULL,
             city=NULL, province=NULL, country=NULL, postcode=NULL,
             phone=NULL, homepage_content=NULL, icon=NULL, mugshot=NULL,
@@ -62,15 +62,6 @@ def close_account(con, log, username):
             creation_rationale=%(unknown_rationale)s, creation_comment=NULL
         WHERE id=%(person_id)s
         """, vars())
-
-    # Trash their calendar.
-    # XXX StuartBishop 2007-01-31:
-    # Can't do this until we make the CalendarSubsciption ON DELETE CASCADE.
-    # table_notification('Calendar')
-    # if calendar_id is not None:
-    #     cur.execute("""
-    #             DELETE FROM Calendar WHERE id=%(calendar_id)s""", vars()
-    #             )
 
     # Reassign their bugs
     table_notification('BugTask')
@@ -119,6 +110,7 @@ def close_account(con, log, username):
         ('JabberId', 'person'),
         ('WikiName', 'person'),
         ('PersonLanguage', 'person'),
+        ('PersonLocation', 'person'),
         ('SshKey', 'person'),
         
         # Karma

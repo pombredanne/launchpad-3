@@ -1,7 +1,13 @@
-<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
-      lang="en"
-      metal:use-macro="context/@@main_template/master"
-      i18n:domain="launchpad"
+<html
+  xmlns="http://www.w3.org/1999/xhtml"
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  xml:lang="en"
+  lang="en"
+  dir="ltr"
+  metal:use-macro="context/@@main_template/master"
+  i18n:domain="launchpad"
 >
   <body>
 
@@ -10,14 +16,30 @@
     </metal:heading>
 
 <metal:block fill-slot="head_epilogue">
-    <meta http-equiv="refresh" content="300">
+    <meta http-equiv="refresh" content="300" />
 </metal:block>
+
+<metal:portlets fill-slot="portlets">
+  <div class="portlet" id="portlet-build-queue-depth"
+       tal:condition="view/hasQueuedBuilds">
+    <h2>Build queue depth</h2>
+    <div class="portletBody">
+      <table width="100%">
+        <tbody>
+          <tr tal:repeat="arch view/buildQueueDepthByArch">
+            <td tal:repeat="value arch" tal:content="value" />
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</metal:portlets>
 
   <div metal:fill-slot="main">
 
       <table class="listing sortable" tal:attributes="id string:builders">
       <thead>
-        <tr>
+        <tr class="builder-row">
             <th>Builder</th>
             <th>Architecture</th>
             <th>Owner</th>
@@ -26,7 +48,7 @@
       </thead>
       <tbody>
         <tal:builder repeat="builder context/getBuilders">
-          <tr>
+          <tr class="builder-row">
             <td>
               <a tal:attributes="href builder/fmt:url"
                  tal:content="builder/name"

@@ -1,4 +1,5 @@
 # Copyright 2004-2007 Canonical Ltd.  All rights reserved.
+# pylint: disable-msg=E0611,W0212
 
 """SQLBase implementation of IQuestionReopening."""
 
@@ -20,6 +21,7 @@ from canonical.database.enumcol import EnumCol
 
 from canonical.launchpad.event import SQLObjectCreatedEvent
 from canonical.launchpad.interfaces import IQuestionReopening, QuestionStatus
+from canonical.launchpad.validators.person import public_person_validator
 
 
 class QuestionReopening(SQLBase):
@@ -32,10 +34,12 @@ class QuestionReopening(SQLBase):
     question = ForeignKey(
         dbName='question', foreignKey='Question', notNull=True)
     datecreated = UtcDateTimeCol(notNull=True, default=DEFAULT)
-    reopener = ForeignKey(dbName='reopener', foreignKey='Person',
-        notNull=True)
-    answerer = ForeignKey(dbName='answerer', foreignKey='Person',
-        notNull=False, default=None)
+    reopener = ForeignKey(
+        dbName='reopener', foreignKey='Person',
+        validator=public_person_validator, notNull=True)
+    answerer = ForeignKey(
+        dbName='answerer', foreignKey='Person',
+        validator=public_person_validator, notNull=False, default=None)
     date_solved = UtcDateTimeCol(notNull=False, default=None)
     priorstate = EnumCol(schema=QuestionStatus, notNull=True)
 

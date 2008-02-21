@@ -58,19 +58,21 @@ use the special getByName() method which returns active/inactive pillars..
     >>> IProject.providedBy(pillar_set.getByName('gimp'))
     True
 
-    >>> 'launchpad' in pillar_set
+It also works if you use Unicode strings.
+
+    >>> u'launchpad' in pillar_set
     True
-    >>> IProduct.providedBy(pillar_set['launchpad'])
+    >>> IProduct.providedBy(pillar_set[u'launchpad'])
     True
-    >>> pillar_set['launchpad'].active = False
+    >>> pillar_set[u'launchpad'].active = False
     >>> flush_database_updates()
-    >>> 'launchpad' in pillar_set
+    >>> u'launchpad' in pillar_set
     False
-    >>> pillar_set['launchpad']
+    >>> pillar_set[u'launchpad']
     Traceback (most recent call last):
     ...
     NotFoundError: 'launchpad'
-    >>> IProduct.providedBy(pillar_set.getByName('launchpad'))
+    >>> IProduct.providedBy(pillar_set.getByName(u'launchpad'))
     True
 
 

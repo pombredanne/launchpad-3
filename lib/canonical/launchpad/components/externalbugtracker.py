@@ -1,4 +1,4 @@
-# Copyright 2006 Canonical Ltd.  All rights reserved.
+# Copyright 2007 Canonical Ltd.  All rights reserved.
 
 """External bugtrackers."""
 
@@ -6,33 +6,50 @@ __metaclass__ = type
 
 import cgi
 import csv
+import email
 import os.path
 import re
+import socket
+import sys
 import urllib
 import urllib2
-import urlparse
-import ClientCookie
 import xml.parsers.expat
+
+from email.Utils import parseaddr
+from itertools import chain
+from urlparse import urlunparse
 from xml.dom import minidom
 
+import ClientCookie
+
 from BeautifulSoup import BeautifulSoup, Comment, SoupStrainer
+from zope.component import getUtility
 from zope.interface import implements
 
+from canonical.cachedproperty import cachedproperty
 from canonical.config import config
 from canonical import encoding
-from canonical.database.constants import UTC_NOW
-from canonical.lp.dbschema import BugTrackerType
+from canonical.database.sqlbase import flush_database_updates, commit
 from canonical.launchpad.scripts import log, debbugs
 from canonical.launchpad.interfaces import (
-    BugTaskStatus, IExternalBugtracker, UNKNOWN_REMOTE_STATUS)
+    BugTaskImportance, BugTaskStatus, BugTrackerType, BugWatchErrorType,
+    CreateBugParams, IBugWatchSet, IDistribution, IExternalBugTracker,
+    ILaunchpadCelebrities, IMessageSet, IPersonSet,
+    PersonCreationRationale, ISupportsCommentImport,
+    UNKNOWN_REMOTE_IMPORTANCE, UNKNOWN_REMOTE_STATUS)
+from canonical.launchpad.webapp import errorlog
+from canonical.launchpad.webapp.url import urlparse
+
 
 # The user agent we send in our requests
-LP_USER_AGENT = "Launchpad Bugscraper/0.2 (http://bugs.launchpad.net/)"
+LP_USER_AGENT = "Launchpad Bugscraper/0.2 (https://bugs.launchpad.net/)"
 
 
 #
 # Exceptions caught in scripts/checkwatches.py
 #
+
+
 class BugWatchUpdateError(Exception):
     """Base exception for when we fail to update watches for a tracker."""
 
@@ -41,6 +58,7 @@ class UnknownBugTrackerTypeError(BugWatchUpdateError):
     """Exception class to catch systems we don't have a class for yet."""
 
     def __init__(self, bugtrackertypename, bugtrackername):
+        BugWatchUpdateError.__init__(self)
         self.bugtrackertypename = bugtrackertypename
         self.bugtrackername = bugtrackername
 
@@ -64,16 +82,27 @@ class BugTrackerConnectError(BugWatchUpdateError):
     """Exception class to catch misc errors contacting a bugtracker."""
 
     def __init__(self, url, error):
+        BugWatchUpdateError.__init__(self)
         self.url = url
         self.error = str(error)
 
     def __str__(self):
         return "%s: %s" % (self.url, self.error)
 
+
 #
 # Exceptions caught locally
 #
-class InvalidBugId(Exception):
+
+
+class BugWatchUpdateWarning(Exception):
+    """An exception representing a warning.
+
+    This is a flag exception for the benefit of the OOPS machinery.
+    """
+
+
+class InvalidBugId(BugWatchUpdateWarning):
     """The bug id wasn't in the format the bug tracker expected.
 
     For example, Bugzilla and debbugs expect the bug id to be an
@@ -81,36 +110,101 @@ class InvalidBugId(Exception):
     """
 
 
-class BugNotFound(Exception):
+class BugNotFound(BugWatchUpdateWarning):
     """The bug was not found in the external bug tracker."""
 
 
 #
-# Helper function
+# OOPS reporting.
 #
-def get_external_bugtracker(bugtracker, version=None):
-    """Return an `ExternalBugTracker` for bugtracker."""
-    bugtrackertype = bugtracker.bugtrackertype
-    if bugtrackertype == BugTrackerType.BUGZILLA:
-        return Bugzilla(bugtracker.baseurl, version)
-    elif bugtrackertype == BugTrackerType.DEBBUGS:
-        return DebBugs()
-    elif bugtrackertype == BugTrackerType.MANTIS:
-        return Mantis(bugtracker.baseurl)
-    elif bugtrackertype == BugTrackerType.TRAC:
-        return Trac(bugtracker.baseurl)
-    elif bugtrackertype == BugTrackerType.ROUNDUP:
-        return Roundup(bugtracker.baseurl)
+
+
+def report_oops(message=None, properties=None, info=None):
+    """Record an oops for the current exception.
+
+    This must only be called while handling an exception.
+
+    :param message: custom explanatory error message. Do not use
+        str(exception) to fill in this parameter, it should only be
+        set when a human readable error has been explicitly generated.
+
+    :param properties: Properties to record in the OOPS report.
+    :type properties: An iterable of (name, value) tuples.
+
+    :param info: Exception info.
+    :type info: The return value of `sys.exc_info()`.
+    """
+    # Get the current exception info first of all.
+    if info is None:
+        info = sys.exc_info()
+
+    # Collect properties to report.
+    if properties is None:
+        properties = []
     else:
-        raise UnknownBugTrackerTypeError(bugtrackertype.name,
-            bugtracker.name)
+        properties = list(properties)
+
+    if message is not None:
+        properties.append(('error-explanation', message))
+
+    # Create the dummy request object.
+    request = errorlog.ScriptRequest(properties)
+    errorlog.globalErrorUtility.raising(info, request)
+
+    return request
+
+
+def report_warning(message, properties=None, info=None):
+    """Create and report a warning as an OOPS.
+
+    If no exception info is passed in this will create a generic
+    `BugWatchUpdateWarning` to record. The reason is that the stack
+    trace may be useful for later diagnosis.
+
+    :param message: See `report_oops`.
+    :param properties: See `report_oops`.
+    :param info: See `report_oops`.
+    """
+    if info is None:
+        # Raise and catch the exception so that sys.exc_info will
+        # return our warning and stack trace.
+        try:
+            raise BugWatchUpdateWarning
+        except BugWatchUpdateWarning:
+            return report_oops(message, properties)
+    else:
+        return report_oops(message, properties, info)
+
+
+_exception_to_bugwatcherrortype = [
+   (BugTrackerConnectError, BugWatchErrorType.CONNECTION_ERROR),
+   (UnparseableBugData, BugWatchErrorType.UNPARSABLE_BUG),
+   (UnparseableBugTrackerVersion, BugWatchErrorType.UNPARSABLE_BUG_TRACKER),
+   (UnsupportedBugTrackerVersion, BugWatchErrorType.UNSUPPORTED_BUG_TRACKER),
+   (UnknownBugTrackerTypeError, BugWatchErrorType.UNSUPPORTED_BUG_TRACKER),
+   (socket.timeout, BugWatchErrorType.TIMEOUT)]
+
+def get_bugwatcherrortype_for_error(error):
+    """Return the correct `BugWatchErrorType` for a given error."""
+    for exc_type, bugwatcherrortype in _exception_to_bugwatcherrortype:
+        if isinstance(error, exc_type):
+            return bugwatcherrortype
+    else:
+        return BugWatchErrorType.UNKNOWN
 
 
 class ExternalBugTracker:
     """Base class for an external bug tracker."""
 
-    implements(IExternalBugtracker)
+    implements(IExternalBugTracker)
+    batch_size = None
     batch_query_threshold = config.checkwatches.batch_query_threshold
+    import_comments = config.checkwatches.import_comments
+
+    def __init__(self, txn, bugtracker):
+        self.bugtracker = bugtracker
+        self.baseurl = bugtracker.baseurl.rstrip('/')
+        self.txn = txn
 
     def urlopen(self, request, data=None):
         return urllib2.urlopen(request, data)
@@ -131,14 +225,17 @@ class ExternalBugTracker:
             #      testing easier.
             for bug_id in bug_ids:
                 bug_id, remote_bug = self.getRemoteBug(bug_id)
-                self.bugs[bug_id] = remote_bug
+
+                if bug_id is not None:
+                    self.bugs[bug_id] = remote_bug
 
     def getRemoteBug(self, bug_id):
         """Retrieve and return a single bug from the remote database.
 
         The bug is returned as a tuple in the form (id, bug). This ensures
         that bug ids are formatted correctly for the current
-        ExternalBugTracker.
+        ExternalBugTracker. If no data can be found for bug_id, (None,
+        None) will be returned.
 
         A BugTrackerConnectError will be raised if anything goes wrong.
         """
@@ -150,6 +247,18 @@ class ExternalBugTracker:
         A BugTrackerConnectError will be raised if anything goes wrong.
         """
         raise NotImplementedError(self.getRemoteBugBatch)
+
+    def getRemoteImportance(self, bug_id):
+        """Return the remote importance for the given bug id.
+
+        Raise BugNotFound if the bug can't be found.
+        Raise InvalidBugId if the bug id has an unexpected format.
+        Raise UnparseableBugData if the bug data cannot be parsed.
+        """
+        # This method should be overridden by subclasses, so we raise a
+        # NotImplementedError if this version of it gets called for some
+        # reason.
+        raise NotImplementedError(self.getRemoteImportance)
 
     def getRemoteStatus(self, bug_id):
         """Return the remote status for the given bug id.
@@ -190,14 +299,19 @@ class ExternalBugTracker:
         page_contents = url.read()
         return page_contents
 
-    def updateBugWatches(self, bug_watches):
-        """Update the given bug watches."""
-        # Save the url for later, since we might need it to report an
-        # error after a transaction has been aborted.
-        bug_tracker_url = self.baseurl
-        bug_watches_by_remote_bug = {}
+    def _getBugWatch(self, bug_watch_id):
+        """Return the bug watch with id `bug_watch_id`."""
+        return getUtility(IBugWatchSet).get(bug_watch_id)
 
-        for bug_watch in bug_watches:
+    def _getBugWatchesByRemoteBug(self, bug_watch_ids):
+        """Returns a dictionary of bug watches mapped to remote bugs.
+
+        For each bug watch id fetches the corresponding bug watch and
+        appends it to a list of bug watches pointing to one remote
+        bug - the key of the returned mapping."""
+        bug_watches_by_remote_bug = {}
+        for bug_watch_id in bug_watch_ids:
+            bug_watch = self._getBugWatch(bug_watch_id)
             remote_bug = bug_watch.remotebug
             # There can be multiple bug watches pointing to the same
             # remote bug; because of that, we need to store lists of bug
@@ -206,56 +320,89 @@ class ExternalBugTracker:
             if remote_bug not in bug_watches_by_remote_bug:
                 bug_watches_by_remote_bug[remote_bug] = []
             bug_watches_by_remote_bug[remote_bug].append(bug_watch)
+        return bug_watches_by_remote_bug
 
-        # Do things in a fixed order, mainly to help with testing.
-        bug_ids_to_update = sorted(bug_watches_by_remote_bug)
-        self.initializeRemoteBugDB(bug_ids_to_update)
+    @property
+    def _oops_properties(self):
+        """Properties that are useful to record in an OOPS report.
 
-        # Again, fixed order here to help with testing.
-        for bug_id, bug_watches in sorted(bug_watches_by_remote_bug.items()):
-            local_ids = ", ".join(str(watch.bug.id) for watch in bug_watches)
-            try:
-                try:
-                    new_remote_status = self.getRemoteStatus(bug_id)
-                except InvalidBugId, error:
-                    log.warn("Invalid bug %r on %s (local bugs: %s)." %
-                             (bug_id, self.baseurl, local_ids))
-                    new_remote_status = UNKNOWN_REMOTE_STATUS
-                except BugNotFound:
-                    log.warn("Didn't find bug %r on %s (local bugs: %s)." %
-                             (bug_id, self.baseurl, local_ids))
-                    new_remote_status = UNKNOWN_REMOTE_STATUS
-                new_malone_status = self.convertRemoteStatus(new_remote_status)
+        Return an iterable of 2-tuples (name, value).
 
-                for bug_watch in bug_watches:
-                    bug_watch.lastchecked = UTC_NOW
-                    bug_watch.updateStatus(new_remote_status, new_malone_status)
+        Subclasses should override this, but chain their properties
+        after these, perhaps with the use of `itertools.chain`.
+        """
+        return [('batch_size', self.batch_size),
+                ('batch_query_threshold', self.batch_query_threshold),
+                ('import_comments', self.import_comments),
+                ('externalbugtracker', self.__class__.__name__),
+                ('baseurl', self.baseurl)]
 
-            except (KeyboardInterrupt, SystemExit):
-                # We should never catch KeyboardInterrupt or SystemExit.
-                raise
-            except:
-                # If something unexpected goes wrong, we shouldn't break the
-                # updating of the other bugs.
-                log.error("Failure updating bug %r on %s (local bugs: %s)." %
-                            (bug_id, bug_tracker_url, local_ids),
-                          exc_info=True)
+    def info(self, message):
+        """Record an informational message related to this bug tracker."""
+        log.info(message)
+
+    def warning(self, message, properties=None, info=None):
+        """Record a warning related to this bug tracker."""
+        if properties is None:
+            properties = self._oops_properties
+        else:
+            properties = chain(properties, self._oops_properties)
+        report_warning(message, properties, info)
+        # Also put it in the log.
+        log.warning(message)
+
+    def error(self, message, properties=None, info=None):
+        """Record an error related to this external bug tracker."""
+        if properties is None:
+            properties = self._oops_properties
+        else:
+            properties = chain(properties, self._oops_properties)
+        report_oops(message, properties, info)
+        # Also put it in the log.
+        log.error(message, exc_info=info)
+
+    def importBugComments(self, bug_watch):
+        """See `ISupportsCommentImport`."""
+        imported_comments = 0
+        for comment_id in self.getCommentIds(bug_watch):
+            displayname, email = self.getPosterForComment(
+                bug_watch, comment_id)
+
+            poster = getUtility(IPersonSet).ensurePerson(
+                email, displayname, PersonCreationRationale.BUGIMPORT,
+                comment='when importing comments for %s.' % bug_watch.title)
+
+            comment_message = self.getMessageForComment(
+                bug_watch, comment_id, poster)
+            if not bug_watch.hasComment(comment_id):
+                bug_watch.addComment(comment_id, comment_message)
+                imported_comments += 1
+
+        if imported_comments > 0:
+            self.info("Imported %(count)i comments for remote bug "
+                "%(remotebug)s on %(bugtracker_url)s into Launchpad bug "
+                "%(bug_id)s." %
+                {'count': imported_comments,
+                 'remotebug': bug_watch.remotebug,
+                 'bugtracker_url': self.baseurl,
+                 'bug_id': bug_watch.bug.id})
+
 
 #
 # Bugzilla
 #
 
 class Bugzilla(ExternalBugTracker):
-    """A class that deals with communications with a remote Bugzilla system."""
+    """An ExternalBugTrack for dealing with remote Bugzilla systems."""
 
-    implements(IExternalBugtracker)
+    implements(IExternalBugTracker)
+    batch_query_threshold = 0 # Always use the batch method.
 
-    def __init__(self, baseurl, version=None):
-        if baseurl.endswith("/"):
-            baseurl = baseurl[:-1]
-        self.baseurl = baseurl
-        self.version = version
+    def __init__(self, txn, bugtracker, version=None):
+        super(Bugzilla, self).__init__(txn, bugtracker)
+        self.version = self._parseVersion(version)
         self.is_issuezilla = False
+        self.remote_bug_status = {}
 
     def _parseDOMString(self, contents):
         """Return a minidom instance representing the XML contents supplied"""
@@ -267,12 +414,19 @@ class Bugzilla(ExternalBugTracker):
         return minidom.parseString(contents)
 
     def _probe_version(self):
+        """Retrieve and return a remote bugzilla version.
+
+        If the version cannot be parsed from the remote server
+        `UnparseableBugTrackerVersion` will be raised. If the remote
+        server cannot be reached `BugTrackerConnectError` will be
+        raised.
+        """
         version_xml = self._getPage('xml.cgi?id=1')
         try:
             document = self._parseDOMString(version_xml)
         except xml.parsers.expat.ExpatError, e:
-            raise BugTrackerConnectError(self.baseurl, "Failed to parse output "
-                                         "when probing for version: %s" % e)
+            raise BugTrackerConnectError(self.baseurl,
+                "Failed to parse output when probing for version: %s" % e)
         bugzilla = document.getElementsByTagName("bugzilla")
         if not bugzilla:
             # Welcome to Disneyland. The Issuezilla tracker replaces
@@ -286,10 +440,48 @@ class Bugzilla(ExternalBugTracker):
                     'not find top-level bugzilla element'
                     % self.baseurl)
         version = bugzilla[0].getAttribute("version")
+        return self._parseVersion(version)
+
+    def _parseVersion(self, version):
+        """Return a Bugzilla version parsed into a tuple.
+
+        A typical tuple will be in the form (major_version,
+        minor_version), so the version string '2.15' would be returned
+        as (2, 15).
+
+        If the passed version is None, None will be returned.
+        If the version cannot be parsed `UnparseableBugTrackerVersion`
+        will be raised.
+        """
+        if version is None:
+            return None
+
+        try:
+            # Get rid of trailing -rh, -debian, etc.
+            version = version.split("-")[0]
+            # Ignore plusses in the version.
+            version = version.replace("+", "")
+            # We need to convert the version to a tuple of integers if
+            # we are to compare it correctly.
+            version = tuple(int(x) for x in version.split("."))
+        except ValueError:
+            raise UnparseableBugTrackerVersion(
+                'Failed to parse version %r for %s' %
+                (version, self.baseurl))
+
         return version
 
+    def convertRemoteImportance(self, remote_importance):
+        """See `ExternalBugTracker`.
+
+        This method is implemented here as a stub to ensure that
+        existing functionality is preserved. As a result,
+        BugTaskImportance.UNKNOWN will always be returned.
+        """
+        return BugTaskImportance.UNKNOWN
+
     def convertRemoteStatus(self, remote_status):
-        """See IExternalBugtracker.
+        """See `IExternalBugTracker`.
 
         Bugzilla status consist of two parts separated by space, where
         the last part is the resolution. The resolution is optional.
@@ -304,7 +496,7 @@ class Bugzilla(ExternalBugTracker):
         if remote_status in ['ASSIGNED', 'ON_DEV', 'FAILS_QA', 'STARTED']:
             # FAILS_QA, ON_DEV: bugzilla.redhat.com
             # STARTED: OOO Issuezilla
-           malone_status = BugTaskStatus.INPROGRESS
+            malone_status = BugTaskStatus.INPROGRESS
         elif remote_status in ['NEEDINFO', 'NEEDINFO_REPORTER',
                                'WAITING', 'SUSPENDED']:
             # NEEDINFO_REPORTER: bugzilla.redhat.com
@@ -312,7 +504,8 @@ class Bugzilla(ExternalBugTracker):
             #   though SUSPENDED applies to something pending discussion
             #   in a larger/separate context.
             malone_status = BugTaskStatus.INCOMPLETE
-        elif remote_status in ['PENDINGUPLOAD', 'MODIFIED', 'RELEASE_PENDING', 'ON_QA']:
+        elif (remote_status in
+            ['PENDINGUPLOAD', 'MODIFIED', 'RELEASE_PENDING', 'ON_QA']):
             # RELEASE_PENDING, MODIFIED, ON_QA: bugzilla.redhat.com
             malone_status = BugTaskStatus.FIXCOMMITTED
         elif remote_status in ['REJECTED']:
@@ -343,7 +536,7 @@ class Bugzilla(ExternalBugTracker):
         elif remote_status in ['UNCONFIRMED']:
             malone_status = BugTaskStatus.NEW
         else:
-            log.warning(
+            self.warning(
                 "Unknown Bugzilla status '%s' at %s." % (
                     remote_status, self.baseurl))
             malone_status = BugTaskStatus.UNKNOWN
@@ -351,22 +544,29 @@ class Bugzilla(ExternalBugTracker):
         return malone_status
 
     def initializeRemoteBugDB(self, bug_ids):
-        """See ExternalBugTracker."""
+        """See `ExternalBugTracker`.
+
+        This method is overriden so that Bugzilla version issues can be
+        accounted for.
+        """
         if self.version is None:
             self.version = self._probe_version()
 
-        try:
-            # Get rid of trailing -rh, -debian, etc.
-            version = self.version.split("-")[0]
-            # Ignore plusses in the version.
-            version = version.replace("+", "")
-            # We need to convert the version to a tuple of integers if
-            # we are to compare it correctly.
-            version = tuple(int(x) for x in version.split("."))
-        except ValueError:
-            raise UnparseableBugTrackerVersion(
-                'Failed to parse version %r for %s' % (self.version, self.baseurl))
+        super(Bugzilla, self).initializeRemoteBugDB(bug_ids)
 
+    def getRemoteBug(self, bug_id):
+        """See `ExternalBugTracker`."""
+        return (bug_id, self.getRemoteBugBatch([bug_id]))
+
+    def getRemoteBugBatch(self, bug_ids):
+        """See `ExternalBugTracker`."""
+        # XXX: GavinPanella 2007-10-25 bug=153532: The modification of
+        # self.remote_bug_status later on is a side-effect that should
+        # really not be in this method, but for the fact that
+        # getRemoteStatus needs it at other times. Perhaps
+        # getRemoteBug and getRemoteBugBatch could return RemoteBug
+        # objects which have status properties that would replace
+        # getRemoteStatus.
         if self.is_issuezilla:
             buglist_page = 'xml.cgi'
             data = {'download_type' : 'browser',
@@ -379,7 +579,7 @@ class Bugzilla(ExternalBugTracker):
             id_tag = 'issue_id'
             status_tag = 'issue_status'
             resolution_tag = 'resolution'
-        elif version < (2, 16):
+        elif self.version < (2, 16):
             buglist_page = 'xml.cgi'
             data = {'id': ','.join(bug_ids)}
             bug_tag = 'bug'
@@ -392,7 +592,7 @@ class Bugzilla(ExternalBugTracker):
                     'bug_id_type' : 'include',
                     'bug_id'      : ','.join(bug_ids),
                     }
-            if version < (2, 17, 1):
+            if self.version < (2, 17, 1):
                 data.update({'format' : 'rdf'})
             else:
                 data.update({'ctype'  : 'rdf'})
@@ -408,7 +608,6 @@ class Bugzilla(ExternalBugTracker):
             raise UnparseableBugData('Failed to parse XML description for '
                 '%s bugs %s: %s' % (self.baseurl, bug_ids, e))
 
-        self.remote_bug_status = {}
         bug_nodes = document.getElementsByTagName(bug_tag)
         for bug_node in bug_nodes:
             # We use manual iteration to pick up id_tags instead of
@@ -429,8 +628,8 @@ class Bugzilla(ExternalBugTracker):
             bug_id = str(bug_id_node.childNodes[0].data)
             # This assertion comes in late so we can at least tell what
             # bug caused this crash.
-            assert len(bug_id_nodes) == 1, \
-                "Should be only one id node, but %s had %s." % (bug_id, len(bug_id_nodes))
+            assert len(bug_id_nodes) == 1, ("Should be only one id node, "
+                "but %s had %s." % (bug_id, len(bug_id_nodes)))
 
             status_nodes = bug_node.getElementsByTagName(status_tag)
             if not status_nodes:
@@ -459,6 +658,15 @@ class Bugzilla(ExternalBugTracker):
                     status += ' %s' % resolution
             self.remote_bug_status[bug_id] = status
 
+    def getRemoteImportance(self, bug_id):
+        """See `ExternalBugTracker`.
+
+        This method is implemented here as a stub to ensure that
+        existing functionality is preserved. As a result,
+        UNKNOWN_REMOTE_IMPORTANCE will always be returned.
+        """
+        return UNKNOWN_REMOTE_IMPORTANCE
+
     def getRemoteStatus(self, bug_id):
         """See ExternalBugTracker."""
         if not bug_id.isdigit():
@@ -478,36 +686,42 @@ debbugsstatusmap = {'open':      BugTaskStatus.NEW,
                     'forwarded': BugTaskStatus.CONFIRMED,
                     'done':      BugTaskStatus.FIXRELEASED}
 
+
+class DebBugsDatabaseNotFound(BugTrackerConnectError):
+    """The Debian bug database was not found."""
+
+
 class DebBugs(ExternalBugTracker):
     """A class that deals with communications with a debbugs db."""
 
-    implements(IExternalBugtracker)
+    implements(ISupportsCommentImport)
 
     # We don't support different versions of debbugs.
     version = None
     debbugs_pl = os.path.join(
         os.path.dirname(debbugs.__file__), 'debbugs-log.pl')
 
-    def __init__(self, db_location=None):
+    def __init__(self, txn, bugtracker, db_location=None):
+        super(DebBugs, self).__init__(txn, bugtracker)
         if db_location is None:
             self.db_location = config.malone.debbugs_db_location
         else:
             self.db_location = db_location
 
         if not os.path.exists(os.path.join(self.db_location, 'db-h')):
-            log.error("There's no debbugs db at %s." % self.db_location)
-            self.debbugs_db = None
-            return
+            raise DebBugsDatabaseNotFound(
+                self.db_location, '"db-h" not found.')
 
         # The debbugs database is split in two parts: a current
-        # database, which is kept under the 'db-h' directory, and the
-        # archived database, which is kept under 'archive'. The archived
-        # database is used as a fallback, as you can see in getRemoteStatus
-        self.debbugs_db = debbugs.Database(self.db_location, self.debbugs_pl)
+        # database, which is kept under the 'db-h' directory, and
+        # the archived database, which is kept under 'archive'. The
+        # archived database is used as a fallback, as you can see in
+        # getRemoteStatus
+        self.debbugs_db = debbugs.Database(
+            self.db_location, self.debbugs_pl)
         if os.path.exists(os.path.join(self.db_location, 'archive')):
-            self.debbugs_db_archive = debbugs.Database(self.db_location,
-                                                       self.debbugs_pl,
-                                                       subdir="archive")
+            self.debbugs_db_archive = debbugs.Database(
+                self.db_location, self.debbugs_pl, subdir="archive")
 
     def initializeRemoteBugDB(self, bug_ids):
         """See `ExternalBugTracker`.
@@ -516,9 +730,14 @@ class DebBugs(ExternalBugTracker):
         the continuous bug-watch checking spec is implemented.
         """
 
-    @property
-    def baseurl(self):
-        return self.db_location
+    def convertRemoteImportance(self, remote_importance):
+        """See `ExternalBugTracker`.
+
+        This method is implemented here as a stub to ensure that
+        existing functionality is preserved. As a result,
+        BugTaskImportance.UNKNOWN will always be returned.
+        """
+        return BugTaskImportance.UNKNOWN
 
     def convertRemoteStatus(self, remote_status):
         """Convert a debbugs status to a Malone status.
@@ -532,7 +751,7 @@ class DebBugs(ExternalBugTracker):
             return BugTaskStatus.UNKNOWN
         parts = remote_status.split(' ')
         if len(parts) < 2:
-            log.error('Malformed debbugs status: %r.' % remote_status)
+            self.warning('Malformed debbugs status: %r.' % remote_status)
             return BugTaskStatus.UNKNOWN
         status = parts[0]
         severity = parts[1]
@@ -542,7 +761,7 @@ class DebBugs(ExternalBugTracker):
         try:
             malone_status = debbugsstatusmap[status]
         except KeyError:
-            log.warn('Unknown debbugs status "%s".' % status)
+            self.warning('Unknown debbugs status "%s".' % status)
             malone_status = BugTaskStatus.UNKNOWN
         if status == 'open':
             confirmed_tags = [
@@ -564,8 +783,6 @@ class DebBugs(ExternalBugTracker):
         return malone_status
 
     def _findBug(self, bug_id):
-        if self.debbugs_db is None:
-            raise BugNotFound(bug_id)
         if not bug_id.isdigit():
             raise InvalidBugId(
                 "Debbugs bug number not an integer: %s" % bug_id)
@@ -581,6 +798,36 @@ class DebBugs(ExternalBugTracker):
 
         return debian_bug
 
+    def _loadLog(self, debian_bug):
+        """Load the debbugs comment log for a given bug.
+
+        This method is analogous to _findBug() in that if the comment
+        log cannot be loaded from the main database it will attempt to
+        load the log from the archive database.
+
+        If no comment log can be found, a debbugs.LogParseFailed error
+        will be raised.
+        """
+        # If we can't find the log in the main database we try the
+        # archive.
+        try:
+            self.debbugs_db.load_log(debian_bug)
+        except debbugs.LogParseFailed:
+            # If there is no log for this bug in the archive a
+            # LogParseFailed error will be raised. However, we let that
+            # propagate upwards since we need to make the callsite deal
+            # with the fact that there's no log to parse.
+            self.debbugs_db_archive.load_log(debian_bug)
+
+    def getRemoteImportance(self, bug_id):
+        """See `ExternalBugTracker`.
+
+        This method is implemented here as a stub to ensure that
+        existing functionality is preserved. As a result,
+        UNKNOWN_REMOTE_IMPORTANCE will always be returned.
+        """
+        return UNKNOWN_REMOTE_IMPORTANCE
+
     def getRemoteStatus(self, bug_id):
         """See ExternalBugTracker."""
         debian_bug = self._findBug(bug_id)
@@ -592,6 +839,78 @@ class DebBugs(ExternalBugTracker):
         new_remote_status = ' '.join(
             [debian_bug.status, severity] + debian_bug.tags)
         return new_remote_status
+
+    def importBug(self, bug_target, remote_bug):
+        """Import a remote bug into Launchpad."""
+        assert IDistribution.providedBy(bug_target), (
+            'We assume debbugs is used only by a distribution (Debian).')
+        debian_bug = self._findBug(remote_bug)
+        reporter_name, reporter_email = parseaddr(debian_bug.originator)
+        reporter = getUtility(IPersonSet).ensurePerson(
+            reporter_email, reporter_name, PersonCreationRationale.BUGIMPORT,
+            comment='when importing debbugs bug #%s' % remote_bug)
+        package = bug_target.getSourcePackage(debian_bug.package)
+        if package is not None:
+            bug_target = package
+        else:
+            # Debbugs requires all bugs to be targeted to a package, so
+            # it shouldn't be empty.
+            self.warning(
+                'Unknown Debian package (debbugs #%s): %s' % (
+                    remote_bug, debian_bug.package))
+        bug = bug_target.createBug(
+            CreateBugParams(
+                reporter, debian_bug.subject, debian_bug.description,
+                subscribe_reporter=False))
+
+        [debian_task] = bug.bugtasks
+        bug_watch = getUtility(IBugWatchSet).createBugWatch(
+            bug=bug,
+            owner=getUtility(ILaunchpadCelebrities).bug_watch_updater,
+            bugtracker=self.bugtracker, remotebug=remote_bug)
+
+        debian_task.bugwatch = bug_watch
+        # Need to flush databse updates, so that the bug watch knows it
+        # is linked from a bug task.
+        flush_database_updates()
+
+        return bug
+
+    def getCommentIds(self, bug_watch):
+        """Return all the comment IDs for a given remote bug."""
+        debian_bug = self._findBug(bug_watch.remotebug)
+        self._loadLog(debian_bug)
+
+        comment_ids = []
+        for comment in debian_bug.comments:
+            parsed_comment = email.message_from_string(comment)
+            comment_ids.append(parsed_comment['message-id'])
+
+        return comment_ids
+
+    def getPosterForComment(self, bug_watch, comment_id):
+        """Return a tuple of (name, emailaddress) for a comment's poster."""
+        debian_bug = self._findBug(bug_watch.remotebug)
+        self._loadLog(debian_bug)
+
+        for comment in debian_bug.comments:
+            parsed_comment = email.message_from_string(comment)
+            if parsed_comment['message-id'] == comment_id:
+                return parseaddr(parsed_comment['from'])
+
+    def getMessageForComment(self, bug_watch, comment_id, poster):
+        """Return a Message object for a comment."""
+        debian_bug = self._findBug(bug_watch.remotebug)
+        self._loadLog(debian_bug)
+
+        for comment in debian_bug.comments:
+            parsed_comment = email.message_from_string(comment)
+            if parsed_comment['message-id'] == comment_id:
+                message = getUtility(IMessageSet).fromEmail(comment, poster,
+                    parsed_message=parsed_comment)
+
+                commit()
+                return message
 
 #
 # Mantis
@@ -623,8 +942,7 @@ class MantisLoginHandler(ClientCookie.HTTPRedirectHandler):
         # urllib2 (and does subclass it), so this is probably a
         # bug. -- Gavin Panella, 2007-08-27
 
-        scheme, host, path, params, query, fragment = (
-            urlparse.urlparse(newurl))
+        scheme, host, path, params, query, fragment = urlparse(newurl)
 
         # If we can, skip the login page and submit credentials
         # directly. The query should contain a 'return' parameter
@@ -637,10 +955,11 @@ class MantisLoginHandler(ClientCookie.HTTPRedirectHandler):
             query = cgi.parse_qs(query, True)
             query['username'] = query['password'] = ['guest']
             if 'return' not in query:
-                log.warn("Mantis redirected us to the login page "
+                self.warning(
+                    "Mantis redirected us to the login page "
                     "but did not set a return path.")
             query = urllib.urlencode(query, True)
-            newurl = urlparse.urlunparse(
+            newurl = urlunparse(
                 (scheme, host, path, params, query, fragment))
 
         # XXX: Previous versions of the Mantis external bug tracker
@@ -657,38 +976,15 @@ class MantisLoginHandler(ClientCookie.HTTPRedirectHandler):
 
 
 class Mantis(ExternalBugTracker):
-    # Example sites (tested 2007-08-2X):            Version      Scrape  CSV Export
-    #   http://www.atutor.ca/atutor/mantis/         1.0.7        NOT OK  NOT OK (no anon access)
-    #   http://bugs.mantisbt.org/                   1.1.0a4-CVS  OK      OK
-    #   http://bugs.endian.it/                      -            OK      OK
-    #   http://www.co-ode.org/mantis/               1.0.0rc1     OK      OK
-    #   http://acme.able.cs.cmu.edu/mantis/         1.0.6        OK      OK
-    #   http://bugs.netmrg.net/                     1.0.7        OK      OK
-    #   http://bugs.busybox.net/                    ??? 2006     OK      NOT OK (empty)
-    #   https://bugtrack.alsa-project.org/alsa-bug/ 1.0.6        OK      NOT OK (empty)
-    #   https://gnunet.org/mantis/                  ??? 2006     OK      OK
-    #   http://www.futureware.biz/mantisdemo/       1.1.0rc1-CVS OK      OK
+    """An `ExternalBugTracker` for dealing with Mantis instances.
+
+    For a list of tested Mantis instances and their behaviour when
+    exported from, see http://launchpad.canonical.com/MantisBugtrackers.
+    """
 
     # Custom opener that automatically sends anonymous credentials to
     # Mantis if (and only if) needed.
     _opener = ClientCookie.build_opener(MantisLoginHandler)
-
-    def __init__(self, baseurl, use_csv_export=False):
-        self.baseurl = baseurl.rstrip('/')
-
-        # Use the CSV export method to get bug statuses. This is
-        # disabled by default because there have been problems with
-        # some Mantis installations sending empty exports.
-        self.use_csv_export = use_csv_export
-        if self.use_csv_export:
-            # Bugs maps an integer bug ID to a dictionary with bug
-            # data that we snarf from the CSV. We use an integer bug
-            # ID because the bug ID for mantis comes prefixed with a
-            # bunch of zeroes and it could get hard to match if we
-            # really wanted to format it exactly the same (and also
-            # because of the way we split lines below in
-            # initializeRemoteBugDB().
-            self.bugs = {}
 
     def urlopen(self, request, data=None):
         # We use ClientCookie to make following cookies transparent.
@@ -700,23 +996,13 @@ class Mantis(ExternalBugTracker):
         # authentication.
         return self._opener.open(request, data)
 
-    def initializeRemoteBugDB(self, bug_ids):
-        if self.use_csv_export:
-            self._fetchCSVExport(bug_ids)
+    @cachedproperty
+    def csv_data(self):
+        """Attempt to retrieve a CSV export from the remote server.
 
-    def _fetchCSVExport(self, bug_ids):
-        # It's unfortunate that Mantis offers no way of limiting its CSV
-        # export to a set of bugs; we end up having to pull the CSV for
-        # the entire bugtracker at once (and some of them actually blow
-        # up in the process!); this is why we ignore the bug_ids
-        # argument here.
-
-        if not bug_ids:
-            # Well, not completely: if we have no ids to refresh from
-            # this Mantis instance, don't even start the process and
-            # save us some time and bandwidth.
-            return
-
+        If the export fails (i.e. the response is 0-length), None will
+        be returned.
+        """
         # Next step is getting our query filter cookie set up; we need
         # to do this weird submit in order to get the closed bugs
         # included in the results; the default Mantis filter excludes
@@ -764,9 +1050,76 @@ class Mantis(ExternalBugTracker):
         # MANTIS_VIEW_ALL_COOKIE set in the previous step to specify
         # what's being viewed.
         csv_data = self._getPage("csv_export.php")
-        # We store CSV in the instance just to make debugging easier.
-        self.csv_data = csv_data
 
+        if not csv_data:
+            return None
+        else:
+            return csv_data
+
+    def canUseCSVExports(self):
+        """Return True if a Mantis instance supports CSV exports.
+
+        If the Mantis instance cannot or does not support CSV exports,
+        False will be returned.
+        """
+        return self.csv_data is not None
+
+    def initializeRemoteBugDB(self, bug_ids):
+        """See `ExternalBugTracker`.
+
+        This method is overridden so that it can take into account the
+        fact that not all Mantis instances support CSV exports. In
+        those cases all bugs will be imported individually, regardless
+        of how many there are.
+        """
+        self.bugs = {}
+
+        if (len(bug_ids) > self.batch_query_threshold and
+            self.canUseCSVExports()):
+            # We only query for batches of bugs if the remote Mantis
+            # instance supports CSV exports, otherwise we default to
+            # screen-scraping on a per bug basis regardless of how many bugs
+            # there are to retrieve.
+            self.bugs = self.getRemoteBugBatch(bug_ids)
+        else:
+            for bug_id in bug_ids:
+                bug_id, remote_bug = self.getRemoteBug(bug_id)
+
+                if bug_id is not None:
+                    self.bugs[bug_id] = remote_bug
+
+    def getRemoteBug(self, bug_id):
+        """See `ExternalBugTracker`."""
+        # Only parse tables to save time and memory. If we didn't have
+        # to check for application errors in the page (using
+        # _checkForApplicationError) then we could be much more
+        # specific than this.
+        bug_page = BeautifulSoup(
+            self._getPage('view.php?id=%s' % bug_id),
+            convertEntities=BeautifulSoup.HTML_ENTITIES,
+            parseOnlyThese=SoupStrainer('table'))
+
+        app_error = self._checkForApplicationError(bug_page)
+        if app_error:
+            app_error_code, app_error_message = app_error
+            # 1100 is ERROR_BUG_NOT_FOUND in Mantis (see
+            # mantisbt/core/constant_inc.php).
+            if app_error_code == '1100':
+                return None, None
+            else:
+                raise BugWatchUpdateError(
+                    "Mantis APPLICATION ERROR #%s: %s" % (
+                    app_error_code, app_error_message))
+
+        bug = {
+            'id': bug_id,
+            'status': self._findValueRightOfKey(bug_page, 'Status'),
+            'resolution': self._findValueRightOfKey(bug_page, 'Resolution')}
+
+        return int(bug_id), bug
+
+    def getRemoteBugBatch(self, bug_ids):
+        """See `ExternalBugTracker`."""
         # You may find this zero in "\r\n0" funny. Well I don't. This is
         # to work around the fact that Mantis' CSV export doesn't cope
         # with the fact that the bug summary can contain embedded "\r\n"
@@ -775,7 +1128,7 @@ class Mantis(ExternalBugTracker):
         # same number as fields as the header.
         # XXX: kiko 2007-07-05: Report Mantis bug.
         # XXX: allenap 2007-09-06: Reported in LP as bug #137780.
-        csv_data = csv_data.strip().split("\r\n0")
+        csv_data = self.csv_data.strip().split("\r\n0")
 
         if not csv_data:
             raise UnparseableBugData("Empty CSV for %s" % self.baseurl)
@@ -798,14 +1151,20 @@ class Mantis(ExternalBugTracker):
                                      % self.baseurl)
 
         try:
+            bugs = {}
             # Using the CSV reader is pretty much essential since the
             # data that comes back can include title text which can in
             # turn contain field separators -- you don't want to handle
             # the unquoting yourself.
             for bug_line in csv.reader(csv_data):
-                self._processCSVBugLine(bug_line)
-        except csv.Error, e:
-            log.warn("Exception parsing CSV file: %s." % e)
+                bug = self._processCSVBugLine(bug_line)
+                bugs[int(bug['id'])] = bug
+
+            return bugs
+
+        except csv.Error, error:
+            raise UnparseableBugData(
+                "Exception parsing CSV file: %s." % error)
 
     def _processCSVBugLine(self, bug_line):
         """Processes a single line of the CSV.
@@ -818,22 +1177,22 @@ class Mantis(ExternalBugTracker):
             try:
                 data = bug_line.pop(0)
             except IndexError:
-                log.warn("Line '%r' incomplete." % bug_line)
+                self.warning("Line '%r' incomplete." % bug_line)
                 return
             bug[header] = data
         for field in required_fields:
             if field not in bug:
-                log.warn("Bug %s lacked field '%r'." % (bug['id'], field))
+                self.warning("Bug %s lacked field '%r'." % (bug['id'], field))
                 return
             try:
                 # See __init__ for an explanation of why we use integer
                 # IDs in the internal data structure.
                 bug_id = int(bug['id'])
             except ValueError:
-                log.warn("Encountered invalid bug ID: %r." % bug['id'])
+                self.warning("Encountered invalid bug ID: %r." % bug['id'])
                 return
 
-        self.bugs[bug_id] = bug
+        return bug
 
     def _checkForApplicationError(self, page_soup):
         """If Mantis does not find the bug it still returns a 200 OK
@@ -948,21 +1307,30 @@ class Mantis(ExternalBugTracker):
 
         return value_node.strip()
 
+    def getRemoteImportance(self, bug_id):
+        """See `ExternalBugTracker`.
+
+        This method is implemented here as a stub to ensure that
+        existing functionality is preserved. As a result,
+        UNKNOWN_REMOTE_IMPORTANCE will always be returned.
+        """
+        return UNKNOWN_REMOTE_IMPORTANCE
+
     def getRemoteStatus(self, bug_id):
         if not bug_id.isdigit():
             raise InvalidBugId(
                 "Mantis (%s) bug number not an integer: %s" % (
                     self.baseurl, bug_id))
 
-        if self.use_csv_export:
-            status, resolution = self._getStatusFromCSV(bug_id)
-        else:
-            status, resolution = self._getStatusFromScrape(bug_id)
+        try:
+            bug = self.bugs[int(bug_id)]
+        except KeyError:
+            raise BugNotFound(bug_id)
 
         # Use a colon and a space to join status and resolution because
         # there is a chance that statuses contain spaces, and because
         # it makes display of the data nicer.
-        return "%s: %s" % (status, resolution)
+        return "%(status)s: %(resolution)s" % bug
 
     def _getStatusFromCSV(self, bug_id):
         try:
@@ -972,40 +1340,22 @@ class Mantis(ExternalBugTracker):
         else:
             return bug['status'], bug['resolution']
 
-    def _getStatusFromScrape(self, bug_id):
-        # Only parse tables to save time and memory. If we didn't have
-        # to check for application errors in the page (using
-        # _checkForApplicationError) then we could be much more
-        # specific than this.
-        bug_page = BeautifulSoup(
-            self._getPage('view.php?id=%s' % bug_id),
-            convertEntities=BeautifulSoup.HTML_ENTITIES,
-            parseOnlyThese=SoupStrainer('table'))
+    def convertRemoteImportance(self, remote_importance):
+        """See `ExternalBugTracker`.
 
-        app_error = self._checkForApplicationError(bug_page)
-        if app_error:
-            app_error_code, app_error_message = app_error
-            # 1100 is ERROR_BUG_NOT_FOUND in Mantis (see
-            # mantisbt/core/constant_inc.php) so we raise
-            # BugNotFound.
-            if app_error_code == '1100':
-                raise BugNotFound(bug_id)
-            else:
-                raise BugWatchUpdateError(
-                    "Mantis APPLICATION ERROR #%s: %s" % (
-                    app_error_code, app_error_message))
-
-        status = self._findValueRightOfKey(bug_page, 'Status')
-        resolution = self._findValueRightOfKey(bug_page, 'Resolution')
-
-        return status, resolution
+        This method is implemented here as a stub to ensure that
+        existing functionality is preserved. As a result,
+        BugTaskImportance.UNKNOWN will always be returned.
+        """
+        return BugTaskImportance.UNKNOWN
 
     def convertRemoteStatus(self, status_and_resolution):
         if (not status_and_resolution or
             status_and_resolution == UNKNOWN_REMOTE_STATUS):
             return BugTaskStatus.UNKNOWN
 
-        remote_status, remote_resolution = status_and_resolution.split(": ", 1)
+        remote_status, remote_resolution = status_and_resolution.split(
+            ": ", 1)
 
         if remote_status == 'assigned':
             return BugTaskStatus.INPROGRESS
@@ -1032,8 +1382,8 @@ class Mantis(ExternalBugTracker):
                 # XXX: kiko 2007-07-05: Pretty inconsistently used
                 return BugTaskStatus.FIXRELEASED
 
-        log.warn("Unknown status/resolution %s/%s." %
-                 (remote_status, remote_resolution))
+        self.warning("Unknown status/resolution %s/%s." %
+                     (remote_status, remote_resolution))
         return BugTaskStatus.UNKNOWN
 
 
@@ -1042,13 +1392,10 @@ class Trac(ExternalBugTracker):
 
     ticket_url = 'ticket/%i?format=csv'
     batch_url = 'query?%s&order=resolution&format=csv'
-    batch_query_threshold = 10
 
-    def __init__(self, baseurl):
-        # Trac can be really finicky about slashes in URLs, so we strip any
-        # trailing slashes to ensure we don't incur its wrath in the form of
-        # a 404.
-        self.baseurl = baseurl.rstrip('/')
+    def __init__(self, txn, bugtracker):
+        super(Trac, self).__init__(txn, bugtracker)
+        self.batch_query_threshold = 10
 
     def supportsSingleExports(self, bug_ids):
         """Return True if the Trac instance provides CSV exports for single
@@ -1089,7 +1436,7 @@ class Trac(ExternalBugTracker):
             return False
 
     def getRemoteBug(self, bug_id):
-        """See `ExternalBugTracker`.""" 
+        """See `ExternalBugTracker`."""
         bug_id = int(bug_id)
         query_url = "%s/%s" % (self.baseurl, self.ticket_url % bug_id)
         reader = csv.DictReader(self._fetchPage(query_url))
@@ -1124,11 +1471,11 @@ class Trac(ExternalBugTracker):
         BugTrackerConnectError will be raised.
         """
         self.bugs = {}
-        # When there are less than batch_query_threshold bugs to update we
-        # make one request per bug id to the remote bug tracker, providing it
-        # supports CSV exports per-ticket. If the Trac instance doesn't support
-        # exports-per-ticket we fail over to using the batch export method for
-        # retrieving bug statuses.
+        # When there are less than batch_query_threshold bugs to update
+        # we make one request per bug id to the remote bug tracker,
+        # providing it supports CSV exports per-ticket. If the Trac
+        # instance doesn't support exports-per-ticket we fail over to
+        # using the batch export method for retrieving bug statuses.
         if (len(bug_ids) < self.batch_query_threshold and
             self.supportsSingleExports(bug_ids)):
             for bug_id in bug_ids:
@@ -1137,10 +1484,20 @@ class Trac(ExternalBugTracker):
                 remote_id, remote_bug = self.getRemoteBug(bug_id)
                 self.bugs[remote_id] = remote_bug
 
-        # For large lists of bug ids we retrieve bug statuses as a batch from
-        # the remote bug tracker so as to avoid effectively DOSing it.
+        # For large lists of bug ids we retrieve bug statuses as a batch
+        # from the remote bug tracker so as to avoid effectively DOSing
+        # it.
         else:
             self.bugs = self.getRemoteBugBatch(bug_ids)
+
+    def getRemoteImportance(self, bug_id):
+        """See `ExternalBugTracker`.
+
+        This method is implemented here as a stub to ensure that
+        existing functionality is preserved. As a result,
+        UNKNOWN_REMOTE_IMPORTANCE will always be returned.
+        """
+        return UNKNOWN_REMOTE_IMPORTANCE
 
     def getRemoteStatus(self, bug_id):
         """Return the remote status for the given bug id.
@@ -1170,17 +1527,28 @@ class Trac(ExternalBugTracker):
             except KeyError:
                 # Some Trac instances don't include the bug status in their
                 # CSV exports. In those cases we raise a warning.
-                log.warn("Trac ticket %i defines no status." % bug_id)
+                self.warning("Trac ticket %i defines no status." % bug_id)
                 return UNKNOWN_REMOTE_STATUS
 
+    def convertRemoteImportance(self, remote_importance):
+        """See `ExternalBugTracker`.
+
+        This method is implemented here as a stub to ensure that
+        existing functionality is preserved. As a result,
+        BugTaskImportance.UNKNOWN will always be returned.
+        """
+        return BugTaskImportance.UNKNOWN
+
     def convertRemoteStatus(self, remote_status):
-        """See IExternalBugTracker"""
+        """See `IExternalBugTracker`"""
         status_map = {
+            'accepted': BugTaskStatus.CONFIRMED,
             'assigned': BugTaskStatus.CONFIRMED,
             # XXX: 2007-08-06 Graham Binns:
             #      We should follow dupes if possible.
             'duplicate': BugTaskStatus.CONFIRMED,
             'fixed': BugTaskStatus.FIXRELEASED,
+            'closed': BugTaskStatus.FIXRELEASED,
             'invalid': BugTaskStatus.INVALID,
             'new': BugTaskStatus.NEW,
             'open': BugTaskStatus.NEW,
@@ -1193,11 +1561,55 @@ class Trac(ExternalBugTracker):
         try:
             return status_map[remote_status]
         except KeyError:
-            log.warn("Unknown remote status '%s'." % remote_status)
+            self.warning("Unknown remote status '%s'." % remote_status)
             return BugTaskStatus.UNKNOWN
+
 
 class Roundup(ExternalBugTracker):
     """An ExternalBugTracker descendant for handling Roundup bug trackers."""
+
+    def __init__(self, txn, bugtracker):
+        """Create a new Roundup instance.
+
+        :bugtracker: The Roundup bugtracker.
+
+        If the bug tracker's baseurl is one which points to
+        bugs.python.org, the behaviour of the Roundup bugtracker will be
+        different from that which it exhibits to every other Roundup bug
+        tracker, since the Python Roundup instance is very specific to
+        Python and in fact behaves rather more like SourceForge than
+        Roundup.
+        """
+        super(Roundup, self).__init__(txn, bugtracker)
+
+        if self.isPython():
+            # The bug export URLs differ only from the base Roundup ones
+            # insofar as they need to include the resolution column in
+            # order for us to be able to successfully export it.
+            self.single_bug_export_url = (
+                "issue?@action=export_csv&@columns=title,id,activity,"
+                "status,resolution&@sort=id&@group=priority&@filter=id"
+                "&@pagesize=50&@startwith=0&id=%i")
+            self.batch_bug_export_url = (
+                "issue?@action=export_csv&@columns=title,id,activity,"
+                "status,resolution&@sort=activity&@group=priority"
+                "&@pagesize=50&@startwith=0")
+        else:
+            # XXX: 2007-08-29 Graham Binns
+            #      I really don't like these URLs but Roundup seems to
+            #      be very sensitive to changing them. These are the
+            #      only ones that I can find that work consistently on
+            #      all the roundup instances I can find to test them
+            #      against, but I think that refining these should be
+            #      looked into at some point.
+            self.single_bug_export_url = (
+                "issue?@action=export_csv&@columns=title,id,activity,"
+                "status&@sort=id&@group=priority&@filter=id"
+                "&@pagesize=50&@startwith=0&id=%i")
+            self.batch_bug_export_url = (
+                "issue?@action=export_csv&@columns=title,id,activity,"
+                "status&@sort=activity&@group=priority&@pagesize=50"
+                "&@startwith=0")
 
     @property
     def status_map(self):
@@ -1256,50 +1668,6 @@ class Roundup(ExternalBugTracker):
                 8: BugTaskStatus.FIXRELEASED,  # Roundup status 'resolved'
                 UNKNOWN_REMOTE_STATUS: BugTaskStatus.UNKNOWN}
 
-
-    def __init__(self, baseurl):
-        """Create a new Roundup instance.
-
-        :baseurl: The base url (including protocol) for the Roundup
-            bugtracker. Trailing slashes will be removed from this.
-
-        If the baseurl passed is one which points to bugs.python.org,
-        the behaviour of the Roundup bugtracker will be different from
-        that which it exhibits to every other Roundup bug tracker, since
-        the Python Roundup instance is very specific to Python and in
-        fact behaves rather more like SourceForge than Roundup.
-        """
-        self.baseurl = baseurl.rstrip('/')
-
-        if self.isPython():
-            # The bug export URLs differ only from the base Roundup ones
-            # insofar as they need to include the resolution column in
-            # order for us to be able to successfully export it.
-            self.single_bug_export_url = (
-                "issue?@action=export_csv&@columns=title,id,activity,"
-                "status,resolution&@sort=id&@group=priority&@filter=id"
-                "&@pagesize=50&@startwith=0&id=%i")
-            self.batch_bug_export_url = (
-                "issue?@action=export_csv&@columns=title,id,activity,"
-                "status,resolution&@sort=activity&@group=priority"
-                "&@pagesize=50&@startwith=0")
-        else:
-            # XXX: 2007-08-29 Graham Binns
-            #      I really don't like these URLs but Roundup seems to
-            #      be very sensitive to changing them. These are the
-            #      only ones that I can find that work consistently on
-            #      all the roundup instances I can find to test them
-            #      against, but I think that refining these should be
-            #      looked into at some point.
-            self.single_bug_export_url = (
-                "issue?@action=export_csv&@columns=title,id,activity,"
-                "status&@sort=id&@group=priority&@filter=id"
-                "&@pagesize=50&@startwith=0&id=%i")
-            self.batch_bug_export_url = (
-                "issue?@action=export_csv&@columns=title,id,activity,"
-                "status&@sort=activity&@group=priority&@pagesize=50"
-                "&@startwith=0")
-
     def isPython(self):
         """Return True if the remote bug tracker is at bugs.python.org.
 
@@ -1356,6 +1724,15 @@ class Roundup(ExternalBugTracker):
 
         return bugs
 
+    def getRemoteImportance(self, bug_id):
+        """See `ExternalBugTracker`.
+
+        This method is implemented here as a stub to ensure that
+        existing functionality is preserved. As a result,
+        UNKNOWN_REMOTE_IMPORTANCE will always be returned.
+        """
+        return UNKNOWN_REMOTE_IMPORTANCE
+
     def getRemoteStatus(self, bug_id):
         """See `ExternalBugTracker`."""
         remote_bug = self._getBug(bug_id)
@@ -1382,6 +1759,15 @@ class Roundup(ExternalBugTracker):
                 raise UnparseableBugData(
                     "Remote bug %s does not define a status.")
 
+    def convertRemoteImportance(self, remote_importance):
+        """See `ExternalBugTracker`.
+
+        This method is implemented here as a stub to ensure that
+        existing functionality is preserved. As a result,
+        BugTaskImportance.UNKNOWN will always be returned.
+        """
+        return BugTaskImportance.UNKNOWN
+
     def convertRemoteStatus(self, remote_status):
         """See `IExternalBugTracker`."""
         # XXX: 2007-09-04 Graham Binns
@@ -1400,7 +1786,7 @@ class Roundup(ExternalBugTracker):
             try:
                 return self.status_map[int(remote_status)]
             except (KeyError, ValueError):
-                log.warn("Unknown remote status '%s'." % remote_status)
+                self.warning("Unknown remote status '%s'." % remote_status)
                 return BugTaskStatus.UNKNOWN
 
     def _convertPythonRemoteStatus(self, remote_status):
@@ -1424,7 +1810,7 @@ class Roundup(ExternalBugTracker):
             # If we can't find the status in our status map we can give
             # up now.
             if not self.status_map.has_key(status):
-                log.warn("Unknown remote status '%s'." % remote_status)
+                self.warning("Unknown remote status '%s'." % remote_status)
                 return BugTaskStatus.UNKNOWN
         except ValueError:
             raise AssertionError("The remote status must be an integer.")
@@ -1445,17 +1831,20 @@ class Roundup(ExternalBugTracker):
         elif self.status_map[1].has_key(resolution):
             return self.status_map[1][resolution]
         else:
-            log.warn("Unknown remote status '%s'." % remote_status)
+            self.warning("Unknown remote status '%s'." % remote_status)
             return BugTaskStatus.UNKNOWN
 
 
 class SourceForge(ExternalBugTracker):
     """An ExternalBugTracker for SourceForge bugs."""
 
+    # We only allow ourselves to update one SourceForge bug at a time to
+    # avoid getting clobbered by SourceForge's rate limiting code.
     export_url = 'support/tracker.php?aid=%s'
+    batch_size = 1
 
-    def __init__(self, baseurl):
-        self.baseurl = baseurl.rstrip('/')
+    def __init__(self, txn, bugtracker):
+        super(SourceForge, self).__init__(txn, bugtracker)
 
     def initializeRemoteBugDB(self, bug_ids):
         """See `ExternalBugTracker`.
@@ -1504,6 +1893,15 @@ class SourceForge(ExternalBugTracker):
                 'status': status,
                 'resolution': resolution}
 
+    def getRemoteImportance(self, bug_id):
+        """See `ExternalBugTracker`.
+
+        This method is implemented here as a stub to ensure that
+        existing functionality is preserved. As a result,
+        UNKNOWN_REMOTE_IMPORTANCE will always be returned.
+        """
+        return UNKNOWN_REMOTE_IMPORTANCE
+
     def getRemoteStatus(self, bug_id):
         """See `ExternalBugTracker`."""
         try:
@@ -1523,6 +1921,14 @@ class SourceForge(ExternalBugTracker):
             raise UnparseableBugData(
                 "Remote bug %i does not define a status." % bug_id)
 
+    def convertRemoteImportance(self, remote_importance):
+        """See `ExternalBugTracker`.
+
+        This method is implemented here as a stub to ensure that
+        existing functionality is preserved. As a result,
+        BugTaskImportance.UNKNOWN will always be returned.
+        """
+        return BugTaskImportance.UNKNOWN
 
     def convertRemoteStatus(self, remote_status):
         """See `IExternalBugTracker`."""
@@ -1585,14 +1991,231 @@ class SourceForge(ExternalBugTracker):
             resolution = None
 
         if status not in status_map:
-            log.warn("Unknown status '%s'" % remote_status)
+            self.warning("Unknown status '%s'" % remote_status)
             return BugTaskStatus.UNKNOWN
 
         local_status = status_map[status].get(
             resolution, status_map['Open'].get(resolution))
         if local_status is None:
-            log.warn("Unknown status '%s'" % remote_status)
+            self.warning("Unknown status '%s'" % remote_status)
             return BugTaskStatus.UNKNOWN
         else:
             return local_status
 
+
+class RequestTracker(ExternalBugTracker):
+    """`ExternalBugTracker` subclass for handling RT imports."""
+
+    ticket_url = 'REST/1.0/ticket/%s/show'
+    batch_url = 'REST/1.0/search/ticket/'
+    batch_query_threshold = 1
+
+    @property
+    def credentials(self):
+        """Return the authentication credentials needed to log in.
+
+        If there are specific credentials for the current RT instance,
+        these will be returned. Otherwise the RT default guest
+        credentials (username and password of 'guest') will be returned.
+        """
+        credentials_map = {
+            'rt.cpan.org': {'user': 'launchpad@launchpad.net',
+                            'pass': 'th4t3'}}
+
+        hostname = urlparse(self.baseurl)[1]
+        try:
+            return credentials_map[hostname]
+        except KeyError:
+            return {'user': 'guest', 'pass': 'guest'}
+
+    def _logIn(self, opener):
+        """Attempt to log in to the remote RT service.
+
+        :param opener: An instance of urllib2.OpenerDirector
+            to be used to connect to the remote server.
+
+        If HTTPError or URLErrors are encountered at any point in this
+        process, they will be raised to be caught at the callsite.
+
+        This method is separate from the _opener property so as to allow
+        us to test the _opener property without having to connect to a
+        remote server.
+        """
+        # To log in to an RT instance we must pass a username and
+        # password to its login form, as a user would from the web.
+        opener.open('%s/' % self.baseurl, urllib.urlencode(
+            self.credentials))
+
+    @cachedproperty
+    def _opener(self):
+        """Return a urllib2.OpenerDirector for the remote RT instance.
+
+        An attempt will be made to log in to the remote instance before
+        the opener is returned. If logging in is not successful a
+        BugTrackerConnectError will be raised
+        """
+        opener = urllib2.build_opener(urllib2.HTTPCookieProcessor())
+
+        # Attempt to log in to the remote system. Raise an error if we
+        # can't.
+        try:
+            self._logIn(opener)
+        except (urllib2.HTTPError, urllib2.URLError), error:
+            raise BugTrackerConnectError('%s/' % self.baseurl,
+                "Unable to authenticate with remote RT service: "
+                "Could not submit login form: " +
+                error.message)
+
+        return opener
+
+    def urlopen(self, request, data=None):
+        """Return a handle to a remote resource.
+
+        This method overrides that of `ExternalBugTracker` so that the
+        custom URL opener for RequestTracker instances can be used.
+        """
+        # We create our own opener so as to handle the RT authentication
+        # cookies that need to be passed around.
+        return self._opener.open(request, data)
+
+    def getRemoteBug(self, bug_id):
+        """See `ExternalBugTracker`."""
+        ticket_url = self.ticket_url % str(bug_id)
+        query_url = '%s/%s' % (self.baseurl, ticket_url)
+        try:
+            bug_data = self.urlopen(query_url)
+        except urllib2.HTTPError, error:
+            raise BugTrackerConnectError(ticket_url, error.message)
+
+        # We use the first line of the response to ensure that we've
+        # made a successful request.
+        firstline = bug_data.readline().strip().split(' ')
+        if firstline[1] != '200':
+            # If anything goes wrong we raise a BugTrackerConnectError.
+            # We included in the error message the status code and error
+            # message returned by the server.
+            raise BugTrackerConnectError(
+                query_url,
+                "Unable to retrieve bug %s. The remote server returned the "
+                "following error: %s." %
+                (str(bug_id), " ".join(firstline[1:])))
+
+        # RT's REST interface returns tickets in RFC822 format, so we
+        # can use the email module to parse them.
+        bug = email.message_from_string(bug_data.read().strip())
+        if bug.get('id') is None:
+            return None, None
+        else:
+            bug_id = bug['id'].replace('ticket/', '')
+            return int(bug_id), bug
+
+    def getRemoteBugBatch(self, bug_ids):
+        """See `ExternalBugTracker`."""
+        # We need to ensure that all the IDs are strings first.
+        id_list = [str(id) for id in bug_ids]
+        query = "id = " + "OR id = ".join(id_list)
+
+        query_url = '%s/%s' % (self.baseurl, self.batch_url)
+        request_params = {'query': query, 'format': 'l'}
+        try:
+            bug_data = self.urlopen(query_url, urllib.urlencode(
+                request_params))
+        except urllib2.HTTPError, error:
+            raise BugTrackerConnectError(query_url, error.message)
+
+        # We use the first line of the response to ensure that we've
+        # made a successful request.
+        firstline = bug_data.readline().strip().split(' ')
+        if firstline[1] != '200':
+            # If anything goes wrong we raise a BugTrackerConnectError.
+            # We included in the error message the status code and error
+            # message returned by the server.
+            bug_id_string = ", ".join([str(bug_id) for bug_id in bug_ids])
+            raise BugTrackerConnectError(
+                query_url,
+                "Unable to retrieve bugs %s. The remote server returned the "
+                "following error:  %s." %
+                (bug_id_string, " ".join(firstline[1:])))
+
+        # Tickets returned in RT multiline format are separated by lines
+        # containing only --\n.
+        tickets = bug_data.read().split("--\n")
+        bugs = {}
+        for ticket in tickets:
+            ticket = ticket.strip()
+
+            # RT's REST interface returns tickets in RFC822 format, so we
+            # can use the email module to parse them.
+            bug = email.message_from_string(ticket)
+
+            # We only bother adding the bug to the bugs dict if we
+            # actually have some data worth adding.
+            if bug.get('id') is not None:
+                bug_id = bug['id'].replace('ticket/', '')
+                bugs[int(bug_id)] = bug
+
+        return bugs
+
+    def getRemoteStatus(self, bug_id):
+        """Return the remote status of a given bug.
+
+        See `ExternalBugTracker`.
+        """
+        try:
+            bug_id = int(bug_id)
+        except ValueError:
+            raise InvalidBugId(
+                "RequestTracker bug ids must be integers (was passed %r)"
+                % bug_id)
+
+        if bug_id not in self.bugs:
+            raise BugNotFound(bug_id)
+
+        return self.bugs[bug_id]['status']
+
+    def getRemoteImportance(self, bug_id):
+        """See `IExternalBugTracker`."""
+        pass
+
+    def convertRemoteImportance(self, remote_importance):
+        """See `IExternalBugTracker`."""
+        return UNKNOWN_REMOTE_IMPORTANCE
+
+    def convertRemoteStatus(self, remote_status):
+        """Convert an RT status into a Launchpad BugTaskStatus."""
+        status_map = {
+            'new': BugTaskStatus.NEW,
+            'open': BugTaskStatus.CONFIRMED,
+            'stalled': BugTaskStatus.CONFIRMED,
+            'rejected': BugTaskStatus.INVALID,
+            'resolved': BugTaskStatus.FIXRELEASED,
+            UNKNOWN_REMOTE_STATUS.lower(): BugTaskStatus.UNKNOWN}
+
+        try:
+            remote_status = remote_status.lower()
+            return status_map[remote_status]
+        except KeyError:
+            self.warning("Unknown status '%s'." % remote_status)
+            return BugTaskStatus.UNKNOWN
+
+
+BUG_TRACKER_CLASSES = {
+    BugTrackerType.BUGZILLA: Bugzilla,
+    BugTrackerType.DEBBUGS: DebBugs,
+    BugTrackerType.MANTIS: Mantis,
+    BugTrackerType.TRAC: Trac,
+    BugTrackerType.ROUNDUP: Roundup,
+    BugTrackerType.RT: RequestTracker,
+    BugTrackerType.SOURCEFORGE: SourceForge
+    }
+
+
+def get_external_bugtracker(txn, bugtracker):
+    """Return an `ExternalBugTracker` for bugtracker."""
+    bugtrackertype = bugtracker.bugtrackertype
+    bugtracker_class = BUG_TRACKER_CLASSES.get(bugtracker.bugtrackertype)
+    if bugtracker_class is not None:
+        return bugtracker_class(txn, bugtracker)
+    else:
+        raise UnknownBugTrackerTypeError(bugtrackertype.name,
+            bugtracker.name)

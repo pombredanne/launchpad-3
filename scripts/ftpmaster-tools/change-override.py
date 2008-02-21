@@ -12,6 +12,7 @@ import sys
 
 from contrib.glock import GlobalLock
 
+from canonical.config import config
 from canonical.launchpad.scripts import (
     execute_zcml_for_scripts, logger, logger_options)
 from canonical.launchpad.scripts.ftpmaster import (
@@ -62,8 +63,7 @@ def main():
     lock.acquire(blocking=True)
 
     log.debug("Initialising connection.")
-    # XXX cprov 2006-04-17: retrieve dbuser from config file
-    ztm = initZopeless(dbuser="lucille")
+    ztm = initZopeless(dbuser=config.archivepublisher.dbuser)
     execute_zcml_for_scripts()
 
     # instatiate and initialize changer object

@@ -4,11 +4,23 @@
 """
 
 __metaclass__ = type
-__all__ = ['UserAttributeCache', 'LaunchpadView', 'LaunchpadXMLRPCView',
-           'canonical_url', 'nearest', 'get_current_browser_request',
-           'canonical_url_iterator', 'rootObject', 'Navigation',
-           'stepthrough', 'redirection', 'stepto', 'RedirectionView',
-           'RenamedView']
+__all__ = [
+    'LaunchpadView',
+    'LaunchpadXMLRPCView',
+    'canonical_name',
+    'canonical_url',
+    'canonical_url_iterator',
+    'get_current_browser_request',
+    'nearest',
+    'Navigation',
+    'rootObject',
+    'stepthrough',
+    'redirection',
+    'stepto',
+    'RedirectionView',
+    'RenamedView',
+    'UserAttributeCache',
+    ]
 
 from zope.interface import implements
 from zope.component import getUtility, queryMultiAdapter
@@ -142,6 +154,19 @@ class UserAttributeCache:
             self._user = getUtility(ILaunchBag).user
         return self._user
 
+    _is_beta = None
+    @property
+    def isBetaUser(self):
+        """Return True if the user is in the beta testers team."""
+        if self._is_beta is not None:
+            return self._is_beta
+
+        # We cannot import ILaunchpadCelebrities here, so we will use the
+        # hardcoded name of the beta testers team
+        self._is_beta = self.user is not None and self.user.inTeam(
+            'launchpad-beta-testers')
+        return self._is_beta
+
 
 class LaunchpadView(UserAttributeCache):
     """Base class for views in Launchpad.
@@ -156,6 +181,7 @@ class LaunchpadView(UserAttributeCache):
     - render()     <-- used to render the page.  override this if you have many
                        templates not set via zcml, or you want to do rendering
                        from Python.
+    - isBetaUser   <-- whether the logged-in user is a beta tester
     """
 
     def __init__(self, context, request):
@@ -338,6 +364,21 @@ def canonical_url(
         ):
         return unicode('/' + path)
     return unicode(root_url + path)
+
+
+def canonical_name(name):
+    """Return the canonical form of a name used in a URL.
+
+    This helps us to deal with common mistypings of URLs.
+    Currently only accounts for uppercase letters.
+
+    >>> canonical_name('ubuntu')
+    'ubuntu'
+    >>> canonical_name('UbUntU')
+    'ubuntu'
+
+    """
+    return name.lower()
 
 
 def get_current_browser_request():
@@ -630,7 +671,7 @@ class RenamedView:
 
     def publishTraverse(self, request, name):
         """See zope.publisher.interfaces.browser.IBrowserPublisher."""
-        raise NotFound(name)
+        raise NotFound(name, self.context)
 
     def browserDefault(self, request):
         """See zope.publisher.interfaces.browser.IBrowserPublisher."""

@@ -24,7 +24,7 @@ from canonical.archiveuploader.utils import (
     re_isadeb, re_issource, re_changes_file_name)
 from canonical.archiveuploader.tagfiles import (
     parse_tagfile, TagFileParseError)
-from canonical.lp.dbschema import SourcePackageUrgency
+from canonical.launchpad.interfaces import SourcePackageUrgency
 
 
 class ChangesFile(SignableTagFile):

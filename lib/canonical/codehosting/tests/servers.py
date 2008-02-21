@@ -510,8 +510,6 @@ class _TestBazaarFileTransferServer(BazaarFileTransferServer):
             event.set()
 
     def connectionLost(self, reason):
-        d = self.sendMirrorRequests()
         event = self.getConnectionLostEvent()
         if event is not None:
-            d.addBoth(lambda ignored: event.set())
-        return d
+            event.set()

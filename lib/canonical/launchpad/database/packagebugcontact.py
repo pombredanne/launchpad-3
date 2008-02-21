@@ -1,4 +1,5 @@
 # Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# pylint: disable-msg=E0611,W0212
 
 """Database API for the PackageBugContact table."""
 
@@ -6,6 +7,7 @@ __metaclass__ = type
 
 from sqlobject import ForeignKey
 from canonical.database.sqlbase import SQLBase
+from canonical.launchpad.validators.person import public_person_validator
 
 class PackageBugContact(SQLBase):
     """Database class for the package bug contact.
@@ -17,6 +19,8 @@ class PackageBugContact(SQLBase):
     distribution = ForeignKey(
         dbName="distribution", notNull=True, foreignKey="Distribution")
     sourcepackagename = ForeignKey(
-        dbName="sourcepackagename", notNull=True, foreignKey="SourcePackageName")
+        dbName="sourcepackagename", notNull=True,
+        foreignKey="SourcePackageName")
     bugcontact = ForeignKey(
-        dbName="bugcontact", notNull=True, foreignKey="Person")
+        dbName="bugcontact", notNull=True, foreignKey="Person",
+        validator=public_person_validator)

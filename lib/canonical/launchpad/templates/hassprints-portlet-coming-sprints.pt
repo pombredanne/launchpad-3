@@ -1,4 +1,8 @@
-<div class="portlet" id="portlet-coming-events"
+<div
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  class="portlet" id="portlet-coming-events"
   tal:define="coming_sprints context/coming_sprints"
   tal:condition="coming_sprints">
 

@@ -150,7 +150,7 @@ common words and stop words.
     >>> faq = target.newFAQ(
     ...     no_priv, 'How to use bug mail',
     ...     'The syntax of bug mail commands is described at: '
-    ...     'http://help.launchpad.net/UsingMaloneEmail')
+    ...     'http://help.launchpad.net/BugTrackerEmailInterface')
 
     >>> for faq in target.findSimilarFAQs('How do I use the Answer Tracker'):
     ...     print faq.title

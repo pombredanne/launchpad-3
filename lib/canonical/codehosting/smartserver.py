@@ -4,16 +4,19 @@
 
 __metaclass__ = type
 __all__ = [
-    'ExecOnlySession', 'RestrictedExecOnlySession', 'get_bzr_path',
-    'launch_smart_server']
+    'ExecOnlySession', 'RestrictedExecOnlySession', 'launch_smart_server']
 
 import os
+import urlparse
 
 from zope.interface import implements
 
 from twisted.conch.interfaces import ISession
 from twisted.internet.process import ProcessExitedAlready
 from twisted.python import log
+
+from canonical.config import config
+from canonical.codehosting import get_bzr_path
 
 
 class ForbiddenCommand(Exception):
@@ -59,7 +62,12 @@ class ExecOnlySession:
         :param command: A whitespace-separated command line. The first token is
         used as the name of the executable, the rest are used as arguments.
         """
-        executable, arguments = self.getCommandToRun(command)
+        try:
+            executable, arguments = self.getCommandToRun(command)
+        except ForbiddenCommand, e:
+            protocol.write(str(e) + '\r\n')
+            protocol.loseConnection()
+            raise
         log.msg('Running: %r, %r, %r'
                 % (executable, arguments, self.environment))
         self._transport = self.reactor.spawnProcess(
@@ -82,7 +90,8 @@ class ExecOnlySession:
 
     def openShell(self, protocol):
         """See ISession."""
-        raise NotImplementedError()
+        protocol.write("No shells on this server.\r\n")
+        protocol.loseConnection()
 
     def windowChanged(self, newWindowSize):
         """See ISession."""
@@ -121,31 +130,25 @@ class RestrictedExecOnlySession(ExecOnlySession):
         :raise ForbiddenCommand: when `command` is not the allowed command.
         """
         if command != self.allowed_command:
-            raise ForbiddenCommand("Not allowed to execute %r" % (command,))
+            raise ForbiddenCommand("Not allowed to execute %r." % (command,))
         return ExecOnlySession.getCommandToRun(
             self, self.executed_command_template
             % {'avatarId': self.avatar.avatarId})
 
 
-def get_bzr_path():
-    import bzrlib
-    ROCKETFUEL_ROOT = os.path.dirname(
-        os.path.dirname(os.path.dirname(bzrlib.__file__)))
-    return ROCKETFUEL_ROOT + '/sourcecode/bzr/bzr'
-
-
 def launch_smart_server(avatar):
     import sys
-    from canonical.codehosting import plugins
     from twisted.internet import reactor
 
-    bzr_plugin_path = os.path.abspath(os.path.dirname(plugins.__file__))
     command = (
         "%(python)s %(bzr)s lp-serve --inet "
         % {'python': sys.executable, 'bzr': get_bzr_path()})
 
     environment = dict(os.environ)
-    environment['BZR_PLUGIN_PATH'] = bzr_plugin_path
+
+    # Extract the hostname from the supermirror root config.
+    hostname = urlparse.urlparse(config.codehosting.supermirror_root)[1]
+    environment['BZR_EMAIL'] = '%s@%s' % (avatar.lpname, hostname)
     return RestrictedExecOnlySession(
         avatar,
         reactor,

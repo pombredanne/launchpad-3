@@ -1,3 +1,7 @@
+ <tal:root
+   xmlns:tal="http://xml.zope.org/namespaces/tal"
+   xmlns:metal="http://xml.zope.org/namespaces/metal"
+   omit-tag="">
 <metal:branch-link define-macro="branch-heading-link">
   <div id="branch-back-link">
     <img src="/@@/branch" alt="" />
@@ -35,16 +39,14 @@
                class string:branchstatus${branch/lifecycle_status/name}"
                >Experimental</span>)
       </tal:show-lifecycle>
-
-      <a tal:condition="mergeproposal/required:launchpad.Edit"
-         tal:attributes="href mergeproposal/fmt:url">
-        <img alt="" src="/@@/edit"/>
-      </a>
+      -
+      <a tal:attributes="href mergeproposal/fmt:url">
+        view proposal details</a>
     </dt>
     <dd>
-      <tal:whiteboard content="structure mergeproposal/whiteboard/fmt:text-to-html">
+      <div class="whiteboard" tal:content="structure mergeproposal/whiteboard/fmt:text-to-html">
         The whiteboard.
-      </tal:whiteboard>
+      </div>
       <div tal:condition="mergeproposal/show_registrant|nothing">
         Merge proposed by
         <tal:registrant replace="structure mergeproposal/registrant/fmt:link"/>
@@ -55,13 +57,17 @@
           <tal:dependent replace="structure dependent_branch/fmt:link" />
         </div>
       </tal:show-dependent>
-      <div tal:condition="mergeproposal/date_merged" class="branchstatusMERGED">
+      <div tal:condition="not: mergeproposal/queue_status/enumvalue:MERGED">
+        <tal:proposal-status replace="mergeproposal/queue_status/title"/>
+      </div>
+      <div tal:condition="mergeproposal/queue_status/enumvalue:MERGED"
+           class="branchstatusMERGED">
         Merged
         <tal:merged replace="mergeproposal/date_merged/fmt:approximatedate">
           2007-06-04
         </tal:merged>
         <tal:have-revno condition="mergeproposal/merged_revno">
-          as revision <tal:revno replace="mergeproposal/merged_revno"/>
+          at revision <tal:revno replace="mergeproposal/merged_revno"/>
         </tal:have-revno>
       </div>
 
@@ -88,8 +94,22 @@
 
 <metal:branch-bug-links define-macro="bug-branch-links">
 
-  <tal:bug-tasks repeat="bugtask branch/related_bug_tasks">
-    <div tal:condition="bugtask/bug/required:launchpad.View">
+  <tal:comment condition="nothing">
+    This macro requires the following defined variables:
+      branch - the branch that has the bug branch links
+    The following variables define what is shown and are optional.
+      show_whiteboard - show the whiteboard for the bug branch
+      show_edit - show the edit form
+  </tal:comment>
+
+  <tal:bug-tasks repeat="bug_branch branch/bug_branches">
+    <div tal:condition="bug_branch/bug/required:launchpad.View"
+         tal:define="bugtask bug_branch/bug_task;
+                     has_edit_permission bug_branch/required:launchpad.Edit;
+                     show_edit show_edit|nothing;
+                     show_edit python: show_edit and has_edit_permission;
+                     ">
+      <div class="bug-branch-summary">
       <tal:link replace="structure bugtask/fmt:link" />
       (<span tal:content="bugtask/importance/title"
              tal:attributes="class string:importance${bugtask/importance/name}">
@@ -99,8 +119,103 @@
        <span tal:content="bugtask/status/title"
              tal:attributes="class string:status${bugtask/status/name}">
          Confirmed
-       </span>)
+       </span>) - <tal:bug_branch_status condition="not: show_edit|nothing" replace="bug_branch/status/title"/>
+       <tal:show-edit condition="show_edit|nothing">
+         <a tal:condition="bug_branch/required:launchpad.Edit"
+            tal:attributes="href string:+bug/${bug_branch/bug/id}/+edit;
+                            onclick string:return switchBugBranchFormAndWhiteboard('${bug_branch/id}')">
+<tal:bug_branch_status replace="bug_branch/status/title"/>         <img src="/@@/expand"/></a>
+       </tal:show-edit>
+       <tal:show-whiteboard condition="show_whiteboard|nothing">
+         <dl tal:condition="bug_branch/whiteboard"
+             tal:attributes="id string:bugbranch${bug_branch/id}-wb">
+           <dd>
+             <tal:whiteboard content="structure bug_branch/whiteboard/fmt:text-to-html">
+               The whiteboard.
+             </tal:whiteboard>
+           </dd>
+         </dl>
+       </tal:show-whiteboard>
+       </div>
+       <div tal:condition="show_edit|nothing"
+            tal:attributes="id string:bugbranch${bug_branch/id}"
+            style="display: none"
+            >
+         <dl><dd>
+         <tal:edit-form replace="structure bug_branch/@@+branch-edit"/>
+       </dd></dl>
+       </div>
     </div>
   </tal:bug-tasks>
 
 </metal:branch-bug-links>
+
+<metal:branch-revisions define-macro="branch-revisions">
+
+  <tal:comment condition="nothing">
+    This macro requires the following defined variables:
+      branch - the branch that has the bug branch links
+      revisions - the revisions to list
+  </tal:comment>
+
+  <dl class="revision">
+    <tal:revision repeat="rev_no revisions"
+                  define="codebrowse view/codebrowse_url">
+      <metal:landing-target use-macro="branch/@@+macros/revision-text"/>
+    </tal:revision>
+  </dl>
+
+</metal:branch-revisions>
+
+<metal:revision-text define-macro="revision-text">
+
+  <tal:comment condition="nothing">
+    This macro requires the following defined variables:
+      rev_no - the branch revision to be displayed.
+      codebrowse - the branch's codebrowse root.
+
+    It is expected that this macro is called from within a definition
+    list (<dl></dl>)
+  </tal:comment>
+  <dt class="revision-details">
+    <tal:comment condition="nothing">
+      The end of the anchor and the start of the next tal expression
+      has no whitespace between the elements as we do not want any
+      space between the number and the fullstop.
+    </tal:comment>
+    <a tal:attributes="href string:${codebrowse}/revision/${rev_no/sequence}"
+       tal:content="rev_no/sequence"
+       tal:condition="rev_no/branch/code_is_browseable">
+      1
+    </a><tal:revno condition="not: rev_no/branch/code_is_browseable"
+                   replace="rev_no/sequence">1</tal:revno>.
+    By
+    <strong>
+      <tal:not-anonymous condition="view/user">
+        <span tal:replace="rev_no/revision/revision_author/name">
+          John Doe &lt;john.doe@example.com&gt;
+        </span>
+      </tal:not-anonymous>
+      <tal:anonymous condition="not:view/user">
+        <span
+            tal:replace="rev_no/revision/revision_author/name_without_email">
+          John Doe
+        </span>
+        &lt;email address hidden&gt;
+      </tal:anonymous>
+    </strong>
+    <tal:revision-date
+        attributes="title rev_no/revision/revision_date/fmt:datetime"
+        content="rev_no/revision/revision_date/fmt:displaydate"
+        >2005-10-05 14:34:22 WST</tal:revision-date>
+  </dt>
+  <dd class="revision-comment">
+    <tal:commit-message
+        replace="structure rev_no/revision/log_body/fmt:text-to-html">
+      The revision commit message.
+    </tal:commit-message>
+  </dd>
+
+</metal:revision-text>
+
+</tal:root>

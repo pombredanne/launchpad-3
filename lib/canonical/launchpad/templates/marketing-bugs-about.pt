@@ -1,4 +1,14 @@
-<html metal:use-macro="context/@@marketing_template/master">
+<html
+  xmlns="http://www.w3.org/1999/xhtml"
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  xml:lang="en"
+  lang="en"
+  dir="ltr"
+  metal:use-macro="context/@@marketing_template/master"
+  i18n:domain="launchpad"
+>
 <body>
   <div id="about" metal:fill-slot="contents">
     <div id="primary">
@@ -46,7 +56,7 @@
         <p>Bugs aren't always found by the people who wrote the buggy code. If
            you find a bug in code that your project relies on, Launchpad helps
            you to create a cross-project team to solve it.
-        <p>
+        </p>
 
         <p>If both projects use Launchpad's bug tracker, you can share common
            bugs. Shared bugs appear in both project's bug lists and send

@@ -173,7 +173,7 @@ An admin, though, will see the link and will be able to edit it.
   n != 1
   >>> print admin_browser.getControl('Visible').optionValue
   on
-  >>> print admin_browser.getControl('Text direction').value
+  >>> print admin_browser.getControl('Text direction').displayValue
   ['Left to Right']
   >>> spokenin_control = admin_browser.getControl(name='field.countries')
   >>> print [country for country in spokenin_control.displayValue]

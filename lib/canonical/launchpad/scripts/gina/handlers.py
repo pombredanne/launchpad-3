@@ -1,11 +1,12 @@
 # Copyright 2004-2005 Canonical Ltd.  All rights reserved.
 
-__metaclass__ = type
-
 """Gina db handlers.
 
 Classes to handle and create entries on launchpad db.
 """
+
+__metaclass__ = type
+
 __all__ = [
     'ImporterHandler',
     'BinaryPackageHandler',
@@ -30,9 +31,6 @@ from canonical.archiveuploader.tagfiles import parse_tagfile
 
 from canonical.database.sqlbase import sqlvalues
 
-from canonical.lp.dbschema import (
-    PackagePublishingStatus, BuildStatus, SourcePackageFormat)
-
 from canonical.launchpad.scripts import log
 from canonical.launchpad.scripts.gina.library import getLibraryAlias
 from canonical.launchpad.scripts.gina.packages import (SourcePackageData,
@@ -46,7 +44,8 @@ from canonical.launchpad.database import (Distribution, DistroSeries,
     SecureSourcePackagePublishingHistory, BinaryPackageFile)
 
 from canonical.launchpad.interfaces import (
-    IPersonSet, IBinaryPackageNameSet, PersonCreationRationale)
+    BuildStatus, IPersonSet, IBinaryPackageNameSet, PersonCreationRationale,
+    PackagePublishingStatus, SourcePackageFormat)
 from canonical.launchpad.helpers import getFileType, getBinaryPackageFormat
 
 
@@ -146,7 +145,7 @@ class ImporterHandler:
         if archtag in self.archinfo.keys():
             return
 
-        """Get distroarchseries and processor from the architecturetag"""
+        # Get distroarchseries and processor from the architecturetag.
         dar = DistroArchSeries.selectOneBy(
                 distroseriesID=self.distroseries.id,
                 architecturetag=archtag)
@@ -335,7 +334,8 @@ class ImporterHandler:
     def publish_sourcepackage(self, sourcepackagerelease, sourcepackagedata):
         """Append to the sourcepackagerelease imported list."""
         self.sppublisher.publish(sourcepackagerelease, sourcepackagedata)
-        self.imported_sources.append((sourcepackagerelease, sourcepackagedata))
+        self.imported_sources.append((sourcepackagerelease,
+            sourcepackagedata))
 
     def publish_binarypackage(self, binarypackagerelease, binarypackagedata,
                               archtag):
@@ -516,15 +516,15 @@ class SourcePackageHandler:
                 SourcePackageRelease.version = %s AND
                 SourcePackagePublishingHistory.sourcepackagerelease =
                     SourcePackageRelease.id AND
-                SourcePackagePublishingHistory.distrorelease =
-                    DistroRelease.id AND
+                SourcePackagePublishingHistory.distroseries =
+                    DistroSeries.id AND
                 SourcePackagePublishingHistory.archive = %s AND
-                DistroRelease.distribution = %s
+                DistroSeries.distribution = %s
                 """ % sqlvalues(sourcepackagename, version,
                                 distroseries.main_archive,
                                 distroseries.distribution)
         ret = SourcePackageRelease.select(query,
-            clauseTables=['SourcePackagePublishingHistory', 'DistroRelease'],
+            clauseTables=['SourcePackagePublishingHistory', 'DistroSeries'],
             orderBy=["-SourcePackagePublishingHistory.datecreated"])
         if not ret:
             return None
@@ -570,12 +570,14 @@ class SourcePackageHandler:
             dsc=src.dsc,
             copyright=src.copyright,
             version=src.version,
-            changelog=src.changelog,
+            changelog_entry=src.changelog,
             builddepends=src.build_depends,
             builddependsindep=src.build_depends_indep,
+            build_conflicts=src.build_conflicts,
+            build_conflicts_indep=src.build_conflicts_indep,
             architecturehintlist=src.architecture,
             format=SourcePackageFormat.DPKG,
-            uploaddistroseries=distroseries.id,
+            upload_distroseries=distroseries.id,
             dsc_format=src.format,
             dsc_maintainer_rfc822=maintainer_line,
             dsc_standards_version=src.standards_version,
@@ -656,7 +658,7 @@ class SourcePackagePublisher:
         """Query for the publishing entry"""
         ret = SecureSourcePackagePublishingHistory.select(
                 """sourcepackagerelease = %s
-                   AND distrorelease = %s
+                   AND distroseries = %s
                    AND archive = %s
                    AND status in (%s, %s)""" %
                 sqlvalues(sourcepackagerelease, self.distroseries,
@@ -691,8 +693,8 @@ class BinaryPackageHandler:
         version = binarypackagedata.version
         architecture = binarypackagedata.architecture
 
-        clauseTables = ["BinaryPackageRelease", "DistroRelease", "Build",
-                        "DistroArchRelease"]
+        clauseTables = ["BinaryPackageRelease", "DistroSeries", "Build",
+                        "DistroArchSeries"]
         distroseries = distroarchinfo['distroarchseries'].distroseries
 
         # When looking for binaries, we need to remember that they are
@@ -702,14 +704,14 @@ class BinaryPackageHandler:
         query = ("BinaryPackageRelease.binarypackagename=%s AND "
                  "BinaryPackageRelease.version=%s AND "
                  "BinaryPackageRelease.build = Build.id AND "
-                 "Build.distroarchrelease = DistroArchRelease.id AND "
-                 "DistroArchRelease.distrorelease = DistroRelease.id AND "
-                 "DistroRelease.distribution = %d" %
+                 "Build.distroarchseries = DistroArchSeries.id AND "
+                 "DistroArchSeries.distroseries = DistroSeries.id AND "
+                 "DistroSeries.distribution = %d" %
                  (binaryname.id, quote(version),
                   distroseries.distribution.id))
 
         if architecture != "all":
-            query += ("AND DistroArchRelease.architecturetag = %s" %
+            query += ("AND DistroArchSeries.architecturetag = %s" %
                       quote(architecture))
 
         try:
@@ -738,25 +740,28 @@ class BinaryPackageHandler:
 
         # Create the binarypackage entry on lp db.
         binpkg = BinaryPackageRelease(
-            binarypackagename = bin_name.id,
-            component = componentID,
-            version = bin.version,
-            description = bin.description,
-            summary = bin.summary,
-            build = build.id,
-            binpackageformat = getBinaryPackageFormat(bin.filename),
-            section = sectionID,
-            priority = prioritymap[bin.priority],
-            shlibdeps = bin.shlibs,
-            depends = bin.depends,
-            suggests = bin.suggests,
-            recommends = bin.recommends,
-            conflicts = bin.conflicts,
-            replaces = bin.replaces,
-            provides = bin.provides,
-            essential = bin.essential,
-            installedsize = bin.installed_size,
-            architecturespecific = architecturespecific,
+            binarypackagename=bin_name.id,
+            component=componentID,
+            version=bin.version,
+            description=bin.description,
+            summary=bin.summary,
+            build=build.id,
+            binpackageformat=getBinaryPackageFormat(bin.filename),
+            section=sectionID,
+            priority=prioritymap[bin.priority],
+            shlibdeps=bin.shlibs,
+            depends=bin.depends,
+            suggests=bin.suggests,
+            recommends=bin.recommends,
+            conflicts=bin.conflicts,
+            replaces=bin.replaces,
+            provides=bin.provides,
+            pre_depends=bin.pre_depends,
+            enhances=bin.enhances,
+            breaks=bin.breaks,
+            essential=bin.essential,
+            installedsize=bin.installed_size,
+            architecturespecific=architecturespecific,
             )
         log.info('Binary Package Release %s (%s) created' %
                  (bin_name.name, bin.version))
@@ -774,7 +779,7 @@ class BinaryPackageHandler:
         """Ensure a build record."""
         distroarchseries = distroarchinfo['distroarchseries']
         distribution = distroarchseries.distroseries.distribution
-        clauseTables = ["Build", "DistroArchRelease", "DistroRelease"]
+        clauseTables = ["Build", "DistroArchSeries", "DistroSeries"]
 
         # XXX kiko 2006-02-03:
         # This method doesn't work for real bin-only NMUs that are
@@ -785,13 +790,13 @@ class BinaryPackageHandler:
         # doing it the second time.
 
         query = ("Build.sourcepackagerelease = %d AND "
-                 "Build.distroarchrelease = DistroArchRelease.id AND "
-                 "DistroArchRelease.distrorelease = DistroRelease.id AND "
-                 "DistroRelease.distribution = %d"
+                 "Build.distroarchseries = DistroArchSeries.id AND "
+                 "DistroArchSeries.distroseries = DistroSeries.id AND "
+                 "DistroSeries.distribution = %d"
                  % (srcpkg.id, distribution.id))
 
         if archtag != "all":
-            query += ("AND DistroArchRelease.architecturetag = %s"
+            query += ("AND DistroArchSeries.architecturetag = %s"
                       % quote(archtag))
 
         try:
@@ -900,7 +905,7 @@ class BinaryPackagePublisher:
         """Query for the publishing entry"""
         ret = SecureBinaryPackagePublishingHistory.select(
                 """binarypackagerelease = %s
-                   AND distroarchrelease = %s
+                   AND distroarchseries = %s
                    AND archive = %s
                    AND status in (%s, %s)""" %
                 sqlvalues(binarypackage, self.distroarchseries,
@@ -927,7 +932,7 @@ def ensure_person(displayname, emailaddress, package_name, distroseries_name):
     """
     person = getUtility(IPersonSet).getByEmail(emailaddress)
     if person is None:
-        comment=('when the %s package was imported into %s'
+        comment = ('when the %s package was imported into %s'
                  % (package_name, distroseries_name))
         person, email = getUtility(IPersonSet).createPersonAndEmail(
             emailaddress, PersonCreationRationale.SOURCEPACKAGEIMPORT,

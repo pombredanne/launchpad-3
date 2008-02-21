@@ -7,14 +7,8 @@ Also define utilities that manipulate layers.
 
 __metaclass__ = type
 
-try:
-    from zope.publisher.interfaces.browser import IDefaultBrowserLayer
-except ImportError:
-    # This code can go once we've upgraded Zope.
-    from zope.publisher.interfaces.browser import IBrowserRequest
-    IDefaultBrowserLayer = IBrowserRequest
-
 from zope.interface import directlyProvides, directlyProvidedBy, Interface
+from zope.publisher.interfaces.browser import IDefaultBrowserLayer
 
 
 def setAdditionalLayer(request, layer):
@@ -62,19 +56,19 @@ class DebugLayer(Interface):
     """
 
 
-class PageTestLayer(Interface):
+class PageTestLayer(LaunchpadLayer):
     """The `PageTestLayer` layer. (need to register a 404 view for this and
     for the debug page too.  and make the debugview a base class in the
     debug view and make system error, not found and unauthorized and
     forbidden views.
 
     This layer is applied to the request that is used for running page tests.
-    No pages are registered for this layer, but the SystemErrorView base
-    class looks at the request to see if it provides this interface.  If so,
-    it renders tracebacks as plain text.
+    Pages registered with this layer are accessible to pagetests but return
+    404s when visited interactively, so this should be used only for pages we
+    want to maintain but not expose to users.
 
-    This derives from Interface beacuse it is just a marker that this
-    is a pagetest-related request.
+    The SystemErrorView base class looks at the request to see if it provides
+    this interface.  If so, it renders tracebacks as plain text.
     """
 
 
@@ -92,3 +86,7 @@ class ShipItKUbuntuLayer(ShipItLayer):
 
 class ShipItEdUbuntuLayer(ShipItLayer):
     """The `ShipIt` for EdUbuntu layer."""
+
+class FeedsLayer(LaunchpadLayer):
+    """The `FeedsLayer` Layer."""
+

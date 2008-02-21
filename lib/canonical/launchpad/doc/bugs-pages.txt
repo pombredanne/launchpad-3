@@ -76,7 +76,8 @@ list, so if we mark bug #2 as private, No Privileges won't see it, since
 he's not subscribed to it.
 
     >>> bug_two = getUtility(IBugSet).get(2)
-    >>> bug_two.private = True
+    >>> bug_two.setPrivate(True, getUtility(ILaunchBag).user)
+    True
     >>> syncUpdate(bug_two)
 
     >>> login('no-priv@canonical.com')
@@ -91,9 +92,11 @@ he's not subscribed to it.
 If Sample Person get subscribed to bug #2, he can see it in the list.
 
     >>> from canonical.launchpad.interfaces import IPersonSet
+    >>> person_set = getUtility(IPersonSet)
     >>> login('foo.bar@canonical.com')
     >>> bug_two.subscribe(
-    ...     getUtility(IPersonSet).getByEmail('test@canonical.com'))
+    ...     person_set.getByEmail('test@canonical.com'),
+    ...     person_set.getByEmail('foo.bar@canonical.com'))
     <BugSubscription...>
     >>> login('test@canonical.com')
     >>> bugs_view = MaloneView(None, LaunchpadTestRequest())

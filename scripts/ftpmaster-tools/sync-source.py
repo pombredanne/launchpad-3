@@ -1,5 +1,7 @@
-#!/usr/bin/env python
-# Copyright (C) 2005, 2007  Canonical Software Ltd. <james.troup@canonical.com>
+#!/usr/bin/python2.4
+# Copyright (C) 2005, 2008  Canonical Software Ltd.
+# <james.troup@canonical.com>
+# pylint: disable-msg=W0403
 
 """ 'Sync' a source package by generating an upload.
 
@@ -33,11 +35,12 @@ from contrib.glock import GlobalLock
 
 from canonical.database.sqlbase import sqlvalues, cursor
 from canonical.launchpad.interfaces import (
-    IDistributionSet, IPersonSet)
+    IDistributionSet, IPersonSet, PackagePublishingStatus,
+    PackagePublishingPocket)
 from canonical.launchpad.scripts import (
     execute_zcml_for_scripts, logger, logger_options)
 from canonical.librarian.client import LibrarianClient
-from canonical.lp import dbschema, initZopeless
+from canonical.lp import initZopeless
 
 
 reject_message = ""
@@ -46,6 +49,7 @@ re_changelog_header = re.compile(
     r"^\S+ \((?P<version>.*)\) .*;.*urgency=(?P<urgency>\w+).*")
 re_closes = re.compile(
     r"closes:\s*(?:bug)?\#?\s?\d+(?:,\s*(?:bug)?\#?\s?\d+)*", re.I)
+re_lp_closes = re.compile(r"lp:\s+\#\d+(?:,\s*\#\d+)*", re.I)
 re_bug_numbers = re.compile(r"\#?\s?(\d+)")
 
 
@@ -107,21 +111,23 @@ def sign_changes(changes, dsc):
 
     cmd = ("gpg --no-options --batch --no-tty --secret-keyring=%s "
            "--keyring=%s --default-key=0x%s --output=%s --clearsign %s" %
-           (secret_keyring, pub_keyring, keyid, output_filename, temp_filename))
+           (secret_keyring, pub_keyring, keyid, output_filename,
+            temp_filename))
     result, output = commands.getstatusoutput(cmd)
 
     if (result != 0):
         print " * command was '%s'" % (cmd)
-        print dak_utils.prefix_multi_line_string(output, " [gpg output:] "), ""
+        print (dak_utils.prefix_multi_line_string(
+                output, " [gpg output:] "), "")
         dak_utils.fubar("%s: signing .changes failed [return code: %s]." %
                         (output_filename, result))
 
     os.unlink(temp_filename)
 
 
-def generate_changes(dsc, dsc_files, suite, changelog, urgency, closes, section,
-                     priority, description, have_orig_tar_gz, requested_by,
-                     origin):
+def generate_changes(dsc, dsc_files, suite, changelog, urgency, closes,
+                     lp_closes, section, priority, description,
+                     have_orig_tar_gz, requested_by, origin):
     """Generate a .changes as a string"""
 
     # XXX cprov 2007-07-03:
@@ -149,6 +155,8 @@ def generate_changes(dsc, dsc_files, suite, changelog, urgency, closes, section,
         changes += " %s\n" % (description)
     if closes:
         changes += "Closes: %s\n" % (" ".join(closes))
+    if lp_closes:
+        changes += "Launchpad-Bugs-Fixed: %s\n" % (" ".join(lp_closes))
     changes += "Changes: \n"
     changes += changelog
     changes += "Files: \n"
@@ -179,7 +187,8 @@ def parse_changelog(changelog_filename, previous_version):
                 previous_version = "9999:9999"
             elif apt_pkg.VersionCompare(
                 match.group('version'), previous_version) > 0:
-                urgency = max(urgency_to_numeric(match.group('urgency')),urgency)
+                urgency = max(
+                    urgency_to_numeric(match.group('urgency')), urgency)
             else:
                 break
         changes += line
@@ -196,7 +205,16 @@ def parse_changelog(changelog_filename, previous_version):
     l.sort()
     closes = map(str, l)
 
-    return (changes, urgency_from_numeric(urgency), closes)
+    lp_closes = []
+    for match in re_lp_closes.finditer(changes):
+        bug_match = re_bug_numbers.findall(match.group(0))
+        lp_closes += map(int, bug_match)
+
+    l = map(int, lp_closes)
+    l.sort()
+    lp_closes = map(str, l)
+
+    return (changes, urgency_from_numeric(urgency), closes, lp_closes)
 
 
 def fix_changelog(changelog):
@@ -290,9 +308,11 @@ def cleanup_source(tmpdir, old_cwd, dsc):
     except OSError, e:
         if errno.errorcode[e.errno] != 'EACCES':
             dak_utils.fubar(
-                "%s: couldn't remove tmp dir for source tree." % (dsc["source"]))
+                "%s: couldn't remove tmp dir for source tree."
+                % (dsc["source"]))
 
-        reject("%s: source tree could not be cleanly removed." % (dsc["source"]))
+        reject("%s: source tree could not be cleanly removed."
+               % (dsc["source"]))
         # We probably have u-r or u-w directories so chmod everything
         # and try again.
         cmd = "chmod -R u+rwx %s" % (tmpdir)
@@ -365,7 +385,7 @@ def import_dsc(dsc_filename, suite, previous_version, signing_rules,
         "%s-%s/debian/changelog" % (dsc["source"], upstr_version))
 
     # Parse it and then adapt it for .changes
-    (changelog, urgency, closes) = parse_changelog(
+    (changelog, urgency, closes, lp_closes) = parse_changelog(
         changelog_filename, previous_version)
     changelog = fix_changelog(changelog)
 
@@ -375,9 +395,10 @@ def import_dsc(dsc_filename, suite, previous_version, signing_rules,
 
     cleanup_source(tmpdir, old_cwd, dsc)
 
-    changes = generate_changes(dsc, dsc_files, suite, changelog, urgency, closes,
-                               section, priority, description, have_orig_tar_gz,
-                               requested_by, origin)
+    changes = generate_changes(
+        dsc, dsc_files, suite, changelog, urgency, closes, lp_closes,
+        section, priority, description, have_orig_tar_gz, requested_by,
+        origin)
 
     # XXX cprov 2007-07-03: Soyuz wants an unsigned changes
     #sign_changes(changes, dsc)
@@ -404,8 +425,8 @@ def read_current_source(distro_series, valid_components="", arguments=None):
     #     distro_series which is not what we want.
     if Options.all:
         spp = distro_series.getSourcePackagePublishing(
-            status=dbschema.PackagePublishingStatus.PUBLISHED,
-            pocket=dbschema.PackagePublishingPocket.RELEASE
+            status=PackagePublishingStatus.PUBLISHED,
+            pocket=PackagePublishingPocket.RELEASE
             )
     else:
         spp = []
@@ -441,7 +462,7 @@ def read_current_binaries(distro_series):
     """
     B = {}
 
-    # XXX cprov 2007-07-10: This searches all pockets of the 
+    # XXX cprov 2007-07-10: This searches all pockets of the
     #     distro_series which is not what we want.
 
     # XXX James Troup 2006-02-03: this is insanely slow due to how It
@@ -452,7 +473,7 @@ def read_current_binaries(distro_series):
     #
     #     for distroarchseries in distro_series.architectures:
     #         bpp = distroarchseries.getAllReleasesByStatus(
-    #             dbschema.PackagePublishingStatus.PUBLISHED)
+    #             PackagePublishingStatus.PUBLISHED)
     #
     #         for bp in bpp:
     #             component = bp.component.name
@@ -467,20 +488,22 @@ def read_current_binaries(distro_series):
 
     # XXX James Troup 2006-02-22: so... let's fall back on raw SQL
     das_ids = [das.id for das in distro_series.architectures]
+    archive_ids = [a.id for a in Options.todistro.all_distro_archives]
     cur = cursor()
-
     query = """
     SELECT bpn.name, bpr.version, c.name
     FROM binarypackagerelease bpr, binarypackagename bpn, component c,
-        securebinarypackagepublishinghistory sbpph, distroarchrelease dar
+        securebinarypackagepublishinghistory sbpph, distroarchseries dar
     WHERE
         bpr.binarypackagename = bpn.id AND
              sbpph.binarypackagerelease = bpr.id AND
         sbpph.component = c.id AND
-        sbpph.distroarchrelease = dar.id AND
+        sbpph.distroarchseries = dar.id AND
         sbpph.status = %s AND
+        sbpph.archive IN %s AND
         dar.id IN %s
-     """ % sqlvalues(dbschema.PackagePublishingStatus.PUBLISHED, das_ids)
+     """ % sqlvalues(
+        PackagePublishingStatus.PUBLISHED, archive_ids, das_ids)
     cur.execute(query)
 
     print "Getting binaries for %s..." % (distro_series.name)
@@ -545,6 +568,7 @@ def add_source(pkg, Sources, previous_version, suite, requested_by, origin,
     files = Sources[pkg]["files"]
     for filename in files:
         # First see if we can find the source in the librarian
+        archive_ids = [a.id for a in Options.todistro.all_distro_archives]
         query = """
         SELECT DISTINCT ON (LibraryFileContent.sha1, LibraryFileContent.filesize)
             LibraryFileAlias.id
@@ -552,8 +576,9 @@ def add_source(pkg, Sources, previous_version, suite, requested_by, origin,
         WHERE
           LibraryFileAlias.id = SourcePackageFilePublishing.libraryfilealias AND
           LibraryFileContent.id = LibraryFileAlias.content AND
-          SourcePackageFilePublishing.libraryfilealiasfilename = %s
-        """ % sqlvalues(filename)
+          SourcePackageFilePublishing.libraryfilealiasfilename = %s AND
+          SourcePackageFilePublishing.archive IN %s
+        """ % sqlvalues(filename, archive_ids)
         cur = cursor()
         cur.execute(query)
         results = cur.fetchall()
@@ -561,7 +586,8 @@ def add_source(pkg, Sources, previous_version, suite, requested_by, origin,
             if not filename.endswith("orig.tar.gz"):
                 dak_utils.fubar(
                     "%s (from %s) is in the DB but isn't an orig.tar.gz.  "
-                    "(Probably published in an older release)" % (filename, pkg))
+                    "(Probably published in an older release)"
+                    % (filename, pkg))
             if len(results) > 1:
                 dak_utils.fubar(
                     "%s (from %s) returns multiple IDs (%s) for "
@@ -576,7 +602,8 @@ def add_source(pkg, Sources, previous_version, suite, requested_by, origin,
             continue
 
         # Download the file
-        download_f = "%s%s" % (origin["url"], files[filename]["remote filename"])
+        download_f = (
+            "%s%s" % (origin["url"], files[filename]["remote filename"]))
         if not os.path.exists(filename):
             print "  - <%s: downloading from %s>" % (filename, origin["url"])
             sys.stdout.flush()
@@ -649,12 +676,6 @@ def do_diff(Sources, Suite, origin, arguments, current_binaries):
             stat_blacklisted += 1
             continue
 
-#        if pkg in [ "mozilla-thunderbird", "ncmpc", "ocrad", "gnuradio-core",
-#                    "gtk-smooth-engine", "libant1.6-java", "glade", "devilspie" ]:
-#            print "[BROKEN] %s_%s" % (pkg, dest_version)
-#            stat_broken += 1
-#            continue
-
         source_version = Sources[pkg]["version"]
         if apt_pkg.VersionCompare(dest_version, source_version) < 0:
             if  not Options.force and dest_version.find("ubuntu") != -1:
@@ -672,7 +693,7 @@ def do_diff(Sources, Suite, origin, arguments, current_binaries):
                         Options.requestor, origin, Suite, current_binaries)
         else:
             if dest_version.find("ubuntu") != -1:
-                stat_uptodate_modified += 1;
+                stat_uptodate_modified += 1
                 if Options.moreverbose:
                     print ("[Nothing to update (Modified)] %s_%s (vs %s)"
                            % (pkg, dest_version, source_version))
@@ -745,6 +766,9 @@ def options_setup():
                       default='debian', help="sync from DISTRO")
     parser.add_option("-S", "--from-suite", dest="fromsuite",
                       help="sync from SUITE (aka distroseries)")
+    parser.add_option("-B", "--blacklist", dest="blacklist_path",
+                      default="/srv/launchpad.net/dak/sync-blacklist.txt",
+                      help="Blacklist file path.")
 
 
     (Options, arguments) = parser.parse_args()
@@ -791,20 +815,57 @@ def objectize_options():
 
     # Fix up Options.requestor
     if not Options.requestor:
-	Options.requestor = "katie"
+        Options.requestor = "katie"
 
     PersonSet = getUtility(IPersonSet)
     person = PersonSet.getByName(Options.requestor)
     if not person:
-	dak_utils.fubar("Unknown LaunchPad user id '%s'."
-			% (Options.requestor))
+        dak_utils.fubar("Unknown LaunchPad user id '%s'."
+                        % (Options.requestor))
     Options.requestor = "%s <%s>" % (person.displayname,
-				     person.preferredemail.email)
+                                     person.preferredemail.email)
     Options.requestor = Options.requestor.encode("ascii", "replace")
 
 
+def parseBlacklist(path):
+    """Parse given file path as a 'blacklist'.
+
+    Format:
+
+    {{{
+    # [comment]
+    <sourcename> # [comment]
+    }}}
+
+    Return a blacklist dictionary where the keys are blacklisted source
+    package names.
+
+    Return an empty dictionary if the given 'path' doesn't exist.
+    """
+    blacklist = {}
+
+    try:
+        blacklist_file = open(path)
+    except IOError:
+        dak_utils.warn('Could not find blacklist file on %s' % path)
+        return blacklist
+
+    for line in blacklist_file:
+        try:
+            line = line[:line.index("#")]
+        except ValueError:
+            pass
+        line = line.strip()
+        if not line:
+            continue
+        blacklist[line] = ""
+    blacklist_file.close()
+
+    return blacklist
+
+
 def init():
-    global Blacklisted, Library, Lock, Log
+    global Blacklisted, Library, Lock, Log, Options
 
     apt_pkg.init()
 
@@ -825,22 +886,10 @@ def init():
 
     objectize_options()
 
-    # Blacklist
-    Blacklisted = {}
-    # XXX cprov 2007-07-06: hardcoded file location for production.
-    blacklist_file = open("/srv/launchpad.net/dak/sync-blacklist.txt")
-    for line in blacklist_file:
-        try:
-            line = line[:line.index("#")]
-        except ValueError:
-            pass
-        line = line.strip()
-        if not line:
-            continue
-        Blacklisted[line] = ""
-    blacklist_file.close()
+    Blacklisted = parseBlacklist(Options.blacklist_path)
 
     return arguments
+
 
 def main():
     arguments = init()
@@ -850,7 +899,8 @@ def main():
     origin["component"] = Options.fromcomponent
 
     Sources = read_Sources("Sources", origin)
-    Suite = read_current_source(Options.tosuite, Options.tocomponent, arguments)
+    Suite = read_current_source(
+        Options.tosuite, Options.tocomponent, arguments)
     current_binaries = read_current_binaries(Options.tosuite)
     do_diff(Sources, Suite, origin, arguments, current_binaries)
 

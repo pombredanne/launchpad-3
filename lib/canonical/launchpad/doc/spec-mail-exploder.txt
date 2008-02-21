@@ -1,10 +1,9 @@
-The Spec Mail Exploder
-======================
+= The Spec Mail Exploder =
 
 There's an address, notifications@specs.launchpad.net, which looks at
 all incoming email to see if it looks like a change notifications from a
 Moin wiki. If it receive such notification, it will look up the relevant
-Launchpad specifiication, and re-send the mail to the spec's related
+Launchpad specification, and re-send the mail to the spec's related
 people.
 
 First, let's take a look at how a Moin change notification looks like:
@@ -71,8 +70,7 @@ If no URL is found, None is returned.
     True
 
 
-The Mail Handler
-----------------
+== The Mail Handler ==
 
 The mail handler that handles mail on notifications@specs.launchpad.net
 is SpecificationHandler.
@@ -115,7 +113,6 @@ If no matching specification is found, None is returned.
     ...     'https://wiki.kubuntu.org/NonExistant')
     >>> spec is None
     True
-
 
 We use a logger to see what the handler does:
 

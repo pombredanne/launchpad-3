@@ -109,6 +109,11 @@ If there isn't one, that should return None.
    >>> print SourcePackageRelease.get(20).productrelease
    None
 
+Check that the uploaded changesfile works:
+
+   >>> commercial = SourcePackageRelease.get(36)
+   >>> commercial.upload_changesfile.http_url
+   'http://.../commercialpackage_1.0-1_source.changes'
 
 Check ISourcePackageRelease.override() behaviour:
 
@@ -140,7 +145,7 @@ IDistroSeries API:
   >>> from canonical.launchpad.interfaces import (
   ...     IDistributionSet, ISourcePackageNameSet, IGPGKeySet)
   >>> from canonical.database.constants import UTC_NOW
-  >>> from canonical.lp.dbschema import SourcePackageUrgency
+  >>> from canonical.launchpad.interfaces import SourcePackageUrgency
 
   >>> hoary = getUtility(IDistributionSet)['ubuntu']['hoary']
 
@@ -161,7 +166,7 @@ The other argurments are strings:
   >>> version = '0.0.99'
   >>> dsc = 'smashed dsc...'
   >>> copyright = 'smashed debian/copyright ...'
-  >>> changelog = 'contigous text....'
+  >>> changelog_entry = 'contigous text....'
   >>> archhintlist = 'any'
   >>> builddepends = 'cdbs, debhelper (>= 4.1.0), libsysfs-dev, libhal-dev'
   >>> builddependsindep = ''
@@ -173,16 +178,17 @@ The other argurments are strings:
 
 Having proper arguments in hand we can create a new
 ISourcePackageRelease, it will automatically set the
-'uploaddistroseries' to the API entry point, in this case Hoary.
+'upload_distroseries' to the API entry point, in this case Hoary.
 
   >>> new_spr = hoary.createUploadedSourcePackageRelease(
   ...     arg_name, version, arg_maintainer,
   ...     builddepends, builddependsindep, archhintlist, arg_comp, arg_creator,
-  ...     arg_urgency, changelog, dsc, arg_key, arg_sect,
+  ...     arg_urgency, changelog_entry, dsc, arg_key, arg_sect,
   ...     dsc_maintainer_rfc822, dsc_standards_version, dsc_format,
-  ...     dsc_binaries, archive, copyright=copyright)
+  ...     dsc_binaries, archive, copyright=copyright,
+  ...      build_conflicts=None, build_conflicts_indep=None)
 
-  >>> new_spr.uploaddistroseries.name
+  >>> new_spr.upload_distroseries.name
   u'hoary'
   >>> new_spr.version
   u'0.0.99'
@@ -200,51 +206,6 @@ Let's get a sample SourcePackageRelease:
    >>> spr_test = SourcePackageRelease.get(20)
    >>> spr_test.name
    u'pmount'
-
-
-== Creating Build records ==
-
-The SourcePackageRelease has the ability to create Build records,
-however it needs fully support to treat architecturehintlist and P-a-s
-information, see further information in buildd-queuebuilder.txt.
-
-The base method createBuild() is able to create build to a given
-distroarchseries and pocket.
-
-Build.buildstate, by default is set to NEEDSBUILD and build.archive is
-the default distribution.main_archive.
-
-   >>> from canonical.lp.dbschema import PackagePublishingPocket
-   >>> pocket = PackagePublishingPocket.RELEASE
-
-   >>> dar = spr_test.uploaddistroseries['i386']
-
-   >>> test_build = spr_test.createBuild(
-   ...     dar, pocket, dar.distroseries.main_archive)
-
-   >>> test_build.buildstate.name
-   'NEEDSBUILD'
-
-   >>> test_build.distroarchseries.architecturetag
-   u'i386'
-
-   >>> test_build.archive.id == dar.distroseries.main_archive.id
-   True
-
-Optionally you can pass also status & archive:
-
-   >>> from canonical.launchpad.interfaces import IPersonSet
-   >>> cprov = getUtility(IPersonSet).getByName('cprov')
-
-   >>> from canonical.lp.dbschema import BuildStatus
-   >>> ppa_build = spr_test.createBuild(
-   ...    dar, pocket, cprov.archive, status=BuildStatus.SUPERSEDED)
-
-   >>> ppa_build.buildstate.name
-   'SUPERSEDED'
-
-   >>> ppa_build.archive.id == cprov.archive.id
-   True
 
 
 == Counting bugs ==
@@ -350,4 +311,3 @@ The second one, executes the import.
     INFO    creating lockfile
     INFO    Importing: Spanish (es) translation of pmount in Ubuntu Hoary package "pmount"
     ...
-

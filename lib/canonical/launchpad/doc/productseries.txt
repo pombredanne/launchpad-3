@@ -104,7 +104,7 @@ Basically, we can filter by completeness, and by whether or not the spec
 is informational.
 
  >>> onezero = firefox.getSeries("1.0")
- >>> from canonical.lp.dbschema import SpecificationFilter
+ >>> from canonical.launchpad.interfaces import SpecificationFilter
 
 We will create two specs for onezero and use them to demonstrate the
 filtering.
@@ -124,9 +124,9 @@ filtering.
 Now, we will make one of them accepted, the other declined, and both of
 them informational.
 
- >>> from canonical.lp.dbschema import SpecificationDefinitionStatus
- >>> from canonical.lp.dbschema import SpecificationGoalStatus
- >>> from canonical.lp.dbschema import SpecificationImplementationStatus
+ >>> from canonical.launchpad.interfaces import (
+ ...     SpecificationDefinitionStatus, SpecificationGoalStatus,
+ ...     SpecificationImplementationStatus)
  >>> a.definition_status = b.definition_status = SpecificationDefinitionStatus.APPROVED
  >>> a.implementation_status = SpecificationImplementationStatus.INFORMATIONAL
  >>> b.implementation_status = SpecificationImplementationStatus.INFORMATIONAL

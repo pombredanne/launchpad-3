@@ -45,12 +45,7 @@ If we POST the page, it should add the request to the queue.
 Let's be sure that we can request po files without translations as the
 No Privileges Person.
 
-  >>> from zope.testbrowser.testing import Browser
-  >>> no_priv_browser = Browser()
-  >>> no_priv_browser.handleErrors = False
-  >>> no_priv_browser.addHeader(
-  ...     'Authorization', 'Basic no-priv@canonical.com:test')
-
+  >>> no_priv_browser = setupBrowser(auth='Basic no-priv@canonical.com:test')
   >>> no_priv_browser.open(
   ...    'http://translations.launchpad.dev/evolution/trunk/+pots/'
   ...    'evolution-2.2/cy')
@@ -82,7 +77,7 @@ But if we request an export from a valid translator, he gets the ownership.
 We test using the Swedish (sv) language which doesn't have a pofile for
 evolution yet; it will be created at the moment the export is requested.
 
-  >>> browser.addHeader('Authorization', 'Basic carlos@canonical.com:test')
+  >>> browser = setupBrowser(auth='Basic carlos@canonical.com:test')
   >>> browser.open(
   ...     'http://translations.launchpad.dev/evolution/trunk/+pots/'
   ...     'evolution-2.2/sv')

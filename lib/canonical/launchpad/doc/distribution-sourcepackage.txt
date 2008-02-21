@@ -33,6 +33,9 @@ Test more advanced features of IDistributionSourcePackage:
     >>> dsp = ubuntu.getSourcePackage("pmount")
     >>> IDistributionSourcePackage.providedBy(dsp)
     True
+    >>> from canonical.launchpad.webapp.testing import verifyObject
+    >>> verifyObject(IDistributionSourcePackage, dsp)
+    True
 
 Useful properties:
 
@@ -118,5 +121,6 @@ archive (bug #60440):
     u'alsa-utils 1.0.9a-4 (source) in ubuntutest'
 
     >>> for pub in alsa_dspr.publishing_history:
-    ...     print pub.distroseries.name, pub.status.name
-    breezy-autotest REMOVED
+    ...     is_removed = pub.dateremoved is not None
+    ...     print pub.distroseries.name, pub.status.name, is_removed
+    breezy-autotest DELETED True

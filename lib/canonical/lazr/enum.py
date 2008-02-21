@@ -10,6 +10,7 @@ import warnings
 from zope.interface import Attribute, Interface, implements
 from zope.schema.interfaces import ITitledTokenizedTerm, IVocabularyTokenized
 from zope.security.proxy import isinstance as zope_isinstance
+from canonical.lazr.interfaces import IJSONPublishable
 
 __all__ = [
     'BaseItem',
@@ -183,7 +184,6 @@ class DBItem(BaseItem):
 
     def __repr__(self):
         return "<DBItem %s.%s, (%d) %s>" % (
-
             self.enum.name, self.name, self.value, self.title)
 
     def __sqlrepr__(self, dbname):

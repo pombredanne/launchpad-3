@@ -7,26 +7,13 @@ is, currently capable of performing imports).
     >>> from canonical.launchpad.interfaces import (
     ...     ICodeImportMachine, ICodeImportMachineSet, CodeImportMachineState)
 
-Adding new machines is considered an admin task, so requires that we switch to
-a database administrator.
+== Accessing ICodeImportMachine/ICodeImportMachineSet ==
 
-Adding a machine is very simple SQL, for which there will probably be a
-shell script.
+The CodeImportMachine table is represented by an utility that provides the
+ICodeImportMachineSet interface.  Currently we hide all aspects of the new
+system from anonymous and regular users.
 
-    >>> from canonical.database.sqlbase import connect, quote
-    >>> connection = connect('testadmin')
-    >>> cur = connection.cursor()
-    >>> cur.execute("""
-    ...     INSERT INTO CodeImportMachine (hostname, state)
-    ...     VALUES ('frobisher.example.com', %s)
-    ...     """ % quote(CodeImportMachineState.OFFLINE))
-    >>> connection.commit()
-
-The webapp only has rights to examine, not modify, the CodeImportMachine
-table.  The table is represented by an utility that provides the
-ICodeImportMachineSet interface.  Currently we hide all aspects of the
-new system from anonymous and regular users.
-
+    >>> login(ANONYMOUS)
     >>> machine_set = getUtility(ICodeImportMachineSet)
     >>> machine_set.getAll()
     Traceback (most recent call last):
@@ -52,65 +39,211 @@ hostname and to all machines.
 
     >>> machine_set = getUtility(ICodeImportMachineSet)
     >>> from canonical.launchpad.webapp.testing import verifyObject
-    >>> from zope.security.proxy import removeSecurityProxy
-    >>> verifyObject(ICodeImportMachineSet, removeSecurityProxy(machine_set))
-    True
-    >>> machine = machine_set.getByHostname('frobisher.example.com')
-    >>> machine in machine_set.getAll()
+    >>> verifyObject(ICodeImportMachineSet, machine_set)
     True
 
-getByHostname returns None if there is no machine by that name in the
-database.
 
-    >>> print machine_set.getByHostname('unlikely.example.com')
-    None
+== Retrieving CodeImportMachines ==
+
+The 'getAll' method of ICodeImportMachineSet returns an iterable of all
+CodeImportMachine.  There is only one CodeImportMachine in the sample data.
+
+    >>> [sample_machine] = machine_set.getAll()
 
 Machine objects themselves provide ICodeImportMachine, which includes
 hostname and online state information.
 
-    >>> verifyObject(ICodeImportMachine, removeSecurityProxy(machine))
+    >>> verifyObject(ICodeImportMachine, sample_machine)
     True
-    >>> machine.hostname
-    u'frobisher.example.com'
-    >>> print machine.state.name
+    >>> sample_machine.hostname
+    u'bazaar-importer'
+    >>> print sample_machine.state.name
+    ONLINE
+
+getByHostname looks for a machine of the given hostname, and returns None if
+there is no machine by that name in the database.
+
+    >>> print machine_set.getByHostname('bazaar-importer')
+    <...CodeImportMachine...>
+
+    >>> print machine_set.getByHostname('unlikely-to-exist')
+    None
+
+
+== Creating CodeImportMachines ==
+
+CodeImportMachines can be created with the 'new' method of
+ICodeImportMachineSet.  New machines are created in the OFFLINE state.
+
+    >>> new_machine = machine_set.new('frobisher')
+    >>> print new_machine.state.name
     OFFLINE
 
-The web app cannot edit this information.
 
-    >>> from canonical.launchpad.interfaces import CodeImportMachineState
-    >>> machine.state = CodeImportMachineState.ONLINE
+== Modifying CodeImportMachine ==
+
+Directly setting the state information on CodeImportMachines is not permitted.
+
+    >>> print new_machine.state.name
+    OFFLINE
+    >>> new_machine.state = CodeImportMachineState.ONLINE
     Traceback (most recent call last):
       ...
     ForbiddenAttribute: ...
 
-Jobs running on the machine itself will connect as the 'importd' user,
-which has rights to update the table so it can update the machine state.
+Instead, the setOnline() and related methods must be used.  These methods
+update the fields and in addition create events in the CodeImportEvent audit
+trail.  The NewEvents class helps testing the creation of CodeImportEvent
+objects.
 
-XXX: MichaelHudson 2007-07-03, it would be nice to be able to use
-SQLObject here.  But the test framework doesn't appear to support this
-(see bug #123785).
+    >>> from canonical.launchpad.interfaces import (
+    ...     CodeImportEventDataType, CodeImportMachineOfflineReason)
+    >>> from canonical.launchpad.tests.test_codeimportjob import NewEvents
 
-    >>> connection = connect('importd')
-    >>> cur = connection.cursor()
-    >>> cur.execute("""
-    ...     UPDATE CodeImportMachine SET state=%s
-    ...     WHERE hostname='frobisher.example.com'
-    ...     """ % quote(CodeImportMachineState.ONLINE))
-    >>> connection.commit()
 
-Now we abort the implicit transaction and flush SQLObject's caches so
-we can see the above changes.
+=== setOnline ===
 
-    >>> import transaction
-    >>> transaction.abort()
-    >>> from canonical.database.sqlbase import flush_database_caches
-    >>> flush_database_caches()
+The setOnline method sets the machine's state to ONLINE and records the
+corresponding event. It is called when a code-import-controller daemon
+goes online.
 
-So when we check again from the web apps point of view, we see that
-the status is indeed updated.
-
-    >>> machine_set = getUtility(ICodeImportMachineSet)
-    >>> machine = machine_set.getByHostname('frobisher.example.com')
-    >>> print machine.state.name
+    >>> new_events = NewEvents()
+    >>> new_machine.setOnline()
+    >>> print new_machine.state.name
     ONLINE
+    >>> print new_events.summary()
+    ONLINE frobisher
 
+=== setOffline ===
+
+The setOffline method sets the machine's state to OFFLINE and records
+the corresponding event. It is called when a code-import-controller
+daemon stops, or when the watchdog detects that it has not updated its
+heartbeat for some time.
+
+    >>> new_events = NewEvents()
+    >>> new_machine.setOffline(CodeImportMachineOfflineReason.STOPPED)
+    >>> print new_machine.state.name
+    OFFLINE
+    >>> print new_events.summary()
+    OFFLINE frobisher
+
+    >>> [new_event] = new_events
+    >>> dict(new_event.items())[CodeImportEventDataType.OFFLINE_REASON]
+    u'STOPPED'
+
+
+=== setQuiescing ===
+
+The setQuiescing method sets the machine's state to QUIESCING and
+records the corresponding event.
+
+    >>> new_machine.setOnline()
+    >>> new_events = NewEvents()
+    >>> new_machine.setQuiescing(ddaa, "1.1.42 rollout")
+    >>> print new_events.summary()
+    QUIESCE frobisher ddaa
+
+    >>> [new_event] = new_events
+    >>> dict(new_event.items())[CodeImportEventDataType.MESSAGE]
+    u'1.1.42 rollout'
+
+
+=== Allowed State Transitions ===
+
+Not all CodeImportMachine.state transitions are allowed.
+
+The CodeImportMachine.setOffline method needs to be provided a value
+from the CodeImportMachineOfflineReason enum. The specific reason value
+does not matter to the state machine.
+
+    >>> some_reason = CodeImportMachineOfflineReason.STOPPED
+
+To make the tests more readable, we define a little helper function to
+create a new machine with a given state and import the
+CodeImportMachineState entries into the local namespace.
+
+    >>> from zope.security.proxy import removeSecurityProxy
+    >>> machine_counter = 0
+    >>> def new_machine_with_state(state):
+    ...     global machine_counter
+    ...     new_machine = machine_set.new('machine-%d' % machine_counter)
+    ...     machine_counter += 1
+    ...     removeSecurityProxy(new_machine).state = state
+    ...     return new_machine
+
+    >>> ONLINE = CodeImportMachineState.ONLINE
+    >>> OFFLINE = CodeImportMachineState.OFFLINE
+    >>> QUIESCING = CodeImportMachineState.QUIESCING
+
+From the OFFLINE state, a machine can only go ONLINE. The setOffline and
+setQuiescing methods must fail.
+
+Since our scripts and daemons run at "READ COMMITTED" isolation level,
+there are races that we cannot easily detect within the limitation of
+SQLObject, when the watchdog process and the controller daemon
+concurrently call setOffline. Those undetected races will lead to the
+creation of redundant OFFLINE events with different reason values, where
+one of the reasons will be WATCHDOG. Those races should not have any
+other adverse effect.
+
+If the machine state is already offline, setOffline will defensively
+fail, this will usefully detect logic errors where a single thread of
+execution makes redundant calls to this method.
+
+    >>> offline_machine = new_machine_with_state(OFFLINE)
+    >>> offline_machine.setOffline(some_reason)
+    Traceback (most recent call last):
+    ...
+    AssertionError: State of machine ... was OFFLINE.
+
+Attempting the transition from OFFLINE to QUIESCING is also logic error.
+
+    >>> offline_machine = new_machine_with_state(OFFLINE)
+    >>> offline_machine.setQuiescing(ddaa, "No worky!")
+    Traceback (most recent call last):
+    ...
+    AssertionError: State of machine ... was OFFLINE.
+
+From the ONLINE state, a machine can go OFFLINE or QUIESCING, setOnline
+must fail.
+
+    >>> online_machine = new_machine_with_state(ONLINE)
+    >>> online_machine.setQuiescing(ddaa, "Because.")
+    >>> print online_machine.state.name
+    QUIESCING
+
+    >>> online_machine = new_machine_with_state(ONLINE)
+    >>> online_machine.setOffline(some_reason)
+    >>> print online_machine.state.name
+    OFFLINE
+
+    >>> online_machine = new_machine_with_state(ONLINE)
+    >>> online_machine.setOnline()
+    Traceback (most recent call last):
+    ...
+    AssertionError: State of machine ... was ONLINE.
+
+From the QUIESCING state, a machine can only go OFFLINE. The setOnline
+and setQuiescing method must fail.
+
+It would be meaningful to allow the transition from QUIESCING to ONLINE,
+meaning "oops, I did not want you to quiesce, after all", but it would
+require a new event type. We will add it later if we find we need it.
+
+    >>> quiescing_machine = new_machine_with_state(QUIESCING)
+    >>> quiescing_machine.setOnline()
+    Traceback (most recent call last):
+    ...
+    AssertionError: State of machine ... was QUIESCING.
+
+    >>> quiescing_machine = new_machine_with_state(QUIESCING)
+    >>> quiescing_machine.setQuiescing(ddaa, "No worky!")
+    Traceback (most recent call last):
+    ...
+    AssertionError: State of machine ... was QUIESCING.
+
+    >>> quiescing_machine = new_machine_with_state(QUIESCING)
+    >>> quiescing_machine.setOffline(some_reason)
+    >>> print quiescing_machine.state.name
+    OFFLINE

@@ -1,4 +1,5 @@
 # Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# pylint: disable-msg=E0611,W0212
 
 __metaclass__ = type
 __all__ = [
@@ -11,17 +12,17 @@ import pytz
 
 from zope.interface import implements
 
-from sqlobject import (
-    ForeignKey, SQLMultipleJoin, SQLRelatedJoin)
+from sqlobject import ForeignKey
 
 from canonical.launchpad.interfaces import (
     IMentoringOffer,
     IMentoringOfferSet,
     )
 
-from canonical.database.sqlbase import SQLBase, quote, sqlvalues
-from canonical.database.constants import DEFAULT, UTC_NOW
+from canonical.database.sqlbase import SQLBase, sqlvalues
+from canonical.database.constants import DEFAULT
 from canonical.database.datetimecol import UtcDateTimeCol
+from canonical.launchpad.validators.person import public_person_validator
 
 
 class MentoringOffer(SQLBase):
@@ -32,9 +33,13 @@ class MentoringOffer(SQLBase):
     _defaultOrder = ['-date_created', '-id']
 
     # db field names
-    owner = ForeignKey(dbName='owner', foreignKey='Person', notNull=True)
+    owner = ForeignKey(
+        dbName='owner', foreignKey='Person',
+        validator=public_person_validator, notNull=True)
     date_created = UtcDateTimeCol(notNull=True, default=DEFAULT)
-    team = ForeignKey(dbName='team', notNull=True, foreignKey='Person')
+    team = ForeignKey(
+        dbName='team', foreignKey='Person',
+        validator=public_person_validator, notNull=True)
     bug = ForeignKey(dbName='bug', notNull=False,
                      foreignKey='Bug', default=None)
     specification = ForeignKey(dbName='specification', notNull=False,

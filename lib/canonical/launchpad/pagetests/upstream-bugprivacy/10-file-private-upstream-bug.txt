@@ -1,7 +1,7 @@
 When filing a private security bug upstream, with no upstream bug
 contact, the maintainer will be subscribed to the bug instead.
 
-    >>> browser.addHeader("Authorization", "Basic foo.bar@canonical.com:test")
+    >>> browser = setupBrowser(auth="Basic foo.bar@canonical.com:test")
     >>> browser.open(
     ...     "http://localhost:9000/firefox/+filebug-advanced")
 
@@ -106,30 +106,30 @@ subscribed instead.
 Trying to access the task edit page of a task on a private bug
 redirects the anonymous user to the login page.
 
+    >>> browser = setupBrowser()
+    >>> browser.handleErrors = True
+    >>> browser.open(
+    ...     "http://launchpad.dev/firefox/+bug/%s/+editstatus" % bug_id)
+
 XXX: Brad Bollenbach, 2005-09-13: This redirect is going to the wrong
 URL. See https://launchpad.net/malone/bugs/2265.
 
-    >>> from zope.testbrowser.testing import Browser
-    >>> browser = Browser()
-    >>> browser.open("http://launchpad.dev/firefox/+bug/%s/+editstatus" % bug_id)
     >>> print browser.url
     http://launchpad.dev/firefox/+bug/.../+editstatus/+login
 
 The no-privs user cannot access bug #10, because it's filed on a private bug on
 which the no-privs is not an explicit subscriber.
 
-    >>> browser = Browser()
-    >>> browser.addHeader("Authorization", "Basic no-priv@canonical.com:test")
+    >>> browser = setupBrowser(auth="Basic no-priv@canonical.com:test")
     >>> browser.open("http://launchpad.dev/firefox/+bug/%s/+editstatus" % bug_id)
     Traceback (most recent call last):
     ...
-    HTTPError: HTTP Error 403: Forbidden
+    Unauthorized:...
 
 Sample Person accesses the bug page of a private bug. He is allowed to
 view the page because he is an explicit subscriber on the bug.
 
-    >>> browser = Browser()
-    >>> browser.addHeader("Authorization", "Basic test@canonical.com:test")
+    >>> browser = setupBrowser(auth="Basic test@canonical.com:test")
     >>> browser.open("http://launchpad.dev/firefox/+bug/%s" % bug_id)
     >>> print browser.headers["Status"]
     200 Ok
@@ -137,8 +137,7 @@ view the page because he is an explicit subscriber on the bug.
 He now accesses the task page of a task on a private bug; also
 permitted.
 
-    >>> browser = Browser()
-    >>> browser.addHeader("Authorization", "Basic test@canonical.com:test")
+    >>> browser = setupBrowser(auth="Basic test@canonical.com:test")
     >>> browser.open("http://launchpad.dev/firefox/+bug/%s/+editstatus" % bug_id)
     >>> print browser.headers["Status"]
     200 Ok

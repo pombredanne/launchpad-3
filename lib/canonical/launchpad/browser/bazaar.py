@@ -14,13 +14,14 @@ from datetime import datetime
 
 from zope.component import getUtility
 
+import bzrlib
+
 from canonical.cachedproperty import cachedproperty
 from canonical.config import config
 from canonical.lp import decorates
 
 from canonical.launchpad.interfaces import (
     IBazaarApplication, IBranchSet, IProduct, IProductSet, IProductSeriesSet)
-from canonical.lp.dbschema import ImportStatus
 from canonical.launchpad.helpers import shortlist
 from canonical.launchpad.webapp import (
     ApplicationMenu, enabled_with_permission, LaunchpadView, Link, Navigation,
@@ -57,25 +58,11 @@ class BazaarApplicationView(LaunchpadView):
         return getUtility(IBranchSet).countBranchesWithAssociatedBugs()
 
     def import_count(self):
-        return self.series_set.importcount()
+        return self.series_set.searchImports().count()
 
-    def testing_count(self):
-        return self.series_set.importcount(ImportStatus.TESTING.value)
-
-    def autotested_count(self):
-        return self.series_set.importcount(ImportStatus.AUTOTESTED.value)
-
-    def testfailed_count(self):
-        return self.series_set.importcount(ImportStatus.TESTFAILED.value)
-
-    def processing_count(self):
-        return self.series_set.importcount(ImportStatus.PROCESSING.value)
-
-    def syncing_count(self):
-        return self.series_set.importcount(ImportStatus.SYNCING.value)
-
-    def stopped_count(self):
-        return self.series_set.importcount(ImportStatus.STOPPED.value)
+    @property
+    def bzr_version(self):
+        return bzrlib.__version__
 
     @cachedproperty
     def recently_changed_branches(self):
@@ -208,9 +195,9 @@ class BazaarProductView:
         for product in products:
             summary = branch_summaries.get(product)
             if not summary:
-                # If the only branches for the product were import branches
-                # or merged or abandoned branches, then there will not be
-                # a summary returned for that product, and we are not interested
+                # If the only branches for the product were import branches or
+                # merged or abandoned branches, then there will not be a
+                # summary returned for that product, and we are not interested
                 # in showing them in our cloud.
                 continue
             last_commit = summary['last_commit']

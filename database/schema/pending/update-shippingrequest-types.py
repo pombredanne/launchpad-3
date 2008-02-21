@@ -6,7 +6,7 @@
 
 import _pythonpath
 
-from canonical.database.sqlbase import sqlvalues
+from canonical.database.sqlbase import cursor, sqlvalues
 from canonical.launchpad.database import ShippingRequest
 from canonical.launchpad.scripts import execute_zcml_for_scripts
 from canonical.lp import initZopeless
@@ -17,28 +17,33 @@ from canonical.launchpad.interfaces import (
 execute_zcml_for_scripts()
 ztm = initZopeless(implicitBegin=False)
 
+ztm.begin()
 query = """
-    ShippingRequest.type IS NULL
-    AND ShippingRequest.id IN (
-        SELECT request FROM RequestedCDs WHERE distrorelease = %s)
+    SELECT DISTINCT ShippingRequest.id
+    FROM ShippingRequest
+    WHERE ShippingRequest.type IS NULL
+        AND ShippingRequest.id IN (
+            SELECT request FROM RequestedCDs WHERE distrorelease = %s)
     """ % sqlvalues(ShipItDistroSeries.FEISTY)
+cur = cursor()
+cur.execute(query)
+ids = cur.fetchall()
+ztm.abort()
 
-while True:
+for [id] in ids:
     ztm.begin()
-    requests = ShippingRequest.select(query)[:50]
-    if requests.count() == 0:
-        break
-    for request in requests:
-        requested_cds = request.getAllRequestedCDs()
-        is_custom = False
-        for flavour in ShipItFlavour.items:
-            if request.containsCustomQuantitiesOfFlavour(flavour):
-                is_custom = True
-        if is_custom:
-            request.type = ShippingRequestType.CUSTOM
-            print "Updated type of request #%d to CUSTOM" % request.id
-        else:
-            request.type = ShippingRequestType.STANDARD
-            print "Updated type of request #%d to STANDARD" % request.id
+
+    request = ShippingRequest.get(id)
+    requested_cds = request.getAllRequestedCDs()
+    is_custom = False
+    for flavour in ShipItFlavour.items:
+        if request.containsCustomQuantitiesOfFlavour(flavour):
+            is_custom = True
+    if is_custom:
+        request.type = ShippingRequestType.CUSTOM
+        print "Updated type of request #%d to CUSTOM" % request.id
+    else:
+        request.type = ShippingRequestType.STANDARD
+        print "Updated type of request #%d to STANDARD" % request.id
 
     ztm.commit()

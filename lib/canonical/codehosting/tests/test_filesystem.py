@@ -10,11 +10,12 @@ import stat
 from bzrlib import errors
 from bzrlib.tests import TestCaseWithTransport
 
+from canonical.codehosting import branch_id_to_path
+from canonical.codehosting.tests.helpers import (
+    adapt_suite, deferToThread, CodeHostingTestProviderAdapter,
+    ServerTestCase)
 from canonical.codehosting.tests.servers import (
     make_launchpad_server, make_sftp_server)
-
-from canonical.codehosting.tests.helpers import (
-    CodeHostingTestProviderAdapter, ServerTestCase, adapt_suite, deferToThread)
 
 from canonical.testing import TwistedLayer
 
@@ -34,6 +35,21 @@ def wait_for_disconnect(method):
     return decorated_function
 
 
+class TestBranchIDToPath(unittest.TestCase):
+    """Tests for branch_id_to_path."""
+
+    def test_branchIDToPath(self):
+        # branch_id_to_path converts an integer branch ID into a path of four
+        # segments, with each segment being a hexadecimal number.
+        self.assertEqual('00/00/00/00', branch_id_to_path(0))
+        self.assertEqual('00/00/00/01', branch_id_to_path(1))
+        arbitrary_large_id = 6731
+        assert "%x" % arbitrary_large_id == '1a4b', (
+            "The arbitrary large id is not what we expect (1a4b): %s"
+            % (arbitrary_large_id))
+        self.assertEqual('00/00/1a/4b', branch_id_to_path(6731))
+
+
 class TestFilesystem(ServerTestCase, TestCaseWithTransport):
 
     layer = TwistedLayer
@@ -44,22 +60,6 @@ class TestFilesystem(ServerTestCase, TestCaseWithTransport):
         # The tests fail badly if this is removed, for unknown reasons.
         from twisted.internet import defer
         return defer.succeed(None)
-
-    def assertPermissionDenied(self, function, *args, **kwargs):
-        """Assert that calling 'function' raises a permission denied error.
-
-        The actual exception depends on whether the function operates on an
-        SFTP transport or a smart server transport. The SFTP transport will
-        raise `errors.PermissionDenied` and the smart server transport will
-        raise `errors.NoSuchFile`.
-        """
-        # XXX: JonathanLange 2007-08-01, The smart server should raise
-        # PermissionDenied, just like the SFTP server. However, a bug in Bazaar
-        # (bug 118736) prevents PermissionDenied errors from being transmitted
-        # over the wire, so the server raises NoSuchFile instead.
-        self.assertRaises(
-            (errors.PermissionDenied, errors.NoSuchFile),
-            function, *args, **kwargs)
 
     @deferToThread
     def test_remove_branch_directory(self):
@@ -72,7 +72,8 @@ class TestFilesystem(ServerTestCase, TestCaseWithTransport):
         self.failUnless(stat.S_ISDIR(transport.stat('bar').st_mode))
 
         # Try to remove a branch directory, which is not allowed.
-        self.assertPermissionDenied(transport.rmdir, 'foo')
+        self.assertTransportRaises(
+            errors.PermissionDenied, transport.rmdir, 'foo')
 
         # The 'foo' directory is still listed.
         self.assertTrue(transport.has('bar'))
@@ -84,14 +85,16 @@ class TestFilesystem(ServerTestCase, TestCaseWithTransport):
         # sometimes a transport will ask to look at files that aren't of that
         # form. In that case, the transport is denied permission.
         transport = self.getTransport()
-        self.assertPermissionDenied(transport.mkdir, 'apple')
+        self.assertTransportRaises(
+            errors.PermissionDenied, transport.mkdir, 'apple')
 
     @deferToThread
     def test_make_valid_user_directory(self):
         # Making a top-level directory is not supported by the Launchpad
         # transport.
         transport = self.getTransport()
-        self.assertPermissionDenied(transport.mkdir, '~apple')
+        self.assertTransportRaises(
+            errors.PermissionDenied, transport.mkdir, '~apple')
 
     @deferToThread
     def test_make_existing_user_directory(self):
@@ -99,21 +102,25 @@ class TestFilesystem(ServerTestCase, TestCaseWithTransport):
         # the error is, but it should be one of FileExists,
         # TransportNotPossible or NoSuchFile
         transport = self.getTransport()
-        self.assertPermissionDenied(transport.mkdir, '~testuser')
+        self.assertTransportRaises(
+            errors.PermissionDenied, transport.mkdir, '~testuser')
 
     @deferToThread
     def test_mkdir_not_team_member_error(self):
         # You can't make a branch under the directory of a team that you don't
         # belong to.
         transport = self.getTransport()
-        self.assertRaises(
-            errors.NoSuchFile,
+        # The SFTP server will get NoSuchFile because /~not-my-team
+        # does not exist, while the smart server gets PermissionDenied
+        # because we can't create the given branch.
+        self.assertTransportRaises(
+            (errors.NoSuchFile, errors.PermissionDenied),
             transport.mkdir, '~not-my-team/firefox/new-branch')
 
     @deferToThread
     def test_make_team_branch_directory(self):
-        # You can make a branch directory under a team directory that you are a
-        # member of (so long as it's a real product), though.
+        # You can make a branch directory under a team directory that you are
+        # a member of (so long as it's a real product).
         transport = self.getTransport()
         transport.mkdir('~testteam/firefox/shiny-new-thing')
         self.assertTrue(
@@ -123,7 +130,11 @@ class TestFilesystem(ServerTestCase, TestCaseWithTransport):
     def test_make_team_junk_branch_directory(self):
         # Teams do not have +junk products
         transport = self.getTransport()
-        self.assertPermissionDenied(
+        # The SFTP server will get NoSuchFile because /~testteam/+junk
+        # does not exist, while the smart server gets PermissionDenied
+        # because we can't create the given branch.
+        self.assertTransportRaises(
+            (errors.NoSuchFile, errors.PermissionDenied),
             transport.mkdir, '~testteam/+junk/new-branch')
 
     @deferToThread
@@ -131,7 +142,8 @@ class TestFilesystem(ServerTestCase, TestCaseWithTransport):
         # Making a branch directory for a non-existent product is not allowed.
         # Products must first be registered in Launchpad.
         transport = self.getTransport()
-        self.assertPermissionDenied(
+        self.assertTransportRaises(
+            errors.PermissionDenied,
             transport.mkdir, '~testuser/no-such-product/new-branch')
 
     @deferToThread
@@ -176,21 +188,23 @@ class TestFilesystem(ServerTestCase, TestCaseWithTransport):
 
     @deferToThread
     def test_non_bzr_directory_inside_branch(self):
-        # Users can only create Bazaar control directories (e.g. '.bzr') inside
-        # a branch. Other directories are strictly forbidden.
+        # Users can only create Bazaar control directories (e.g. '.bzr')
+        # inside a branch. Other directories are strictly forbidden.
         transport = self.getTransport()
         transport.mkdir('~testuser/+junk/banana')
-        self.assertPermissionDenied(
+        self.assertTransportRaises(
+            errors.PermissionDenied,
             transport.mkdir, '~testuser/+junk/banana/republic')
 
     @deferToThread
     @wait_for_disconnect
     def test_non_bzr_file_inside_branch(self):
-        # Users can only create Bazaar control directories (e.g. '.bzr') inside
-        # a branch. Files are not allowed.
+        # Users can only create Bazaar control directories (e.g. '.bzr')
+        # inside a branch. Files are not allowed.
         transport = self.getTransport()
         transport.mkdir('~testuser/+junk/banana')
-        self.assertPermissionDenied(
+        self.assertTransportRaises(
+            errors.PermissionDenied,
             transport.put_bytes, '~testuser/+junk/banana/README', 'Hello!')
 
     @deferToThread
@@ -202,7 +216,8 @@ class TestFilesystem(ServerTestCase, TestCaseWithTransport):
         transport = self.getTransport()
         transport.mkdir('~testuser/firefox/banana')
         transport.mkdir('~testuser/firefox/banana/.bzr')
-        self.assertPermissionDenied(
+        self.assertTransportRaises(
+            errors.PermissionDenied,
             transport.rename, '~testuser/firefox/banana/.bzr',
             '~testuser/firefox/banana/republic')
 
@@ -242,6 +257,18 @@ class TestFilesystem(ServerTestCase, TestCaseWithTransport):
         transport.mkdir('branch/.bzr/dir1/foo')
         transport.rename('branch/.bzr/dir1', 'branch/.bzr/dir2')
         self.assertEqual(['dir2'], transport.list_dir('branch/.bzr'))
+
+    @deferToThread
+    @wait_for_disconnect
+    def test_make_directory_twice(self):
+        # The transport raises a `FileExists` error if we try to make a
+        # directory that already exists.
+        transport = self.getTransport('~testuser/+junk')
+        transport.mkdir('branch')
+        transport.mkdir('branch/.bzr')
+        transport.mkdir('branch/.bzr/dir1')
+        self.assertRaises(
+            errors.FileExists, transport.mkdir, 'branch/.bzr/dir1')
 
 
 class TestErrorMessages(ServerTestCase, TestCaseWithTransport):
@@ -302,7 +329,8 @@ class TestErrorMessages(ServerTestCase, TestCaseWithTransport):
 
 def test_suite():
     # Parametrize the tests so they run against the SFTP server and a Bazaar
-    # smart server. This ensures that both services provide the same behaviour.
+    # smart server. This ensures that both services provide the same
+    # behaviour.
     servers = [make_sftp_server, make_launchpad_server]
     adapter = CodeHostingTestProviderAdapter(servers)
     loader = unittest.TestLoader()

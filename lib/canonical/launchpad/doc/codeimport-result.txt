@@ -1,0 +1,12 @@
+= Code Import Results =
+
+A CodeImportResult is a record of a completed code import job.  They
+are accessed via a utility registered for the ICodeImportResultSet
+interface.
+
+    >>> from canonical.launchpad.interfaces import (
+    ...     ICodeImportResult, ICodeImportResultSet)
+    >>> result_set = getUtility(ICodeImportResultSet)
+    >>> from canonical.launchpad.webapp.testing import verifyObject
+    >>> verifyObject(ICodeImportResultSet, result_set)
+    True

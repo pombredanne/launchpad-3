@@ -61,12 +61,4 @@
           canonical.launchpad.event.interfaces.ISQLObjectCreatedEvent"
      handler="canonical.launchpad.subscribers.bugactivity.record_bug_attachment_added" />
 
-    <!--
- <subscriber
-     for="canonical.launchpad.interfaces.IBugExternalRef
-          zope.app.event.interfaces.IObjectCreatedEvent"
-     handler="canonical.launchpad.mailnotification.notify_bug_external_ref_added" />
-
--->
-
 </configure>

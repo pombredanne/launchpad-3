@@ -2,7 +2,7 @@ Because milestones are associated with products or distros, reassigning
 a bugtask to a different product forces the milestone value to None,
 even if the user was trying to set the milestone value.
 
-    >>> browser.addHeader("Authorization", "Basic foo.bar@canonical.com:test")
+    >>> browser = setupBrowser(auth="Basic foo.bar@canonical.com:test")
     >>> browser.open("http://bugs.launchpad.dev/firefox/+bug/1/+editstatus")
     >>> browser.getControl("Project").value = "evolution"
     >>> browser.getControl("Milestone").value = ["1"]

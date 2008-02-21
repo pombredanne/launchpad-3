@@ -1,4 +1,5 @@
 # Copyright 2005-2007 Canonical Ltd.  All rights reserved.
+# pylint: disable-msg=E0611,W0212
 
 """Classes to represent source packages in a distribution."""
 
@@ -12,11 +13,9 @@ from sqlobject.sqlbuilder import SQLConstant
 
 from zope.interface import implements
 
-from canonical.lp.dbschema import PackagePublishingStatus
-
 from canonical.launchpad.interfaces import (
-    IDistributionSourcePackage, IQuestionTarget, DuplicateBugContactError,
-    DeleteBugContactError)
+    IDistributionSourcePackage, IQuestionTarget,
+    IStructuralSubscriptionTarget, PackagePublishingStatus)
 from canonical.database.sqlbase import sqlvalues
 from canonical.launchpad.database.bug import BugSet, get_bug_tags_open_count
 from canonical.launchpad.database.bugtarget import BugTargetBase
@@ -25,17 +24,19 @@ from canonical.launchpad.database.distributionsourcepackagecache import (
     DistributionSourcePackageCache)
 from canonical.launchpad.database.distributionsourcepackagerelease import (
     DistributionSourcePackageRelease)
-from canonical.launchpad.database.packagebugcontact import PackageBugContact
 from canonical.launchpad.database.publishing import (
     SourcePackagePublishingHistory)
 from canonical.launchpad.database.sourcepackagerelease import (
     SourcePackageRelease)
 from canonical.launchpad.database.sourcepackage import (
     SourcePackage, SourcePackageQuestionTargetMixin)
+from canonical.launchpad.database.structuralsubscription import (
+    StructuralSubscriptionTargetMixin)
 
 
 class DistributionSourcePackage(BugTargetBase,
-                                SourcePackageQuestionTargetMixin):
+                                SourcePackageQuestionTargetMixin,
+                                StructuralSubscriptionTargetMixin):
     """This is a "Magic Distribution Source Package". It is not an
     SQLObject, but instead it represents a source package with a particular
     name in a particular distribution. You can then ask it all sorts of
@@ -43,7 +44,9 @@ class DistributionSourcePackage(BugTargetBase,
     or current release, etc.
     """
 
-    implements(IDistributionSourcePackage, IQuestionTarget)
+    implements(
+        IDistributionSourcePackage, IQuestionTarget,
+        IStructuralSubscriptionTarget)
 
     def __init__(self, distribution, sourcepackagename):
         self.distribution = distribution
@@ -76,15 +79,20 @@ class DistributionSourcePackage(BugTargetBase,
         return 'Source Package "%s" in %s' % (
             self.sourcepackagename.name, self.distribution.title)
 
+    @property
+    def bug_reporting_guidelines(self):
+        """See `IBugTarget`."""
+        return self.distribution.bug_reporting_guidelines
+
     def __getitem__(self, version):
         return self.getVersion(version)
 
     def getVersion(self, version):
         """See IDistributionSourcePackage."""
         spph = SourcePackagePublishingHistory.select("""
-            SourcePackagePublishingHistory.distrorelease =
-                DistroRelease.id AND
-            DistroRelease.distribution = %s AND
+            SourcePackagePublishingHistory.distroseries =
+                DistroSeries.id AND
+            DistroSeries.distribution = %s AND
             SourcePackagePublishingHistory.archive IN %s AND
             SourcePackagePublishingHistory.sourcepackagerelease =
                 SourcePackageRelease.id AND
@@ -96,7 +104,7 @@ class DistributionSourcePackage(BugTargetBase,
                             version),
             orderBy='-datecreated',
             prejoinClauseTables=['SourcePackageRelease'],
-            clauseTables=['DistroRelease', 'SourcePackageRelease'])
+            clauseTables=['DistroSeries', 'SourcePackageRelease'])
         if spph.count() == 0:
             return None
         return DistributionSourcePackageRelease(
@@ -112,16 +120,15 @@ class DistributionSourcePackage(BugTargetBase,
             SourcePackageRelease.sourcepackagename = %s AND
             SourcePackageRelease.id =
                 SourcePackagePublishingHistory.sourcepackagerelease AND
-            SourcePackagePublishingHistory.distrorelease =
-                DistroRelease.id AND
-            DistroRelease.distribution = %s AND
+            SourcePackagePublishingHistory.distroseries =
+                DistroSeries.id AND
+            DistroSeries.distribution = %s AND
             SourcePackagePublishingHistory.archive IN %s AND
-            SourcePackagePublishingHistory.status != %s
+            SourcePackagePublishingHistory.dateremoved is NULL
             """ % sqlvalues(self.sourcepackagename,
                             self.distribution,
-                            self.distribution.all_distro_archive_ids,
-                            PackagePublishingStatus.REMOVED),
-            clauseTables=['SourcePackagePublishingHistory', 'DistroRelease'],
+                            self.distribution.all_distro_archive_ids),
+            clauseTables=['SourcePackagePublishingHistory', 'DistroSeries'],
             orderBy=[SQLConstant(order_const),
                      "-SourcePackagePublishingHistory.datepublished"])
 
@@ -143,58 +150,6 @@ class DistributionSourcePackage(BugTargetBase,
             limit=quantity)
 
     @property
-    def bugcontacts(self):
-        """See IDistributionSourcePackage."""
-        # Use "list" here because it's possible that this list will be longer
-        # than a "shortlist", though probably uncommon.
-        query = """
-            PackageBugContact.distribution=%s
-            AND PackageBugContact.sourcepackagename = %s
-            AND PackageBugContact.bugcontact = Person.id
-            """ % sqlvalues(self.distribution, self.sourcepackagename)
-        contacts = PackageBugContact.select(
-            query,
-            orderBy='Person.displayname',
-            clauseTables=['Person'])
-        contacts.prejoin(["bugcontact"])
-        return list(contacts)
-
-    def addBugContact(self, person):
-        """See IDistributionSourcePackage."""
-        contact_already_exists = self.isBugContact(person)
-
-        if contact_already_exists:
-            raise DuplicateBugContactError(
-                "%s is already one of the bug contacts for %s." %
-                (person.name, self.displayname))
-        else:
-            PackageBugContact(
-                distribution=self.distribution,
-                sourcepackagename=self.sourcepackagename,
-                bugcontact=person)
-
-    def removeBugContact(self, person):
-        """See IDistributionSourcePackage."""
-        contact_to_remove = self.isBugContact(person)
-
-        if not contact_to_remove:
-            raise DeleteBugContactError("%s is not a bug contact for this package.")
-        else:
-            contact_to_remove.destroySelf()
-
-    def isBugContact(self, person):
-        """See IDistributionSourcePackage."""
-        package_bug_contact = PackageBugContact.selectOneBy(
-            distribution=self.distribution,
-            sourcepackagename=self.sourcepackagename,
-            bugcontact=person)
-
-        if package_bug_contact:
-            return package_bug_contact
-        else:
-            return False
-
-    @property
     def binary_package_names(self):
         """See IDistributionSourcePackage."""
         cache = DistributionSourcePackageCache.selectOne("""
@@ -205,10 +160,13 @@ class DistributionSourcePackage(BugTargetBase,
             return None
         return cache.binpkgnames
 
-    def get_distroseries_packages(self):
+    def get_distroseries_packages(self, active_only=True):
         """See IDistributionSourcePackage."""
         result = []
         for series in self.distribution.serieses:
+            if active_only:
+                if not series.active:
+                    continue
             candidate = SourcePackage(self.sourcepackagename, series)
             if candidate.currentrelease is not None:
                 result.append(candidate)
@@ -228,10 +186,10 @@ class DistributionSourcePackage(BugTargetBase,
 
     def _getPublishingHistoryQuery(self, status=None):
         query = """
-            DistroRelease.distribution = %s AND
+            DistroSeries.distribution = %s AND
             SourcePackagePublishingHistory.archive IN %s AND
-            SourcePackagePublishingHistory.distrorelease =
-                DistroRelease.id AND
+            SourcePackagePublishingHistory.distroseries =
+                DistroSeries.id AND
             SourcePackagePublishingHistory.sourcepackagerelease =
                 SourcePackageRelease.id AND
             SourcePackageRelease.sourcepackagename = %s
@@ -244,7 +202,7 @@ class DistributionSourcePackage(BugTargetBase,
                       % sqlvalues(status))
 
         return SourcePackagePublishingHistory.select(query,
-            clauseTables=['DistroRelease', 'SourcePackageRelease'],
+            clauseTables=['DistroSeries', 'SourcePackageRelease'],
             prejoinClauseTables=['SourcePackageRelease'],
             orderBy='-datecreated')
 
@@ -253,8 +211,8 @@ class DistributionSourcePackage(BugTargetBase,
     def releases(self):
         """See IDistributionSourcePackage."""
         ret = SourcePackagePublishingHistory.select("""
-            sourcepackagepublishinghistory.distrorelease = DistroRelease.id AND
-            DistroRelease.distribution = %s AND
+            sourcepackagepublishinghistory.distroseries = DistroSeries.id AND
+            DistroSeries.distribution = %s AND
             sourcepackagepublishinghistory.archive IN %s AND
             sourcepackagepublishinghistory.sourcepackagerelease =
                 sourcepackagerelease.id AND
@@ -263,7 +221,7 @@ class DistributionSourcePackage(BugTargetBase,
                             self.distribution.all_distro_archive_ids,
                             self.sourcepackagename),
             orderBy='-datecreated',
-            clauseTables=['distrorelease', 'sourcepackagerelease'])
+            clauseTables=['distroseries', 'sourcepackagerelease'])
         result = []
         versions = set()
         for spp in ret:

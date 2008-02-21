@@ -1,4 +1,5 @@
 # Copyright 2007 Canonical Ltd.  All rights reserved.
+# pylint: disable-msg=E0211,E0213
 
 """BranchVisibilityPolicy interfaces."""
 
@@ -10,11 +11,12 @@ __all__ = [
     'IBranchVisibilityTeamPolicy',
     ]
 
-from zope.interface import Interface, Attribute
+from zope.interface import Interface
 
 from zope.schema import Choice
 
 from canonical.launchpad import _
+from canonical.launchpad.fields import PublicPersonChoice
 from canonical.lazr import DBEnumeratedType, DBItem
 
 
@@ -108,7 +110,7 @@ class IBranchVisibilityTeamPolicy(Interface):
     The team may be null, in which case the rule applies to everyone.
     """
 
-    team = Choice(
+    team = PublicPersonChoice(
         title=_('Team'), required=False, vocabulary='ValidPersonOrTeam',
         description=_("Specifies the team that the policy applies to. "
                       "If None then the policy applies to everyone."))

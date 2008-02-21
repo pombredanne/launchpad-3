@@ -30,15 +30,18 @@ case "$1" in
 
         install -d -o${USER} -m0755 /home/${USER}
 
-        cp  /usr/share/launchpad-buildd/sbuildrc \
-	    /home/${USER}/sbuildrc.tmp
-	cd /home/${USER}
-	sed -e's/@ARCHTAG@/'$(dpkg --print-installation-architecture)'/g' \
-            -e's/@FQDN@/'$(hostname --fqdn)'/g' \
-            <sbuildrc.tmp > .sbuildrc
-	chown $USER:buildd .sbuildrc
-	chmod 0644 .sbuildrc
-	rm sbuildrc.tmp
+	# Create ~buildd/.sbuildrc if needed
+	if [ ! -f /home/${USER}/.sbuildrc ]; then
+	    cp  /usr/share/launchpad-buildd/sbuildrc \
+		/home/${USER}/sbuildrc.tmp
+	    cd /home/${USER}
+	    sed -e's/@ARCHTAG@/'$(dpkg --print-installation-architecture)'/g' \
+		-e's/@FQDN@/'$(hostname --fqdn)'/g' \
+		<sbuildrc.tmp > .sbuildrc
+	    chown $USER:buildd .sbuildrc
+	    chmod 0644 .sbuildrc
+	    rm sbuildrc.tmp
+	fi
 
 	# Prepare a default buildd...
 	test -e /etc/launchpad-buildd/default || make_buildd

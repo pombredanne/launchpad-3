@@ -3,9 +3,7 @@
 We have one page in which a team admin can review (approve/decline/hold) all
 proposed members at once.
 
-    >>> from zope.testbrowser.testing import Browser
-    >>> browser = Browser()
-    >>> browser.addHeader('Authorization', 'Basic mark@hbd.com:test')
+    >>> browser = setupBrowser(auth='Basic mark@hbd.com:test')
     >>> browser.open('http://launchpad.dev/~ubuntu-team/+members')
     >>> browser.getLink('Approve or decline members').click()
     >>> browser.url

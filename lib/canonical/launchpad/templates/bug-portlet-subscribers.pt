@@ -1,28 +1,39 @@
-<div class="portlet" id="portlet-subscribers">
+<div
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  class="portlet" id="portlet-subscribers">
   <h2>Subscribers</h2>
   <div class="portletBody"
-       tal:define="from_dupes_subscribers context/getSubscribersFromDuplicates;
+       tal:define="direct_subscriptions context/getDirectSubscriptions;
+		   from_dupes_subscriptions context/getSubscriptionsFromDuplicates;
                    also_notified_subscribers context/getAlsoNotifiedSubscribers">
 
     <ul class="person">
-      <li tal:repeat="subscriber context/getDirectSubscribers">
+      <li tal:repeat="subscription direct_subscriptions">
         <a href="#"
-           tal:content="subscriber/browsername"
-           tal:attributes="href subscriber/fmt:url">Dafydd Harries</a>
+           tal:content="subscription/person/browsername"
+           tal:attributes="
+               href subscription/person/fmt:url;
+               title subscription/display_subscribed_by">
+	  Dafydd Harries
+	</a>
       </li>
-      <li class="info" tal:condition="not: context/getDirectSubscribers">
+      <li class="info" tal:condition="not: direct_subscriptions">
         <i>No subscribers</i>
       </li>
     </ul>
 
-    <div tal:condition="from_dupes_subscribers">
+    <div tal:condition="from_dupes_subscriptions">
       <br />
       <b>From duplicates:</b><br />
       <ul class="person">
-        <li tal:repeat="subscriber from_dupes_subscribers">
+        <li tal:repeat="subscription from_dupes_subscriptions">
           <a href="#"
-             tal:content="subscriber/browsername"
-             tal:attributes="href subscriber/fmt:url">Dafydd Harries</a>
+             tal:content="subscription/person/browsername"
+             tal:attributes="
+                 href subscription/person/fmt:url;
+                 title subscription/display_subscribed_by">Dafydd Harries</a>
         </li>
       </ul>
     </div>
@@ -40,4 +51,5 @@
       </ul>
 
     </div>
+  </div>
 </div>

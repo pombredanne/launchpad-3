@@ -1,4 +1,8 @@
-<tr class="ppa_batch_row">
+<tr 
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  class="ppa_batch_row">
   <td><a tal:content="context/owner/browsername"
          tal:attributes="href context/fmt:url">FooBar</a></td>
   <td tal:content="context/description/fmt:shorten/65" />

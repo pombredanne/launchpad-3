@@ -1,3 +1,8 @@
+<tal:root
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  omit-tag="">
 <div
   tal:condition="python:view.num_lists == 1"
   id="structural-children"
@@ -19,3 +24,4 @@
       condition="not:repeat/child/end">,</tal:comma></tal:child><tal:ellipsis condition="view/has_more_alt_children">, &hellip;</tal:ellipsis>
   </div>
 </div>
+</tal:root>

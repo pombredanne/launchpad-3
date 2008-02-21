@@ -108,8 +108,8 @@ it to return:
   >>> from zope.component import getUtility
   >>> from canonical.launchpad.ftests import login, ANONYMOUS
   >>> from canonical.launchpad.interfaces import (
-  ...     IPersonSet, IBugSet, IBugTrackerSet, ILaunchpadCelebrities)
-  >>> from canonical.lp.dbschema import BugTrackerType
+  ...     BugTrackerType, IPersonSet, IBugSet, IBugTrackerSet,
+  ...     ILaunchpadCelebrities)
   >>> from canonical.launchpad.scripts import bugzilla
 
 Get a reference to the Ubuntu bug tracker, and log in:
@@ -187,6 +187,7 @@ Now we import bug #1 and check the results:
   Subscribers:
       Foo Bar
       Sample Person
+      Ubuntu Team
   Task: mozilla-firefox (Ubuntu)
       Status: NEW
       Distro: ubuntu
@@ -245,6 +246,7 @@ to notice:
       Foo Bar
       New User
       Sample Person
+      Ubuntu Team
   Task: Ubuntu
       Status: INVALID
       Distro: ubuntu
@@ -256,6 +258,8 @@ to notice:
       Date: 2005-04-02 00:00:00+00:00
       Subject: Test bug 2
       First comment
+  <BLANKLINE>
+      http://www.ubuntu.com
   <BLANKLINE>
       Author: Foo Bar
       Date: 2005-04-02 01:00:00+00:00
@@ -281,6 +285,7 @@ Now import an ASSIGNED bug.  Things to note about this import:
   Subscribers:
       Foo Bar
       Sample Person
+      Ubuntu Team
   Task: netapplet (Ubuntu)
       Status: CONFIRMED
       Distro: ubuntu
@@ -295,6 +300,8 @@ Now import an ASSIGNED bug.  Things to note about this import:
       Date: 2005-04-03 00:00:00+00:00
       Subject: Test bug 3
       First comment
+  <BLANKLINE>
+      http://www.ubuntu.com
   <BLANKLINE>
       Author: Sample Person
       Date: 2005-04-03 01:00:00+00:00
@@ -324,6 +331,7 @@ Next we import a fixed bug:
   Subscribers:
       Foo Bar
       Sample Person
+      Ubuntu Team
   Task: mozilla-firefox (Ubuntu)
       Status: FIXRELEASED
       Distro: ubuntu
@@ -336,6 +344,8 @@ Next we import a fixed bug:
       Date: 2005-04-04 00:00:00+00:00
       Subject: Test bug 4
       First comment
+  <BLANKLINE>
+      http://www.ubuntu.com
   <BLANKLINE>
 
 
@@ -352,12 +362,14 @@ and attach a watch to the upstream bug tracker:
   Reporter: Sample Person
   Created: 2005-04-04 00:00:00+00:00
   Subscribers:
+      Mark Shuttleworth
       Sample Person
+      Ubuntu Team
   Task: Evolution
       Status: NEW
       Product: evolution
       Importance: UNDECIDED
-      Watch: http://bugzilla.gnome.org/show_bug.cgi?id=273041
+      Watch: http://bugzilla.gnome.org/bugs/show_bug.cgi?id=273041
   Task: evolution (Ubuntu)
       Status: NEW
       Distro: ubuntu
@@ -376,6 +388,8 @@ and attach a watch to the upstream bug tracker:
       Date: 2005-04-05 00:00:00+00:00
       Subject: Test bug 5
       First comment
+  <BLANKLINE>
+  http://bugzilla.gnome.org/show_bug.cgi?id=273041
   <BLANKLINE>
 
 XXX mpt 20060404: In sampledata Evolution uses Malone officially, so adding

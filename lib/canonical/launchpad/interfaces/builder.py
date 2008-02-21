@@ -1,4 +1,5 @@
 # Copyright 2004-2006 Canonical Ltd.  All rights reserved.
+# pylint: disable-msg=E0211,E0213
 
 """Builder interfaces."""
 
@@ -9,7 +10,7 @@ __all__ = [
     'BuildJobMismatch',
     'BuildSlaveFailure',
     'CannotBuild',
-    'CannotResetHost',
+    'CannotResumeHost',
     'IBuilder',
     'IBuilderSet',
     'ProtocolVersionMismatch',
@@ -34,11 +35,14 @@ class ProtocolVersionMismatch(BuildDaemonError):
 
 
 class BuildJobMismatch(BuildDaemonError):
-    """The build slave is working with mismatched information, needs rescue."""
+    """The build slave is working with mismatched information.
+
+    It needs to be rescued.
+    """
 
 
-class CannotResetHost(BuildDaemonError):
-    """The build slave is hosted on a machine that cannot be remotely reset."""
+class CannotResumeHost(BuildDaemonError):
+    """The build slave virtual machine cannot be resumed."""
 
 
 # CannotBuild is intended to be the base class for a family of more specific
@@ -64,64 +68,76 @@ class IBuilder(IHasOwner):
     builderok, status, failnotes and currentjob.
     """
     id = Attribute("Builder identifier")
-    processor = Choice(title=_('Processor'), required=True,
-                       vocabulary='Processor',
-                       description=_('Build Slave Processor, used to identify '
-                                     'which jobs can be built by this device.')
-                       )
+    processor = Choice(
+        title=_('Processor'), required=True, vocabulary='Processor',
+        description=_('Build Slave Processor, used to identify '
+                      'which jobs can be built by this device.'))
 
-    owner = Choice(title=_('Owner'), required=True,
-                   vocabulary='ValidOwner',
-                   description=_('Builder owner, a Launchpad member which '
-                                 'will be responsible for this device.')
-                   )
+    owner = Choice(
+        title=_('Owner'), required=True, vocabulary='ValidOwner',
+        description=_('Builder owner, a Launchpad member which '
+                      'will be responsible for this device.'))
 
-    url = TextLine(title=_('URL'), required=True,
-                   constraint=builder_url_validator,
-                   description=_('The URL to the build machine, used as a '
-                                 'unique identifier. Includes protocol, '
-                                 'host and port only, '
-                                 'e.g.: http://farm.com:8221/')
-                   )
-    name = TextLine(title=_('Name'), required=True,
-                    constraint=name_validator,
-                    description=_('Builder Slave Name used for reference '
-                                  'proposes')
-                    )
-    title = Title(title=_('Title'), required=True,
-                  description=_('The builder slave title. Should be just '
-                                'a few words.')
-                  )
+    url = TextLine(
+        title=_('URL'), required=True, constraint=builder_url_validator,
+        description=_('The URL to the build machine, used as a unique '
+                      'identifier. Includes protocol, host and port only, '
+                      'e.g.: http://farm.com:8221/'))
 
-    description = Description(title=_('Description'), required=True,
-                              description=_('The builder slave description, '
-                                            'may be several paragraphs of '
-                                            'text, giving the highlights '
-                                            'and details.')
-                              )
+    name = TextLine(
+        title=_('Name'), required=True, constraint=name_validator,
+        description=_('Builder Slave Name used for reference proposes'))
 
-    trusted = Bool(title=_('Trusted'), required=True,
-                   description=_('Whether or not the builder is prepared '
-                                 'to build untrusted packages.')
-                   )
+    title = Title(
+        title=_('Title'), required=True,
+        description=_('The builder slave title. Should be just a few words.'))
 
-    manual = Bool(title=_('Manual Mode'), required=False,
-                   description=_('The auto-build system does not dispatch '
-                                 'jobs automatically for slaves in manual '
-                                 'mode.')
-                   )
+    description = Description(
+        title=_('Description'), required=True,
+        description=_('The builder slave description, may be several '
+                      'paragraphs of text, giving the highlights and '
+                      'details.'))
 
-    builderok = Bool(title=_('Builder State OK'), required=False,
-                     description=_('Whether or not the builder is ok')
-                     )
+    trusted = Bool(
+        title=_('Trusted'), required=True,
+        description=_('Whether or not the builder is prepared to build '
+                      'untrusted packages.'))
 
-    failnotes = Text(title=_('Failure Notes'), required=False,
-                     description=_('The reason for a builder not being ok')
-                     )
+    manual = Bool(
+        title=_('Manual Mode'), required=False,
+        description=_('The auto-build system does not dispatch '
+                      'jobs automatically for slaves in manual mode.'))
+
+    builderok = Bool(
+        title=_('Builder State OK'), required=False,
+        description=_('Whether or not the builder is ok'))
+
+    failnotes = Text(
+        title=_('Failure Notes'), required=False,
+        description=_('The reason for a builder not being ok'))
+
+    vm_host = TextLine(
+        title=_('Virtual Machine Host'), required=False,
+        description=_('The machine hostname hosting the virtual '
+                      'buildd-slave, e.g.: foobar-host.ppa'))
+
+    active = Bool(
+        title=_('Active'), required=False,
+        description=_('Whether or not to present the builder publicly.'))
 
     slave = Attribute("xmlrpclib.Server instance corresponding to builder.")
     currentjob = Attribute("Build Job being processed")
     status = Attribute("Generated status information")
+    pocket_dependencies = Attribute("""
+        A dictionary of pocket to a tuple of pocket dependencies.
+
+        A dictionary that maps a pocket to pockets that it can
+        depend on for a build.
+        """)
+    is_available = Bool(
+        title=_("Whether or not a builder is available for building "
+                "new jobs. "),
+        required=False)
 
     def cacheFileOnSlave(logger, libraryfilealias):
         """Ask the slave to cache a librarian file to its local disk.
@@ -169,13 +185,16 @@ class IBuilder(IHasOwner):
         detect when the abort has taken effect. (Look for status ABORTED).
         """
 
-    def resetSlaveHost(logger):
-        """Reset the slave host to a known good condition.
+    def resumeSlaveHost():
+        """Resume the slave host to a known good condition.
 
-        :param logger: A logger used for providing debug information.
-        :raises CannotResetHost: Currently only virtual machine based builders
-            (those that are used to build untrusted source (not self.trusted)
-            can be reset.
+        Issues 'builddmaster.vm_resume_command' specified in the configuration
+        to resume the slave.
+
+        :raises: CannotResumeHost: if builder is not virtual (untrusted),
+            or if the configuration command has failed.
+
+        :return: command stdout and stderr buffers as a tuple.
         """
 
     def setSlaveForTesting(new_slave):
@@ -225,6 +244,20 @@ class IBuilder(IHasOwner):
         :return: A librarian file alias.
         """
 
+    def findBuildCandidate():
+        """Return the candidate for building.
+
+        The pending BuildQueue item with the highest score for this builder
+        ProcessorFamily or None if no candidate is available.
+        """
+
+    def dispatchBuildCandidate(candidate):
+        """Dispatch the given job to this builder.
+
+        This method can only be executed in the builddmaster machine, since
+        it will actually issues the XMLRPC call to the buildd-slave.
+        """
+
 
 class IBuilderSet(Interface):
     """Collections of builders.
@@ -254,15 +287,20 @@ class IBuilderSet(Interface):
         """Return the IBuilder with the given builderid."""
 
     def getBuilders():
-        """Return all configured builders."""
+        """Return all active configured builders."""
 
     def getBuildersByArch(arch):
         """Return all configured builders for a given DistroArchSeries."""
 
+    def getBuildQueueDepthByArch():
+        """Return a list of architectures and the number of Builds that are
+        in the NEEDSBUILD state for each of them.
+        """
+
     def pollBuilders(logger, txn):
         """Poll all the builders and take any immediately available actions.
 
-        Specifically this will request a reset if needed, update log tails in
+        Specifically this will request a resume if needed, update log tails in
         the database, copy and process the result of builds.
 
         :param logger: A logger to use to provide information about the polling
@@ -273,15 +311,4 @@ class IBuilderSet(Interface):
         :return: A canonical.buildmaster.master.BuilddMaster instance. This is
             temporary and once the dispatchBuilds method no longer requires
             a used instance this return parameter will be dropped.
-        """
-
-    def dispatchBuilds(logger, buildMaster):
-        """Dispatch any pending builds that can be dispatched.
-
-        :param logger: A logger to use to provide information about the
-            dispatching process.
-        :param buildMaster: This is a canonical.buildmaster.master.BuilddMaster
-            instance which will be used to perform the dispatching as that is
-            where the detailed logic currently resides. This is being
-            refactored to remove the need for a buildMaster parameter at all.
         """

@@ -5,30 +5,29 @@ from unittest import TestLoader
 
 from canonical.launchpad.tests.test_publishing import TestNativePublishingBase
 
-from canonical.lp.dbschema import (
-    PackagePublishingPocket, PackagePublishingStatus,
-    DistroSeriesStatus)
+from canonical.launchpad.interfaces import (
+    DistroSeriesStatus, PackagePublishingPocket, PackagePublishingStatus)
 
-class TestIPublishingAPI(TestNativePublishingBase):
+class TestICanPublishPackagesAPI(TestNativePublishingBase):
 
     def _createLinkedPublication(self, name, pocket):
-        """Create and return a linked pair of source and binary publications."""
+        """Return a linked pair of source and binary publications."""
         pub_source = self.getPubSource(
             sourcename=name, filecontent="Hello", pocket=pocket)
 
         binaryname = '%s-bin' % name
-        pub_bin = self.getPubBinary(
+        pub_bin = self.getPubBinaries(
             binaryname=binaryname, filecontent="World",
-            pub_source=pub_source, pocket=pocket)
+            pub_source=pub_source, pocket=pocket)[0]
 
         return (pub_source, pub_bin)
 
     def _createDefaulSourcePublications(self):
         """Create and return default source publications.
 
-        See TestNativePublishingBase.getPubSource for more information.
+        See `TestNativePublishingBase.getPubSource` for more information.
 
-        It creates the following publications in brezzy-autotest context:
+        It creates the following publications in breezy-autotest context:
 
          * a PENDING publication for RELEASE pocket;
          * a PUBLISHED publication for RELEASE pocket;
@@ -51,14 +50,15 @@ class TestIPublishingAPI(TestNativePublishingBase):
             status=PackagePublishingStatus.PENDING,
             pocket=PackagePublishingPocket.UPDATES)
 
-        return (pub_pending_release, pub_published_release, pub_pending_updates)
+        return (pub_pending_release, pub_published_release,
+                pub_pending_updates)
 
     def _createDefaulBinaryPublications(self):
         """Create and return default binary publications.
 
-        See TestNativePublishingBase.getPubBinary for more information.
+        See `TestNativePublishingBase.getPubBinaries` for more information.
 
-        It creates the following publications in brezzy-autotest context:
+        It creates the following publications in breezy-autotest context:
 
          * a PENDING publication for RELEASE pocket;
          * a PUBLISHED publication for RELEASE pocket;
@@ -66,22 +66,23 @@ class TestIPublishingAPI(TestNativePublishingBase):
 
         Returns the respective IBPPH objects as a tuple.
         """
-        pub_pending_release = self.getPubBinary(
+        pub_pending_release = self.getPubBinaries(
             binaryname='first',
             status=PackagePublishingStatus.PENDING,
-            pocket=PackagePublishingPocket.RELEASE)
+            pocket=PackagePublishingPocket.RELEASE)[0]
 
-        pub_published_release = self.getPubBinary(
+        pub_published_release = self.getPubBinaries(
             binaryname='second',
             status=PackagePublishingStatus.PUBLISHED,
-            pocket=PackagePublishingPocket.RELEASE)
+            pocket=PackagePublishingPocket.RELEASE)[0]
 
-        pub_pending_updates = self.getPubBinary(
+        pub_pending_updates = self.getPubBinaries(
             binaryname='third',
             status=PackagePublishingStatus.PENDING,
-            pocket=PackagePublishingPocket.UPDATES)
+            pocket=PackagePublishingPocket.UPDATES)[0]
 
-        return (pub_pending_release, pub_published_release, pub_pending_updates)
+        return (pub_pending_release, pub_published_release,
+                pub_pending_updates)
 
     def _publish(self, pocket, is_careful=False):
         """Publish the test IDistroSeries.
@@ -106,13 +107,15 @@ class TestIPublishingAPI(TestNativePublishingBase):
         self._publish(pocket=pocket)
 
         # source and binary PUBLISHED in database.
+        pub_source.sync()
+        pub_bin.sync()
         self.assertEqual(pub_source.status, PackagePublishingStatus.PUBLISHED)
         self.assertEqual(pub_bin.status, PackagePublishingStatus.PUBLISHED)
 
         # source and binary PUBLISHED on disk.
         foo_dsc = "%s/main/f/foo/foo.dsc" % self.pool_dir
         self.assertEqual(open(foo_dsc).read().strip(),'Hello')
-        foo_deb = "%s/main/f/foo/foo-bin.deb" % self.pool_dir
+        foo_deb = "%s/main/f/foo/foo-bin_all.deb" % self.pool_dir
         self.assertEqual(open(foo_deb).read().strip(), 'World')
 
     def checkPublicationsAreIgnored(self, pocket):
@@ -200,7 +203,7 @@ class TestIPublishingAPI(TestNativePublishingBase):
     def testPublicationLookUpForUnstableDistroSeries(self):
         """Source publishing record lookup for a unstable DistroSeries.
 
-        Check if the IPublishing.getPendingPublications() works properly
+        Check if the ICanPublishPackages.getPendingPublications() works properly
         for a DistroSeries when it is still in development, 'unreleased'.
         """
         pub_pending_release, pub_published_release, pub_pending_updates = (
@@ -234,7 +237,7 @@ class TestIPublishingAPI(TestNativePublishingBase):
     def testPublicationLookUpForStableDistroSeries(self):
         """Source publishing record lookup for a stable/released DistroSeries.
 
-        Check if the IPublishing.getPendingPublications() works properly
+        Check if the ICanPublishPackages.getPendingPublications() works properly
         for a DistroSeries when it is not in development anymore, i.e.,
         'released'.
         """
@@ -269,7 +272,7 @@ class TestIPublishingAPI(TestNativePublishingBase):
     def testPublicationLookUpForFrozenDistroSeries(self):
         """Source publishing record lookup for a frozen DistroSeries.
 
-        Check if the IPublishing.getPendingPubliations() works properly
+        Check if the ICanPublishPackages.getPendingPubliations() works properly
         for a DistroSeries when it is in FROZEN state.
         """
         pub_pending_release, pub_published_release, pub_pending_updates = (
@@ -306,7 +309,7 @@ class TestIPublishingAPI(TestNativePublishingBase):
     def testPublicationLookUpForUnstableDistroArchSeries(self):
         """Binary publishing record lookup for a unstable DistroArchSeries.
 
-        Check if the IPublishing.getPendingPublications() works properly
+        Check if the ICanPublishPackages.getPendingPublications() works properly
         for a DistroArchSeries when it is still in DEVELOPMENT, i.e.,
         'unstable'.
         """
@@ -340,11 +343,15 @@ class TestIPublishingAPI(TestNativePublishingBase):
             expected_result=[pub_published_release, pub_pending_release])
 
     def testPublicationLookUpForStableDistroArchSeries(self):
-        """Binary publishing record lookup for stable/released DistroArchSeries.
+        """Binary publishing record lookup for released DistroArchSeries.
 
-        Check if the IPublishing.getPendingPublications() works properly for
-        a DistroArchSeries when it is not in development anymore, i.e.,
-        'released'.
+        Check if the ICanPublishPackages.getPendingPublications() works
+        properly for a DistroArchSeries when it is not in development
+        anymore, i.e., 'released'.
+
+        Released DistroArchSeries can't be modified, so we expect empty
+        results in the lookups, even if there are pending publishing
+        records available.
         """
         pub_pending_release, pub_published_release, pub_pending_updates = (
             self._createDefaulBinaryPublications())
@@ -365,7 +372,8 @@ class TestIPublishingAPI(TestNativePublishingBase):
         # mirrors/clients out.
         # At the end, "careful" mode is such a gross hack.
         self.checkBinaryLookupForPocket(
-            PackagePublishingPocket.RELEASE, is_careful=True, expected_result=[])
+            PackagePublishingPocket.RELEASE, is_careful=True,
+            expected_result=[])
 
         # Publications targeted to other pockets than RELEASE are
         # still reachable.
@@ -376,8 +384,8 @@ class TestIPublishingAPI(TestNativePublishingBase):
     def testPublicationLookUpForFrozenDistroArchSeries(self):
         """Binary publishing record lookup for a frozen DistroArchSeries.
 
-        Check if the IPublishing.getPendingPublications() works properly for
-        a DistroArchSeries when it is frozen state.
+        Check if the ICanPublishPackages.getPendingPublications() works
+        properly for a DistroArchSeries when it is frozen state.
         """
         pub_pending_release, pub_published_release, pub_pending_updates = (
             self._createDefaulBinaryPublications())

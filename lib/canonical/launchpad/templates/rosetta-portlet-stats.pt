@@ -1,3 +1,9 @@
+<tal:root
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  omit-tag="">
+
 <div>
   <strong tal:content="context/pomsgid_count" /> strings
   in <strong tal:content="context/potemplate_count" /> translation templates
@@ -11,3 +17,4 @@
     translation groups
   </a>
 </div>
+</tal:root>

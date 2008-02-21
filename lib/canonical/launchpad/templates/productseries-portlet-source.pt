@@ -1,9 +1,15 @@
+<tal:root
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  omit-tag="">
+
 <div class="portlet" id="portlet-source">
   <h2>Revision control details</h2>
 
   <div class="portletBody">
     <div class="portletContent">
-      <div tal:condition="not:context/rcstype"
+      <div tal:condition="not: context/rcstype"
            tal:define="branch context/series_branch">
         <tal:block condition="branch/required:launchpad.View">
           <b>Bazaar Branch:</b><br />
@@ -54,3 +60,4 @@
     </div>
   </div>
 </div>
+</tal:root>

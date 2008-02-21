@@ -1,4 +1,5 @@
 # Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# pylint: disable-msg=E0611,W0212
 """A module for CodeOfConduct (CoC) related classes.
 
 https://launchpad.canonical.com/CodeOfConduct
@@ -291,7 +292,7 @@ class SignedCodeOfConductSet:
                                      signedcode=signedcode, active=True)
 
         # Send Advertisement Email
-        subject = 'Launchpad: Code of Conduct Signature Acknowledge'
+        subject = 'Your Code of Conduct signature has been acknowledged'
         content = ('Digitally Signed by %s\n' % sig.fingerprint)
         signed.sendAdvertisementEmail(subject, content)
 

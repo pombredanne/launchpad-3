@@ -7,6 +7,7 @@ __all__ = [
     'POExportView',
     'POFileAppMenus',
     'POFileFacets',
+    'POFileFilteredView',
     'POFileNavigation',
     'POFileSOP',
     'POFileTranslateView',
@@ -21,17 +22,18 @@ from zope.component import getUtility
 from zope.publisher.browser import FileUpload
 
 from canonical.cachedproperty import cachedproperty
-from canonical.launchpad.browser.pomsgset import (
-    BaseTranslationView, POMsgSetView)
+from canonical.launchpad.browser.translationmessage import (
+    BaseTranslationView, CurrentTranslationMessageView)
 from canonical.launchpad.browser.poexportrequest import BaseExportView
 from canonical.launchpad.browser.potemplate import (
     POTemplateSOP, POTemplateFacets)
 from canonical.launchpad.interfaces import (
-    IPOFile, ITranslationImporter, ITranslationImportQueue,
+    IPersonSet, IPOFile, ITranslationImporter, ITranslationImportQueue,
     UnexpectedFormData, NotFoundError)
 from canonical.launchpad.webapp import (
     ApplicationMenu, Link, canonical_url, LaunchpadView, Navigation)
 from canonical.launchpad.webapp.batching import BatchNavigator
+from canonical.launchpad.webapp.menu import structured
 
 
 class CustomDropdownWidget(DropdownWidget):
@@ -46,7 +48,6 @@ class POFileNavigation(Navigation):
 
     def traverse(self, name):
         """Return the IPOMsgSet associated with the given name."""
-
         assert self.request.method in ['GET', 'HEAD', 'POST'], (
             'We only know about GET, HEAD, and POST')
 
@@ -69,25 +70,19 @@ class POFileNavigation(Navigation):
                 "%r is not a valid sequence number." % name)
 
         # Need to check in our database whether we have already the requested
-        # POMsgSet.
-        pomsgset = potmsgset.getPOMsgSet(
-            self.context.language.code, self.context.variant)
+        # TranslationMessage.
+        translationmessage = potmsgset.getCurrentTranslationMessage(
+            self.context.language)
 
-        if pomsgset is not None:
+        if translationmessage is not None:
             # Already have a valid POMsgSet entry, just return it.
-            return pomsgset
-        elif self.request.method in ['GET', 'HEAD']:
-            # It's just a query, get a fake one so we don't create new
-            # POMsgSet just because someone is browsing the web.
-            return potmsgset.getDummyPOMsgSet(
-                self.context.language.code, self.context.variant)
+            return translationmessage
         else:
-            # It's a POST.
-            # XXX CarlosPerelloMarin 2006-04-20 bug=40275:
-            # We should check the kind of POST we got,
-            # a Log out action will be also a POST and we
-            # should not create a POMsgSet in that case.
-            return self.context.createMessageSetFromMessageSet(potmsgset)
+            # Get a fake one so we don't create new TranslationMessage just
+            # because someone is browsing the web.
+            return potmsgset.getCurrentDummyTranslationMessage(
+                self.context.language)
+
 
 class POFileFacets(POTemplateFacets):
     usedfor = IPOFile
@@ -132,8 +127,88 @@ class POFileView(LaunchpadView):
         return list(self.context.contributors)
 
 
+class TranslationMessageContainer:
+    def __init__(self, translation):
+        self.data = translation
+
+        # Assign a CSS class to the translation
+        # depending on whether it's used, suggested,
+        # or an obsolete suggestion.
+        if translation.is_current:
+            self.usage_class = 'usedtranslation'
+        else:
+            if translation.is_hidden:
+                self.usage_class = 'hiddentranslation'
+            else:
+                self.usage_class = 'suggestedtranslation'
+
+
+class FilteredPOTMsgSets:
+    def __init__(self, translations):
+        potmsgsets = []
+        current_potmsgset = None
+        if translations is None:
+            self.potmsgsets = None
+        else:
+            for translation in translations:
+                if (current_potmsgset is not None and
+                    current_potmsgset['potmsgset'] == translation.potmsgset):
+                    current_potmsgset['translations'].append(
+                        TranslationMessageContainer(translation))
+                else:
+                    if current_potmsgset is not None:
+                        potmsgsets.append(current_potmsgset)
+                    current_potmsgset = {
+                        'potmsgset' : translation.potmsgset,
+                        'translations' : [TranslationMessageContainer(
+                            translation)],
+                        'context' : translation
+                        }
+            if current_potmsgset is not None:
+                potmsgsets.append(current_potmsgset)
+
+            self.potmsgsets = potmsgsets
+
+
+class POFileFilteredView(LaunchpadView):
+    """A filtered view for a `POFile`."""
+
+    DEFAULT_BATCH_SIZE = 50
+
+    def initialize(self):
+        """See `LaunchpadView`."""
+        self.person = None
+        person = self.request.form.get('person')
+        if person is None:
+            self.request.response.addErrorNotification(
+                "No person to filter by specified.")
+            translations = None
+        else:
+            self.person = getUtility(IPersonSet).getByName(person)
+            if self.person is None:
+                self.request.response.addErrorNotification(
+                    "Requested person not found.")
+                translations = None
+            else:
+                translations = self.context.getTranslationsFilteredBy(
+                    person=self.person)
+
+        self.batchnav = BatchNavigator(translations, self.request,
+                                       size=self.DEFAULT_BATCH_SIZE)
+
+    @property
+    def translations(self):
+        """Group a list of `TranslationMessages` under `POTMsgSets`.
+
+        Batching is done over TranslationMessages, and in order to
+        display them grouped by English string, we transform the
+        current batch.
+        """
+        return FilteredPOTMsgSets(self.batchnav.currentBatch()).potmsgsets
+
+
 class POFileUploadView(POFileView):
-    """A basic view for a POFile"""
+    """A basic view for a `POFile`."""
 
     def initialize(self):
         self.form = self.request.form
@@ -203,10 +278,11 @@ class POFileUploadView(POFileView):
             potemplate=self.context.potemplate, pofile=self.context)
 
         self.request.response.addInfoNotification(
+            structured(
             'Thank you for your upload. The translation content will be'
             ' imported soon into Launchpad. You can track its status from the'
             ' <a href="%s/+imports">Translation Import Queue</a>' %
-                canonical_url(self.context.potemplate.translationtarget))
+                canonical_url(self.context.potemplate.translationtarget)))
 
 
 class POFileTranslateView(BaseTranslationView):
@@ -234,7 +310,10 @@ class POFileTranslateView(BaseTranslationView):
         # useful for doing display of only widgets with errors when we
         # do that.
         self.errors = {}
-        self.pomsgset_views = []
+        self.translationmessage_views = []
+        # The batchnav's start should change when the user mutates a
+        # filtered views of messages.
+        self.start_offset = 0
 
         self._initializeShowOption()
         BaseTranslationView.initialize(self)
@@ -248,25 +327,28 @@ class POFileTranslateView(BaseTranslationView):
         return BatchNavigator(self._getSelectedPOTMsgSets(),
                               self.request, size=self.DEFAULT_SIZE)
 
-    def _initializeMsgSetViews(self):
-        """See BaseTranslationView._initializeMsgSetViews."""
-        self._buildPOMsgSetViews(self.batchnav.currentBatch())
+    def _initializeTranslationMessageViews(self):
+        """See BaseTranslationView._initializeTranslationMessageViews."""
+        self._buildTranslationMessageViews(self.batchnav.currentBatch())
 
-    def _buildPOMsgSetViews(self, for_potmsgsets):
-        """Build POMsgSet views for all POTMsgSets in for_potmsgsets."""
-        for_potmsgsets = list(for_potmsgsets)
-        po_to_pot_msg = self.context.getMsgSetsForPOTMsgSets(for_potmsgsets)
-
+    def _buildTranslationMessageViews(self, for_potmsgsets):
+        """Build translation message views for all potmsgsets given."""
         last = None
         for potmsgset in for_potmsgsets:
             assert last is None or potmsgset.sequence >= last.sequence, (
                 "POTMsgSets on page not in ascending sequence order")
             last = potmsgset
 
-            pomsgset = po_to_pot_msg[potmsgset]
+            translationmessage = potmsgset.getCurrentTranslationMessage(
+                self.context.language)
+            if translationmessage is None:
+                translationmessage = (
+                    potmsgset.getCurrentDummyTranslationMessage(
+                        self.context.language))
             view = self._prepareView(
-                POMsgSetView, pomsgset, self.errors.get(potmsgset))
-            self.pomsgset_views.append(view)
+                CurrentTranslationMessageView, translationmessage,
+                self.errors.get(potmsgset))
+            self.translationmessage_views.append(view)
 
     def _submitTranslations(self):
         """See BaseTranslationView._submitTranslations."""
@@ -285,15 +367,8 @@ class POFileTranslateView(BaseTranslationView):
                     "Got translation for POTMsgID %d which is not in the "
                     "template." % id)
 
-            # Get hold of an appropriate message set in the PO file,
-            # creating it if necessary.
-            pomsgset = self.pofile.getPOMsgSetFromPOTMsgSet(potmsgset,
-                                                            only_current=False)
-            if pomsgset is None:
-                pomsgset = self.pofile.createMessageSetFromMessageSet(potmsgset)
-
-            error = self._storeTranslations(pomsgset)
-            if error and pomsgset.sequence != 0:
+            error = self._storeTranslations(potmsgset)
+            if error and potmsgset.sequence != 0:
                 # There is an error, we should store it to be rendered
                 # together with its respective view.
                 #
@@ -307,7 +382,7 @@ class POFileTranslateView(BaseTranslationView):
                 # error, we cannot render that error so we discard it,
                 # that translation is not being used anyway, so it's not
                 # a big loss.
-                self.errors[pomsgset.potmsgset] = error
+                self.errors[potmsgset] = error
 
         if self.errors:
             if len(self.errors) == 1:
@@ -320,8 +395,29 @@ class POFileTranslateView(BaseTranslationView):
             self.request.response.addErrorNotification(message)
             return False
 
+        if self.batchnav.batch.nextBatch() is not None:
+            # Update the start of the next batch by the number of messages
+            # that were removed from the batch.
+            self.batchnav.batch.start -= self.start_offset
         self._redirectToNextPage()
         return True
+
+    def _observeTranslationUpdate(self, potmsgset):
+        """see `BaseTranslationView`.
+
+        Update the start_offset when the filtered batch has mutated.
+        """
+        if self.show == 'untranslated':
+            translationmessage = potmsgset.getCurrentTranslationMessage(
+                self.pofile.language)
+            if translationmessage is not None:
+                self.start_offset += 1
+        elif self.show == 'need_review':
+            if not self.form_posted_needsreview.get(potmsgset, False):
+                self.start_offset += 1
+        else:
+            # This change does not mutate the batch.
+            pass
 
     def _buildRedirectParams(self):
         parameters = BaseTranslationView._buildRedirectParams(self)
@@ -393,14 +489,7 @@ class POFileTranslateView(BaseTranslationView):
 class POExportView(BaseExportView):
 
     def processForm(self):
-        if self.context.validExportCache():
-            # There is already a valid exported file cached in Librarian, we
-            # can serve that file directly.
-            self.request.response.redirect(self.context.exportfile.http_url)
-            return None
-
         return (None, [self.context])
 
     def getDefaultFormat(self):
         return self.context.potemplate.source_file_format
-

@@ -1,4 +1,5 @@
 # Copyright 2005 Canonical Ltd.  All rights reserved.
+# pylint: disable-msg=E0611,W0212
 
 __metaclass__ = type
 __all__ = ['StandardShipItRequest', 'StandardShipItRequestSet',
@@ -379,7 +380,7 @@ class ShippingRequest(SQLBase):
                 AND country = %(country)s
                 AND recipient != %(recipient)s
                 AND status NOT IN (%(cancelled)s, %(denied)s)
-                AND RequestedCDs.distrorelease = %(series)s
+                AND RequestedCDs.distroseries = %(series)s
             """ % sqlvalues(
                 address=self.normalized_address, recipient=self.recipient,
                 denied=ShippingRequestStatus.DENIED, country=self.country,
@@ -486,7 +487,7 @@ class ShippingRequestSet:
             FROM ShippingRequest, RequestedCDs
             WHERE shipment IS NULL
                   AND ShippingRequest.id = RequestedCDs.request
-                  AND RequestedCDs.distrorelease = %(distroseries)s
+                  AND RequestedCDs.distroseries = %(distroseries)s
                   AND status = %(status)s
                   %(priorityfilter)s
             ORDER BY id
@@ -513,7 +514,7 @@ class ShippingRequestSet:
         if distroseries is not None:
             queries.append("""
                 ShippingRequest.id IN (
-                    SELECT request FROM RequestedCDs WHERE distrorelease = %s)
+                    SELECT request FROM RequestedCDs WHERE distroseries = %s)
                 """ % sqlvalues(distroseries))
 
         if flavour is not None:
@@ -624,7 +625,7 @@ class ShippingRequestSet:
         series_filter = ""
         if current_series_only:
             series_filter = (
-                " AND RequestedCDs.distrorelease = %s"
+                " AND RequestedCDs.distroseries = %s"
                 % sqlvalues(ShipItConstants.current_distroseries))
         for flavour in ShipItFlavour.items:
             quantities[flavour] = {}
@@ -677,7 +678,7 @@ class ShippingRequestSet:
             clauseTables = []
             if current_series_only:
                 base_query += """
-                    AND RequestedCDs.distrorelease = %s
+                    AND RequestedCDs.distroseries = %s
                     AND RequestedCDs.request = ShippingRequest.id
                     """ % sqlvalues(ShipItConstants.current_distroseries)
                 clauseTables.append('RequestedCDs')
@@ -769,7 +770,7 @@ class ShippingRequestSet:
                 FROM ShippingRequest, RequestedCDs
                 WHERE ShippingRequest.status != %s
                       AND RequestedCDs.request = ShippingRequest.id
-                      AND RequestedCDs.distrorelease = %s
+                      AND RequestedCDs.distroseries = %s
                 """ % sqlvalues(ShippingRequestStatus.CANCELLED,
                                 ShipItConstants.current_distroseries)
         else:
@@ -787,7 +788,7 @@ class ShippingRequestSet:
             """ % sqlvalues(ShippingRequestStatus.CANCELLED)
         if only_current_distroseries:
             sum_base_query += (
-                " AND RequestedCDs.distrorelease = %s"
+                " AND RequestedCDs.distroseries = %s"
                 % sqlvalues(ShipItConstants.current_distroseries))
 
         sum_group_by = " GROUP BY flavour, architecture"
@@ -857,7 +858,7 @@ class ShippingRequestSet:
         series_filter = ""
         if current_series_only:
             series_filter = (
-                " AND RequestedCDs.distrorelease = %s"
+                " AND RequestedCDs.distroseries = %s"
                 % sqlvalues(ShipItConstants.current_distroseries))
         query_str = """
             SELECT shipment_size, COUNT(request_id) AS shipments
@@ -919,7 +920,7 @@ class ShippingRequestSet:
                     FROM RequestedCDs
                         JOIN ShippingRequestWithKarma ON
                             ShippingRequestWithKarma.id = RequestedCDs.request
-                    WHERE distrorelease = %(current_series)s
+                    WHERE distroseries = %(current_series)s
                         AND %(status_filter)s
                         AND recipient != %(shipit_admins)s
                     -- The has_10_karma will always be the same for a given
@@ -963,7 +964,7 @@ class ShippingRequestSet:
                 FROM ShippingRequestWithKarma
                     JOIN RequestedCDs
                         ON RequestedCDs.request = ShippingRequestWithKarma.id
-                WHERE distrorelease = %(current_series)s
+                WHERE distroseries = %(current_series)s
                     AND recipient != %(shipit_admins)s
                     AND status != %(cancelled)s);
             CREATE UNIQUE INDEX current_series_requester__unq
@@ -978,7 +979,7 @@ class ShippingRequestSet:
                 FROM ShippingRequestWithKarma
                     JOIN RequestedCDs
                         ON RequestedCDs.request = ShippingRequestWithKarma.id
-                WHERE distrorelease < %(current_series)s
+                WHERE distroseries < %(current_series)s
                     AND recipient != %(shipit_admins)s
                     AND status != %(cancelled)s);
             CREATE UNIQUE INDEX previous_series_requester__unq
@@ -993,7 +994,7 @@ class ShippingRequestSet:
                 FROM ShippingRequestWithKarma
                     JOIN RequestedCDs
                         ON RequestedCDs.request = ShippingRequestWithKarma.id
-                WHERE distrorelease < %(current_series)s
+                WHERE distroseries < %(current_series)s
                     AND recipient != %(shipit_admins)s
                     AND status NOT IN (%(shipped)s, %(cancelled)s)
                 EXCEPT
@@ -1001,7 +1002,7 @@ class ShippingRequestSet:
                 FROM ShippingRequestWithKarma
                     JOIN RequestedCDs
                         ON RequestedCDs.request = ShippingRequestWithKarma.id
-                WHERE distrorelease < %(current_series)s
+                WHERE distroseries < %(current_series)s
                     AND recipient != %(shipit_admins)s
                     AND status = %(shipped)s);
             CREATE UNIQUE INDEX previous_series_non_recipient__unq
@@ -1034,7 +1035,7 @@ class ShippingRequestSet:
                         SUM(quantity) AS requested_cds_per_user,
                         COUNT(DISTINCT request) AS requests
                     FROM RequestedCDs, ShippingRequestWithKarma
-                    WHERE distrorelease < %(current_series)s
+                    WHERE distroseries < %(current_series)s
                         AND status != %(cancelled)s
                         AND ShippingRequestWithKarma.id = RequestedCDs.request
                         AND recipient IN (
@@ -1086,7 +1087,7 @@ class ShippingRequestSet:
                         SUM(quantityapproved) AS approved_cds_per_user,
                         COUNT(DISTINCT request) AS requests
                     FROM RequestedCDs, ShippingRequestWithKarma
-                    WHERE distrorelease < %(current_series)s
+                    WHERE distroseries < %(current_series)s
                         AND status = %(shipped)s
                         AND ShippingRequestWithKarma.id = RequestedCDs.request
                         AND recipient IN (
@@ -1102,7 +1103,7 @@ class ShippingRequestSet:
                     SELECT recipient, has_10_karma,
                         0 AS approved_cds_per_user, 0 AS requests
                     FROM RequestedCDs, ShippingRequestWithKarma
-                    WHERE distrorelease < %(current_series)s
+                    WHERE distroseries < %(current_series)s
                         AND status != %(shipped)s
                         AND ShippingRequestWithKarma.id = RequestedCDs.request
                         AND recipient IN (
@@ -1233,7 +1234,7 @@ class RequestedCDs(SQLBase):
     request = ForeignKey(
         dbName='request', foreignKey='ShippingRequest', notNull=True)
 
-    distroseries = EnumCol(dbName='distrorelease',
+    distroseries = EnumCol(dbName='distroseries',
         enum=ShipItDistroSeries, notNull=True)
     architecture = EnumCol(enum=ShipItArchitecture, notNull=True)
     flavour = EnumCol(enum=ShipItFlavour, notNull=True)
@@ -1263,24 +1264,31 @@ class StandardShipItRequest(SQLBase):
     quantityamd64 = IntCol(notNull=True)
     isdefault = BoolCol(notNull=True, default=False)
     flavour = EnumCol(enum=ShipItFlavour, notNull=True)
-
-    @property
-    def description_without_flavour(self):
-        """See IStandardShipItRequest"""
-        if self.totalCDs > 1:
-            description = "%d CDs" % self.totalCDs
-        else:
-            description = "%d CD" % self.totalCDs
-        return "%s (%s)" % (description, self._detailed_description())
+    user_description = StringCol(dbName='description')
 
     @property
     def description(self):
-        """See IStandardShipItRequest"""
+        """See `IStandardShipItRequest`"""
+        if self.user_description:
+            return self.user_description
+
+        quantities = []
+        text = '%d %s Edition'
+        if self.quantityx86:
+            quantities.append(
+                text % (self.quantityx86, ShipItArchitecture.X86.title))
+        if self.quantityamd64:
+            quantities.append(
+                text % (self.quantityamd64, ShipItArchitecture.AMD64.title))
+        if self.quantityppc:
+            quantities.append(
+                text % (self.quantityppc, ShipItArchitecture.PPC.title))
+        quantities_description = ", ".join(quantities)
         if self.totalCDs > 1:
             description = "%d %s CDs" % (self.totalCDs, self.flavour.title)
         else:
             description = "%d %s CD" % (self.totalCDs, self.flavour.title)
-        return "%s (%s)" % (description, self._detailed_description())
+        return u"%s (%s)" % (description, quantities_description)
 
     @property
     def quantities(self):
@@ -1288,20 +1296,6 @@ class StandardShipItRequest(SQLBase):
         return {ShipItArchitecture.X86: self.quantityx86,
                 ShipItArchitecture.AMD64: self.quantityamd64,
                 ShipItArchitecture.PPC: self.quantityppc}
-
-    def _detailed_description(self):
-        detailed = []
-        text = '%d %s Edition'
-        if self.quantityx86:
-            detailed.append(
-                text % (self.quantityx86, ShipItArchitecture.X86.title))
-        if self.quantityamd64:
-            detailed.append(
-                text % (self.quantityamd64, ShipItArchitecture.AMD64.title))
-        if self.quantityppc:
-            detailed.append(
-                text % (self.quantityppc, ShipItArchitecture.PPC.title))
-        return ", ".join(detailed)
 
     @property
     def totalCDs(self):
@@ -1314,11 +1308,12 @@ class StandardShipItRequestSet:
 
     implements(IStandardShipItRequestSet)
 
-    def new(self, flavour, quantityx86, quantityamd64, quantityppc, isdefault):
+    def new(self, flavour, quantityx86, quantityamd64, quantityppc, isdefault,
+            user_description=''):
         """See IStandardShipItRequestSet"""
         return StandardShipItRequest(flavour=flavour, quantityx86=quantityx86,
                 quantityppc=quantityppc, quantityamd64=quantityamd64,
-                isdefault=isdefault)
+                isdefault=isdefault, user_description=user_description)
 
     def getByFlavour(self, flavour, user=None):
         """See IStandardShipItRequestSet"""
@@ -1462,13 +1457,12 @@ class ShippingRun(SQLBase):
         # to set them manually.
         extra_fields = ['ship Ubuntu quantity PC',
                         'ship Ubuntu quantity 64-bit PC',
-                        'ship Ubuntu quantity Mac',
                         'ship Kubuntu quantity PC',
                         'ship Kubuntu quantity 64-bit PC',
-                        'ship Kubuntu quantity Mac',
                         'ship Edubuntu quantity PC',
                         'ship Edubuntu quantity 64-bit PC',
-                        'ship Edubuntu quantity Mac',
+                        'ship Server quantity PC',
+                        'ship Server quantity 64-bit PC',
                         'token', 'Ship via', 'display']
         row.extend('"%s"' % field for field in extra_fields)
         csv_writer.writerow(row)
@@ -1476,8 +1470,8 @@ class ShippingRun(SQLBase):
         ubuntu = ShipItFlavour.UBUNTU
         kubuntu = ShipItFlavour.KUBUNTU
         edubuntu = ShipItFlavour.EDUBUNTU
+        server = ShipItFlavour.SERVER
         x86 = ShipItArchitecture.X86
-        ppc = ShipItArchitecture.PPC
         amd64 = ShipItArchitecture.AMD64
         for request in self.requests:
             row = []
@@ -1509,8 +1503,8 @@ class ShippingRun(SQLBase):
             # The order that the flavours and arches appear in the following
             # two for loops must match the order the headers appear in
             # extra_fields.
-            for flavour in [ubuntu, kubuntu, edubuntu]:
-                for arch in [x86, amd64, ppc]:
+            for flavour in [ubuntu, kubuntu, edubuntu, server]:
+                for arch in [x86, amd64]:
                     requested_cds = all_requested_cds[flavour][arch]
                     if requested_cds is None:
                         quantityapproved = 0

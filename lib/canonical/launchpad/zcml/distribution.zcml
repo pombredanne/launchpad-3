@@ -13,11 +13,15 @@
       permission="launchpad.Edit"
       set_attributes="displayname title summary description
                       translationgroup translationpermission
-                      driver members owner bugcontact
-                      official_malone official_rosetta official_answers
+                      driver members owner
                       security_contact upload_admin upload_sender
                       mirror_admin homepage_content icon logo
-                      mugshot"
+                      mugshot bug_reporting_guidelines"
+      />
+    <require
+      permission="launchpad.Admin"
+      set_attributes="official_malone official_rosetta official_answers
+                      enable_bug_expiration"
       />
     <require
       permission="launchpad.TranslationsAdmin"
@@ -31,7 +35,8 @@
       />
     <require
       permission="launchpad.AnyPerson"
-      attributes="newQuestion addAnswerContact removeAnswerContact"
+      attributes="newQuestion createQuestionFromBug addAnswerContact
+                  removeAnswerContact"
       />
     <!-- IFAQTarget -->
     <allow
@@ -42,6 +47,19 @@
       permission="launchpad.Moderate"
       attributes="newFAQ"
       />
+    <!-- IStructuralSubscriptionTarget -->
+    <allow attributes="bug_subscriptions getSubscriptions
+                       getSubscription getBugNotificationsRecipients
+                       parent_subscription_target" />
+    <require
+        permission="launchpad.AnyPerson"
+        attributes="addSubscription addBugSubscription
+                    removeBugSubscription" />
+    <!-- IHasBugcontact -->
+    <allow attributes="bugcontact" />
+    <require
+        permission="launchpad.Edit"
+        attributes="setBugContact" />
   </content>
 
   <browser:menus
@@ -178,6 +196,15 @@
     />
 
   <browser:page
+    for="canonical.launchpad.interfaces.IDistribution"
+    facet="overview"
+    class="canonical.launchpad.browser.DistributionPendingReviewMirrorsView"
+    permission="zope.Public"
+    name="+pendingreviewmirrors"
+    template="../templates/distribution-mirrors.pt"
+    />
+
+  <browser:page
     name="+newmirror"
     facet="overview"
     for="canonical.launchpad.interfaces.IDistribution"
@@ -206,16 +233,6 @@
       template="../templates/distribution-search.pt"
       />
     <browser:page
-      name="+bounties"
-      facet="bounties"
-      template="../templates/related-bounties.pt"
-      />
-    <browser:page
-      name="+members"
-      facet="overview"
-      template="../templates/distribution-members.pt"
-      />
-    <browser:page
       name="+builds"
       facet="overview"
       template="../templates/distribution-builds.pt"
@@ -226,6 +243,18 @@
      />
   </browser:pages>
 
+  <!-- The bounty system is kept maintained but not available for users.
+  This is achieved by putting it on the PageTestLayer. -->
+  <browser:page
+    for="canonical.launchpad.interfaces.IDistribution"
+    class="canonical.launchpad.browser.DistributionView"
+    facet="bounties"
+    layer="canonical.launchpad.layers.PageTestLayer"
+    name="+bounties"
+    permission="zope.Public"
+    template="../templates/related-bounties.pt"
+  />
+
   <browser:page
     for="canonical.launchpad.interfaces.IDistribution"
     class="canonical.launchpad.browser.DistributionPPASearchView"
@@ -233,6 +262,15 @@
     permission="zope.Public"
     facet="overview"
     template="../templates/distribution-ppa-list.pt"
+    />
+
+  <browser:page
+    for="canonical.launchpad.interfaces.IDistribution"
+    name="+upstreamreport"
+    class="canonical.launchpad.browser.DistributionUpstreamBugReport"
+    permission="zope.Public"
+    facet="bugs"
+    template="../templates/distribution-upstream-bug-report.pt"
     />
 
   <browser:page
@@ -266,8 +304,8 @@
     for="canonical.launchpad.interfaces.IDistribution"
     permission="zope.Public" >
     <browser:page
-      name="+portlet-details"
-      template="../templates/distribution-portlet-details.pt"
+      name="+details"
+      template="../templates/distribution-details.pt"
       />
     <browser:page
       name="+portlet-lifecycle"
@@ -297,6 +335,9 @@
     <browser:page
       name="+portlet-aboutcve"
       template="../templates/portlet-aboutcve.pt" />
+    <browser:page
+      name="+portlet-ppa-architectures"
+      template="../templates/distribution-portlet-ppa-architectures.pt" />
   </browser:pages>
 
   <browser:pages
@@ -315,7 +356,7 @@
     for="canonical.launchpad.interfaces.IDistribution"
     schema="canonical.launchpad.interfaces.IDistroSeries"
     label="Register a new series"
-    fields="name displayname title summary description version parentseries"
+    fields="name displayname title summary description version parent_series"
     content_factory="canonical.launchpad.database.DistroSeries"
     class="canonical.launchpad.browser.DistroSeriesAddView"
     facet="overview"
@@ -343,15 +384,6 @@
     name="+branding"
     facet="overview"
     template="../templates/object-branding.pt"
-    />
-
-  <browser:page
-    name="+launchpad"
-    for="canonical.launchpad.interfaces.IDistribution"
-    class="canonical.launchpad.browser.DistributionLaunchpadUsageEditView"
-    facet="overview"
-    permission="launchpad.Edit"
-    template="../templates/object-launchpadusage.pt"
     />
 
   <browser:editform
@@ -386,15 +418,11 @@
     template="../templates/distribution-change-mirror-admin.pt"
     />
 
-  <browser:editform
-    name="+bugcontact"
+  <browser:page
+    name="+translations"
     for="canonical.launchpad.interfaces.IDistribution"
-    schema="canonical.launchpad.interfaces.IDistribution"
-    class="canonical.launchpad.browser.distribution.DistributionBugContactEditView"
-    facet="bugs"
-    fields="bugcontact"
-    permission="launchpad.Edit"
-    template="../templates/distribution-bugcontact.pt"
+    class="canonical.launchpad.browser.TranslationsRedirectView"
+    permission="zope.Public"
     />
 
   <browser:page
@@ -405,6 +433,14 @@
     facet="translations"
     template="../templates/distribution-translations.pt"
     layer="canonical.launchpad.layers.TranslationsLayer"
+    />
+
+  <browser:page
+    name="+help-translate-button"
+    facet="translations"
+    for="canonical.launchpad.interfaces.IDistribution"
+    class="canonical.launchpad.browser.HelpTranslateButtonView"
+    permission="zope.Public"
     />
 
   <browser:editform

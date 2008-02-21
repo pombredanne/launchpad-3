@@ -4,55 +4,52 @@ credentials. See Bug #33427
 
 First we log in via cookie
 
->>> browser.open('http://launchpad.dev/+login')
->>> browser.url
-'http://launchpad.dev/+login'
->>> browser.getControl('E-mail', index=0).value = 'foo.bar@canonical.com'
->>> browser.getControl('Password').value = 'test'
->>> browser.getControl('Log In').click()
->>> browser.url
-'http://launchpad.dev'
->>> 'Logged in as' in browser.contents
-True
+  >>> browser.open('http://launchpad.dev/+login')
+  >>> browser.url
+  'http://launchpad.dev/+login'
+  >>> browser.getControl('E-mail', index=0).value = 'foo.bar@canonical.com'
+  >>> browser.getControl('Password').value = 'test'
+  >>> browser.getControl('Log In').click()
+  >>> browser.url
+  'http://launchpad.dev'
+  >>> 'Logged in as' in browser.contents
+  True
 
 Now invalidate that person
 
->>> from canonical.launchpad.database import Person
->>> foobar = Person.byName('name16')
->>> original_password = foobar.password
->>> foobar.password = None
->>> foobar.sync()
+  >>> from canonical.launchpad.database import Person
+  >>> foobar = Person.byName('name16')
+  >>> original_password = foobar.password
+  >>> foobar.password = None
+  >>> foobar.sync()
 
 Now if we reload the front page, we should be logged out.
 
->>> browser.open('http://launchpad.dev')
->>> browser.url
-'http://launchpad.dev'
->>> 'Logged in as' in browser.contents
-False
+  >>> browser.open('http://launchpad.dev')
+  >>> browser.url
+  'http://launchpad.dev'
+  >>> 'Logged in as' in browser.contents
+  False
 
 We also can only connect via Basic auth when then user is valid
 
->>> foobar.password = original_password
->>> foobar.sync()
+  >>> foobar.password = original_password
+  >>> foobar.sync()
 
->>> from zope.testbrowser.testing import Browser
->>> browser = Browser()
->>> browser.addHeader('Authorization', 'Basic foo.bar@canonical.com:test')
->>> browser.open('http://launchpad.dev')
->>> browser.url
-'http://launchpad.dev'
->>> 'Logged in as' in browser.contents
-True
+  >>> browser = setupBrowser(auth='Basic foo.bar@canonical.com:test')
+  >>> browser.open('http://launchpad.dev')
+  >>> browser.url
+  'http://launchpad.dev'
+  >>> 'Logged in as' in browser.contents
+  True
 
->>> foobar.password = None
->>> foobar.sync()
+  >>> foobar.password = None
+  >>> foobar.sync()
 
->>> browser = Browser()
->>> browser.addHeader('Authorization', 'Basic foo.bar@canonical.com:test')
->>> browser.open('http://launchpad.dev')
->>> browser.url
-'http://launchpad.dev'
->>> 'Logged in as' in browser.contents
-False
+  >>> browser = setupBrowser(auth='Basic foo.bar@canonical.com:test')
+  >>> browser.open('http://launchpad.dev')
+  >>> browser.url
+  'http://launchpad.dev'
+  >>> 'Logged in as' in browser.contents
+  False
 

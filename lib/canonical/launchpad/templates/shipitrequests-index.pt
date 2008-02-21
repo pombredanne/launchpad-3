@@ -1,8 +1,21 @@
+<tal:root
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  omit-tag="">
+
 <tal:do-this-first condition="view/processForm" />
-<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
-      lang="en"
-      metal:use-macro="context/@@main_template/master"
-      i18n:domain="launchpad">
+<html
+  xmlns="http://www.w3.org/1999/xhtml"
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  xml:lang="en"
+  lang="en"
+  dir="ltr"
+  metal:use-macro="context/@@main_template/master"
+  i18n:domain="launchpad"
+>
 <body>
 
   <div metal:fill-slot="body" style="padding-left: 1em">
@@ -78,6 +91,7 @@
         <input type="submit" value="Show" name="show" />
       </td>
     </tr>
+    </tbody>
   </table>
   </form>
 
@@ -144,6 +158,7 @@
             <tal:navigation replace="structure bn/@@+navigation-links-lower" />
           </td>
         </tr>
+      </table>
     </tal:block>
 
   </tal:block>
@@ -155,9 +170,11 @@
     tal:content="structure context/@@+portlet-navigation"
   />
   </tr>
+  </tbody>
   </table>  
   
 </div>
 
 </body>
 </html>
+</tal:root>

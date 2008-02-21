@@ -21,7 +21,8 @@ from canonical.launchpad.interfaces import (
     ITranslationGroup, ITranslationGroupSet, ITranslator, ITranslatorSet,
     NotFoundError
     )
-from canonical.launchpad.browser.person import ObjectReassignmentView
+from canonical.launchpad.browser.objectreassignment import (
+    ObjectReassignmentView)
 from canonical.launchpad.webapp import (
     action, canonical_url, GetitemNavigation, LaunchpadEditFormView,
     LaunchpadFormView
@@ -101,6 +102,8 @@ class TranslationGroupEditView(LaunchpadEditFormView):
 
     def validate(self, data):
         """Check that we follow fields restrictions."""
+        # Pylint wrongly reports that the try does not do anything.
+        # pylint: disable-msg=W0104
         new_name = data.get('name')
         translation_group = getUtility(ITranslationGroupSet)
         if (self.context.name != new_name):
@@ -136,6 +139,8 @@ class TranslationGroupAddView(LaunchpadFormView):
 
     def validate(self, data):
         """Do not allow new groups with duplicated names."""
+        # Pylint wrongly reports that the try does not do anything.
+        # pylint: disable-msg=W0104
         name = data.get('name')
         try:
             self.context[name]

@@ -1,4 +1,5 @@
 # Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# pylint: disable-msg=E0611,W0212
 
 __metaclass__ = type
 __all__ = ['PublishedPackage', 'PublishedPackageSet']
@@ -11,10 +12,8 @@ from canonical.database.sqlbase import SQLBase, quote, quote_like
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
 
-from canonical.lp.dbschema import PackagePublishingStatus
-
 from canonical.launchpad.interfaces import (
-    IPublishedPackage, IPublishedPackageSet)
+    IPublishedPackage, IPublishedPackageSet, PackagePublishingStatus)
 
 
 class PublishedPackage(SQLBase):
@@ -22,18 +21,20 @@ class PublishedPackage(SQLBase):
 
     implements(IPublishedPackage)
 
-    _table = 'PublishedPackageView'
+    _table = 'PublishedPackage'
 
+    archive = ForeignKey(
+        dbName='archive', foreignKey='Archive', immutable=True)
     distribution = ForeignKey(dbName='distribution',
                               foreignKey='Distribution',
                               immutable=True)
-    distroarchseries = ForeignKey(dbName='distroarchrelease',
+    distroarchseries = ForeignKey(dbName='distroarchseries',
                                    foreignKey='DistroArchSeries',
                                    immutable=True)
-    distroseries = ForeignKey(dbName='distrorelease',
+    distroseries = ForeignKey(dbName='distroseries',
                                foreignKey='DistroSeries',
                                immutable=True)
-    distroseriesname = StringCol(dbName='distroreleasename', immutable=True)
+    distroseriesname = StringCol(dbName='distroseriesname', immutable=True)
     processorfamily = ForeignKey(dbName="processorfamily",
                                  foreignKey="ProcessorFamily",
                                  immutable=True)
@@ -75,9 +76,9 @@ class PublishedPackageSet:
         if distribution:
             queries.append("distribution = %d" % distribution.id)
         if distroseries:
-            queries.append("distrorelease = %d" % distroseries.id)
+            queries.append("distroseries = %d" % distroseries.id)
         if distroarchseries:
-            queries.append("distroarchrelease = %d" % distroarchseries.id)
+            queries.append("distroarchseries = %d" % distroarchseries.id)
         if component:
             queries.append("component = %s" % quote(component))
         if text:

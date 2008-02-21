@@ -12,11 +12,9 @@ A summary:
  * priority/seed/component (BASE|DESKTOP|SUPPORTED) [PEND]
  * Overarching policy (SECURITY/UPDATES/RELEASE) [PEND]
 
-
     >>> import datetime
     >>> import pytz
     >>> LOCAL_NOW = datetime.datetime.now(pytz.timezone('UTC'))
-
 
 Let's create a 'mock' class which emulate the real behaviour of
 BuildQueue entries.
@@ -29,36 +27,40 @@ BuildQueue entries.
     >>> hoary386.title
     u'The Hoary Hedgehog Release for i386 (x86)'
 
-    >>> pmount_sp = hoary.getSourcePackage('pmount')
-    >>> pmount_dsspr = pmount_sp.currentrelease
-    >>> pmount_current_publication = pmount_dsspr.current_published
-    >>> pmount_spr = pmount_dsspr.sourcepackagerelease
+    >>> from canonical.database.sqlbase import commit
+    >>> from canonical.launchpad.interfaces import (
+    ...     PackagePublishingPocket, PackagePublishingStatus,
+    ...     SourcePackageUrgency)
+    >>> from canonical.launchpad.tests.test_publishing import (
+    ...     SoyuzTestPublisher)
+    >>> from canonical.testing.layers import LaunchpadZopelessLayer
 
+    >>> test_publisher = SoyuzTestPublisher()
 
-    >>> from canonical.launchpad.interfaces import IComponentSet
-    >>> comp_set = getUtility(IComponentSet)
-    >>> main_component = comp_set['main']
-    >>> restricted_component = comp_set['restricted']
-    >>> universe_component = comp_set['universe']
-    >>> multiverse_component = comp_set['multiverse']
+    >>> commit()
+    >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
+    >>> test_publisher.prepareBreezyAutotest()
+    >>> commit()
+    >>> LaunchpadZopelessLayer.switchDbUser(test_dbuser)
 
-
-    >>> from canonical.lp.dbschema import (
-    ...     SourcePackageUrgency, PackagePublishingPocket)
-    >>> from zope.security.proxy import removeSecurityProxy
+    >>> version = 1
 
     >>> def setUpBuildQueueEntry(
-    ...     component=main_component, urgency=SourcePackageUrgency.HIGH,
+    ...     component_name='main', urgency=SourcePackageUrgency.HIGH,
     ...     date_created=LOCAL_NOW, manual=False):
-    ...
-    ...     naked_spr = removeSecurityProxy(pmount_spr)
-    ...     naked_spr.urgency = urgency
-    ...     naked_pub = removeSecurityProxy(pmount_current_publication)
-    ...     naked_pub.component = component
-    ...
-    ...     pocket = PackagePublishingPocket.RELEASE
-    ...     archive = hoary386.distroseries.main_archive
-    ...     build = naked_spr.createBuild(hoary386, pocket, archive)
+    ...     global version
+    ...     commit()
+    ...     LaunchpadZopelessLayer.switchDbUser('launchpad')
+    ...     pub = test_publisher.getPubSource(
+    ...        sourcename='test-build', version=str(version),
+    ...        distroseries=hoary, component=component_name,
+    ...        urgency=urgency,
+    ...        status=PackagePublishingStatus.PUBLISHED)
+    ...     commit()
+    ...     LaunchpadZopelessLayer.switchDbUser(test_dbuser)
+    ...     version += 1
+    ...     build = pub.sourcepackagerelease.createBuild(
+    ...         hoary386, pub.pocket, pub.archive)
     ...
     ...     build_queue = build.createBuildQueueEntry()
     ...     build_queue.created = date_created
@@ -74,7 +76,6 @@ BuildQueue entries.
     >>> bq0 = setUpBuildQueueEntry()
 
     >>> bq0.score()
-    DEBUG:root:i386 build of pmount 0.1-2 in ubuntu hoary RELEASE (0) -> U+15 C+1000 T+0 = 1015
     >>> bq0.lastscore
     1015
 
@@ -82,13 +83,11 @@ BuildQueue entries.
  * 5 point for priority LOW
  * nothing for queue_time
 
-    >>> time1 = LOCAL_NOW - datetime.timedelta(seconds=300)
+    >>> time1 = LOCAL_NOW - datetime.timedelta(seconds=290)
     >>> bq1 = setUpBuildQueueEntry(
     ...      urgency=SourcePackageUrgency.LOW, date_created=time1)
 
     >>> bq1.score()
-    DEBUG:root:i386 build of pmount 0.1-2 in ubuntu hoary RELEASE (0) -> U+5 C+1000 T+0 = 1005
-
     >>> bq1.lastscore
     1005
 
@@ -98,11 +97,10 @@ BuildQueue entries.
 
     >>> time2 = LOCAL_NOW - datetime.timedelta(seconds=310)
     >>> bq2 = setUpBuildQueueEntry(
-    ...      component=universe_component, urgency=SourcePackageUrgency.HIGH,
+    ...      component_name='universe', urgency=SourcePackageUrgency.HIGH,
     ...      date_created=time2)
 
     >>> bq2.score()
-    DEBUG:root:i386 build of pmount 0.1-2 in ubuntu hoary RELEASE (0) -> U+15 C+250 T+5 = 270
 
     >>> bq2.lastscore
     270
@@ -113,11 +111,10 @@ BuildQueue entries.
 
     >>> time3 = LOCAL_NOW - datetime.timedelta(seconds=1000)
     >>> bq3 = setUpBuildQueueEntry(
-    ...      component=multiverse_component, urgency=SourcePackageUrgency.MEDIUM,
+    ...      component_name='multiverse', urgency=SourcePackageUrgency.MEDIUM,
     ...      date_created=time3)
 
     >>> bq3.score()
-    DEBUG:root:i386 build of pmount 0.1-2 in ubuntu hoary RELEASE (0) -> U+10 C+0 T+10 = 20
 
     >>> bq3.lastscore
     20
@@ -126,14 +123,12 @@ BuildQueue entries.
  * 20 points for EMERGENCY priority
  * 15 points for queue_time ( > 1800 seconds)
 
-    >>> time4 = LOCAL_NOW - datetime.timedelta(seconds=3600)
+    >>> time4 = LOCAL_NOW - datetime.timedelta(seconds=3590)
     >>> bq4 = setUpBuildQueueEntry(
-    ...      component=main_component, urgency=SourcePackageUrgency.EMERGENCY,
+    ...      component_name='main', urgency=SourcePackageUrgency.EMERGENCY,
     ...      date_created=time4)
 
     >>> bq4.score()
-    DEBUG:root:i386 build of pmount 0.1-2 in ubuntu hoary RELEASE (0) -> U+20 C+1000 T+15 = 1035
-
     >>> bq4.lastscore
     1035
 
@@ -143,15 +138,12 @@ BuildQueue entries.
 
     >>> time5 = LOCAL_NOW - datetime.timedelta(seconds=4000)
     >>> bq5 = setUpBuildQueueEntry(
-    ...      component=restricted_component, urgency=SourcePackageUrgency.LOW,
+    ...      component_name='restricted', urgency=SourcePackageUrgency.LOW,
     ...      date_created=time5)
 
     >>> bq5.score()
-    DEBUG:root:i386 build of pmount 0.1-2 in ubuntu hoary RELEASE (0) -> U+5 C+750 T+20 = 775
-
     >>> bq5.lastscore
     775
-
 
 By setting manual attribute of a BuildQueue entry we prevent it to be
 rescored, which allows us to set an arbitrary value on it.
@@ -163,7 +155,6 @@ rescored, which allows us to set an arbitrary value on it.
     >>> bq6.lastscore = 5000
 
     >>> bq6.score()
-    DEBUG:root:pmount (5000) MANUALLY RESCORED
 
     >>> bq6.lastscore
     5000

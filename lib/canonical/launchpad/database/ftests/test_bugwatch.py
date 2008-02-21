@@ -10,10 +10,8 @@ from zope.component import getUtility
 
 from canonical.launchpad.ftests import login, ANONYMOUS
 from canonical.launchpad.interfaces import (
-    IBugTaskSet, IBugTrackerSet, IBugWatchSet, IPersonSet, NoBugTrackerFound,
-    UnrecognizedBugTrackerURL)
-from canonical.launchpad.webapp.servers import LaunchpadTestRequest
-from canonical.lp.dbschema import BugTrackerType
+    BugTrackerType, IBugTrackerSet, IBugWatchSet, IPersonSet,
+    NoBugTrackerFound, UnrecognizedBugTrackerURL)
 from canonical.testing import LaunchpadFunctionalLayer
 
 
@@ -81,7 +79,7 @@ class ExtractBugTrackerAndBugTestBase(unittest.TestCase):
 
 
 class MantisExtractBugTrackerAndBugTest(ExtractBugTrackerAndBugTestBase):
-    """Make sure BugWatchSet.extractBugTrackerAndBug works with Mantis URLs."""
+    """Ensure BugWatchSet.extractBugTrackerAndBug works with Mantis URLs."""
 
     bugtracker_type = BugTrackerType.MANTIS
     bug_url = 'http://some.host/bugs/view.php?id=3224'
@@ -90,7 +88,7 @@ class MantisExtractBugTrackerAndBugTest(ExtractBugTrackerAndBugTestBase):
 
 
 class BugzillaExtractBugTrackerAndBugTest(ExtractBugTrackerAndBugTestBase):
-    """Make sure BugWatchSet.extractBugTrackerAndBug works with Bugzilla URLs."""
+    """Ensure BugWatchSet.extractBugTrackerAndBug works with Bugzilla URLs."""
 
     bugtracker_type = BugTrackerType.BUGZILLA
     bug_url = 'http://some.host/bugs/show_bug.cgi?id=3224'
@@ -99,7 +97,7 @@ class BugzillaExtractBugTrackerAndBugTest(ExtractBugTrackerAndBugTestBase):
 
 
 class IssuezillaExtractBugTrackerAndBugTest(ExtractBugTrackerAndBugTestBase):
-    """Make sure BugWatchSet.extractBugTrackerAndBug works with Issuezilla.
+    """Ensure BugWatchSet.extractBugTrackerAndBug works with Issuezilla.
 
     Issuezilla is practically the same as Buzilla, so we treat it as a
     normal BUGZILLA type.
@@ -112,7 +110,7 @@ class IssuezillaExtractBugTrackerAndBugTest(ExtractBugTrackerAndBugTestBase):
 
 
 class RoundUpExtractBugTrackerAndBugTest(ExtractBugTrackerAndBugTestBase):
-    """Make sure BugWatchSet.extractBugTrackerAndBug works with RoundUp URLs."""
+    """Ensure BugWatchSet.extractBugTrackerAndBug works with RoundUp URLs."""
 
     bugtracker_type = BugTrackerType.ROUNDUP
     bug_url = 'http://some.host/some/path/issue377'
@@ -121,7 +119,7 @@ class RoundUpExtractBugTrackerAndBugTest(ExtractBugTrackerAndBugTestBase):
 
 
 class TracExtractBugTrackerAndBugTest(ExtractBugTrackerAndBugTestBase):
-    """Make sure BugWatchSet.extractBugTrackerAndBug works with Trac URLs."""
+    """Ensure BugWatchSet.extractBugTrackerAndBug works with Trac URLs."""
 
     bugtracker_type = BugTrackerType.TRAC
     bug_url = 'http://some.host/some/path/ticket/42'
@@ -130,7 +128,7 @@ class TracExtractBugTrackerAndBugTest(ExtractBugTrackerAndBugTestBase):
 
 
 class DebbugsExtractBugTrackerAndBugTest(ExtractBugTrackerAndBugTestBase):
-    """Make sure BugWatchSet.extractBugTrackerAndBug works with Debbugs URLs."""
+    """Ensure BugWatchSet.extractBugTrackerAndBug works with Debbugs URLs."""
 
     bugtracker_type = BugTrackerType.DEBBUGS
     bug_url = 'http://some.host/some/path/cgi-bin/bugreport.cgi?bug=42'
@@ -138,8 +136,9 @@ class DebbugsExtractBugTrackerAndBugTest(ExtractBugTrackerAndBugTestBase):
     bug_id = '42'
 
 
-class DebbugsExtractBugTrackerAndBugShorthandTest(ExtractBugTrackerAndBugTestBase):
-    """Make sure BugWatchSet.extractBugTrackerAndBug works with compact Debbugs URLs."""
+class DebbugsExtractBugTrackerAndBugShorthandTest(
+    ExtractBugTrackerAndBugTestBase):
+    """Ensure extractBugTrackerAndBug works for short Debbugs URLs."""
 
     bugtracker_type = BugTrackerType.DEBBUGS
     bug_url = 'http://bugs.debian.org/42'
@@ -151,7 +150,7 @@ class DebbugsExtractBugTrackerAndBugShorthandTest(ExtractBugTrackerAndBugTestBas
         pass
 
 class SFExtractBugTrackerAndBugTest(ExtractBugTrackerAndBugTestBase):
-    """Make sure BugWatchSet.extractBugTrackerAndBug works with SF URLs.
+    """Ensure BugWatchSet.extractBugTrackerAndBug works with SF URLs.
 
     We have only one SourceForge tracker registered in Launchpad, so we
     don't care about the aid and group_id, only about atid which is the
@@ -171,6 +170,57 @@ class SFExtractBugTrackerAndBugTest(ExtractBugTrackerAndBugTestBase):
         pass
 
 
+class RTExtractBugTrackerAndBugTest(ExtractBugTrackerAndBugTestBase):
+    """Ensure BugWatchSet.extractBugTrackerAndBug works with RT URLs."""
+
+    bugtracker_type = BugTrackerType.RT
+    bug_url = 'http://some.host/Ticket/Display.html?id=2379'
+    base_url = 'http://some.host/'
+    bug_id = '2379'
+
+
+class CpanExtractBugTrackerAndBugTest(ExtractBugTrackerAndBugTestBase):
+    """Ensure BugWatchSet.extractBugTrackerAndBug works with CPAN URLs."""
+
+    bugtracker_type = BugTrackerType.RT
+    bug_url = 'http://rt.cpan.org/Public/Bug/Display.html?id=2379'
+    base_url = 'http://rt.cpan.org/'
+    bug_id = '2379'
+
+
+class SavannahExtractBugTrackerAndBugTest(ExtractBugTrackerAndBugTestBase):
+    """Ensure BugWatchSet.extractBugTrackerAndBug works with Savannah URLs.
+    """
+
+    bugtracker_type = BugTrackerType.SAVANNAH
+    bug_url = 'http://savannah.gnu.org/bugs/?22003'
+    base_url = 'http://savannah.gnu.org/'
+    bug_id = '22003'
+
+    def test_unregistered_tracker_url(self):
+        # The Savannah tracker is always registered, so this test
+        # doesn't make sense for Savannah URLs.
+        pass
+
+
+class EmailAddressExtractBugTrackerAndBugTest(
+    ExtractBugTrackerAndBugTestBase):
+    """Ensure BugWatchSet.extractBugTrackerAndBug works with email addresses.
+    """
+
+    bugtracker_type = BugTrackerType.EMAILADDRESS
+    bug_url = 'mailto:foo.bar@example.com'
+    base_url = 'mailto:foo.bar@example.com'
+    bug_id = ''
+
+    def test_extract_bug_tracker_and_bug_rejects_invalid_email_address(self):
+        # BugWatch.extractBugTrackerAndBug() will reject invalid email
+        # addresses.
+        self.assertRaises(UnrecognizedBugTrackerURL,
+            self.bugwatch_set.extractBugTrackerAndBug,
+            url='this\.is@@a.bad.email.address')
+
+
 def test_suite():
     suite = unittest.TestSuite()
     suite.addTest(unittest.makeSuite(BugzillaExtractBugTrackerAndBugTest))
@@ -178,9 +228,14 @@ def test_suite():
     suite.addTest(unittest.makeSuite(RoundUpExtractBugTrackerAndBugTest))
     suite.addTest(unittest.makeSuite(TracExtractBugTrackerAndBugTest))
     suite.addTest(unittest.makeSuite(DebbugsExtractBugTrackerAndBugTest))
-    suite.addTest(unittest.makeSuite(DebbugsExtractBugTrackerAndBugShorthandTest))
+    suite.addTest(
+        unittest.makeSuite(DebbugsExtractBugTrackerAndBugShorthandTest))
     suite.addTest(unittest.makeSuite(SFExtractBugTrackerAndBugTest))
     suite.addTest(unittest.makeSuite(MantisExtractBugTrackerAndBugTest))
+    suite.addTest(unittest.makeSuite(RTExtractBugTrackerAndBugTest))
+    suite.addTest(unittest.makeSuite(CpanExtractBugTrackerAndBugTest))
+    suite.addTest(unittest.makeSuite(SavannahExtractBugTrackerAndBugTest))
+    suite.addTest(unittest.makeSuite(EmailAddressExtractBugTrackerAndBugTest))
     return suite
 
 

@@ -5,10 +5,10 @@ Get evolution template for Ubuntu Hoary
     >>> import datetime
     >>> import pytz
     >>> from zope.component import getUtility
-    >>> from zope.interface.verify import verifyObject
+    >>> from canonical.launchpad.webapp.testing import verifyObject
     >>> from canonical.launchpad.interfaces import (
-    ...     IDistributionSet, IPersonSet, IPOFile, IPOTemplateSet,
-    ...     ISourcePackageNameSet)
+    ...     IDistributionSet, ILanguageSet, IPersonSet, IPOFile,
+    ...     IPOTemplateSet, ISourcePackageNameSet)
     >>> sourcepackagenameset = getUtility(ISourcePackageNameSet)
     >>> sourcepackagename = sourcepackagenameset['evolution']
     >>> distributionset = getUtility(IDistributionSet)
@@ -47,7 +47,7 @@ except for untranslated messages.
     >>> dummy_pofile.getPOTMsgSetWithErrors().count()
     0
     >>> dummy_pofile.getPOTMsgSetUntranslated().count()
-    23
+    22
 
 Get the set of POTMsgSets that are untranslated.
 
@@ -66,6 +66,38 @@ Get the set of POTMsgSets that are untranslated.
     13
 
 
+== path ==
+
+A PO file has a storage path that determines where the file is to be
+stored in a filesystem tree (such as an export tarball).  The path
+ends with the actual file name and should include a language code.
+
+    >>> pofile_xh = potemplate.getPOFileByLang('xh')
+    >>> pofile_xh.path
+    u'xh.po'
+
+To change this path, use setPathIfUnique().
+
+    >>> pofile_xh.setPathIfUnique('xh2.po')
+    >>> pofile_xh.path
+    u'xh2.po'
+
+The path must be unique within its distribution series package or
+product release series, so that a single file system tree can contain
+all translations found there.
+
+If the given path is not locally unique, setPathIfUnique() simply does
+nothing.  There can be no naming conflict in that case because the PO
+file's existing path is already supposed to be unique.
+
+Here we try to copy the path of another translation of the same template
+but the PO file correctly retains its original path.
+
+    >>> pofile_xh.setPathIfUnique(pofile.path)
+    >>> pofile_xh.path
+    u'xh2.po'
+
+
 == updateHeader() ==
 
 This method is used to update the header of the POFile to a newer version.
@@ -82,7 +114,7 @@ This is the new header we are going to apply.
     ... Content-Transfer-Encoding: 8bit
     ... Report-Msgid-Bugs-To: serrador@hispalinux.es'''
 
-We can get an ITranslationHeader from the file format importer.
+We can get an ITranslationHeaderData from the file format importer.
 
     >>> from canonical.launchpad.interfaces import ITranslationImporter
     >>> translation_importer = getUtility(ITranslationImporter)
@@ -155,6 +187,44 @@ Now, we can see how we detect that it's older with an older date.
     True
 
 
+If the revision date of the stored translation file is missing, the new
+one is considered an update.
+
+    >>> from zope.security.proxy import removeSecurityProxy
+    >>> from canonical.launchpad.translationformat.gettext_po_parser import (
+    ...     POHeader)
+
+    >>> old_pofile = removeSecurityProxy(potemplate.newPOFile('tl'))
+    >>> old_pofile.header = """
+    ...     Project-Id-Version: foo
+    ...     MIME-Version: 1.0
+    ...     Content-Type: text/plain; charset=UTF-8
+    ...     Content-Transfer-Encoding: 8bit
+    ...     """
+    >>> new_header = POHeader("""
+    ...     Project-Id-Version: foo
+    ...     PO-Revision-Date: 2007-05-03 14:00+0200
+    ...     MIME-Version: 1.0
+    ...     Content-Type: text/plain; charset=UTF-8
+    ...     Content-Transfer-Encoding: 8bit
+    ...     """)
+
+    >>> old_pofile.isTranslationRevisionDateOlder(new_header)
+    False
+
+
+This even goes if the new file also omits the revision date.
+
+    >>> new_header = POHeader("""
+    ...     Project-Id-Version: foo
+    ...     MIME-Version: 1.0
+    ...     Content-Type: text/plain; charset=UTF-8
+    ...     Content-Transfer-Encoding: 8bit
+    ...     """)
+    >>> old_pofile.isTranslationRevisionDateOlder(new_header)
+    False
+
+
 == canEditTranslations ==
 
 This method determines if someone is allowed to edit translations.
@@ -165,9 +235,9 @@ Do some needed imports.
     >>> from canonical.launchpad.interfaces import IPersonSet
     >>> from canonical.launchpad.interfaces import IProductSet
     >>> from canonical.launchpad.interfaces import ITranslationGroupSet
+    >>> from canonical.launchpad.interfaces import TranslationPermission
     >>> from canonical.launchpad.database import POFile
     >>> from canonical.launchpad.ftests import login
-    >>> from canonical.lp.dbschema import TranslationPermission
     >>> person_set = getUtility(IPersonSet)
 
 Need extra permissions to change the values.
@@ -197,7 +267,7 @@ A Launchpad admin must have permission always.
 
 A Rosetta Expert too.
 
-    >>> rosetta_experts = getUtility(ILaunchpadCelebrities).rosetta_expert
+    >>> rosetta_experts = getUtility(ILaunchpadCelebrities).rosetta_experts
     >>> pofile_es.canEditTranslations(rosetta_experts)
     True
 
@@ -217,12 +287,13 @@ But the unprivileged account should not.
 And if he tries to update translations, the system blocks such
 breakage.
 
-    >>> pomsgset = pofile_es.getPOMsgSet(u'evolution addressbook')
-    >>> fuzzy = False
-    >>> published = False
-    >>> lock_timestamp = None
-    >>> pomsgset.updateTranslationSet(
-    ...     no_priv, [u'foo'], fuzzy, published, lock_timestamp)
+    >>> translation_message = pofile_es.getCurrentTranslationMessage(
+    ...     u'evolution addressbook')
+    >>> is_fuzzy = False
+    >>> is_imported = False
+    >>> lock_timestamp = datetime.datetime.now(UTC)
+    >>> translation_message.potmsgset.updateTranslation(
+    ...     pofile_es, no_priv, [u'foo'], is_fuzzy, is_imported, lock_timestamp)
     Traceback (most recent call last):
     ...
     AssertionError: No Privileges Person cannot add translations nor can...
@@ -382,10 +453,38 @@ handling suggestions because it allows anyone to add suggestions.
 
     Leave the permission back to OPEN.
     >>> product.translationpermission = TranslationPermission.OPEN
-    >>> transaction.commit()
 
+== plural_forms ==
 
-== uncachedExport ==
+This method returns a number of plural forms for the language of the POFile,
+or a default of 2 when language doesn't specify it: 2 is the most common
+value for number of plural forms, so most likely to be correct for any new
+language.  Even if the default value is incorrect, it is handled gracefully
+by the rest of the system (see doc/poimport.txt for example).
+
+When the language has number of plural forms defined, that value is used.
+
+    >>> evolution = getUtility(IProductSet).getByName('evolution')
+    >>> evolution_trunk = evolution.getSeries('trunk')
+    >>> evolution_pot = evolution_trunk.getPOTemplate('evolution-2.2')
+    >>> serbian = getUtility(ILanguageSet)['sr']
+    >>> serbian.pluralforms
+    3
+    >>> evolution_sr = evolution_pot.getDummyPOFile(serbian.code)
+    >>> evolution_sr.plural_forms
+    3
+
+And when a language has no plural forms defined, a POFile defaults to 2,
+the most common number of plural forms:
+
+    >>> divehi = getUtility(ILanguageSet)['dv']
+    >>> print divehi.pluralforms
+    None
+    >>> evolution_dv = evolution_pot.getDummyPOFile(divehi.code)
+    >>> evolution_dv.plural_forms
+    2
+
+== export ==
 
 This method serializes an IPOFile as a .po file.
 
@@ -400,7 +499,7 @@ Get a concrete POFile we know doesn't have a UTF-8 encoding.
 
 Now, let's export it with its default encoding.
 
-    >>> stream = pofile.uncachedExport()
+    >>> stream = pofile.export()
     >>> stream_list = stream.splitlines()
 
 The header is not changed.
@@ -423,7 +522,7 @@ encoding.
 
 Now, let's force the UTF-8 encoding.
 
-    >>> stream = pofile.uncachedExport(force_utf8=True)
+    >>> stream = pofile.export(force_utf8=True)
     >>> stream_list = stream.splitlines()
 
 We can see that the header has been updated to have UTF-8
@@ -442,6 +541,49 @@ And the encoding used is also using UTF-8 chars.
     >>> stream_list[i]
     'msgstr "\xe8\xa8\xad\xe5\xae\x9a\xe3\x81\xae\xe3\x82\xab\xe3\x82\xb9\xe3\x82\xbf\xe3\x83\x9e\xe3\x82\xa4\xe3\x82\xba\xe3\x81\xab /etc/mozilla/prefs.js \xe3\x81\x8c\xe5\x88\xa9\xe7\x94\xa8\xe3\x81\xa7\xe3\x81\x8d\xe3\x81\xbe\xe3\x81\x99\xe3\x80\x82"'
 
+There are some situations when a msgid_plural changes, while the msgid
+singular remains unchanged.
+
+So for a concrete export, we have a message like:
+
+    >>> print pofile_es.export(force_utf8=True).decode('utf8')
+    # traducci...
+    ...
+    #: addressbook/gui/widgets/foo.c:345
+    #, fuzzy, c-format
+    msgid "%d foo"
+    msgid_plural "%d bars"
+    msgstr[0] "%d foo"
+    ...
+
+When it changes...
+
+    >>> potmsgset = potemplate.getPOTMsgSetByMsgIDText(
+    ...     u'%d foo')
+
+    # It has plural forms.
+    >>> print potmsgset.plural_text
+    %d bars
+
+    # We change the plural form.
+    >>> potmsgset.updatePluralForm(u'something else')
+    >>> from canonical.database.sqlbase import flush_database_updates
+    >>> flush_database_updates()
+    >>> print potmsgset.plural_text
+    something else
+
+...the export reflects that change.
+
+    >>> print pofile_es.export(force_utf8=True).decode('utf8')
+    # traducci...
+    ...
+    #: addressbook/gui/widgets/foo.c:345
+    #, fuzzy, c-format
+    msgid "%d foo"
+    msgid_plural "something else"
+    msgstr[0] "%d foo"
+    ...
+
 
 == getPOTMsgSetUntranslated ==
 
@@ -456,8 +598,8 @@ that as not bein complete too.
     13
 
     >>> for potmsgset in untranslated_potmsgset:
-    ...     pomsgset = potmsgset.getPOMsgSet(
-    ...         pofile_es.language.code, pofile_es.variant)
+    ...     pomsgset = potmsgset.getCurrentTranslationMessage(
+    ...         pofile_es.language)
     ...     assert (pomsgset is None or
     ...             (pomsgset.iscomplete == False and
     ...              pomsgset.isfuzzy == False))
@@ -477,286 +619,39 @@ And the msgid we are looking for.
 
 Now, just to be sure that this entry doesn't exist yet:
 
-    >>> pofile_sr.getPOMsgSet(msgid) is None
-    True
+    >>> pofile_sr.getCurrentTranslationMessage(msgid).translations
+    [None, None, None]
 
 Is time to create it.
 
     >>> potmsgset = pofile_sr.potemplate.getPOTMsgSetByMsgIDText(msgid)
-    >>> pomsgset = pofile_sr.createMessageSetFromMessageSet(potmsgset)
+    >>> translations = {0: u''}
+    >>> is_fuzzy = False
+    >>> is_imported = False
+    >>> lock_timestamp = datetime.datetime.now(UTC)
+    >>> translation_message = potmsgset.updateTranslation(
+    ...     pofile_sr, rosetta_experts, translations, is_fuzzy, is_imported,
+    ...     lock_timestamp)
 
 As we can see, is the msgid we were looking for.
 
-    >>> print pomsgset.potmsgset.msgid
+    >>> print translation_message.potmsgset.msgid_singular.msgid
     Found %i invalid file.
-    >>> print pofile_sr.language.id
-    358
-    >>> print pomsgset.language.id
-    358
+    >>> print pofile_sr.language.code
+    sr
+    >>> print translation_message.pofile.language.code
+    sr
 
 This entry is in fact one that is not used anymore, that means, its sequence
 is zero.
 
-    >>> pomsgset.potmsgset.sequence
+    >>> translation_message.potmsgset.sequence
     0
 
-Also, as we just created it, it shouldn't have any translation.
+Also, we created it without translations.
 
-    >>> pomsgset.active_texts
+    >>> translation_message.translations
     [None, None, None]
-    >>> pomsgset.published_texts
-    [None, None, None]
-
-
-== export and validExportCache ==
-
-The export method is used to get a .po file from our database rows. It's
-strongly related with validExportCache, which drives whether the export
-should be a full export from our database or just return an already
-cached value.
-
-    # Get hold of a PO file which has been exported before.
-    >>> from canonical.launchpad.database import POFile
-    >>> pofile = POFile.get(1)
-
-The way to know whether there is a previous export is to have a value in
-IPOFile.exportfile. That's a link to a librarian file containing a cached
-export.
-
-    >>> pofile.exportfile is None
-    False
-    >>> old_cached_file_id = pofile.exportfile.id
-
-However, it would be old, so it doesn't have a valid cache.
-
-    >>> pofile.validExportCache()
-    False
-
-Now ask it to export itself.
-
-    >>> export = pofile.export()
-    >>> export.split('\n')[0]
-    '# traducci\xc3\xb3n de es.po al Spanish'
-
-    # Now, because of a SQLObject quirk, we need to call .sync() on the PO file.
-    # This is because calling .export() has set pofile.exporttime to the magic
-    # constant UTC_NOW. This would normally be fine, as the attribute would not
-    # normally be accessed again in the same SQLObject session, and it would
-    # appear as a datetime value the next time around. However, in this case, we
-    # need to access it immediately, so we need to write it to the database and
-    # read it back again.
-    >>> pofile.sync()
-
-Because the PO file has been exported, it will have updated the cache.
-
-    >>> pofile.validExportCache()
-    True
-
-Which is different than previous one:
-
-    >>> old_cached_file_id != pofile.exportfile.id
-    True
-    >>> old_cached_file_id = pofile.exportfile.id
-
-    # In order to have different datetimes for the export time of the pofile,
-    # and for any new stuff we do, lets commit a transaction.
-    >>> transaction.commit()
-
-validExportCache method detects any translation change done in the IPOFile and
-invalidates the cache.
-
-    # We can see current value before we do a change, so we are completely sure
-    # that the exported file includes the modification.
-    >>> print export.decode('UTF-8')
-    #...
-    #: addressbook/addressbook-errors.xml.h:6
-    msgid "Failed to authenticate with LDAP server."
-    msgstr ""
-    ...
-
-    # Let's update a translation to the PO file.
-    >>> from canonical.launchpad.database import Person
-    >>> person = Person.get(1)
-    >>> msgid = u"Failed to authenticate with LDAP server."
-    >>> msgset = pofile.getPOMsgSet(msgid)
-    >>> print msgset.active_texts
-    [None]
-
-If we update it with the same untranslated message, the cache is not
-invalidated.
-
-    >>> msgset.updateTranslationSet(person, {0: ''}, fuzzy=False,
-    ...     published=True, lock_timestamp=datetime.datetime.now(UTC))
-    >>> print msgset.active_texts
-    [None]
-    >>> print msgset.date_reviewed
-    None
-
-    # We need to sync the changed objects for the same reason as before.
-    >>> msgset.sync()
-    >>> pofile.validExportCache()
-    True
-
-When we actually update untranslated pomsgset with a new translation,
-cache is invalidated, but for published submissions, date_reviewed is
-not updated.
-
-    >>> msgset.updateTranslationSet(person, {0: 'Foo.'}, fuzzy=False,
-    ...     published=True, lock_timestamp=datetime.datetime.now(UTC))
-    >>> print msgset.active_texts
-    [u'Foo.']
-    >>> print msgset.date_reviewed
-    None
-    >>> txt = msgset.active_texts[0]
-
-    # We need to sync the changed objects for the same reason as before.
-    >>> msgset.sync()
-    >>> pofile.validExportCache()
-    False
-    >>> pofile.last_touched_pomsgset==msgset
-    True
-
-Exporting a pofile regenerates the cache.
-
-    >>> export = pofile.export()
-    >>> export is not None
-    True
-
-    # And we can see that it's applied in the exported file.
-    >>> print export.decode('UTF-8')
-    #...
-    #: addressbook/addressbook-errors.xml.h:6
-    msgid "Failed to authenticate with LDAP server."
-    msgstr "Foo."
-    ...
-    >>> pofile.validExportCache()
-    True
-
-Setting a new translation directly through Launchpad (not-published)
-updates the date_reviewed value and invalidates the cache.
-
-    >>> msgset.updateTranslationSet(person, {0: 'Blah.'}, fuzzy=False,
-    ...     published=False, lock_timestamp=datetime.datetime.now(UTC))
-    >>> print msgset.active_texts
-    [u'Blah.']
-
-    # We need to sync the changed objects for the same reason as before.
-    >>> msgset.sync()
-    >>> msgset.date_reviewed is None
-    False
-    >>> pofile.last_touched_pomsgset==msgset
-    True
-
-Another export run generates a new cached file that contains that new
-translation.
-
-    # First we invalidate the cache manually, because everything is inside
-    # one transaction and we will get the same value with now() being used
-    # in both pofile.exporttime and msgset.date_reviewed.
-    >>> pofile.exportfile = None
-    >>> export = pofile.export()
-    >>> export is not None
-    True
-
-    # And we can see that it's applied in the exported file.
-    >>> print export.decode('UTF-8')
-    #...
-    #: addressbook/addressbook-errors.xml.h:6
-    msgid "Failed to authenticate with LDAP server."
-    msgstr "Blah."
-    ...
-    >>> old_cached_file_id != pofile.exportfile.id
-    True
-    >>> pofile.validExportCache()
-    True
-
-There is a corner case in the way we check that the cached export is valid.
-When the IPOFile has no submissions at all we don't have a way to know
-when was last time that a translation was updated, because there are no
-translations.
-
-This tests two specific things:
-
- - That a PO file with no translations can be exported.
- - The situation where there is a cached export for a file with no
-   translations, and there is no submission which we can use to check the
-   cache's validity.
-
-    >>> empty_pofile = pofile.potemplate.newPOFile('cy')
-    >>> empty_pofile.last_touched_pomsgset is None
-    True
-    >>> empty_pofile.validExportCache()
-    False
-
-    # There is something exported.
-    >>> len(empty_pofile.export()) > 0
-    True
-
-XXX DaniloSegan 20070115: we're currently unable to track cache status
-for empty PO files, since this is similar to case of a single deactivated
-translation.
-
-    >>> empty_pofile.validExportCache()
-    False
-
-Also, the export is robust enough to handle a situation where Librarian is not
-available.
-
-    # To demonstrate it, we are going to shutdown Librarian.
-    >>> from canonical.testing import LibrarianLayer
-    >>> LibrarianLayer.hide()
-
-At this point, librarian is not available, but the export is still working.
-
-    >>> pofile = POFile.get(1)
-    >>> pofile.validExportCache()
-    True
-    >>> old_cached_file_id = pofile.exportfile.id
-    >>> len(pofile.export()) > 0
-    ERROR:root:Error fetching a cached file from librarian
-    Traceback (most recent call last):
-    ...
-    LookupError: ...
-    WARNING:root:Error uploading a cached file into librarian
-    ...
-    UploadFailed: (111, 'Connection refused')
-    True
-
-Although the cache is still pointing to previous value because it cannot be
-updated.
-
-    >>> pofile.exportfile.id == old_cached_file_id
-    True
-
-Even when we there is no cached file, the export will work and will not be
-stored due the problem with Librarian.
-
-    >>> pofile.invalidateCache()
-    >>> len(pofile.export()) > 0
-    WARNING:root:Error uploading a cached file into librarian
-    ...
-    UploadFailed: (111, 'Connection refused')
-    True
-    >>> pofile.validExportCache()
-    False
-
-    # We restore now Librarian
-    >>> LibrarianLayer.reveal()
-
-When an IPOFile has the wrong encoding defined in its header, the system
-exports it as UTF-8
-
-    >>> pofile.header = 'Content-Type: text/plain; charset=broken\n'
-    >>> pofile.sync()
-    >>> export_content = pofile.export()
-    >>> unicode(export_content)
-    Traceback (most recent call last):
-    ...
-    UnicodeDecodeError: ...
-    >>> print export_content.decode('UTF-8')
-    #...
-    "Content-Type: text/plain; charset=UTF-8\n"
-    ...
 
 
 == getPOTMsgSetChangedInLaunchpad ==
@@ -787,6 +682,18 @@ Launchpad.
     >>> print pofile_changed.updatesCount()
     1
 
+This message is also counted as translated message (number of translated
+messages is the number of imported/currentCount plus number of newly
+translated in Launchpad/rosettaCount plus number of changed in
+Launchpad/updatesCount):
+
+    >>> print pofile_changed.currentCount()
+    7
+    >>> print pofile_changed.rosettaCount()
+    0
+    >>> print pofile_changed.updatesCount()
+    1
+
 We make sure that submissions on untranslated strings are not considered
 'changed in Launchpad', since this method is mainly designed to help
 translators revert translations to published translations.
@@ -796,15 +703,20 @@ Lets get a single untranslated POTMsgSet.
     >>> untranslated = list(pofile_changed.getPOTMsgSetUntranslated())[0]
     >>> untranslated is None
     False
-    >>> pomsgset = pofile_changed.getPOMsgSet(untranslated.msgid)
-    >>> pomsgset is None
-    False
+    >>> current = untranslated.getCurrentTranslationMessage(
+    ...     pofile_changed.language)
+    >>> current is None
+    True
+    >>> imported = untranslated.getImportedTranslationMessage(
+    ...     pofile_changed.language)
+    >>> imported is None
+    True
 
 Now, lets provide a translation for it.
 
-    >>> pomsgset.updateTranslationSet(
-    ...     pofile_changed.owner, {0: u'sample translation'}, fuzzy=False,
-    ...     published=False, lock_timestamp=datetime.datetime.now(UTC))
+    >>> translation_message = untranslated.updateTranslation(pofile_changed,
+    ...     pofile_changed.owner, {0: u'sample translation'}, is_fuzzy=False,
+    ...     is_imported=False, lock_timestamp=datetime.datetime.now(UTC))
 
 And make sure that the count of changed in Launchpad hasn't changed.
 
@@ -815,23 +727,27 @@ And make sure that the count of changed in Launchpad hasn't changed.
     >>> print pofile_changed.updatesCount()
     1
 
-Now, lets change translation for a message which already has a published
-translation.  First we need to find a message with active, published
+Now, lets change translation for a message which already has an imported
+translation.  First we need to find a message with current, imported
 translation:
 
-    >>> for pomsgset in pofile_changed:
-    ...     if pomsgset.publishedcomplete and not pomsgset.publishedfuzzy:
-    ...         submission = pomsgset.getPublishedSubmission(0)
-    ...         if submission and submission.active:
-    ...             break
-    >>> pomsgset is None
+    >>> for potmsgset in pofile_changed.potemplate:
+    ...     tm = potmsgset.getImportedTranslationMessage(
+    ...         pofile_changed.language)
+    ...     if tm is not None and tm.is_complete and tm.is_current:
+    ...         imported_potmsgset = potmsgset
+    ...         break
+    >>> potmsgset is None
     False
 
 Lets re-translate that:
 
-    >>> pomsgset.updateTranslationSet(
-    ...     pofile_changed.owner, {0: u'new translation'}, fuzzy=False,
-    ...     published=False, lock_timestamp=datetime.datetime.now(UTC))
+    >>> translation_message = imported_potmsgset.updateTranslation(
+    ...     pofile_changed, pofile_changed.owner, {0: u'new translation'},
+    ...     is_fuzzy=False, is_imported=False,
+    ...     lock_timestamp=datetime.datetime.now(UTC))
+    >>> from canonical.database.sqlbase import flush_database_caches
+    >>> flush_database_caches()
 
 And make sure that the count of messages changed in Launchpad _has_ changed:
 
@@ -866,7 +782,6 @@ Lets get Evolution Spanish translation in distribution Hoary.
     >>> editor = person_set.getByName('carlos')
 
     # Make sure the translation permission mode is restricted
-    >>> from canonical.lp.dbschema import TranslationPermission
     >>> product.translationpermission = TranslationPermission.RESTRICTED
 
 Non-editor can only submit a new suggestion on untranslated message.
@@ -877,18 +792,26 @@ Non-editor can only submit a new suggestion on untranslated message.
     >>> print evolution_es.unreviewedCount()
     2
 
-    >>> pomsgset = evolution_es.getPOMsgSet(u'evolution minicard')
+    >>> potmsgset = evolution_es.potemplate.getPOTMsgSetByMsgIDText(
+    ...     u'evolution minicard')
+    >>> current = potmsgset.getCurrentTranslationMessage(evolution_es.language)
 
     # Make sure this entry is unreviewed and untranslated
-    >>> print pomsgset.date_reviewed
+    >>> print current
     None
-    >>> pomsgset.active_texts
-    [None]
 
-    >>> pomsgset.updateTranslationSet(noneditor, {0: 'translation'}, fuzzy=False,
-    ...     published=False, lock_timestamp=datetime.datetime.now(UTC))
-    >>> pomsgset.active_texts
-    [None]
+    >>> new_translation = potmsgset.updateTranslation(
+    ...     evolution_es, noneditor, {0: u'translation'}, is_fuzzy=False,
+    ...     is_imported=False, lock_timestamp=datetime.datetime.now(UTC))
+    >>> flush_database_caches() # Store modification dates in database
+    >>> print new_translation.translations
+    [u'translation']
+    >>> new_translation.is_current
+    False
+    >>> current = potmsgset.getCurrentTranslationMessage(evolution_es.language)
+    >>> print current
+    None
+
     >>> evolution_es.getPOTMsgSetWithNewSuggestions().count()
     3
     >>> stats = evolution_es.updateStatistics()
@@ -898,9 +821,12 @@ Non-editor can only submit a new suggestion on untranslated message.
 A privileged translator can approve this same suggestion by submitting
 it himself.
 
-    >>> pomsgset.updateTranslationSet(editor, {0: 'translation'}, fuzzy=False,
-    ...     published=False, lock_timestamp=datetime.datetime.now(UTC))
-    >>> pomsgset.active_texts
+    >>> new_translation = potmsgset.updateTranslation(
+    ...     evolution_es, editor, {0: u'translation'}, is_fuzzy=False,
+    ...     is_imported=False, lock_timestamp=datetime.datetime.now(UTC))
+    >>> flush_database_caches() # Store modification dates in database
+    >>> current = potmsgset.getCurrentTranslationMessage(evolution_es.language)
+    >>> print current.translations
     [u'translation']
     >>> evolution_es.getPOTMsgSetWithNewSuggestions().count()
     2
@@ -911,9 +837,12 @@ it himself.
 Or, they can update it with entirely different translation, which won't be
 picked up as a new suggestion, but will be directly set as the translation.
 
-    >>> pomsgset.updateTranslationSet(editor, {0: 'boohoo'}, fuzzy=False,
-    ...     published=False, lock_timestamp=datetime.datetime.now(UTC))
-    >>> pomsgset.active_texts
+    >>> new_translation = potmsgset.updateTranslation(
+    ...     evolution_es, editor, {0: u'boohoo'}, is_fuzzy=False,
+    ...     is_imported=False, lock_timestamp=datetime.datetime.now(UTC))
+    >>> flush_database_caches() # Store modification dates in database
+    >>> current = potmsgset.getCurrentTranslationMessage(evolution_es.language)
+    >>> print current.translations
     [u'boohoo']
     >>> evolution_es.getPOTMsgSetWithNewSuggestions().count()
     2
@@ -925,12 +854,17 @@ Non-editors can still provide suggestions on messages with approved
 translations, and this will again list this message among those with
 new suggestions.
 
-    >>> pomsgset = evolution_es.getPOMsgSet(u'have ')
-    >>> print pomsgset.active_texts
+    >>> potmsgset = evolution_es.potemplate.getPOTMsgSetByMsgIDText(
+    ...     u'have ')
+    >>> current = potmsgset.getCurrentTranslationMessage(evolution_es.language)
+    >>> print current.translations
     [u'tiene ']
-    >>> pomsgset.updateTranslationSet(noneditor, {0: 'blahblah'}, fuzzy=False,
-    ...     published=False, lock_timestamp=datetime.datetime.now(UTC))
-    >>> pomsgset.active_texts
+
+    >>> new_translation = potmsgset.updateTranslation(
+    ...     evolution_es, noneditor, {0: u'blahblah'}, is_fuzzy=False,
+    ...     is_imported=False, lock_timestamp=datetime.datetime.now(UTC))
+    >>> current = potmsgset.getCurrentTranslationMessage(evolution_es.language)
+    >>> print current.translations
     [u'tiene ']
     >>> evolution_es.getPOTMsgSetWithNewSuggestions().count()
     3
@@ -941,15 +875,115 @@ new suggestions.
 And if we've got two new suggestions for the same message, POTMsgSet
 will not be listed twice in the returned result.
 
-    >>> pomsgset.updateTranslationSet(noneditor, {0: 'another'}, fuzzy=False,
-    ...     published=False, lock_timestamp=datetime.datetime.now(UTC))
+    >>> new_translation = potmsgset.updateTranslation(
+    ...     evolution_es, noneditor, {0: u'another'}, is_fuzzy=False,
+    ...     is_imported=False, lock_timestamp=datetime.datetime.now(UTC))
     >>> evolution_es.getPOTMsgSetWithNewSuggestions().count()
     3
     >>> len(set(evolution_es.getPOTMsgSetWithNewSuggestions()))
     3
 
 
-== Translations credits ==
+== getPOTMsgSetTranslated ==
+
+With this method we can get all POTMsgSet objects that are fully
+translated for a given POFile.
+
+    >>> def print_message_status(potmsgsets, language):
+    ...     print "%-10s %-5s %-10s %-9s %-11s" % (
+    ...         "msgid", "form", "translat.", "fuzzy", "Has plurals")
+    ...     for potmsgset in potmsgsets:
+    ...         translationmessage = potmsgset.getCurrentTranslationMessage(
+    ...             language)
+    ...         for index in range(len(translationmessage.translations)):
+    ...             msgid = potmsgset.msgid_singular.msgid
+    ...             if len(msgid) > 10:
+    ...                 msgid = msgid[:7] + '...'
+    ...             if translationmessage.translations[index] is None:
+    ...                 translation = 'None'
+    ...             else:
+    ...                 translation = translationmessage.translations[index]
+    ...                 if len(translation) > 10:
+    ...                     translation = translation[:7] + '...'
+    ...             print "%-10s %-5s %-10s %-9s %-11s" % (
+    ...                 msgid, index, translation,
+    ...                 translationmessage.is_fuzzy,
+    ...                 potmsgset.msgid_plural is not None)
+
+    >>> potmsgsets_translated = evolution_es.getPOTMsgSetTranslated()
+    >>> print_message_status(
+    ...     potmsgsets_translated, evolution_es.language)
+    msgid      form  translat.  fuzzy     Has plurals
+    evoluti... 0     libreta... False     False
+    current... 0     carpeta... False     False
+    have       0     tiene      False     False
+     cards     0      tarjetas  False     False
+    evoluti... 0     boohoo     False     False
+    The loc... 0     La ubic... False     False
+    %d contact 0     %d cont... False     True
+    %d contact 1     %d cont... False     True
+    Opening... 0     Abrir %... False     True
+    Opening... 1     Abrir %... False     True
+    EncFS P... 0     Contras... False     False
+
+
+== getPOTMsgSetFuzzy ==
+
+This method returns all POTMsgSet for a given POFile that have its
+current TranslationMessage with is_fuzzy flag set.
+
+    >>> potmsgsets_fuzzy = evolution_es.getPOTMsgSetFuzzy()
+    >>> print_message_status(potmsgsets_fuzzy, evolution_es.language)
+    msgid      form  translat.  fuzzy     Has plurals
+    %d foo     0     %d foo     True      True
+    %d foo     1     None       True      True
+
+And when we submit another translation that is fuzzy...
+
+    >>> potmsgset_to_change = potmsgsets_fuzzy[0]
+    >>> new_translationmessage = potmsgset_to_change.updateTranslation(
+    ...     evolution_es, editor, {0: u'something'}, is_fuzzy=True,
+    ...     is_imported=False, lock_timestamp=datetime.datetime.now(UTC))
+
+... we get only the new one, which is fuzzy
+
+    >>> potmsgsets_fuzzy = evolution_es.getPOTMsgSetFuzzy()
+    >>> print_message_status(potmsgsets_fuzzy, evolution_es.language)
+    msgid      form  translat.  fuzzy     Has plurals
+    %d foo     0     something  True      True
+    %d foo     1     None       True      True
+
+== getTranslationsFilteredBy ==
+
+This method returns a list of TranslationMessages in a given POFile
+created by a certain person.
+
+    >>> carlos = person_set.getByName('carlos')
+    >>> translationmessages = evolution_es.getTranslationsFilteredBy(carlos)
+    >>> for translationmessage in translationmessages:
+    ...     print translationmessage.translations
+    [u'libreta de direcciones de Evolution']
+    [u'carpeta de libretas de direcciones actual']
+    [u'lalalala']
+    [u'tiene ']
+    [u' tarjetas']
+    [u'boohoo']
+    [u'La ubicaci\xf3n y jerarqu\xeda de las carpetas de contactos de Evolution ha cambiado desde Evolution 1.x.\n\nTenga paciencia mientras Evolution migra sus carpetas...']
+    [u'%d contacto', u'%d contactos']
+    [u'Abrir %d contacto abrir\xe1 %d ventanas nuevas tambi\xe9n.\n\xbfQuiere realmente mostrar este contacto?', u'Abrir %d contactos abrir\xe1 %d ventanas nuevas tambi\xe9n.\n\xbfQuiere realmente mostrar todos estos contactos?']
+    [u'something', None]
+    [u'%d foo', None]
+    [u'Contrase\xf1a de EncFS: ']
+    [u'_A\xf1adir grupo']
+
+If the passed person is None, the call fails with an assertion.
+
+    >>> translationmessages = evolution_es.getTranslationsFilteredBy(None)
+    Traceback (most recent call last):
+    ...
+    AssertionError: You must provide a person to filter by.
+
+== Translation credits ==
 
 Translation credits are handled automatically, and cannot be
 translated in any other way except through a published upload.
@@ -959,44 +993,62 @@ Lets get Spanish translation for alsa-utils.
     >>> alsautils = getUtility(IProductSet).getByName('alsa-utils')
     >>> alsa_trunk = alsautils.getSeries('trunk')
     >>> alsa_template = alsa_trunk.getPOTemplate('alsa-utils')
-    >>> alsa_translation = alsa_template.getPOFileByLang('es')
+    >>> alsa_translation = alsa_template.newPOFile('sr')
+    >>> alsa_translation.owner = editor
 
 This translation file contains untranslated translation-credits message.
 
-    >>> translation_credits = (
-    ...     alsa_translation.getPOMsgSet(u"translation-credits"))
-    >>> print translation_credits.active_texts
-    [None]
+    >>> potmsgset = alsa_template.getPOTMsgSetByMsgIDText(
+    ...     u'translation-credits')
+    >>> current = potmsgset.getCurrentTranslationMessage(
+    ...     alsa_translation.language)
+    >>> print current
+    None
 
 If we submit a published translation, the translation for this message
 is updated.
 
-    >>> translation_credits.updateTranslationSet(
-    ...     alsa_translation.owner, {0: u'Happy translator'}, fuzzy=False,
-    ...     published=True, lock_timestamp=datetime.datetime.now(UTC))
-    >>> print translation_credits.active_texts
+    >>> new_credits = potmsgset.updateTranslation(
+    ...     alsa_translation, alsa_translation.owner, {0: u'Happy translator'},
+    ...     is_fuzzy=False, is_imported=True,
+    ...     lock_timestamp=datetime.datetime.now(UTC))
+    >>> flush_database_updates()
+    >>> current = potmsgset.getCurrentTranslationMessage(
+    ...     alsa_translation.language)
+    >>> print current.translations
     [u'Happy translator']
 
 If we submit non-published translation, it's refused.
 
-    >>> translation_credits.updateTranslationSet(
-    ...     alsa_translation.owner, {0: u'Unhappy translator'}, fuzzy=False,
-    ...     published=False, lock_timestamp=datetime.datetime.now(UTC))
-    >>> print translation_credits.active_texts
+    >>> no_credits = potmsgset.updateTranslation(
+    ...     alsa_translation, alsa_translation.owner,
+    ...     {0: u'Unhappy translator'}, is_fuzzy=False, is_imported=False,
+    ...     lock_timestamp=datetime.datetime.now(UTC))
+    >>> print no_credits
+    None
+    >>> flush_database_updates()
+    >>> current = potmsgset.getCurrentTranslationMessage(
+    ...     alsa_translation.language)
+    >>> print current.translations
     [u'Happy translator']
 
 In automatically generated credits, alsa_translation.owner is now
 credited as well.
 
-    >>> alsa_translation.prepareTranslationCredits(translation_credits.potmsgset)
+    >>> potmsgset = alsa_template.getPOTMsgSetByMsgIDText(
+    ...     u'translation-credits')
+    >>> alsa_translation.prepareTranslationCredits(
+    ...     potmsgset)
     u'Happy translator\n\nLaunchpad Contributions:\n  Carlos Perell\xf3 Mar\xedn http://launchpad.dev/~carlos'
 
-Emails of translators is translated already.
+Emails of translators is not yet translated.
 
-    >>> emails_of_translators = (
-    ...     alsa_translation.getPOMsgSet(u"_: EMAIL OF TRANSLATORS\nYour emails"))
-    >>> print emails_of_translators.active_texts
-    [u'danilo@canonical.com']
+    >>> emails_of_translators = alsa_template.getPOTMsgSetByMsgIDText(
+    ...     u"_: EMAIL OF TRANSLATORS\nYour emails")
+    >>> current = emails_of_translators.getCurrentTranslationMessage(
+    ...     alsa_translation.language)
+    >>> print current
+    None
 
 But now credits Carlos when prepared automatically.  Two empty emails are
 added to make formatting nicer (first one is used as a separation
@@ -1004,29 +1056,108 @@ between package and Launchpad contributors, and second is empty email
 for 'Launchpad Contributions' title; see bug #133817 for details).
 
     >>> alsa_translation.prepareTranslationCredits(
-    ...     emails_of_translators.potmsgset)
-    u'danilo@canonical.com,,,carlos@canonical.com'
+    ...     emails_of_translators)
+    u',,carlos@canonical.com'
 
 Names of translators are untranslated and there is no message set for them yet.
 
-    >>> names_of_translators = (
-    ...     alsa_translation.getPOMsgSet(u"_: NAME OF TRANSLATORS\nYour names"))
-    >>> print names_of_translators
+    >>> names_of_translators = alsa_template.getPOTMsgSetByMsgIDText(
+    ...     u"_: NAME OF TRANSLATORS\nYour names")
+    >>> current = names_of_translators.getCurrentTranslationMessage(
+    ...     alsa_translation.language)
+    >>> print current
     None
-    >>> names_of_translators_potmsgset = alsa_template.getPOTMsgSetByMsgIDText(
-    ...    u"_: NAME OF TRANSLATORS\nYour names")
-    >>> names_of_translators = alsa_translation.createMessageSetFromMessageSet(
-    ...    names_of_translators_potmsgset)
-    >>> names_of_translators.active_texts
-    [None]
 
 But now names credit Carlos when prepared automatically.  As above, an
 empty name is added first to serve as a separator, and "Launchpad
 Contributions:" is used as a header for the added credits.
 
     >>> alsa_translation.prepareTranslationCredits(
-    ...     names_of_translators.potmsgset)
+    ...     names_of_translators)
     u',Launchpad Contributions:,Carlos Perell\xf3 Mar\xedn'
+
+Lets add a newly supported KDE context message with credit strings
+split into two: context and message, instead of a single message with
+embedded context.
+
+    >>> new_kde_name_credits = alsa_template.createMessageSetFromText(
+    ...     singular_text=u"Your names", plural_text=None,
+    ...     context=u"NAME OF TRANSLATORS")
+
+prepareTranslationCredits works on such messages as well:
+
+    >>> alsa_translation.prepareTranslationCredits(new_kde_name_credits)
+    u',Launchpad Contributions:,Carlos Perell\xf3 Mar\xedn'
+
+Similar happens for email credits as with name credits.
+
+    >>> new_kde_email_credits = alsa_template.createMessageSetFromText(
+    ...     singular_text=u"Your emails", plural_text=None,
+    ...     context=u"EMAIL OF TRANSLATORS")
+    >>> alsa_translation.prepareTranslationCredits(new_kde_email_credits)
+    u',,carlos@canonical.com'
+
+
+== POFileToTranslationFileDataAdapter ==
+
+POFileToTranslationFileDataAdapter is an adapter to export a POFile
+object. It implements the ITranslationFileData interface which is a
+common file format in-memory to convert from one file format to
+another.
+
+    >>> from canonical.launchpad.interfaces import ITranslationFileData
+    >>> evolution_sourcepackagename = sourcepackagenameset['evolution']
+    >>> ubuntu = distributionset['ubuntu']
+    >>> hoary = ubuntu['hoary']
+    >>> potemplatesubset = potemplateset.getSubset(
+    ...     distroseries=hoary, sourcepackagename=evolution_sourcepackagename)
+    >>> evolution_22 = potemplatesubset['evolution-2.2']
+    >>> evolution_ja = evolution_22.getPOFileByLang('ja')
+
+Getting the translation file data is just a matter of adapting the
+object to the ITranslationFileData interface.
+
+    >>> translation_file_data = ITranslationFileData(evolution_ja)
+
+We get an updated header based on some metadata in our database
+instead of the imported one stored in POFile.header.
+
+    >>> print evolution_ja.header
+    Project-Id-Version: evolution
+    Report-Msgid-Bugs-To: FULL NAME <EMAIL@ADDRESS>
+    POT-Creation-Date: 2005-05-06 20:39:27.778946+00:00
+    PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE
+    Last-Translator: FULL NAME <EMAIL@ADDRESS>
+    Language-Team: Japanese <ja@li.org>
+    MIME-Version: 1.0
+    Content-Type: text/plain; charset=UTF-8
+    Content-Transfer-Encoding: 8bit
+    Plural-Forms: nplurals=1; plural=0
+
+    >>> print translation_file_data.header.getRawContent()
+    Project-Id-Version: evolution
+    Report-Msgid-Bugs-To: FULL NAME <EMAIL@ADDRESS>
+    POT-Creation-Date: 2005-04-07 14:10+0200
+    PO-Revision-Date: 2005-10-11 23:08+0000
+    Last-Translator: Carlos Perell... <carlos@canonical.com>
+    Language-Team: Japanese <ja@li.org>
+    MIME-Version: 1.0
+    Content-Type: text/plain; charset=UTF-8
+    Content-Transfer-Encoding: 8bit
+    Plural-Forms: nplurals=1; plural=0;
+    X-Launchpad-Export-Date: ...-...-... ...:...+...
+    X-Generator: Launchpad (build ...)
+
+We can see that last translator is Carlos, just like the updated header
+says:
+
+    >>> evolution_ja.lasttranslator.displayname
+    u'Carlos Perell\xf3 Mar\xedn'
+
+And the PO Revision Date matches when was the PO file last changed.
+
+    >>> print evolution_ja.date_changed
+    2005-10-11 23:08:01.899322+00:00
 
 
 = POFile Security tests =
@@ -1036,6 +1167,7 @@ Import the function that will help us to do this test.
     >>> from canonical.launchpad.webapp.authorization import check_permission
 
 A Launchpad admin must have permission to edit an IPOFile always.
+
     >>> login('foo.bar@canonical.com')
     >>> check_permission('launchpad.Edit', pofile)
     True

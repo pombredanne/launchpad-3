@@ -6,10 +6,9 @@ import base64
 import sys
 
 from canonical.lp import initZopeless
-from canonical.lp.dbschema import RosettaImportStatus
 from canonical.database.constants import UTC_NOW
 from canonical.launchpad.database import ProductSet
-from canonical.rosetta.poexport import POExport
+from canonical.launchpad.interfaces import RosettaImportStatus
 
 def po_import(product_name, template_name, language_code, contents):
     products = ProductSet()

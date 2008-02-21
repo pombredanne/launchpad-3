@@ -1,8 +1,7 @@
   Let's add a new option for the dpl-2080 poll we've just created.
 
-  >>> team_admin_browser = browser
-  >>> team_admin_browser.addHeader(
-  ...     'Authorization', 'Basic jeff.waugh@ubuntulinux.com:jdub')
+  >>> team_admin_browser = setupBrowser(
+  ...     auth='Basic jeff.waugh@ubuntulinux.com:jdub')
   >>> team_admin_browser.open(
   ...     'http://launchpad.dev/~ubuntu-team/+poll/dpl-2080')
   >>> team_admin_browser.getLink('Add new option').click()

@@ -20,10 +20,11 @@ import apt_inst
 import apt_pkg
 import os
 import md5
-import re
 import sha
+import shutil
 import subprocess
 import sys
+import tempfile
 import time
 
 from zope.component import getUtility
@@ -34,12 +35,10 @@ from canonical.archiveuploader.utils import (
     re_extract_src_version)
 from canonical.encoding import guess as guess_encoding
 from canonical.launchpad.interfaces import (
-    IComponentSet, ISectionSet, IBuildSet, ILibraryFileAliasSet,
-    IBinaryPackageNameSet)
+    ArchivePurpose, BinaryPackageFormat, BuildStatus, IComponentSet,
+    ISectionSet, IBuildSet, ILibraryFileAliasSet, IBinaryPackageNameSet,
+    PackagePublishingPriority, PackageUploadCustomFormat, PackageUploadStatus)
 from canonical.librarian.utils import filechunks
-from canonical.lp.dbschema import (
-    PackagePublishingPriority, PackageUploadCustomFormat,
-    PackageUploadStatus, BinaryPackageFormat, BuildStatus)
 
 
 apt_pkg.InitSystem()
@@ -72,6 +71,14 @@ class TarFileDateChecker:
         """Callback designed to cope with apt_inst.debExtract.
 
         It check and store timestamp details of the extracted DEB.
+        """
+        self.check_cutoff(name, mtime)
+
+    def check_cutoff(self, name, mtime):
+        """Check the timestamp details of the supplied file.
+
+        Store the name of the file with its mtime timestamp if it's
+        outside the required date range.
         """
         if mtime > self.future_cutoff:
             self.future_files[name] = mtime
@@ -125,7 +132,10 @@ class NascentUploadFile:
 
     @property
     def content_type(self):
-        """The content type for this file ready for adding to the librarian."""
+        """The content type for this file.
+
+        Return a value ready for adding to the librarian.
+        """
         for content_type_map in self.filename_ending_content_type_map.items():
             ending, content_type = content_type_map
             if self.filename.endswith(ending):
@@ -290,10 +300,18 @@ class PackageUploadFile(NascentUploadFile):
             # were forced to accept a package with a broken section
             # (linux-meta_2.6.12.16_i386). Result: packages with invalid
             # sections now get put into misc -- cprov 20060119
-            default_section = 'misc'
-            self.logger.warn("Unable to grok section %r, overriding it with %s"
-                      % (self.section_name, default_section))
-            self.section_name = default_section
+            if self.policy.archive.purpose == ArchivePurpose.PPA:
+                # PPA uploads should not override because it will probably
+                # make the section inconsistent with the one in the .dsc.
+                raise UploadError(
+                    "%s: Section %r is not valid" % (
+                    self.filename, self.section_name))
+            else:
+                default_section = 'misc'
+                self.logger.warn("Unable to grok section %r, "
+                                 "overriding it with %s"
+                          % (self.section_name, default_section))
+                self.section_name = default_section
 
         if self.component_name not in valid_components:
             raise UploadError(
@@ -519,7 +537,7 @@ class BaseBinaryUploadFile(PackageUploadFile):
         """
         if not re_valid_version.match(self.control_version):
             yield UploadError("%s: invalid version number %r."
-                              % (self.filename, control_version))
+                              % (self.filename, self.control_version))
 
         binary_match = re_isadeb.match(self.filename)
         filename_version = binary_match.group(2)
@@ -539,7 +557,8 @@ class BaseBinaryUploadFile(PackageUploadFile):
 
         if control_arch not in valid_archs and control_arch != "all":
             yield UploadError(
-                "%s: Unknown architecture: %r" % (self.filename, control_arch))
+                "%s: Unknown architecture: %r" % (
+                self.filename, control_arch))
 
         if control_arch not in self.changes.architectures:
             yield UploadError(
@@ -577,8 +596,8 @@ class BaseBinaryUploadFile(PackageUploadFile):
         control_priority = self.control.get('Priority', '')
         if control_priority and self.priority_name != control_priority:
             yield UploadError(
-                "%s control file lists priority as %s but changes file has %s."
-                % (self.filename, control_priority, self.priority_name))
+                "%s control file lists priority as %s but changes file has "
+                "%s." % (self.filename, control_priority, self.priority_name))
 
     def verifyFormat(self):
         """Check if the DEB format is sane.
@@ -606,16 +625,58 @@ class BaseBinaryUploadFile(PackageUploadFile):
         debian_binary, control_tar, data_tar = chunks
         if debian_binary != "debian-binary":
             yield UploadError(
-                "%s: first chunk is %s, expected debian-binary" % (
+                "%s: first chunk is %s, expected debian-binary." % (
                 self.filename, debian_binary))
         if control_tar != "control.tar.gz":
             yield UploadError(
-                "%s: second chunk is %s, expected control.tar.gz" % (
+                "%s: second chunk is %s, expected control.tar.gz." % (
                 self.filename, control_tar))
-        if data_tar not in ("data.tar.gz", "data.tar.bz2"):
+        if data_tar not in ("data.tar.gz", "data.tar.bz2", "data.tar.lzma"):
             yield UploadError(
-                "%s: third chunk is %s, expected data.tar.gz or "
-                "data.tar.bz2" % (self.filename, data_tar))
+                "%s: third chunk is %s, expected data.tar.gz, "
+                "data.tar.bz2 or data.tar.lzma." % (self.filename, data_tar))
+
+        # lzma compressed debs must contain dpkg >= 1.14.12ubuntu3.
+        REQUIRED_DPKG_VER = '1.14.12ubuntu3'
+        if data_tar == "data.tar.lzma":
+            parsed_deps = []
+            try:
+                parsed_deps = apt_pkg.ParseDepends(
+                    self.control['Pre-Depends'])
+            except (ValueError, TypeError):
+                yield UploadError(
+                    "Can't parse Pre-Depends in the control file.")
+                return
+            except KeyError:
+                # Go past the for loop and yield the error below.
+                pass
+
+            for token in parsed_deps:
+                try:
+                    name, version, relation = token[0]
+                except ValueError:
+                    yield("APT error processing token '%r' from Pre-Depends.")
+                    return
+
+                if name == 'dpkg':
+                    # VersionCompare returns values similar to cmp;
+                    # negative if first < second, zero if first ==
+                    # second and positive if first > second.
+                    if apt_pkg.VersionCompare(
+                        version, REQUIRED_DPKG_VER) >= 0:
+                        # Pre-Depends dpkg is fine.
+                        return
+                    else:
+                        yield UploadError(
+                            "Pre-Depends dpkg version should be >= %s "
+                            "when using lzma compression." %
+                            REQUIRED_DPKG_VER)
+                        return
+
+            yield UploadError(
+                "Require Pre-Depends: dpkg (>= %s) when using lzma "
+                "compression." % REQUIRED_DPKG_VER)
+
 
     def verifyDebTimestamp(self):
         """Check specific DEB format timestamp checks."""
@@ -631,45 +692,58 @@ class BaseBinaryUploadFile(PackageUploadFile):
             deb_file = open(self.filepath, "rb")
             apt_inst.debExtract(deb_file, tar_checker.callback,
                                 "control.tar.gz")
+            # XXX 2008-01-18 Julian
+            # To work around a bug in debExtract which fails on lzma
+            # archives, we'll extract the archive ourselves to a temp
+            # directory.  This code should be changed when python-apt is
+            # fixed.
+            # Oh, and bring on Python 2.5 that lets me use
+            # try/except/finally properly. :/
+            tmpdir = tempfile.mkdtemp()
             deb_file.seek(0)
             try:
-                apt_inst.debExtract(deb_file, tar_checker.callback,
-                                    "data.tar.gz")
-            except SystemError, error:
-                # If we can't find a data.tar.gz,
-                # look for data.tar.bz2 instead.
-                if re.search(r"Cannot f[ui]nd chunk data.tar.gz$",
-                                 str(error)):
-                    deb_file.seek(0)
-                    apt_inst.debExtract(deb_file, tar_checker.callback,
-                                        "data.tar.bz2")
-                else:
-                    yield UploadError("Could not find data tarball in %s"
-                                       % self.filename)
-                    deb_file.close();
-                    return
+                # apt_inst kindly changes the CWD under our feet, let's
+                # save it and restore after this call.  This only seems
+                # to be a problem for the test harness, explicitly when
+                # the tmp dir gets removed later.
+                cwd = os.getcwd()
+                apt_inst.debExtractArchive(deb_file, tmpdir)
+                os.chdir(cwd)
+            except SystemError:
+                yield UploadError("Unable to unpack %s." % self.filename)
+                deb_file.close()
+                shutil.rmtree(tmpdir)
+                return
+            deb_file.close()
 
-            deb_file.close();
+            # Examine all the files that were extracted:
+            for dirpath, dirnames, filenames in os.walk(tmpdir):
+                for filename in filenames:
+                    tar_checker.check_cutoff(
+                        filename,
+                        os.stat(os.path.join(dirpath, filename)).st_mtime)
 
-            future_files = tar_checker.future_files.keys()
-            if future_files:
-                first_file = future_files[0]
-                timestamp = time.ctime(tar_checker.future_files[first_file])
-                yield UploadError(
-                    "%s: has %s file(s) with a time stamp too "
-                    "far into the future (e.g. %s [%s])."
-                     % (self.filename, len(future_files), first_file,
-                        timestamp))
+                    future_files = tar_checker.future_files.keys()
+                    if future_files:
+                        first_file = future_files[0]
+                        timestamp = time.ctime(
+                            tar_checker.future_files[first_file])
+                        yield UploadError(
+                            "%s: has %s file(s) with a time stamp too "
+                            "far into the future (e.g. %s [%s])."
+                             % (self.filename, len(future_files), first_file,
+                                timestamp))
 
-            ancient_files = tar_checker.ancient_files.keys()
-            if ancient_files:
-                first_file = ancient_files[0]
-                timestamp = time.ctime(tar_checker.ancient_files[first_file])
-                yield UploadError(
-                    "%s: has %s file(s) with a time stamp too "
-                    "far into the future (e.g. %s [%s])."
-                     % (self.filename, len(ancient_files), first_file,
-                        timestamp))
+                    ancient_files = tar_checker.ancient_files.keys()
+                    if ancient_files:
+                        first_file = ancient_files[0]
+                        timestamp = time.ctime(
+                            tar_checker.ancient_files[first_file])
+                        yield UploadError(
+                            "%s: has %s file(s) with a time stamp too "
+                            "far into the future (e.g. %s [%s])."
+                             % (self.filename, len(ancient_files), first_file,
+                                timestamp))
 
         except (SystemExit, KeyboardInterrupt):
             raise
@@ -681,6 +755,8 @@ class BaseBinaryUploadFile(PackageUploadFile):
             # them all and make them into rejection messages instead
             yield UploadError("%s: deb contents timestamp check failed: %s"
                  % (self.filename, error))
+
+        shutil.rmtree(tmpdir)
 
 #
 #   Database relationship methods
@@ -713,7 +789,8 @@ class BaseBinaryUploadFile(PackageUploadFile):
             # XXX cprov 2006-08-09 bug=55774: Building from ACCEPTED is
             # special condition, not really used in production. We should
             # remove the support for this use case.
-            self.logger.debug("No source published, checking the ACCEPTED queue")
+            self.logger.debug(
+                "No source published, checking the ACCEPTED queue")
 
             queue_candidates = distroseries.getQueueItems(
                 status=PackageUploadStatus.ACCEPTED,
@@ -749,8 +826,8 @@ class BaseBinaryUploadFile(PackageUploadFile):
         if self.source_name != sourcepackagerelease.name:
             raise UploadError(
                 "source name %r for %s does not match name %r in "
-                "control file"
-                % (sourcepackagerelease.name, self.filename, self.source_name))
+                "control file" % (sourcepackagerelease.name, self.filename,
+                                  self.source_name))
 
     def findBuild(self, sourcepackagerelease):
         """Find and return a build for the given archtag, cached on policy.
@@ -841,6 +918,9 @@ class BaseBinaryUploadFile(PackageUploadFile):
             conflicts=encoded.get('Conflicts', ''),
             replaces=encoded.get('Replaces', ''),
             provides=encoded.get('Provides', ''),
+            pre_depends=encoded.get('Pre-Depends', ''),
+            enhances=encoded.get('Enhances', ''),
+            breaks=encoded.get('Breaks', ''),
             essential=is_essential,
             installedsize=installedsize,
             architecturespecific=architecturespecific)

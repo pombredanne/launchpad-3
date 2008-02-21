@@ -30,6 +30,13 @@ is only available to users which have 'Admin' privileges on the project.
     >>> admin_browser.getLink('Register another project').url
     'http://launchpad.dev/mozilla/+newproduct'
 
+Also, it has a link to help translate it.
+
+    >>> admin_browser.getLink('Help translate').click()
+    >>> print admin_browser.title
+    Translatable projects for The Mozilla Project
+
+
 == Empty Project Groups ==
 
 An empty project group needs to be set up first...

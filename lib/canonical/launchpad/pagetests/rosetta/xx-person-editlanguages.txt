@@ -3,7 +3,7 @@
 Carlos is a translator who translates things into Spanish with Rosetta.
 He is on Rosetta About page and wants to change his preferred languages.
 
-    >>> browser.addHeader('Authorization', 'Basic carlos@canonical.com:test')
+    >>> browser = setupBrowser(auth='Basic carlos@canonical.com:test')
     >>> browser.open('http://translations.launchpad.dev/translations/+about')
 
 So, he looks for the 'Your preferred languages' portlet for the
@@ -69,10 +69,8 @@ We are also pretending that this request is coming from someone in
 Serbia (194.247.192.33), to test country detection.  Proxies add
 'X-Forwarded-For' header, which is what the code is handling.
 
-    >>> from zope.testbrowser.testing import Browser
-    >>> browser = Browser()
+    >>> browser = setupBrowser('Basic test@canonical.com:test')
     >>> browser.addHeader('X-Forwarded-For', '194.247.192.33')
-    >>> browser.addHeader('Authorization', 'Basic test@canonical.com:test')
     >>> browser.addHeader('Accept-Language', 'pt_br, Espa\xf1ol')
     >>> browser.open(
     ...     'http://translations.launchpad.dev/~name12/+editlanguages')
@@ -118,7 +116,7 @@ is the admin for Landscape Developers. He decides he wants the team
 to support Spanish questions for Ubuntu, so he sets the team's
 preferred languages.
 
-    >>> browser.addHeader('Authorization', 'Basic test@canonical.com:test')
+    >>> browser = setupBrowser(auth='Basic test@canonical.com:test')
     >>> browser.open('http://launchpad.dev/~landscape-developers')
     >>> browser.title
     'Landscape Developers in Launchpad'

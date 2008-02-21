@@ -10,6 +10,7 @@ import _pythonpath
 import optparse
 import sys
 
+from canonical.config import config
 from canonical.launchpad.scripts import (
     execute_zcml_for_scripts, logger, logger_options)
 from canonical.launchpad.scripts.ftpmaster import (
@@ -41,7 +42,7 @@ def main():
     lock.acquire(blocking=True)
 
     log.debug("Initialising connection.")
-    ztm = initZopeless(dbuser="lucille")
+    ztm = initZopeless(dbuser=config.archivepublisher.dbuser)
     execute_zcml_for_scripts()
 
 

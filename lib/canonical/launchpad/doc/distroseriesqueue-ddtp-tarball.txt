@@ -70,7 +70,7 @@ Now do a proper upload into the system.
   DEBUG: Verifying the changes file.
   DEBUG: Verifying files in upload.
   DEBUG: Single Custom Upload detected.
-  DEBUG: Foo Bar (16) is an uploader for main.
+  DEBUG: Foo Bar (16) is an uploader for main, universe.
   DEBUG: Finished checking upload.
 
 It was not rejected.
@@ -87,7 +87,7 @@ It was not rejected.
   ...
   DEBUG: signer of the above package.
   DEBUG: Sent a mail:
-  DEBUG:     Subject: Accepted translations_main_20060728.tar.gz - (raw-ddtp-tarball)
+  DEBUG:     Subject: Accepted: translations_main_20060728.tar.gz - (raw-ddtp-tarball)
   DEBUG:     Recipients: test@example.com
   ...
 
@@ -149,7 +149,7 @@ Cleanup the mess:
 Inspect the QUEUE looking for an ACCEPTED entry corresponding to the
 previous upload:
 
-  >>> from canonical.lp.dbschema import PackageUploadStatus
+  >>> from canonical.launchpad.interfaces import PackageUploadStatus
   >>> queue_item = breezy_autotest.getQueueItems(
   ...      status=PackageUploadStatus.ACCEPTED)[0]
   >>> queue_item.customfiles[0].libraryfilealias.filename
@@ -167,7 +167,7 @@ the tarball contents in the archive, collect and check debug message:
 The umask must be 022 in order to perform the upload.
 
   >>> old_mask = os.umask(022)
-  >>> queue_item.realiseUpload(MockLogger())
+  >>> pub_records = queue_item.realiseUpload(MockLogger())
   DEBUG: Publishing custom translations_main_20060728.tar.gz to ubuntutest/breezy-autotest
   >>> print '%03o' % os.umask(old_mask)
   022
@@ -250,7 +250,7 @@ Retrieve and publish new custom upload:
   >>> queue_item = breezy_autotest.getQueueItems(
   ...      status=PackageUploadStatus.ACCEPTED)[0]
 
-  >>> queue_item.realiseUpload()
+  >>> pub_records = queue_item.realiseUpload()
 
 
 Check if there is new content for "bn" index:

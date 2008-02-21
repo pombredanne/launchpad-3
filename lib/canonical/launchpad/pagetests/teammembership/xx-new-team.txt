@@ -29,7 +29,7 @@ message when the from is redisplayed.
     >>> browser.title
     'Register a new team in Launchpad'
     
-    >>> for message in get_feedback_messages(browser):
+    >>> for message in get_feedback_messages(browser.contents):
     ...     print message
     There is 1 error.
     You must specify a default renewal period greater than 0.
@@ -41,7 +41,7 @@ an error message.
     ...     'invite them to renew their own membership').selected = True
     >>> browser.getControl('Create').click()
     
-    >>> for message in get_feedback_messages(browser):
+    >>> for message in get_feedback_messages(browser.contents):
     ...     print message
     There is 1 error.
     You must specify a default renewal period greater than 0.
@@ -62,7 +62,7 @@ Sample Person cannot change the renewal period 'New Test Team' to zero.
     >>> browser.getControl('Renewal period').value = '0'
     >>> browser.getControl('Save').click()
     
-    >>> for message in get_feedback_messages(browser):
+    >>> for message in get_feedback_messages(browser.contents):
     ...     print message
     There is 1 error.
     You must specify a default renewal period greater than 0.

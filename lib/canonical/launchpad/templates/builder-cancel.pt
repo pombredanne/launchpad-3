@@ -1,7 +1,13 @@
-<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
-      lang="en"
-      metal:use-macro="context/@@main_template/master"
-      i18n:domain="launchpad"
+<html
+  xmlns="http://www.w3.org/1999/xhtml"
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  xml:lang="en"
+  lang="en"
+  dir="ltr"
+  metal:use-macro="context/@@main_template/master"
+  i18n:domain="launchpad"
 >
   <body>
     <metal:heading fill-slot="pageheading">
@@ -16,11 +22,11 @@
 
     <div tal:condition="job">
 
-    <p
+    <div
       tal:define="message view/cancelBuildJob"
       tal:condition="message"
       tal:content="structure message"
-      class="informational message" 
+      class="informational message"
     />
 
       <p>
@@ -58,14 +64,14 @@
       </tbody>
      </table>
 
-     <p>Are you sure ?</p> 
+     <p>Are you sure ?</p>
 
      <form name="CANCEL" action="" method="POST">
-       <input name="BUILDERID" type="hidden" 
+       <input name="BUILDERID" type="hidden"
               tal:attributes="value context/id"/>
-       <input type="submit" value="Cancel Current Job"/>
+       <input type="submit" value="Cancel job"/>
      </form>
-       
+
     </div>
 
     <p tal:condition="not:job">

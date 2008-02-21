@@ -22,8 +22,7 @@ from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 
 from canonical.config import config
 from canonical.cachedproperty import cachedproperty
-from canonical.launchpad.helpers import (
-    intOrZero, get_email_template, shortlist)
+from canonical.launchpad.helpers import intOrZero, shortlist
 from canonical.launchpad.webapp.error import SystemErrorView
 from canonical.launchpad.webapp.login import LoginOrRegister
 from canonical.launchpad.webapp.publisher import LaunchpadView
@@ -31,7 +30,6 @@ from canonical.launchpad.webapp.generalform import GeneralFormView
 from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp import (
     canonical_url, Navigation, stepto, redirection)
-from canonical.launchpad.mail.sendmail import simple_sendmail
 from canonical.database.sqlbase import flush_database_updates
 from canonical.launchpad.interfaces.validation import shipit_postcode_required
 from canonical.launchpad.interfaces import (
@@ -59,8 +57,18 @@ class ShipItUnauthorizedView(SystemErrorView):
 
 class ShipitFrontPageView(LaunchpadView):
 
+    series = ShipItConstants.current_distroseries
+
     def initialize(self):
         self.flavour = _get_flavour_from_layer(self.request)
+
+    @property
+    def prerelease_mode(self):
+        return config.shipit.prerelease_mode
+
+    @property
+    def beta_download_link(self):
+        return config.shipit.beta_download_link
 
     @property
     def download_or_buy_link(self):
@@ -89,6 +97,7 @@ def shipit_is_open(flavour):
 class ShipItLoginView(LoginOrRegister):
     """Process the login form and redirect the user to the request page."""
 
+    series = ShipItConstants.current_distroseries
     possible_origins = {
         ShipItFlavour.UBUNTU: 'shipit-ubuntu',
         ShipItFlavour.KUBUNTU: 'shipit-kubuntu',
@@ -206,8 +215,15 @@ class ShipItRequestView(GeneralFormView):
         return shipit_is_open(self.flavour)
 
     @property
+    def prerelease_mode(self):
+        return config.shipit.prerelease_mode
+
+    @property
     def dvds_section(self):
         """Get the HTML containing links to DVD sales for this flavour."""
+        # XXX: Method stubbed out until we get the links to Gutsy DVDs on
+        # amazon.com. -- Guilherme Salgado, 2007-09-24
+        return u''
         if self.flavour == ShipItFlavour.UBUNTU:
             return ViewPageTemplateFile('../templates/shipit-ubuntu-dvds.pt')(
                 self)
@@ -527,11 +543,6 @@ class ShipItRequestView(GeneralFormView):
             # request pending in the code above, we need to clear them out.
             current_order.clearApprovedQuantities()
 
-        if current_order.isAwaitingApproval():
-            # This request needs manual approval, so we need to notify the
-            # shipit admins.
-            self._notifyShipItAdmins(current_order)
-
         return msg
 
     def userAlreadyRequestedFlavours(self, flavours):
@@ -568,22 +579,6 @@ class ShipItRequestView(GeneralFormView):
 
         if errors:
             raise WidgetsError(errors)
-
-    def _notifyShipItAdmins(self, order):
-        """Notify the shipit admins by email that there's a new request."""
-        subject = '[ShipIt] New Request Pending Approval (#%d)' % order.id
-        recipient = order.recipient
-        headers = {'Reply-To': order.recipient_email}
-        shipped_requests = recipient.shippedShipItRequestsOfCurrentSeries()
-        replacements = {'recipientname': order.recipientdisplayname,
-                        'recipientemail': order.recipient_email,
-                        'requesturl': canonical_url(order),
-                        'shipped_requests': shipped_requests.count(),
-                        'reason': order.reason}
-        message = get_email_template('shipit-custom-request.txt') % replacements
-        shipit_admins = config.shipit.admins_email_address
-        simple_sendmail(
-            self.from_email_address, shipit_admins, subject, message, headers)
 
 
 class _SelectMenuOption:
@@ -722,11 +717,12 @@ class StandardShipItRequestAddView(AddView):
         flavour = data.get('flavour')
         quantityx86 = data.get('quantityx86')
         quantityamd64 = data.get('quantityamd64')
-        # We're not shipping PPC CDs anymore.
-        quantityppc = 0
+        quantityppc = 0 # We're not shipping PPC CDs anymore.
         isdefault = data.get('isdefault')
+        user_description = data.get('user_description')
         request = getUtility(IStandardShipItRequestSet).new(
-            flavour, quantityx86, quantityamd64, quantityppc, isdefault)
+            flavour, quantityx86, quantityamd64, quantityppc, isdefault,
+            user_description)
         notify(ObjectCreatedEvent(request))
 
 
@@ -741,7 +737,8 @@ class ShippingRequestAdminMixinView:
     # This is the order in which we display the distribution flavours
     # in the UI
     ordered_flavours = (
-        ShipItFlavour.UBUNTU, ShipItFlavour.KUBUNTU, ShipItFlavour.EDUBUNTU)
+        ShipItFlavour.UBUNTU, ShipItFlavour.KUBUNTU, ShipItFlavour.EDUBUNTU,
+        ShipItFlavour.SERVER)
 
     # This is the order in which we display the quantity widgets for each
     # flavour in the UI
@@ -808,7 +805,10 @@ class ShippingRequestApproveOrDenyView(
              ShipItArchitecture.AMD64: 'kubuntu_quantityamd64approved'},
         ShipItFlavour.EDUBUNTU:
             {ShipItArchitecture.X86: 'edubuntu_quantityx86approved',
-             ShipItArchitecture.AMD64: None}
+             ShipItArchitecture.AMD64: None},
+        ShipItFlavour.SERVER:
+            {ShipItArchitecture.X86: 'server_quantityx86approved',
+             ShipItArchitecture.AMD64: 'server_quantityamd64approved'}
         }
 
     def process(self, *args, **kw):
@@ -953,16 +953,19 @@ class ShippingRequestAdminView(GeneralFormView, ShippingRequestAdminMixinView):
              ShipItArchitecture.AMD64: 'kubuntu_quantityamd64'},
         ShipItFlavour.EDUBUNTU:
             {ShipItArchitecture.X86: 'edubuntu_quantityx86',
-             ShipItArchitecture.AMD64: None}
+             ShipItArchitecture.AMD64: None},
+        ShipItFlavour.SERVER:
+            {ShipItArchitecture.X86: 'server_quantityx86',
+             ShipItArchitecture.AMD64: 'server_quantityamd64'}
         }
 
+    series = ShipItConstants.current_distroseries
     current_order = None
     shipping_details_fields = [
         'recipientdisplayname', 'country', 'city', 'addressline1', 'phone',
         'addressline2', 'province', 'postcode', 'organization']
 
     def __init__(self, context, request):
-        self.series = ShipItConstants.current_distroseries
         order_id = request.form.get('order')
         if order_id is not None and order_id.isdigit():
             self.current_order = getUtility(IShippingRequestSet).get(

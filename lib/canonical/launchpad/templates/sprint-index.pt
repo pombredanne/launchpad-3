@@ -1,26 +1,35 @@
-<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
-      lang="en"
-      metal:use-macro="context/@@main_template/master"
-      i18n:domain="launchpad">
+<html
+  xmlns="http://www.w3.org/1999/xhtml"
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  xml:lang="en"
+  lang="en"
+  dir="ltr"
+  metal:use-macro="context/@@main_template/master"
+  i18n:domain="launchpad"
+>
 
 <body>
 
-<metal:leftportlets fill-slot="portlets_one">
-  <div tal:replace="structure context/@@+portlet-attendees" />
-</metal:leftportlets>
-
-<metal:rightportlets fill-slot="portlets_two">
+<metal:portlets fill-slot="portlets">
   <div tal:replace="structure context/@@+portlet-details" />
-</metal:rightportlets>
-
-<metal:heading fill-slot="pageheading">
-  <tal:mugshot replace="structure context/image:mugshot" />
-  <h1>Meeting overview</h1>
-</metal:heading>
+  <div tal:replace="structure context/@@+portlet-attendees" />
+</metal:portlets>
 
 <div metal:fill-slot="main"
      tal:define="specs view/specs;
                  has_any_specs view/has_any_specifications">
+
+  <tal:mugshot replace="structure context/image:mugshot" />
+  <h1>Meeting overview</h1>
+
+  <p>
+    <strong>
+      <tal:start replace="view/local_start" /> till
+      <tal:end replace="view/local_end" />
+    </strong>
+  </p>
 
   <p>
     <span tal:replace="context/summary">

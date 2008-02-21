@@ -1,4 +1,7 @@
-<tal:assigneewidget define="widget_name string:${view/name}.option">
+<tal:assigneewidget
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  define="widget_name string:${view/name}.option">
 
   <table>
     <tr>
@@ -8,7 +11,7 @@
                                id view/assign_to_nobody;
                                value view/assign_to_nobody;
                                checked python:view.selectedRadioButton() ==
-                                              view.assign_to_nobody">
+                                              view.assign_to_nobody" />
       </td>
       <td style="padding: 0">
         <label style="font-weight: normal"
@@ -24,7 +27,7 @@
                                id view/assign_to_me;
                                value view/assign_to_me;
                                checked python:view.selectedRadioButton() ==
-                                              view.assign_to_me">
+                                              view.assign_to_me" />
       </td>
       <td style="padding: 0">
         <label style="font-weight: normal"
@@ -42,7 +45,7 @@
                                      id view/assigned_to;
                                      value view/assigned_to;
                                      checked python:view.selectedRadioButton() ==
-                                                    view.assigned_to">
+                                                    view.assigned_to" />
           </td>
           <td style="padding: 0">
             <label style="font-weight: normal"
@@ -60,7 +63,7 @@
                                id view/assign_to;
                                value view/assign_to;
                                checked python:view.selectedRadioButton() ==
-                                              view.assign_to">
+                                              view.assign_to" />
       </td>
       <td style="padding: 0">
         <tal:assignee_chooser define="widget nocall:view/assignee_chooser_widget">

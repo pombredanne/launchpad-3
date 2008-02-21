@@ -1,7 +1,7 @@
-Hi %(member_displayname)s
+Hello %(recipient_name)s,
 
 On %(expiration_date)s, %(approximate_duration)s from now, your membership
-of the %(team_name)s Launchpad team
+in the %(team_name)s Launchpad team
 is due to expire.
 <%(team_url)s>
 

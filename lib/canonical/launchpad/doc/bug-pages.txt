@@ -1,8 +1,6 @@
-Bug Filing Pages
-================
+= Bug Filing Pages =
 
-Filing a Bug
-------------
+== Filing a Bug ==
 
 There are three objects on which you can file a bug. An
 SQLObjectCreatedEvent is published when the bug is filed. Let's register
@@ -114,8 +112,7 @@ You can also access the +filebug page from a sourcepackage.
 
     >>> launchbag.clear()
 
-Adding Comments
----------------
+== Adding Comments ==
 
 Let's flush all changes so far to ensure we're looking at a consistent view of
 the database.
@@ -157,8 +154,7 @@ grab a new view to actually see them:
      (1, u'name16', u'I can reproduce this bug.'),
      (2, u'name16', u'I can reproduce this bug.')]
 
-Description and Comment Display
--------------------------------
+== Description and Comment Display ==
 
 When a user posts a new bug, the first comment and the description are
 identical. Take as an example the first bug posted above:
@@ -207,11 +203,10 @@ indentical to the second, we really only display one comment:
 
     >>> on_created_listener.unregister()
 
-Bug Portlets
-============
 
-Duplicates Portlet
-------------------
+= Bug Portlets =
+
+== Duplicates Portlet ==
 
 The duplicate bugs portlet lists duplicates of the current bug. If the
 duplicate bug affects the current context, the link to the dupe will
@@ -255,8 +250,7 @@ and see how the returned link changes.
     >>> print bug_page_view.getDupeBugLink(bug_two)
     http://.../bugs/2
 
-Bug Navigation
---------------
+== Bug Navigation ==
 
 The +subscribe link has different text depending on if the user is
 subscribed to the bug, or if a team the user of a member of is
@@ -291,7 +285,7 @@ subscribed to it, 'Subscribe' is shown.
 
 If we subscribe Foo Bar, 'Unsubscribe' is shown.
 
-    >>> bug_one.subscribe(foo_bar)
+    >>> bug_one.subscribe(foo_bar, foo_bar)
     <BugSubscription at ...>
     >>> bug_menu = BugContextMenu(bug_one_bugtask)
     >>> bug_menu.subscription().text
@@ -306,7 +300,7 @@ still say 'Unsubscribe':
     >>> launchpad_team = getUtility(IPersonSet).getByName('launchpad')
     >>> foo_bar.inTeam(launchpad_team)
     True
-    >>> bug_one.subscribe(launchpad_team)
+    >>> bug_one.subscribe(launchpad_team, launchpad_team)
     <BugSubscription at ...>
     >>> bug_menu = BugContextMenu(bug_one_bugtask)
     >>> bug_menu.subscription().text
@@ -336,7 +330,7 @@ other team, it will say only 'Subscribe'.
     >>> foo_bar.inTeam(shipit_team)
     False
     >>> bug_one.unsubscribe(launchpad_team)
-    >>> bug_one.subscribe(shipit_team)
+    >>> bug_one.subscribe(shipit_team, shipit_team)
     <BugSubscription at ...>
 
     >>> bug_menu = BugContextMenu(bug_one_bugtask)
@@ -360,27 +354,27 @@ we can't know if the user is subscribed or not.
     Subscribers from duplicates have the option to unsubscribe as well. For
     example, Steve Alexander can currently subscribe to bug #3.
 
-        >>> bug_three = bugset.get(3)
-        >>> bug_three_bugtask = bug_three.bugtasks[0]
-        >>> getUtility(IOpenLaunchBag).clear()
-        >>> getUtility(IOpenLaunchBag).add(bug_three_bugtask)
+    >>> bug_three = bugset.get(3)
+    >>> bug_three_bugtask = bug_three.bugtasks[0]
+    >>> getUtility(IOpenLaunchBag).clear()
+    >>> getUtility(IOpenLaunchBag).add(bug_three_bugtask)
 
-        >>> login("steve.alexander@ubuntulinux.com")
+    >>> login("steve.alexander@ubuntulinux.com")
 
-        >>> bug_menu = BugContextMenu(bug_three_bugtask)
-        >>> bug_menu.subscription().text
+    >>> bug_menu = BugContextMenu(bug_three_bugtask)
+    >>> bug_menu.subscription().text
         'Subscribe'
 
     Bug if bug #2, a bug that Steve is directly subscribed to, is marked as
     a dupe of bug #3, then Steve gets indirectly subscribed to bug #3, and
     is presented with the Unsubscribe link.
 
-        >>> from canonical.launchpad.ftests import syncUpdate
+    >>> from canonical.launchpad.ftests import syncUpdate
 
-        >>> bug_two.duplicateof = bug_three
-        >>> syncUpdate(bug_two)
+    >>> bug_two.duplicateof = bug_three
+    >>> syncUpdate(bug_two)
 
-        >>> bug_menu.subscription().text
+    >>> bug_menu.subscription().text
         'Unsubscribe'
 
     Now, let's revert that duplicate marking and demonstrate it again, this
@@ -388,12 +382,12 @@ we can't know if the user is subscribed or not.
     the current user is a member. So, for Foo Bar, bug #3 has a simple
     Subscribe link initially.
 
-        >>> bug_two.duplicateof = None
-        >>> syncUpdate(bug_two)
+    >>> bug_two.duplicateof = None
+    >>> syncUpdate(bug_two)
 
-        >>> login("foo.bar@canonical.com")
+    >>> login("foo.bar@canonical.com")
 
-        >>> bug_menu.subscription().text
+    >>> bug_menu.subscription().text
         'Subscribe'
 
     Now let's subscribe Ubuntu Team directly to bug #2. When bug #2 is duped
@@ -401,17 +395,18 @@ we can't know if the user is subscribed or not.
     Bar can subscribe himself, or unsubscribe the Ubuntu Team, which got
     indirectly subscribed to bug #3 from the dupe, bug #2.
 
-        >>> bug_two.subscribe(getUtility(IPersonSet).getByName("ubuntu-team"))
+    >>> ubuntu_team = getUtility(IPersonSet).getByName("ubuntu-team")
+    >>> bug_two.subscribe(ubuntu_team, ubuntu_team)
         <BugSubscription...>
 
-        >>> bug_two.duplicateof = bug_three
-        >>> syncUpdate(bug_two)
+    >>> bug_two.duplicateof = bug_three
+    >>> syncUpdate(bug_two)
 
-        >>> bug_menu.subscription().text
+    >>> bug_menu.subscription().text
         'Subscribe/Unsubscribe'
 
-BugTasks and Nominations Table
-------------------------------
+
+== BugTasks and Nominations Table ==
 
 A table is rendered at the top of the bug page which shows both bugtasks
 and nominations. This table is rendered with the
@@ -668,3 +663,50 @@ should exist.
     True
     >>> bn_set[-1].message.text_contents
     u'** Tags added: new-tag'
+
+
+= Visibility of Imported DebBugs Comments =
+
+Comments imported from the DebBugs bug tracker are not displayed in the
+user interface by default.
+
+A config option, malone.show_imported_comments, controls whether or not
+imported comments will be displayed. We can demonstrate these using the
+standard BugTaskView for bug 15, which has a debian bug watch and
+imported comments.
+
+    >>> from zope.component import getUtility
+    >>> from canonical.launchpad.browser import BugTaskView
+    >>> from canonical.launchpad.interfaces import IBugSet
+    >>> from canonical.launchpad.webapp.servers import (
+    ...     LaunchpadTestRequest)
+    >>> bug = getUtility(IBugSet).get(15)
+    >>> view = BugTaskView(bug.bugtasks[0], LaunchpadTestRequest())
+
+By default, the comments returned which have been imported from a bug
+watch will have a can_be_shown property of False.
+
+    >>> for comment in view.getBugCommentsForDisplay():
+    ...     comment.can_be_shown
+    False
+    False
+    False
+    False
+    False
+    False
+
+However, if we set the show_imported_comments config option to True, the
+imported comments for bug 4 will be displayable.
+
+    >>> from canonical.config import config
+    >>> config.malone.show_imported_comments = True
+    >>> view = BugTaskView(bug.bugtasks[0], LaunchpadTestRequest())
+    >>> for comment in view.getBugCommentsForDisplay():
+    ...     comment.can_be_shown
+    True
+    True
+    True
+    True
+    True
+    True
+

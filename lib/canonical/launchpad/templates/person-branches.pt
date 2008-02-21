@@ -1,21 +1,23 @@
-<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
-      lang="en"
-      metal:use-macro="context/@@main_template/master"
-      i18n:domain="launchpad">
+<html
+  xmlns="http://www.w3.org/1999/xhtml"
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  xml:lang="en"
+  lang="en"
+  dir="ltr"
+  metal:use-macro="context/@@main_template/master"
+  i18n:domain="launchpad"
+>
 
 <body>
 
-<metal:leftportlets fill-slot="portlets_one">
-</metal:leftportlets>
-
-<metal:rightportlets fill-slot="portlets_two">
-
+<metal:rightportlets fill-slot="portlets">
     <div tal:replace="structure context/@@+portlet-teambranches" />
-
 </metal:rightportlets>
 
 <metal:heading fill-slot="pageheading">
-  <h1><span tal:replace="view/title_prefix">Bazaar</span> branches</h1>
+  <h1 tal:content="view/heading">Bazaar branches</h1>
 </metal:heading>
 
 <div metal:fill-slot="main"
@@ -56,18 +58,6 @@
     <em>author</em> of a branch, it appears as the <em>author</em>. A person or
     team is presented as the registrant only if the branch has different
     author, or if the author is not specified.</p>
-
-  <p>From this page you can:<p>
-
-  <ul>
-    <li>Browse to every listed branch.</li>
-
-    <li>See detailed listings that only show the branches of which this
-      person is the author, the registrant (and not the author), or a
-      subcriber.</li>
-
-    <li>Register a new mirror branch whose author is this person.</li>
-  </ul>
 
 </metal:block><tal:comment condition="nothing"><!-- end help slot --></tal:comment>
 

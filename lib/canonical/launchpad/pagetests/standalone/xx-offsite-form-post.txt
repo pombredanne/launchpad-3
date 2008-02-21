@@ -10,13 +10,9 @@ First a helper to set up a browser object that doesn't handle the
 mechanize browser object here because Zope's test browser does not
 expose the required functionality:
 
-  >>> from zope.testbrowser.testing import Browser
   >>> def setupBrowserWithReferrer(referrer):
-  ...      browser = Browser()
-  ...      browser.handleErrors = False
+  ...      browser = setupBrowser("Basic no-priv@canonical.com:test")
   ...      browser.mech_browser.set_handle_referer(False)
-  ...      browser.addHeader("Authorization",
-  ...                        "Basic no-priv@canonical.com:test")
   ...      if referrer is not None:
   ...          browser.addHeader("Referer", referrer)
   ...      return browser
@@ -67,3 +63,22 @@ Or if the referrer is from a site managed by launchpad:
   >>> browser.getControl('Create').click()
   >>> print browser.url
   http://launchpad.dev/~team4
+
+
+== Posts to the OpenID endpoint ==
+
+The OpenID 2.0 protocol allows authentication requests to be made via
+form posts.  Such requests appear to be off-site form posts.  We
+explicitly allow POST requests through to the OpenID endpoint:
+
+  >>> from urllib import urlencode
+  >>> browser = setupBrowserWithReferrer('http://relying-party.com/')
+  >>> browser.handleErrors = True
+  >>> browser.open('http://openid.launchpad.dev/+openid', data=urlencode({
+  ...    'openid.mode': 'no-such-method'}))
+  >>> print browser.url
+  http://openid.launchpad.dev/+openid
+  >>> print browser.contents
+  error:No decoder for mode 'no-such-method'
+  mode:error
+  <BLANKLINE>

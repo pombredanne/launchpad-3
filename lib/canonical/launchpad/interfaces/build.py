@@ -1,16 +1,20 @@
 # Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# pylint: disable-msg=E0211,E0213
 
 """Build interfaces."""
 
 __metaclass__ = type
 
 __all__ = [
+    'BuildStatus',
     'IBuild',
     'IBuildSet',
     'IHasBuildRecords'
     ]
 
 from zope.interface import Interface, Attribute
+
+from canonical.lazr import DBEnumeratedType, DBItem
 
 class IBuild(Interface):
     """A Build interface"""
@@ -29,6 +33,9 @@ class IBuild(Interface):
     archive = Attribute("The archive")
 
     # Properties
+    current_component = Attribute(
+        "Component where the ISourcePackageRelease related to "
+        "this build was published.")
     title = Attribute("Build Title")
     changesfile = Attribute("The Build Changesfile object, returns None if "
                             "it is a gina-inserted record.")
@@ -41,7 +48,7 @@ class IBuild(Interface):
         "details for this sourcepackagerelease in this distribution.")
     binarypackages = Attribute(
         "A list of binary packages that resulted from this build, "
-        "not limitted and ordered by name.")
+        "not limited and ordered by name.")
     distroarchseriesbinarypackages = Attribute(
         "A list of distroarchseriesbinarypackages that resulted from this"
         "build, ordered by name.")
@@ -55,19 +62,32 @@ class IBuild(Interface):
     calculated_buildstart = Attribute(
         "Emulates a buildstart timestamp by calculating it from "
         "datebuilt - buildduration.")
+
     is_trusted = Attribute(
         "whether or not the record corresponds to a source targeted to "
         "the distribution main_archive (archive == distro.main_archive).")
+
     package_upload = Attribute(
         "The PackageUpload for this build, or None if there is "
         "no build.")
+
+    component_dependencies = Attribute(
+        "Return a dictionary which maps a component name to a list of "
+        "component names it could depend of.")
+
+    ogre_components = Attribute(
+        "The components this build is allowed to use. It returns a string "
+        "that can be used directly at the end of sources.list lines.")
 
     def retry():
         """Restore the build record to its initial state.
 
         Build record loses its history, is moved to NEEDSBUILD and a new
-        empty BuildQueue entry is created for it.
+        non-scored BuildQueue entry is created for it.
         """
+
+    def updateDependencies():
+        """Update the build-dependencies line within the targeted context."""
 
     def __getitem__(name):
         """Mapped to getBinaryPackageRelease."""
@@ -77,16 +97,14 @@ class IBuild(Interface):
         raise NotFoundError if no such package exists.
         """
 
-    def createBinaryPackageRelease(binarypackagename, version,
-                                   summary, description,
-                                   binpackageformat, component,
-                                   section, priority, shlibdeps,
-                                   depends, recommends, suggests,
-                                   conflicts, replaces, provides,
-                                   essential, installedsize,
-                                   architecturespecific):
-        """Create a binary package release with the provided args, attached
-        to this specific build.
+    def createBinaryPackageRelease(
+        binarypackagename, version, summary, description, binpackageformat,
+        component, section, priority, shlibdeps, depends, recommends,
+        suggests, conflicts, replaces, provides, pre_depends, enhances,
+        breaks, essential, installedsize, architecturespecific):
+        """Create and return a `BinaryPackageRelease`.
+
+        The binarypackagerelease will be attached to this specific build.
         """
 
     def createBuildQueueEntry():
@@ -153,12 +171,20 @@ class IBuildSet(Interface):
         records. If name is passed return only the builds which the
         sourcepackagename matches (SQL LIKE).
         """
+    def retryDepWaiting(distroarchseries):
+        """Re-process all MANUALDEPWAIT builds for a given IDistroArchSeries.
+
+        This method will update all the dependency lines of all MANUALDEPWAIT
+        records in the given architecture and those with all dependencies
+        satisfied at this point will be automatically retried and re-scored.
+        """
 
 
 class IHasBuildRecords(Interface):
     """An Object that has build records"""
 
-    def getBuildRecords(build_state=None, name=None, pocket=None):
+    def getBuildRecords(build_state=None, name=None, pocket=None,
+                        user=None):
         """Return build records owned by the object.
 
         The optional 'build_state' argument selects build records in a specific
@@ -170,4 +196,86 @@ class IHasBuildRecords(Interface):
         sourcepackagename matches (SQL LIKE).
         If pocket is specified return only builds for this pocket, otherwise
         return all.
+        "user" is the requesting user and if specified can be used in
+        permission checks to see if he is allowed to view the build.
         """
+
+
+class BuildStatus(DBEnumeratedType):
+    """Build status type
+
+    Builds exist in the database in a number of states such as 'complete',
+    'needs build' and 'dependency wait'. We need to track these states in
+    order to correctly manage the autobuilder queues in the BuildQueue table.
+    """
+
+    NEEDSBUILD = DBItem(0, """
+        Needs building
+
+        Build record is fresh and needs building. Nothing is yet known to
+        block this build and it is a candidate for building on any free
+        builder of the relevant architecture
+        """)
+
+    FULLYBUILT = DBItem(1, """
+        Successfully built
+
+        Build record is an historic account of the build. The build is complete
+        and needs no further work to complete it. The build log etc are all
+        in place if available.
+        """)
+
+    FAILEDTOBUILD = DBItem(2, """
+        Failed to build
+
+        Build record is an historic account of the build. The build failed and
+        cannot be automatically retried. Either a new upload will be needed
+        or the build will have to be manually reset into 'NEEDSBUILD' when
+        the issue is corrected
+        """)
+
+    MANUALDEPWAIT = DBItem(3, """
+        Dependency wait
+
+        Build record represents a package whose build dependencies cannot
+        currently be satisfied within the relevant DistroArchSeries. This
+        build will have to be manually given back (put into 'NEEDSBUILD') when
+        the dependency issue is resolved.
+        """)
+
+    CHROOTWAIT = DBItem(4, """
+        Chroot problem
+
+        Build record represents a build which needs a chroot currently known
+        to be damaged or bad in some way. The buildd maintainer will have to
+        reset all relevant CHROOTWAIT builds to NEEDSBUILD after the chroot
+        has been fixed.
+        """)
+
+    SUPERSEDED = DBItem(5, """
+        Build for superseded Source
+
+        Build record represents a build which never got to happen because the
+        source package release for the build was superseded before the job
+        was scheduled to be run on a builder. Builds which reach this state
+        will rarely if ever be reset to any other state.
+        """)
+
+    BUILDING = DBItem(6, """
+        Currently building
+
+        Build record represents a build which is being build by one of the
+        available builders.
+        """)
+
+    FAILEDTOUPLOAD = DBItem(7, """
+        Failed to upload
+
+        Build record is an historic account of a build that could not be
+        uploaded correctly. It's mainly genereated by failures in
+        process-upload which quietly rejects the binary upload resulted
+        by the build procedure.
+        In those cases all the build historic information will be stored (
+        buildlog, datebuilt, duration, builder, etc) and the buildd admins
+        will be notified via process-upload about the reason of the rejection.
+        """)

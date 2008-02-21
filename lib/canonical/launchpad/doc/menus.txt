@@ -253,6 +253,7 @@ are as we expect.
     name: foo
     selected: False
     site: None
+    sort_key: 0
     summary: None
     target: +foo
     text: Foo
@@ -265,6 +266,7 @@ are as we expect.
     name: bar
     selected: False
     site: None
+    sort_key: 1
     summary: More explanation about Bar of sesamestreet
     target: +bar
     text: Bar
@@ -371,22 +373,22 @@ Checking out the escapedtext attribute.
     >>> link = Link('+target', text)
 
     >>> ILink(link).escapedtext
-    'some <b> --&gt; </b> text'
+    u'some <b> --&gt; </b> text'
     >>> IFacetLink(link).escapedtext
-    'some <b> --&gt; </b> text'
+    u'some <b> --&gt; </b> text'
 
 
 We can test the 'structured' helper directly.
 
     >>> structured('foo').escapedtext
-    'foo'
+    u'foo'
     >>> structured('%s', 'a < b > c & d " e').escapedtext
-    'a &lt; b &gt; c &amp; d " e'
+    u'a &lt; b &gt; c &amp; d " e'
     >>> structured('a < b > c & d " e').escapedtext
-    'a < b > c & d " e'
+    u'a < b > c & d " e'
     >>> structured(
     ...     'replacement %(foo)s, %(bar)s', foo='<foo>', bar='bar').escapedtext
-    'replacement &lt;foo&gt;, bar'
+    u'replacement &lt;foo&gt;, bar'
     >>> structured('whatever', 'foo', 'bar', baz='baz')
     Traceback (most recent call last):
     ...
@@ -684,6 +686,7 @@ are as we expect.
     linked: True
     name: first
     site: None
+    sort_key: 0
     summary: None
     target: +first
     text: First menu
@@ -745,6 +748,7 @@ are as we expect.
     linked: True
     name: first
     site: None
+    sort_key: 0
     summary: None
     target: +firstcontext
     text: First context menu item
@@ -973,13 +977,46 @@ is selected, we get a couple of menus.
     ...     print link.url
     http://launchpad.dev/sesamestreet/number73/+first
 
+You can traverse to an individual menu item from the facet menu:
+
+    >>> link = test_tales(
+    ...     'CONTEXTS/menu:foo/first', context=house, view=view,
+    ...     request=request)
+    >>> print link.url
+    http://launchpad.dev/sesamestreet/number73/+first
+
+But if a non-existing entry is requested, a KeyError is raised:
+
+    >>> test_tales(
+    ...     'CONTEXTS/menu:foo/broken', context=house, view=view,
+    ...     request=request)
+    Traceback (most recent call last):
+    ...
+    KeyError: 'broken'
+
+We also report when the selected facet does not exist with a
+TraversalError exception:
+
+    >>> test_tales(
+    ...     'CONTEXTS/menu:broken/bar', context=house, view=view,
+    ...     request=request)
+    Traceback (most recent call last):
+    ...
+    TraversalError: ..., 'broken')
+
 We can also get a context menu as menu:context.  It makes no difference
 whether the TALES code is CONTEXTS/menu:context or context/menu:context,
 because the menus system doesn't need to know anything about the view object.
 
     >>> links = test_tales('context/menu:context', context=house)
-    >>> for link in links:
+    >>> for link in links.values():
     ...     print link.url
+    http://launchpad.dev/sesamestreet/number73/+firstcontext
+
+The link is also reachable by name:
+
+    >>> link = test_tales('context/menu:context/first', context=house)
+    >>> print link.url
     http://launchpad.dev/sesamestreet/number73/+firstcontext
 
 When there is no menu for a thing, we get an empty iterator.
@@ -996,6 +1033,15 @@ When there is no menu for a thing, we get an empty iterator.
     ...     context=root, view=view, request=request)
     >>> list(menu)
     []
+
+And thus, we don't have a facet to navigate to:
+
+    >>> test_tales(
+    ...     'CONTEXTS/menu:foo/+first', context=root, view=view,
+    ...     request=request)
+    Traceback (most recent call last):
+    ...
+    TraversalError: ..., 'foo')
 
 
 == Cleaning up ==

@@ -1,3 +1,66 @@
+launchpad-buildd (42) dapper-cat; urgency=low
+
+  * sbuild: using "eq" to evaluate strings instead of "==" is ever
+    so slightly less retarded (fixed the launchpad bug #184565)
+
+ -- Adam Conrad <adconrad@ubuntu.com>  Tue, 22 Jan 2008 16:21:54 -0700
+
+launchpad-buildd (41) dapper-cat; urgency=low
+
+  * sbuild: If we've already marked a package as "installed" with a
+    valid version, don't overwrite that version with PROVIDED.
+
+ -- Adam Conrad <adconrad@ubuntu.com>  Thu, 17 Jan 2008 10:39:26 -0700
+
+launchpad-buildd (40) dapper-cat; urgency=low
+
+  * sbuild: Don't allow versioned build-deps to be satisfied by provided
+    packages, but force them to go through the "upgrade/downgrade" tests.
+  * sbuild: Do --info and --contents on _all.deb packages as well, if
+    we're building arch:all packages.
+  * sbuild: Don't process ENV_OVERRIDE anymore, we only had an override
+    for one thing anyway (LC_ALL), and this code caused bug #87077.
+  * sbuild-package: Call sbuild with LC_ALL=C explicitely, to compensate.
+  * Makefile: clean up the makefile a bit to DTRT (as I expect it).
+
+ -- Adam Conrad <adconrad@ubuntu.com>  Tue, 15 Jan 2008 16:51:08 -0700
+
+launchpad-buildd (39) unstable; urgency=low
+
+  * If we're fed an archive_purpose argument from the builddmaster,
+    we pass --purpose=$archive_purpose to sbuild, and if we get suite
+    from the builddmaster, we pass --dist=$suite to sbuild.
+  * Mangle sbuild to write out Suite: and Purpose: stanzas to our
+    CurrentlyBuilding file, according to command-line input.
+  * Now that we're no longer always feeding -dautobuild to sbuild,
+    fix up sbuild to always look for the chroot at chroot-autobuild
+    instead of the Debian Way of using chroot-$suite.
+  * If the config file contains an ntphost stanza, use that with
+    ntpdate to sync the system's clock before we unpack the chroot.
+  * Mangle update-config to add an ntphost stanza to the default
+    config, and to 's/-dautobuild //' from the sbuild arguments.
+
+ -- Adam Conrad <adconrad@ubuntu.com>  Thu, 20 Dec 2007 01:51:49 -0700
+
+launchpad-buildd (38) unstable; urgency=high
+
+  * unpack-chroot: set $PATH rather than hardcoding paths to binaries
+    since bzip2 moved from /usr/bin to /bin in edgy and didn't bother with
+    compatability symlinks.
+
+ -- James Troup <james.troup@canonical.com>  Wed, 21 Nov 2007 17:08:36 +0000
+
+launchpad-buildd (37) dapper; urgency=high
+
+  * update-debian-chroot: Adam's LPIA support (i.e. overriding
+    architecture for chapt-get).
+  * debian/launchpad-buildd.cron.daily: fix run-on-line.
+  * debian/postinst: only create ~buildd/.sbuildrc if it doesn't exist.
+    This avoids the problem of upgrades of the launchpad-buildd package
+    resetting the architecture to i386 on lpia builders.
+
+ -- James Troup <james.troup@canonical.com>  Wed, 14 Nov 2007 18:34:46 +0000
+
 launchpad-buildd (36) dapper; urgency=low
 
   * changing override-sources to replace current sources.list with
@@ -16,9 +79,37 @@ launchpad-buildd (35) unstable; urgency=low
 launchpad-buildd (34) unstable; urgency=low
 
   * add suport for overriding the chroot /etc/apt/sources.list with the
-  content of builddmaster build arguments 'archives'.
+    content of builddmaster build arguments 'archives'.
 
  -- Celso Providelo <cprov@canonical.com>  Thu, 17 May 2007 15:12:26 -0300
+
+launchpad-buildd (33) unstable; urgency=low
+
+  * Mangle sbuild further to allow us to publish Martin's debug debs (ddeb)
+    to public_html/ddebs/ until such a time as soyuz can do this natively.
+  * Fix the auto-dep-wait regexes to allow for versions with ~ in them.
+  * Make cron.daily clean out translations and ddebs more than 1 week old.
+
+ -- Adam Conrad <adconrad@ubuntu.com>  Sat, 30 Sep 2006 17:25:25 +1000
+
+launchpad-buildd (32) unstable; urgency=low
+
+  * We need to create /var/run/launchpad-buildd in our init script in the
+    case (such as in current dapper) where /var/run is on a tmpfs.
+  * Our init script shouldn't exit non-zero on "stop" if already stopped.
+  * Remove exc_info argument from our call to self.log in slave.py, which
+    clearly doesn't support that argument, so stop producing tracebacks.
+  * Reset self.builddependencies in our clean routine, so the variable
+    doesn't get leaked to the next build, causing me SERIOUS confusion.
+  * Tidy up translation handling a bit more to deal with old chroots (where
+    pkgstriptranslations won't dpkg-distaddfile for us), and to chmod the
+    translation dirs after the build, so apache can actually get at them.
+  * Add --no_save to our command line to avoid useless -shutdown.tap files.
+  * Make sure umount-chroot doesn't fail, even if there's nothing to umount.
+  * Append to the cron.daily cleaning to also occasionally clean up the apt
+    cache and /home/buildd/filecache-default, so we don't run out of disk.
+
+ -- Adam Conrad <adconrad@ubuntu.com>  Fri, 17 Mar 2006 19:39:05 +1100
 
 launchpad-buildd (31) unstable; urgency=low
 

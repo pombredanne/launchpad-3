@@ -1,9 +1,13 @@
 <html
-    xmlns="http://www.w3.org/1999/xhtml"
-    xml:lang="en"
-    lang="en"
-    metal:use-macro="context/@@main_template/master"
-    i18n:domain="launchpad"
+  xmlns="http://www.w3.org/1999/xhtml"
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  xml:lang="en"
+  lang="en"
+  dir="ltr"
+  metal:use-macro="context/@@main_template/master"
+  i18n:domain="launchpad"
 >
   <body>
 
@@ -41,7 +45,7 @@
 
   <p>A mirror branch cannot be converted to an upload branch, and conversely,
     you cannot convert an upload branch to a mirror branch. However you can
-    rename a branch and create a new one in its place.<p>
+    rename a branch and create a new one in its place.</p>
 
   <p>The title and the summary appear in listing and on the branch page, they
     should describe the branch contents and purpose. The whiteboard appears on

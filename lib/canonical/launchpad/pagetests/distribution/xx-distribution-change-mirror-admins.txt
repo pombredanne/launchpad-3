@@ -3,18 +3,13 @@ Each distribution has an associated person/team that is responsible for
 reviewing mirrors and making them official. This person/team can be changed by
 the distribution owner, on the +selectmirroradmins page.
 
-    >>> browser.addHeader('Authorization', 'Basic test@canonical.com:test')
+    >>> browser = setupBrowser(auth='Basic test@canonical.com:test')
     >>> browser.open('http://localhost/ubuntu/+selectmirroradmins')
     Traceback (most recent call last):
     ...
     Unauthorized: ...
 
-    # XXX Guilherme Salgado 2006-06-16 bug=45226: 
-    # Workaround for https://launchpad.net/launchpad/+bug/45226
-    >>> from zope.testbrowser.testing import Browser
-    >>> browser = Browser()
-
-    >>> browser.addHeader('Authorization', 'Basic mark@hbd.com:test')
+    >>> browser = setupBrowser(auth='Basic mark@hbd.com:test')
     >>> browser.open('http://localhost/ubuntu/+selectmirroradmins')
     >>> browser.url
     'http://localhost/ubuntu/+selectmirroradmins'
@@ -27,3 +22,4 @@ the distribution owner, on the +selectmirroradmins page.
     >>> browser.open('http://localhost/ubuntu/+selectmirroradmins')
     >>> browser.getControl('Mirror Administrator').value
     'sabdfl'
+

@@ -372,6 +372,9 @@ def drop_tables(cur, tables):
 def allow_sequential_scans(cur, permission):
     """Allow database to ignore indexes and scan sequentially when it wants?
 
+    DO NOT USE THIS WITHOUT REVIEW BY A DBA.  When you find yourself wanting
+    this function, chances are you're really hiding a bug in your code.
+
     This is an unfortunate hack.  In some cases we have found that postgres
     will resort to costly sequential scans when a perfectly good index is
     available.  Specifically, this happened when we deleted one-third or so of

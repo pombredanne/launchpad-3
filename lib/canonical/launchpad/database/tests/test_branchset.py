@@ -11,16 +11,20 @@ import pytz
 
 import transaction
 
+from canonical.config import config
 from canonical.codehosting.tests.helpers import BranchTestCase
 from canonical.database.constants import UTC_NOW
 
 from canonical.launchpad.ftests import login, logout, ANONYMOUS, syncUpdate
 from canonical.launchpad.database.branch import BranchSet
 from canonical.launchpad.interfaces import (
-    BranchType, BranchLifecycleStatus, BranchCreationForbidden,
-    BranchCreatorNotMemberOfOwnerTeam, BranchVisibilityRule,
-    IBranchSet, IPersonSet, IProductSet, PersonCreationRationale,
-    TeamSubscriptionPolicy)
+    BranchCreationForbidden, BranchCreationNoTeamOwnedJunkBranches,
+    BranchCreatorNotMemberOfOwnerTeam, BranchCreatorNotOwner,
+    BranchLifecycleStatus, BranchType, BranchVisibilityRule, IBranchSet,
+    IPersonSet, IProductSet, MAXIMUM_MIRROR_FAILURES, MIRROR_TIME_INCREMENT,
+    PersonCreationRationale, TeamSubscriptionPolicy)
+from canonical.launchpad.testing import LaunchpadObjectFactory
+from canonical.launchpad.validators import LaunchpadValidationError
 
 from canonical.testing import LaunchpadFunctionalLayer
 
@@ -52,8 +56,8 @@ class TestBranchSet(TestCase):
         self.assertEqual(quantity, len(list(latest_branches)))
 
     def test_onlyForProduct(self):
-        """getLatestBranchesForProduct returns branches only from the requested
-        product.
+        """getLatestBranchesForProduct returns branches only from the
+        requested product.
         """
         quantity = 5
         latest_branches = self.branch_set.getLatestBranchesForProduct(
@@ -63,9 +67,9 @@ class TestBranchSet(TestCase):
             [branch.product.name for branch in latest_branches])
 
     def test_abandonedBranchesNotIncluded(self):
-        """getLatestBranchesForProduct does not include branches that have been
-        abandoned, because they are not relevant for those interested in recent
-        activity.
+        """getLatestBranchesForProduct does not include branches that have
+        been abandoned, because they are not relevant for those interested
+        in recent activity.
         """
         original_branches = list(
             self.branch_set.getLatestBranchesForProduct(self.product, 5))
@@ -100,13 +104,104 @@ class TestBranchSet(TestCase):
             logout()
 
 
-class TestMirroring(BranchTestCase):
+class TestBranchSetDormancyClause(TestCase):
+    """Test that the dormancy clause correctly selects branches."""
+
+    layer = LaunchpadFunctionalLayer
+
+    def setUp(self):
+        login(ANONYMOUS)
+        factory = LaunchpadObjectFactory()
+        self.branch_owner = factory.makePerson()
+
+        dormant_days = config.launchpad.branch_dormant_days
+        dormant_cutoff = datetime.now(pytz.UTC) - timedelta(dormant_days)
+
+        # Make two new branches on either side of the cut off period.
+        for delta in [-10, -1, 1, 10]:
+            date_created = dormant_cutoff + timedelta(days=delta)
+            factory.makeBranch(
+                owner=self.branch_owner, date_created=date_created)
+
+    def tearDown(self):
+        logout()
+
+    def test_showDormantBranchClause(self):
+        """Four branches should be returned if showing dormant branches."""
+        branch_set = getUtility(IBranchSet)
+        branch_count = branch_set.getBranchesForPerson(
+            self.branch_owner, hide_dormant=False).count()
+        self.assertEqual(4, branch_count,
+                         "Expected 4 branches, got %d" % branch_count)
+
+    def test_hideDormantBranchClause(self):
+        """Two branches should be returned if showing dormant branches."""
+        branch_set = getUtility(IBranchSet)
+        branch_count = branch_set.getBranchesForPerson(
+            self.branch_owner, hide_dormant=True).count()
+        self.assertEqual(2, branch_count,
+                         "Expected 2 branches, got %d" % branch_count)
+
+
+class TestBranchSetNewNameValidation(TestCase):
+    """Test of the validation of the branch name done by BranchSet.new()."""
+
+    layer = LaunchpadFunctionalLayer
+
+    def setUp(self):
+        TestCase.setUp(self)
+        login(ANONYMOUS)
+        # This person should be considered to be wholly arbitrary.
+        self.person = getUtility(IPersonSet).getByName('name12')
+        assert self.person is not None, "Sample Person not found."
+        self.branch_set = getUtility(IBranchSet)
+
+    def tearDown(self):
+        logout()
+        TestCase.tearDown(self)
+
+    def makeNewBranchWithName(self, name):
+        """Attempt to create a new branch with name 'name'.
+
+        It will a +junk branch owned and authored by Sample Person, but this
+        shouldn't be important.
+        """
+        return self.branch_set.new(
+            BranchType.HOSTED, name, self.person, self.person, None, None)
+
+    def testPermittedFirstCharacter(self):
+        # The first character of a branch name must be a letter or a number.
+        for c in [chr(i) for i in range(128)]:
+            if c.isalnum():
+                self.makeNewBranchWithName(c)
+            else:
+                self.assertRaises(
+                    LaunchpadValidationError, self.makeNewBranchWithName, c)
+
+    def testPermittedSubsequentCharacter(self):
+        # After the first character, letters, numbers and certain punctuation
+        # is permitted.
+        for c in [chr(i) for i in range(128)]:
+            if c.isalnum() or c in '+-_@.':
+                self.makeNewBranchWithName('a' + c)
+            else:
+                self.assertRaises(
+                    LaunchpadValidationError,
+                    self.makeNewBranchWithName, 'a' + c)
+
+
+class TestMirroringForHostedBranches(BranchTestCase):
     """Tests for mirroring methods of a branch."""
+
+    branch_type = BranchType.HOSTED
 
     def setUp(self):
         BranchTestCase.setUp(self)
+        self.branch_set = getUtility(IBranchSet)
         login(ANONYMOUS)
         self.emptyPullQueues()
+        # The absolute minimum value for any time field set to 'now'.
+        self._now_minimum = self.getNow()
 
     def tearDown(self):
         logout()
@@ -118,15 +213,29 @@ class TestMirroring(BranchTestCase):
             lower_bound < variable < upper_bound,
             "%r < %r < %r" % (lower_bound, variable, upper_bound))
 
+    def assertInFuture(self, time, delta):
+        """Assert that 'time' is set (roughly) to 'now' + 'delta'.
+
+        We do not want to assert that 'time' is exactly 'delta' in the future
+        as this assertion is executing after whatever changed the value of
+        'time'.
+        """
+        now_maximum = self.getNow()
+        self.assertBetween(
+            self._now_minimum + delta, time, now_maximum + delta)
+
     def getNow(self):
         """Return a datetime representing 'now' in UTC."""
         return datetime.now(pytz.timezone('UTC'))
+
+    def makeBranch(self):
+        return BranchTestCase.makeBranch(self, self.branch_type)
 
     def test_requestMirror(self):
         """requestMirror sets the mirror request time to 'now'."""
         branch = self.makeBranch()
         branch.requestMirror()
-        self.assertEqual(UTC_NOW, branch.mirror_request_time)
+        self.assertEqual(UTC_NOW, branch.next_mirror_time)
 
     def test_requestMirrorDuringPull(self):
         """Branches can have mirrors requested while they are being mirrored.
@@ -141,10 +250,10 @@ class TestMirroring(BranchTestCase):
         branch.requestMirror()
         removeSecurityProxy(branch).sync()
         self.assertNotEqual(
-            branch.last_mirror_attempt, branch.mirror_request_time)
-        mirror_request_time = branch.mirror_request_time
+            branch.last_mirror_attempt, branch.next_mirror_time)
+        next_mirror_time = branch.next_mirror_time
         branch.mirrorComplete('rev1')
-        self.assertEqual(mirror_request_time, branch.mirror_request_time)
+        self.assertEqual(next_mirror_time, branch.next_mirror_time)
 
     def test_mirrorCompleteRemovesFromPullQueue(self):
         """Completing the mirror removes the branch from the pull queue."""
@@ -155,74 +264,32 @@ class TestMirroring(BranchTestCase):
         self.assertEqual(
             [], list(self.branch_set.getPullQueue(branch.branch_type)))
 
-    def test_mirroringResetsMirrorRequestForHostedBranches(self):
-        """Mirroring hosted branches resets their mirror request times."""
-        branch = self.makeBranch(BranchType.HOSTED)
+    def test_mirroringResetsMirrorRequest(self):
+        """Mirroring branches resets their mirror request times."""
+        branch = self.makeBranch()
         branch.requestMirror()
         branch.startMirroring()
         branch.mirrorComplete('rev1')
-        self.assertEqual(None, branch.mirror_request_time)
+        self.assertEqual(None, branch.next_mirror_time)
 
-    def test_mirroringResetsMirrorRequestForImportedBranches(self):
-        """Mirroring hosted branches resets their mirror request times."""
-        branch = self.makeBranch(BranchType.IMPORTED)
-        branch.requestMirror()
-        branch.startMirroring()
-        branch.mirrorComplete('rev1')
-        self.assertEqual(None, branch.mirror_request_time)
-
-    def test_mirroringResetsMirrorRequestForMirroredBranches(self):
-        """Mirroring 'mirrored' branches sets their mirror request time to six
-        hours in the future.
+    def test_mirrorFailureResetsMirrorRequest(self):
+        """If a branch fails to mirror then update failures but don't mirror
+        again until asked.
         """
-        before_request = self.getNow()
-        branch = self.makeBranch(BranchType.MIRRORED)
+        branch = self.makeBranch()
         branch.requestMirror()
         branch.startMirroring()
-        branch.mirrorComplete('rev1')
-        after_request = self.getNow()
-        self.assertBetween(
-            before_request, branch.mirror_request_time - timedelta(hours=6),
-            after_request)
-
-    def test_mirrorFailureResetsMirrorRequestForHostedBranches(self):
-        before_request = self.getNow()
-        branch = self.makeBranch(BranchType.HOSTED)
-        branch.requestMirror()
         branch.mirrorFailed('No particular reason')
-        after_request = self.getNow()
-        self.assertBetween(
-            before_request, branch.mirror_request_time - timedelta(hours=6),
-            after_request)
-
-    def test_mirrorFailureResetsMirrorRequestForImportedBranches(self):
-        before_request = self.getNow()
-        branch = self.makeBranch(BranchType.IMPORTED)
-        branch.requestMirror()
-        branch.mirrorFailed('No particular reason')
-        after_request = self.getNow()
-        self.assertBetween(
-            before_request, branch.mirror_request_time - timedelta(hours=6),
-            after_request)
-
-    def test_mirrorFailureResetsMirrorRequestForMirroredBranches(self):
-        before_request = self.getNow()
-        branch = self.makeBranch(BranchType.MIRRORED)
-        branch.requestMirror()
-        branch.mirrorFailed('No particular reason')
-        after_request = self.getNow()
-        self.assertBetween(
-            before_request, branch.mirror_request_time - timedelta(hours=6),
-            after_request)
+        self.assertEqual(1, branch.mirror_failures)
+        self.assertEqual(None, branch.next_mirror_time)
 
     def test_pullQueueEmpty(self):
-        """Branches with no mirror_request_time are not in the pull queue."""
-        for branch_type in BranchType.items:
-            self.assertEqual(
-                [], list(self.branch_set.getPullQueue(branch_type)))
+        """Branches with no next_mirror_time are not in the pull queue."""
+        self.assertEqual(
+            [], list(self.branch_set.getPullQueue(self.branch_type)))
 
-    def test_pastMirrorRequestTimeInQueue(self):
-        """Branches with mirror_request_time in the past are mirrored."""
+    def test_pastNextMirrorTimeInQueue(self):
+        """Branches with next_mirror_time in the past are mirrored."""
         transaction.begin()
         branch = self.makeBranch()
         branch.requestMirror()
@@ -233,12 +300,12 @@ class TestMirroring(BranchTestCase):
             [branch.id
              for branch in self.branch_set.getPullQueue(branch.branch_type)])
 
-    def test_futureMirrorRequestTimeInQueue(self):
-        """Branches with mirror_request_time in the future are not mirrored."""
+    def test_futureNextMirrorTimeInQueue(self):
+        """Branches with next_mirror_time in the future are not mirrored."""
         transaction.begin()
         branch = removeSecurityProxy(self.makeBranch())
         tomorrow = self.getNow() + timedelta(1)
-        branch.mirror_request_time = tomorrow
+        branch.next_mirror_time = tomorrow
         branch.syncUpdate()
         transaction.commit()
         self.assertEqual(
@@ -248,13 +315,67 @@ class TestMirroring(BranchTestCase):
         """Pull queue has the oldest mirror request times first."""
         branches = []
         for i in range(3):
-            branch = removeSecurityProxy(self.makeBranch(BranchType.HOSTED))
-            branch.mirror_request_time = self.getNow() - timedelta(hours=i+1)
+            branch = removeSecurityProxy(self.makeBranch())
+            branch.next_mirror_time = self.getNow() - timedelta(hours=i+1)
             branch.sync()
             branches.append(branch)
         self.assertEqual(
             list(reversed(branches)),
-            list(self.branch_set.getPullQueue(BranchType.HOSTED)))
+            list(self.branch_set.getPullQueue(self.branch_type)))
+
+
+class TestMirroringForMirroredBranches(TestMirroringForHostedBranches):
+
+    branch_type = BranchType.MIRRORED
+
+    def test_mirrorFailureResetsMirrorRequest(self):
+        """If a branch fails to mirror then mirror again later."""
+        branch = self.makeBranch()
+        branch.requestMirror()
+        branch.mirrorFailed('No particular reason')
+        self.assertEqual(1, branch.mirror_failures)
+        self.assertInFuture(branch.next_mirror_time, MIRROR_TIME_INCREMENT)
+
+    def test_mirrorFailureBacksOffExponentially(self):
+        """If a branch repeatedly fails to mirror then back off exponentially.
+        """
+        branch = self.makeBranch()
+        num_failures = 3
+        for i in range(num_failures):
+            branch.requestMirror()
+            branch.mirrorFailed('No particular reason')
+        self.assertEqual(num_failures, branch.mirror_failures)
+        self.assertInFuture(
+            branch.next_mirror_time,
+            (MIRROR_TIME_INCREMENT * 2 ** (num_failures - 1)))
+
+    def test_repeatedMirrorFailuresDisablesMirroring(self):
+        """If a branch's mirror failures exceed the maximum, disable
+        mirroring.
+        """
+        branch = self.makeBranch()
+        for i in range(MAXIMUM_MIRROR_FAILURES):
+            branch.requestMirror()
+            branch.mirrorFailed('No particular reason')
+        self.assertEqual(MAXIMUM_MIRROR_FAILURES, branch.mirror_failures)
+        self.assertEqual(None, branch.next_mirror_time)
+
+    def test_mirroringResetsMirrorRequest(self):
+        """Mirroring 'mirrored' branches sets their mirror request time to six
+        hours in the future.
+        """
+        branch = self.makeBranch()
+        branch.requestMirror()
+        branch.startMirroring()
+        branch.mirrorComplete('rev1')
+        self.assertInFuture(
+            branch.next_mirror_time, MIRROR_TIME_INCREMENT)
+        self.assertEqual(0, branch.mirror_failures)
+
+
+class TestMirroringForImportedBranches(TestMirroringForHostedBranches):
+
+    branch_type = BranchType.IMPORTED
 
 
 class BranchVisibilityPolicyTestCase(TestCase):
@@ -275,7 +396,7 @@ class BranchVisibilityPolicyTestCase(TestCase):
           * "doug", who is a member of no teams.
         """
         TestCase.setUp(self)
-        login(ANONYMOUS)
+        login("foo.bar@canonical.com")
         # Our test product.
         person_set = getUtility(IPersonSet)
 
@@ -315,6 +436,7 @@ class BranchVisibilityPolicyTestCase(TestCase):
         self.albert.join(self.zulu)
         self.bob.join(self.yankee)
         self.charlie.join(self.zulu)
+        login(ANONYMOUS)
 
     def defineTeamPolicies(self, team_policies):
         """Shortcut to help define team policies."""
@@ -324,7 +446,8 @@ class BranchVisibilityPolicyTestCase(TestCase):
     def assertBranchRule(self, creator, owner, expected_rule):
         """Check the getBranchVisibilityRuleForBranch results for a branch."""
         branch = BranchSet().new(
-            BranchType.HOSTED, 'test_rule', creator, owner, self.firefox, None)
+            BranchType.HOSTED, 'test_rule', creator, owner, self.firefox,
+            None)
         rule = self.firefox.getBranchVisibilityRuleForBranch(branch)
         self.assertEqual(rule, expected_rule,
                          'Wrong visibililty rule returned: '
@@ -335,17 +458,17 @@ class BranchVisibilityPolicyTestCase(TestCase):
         """Check the visibility policy for branch creation.
 
         The method _checkVisibilityPolicy of the class BranchSet is called
-        when a branch is being created.  The method is responsible for checking
-        the visibility policy of the product.  The visibility policy is a
-        collection of team policies, where a team policy is a team and a
+        when a branch is being created.  The method is responsible for
+        checking the visibility policy of the product.  The visibility policy
+        is a collection of team policies, where a team policy is a team and a
         visiblity rule.
 
         This method does not create a branch, it just checks to see that the
         creator is able to create a branch in the namespace of the owner, and
-        it determins whether the branch is a public branch or a private branch.
-        If the branch is to be created as a private branch, then there may be
-        a team that is implicitly subscribed to the branch to give that team
-        the ability to see the private branch.
+        it determins whether the branch is a public branch or a private
+        branch.  If the branch is to be created as a private branch, then
+        there may be a team that is implicitly subscribed to the branch to
+        give that team the ability to see the private branch.
 
         :param creator: The user creating the branch.
         :param owner: The person or team that will be the owner of the branch.
@@ -435,11 +558,17 @@ class NoPolicies(BranchVisibilityPolicyTestCase):
     """Test behaviour with no team policies defined."""
 
     def test_creation_where_not_team_member(self):
-        """If the creator isn't a member of the owner an exception is raised."""
+        """If the creator isn't a member of the owner an exception is raised.
+        """
         self.assertPolicyCheckRaises(
             BranchCreatorNotMemberOfOwnerTeam, self.doug, self.xray)
+
+    def test_creation_under_different_user(self):
+        """If the owner is a user other than the creator an exception is
+        raised.
+        """
         self.assertPolicyCheckRaises(
-            BranchCreatorNotMemberOfOwnerTeam, self.albert, self.bob)
+            BranchCreatorNotOwner, self.albert, self.bob)
 
     def test_public_branch_creation(self):
         """Branches where the creator is a memeber of owner will be public."""
@@ -769,6 +898,7 @@ class TeamsWithinTeamsPolicies(BranchVisibilityPolicyTestCase):
     def setUp(self):
         """Join up the teams so zulu is in yankee, and yankee is in xray."""
         BranchVisibilityPolicyTestCase.setUp(self)
+        login("foo.bar@canonical.com")
         self.yankee.addMember(self.zulu, self.albert, force_team_add=True)
         self.xray.addMember(self.yankee, self.albert, force_team_add=True)
         self.defineTeamPolicies((
@@ -777,6 +907,7 @@ class TeamsWithinTeamsPolicies(BranchVisibilityPolicyTestCase):
             (self.yankee, BranchVisibilityRule.PUBLIC),
             (self.zulu, BranchVisibilityRule.PRIVATE),
             ))
+        login(ANONYMOUS)
 
     def test_team_memberships(self):
         albert, bob, charlie, doug = self.people
@@ -845,9 +976,10 @@ class TeamsWithinTeamsPolicies(BranchVisibilityPolicyTestCase):
 
     def test_multiple_private_policies_through_indirect_membership(self):
         """If a person is a member of a team that specifies private branches,
-        and that team is also a member either directly or indirectly of another
-        team that specifies private branches, then when members of those teams
-        create branches, those branches have no implicit subscribers.
+        and that team is also a member either directly or indirectly of
+        another team that specifies private branches, then when members of
+        those teams create branches, those branches have no implicit
+        subscribers.
         """
         self.assertPrivateSubscriber(self.albert, self.albert, None)
         self.assertPrivateSubscriber(self.charlie, self.charlie, None)
@@ -864,19 +996,21 @@ class JunkBranches(BranchVisibilityPolicyTestCase):
         # Override the product that is used in the check tests.
         self.firefox = None
 
-    def test_junk_brances_public(self):
+    def test_junk_branches_public(self):
         """Branches created by anyone that has no product defined are created
         as public branches.
         """
         self.assertPublic(self.albert, self.albert)
-        # XXX: thumper 2007-06-22 bug=120501
-        # Bug 120501 is about whether or not users are able to create junk
-        # branches in the team namespace.
-        self.assertPublic(self.albert, self.xray)
-        self.assertPublic(self.albert, self.yankee)
-        self.assertPublic(self.albert, self.zulu)
 
-        self.assertPublic(self.doug, self.doug)
+    def test_no_team_junk_branches(self):
+        """We forbid the creation of team-owned +junk branches."""
+        self.assertPolicyCheckRaises(
+            BranchCreationNoTeamOwnedJunkBranches, self.albert, self.xray)
+
+    def test_no_create_junk_branch_for_other_user(self):
+        """One user can't create +junk branches owned by another."""
+        self.assertPolicyCheckRaises(
+            BranchCreatorNotOwner, self.albert, self.doug)
 
 
 def test_suite():

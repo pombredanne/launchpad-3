@@ -1,10 +1,22 @@
-# Copyright 2006 Canonical Ltd.  All rights reserved.
+# Copyright 2006-2007 Canonical Ltd.  All rights reserved.
 
 """Helper functions for testing SQLObjects."""
 
 from zope.security.proxy import (
     removeSecurityProxy, isinstance as zope_isinstance)
 from sqlobject import SQLObject
+
+
+def sync(object):
+    """Sync the object's from the database.
+
+    This is useful if the object's connection was commited in Zopeless mode,
+    or if the database was updated outside the ORM.
+    """
+    if zope_isinstance(object, SQLObject):
+        removeSecurityProxy(object).sync()
+    else:
+        raise TypeError('%r is not an SQLObject' % object)
 
 
 def syncUpdate(object):
@@ -17,7 +29,7 @@ def syncUpdate(object):
 
 def set_so_attr(object, colname, value):
     """Set the underlying SQLObject's column value.
-    
+
     Use this function to setup test data when the SQLObject decendant guards
     its data. Data is guarded by transitional conditions for workflows, or
     because the decendant is conjoined to another object that controls it.

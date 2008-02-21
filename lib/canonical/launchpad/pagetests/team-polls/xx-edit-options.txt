@@ -18,8 +18,8 @@ team's administrators:
 And when the poll already started, administrators cannot change the options
 either:
 
-    >>> browser.addHeader(
-    ...     'Authorization', 'Basic jeff.waugh@ubuntulinux.com:jdub')
+    >>> browser = setupBrowser(
+    ...     auth='Basic jeff.waugh@ubuntulinux.com:jdub')
     >>> browser.open('http://launchpad.dev/~ubuntu-team/+poll/never-closes4')
     >>> browser.getLink('Show option details').click()
     >>> browser.url

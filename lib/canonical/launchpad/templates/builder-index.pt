@@ -1,7 +1,13 @@
-<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
-      lang="en"
-      metal:use-macro="context/@@main_template/master"
-      i18n:domain="launchpad"
+<html
+  xmlns="http://www.w3.org/1999/xhtml"
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  xml:lang="en"
+  lang="en"
+  dir="ltr"
+  metal:use-macro="context/@@main_template/master"
+  i18n:domain="launchpad"
 >
   <body>
     <metal:heading fill-slot="pageheading">
@@ -9,7 +15,7 @@
     </metal:heading>
 
 <metal:block fill-slot="head_epilogue">
-    <meta http-equiv="refresh" content="300">
+    <meta http-equiv="refresh" content="300" />
 </metal:block>
 
 <metal:leftportlets fill-slot="portlets_one">
@@ -19,6 +25,14 @@
   <div metal:fill-slot="main" tal:define="job context/currentjob">
 
       <h2>Current status</h2>
+
+      <div class="informational message" tal:condition="not: job">
+        <p><tal:builder content="context/title" />
+           <tal:builderok condition="context/builderok"
+             >is idle.</tal:builderok>
+           <tal:buildernok condition="not: context/builderok"
+             >is deactivated.</tal:buildernok></p>
+      </div>
 
       <tal:job condition="job">
         <table class="listing sortable">
@@ -49,9 +63,6 @@
           tal:content="structure job/logtail/fmt:text-to-html"
         >Things are crashing and burning all over the place.</div>
       </tal:job>
-      <p tal:condition="not: job">
-        <tal:builder content="context/title" /> is idle.
-      </p>
 
       <p>Last updated <span tal:replace="view/now"/></p>
 

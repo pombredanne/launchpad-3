@@ -1,38 +1,33 @@
-<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
-      lang="en"
-      metal:use-macro="context/@@main_template/master"
-      i18n:domain="launchpad">
+<html
+  xmlns="http://www.w3.org/1999/xhtml"
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  xml:lang="en"
+  lang="en"
+  dir="ltr"
+  metal:use-macro="context/@@main_template/master"
+  i18n:domain="launchpad"
+>
 
 <body>
 
 <div metal:fill-slot="main">
 
-      <div>
-        <img alt="" src="/@@/bug" />
-        <a tal:attributes="href context/fmt:url"
-        >Bug #<tal:bug replace="context/bug/id">3252543</tal:bug></a>:
-        <tal:title replace="context/bug/title">Foo doesn't work</tal:title>
-      </div>
+  <div>
+    <img alt="" src="/@@/bug" />
+    <a tal:attributes="href context/fmt:url"
+       >Bug #<tal:bug replace="context/bug/id">3252543</tal:bug></a>:
+    <tal:title replace="context/bug/title">Foo doesn't work</tal:title>
+  </div>
 
-  <div metal:use-macro="context/@@launchpad_generalform/generalform">
+  <h1>Add a branch</h1>
 
-    <h1 tal:condition="view/label"
-        tal:content="view/label"
-        metal:fill-slot="heading">Add a branch</h1>
-
+  <div metal:use-macro="context/@@launchpad_form/form">
     <div metal:fill-slot="extra_info" class="documentDescription">
-      <p tal:condition="context/bug/private"
-           class="warning message">
-        This bug is private. Only private branches should be linked to
-        this bug.
-     </p>
-
       Adding a Bazaar branch to a bug allows you to notify others
       about where work is going on to fix this bug.
     </div>
-
-    <legend metal:fill-slot="form_legend">Add a Branch</legend>
-
   </div>
 
 </div><tal:comment condition="nothing"><!-- end main slot --></tal:comment>
@@ -45,7 +40,7 @@
 
   <p>Post this form to associate this bug to a Bazaar branch that is already
     known to Launchpad. This allows quickly locating branches that contain work
-    to fix this bug.<p>
+    to fix this bug.</p>
 
   <p>To specify the branch, you can paste its unique name (of the form
     ~owner/product/branch), its URL on <code>bazaar.launchpad.net</code>, or

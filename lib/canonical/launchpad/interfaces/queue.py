@@ -1,4 +1,5 @@
 # Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# pylint: disable-msg=E0211,E0213
 
 """Queue interfaces."""
 
@@ -101,15 +102,15 @@ class IPackageUpload(Interface):
     sourcepackagerelease = Attribute(
         "The source package release for this item")
 
-    containsSource = Attribute("whether or not this upload contains sources")
-    containsBuild = Attribute("whether or not this upload contains binaries")
-    containsInstaller = Attribute(
+    contains_source = Attribute("whether or not this upload contains sources")
+    contains_build = Attribute("whether or not this upload contains binaries")
+    contains_installer = Attribute(
         "whether or not this upload contains installers images")
-    containsTranslation = Attribute(
+    contains_translation = Attribute(
         "whether or not this upload contains translations")
-    containsUpgrader = Attribute(
+    contains_upgrader = Attribute(
         "wheter or not this upload contains upgrader images")
-    containsDdtp = Attribute(
+    contains_ddtp = Attribute(
         "wheter or not this upload contains DDTP images")
     isPPA = Attribute(
         "Return True if this PackageUpload is a PPA upload.")
@@ -133,6 +134,20 @@ class IPackageUpload(Interface):
     def setRejected():
         """Set queue state to REJECTED."""
 
+    def acceptFromUploader(changesfile_path, logger=None):
+        """Perform upload acceptance during upload-time.
+
+         * Move the upload to accepted queue in all cases;
+         * Publish and close bugs for 'single-source' uploads;
+         * Skip bug-closing for PPA uploads.
+        """
+
+    def acceptFromQueue(announce_list, logger=None, dry_run=False):
+        """Call setAccepted, do a syncUpdate, and send notification email."""
+
+    def rejectFromQueue(logger=None, dry_run=False):
+        """Call setRejected, do a syncUpdate, and send notification email."""
+
     def realiseUpload(logger=None):
         """Take this ACCEPTED upload and create the publishing records for it
         as appropriate.
@@ -142,6 +157,8 @@ class IPackageUpload(Interface):
 
         If a logger is provided, messages will be written to it as the upload
         is entered into the publishing records.
+
+        Return a list containing the publishing records created.
         """
 
     def addSource(spr):

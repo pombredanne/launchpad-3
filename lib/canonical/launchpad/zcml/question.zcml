@@ -26,8 +26,8 @@
       />
     <require
       permission="launchpad.AnyPerson"
-      attributes="requestInfo giveAnswer expireQuestion addComment linkFAQ
-                  subscribe unsubscribe"
+      attributes="requestInfo giveAnswer expireQuestion addComment
+                  addCommentWithoutNotify linkFAQ subscribe unsubscribe"
       set_attributes="title description datedue target language"
       />
     <require
@@ -97,20 +97,27 @@
       template="../templates/question-history.pt"
       />
     <browser:page
-      name="+listing-detailed"
-      template="../templates/question-listing-detailed.pt"
-      />
-    <browser:page
-      name="+portlet-details"
-      template="../templates/question-portlet-details.pt"
-      />
-    <browser:page
       name="+portlet-reopenings"
       template="../templates/question-portlet-reopenings.pt"
       />
     <browser:page
       name="+portlet-subscribers"
       template="../templates/question-portlet-subscribers.pt"
+      />
+  </browser:pages>
+
+  <browser:pages
+    for="canonical.launchpad.interfaces.IQuestion"
+    class="canonical.launchpad.webapp.LaunchpadView"
+    permission="zope.Public"
+    >
+    <browser:page
+      name="+listing-detailed"
+      template="../templates/question-listing-detailed.pt"
+      />
+    <browser:page
+      name="+portlet-details"
+      template="../templates/question-portlet-details.pt"
       />
   </browser:pages>
 

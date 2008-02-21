@@ -20,14 +20,15 @@ import _pythonpath
 
 from zope.component import getUtility
 
+from canonical.config import config
 from canonical.database.constants import UTC_NOW
 from canonical.launchpad.database import (SecureBinaryPackagePublishingHistory,
                                           SecureSourcePackagePublishingHistory)
-from canonical.launchpad.interfaces import IDistributionSet
+from canonical.launchpad.interfaces import (
+    IDistributionSet, PackagePublishingStatus)
 from canonical.launchpad.scripts import (execute_zcml_for_scripts,
                                          logger, logger_options)
 from canonical.lp import initZopeless
-from canonical.lp.dbschema import PackagePublishingStatus
 
 from contrib.glock import GlobalLock
 
@@ -257,8 +258,7 @@ def init():
     Lock.acquire(blocking=True)
 
     Log.debug("Initialising connection.")
-    ztm = initZopeless(dbuser="lucille", dbname="launchpad_prod",
-                       dbhost="jubany")
+    ztm = initZopeless(dbuser=config.archivepublisher.dbuser)
 
     execute_zcml_for_scripts()
 

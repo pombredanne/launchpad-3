@@ -14,16 +14,13 @@ icon, as we think this will create too much noise in the UI.
 Team branding
 =============
 
-    >>> from zope.testbrowser.testing import Browser
-    >>> browser = Browser()
-    >>> browser.addHeader('Authorization', 'Basic no-priv@canonical.com:test')
+    >>> browser = setupBrowser(auth='Basic no-priv@canonical.com:test')
     >>> browser.open('http://launchpad.dev/~ubuntu-team/+branding')
     Traceback (most recent call last):
     ...
-    HTTPError: HTTP Error 403: Forbidden
+    Unauthorized:...
 
-    >>> browser = Browser()
-    >>> browser.addHeader('Authorization', 'Basic mark@hbd.com:test')
+    >>> browser = setupBrowser(auth='Basic mark@hbd.com:test')
     >>> browser.open('http://launchpad.dev/~ubuntu-team')
     >>> browser.url
     'http://launchpad.dev/~ubuntu-team'
@@ -75,15 +72,13 @@ Person branding
 Note that we have chosen not to expose the ability to customise the icon for
 each individual in Launchpad.
 
-    >>> browser = Browser()
-    >>> browser.addHeader('Authorization', 'Basic no-priv@canonical.com:test')
+    >>> browser = setupBrowser(auth='Basic no-priv@canonical.com:test')
     >>> browser.open('http://launchpad.dev/~sabdfl/+branding')
     Traceback (most recent call last):
     ...
-    HTTPError: HTTP Error 403: Forbidden
+    Unauthorized:...
 
-    >>> browser = Browser()
-    >>> browser.addHeader('Authorization', 'Basic mark@hbd.com:test')
+    >>> browser = setupBrowser(auth='Basic mark@hbd.com:test')
     >>> browser.open('http://launchpad.dev/~sabdfl')
     >>> browser.url
     'http://launchpad.dev/~sabdfl'
@@ -124,15 +119,13 @@ Here we see the updated values.
 Distribution branding
 =====================
 
-    >>> browser = Browser()
-    >>> browser.addHeader('Authorization', 'Basic no-priv@canonical.com:test')
+    >>> browser = setupBrowser(auth='Basic no-priv@canonical.com:test')
     >>> browser.open('http://launchpad.dev/kubuntu/+branding')
     Traceback (most recent call last):
     ...
-    HTTPError: HTTP Error 403: Forbidden
+    Unauthorized:...
 
-    >>> browser = Browser()
-    >>> browser.addHeader('Authorization', 'Basic mark@hbd.com:test')
+    >>> browser = setupBrowser(auth='Basic mark@hbd.com:test')
     >>> browser.open('http://launchpad.dev/kubuntu')
     >>> browser.url
     'http://launchpad.dev/kubuntu'
@@ -181,15 +174,13 @@ Here we see the updated values.
 Project branding
 ================
 
-    >>> browser = Browser()
-    >>> browser.addHeader('Authorization', 'Basic no-priv@canonical.com:test')
+    >>> browser = setupBrowser(auth='Basic no-priv@canonical.com:test')
     >>> browser.open('http://launchpad.dev/mozilla/+branding')
     Traceback (most recent call last):
     ...
-    HTTPError: HTTP Error 403: Forbidden
+    Unauthorized:...
 
-    >>> browser = Browser()
-    >>> browser.addHeader('Authorization', 'Basic mark@hbd.com:test')
+    >>> browser = setupBrowser(auth='Basic mark@hbd.com:test')
     >>> browser.open('http://launchpad.dev/mozilla')
     >>> browser.url
     'http://launchpad.dev/mozilla'
@@ -238,15 +229,13 @@ Here we see the updated values.
 Product branding
 ================
 
-    >>> browser = Browser()
-    >>> browser.addHeader('Authorization', 'Basic no-priv@canonical.com:test')
+    >>> browser = setupBrowser(auth='Basic no-priv@canonical.com:test')
     >>> browser.open('http://launchpad.dev/jokosher/+branding')
     Traceback (most recent call last):
     ...
-    HTTPError: HTTP Error 403: Forbidden
+    Unauthorized:...
 
-    >>> browser = Browser()
-    >>> browser.addHeader('Authorization', 'Basic mark@hbd.com:test')
+    >>> browser = setupBrowser(auth='Basic mark@hbd.com:test')
     >>> browser.open('http://launchpad.dev/jokosher')
     >>> browser.url
     'http://launchpad.dev/jokosher'
@@ -297,15 +286,13 @@ Sprint branding
 
 Again, for Sprints, we have not exposed icon editing through the UI.
 
-    >>> browser = Browser()
-    >>> browser.addHeader('Authorization', 'Basic no-priv@canonical.com:test')
+    >>> browser = setupBrowser(auth='Basic no-priv@canonical.com:test')
     >>> browser.open('http://launchpad.dev/sprints/futurista/+branding')
     Traceback (most recent call last):
     ...
-    HTTPError: HTTP Error 403: Forbidden
+    Unauthorized:...
 
-    >>> browser = Browser()
-    >>> browser.addHeader('Authorization', 'Basic mark@hbd.com:test')
+    >>> browser = setupBrowser(auth='Basic mark@hbd.com:test')
     >>> browser.open('http://launchpad.dev/sprints/futurista')
     >>> browser.url
     'http://launchpad.dev/sprints/futurista'

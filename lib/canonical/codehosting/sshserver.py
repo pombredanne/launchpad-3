@@ -315,27 +315,6 @@ class BazaarFileTransferServer(filetransfer.FileTransferServer):
     def __init__(self, data=None, avatar=None):
         filetransfer.FileTransferServer.__init__(self, data, avatar)
         self.logger = avatar.logger
-        self._dirtyBranches = set()
-        self.client.filesystem.root.setListenerFactory(self.makeListener)
-        self._launchpad = self.client.avatar._launchpad
-
-    def makeListener(self, branchID):
-        def flag_as_dirty():
-            self.branchDirtied(branchID)
-        return flag_as_dirty
-
-    def branchDirtied(self, branchID):
-        self._dirtyBranches.add(branchID)
-
-    def sendMirrorRequests(self):
-        """Request that all changed branches be mirrored. Return a deferred
-        which fires when each request has received a response from the server.
-        """
-        self.logger.info('Requesting mirrors for: %r', self._dirtyBranches)
-        deferreds = [self._launchpad.requestMirror(branch)
-                     for branch in self._dirtyBranches]
-        return defer.gatherResults(deferreds)
 
     def connectionLost(self, reason):
         self.logger.info('Connection lost: %s', reason)
-        self.sendMirrorRequests()

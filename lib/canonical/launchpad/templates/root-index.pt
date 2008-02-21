@@ -1,8 +1,17 @@
-<html metal:use-macro="view/macro:page/freeform" i18n:domain="launchpad">
+<html
+  xmlns="http://www.w3.org/1999/xhtml"
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  xml:lang="en"
+  lang="en"
+  dir="ltr"
+  metal:use-macro="view/macro:page/freeform"
+  i18n:domain="launchpad">
   <body>
     <div metal:fill-slot="main">
 
-  <div class="informational message" tal:condition="view/isBetaUser">
+  <div class="informational message" tal:condition="view/canRedirect">
     <tal:redirect_inhibited condition="view/isRedirectInhibited">
       <p>As a member of the Launchpad Beta Testers team, you would
       normally be redirected to the beta site when viewing Launchpad
@@ -27,6 +36,11 @@
         method="get"
         accept-charset="UTF-8"
       >
+        <tal:comment replace="nothing">
+          Do not replace the line below: "Is your project registered yet?"
+          without contacting the IS team. It's used by Nagios to verify
+          the app servers are running.
+        </tal:comment>
         <label for="text">Is your project registered yet?</label>
         <input id="text" type="text" name="text" size="20" />
         <input type="submit" value="Search" />
@@ -35,59 +49,113 @@
         <div class="three column left">
           <h2>What is Launchpad?</h2>
           <p id="application-summary">
-            We make it easy to <strong>collaborate
-            across multiple projects</strong>
-            in the free software world.
-            <a href="/+about">Learn&nbsp;more&#8230;</a>
+            Launchpad is a free software hosting and development
+            website. We make it easy to <strong>collaborate
+            across multiple projects</strong>.
+            <br />
+            <center>
+              <a href="/+about">
+                <img
+                  alt="Take a tour"
+                  src="/+icing/but-lrg-takeatour.gif"
+                />
+              </a>
+            </center>
+           </p>
+           <h2>Join the Launchpad beta team</h2>
+           <p id="beta-test">
+             Get first access to new features and take part in the Launchpad development process.
+             Join the <a href="https://help.launchpad.net/BetaTesting">beta team</a> today!
           </p>
         </div>
         <div class="three column middle">
-          <h2>What&#8217;s new</h2>
-          <ul class="news">
-            <li>
-              <a href="https://help.launchpad.net/PPAQuickStart"
-                 ><strong>Personal Package Archives:</strong>
-                 beta of Launchpad's new package
-                 build and repository hosting service.</a>
-            </li>
-            <li>
-              <a href="https://help.launchpad.net/BranchMergeProposals">
-                <strong>Code submissions:</strong> Specify
-                the branch you intend to land your own branch on.</a>
-            </li>
-            <li>
-              <a href="https://help.launchpad.net/BugStatuses#trac">
-                <strong>Support for Trac:</strong> Trac bug
-                statuses are now captured in bug watches.</a>
-            </li>
-            <li>
-              <a href="https://help.launchpad.net/FileDownloadsOverview">
-              <strong>File downloads:</strong>
-              make releases and other files
-                available from your project's overview page</a>
-            </li>
-            <li>
-             <a href="https://translations.launchpad.net/people/+me/+imports">
-               <strong>Translation imports:</strong> Individuals
-             now have their own translations import queue page.</a>
-            </li>
-          </ul>
+          <h2>What&#8217;s new here?</h2>
+          <table>
+            <tbody>
+             <tr>
+              <td><img src="/@@/news" alt="" /></td>
+              <td>
+              <a href="https://help.launchpad.net/BugSubscriptions">
+                <strong>Improved bug subscriptions</strong><br />
+                Get email notifications of bugs associated with a milestone, project, package or distribution.
+               </a>
+              </td>
+             </tr>
+             <tr>
+              <td><img src="/@@/news" alt="" /></td>
+              <td>
+               <a href="https://help.launchpad.net/BugTrackerEmailInterface#attachments">
+                <strong>Bug attachments by email</strong><br />
+                You can now attach files to bug reports using the Bug Tracker's email interface.
+               </a>
+              </td>
+             </tr>
+             <tr>
+              <td><img src="/@@/news" alt="" /></td>
+              <td>
+               <a href="https://help.launchpad.net/BranchMergeProposals">
+                <strong>Approve branch merge proposals</strong><br />
+                Mark branch merge proposals as approved or rejected.
+               </a>
+              </td>
+             </tr>
+             <tr>
+               <td><img src="/@@/news" alt="" /></td>
+               <td>
+                 <a href="https://help.launchpad.net/logo">
+                   <strong>Logo competition!</strong><br />
+                   Submit your design for the new Launchpad logo for
+                   the chance to win an Ubuntu Messenger bag.
+                 </a>
+               </td>
+             </tr>
+            </tbody>
+          </table>
+          <div class="discreet" style="text-align: right">
+            Updated 2008-02-20.
+            <a href="http://news.launchpad.net">More...</a>
+          </div>
         </div>
-        <div class="three column right">
+        <div class="three column right" id="featured-projects">
           <h2>Featured projects</h2>
-          <ul>
+          <table>
+            <tr tal:repeat="project view/featured_projects">
+              <td tal:content="structure project/fmt:link" />
+            </tr>
+          </table>
+          <ul tal:condition="not: view/featured_projects">
+            <li class="product"><a href="/exaile">Exaile Media Player</a></li>
+            <li class="product"><a href="/deluge">Deluge Torrent Client</a></li>
             <li class="distro"><a href="/ubuntu">Ubuntu</a></li>
-            <li class="product"><a href="/bzr">Bazaar</a></li>
-            <li class="product"><a href="/jokosher">Jokosher</a></li>
-            <li class="product"><a href="/upstart">Upstart</a></li>
-            <li class="product"><a href="/aptoncd">Apt on CD</a></li>
+            <li class="product"><a href="/bzr">Bazaar Version Control</a></li>
+            <li class="product"><a href="/democracy">Miro TV Player</a></li>
+            <li class="product"><a href="/awn">Avant Window Navigator</a></li>
+            <li class="product"><a href="/schooltool">SchoolTool</a></li>
+            <li class="product"><a href="/tangocms">TangoCMS</a></li>
           </ul>
+          <p>
+            <a tal:condition="context/required:launchpad.Admin"
+               href="+featuredprojects">&raquo; Manage featured project list</a>
+          </p>
         </div>
     </div><!--main-->
-    <p metal:fill-slot="help">
+    <div metal:fill-slot="help">
+      <p>
       This panel provides help on individual Launchpad pages.
       Open it on any page that you don&rsquo;t understand.
-    </p>
+      </p>
+      <p>
+      You can browse our dedicated help site, <a
+      href="https://help.launchpad.net/">help.launchpad.net</a>, for a
+      complete set of documents about Launchpad
+      </p>
+      <p>
+      You can also find help on the <a
+      href="https://lists.ubuntu.com/mailman/listinfo/launchpad-users">Launchpad
+      users mailing list</a> or online via IRC, on <a
+      href="http://freenode.net/">Freenode</a>, channel #launchpad.
+      </p>
+    </div>
   </body>
 </html>
 <!-- 1-0 inprogress Needs images and marketing material -->

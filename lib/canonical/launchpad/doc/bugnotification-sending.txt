@@ -1,5 +1,4 @@
-Sending the Bug Notifications
-=============================
+= Sending the Bug Notifications =
 
 As explained in bugnotifications.txt, a change to a bug causes a bug
 notification to be added. These notifications should be assembled into
@@ -16,13 +15,16 @@ be sent:
     >>> len(getUtility(IBugNotificationSet).getNotificationsToSend())
     0
 
-And let's define a function to make printing out the notifications
+And let's define functions to make printing out the notifications
 easier.
 
-    >>> def print_notification(email_notification):
+    >>> def print_notification_headers(email_notification):
     ...     for header in ['To', 'From', 'Subject',
     ...                    'X-Launchpad-Message-Rationale']:
     ...         print "%s: %s" % (header, email_notification[header])
+
+    >>> def print_notification(email_notification):
+    ...     print_notification_headers(email_notification)
     ...     print
     ...     print email_notification.get_payload(decode=True)
     ...     print "-" * 70
@@ -53,20 +55,21 @@ list of emails to send:
 
     >>> from canonical.launchpad.scripts.bugnotification import (
     ...     get_email_notifications)
-    >>> for bug_notifications, messages in get_email_notifications(notifications):
+    >>> email_notifications = get_email_notifications(notifications)
+    >>> for bug_notifications, messages in email_notifications:
     ...     for message in messages:
     ...         print_notification(message)
     To: foo.bar@canonical.com
     From: Sample Person <test@canonical.com>
     Subject: [Bug 1] subject
-    X-Launchpad-Message-Rationale: Bug Contact (mozilla-firefox in ubuntu)
+    X-Launchpad-Message-Rationale: Subscriber (mozilla-firefox in ubuntu)
     <BLANKLINE>
     a comment.
     <BLANKLINE>
     ...
     Firefox does not support SVG
     http://bugs.launchpad.dev/bugs/1
-    You received this bug notification because you are a bug contact for
+    You received this bug notification because you are subscribed to
     mozilla-firefox in ubuntu.
     <BLANKLINE>
     ----------------------------------------------------------------------
@@ -81,6 +84,20 @@ list of emails to send:
     Firefox does not support SVG
     http://bugs.launchpad.dev/bugs/1
     You received this bug notification because you are a bug assignee.
+    <BLANKLINE>
+    ----------------------------------------------------------------------
+    To: support@ubuntu.com
+    From: Sample Person <test@canonical.com>
+    Subject: [Bug 1] subject
+    X-Launchpad-Message-Rationale: Registrant (Ubuntu) @ubuntu-team
+    <BLANKLINE>
+    a comment.
+    <BLANKLINE>
+    --
+    Firefox does not support SVG
+    http://bugs.launchpad.dev/bugs/1
+    You received this bug notification because you are a member of Ubuntu
+    Team, which is the registrant for Ubuntu.
     <BLANKLINE>
     ----------------------------------------------------------------------
     To: test@canonical.com
@@ -126,6 +143,17 @@ Setting date_emailed to some date causes it not to be pending anymore:
     >>> len(pending_notifications)
     0
 
+Let's define a helper function to do that for all pending notifications:
+
+    >>> def flush_notifications():
+    ...     utc_now = datetime.now(pytz.timezone('UTC'))
+    ...     pending_notifications = getUtility(
+    ...         IBugNotificationSet).getNotificationsToSend()
+    ...     for notification in pending_notifications:
+    ...         notification.date_emailed = utc_now
+    ...     flush_database_updates()
+
+
 To every message that get sent out, [Bug $bugid] is prefixed to the
 subject. It gets prefixed only if it's not already present in the
 subject, though, which is often the case when someone replies via email.
@@ -136,20 +164,21 @@ subject, though, which is often the case when someone replies via email.
     >>> bug_one.addCommentNotification(comment)
     >>> pending_notifications = getUtility(
     ...     IBugNotificationSet).getNotificationsToSend()
-    >>> for bug_notifications, messages in get_email_notifications(pending_notifications):
+    >>> email_notifications = get_email_notifications(pending_notifications)
+    >>> for bug_notifications, messages in email_notifications:
     ...     for message in messages:
     ...         print_notification(message)
     To: foo.bar@canonical.com
     From: Sample Person <test@canonical.com>
     Subject: Re: [Bug 1] subject
-    X-Launchpad-Message-Rationale: Bug Contact (mozilla-firefox in ubuntu)
+    X-Launchpad-Message-Rationale: Subscriber (mozilla-firefox in ubuntu)
     <BLANKLINE>
     a new comment.
     <BLANKLINE>
     --
     Firefox does not support SVG
     http://bugs.launchpad.dev/bugs/1
-    You received this bug notification because you are a bug contact for
+    You received this bug notification because you are subscribed to
     mozilla-firefox in ubuntu.
     <BLANKLINE>
     ----------------------------------------------------------------------
@@ -158,9 +187,7 @@ subject, though, which is often the case when someone replies via email.
     To: test@canonical.com
     ...
 
-    >>> for notification in pending_notifications:
-    ...     notification.date_emailed = datetime.now(pytz.timezone('UTC'))
-    >>> flush_database_updates()
+    >>> flush_notifications()
 
 Let's add a few changes and see how it looks like:
 
@@ -175,13 +202,14 @@ Let's add a few changes and see how it looks like:
     >>> len(pending_notifications)
     2
 
-    >>> for bug_notifications, messages in get_email_notifications(pending_notifications):
+    >>> email_notifications = get_email_notifications(pending_notifications)
+    >>> for bug_notifications, messages in email_notifications:
     ...     for message in messages:
     ...         print_notification(message)
     To: foo.bar@canonical.com
     From: Sample Person <test@canonical.com>
     Subject: [Bug 1] Re: Firefox does not support SVG
-    X-Launchpad-Message-Rationale: Bug Contact (mozilla-firefox in ubuntu)
+    X-Launchpad-Message-Rationale: Subscriber (mozilla-firefox in ubuntu)
     <BLANKLINE>
     ** Summary changed to: New summary.
     <BLANKLINE>
@@ -190,7 +218,7 @@ Let's add a few changes and see how it looks like:
     ...
     Firefox does not support SVG
     http://bugs.launchpad.dev/bugs/1
-    You received this bug notification because you are a bug contact for
+    You received this bug notification because you are subscribed to
     mozilla-firefox in ubuntu.
     <BLANKLINE>
     ----------------------------------------------------------------------
@@ -220,13 +248,14 @@ the constructed email:
 Notice how the comment is in the top of the email, and the changes are
 in the order they were added:
 
-    >>> for bug_notifications, messages in get_email_notifications(pending_notifications):
+    >>> email_notifications = get_email_notifications(pending_notifications)
+    >>> for bug_notifications, messages in email_notifications:
     ...     for message in messages:
     ...         print_notification(message)
     To: foo.bar@canonical.com
     From: Sample Person <test@canonical.com>
     Subject: [Bug 1] Re: Firefox does not support SVG
-    X-Launchpad-Message-Rationale: Bug Contact (mozilla-firefox in ubuntu)
+    X-Launchpad-Message-Rationale: Subscriber (mozilla-firefox in ubuntu)
     <BLANKLINE>
     a new comment.
     <BLANKLINE>
@@ -241,7 +270,7 @@ in the order they were added:
     --
     Firefox does not support SVG
     http://bugs.launchpad.dev/bugs/1
-    You received this bug notification because you are a bug contact for
+    You received this bug notification because you are subscribed to
     mozilla-firefox in ubuntu.
     ----------------------------------------------------------------------
     To: mark@hbd.com
@@ -260,13 +289,14 @@ If we insert yet another comment, it will be sent as a separate email.
     >>> len(pending_notifications)
     6
 
-    >>> for bug_notifications, messages in get_email_notifications(pending_notifications):
+    >>> email_notifications = get_email_notifications(pending_notifications)
+    >>> for bug_notifications, messages in email_notifications:
     ...     for message in messages:
     ...         print_notification(message)
     To: foo.bar@canonical.com
     From: Sample Person <test@canonical.com>
     Subject: [Bug 1] Re: Firefox does not support SVG
-    X-Launchpad-Message-Rationale: Bug Contact (mozilla-firefox in ubuntu)
+    X-Launchpad-Message-Rationale: Subscriber (mozilla-firefox in ubuntu)
     <BLANKLINE>
     a new comment.
     <BLANKLINE>
@@ -281,7 +311,7 @@ If we insert yet another comment, it will be sent as a separate email.
     --
     Firefox does not support SVG
     http://bugs.launchpad.dev/bugs/1
-    You received this bug notification because you are a bug contact for
+    You received this bug notification because you are subscribed to
     mozilla-firefox in ubuntu.
     <BLANKLINE>
     ----------------------------------------------------------------------
@@ -292,13 +322,13 @@ If we insert yet another comment, it will be sent as a separate email.
     To: foo.bar@canonical.com
     From: Sample Person <test@canonical.com>
     Subject: [Bug 1] subject
-    X-Launchpad-Message-Rationale: Bug Contact (mozilla-firefox in ubuntu)
+    X-Launchpad-Message-Rationale: Subscriber (mozilla-firefox in ubuntu)
     <BLANKLINE>
     another comment.
     --
     Firefox does not support SVG
     http://bugs.launchpad.dev/bugs/1
-    You received this bug notification because you are a bug contact for
+    You received this bug notification because you are subscribed to
     mozilla-firefox in ubuntu.
     ----------------------------------------------------------------------
     To: mark@hbd.com
@@ -306,9 +336,7 @@ If we insert yet another comment, it will be sent as a separate email.
     To: test@canonical.com
     ...
 
-    >>> for notification in pending_notifications:
-    ...     notification.date_emailed = datetime.now(pytz.timezone('UTC'))
-    >>> flush_database_updates()
+    >>> flush_notifications()
 
 If we add three comments, three notifications will be sent:
 
@@ -329,20 +357,21 @@ If we add three comments, three notifications will be sent:
     >>> len(pending_notifications)
     3
 
-    >>> for bug_notifications, messages in get_email_notifications(pending_notifications):
+    >>> email_notifications = get_email_notifications(pending_notifications)
+    >>> for bug_notifications, messages in email_notifications:
     ...     for message in messages:
     ...         print_notification(message)
     To: foo.bar@canonical.com
     From: Sample Person <test@canonical.com>
     Subject: [Bug 1] subject
-    X-Launchpad-Message-Rationale: Bug Contact (mozilla-firefox in ubuntu)
+    X-Launchpad-Message-Rationale: Subscriber (mozilla-firefox in ubuntu)
     <BLANKLINE>
     a comment.
     <BLANKLINE>
     --
     Firefox does not support SVG
     http://bugs.launchpad.dev/bugs/1
-    You received this bug notification because you are a bug contact for
+    You received this bug notification because you are subscribed to
     mozilla-firefox in ubuntu.
     <BLANKLINE>
     ----------------------------------------------------------------------
@@ -353,14 +382,14 @@ If we add three comments, three notifications will be sent:
     To: foo.bar@canonical.com
     From: Sample Person <test@canonical.com>
     Subject: [Bug 1] subject
-    X-Launchpad-Message-Rationale: Bug Contact (mozilla-firefox in ubuntu)
+    X-Launchpad-Message-Rationale: Subscriber (mozilla-firefox in ubuntu)
     <BLANKLINE>
     another comment.
     <BLANKLINE>
     --
     Firefox does not support SVG
     http://bugs.launchpad.dev/bugs/1
-    You received this bug notification because you are a bug contact for
+    You received this bug notification because you are subscribed to
     mozilla-firefox in ubuntu.
     <BLANKLINE>
     ----------------------------------------------------------------------
@@ -371,14 +400,14 @@ If we add three comments, three notifications will be sent:
     To: foo.bar@canonical.com
     From: Sample Person <test@canonical.com>
     Subject: [Bug 1] subject
-    X-Launchpad-Message-Rationale: Bug Contact (mozilla-firefox in ubuntu)
+    X-Launchpad-Message-Rationale: Subscriber (mozilla-firefox in ubuntu)
     <BLANKLINE>
     yet another comment.
     <BLANKLINE>
     --
     Firefox does not support SVG
     http://bugs.launchpad.dev/bugs/1
-    You received this bug notification because you are a bug contact for
+    You received this bug notification because you are subscribed to
     mozilla-firefox in ubuntu.
     <BLANKLINE>
     ----------------------------------------------------------------------
@@ -387,9 +416,7 @@ If we add three comments, three notifications will be sent:
     To: test@canonical.com
     ...
 
-    >>> for notification in pending_notifications:
-    ...     notification.date_emailed = datetime.now(pytz.timezone('UTC'))
-    >>> flush_database_updates()
+    >>> flush_notifications()
 
 If Sample Person does a few changes, and Foo Bar steps in a does a
 change in between, three notifications will be sent:
@@ -412,20 +439,21 @@ change in between, three notifications will be sent:
     >>> len(pending_notifications)
     3
 
-    >>> for bug_notifications, messages in get_email_notifications(pending_notifications):
+    >>> email_notifications = get_email_notifications(pending_notifications)
+    >>> for bug_notifications, messages in email_notifications:
     ...     for message in messages:
     ...         print_notification(message)
     To: foo.bar@canonical.com
     From: Sample Person <test@canonical.com>
     Subject: [Bug 1] subject
-    X-Launchpad-Message-Rationale: Bug Contact (mozilla-firefox in ubuntu)
+    X-Launchpad-Message-Rationale: Subscriber (mozilla-firefox in ubuntu)
     <BLANKLINE>
     a comment.
     <BLANKLINE>
     --
     Firefox does not support SVG
     http://bugs.launchpad.dev/bugs/1
-    You received this bug notification because you are a bug contact for
+    You received this bug notification because you are subscribed to
     mozilla-firefox in ubuntu.
     <BLANKLINE>
     ----------------------------------------------------------------------
@@ -437,14 +465,14 @@ change in between, three notifications will be sent:
     To: foo.bar@canonical.com
     From: Foo Bar <foo.bar@canonical.com>
     Subject: [Bug 1] Re: Firefox does not support SVG
-    X-Launchpad-Message-Rationale: Bug Contact (mozilla-firefox in ubuntu)
+    X-Launchpad-Message-Rationale: Subscriber (mozilla-firefox in ubuntu)
     <BLANKLINE>
     ** Summary changed to: New summary.
     <BLANKLINE>
     --
     Firefox does not support SVG
     http://bugs.launchpad.dev/bugs/1
-    You received this bug notification because you are a bug contact for
+    You received this bug notification because you are subscribed to
     mozilla-firefox in ubuntu.
     <BLANKLINE>
     ----------------------------------------------------------------------
@@ -455,14 +483,14 @@ change in between, three notifications will be sent:
     To: foo.bar@canonical.com
     From: Sample Person <test@canonical.com>
     Subject: [Bug 1] Re: Firefox does not support SVG
-    X-Launchpad-Message-Rationale: Bug Contact (mozilla-firefox in ubuntu)
+    X-Launchpad-Message-Rationale: Subscriber (mozilla-firefox in ubuntu)
     <BLANKLINE>
     ** Visibility changed to: Private.
     <BLANKLINE>
     --
     Firefox does not support SVG
     http://bugs.launchpad.dev/bugs/1
-    You received this bug notification because you are a bug contact for
+    You received this bug notification because you are subscribed to
     mozilla-firefox in ubuntu.
     <BLANKLINE>
     ----------------------------------------------------------------------
@@ -471,9 +499,7 @@ change in between, three notifications will be sent:
     To: test@canonical.com
     ...
 
-    >>> for notification in pending_notifications:
-    ...     notification.date_emailed = datetime.now(pytz.timezone('UTC'))
-    >>> flush_database_updates()
+    >>> flush_notifications()
 
 We send the notification only if the user hasn't done any other changes
 for the last 5 minutes:
@@ -488,10 +514,7 @@ for the last 5 minutes:
     >>> len(pending_notifications)
     0
 
-    >>> from canonical.launchpad.database import BugNotification
-    >>> for notification in BugNotification.select():
-    ...     notification.date_emailed = datetime.now(pytz.timezone('UTC'))
-    >>> flush_database_updates()
+    >>> flush_notifications()
 
 A more complicated example, Sample Person does a change every minute,
 but Foo Bar does a change in between:
@@ -516,10 +539,7 @@ but Foo Bar does a change in between:
     27 Sample Person
     28 Foo Bar
 
-    >>> from canonical.launchpad.database import BugNotification
-    >>> for notification in BugNotification.select():
-    ...     notification.date_emailed = datetime.now(pytz.timezone('UTC'))
-    >>> flush_database_updates()
+    >>> flush_notifications()
 
 Let's take a more complete example, where we edit different bugs as
 well:
@@ -555,111 +575,81 @@ well:
     >>> len(pending_notifications)
     9
 
-    >>> for bug_notifications, messages in get_email_notifications(pending_notifications):
+    >>> email_notifications = get_email_notifications(pending_notifications)
+    >>> for bug_notifications, messages in email_notifications:
     ...     for message in messages:
-    ...         print_notification(message)
+    ...         print_notification_headers(message)
+    ...         print
+    To: mark@hbd.com
+    From: Sample Person <test@canonical.com>
+    Subject: [Bug 2] Re: Blackhole Trash folder
+    X-Launchpad-Message-Rationale: Registrant (Debian)
+    <BLANKLINE>
     To: support@ubuntu.com
     From: Sample Person <test@canonical.com>
     Subject: [Bug 2] Re: Blackhole Trash folder
     X-Launchpad-Message-Rationale: Registrant (Tomcat) @ubuntu-team
     <BLANKLINE>
-    ** Visibility changed to: Private.
-    <BLANKLINE>
-    ** Visibility changed to: Private.
-    <BLANKLINE>
-    ** Visibility changed to: Private.
-    <BLANKLINE>
-    ...
-    Blackhole Trash folder
-    http://bugs.launchpad.dev/bugs/2
-    You received this bug notification because you are a member of Ubuntu
-    Team, which is the registrant for Tomcat.
-    <BLANKLINE>
-    ----------------------------------------------------------------------
     To: test@canonical.com
     From: Sample Person <test@canonical.com>
     Subject: [Bug 2] Re: Blackhole Trash folder
     X-Launchpad-Message-Rationale: Assignee
     <BLANKLINE>
-    ** Visibility changed to: Private.
+    To: mark@hbd.com
+    From: Foo Bar <foo.bar@canonical.com>
+    Subject: [Bug 2] Re: Blackhole Trash folder
+    X-Launchpad-Message-Rationale: Registrant (Debian)
     <BLANKLINE>
-    ** Visibility changed to: Private.
-    <BLANKLINE>
-    ** Visibility changed to: Private.
-    <BLANKLINE>
-    ...
-    Blackhole Trash folder
-    http://bugs.launchpad.dev/bugs/2
-    You received this bug notification because you are a bug assignee.
-    <BLANKLINE>
-    ----------------------------------------------------------------------
     To: support@ubuntu.com
     From: Foo Bar <foo.bar@canonical.com>
     Subject: [Bug 2] Re: Blackhole Trash folder
     X-Launchpad-Message-Rationale: Registrant (Tomcat) @ubuntu-team
     <BLANKLINE>
-    ** Visibility changed to: Public.
-    <BLANKLINE>
-    ...
-    Blackhole Trash folder
-    http://bugs.launchpad.dev/bugs/2
-    You received this bug notification because you are a member of Ubuntu
-    Team, which is the registrant for Tomcat.
-    <BLANKLINE>
-    ----------------------------------------------------------------------
     To: test@canonical.com
-    ...
-    ----------------------------------------------------------------------
+    From: Foo Bar <foo.bar@canonical.com>
+    Subject: [Bug 2] Re: Blackhole Trash folder
+    X-Launchpad-Message-Rationale: Assignee
+    <BLANKLINE>
     To: foo.bar@canonical.com
     From: Sample Person <test@canonical.com>
     Subject: [Bug 1] Re: Firefox does not support SVG
-    X-Launchpad-Message-Rationale: Bug Contact (mozilla-firefox in ubuntu)
+    X-Launchpad-Message-Rationale: Subscriber (mozilla-firefox in ubuntu)
     <BLANKLINE>
-    ** Visibility changed to: Private.
-    <BLANKLINE>
-    ** Visibility changed to: Private.
-    <BLANKLINE>
-    ** Visibility changed to: Private.
-    <BLANKLINE>
-    ...
-    Firefox does not support SVG
-    http://bugs.launchpad.dev/bugs/1
-    You received this bug notification because you are a bug contact for
-    mozilla-firefox in ubuntu.
-    <BLANKLINE>
-    ----------------------------------------------------------------------
     To: mark@hbd.com
-    ...
+    From: Sample Person <test@canonical.com>
+    Subject: [Bug 1] Re: Firefox does not support SVG
+    X-Launchpad-Message-Rationale: Assignee
+    <BLANKLINE>
+    To: support@ubuntu.com
+    From: Sample Person <test@canonical.com>
+    Subject: [Bug 1] Re: Firefox does not support SVG
+    X-Launchpad-Message-Rationale: Registrant (Ubuntu) @ubuntu-team
+    <BLANKLINE>
     To: test@canonical.com
-    ...
-    ----------------------------------------------------------------------
+    From: Sample Person <test@canonical.com>
+    Subject: [Bug 1] Re: Firefox does not support SVG
+    X-Launchpad-Message-Rationale: Subscriber
+    <BLANKLINE>
     To: foo.bar@canonical.com
     From: Foo Bar <foo.bar@canonical.com>
     Subject: [Bug 1] Re: Firefox does not support SVG
-    X-Launchpad-Message-Rationale: Bug Contact (mozilla-firefox in ubuntu)
+    X-Launchpad-Message-Rationale: Subscriber (mozilla-firefox in ubuntu)
     <BLANKLINE>
-    This is a long comment, which is longer than 72 characters.  This
-    should result in the lined being wrapped, so that it won't be
-    displayed as a single long line. Let's add another sentence just to
-    make it longer.
-    <BLANKLINE>
-    Let's add another paragraph to the comment as well, separating it
-    with dos-style line endings.
-    <BLANKLINE>
-    ** Visibility changed to: Public.
-    <BLANKLINE>
-    ...
-    Firefox does not support SVG
-    http://bugs.launchpad.dev/bugs/1
-    You received this bug notification because you are a bug contact for
-    mozilla-firefox in ubuntu.
-    <BLANKLINE>
-    ----------------------------------------------------------------------
     To: mark@hbd.com
-    ...
+    From: Foo Bar <foo.bar@canonical.com>
+    Subject: [Bug 1] Re: Firefox does not support SVG
+    X-Launchpad-Message-Rationale: Assignee
+    <BLANKLINE>
+    To: support@ubuntu.com
+    From: Foo Bar <foo.bar@canonical.com>
+    Subject: [Bug 1] Re: Firefox does not support SVG
+    X-Launchpad-Message-Rationale: Registrant (Ubuntu) @ubuntu-team
+    <BLANKLINE>
     To: test@canonical.com
-    ...
-    ----------------------------------------------------------------------
+    From: Foo Bar <foo.bar@canonical.com>
+    Subject: [Bug 1] Re: Firefox does not support SVG
+    X-Launchpad-Message-Rationale: Subscriber
+    <BLANKLINE>
 
 There's a blank line before the signature, and the signature marker has
 a trailing space.
@@ -680,9 +670,7 @@ a trailing space.
      'You received this bug notification because you are a direct subscriber',
      'of the bug.']
 
-    >>> for notification in BugNotification.select():
-    ...     notification.date_emailed = datetime.now(pytz.timezone('UTC'))
-    >>> flush_database_updates()
+    >>> flush_notifications()
 
 If a team without a contact address is subscribed to the bug, the
 notification will be sent to all members individually.
@@ -694,7 +682,7 @@ notification will be sent to all members individually.
     ...     print member.preferredemail.email
     marilize@hbd.com
 
-    >>> bug_one.subscribe(shipit_admins)
+    >>> bug_one.subscribe(shipit_admins, shipit_admins)
     <...>
 
     >>> comment = getUtility(IMessageSet).fromText(
@@ -706,20 +694,20 @@ notification will be sent to all members individually.
     >>> len(pending_notifications)
     1
 
-    >>> for bug_notifications, messages in get_email_notifications(pending_notifications):
+    >>> email_notifications = get_email_notifications(pending_notifications)
+    >>> for bug_notifications, messages in email_notifications:
     ...     for message in messages:
     ...         print message['To']
     foo.bar@canonical.com
     marilize@hbd.com
     mark@hbd.com
+    support@ubuntu.com
     test@canonical.com
 
-    >>> for notification in BugNotification.select():
-    ...     notification.date_emailed = datetime.now(pytz.timezone('UTC'))
-    >>> flush_database_updates()
+    >>> flush_notifications()
 
-Bug Filed Notification
-----------------------
+
+== Bug Filed Notification ==
 
 Generating notifications when a new bug is filed is just a special case
 of a comment notification. If we add a comment notification for the
@@ -744,34 +732,23 @@ initial message of the bug, it will result in a bug filed notification:
 
     >>> for bug_notifications, messages in get_email_notifications(notifications):
     ...     for message in messages:
-    ...         print_notification(message)
+    ...         print_notification_headers(message)
+    ...         print
+    To: support@ubuntu.com
+    From: Sample Person <test@canonical.com>
+    Subject: [Bug ...] [NEW] new bug
+    X-Launchpad-Message-Rationale: Registrant (Ubuntu) @ubuntu-team
+    <BLANKLINE>
     To: test@canonical.com
     From: Sample Person <test@canonical.com>
-    Subject: [Bug ...] subject
+    Subject: [Bug ...] [NEW] new bug
     X-Launchpad-Message-Rationale: Subscriber
     <BLANKLINE>
-    Public bug reported:
-    <BLANKLINE>
-    a description of the bug.
-    <BLANKLINE>
-    ** Affects: ubuntu
-         Importance: Undecided
-             Status: New
-    <BLANKLINE>
-    --
-    new bug
-    http://bugs.launchpad.dev/bugs/...
-    You received this bug notification because you are a direct subscriber
-    of the bug.
-    <BLANKLINE>
-    ----------------------------------------------------------------------
 
-    >>> for notification in BugNotification.select():
-    ...     notification.date_emailed = datetime.now(pytz.timezone('UTC'))
-    >>> flush_database_updates()
+    >>> flush_notifications()
 
-Duplicates
-----------
+
+== Duplicates ==
 
 If the bug is a duplicate of another bug, a marker gets inserted at the
 top of the email:
@@ -791,7 +768,7 @@ top of the email:
     To: foo.bar@canonical.com
     From: Sample Person <test@canonical.com>
     Subject: [Bug ...] subject
-    X-Launchpad-Message-Rationale: Bug Contact (mozilla-firefox in ubuntu) via Bug 1
+    X-Launchpad-Message-Rationale: Subscriber (mozilla-firefox in ubuntu) via Bug 1
     <BLANKLINE>
     *** This bug is a duplicate of bug 1 ***
         http://bugs.launchpad.dev/bugs/1
@@ -801,7 +778,7 @@ top of the email:
     --
     new bug
     http://bugs.launchpad.dev/bugs/...
-    You received this bug notification because you are a bug contact for
+    You received this bug notification because you are subscribed to
     mozilla-firefox in ubuntu (via bug 1).
     <BLANKLINE>
     ----------------------------------------------------------------------
@@ -839,6 +816,23 @@ top of the email:
     bug 1).
     <BLANKLINE>
     ----------------------------------------------------------------------
+    To: support@ubuntu.com
+    From: Sample Person <test@canonical.com>
+    Subject: [Bug ...] subject
+    X-Launchpad-Message-Rationale: Registrant (Ubuntu) @ubuntu-team
+    <BLANKLINE>
+    *** This bug is a duplicate of bug 1 ***
+        http://bugs.launchpad.dev/bugs/1
+    <BLANKLINE>
+    a comment.
+    <BLANKLINE>
+    --
+    new bug
+    http://bugs.launchpad.dev/bugs/...
+    You received this bug notification because you are a member of Ubuntu
+    Team, which is the registrant for Ubuntu.
+    <BLANKLINE>
+    ----------------------------------------------------------------------
     To: test@canonical.com
     From: Sample Person <test@canonical.com>
     Subject: [Bug ...] subject
@@ -857,16 +851,74 @@ top of the email:
     <BLANKLINE>
     ----------------------------------------------------------------------
 
-
 Also note that notification was sent to Mark as well, since he's a
 subscriber of bug one.
 
-    >>> for notification in BugNotification.select():
-    ...     notification.date_emailed = datetime.now(pytz.timezone('UTC'))
-    >>> flush_database_updates()
+    >>> flush_notifications()
 
-The cronscript
---------------
+
+== Security Vulnerabilities ==
+
+When a new security related bug is filed, a small notification is
+inserted at the top of the message body.
+
+    >>> sec_vuln_description = getUtility(IMessageSet).fromText(
+    ...     'Zero-day on Frobulator', 'Woah.', sample_person,
+    ...     datecreated=ten_minutes_ago)
+    >>> sec_vuln_bug = ubuntu.createBug(CreateBugParams(
+    ...         msg=sec_vuln_description, owner=sample_person,
+    ...         title='Zero-day on Frobulator',
+    ...         security_related=True, private=True))
+    >>> sec_vuln_bug.addCommentNotification(sec_vuln_description)
+
+    >>> sec_vuln_bug.security_related
+    True
+    >>> sec_vuln_bug.private
+    True
+
+    >>> notifications = (
+    ...     getUtility(IBugNotificationSet).getNotificationsToSend())
+    >>> email_notifications = get_email_notifications(notifications)
+    >>> for bug_notifications, messages in email_notifications:
+    ...     for message in messages:
+    ...         print_notification(message)
+    To: support@ubuntu.com
+    From: Sample Person <test@canonical.com>
+    Subject: [Bug ...] [NEW] Zero-day on Frobulator
+    X-Launchpad-Message-Rationale: Subscriber @ubuntu-team
+    <BLANKLINE>
+    *** This bug is a security vulnerability ***
+    <BLANKLINE>
+    ...
+
+    >>> flush_notifications()
+
+The message is only inserted for new bugs, not for modified bugs:
+
+    >>> comment = getUtility(IMessageSet).fromText(
+    ...     'subject', 'a comment.', sample_person,
+    ...     datecreated=ten_minutes_ago)
+    >>> sec_vuln_bug.addCommentNotification(comment)
+
+    >>> notifications = (
+    ...     getUtility(IBugNotificationSet).getNotificationsToSend())
+    >>> email_notifications = get_email_notifications(notifications)
+    >>> for bug_notifications, messages in email_notifications:
+    ...     for message in messages:
+    ...         print_notification(message)
+    To: support@ubuntu.com
+    From: Sample Person <test@canonical.com>
+    Subject: [Bug ...] subject
+    X-Launchpad-Message-Rationale: Subscriber @ubuntu-team
+    <BLANKLINE>
+    a comment.
+    <BLANKLINE>
+    ...
+
+    >>> flush_notifications()
+
+
+== The cronscript ==
 
 There's a cronsript which does the sending of the email. Let's add a
 few notifications to show that it works.
@@ -918,6 +970,8 @@ makes it write out the emails it sends.
     0
     >>> print err
     INFO creating lockfile
+    INFO    Notifying mark@hbd.com about bug 2.
+    ...
     INFO    Notifying support@ubuntu.com about bug 2.
     ...
     From: Sample Person <test@canonical.com>
@@ -951,6 +1005,8 @@ makes it write out the emails it sends.
     ...
     INFO    Notifying mark@hbd.com about bug 1.
     ...
+    INFO    Notifying support@ubuntu.com about bug 1.
+    ...
     INFO    Notifying test@canonical.com about bug 1.
     ...
     INFO    Notifying foo.bar@canonical.com about bug 1.
@@ -967,23 +1023,22 @@ makes it write out the emails it sends.
     ...
     INFO    Notifying mark@hbd.com about bug 1.
     ...
+    INFO    Notifying support@ubuntu.com about bug 1.
+    ...
     INFO    Notifying test@canonical.com about bug 1.
     ...
 
+    >>> flush_notifications()
 
-    >>> for notification in BugNotification.select():
-    ...     notification.date_emailed = datetime.now(pytz.timezone('UTC'))
-    >>> flush_database_updates()
 
-The X-Launchpad-Bug header
---------------------------
+== The X-Launchpad-Bug header ==
 
 When a notification is sent out about a bug, the X-Launchpad-Bug header is
 filled with data about that bug:
 
     >>> from canonical.launchpad.interfaces import IMilestoneSet
     >>> bug_three = getUtility(IBugSet).get(3)
-    >>> subscription = bug_three.subscribe(sample_person)
+    >>> subscription = bug_three.subscribe(sample_person, sample_person)
 
     >>> comment = getUtility(IMessageSet).fromText(
     ...     'subject', 'a short comment.', sample_person,
@@ -997,15 +1052,15 @@ filled with data about that bug:
 If we take a closer look at a notification, we can see that
 X-Launchpad-Bug headers were added:
 
-    >>> [(bug_notifications, messages)] = get_email_notifications(
-    ...     notifications)
-    >>> [message] = messages
-    >>> sorted(message.get_all('X-Launchpad-Bug'))
+    >>> email_notifications = get_email_notifications(notifications)
+    >>> for bug_notifications, messages in email_notifications:
+    ...     for message in messages:
+    ...         sorted(message.get_all('X-Launchpad-Bug'))
     [u'distribution=debian; distroseries=sarge;... milestone=3.1;...',
      u'distribution=debian; distroseries=woody;...',
      u'distribution=debian; sourcepackage=mozilla-firefox; component=...']
 
-The milestone field in X-Launchpad-Bug won't be filled where no milestone is 
+The milestone field in X-Launchpad-Bug won't be filled where no milestone is
 specified:
 
     >>> for line in sorted(message.get_all('X-Launchpad-Bug')):
@@ -1013,4 +1068,195 @@ specified:
     True
     False
     False
+
+
+== The X-Launchpad-Bug-Private header ==
+
+First, a helper function that triggers notifications by adding a
+comment to a given bug, another that returns a sorted list of new
+email messages, and a third that combines the first two.
+
+    >>> def trigger_notifications(bug):
+    ...     comment = getUtility(IMessageSet).fromText(
+    ...         'subject', 'a short comment.', sample_person,
+    ...         datecreated=ten_minutes_ago)
+    ...     bug.addCommentNotification(comment)
+    ...     return getUtility(
+    ...         IBugNotificationSet).getNotificationsToSend()
+
+    >>> def get_email_messages(notifications):
+    ...     messages = (message
+    ...         for bug_notifications, messages in
+    ...             get_email_notifications(notifications)
+    ...         for message in messages)
+    ...     return sorted(messages, key=lambda message: message['To'])
+
+    >>> def trigger_and_get_email_messages(bug):
+    ...     flush_notifications()
+    ...     notifications = trigger_notifications(bug)
+    ...     return get_email_messages(notifications)
+
+When a notification is sent out about a bug, the
+X-Launchpad-Bug-Private header shows if the bug is marked as
+private. It can have the value "yes" or "no".
+
+    >>> bug_three.private
+    False
+
+    >>> for message in trigger_and_get_email_messages(bug_three):
+    ...     print message['To'], message.get_all('X-Launchpad-Bug-Private')
+    mark@hbd.com ['no']
+    test@canonical.com ['no']
+
+Predictably, private bugs are sent with a slightly different header:
+
+    >>> bug_three.setPrivate(True, sample_person)
+    True
+    >>> bug_three.private
+    True
+
+    >>> for message in trigger_and_get_email_messages(bug_three):
+    ...     print message['To'], message.get_all('X-Launchpad-Bug-Private')
+    mark@hbd.com ['yes']
+    test@canonical.com ['yes']
+
+
+== The X-Launchpad-Bug-Security-Vulnerability header ==
+
+When a notification is sent out about a bug, the
+X-Launchpad-Bug-Security-Vulnerability header records if the bug is a
+security vulnerability. It can have the value "yes" or "no".
+
+    >>> bug_three.security_related
+    False
+
+    >>> for message in trigger_and_get_email_messages(bug_three):
+    ...     print message['To'], (
+    ...         message.get_all('X-Launchpad-Bug-Security-Vulnerability'))
+    mark@hbd.com ['no']
+    test@canonical.com ['no']
+
+The presence of the security flag on a bug is, surprise, denoted by a
+simple "yes":
+
+    >>> bug_three.security_related = True
+    >>> bug_three.security_related
+    True
+
+    >>> for message in trigger_and_get_email_messages(bug_three):
+    ...     print message['To'], (
+    ...         message.get_all('X-Launchpad-Bug-Security-Vulnerability'))
+    mark@hbd.com ['yes']
+    test@canonical.com ['yes']
+
+
+== Verbose bug notifications ==
+
+It is possible for users to have all the bug notifications which they
+receive include the bug description and status. This helps in those
+cases where the user doesn't save bug notifications, which can make
+subsequent notifications seem somewhat obscure.
+
+We'll expire all existing notifications since we're not interested in
+them:
+
+    >>> notifications = getUtility(
+    ...     IBugNotificationSet).getNotificationsToSend()
+    >>> len(notifications)
+    1
+
+    >>> from canonical.launchpad.ftests import syncUpdate
+    >>> for notification in notifications:
+    ...     notification.date_emailed = datetime.now(pytz.timezone('UTC'))
+    ...     syncUpdate(notification)
+
+
+To demonstrate verbose notifications, we'll subscribe David Allouche,
+who receives verbose bug notifications, to bug 15.
+
+    >>> bug_15 = getUtility(IBugSet).get(15)
+    >>> ddaa = getUtility(IPersonSet).getByName('ddaa')
+    >>> ddaa.verbose_bugnotifications
+    True
+
+    >>> bug_15.subscribe(ddaa, sample_person)
+    <...>
+
+If we then add a comment to the bug, ddaa will receieve a notification
+containing that comment.
+
+    >>> comment = getUtility(IMessageSet).fromText(
+    ...     'subject', 'a really simple comment.', sample_person,
+    ...     datecreated=ten_minutes_ago)
+    >>> bug_15.addCommentNotification(comment)
+
+    >>> notifications = getUtility(
+    ...     IBugNotificationSet).getNotificationsToSend()
+    >>> len(notifications)
+    1
+
+If we pass this notifcation to get_email_notifications we can see that
+ddaa will receieve a notification which contains the bug description and
+its status in all of its targets. All other subscribers will receive
+standard notifications that don't include the bug description. To help
+with demonstrating this, we'll define a helper function.
+
+    >>> def collate_messages_by_recipient(messages):
+    ...     messages_by_recipient = {}
+    ...     for message in messages:
+    ...         recipient = message['To']
+    ...         if recipient in messages_by_recipient:
+    ...             messages_by_recipient[recipient].append(message)
+    ...         else:
+    ...             messages_by_recipient[recipient] = [message]
+    ...     return messages_by_recipient
+
+    >>> from itertools import chain
+    >>> collated_messages = collate_messages_by_recipient(
+    ...     chain(*(messages for bug_notifications, messages in
+    ...             get_email_notifications(notifications))))
+
+We can see that foo.bar@canonical.com doesn't receive verbose
+notifications:
+
+    >>> print_notification(collated_messages['foo.bar@canonical.com'][0])
+    To: foo.bar@canonical.com
+    From: Sample Person <test@canonical.com>
+    Subject: [Bug 15] subject
+    X-Launchpad-Message-Rationale: Subscriber
+    <BLANKLINE>
+    a really simple comment.
+    <BLANKLINE>
+    --
+    Nonsensical bugs are useless
+    http://bugs.launchpad.dev/bugs/15
+    You received this bug notification because you are a direct subscriber
+    of the bug.
+    <BLANKLINE>
+    ----------------------------------------------------------------------
+
+Whereas ddaa does:
+
+    >>> print_notification(
+    ...     collated_messages['david.allouche@canonical.com'][0])
+    To: david.allouche@canonical.com
+    From: Sample Person <test@canonical.com>
+    Subject: [Bug 15] subject
+    X-Launchpad-Message-Rationale: Subscriber
+    <BLANKLINE>
+    a really simple comment.
+    <BLANKLINE>
+    --
+    Nonsensical bugs are useless
+    http://bugs.launchpad.dev/bugs/15
+    You received this bug notification because you are a direct subscriber
+    of the bug.
+    <BLANKLINE>
+    Status in Redfish: New
+    Status in Mozilla Thunderbird: New
+    <BLANKLINE>
+    Bug description:
+    Like this one, natch.
+    <BLANKLINE>
+    ----------------------------------------------------------------------
 

@@ -80,7 +80,8 @@ Note that the generated notification contain the 'extra_info' content:
    * Source Package: cdrkit
    * Version: 1.0
    * Architecture: i386
-   * Archive: ubuntu main archive
+   * Archive: ubuntu primary archive
+   * Component: main
    * State: Failed to upload
    * Duration: a minute
    * Build Log: http://localhost:58000/1/netapplet-1.0.0.tar.gz

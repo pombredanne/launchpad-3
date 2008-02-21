@@ -98,12 +98,62 @@ upload, even though it gets changed in the publishing record.
 Only PUBLISHED records are considered when looking the latest published
 component. If there are no PUBLISHED records, None is returned.
 
-    >>> from canonical.lp.dbschema import PackagePublishingStatus
+    >>> from canonical.launchpad.interfaces import PackagePublishingStatus
 
-    >>> latest_publishing.status = PackagePublishingStatus.REMOVED
+    >>> latest_publishing.status = PackagePublishingStatus.SUPERSEDED
     >>> syncUpdate(latest_publishing)
     >>> print firefox_warty.latest_published_component
     None
+
+SourcePackage traversing is also provided through the available
+published versions. Note that all versions ever published in the
+SourcePackage context will be reachable.
+
+    >>> pmount_hoary = ubuntu['hoary'].getSourcePackage('pmount')
+
+    >>> for release in pmount_hoary.releases:
+    ...     print release.title, release.publishing_history[0].status.name
+    pmount 0.1-1 (source) in Ubuntu SUPERSEDED
+    pmount 0.1-2 (source) in Ubuntu PUBLISHED
+
+    >>> print pmount_hoary['0.1-1'].title
+    pmount 0.1-1 (source) in ubuntu hoary
+
+    >>> print pmount_hoary['0.1-2'].title
+    pmount 0.1-2 (source) in ubuntu hoary
+
+    >>> len(list(pmount_hoary.distinctreleases))
+    2
+
+'pmount_0.1-1' in hoary is SUPERSEDED but not yet 'removed from disk'.
+
+    >>> secure_pub =  SecureSourcePackagePublishingHistory.get(
+    ...     pmount_hoary['0.1-1'].publishing_history[0].id)
+    >>> secure_pub.datesuperseded is not None
+    True
+    >>> secure_pub.dateremoved is None
+    True
+
+We will emulate disk-removal to ensure it will continue to be
+reachable. See bug #179028 for further information.
+
+    >>> from datetime import timedelta
+    >>> secure_pub.dateremoved = secure_pub.datesuperseded + timedelta(days=1)
+    >>> syncUpdate(secure_pub)
+
+    >>> for release in pmount_hoary.releases:
+    ...     print release.title, release.publishing_history[0].status.name
+    pmount 0.1-1 (source) in Ubuntu SUPERSEDED
+    pmount 0.1-2 (source) in Ubuntu PUBLISHED
+
+    >>> print pmount_hoary['0.1-1'].title
+    pmount 0.1-1 (source) in ubuntu hoary
+
+    >>> len(list(pmount_hoary.distinctreleases))
+    2
+
+We will leave the pmount_0.1-1 marked as 'removed from disk' because
+we do want it to affect the next test cases.
 
 
 == Distribution Source Packages ==
@@ -236,7 +286,7 @@ Now verify we still get a product for that source package
 And if we want to link that productseries to a source package in that
 distroseries
 
-    >>> from canonical.lp.dbschema import PackagingType
+    >>> from canonical.launchpad.interfaces import PackagingType
     >>> from canonical.launchpad.database import Person
     >>> foobar = Person.byName('name16')
     >>> PackagingUtil().createPackaging(
@@ -252,7 +302,22 @@ distroseries
     ...     distroseries=g2k5)
     True
 
+Packaging entries can be deleted using PackagingUtil.deletePackaging.
+
+    >>> PackagingUtil().deletePackaging(
+    ...     productseries=sp.productseries,
+    ...     sourcepackagename=a52dec,
+    ...     distroseries=g2k5)
+    >>> PackagingUtil().packagingEntryExists(
+    ...     productseries=sp.productseries,
+    ...     sourcepackagename=a52dec,
+    ...     distroseries=g2k5)
+    False
+
 Linkified changelogs are available through SourcePackageReleaseView:
+XXX julian 2007-09-17
+This is duplicating the page test. Instead it should be more like the bug
+number linkification just below.
 
     >>> from zope.component import queryView
     >>> from zope.publisher.browser import TestRequest
@@ -261,35 +326,47 @@ Linkified changelogs are available through SourcePackageReleaseView:
     >>> sp = SourcePackage(sourcepackagename=pmount, distroseries=hoary)
     >>> spr = sp['0.1-2']
     >>> spr_view = queryView(spr, "+changelog", request)
-    >>> print spr_view.changelog()
+    >>> print spr_view.changelog_entry
     This is a placeholder changelog for pmount 0.1-2
 
     >>> spr = sp['0.1-1']
     >>> spr_view = queryView(spr, "+changelog", request)
-    >>> print spr_view.changelog()
-    pmount (<a href="../../../hoary/+source/pmount/0.1-1">0.1-1</a>) hoary; urgency=low
+    >>> print spr_view.changelog_entry
+    pmount (0.1-1) hoary; urgency=low
     <BLANKLINE>
      * Fix description (Malone #1)
      * Fix debian (Debian #2000)
      * Fix warty (Warty Ubuntu #1)
     <BLANKLINE>
-     -- Sample Person &lt;test@canonical.com&gt; Tue, 7 Feb 2006 12:10:08 +0300
+     -- Sample Person &lt;email address hidden&gt; Tue, 7 Feb 2006 12:10:08 +0300
     <BLANKLINE>
     <BLANKLINE>
 
-Checking handy Sourcepackage properties:
+The view will linkify bug numbers of the format "LP: #number" in the changelog
+if number is a valid bug ID (also see Soyuz page tests
+24-sourcepackage-changelog.txt).  The changelog() method calls a method
+_linkify_bug_numbers() to do this.
 
-XXX cprov 20060125: it's still very primitive test but it's better
-than nothing ... bug # 29659
+Zero or more spaces may appear between the ":" and the "#".
 
-    >>> len(sp.releases)
-    2
+    >>> spr_view._linkify_bug_numbers("LP: #10")
+    u'LP: <a href="/bugs/10" title="another test bug">#10</a>'
 
-SQLObject won't let us use .count on the results set returned from 
-distinctreleases, so we use this ugly hack:
+    >>> spr_view._linkify_bug_numbers("LP:         #10")
+    u'LP:         <a href="/bugs/10" title="another test bug">#10</a>'
 
-    >>> len(list(sp.distinctreleases))
-    2
+    >>> spr_view._linkify_bug_numbers("LP:#10")
+    u'LP:<a href="/bugs/10" title="another test bug">#10</a>'
+
+    >>> spr_view._linkify_bug_numbers("LP: #999")
+    'LP: <a href="/bugs/999" title="No such bug">#999</a>'
+
+    >>> spr_view._linkify_bug_numbers("garbage")
+    'garbage'
+
+    >>> spr_view._linkify_bug_numbers("LP: #10, #7")
+    u'LP: <a href="/bugs/10" title="another test bug">#10</a>,
+    <a href="/bugs/7" title="A test bug">#7</a>'
 
 
 == Comparing Sourcepackages ==
@@ -327,7 +404,7 @@ Lastly, note that sourcepackages know how to compare to each other:
 
 SourcePackageName implements IHasTranslationImports interface:
 
-    >>> from zope.interface.verify import verifyObject
+    >>> from canonical.launchpad.webapp.testing import verifyObject
     >>> from canonical.launchpad.interfaces import (
     ...     IHasTranslationImports)
     >>> IHasTranslationImports.providedBy(warty_firefox)

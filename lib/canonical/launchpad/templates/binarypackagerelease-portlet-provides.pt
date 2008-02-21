@@ -1,4 +1,8 @@
-<div class="portlet" id="portlet-provides">
+<div
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  class="portlet" id="portlet-provides">
 
   <h2>Provides</h2>
 
@@ -6,9 +10,8 @@
        id="provides"
        tal:define="relationships view/provides">
 
-     <tal:has_dep condition="relationships/has_items">
-        <tal:block replace="structure relationships/@@+render-list"/>
-     </tal:has_dep>
+     <tal:block condition="relationships/has_items"
+                replace="structure relationships/@@+render-list"/>
 
   </div>
 

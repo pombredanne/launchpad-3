@@ -9,12 +9,13 @@ From this module, you can get:
   versioninfo: the version_info dict
   revno: the revision number
   date: the date of the last revision
+  branch_nick: the branch nickname
 
-If the bzr-version-info.py file does not exist, then
-version_info, revno and date will all be None.
+If the bzr-version-info.py file does not exist, then revno, date and
+branch_nick will all be None.
 
-If that file exists, and contains valid python, if version_info is present,
-version_info, revno and date will have appropriate values from version_info.
+If that file exists, and contains valid python, revno, date and branch_nick
+will have appropriate values from version_info.
 
 If that file exists, and contains invalid python, there will be an error when
 this module is loaded.  This module is imported into
@@ -24,7 +25,7 @@ canonical/launchpad/__init__.py so that such errors are caught at start-up.
 
 import imp
 
-__all__ = ['versioninfo', 'revno', 'date']
+__all__ = ['versioninfo', 'revno', 'date', 'branch_nick']
 
 
 def read_version_info():
@@ -43,7 +44,9 @@ versioninfo = read_version_info()
 if versioninfo is None:
     revno = None
     date = None
+    branch_nick = None
 else:
     revno = versioninfo.get('revno')
     date = versioninfo.get('date')
+    branch_nick = versioninfo.get('branch_nick')
 

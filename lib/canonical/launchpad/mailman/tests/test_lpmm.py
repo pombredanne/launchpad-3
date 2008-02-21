@@ -2,10 +2,8 @@
 
 """Test harness for Launchpad/Mailman doctests."""
 
-import os
 import doctest
 import unittest
-import subprocess
 
 
 def test_suite():
@@ -18,6 +16,7 @@ def test_suite():
     # package is importable because, that we really want to do in the doctest!
     from canonical.config import config
     if config.mailman.build.build:
+        # These tests will only be run when Mailman is enabled.
         test = doctest.DocFileSuite(
             'test-lpmm.txt',
             optionflags = (doctest.ELLIPSIS     |

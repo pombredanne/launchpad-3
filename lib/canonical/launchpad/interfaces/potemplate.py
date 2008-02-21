@@ -1,4 +1,5 @@
 # Copyright 2004-2007 Canonical Ltd.  All rights reserved.
+# pylint: disable-msg=E0211,E0213
 
 from zope.interface import Attribute, Interface
 from zope.schema import (
@@ -13,21 +14,91 @@ from canonical.launchpad.interfaces.productseries import IProductSeries
 from canonical.launchpad.interfaces.rosettastats import IRosettaStats
 from canonical.launchpad.interfaces.sourcepackagename import (
     ISourcePackageName)
+from canonical.launchpad.interfaces.translationfileformat import (
+    TranslationFileFormat)
 from canonical.launchpad import _
+from canonical.lazr import DBEnumeratedType, DBItem
+
 
 __metaclass__ = type
 
 __all__ = [
+    'IHasTranslationTemplates',
     'IPOTemplate',
     'IPOTemplateSet',
     'IPOTemplateSubset',
     'IPOTemplateWithContent',
     'LanguageNotFound',
+    'TranslationPriority',
     ]
 
 
 class LanguageNotFound(NotFoundError):
     """Raised when a a language does not exist in the database."""
+
+
+class TranslationPriority(DBEnumeratedType):
+    """Translation Priority
+
+    Translations in Rosetta can be assigned a priority. This is used in a
+    number of places. The priority stored on the translation itself is set
+    by the upstream project maintainers, and used to identify the
+    translations they care most about. For example, if Apache were nearing a
+    big release milestone they would set the priority on those POTemplates
+    to 'high'. The priority is also used by TranslationEfforts to indicate
+    how important that POTemplate is to the effort. And lastly, an
+    individual translator can set the priority on his personal subscription
+    to a project, to determine where it shows up on his list.  """
+
+    HIGH = DBItem(1, """
+        High
+
+        This translation should be shown on any summary list of translations
+        in the relevant context. For example, 'high' priority projects show
+        up on the home page of a TranslationEffort or Project in Rosetta.
+        """)
+
+    MEDIUM = DBItem(2, """
+        Medium
+
+        A medium priority POTemplate should be shown on longer lists and
+        dropdowns lists of POTemplates in the relevant context.  """)
+
+    LOW = DBItem(3, """
+        Low
+
+        A low priority POTemplate should only show up if a comprehensive
+        search or complete listing is requested by the user.  """)
+
+
+class IHasTranslationTemplates(Interface):
+    """An entity that has translation templates attached.
+
+    Examples include ISourcePackage, IDistribution, IDistroSeries, IProduct
+    and IProductSeries.
+    """
+
+    def getCurrentTranslationTemplates():
+        """Return an iterator over its active translation templates.
+
+        A translation template is considered active when both
+        `IPOTemplate`.iscurrent and `IDistribution`.official_rosetta flags
+        are set to True.
+        """
+
+    def getObsoleteTranslationTemplates():
+        """Return an iterator over its not active translation templates.
+
+        A translation template is considered not active when any of
+        `IPOTemplate`.iscurrent or `IDistribution`.official_rosetta flags
+        are set to False.
+        """
+
+    def getTranslationTemplates():
+        """Return an iterator over all its translation templates.
+
+        The returned templates are either obsolete or current.
+        """
 
 
 class IPOTemplate(IRosettaStats):
@@ -37,19 +108,21 @@ class IPOTemplate(IRosettaStats):
         title=u"The translation template id.",
         required=True, readonly=True)
 
-    potemplatename = Choice(
-        title=_("Template Name"),
+    name = TextLine(
+        title=_("Template name"),
         description=_("The name of this PO template, for example "
             "'evolution-2.2'. Each translation template has a "
             "unique name in its package. It's important to get this "
             "correct, because Launchpad will recommend alternative "
             "translations based on the name."),
-        required=True,
-        vocabulary="POTemplateName")
+        required=True)
 
-    name = TextLine(
-        title=_("Template name"),
-        readonly=True)
+    translation_domain = TextLine(
+        title=_("Translation domain"),
+        description=_("The translation domain for a translation template. "
+            "Used with PO file format when generating MO files for inclusion "
+            "in language pack or MO tarball exports."),
+        required=True)
 
     description = Text(
         title=_("Description"),
@@ -128,7 +201,8 @@ class IPOTemplate(IRosettaStats):
         default=False)
 
     path = TextLine(
-        title=_("Path of the template in the source tree, including filename."),
+        title=_(
+            "Path of the template in the source tree, including filename."),
         required=False)
 
     source_file = Object(
@@ -138,7 +212,7 @@ class IPOTemplate(IRosettaStats):
     source_file_format = Choice(
         title=_("File format for the source file"),
         required=False,
-        vocabulary="TranslationFileFormat")
+        vocabulary=TranslationFileFormat)
 
     priority = Int(
         title=_('Priority'),
@@ -178,10 +252,7 @@ class IPOTemplate(IRosettaStats):
         _('All `IPOFile` that exist for this template.'))
 
     relatives_by_name = Attribute(
-        _('''
-            All `IPOTemplate` objects that have the same template name as
-            this one.
-            '''))
+        _('All `IPOTemplate` objects that have the same name asa this one.'))
 
     relatives_by_source = Attribute(
         _('''All `IPOTemplate` objects that have the same source.
@@ -225,7 +296,7 @@ class IPOTemplate(IRosettaStats):
         """Return an iterator over current `IPOTMsgSet` in this template."""
 
     def getHeader():
-        """Return an `ITranslationHeader` representing its header."""
+        """Return an `ITranslationHeaderData` representing its header."""
 
     def getPOTMsgSetByMsgIDText(msgidtext, only_current=False, context=None):
         """Return the `IPOTMesgSet` indexed by msgidtext from this template.
@@ -298,16 +369,9 @@ class IPOTemplate(IRosettaStats):
         Return None if there is no such POFile.
         """
 
-    def hasMessageID(msgid, context=None):
-        """Check whether a message set with the given message ID exists within
-        this template with given context."""
-
     def hasPluralMessage():
         """Test whether this template has any message sets which are plural
         message sets."""
-
-    def invalidateCache():
-        """Invalidate the cached export for all pofiles."""
 
     def export():
         """Return a serialized version as a string using its native format."""
@@ -345,33 +409,39 @@ class IPOTemplate(IRosettaStats):
         variant.
         """
 
-    def createMessageSetFromMessageID(msgid, context=None):
-        """Creates in the database a new message set.
+    def createPOTMsgSetFromMsgIDs(msgid_singular, msgid_plural=None,
+                                  context=None):
+        """Creates a new template message in the database.
 
-        As a side-effect, creates a message ID sighting in the database for the
-        new set's prime message ID.
-
-        Returns the newly created message set.
+        :param msgid_singular: A reference to a singular msgid.
+        :param msgid_plural: A reference to a plural msgid.  Can be None
+        if the message is not a plural message.
+        :param context: A context for the template message differentiating
+        it from other template messages with exactly the same `msgid`.
+        :return: The newly created message set.
         """
 
-    def createMessageSetFromText(text, context=None):
-        """Creates in the database a new message set.
+    def createMessageSetFromText(singular_text, plural_text, context=None):
+        """Creates a new template message in the database using strings.
 
-        Similar to createMessageSetFromMessageID, but takes a text object
+        Similar to createMessageSetFromMessageID, but takes text objects
         (unicode or string) along with textual context, rather than a
-        message ID.
+        message IDs.
+
+        For non-plural messages, plural_text should be None.
 
         Returns the newly created message set.
         """
 
-    def getNextToImport():
-        """Return the next entry on the import queue to be imported."""
+    def importFromQueue(entry_to_import, logger=None):
+        """Import given queue entry.
 
-    def importFromQueue(logger=None):
-        """Execute the import of the next entry on the queue, if needed.
+        :param entry_to_import: `TranslationImportQueueEntry` specifying an
+            approved import for this `POTemplate`
+        :param logger: optional logger to report problems to.
 
-        If a logger argument is given, any problem found with the
-        import will be logged there.
+        :return: a tuple of the subject line and body for a notification email
+            to be sent to the uploader.
         """
 
 
@@ -405,7 +475,7 @@ class IPOTemplateSubset(Interface):
     def __getitem__(name):
         """Get a POTemplate by its name."""
 
-    def new(potemplatename, title, contents, owner):
+    def new(name, translation_domain, title, contents, owner):
         """Create a new template for the context of this Subset."""
 
     def getPOTemplateByName(name):
@@ -433,7 +503,7 @@ class IPOTemplateSubset(Interface):
         """
 
     def getClosestPOTemplate(path):
-        """Return a `IPOTemplate` with a path closer to the given path or None.
+        """Return a `IPOTemplate` with a path closer to given path, or None.
 
         If there is no `IPOTemplate` with a common path with the given argument,
         or if there are more than one `IPOTemplate` with the same common path,
@@ -476,7 +546,8 @@ class IPOTemplateSet(Interface):
 
 
 class IPOTemplateWithContent(IPOTemplate):
-    """Interface for an `IPOTemplate` used to create the new POTemplate form."""
+    """Interface for an `IPOTemplate` used to create the new POTemplate form.
+    """
 
     content = Bytes(
         title=_("PO Template File to Import"),

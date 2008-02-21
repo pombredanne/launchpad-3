@@ -42,7 +42,8 @@ dummy po files.
 The list that include dummies should be the same as the current potemplates
 for Hoary
 
-    >>> for potemplate in hoary.currentpotemplates: print potemplate.name
+    >>> for potemplate in hoary.getCurrentTranslationTemplates():
+    ...     print potemplate.name
     evolution-2.2
     man
     man
@@ -53,7 +54,8 @@ But if we get the whole list of templates, even non current ones, we can see
 that there is one extra template that was not shown in distroserieslanguage
 listing.
 
-    >>> for potemplate in hoary.potemplates: print potemplate.name
+    >>> for potemplate in hoary.getTranslationTemplates():
+    ...     print potemplate.name
     evolution-2.2
     disabled-template
     man
@@ -61,10 +63,16 @@ listing.
     pkgconf-mozilla
     pmount
 
+Which is exactly the one that is obsolete.
+
+    >>> for potemplate in hoary.getObsoleteTranslationTemplates():
+    ...     print potemplate.name
+    disabled-template
+
 Also, we can see that the template has an Spanish translation that
 hoary_spanish.pofiles is hidding as expected.
 
-    >>> for potemplate in hoary.potemplates:
+    >>> for potemplate in hoary.getTranslationTemplates():
     ...     if potemplate.name == 'disabled-template':
     ...         print potemplate.getPOFileByLang('es').title
     Spanish (es) translation of disabled-template in Ubuntu Hoary package "evolution"
@@ -114,7 +122,7 @@ tests show that).
 
 Now we will show that the priority can dominate the sort order.
 
-    >>> potemplates = hoary.currentpotemplates
+    >>> potemplates = hoary.getCurrentTranslationTemplates()
     >>> evo = potemplates[0]
     >>> print evo.name
     evolution-2.2
@@ -147,10 +155,13 @@ priority.
     >>> man2.priority = 7
     >>> mozconf.priority = 8
     >>> pm.priority = 9
+    >>> from canonical.database.sqlbase import flush_database_updates
+    >>> flush_database_updates()
 
 And now we can confirm that priority does in fact dominate
 
-    >>> for pot in hoary.currentpotemplates: print pot.priority, pot.name
+    >>> for pot in hoary.getCurrentTranslationTemplates():
+    ...     print pot.priority, pot.name
     9 pmount
     8 pkgconf-mozilla
     7 man

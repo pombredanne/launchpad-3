@@ -49,16 +49,16 @@ __metaclass__ = type
 
 import os
 import shutil
+import stat
 
 from zope.component import getUtility
 
 from canonical.archiveuploader.nascentupload import (
-    NascentUpload, FatalUploadError)
+    NascentUpload, FatalUploadError, EarlyReturnUploadError)
 from canonical.archiveuploader.uploadpolicy import (
     findPolicyByOptions, UploadPolicyError)
 from canonical.launchpad.interfaces import (
-    IDistributionSet, IPersonSet, NotFoundError)
-from canonical.lp.dbschema import ArchivePurpose
+    ArchivePurpose, IDistributionSet, IPersonSet, NotFoundError)
 
 from contrib.glock import GlobalLock
 
@@ -162,8 +162,9 @@ class UploadProcessor:
             except (KeyboardInterrupt, SystemExit):
                 raise
             except:
-                self.log.error("Unhandled exception from processing an upload",
-                               exc_info=True)
+                self.log.error(
+                    "Unhandled exception from processing an upload",
+                    exc_info=True)
                 some_failed = True
 
         if some_failed:
@@ -184,12 +185,26 @@ class UploadProcessor:
         # Protecting listdir by a lock ensures that we only get
         # completely finished directories listed. See
         # PoppyInterface for the other locking place.
-        fsroot_lock = GlobalLock(os.path.join(fsroot, ".lock"))
+        lockfile_path = os.path.join(fsroot, ".lock")
+        fsroot_lock = GlobalLock(lockfile_path)
+        mode = stat.S_IMODE(os.stat(lockfile_path).st_mode)
+
+        # XXX cprov 20081024: The lockfile permission can only be changed
+        # by its owner. Since we can't predict which process will create
+        # it in production systems we simply ignore errors when trying to
+        # grant the right permission. At least, one of the process will
+        # be able to do so. See further information in bug #185731.
+        try:
+            os.chmod(lockfile_path, mode | stat.S_IWGRP)
+        except OSError, err:
+            self.log.debug('Could not fix the lockfile permission: %s' % err)
+
         try:
             fsroot_lock.acquire(blocking=True)
             dir_names = os.listdir(fsroot)
         finally:
-            fsroot_lock.release()
+            # Skip lockfile deletion, see similar code in poppyinterface.py.
+            fsroot_lock.release(skip_delete=True)
 
         dir_names = [dir_name for dir_name in dir_names if
                      os.path.isdir(os.path.join(fsroot, dir_name))]
@@ -209,7 +224,8 @@ class UploadProcessor:
             relative_path = dirpath[len(upload_path) + 1:]
             for filename in filenames:
                 if filename.endswith(".changes"):
-                    changes_files.append(os.path.join(relative_path, filename))
+                    changes_files.append(
+                        os.path.join(relative_path, filename))
         return self.orderFilenames(changes_files)
 
     def processChangesFile(self, upload_path, changes_file):
@@ -235,8 +251,8 @@ class UploadProcessor:
         relative_path = os.path.dirname(changes_file)
         error = None
         try:
-            distribution, suite_name, archive = self.getDistributionAndArchive(
-                relative_path)
+            (distribution, suite_name,
+             archive) = self.getDistributionAndArchive(relative_path)
         except UploadPathError, e:
             # pick some defaults to create the NascentUploap() object.
             # We will be rejecting the upload so it doesn matter much.
@@ -253,6 +269,11 @@ class UploadProcessor:
             # This is fine because the transaction will be aborted when
             # the rejection happens.
             archive.purpose = ArchivePurpose.PPA
+            # XXX cprov 20071212: overriding primary-archive is not exactly
+            # fine because it can confuse the code that sends rejection
+            # messages if it relies only on archive.purpose (which should be
+            # enough). On the other hand if we set an arbitrary owner it
+            # will break nascentupload ACL calculations.
             error = str(e)
 
         self.log.debug("Finding fresh policy")
@@ -295,6 +316,12 @@ class UploadProcessor:
                                exc_info=True)
             except (KeyboardInterrupt, SystemExit):
                 raise
+            except EarlyReturnUploadError:
+                # An error occurred that prevented further error collection,
+                # add this fact to the list of errors.
+                upload.reject(
+                    "Further error processing not possible because of "
+                    "a critical previous error.")
             except Exception, e:
                 # In case of unexpected unhandled exception, we'll
                 # *try* to reject the upload. This may fail and cause

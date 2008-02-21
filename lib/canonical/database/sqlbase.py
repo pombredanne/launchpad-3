@@ -29,12 +29,12 @@ __all__ = ['SQLBase', 'quote', 'quote_like', 'quoteIdentifier', 'sqlvalues',
            'clear_current_connection_cache', 'expire_from_cache']
 
 # As per badly documented psycopg 1 constants
-AUTOCOMMIT_ISOLATION=0
-READ_COMMITTED_ISOLATION=1
-SERIALIZABLE_ISOLATION=3
+AUTOCOMMIT_ISOLATION = 0
+READ_COMMITTED_ISOLATION = 1
+SERIALIZABLE_ISOLATION = 3
 # Default we want for scripts, and the PostgreSQL default. Note psycopg1 will
 # use SERIALIZABLE unless we override, but psycopg2 will not.
-DEFAULT_ISOLATION=READ_COMMITTED_ISOLATION
+DEFAULT_ISOLATION = READ_COMMITTED_ISOLATION
 
 # First, let's monkey-patch SQLObject a little:
 import zope.security.proxy
@@ -76,7 +76,8 @@ class LaunchpadStyle(Style):
 
     # dsilvers: 20050322: If you take this method out; then RelativeJoin
     # instances in our SQLObject classes cause the following error:
-    # AttributeError: 'LaunchpadStyle' object has no attribute 'tableReference'
+    # AttributeError: 'LaunchpadStyle' object has no attribute
+    # 'tableReference'
     def tableReference(self, table):
         """Return the tablename mapped for use in RelativeJoin statements."""
         return table.__str__()
@@ -151,8 +152,8 @@ class _ZopelessConnectionDescriptor(object):
                     pass
                 conn = None
 
-            # Make a connection, and a cursor.  If this fails, just loop and try
-            # again.
+            # Make a connection, and a cursor.  If this fails, just loop and
+            # try again.
             try:
                 conn = connectionForURI(self.connectionURI).makeConnection()
                 cur = conn.cursor()
@@ -197,10 +198,17 @@ class _ZopelessConnectionDescriptor(object):
 
     def _deactivate(self):
         """Deactivate SQLBase._connection for the current thread."""
-        del self.transactions[thread.get_ident()]
+        tid = thread.get_ident()
+        assert tid in self.transactions, (
+            "Deactivating a non-active connection descriptor for this "
+            "thread.")
+        self.transactions[tid]._connection.close()
+        self.transactions[tid]._makeObsolete()
+        del self.transactions[tid]
 
     def __get__(self, inst, cls=None):
-        """Return Transaction object for this thread (if it exists) or None."""
+        """Return Transaction object for this thread (if it exists) or None.
+        """
         tid = thread.get_ident()
         if self.implicitActivate and tid not in self.transactions:
             self._activate()
@@ -242,8 +250,8 @@ class _ZopelessConnectionDescriptor(object):
             trans._dbConnection._connection.close()
 
         # Remove the _connection descriptor.  This assumes there was no
-        # _connection in this particular class to start with (which is true for
-        # SQLBase, but wouldn't be true for SQLOS)
+        # _connection in this particular class to start with (which is true
+        # for SQLBase, but wouldn't be true for SQLOS)
         del cls.sqlClass._connection
 
 
@@ -266,6 +274,12 @@ class ZopelessTransactionManager(object):
     _installed = None
     alreadyInited = False
 
+    # Reset database connection at end of every transaction?  We do this by
+    # default to protect us against leaks and accidentally carrying over
+    # state between logically unconnected requests, but sometimes we do need
+    # to carry over state such as temporary tables.
+    reset_after_transaction = True
+
     def __new__(cls, connectionURI, sqlClass=SQLBase, debug=False,
                 implicitBegin=True, isolation=DEFAULT_ISOLATION):
         if cls._installed is not None:
@@ -276,8 +290,8 @@ class ZopelessTransactionManager(object):
                         "A ZopelessTransactionManager with different "
                         "settings is already installed"
                 )
-            # There's an identical ZopelessTransactionManager already installed,
-            # so return that one, but also emit a warning.
+            # There's an identical ZopelessTransactionManager already
+            # installed, so return that one, but also emit a warning.
             warnings.warn(alreadyInstalledMsg, stacklevel=2)
             return cls._installed
         cls._installed = object.__new__(cls, connectionURI, sqlClass, debug,
@@ -328,18 +342,6 @@ class ZopelessTransactionManager(object):
         con.set_isolation_level(level)
         # Make the isolation level stick
         self.desc.isolation = level
-        cur = con.cursor()
-        cur.execute('SHOW transaction_isolation')
-        isolation_str = cur.fetchone()[0]
-        if level == AUTOCOMMIT_ISOLATION:
-            # psycopg implements autocommit using read committed and commits.
-            assert isolation_str == 'read committed', 'Got ' + isolation_str
-        elif level == READ_COMMITTED_ISOLATION:
-            assert isolation_str == 'read committed', 'Got ' + isolation_str
-        elif level == SERIALIZABLE_ISOLATION:
-            assert isolation_str == 'serializable', 'Got ' + isolation_str
-        else:
-            raise AssertionError("Unknown transaction isolation level")
 
     def conn(self):
         return self.sqlClass._connection._connection
@@ -367,11 +369,12 @@ class ZopelessTransactionManager(object):
     def commit(self):
         self.manager.get().commit()
 
-        # We always remove the existing transaction & connection, for
-        # simplicity.  SQLObject does connection pooling, and we don't have any
-        # indication that reconnecting every transaction would be a performance
-        # problem anyway.
-        self.desc._deactivate()
+        # By default we close the connection after completing a transaction,
+        # to safeguard against cached SQLObject data and SQL session state
+        # spilling out of their transactions.  Connection pooling keeps the
+        # performance penalty acceptably low.
+        if self.reset_after_transaction:
+            self.desc._deactivate()
 
         if self.implicitBegin:
             self.begin()
@@ -382,7 +385,8 @@ class ZopelessTransactionManager(object):
         for obj in objects:
             obj.reset()
             obj.expire()
-        self.desc._deactivate()
+        if self.reset_after_transaction:
+            self.desc._deactivate()
         if self.implicitBegin:
             self.begin()
 
@@ -690,8 +694,9 @@ class FakeZopelessTransactionManager:
         ZopelessTransactionManager._installed = None
 
     # XXX Andrew Bennetts 2005-07-12:
-    #      Ideally I'd be able to re-use some of the ZopelessTransactionManager
-    #      implementation of begin, commit and abort.
+    #      Ideally I'd be able to re-use some of the
+    #      ZopelessTransactionManager implementation of begin, commit
+    #      and abort.
     def begin(self):
         if not self.implicitBegin:
             self.desc._activate()

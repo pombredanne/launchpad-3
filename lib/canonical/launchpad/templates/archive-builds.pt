@@ -1,22 +1,21 @@
 <html
   xmlns="http://www.w3.org/1999/xhtml"
-  xml:lang="en" lang="en"
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  xml:lang="en"
+  lang="en"
+  dir="ltr"
   metal:use-macro="context/@@main_template/master"
   i18n:domain="launchpad"
   >
 <body>
+  <div metal:fill-slot="main">
 
-    <metal:heading fill-slot="pageheading">
-      <h1><span tal:replace="context/title"/> builds</h1>
-    </metal:heading>
+    <h1>Builds for <tal:title replace="context/title" /></h1>
 
-    <metal:leftportlets fill-slot="portlets_one">
-      <div tal:replace="structure context/owner/@@+portlet-details" />
-    </metal:leftportlets>
+    <div tal:replace="structure context/@@+builds-list"/>
 
-    <div metal:fill-slot="main">
-      <div tal:replace="structure context/@@+builds-list"/>
-    </div>
-
+  </div>
 </body>
 </html>

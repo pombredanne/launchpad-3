@@ -1,5 +1,6 @@
 #!/usr/bin/python2.4
 # Copyright 2005 Canonical Ltd.  All rights reserved.
+# pylint: disable-msg=C0103,W0403
 # Author: Gustavo Niemeyer <gustavo@niemeyer.net>
 #         David Allouche <david@allouche.net>
 
@@ -11,7 +12,7 @@ import logging
 
 from canonical.config import config
 from canonical.launchpad.scripts.base import LaunchpadCronScript
-from canonical.launchpad.scripts.branch_scanner import BranchScanner
+from canonical.codehosting.scanner.branch_scanner import BranchScanner
 
 
 class UpdateBranches(LaunchpadCronScript):
