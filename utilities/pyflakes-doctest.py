@@ -57,6 +57,34 @@ def extract_script(data):
     This code is based on doctest.script_from_examples() but has been
     modified not to insert or remove lines of content.  This should
     make line numbers in the output script match those in the input.
+
+        >>> text = '''
+        ...
+        ... Some text
+        ...     >>> 2 + 2
+        ...     5
+        ...
+        ... More text
+        ...
+        ...     >>> if False:
+        ...     ...     whatever
+        ...
+        ... end.
+        ... '''
+
+        >>> print extract_script(text)
+        #
+        # Some text
+        2 + 2
+        ## 5
+        #
+        # More text
+        #
+        if False:
+            whatever
+        #
+        # end.
+        <BLANKLINE>
     """
     output = []
     for piece in doctest.DocTestParser().parse(data):
@@ -72,7 +100,7 @@ def extract_script(data):
             output += [doctest._comment_line(l)
                        for l in piece.split('\n')[:-1]]
     # Combine the output, and return it.
-    # Add a courtesy newline to prevent exec from choking (see bug #1172785)
+    # Add a courtesy newline to prevent exec from choking
     return '\n'.join(output) + '\n'
 
 
