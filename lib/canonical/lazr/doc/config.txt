@@ -21,7 +21,7 @@ the information in the configuration file.
     >>> from canonical.lazr.interfaces import IConfigSchema
 
     >>> base_conf = path.normpath(path.join(
-    ...     path.dirname(__file__), '..', 'ftests', 'testfiles', 'base.conf'))
+    ...     path.dirname(__file__), '..', 'tests', 'data', 'base.conf'))
 
 The config file contains sections enclosed in square brackets ([]).
 The section name may be divided into major and minor categories using a
@@ -68,7 +68,7 @@ required. Lines that start with a hash (#) are comments.
     >>> schema.name
     'base.conf'
     >>> schema.filename
-    '...ftests/testfiles/base.conf'
+    '...tests/data/base.conf'
 
 A schema is made up of multiple SchemaSections. They can be iterated
 over in a loop as needed.
@@ -221,7 +221,7 @@ Schema files that contain non-ASCII characters raise a
 UnicodeDecodeError.
 
     >>> testfiles_dir = path.normpath(path.join(
-    ...     path.dirname(__file__), '..', 'ftests', 'testfiles'))
+    ...     path.dirname(__file__), '..', 'tests', 'data'))
     >>> ConfigSchema('%s/%s' % (testfiles_dir, 'bad-nonascii.conf'))
     Traceback (most recent call last):
       ...
@@ -370,7 +370,7 @@ the configuration.
     >>> config.name
     'local.conf'
     >>> config.filename
-    '...ftests/testfiles/local.conf'
+    '...tests/data/local.conf'
 
 The config can access the schema via the schema property.
 
@@ -677,7 +677,7 @@ the config to the schema). The schema can also be pushed to reset the
 values in the config to the schema's default values.
 
     >>> extender_conf_name = path.normpath(path.join(
-    ...     path.dirname(__file__), '..', 'ftests', 'testfiles',
+    ...     path.dirname(__file__), '..', 'tests', 'data',
     ...     'extender.conf'))
     >>> extender_conf_data = '\n'.join([
     ...     "[meta]",
