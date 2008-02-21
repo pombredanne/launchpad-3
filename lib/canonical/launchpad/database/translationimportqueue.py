@@ -666,6 +666,8 @@ class TranslationImportQueue:
         # fileobj in a tarfile._Stream instance. We can get rid of this
         # when we upgrade to python2.5 everywhere.
         #       -- kiko, 2008-02-08
+        num_files = 0
+
         if content.startswith('BZh'):
             mode = "r|bz2"
         elif content.startswith('\037\213'):
@@ -673,9 +675,9 @@ class TranslationImportQueue:
         elif content[257:262] == 'ustar':
             mode = "r|tar"
         else:
-            mode = "r"
+            # Not a tarball, we ignore it.
+            return num_files
 
-        num_files = 0
         try:
             tarball = tarfile.open('', mode, StringIO(content))
         except tarfile.ReadError:
