@@ -30,8 +30,6 @@ from canonical.launchpad.interfaces import (
     ArchivePurpose, IBinaryPackageNameSet, IDistributionSet,
     ILibraryFileAliasSet, ISourcePackageNameSet, NotFoundError,
     PackagePublishingPocket, QueueInconsistentStateError)
-from canonical.launchpad.scripts.processaccepted import (
-    close_bugs_for_queue_item)
 
 
 PARTNER_COMPONENT_NAME = 'partner'
@@ -160,18 +158,31 @@ class NascentUpload:
                 self.reject("Upload is sourceful, but policy refuses "
                             "sourceful uploads.")
 
-            if self.binaryful and not self.policy.can_upload_binaries:
-                self.reject("Upload is binaryful, but policy refuses "
-                            "binaryful uploads.")
+            elif self.binaryful and not self.policy.can_upload_binaries:
+                messages = [
+                    "Upload rejected because it contains binary packages.",
+                    "Ensure you are using `debuild -S`, or an equivalent",
+                    "command, to generate only the source package before",
+                    "re-uploading."
+                    ]
+                if self.is_ppa:
+                    messages.append(
+                    "See https://help.launchpad.net/PPAQuickStart/ for more "
+                    "information.")
+                self.reject(" ".join(messages))
 
-            if (self.sourceful and self.binaryful and
-                not self.policy.can_upload_mixed):
+            elif (self.sourceful and self.binaryful and
+                  not self.policy.can_upload_mixed):
                 self.reject("Upload is source/binary but policy refuses "
                             "mixed uploads.")
 
-            if self.sourceful and not self.changes.dsc:
+            elif self.sourceful and not self.changes.dsc:
                 self.reject(
-                    "Unable to find the dsc file in the sourceful upload?")
+                    "Unable to find the DSC file in the source upload.")
+
+            else:
+                # Upload content are consistent with the current policy.
+                pass
 
             # Apply the overrides from the database. This needs to be done
             # before doing component verifications because the component
@@ -982,33 +993,17 @@ class NascentUpload:
                     "Upload contains binaries of different sources.")
                 self.queue_root.addBuild(considered_build)
 
-        if not self.is_new:
-            # if it is known (already overridden properly), move it to
-            # ACCEPTED state automatically
-            if self.policy.autoApprove(self):
-                self.logger.debug("Setting it to ACCEPTED")
-                self.queue_root.setAccepted()
-                # If it is a pure-source upload we can further process it
-                # in order to have a pending publishing record in place.
-                # This change is based on discussions for bug #77853 and aims
-                # to fix a deficiency on published file lookup system.
-                if ((self.queue_root.sources.count() == 1) and
-                    (self.queue_root.builds.count() == 0) and
-                    (self.queue_root.customfiles.count() == 0)):
-                    self.logger.debug("Creating PENDING publishing record.")
-                    self.queue_root.realiseUpload()
-                    # Do not even try to close bugs for PPA uploads
-                    if self.is_ppa:
-                        return
-                    # Closing bugs.
-                    changesfile_object = open(self.changes.filepath, 'r')
-                    close_bugs_for_queue_item(
-                        self.queue_root,
-                        changesfile_object=changesfile_object)
-                    changesfile_object.close()
-            else:
-                self.logger.debug("Setting it to UNAPPROVED")
-                self.queue_root.setUnapproved()
+        if self.is_new:
+            return
+
+        # If it is known (already overridden properly), move it to
+        # ACCEPTED state automatically
+        if self.policy.autoApprove(self):
+            self.queue_root.acceptFromUploader(
+                self.changes.filepath, logger=self.logger)
+        else:
+            self.logger.debug("Setting it to UNAPPROVED")
+            self.queue_root.setUnapproved()
 
     def overrideArchive(self):
         """Override the archive set on the policy as necessary.
