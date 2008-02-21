@@ -2733,7 +2733,6 @@ class TeamJoinView(PersonView):
                   mapping={'reason': unicode(error)}))
         else:
             policy = self.context.subscriptionpolicy
-
             if policy == TeamSubscriptionPolicy.MODERATED:
                 notify_info(
                     _('Your mailing list subscription is awaiting '
@@ -2750,7 +2749,6 @@ class TeamJoinView(PersonView):
             return False
         if not mailing_list.isUsable():
             return False
-
         has_subscription = bool(mailing_list.getSubscription(user))
         return not has_subscription
 
