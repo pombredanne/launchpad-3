@@ -44,49 +44,6 @@ from canonical.launchpad.testing import LaunchpadObjectFactory
 from canonical.launchpad.webapp import canonical_url
 
 
-class ListeningSubversionServer(SubversionServer):
-    """A Subversion server that runs svnserve on a port."""
-
-    def __init__(self, repository_path, port_number):
-        super(ListeningSubversionServer, self).__init__(repository_path)
-        self.port_number = port_number
-
-    def get_url(self):
-        """Return a URL to the Subversion repository."""
-        return ('svn://localhost:%s/%s/'
-                % (self.port_number, os.path.basename(self.repository_path)))
-
-    def get_local_url(self):
-        return local_path_to_url(self.repository_path)
-
-    def makeBranch(self, branch_name, tree_contents):
-        super(ListeningSubversionServer, self).makeBranch(
-            branch_name, tree_contents)
-        return urljoin(self.get_url(), branch_name)
-
-    def makeDirectory(self, directory_name, commit_message=None):
-        """Make a directory on the repository."""
-        if commit_message is None:
-            commit_message = 'Make %r' % (directory_name,)
-        url = urljoin(self.get_local_url(), directory_name)
-        client = pysvn.Client()
-        client.mkdir(url, commit_message)
-        return url
-
-    def setUp(self):
-        super(ListeningSubversionServer, self).setUp()
-        self._process = Popen(
-            ['svnserve', '-d', '--foreground',
-             '--listen-port', str(self.port_number),
-             '--root', os.path.dirname(self.repository_path)])
-        print ("RUNNING Subversion server. 'kill %s' or Ctrl-C to terminate."
-               % (self._process.pid,))
-
-    def wait(self):
-        """Block until the server is dead."""
-        self._process.wait()
-
-
 def shell(*args):
     print ' '.join(args)
     return Popen(args, stdout=PIPE).communicate()[0]
@@ -102,10 +59,11 @@ def main():
     execute_zcml_for_scripts(use_web_security=False)
     temp_directory = tempfile.mkdtemp()
     svn_repo_path = os.path.join(temp_directory, 'svn-repository')
-    svn_server = ListeningSubversionServer(svn_repo_path, 8083)
+    svn_server = SubversionServer(svn_repo_path)
     svn_server.setUp()
     try:
-        svn_url = svn_server.makeBranch('trunk', [('README', 'No real content\n.')])
+        svn_url = svn_server.makeBranch(
+            'trunk', [('README', 'No real content\n.')])
         job = make_import_job(svn_url)
         print
         print "CodeImportJob.id:", job.id
@@ -113,7 +71,6 @@ def main():
         print "Subversion branch URL:", job.code_import.svn_branch_url
         print "Launchpad URL:", canonical_url(job.code_import.branch)
         print
-        svn_server.wait()
     finally:
         svn_server.tearDown()
 
