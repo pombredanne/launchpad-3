@@ -44,22 +44,6 @@ def execute_query_as_user(dbname, user, query):
     connection.close()
 
 
-def remove_subversion_url_constraint(dbname=None):
-    """Remove the constraint that prevents SVN URLs from using file:///.
-
-    For these tests, we want to check out Subversion branches without
-    necessarily going through the overhead of running a server. The
-    easiest way to do this is make branches available at file:/// URLs.
-
-    To do this, we need to remove the database constraint
-    """
-    if dbname is None:
-        dbname = LaunchpadTestSetup().dbname
-    execute_query_as_user(
-        dbname, 'postgres',
-        "ALTER TABLE codeimport DROP CONSTRAINT valid_vcs_details")
-
-
 class WorkerTest(TestCaseWithTransport):
     """Base test case for things that test the code import worker.
 
@@ -479,7 +463,6 @@ class TestSubversionImport(WorkerTest):
 
     def setUp(self):
         WorkerTest.setUp(self)
-        remove_subversion_url_constraint()
 
         repository_path = tempfile.mkdtemp()
         self.addCleanup(lambda: shutil.rmtree(repository_path))

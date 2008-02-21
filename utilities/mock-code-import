@@ -32,12 +32,10 @@ import pysvn
 
 from zope.component import getUtility
 
-from bzrlib.urlutils import local_path_to_url, join as urljoin
+from bzrlib.urlutils import join as urljoin
 
 from canonical.codehosting.codeimport.tests.test_foreigntree import (
-    SubversionServer)
-from canonical.codehosting.codeimport.tests.test_worker import (
-    remove_subversion_url_constraint)
+    local_path_to_url, SubversionServer)
 from canonical.launchpad.interfaces import (
     BranchType, CodeImportReviewStatus, ICodeImportSet,
     ICodeImportJobWorkflow, ILaunchpadCelebrities, RevisionControlSystems)
@@ -102,21 +100,6 @@ def make_import_job(svn_url):
 
 def main():
     execute_zcml_for_scripts(use_web_security=False)
-    try:
-        remove_subversion_url_constraint('launchpad_dev')
-    except psycopg.ProgrammingError, exception:
-        constraint_error = 'constraint "valid_vcs_details" does not exist'
-        exception_msg = str(exception).splitlines()[0].rstrip()
-
-        if exception_msg.endswith(constraint_error):
-            # There's no constraint, it was probably removed on a previous
-            # run. Let's keep going.
-            pass
-        else:
-            # It's another, entirely different and unexpected
-            # ProgrammingError.
-            raise
-    transaction.commit()
     temp_directory = tempfile.mkdtemp()
     svn_repo_path = os.path.join(temp_directory, 'svn-repository')
     svn_server = ListeningSubversionServer(svn_repo_path, 8083)

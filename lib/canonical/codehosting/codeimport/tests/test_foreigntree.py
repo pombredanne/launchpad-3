@@ -15,7 +15,7 @@ import CVS
 import pysvn
 import svn_oo
 
-from bzrlib.urlutils import local_path_to_url, join as urljoin
+from bzrlib.urlutils import escape, join as urljoin
 from bzrlib.transport import Server
 from bzrlib.tests import TestCaseWithTransport
 from bzrlib.tests.treeshape import build_tree_contents
@@ -23,6 +23,16 @@ from bzrlib.tests.treeshape import build_tree_contents
 from canonical.codehosting.codeimport.foreigntree import (
     CVSWorkingTree, SubversionWorkingTree)
 from canonical.testing import BaseLayer
+
+
+def local_path_to_url(local_path):
+    """Return a file:// URL to `local_path`.
+
+    This implementation is unusual in that it returns a file://localhost/ URL.
+    This is to work around the valid_vcs_details constraint on CodeImport.
+    """
+    return 'file://localhost' + escape(
+        os.path.normpath(os.path.abspath(local_path)))
 
 
 def _make_silent_logger():
