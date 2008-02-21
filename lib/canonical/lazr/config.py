@@ -8,6 +8,8 @@ __all__ = [
     'Config',
     'ConfigData',
     'ConfigSchema',
+    'ImplicitTypeSchema',
+    'ImplicitTypeSection',
     'Section',
     'SectionSchema',]
 
