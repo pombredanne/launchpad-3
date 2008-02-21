@@ -810,23 +810,47 @@ class PersonFormatterAPI(ObjectFormatterExtendedAPI):
             url, image_html, cgi.escape(person.browsername))
 
 
-class ConvenientFormatter(ObjectFormatterExtendedAPI):
-    """A ObjectFormatterExtendedAPI that is easy to customize"""
+class CustomizableFormatter(ObjectFormatterExtendedAPI):
+    """A ObjectFormatterExtendedAPI that is easy to customize.
 
-    _permission = 'launchpad.View'
+    For most object types, only the _summary_template class variable and
+    _summary_values method need to be overridden.  This assumes that:
+    1. canonical_url produces appropriate urls for this type
+    2. the launchpad.View permission alone is required to view this object's
+       url
+    3. if there is an icon for this object type, image:icon is implemented
+       and appropriate.
+
+    For greater control over the summary, overrride _make_summary.
+
+    If image:icon does not provide a suitable icon, override _get_icon.
+
+    If a different permission is required, override _link_permission.  If the
+    permission logic is more complicated than this, override _should_link.
+    """
+
+    _link_permission = 'launchpad.View'
 
     def _should_link(self):
-        """Return True if a link should be shown, False otherwise"""
-        return check_permission(self._permission, self._context)
+        """Return True if a link should be shown, False otherwise."""
+        return check_permission(self._link_permission, self._context)
 
-    def _values(self):
-        """Return a dict of values to use for template substitution"""
-        raise NotImplementedError(self._values)
+    def _summary_values(self):
+        """Return a dict of values to use for template substitution.
+
+        These values should not be escaped, as this will be performed later.
+        For this reason, only string values should be supplied.
+        """
+        raise NotImplementedError(self._summary_values)
 
     def _make_summary(self):
-        """Create a summary from _template and _values()"""
+        """Create a summary from _template and _summary_values().
+
+        This summary is for use in fmt:link, which is meant to be used in
+        contexts like lists of items.
+        """
         values = {}
-        for key, value in self._values().iteritems():
+        for key, value in self._summary_values().iteritems():
             if value is None:
                 values[key] = ''
             else:
@@ -834,6 +858,10 @@ class ConvenientFormatter(ObjectFormatterExtendedAPI):
         return self._template % values
 
     def _get_icon(self):
+        """Retrieve the icon for the _context, if any.
+
+        :return: The icon HTML or None if no icon is available.
+        """
         icon = queryAdapter(self._context, IPathAdapter, 'image').icon()
         if 'src="/@@/nyet-icon"' in icon:
             return None
@@ -863,13 +891,13 @@ class ConvenientFormatter(ObjectFormatterExtendedAPI):
         return html
 
 
-class PillarFormatterAPI(ConvenientFormatter):
+class PillarFormatterAPI(CustomizableFormatter):
     """Adapter for IProduct, IDistribution and IProject objects to a
     formatted string."""
 
     _template = '%(displayname)s'
 
-    def _values(self):
+    def _summary_values(self):
         return {'displayname': self._context.displayname}
 
 
@@ -932,12 +960,12 @@ class BranchFormatterAPI(ObjectFormatterExtendedAPI):
             '%(name)s</a>: %(title)s' % self._args(extra_path))
 
 
-class BranchSubscriptionFormatterAPI(ConvenientFormatter):
+class BranchSubscriptionFormatterAPI(CustomizableFormatter):
     """Adapter for IBranchSubscription objects to a formatted string."""
 
     _template = _('Subscription of %(person)s to %(branch)s')
 
-    def _values(self):
+    def _summary_values(self):
         """Provide values for template substitution"""
         return {
             'person': self._context.person.displayname,
@@ -945,19 +973,18 @@ class BranchSubscriptionFormatterAPI(ConvenientFormatter):
         }
 
 
-class BranchMergeProposalFormatterAPI(ConvenientFormatter):
+class BranchMergeProposalFormatterAPI(CustomizableFormatter):
 
     _template = _('Proposed merge of %(source)s into %(target)s')
 
-    def _values(self):
-        merge_proposal = self._context
+    def _summary_values(self):
         return {
-            'source': merge_proposal.source_branch.title,
-            'target': merge_proposal.target_branch.title,
+            'source': self._context.source_branch.title,
+            'target': self._context.target_branch.title,
             }
 
 
-class BugBranchFormatterAPI(ConvenientFormatter):
+class BugBranchFormatterAPI(CustomizableFormatter):
     """Adapter providing fmt support for BugBranch objects"""
 
     def _get_task_formatter(self):
@@ -975,31 +1002,30 @@ class BugBranchFormatterAPI(ConvenientFormatter):
         return self._get_task_formatter()._get_icon()
 
 
-class BugFormatterAPI(ConvenientFormatter):
+class BugFormatterAPI(CustomizableFormatter):
     """Adapter for IBug objects to a formatted string."""
 
     _template = 'Bug #%(id)s: %(title)s'
 
-    def _values(self):
-        """See ConvenientFormatter._values."""
-        bug = self._context
-        return {'id': str(bug.id), 'title': bug.title}
+    def _summary_values(self):
+        """See CustomizableFormatter._summary_values."""
+        return {'id': str(self._context.id), 'title': self._context.title}
 
 
-class BugTaskFormatterAPI(ConvenientFormatter):
+class BugTaskFormatterAPI(CustomizableFormatter):
     """Adapter for IBugTask objects to a formatted string."""
 
     def _make_summary(self):
         return BugFormatterAPI(self._context.bug)._make_summary()
 
 
-class CodeImportFormatterAPI(ConvenientFormatter):
+class CodeImportFormatterAPI(CustomizableFormatter):
     """Adapter providing fmt support for CodeImport objects"""
 
     _template = _('Import of %(product)s: %(branch)s')
 
-    def _values(self):
-        """See ConvenientFormatter._values."""
+    def _summary_values(self):
+        """See CustomizableFormatter._summary_values."""
         branch_title = self._context.branch.title
         if branch_title is None:
             branch_title = _('(no title)')
@@ -1008,28 +1034,28 @@ class CodeImportFormatterAPI(ConvenientFormatter):
                }
 
 
-class ProductSeriesFormatterAPI(ConvenientFormatter):
+class ProductSeriesFormatterAPI(CustomizableFormatter):
     """Adapter providing fmt support for ProductSeries objects"""
 
     _template = _('%(product)s Series: %(series)s')
 
-    def _values(self):
-        """See ConvenientFormatter._values."""
+    def _summary_values(self):
+        """See CustomizableFormatter._summary_values."""
         return {'series': self._context.name,
                 'product': self._context.product.displayname}
 
 
-class SpecificationFormatterAPI(ConvenientFormatter):
+class SpecificationFormatterAPI(CustomizableFormatter):
     """Adapter providing fmt support for Specification objects"""
 
     _template = _('%(title)s')
 
-    def _values(self):
-        """See ConvenientFormatter._values."""
+    def _summary_values(self):
+        """See CustomizableFormatter._summary_values."""
         return {'title': self._context.title}
 
 
-class SpecificationBranchFormatterAPI(ConvenientFormatter):
+class SpecificationBranchFormatterAPI(CustomizableFormatter):
     """Adapter for ISpecificationBranch objects to a formatted string."""
 
     def _make_summary(self):
