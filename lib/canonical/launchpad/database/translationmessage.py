@@ -21,6 +21,7 @@ from canonical.database.sqlbase import SQLBase
 from canonical.launchpad.interfaces import (
     ITranslationMessage, ITranslationMessageSet, RosettaTranslationOrigin,
     TranslationValidationStatus)
+from canonical.launchpad.validators.person import public_person_validator
 
 
 class TranslationMessageMixIn:
@@ -83,6 +84,7 @@ class DummyTranslationMessage(TranslationMessageMixIn):
         self.is_fuzzy = False
         self.is_imported = False
         self.is_empty = True
+        self.is_hidden = True
         self.was_obsolete_in_last_import = False
         self.was_complete_in_last_import = False
         self.was_fuzzy_in_last_import = False
@@ -108,11 +110,13 @@ class TranslationMessage(SQLBase, TranslationMessageMixIn):
     date_created = UtcDateTimeCol(
         dbName='date_created', notNull=True, default=UTC_NOW)
     submitter = ForeignKey(
-        foreignKey='Person', dbName='submitter', notNull=True)
+        foreignKey='Person',
+        validator=public_person_validator, dbName='submitter', notNull=True)
     date_reviewed = UtcDateTimeCol(
         dbName='date_reviewed', notNull=False, default=None)
     reviewer = ForeignKey(
-        foreignKey='Person', dbName='reviewer', notNull=False, default=None)
+        dbName='reviewer', foreignKey='Person',
+        validator=public_person_validator, notNull=False, default=None)
     msgstr0 = ForeignKey(
         foreignKey='POTranslation', dbName='msgstr0', notNull=True)
     msgstr1 = ForeignKey(
@@ -239,6 +243,31 @@ class TranslationMessage(SQLBase, TranslationMessageMixIn):
                 return False
         # We found no translations in this translation_message
         return True
+
+    @property
+    def is_hidden(self):
+        """See `ITranslationMessage`."""
+        # If this message is currently used or has been imported,
+        # it's not hidden.
+        if self.is_current or self.is_imported:
+            return False
+
+        # Otherwise, if this suggestions has been reviewed and
+        # rejected (i.e. current translation's date_reviewed is
+        # more recent than the date of suggestion's date_created),
+        # it is hidden.
+        # If it has not been reviewed yet, it's not hidden.
+        current = self.potmsgset.getCurrentTranslationMessage(
+            self.pofile.language, self.pofile.variant)
+        # If there is no current translation, none of the
+        # suggestions have been reviewed, so they are all shown.
+        if current is None:
+            return False
+        date_reviewed = current.date_reviewed
+        # For an imported current translation, no date_reviewed is set.
+        if date_reviewed is None:
+            date_reviewed = current.date_created
+        return date_reviewed > self.date_created
 
 
 class TranslationMessageSet:

@@ -16,7 +16,7 @@ from urlparse import urlparse, urlunparse
 import zope.thread
 import ZConfig
 
-from canonical.lazr.config import ConfigSchema
+from canonical.lazr.config import ImplicitTypeSchema
 from canonical.lazr.interfaces.config import ConfigErrors
 
 
@@ -101,11 +101,12 @@ class CanonicalConfig(object):
 
             # Monkey patch Section to store it's ZConfig counterpart, and
             # use it when it cannot provide the data.
-            from canonical.lazr.config import Section
-            Section._zconfig = self.getConfig()
-            Section.__getattr__ = failover_to_zconfig(Section.__getattr__)
+            from canonical.lazr.config import ImplicitTypeSection
+            ImplicitTypeSection._zconfig = self.getConfig()
+            ImplicitTypeSection.__getattr__ = failover_to_zconfig(
+                ImplicitTypeSection.__getattr__)
 
-            schema = ConfigSchema(schema_file)
+            schema = ImplicitTypeSchema(schema_file)
             self._config = schema.load(config_file)
             try:
                 self._config.validate()

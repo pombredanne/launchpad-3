@@ -1,6 +1,4 @@
 # Copyright 2004-2007 Canonical Ltd.  All rights reserved.
-# XXX: Aaron Bentley 2008-01-21: This is due to the unreachable loom test.
-# Will be removed when looms are enabled.
 # pylint: disable-msg=W0101
 
 """Acceptance tests for Supermirror SFTP server's bzr support."""
@@ -18,8 +16,6 @@ import bzrlib.branch
 from bzrlib.builtins import cmd_branch, cmd_push
 from bzrlib.errors import (
     BzrCommandError, LockFailed, NotBranchError, TransportNotPossible)
-# XXX: Aaron Bentley 2008-01-21: loom plugin is not yet supported
-# from bzrlib.plugins.loom import branch as loom_branch
 from bzrlib.repofmt.weaverepo import RepositoryFormat7
 from bzrlib.repository import format_registry
 
@@ -43,7 +39,7 @@ from canonical.launchpad.webapp.errorlog import globalErrorUtility
 from canonical.testing import TwistedLayer
 
 
-class SSHTestCase(ServerTestCase, TestCaseWithTransport):
+class SSHTestCase(ServerTestCase):
 
     layer = TwistedLayer
     server = None
@@ -267,6 +263,7 @@ class AcceptanceTests(SSHTestCase):
         else:
             url = None
         return database.Branch(
+            registrant=owner,
             name=branch_name, owner=owner, author=owner, product=product,
             url=url, title=None, lifecycle_status=BranchLifecycleStatus.NEW,
             summary=None, home_page=None, whiteboard=None, private=private,
@@ -513,23 +510,8 @@ class AcceptanceTests(SSHTestCase):
 
     @deferToThread
     def test_can_push_loom_branch(self):
-        # XXX: Aaron Bentley 2008-01-21: loom plugin is not yet supported
-        return
-        from bzrlib.plugins.loom import loom_branch
         # We can push and pull a loom branch.
-        tree = self.make_branch_and_tree('loom')
-        tree.lock_write()
-        try:
-            tree.branch.nick = 'bottom-thread'
-            loom_branch.loomify(tree.branch)
-        finally:
-            tree.unlock()
-        loomtree = tree.bzrdir.open_workingtree()
-        loomtree.lock_write()
-        loomtree.branch.new_thread('bottom-thread')
-        loomtree.commit('this is a commit', rev_id='commit-1')
-        loomtree.unlock()
-        loomtree.branch.record_loom('sample loom')
+        tree = self.makeLoomBranchAndTree('loom')
         remote_url = self.getTransportURL('~testuser/+junk/loom')
         self.push('loom', remote_url)
         self.assertBranchesMatch('loom', remote_url)

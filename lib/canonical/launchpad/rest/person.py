@@ -40,10 +40,6 @@ class PersonEntry(Entry):
 
     parent_collection_name = 'people'
 
-    def fragment(self):
-        """See `IEntry`."""
-        return self.context.name
-
     @property
     def members(self):
         """See `IPersonEntry`."""
@@ -54,6 +50,10 @@ class PersonEntry(Entry):
 
 class PersonCollection(Collection):
     """A collection of people."""
+
+    def getEntryPath(self, entry):
+        """See `ICollection`."""
+        return entry.name
 
     def lookupEntry(self, name):
         """Find a person by name."""

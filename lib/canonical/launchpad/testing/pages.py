@@ -66,10 +66,16 @@ class WebServiceResponseWrapper(ProxyBase):
 
     def jsonBody(self):
         """Return the body of the web service request as a JSON document."""
-        json = simplejson.loads(self.getBody())
-        if isinstance(json, list):
-            json = sorted(json)
-        return json
+        try:
+            json = simplejson.loads(self.getBody())
+            if isinstance(json, list):
+                json = sorted(json)
+            return json
+        except ValueError:
+            # Return a useful ValueError that displays the problematic
+            # string, instead of one that just says the string wasn't
+            # JSON.
+            raise ValueError(self.getBody())
 
 
 class DuplicateIdError(Exception):
@@ -128,8 +134,13 @@ def find_portlet(content, name):
 
 
 def find_main_content(content):
-    """Find and return the main content area of the page"""
-    return find_tag_by_id(content, 'maincontent')
+    """Return the main content of the page, excluding any portlets."""
+    main_content = find_tag_by_id(content, 'maincontent')
+    if main_content is None:
+        # One-column pages don't use a <div id="maincontent">, so we
+        # use the next best thing: <div id="container">.
+        main_content = find_tag_by_id(content, 'container')
+    return main_content
 
 
 def get_feedback_messages(content):
