@@ -1967,7 +1967,18 @@ def notify_mailinglist_activated(mailinglist, event):
             members.add(person)
         return members
 
+    beta_testers = getUtility(ILaunchpadCelebrities).launchpad_beta_testers
+
     for person in contacts_for(team):
+
+        # XXX mars 2008-02-21:
+        # This should be removed when the Mailing List Beta is over.
+        #
+        # Only send an invitation to Beta testers, because they are
+        # the only people that can sign up for the list!
+        if not person.hasParticipationEntryFor(beta_testers):
+            continue
+
         to_address = [str(person.preferredemail.email)]
         replacements = {
             'user': person.displayname,
