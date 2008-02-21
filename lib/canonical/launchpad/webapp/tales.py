@@ -385,11 +385,11 @@ class ObjectFormatterAPI:
     def __init__(self, context):
         self._context = context
 
-    def url(self, extra_path=None):
+    def url(self, extra_path=''):
         request = get_current_browser_request()
         url = canonical_url(
             self._context, request, path_only_if_possible=True)
-        if extra_path is not None:
+        if extra_path != '':
             url = '%s/%s' % (url, extra_path)
         return url
 
