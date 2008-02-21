@@ -6,7 +6,9 @@ via email.
     >>> import email
     >>> from canonical.launchpad.mail import stub
 
-    >>> from canonical.launchpad.tests.mail_helpers import pop_notifications
+    >>> from canonical.launchpad.tests.mail_helpers import (
+    ...     pop_notifications, print_emails)
+
 
     >>> def print_messages_and_recipients(include_reply_to=False):
     ...     """Pop all messages from stub.test_emails and print them with
@@ -54,7 +56,7 @@ all active team members.
     >>> transaction.commit()	# Send the emails.
     >>> len(stub.test_emails)
     2
-    >>> print_messages_and_recipients(include_reply_to=True)
+    >>> print_emails(include_reply_to=True)
     From: Team One <noreply@launchpad.net>
     To: anne.person@example.com
     Reply-To: Team One <noreply@launchpad.net>
@@ -136,7 +138,7 @@ individual team members.
     >>> transaction.commit()	# Send the emails.
     >>> len(stub.test_emails)
     4
-    >>> print_messages_and_recipients(include_reply_to=True)
+    >>> print_emails(include_reply_to=True)
     From: Super Team <noreply@launchpad.net>
     To: anne.person@example.com
     Reply-To: Super Team <noreply@launchpad.net>
