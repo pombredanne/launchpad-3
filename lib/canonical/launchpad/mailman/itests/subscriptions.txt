@@ -131,7 +131,10 @@ the membership list, either as an enabled or disabled address.
     >>> email = email_set.new('anne.x.person@example.net', anne)
     >>> logout()
     >>> commit()
+
+    # This will time out because no changes have been propagated to Mailman.
     >>> itest_helper.wait_for_mailman()
+    'Timed out'
 
     # Reload the list data.
     >>> mailing_list.Load()

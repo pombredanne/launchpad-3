@@ -39,8 +39,7 @@ TOP = os.path.normpath(os.path.join(HERE, '../../../..'))
 MAILMAN_BIN = os.path.normpath(os.path.join(
     os.path.dirname(sys.argv[0]), '../../../../', 'mailman', 'bin'))
 
-MAX_CYCLES = 4
-LOG_GROWTH_WAIT_INTERVAL = datetime.timedelta(seconds=30)
+LOG_GROWTH_WAIT_INTERVAL = datetime.timedelta(seconds=5)
 SECONDS_TO_SNOOZE = 0.1
 
 
@@ -79,30 +78,16 @@ def wait_for_mailman():
     # Import this here because sys.path won't be set up properly when this
     # module is imported.
     from Mailman import mm_cfg
-    # This starts by getting the mtime of Mailman's logs/xmlrpc file.  Then it
-    # waits until this file has changed, indicating that Mailman has processed
-    # the last request.
-    #
-    # It's actually more complicated than that due to a race condition.
-    # Mailman might be updating as we're committing the transaction, and the
-    # first log growth we see may not be about the change we're interested in.
-    # This occurs because we can't atomically get the mtime and commit the
-    # database change that will trigger a Mailman update.
-    #
-    # To solve this, we actually wait through two cycles of log growth.
-    # Mailman's XMLRPCRunner will always print a message to its log file when
-    # it talks to Launchpad, so two cycles ensures that the operaton triggered
-    # by the transaction commit has actually been handled.
-    log_file = os.path.join(mm_cfg.LOG_DIR, 'xmlrpc')
+    # This starts by getting the mtime of Mailman's logs/serial file.  Then it
+    # waits until this file has changed, indicating that Mailman detected
+    # changes in the last request and has processed them.
+    log_file = os.path.join(mm_cfg.LOG_DIR, 'serial')
     last_mtime = os.stat(log_file).st_mtime
     until = datetime.datetime.now() + LOG_GROWTH_WAIT_INTERVAL
-    cycle = 0
     while True:
         if os.stat(log_file).st_mtime > last_mtime:
-            cycle += 1
-            if cycle >= MAX_CYCLES:
-                # We want no output in the doctest for the expected success.
-                return None
+            # We want no output in the doctest for the expected success.
+            return None
         if datetime.datetime.now() > until:
             return 'Timed out'
         time.sleep(SECONDS_TO_SNOOZE)
