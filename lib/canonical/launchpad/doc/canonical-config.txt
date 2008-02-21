@@ -63,7 +63,7 @@ launchpad.testrunner.conf, which extends the default conf.
 
 == Transition from ZConfig to LAZR ==
 
-XXX sinzui 2008-02-11: This feature is must be removed when all
+XXX sinzui 2008-02-11: This feature must be removed when all
 launchpad callsites use lazr.config.
 
 During the transition from `ZConfig` to `canonical.lazr.config`,
@@ -168,3 +168,23 @@ key.
 
     >>> os.environ['ENABLE_DEPRECATED_ZCONFIG_WARNINGS'] = 'false'
 
+
+== Working with test configurations ==
+
+Tests can update the config with test data. For example, the domain
+can be changed for a feature.
+
+    >>> from textwrap import dedent
+    >>> test_data = dedent("""
+    ...     [answertracker]
+    ...     email_domain: answers.launchpad.dev""")
+    >>> config.push('test_data', test_data)
+    >>> config.answertracker.email_domain
+    'answers.launchpad.dev'
+
+And the test can remove the data when it is done to restore the config.
+
+    >>> config.pop('test_data')
+    (<canonical.lazr.config.ConfigData ...>,)
+    >>> config.answertracker.email_domain
+    'answers.launchpad.net'

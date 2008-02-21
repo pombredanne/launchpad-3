@@ -173,7 +173,7 @@ def failover_to_zconfig(func):
         try:
             lazr_value = func(self, name)
         except AttributeError:
-            # Raise a warning that the callsite is is using multisections.
+            # Raise a warning that the callsite is using multisections.
             lazr_value = None
             pass
 
@@ -237,7 +237,6 @@ def url(value):
     value = urlunparse(bits)
     return value
 
-
 def urlbase(value):
     """ZConfig validator for url bases
 
@@ -288,11 +287,9 @@ def urlbase(value):
         value = value + '/'
     return value
 
-
 def commalist(value):
     """ZConfig validator for a comma seperated list"""
     return [v.strip() for v in value.split(',')]
-
 
 def loglevel(value):
     """ZConfig validator for log levels.
