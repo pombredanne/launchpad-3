@@ -24,6 +24,7 @@ __all__ = [
     'ExperimentalLaunchpadZopelessLayer',
     ]
 
+import gc
 import logging
 import os
 import socket
@@ -155,6 +156,16 @@ class BaseLayer:
         del canonical.launchpad.mail.stub.test_emails[:]
         BaseLayer.test_name = None
         cls.check()
+
+        # Objects with __del__ methods cannot participate in refence cycles.
+        # Pick up memory leaks now rather than when Launchpad crashes due
+        # to a leak.
+        gc.collect()
+        if gc.garbage:
+            raise LayerIsolationError(
+                    "Test left uncollectable garbage\n"
+                    "%s (referenced from %s)"
+                    % (gc.garbage, gc.get_referrers(*gc.garbage)))
 
     @classmethod
     @profiled
