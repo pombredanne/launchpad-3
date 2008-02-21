@@ -43,14 +43,18 @@ All of the similar bugs have relevant bugtasks:
       #5 Firefox install instructions should be complete
       New, last updated 2006-07-14
 
-However, what if relevant bug tasks can't be found? This is unlikely,
+However, what if a relevant bugtask can't be found? This is unlikely,
 but possible, because a similar bug might actually be a duplicate of a
 bug that has no bugtask for the product.
 
 When a similar bug is found that is also a duplicate bug, we display
 the duplicated bug instead. If the duplicated bug has no bugtask
-relating to the product we're trying to file a bug against, we just
-show basic non-bugtask information.
+relating to the context (here, a product) we're trying to file a bug
+against, we just show basic non-bugtask information.
+
+Specifically, we do not have a status or importance, so we only show
+the generic bug icon and 'Open' or 'Closed' instead of 'New',
+'Confirmed', etc.
 
 We shall make bug 4 a duplicate of bug 8, which has no bugtask for
 firefox.
@@ -114,7 +118,7 @@ basic bug information is displayed:
       #9 Thunderbird crashes
       Confirmed, last updated 2006-07-14
 
-Only basic details are given when no relevant bugtask exists:
+Only basic details are shown when no relevant bugtask exists:
 
     >>> user_browser.open(
     ...     "http://bugs.launchpad.dev/ubuntu/+source/"
@@ -145,7 +149,7 @@ Only basic details are given when no relevant bugtask exists:
       #1 Firefox does not support SVG
       New, last updated 2006-05-19
 
-Only basic details are given when no relevant bugtask exists:
+Only basic details are shown when no relevant bugtask exists:
 
     >>> user_browser.open(
     ...     "http://bugs.launchpad.dev/firefox/+bug/1/+duplicate")
