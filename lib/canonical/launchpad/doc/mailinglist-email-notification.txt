@@ -25,6 +25,7 @@ via email.
     >>> from canonical.launchpad.interfaces import ILaunchpadCelebrities
     >>> beta_testers = getUtility(
     ... 		ILaunchpadCelebrities).launchpad_beta_testers
+
     >>> def beta_tester(name):
     ...     """Create a new person who is also a beta tester."""
     ...     person = new_person(name)
@@ -34,7 +35,7 @@ via email.
 
 
 When a new email list becomes active, an email notification is sent to
-all active team members who are also launchpad beta testers.
+all active team members who are launchpad beta testers.
 
     # XXX mars 2008-02-21:
     # Change this  of tests when the mailing list beta is over.
@@ -51,7 +52,6 @@ all active team members who are also launchpad beta testers.
 
     # This will take our team through the entire list creation
     # process, generating notification emails along the way.
-    >>> flush_database_updates()
     >>> list_one = new_list_for_team(team_one)
     >>> list_one.status.name
     'ACTIVE'
