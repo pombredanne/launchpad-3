@@ -1018,7 +1018,7 @@ imports.
     firefox         Mozilla Firefox
     ubuntu/hoary    Hoary
 
-An administrator deactivates Firefox, thinking that the proejct is being
+An administrator deactivates Firefox, thinking that the project is being
 run in violation of Launchpad policies.
 
     >>> firefox.active = False
