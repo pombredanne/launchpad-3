@@ -584,8 +584,9 @@ class FileBugViewBase(LaunchpadFormView):
             def isRelevant(bugtask, context):
                 return bugtask.distribution == context
         elif IProject.providedBy(context):
+            project_products = set(context.products)
             def isRelevant(bugtask, context):
-                return bugtask.pillar.project == context
+                return bugtask.product in project_products
         else:
             def isRelevant(bugtask, context):
                 return bugtask.target == context
