@@ -129,6 +129,9 @@ to a content object.  There are currently links defined for:
   * bugs
   * bug tasks
 
+
+=== Person entries ===
+
 For a person or team, fmt:link gives us a link to that person's page,
 containing the person name and an icon.
 
@@ -168,6 +171,9 @@ that the links and images are pointing at the right hostname.
     >>> test_tales("person/fmt:link:bugs/foo/bar", person=spiv)
     u'<a href="http://bugs.launchpad.dev/~spiv/foo/bar"><img...src="http://bugs.launchpad.dev/@@/person-inactive"...'
 
+
+=== Branches ===
+
 For branches, fmt:link links to the branch page.
 
     >>> from canonical.launchpad.interfaces import IBranchSet
@@ -175,6 +181,9 @@ For branches, fmt:link links to the branch page.
     ...     '~name12/gnome-terminal/main')
     >>> test_tales("branch/fmt:link", branch=branch)
     u'<a href=".../~name12/gnome-terminal/main" title="GNOME Terminal Mainline"><img src="/@@/branch"...>&nbsp;~name12/gnome-terminal/main</a>'
+
+
+=== Bugs ===
 
 For bugs, fmt:link takes to the bug redirect page.
 
@@ -207,6 +216,8 @@ title might be interpreted by the browser.
       Opps&lt;br/&gt;&lt;script&gt;alert(\'XSS\')&lt;/script&gt;</a>'
 
 
+=== Branch subscriptions ===
+
 Branch subscriptions show the person and branch name.
 
     >>> from canonical.launchpad.testing import LaunchpadObjectFactory
@@ -215,6 +226,9 @@ Branch subscriptions show the person and branch name.
     ...     'My Person')
     >>> test_tales("subscription/fmt:link", subscription=subscription)
     u'Subscription of My Person to My Branch'
+
+
+=== Merge proposals ===
 
 Merge proposals also have a link formatter, which displays branch titles:
 
@@ -225,7 +239,11 @@ Merge proposals also have a link formatter, which displays branch titles:
     >>> test_tales("proposal/fmt:link", proposal=proposal)
     u'<a href="...">Proposed merge of baz into qux</a>'
 
-BugBranches also have a formatter.
+
+=== Bug branches ===
+
+BugBranches also have a formatter.  It displays the same icon and summary as
+the bug task.
 
     >>> login('test@canonical.com')
     >>> branch = factory.makeBranch()
@@ -234,6 +252,9 @@ BugBranches also have a formatter.
     >>> test_tales("bugbranch/fmt:link", bugbranch=bugbranch)
     u'<a href="...+bug..."><img .../>&nbsp;Bug #...</a>'
 
+
+=== Code imports ===
+
 ICodeImport providers have a formatter.
 
     >>> login('foo.bar@canonical.com')
@@ -241,11 +262,17 @@ ICodeImport providers have a formatter.
     >>> test_tales("code_import/fmt:link", code_import=code_import)
     u'<a href="...+code-import">Import of...</a>'
 
+
+=== Product series ===
+
 IProductSeries providers have a formatter.
 
     >>> product_series = factory.makeSeries()
     >>> test_tales("product_series/fmt:link", product_series=product_series)
     u'... Series: ...'
+
+
+=== Blueprints ===
 
 ISpecification providers have a formatter.
 
@@ -254,7 +281,11 @@ ISpecification providers have a formatter.
     >>> test_tales("specification/fmt:link", specification=specification)
     u'...<img ... src="/@@/blueprint-undefined" />&nbsp;...'
 
-ISpecificationBranch providers have a formatter.
+
+=== Blueprint branches ===
+
+ISpecificationBranch providers have a formatter.  It uses the same icon and
+summary as blueprints.
 
     >>> specification = factory.makeSpec()
     >>> branch = factory.makeBranch()
