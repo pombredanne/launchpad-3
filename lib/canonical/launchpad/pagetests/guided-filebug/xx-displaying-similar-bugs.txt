@@ -26,6 +26,10 @@ duplicates.
 
 == Products ==
 
+If a user tries to file a bug against a product, and does not go down
+the advanced bug filing route, they're shown a list of bugs similar to
+the summary entered (assuming some are found).
+
     >>> user_browser.open("http://bugs.launchpad.dev/firefox/+filebug")
     >>> user_browser.getControl("Summary").value = 'a'
     >>> user_browser.getControl("Continue").click()
@@ -49,8 +53,8 @@ bug that has no bugtask for the product.
 
 When a similar bug is found that is also a duplicate bug, we display
 the duplicated bug instead. If the duplicated bug has no bugtask
-relating to the context (here, a product) we're trying to file a bug
-against, we just show basic non-bugtask information.
+relating to the context we're trying to file a bug against (here, a
+product), we just show basic non-bugtask information.
 
 Specifically, we do not have a status or importance, so we only show
 the generic bug icon and 'Open' or 'Closed' instead of 'New',
@@ -77,6 +81,9 @@ Then, if we match bug 1, only basic details of bug 8 are displayed:
 
 
 == Projects ==
+
+Like with products, the user will be shown a list of similar bugs when
+filing a bug against a project:
 
     >>> user_browser.open("http://bugs.launchpad.dev/gnome/+filebug")
     >>> user_browser.getControl("Project").value = ['evolution']
@@ -109,6 +116,9 @@ basic bug information is displayed:
 
 == Distributions ==
 
+If similar bugs are found they're displayed so that the user might
+find that their bug has already been reported.
+
     >>> user_browser.open("http://launchpad.dev/ubuntu/+filebug")
     >>> user_browser.getControl("Summary").value = 'crashes'
     >>> user_browser.getControl("Continue").click()
@@ -137,6 +147,10 @@ Only basic details are shown when no relevant bugtask exists:
 
 
 == Distribution Source Packages ==
+
+In common with all the other guided bug filing processes, we display a
+list of similar bugs when a user tries to file a bug against a source
+package.
 
     >>> user_browser.open(
     ...     "http://launchpad.dev/ubuntu/+source/"
