@@ -11,8 +11,6 @@ __all__ = [
 import datetime
 import pytz
 
-import transaction
-
 from zope.component import getUtility
 from zope.interface import implements
 from zope.security.interfaces import Unauthorized
@@ -25,14 +23,15 @@ from canonical.launchpad.interfaces import (
     UnknownBranchTypeError)
 from canonical.launchpad.ftests import login, logout, ANONYMOUS
 from canonical.launchpad.validators import LaunchpadValidationError
-from canonical.database.sqlbase import clear_current_connection_cache
+from canonical.database.sqlbase import (
+    clear_current_connection_cache, ZopelessTransactionManager)
 
 from canonical.authserver.interfaces import (
     IBranchDetailsStorage, IHostedBranchStorage, IUserDetailsStorage,
     IUserDetailsStorageV2, NOT_FOUND_FAULT_CODE, PERMISSION_DENIED_FAULT_CODE,
     READ_ONLY, WRITABLE)
+from canonical.lp import initZopeless
 
-from twisted.internet.threads import deferToThread
 from twisted.python.util import mergeFunctionMetadata
 from twisted.web.xmlrpc import Fault
 
@@ -45,34 +44,46 @@ def utf8(x):
     return x
 
 
+def getTxnManager():
+    """Get a current ZopelessTransactionManager."""
+    # FIXME: That uses a protected attribute in ZopelessTransactionManager
+    # -- David Allouche 2005-02-16
+    if ZopelessTransactionManager._installed is None:
+        return initZopeless(implicitBegin=False)
+    else:
+        return ZopelessTransactionManager._installed
+
+
 def read_only_transaction(function):
     """Wrap 'function' in a transaction and Zope session."""
     def transacted(*args, **kwargs):
-        transaction.begin()
+        txn = getTxnManager()
+        txn.begin()
         clear_current_connection_cache()
         login(ANONYMOUS)
         try:
             return function(*args, **kwargs)
         finally:
             logout()
-            transaction.abort()
+            txn.abort()
     return mergeFunctionMetadata(function, transacted)
 
 
 def writing_transaction(function):
     """Wrap 'function' in a transaction and Zope session."""
     def transacted(*args, **kwargs):
-        transaction.begin()
+        txn = getTxnManager()
+        txn.begin()
         clear_current_connection_cache()
         login(ANONYMOUS)
         try:
             ret = function(*args, **kwargs)
         except:
             logout()
-            transaction.abort()
+            txn.abort()
             raise
         logout()
-        transaction.commit()
+        txn.commit()
         return ret
     return mergeFunctionMetadata(function, transacted)
 

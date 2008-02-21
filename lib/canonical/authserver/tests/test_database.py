@@ -36,7 +36,7 @@ from canonical.authserver.database import (
     DatabaseUserDetailsStorageV2, NOT_FOUND_FAULT_CODE,
     PERMISSION_DENIED_FAULT_CODE)
 
-from canonical.testing.layers import LaunchpadScriptLayer
+from canonical.testing.layers import LaunchpadZopelessLayer
 
 
 UTC = pytz.timezone('UTC')
@@ -45,22 +45,27 @@ UTC = pytz.timezone('UTC')
 class DatabaseTest(unittest.TestCase):
     """Base class for authserver database tests.
 
-    Runs the tests in using the web database adapter and the stricter Launchpad
-    security model. Provides a `cursor` instance variable for ad-hoc queries.
+    Runs the tests in using the web database adapter and the stricter
+    Launchpad security model. Provides a `cursor` instance variable for ad-hoc
+    queries.
     """
 
-    layer = LaunchpadScriptLayer
+    layer = LaunchpadZopelessLayer
 
     def setUp(self):
-        LaunchpadScriptLayer.switchDbConfig('authserver')
+        LaunchpadZopelessLayer.switchDbUser('authserver')
         super(DatabaseTest, self).setUp()
         self._old_policy = getSecurityPolicy()
         setSecurityPolicy(LaunchpadSecurityPolicy)
-        self.cursor = cursor()
 
     def tearDown(self):
         setSecurityPolicy(self._old_policy)
         super(DatabaseTest, self).tearDown()
+
+    def fetchOne(self, query):
+        cur = cursor()
+        cur.execute(query)
+        return cur.fetchone()
 
     def getNextMirrorTime(self, branch_id):
         """Return the value of next_mirror_time for the branch with the given
@@ -69,15 +74,14 @@ class DatabaseTest(unittest.TestCase):
         :param branch_id: The id of a row in the Branch table. An int.
         :return: A timestamp or None.
         """
-        self.cursor.execute(
+        [next_mirror_time] = self.fetchOne(
             "SELECT next_mirror_time FROM branch WHERE id = %s"
             % sqlvalues(branch_id))
-        [next_mirror_time] = self.cursor.fetchone()
         return next_mirror_time
 
     def setNextMirrorTime(self, branch_id, next_mirror_time):
         """Set next_mirror_time on the branch with the given id."""
-        self.cursor.execute(
+        cursor().execute(
             "UPDATE Branch SET next_mirror_time = %s WHERE id = %s"
             % sqlvalues(next_mirror_time, branch_id))
 
@@ -95,7 +99,7 @@ class DatabaseTest(unittest.TestCase):
         if now_minus is not None:
             value = ("CURRENT_TIMESTAMP AT TIME ZONE 'UTC' - interval '%s'"
                      % now_minus)
-        self.cursor.execute(
+        cursor().execute(
             "UPDATE ProductSeries SET datelastsynced = (%s) WHERE id = %d"
             % (value, series_id))
 
@@ -114,7 +118,7 @@ class DatabaseTest(unittest.TestCase):
         if now_minus is not None:
             value = ("CURRENT_TIMESTAMP AT TIME ZONE 'UTC' - interval '%s'"
                      % now_minus)
-        self.cursor.execute(
+        cursor().execute(
             "UPDATE Branch SET last_mirror_attempt = (%s) WHERE id = %d"
             % (value, branch_id))
 
@@ -179,13 +183,13 @@ class UserDetailsStorageTest(DatabaseTest):
         storage = DatabaseUserDetailsStorage(None)
         userDict = storage.getUser('stuart.bishop@canonical.com')
 
-        transaction.begin()
+        self.layer.txn.begin()
         login(ANONYMOUS)
         stub = getUtility(IPersonSet).getByName('stub')
         email_set = getUtility(IEmailAddressSet)
         email = email_set.new('sb@example.com', stub, EmailAddressStatus.NEW)
         logout()
-        transaction.commit()
+        self.layer.txn.commit()
 
         userDict2 = storage.getUser('stuart.bishop@canonical.com')
         self.assertEqual(userDict, userDict2)
@@ -194,7 +198,7 @@ class UserDetailsStorageTest(DatabaseTest):
         # If there's a PREFERRED address, it should be first in the
         # emailaddresses list.  Let's make stuart@stuartbishop.net PREFERRED
         # rather than stuart.bishop@canonical.com.
-        transaction.begin()
+        self.layer.txn.begin()
         email_set = getUtility(IEmailAddressSet)
 
         email = email_set.getByEmail('stuart.bishop@canonical.com')
@@ -204,7 +208,7 @@ class UserDetailsStorageTest(DatabaseTest):
         email = email_set.getByEmail('stuart@stuartbishop.net')
         email.status = EmailAddressStatus.PREFERRED
         email.syncUpdate()
-        transaction.commit()
+        self.layer.txn.commit()
 
         storage = DatabaseUserDetailsStorage(None)
         userDict = storage.getUser('stuart.bishop@canonical.com')
@@ -215,14 +219,14 @@ class UserDetailsStorageTest(DatabaseTest):
     def test_emailAlphabeticallySorted(self):
         # Although the preferred email address is first in the emailaddresses
         # list, the rest are alphabetically sorted.
-        transaction.begin()
+        self.layer.txn.begin()
         stub = getUtility(IPersonSet).getByName('stub')
         email_set = getUtility(IEmailAddressSet)
         # Use a silly email address that is going to appear before all others
         # in alphabetical sorting.
         email = email_set.new(
             '_stub@canonical.com', stub, EmailAddressStatus.VALIDATED)
-        transaction.commit()
+        self.layer.txn.commit()
 
         storage = DatabaseUserDetailsStorage(None)
         userDict = storage.getUser('stub')
@@ -251,7 +255,7 @@ class UserDetailsStorageTest(DatabaseTest):
         # Unconfirmed email addresses cannot be used to log in.
         storage = DatabaseUserDetailsStorage(None)
         ssha = SSHADigestEncryptor().encrypt('supersecret!')
-        self.cursor.execute('''
+        cursor().execute('''
             UPDATE Person SET password = '%s'
             WHERE id = (SELECT person FROM EmailAddress WHERE email =
                         'justdave@bugzilla.org')'''
@@ -271,7 +275,7 @@ class UserDetailsStorageTest(DatabaseTest):
         self.assertEqual(goodDict, userDict)
 
         # Unicode email addresses are handled too.
-        self.cursor.execute(
+        cursor().execute(
             "INSERT INTO EmailAddress (person, email, status) "
             "VALUES ("
             "  1, "
@@ -305,12 +309,10 @@ class UserDetailsStorageTest(DatabaseTest):
         # address.  The result should be the same.
 
         # The authserver isn't allowed to delete email addresses.
-        LaunchpadScriptLayer.switchDbConfig('launchpad')
-        self.cursor = cursor()
-        self.cursor.execute(
-            "DELETE FROM EmailAddress WHERE person = 1;"
-        )
-        LaunchpadScriptLayer.switchDbConfig('authserver')
+        LaunchpadZopelessLayer.switchDbUser('launchpad')
+        cur = cursor()
+        cur.execute("DELETE FROM EmailAddress WHERE person = 1;")
+        LaunchpadZopelessLayer.switchDbUser('authserver')
 
         storage = DatabaseUserDetailsStorage(None)
         ssha = SSHADigestEncryptor().encrypt('test', self.salt)
@@ -343,12 +345,11 @@ class UserDetailsStorageTest(DatabaseTest):
         # getSSHKeys returns a list of keytype, keytext tuples for users with
         # SSH keys.
 
-        self.cursor.execute("""
+        [expected_keytext] = self.fetchOne("""
             SELECT keytext FROM SSHKey
             JOIN Person ON (SSHKey.person = Person.id)
             WHERE Person.name = 'sabdfl'
             """)
-        [expected_keytext] = self.cursor.fetchone()
 
         storage = DatabaseUserDetailsStorage(None)
         [(keytype, keytext)] = storage.getSSHKeys('sabdfl')
@@ -398,7 +399,8 @@ class HostedBranchStorageTest(DatabaseTest, XMLRPCTestHelper):
             """
             % branchID)
         self.assertEqual(
-            ['name12', 'firefox', 'foo', None, None, 12], cur.fetchone())
+            ['name12', 'firefox', 'foo', None, None, 12],
+            list(cur.fetchone()))
 
     def test_createBranch_junk(self):
         # Create a branch with NULL product too:
@@ -414,7 +416,7 @@ class HostedBranchStorageTest(DatabaseTest, XMLRPCTestHelper):
             """
             % branchID)
         self.assertEqual(
-            ['sabdfl', None, 'foo', None, None, 1], cur.fetchone())
+            ['sabdfl', None, 'foo', None, None, 1], list(cur.fetchone()))
 
     def test_createBranch_bad_product(self):
         # Test that creating a branch for a non-existant product fails.
@@ -471,7 +473,7 @@ class HostedBranchStorageTest(DatabaseTest, XMLRPCTestHelper):
         # getBranchesForUser returns all of the hosted branches that a user
         # may write to. The branches are grouped by product, and are specified
         # by name and id. The name and id of the products are also included.
-        transaction.begin()
+        self.layer.txn.begin()
         no_priv = getUtility(IPersonSet).getByName('no-priv')
         firefox = getUtility(IProductSet).getByName('firefox')
         new_branch = getUtility(IBranchSet).new(
@@ -480,7 +482,7 @@ class HostedBranchStorageTest(DatabaseTest, XMLRPCTestHelper):
         # Zope's security is not relevant and only gets in the way, because
         # there's no logged in user.
         new_branch = removeSecurityProxy(new_branch)
-        transaction.commit()
+        self.layer.txn.commit()
 
         storage = DatabaseUserDetailsStorageV2(None)
         fetched_branches = storage.getBranchesForUser(no_priv.id)
@@ -501,7 +503,7 @@ class HostedBranchStorageTest(DatabaseTest, XMLRPCTestHelper):
         finally:
             logout()
 
-        transaction.begin()
+        self.layer.txn.begin()
         login(login_email)
         try:
             branch = getUtility(IBranchSet).new(
@@ -509,7 +511,7 @@ class HostedBranchStorageTest(DatabaseTest, XMLRPCTestHelper):
                 None)
         finally:
             logout()
-            transaction.commit()
+            self.layer.txn.commit()
 
         storage = DatabaseUserDetailsStorageV2(None)
         branchInfo = storage.getBranchesForUser(12)
@@ -729,7 +731,7 @@ class UserDetailsStorageV2Test(DatabaseTest):
         # Unconfirmed email addresses cannot be used to log in.
         storage = DatabaseUserDetailsStorageV2(None)
         ssha = SSHADigestEncryptor().encrypt('supersecret!')
-        self.cursor.execute('''
+        cursor().execute('''
             UPDATE Person SET password = '%s'
             WHERE id = (SELECT person FROM EmailAddress
                         WHERE email = 'justdave@bugzilla.org')'''
@@ -751,12 +753,12 @@ class UserDetailsStorageV2Test(DatabaseTest):
         # can never happen, until then the authserver should be robust).
 
         # First, make sure that the sample user has no wikiname.
-        transaction.begin()
+        self.layer.txn.begin()
         person = getUtility(IPersonSet).getByEmail('test@canonical.com')
         wiki_names = getUtility(IWikiNameSet).getAllWikisByPerson(person)
         for wiki_name in wiki_names:
             wiki_name.destroySelf()
-        transaction.commit()
+        self.layer.txn.commit()
 
         # Get the user dict for Sample Person (test@canonical.com).
         storage = DatabaseUserDetailsStorageV2(None)
@@ -774,7 +776,7 @@ class UserDetailsStorageV2Test(DatabaseTest):
         getUtility(IWikiNameSet).new(
             person, 'http://foowiki/', 'SamplePerson')
         logout()
-        transaction.commit()
+        self.layer.txn.commit()
 
         # The authserver should return exactly the same results.
         userDict2 = storage.getUser('test@canonical.com')
@@ -790,10 +792,9 @@ class BranchDetailsStorageTest(DatabaseTest):
 
     def test_startMirroring(self):
         # verify that the last mirror time is None before hand.
-        self.cursor.execute("""
+        row = self.fetchOne("""
             SELECT last_mirror_attempt, last_mirrored
                 FROM branch WHERE id = 1""")
-        row = self.cursor.fetchone()
         self.assertEqual(row[0], None)
         self.assertEqual(row[1], None)
 
@@ -801,28 +802,27 @@ class BranchDetailsStorageTest(DatabaseTest):
         self.assertEqual(success, True)
 
         # verify that last_mirror_attempt is set
-        self.cursor.execute("""
+        row = self.fetchOne("""
             SELECT last_mirror_attempt, last_mirrored
                 FROM branch WHERE id = 1""")
-        row = self.cursor.fetchone()
         self.assertNotEqual(row[0], None)
         self.assertEqual(row[1], None)
 
     def test_startMirroring_invalid_branch(self):
         # verify that no branch exists with id == -1
-        self.cursor.execute("""
+        cur = cursor()
+        cur.execute("""
             SELECT id FROM branch WHERE id = -1""")
-        self.assertEqual(self.cursor.rowcount, 0)
+        self.assertEqual(cur.rowcount, 0)
 
         success = self.storage.startMirroring(-11)
         self.assertEqual(success, False)
 
     def test_mirrorFailed(self):
-        self.cursor.execute("""
+        row = self.fetchOne("""
             SELECT last_mirror_attempt, last_mirrored, mirror_failures,
                 mirror_status_message
                 FROM branch WHERE id = 1""")
-        row = self.cursor.fetchone()
         self.assertEqual(row[0], None)
         self.assertEqual(row[1], None)
         self.assertEqual(row[2], 0)
@@ -833,21 +833,19 @@ class BranchDetailsStorageTest(DatabaseTest):
         success = self.storage.mirrorFailed(1, "failed")
         self.assertEqual(success, True)
 
-        self.cursor.execute("""
+        row = self.fetchOne("""
             SELECT last_mirror_attempt, last_mirrored, mirror_failures,
                 mirror_status_message
                 FROM branch WHERE id = 1""")
-        row = self.cursor.fetchone()
         self.assertNotEqual(row[0], None)
         self.assertEqual(row[1], None)
         self.assertEqual(row[2], 1)
         self.assertEqual(row[3], 'failed')
 
     def test_mirrorComplete(self):
-        self.cursor.execute("""
+        row = self.fetchOne("""
             SELECT last_mirror_attempt, last_mirrored, mirror_failures
                 FROM branch WHERE id = 1""")
-        row = self.cursor.fetchone()
         self.assertEqual(row[0], None)
         self.assertEqual(row[1], None)
         self.assertEqual(row[2], 0)
@@ -857,11 +855,10 @@ class BranchDetailsStorageTest(DatabaseTest):
         success = self.storage.mirrorComplete(1, 'rev-1')
         self.assertEqual(success, True)
 
-        self.cursor.execute("""
+        row = self.fetchOne("""
             SELECT last_mirror_attempt, last_mirrored, mirror_failures,
                    last_mirrored_id
                 FROM branch WHERE id = 1""")
-        row = self.cursor.fetchone()
         self.assertNotEqual(row[0], None)
         self.assertEqual(row[0], row[1])
         self.assertEqual(row[2], 0)
@@ -876,10 +873,9 @@ class BranchDetailsStorageTest(DatabaseTest):
         success = self.storage.mirrorComplete(1, 'rev-1')
         self.assertEqual(success, True)
 
-        self.cursor.execute("""
+        row = self.fetchOne("""
             SELECT last_mirror_attempt, last_mirrored, mirror_failures
                 FROM branch WHERE id = 1""")
-        row = self.cursor.fetchone()
         self.assertNotEqual(row[0], None)
         self.assertEqual(row[0], row[1])
         self.assertEqual(row[2], 0)
@@ -894,10 +890,9 @@ class BranchDetailsStorageTest(DatabaseTest):
             'test-recordsuccess', 'vostok', started_tuple, completed_tuple)
         self.assertEqual(success, True, 'recordSuccess failed')
 
-        self.cursor.execute("""
+        row = self.fetchOne("""
             SELECT name, hostname, date_started, date_completed
                 FROM ScriptActivity where name = 'test-recordsuccess'""")
-        row = self.cursor.fetchone()
         self.assertEqual(row[0], 'test-recordsuccess')
         self.assertEqual(row[1], 'vostok')
         self.assertEqual(row[2], started.replace(tzinfo=None))
@@ -907,14 +902,19 @@ class BranchDetailsStorageTest(DatabaseTest):
 class BranchPullQueueTest(BranchTestCase):
     """Tests for the pull queue methods of `IBranchDetailsStorage`."""
 
-    layer = LaunchpadScriptLayer
+    layer = LaunchpadZopelessLayer
 
     def setUp(self):
-        LaunchpadScriptLayer.switchDbConfig('authserver')
+        LaunchpadZopelessLayer.switchDbUser('authserver')
         super(BranchPullQueueTest, self).setUp()
-        self.restrictSecurityPolicy()
         self.emptyPullQueues()
+        self.restrictSecurityPolicy()
         self.storage = DatabaseBranchDetailsStorage(None)
+
+    def emptyPullQueues(self):
+        self.layer.txn.begin()
+        cursor().execute("UPDATE Branch SET next_mirror_time = NULL")
+        self.layer.txn.commit()
 
     def assertBranchQueues(self, hosted, mirrored, imported):
         login(ANONYMOUS)
@@ -938,10 +938,10 @@ class BranchPullQueueTest(BranchTestCase):
 
     def makeBranchAndRequestMirror(self, branch_type):
         """Make a branch of the given type and call requestMirror on it."""
-        transaction.begin()
+        self.layer.txn.begin()
         branch = self.makeBranch(branch_type)
         branch.requestMirror()
-        transaction.commit()
+        self.layer.txn.commit()
         return branch
 
     def test_requestMirrorPutsBranchInQueue_hosted(self):
