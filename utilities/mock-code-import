@@ -21,24 +21,12 @@ Details of the Subversion server are printed to stdout.
 import _pythonpath
 
 import os
-import shutil
 from subprocess import PIPE, Popen
 import tempfile
-import time
 import transaction
 
-import psycopg
-import pysvn
-
-from zope.component import getUtility
-
-from bzrlib.urlutils import join as urljoin
-
 from canonical.codehosting.codeimport.tests.test_foreigntree import (
-    local_path_to_url, SubversionServer)
-from canonical.launchpad.interfaces import (
-    BranchType, CodeImportReviewStatus, ICodeImportSet,
-    ICodeImportJobWorkflow, ILaunchpadCelebrities, RevisionControlSystems)
+    SubversionServer)
 from canonical.launchpad.scripts import execute_zcml_for_scripts
 from canonical.launchpad.testing import LaunchpadObjectFactory
 from canonical.launchpad.webapp import canonical_url
@@ -65,7 +53,7 @@ def main():
         svn_url = svn_server.makeBranch(
             'trunk', [('README', 'No real content\n.')])
         job = make_import_job(svn_url)
-        print
+        transaction.commit()
         print "CodeImportJob.id:", job.id
         print "Subversion Repository:", svn_repo_path
         print "Subversion branch URL:", job.code_import.svn_branch_url
