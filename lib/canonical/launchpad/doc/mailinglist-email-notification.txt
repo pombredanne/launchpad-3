@@ -10,25 +10,6 @@ via email.
     ...     pop_notifications, print_emails)
 
 
-    >>> def print_messages_and_recipients(include_reply_to=False):
-    ...     """Pop all messages from stub.test_emails and print them with
-    ...      their recipients.
-    ...
-    ...     Since the same message may be sent more than once (for different
-    ...     recipients), we print each distinct message only once and group
-    ...     all recipients of that message together.
-    ...     """
-    ...     for message in pop_notifications():
-    ...         body = message.get_payload()
-    ...         print 'From:', message['From']
-    ...         print 'To:', message['To']
-    ...         if include_reply_to:
-    ...             print 'Reply-To:', message['Reply-To']
-    ...         print 'Subject:', message['Subject']
-    ...         print body
-    ...         print "-"*40
-
-
 When a new email list becomes active, an email notification is sent to
 all active team members.
 
