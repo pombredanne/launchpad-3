@@ -850,7 +850,7 @@ class CustomizableFormatter(ObjectFormatterExtendedAPI):
                 values[key] = ''
             else:
                 values[key] = cgi.escape(value)
-        return self._template % values
+        return self._link_summary_template % values
 
     def _get_icon(self):
         """Retrieve the icon for the _context, if any.
@@ -892,7 +892,7 @@ class PillarFormatterAPI(CustomizableFormatter):
     """Adapter for IProduct, IDistribution and IProject objects to a
     formatted string."""
 
-    _template = '%(displayname)s'
+    _link_summary_template = '%(displayname)s'
 
     def _link_summary_values(self):
         return {'displayname': self._context.displayname}
@@ -960,7 +960,7 @@ class BranchFormatterAPI(ObjectFormatterExtendedAPI):
 class BranchSubscriptionFormatterAPI(CustomizableFormatter):
     """Adapter for IBranchSubscription objects to a formatted string."""
 
-    _template = _('Subscription of %(person)s to %(branch)s')
+    _link_summary_template = _('Subscription of %(person)s to %(branch)s')
 
     def _link_summary_values(self):
         """Provide values for template substitution"""
@@ -972,7 +972,7 @@ class BranchSubscriptionFormatterAPI(CustomizableFormatter):
 
 class BranchMergeProposalFormatterAPI(CustomizableFormatter):
 
-    _template = _('Proposed merge of %(source)s into %(target)s')
+    _link_summary_template = _('Proposed merge of %(source)s into %(target)s')
 
     def _link_summary_values(self):
         return {
@@ -1002,7 +1002,7 @@ class BugBranchFormatterAPI(CustomizableFormatter):
 class BugFormatterAPI(CustomizableFormatter):
     """Adapter for IBug objects to a formatted string."""
 
-    _template = 'Bug #%(id)s: %(title)s'
+    _link_summary_template = 'Bug #%(id)s: %(title)s'
 
     def _link_summary_values(self):
         """See CustomizableFormatter._link_summary_values."""
@@ -1019,7 +1019,7 @@ class BugTaskFormatterAPI(CustomizableFormatter):
 class CodeImportFormatterAPI(CustomizableFormatter):
     """Adapter providing fmt support for CodeImport objects"""
 
-    _template = _('Import of %(product)s: %(branch)s')
+    _link_summary_template = _('Import of %(product)s: %(branch)s')
 
     def _link_summary_values(self):
         """See CustomizableFormatter._link_summary_values."""
@@ -1034,7 +1034,7 @@ class CodeImportFormatterAPI(CustomizableFormatter):
 class ProductSeriesFormatterAPI(CustomizableFormatter):
     """Adapter providing fmt support for ProductSeries objects"""
 
-    _template = _('%(product)s Series: %(series)s')
+    _link_summary_template = _('%(product)s Series: %(series)s')
 
     def _link_summary_values(self):
         """See CustomizableFormatter._link_summary_values."""
@@ -1045,7 +1045,7 @@ class ProductSeriesFormatterAPI(CustomizableFormatter):
 class SpecificationFormatterAPI(CustomizableFormatter):
     """Adapter providing fmt support for Specification objects"""
 
-    _template = _('%(title)s')
+    _link_summary_template = _('%(title)s')
 
     def _link_summary_values(self):
         """See CustomizableFormatter._link_summary_values."""
