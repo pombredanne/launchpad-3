@@ -371,17 +371,15 @@ class TestWorkerCore(WorkerTest):
             branch.local_path)
 
 
-class TestCVSImport(WorkerTest):
-    """Tests for the worker importing and syncing a CVS module."""
+class TestActualImportMixin:
+    """Mixin for tests that check the actual importing."""
 
-    def setUp(self):
-        """Set up a CVS repository with a 'trunk' module and an import worker.
+    def setUpImport(self):
+        """Set up the objects required for an import.
 
-        This requires setting up a `BazaarBranchStore` and a
-        `ForeignBranchStore` as well.
+        This means a BazaarBranchStore, ForeignBranchStore, CodeImport and
+        a CodeImportJob.
         """
-        WorkerTest.setUp(self)
-
         repository_path = tempfile.mkdtemp()
         self.addCleanup(lambda: shutil.rmtree(repository_path))
 
@@ -395,27 +393,23 @@ class TestCVSImport(WorkerTest):
         self.job = self.factory.makeCodeImportJob(self.code_import)
 
     def commitInForeignTree(self, foreign_tree):
-        # If you write to a file in the same second as the previous commit,
-        # CVS will not think that it has changed.
-        time.sleep(1)
-        self.build_tree_contents(
-            [(os.path.join(foreign_tree.local_path, 'README'),
-              'New content')])
-        foreign_tree.commit()
+        """Commit a single revision to `foreign_tree`.
+
+        Override this in your subclass.
+        """
+        raise NotImplementedError(
+            "Override this with a VCS-specific implementation.")
 
     def makeCodeImport(self, repository_path, module_name, files):
-        """Make a CVS `CodeImport` that points to a real CVS repository."""
-        cvs_server = CVSServer(repository_path)
-        cvs_server.setUp()
-        self.addCleanup(cvs_server.tearDown)
+        """Make a `CodeImport` that points to a real repository.
 
-        cvs_server.makeModule('trunk', [('README', 'original\n')])
-
-        # Construct a CodeImportJob
-        return self.factory.makeCodeImport(
-            cvs_root=cvs_server.getRoot(), cvs_module='trunk')
+        Override this in your subclass.
+        """
+        raise NotImplementedError(
+            "Override this with a VCS-specific implementation.")
 
     def makeImportWorker(self):
+        """Make a new `ImportWorker`."""
         return ImportWorker(
             self.job.id, self.foreign_store, self.bazaar_store)
 
@@ -451,28 +445,41 @@ class TestCVSImport(WorkerTest):
         self.assertEqual(3, len(bazaar_tree.branch.revision_history()))
 
 
-class TestSubversionImport(WorkerTest):
+class TestCVSImport(WorkerTest, TestActualImportMixin):
+    """Tests for the worker importing and syncing a CVS module."""
+
+    def setUp(self):
+        super(TestCVSImport, self).setUp()
+        self.setUpImport()
+
+    def commitInForeignTree(self, foreign_tree):
+        # If you write to a file in the same second as the previous commit,
+        # CVS will not think that it has changed.
+        time.sleep(1)
+        self.build_tree_contents(
+            [(os.path.join(foreign_tree.local_path, 'README'),
+              'New content')])
+        foreign_tree.commit()
+
+    def makeCodeImport(self, repository_path, module_name, files):
+        """Make a CVS `CodeImport` that points to a real CVS repository."""
+        cvs_server = CVSServer(repository_path)
+        cvs_server.setUp()
+        self.addCleanup(cvs_server.tearDown)
+
+        cvs_server.makeModule('trunk', [('README', 'original\n')])
+
+        # Construct a CodeImportJob
+        return self.factory.makeCodeImport(
+            cvs_root=cvs_server.getRoot(), cvs_module='trunk')
+
+
+class TestSubversionImport(WorkerTest, TestActualImportMixin):
     """Tests for the worker importing and syncing a Subversion branch."""
 
     def setUp(self):
-        """Set up a Subversion repository with a trunk and an import worker.
-
-        This requires setting up a `BazaarBranchStore` and a
-        `ForeignBranchStore` as well.
-        """
         WorkerTest.setUp(self)
-
-        repository_path = tempfile.mkdtemp()
-        self.addCleanup(lambda: shutil.rmtree(repository_path))
-
-        self.bazaar_store = BazaarBranchStore(
-            self.get_transport('bazaar_store'))
-        self.foreign_store = ForeignBranchStore(
-            self.get_transport('foreign_store'))
-
-        self.code_import = self.makeCodeImport(
-            repository_path, 'trunk', [('README', 'Original contents')])
-        self.job = self.factory.makeCodeImportJob(self.code_import)
+        self.setUpImport()
 
     def commitInForeignTree(self, foreign_tree):
         """Change the foreign tree, generating exactly one commit."""
@@ -494,23 +501,6 @@ class TestSubversionImport(WorkerTest):
 
         svn_branch_url = svn_server.makeBranch(branch_name, files)
         return self.factory.makeCodeImport(svn_branch_url)
-
-    def makeImportWorker(self):
-        return ImportWorker(
-            self.job.id, self.foreign_store, self.bazaar_store)
-
-    def test_import(self):
-        # Running the worker on a branch that hasn't been imported yet imports
-        # the branch.
-        worker = self.makeImportWorker()
-        worker.run()
-        bazaar_tree = worker.getBazaarWorkingTree()
-        # XXX: JonathanLange 2008-02-22: This assumes that the branch that we
-        # are importing has two revisions. Looking at the test, it's not
-        # obvious why we make this assumption, hence the XXX. The two
-        # revisions are from 1) making the repository and 2) adding a file.
-        # The name of this test smell is "Mystery Guest".
-        self.assertEqual(2, len(bazaar_tree.branch.revision_history()))
 
     def test_bazaarBranchStored(self):
         # The worker stores the Bazaar branch after it has imported the new
@@ -535,24 +525,6 @@ class TestSubversionImport(WorkerTest):
             worker.job.code_import, 'tmp-foreign-tree')
         self.assertDirectoryTreesEqual(
             foreign_tree.local_path, worker.getForeignBranch().local_path)
-
-    def test_sync(self):
-        # Do an import.
-        worker = self.makeImportWorker()
-        worker.run()
-        bazaar_tree = worker.getBazaarWorkingTree()
-        self.assertEqual(2, len(bazaar_tree.branch.revision_history()))
-
-        # Change the remote branch.
-        foreign_tree = worker.getForeignBranch()
-        self.commitInForeignTree(foreign_tree)
-
-        # Run the same worker again.
-        worker.run()
-
-        # Check that the new revisions are in the Bazaar branch.
-        bazaar_tree = worker.getBazaarWorkingTree()
-        self.assertEqual(3, len(bazaar_tree.branch.revision_history()))
 
 
 def test_suite():
