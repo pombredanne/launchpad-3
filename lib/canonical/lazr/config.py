@@ -133,7 +133,7 @@ class ImplicitTypeSection(Section):
         (?P<str> ^.*$)
         ''', re.IGNORECASE | re.VERBOSE)
 
-    def _implicit(self, value):
+    def _convert(self, value):
         """Return the value as the datatype the str appears to be.
 
         Conversion rules:
@@ -156,12 +156,12 @@ class ImplicitTypeSection(Section):
     def __getitem__(self, key):
         """See `ISection`."""
         value = super(ImplicitTypeSection, self).__getitem__(key)
-        return self._implicit(value)
+        return self._convert(value)
 
     def __getattr__(self, name):
         """See `ISection`."""
         value = super(ImplicitTypeSection, self).__getattr__(name)
-        return self._implicit(value)
+        return self._convert(value)
 
 
 class ConfigSchema:
