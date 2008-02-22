@@ -360,15 +360,16 @@
       />
   </browser:pages>
 
-  <browser:pages
+  <!-- The bounty system is kept maintained but not available for users.
+  This is achieved by putting it on the PageTestLayer. -->
+  <browser:page
+    facet="bounties"
     for="canonical.launchpad.interfaces.IProduct"
-    permission="zope.Public" >
-    <browser:page
-      name="+bounties"
-      facet="bounties"
-      template="../templates/related-bounties.pt"
-      />
-  </browser:pages>
+    layer="canonical.launchpad.layers.PageTestLayer"
+    name="+bounties"
+    permission="zope.Public"
+    template="../templates/related-bounties.pt"
+    />
 
   <browser:page
     name="+edit"

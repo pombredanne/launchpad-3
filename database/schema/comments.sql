@@ -1661,6 +1661,7 @@ COMMENT ON COLUMN SectionSelection.section IS 'Refers to the section in question
 
 -- PillarName
 COMMENT ON TABLE PillarName IS 'A cache of the names of our "Pillar''s" (distribution, product, project) to ensure uniqueness in this shared namespace. This is a materialized view maintained by database triggers.';
+COMMENT ON COLUMN PillarName.alias_for IS 'An alias for another pillarname. Rows with this column set are not maintained by triggers.';
 
 -- POFileTranslator
 COMMENT ON TABLE POFileTranslator IS 'A materialized view caching who has translated what pofile.';
@@ -1704,6 +1705,9 @@ COMMENT ON COLUMN Entitlement.amount_used IS 'Quantity of this entitlement alloc
 COMMENT ON COLUMN Entitlement.whiteboard IS 'A place for administrator notes.';
 COMMENT ON COLUMN Entitlement.state IS 'The state (REQUESTED, ACTIVE, INACTIVE) of the entitlement.';
 COMMENT ON COLUMN Entitlement.is_dirty IS 'This entitlement has been modified and the state needst to be updated on the external system.';
+COMMENT ON COLUMN Entitlement.distribution IS 'The distribution to which this entitlement applies.';
+COMMENT ON COLUMN Entitlement.product IS 'The product to which this entitlement applies.';
+COMMENT ON COLUMN Entitlement.project IS 'The project to which this entitlement applies.';
 
 -- OpenIdRealmConfig
 COMMENT ON TABLE OpenIdRPConfig IS 'Configuration information for OpenID Relying Parties';

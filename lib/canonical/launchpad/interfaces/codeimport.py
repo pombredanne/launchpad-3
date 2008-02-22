@@ -17,7 +17,7 @@ from zope.schema import Datetime, Choice, Int, TextLine, Timedelta
 from canonical.lazr import DBEnumeratedType, DBItem
 
 from canonical.launchpad import _
-from canonical.launchpad.fields import URIField
+from canonical.launchpad.fields import PublicPersonChoice, URIField
 from canonical.launchpad.interfaces.productseries import (
     validate_cvs_module, validate_cvs_root, RevisionControlSystems)
 
@@ -62,17 +62,17 @@ class ICodeImport(Interface):
         title=_('Branch'), required=True, readonly=True, vocabulary='Branch',
         description=_("The Bazaar branch produced by the import system."))
 
-    registrant = Choice(
+    registrant = PublicPersonChoice(
         title=_('Registrant'), required=True, readonly=True,
         vocabulary='ValidPersonOrTeam',
         description=_("The person who initially requested this import."))
 
-    owner = Choice(
+    owner = PublicPersonChoice(
         title=_('Owner'), required=True, readonly=False,
         vocabulary='ValidPersonOrTeam',
         description=_("The community contact for this import."))
 
-    assignee = Choice(
+    assignee = PublicPersonChoice(
         title=_('Assignee'), required=False, readonly=False,
         vocabulary='ValidPersonOrTeam',
         description=_("The person in charge of handling this import."))

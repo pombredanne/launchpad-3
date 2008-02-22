@@ -11,6 +11,7 @@ __all__ = ["BugBranch",
 from sqlobject import ForeignKey, IN, StringCol
 
 from zope.component import getUtility
+from zope.event import notify
 from zope.interface import implements
 
 from canonical.database.constants import UTC_NOW
@@ -18,8 +19,10 @@ from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.sqlbase import SQLBase, sqlvalues
 from canonical.database.enumcol import EnumCol
 
+from canonical.launchpad.event import SQLObjectCreatedEvent
 from canonical.launchpad.interfaces import (
     BugBranchStatus, IBugBranch, IBugBranchSet, ILaunchpadCelebrities)
+from canonical.launchpad.validators.person import public_person_validator
 
 
 class BugBranch(SQLBase):
@@ -36,7 +39,8 @@ class BugBranch(SQLBase):
     whiteboard = StringCol(notNull=False, default=None)
 
     registrant = ForeignKey(
-        dbName='registrant', foreignKey='Person', notNull=True)
+        dbName='registrant', foreignKey='Person',
+        validator=public_person_validator, notNull=True)
 
     @property
     def bug_task(self):
@@ -54,8 +58,10 @@ class BugBranchSet:
 
     def new(self, bug, branch, status, registrant):
         "See `IBugBranchSet`."
-        return BugBranch(
+        bug_branch = BugBranch(
             bug=bug, branch=branch, status=status, registrant=registrant)
+        notify(SQLObjectCreatedEvent(bug_branch))
+        return bug_branch
 
     def getBugBranch(self, bug, branch):
         "See `IBugBranchSet`."

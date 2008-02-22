@@ -14,7 +14,7 @@ import logging
 import os
 
 from bzrlib.errors import (
-    BzrError, InProcessTransport, NoSuchFile, PermissionDenied,
+    BzrError, FileExists, InProcessTransport, NoSuchFile, PermissionDenied,
     TransportNotPossible)
 from bzrlib import trace, urlutils
 from bzrlib.transport import (
@@ -62,6 +62,9 @@ def makedirs(base_transport, path, mode=None):
             transport.mkdir('.', mode)
         except NoSuchFile:
             need_to_create.append(transport)
+        except FileExists:
+            # Nothing to do. Directory made.
+            return
         else:
             break
         transport = transport.clone('..')
@@ -391,16 +394,20 @@ class LaunchpadTransport(Transport):
         :raise TransportNotPossible: If trying to do a write operation on a
             read-only path.
         """
-        path, permissions = self._translate_virtual_path(relpath)
-        if permissions == READ_ONLY:
-            transport = self.server.mirror_transport
-        else:
-            transport = self.server.backing_transport
+        transport, path, permissions = self._get_transport_and_path(relpath)
         self.server.logger.info(
             '%s(%r -> %r, args=%r, kwargs=%r)',
             methodname, relpath, (path, permissions), args, kwargs)
         method = getattr(transport, methodname)
         return method(path, *args, **kwargs)
+
+    def _get_transport_and_path(self, relpath):
+        path, permissions = self._translate_virtual_path(relpath)
+        if permissions == READ_ONLY:
+            transport = self.server.mirror_transport
+        else:
+            transport = self.server.backing_transport
+        return transport, path, permissions
 
     def _translate_virtual_path(self, relpath):
         """Translate a virtual path into a path on the backing transport.
@@ -445,13 +452,13 @@ class LaunchpadTransport(Transport):
 
     def iter_files_recursive(self):
         self.server.logger.debug('iter_files_recursive()')
-        path, ignored = self._translate_virtual_path('.')
-        backing_transport = self.server.backing_transport.clone(path)
-        return backing_transport.iter_files_recursive()
+        transport, path, permissions = self._get_transport_and_path('.')
+        return transport.clone(path).iter_files_recursive()
 
     def listable(self):
         self.server.logger.debug('listable()')
-        return self.server.backing_transport.listable()
+        transport, path, permissions = self._get_transport_and_path('.')
+        return transport.listable()
 
     def list_dir(self, relpath):
         return self._call('list_dir', relpath)
