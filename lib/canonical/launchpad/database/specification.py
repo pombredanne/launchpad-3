@@ -261,11 +261,9 @@ class Specification(SQLBase, BugLinkTargetMixin):
 
     def getFeedbackRequests(self, person):
         """See ISpecification."""
-        reqlist = []
-        for fbreq in self.feedbackrequests:
-            if fbreq.reviewer.id == person.id:
-                reqlist.append(fbreq)
-        return reqlist
+        fb = SpecificationFeedback.selectBy(
+            specification=self, reviewer=person)
+        return fb.prejoin(['requester'])
 
     def canMentor(self, user):
         """See ICanBeMentored."""
