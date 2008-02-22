@@ -267,7 +267,6 @@ ICanonicalUrlData, but its parent or its parent's parent (and so on) cannot.
 The first argument to NoCanonicalUrl is the object that a canonical url was
 requested for.  The second argument is the object that broke the chain.
 
-
 == The canonical_urldata_iterator function ==
 
 TODO.  Currently tested implicitly by the canonical_url_iterator tests.
