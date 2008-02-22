@@ -1005,11 +1005,14 @@ class IPersonPublic(IHasSpecifications, IHasMentoringOffers,
         for each source package name, distribution series combination.
         """
 
-    def getLatestUploadedPPAPackages():
+    def getLatestUploadedPPAPackages(user):
         """Return `SourcePackageRelease`s uploaded by this person to any PPA.
 
         This method will only include the latest source package release
         for each source package name, distribution series combination.
+
+        'user' must be provided to ensure that a private archive's packages
+        are not returned to non-privileged users.
         """
 
     def isUploader(distribution):

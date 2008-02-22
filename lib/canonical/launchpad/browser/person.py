@@ -2056,6 +2056,14 @@ class PersonView(LaunchpadView, FeedsMixin):
             return None
         return mailing_list.archive_url
 
+    def getLatestUploadedPPAPackages(self):
+        """Return the sourcepackagereleases uploaded to PPAs by this person.
+
+        Results are filtered according to the permission of the requesting
+        user to see private archives.
+        """
+        return self.context.getLatestUploadedPPAPackages(self.user)
+
 
 class PersonIndexView(XRDSContentNegotiationMixin, PersonView):
     """View class for person +index and +xrds pages."""
