@@ -390,16 +390,30 @@ class TestCVSImport(WorkerTest):
         self.foreign_store = ForeignBranchStore(
             self.get_transport('foreign_store'))
 
-        self.cvs_server = CVSServer(repository_path)
-        self.cvs_server.setUp()
-        self.addCleanup(self.cvs_server.tearDown)
+        self.code_import = self.makeCodeImport(
+            repository_path, 'trunk', [('README', 'Original contents')])
+        self.job = self.factory.makeCodeImportJob(self.code_import)
 
-        self.cvs_server.makeModule('trunk', [('README', 'original\n')])
+    def commitInForeignTree(self, foreign_tree):
+        # If you write to a file in the same second as the previous commit,
+        # CVS will not think that it has changed.
+        time.sleep(1)
+        self.build_tree_contents(
+            [(os.path.join(foreign_tree.local_path, 'README'),
+              'New content')])
+        foreign_tree.commit()
+
+    def makeCodeImport(self, repository_path, module_name, files):
+        """Make a CVS `CodeImport` that points to a real CVS repository."""
+        cvs_server = CVSServer(repository_path)
+        cvs_server.setUp()
+        self.addCleanup(cvs_server.tearDown)
+
+        cvs_server.makeModule('trunk', [('README', 'original\n')])
 
         # Construct a CodeImportJob
-        self.code_import = self.factory.makeCodeImport(
-            cvs_root=self.cvs_server.getRoot(), cvs_module='trunk')
-        self.job = self.factory.makeCodeImportJob(self.code_import)
+        return self.factory.makeCodeImport(
+            cvs_root=cvs_server.getRoot(), cvs_module='trunk')
 
     def makeImportWorker(self):
         return ImportWorker(
@@ -427,14 +441,7 @@ class TestCVSImport(WorkerTest):
 
         # Change the remote branch.
         foreign_tree = worker.getForeignBranch()
-
-        # If you write to a file in the same second as the previous commit,
-        # CVS will not think that it has changed.
-        time.sleep(1)
-        self.build_tree_contents(
-            [(os.path.join(foreign_tree.local_path, 'README'),
-              'New content')])
-        foreign_tree.commit()
+        self.commitInForeignTree(foreign_tree)
 
         # Run the same worker again.
         worker.run()
@@ -467,6 +474,18 @@ class TestSubversionImport(WorkerTest):
             repository_path, 'trunk', [('README', 'Original contents')])
         self.job = self.factory.makeCodeImportJob(self.code_import)
 
+    def commitInForeignTree(self, foreign_tree):
+        """Change the foreign tree, generating exactly one commit."""
+        svn_url = foreign_tree.remote_url
+        client = pysvn.Client()
+        client.checkout(svn_url, 'working_tree')
+        file = open('working_tree/newfile', 'w')
+        file.write('No real content\n')
+        file.close()
+        client.add('working_tree/newfile')
+        client.checkin('working_tree', 'Add a file', recurse=True)
+        shutil.rmtree('working_tree')
+
     def makeCodeImport(self, repository_path, branch_name, files):
         """Make a Subversion `CodeImport` that points to a real SVN repo."""
         svn_server = SubversionServer(repository_path)
@@ -479,18 +498,6 @@ class TestSubversionImport(WorkerTest):
     def makeImportWorker(self):
         return ImportWorker(
             self.job.id, self.foreign_store, self.bazaar_store)
-
-    def commitInForeignTree(self, foreign_tree):
-        """Change the foreign tree, generating exactly one commit."""
-        svn_url = foreign_tree.remote_url
-        client = pysvn.Client()
-        client.checkout(svn_url, 'working_tree')
-        file = open('working_tree/newfile', 'w')
-        file.write('No real content\n')
-        file.close()
-        client.add('working_tree/newfile')
-        client.checkin('working_tree', 'Add a file', recurse=True)
-        shutil.rmtree('working_tree')
 
     def test_import(self):
         # Running the worker on a branch that hasn't been imported yet imports
