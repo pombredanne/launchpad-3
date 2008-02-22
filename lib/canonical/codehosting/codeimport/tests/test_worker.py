@@ -212,30 +212,30 @@ class TestForeignTreeStore(WorkerTest):
 
         The store is in a different directory to the local working directory.
         """
-        def _getForeignBranch(code_import, target_path):
+        def _getForeignTree(code_import, target_path):
             return MockForeignWorkingTree(target_path)
         if transport is None:
             transport = self.get_transport('remote')
         store = ForeignTreeStore(transport)
-        store._getForeignBranch = _getForeignBranch
+        store._getForeignTree = _getForeignTree
         return store
 
-    def test_getForeignBranchSubversion(self):
-        # _getForeignBranch() returns a Subversion working tree for Subversion
+    def test_getForeignTreeSubversion(self):
+        # _getForeignTree() returns a Subversion working tree for Subversion
         # code imports.
         store = ForeignTreeStore(None)
         svn_import = self.factory.makeCodeImport(
             svn_branch_url=self.factory.getUniqueURL())
-        working_tree = store._getForeignBranch(svn_import, 'path')
+        working_tree = store._getForeignTree(svn_import, 'path')
         self.assertIsSameRealPath(working_tree.local_path, 'path')
         self.assertEqual(working_tree.remote_url, svn_import.svn_branch_url)
 
-    def test_getForeignBranchCVS(self):
-        # _getForeignBranch() returns a CVS working tree for CVS code imports.
+    def test_getForeignTreeCVS(self):
+        # _getForeignTree() returns a CVS working tree for CVS code imports.
         store = ForeignTreeStore(None)
         cvs_import = self.factory.makeCodeImport(
             cvs_root='root', cvs_module='module')
-        working_tree = store._getForeignBranch(cvs_import, 'path')
+        working_tree = store._getForeignTree(cvs_import, 'path')
         self.assertIsSameRealPath(working_tree.local_path, 'path')
         self.assertEqual(working_tree.root, cvs_import.cvs_root)
         self.assertEqual(working_tree.module, cvs_import.cvs_module)
@@ -361,11 +361,11 @@ class TestWorkerCore(WorkerTest):
                 worker.working_directory, worker.BZR_WORKING_TREE_PATH),
             os.path.abspath(bzr_working_tree.basedir))
 
-    def test_getForeignBranch(self):
-        # getForeignBranch returns an object that represents the 'foreign'
+    def test_getForeignTree(self):
+        # getForeignTree returns an object that represents the 'foreign'
         # branch (i.e. a CVS or Subversion branch).
         worker = self.makeImportWorker()
-        branch = worker.getForeignBranch()
+        branch = worker.getForeignTree()
         self.assertIsSameRealPath(
             os.path.join(
                 worker.working_directory, worker.FOREIGN_WORKING_TREE_PATH),
@@ -435,7 +435,7 @@ class TestActualImportMixin:
         self.assertEqual(2, len(bazaar_tree.branch.revision_history()))
 
         # Change the remote branch.
-        foreign_tree = worker.getForeignBranch()
+        foreign_tree = worker.getForeignTree()
         self.commitInForeignTree(foreign_tree)
 
         # Run the same worker again.
@@ -527,7 +527,7 @@ class TestSubversionImport(WorkerTest, TestActualImportMixin):
         foreign_tree = worker.foreign_tree_store.fetchFromArchive(
             worker.job.code_import, 'tmp-foreign-tree')
         self.assertDirectoryTreesEqual(
-            foreign_tree.local_path, worker.getForeignBranch().local_path)
+            foreign_tree.local_path, worker.getForeignTree().local_path)
 
 
 def test_suite():

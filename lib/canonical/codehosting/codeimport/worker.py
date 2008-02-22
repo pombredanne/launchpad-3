@@ -137,7 +137,7 @@ class ForeignTreeStore:
         """
         self.transport = transport
 
-    def _getForeignBranch(self, code_import, target_path):
+    def _getForeignTree(self, code_import, target_path):
         """Return a foreign tree object for `code_import`."""
         if code_import.rcs_type == RevisionControlSystems.SVN:
             return SubversionWorkingTree(
@@ -180,7 +180,7 @@ class ForeignTreeStore:
 
     def fetchFromSource(self, code_import, target_path):
         """Fetch the foreign tree for `code_import` to `target_path`."""
-        branch = self._getForeignBranch(code_import, target_path)
+        branch = self._getForeignTree(code_import, target_path)
         branch.checkout()
         return branch
 
@@ -191,7 +191,7 @@ class ForeignTreeStore:
             raise NoSuchFile(tarball_name)
         _download(self.transport, tarball_name, tarball_name)
         extract_tarball(tarball_name, target_path)
-        tree = self._getForeignBranch(code_import, target_path)
+        tree = self._getForeignTree(code_import, target_path)
         tree.update()
         return tree
 
@@ -241,7 +241,7 @@ class ImportWorker:
         return self.bazaar_branch_store.pull(
             self.job.code_import.branch, self._bazaar_working_tree_path)
 
-    def getForeignBranch(self):
+    def getForeignTree(self):
         """Return the foreign branch object that we are importing from.
 
         :return: A `SubversionWorkingTree` or a `CVSWorkingTree`.
@@ -311,7 +311,7 @@ class ImportWorker:
          5. Archives the foreign tree, so that we can update it quickly next
             time.
         """
-        foreign_tree = self.getForeignBranch()
+        foreign_tree = self.getForeignTree()
         bazaar_tree = self.getBazaarWorkingTree()
         self.importToBazaar(foreign_tree, bazaar_tree)
         self.bazaar_branch_store.push(
