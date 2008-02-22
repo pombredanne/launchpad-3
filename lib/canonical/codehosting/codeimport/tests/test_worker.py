@@ -505,6 +505,7 @@ class TestSubversionImport(WorkerTest, TestActualImportMixin):
     def test_bazaarBranchStored(self):
         # The worker stores the Bazaar branch after it has imported the new
         # revisions.
+        # XXX: JonathanLange 2008-02-22: This test ought to be VCS-neutral.
         worker = self.makeImportWorker()
         worker.run()
 
@@ -517,6 +518,7 @@ class TestSubversionImport(WorkerTest, TestActualImportMixin):
     def test_foreignTreeStored(self):
         # The worker archives the foreign tree after it has imported the new
         # revisions.
+        # XXX: JonathanLange 2008-02-22: This test ought to be VCS-neutral.
         worker = self.makeImportWorker()
         worker.run()
 
