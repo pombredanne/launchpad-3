@@ -23,6 +23,7 @@ from canonical.database.sqlbase import SQLBase, sqlvalues
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
+from canonical.launchpad.database.librarian import LibraryFileAlias
 from canonical.launchpad.interfaces import (
     IArchiveSafePublisher, IBinaryPackageFilePublishing,
     IBinaryPackagePublishingHistory, ISecureBinaryPackagePublishingHistory,
@@ -468,6 +469,51 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
 
         return SourcePackageFilePublishing.selectBy(
             sourcepackagepublishing=self).prejoin(preJoins)
+
+    @property
+    def source_and_binary_files(self):
+        """See `IPublishing`."""
+        sourcesClause = """
+            LibraryFileAlias.id = SourcePackageReleaseFile.libraryfile AND
+            SourcePackageReleaseFile.sourcepackagerelease = %s
+            """ % sqlvalues(self.sourcepackagerelease)
+        sourcesClauseTables = ['SourcePackageReleaseFile']
+
+        binariesClause = """
+            LibraryFileAlias.id = BinaryPackageFile.libraryfile AND
+            BinaryPackageFile.binarypackagerelease =
+                BinaryPackageRelease.id AND
+            BinaryPackageRelease.build=Build.id AND
+            Build.sourcepackagerelease=%s AND
+            DistroArchSeries.distroseries=%s AND
+
+            BinaryPackagePublishingHistory.binarypackagerelease=
+                BinaryPackageRelease.id AND
+            BinaryPackagePublishingHistory.distroarchseries=
+                DistroArchSeries.id AND
+            BinaryPackagePublishingHistory.archive=%s AND
+            BinaryPackagePublishingHistory.pocket=%s AND
+            BinaryPackagePublishingHistory.status=%s
+            """ % sqlvalues(
+                    self.sourcepackagerelease,
+                    self.distroseries,
+                    self.archive,
+                    self.pocket,
+                    PackagePublishingStatus.PUBLISHED)
+        binariesClauseTables = [
+            'BinaryPackageFile', 'BinaryPackagePublishingHistory',
+            'BinaryPackageRelease', 'Build', 'DistroArchSeries']
+
+        orderBy = ['LibraryFileAlias.filename']
+
+        sourcesQuery = LibraryFileAlias.select(
+            sourcesClause, clauseTables=sourcesClauseTables,
+           orderBy=orderBy)
+        binariesQuery = LibraryFileAlias.select(
+            binariesClause, clauseTables=binariesClauseTables,
+            orderBy=orderBy)
+
+        return sourcesQuery.union(binariesQuery)
 
     @property
     def meta_sourcepackage(self):

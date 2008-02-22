@@ -96,14 +96,12 @@ class SourcePublishingRecordView(BasePublishingRecordView):
         """Return list of dicts describing all files published
            for a certain source publication.
         """
-        files = list(self.context.files)
-        for binary in self.context.getPublishedBinaries():
-            files.extend(binary.files)
+        files = self.context.source_and_binary_files
         ret = []
         urls = set()
         for f in files:
             d = {}
-            url = f.libraryfilealias.http_url
+            url = f.http_url
             if url in urls:
                 # Don't print out the same file multiple times. This
                 # actually happens for arch-all builds, and is
@@ -111,8 +109,8 @@ class SourcePublishingRecordView(BasePublishingRecordView):
                 continue
             urls.add(url)
             d["url"] = url
-            d["filename"] = f.libraryfilealias.filename
-            d["filesize"] = f.libraryfilealias.content.filesize
+            d["filename"] = f.filename
+            d["filesize"] = f.content.filesize
             ret.append(d)
         return ret
 
