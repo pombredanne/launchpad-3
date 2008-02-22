@@ -115,37 +115,43 @@
 </div> <!--main -->
 
 <div metal:fill-slot="help">
-   <p>Search for the desired packages, then select one of more of them
-     for deletion. A message is displayed below the list of packages
-     if there were more than <tal:max_sources
-     replace="view/max_sources_presented"/> packages found; you may
-     want to refine your search if the packages you are interested in
-     are not listed. A short text comment should be provided when
-     deleting packages, it will be recorded and displayed when
-     presenting the package information.</p>
+   <p>This page allows you to schedule packages for deletion. To do
+     this, search first for the desired packages, select one of more
+     of them, input a comment, and request deletion. Deletion will
+     affect the source selected and any binary packages built from
+     it.<p>
 
-   <p>The  deletion will affect the source selected and any binary
-     built from it.<p>
+   <p>Deletion marks the packages as deleted in the UI, but they are
+     actually removed from your PPA in separate steps:<p>
 
-   <p>The deleted packages will disappear from the archive  indexes
-     within 20 minutes, so users won't be able to install it via apt,
-     and the related files will be removed automatically from the
-     archive disk only when all published references to it are also
-     gone.</p>
+   <ul>
+     <li>
+       <b>Archive indexes</b>: A deleted package disappears from the
+       archive indexes in at most 20 minutes. As soon as this
+       happens, users will no longer be able to install it via
+       apt.
+     </li>
 
-   <p>Since the <i>archive-remover</i> only runs once a day for all
-     PPAs, it may take 1 or 2 days (runs), depending on how long we
-     have to wait for each reference to be removed, to remove the
-     related files from disk. Published files can take a long time to
-     be removed from the archive pool, because there might exist
-     implicit references from other versions of the same package
-     published in other suites.</p>
+     <li>
+       <b>Files on disk</b>; A file will be removed from the archive
+       disk pool only when <b>all</b> packages referencing it have
+       been scheduled for deletion. This includes packages published
+       in other series, or multiple package versions referring to
+       the same original upstream tarball.
 
-   <p>The best alternative to replace a broken source is always to
-     upload a higher version and let the system automatically
-     supersede and remove if from disk when it is time. You should not
-     rely on deletion requests to re-upload the same source version
-     with different contents.</p>
+       Since the archive removal job runs only once a day, it may
+       take up to a few days to remove a file from disk, depending
+       on the number of packages referencing it. In the most common
+       situation, files are removed within 24 hours.
+     </li>
+   </ul>
+
+   <p>Because of these conditions, the easiest alternative to replace
+     a broken source is always to upload a package with a higher
+     version number and let the system automatically supersede and
+     remove the older version. <b>You should not rely on deletion
+     requests to re-upload the same source version with different
+     contents</b>.</p>
 </div>
 
 </body>
