@@ -86,7 +86,7 @@ The page is restricted to logged in users.
 You also can't propose a team to itself. Here although Salgado is usually
 allowed to propose Launchpad Administrators in other team, it doesn't
 appear in the list when proposing a team for the Launchpad
-Administrators team. Likewise Mailing List Experts isn't shown because 
+Administrators team. Likewise Mailing List Experts isn't shown because
 the Launchpad Administrators are a member of Mailing List Experts.
 Adding Mailing List Experts would create a cycle.
 
@@ -110,7 +110,7 @@ anymore of the Ubuntu Team:
     ...     'admins', 'mailing-list-experts']
     >>> browser.getControl('Continue').click()
     >>> print "\n".join(get_feedback_messages(browser.contents))
-    Launchpad Administrators, Mailing List Experts have been added to this 
+    Launchpad Administrators, Mailing List Experts have been added to this
     team.
 
 And when no teams can be added, a message is displayed:
