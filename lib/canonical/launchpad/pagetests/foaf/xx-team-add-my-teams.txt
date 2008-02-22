@@ -82,3 +82,40 @@ The page is restricted to logged in users.
     >>> anon_browser.open('http://launchpad.dev/~ubuntu-team/+add-my-teams')
     Traceback (most recent call last):
     Unauthorized:...
+
+You also can't propose a team to itself. Here although Salgado is usually
+allowed to propose Launchpad Administrators in other team, it doesn't
+appear in the list when proposing a team for the Launchpad
+Administrators team. Likewise Mailing List Experts isn't shown because 
+the Launchpad Administrators are a member of Mailing List Experts.
+Adding Mailing List Experts would create a cycle.
+
+    >>> browser.open('http://launchpad.dev/~admins/+add-my-teams')
+    >>> browser.getControl(name='field.teams').options
+    ['rosetta-admins']
+
+Teams that are already member of the team can't be proposed or added.
+For example, Rosetta Administrators is not in the list of choices
+anymore of the Ubuntu Team:
+
+    >>> admin_browser.open('http://launchpad.dev/~ubuntu-team/+edit')
+    >>> admin_browser.getControl(
+    ...     name='field.subscriptionpolicy').displayValue = ['Open']
+    >>> admin_browser.getControl('Save').click()
+
+    >>> browser.open('http://launchpad.dev/~ubuntu-team/+add-my-teams')
+    >>> browser.getControl(name='field.teams').options
+    ['admins', 'mailing-list-experts']
+    >>> browser.getControl(name='field.teams').value = [
+    ...     'admins', 'mailing-list-experts']
+    >>> browser.getControl('Continue').click()
+    >>> print "\n".join(get_feedback_messages(browser.contents))
+    Launchpad Administrators, Mailing List Experts have been added to this 
+    team.
+
+And when no teams can be added, a message is displayed:
+
+    >>> browser.open('http://launchpad.dev/~ubuntu-team/+add-my-teams')
+    >>> print extract_text(find_main_content(browser.contents))
+    None of the teams you administer can be added to this team.
+
