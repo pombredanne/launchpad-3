@@ -843,3 +843,7 @@ class SpecificationSet(HasSpecificationsMixin):
             dependencies[spec_id].append(dependency)
 
         return dependencies
+
+    def get(self, spec_id):
+        """See canonical.launchpad.interfaces.ISpecificationSet."""
+        return Specification.get(spec_id)

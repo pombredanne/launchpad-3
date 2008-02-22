@@ -309,28 +309,28 @@ class HasSpecificationsView(LaunchpadView):
 
     @cachedproperty
     def spec_plan(self):
-        """Figure out what the best sequence of implementation is for the
-        specs currently in the queue for this target. Save the plan in
-        self._plan, and put any dangling specs in self._dangling.
+        """Return the optimised sequence of specs for this target.
+
+        Figure out what the best sequence of implementation is for the
+        specs registered on this target.
         """
         filter = [
             SpecificationFilter.INCOMPLETE,
             SpecificationFilter.ACCEPTED]
         specs = self.context.specifications(filter=filter)
-        if not specs:
+        if specs.count() == 0:
             return []
 
         specification_set = getUtility(ISpecificationSet)
         dependencies = specification_set.getDependencyDict(specs)
 
         def update_plan(specs, plan):
+            """Update the plan with this spec's dependencies."""
             for spec in specs:
                 if spec in plan:
-                    # XXX: may this stop working if the sqlobject cache
-                    # breaks?
                     continue
                 my_deps = dependencies.get(spec.id)
-                if my_deps:
+                if my_deps is not None:
                     update_plan(my_deps, plan)
                 plan.append(spec)
 

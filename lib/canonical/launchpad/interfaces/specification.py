@@ -908,6 +908,9 @@ class ISpecificationSet(IHasSpecifications):
         :specifications: a sequence of the specifications to look up.
         """
 
+    def get(spec_id):
+        """Return the ISpecification with the given spec_id."""
+
 
 class ISpecificationDelta(Interface):
     """The quantitative changes made to a spec that was edited."""
