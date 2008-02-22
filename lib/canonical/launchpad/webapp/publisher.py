@@ -307,15 +307,13 @@ def canonical_url(
 
     Raises NoCanonicalUrl if a canonical url is not available.
     :param path_only_if_possible: If the protocol and hostname can be omitted
-        in the current context, return a url containing only the path.
-    :param view_name: Generate the canonical url for the specified view page,
-        rather than the default view page.
+        for the current request, return a url containing only the path.
+    :param view_name: Provide the canonical url for the specified view,
+        rather than the default view.
     """
     urlparts = [urldata.path
                 for urldata in canonical_urldata_iterator(obj)
                 if urldata.path]
-    if view_name is not None:
-        urlparts.insert(0, view_name)
 
     if rootsite is None:
         obj_urldata = ICanonicalUrlData(obj, None)
@@ -330,6 +328,11 @@ def canonical_url(
         current_request = get_current_browser_request()
         if current_request is not None:
             request = current_request
+
+    if view_name is not None:
+        if queryMultiAdapter((obj, request), name=view_name) is None:
+            raise AssertionError('%s is not a valid view name.' % view_name)
+        urlparts.insert(0, view_name)
 
     if rootsite is None:
         # This means we should use the request, or fall back to the main site.
