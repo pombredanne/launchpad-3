@@ -28,7 +28,6 @@ __all__ = [
     'review_list',
     'run_mailman',
     'transactionmgr',
-    'wait_for_mailman',
     ]
 
 __metaclass__ = type
@@ -71,26 +70,6 @@ def make_browser():
     browser.handleErrors = False
     browser.addHeader('Authorization', auth('no-priv@canonical.com', 'test'))
     return browser
-
-
-def wait_for_mailman():
-    """Wait for Mailman to Do Something based on an XMLRPC response."""
-    # Import this here because sys.path won't be set up properly when this
-    # module is imported.
-    from Mailman import mm_cfg
-    # This starts by getting the mtime of Mailman's logs/serial file.  Then it
-    # waits until this file has changed, indicating that Mailman detected
-    # changes in the last request and has processed them.
-    log_file = os.path.join(mm_cfg.LOG_DIR, 'serial')
-    last_mtime = os.stat(log_file).st_mtime
-    until = datetime.datetime.now() + LOG_GROWTH_WAIT_INTERVAL
-    while True:
-        if os.stat(log_file).st_mtime > last_mtime:
-            # We want no output in the doctest for the expected success.
-            return None
-        if datetime.datetime.now() > until:
-            return 'Timed out'
-        time.sleep(SECONDS_TO_SNOOZE)
 
 
 class SMTPServer:
@@ -182,11 +161,7 @@ def get_size(path):
 
 
 class LogWatcher:
-    """Watch a log file and wait until it has grown in size.
-
-    Use this instead of wait_for_mailman() when watching a log file that isn't
-    guaranteed to grow or even exist (such as logs/vette).
-    """
+    """Watch a log file and wait until it has grown in size."""
     def __init__(self, log_file):
         # Import this here since sys.path isn't set up properly when this
         # module is imported.
@@ -194,7 +169,7 @@ class LogWatcher:
         self._log_path = os.path.join(LOG_DIR, log_file)
         self._last_size = get_size(self._log_path)
 
-    def wait_for_growth(self):
+    def wait(self):
         """Wait for a while, or until the file has grown."""
         until = datetime.datetime.now() + LOG_GROWTH_WAIT_INTERVAL
         while True:
@@ -225,9 +200,13 @@ def review_list(list_name, status=None):
     from zope.component import getUtility
     login('foo.bar@canonical.com')
     mailinglists_helper.review_list(list_name, status)
+    # Commit the change and wait until Mailman has actually created the
+    # mailing list.  Don't worry about the return value because if the log
+    # watcher times out, other things will notice this failure.
+    serial_watcher = LogWatcher('serial')
     commit()
     # Wait until Mailman has actually created the mailing list.
-    wait_for_mailman()
+    serial_watcher.wait()
     # Return an updated mailing list object.
     mailing_list = getUtility(IMailingListSet).get(list_name)
     logout()

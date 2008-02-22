@@ -23,7 +23,6 @@ this stanza can be removed.
     >>> browser.getControl('Apply for Mailing List').click()
 
     >>> list_one = itest_helper.review_list('itest-one')
-    >>> itest_helper.wait_for_mailman()
     >>> from Mailman.Utils import list_names
     >>> sorted(name for name in list_names() if name.startswith('itest-'))
     ['itest-one']
@@ -52,8 +51,9 @@ people and join them to teams through the backdoor.
     >>> bart.join(team_one)
     >>> list_one.subscribe(bart, get_alternative_email(bart))
     >>> from canonical.database.sqlbase import commit
+    >>> serial_watcher = itest_helper.LogWatcher('serial')
     >>> commit()
-    >>> itest_helper.wait_for_mailman()
+    >>> serial_watcher.wait()
 
 Both Anne and Bart are now members of the mailing list.  Both have two
 subscribed addresses (because both are validated with Launchpad), but only one
@@ -100,8 +100,9 @@ preferred email address, and Bart unsubscribes from the mailing list.
     >>> sync(anne)
     >>> anne.setPreferredEmail(get_alternative_email(anne))
     >>> logout()
+    >>> serial_watcher.resync()
     >>> commit()
-    >>> itest_helper.wait_for_mailman()
+    >>> serial_watcher.wait()
 
 Anne is now subscribed with her alternate email address, and Cris and Dirk are
 the only other members.
@@ -130,10 +131,11 @@ the membership list, either as an enabled or disabled address.
     >>> email_set = getUtility(IEmailAddressSet)
     >>> email = email_set.new('anne.x.person@example.net', anne)
     >>> logout()
+    >>> serial_watcher.resync()
     >>> commit()
 
     # This will time out because no changes have been propagated to Mailman.
-    >>> itest_helper.wait_for_mailman()
+    >>> serial_watcher.wait()
     'Timed out'
 
     # Reload the list data.
@@ -151,8 +153,10 @@ Once Anne validates her address though, she may post from it.
 
     >>> from canonical.launchpad.interfaces import EmailAddressStatus
     >>> email.status = EmailAddressStatus.VALIDATED
+    >>> serial_watcher.resync()
     >>> commit()
-    >>> itest_helper.wait_for_mailman()
+    >>> serial_watcher.wait()
+
     >>> mailing_list.Load()
     >>> print_members(mailing_list)
     Anne Person <anne.person@example.com> False

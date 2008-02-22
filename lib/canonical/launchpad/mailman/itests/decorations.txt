@@ -32,7 +32,6 @@ this stanza can be removed.
     >>> list_one = itest_helper.review_list('itest-one')
     >>> from canonical.database.sqlbase import commit
     >>> commit()
-    >>> itest_helper.wait_for_mailman()
     >>> from Mailman.Utils import list_names
     >>> sorted(name for name in list_names() if name.startswith('itest-'))
     ['itest-one']
@@ -51,8 +50,9 @@ Add a member of the mailing list so that we can post messages to the list.
     >>> anne.join(team_one)
     >>> list_one.subscribe(anne)
     >>> logout()
+    >>> serial_watcher = itest_helper.LogWatcher('serial')
     >>> commit()
-    >>> itest_helper.wait_for_mailman()
+    >>> serial_watcher.wait()
 
     >>> from Mailman.MailList import MailList
     >>> m = MailList('itest-one', lock=False)
@@ -78,7 +78,7 @@ contents below.
     ...
     ... Hi, I am a member of this team's list.
     ... """)
-    >>> smtp_watcher.wait_for_growth()
+    >>> smtp_watcher.wait()
     >>> messages = smtpd.getMessages()
     >>> messages.sort(key=itemgetter('sender'))
     >>> message = messages[0]
