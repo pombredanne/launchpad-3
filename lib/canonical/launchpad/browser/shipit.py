@@ -332,8 +332,15 @@ class ShipItRequestView(GeneralFormView):
 
     def standardShipItRequests(self):
         """Return all standard ShipIt Requests sorted by quantity of CDs."""
-        requests = getUtility(IStandardShipItRequestSet).getByFlavour(
-            self.flavour, self.user)
+        request_set = getUtility(IStandardShipItRequestSet)
+        requests = request_set.getByFlavour(self.flavour, self.user)
+        # XXX: Evil hack to allow users to request Ubuntu Server CDs on
+        # https://shipit.ubuntu.com/.  A more reasonable solution will replace
+        # this one before we start shipping Hardy.
+        # -- Guilherme Salgado, 2008-02-22
+        if self.flavour == ShipItFlavour.UBUNTU:
+            server_requests = request_set.getByFlavour(ShipItFlavour.SERVER)
+            requests = list(requests) + list(server_requests)
         return sorted(requests, key=attrgetter('totalCDs'))
 
     @cachedproperty
@@ -463,7 +470,16 @@ class ShipItRequestView(GeneralFormView):
             assert not self._extra_fields
             request_type = getUtility(IStandardShipItRequestSet).get(
                 request_type_id)
-            if request_type is None or request_type.flavour != self.flavour:
+            allowed_flavour = False
+            if self.flavour == ShipItFlavour.UBUNTU:
+                # XXX: We're currently accepting requests for Desktop/Server
+                # CDs on shipit.ubuntu.com/myrequest.  Soon we'll use a
+                # separate page for that and drop this.
+                allowed_flavour = request_type.flavour in [
+                    ShipItFlavour.UBUNTU, ShipItFlavour.SERVER]
+            else:
+                allowed_flavour = request_type.flavour == self.flavour
+            if request_type is None or not allowed_flavour:
                 # Either a shipit admin removed this option after the user
                 # loaded the page or the user is poisoning the form.
                 return ("The option you chose was not found. Please select "
@@ -484,7 +500,7 @@ class ShipItRequestView(GeneralFormView):
         # check (and possibly change) its approved quantities before it can be
         # shipped.
         current_order.setQuantities(
-            {self.flavour: quantities}, distroseries=self.series)
+            {request_type.flavour: quantities}, distroseries=self.series)
 
         # Make sure that subsequent queries will see the RequestedCDs objects
         # created/updated when we set the order quantities above.
