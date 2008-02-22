@@ -116,8 +116,11 @@ search_path:
 		echo "* It appears your search path is unconfigured."; \
 		echo "	Have you read <https://launchpad.canonical.com/DatabaseSetup>?";  \
 		echo; \
-		echo "* Add the following to /etc/postgresql/8.1/main/postgresql.conf:"; \
+		echo "* Add the following to /etc/postgresql/X.X/main/postgresql.conf"; \
+		echo " (where X.X is the version of the PostgreSQL DB you're connecting to):"; \
 		echo "    search_path='\$$user,public,ts2'"; \
+		echo "    NOTE: this the not the same as:"; \
+		echo "    search_path='\"\$$user\",public,ts2'"; \
 		echo "* Then reload PostgreSQL:";  \
 		echo "    sudo /etc/init.d/postgresql reload";  \
 		exit 1; \
