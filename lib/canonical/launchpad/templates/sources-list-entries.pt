@@ -1,25 +1,35 @@
-<script>
-<!--
-    function updateSeries(select) {
-        var deb = document.getElementById('series-deb');
-        deb.innerHTML = select.value;
-        var deb_src = document.getElementById('series-deb-src');
-        deb_src.innerHTML = select.value;
-    }
-//-->
-</script>
+<tal:root
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  omit-tag="">
 
-<div tal:condition="view/sources_in_more_than_one_series" id="series-widget-div">
-  <form style="display: inline">
-  Display sources.list entries for: <span tal:replace="structure view/plain_series_widget" />
-  </form>
-</div>
+  <script>
+  <!--
+      function updateSeries(select) {
+          var deb = document.getElementById('series-deb');
+          deb.innerHTML = select.value;
+          var deb_src = document.getElementById('series-deb-src');
+          deb_src.innerHTML = select.value;
+      }
+  //-->
+  </script>
 
-<pre style="border: 1px solid gray; padding: 0.3em" id="sources-list-entries">
-deb <a tal:attributes="href context/archive_url"
- tal:content="context/archive_url" /> <span id="series-deb"
-       tal:content="view/default_series_name">gutsy</span> main
-deb-src <a tal:attributes="href context/archive_url"
-     tal:content="context/archive_url" /> <span id="series-deb-src"
-       tal:content="view/default_series_name">gutsy</span> main</pre>
+  <div tal:condition="view/sources_in_more_than_one_series" id="series-widget-div">
+    <form style="display: inline">
+    Display sources.list entries for: <span tal:replace="structure view/plain_series_widget" />
+    </form>
+  </div>
 
+  <!--No extra spacing is important here. -->
+  <pre style="border: 1px solid gray; padding: 0.3em" id="sources-list-entries">
+<tal:archive_bin repeat="archive_url context/archive_urls"
+  >deb <a tal:attributes="href archive_url" tal:content="archive_url"
+    /> <span id="series-deb" tal:content="view/default_series_name"
+    >gutsy</span> main</tal:archive_bin>
+<tal:archive_src repeat="archive_url context/archive_urls"
+  >deb-src <a tal:attributes="href archive_url" tal:content="archive_url"
+    /> <span id="series-deb-src" tal:content="view/default_series_name"
+    >gutsy</span> main</tal:archive_src></pre>
+
+</tal:root>

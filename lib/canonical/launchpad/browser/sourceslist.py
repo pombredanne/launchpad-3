@@ -17,9 +17,9 @@ class SourcesListEntries:
 
     Represents a set of distroseries in a distribution archive.
     """
-    def __init__(self, distribution, archive_url, valid_series):
+    def __init__(self, distribution, archive_urls, valid_series):
         self.distribution = distribution
-        self.archive_url = archive_url
+        self.archive_urls = archive_urls
         self.valid_series = valid_series
 
 

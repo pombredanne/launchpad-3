@@ -9,6 +9,7 @@ __all__ = [
     'ArchiveContextMenu',
     'ArchiveView',
     'ArchivePackageDeletionView',
+    'ArchiveEditDependenciesView',
     'ArchiveActivateView',
     'ArchiveBuildsView',
     'ArchiveEditView',
@@ -31,9 +32,10 @@ from canonical.launchpad.browser.build import BuildRecordsView
 from canonical.launchpad.browser.sourceslist import (
     SourcesListEntries, SourcesListEntriesView)
 from canonical.launchpad.interfaces import (
-    ArchivePurpose, IArchive, IArchivePackageDeletionForm, IArchiveSet,
-    IBuildSet, IHasBuildRecords, ILaunchpadCelebrities, IPPAActivateForm,
-    IStructuralHeaderPresentation, NotFoundError, PackagePublishingStatus)
+    ArchivePurpose, IArchive, IArchiveEditDependenciesForm,
+    IArchivePackageDeletionForm, IArchiveSet, IBuildSet, IHasBuildRecords,
+    ILaunchpadCelebrities, IPPAActivateForm, IStructuralHeaderPresentation,
+    NotFoundError, PackagePublishingStatus)
 from canonical.launchpad.webapp import (
     action, canonical_url, custom_widget, enabled_with_permission,
     stepthrough, ContextMenu, LaunchpadEditFormView,
@@ -68,7 +70,7 @@ class ArchiveContextMenu(ContextMenu):
     """Overview Menu for IArchive."""
 
     usedfor = IArchive
-    links = ['admin', 'edit', 'builds', 'delete']
+    links = ['admin', 'edit', 'builds', 'delete', 'edit_dependencies']
 
     @enabled_with_permission('launchpad.Admin')
     def admin(self):
@@ -88,6 +90,12 @@ class ArchiveContextMenu(ContextMenu):
     def delete(self):
         text = 'Delete packages'
         return Link('+delete-packages', text, icon='edit')
+
+    @enabled_with_permission('launchpad.Edit')
+    def edit_dependencies(self):
+        text = 'Edit dependencies'
+        return Link('+edit-dependencies', text, icon='edit')
+
 
 
 class ArchiveViewBase:
@@ -180,9 +188,17 @@ class ArchiveView(ArchiveViewBase, LaunchpadView):
             self.selected_status_filter.value)
 
     def setupSourcesListEntries(self):
-        """Setup of the sources list entries widget."""
+        """Setup of the sources list entries widget.
+
+        The 'sources.list' snippet corresponding to this PPA will also
+        contain entries for its dependencies.
+        """
+        archive_urls = [self.context.archive_url]
+        archive_urls.extend(
+            [dep.dependency.archive_url for dep in self.context.dependencies])
+
         entries = SourcesListEntries(
-            self.context.distribution, self.context.archive_url,
+            self.context.distribution, archive_urls,
             self.context.series_with_sources)
         self.sources_list_entries = SourcesListEntriesView(
             entries, self.request)
@@ -386,6 +402,158 @@ class ArchivePackageDeletionView(ArchiveViewBase, LaunchpadFormView):
 
         notification = "\n".join(messages)
         self.request.response.addNotification(structured(notification))
+
+
+class ArchiveEditDependenciesView(LaunchpadFormView):
+    """Archive depedencies view class."""
+
+    schema = IArchiveEditDependenciesForm
+
+    custom_widget('selected_dependencies', LabeledMultiCheckBoxWidget)
+
+    def setUpFields(self):
+        """Override `LaunchpadFormView`.
+
+        In addition to setting schema fields, also initialize
+        'selected_dependencies' field.
+
+        See `createSelectedSourcesField` method.
+        """
+        LaunchpadFormView.setUpFields(self)
+
+        self.form_fields = (
+            self.createSelectedDependenciesField() + self.form_fields)
+
+    def focusedElementScript(self):
+        """Override `LaunchpadFormView`.
+
+        Ensure focus is only set if there are dependencies actually presented.
+        """
+        if not self.has_dependencies:
+            return ''
+        return LaunchpadFormView.focusedElementScript(self)
+
+    def createSelectedDependenciesField(self):
+        """Creates the 'selected_dependencies' field.
+
+        'selected_dependencies' is a list of elements of a vocabulary
+        containing all the current recorded dependencies for the context
+        PPA.
+        """
+        terms = []
+        for archive_dependency in self.context.dependencies:
+            dependency = archive_dependency.dependency
+            dependency_label = '<a href="%s">%s</a>' % (
+                canonical_url(dependency), dependency.title)
+            term = SimpleTerm(
+                dependency, dependency.owner.name, dependency_label)
+            terms.append(term)
+        return form.Fields(
+            List(__name__='selected_dependencies',
+                 title=_('Recorded dependencies'),
+                 value_type=Choice(vocabulary=SimpleVocabulary(terms)),
+                 required=False,
+                 default=[],
+                 description=_(
+                    'Select one or more dependencies to be removed.')),
+            custom_widget=self.custom_widgets['selected_dependencies'],
+            render_context=self.render_context)
+
+    def refreshSelectedDependenciesWidget(self):
+        """Refresh 'selected_dependencies' widget.
+
+        It's called after removals or additions to eliminate to present
+        up-to-date results.
+        """
+        flush_database_updates()
+        self.form_fields = self.form_fields.omit('selected_dependencies')
+        self.form_fields = (
+            self.createSelectedDependenciesField() + self.form_fields)
+        self.widgets = form.setUpWidgets(
+            self.form_fields, self.prefix, self.context, self.request,
+            data=self.initial_values, ignore_request=False)
+
+    @cachedproperty
+    def has_dependencies(self):
+        """Whether or not the PPA has recorded dependencies."""
+        return bool(self.context.dependencies)
+
+    def validate_remove(self, action, data):
+        """Validate remove parameters.
+
+        Ensure we have, at least, one dependency selected.
+        """
+        form.getWidgetsData(self.widgets, 'field', data)
+
+        if len(data.get('selected_dependencies', [])) == 0:
+            self.setFieldError(
+                'selected_dependencies', 'No dependencies selected.')
+
+    @action(_("Remove Dependencies"), name="remove",
+            validator="validate_remove")
+    def action_remove(self, action, data):
+        """Perform the removal of the selected dependencies."""
+        if len(self.errors) != 0:
+            return
+
+        selected_dependencies = data.get('selected_dependencies')
+
+        # Perform deletion of the source and its binaries.
+        for dependency in selected_dependencies:
+            self.context.removeArchiveDependency(dependency)
+
+        self.refreshSelectedDependenciesWidget()
+
+        # Present a page notification describing the action.
+        messages = []
+        messages.append('<p>Dependencies removed:')
+        for dependency in selected_dependencies:
+            messages.append('<br/>%s' % dependency.title)
+        messages.append('</p>')
+        notification = "\n".join(messages)
+        self.request.response.addNotification(structured(notification))
+
+    def validate_add(self, action, data):
+        """Validate add dependency parameters.
+
+        Ensure the following contitions
+         * The dependency_candidate exists (was chosen by the user);
+         * The dependency_candidate is not the context PPA (recursive);
+         * The dependency_candidate is not yet recorded (duplication).
+
+        A error message is rendered if any of those checks fails.
+        """
+        form.getWidgetsData(self.widgets, 'field', data)
+
+        dependency_candidate = data.get('dependency_candidate')
+        if dependency_candidate is None:
+            self.setFieldError(
+                'dependency_candidate', 'Choose one dependency to add.')
+            return
+
+        if dependency_candidate == self.context:
+            self.setFieldError('dependency_candidate',
+                               "An archive should not depend on itself.")
+            return
+
+        if self.context.getArchiveDependency(dependency_candidate):
+            self.setFieldError('dependency_candidate',
+                               "This dependency is already recorded.")
+            return
+
+    @action(_("Add Dependency"), name="add", validator="validate_add")
+    def action_add(self, action, data):
+        """Record the selected dependency."""
+        if len(self.errors) != 0:
+            return
+
+        dependency_candidate = data.get('dependency_candidate')
+        self.context.addArchiveDependency(dependency_candidate)
+        self.refreshSelectedDependenciesWidget()
+
+        self.request.response.addNotification(
+            structured(
+                '<p>Dependency added: %s</p>' % dependency_candidate.title))
 
 
 class ArchiveActivateView(LaunchpadFormView):
