@@ -218,8 +218,6 @@ title might be interpreted by the browser.
 
 === Branch subscriptions ===
 
-Branch subscriptions show the person and branch name.
-
     >>> from canonical.launchpad.testing import LaunchpadObjectFactory
     >>> factory = LaunchpadObjectFactory()
     >>> subscription = factory.makeBranchSubscription('My Branch',
@@ -229,8 +227,6 @@ Branch subscriptions show the person and branch name.
 
 
 === Merge proposals ===
-
-Merge proposals also have a link formatter, which displays branch titles:
 
     >>> login('foo.bar@canonical.com')
     >>> proposal = factory.makeBranchMergeProposal()
@@ -242,9 +238,6 @@ Merge proposals also have a link formatter, which displays branch titles:
 
 === Bug branches ===
 
-BugBranches also have a formatter.  It displays the same icon and summary as
-the bug task.
-
     >>> login('test@canonical.com')
     >>> branch = factory.makeBranch()
     >>> bug = factory.makeBug()
@@ -255,8 +248,6 @@ the bug task.
 
 === Code imports ===
 
-ICodeImport providers have a formatter.
-
     >>> login('foo.bar@canonical.com')
     >>> code_import = factory.makeCodeImport()
     >>> test_tales("code_import/fmt:link", code_import=code_import)
@@ -265,16 +256,12 @@ ICodeImport providers have a formatter.
 
 === Product series ===
 
-IProductSeries providers have a formatter.
-
     >>> product_series = factory.makeSeries()
     >>> test_tales("product_series/fmt:link", product_series=product_series)
     u'... Series: ...'
 
 
 === Blueprints ===
-
-ISpecification providers have a formatter.
 
     >>> login('test@canonical.com')
     >>> specification = factory.makeSpec()
@@ -283,9 +270,6 @@ ISpecification providers have a formatter.
 
 
 === Blueprint branches ===
-
-ISpecificationBranch providers have a formatter.  It uses the same icon and
-summary as blueprints.
 
     >>> specification = factory.makeSpec()
     >>> branch = factory.makeBranch()
