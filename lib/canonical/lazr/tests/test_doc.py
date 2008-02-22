@@ -15,5 +15,7 @@ def test_suite():
     suite = unittest.TestSuite()
     suite.addTest(doctest.DocFileSuite(
         '../doc/debug.txt', optionflags=options))
+    suite.addTest(doctest.DocFileSuite(
+        '../doc/interface.txt', optionflags=options))
     return suite
 
