@@ -11,6 +11,25 @@ to use their accounts to log in.
     >>> print extract_text(find_tags_by_class(browser.contents, "login")[0])
     Logged in as Sample Person ...
 
+Deactivating a user's account will un-assign all their bug tasks. To
+demonstrate this, we'll assign a bug to the user that we're going to
+deactivate.
+
+    >>> edit_bug_url = ("http://bugs.launchpad.dev/debian/sarge/+source/"
+    ...     "mozilla-firefox/+bug/3/+editstatus")
+    >>> browser.open(edit_bug_url)
+    >>> bugwatch_control = browser.getControl(
+    ...     name='debian_sarge_mozilla-firefox.bugwatch')
+    >>> bugwatch_control.value = []
+    >>> browser.getControl('Save Changes').click()
+
+    >>> browser.open(edit_bug_url)
+    >>> assignee_control = browser.getControl(
+    ...     name='debian_sarge_mozilla-firefox.assignee.option')
+    >>> assignee_control.value = [
+    ...     'debian_sarge_mozilla-firefox.assignee.assign_to_me']
+    >>> browser.getControl('Save Changes').click()
+
 There's a link to the +deactivate-account page in a person's +edit page.
 
     >>> browser.open('http://launchpad.dev/~name12')
