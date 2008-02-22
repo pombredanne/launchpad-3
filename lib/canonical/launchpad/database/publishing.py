@@ -449,8 +449,12 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
         clauseTables = ['Build', 'BinaryPackageRelease', 'BinaryPackageName',
                         'DistroArchSeries']
 
+        preJoins = ['binarypackagerelease',
+                    'binarypackagerelease.binarypackagename']
+
         return BinaryPackagePublishingHistory.select(
-            clause, orderBy=orderBy, clauseTables=clauseTables)
+            clause, orderBy=orderBy, clauseTables=clauseTables,
+            prejoins=preJoins)
 
     @property
     def secure_record(self):
@@ -460,8 +464,10 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
     @property
     def files(self):
         """See `IPublishing`."""
+        preJoins = ['libraryfilealias', 'libraryfilealias.content']
+
         return SourcePackageFilePublishing.selectBy(
-            sourcepackagepublishing=self)
+            sourcepackagepublishing=self).prejoin(preJoins)
 
     @property
     def meta_sourcepackage(self):
@@ -636,8 +642,10 @@ class BinaryPackagePublishingHistory(SQLBase, ArchivePublisherBase):
     @property
     def files(self):
         """See `IPublishing`."""
+        preJoins = ['libraryfilealias', 'libraryfilealias.content']
+
         return BinaryPackageFilePublishing.selectBy(
-            binarypackagepublishing=self)
+            binarypackagepublishing=self).prejoin(preJoins)
 
     @property
     def displayname(self):
