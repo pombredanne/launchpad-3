@@ -283,7 +283,8 @@ def canonical_url_iterator(obj):
 
 
 def canonical_url(
-    obj, request=None, rootsite=None, path_only_if_possible=False):
+    obj, request=None, rootsite=None, path_only_if_possible=False,
+    view_page=None):
     """Return the canonical URL string for the object.
 
     If the canonical url configuration for the given object binds it to a
@@ -305,10 +306,16 @@ def canonical_url(
     from the root_url given in launchpad.conf.
 
     Raises NoCanonicalUrl if a canonical url is not available.
+    :param path_only_if_possible: If the protocol and hostname can be omitted
+        in the current context, return a url containing only the path.
+    :param view_page: Generate the canonical url for the specified view page,
+        rather than the default view page.
     """
     urlparts = [urldata.path
                 for urldata in canonical_urldata_iterator(obj)
                 if urldata.path]
+    if view_page is not None:
+        urlparts.insert(0, view_page)
 
     if rootsite is None:
         obj_urldata = ICanonicalUrlData(obj, None)

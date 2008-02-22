@@ -257,6 +257,13 @@ ICanonicalUrlData, but its parent or its parent's parent (and so on) cannot.
 The first argument to NoCanonicalUrl is the object that a canonical url was
 requested for.  The second argument is the object that broke the chain.
 
+A view_page can be specified, to retrieve the URL for a view of the object
+other than the default.
+
+    >>> canonical_url(country_instance, view_page="+towns")
+    u'http://launchpad.dev/countries/England/+towns'
+
+
 == The canonical_urldata_iterator function ==
 
 TODO.  Currently tested implicitly by the canonical_url_iterator tests.
