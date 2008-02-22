@@ -221,8 +221,11 @@ class ImportWorker:
         :param bazaar_branch_store: A `BazaarBranchStore`. The import worker
             uses this to fetch and store the Bazaar branches that are created
             and updated during the import process.
-        :param log_level: ???
+        :param log_level: Controls the level of information in the (cscvs?)
+           logs. Pick a number between one and five, just to be safe.
         """
+        # XXX: JonathanLange 2008-02-22: `log_level` really needs better
+        # documentation.
         self.job = getUtility(ICodeImportJobSet).getById(job_id)
         self.foreign_tree_store = foreign_tree_store
         self.bazaar_branch_store = bazaar_branch_store
