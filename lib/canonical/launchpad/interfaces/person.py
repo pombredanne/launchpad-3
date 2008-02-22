@@ -18,7 +18,6 @@ __all__ = [
     'IPersonClaim',
     'IPersonEditRestricted',
     'IPersonPublic',
-    'IPersonEntry',
     'IPersonSet',
     'IPersonViewRestricted',
     'IRequestPeopleMerge',
@@ -33,7 +32,6 @@ __all__ = [
     'TeamMembershipRenewalPolicy',
     'TeamMembershipStatus',
     'TeamSubscriptionPolicy',
-    'make_person_name_field',
     ]
 
 
@@ -409,23 +407,6 @@ class INewPerson(Interface):
         description=_("The reason why you're creating this profile."))
 
 
-def make_person_name_field():
-    """Construct a PersonNameField.
-
-    This is used to define both IPerson and IPersonEntry. This is
-    not a long-term solution.
-
-    XXX leonardr 2008-01-28 bug=186702
-    """
-    return PersonNameField(
-            title=_('Name'), required=True, readonly=False,
-            constraint=name_validator,
-            description=_(
-                "A short unique name, beginning with a lower-case "
-                "letter or number, and containing only letters, "
-                "numbers, dots, hyphens, or plus signs.")
-            )
-
 class IPersonPublic(IHasSpecifications, IHasMentoringOffers,
                     IQuestionCollection, IHasLogo, IHasMugshot, IHasIcon):
     """Public attributes for a Person."""
@@ -433,7 +414,14 @@ class IPersonPublic(IHasSpecifications, IHasMentoringOffers,
     id = Int(
             title=_('ID'), required=True, readonly=True,
             )
-    name = make_person_name_field()
+    name = PersonNameField(
+            title=_('Name'), required=True, readonly=False,
+            constraint=name_validator,
+            description=_(
+                "A short unique name, beginning with a lower-case "
+                "letter or number, and containing only letters, "
+                "numbers, dots, hyphens, or plus signs.")
+            )
     displayname = StrippedTextLine(
             title=_('Display Name'), required=True, readonly=False,
             description=_("Your name as you would like it displayed "
@@ -1277,14 +1265,6 @@ class IPersonEditRestricted(Interface):
 
 class IPerson(IPersonPublic, IPersonViewRestricted, IPersonEditRestricted):
     """A Person."""
-
-
-class IPersonEntry(IEntry):
-    """The part of a person that we expose through the web service."""
-
-    name = make_person_name_field()
-    teamowner = Object(schema=IPerson)
-    members = CollectionField(value_type=Object(schema=IPerson))
 
 
 class INewPersonForm(IPerson):
