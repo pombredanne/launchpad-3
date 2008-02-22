@@ -5,7 +5,7 @@
 __metaclass__ = type
 __all__ = [
     'BazaarBranchStore',
-    'ForeignBranchStore',
+    'ForeignTreeStore',
     'get_default_bazaar_branch_store',
     'get_default_foreign_branch_store']
 
@@ -117,7 +117,7 @@ def _download(transport, relpath, local_path):
         local_file.close()
 
 
-class ForeignBranchStore:
+class ForeignTreeStore:
     """Manages retrieving and storing foreign branches.
 
     The code import system stores tarballs of CVS and SVN branches on another
@@ -129,7 +129,7 @@ class ForeignBranchStore:
     """
 
     def __init__(self, transport):
-        """Construct a `ForeignBranchStore`.
+        """Construct a `ForeignTreeStore`.
 
         :param transport: A writable transport that points to the base
             directory where the tarballs are stored.
@@ -198,8 +198,8 @@ class ForeignBranchStore:
 
 
 def get_default_foreign_branch_store():
-    """Get the default `ForeignBranchStore`."""
-    return ForeignBranchStore(
+    """Get the default `ForeignTreeStore`."""
+    return ForeignTreeStore(
         get_transport(config.codeimport.foreign_branch_store))
 
 
@@ -217,7 +217,7 @@ class ImportWorker:
         """Construct an `ImportWorker`.
 
         :param job_id: The database ID of the `CodeImportJob` to run.
-        :param foreign_branch_store: A `ForeignBranchStore`. The import worker
+        :param foreign_branch_store: A `ForeignTreeStore`. The import worker
             uses this to fetch and store foreign branches.
         :param bazaar_branch_store: A `BazaarBranchStore`. The import worker
             uses this to fetch and store the Bazaar branches that are created

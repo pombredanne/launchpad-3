@@ -13,7 +13,7 @@ import svn_oo
 
 
 class CVSWorkingTree:
-    """A foreign branch object that represents a CVS branch."""
+    """Represents a CVS working tree."""
 
     def __init__(self, cvs_root, cvs_module, local_path):
         """Construct a CVSWorkingTree.
@@ -40,7 +40,7 @@ class CVSWorkingTree:
 
 
 class SubversionWorkingTree:
-    """A foreign branch object that represents a Subversion branch."""
+    """Represents a Subversion working tree."""
 
     def __init__(self, url, path):
         """Construct a `SubversionWorkingTree`.

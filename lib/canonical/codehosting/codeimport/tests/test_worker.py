@@ -18,7 +18,7 @@ from bzrlib.urlutils import join as urljoin
 
 from canonical.cachedproperty import cachedproperty
 from canonical.codehosting.codeimport.worker import (
-    BazaarBranchStore, ForeignBranchStore, ImportWorker,
+    BazaarBranchStore, ForeignTreeStore, ImportWorker,
     get_default_bazaar_branch_store, get_default_foreign_branch_store)
 from canonical.codehosting.codeimport.tests.test_foreigntree import (
     CVSServer, SubversionServer)
@@ -191,8 +191,8 @@ class MockForeignWorkingTree:
         self.log.append('update')
 
 
-class TestForeignBranchStore(WorkerTest):
-    """Tests for the `ForeignBranchStore` object."""
+class TestForeignTreeStore(WorkerTest):
+    """Tests for the `ForeignTreeStore` object."""
 
     def assertCheckedOut(self, tree):
         self.assertEqual(['checkout'], tree.log)
@@ -202,12 +202,12 @@ class TestForeignBranchStore(WorkerTest):
 
     def setUp(self):
         """Set up a code import job to import a SVN branch."""
-        super(TestForeignBranchStore, self).setUp()
+        super(TestForeignTreeStore, self).setUp()
         self.code_import = self.factory.makeCodeImport()
         self.temp_dir = self.makeTemporaryDirectory()
         self._log = []
 
-    def makeForeignBranchStore(self, transport=None):
+    def makeForeignTreeStore(self, transport=None):
         """Make a foreign branch store.
 
         The store is in a different directory to the local working directory.
@@ -216,14 +216,14 @@ class TestForeignBranchStore(WorkerTest):
             return MockForeignWorkingTree(target_path)
         if transport is None:
             transport = self.get_transport('remote')
-        store = ForeignBranchStore(transport)
+        store = ForeignTreeStore(transport)
         store._getForeignBranch = _getForeignBranch
         return store
 
     def test_getForeignBranchSubversion(self):
         # _getForeignBranch() returns a Subversion working tree for Subversion
         # code imports.
-        store = ForeignBranchStore(None)
+        store = ForeignTreeStore(None)
         svn_import = self.factory.makeCodeImport(
             svn_branch_url=self.factory.getUniqueURL())
         working_tree = store._getForeignBranch(svn_import, 'path')
@@ -232,7 +232,7 @@ class TestForeignBranchStore(WorkerTest):
 
     def test_getForeignBranchCVS(self):
         # _getForeignBranch() returns a CVS working tree for CVS code imports.
-        store = ForeignBranchStore(None)
+        store = ForeignTreeStore(None)
         cvs_import = self.factory.makeCodeImport(
             cvs_root='root', cvs_module='module')
         working_tree = store._getForeignBranch(cvs_import, 'path')
@@ -250,14 +250,14 @@ class TestForeignBranchStore(WorkerTest):
     def test_getNewBranch(self):
         # If the branch store doesn't have an archive of the foreign branch,
         # then fetching the branch actually pulls in from the original site.
-        store = self.makeForeignBranchStore()
+        store = self.makeForeignTreeStore()
         tree = store.fetchFromSource(self.code_import, self.temp_dir)
         self.assertCheckedOut(tree)
 
     def test_archiveBranch(self):
         # Once we have a checkout of a foreign branch, we can archive it so
         # that we can retrieve it more reliably in the future.
-        store = self.makeForeignBranchStore()
+        store = self.makeForeignTreeStore()
         foreign_branch = store.fetchFromSource(
             self.code_import, self.temp_dir)
         store.archive(self.code_import, foreign_branch)
@@ -268,7 +268,7 @@ class TestForeignBranchStore(WorkerTest):
     def test_makeDirectories(self):
         # archive() tries to create the base directory of the branch store if
         # it doesn't already exist.
-        store = self.makeForeignBranchStore(self.get_transport('doesntexist'))
+        store = self.makeForeignTreeStore(self.get_transport('doesntexist'))
         foreign_branch = store.fetchFromSource(
             self.code_import, self.temp_dir)
         store.archive(self.code_import, foreign_branch)
@@ -277,7 +277,7 @@ class TestForeignBranchStore(WorkerTest):
     def test_fetchFromArchiveFailure(self):
         # If a branch has not been archived yet, but we try to retrieve it
         # from the archive, then we get a NoSuchFile error.
-        store = self.makeForeignBranchStore()
+        store = self.makeForeignTreeStore()
         self.assertRaises(
             NoSuchFile,
             store.fetchFromArchive, self.code_import, self.temp_dir)
@@ -285,7 +285,7 @@ class TestForeignBranchStore(WorkerTest):
     def test_fetchFromArchive(self):
         # After archiving a branch, we can retrieve it from the store -- the
         # tarball gets downloaded and extracted.
-        store = self.makeForeignBranchStore()
+        store = self.makeForeignTreeStore()
         foreign_branch = store.fetchFromSource(
             self.code_import, self.temp_dir)
         store.archive(self.code_import, foreign_branch)
@@ -298,7 +298,7 @@ class TestForeignBranchStore(WorkerTest):
     def test_fetchFromArchiveUpdates(self):
         # The local working tree is updated with changes from the remote
         # branch after it has been fetched from the archive.
-        store = self.makeForeignBranchStore()
+        store = self.makeForeignTreeStore()
         foreign_branch = store.fetchFromSource(
             self.code_import, self.temp_dir)
         store.archive(self.code_import, foreign_branch)
@@ -308,11 +308,11 @@ class TestForeignBranchStore(WorkerTest):
         self.assertUpdated(foreign_branch2)
 
 
-class FakeForeignBranchStore(ForeignBranchStore):
-    """A ForeignBranchStore that always fetches fake foreign branches."""
+class FakeForeignTreeStore(ForeignTreeStore):
+    """A ForeignTreeStore that always fetches fake foreign branches."""
 
     def __init__(self):
-        ForeignBranchStore.__init__(self, None)
+        ForeignTreeStore.__init__(self, None)
 
     def fetch(self, code_import, target_path):
         return MockForeignWorkingTree(target_path)
@@ -333,7 +333,7 @@ class TestWorkerCore(WorkerTest):
     def makeImportWorker(self):
         """Make an ImportWorker that only uses fake branches."""
         return ImportWorker(
-            self.job.id, FakeForeignBranchStore(),
+            self.job.id, FakeForeignTreeStore(),
             self.makeBazaarBranchStore())
 
     def test_construct(self):
@@ -377,7 +377,7 @@ class TestActualImportMixin:
     def setUpImport(self):
         """Set up the objects required for an import.
 
-        This means a BazaarBranchStore, ForeignBranchStore, CodeImport and
+        This means a BazaarBranchStore, ForeignTreeStore, CodeImport and
         a CodeImportJob.
         """
         repository_path = tempfile.mkdtemp()
@@ -385,7 +385,7 @@ class TestActualImportMixin:
 
         self.bazaar_store = BazaarBranchStore(
             self.get_transport('bazaar_store'))
-        self.foreign_store = ForeignBranchStore(
+        self.foreign_store = ForeignTreeStore(
             self.get_transport('foreign_store'))
 
         self.code_import = self.makeCodeImport(
