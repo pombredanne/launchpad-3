@@ -385,12 +385,9 @@ class ObjectFormatterAPI:
     def __init__(self, context):
         self._context = context
 
-    def url(self, extra_path=''):
-        request = get_current_browser_request()
+    def url(self, view_name=None):
         url = canonical_url(
-            self._context, request, path_only_if_possible=True)
-        if extra_path != '':
-            url = '%s/%s' % (url, extra_path)
+            self._context, path_only_if_possible=True, view_name=view_name)
         return url
 
 
@@ -823,7 +820,7 @@ class CustomizableFormatter(ObjectFormatterExtendedAPI):
     3. if there is an icon for this object type, image:icon is implemented
        and appropriate.
 
-    For greater control over the summary, overrride _make_summary.
+    For greater control over the summary, overrride _make_link_summary.
 
     If image:icon does not provide a suitable icon, override _get_icon.
 
@@ -839,10 +836,10 @@ class CustomizableFormatter(ObjectFormatterExtendedAPI):
         These values should not be escaped, as this will be performed later.
         For this reason, only string values should be supplied.
         """
-        raise NotImplementedError(self._summary_values)
+        raise NotImplementedError(self._link_summary_values)
 
     def _make_link_summary(self):
-        """Create a summary from _template and _summary_values().
+        """Create a summary from _template and _link_summary_values().
 
         This summary is for use in fmt:link, which is meant to be used in
         contexts like lists of items.
@@ -870,7 +867,7 @@ class CustomizableFormatter(ObjectFormatterExtendedAPI):
         """Return html including a link, description and icon.
 
         Icon and link are optional, depending on type and permissions.
-        Uses self._make_summary for the summary, self._get_icon
+        Uses self._make_link_summary for the summary, self._get_icon
         for the icon, self._should_link to determine whether to link, and
         self.url() to generate the url.
         """
@@ -879,7 +876,9 @@ class CustomizableFormatter(ObjectFormatterExtendedAPI):
             html = ''
         else:
             html += '&nbsp;'
-        html += self._make_summary()
+        html += self._make_link_summary()
+        if extra_path == '':
+            extra_path = None
         if check_permission(self._link_permission, self._context):
             url = self.url(extra_path)
         else:
@@ -895,7 +894,7 @@ class PillarFormatterAPI(CustomizableFormatter):
 
     _template = '%(displayname)s'
 
-    def _summary_values(self):
+    def _link_summary_values(self):
         return {'displayname': self._context.displayname}
 
 
@@ -963,7 +962,7 @@ class BranchSubscriptionFormatterAPI(CustomizableFormatter):
 
     _template = _('Subscription of %(person)s to %(branch)s')
 
-    def _summary_values(self):
+    def _link_summary_values(self):
         """Provide values for template substitution"""
         return {
             'person': self._context.person.displayname,
@@ -975,7 +974,7 @@ class BranchMergeProposalFormatterAPI(CustomizableFormatter):
 
     _template = _('Proposed merge of %(source)s into %(target)s')
 
-    def _summary_values(self):
+    def _link_summary_values(self):
         return {
             'source': self._context.source_branch.title,
             'target': self._context.target_branch.title,
@@ -991,9 +990,9 @@ class BugBranchFormatterAPI(CustomizableFormatter):
             task = self._context.bug.bugtasks[0]
         return BugTaskFormatterAPI(task)
 
-    def _make_summary(self):
+    def _make_link_summary(self):
         """Return the summary of the related product's bug task"""
-        return self._get_task_formatter()._make_summary()
+        return self._get_task_formatter()._make_link_summary()
 
     def _get_icon(self):
         """Return the icon of the related product's bugtask"""
@@ -1005,16 +1004,16 @@ class BugFormatterAPI(CustomizableFormatter):
 
     _template = 'Bug #%(id)s: %(title)s'
 
-    def _summary_values(self):
-        """See CustomizableFormatter._summary_values."""
+    def _link_summary_values(self):
+        """See CustomizableFormatter._link_summary_values."""
         return {'id': str(self._context.id), 'title': self._context.title}
 
 
 class BugTaskFormatterAPI(CustomizableFormatter):
     """Adapter for IBugTask objects to a formatted string."""
 
-    def _make_summary(self):
-        return BugFormatterAPI(self._context.bug)._make_summary()
+    def _make_link_summary(self):
+        return BugFormatterAPI(self._context.bug)._make_link_summary()
 
 
 class CodeImportFormatterAPI(CustomizableFormatter):
@@ -1022,8 +1021,8 @@ class CodeImportFormatterAPI(CustomizableFormatter):
 
     _template = _('Import of %(product)s: %(branch)s')
 
-    def _summary_values(self):
-        """See CustomizableFormatter._summary_values."""
+    def _link_summary_values(self):
+        """See CustomizableFormatter._link_summary_values."""
         branch_title = self._context.branch.title
         if branch_title is None:
             branch_title = _('(no title)')
@@ -1037,8 +1036,8 @@ class ProductSeriesFormatterAPI(CustomizableFormatter):
 
     _template = _('%(product)s Series: %(series)s')
 
-    def _summary_values(self):
-        """See CustomizableFormatter._summary_values."""
+    def _link_summary_values(self):
+        """See CustomizableFormatter._link_summary_values."""
         return {'series': self._context.name,
                 'product': self._context.product.displayname}
 
@@ -1048,18 +1047,18 @@ class SpecificationFormatterAPI(CustomizableFormatter):
 
     _template = _('%(title)s')
 
-    def _summary_values(self):
-        """See CustomizableFormatter._summary_values."""
+    def _link_summary_values(self):
+        """See CustomizableFormatter._link_summary_values."""
         return {'title': self._context.title}
 
 
 class SpecificationBranchFormatterAPI(CustomizableFormatter):
     """Adapter for ISpecificationBranch objects to a formatted string."""
 
-    def _make_summary(self):
+    def _make_link_summary(self):
         """Provide the summary of the linked spec"""
         formatter = SpecificationFormatterAPI(self._context.specification)
-        return formatter._make_summary()
+        return formatter._make_link_summary()
 
     def _get_icon(self):
         """Provide the icon of the linked spec"""
