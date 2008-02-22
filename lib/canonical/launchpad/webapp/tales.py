@@ -813,8 +813,10 @@ class PersonFormatterAPI(ObjectFormatterExtendedAPI):
 class CustomizableFormatter(ObjectFormatterExtendedAPI):
     """A ObjectFormatterExtendedAPI that is easy to customize.
 
-    For most object types, only the _summary_template class variable and
-    _summary_values method need to be overridden.  This assumes that:
+    This provides fmt:url and fmt:link support for the object it adapts.
+
+    For most object types, only the _link_summary_template class variable and
+    _link_summary_values method need to be overridden.  This assumes that:
     1. canonical_url produces appropriate urls for this type
     2. the launchpad.View permission alone is required to view this object's
        url
@@ -831,11 +833,7 @@ class CustomizableFormatter(ObjectFormatterExtendedAPI):
 
     _link_permission = 'launchpad.View'
 
-    def _should_link(self):
-        """Return True if a link should be shown, False otherwise."""
-        return check_permission(self._link_permission, self._context)
-
-    def _summary_values(self):
+    def _link_summary_values(self):
         """Return a dict of values to use for template substitution.
 
         These values should not be escaped, as this will be performed later.
@@ -843,14 +841,14 @@ class CustomizableFormatter(ObjectFormatterExtendedAPI):
         """
         raise NotImplementedError(self._summary_values)
 
-    def _make_summary(self):
+    def _make_link_summary(self):
         """Create a summary from _template and _summary_values().
 
         This summary is for use in fmt:link, which is meant to be used in
         contexts like lists of items.
         """
         values = {}
-        for key, value in self._summary_values().iteritems():
+        for key, value in self._link_summary_values().iteritems():
             if value is None:
                 values[key] = ''
             else:
@@ -882,7 +880,7 @@ class CustomizableFormatter(ObjectFormatterExtendedAPI):
         else:
             html += '&nbsp;'
         html += self._make_summary()
-        if self._should_link():
+        if check_permission(self._link_permission, self._context):
             url = self.url(extra_path)
         else:
             url = ''
