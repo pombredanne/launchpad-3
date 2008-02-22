@@ -201,14 +201,14 @@ class TestForeignTreeStore(WorkerTest):
         self.assertEqual(['update'], tree.log)
 
     def setUp(self):
-        """Set up a code import job to import a SVN branch."""
+        """Set up a code import for an SVN working tree."""
         super(TestForeignTreeStore, self).setUp()
         self.code_import = self.factory.makeCodeImport()
         self.temp_dir = self.makeTemporaryDirectory()
         self._log = []
 
     def makeForeignTreeStore(self, transport=None):
-        """Make a foreign branch store.
+        """Make a foreign tree store.
 
         The store is in a different directory to the local working directory.
         """
@@ -247,69 +247,70 @@ class TestForeignTreeStore(WorkerTest):
             store.transport.base.rstrip('/'),
             config.codeimport.foreign_tree_store.rstrip('/'))
 
-    def test_getNewBranch(self):
-        # If the branch store doesn't have an archive of the foreign branch,
-        # then fetching the branch actually pulls in from the original site.
+    def test_getNewWorkingTree(self):
+        # If the foreign tree store doesn't have an archive of the foreign
+        # tree, then fetching the tree actually pulls in from the original
+        # site.
         store = self.makeForeignTreeStore()
         tree = store.fetchFromSource(self.code_import, self.temp_dir)
         self.assertCheckedOut(tree)
 
-    def test_archiveBranch(self):
-        # Once we have a checkout of a foreign branch, we can archive it so
-        # that we can retrieve it more reliably in the future.
+    def test_archiveTree(self):
+        # Once we have a foreign working tree, we can archive it so that we
+        # can retrieve it more reliably in the future.
         store = self.makeForeignTreeStore()
-        foreign_branch = store.fetchFromSource(
+        foreign_tree = store.fetchFromSource(
             self.code_import, self.temp_dir)
-        store.archive(self.code_import, foreign_branch)
+        store.archive(self.code_import, foreign_tree)
         self.assertTrue(
             store.transport.has('%08x.tar.gz' % self.code_import.branch.id),
             "Couldn't find '%08x.tar.gz'" % self.code_import.branch.id)
 
     def test_makeDirectories(self):
-        # archive() tries to create the base directory of the branch store if
-        # it doesn't already exist.
+        # archive() tries to create the base directory of the foreign tree
+        # store if it doesn't already exist.
         store = self.makeForeignTreeStore(self.get_transport('doesntexist'))
-        foreign_branch = store.fetchFromSource(
+        foreign_tree = store.fetchFromSource(
             self.code_import, self.temp_dir)
-        store.archive(self.code_import, foreign_branch)
+        store.archive(self.code_import, foreign_tree)
         self.assertIsDirectory('doesntexist', self.get_transport())
 
     def test_fetchFromArchiveFailure(self):
-        # If a branch has not been archived yet, but we try to retrieve it
-        # from the archive, then we get a NoSuchFile error.
+        # If a tree has not been archived yet, but we try to retrieve it from
+        # the archive, we get a NoSuchFile error.
         store = self.makeForeignTreeStore()
         self.assertRaises(
             NoSuchFile,
             store.fetchFromArchive, self.code_import, self.temp_dir)
 
     def test_fetchFromArchive(self):
-        # After archiving a branch, we can retrieve it from the store -- the
+        # After archiving a tree, we can retrieve it from the store -- the
         # tarball gets downloaded and extracted.
         store = self.makeForeignTreeStore()
-        foreign_branch = store.fetchFromSource(
+        foreign_tree = store.fetchFromSource(
             self.code_import, self.temp_dir)
-        store.archive(self.code_import, foreign_branch)
+        store.archive(self.code_import, foreign_tree)
         new_temp_dir = self.makeTemporaryDirectory()
-        foreign_branch2 = store.fetchFromArchive(
+        foreign_tree2 = store.fetchFromArchive(
             self.code_import, new_temp_dir)
-        self.assertEqual(new_temp_dir, foreign_branch2.local_path)
+        self.assertEqual(new_temp_dir, foreign_tree2.local_path)
         self.assertDirectoryTreesEqual(self.temp_dir, new_temp_dir)
 
     def test_fetchFromArchiveUpdates(self):
         # The local working tree is updated with changes from the remote
         # branch after it has been fetched from the archive.
         store = self.makeForeignTreeStore()
-        foreign_branch = store.fetchFromSource(
+        foreign_tree = store.fetchFromSource(
             self.code_import, self.temp_dir)
-        store.archive(self.code_import, foreign_branch)
+        store.archive(self.code_import, foreign_tree)
         new_temp_dir = self.makeTemporaryDirectory()
-        foreign_branch2 = store.fetchFromArchive(
+        foreign_tree2 = store.fetchFromArchive(
             self.code_import, new_temp_dir)
-        self.assertUpdated(foreign_branch2)
+        self.assertUpdated(foreign_tree2)
 
 
 class FakeForeignTreeStore(ForeignTreeStore):
-    """A ForeignTreeStore that always fetches fake foreign branches."""
+    """A ForeignTreeStore that always fetches fake foreign trees."""
 
     def __init__(self):
         ForeignTreeStore.__init__(self, None)

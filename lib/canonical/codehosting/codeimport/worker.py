@@ -138,7 +138,7 @@ class ForeignTreeStore:
         self.transport = transport
 
     def _getForeignBranch(self, code_import, target_path):
-        """Return a foreign branch object for `code_import`."""
+        """Return a foreign tree object for `code_import`."""
         if code_import.rcs_type == RevisionControlSystems.SVN:
             return SubversionWorkingTree(
                 str(code_import.svn_branch_url), str(target_path))
@@ -155,10 +155,10 @@ class ForeignTreeStore:
         """Return the name of the tarball for the code import."""
         return '%08x.tar.gz' % code_import.branch.id
 
-    def archive(self, code_import, foreign_branch):
-        """Archive the foreign branch."""
+    def archive(self, code_import, foreign_tree):
+        """Archive the foreign tree."""
         tarball_name = self._getTarballName(code_import)
-        create_tarball(foreign_branch.local_path, tarball_name)
+        create_tarball(foreign_tree.local_path, tarball_name)
         tarball = open(tarball_name, 'rb')
         ensure_base(self.transport)
         try:
@@ -170,8 +170,8 @@ class ForeignTreeStore:
         """Fetch the foreign branch for `code_import` to `target_path`.
 
         If there is no tarball archived for `code_import`, then try to
-        download (i.e. checkout) the foreign branch from its source
-        repository, generally on a third party server.
+        download (i.e. checkout) the foreign tree from its source repository,
+        generally on a third party server.
         """
         try:
             return self.fetchFromArchive(code_import, target_path)
@@ -179,14 +179,13 @@ class ForeignTreeStore:
             return self.fetchFromSource(code_import, target_path)
 
     def fetchFromSource(self, code_import, target_path):
-        """Fetch the latest foreign branch for `code_import` to `target_path`.
-        """
+        """Fetch the foreign tree for `code_import` to `target_path`."""
         branch = self._getForeignBranch(code_import, target_path)
         branch.checkout()
         return branch
 
     def fetchFromArchive(self, code_import, target_path):
-        """Fetch the foreign branch for `code_import` from the archive."""
+        """Fetch the foreign tree for `code_import` from the archive."""
         tarball_name = self._getTarballName(code_import)
         if not self.transport.has(tarball_name):
             raise NoSuchFile(tarball_name)
@@ -209,7 +208,7 @@ class ImportWorker:
     # Where the Bazaar working tree will be stored.
     BZR_WORKING_TREE_PATH = 'bzr_working_tree'
 
-    # Where the foreign branch checkout will be stored.
+    # Where the foreign working tree will be stored.
     FOREIGN_WORKING_TREE_PATH = 'foreign_working_tree'
 
     def __init__(self, job_id, foreign_tree_store, bazaar_branch_store,
@@ -253,14 +252,13 @@ class ImportWorker:
         return self.foreign_tree_store.fetch(
             self.job.code_import, self._foreign_working_tree_path)
 
-    def importToBazaar(self, foreign_branch, bazaar_tree):
-        """Actually import `foreign_branch` into `bazaar_tree`.
+    def importToBazaar(self, foreign_tree, bazaar_tree):
+        """Actually import `foreign_tree` into `bazaar_tree`.
 
-        :param foreign_branch: A `SubversionWorkingTree` or a
-            `CVSWorkingTree`.
+        :param foreign_tree: A `SubversionWorkingTree` or a `CVSWorkingTree`.
         :param bazaar_tree: A `bzrlib.workingtree.WorkingTree`.
         """
-        foreign_directory = foreign_branch.local_path
+        foreign_directory = foreign_tree.local_path
         bzr_directory = str(bazaar_tree.basedir)
 
         scm_branch = SCM.branch(bzr_directory)
@@ -303,22 +301,22 @@ class ImportWorker:
         This is the primary public interface to the `ImportWorker`. This
         method:
 
-         1. Retrieves an up-to-date foreign branch to import.
+         1. Retrieves an up-to-date foreign tree to import.
          2. Gets the Bazaar branch to import into.
-         3. Imports the foreign branch into the Bazaar branch. If we've
+         3. Imports the foreign tree into the Bazaar branch. If we've
             already imported this before, we synchronize the imported Bazaar
-            branch with the latest changes to the foreign branch.
+            branch with the latest changes to the foreign tree.
          4. Publishes the newly-updated Bazaar branch, making it available to
             Launchpad users.
-         5. Archives the foreign branch, so that we can update it quickly next
+         5. Archives the foreign tree, so that we can update it quickly next
             time.
         """
-        foreign_branch = self.getForeignBranch()
+        foreign_tree = self.getForeignBranch()
         bazaar_tree = self.getBazaarWorkingTree()
-        self.importToBazaar(foreign_branch, bazaar_tree)
+        self.importToBazaar(foreign_tree, bazaar_tree)
         self.bazaar_branch_store.push(
             self.job.code_import.branch, bazaar_tree)
         self.foreign_tree_store.archive(
-            self.job.code_import, foreign_branch)
+            self.job.code_import, foreign_tree)
         shutil.rmtree(bazaar_tree.basedir)
-        shutil.rmtree(foreign_branch.local_path)
+        shutil.rmtree(foreign_tree.local_path)
