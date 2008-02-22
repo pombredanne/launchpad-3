@@ -869,7 +869,7 @@ But the type of sections in the config support implicit typing.
     >>> implicit_config['section_3.app_b']
     <canonical.lazr.config.ImplicitTypeSection object at ...>
 
-ImplicitTypeSection, in contrast to Section, converting values that
+ImplicitTypeSection, in contrast to Section, converts values that
 appear to be integer or boolean into ints and bools.
 
     >>> config['section_3.app_b']['key1']
@@ -896,46 +896,46 @@ When the argument is the word 'true' or 'false' (in any case), a bool is
 returned. Values like 'yes', 'no', '0', and '1' are not converted to
 bool.
 
-    >>> implicit = implicit_config['section_1']._implicit
+    >>> convert = implicit_config['section_1']._convert
 
-    >>> implicit('false')
+    >>> convert('false')
     False
-    >>> implicit('TRUE')
+    >>> convert('TRUE')
     True
-    >>> implicit('tRue')
+    >>> convert('tRue')
     True
 
-    >>> implicit('yes')
+    >>> convert('yes')
     'yes'
-    >>> implicit('1')
+    >>> convert('1')
     1
-    >>> implicit('True or False')
+    >>> convert('True or False')
     'True or False'
 
 When the argument is an unbroken sequence of numbers, an int is
 returned. The number may have a leading positive or negative. Octal and
 hex notation is not supported.
 
-    >>> implicit('0')
+    >>> convert('0')
     0
-    >>> implicit('2001')
+    >>> convert('2001')
     2001
-    >>> implicit('-55')
+    >>> convert('-55')
     -55
-    >>> implicit('+404')
+    >>> convert('+404')
     404
-    >>> implicit('0100')
+    >>> convert('0100')
     100
 
-    >>> implicit('2001-01-01')
+    >>> convert('2001-01-01')
     '2001-01-01'
-    >>> implicit('1000*60*5')
+    >>> convert('1000*60*5')
     '1000*60*5'
-    >>> implicit('1000 * 60 * 5')
+    >>> convert('1000 * 60 * 5')
     '1000 * 60 * 5'
-    >>> implicit('1,024')
+    >>> convert('1,024')
     '1,024'
-    >>> implicit('0.5')
+    >>> convert('0.5')
     '0.5'
-    >>> implicit('0x100')
+    >>> convert('0x100')
     '0x100'
