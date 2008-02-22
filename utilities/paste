@@ -4,12 +4,12 @@
 
 from __future__ import with_statement
 
+import base64
+import httplib
 import os
 import pwd
 import sys
-import base64
 import urllib
-import httplib
 import webbrowser
 
 from optparse import OptionParser
