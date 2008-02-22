@@ -106,6 +106,18 @@
       />
   </browser:pages>
 
+  <browser:pages
+    for="canonical.launchpad.interfaces.IArchive"
+    permission="launchpad.Edit"
+    class="canonical.launchpad.browser.ArchiveEditDependenciesView">
+    <browser:page
+      template="../templates/archive-edit-dependencies.pt"
+      facet="overview"
+      name="+edit-dependencies"
+      />
+  </browser:pages>
+
+
   <!-- ArchiveSet -->
   <content class="canonical.launchpad.database.ArchiveSet">
     <allow interface="canonical.launchpad.interfaces.IArchiveSet"/>
