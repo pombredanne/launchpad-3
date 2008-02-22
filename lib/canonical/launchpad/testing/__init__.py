@@ -15,12 +15,10 @@ from datetime import datetime, timedelta
 import pytz
 
 from zope.component import getUtility
-from canonical.database.sqlbase import connect, sqlvalues
 from canonical.launchpad.interfaces import (
     BranchMergeProposalStatus,
     BranchSubscriptionNotificationLevel,
     BranchType,
-    CodeImportMachineState,
     CodeImportReviewStatus,
     CreateBugParams,
     EmailAddressStatus,
