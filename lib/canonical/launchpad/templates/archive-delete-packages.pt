@@ -90,6 +90,8 @@
                    define="widget nocall:view/widgets/deletion_comment;
                            field_name widget/context/__name__;
                            error python:view.getFieldError(field_name);">
+        <p class="warning message"
+          >Read the page help to understand how removals work.</p>
         <div style="margin-top: 1em;">
           <label tal:attributes="for widget/name"
                  tal:content="string:${widget/label}:">Label</label>
@@ -112,18 +114,39 @@
 
 </div> <!--main -->
 
-<p metal:fill-slot="help">
-   Search for the desired packages, then select one of more of them for
-   deletion. A message is displayed below the list of packages if
-   there were more than <tal:max_sources replace="view/max_sources_presented"
-   /> packages found; you may want to refine your
-   search if the packages you are interested in are not listed. A short
-   text comment should be provided when deleting packages, it will be
-   recorded and displayed when presenting the package information.A
-   deleted package will disappear from the archive indexes within 20
-   minutes and the related files will be gone once they are not
-   required in the archive anymore.
-</p>
+<div metal:fill-slot="help">
+   <p>Search for the desired packages, then select one of more of them
+     for deletion. A message is displayed below the list of packages
+     if there were more than <tal:max_sources
+     replace="view/max_sources_presented"/> packages found; you may
+     want to refine your search if the packages you are interested in
+     are not listed. A short text comment should be provided when
+     deleting packages, it will be recorded and displayed when
+     presenting the package information.</p>
+
+   <p>The  deletion will affect the source selected and any binary
+     built from it.<p>
+
+   <p>The deleted packages will disappear from the archive  indexes
+     within 20 minutes, so users won't be able to install it via apt,
+     and the related files will be removed automatically from the
+     archive disk only when all published references to it are also
+     gone.</p>
+
+   <p>Since the <i>archive-remover</i> only runs once a day for all
+     PPAs, it may take 1 or 2 days (runs), depending on how long we
+     have to wait for each reference to be removed, to remove the
+     related files from disk. Published files can take a long time to
+     be removed from the archive pool, because there might exist
+     implicit references from other versions of the same package
+     published in other suites.</p>
+
+   <p>The best alternative to replace a broken source is always to
+     upload a higher version and let the system automatically
+     supersede and remove if from disk when it is time. You should not
+     rely on deletion requests to re-upload the same source version
+     with different contents.</p>
+</div>
 
 </body>
 </html>
