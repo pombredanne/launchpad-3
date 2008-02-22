@@ -9,7 +9,8 @@ __all__ = ['Archive', 'ArchiveSet']
 
 import os
 
-from sqlobject import StringCol, ForeignKey, BoolCol, IntCol
+from sqlobject import  (
+    BoolCol, ForeignKey, IntCol, StringCol)
 from sqlobject.sqlbuilder import SQLConstant
 from zope.component import getUtility
 from zope.interface import implements
@@ -19,6 +20,8 @@ from canonical.archivepublisher.config import Config as PubConfig
 from canonical.config import config
 from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import cursor, SQLBase, sqlvalues, quote_like
+from canonical.launchpad.database.archivedependency import (
+    ArchiveDependency)
 from canonical.launchpad.database.publishing import (
     SourcePackagePublishingHistory, BinaryPackagePublishingHistory)
 from canonical.launchpad.database.librarian import LibraryFileContent
@@ -73,6 +76,19 @@ class Archive(SQLBase):
         published_series_ids = [int(row[0]) for row in cur.fetchall()]
         return [s for s in self.distribution.serieses if s.id in
                 published_series_ids]
+
+    @property
+    def dependencies(self):
+        query = """
+            ArchiveDependency.dependency = Archive.id AND
+            Archive.owner = Person.id AND
+            ArchiveDependency.archive = %s
+        """ % sqlvalues(self)
+        clauseTables = ["Archive", "Person"]
+        orderBy = ['Person.displayname']
+        dependencies = ArchiveDependency.select(
+            query, clauseTables=clauseTables, orderBy=orderBy)
+        return dependencies
 
     @property
     def archive_url(self):
@@ -411,6 +427,31 @@ class Archive(SQLBase):
             permission = False
 
         return permission
+
+    def getArchiveDependency(self, dependency):
+        """See `IArchive`."""
+        return ArchiveDependency.selectOneBy(
+            archive=self, dependency=dependency)
+
+    def removeArchiveDependency(self, dependency):
+        """See `IArchive`."""
+        dependency = self.getArchiveDependency(dependency)
+        if dependency is None:
+            raise AssertionError("This dependency does not exist.")
+        dependency.destroySelf()
+
+    def addArchiveDependency(self, dependency):
+        """See `IArchive`."""
+        if dependency == self:
+            raise AssertionError("An archive should not depend on itself.")
+
+        if dependency.purpose != ArchivePurpose.PPA:
+            raise AssertionError("Archive dependencies only applies to PPAs.")
+
+        if self.getArchiveDependency(dependency):
+            raise AssertionError("This dependency is already recorded.")
+
+        return ArchiveDependency(archive=self, dependency=dependency)
 
 
 class ArchiveSet:
