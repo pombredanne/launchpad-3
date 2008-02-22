@@ -1,0 +1,427 @@
+## page was renamed from UsingMaloneEmail
+[[Anchor(support)]]
+This document describes the email interface to the bug tracker in Launchpad. If you have questions or comments about this document, please address them to {{{#launchpad}}} on freenode, or ask on the [https://lists.ubuntu.com/mailman/listinfo/launchpad-users launchpad-users mailing list].
+
+[[TableOfContents()]]
+
+== Summary ==
+
+Malone provides an email interface for commenting on and modifying bugs. It also provides an `X-Launchpad-Bug:` header you can use to filter the messages it sends you.
+
+== Example syntax for Malone commands ==
+
+Email for reporting and editing bugs must be GPG-signed. Commenting on a bug can be done by simply replying to a bugmail. The commands, `affects`, `status`, etc., must each be indented at least one space character.
+
+Reporting a bug in Ubuntu firefox:
+
+{{{
+From: me@example.com
+To: new@bugs.launchpad.net
+Subject: The foobar is busted
+
+The foobar is busted.
+
+ affects ubuntu/firefox
+ status confirmed
+ subscribe launchpad
+ private yes
+ assignee salgado
+}}}
+
+Reporting a bug on Malone itself:
+
+{{{
+From: me@example.com
+To: new@bugs.launchpad.net
+Subject: The foobar is busted
+
+The foobar is busted.
+
+ affects malone
+}}}
+
+Marking bug #42 fixed:
+
+{{{
+From: me@example.com
+To: 42@bugs.launchpad.net
+Subject: The foobar is busted
+
+The foobar is busted.
+
+ status fixreleased
+}}}
+
+== Example syntax for X-Launchpad-Bug: ==
+
+ * X-Launchpad-Bug: distribution=ubuntu; sourcepackage=linux; component=main; status=New; importance=High; assignee=ben.collins@ubuntu.com
+ * X-Launchpad-Bug: product=bzr; status=New; importance=Untriaged; assignee=robert.collins@ubuntu.com
+
+== Example syntax for X-Launchpad-Message-Rationale: ==
+
+When sending out most email Launchpad will include an X-Launchpad-Message-Rationale header which you can filter with.
+
+More information about the header can be found in LaunchpadMessageRationale
+
+== How to Get Started ==
+
+To add comments, you need only [https://launchpad.net/+login a Launchpad account].
+
+Editing bugs requires GPG-signing the email you send. So you need:
+
+1. A [http://www.kuro5hin.org/story/2000/5/1/17058/47630 GPG key].
+
+2. To associate your GPG key with your Launchpad account. Start at your personal page, e.g.:
+
+{{{https://launchpad.net/~$yournick}}}
+
+Click on "Edit OpenPGP Keys" and follow the instructions.
+
+== Reporting a Bug ==
+
+Send a GPG signed email to `new@bugs.launchpad.net`. Use the `affects` command to specify where the bug exists, for example:
+
+{{{
+From: Foo Bar <foo.bar@canonical.com>
+Subject: System error when searching for products
+To: new@bugs.launchpad.net
+
+-----BEGIN PGP SIGNED MESSAGE-----
+
+Every time I try to search for a product, I get a system error page.
+
+ affects launchpad
+-----BEGIN PGP SIGNATURE-----
+...
+-----END PGP SIGNATURE-----
+}}}
+
+Filing a distro bug:
+
+{{{
+From: Foo Bar <foo.bar@canonical.com>
+Subject: Newest version of Firefox doesn't support web dev toolbar
+To: new@bugs.launchpad.net
+
+-----BEGIN PGP SIGNED MESSAGE-----
+
+The newest version of Firefox breaks with the web dev toolbar.
+
+ affects ubuntu/firefox
+-----BEGIN PGP SIGNATURE-----
+...
+-----END PGP SIGNATURE-----
+}}}
+
+To file a bug on '''more than one package''', add another `affects` stanza. For example:
+
+{{{
+From: Foo Bar <foo.bar@canonical.com>
+Subject: Sound does not work properly in Flash in firefox
+To: new@bugs.launchpad.net
+
+-----BEGIN PGP SIGNED MESSAGE-----
+
+Sound does not work in Flash in firefox. This is because I am about to (in my
+next upload) turn off the hack that makes it work.
+
+ affects ubuntu/flash-player
+ affects ubuntu/flashplugin-nonfree
+-----BEGIN PGP SIGNATURE-----
+...
+-----END PGP SIGNATURE-----
+}}}
+
+[[Anchor(affects)]]
+=== affects [distribution|package|product] ===
+
+When filing a bug, `affects $target` says the bug is in `$target`.
+
+'''When editing a bug, `affects` is optional''', unless the bug is reported in more than one upstream or package, in which case Malone will select the first bug upstream or package it finds, based on the following criteria:
+
+  1. The upstream on which the user is a bug contact.
+
+  2. The distribution of which the user is a member.
+
+  3. The package on which the user is a bug contact.
+
+If the correct bug upstream/package still cannot be determined, the sender will receive an error email.
+
+`affects` needs to be '''indented with at least one space character''' to distinguish it from the description. This requirement may change in the future. The `affects` target can take the following forms:
+
+{{{
+ affects ubuntu/$packagename
+}}}
+{{{
+ affects $distroname
+}}}
+{{{
+ affects $productname
+}}}
+
+== Commenting on a Bug ==
+
+Send an email to `$bugid@bugs.launchpad.net`. Replying to a bugmail will add a comment to that bug. For example:
+
+{{{
+From: Foo Bar <foo.bar@canonical.com>
+Subject: Re: [Bug 42] Some bug
+To: 42@bugs.launchpad.net
+
+> I'm not sure if it's really a bug.
+
+Yes, it is a bug.
+}}}
+
+== Editing a Bug ==
+
+Just like commenting, send an email to `$bugid@bugs.launchpad.net` to edit a bug.
+
+[[Anchor(intersperse)]]
+=== Formatting Commands ===
+
+Email commands are written one per line.
+
+{{{
+ status confirmed
+ assignee foobar
+}}}
+
+Commands can be mixed with non-command text, e.g., the description when filing a bug, or comment text when replying to a bugmail. For example:
+
+{{{
+This is an example bit of bug description.
+
+ affects ubuntu/firefox
+
+And this is some more description.
+
+ assignee bradb
+}}}
+
+Some users have reported this as confusing. It's a [#knownissues known issue].
+
+Malone always processes the entire email; there is no `done` command to explicitly stop command processing.
+
+The following commands can be used to edit a bug (remember, each one must be indented with a space character, for now):
+
+=== summary "$summary" ===
+
+Change the one-line summary of the bug. Quotes are required.
+
+{{{
+ summary "A better summary"
+}}}
+
+=== assignee [name|email|nobody] ===
+
+Assign a bug to someone.
+
+{{{
+ assignee bradb
+}}}
+
+{{{
+ assignee brad.bollenbach@ubuntu.com
+}}}
+
+Unassign the bug.
+
+{{{
+ assignee nobody
+}}}
+
+=== status [new|incomplete|invalid|wontfix|confirmed|triaged|inprogress|fixcommitted|fixreleased] ===
+
+Change the status of a bug.
+
+{{{
+ status fixreleased
+}}}
+
+=== importance [wishlist|low|medium|high|critical] ===
+
+Change the importance of a bug.
+
+{{{
+ importance high
+}}}
+
+=== milestone $milestone ===
+
+Sets or clears the milestone of the bug. The milestone must already exist in Launchpad (see [:FeatureHighlights/MilestoneUsage: MilestoneUsage]).
+
+{{{
+ milestone 1.1.10
+}}}
+
+You can clear the milestone by sending a hyphen:
+
+{{{
+ milestone -
+}}}
+
+=== private [yes|no] ===
+
+Changes the visibility of the bug.
+
+{{{
+ private yes
+}}}
+
+=== subscribe [name|email] ===
+
+Subscribes yourself or someone else to the bug. If you don't specify a name or email, the sender of the email will be subscribed.
+
+Subscribe yourself to the bug:
+{{{
+ subscribe
+}}}
+
+Subscribe Foo Bar to the bug:
+{{{
+ subscribe foo.bar@canonical.com
+}}}
+
+Subscribe Bjorn to the bug.
+
+{{{
+ subscribe bjornt
+}}}
+
+=== unsubscribe [name|email] ===
+
+The opposite of the subscribe command.
+
+=== duplicate $bugid ===
+
+Mark the bug as a duplicate of another bug.
+
+{{{
+  duplicate 42
+}}}
+
+To unmark the bug as a duplicate, specify 'no' as the bug id.
+
+{{{
+  duplicate no
+}}}
+
+=== bug $bugid ===
+
+The `bug` command is intended for users who want to generate batch change emails. The batch change address is `edit@bugs.launchpad.net`.
+
+{{{
+From: me@example.com
+To: edit@bugs.launchpad.net
+Subject: <whatever>
+
+ bug 42
+ status confirmed
+
+ bug 49
+ status confirmed
+}}}
+
+=== tag $tag ===
+
+The `tag` command can be used to assign a tag to a bug. Multiple tags can be specified with a single command.
+
+{{{
+ tag foo
+
+ tag foo bar
+}}}
+
+Tags can also be removed by prefixing the tag name with `-`.
+
+{{{
+ tag -foo
+}}}
+
+=== Editing a Bug Affecting More Than One Package ===
+
+Every package or product affected by a bug has its own fix status, assignee, milestone, etc. Use the [#affects affects command] to edit a specific fix status, assignee, etc., when a bug affects more than one package.
+
+For example, [https://launchpad.net/bugs/29760 bug 29760] affects `flash-player` and `flashplugin-nonfree`. To mark the bug fixed in `flash-player` you would send this email:
+
+{{{
+From: you@example.com
+To: 29760@bugs.launchpad.net
+Subject: <whatever>
+
+ affects ubuntu/flash-player
+ status fixreleased
+}}}
+
+When a bug affects only one package or product, the `affects` command is unnecessary.
+
+== What To Expect When You Submit an Email ==
+
+Malone processes incoming mail every three minutes, so a '''slight delay between sending a mail and receiving a response is normal'''.
+
+=== On Success ===
+
+If your email was processed successfully, you will receive a standard bugmail change notification, identical to the bugmail that would get sent if you made the same changes via the web UI. For example, if you send an email like:
+
+{{{
+From: you@example.com
+To: 28919@bugs.launchpad.net
+Subject: Re: [Bug 28919] error signing code of conduct: "str: No public key"
+
+ status incomplete
+}}}
+
+You'll receive a response like:
+
+{{{
+From: you@example.com
+To: launchpad-bugs@lists.ubuntu.com
+Subject: [Bug 28919] error signing code of conduct: "str: No public key"
+
+Public bug report changed:
+https://launchpad.net/malone/bugs/28919
+
+Changed in: Launchpad (upstream)
+         Status: Unconfirmed => Incomplete
+
+--
+launchpad-bugs mailing list
+launchpad-bugs@lists.canonical.com
+https://lists.ubuntu.com/mailman/listinfo/launchpad-bugs
+}}}
+
+=== On Failure ===
+
+If an error occurs while processing your email, you should receive a failure message from Malone. For example, if you forget to GPG-sign a filebug email, you'll receive an error message like:
+
+{{{
+From: noreply@bugs.launchpad.net
+To: you@example.com
+Subject: Submit Request Failure
+
+An error occurred while processing a mail you sent to Malone's email
+interface.
+
+
+Error message:
+
+In order to submit bugs via email you have to sign the message with a
+GPG key that is registered in Launchpad.
+
+
+-- 
+For more information about using Malone's email interface, please see
+https://wiki.launchpad.canonical.com/MaloneEmailInterfaceUserDoc.
+}}}
+
+If you've waited several minutes and still not received either a bugmail change notification or an error message, please refer to the [#support support channels] mentioned at the beginning of this document.
+
+[[Anchor(knownissues)]]
+== Known Issues ==
+
+Requiring GPG-signed mail is probably too restrictive.
+
+Requiring indentation for the commands makes it easy to get it wrong.
+
+Being able to [#intersperse intersperse command and non-command text] is [https://launchpad.net/products/malone/+bug/29572 unnecessary and confusing].

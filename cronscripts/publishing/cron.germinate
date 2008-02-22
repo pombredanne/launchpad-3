@@ -38,7 +38,7 @@ for component in main universe restricted; do
 done
 
 > "$MISCROOT/more-extra.override.$suite.main.new"
-for distro in ubuntu kubuntu edubuntu xubuntu gobuntu; do
+for distro in ubuntu kubuntu edubuntu xubuntu gobuntu kubuntu-kde4; do
   DISTRO="$(echo $distro | tr a-z A-Z)"
   germinate_suite="$distro.$suite"
   if [ "$distro" = gobuntu ]; then

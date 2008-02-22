@@ -26,9 +26,7 @@ from zope.security.proxy import removeSecurityProxy
 from canonical.authserver.tests.harness import AuthserverTacTestSetup
 from canonical.codehosting.tests.helpers import BranchTestCase
 from canonical.config import config
-from canonical.database.sqlbase import cursor, sqlvalues
-from canonical.launchpad.interfaces import (
-    BranchType, IBranchSet, IScriptActivitySet)
+from canonical.launchpad.interfaces import BranchType, IScriptActivitySet
 from canonical.codehosting import branch_id_to_path
 from canonical.testing import LaunchpadScriptLayer
 
@@ -58,9 +56,9 @@ class TestBranchPuller(BranchTestCase):
         """Assert that 'branch' was mirrored succesfully."""
         # Make sure that we are testing the actual data.
         removeSecurityProxy(branch).sync()
+        self.assertEqual(None, branch.mirror_status_message)
         self.assertEqual(branch.last_mirror_attempt, branch.last_mirrored)
         self.assertEqual(0, branch.mirror_failures)
-        self.assertEqual(None, branch.mirror_status_message)
         hosted_branch = Branch.open(source_path)
         mirrored_branch = Branch.open(self.getMirroredPath(branch))
         self.assertEqual(
@@ -102,16 +100,18 @@ class TestBranchPuller(BranchTestCase):
             shutil.rmtree(path)
         os.makedirs(path)
 
-    def pushToBranch(self, branch):
+    def pushToBranch(self, branch, tree=None):
         """Push a trivial Bazaar branch to a given Launchpad branch.
 
         :param branch: A Launchpad Branch object.
         """
         hosted_path = self.getHostedPath(branch)
-        tree = self.createTemporaryBazaarBranchAndTree()
+        if tree is None:
+            tree = self.createTemporaryBazaarBranchAndTree()
         out, err = self.run_bzr(
             ['push', '--create-prefix', '-d',
-             local_path_from_url(tree.branch.base), hosted_path], retcode=None)
+             local_path_from_url(tree.branch.base), hosted_path],
+            retcode=None)
         # We want to be sure that a new branch was indeed created.
         self.assertEqual("Created new branch.\n", err)
 
@@ -174,6 +174,17 @@ class TestBranchPuller(BranchTestCase):
         # 124849.
         branch = self.makeBranch(BranchType.HOSTED)
         self.pushToBranch(branch)
+        branch.requestMirror()
+        transaction.commit()
+        command, retcode, output, error = self.runPuller('upload')
+        self.assertRanSuccessfully(command, retcode, output, error)
+        self.assertMirrored(self.getHostedPath(branch), branch)
+
+    def test_mirrorAHostedLoomBranch(self):
+        """Run the puller over a branch with looms enabled."""
+        branch = self.makeBranch(BranchType.HOSTED)
+        loom_tree = self.makeLoomBranchAndTree('loom')
+        self.pushToBranch(branch, loom_tree)
         branch.requestMirror()
         transaction.commit()
         command, retcode, output, error = self.runPuller('upload')

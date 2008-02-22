@@ -7,7 +7,9 @@
 
 __metaclass__ = type
 __all__ = [
-    'Person', 'PersonSet', 'SSHKey', 'SSHKeySet', 'WikiName', 'WikiNameSet',
+    'Person', 'PersonSet',
+    'SSHKey', 'SSHKeySet',
+    'WikiName', 'WikiNameSet',
     'JabberID', 'JabberIDSet', 'IrcID', 'IrcIDSet']
 
 from datetime import datetime, timedelta
@@ -95,6 +97,7 @@ from canonical.launchpad.database.teammembership import (
 from canonical.launchpad.database.question import QuestionPersonSearch
 
 from canonical.launchpad.searchbuilder import any
+from canonical.launchpad.validators.person import public_person_validator
 
 
 class ValidPersonOrTeamCache(SQLBase):
@@ -167,7 +170,8 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
     organization = StringCol(default=None)
 
     teamowner = ForeignKey(dbName='teamowner', foreignKey='Person',
-                           default=None)
+                           default=None,
+                           validator=public_person_validator)
 
     sshkeys = SQLMultipleJoin('SSHKey', joinColumn='person')
 
@@ -188,7 +192,8 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
     creation_rationale = EnumCol(enum=PersonCreationRationale, default=None)
     creation_comment = StringCol(default=None)
     registrant = ForeignKey(
-        dbName='registrant', foreignKey='Person', default=None)
+        dbName='registrant', foreignKey='Person', default=None,
+        validator=public_person_validator)
     hide_email_addresses = BoolCol(notNull=True, default=False)
     verbose_bugnotifications = BoolCol(notNull=True, default=True)
 

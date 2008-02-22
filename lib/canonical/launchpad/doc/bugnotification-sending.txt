@@ -55,7 +55,8 @@ list of emails to send:
 
     >>> from canonical.launchpad.scripts.bugnotification import (
     ...     get_email_notifications)
-    >>> for bug_notifications, messages in get_email_notifications(notifications):
+    >>> email_notifications = get_email_notifications(notifications)
+    >>> for bug_notifications, messages in email_notifications:
     ...     for message in messages:
     ...         print_notification(message)
     To: foo.bar@canonical.com
@@ -142,6 +143,17 @@ Setting date_emailed to some date causes it not to be pending anymore:
     >>> len(pending_notifications)
     0
 
+Let's define a helper function to do that for all pending notifications:
+
+    >>> def flush_notifications():
+    ...     utc_now = datetime.now(pytz.timezone('UTC'))
+    ...     pending_notifications = getUtility(
+    ...         IBugNotificationSet).getNotificationsToSend()
+    ...     for notification in pending_notifications:
+    ...         notification.date_emailed = utc_now
+    ...     flush_database_updates()
+
+
 To every message that get sent out, [Bug $bugid] is prefixed to the
 subject. It gets prefixed only if it's not already present in the
 subject, though, which is often the case when someone replies via email.
@@ -152,7 +164,8 @@ subject, though, which is often the case when someone replies via email.
     >>> bug_one.addCommentNotification(comment)
     >>> pending_notifications = getUtility(
     ...     IBugNotificationSet).getNotificationsToSend()
-    >>> for bug_notifications, messages in get_email_notifications(pending_notifications):
+    >>> email_notifications = get_email_notifications(pending_notifications)
+    >>> for bug_notifications, messages in email_notifications:
     ...     for message in messages:
     ...         print_notification(message)
     To: foo.bar@canonical.com
@@ -174,9 +187,7 @@ subject, though, which is often the case when someone replies via email.
     To: test@canonical.com
     ...
 
-    >>> for notification in pending_notifications:
-    ...     notification.date_emailed = datetime.now(pytz.timezone('UTC'))
-    >>> flush_database_updates()
+    >>> flush_notifications()
 
 Let's add a few changes and see how it looks like:
 
@@ -191,7 +202,8 @@ Let's add a few changes and see how it looks like:
     >>> len(pending_notifications)
     2
 
-    >>> for bug_notifications, messages in get_email_notifications(pending_notifications):
+    >>> email_notifications = get_email_notifications(pending_notifications)
+    >>> for bug_notifications, messages in email_notifications:
     ...     for message in messages:
     ...         print_notification(message)
     To: foo.bar@canonical.com
@@ -236,7 +248,8 @@ the constructed email:
 Notice how the comment is in the top of the email, and the changes are
 in the order they were added:
 
-    >>> for bug_notifications, messages in get_email_notifications(pending_notifications):
+    >>> email_notifications = get_email_notifications(pending_notifications)
+    >>> for bug_notifications, messages in email_notifications:
     ...     for message in messages:
     ...         print_notification(message)
     To: foo.bar@canonical.com
@@ -276,7 +289,8 @@ If we insert yet another comment, it will be sent as a separate email.
     >>> len(pending_notifications)
     6
 
-    >>> for bug_notifications, messages in get_email_notifications(pending_notifications):
+    >>> email_notifications = get_email_notifications(pending_notifications)
+    >>> for bug_notifications, messages in email_notifications:
     ...     for message in messages:
     ...         print_notification(message)
     To: foo.bar@canonical.com
@@ -322,9 +336,7 @@ If we insert yet another comment, it will be sent as a separate email.
     To: test@canonical.com
     ...
 
-    >>> for notification in pending_notifications:
-    ...     notification.date_emailed = datetime.now(pytz.timezone('UTC'))
-    >>> flush_database_updates()
+    >>> flush_notifications()
 
 If we add three comments, three notifications will be sent:
 
@@ -345,7 +357,8 @@ If we add three comments, three notifications will be sent:
     >>> len(pending_notifications)
     3
 
-    >>> for bug_notifications, messages in get_email_notifications(pending_notifications):
+    >>> email_notifications = get_email_notifications(pending_notifications)
+    >>> for bug_notifications, messages in email_notifications:
     ...     for message in messages:
     ...         print_notification(message)
     To: foo.bar@canonical.com
@@ -403,9 +416,7 @@ If we add three comments, three notifications will be sent:
     To: test@canonical.com
     ...
 
-    >>> for notification in pending_notifications:
-    ...     notification.date_emailed = datetime.now(pytz.timezone('UTC'))
-    >>> flush_database_updates()
+    >>> flush_notifications()
 
 If Sample Person does a few changes, and Foo Bar steps in a does a
 change in between, three notifications will be sent:
@@ -428,7 +439,8 @@ change in between, three notifications will be sent:
     >>> len(pending_notifications)
     3
 
-    >>> for bug_notifications, messages in get_email_notifications(pending_notifications):
+    >>> email_notifications = get_email_notifications(pending_notifications)
+    >>> for bug_notifications, messages in email_notifications:
     ...     for message in messages:
     ...         print_notification(message)
     To: foo.bar@canonical.com
@@ -487,9 +499,7 @@ change in between, three notifications will be sent:
     To: test@canonical.com
     ...
 
-    >>> for notification in pending_notifications:
-    ...     notification.date_emailed = datetime.now(pytz.timezone('UTC'))
-    >>> flush_database_updates()
+    >>> flush_notifications()
 
 We send the notification only if the user hasn't done any other changes
 for the last 5 minutes:
@@ -504,10 +514,7 @@ for the last 5 minutes:
     >>> len(pending_notifications)
     0
 
-    >>> from canonical.launchpad.database import BugNotification
-    >>> for notification in BugNotification.select():
-    ...     notification.date_emailed = datetime.now(pytz.timezone('UTC'))
-    >>> flush_database_updates()
+    >>> flush_notifications()
 
 A more complicated example, Sample Person does a change every minute,
 but Foo Bar does a change in between:
@@ -532,10 +539,7 @@ but Foo Bar does a change in between:
     27 Sample Person
     28 Foo Bar
 
-    >>> from canonical.launchpad.database import BugNotification
-    >>> for notification in BugNotification.select():
-    ...     notification.date_emailed = datetime.now(pytz.timezone('UTC'))
-    >>> flush_database_updates()
+    >>> flush_notifications()
 
 Let's take a more complete example, where we edit different bugs as
 well:
@@ -571,7 +575,8 @@ well:
     >>> len(pending_notifications)
     9
 
-    >>> for bug_notifications, messages in get_email_notifications(pending_notifications):
+    >>> email_notifications = get_email_notifications(pending_notifications)
+    >>> for bug_notifications, messages in email_notifications:
     ...     for message in messages:
     ...         print_notification_headers(message)
     ...         print
@@ -665,9 +670,7 @@ a trailing space.
      'You received this bug notification because you are a direct subscriber',
      'of the bug.']
 
-    >>> for notification in BugNotification.select():
-    ...     notification.date_emailed = datetime.now(pytz.timezone('UTC'))
-    >>> flush_database_updates()
+    >>> flush_notifications()
 
 If a team without a contact address is subscribed to the bug, the
 notification will be sent to all members individually.
@@ -691,7 +694,8 @@ notification will be sent to all members individually.
     >>> len(pending_notifications)
     1
 
-    >>> for bug_notifications, messages in get_email_notifications(pending_notifications):
+    >>> email_notifications = get_email_notifications(pending_notifications)
+    >>> for bug_notifications, messages in email_notifications:
     ...     for message in messages:
     ...         print message['To']
     foo.bar@canonical.com
@@ -700,9 +704,7 @@ notification will be sent to all members individually.
     support@ubuntu.com
     test@canonical.com
 
-    >>> for notification in BugNotification.select():
-    ...     notification.date_emailed = datetime.now(pytz.timezone('UTC'))
-    >>> flush_database_updates()
+    >>> flush_notifications()
 
 
 == Bug Filed Notification ==
@@ -743,9 +745,7 @@ initial message of the bug, it will result in a bug filed notification:
     X-Launchpad-Message-Rationale: Subscriber
     <BLANKLINE>
 
-    >>> for notification in BugNotification.select():
-    ...     notification.date_emailed = datetime.now(pytz.timezone('UTC'))
-    >>> flush_database_updates()
+    >>> flush_notifications()
 
 
 == Duplicates ==
@@ -854,9 +854,7 @@ top of the email:
 Also note that notification was sent to Mark as well, since he's a
 subscriber of bug one.
 
-    >>> for notification in BugNotification.select():
-    ...     notification.date_emailed = datetime.now(pytz.timezone('UTC'))
-    >>> flush_database_updates()
+    >>> flush_notifications()
 
 
 == Security Vulnerabilities ==
@@ -893,9 +891,7 @@ inserted at the top of the message body.
     <BLANKLINE>
     ...
 
-    >>> for notification in BugNotification.select():
-    ...     notification.date_emailed = datetime.now(pytz.timezone('UTC'))
-    >>> flush_database_updates()
+    >>> flush_notifications()
 
 The message is only inserted for new bugs, not for modified bugs:
 
@@ -919,9 +915,7 @@ The message is only inserted for new bugs, not for modified bugs:
     <BLANKLINE>
     ...
 
-    >>> for notification in BugNotification.select():
-    ...     notification.date_emailed = datetime.now(pytz.timezone('UTC'))
-    >>> flush_database_updates()
+    >>> flush_notifications()
 
 
 == The cronscript ==
@@ -1034,10 +1028,7 @@ makes it write out the emails it sends.
     INFO    Notifying test@canonical.com about bug 1.
     ...
 
-
-    >>> for notification in BugNotification.select():
-    ...     notification.date_emailed = datetime.now(pytz.timezone('UTC'))
-    >>> flush_database_updates()
+    >>> flush_notifications()
 
 
 == The X-Launchpad-Bug header ==
@@ -1061,10 +1052,10 @@ filled with data about that bug:
 If we take a closer look at a notification, we can see that
 X-Launchpad-Bug headers were added:
 
-    >>> [(bug_notifications, messages)] = get_email_notifications(
-    ...     notifications)
-    >>> message = messages[0]
-    >>> print sorted(message.get_all('X-Launchpad-Bug'))
+    >>> email_notifications = get_email_notifications(notifications)
+    >>> for bug_notifications, messages in email_notifications:
+    ...     for message in messages:
+    ...         sorted(message.get_all('X-Launchpad-Bug'))
     [u'distribution=debian; distroseries=sarge;... milestone=3.1;...',
      u'distribution=debian; distroseries=woody;...',
      u'distribution=debian; sourcepackage=mozilla-firefox; component=...']
@@ -1081,6 +1072,30 @@ specified:
 
 == The X-Launchpad-Bug-Private header ==
 
+First, a helper function that triggers notifications by adding a
+comment to a given bug, another that returns a sorted list of new
+email messages, and a third that combines the first two.
+
+    >>> def trigger_notifications(bug):
+    ...     comment = getUtility(IMessageSet).fromText(
+    ...         'subject', 'a short comment.', sample_person,
+    ...         datecreated=ten_minutes_ago)
+    ...     bug.addCommentNotification(comment)
+    ...     return getUtility(
+    ...         IBugNotificationSet).getNotificationsToSend()
+
+    >>> def get_email_messages(notifications):
+    ...     messages = (message
+    ...         for bug_notifications, messages in
+    ...             get_email_notifications(notifications)
+    ...         for message in messages)
+    ...     return sorted(messages, key=lambda message: message['To'])
+
+    >>> def trigger_and_get_email_messages(bug):
+    ...     flush_notifications()
+    ...     notifications = trigger_notifications(bug)
+    ...     return get_email_messages(notifications)
+
 When a notification is sent out about a bug, the
 X-Launchpad-Bug-Private header shows if the bug is marked as
 private. It can have the value "yes" or "no".
@@ -1088,8 +1103,10 @@ private. It can have the value "yes" or "no".
     >>> bug_three.private
     False
 
-    >>> message.get_all('X-Launchpad-Bug-Private')
-    ['no']
+    >>> for message in trigger_and_get_email_messages(bug_three):
+    ...     print message['To'], message.get_all('X-Launchpad-Bug-Private')
+    mark@hbd.com ['no']
+    test@canonical.com ['no']
 
 Predictably, private bugs are sent with a slightly different header:
 
@@ -1098,12 +1115,10 @@ Predictably, private bugs are sent with a slightly different header:
     >>> bug_three.private
     True
 
-    >>> email_notifications = get_email_notifications(notifications)
-    >>> for bug_notifications, messages in email_notifications:
-    ...     for message in messages:
-    ...         message.get_all('X-Launchpad-Bug-Private')
-    ['yes']
-    ['yes']
+    >>> for message in trigger_and_get_email_messages(bug_three):
+    ...     print message['To'], message.get_all('X-Launchpad-Bug-Private')
+    mark@hbd.com ['yes']
+    test@canonical.com ['yes']
 
 
 == The X-Launchpad-Bug-Security-Vulnerability header ==
@@ -1115,8 +1130,11 @@ security vulnerability. It can have the value "yes" or "no".
     >>> bug_three.security_related
     False
 
-    >>> message.get_all('X-Launchpad-Bug-Security-Vulnerability')
-    ['no']
+    >>> for message in trigger_and_get_email_messages(bug_three):
+    ...     print message['To'], (
+    ...         message.get_all('X-Launchpad-Bug-Security-Vulnerability'))
+    mark@hbd.com ['no']
+    test@canonical.com ['no']
 
 The presence of the security flag on a bug is, surprise, denoted by a
 simple "yes":
@@ -1125,12 +1143,11 @@ simple "yes":
     >>> bug_three.security_related
     True
 
-    >>> email_notifications = get_email_notifications(notifications)
-    >>> for bug_notifications, messages in email_notifications:
-    ...     for message in messages:
-    ...         message.get_all('X-Launchpad-Bug-Security-Vulnerability')
-    ['yes']
-    ['yes']
+    >>> for message in trigger_and_get_email_messages(bug_three):
+    ...     print message['To'], (
+    ...         message.get_all('X-Launchpad-Bug-Security-Vulnerability'))
+    mark@hbd.com ['yes']
+    test@canonical.com ['yes']
 
 
 == Verbose bug notifications ==
@@ -1184,25 +1201,25 @@ its status in all of its targets. All other subscribers will receive
 standard notifications that don't include the bug description. To help
 with demonstrating this, we'll define a helper function.
 
-    >>> def sort_messages_by_recipient(messages):
+    >>> def collate_messages_by_recipient(messages):
     ...     messages_by_recipient = {}
     ...     for message in messages:
-    ...         if message['To'] in messages_by_recipient:
-    ...             messages_by_recipient[message['To']].append(message)
+    ...         recipient = message['To']
+    ...         if recipient in messages_by_recipient:
+    ...             messages_by_recipient[recipient].append(message)
     ...         else:
-    ...             messages_by_recipient[message['To']] = [message]
+    ...             messages_by_recipient[recipient] = [message]
     ...     return messages_by_recipient
 
-    >>> from canonical.launchpad.scripts.bugnotification import (
-    ...     get_email_notifications)
-    >>> [(bug_notifications, messages)] = (
-    ...     get_email_notifications(notifications))
-    >>> sorted_messages = sort_messages_by_recipient(messages)
+    >>> from itertools import chain
+    >>> collated_messages = collate_messages_by_recipient(
+    ...     chain(*(messages for bug_notifications, messages in
+    ...             get_email_notifications(notifications))))
 
 We can see that foo.bar@canonical.com doesn't receive verbose
 notifications:
 
-    >>> print_notification(sorted_messages['foo.bar@canonical.com'][0])
+    >>> print_notification(collated_messages['foo.bar@canonical.com'][0])
     To: foo.bar@canonical.com
     From: Sample Person <test@canonical.com>
     Subject: [Bug 15] subject
@@ -1210,18 +1227,18 @@ notifications:
     <BLANKLINE>
     a really simple comment.
     <BLANKLINE>
-    -- 
+    --
     Nonsensical bugs are useless
     http://bugs.launchpad.dev/bugs/15
     You received this bug notification because you are a direct subscriber
     of the bug.
     <BLANKLINE>
-    ---------------------------------------------------------------------- 
+    ----------------------------------------------------------------------
 
 Whereas ddaa does:
 
     >>> print_notification(
-    ...     sorted_messages['david.allouche@canonical.com'][0])
+    ...     collated_messages['david.allouche@canonical.com'][0])
     To: david.allouche@canonical.com
     From: Sample Person <test@canonical.com>
     Subject: [Bug 15] subject
@@ -1229,7 +1246,7 @@ Whereas ddaa does:
     <BLANKLINE>
     a really simple comment.
     <BLANKLINE>
-    -- 
+    --
     Nonsensical bugs are useless
     http://bugs.launchpad.dev/bugs/15
     You received this bug notification because you are a direct subscriber
@@ -1241,5 +1258,5 @@ Whereas ddaa does:
     Bug description:
     Like this one, natch.
     <BLANKLINE>
-    ---------------------------------------------------------------------- 
+    ----------------------------------------------------------------------
 
