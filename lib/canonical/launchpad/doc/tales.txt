@@ -129,6 +129,9 @@ to a content object.  There are currently links defined for:
   * bugs
   * bug tasks
 
+
+=== Person entries ===
+
 For a person or team, fmt:link gives us a link to that person's page,
 containing the person name and an icon.
 
@@ -168,6 +171,9 @@ that the links and images are pointing at the right hostname.
     >>> test_tales("person/fmt:link:bugs/foo/bar", person=spiv)
     u'<a href="http://bugs.launchpad.dev/~spiv/foo/bar"><img...src="http://bugs.launchpad.dev/@@/person-inactive"...'
 
+
+=== Branches ===
+
 For branches, fmt:link links to the branch page.
 
     >>> from canonical.launchpad.interfaces import IBranchSet
@@ -176,12 +182,15 @@ For branches, fmt:link links to the branch page.
     >>> test_tales("branch/fmt:link", branch=branch)
     u'<a href=".../~name12/gnome-terminal/main" title="GNOME Terminal Mainline"><img src="/@@/branch"...>&nbsp;~name12/gnome-terminal/main</a>'
 
+
+=== Bugs ===
+
 For bugs, fmt:link takes to the bug redirect page.
 
     >>> from canonical.launchpad.interfaces import IBugSet
     >>> bug = getUtility(IBugSet).get(1)
     >>> test_tales("bug/fmt:link", bug=bug)
-    u'<a href=".../bugs/1/"><img ...src="/@@/bug" />&nbsp;Bug #1: Firefox does
+    u'<a href=".../bugs/1"><img ...src="/@@/bug" />&nbsp;Bug #1: Firefox does
     not support SVG</a>'
 
 For bugtasks, fmt:link shows the severity bug icon, and links to the
@@ -189,7 +198,7 @@ appropriate project's bug.
 
     >>> bugtask = bug.bugtasks[0]
     >>> test_tales("bugtask/fmt:link", bugtask=bugtask)
-    u'<a href=".../firefox/+bug/1/"><img ...src="/@@/bug-low" />&nbsp;Bug #1:
+    u'<a href=".../firefox/+bug/1"><img ...src="/@@/bug-low" />&nbsp;Bug #1:
     Firefox does not support SVG</a>'
 
 Bug titles may contain markup (when describing issue regarding markup).
@@ -199,14 +208,15 @@ title might be interpreted by the browser.
 
     >>> bug.title = "Opps<br/><script>alert('XSS')</script>"
     >>> test_tales("bug/fmt:link", bug=getUtility(IBugSet).get(1))
-    u'<a href=".../bugs/1/"><img ...src="/@@/bug" />&nbsp;Bug #1:
+    u'<a href=".../bugs/1"><img ...src="/@@/bug" />&nbsp;Bug #1:
       Opps&lt;br/&gt;&lt;script&gt;alert(\'XSS\')&lt;/script&gt;</a>'
 
     >>> test_tales("bugtask/fmt:link", bugtask=bugtask)
-    u'<a href=".../firefox/+bug/1/"><img ...src="/@@/bug-low" />&nbsp;Bug #1:
+    u'<a href=".../firefox/+bug/1"><img ...src="/@@/bug-low" />&nbsp;Bug #1:
       Opps&lt;br/&gt;&lt;script&gt;alert(\'XSS\')&lt;/script&gt;</a>'
 
 
+=== Branch subscriptions ===
 Branch subscriptions show the person and branch name.  For users
 without adequate permissions, a link is not generated.
 
@@ -225,6 +235,9 @@ But if we log in as the subscriber, a link is presented.
 
 Merge proposals also have a link formatter, which displays branch titles:
 
+
+=== Merge proposals ===
+
     >>> login('foo.bar@canonical.com')
     >>> proposal = factory.makeBranchMergeProposal()
     >>> proposal.source_branch.title = 'baz'
@@ -232,7 +245,8 @@ Merge proposals also have a link formatter, which displays branch titles:
     >>> test_tales("proposal/fmt:link", proposal=proposal)
     u'<a href="...">Proposed merge of baz into qux</a>'
 
-BugBranches also have a formatter.
+
+=== Bug branches ===
 
     >>> login('test@canonical.com')
     >>> branch = factory.makeBranch()
@@ -241,27 +255,31 @@ BugBranches also have a formatter.
     >>> test_tales("bugbranch/fmt:link", bugbranch=bugbranch)
     u'<a href="...+bug..."><img .../>&nbsp;Bug #...</a>'
 
-ICodeImport providers have a formatter.
+
+=== Code imports ===
 
     >>> login('foo.bar@canonical.com')
     >>> code_import = factory.makeCodeImport()
     >>> test_tales("code_import/fmt:link", code_import=code_import)
-    u'<a href="...+code-import/">Import of...</a>'
+    u'<a href="...+code-import">Import of...</a>'
 
-IProductSeries providers have a formatter.
+
+=== Product series ===
 
     >>> product_series = factory.makeSeries()
     >>> test_tales("product_series/fmt:link", product_series=product_series)
     u'... Series: ...'
 
-ISpecification providers have a formatter.
+
+=== Blueprints ===
 
     >>> login('test@canonical.com')
     >>> specification = factory.makeSpec()
     >>> test_tales("specification/fmt:link", specification=specification)
     u'...<img ... src="/@@/blueprint-undefined" />&nbsp;...'
 
-ISpecificationBranch providers have a formatter.
+
+=== Blueprint branches ===
 
     >>> specification = factory.makeSpec()
     >>> branch = factory.makeBranch()
