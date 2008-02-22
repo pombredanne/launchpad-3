@@ -532,7 +532,8 @@ class Navigation:
         else:
             has_menu = menuview.submenuHasItems('')
         self.request.breadcrumbs.append(
-            Breadcrumb(self.request.getURL(1, path_only=False), text, has_menu))
+            Breadcrumb(self.request.getURL(1, path_only=False), text,
+                       has_menu))
 
     def _handle_next_object(self, nextobj, request, name):
         """Do the right thing with the outcome of traversal.
@@ -602,7 +603,8 @@ class Navigation:
                         nextobj = handler(self, nextstep)
                     except NotFoundError:
                         nextobj = None
-                    return self._handle_next_object(nextobj, request, nextstep)
+                    return self._handle_next_object(nextobj, request,
+                        nextstep)
 
         # Next, look up views on the context object.  If a view exists,
         # use it.
