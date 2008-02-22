@@ -900,6 +900,17 @@ class ISpecificationSet(IHasSpecifications):
         priority=SpecificationPriority.UNDEFINED):
         """Create a new specification."""
 
+    def getDependencyDict(specifications):
+        """Return a dictionary mapping specifications to their dependencies.
+
+        The results are ordered by descending priority.
+
+        :specifications: a sequence of the specifications to look up.
+        """
+
+    def get(spec_id):
+        """Return the ISpecification with the given spec_id."""
+
 
 class ISpecificationDelta(Interface):
     """The quantitative changes made to a spec that was edited."""
