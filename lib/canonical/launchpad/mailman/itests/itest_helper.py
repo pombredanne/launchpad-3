@@ -8,6 +8,7 @@ import sys
 import time
 import errno
 import base64
+import shutil
 import signal
 import socket
 import mailbox
@@ -17,16 +18,21 @@ import tempfile
 from email import message_from_file
 from subprocess import Popen, PIPE
 
+
 __all__ = [
     'HERE',
     'IntegrationTestFailure',
     'MAILMAN_BIN',
     'TOP',
+    'create_list',
     'create_transaction_manager',
+    'dump_list_info',
     'make_browser',
     'num_requests_pending',
+    'prepare_for_sync'
     'review_list',
     'run_mailman',
+    'subscribe',
     'transactionmgr',
     ]
 
@@ -280,3 +286,131 @@ def num_requests_pending(list_name):
         return mailing_list.NumRequestsPending()
     finally:
         mailing_list.Unlock()
+
+
+def create_list(team_name):
+    """Do everything you need to do to make the team's list live."""
+    displayname = ' '.join(word.capitalize() for word in team_name.split('-'))
+    browser = make_browser()
+    # Create the team.
+    browser.open('http://launchpad.dev/people/+newteam')
+    browser.getControl(name='field.name').value = team_name
+    browser.getControl('Display Name').value = displayname
+    browser.getControl(name='field.subscriptionpolicy').displayValue = [
+        'Open Team']
+    browser.getControl('Create').click()
+    # Create the mailing list.
+    beta_program_enable(team_name)
+    browser.reload()
+    browser.getLink('Configure mailing list').click()
+    browser.getControl('Apply for Mailing List').click()
+    review_list(team_name)
+    from Mailman.Utils import list_names
+    assert team_name in list_names(), (
+        'Mailing list was not created: %s' % list_names())
+
+
+def subscribe(first_name, team_name):
+    """Do everything you need to subscribe a person to a mailing list."""
+    from canonical.database.sqlbase import commit
+    from canonical.launchpad.ftests import login, logout
+    from canonical.launchpad.ftests.mailinglists_helper import new_person
+    from canonical.launchpad.interfaces import IMailingListSet, IPersonSet
+    from zope.component import getUtility
+    # Create the person if she does not already exist, and join her to the
+    # team.
+    login('foo.bar@canonical.com')
+    person_set = getUtility(IPersonSet)
+    person = person_set.getByName(first_name.lower())
+    if person is None:
+        person = new_person(first_name)
+    team = getUtility(IPersonSet).getByName(team_name)
+    person.join(team)
+    # Subscriber her to the list.
+    mailing_list = getUtility(IMailingListSet).get(team_name)
+    mailing_list.subscribe(person)
+    logout()
+    serial_watcher = LogWatcher('serial')
+    commit()
+    serial_watcher.wait()
+
+
+def prepare_for_sync():
+    """Prepare a sync'd directory for mlist-sync.py."""
+    from canonical.config import config
+    from canonical.database.sqlbase import commit
+    from canonical.launchpad.ftests import login, logout
+    from canonical.launchpad.interfaces import IEmailAddressSet
+    from zope.component import getUtility
+    # Tweak each of the mailing lists by essentially breaking their host_name
+    # and web_page_urls.  These will get repaired by the sync script.  Do this
+    # before we copy so that the production copy will have the busted values.
+    from Mailman import mm_cfg
+    from Mailman.MailList import MailList
+    from Mailman.Utils import list_names
+    team_names = list_names()
+    for list_name in team_names:
+        if list_name == mm_cfg.MAILMAN_SITE_LIST:
+            continue
+        mailing_list = MailList(list_name)
+        try:
+            mailing_list.host_name = 'lists.prod.launchpad.dev'
+            mailing_list.web_page_url = 'http://lists.prod.launchpad.dev'
+            mailing_list.Save()
+        finally:
+            mailing_list.Unlock()
+    # Create a mailing list that exists only in Mailman.  The sync script will
+    # end up deleting this because it represents a race condition between when
+    # the production database was copied and when the Mailman data was copied.
+    mlist = MailList()
+    try:
+        mlist.Create('fake-team', mm_cfg.SITE_LIST_OWNER, ' no password ')
+        mlist.Save()
+        os.makedirs(os.path.join(mm_cfg.VAR_PREFIX, 'mhonarc', 'fake-team'))
+    finally:
+        mlist.Unlock()
+    # Calculate a directory in which to put the simulated production database,
+    # then copy our current Mailman stuff to it, lock, stock, and barrel.
+    tempdir = tempfile.mkdtemp()
+    source_dir = os.path.join(tempdir, 'production')
+    shutil.copytree(config.mailman.build.var_dir, source_dir, symlinks=True)
+    # Now, we have to mess up the production database by tweaking the email
+    # addresses of all the mailing lists.
+    login('foo.bar@canonical.com')
+    email_set = getUtility(IEmailAddressSet)
+    for list_name in team_names:
+        if list_name == mm_cfg.MAILMAN_SITE_LIST:
+            continue
+        email = email_set.getByEmail(list_name + '@lists.launchpad.dev')
+        email.email = list_name + '@lists.prod.launchpad.dev'
+    logout()
+    commit()
+    return source_dir
+
+
+def dump_list_info():
+    """Print a bunch of useful information related to sync'ing."""
+    from canonical.database.sqlbase import flush_database_caches
+    from canonical.launchpad.ftests import login, logout
+    from canonical.launchpad.interfaces import IEmailAddressSet, IPersonSet
+    from zope.component import getUtility
+    from Mailman import mm_cfg
+    from Mailman.MailList import MailList
+    from Mailman.Utils import list_names
+    # Print interesting information about each mailing list.
+    flush_database_caches()
+    login('foo.bar@canonical.com')
+    for list_name in sorted(list_names()):
+        if list_name == mm_cfg.MAILMAN_SITE_LIST:
+            continue
+        mailing_list = MailList(list_name, lock=False)
+        print mailing_list.internal_name()
+        print '   ', mailing_list.host_name, mailing_list.web_page_url
+        team = getUtility(IPersonSet).getByName(list_name)
+        if team is None:
+            print '    No Launchpad team:', list_name
+        else:
+            mlist_addresses = getUtility(IEmailAddressSet).getByPerson(team)
+            for email in sorted(email.email for email in mlist_addresses):
+                print '   ', email
+    logout()

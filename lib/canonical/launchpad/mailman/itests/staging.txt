@@ -1,0 +1,160 @@
+= Staging migration =
+
+Every once in a while we copy production's database over to staging so that
+testing can be done there on the real database, but without any chance of
+messing up the real site.  When this happens, we also need to synchronize
+production's Mailman directories so that the mailing lists all stay consistent
+(well, within the limits of the inherent race conditions).  To do this, we use
+scripts/mlist-sync.py.
+
+
+== Synchronization ==
+
+It's actually fairly difficult to recreate what happens during the staging
+sync, but we can get close.  Start off by creating a few mailing lists and
+sending some messages to them.
+
+    >>> import itest_helper
+    >>> itest_helper.create_list('itest-one')
+    >>> itest_helper.create_list('itest-two')
+    >>> itest_helper.subscribe('Anne', 'itest-one')
+    >>> itest_helper.subscribe('Anne', 'itest-two')
+    >>> itest_helper.subscribe('Bart', 'itest-one')
+    >>> itest_helper.subscribe('Cris', 'itest-two')
+
+    >>> smtpd = itest_helper.SMTPServer()
+    >>> smtpd.start()
+    >>> smtp_watcher = itest_helper.LogWatcher('smtp')
+    >>> from Mailman.Post import inject
+    >>> inject('itest-one', """\
+    ... From: anne.person@example.com
+    ... To: itest-one@lists.launchpad.dev
+    ... Subject: hello
+    ... Message-ID: <first-injection>
+    ...
+    ... Hello team!
+    ... """)
+    >>> smtp_watcher.wait()
+
+    >>> inject('itest-two', """\
+    ... From: anne.person@example.com
+    ... To: itest-two@lists.launchpad.dev
+    ... Subject: hello
+    ... Message-ID: <second-injection>
+    ...
+    ... Hello team!
+    ... """)
+    >>> smtp_watcher.wait()
+
+    >>> inject('itest-one', """\
+    ... From: bart.person@example.com
+    ... To: itest-one@lists.launchpad.dev
+    ... Subject: hello
+    ... Message-ID: <third-injection>
+    ...
+    ... Hello team!
+    ... """)
+    >>> smtp_watcher.wait()
+
+    >>> inject('itest-two', """\
+    ... From: cris.person@example.com
+    ... To: itest-two@lists.launchpad.dev
+    ... Subject: hello
+    ... Message-ID: <fourth-injection>
+    ...
+    ... Hello team!
+    ... """)
+    >>> smtp_watcher.wait()
+
+    >>> from operator import itemgetter
+    >>> for message in sorted(smtpd.getMessages(), key=itemgetter('sender')):
+    ...     print message['sender']
+    itest-one-bounces+anne.person=example.com@lists.launchpad.dev
+    itest-one-bounces+anne.person=example.com@lists.launchpad.dev
+    itest-one-bounces+archive=mail-archive.com@lists.launchpad.dev
+    itest-one-bounces+archive=mail-archive.com@lists.launchpad.dev
+    itest-one-bounces+bart.person=example.com@lists.launchpad.dev
+    itest-one-bounces+bart.person=example.com@lists.launchpad.dev
+    itest-two-bounces+anne.person=example.com@lists.launchpad.dev
+    itest-two-bounces+anne.person=example.com@lists.launchpad.dev
+    itest-two-bounces+archive=mail-archive.com@lists.launchpad.dev
+    itest-two-bounces+archive=mail-archive.com@lists.launchpad.dev
+    itest-two-bounces+cris.person=example.com@lists.launchpad.dev
+    itest-two-bounces+cris.person=example.com@lists.launchpad.dev
+
+Give one of the mailing lists a contact address, to further simulate what the
+sync script has to deal with.
+
+    >>> from canonical.database.sqlbase import commit
+    >>> from canonical.launchpad.ftests import login, logout
+    >>> from canonical.launchpad.interfaces import (
+    ...     EmailAddressStatus, IEmailAddressSet, IPersonSet)
+    >>> from zope.component import getUtility
+    >>> login('foo.bar@canonical.com')
+    >>> team = getUtility(IPersonSet).getByName('itest-two')
+    >>> email = getUtility(IEmailAddressSet).new(
+    ...     'contact@example.com', team, EmailAddressStatus.VALIDATED)
+    >>> team.setContactAddress(email)
+    >>> logout()
+    >>> commit()
+
+Now we need to simulate the difference between the staging and production
+databases.  To do this, we'll use a helper, but first we need to stop Mailman.
+
+    >>> from canonical.launchpad.mailman import runmailman
+    >>> runmailman.stop_mailman(quiet=True)
+    >>> source_dir = itest_helper.prepare_for_sync()
+
+Here's what these lists look like before they're sync'd.
+
+    >>> itest_helper.dump_list_info()
+    fake-team
+        lists.launchpad.dev http://lists.launchpad.dev/mailman/
+        No Launchpad team: fake-team
+    itest-one
+        lists.prod.launchpad.dev http://lists.prod.launchpad.dev/
+        itest-one@lists.prod.launchpad.dev
+    itest-two
+        lists.prod.launchpad.dev http://lists.prod.launchpad.dev/
+        contact@example.com
+        itest-two@lists.prod.launchpad.dev
+
+Do the sync by calling the script.  We must set the LPCONFIG environment
+variable for the script to find the correct launchpad.conf file.
+
+    >>> from canonical.config import config
+    >>> from subprocess import *
+    >>> proc = Popen(
+    ...     ('scripts/mlist-sync.py', '--hostname',
+    ...      'lists.prod.launchpad.dev', source_dir),
+    ...     stdout=PIPE, stderr=PIPE, cwd=config.root,
+    ...     env=dict(LPCONFIG='mailman-itests'))
+    >>> stdout, stderr = proc.communicate()
+
+    # Ignore stdout and stderr, but print the return code.  stdout should be
+    # completely empty and stderr really is uninteresting.  It's also
+    # problematic because of the way log files are printed (breaking doctest
+    # ellipses).
+    >>> proc.returncode
+    0
+
+If the script ran correctly, Mailman should only know about the two mailing
+lists we created above, and not the fake-team list.  Also, the host_name and
+web_page_url attributes for these lists should not point to 'prod'.
+
+    >>> itest_helper.dump_list_info()
+    itest-one
+        lists.launchpad.dev http://lists.launchpad.dev/mailman/
+        itest-one@lists.launchpad.dev
+    itest-two
+        lists.launchpad.dev http://lists.launchpad.dev/mailman/
+        contact@example.com
+        itest-two@lists.launchpad.dev
+
+
+== Clean up ==
+
+    >>> import shutil
+    >>> shutil.rmtree(source_dir)
+    >>> runmailman.start_mailman(quiet=True)
+    >>> smtpd.stop()

@@ -153,7 +153,9 @@ class MailingListSyncScript(LaunchpadCronScript):
                 self.deleteMailmanList(list_name)
                 continue
 
-            # Teams with mailing lists should have only one email address.
+            # Clean up the team email addresses corresponding to their mailing
+            # lists.  Note that teams can have two email addresses if they
+            # have a different contact address.
             team = getUtility(IPersonSet).getByName(list_name)
             mlist_addresses = email_address_set.getByPerson(team)
             if mlist_addresses.count() == 0:

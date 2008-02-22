@@ -91,7 +91,7 @@ def integrationTestCleanUp(test):
     # Now delete any mailing lists still hanging around.  We don't care if
     # this fails because it means the list doesn't exist.  While we're at it,
     # remove any related archived backup files.
-    for team_name in ('itest-one', 'itest-two', 'itest-three'):
+    for team_name in ('itest-one', 'itest-two', 'itest-three', 'fake-team'):
         try:
             itest_helper.run_mailman('./rmlist', '-a', team_name)
         except itest_helper.IntegrationTestFailure:
