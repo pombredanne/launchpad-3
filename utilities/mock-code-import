@@ -55,9 +55,10 @@ def main():
         job = make_import_job(svn_url)
         transaction.commit()
         print "CodeImportJob.id:", job.id
+        print "Code Import URL:", canonical_url(job.code_import)
         print "Subversion Repository:", svn_repo_path
         print "Subversion branch URL:", job.code_import.svn_branch_url
-        print "Launchpad URL:", canonical_url(job.code_import.branch)
+        print "Launchpad branch URL:", canonical_url(job.code_import.branch)
         print
     finally:
         svn_server.tearDown()
