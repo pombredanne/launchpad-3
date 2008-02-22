@@ -24,10 +24,9 @@ def test_suite():
     options = (doctest.ELLIPSIS|
                doctest.NORMALIZE_WHITESPACE|
                doctest.REPORT_NDIFF)
-    globs = {}
     suite = unittest.TestSuite()
     for docfile in docfiles:
-        globs['__file__'] = path.normpath(path.join(here, docfile))
+        globs = {'__file__' : path.normpath(path.join(here, docfile))}
         test = doctest.DocFileSuite(docfile, optionflags=options, globs=globs)
         suite.addTest(test)
     return suite
