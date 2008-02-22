@@ -32,18 +32,6 @@ from canonical.testing import LaunchpadScriptLayer
 import pysvn
 
 
-def execute_query_as_user(dbname, user, query):
-    """Connect to `dbname` as `user` and execute `query`."""
-    import psycopg
-    from canonical.launchpad.ftests.harness import LaunchpadTestSetup
-    connection = psycopg.connect(
-        LaunchpadTestSetup()._connectionString(dbname, user))
-    cur = connection.cursor()
-    cur.execute(query)
-    connection.commit()
-    connection.close()
-
-
 class WorkerTest(TestCaseWithTransport):
     """Base test case for things that test the code import worker.
 
@@ -68,17 +56,6 @@ class WorkerTest(TestCaseWithTransport):
     @cachedproperty
     def factory(self):
         return LaunchpadObjectFactory()
-
-    def makeCodeImport(self, svn_branch_url=None, cvs_root=None,
-                       cvs_module=None):
-        return self.factory.makeCodeImport(
-            svn_branch_url=svn_branch_url, cvs_root=cvs_root,
-            cvs_module=cvs_module)
-
-    def makeCodeImportJob(self, code_import):
-        # I'm not sure, is this how we spell "reviewed"?
-        # I still hate this API. (jml)
-        return self.factory.makeCodeImportJob(code_import)
 
     def makeTemporaryDirectory(self):
         directory = tempfile.mkdtemp()
@@ -215,6 +192,7 @@ class MockForeignWorkingTree:
 
 
 class TestForeignBranchStore(WorkerTest):
+    """Tests for the `ForeignBranchStore` object."""
 
     def assertCheckedOut(self, tree):
         self.assertEqual(['checkout'], tree.log)
@@ -225,7 +203,7 @@ class TestForeignBranchStore(WorkerTest):
     def setUp(self):
         """Set up a code import job to import a SVN branch."""
         super(TestForeignBranchStore, self).setUp()
-        self.code_import = self.makeCodeImport()
+        self.code_import = self.factory.makeCodeImport()
         self.temp_dir = self.makeTemporaryDirectory()
         self._log = []
 
@@ -246,7 +224,7 @@ class TestForeignBranchStore(WorkerTest):
         # _getForeignBranch() returns a Subversion working tree for Subversion
         # code imports.
         store = ForeignBranchStore(None)
-        svn_import = self.makeCodeImport(
+        svn_import = self.factory.makeCodeImport(
             svn_branch_url=self.factory.getUniqueURL())
         working_tree = store._getForeignBranch(svn_import, 'path')
         self.assertIsSameRealPath(working_tree.local_path, 'path')
@@ -255,7 +233,8 @@ class TestForeignBranchStore(WorkerTest):
     def test_getForeignBranchCVS(self):
         # _getForeignBranch() returns a CVS working tree for CVS code imports.
         store = ForeignBranchStore(None)
-        cvs_import = self.makeCodeImport(cvs_root='root', cvs_module='module')
+        cvs_import = self.factory.makeCodeImport(
+            cvs_root='root', cvs_module='module')
         working_tree = store._getForeignBranch(cvs_import, 'path')
         self.assertIsSameRealPath(working_tree.local_path, 'path')
         self.assertEqual(working_tree.root, cvs_import.cvs_root)
@@ -344,8 +323,8 @@ class TestWorkerCore(WorkerTest):
 
     def setUp(self):
         WorkerTest.setUp(self)
-        code_import = self.makeCodeImport()
-        self.job = self.makeCodeImportJob(code_import)
+        code_import = self.factory.makeCodeImport()
+        self.job = self.factory.makeCodeImportJob(code_import)
 
     def makeBazaarBranchStore(self):
         """Make a Bazaar branch store."""
@@ -393,12 +372,14 @@ class TestWorkerCore(WorkerTest):
 
 
 class TestCVSImport(WorkerTest):
-
-    def makeImportWorker(self):
-        return ImportWorker(
-            self.job.id, self.foreign_store, self.bazaar_store)
+    """Tests for the worker importing and syncing a CVS module."""
 
     def setUp(self):
+        """Set up a CVS repository with a 'trunk' module and an import worker.
+
+        This requires setting up a `BazaarBranchStore` and a
+        `ForeignBranchStore` as well.
+        """
         WorkerTest.setUp(self)
 
         repository_path = tempfile.mkdtemp()
@@ -416,9 +397,13 @@ class TestCVSImport(WorkerTest):
         self.cvs_server.makeModule('trunk', [('README', 'original\n')])
 
         # Construct a CodeImportJob
-        self.code_import = self.makeCodeImport(
+        self.code_import = self.factory.makeCodeImport(
             cvs_root=self.cvs_server.getRoot(), cvs_module='trunk')
-        self.job = self.makeCodeImportJob(self.code_import)
+        self.job = self.factory.makeCodeImportJob(self.code_import)
+
+    def makeImportWorker(self):
+        return ImportWorker(
+            self.job.id, self.foreign_store, self.bazaar_store)
 
     def test_import(self):
         # Running the worker on a branch that hasn't been imported yet imports
@@ -426,7 +411,11 @@ class TestCVSImport(WorkerTest):
         worker = self.makeImportWorker()
         worker.run()
         bazaar_tree = worker.getBazaarWorkingTree()
-        # XXX: Mystery guest!
+        # XXX: JonathanLange 2008-02-22: This assumes that the branch that we
+        # are importing has two revisions. Looking at the test, it's not
+        # obvious why we make this assumption, hence the XXX. The two
+        # revisions are from 1) making the repository and 2) adding a file.
+        # The name of this test smell is "Mystery Guest".
         self.assertEqual(2, len(bazaar_tree.branch.revision_history()))
 
     def test_sync(self):
@@ -456,12 +445,14 @@ class TestCVSImport(WorkerTest):
 
 
 class TestSubversionImport(WorkerTest):
-
-    def makeImportWorker(self):
-        return ImportWorker(
-            self.job.id, self.foreign_store, self.bazaar_store)
+    """Tests for the worker importing and syncing a Subversion branch."""
 
     def setUp(self):
+        """Set up a Subversion repository with a trunk and an import worker.
+
+        This requires setting up a `BazaarBranchStore` and a
+        `ForeignBranchStore` as well.
+        """
         WorkerTest.setUp(self)
 
         repository_path = tempfile.mkdtemp()
@@ -480,8 +471,12 @@ class TestSubversionImport(WorkerTest):
             'trunk', [('README', 'original\n')])
 
         # Construct a CodeImportJob
-        self.code_import = self.makeCodeImport(self.svn_branch_url)
-        self.job = self.makeCodeImportJob(self.code_import)
+        self.code_import = self.factory.makeCodeImport(self.svn_branch_url)
+        self.job = self.factory.makeCodeImportJob(self.code_import)
+
+    def makeImportWorker(self):
+        return ImportWorker(
+            self.job.id, self.foreign_store, self.bazaar_store)
 
     def test_import(self):
         # Running the worker on a branch that hasn't been imported yet imports
@@ -489,7 +484,11 @@ class TestSubversionImport(WorkerTest):
         worker = self.makeImportWorker()
         worker.run()
         bazaar_tree = worker.getBazaarWorkingTree()
-        # XXX: Mystery guest!
+        # XXX: JonathanLange 2008-02-22: This assumes that the branch that we
+        # are importing has two revisions. Looking at the test, it's not
+        # obvious why we make this assumption, hence the XXX. The two
+        # revisions are from 1) making the repository and 2) adding a file.
+        # The name of this test smell is "Mystery Guest".
         self.assertEqual(2, len(bazaar_tree.branch.revision_history()))
 
     def test_bazaarBranchStored(self):

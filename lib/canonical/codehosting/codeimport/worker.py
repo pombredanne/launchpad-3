@@ -214,6 +214,16 @@ class ImportWorker:
 
     def __init__(self, job_id, foreign_branch_store, bazaar_branch_store,
                  log_level=2):
+        """Construct an `ImportWorker`.
+
+        :param job_id: The database ID of the `CodeImportJob` to run.
+        :param foreign_branch_store: A `ForeignBranchStore`. The import worker
+            uses this to fetch and store foreign branches.
+        :param bazaar_branch_store: A `BazaarBranchStore`. The import worker
+            uses this to fetch and store the Bazaar branches that are created
+            and updated during the import process.
+        :param log_level: ???
+        """
         self.job = getUtility(ICodeImportJobSet).getById(job_id)
         self.foreign_branch_store = foreign_branch_store
         self.bazaar_branch_store = bazaar_branch_store
@@ -226,12 +236,17 @@ class ImportWorker:
             self.working_directory, self.FOREIGN_WORKING_TREE_PATH)
 
     def getBazaarWorkingTree(self):
+        """Return the Bazaar `WorkingTree` that we are importing into."""
         if os.path.isdir(self._bazaar_working_tree_path):
             shutil.rmtree(self._bazaar_working_tree_path)
         return self.bazaar_branch_store.pull(
             self.job.code_import.branch, self._bazaar_working_tree_path)
 
     def getForeignBranch(self):
+        """Return the foreign branch object that we are importing from.
+
+        :return: A `SubversionWorkingTree` or a `CVSWorkingTree`.
+        """
         if os.path.isdir(self._foreign_working_tree_path):
             shutil.rmtree(self._foreign_working_tree_path)
         os.mkdir(self._foreign_working_tree_path)
@@ -239,27 +254,65 @@ class ImportWorker:
             self.job.code_import, self._foreign_working_tree_path)
 
     def importToBazaar(self, foreign_branch, bazaar_tree):
-        source_directory = foreign_branch.local_path
-        target_directory = str(bazaar_tree.basedir)
+        """Actually import `foreign_branch` into `bazaar_tree`.
 
-        branch = SCM.branch(target_directory)
-        last_commit = cscvs.findLastCscvsCommit(branch)
+        :param foreign_branch: A `SubversionWorkingTree` or a
+            `CVSWorkingTree`.
+        :param bazaar_tree: A `bzrlib.workingtree.WorkingTree`.
+        """
+        foreign_directory = foreign_branch.local_path
+        bzr_directory = str(bazaar_tree.basedir)
 
+        scm_branch = SCM.branch(bzr_directory)
+        last_commit = cscvs.findLastCscvsCommit(scm_branch)
+
+        # If branch in `bazaar_tree` doesn't have any identifiable CSCVS
+        # revisions, CSCVS "initialises" the branch.
         if last_commit is None:
             self._runToBaz(
-                source_directory, "-SI", "MAIN.1", target_directory)
+                foreign_directory, "-SI", "MAIN.1", bzr_directory)
 
-        last_commit = cscvs.findLastCscvsCommit(branch)
+        # Now we synchronise the branch, that is, import all new revisions
+        # from the foreign branch into the Bazaar branch. If we've just
+        # initialized the Bazaar branch, then this means we import *all*
+        # revisions.
+        last_commit = cscvs.findLastCscvsCommit(scm_branch)
         self._runToBaz(
-            source_directory, "-SC", "%s::" % last_commit, target_directory)
+            foreign_directory, "-SC", "%s::" % last_commit, bzr_directory)
 
     def _runToBaz(self, source_dir, flags, revisions, bazpath):
+        """Actually run the CSCVS utility that imports revisions.
+
+        :param source_dir: The directory containing the foreign working tree
+            that we are importing from.
+        :param flags: Flags to pass to `totla.totla`.
+        :param revisions: The revisions to import.
+        :param bazpath: The directory containing the Bazaar working tree that
+            we are importing into.
+        """
+        # XXX: JonathanLange 2008-02-08: We need better documentation for
+        # `flags` and `revisions`.
         config = CVS.Config(source_dir)
         config.args = ["--strict", "-b", bazpath,
                        flags, revisions, bazpath]
         totla.totla(config, self._logger, config.args, SCM.tree(source_dir))
 
     def run(self):
+        """Run the code import job.
+
+        This is the primary public interface to the `ImportWorker`. This
+        method:
+
+         1. Retrieves an up-to-date foreign branch to import.
+         2. Gets the Bazaar branch to import into.
+         3. Imports the foreign branch into the Bazaar branch. If we've
+            already imported this before, we synchronize the imported Bazaar
+            branch with the latest changes to the foreign branch.
+         4. Publishes the newly-updated Bazaar branch, making it available to
+            Launchpad users.
+         5. Archives the foreign branch, so that we can update it quickly next
+            time.
+        """
         foreign_branch = self.getForeignBranch()
         bazaar_tree = self.getBazaarWorkingTree()
         self.importToBazaar(foreign_branch, bazaar_tree)
