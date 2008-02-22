@@ -7,7 +7,7 @@ __all__ = [
     'BazaarBranchStore',
     'ForeignTreeStore',
     'get_default_bazaar_branch_store',
-    'get_default_foreign_branch_store']
+    'get_default_foreign_tree_store']
 
 
 import logging
@@ -118,11 +118,11 @@ def _download(transport, relpath, local_path):
 
 
 class ForeignTreeStore:
-    """Manages retrieving and storing foreign branches.
+    """Manages retrieving and storing foreign working trees.
 
-    The code import system stores tarballs of CVS and SVN branches on another
-    system. The tarballs are kept in predictable locations based on the ID of
-    their `CodeImport`.
+    The code import system stores tarballs of CVS and SVN working trees on
+    another system. The tarballs are kept in predictable locations based on
+    the ID of their `CodeImport`.
 
     The tarballs are all kept in one directory. The filename of a tarball is
     XXXXXXXX.tar.gz, where 'XXXXXXXX' is the ID of the `CodeImport` in hex.
@@ -197,10 +197,10 @@ class ForeignTreeStore:
         return tree
 
 
-def get_default_foreign_branch_store():
+def get_default_foreign_tree_store():
     """Get the default `ForeignTreeStore`."""
     return ForeignTreeStore(
-        get_transport(config.codeimport.foreign_branch_store))
+        get_transport(config.codeimport.foreign_tree_store))
 
 
 class ImportWorker:
@@ -212,12 +212,12 @@ class ImportWorker:
     # Where the foreign branch checkout will be stored.
     FOREIGN_WORKING_TREE_PATH = 'foreign_working_tree'
 
-    def __init__(self, job_id, foreign_branch_store, bazaar_branch_store,
+    def __init__(self, job_id, foreign_tree_store, bazaar_branch_store,
                  log_level=2):
         """Construct an `ImportWorker`.
 
         :param job_id: The database ID of the `CodeImportJob` to run.
-        :param foreign_branch_store: A `ForeignTreeStore`. The import worker
+        :param foreign_tree_store: A `ForeignTreeStore`. The import worker
             uses this to fetch and store foreign branches.
         :param bazaar_branch_store: A `BazaarBranchStore`. The import worker
             uses this to fetch and store the Bazaar branches that are created
@@ -225,7 +225,7 @@ class ImportWorker:
         :param log_level: ???
         """
         self.job = getUtility(ICodeImportJobSet).getById(job_id)
-        self.foreign_branch_store = foreign_branch_store
+        self.foreign_tree_store = foreign_tree_store
         self.bazaar_branch_store = bazaar_branch_store
         self.working_directory = tempfile.mkdtemp()
         self._foreign_branch = None
@@ -250,7 +250,7 @@ class ImportWorker:
         if os.path.isdir(self._foreign_working_tree_path):
             shutil.rmtree(self._foreign_working_tree_path)
         os.mkdir(self._foreign_working_tree_path)
-        return self.foreign_branch_store.fetch(
+        return self.foreign_tree_store.fetch(
             self.job.code_import, self._foreign_working_tree_path)
 
     def importToBazaar(self, foreign_branch, bazaar_tree):
@@ -318,7 +318,7 @@ class ImportWorker:
         self.importToBazaar(foreign_branch, bazaar_tree)
         self.bazaar_branch_store.push(
             self.job.code_import.branch, bazaar_tree)
-        self.foreign_branch_store.archive(
+        self.foreign_tree_store.archive(
             self.job.code_import, foreign_branch)
         shutil.rmtree(bazaar_tree.basedir)
         shutil.rmtree(foreign_branch.local_path)

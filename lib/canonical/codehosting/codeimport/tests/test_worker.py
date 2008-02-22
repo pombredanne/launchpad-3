@@ -19,7 +19,7 @@ from bzrlib.urlutils import join as urljoin
 from canonical.cachedproperty import cachedproperty
 from canonical.codehosting.codeimport.worker import (
     BazaarBranchStore, ForeignTreeStore, ImportWorker,
-    get_default_bazaar_branch_store, get_default_foreign_branch_store)
+    get_default_bazaar_branch_store, get_default_foreign_tree_store)
 from canonical.codehosting.codeimport.tests.test_foreigntree import (
     CVSServer, SubversionServer)
 from canonical.codehosting.tests.helpers import (
@@ -241,11 +241,11 @@ class TestForeignTreeStore(WorkerTest):
         self.assertEqual(working_tree.module, cvs_import.cvs_module)
 
     def test_defaultStore(self):
-        # The default store is at config.codeimport.foreign_branch_store.
-        store = get_default_foreign_branch_store()
+        # The default store is at config.codeimport.foreign_tree_store.
+        store = get_default_foreign_tree_store()
         self.assertEqual(
             store.transport.base.rstrip('/'),
-            config.codeimport.foreign_branch_store.rstrip('/'))
+            config.codeimport.foreign_tree_store.rstrip('/'))
 
     def test_getNewBranch(self):
         # If the branch store doesn't have an archive of the foreign branch,
@@ -523,7 +523,7 @@ class TestSubversionImport(WorkerTest, TestActualImportMixin):
         worker.run()
 
         os.mkdir('tmp-foreign-tree')
-        foreign_tree = worker.foreign_branch_store.fetchFromArchive(
+        foreign_tree = worker.foreign_tree_store.fetchFromArchive(
             worker.job.code_import, 'tmp-foreign-tree')
         self.assertDirectoryTreesEqual(
             foreign_tree.local_path, worker.getForeignBranch().local_path)
