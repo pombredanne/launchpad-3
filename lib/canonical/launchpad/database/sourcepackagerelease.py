@@ -233,6 +233,15 @@ class SourcePackageRelease(SQLBase):
         return [DistroSeriesSourcePackageRelease(pub.distroseries, self)
                 for pub in self.publishings]
 
+    @property
+    def published_archives(self):
+        """See `ISourcePacakgeRelease`."""
+        archives = set()
+        for pub in self.publishings:
+            archives.add(pub.archive)
+
+        return archives
+
     def addFile(self, file):
         """See ISourcePackageRelease."""
         determined_filetype = None
