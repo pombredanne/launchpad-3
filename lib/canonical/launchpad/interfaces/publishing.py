@@ -329,7 +329,7 @@ class ISourcePackagePublishingHistory(ISecureSourcePackagePublishingHistory):
         Pocket, ordered by architecturetag.
         """
 
-    def source_and_binary_files():
+    def getSourceAndBinaryLibraryFiles():
         """Return LibraryFileAlias records for all source and binaries.
 
         All the published source and binary files associated with this

@@ -96,7 +96,8 @@ class SourcePublishingRecordView(BasePublishingRecordView):
         """Return list of dicts describing all files published
            for a certain source publication.
         """
-        files = self.context.source_and_binary_files
+        files = sorted(self.context.getSourceAndBinaryLibraryFiles(),
+                       key=lambda l: l.filename)
         ret = []
         urls = set()
         for f in files:

@@ -470,8 +470,7 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
         return SourcePackageFilePublishing.selectBy(
             sourcepackagepublishing=self).prejoin(preJoins)
 
-    @property
-    def source_and_binary_files(self):
+    def getSourceAndBinaryLibraryFiles(self):
         """See `IPublishing`."""
         sourcesClause = """
             LibraryFileAlias.id = SourcePackageReleaseFile.libraryfile AND
@@ -504,16 +503,20 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
             'BinaryPackageFile', 'BinaryPackagePublishingHistory',
             'BinaryPackageRelease', 'Build', 'DistroArchSeries']
 
-        orderBy = ['LibraryFileAlias.filename']
+        preJoins = ['content']
 
         sourcesQuery = LibraryFileAlias.select(
             sourcesClause, clauseTables=sourcesClauseTables,
-           orderBy=orderBy)
+            prejoins=preJoins)
         binariesQuery = LibraryFileAlias.select(
             binariesClause, clauseTables=binariesClauseTables,
-            orderBy=orderBy)
+            prejoins=preJoins)
 
-        return sourcesQuery.union(binariesQuery)
+        # I would like to use UNION here to merge the two result sets, but
+        # that silently drops the preJoins.
+        results = list(sourcesQuery)
+        results.extend(list(binariesQuery))
+        return results
 
     @property
     def meta_sourcepackage(self):
