@@ -38,10 +38,10 @@ successfully, Mantis will redirect us to the page this specifies.
 If Mantis does not specify a "return" query parameter, we log a
 warning and record an OOPS.
 
-Apart from the fact that we rely on Mantis to return us to
-the page we originally requested, this can also mean that we failed to
-log in: when Mantis redirects back to the log in page with an error it
-forgets the "return" parameter.
+Apart from the fact that we rely on Mantis to return us to the page we
+originally requested, this can also mean that we failed to log in:
+when Mantis redirects back to the login page with an error it forgets
+the "return" parameter.
 
     >>> from canonical.launchpad.ftests.externalbugtracker import oops_hook
     >>> oops_hook.install()

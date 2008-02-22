@@ -971,10 +971,10 @@ class MantisLoginHandler(ClientCookie.HTTPRedirectHandler):
         return url
 
     def redirect_request(self, newurl, req, fp, code, msg, headers):
-        # XXX: The argument order here is different from that in
-        # urllib2.HTTPRedirectHandler. ClientCookie is meant to mimic
-        # urllib2 (and does subclass it), so this is probably a
-        # bug. -- Gavin Panella, 2007-08-27
+        # XXX: Gavin Panella 2007-08-27: The argument order here is
+        # different from that in urllib2.HTTPRedirectHandler.
+        # ClientCookie is meant to mimic urllib2 (and does subclass
+        # it), so this is probably a bug.
 
         return ClientCookie.HTTPRedirectHandler.redirect_request(
             self, self.rewrite_url(newurl), req, fp, code, msg, headers)
