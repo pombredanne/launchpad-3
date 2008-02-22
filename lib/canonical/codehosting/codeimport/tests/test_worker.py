@@ -463,20 +463,34 @@ class TestSubversionImport(WorkerTest):
         self.foreign_store = ForeignBranchStore(
             self.get_transport('foreign_store'))
 
-        self.svn_server = SubversionServer(repository_path)
-        self.svn_server.setUp()
-        self.addCleanup(self.svn_server.tearDown)
-
-        self.svn_branch_url = self.svn_server.makeBranch(
-            'trunk', [('README', 'original\n')])
-
-        # Construct a CodeImportJob
-        self.code_import = self.factory.makeCodeImport(self.svn_branch_url)
+        self.code_import = self.makeCodeImport(
+            repository_path, 'trunk', [('README', 'Original contents')])
         self.job = self.factory.makeCodeImportJob(self.code_import)
+
+    def makeCodeImport(self, repository_path, branch_name, files):
+        """Make a Subversion `CodeImport` that points to a real SVN repo."""
+        svn_server = SubversionServer(repository_path)
+        svn_server.setUp()
+        self.addCleanup(svn_server.tearDown)
+
+        svn_branch_url = svn_server.makeBranch(branch_name, files)
+        return self.factory.makeCodeImport(svn_branch_url)
 
     def makeImportWorker(self):
         return ImportWorker(
             self.job.id, self.foreign_store, self.bazaar_store)
+
+    def commitInForeignTree(self, foreign_tree):
+        """Change the foreign tree, generating exactly one commit."""
+        svn_url = foreign_tree.remote_url
+        client = pysvn.Client()
+        client.checkout(svn_url, 'working_tree')
+        file = open('working_tree/newfile', 'w')
+        file.write('No real content\n')
+        file.close()
+        client.add('working_tree/newfile')
+        client.checkin('working_tree', 'Add a file', recurse=True)
+        shutil.rmtree('working_tree')
 
     def test_import(self):
         # Running the worker on a branch that hasn't been imported yet imports
@@ -524,15 +538,7 @@ class TestSubversionImport(WorkerTest):
 
         # Change the remote branch.
         foreign_tree = worker.getForeignBranch()
-        svn_url = foreign_tree.remote_url
-        client = pysvn.Client()
-        client.checkout(svn_url, 'working_tree')
-        file = open('working_tree/newfile', 'w')
-        file.write('No real content\n')
-        file.close()
-        client.add('working_tree/newfile')
-        client.checkin('working_tree', 'Add a file', recurse=True)
-        shutil.rmtree('working_tree')
+        self.commitInForeignTree(foreign_tree)
 
         # Run the same worker again.
         worker.run()
