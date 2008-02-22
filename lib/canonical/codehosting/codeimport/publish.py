@@ -7,7 +7,7 @@ This module is the back-end for scripts/importd-publish.py.
 
 __metaclass__ = type
 
-__all__ = ['ImportdPublisher', 'mirror_url_from_series']
+__all__ = ['ImportdPublisher']
 
 
 import os
