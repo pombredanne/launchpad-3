@@ -34,7 +34,8 @@ import _pythonpath
 from zope.component import getUtility
 
 from canonical.config import config
-from canonical.launchpad.interfaces import IEmailAddressSet, IMailingListSet
+from canonical.launchpad.interfaces import (
+    IEmailAddressSet, IMailingListSet, IPersonSet)
 from canonical.launchpad.scripts.base import LaunchpadCronScript
 
 
@@ -65,6 +66,17 @@ class MailingListSyncScript(LaunchpadCronScript):
     def __init__(self, name, dbuser=None):
         self.usage = textwrap.dedent(self.__doc__)
         super(MailingListSyncScript, self).__init__(name, dbuser)
+
+    def add_my_options(self):
+        """See `LaunchpadScript`."""
+        # Add optional override of production mailing list host name.  In real
+        # use, it's always going to be lists.launchpad.net so that makes a
+        # reasonable default.  Some testing environments may override this.
+        self.parser.add_option('--hostname', default='lists.launchpad.net',
+                               help=('The hostname for the production '
+                                     'mailing list system.  This is used to '
+                                     'resolve teams which have multiple '
+                                     'email addresses.'))
 
     def syncMailmanDirectories(self, source_url):
         """Synchronize the Mailman directories.
@@ -131,16 +143,53 @@ class MailingListSyncScript(LaunchpadCronScript):
             # database.
             lp_mailing_list = mailing_list_set.get(list_name)
             if lp_mailing_list is None:
+                # We found a mailing list in Mailman that does not exist in
+                # the Launchpad database.  This can happen if we rsync'd the
+                # Mailman directories after the lists were created, but we
+                # copied the LP database /before/ the lists were created.
+                # If we don't delete the Mailman lists, we won't be able to
+                # create the mailing lists on staging.
                 self.logger.error('No LP mailing list for: %s', list_name)
+                self.deleteMailmanList(list_name)
                 continue
 
-            email_address = email_address_set.getByEmail(
-                lp_mailing_list.address)
-
-            if email_address is None:
+            # Teams with mailing lists should have only one email address.
+            team = getUtility(IPersonSet).getByName(list_name)
+            mlist_addresses = email_address_set.getByPerson(team)
+            if mlist_addresses.count() == 0:
                 self.logger.error('No LP email address for: %s', list_name)
+            elif mlist_addresses.count() > 1:
+                # This team has both a mailing list and a contact address.  We
+                # only want to change the former, but we need some heuristics
+                # to figure out which is which.
+                old_address = '%s@%s' % (list_name, self.options.hostname)
+                for email_address in mlist_addresses:
+                    if email_address.email == old_address:
+                        email_address.email = lp_mailing_list.address
+                        break
+                else:
+                    self.logger.error('No change to LP email address for: %s',
+                                      list_name)
             else:
+                email_address = mlist_addresses[0]
                 email_address.email = lp_mailing_list.address
+
+    def deleteMailmanList(self, list_name):
+        """Delete all Mailman data structures for `list_name`."""
+        mailman_bindir = os.path.normpath(os.path.join(
+            config.mailman.build.prefix, 'bin'))
+        process = subprocess.Popen(('./rmlist', '-a', list_name),
+                                   stdout=subprocess.PIPE,
+                                   stderr=subprocess.PIPE,
+                                   cwd=mailman_bindir)
+        stdout, stderr = process.communicate()
+        if process.returncode == 0:
+            self.logger.info('%s', stdout)
+        else:
+            self.logger.error('rmlist command failed with exit status: %s',
+                              process.returncode)
+            self.logger.error('STDOUT:\n%s\nSTDERR:\n%s', stdout, stderr)
+            # Keep going.
 
     def main(self):
         """See `LaunchpadCronScript`."""
