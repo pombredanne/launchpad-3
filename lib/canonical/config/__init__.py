@@ -88,31 +88,36 @@ class CanonicalConfig(object):
         The config is will be loaded only when there is not a config.
         Repeated calls to this method will not cause the config to reload.
         """
-        if self._config is None:
-            config_dir = os.path.join(
-                os.path.dirname(__file__), os.pardir, os.pardir, os.pardir,
-                'configs')
+        if self._config is not None:
+            return
+
+        if self._default_config_section != 'default':
+            environ_dir = self._default_config_section
+        else:
             environ_dir = os.environ.get(
                     CONFIG_ENVIRONMENT_VARIABLE, DEFAULT_CONFIG)
-            role = self._default_config_section
-            schema_file = os.path.join(config_dir, 'schema.lazr.conf')
-            config_file = os.path.join(
-                config_dir, environ_dir,'launchpad.%s.conf' % role)
+        here = os.path.dirname(__file__)
+        config_dir = os.path.join(
+            here, os.pardir, os.pardir, os.pardir, 'configs', environ_dir)
+        schema_file = os.path.join(here, 'schema-lazr.conf')
+        config_file = os.path.join(config_dir, 'launchpad-lazr.conf')
 
-            # Monkey patch Section to store it's ZConfig counterpart, and
-            # use it when it cannot provide the data.
-            from canonical.lazr.config import ImplicitTypeSection
-            ImplicitTypeSection._zconfig = self.getConfig()
-            ImplicitTypeSection.__getattr__ = failover_to_zconfig(
-                ImplicitTypeSection.__getattr__)
+        # Monkey patch the Section class to store it's ZConfig counterpart.
+        # The Section instance will failover to the ZConfig instance when
+        # the key does not exist. This is for the transitionary period
+        # where ZConfig and lazr.config are concurrently loaded.
+        from canonical.lazr.config import ImplicitTypeSection
+        ImplicitTypeSection._zconfig = self.getConfig()
+        ImplicitTypeSection.__getattr__ = failover_to_zconfig(
+            ImplicitTypeSection.__getattr__)
 
-            schema = ImplicitTypeSchema(schema_file)
-            self._config = schema.load(config_file)
-            try:
-                self._config.validate()
-            except ConfigErrors, error:
-                message = '\n'.join([str(e) for e in error.errors])
-                self.fail(message)
+        schema = ImplicitTypeSchema(schema_file)
+        self._config = schema.load(config_file)
+        try:
+            self._config.validate()
+        except ConfigErrors, error:
+            message = '\n'.join([str(e) for e in error.errors])
+            self.fail(message)
 
     def _magic_settings(self, config, root_options):
         """Modify the config, adding automatically generated settings"""
@@ -164,19 +169,20 @@ def failover_to_zconfig(func):
         # This method may access protected members.
         # pylint: disable-msg=W0212
         try:
-            section_value = getattr(self._zconfig, self.name)
-            zconfig_value = getattr(section_value, name)
+            # Try to get the value of the section key from ZConfig.
+            # e.g. config.section.key
+            z_section = getattr(self._zconfig, self.name)
+            z_key_value = getattr(z_section, name)
             is_zconfig = True
         except AttributeError:
             is_zconfig = False
-            pass
 
         try:
+            # Try to get the value of the section key from lazr.config.
+            # e.g. config.section.key
             lazr_value = func(self, name)
         except AttributeError:
-            # Raise a warning that the callsite is using multisections.
             lazr_value = None
-            pass
 
         if not is_zconfig and lazr_value is None:
             # The callsite was converted to lazr config, but has an error.
@@ -193,7 +199,7 @@ def failover_to_zconfig(func):
             raise_warning(
                 "Callsite requests a nonexistent key: '%s.%s'." %
                 (self.name, name))
-            return zconfig_value
+            return z_key_value
 
     return failover_getattr
 

@@ -38,27 +38,16 @@ override the 'DEFAULT_SECTION' to 'testrunner' to select
 launchpad.testrunner.conf, which extends the default conf.
 
     >>> import os.path, canonical
-    >>> from canonical.config import (
-    ...     CONFIG_ENVIRONMENT_VARIABLE, DEFAULT_CONFIG, DEFAULT_SECTION)
     >>> os.path.join(config.root, 'lib', 'canonical') == os.path.dirname(
     ...     canonical.__file__)
     True
 
     >>> config._default_config_section
     'testrunner'
-    >>> config.name
-    'launchpad.testrunner.conf'
-
-    >>> os.environ.get('LPCONFIG', DEFAULT_SECTION)
-    'default'
+    >>> config.filename
+    '.../configs/testrunner/launchpad-lazr.conf'
     >>> config.extends.name
-    'launchpad.default.conf'
-
-    >>> environ_dir = os.environ.get(
-    ...     CONFIG_ENVIRONMENT_VARIABLE, DEFAULT_CONFIG)
-    >>> environ_and_name = os.path.join(environ_dir, config.name)
-    >>> config.filename.endswith(environ_and_name)
-    True
+    'schema-lazr.conf'
 
 
 == Transition from ZConfig to LAZR ==

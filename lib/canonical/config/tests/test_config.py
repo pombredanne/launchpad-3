@@ -22,8 +22,7 @@ here = os.path.dirname(canonical.config.__file__)
 schema_file = os.path.join(here, 'schema.xml')
 schema = ZConfig.loadSchema(schema_file)
 
-top_directory = os.path.join(here, '../../..', 'configs')
-lazr_schema_file = os.path.join(top_directory, 'schema.lazr.conf')
+lazr_schema_file = os.path.join(here, 'schema-lazr.conf')
 
 # This is necessary because pid_dir typically points to a directory that only
 # exists on the deployed servers, almost never on a developer machine.
@@ -41,7 +40,7 @@ def make_config_test(config_file, description):
     """Return a class to test a single lazr.config file.
 
     The config file name is shown in the output of test.py -vv. eg.
-    testConfig (canonical.config.tests.test_config...configs/schema.lazr.conf)
+    (canonical.config.tests.test_config.../configs/schema.lazr.conf)
     """
     class LAZRConfigTestCase(unittest.TestCase):
         """Test a lazr.config."""
@@ -58,7 +57,7 @@ def make_config_test(config_file, description):
                 message = '\n'.join([str(e) for e in error.errors])
                 self.fail(message)
     # Hack the config file name into the class name.
-    LAZRConfigTestCase.__name__ = '..configs/' + description
+    LAZRConfigTestCase.__name__ = '../configs/' + description
     return LAZRConfigTestCase
 
 
@@ -72,8 +71,8 @@ def test_suite():
         optionflags=NORMALIZE_WHITESPACE | ELLIPSIS
         ))
     # Add a test for every launchpad[.lazr].conf file in our tree.
+    top_directory = os.path.join(here, '../../..', 'configs')
     prefix_len = len(top_directory) + 1
-    lazr_conf_files = ('launchpad.default.conf', 'launchpad.testrunner.conf')
     for dirpath, dirnames, filenames in os.walk(top_directory):
         for filename in filenames:
             if filename == 'launchpad.conf':
@@ -85,7 +84,7 @@ def test_suite():
                 # doesn't do what we want.
                 suite.addTest(unittest.FunctionTestCase(
                     make_test(config_file, 'configs/' + description)))
-            elif filename in lazr_conf_files:
+            elif filename == 'launchpad-lazr.conf':
                 # Test the lazr.config conf files.
                 config_file = os.path.join(dirpath, filename)
                 description = config_file[prefix_len:]
