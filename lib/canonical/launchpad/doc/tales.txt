@@ -73,6 +73,13 @@ We also have image:icon for KarmaCategory:
     <img ... title="Specification Tracking" src="/@@/blueprint" />
     <img ... title="Translations in Rosetta" src="/@@/translation" />
 
+We also have an icon for bugs.
+
+    >>> from canonical.launchpad.interfaces import IBugSet
+    >>> bug = getUtility(IBugSet).get(1)
+    >>> print test_tales("bug/image:icon", bug=bug)
+    <img ... src="/@@/bug" />
+
 
 == The fmt: namespace to get strings ==
 
@@ -187,7 +194,6 @@ For branches, fmt:link links to the branch page.
 
 For bugs, fmt:link takes to the bug redirect page.
 
-    >>> from canonical.launchpad.interfaces import IBugSet
     >>> bug = getUtility(IBugSet).get(1)
     >>> test_tales("bug/fmt:link", bug=bug)
     u'<a href=".../bugs/1"><img ...src="/@@/bug" />&nbsp;Bug #1: Firefox does
