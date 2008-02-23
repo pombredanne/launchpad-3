@@ -1440,10 +1440,12 @@ class PPAVocabulary(SQLObjectVocabularyBase):
     displayname = 'Select a PPA'
 
     def toTerm(self, archive):
+        """See `IVocabulary`."""
         summary = archive.description.splitlines()[0]
         return SimpleTerm(archive, archive.owner.name, summary)
 
     def getTermByToken(self, token):
+        """See `IVocabularyTokenized`."""
         clause = """
         %s AND Person.name = %s
         """ % (self._filter, quote(token))
@@ -1457,6 +1459,10 @@ class PPAVocabulary(SQLObjectVocabularyBase):
             return self.toTerm(obj)
 
     def search(self, query):
+        """Return a resultset of archives.
+
+        This is a helper required by `SQLObjectVocabularyBase.searchForTerms`.
+        """
         if not query:
             return self.emptySelectResults()
 
