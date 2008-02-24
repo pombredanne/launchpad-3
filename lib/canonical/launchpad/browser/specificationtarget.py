@@ -20,20 +20,21 @@ from canonical.launchpad.interfaces import (
     IProject,
     IProjectSeries,
     ISprint,
+    ISpecificationSet,
     ISpecificationTarget,
     SpecificationFilter,
     SpecificationSort,
     )
 
 from canonical.config import config
-from canonical.database.sqlbase import cursor, sqlvalues
 from canonical.launchpad import _
 from canonical.launchpad.webapp import LaunchpadView
 from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.helpers import shortlist
 from canonical.cachedproperty import cachedproperty
 from canonical.launchpad.webapp import canonical_url
-from zope.component import queryMultiAdapter
+from zope.component import getUtility, queryMultiAdapter
+
 
 class HasSpecificationsView(LaunchpadView):
     """Base class for several context-specific views that involve lists of
@@ -306,95 +307,37 @@ class HasSpecificationsView(LaunchpadView):
         return self.context.specifications(sort=SpecificationSort.DATE,
             quantity=quantity)
 
-    def specPlan(self):
-        """Return the current sequence of recommended spec implementations,
-        based on their priority and dependencies.
-        """
-        if not hasattr(self, '_plan'):
-            # we have not done this before so make the plan
-            self.makeSpecPlan()
-        return self._plan
+    @cachedproperty
+    def spec_plan(self):
+        """Return the optimised sequence of specs for this target.
 
-    def danglingSpecs(self):
-        """Return the specs that are currently in a messy state because
-        their dependencies do not allow them to be implemented (circular
-        deps, for example.
+        Figure out what the best sequence of implementation is for the
+        specs registered on this target.
         """
-        if not hasattr(self, '_dangling'):
-            # we have not done this before so figure out if any are dangling
-            self.makeSpecPlan()
-        return self._dangling
-
-    def makeSpecPlan(self):
-        """Figure out what the best sequence of implementation is for the
-        specs currently in the queue for this target. Save the plan in
-        self._plan, and put any dangling specs in self._dangling.
-        """
-        # XXX sabdfl 2006-04-07: This is incomplete and will not build a
-        # proper comprehensive roadmap.
-        plan = []
         filter = [
             SpecificationFilter.INCOMPLETE,
             SpecificationFilter.ACCEPTED]
-        specs = set(self.context.specifications(filter=filter))
+        specs = self.context.specifications(filter=filter)
+        if specs.count() == 0:
+            return []
 
-        # In order to optimize this for targets with a large
-        # set of blueprints, we first fetch all the dependencies
-        # in one go (rather than ask SQLObject to get a related
-        # join for every iteration).
-        if len(specs):
-            cur = cursor()
-            cur.execute("""
-            SELECT specification, dependency
-            FROM SpecificationDependency
-            WHERE specification IN %s
-            """ % sqlvalues([spec.id for spec in specs]))
-            dependencies = cur.fetchall()
-            cur.close()
-        else:
-            dependencies = []
+        specification_set = getUtility(ISpecificationSet)
+        dependencies = specification_set.getDependencyDict(specs)
 
-        # We loop over all the blueprints, adding them only
-        # after their dependencies have been added.
-        found_spec = True
-        while found_spec:
-            found_spec = False
+        def update_plan(specs, plan):
+            """Update the plan with this spec's dependencies."""
             for spec in specs:
                 if spec in plan:
                     continue
-                # Check whether the spec has
-                # any dependencies by looking
-                # at the cached dependencies list
-                spec_has_dependencies = False
-                for spec_id, dep_id in dependencies:
-                    if spec_id == spec.id:
-                        spec_has_dependencies = True
-                        break
-                if not spec_has_dependencies:
-                    found_spec = True
-                    plan.append(spec)
-                    continue
-                all_clear = True
-                spec_dependencies = [
-                    dep_id for (spec_id, dep_id)
-                    in dependencies
-                    if spec_id == spec.id]
-                planned_spec_dependencies = [p_spec.id for p_spec in plan]
-                for depspec_id in spec_dependencies:
-                    if depspec_id not in planned_spec_dependencies:
-                        all_clear = False
-                        break
-                if all_clear:
-                    found_spec = True
-                    plan.append(spec)
-        # At this point, plan contains the ones that can move
-        # immediately. we need to find the dangling ones
-        dangling = []
-        for spec in specs:
-            if spec not in plan:
-                dangling.append(spec)
-        self._plan = plan
-        self._dangling = dangling
+                my_deps = dependencies.get(spec.id)
+                if my_deps is not None:
+                    update_plan(my_deps, plan)
+                plan.append(spec)
+
+        the_plan = []
+        update_plan(specs, the_plan)
+
+        return the_plan
 
 
 class RegisterABlueprintButtonView:

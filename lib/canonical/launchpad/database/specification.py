@@ -29,7 +29,7 @@ from canonical.launchpad.interfaces import (
     SpecificationSort,
     )
 
-from canonical.database.sqlbase import SQLBase, quote, sqlvalues
+from canonical.database.sqlbase import cursor, quote, SQLBase, sqlvalues
 from canonical.database.constants import DEFAULT, UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
@@ -820,3 +820,30 @@ class SpecificationSet(HasSpecificationsMixin):
             approver=approver, product=product, distribution=distribution,
             assignee=assignee, drafter=drafter, whiteboard=whiteboard)
 
+    def getDependencyDict(self, specifications):
+        """See `ISpecificationSet`."""
+
+        cur = cursor()
+        cur.execute("""
+            SELECT SpecificationDependency.specification,
+                   SpecificationDependency.dependency
+            FROM SpecificationDependency, Specification
+            WHERE SpecificationDependency.specification IN %s
+            AND SpecificationDependency.dependency = Specification.id
+            ORDER BY Specification.priority DESC
+        """ % sqlvalues([spec.id for spec in specifications]))
+        results = cur.fetchall()
+        cur.close()
+
+        dependencies = {}
+        for spec_id, dep_id in results:
+            if spec_id not in dependencies:
+                dependencies[spec_id] = []
+            dependency = Specification.get(dep_id)
+            dependencies[spec_id].append(dependency)
+
+        return dependencies
+
+    def get(self, spec_id):
+        """See canonical.launchpad.interfaces.ISpecificationSet."""
+        return Specification.get(spec_id)

@@ -68,6 +68,14 @@
     handler="canonical.launchpad.subscribers.karma.spec_modified" />
 
   <browser:pages
+      for="canonical.launchpad.interfaces.ISpecification"
+      permission="zope.Public">
+    <browser:page
+        name="+listing-simple"
+        template="../templates/specification-listing-simple.pt" />
+  </browser:pages>
+
+  <browser:pages
     for="canonical.launchpad.interfaces.ISpecification"
     class="canonical.launchpad.browser.SpecificationView"
     permission="zope.Public">
@@ -86,9 +94,6 @@
     <browser:page
       name="+listing-feedback"
       template="../templates/specification-listing-feedback.pt" />
-    <browser:page
-      name="+listing-simple"
-      template="../templates/specification-listing-simple.pt" />
     <browser:page
       name="+listing-compact"
       template="../templates/specification-listing-compact.pt" />

@@ -329,6 +329,13 @@ class ISourcePackagePublishingHistory(ISecureSourcePackagePublishingHistory):
         Pocket, ordered by architecturetag.
         """
 
+    def getSourceAndBinaryLibraryFiles():
+        """Return LibraryFileAlias records for all source and binaries.
+
+        All the published source and binary files associated with this
+        source publishing are returned as LibraryFileAlias records.
+        """
+
     def changeOverride(new_component=None, new_section=None):
         """Change the component and/or section of this publication
 

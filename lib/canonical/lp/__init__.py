@@ -14,7 +14,8 @@ import os
 
 from canonical.config import config
 from canonical.database.sqlbase import (
-        ZopelessTransactionManager, DEFAULT_ISOLATION)
+        AUTOCOMMIT_ISOLATION, DEFAULT_ISOLATION, READ_COMMITTED_ISOLATION,
+        SERIALIZABLE_ISOLATION, ZopelessTransactionManager)
 
 import psycopgda.adapter
 
