@@ -453,7 +453,7 @@ class SpecificationView(SpecificationSimpleView):
 
         request = self.request
         if request.method == 'POST':
-            # establish if a subscription form was posted
+            # establish if a subscription form was posted.
             sub = request.form.get('subscribe')
             upd = request.form.get('update')
             unsub = request.form.get('unsubscribe')

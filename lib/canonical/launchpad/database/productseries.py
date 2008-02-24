@@ -338,7 +338,6 @@ class ProductSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
                 query += ' AND Specification.fti @@ ftq(%s) ' % quote(
                     constraint)
 
-        # now do the query, and remember to prejoin to people
         results = Specification.select(query, orderBy=order, limit=quantity)
         if prejoin_people:
             results = results.prejoin(['assignee', 'approver', 'drafter'])

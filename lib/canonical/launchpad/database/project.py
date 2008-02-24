@@ -247,7 +247,6 @@ class Project(SQLBase, BugTargetBase, HasSpecificationsMixin,
                       % sqlvalues(series))
             clause_tables.append('ProductSeries')
 
-        # now do the query, and remember to prejoin to people
         results = Specification.select(query, orderBy=order, limit=quantity,
             clauseTables=clause_tables)
         if prejoin_people:

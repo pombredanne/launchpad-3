@@ -200,7 +200,6 @@ class Sprint(SQLBase):
                          '-SprintSpecification.date_created',
                          'Specification.id']
 
-        # now do the query, and remember to prejoin to people
         results = Specification.select(query, orderBy=order, limit=quantity,
             clauseTables=['SprintSpecification'])
         if prejoin_people:
