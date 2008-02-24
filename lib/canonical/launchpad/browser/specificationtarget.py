@@ -327,7 +327,8 @@ class SpecificationRoadmapView(LaunchpadView):
         filter = [
             SpecificationFilter.INCOMPLETE,
             SpecificationFilter.ACCEPTED]
-        specs = self.context.specifications(filter=filter, prejoin_people=False)
+        specs = self.context.specifications(
+            filter=filter, prejoin_people=False)
         if specs.count() == 0:
             return []
 

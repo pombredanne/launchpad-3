@@ -389,9 +389,8 @@ class SpecificationContextMenu(ContextMenu):
 
     def dependencytree(self):
         text = 'Show dependencies'
-        enabled = (
-            bool(self.context.dependencies) or bool(self.context.blocked_specs)
-            )
+        enabled = (bool(self.context.dependencies) or
+                   bool(self.context.blocked_specs))
         return Link('+deptree', text, icon='info', enabled=enabled)
 
     def linksprint(self):
@@ -650,16 +649,20 @@ class SpecificationSupersedingView(LaunchpadFormView):
 
     @action(_('Continue'), name='supersede')
     def supersede_action(self, action, data):
+        # Store some shorter names to avoid line-wrapping.
+        SUPERSEDED = SpecificationDefinitionStatus.SUPERSEDED
+        NEW = SpecificationDefinitionStatus.NEW
         self.context.superseded_by = data['superseded_by']
         if data['superseded_by'] is not None:
             # set the state to superseded
-            self.context.definition_status = SpecificationDefinitionStatus.SUPERSEDED
+            self.context.definition_status = SUPERSEDED
         else:
             # if the current state is SUPERSEDED and we are now removing the
             # superseded-by then we should move this spec back into the
             # drafting pipeline by resetting its status to NEW
-            if self.context.definition_status == SpecificationDefinitionStatus.SUPERSEDED:
-                self.context.definition_status = SpecificationDefinitionStatus.NEW
+            if (self.context.definition_status == 
+                    SpecificationDefinitionStatus.SUPERSEDED):
+                self.context.definition_status = NEW
         newstate = self.context.updateLifecycleStatus(self.user)
         if newstate is not None:
             self.request.response.addNotification(
@@ -738,7 +741,7 @@ class SpecGraph:
         self.walkSpecsMakingNodes(spec, get_related_specs_fn, link_nodes_fn)
 
     def addBlockedNodes(self, spec):
-        """Add nodes for the specs that the given spec blocks, transitively."""
+        """Add nodes for specs that the given spec blocks, transitively."""
         get_related_specs_fn = attrgetter('blocked_specs')
         def link_nodes_fn(node, blocked_spec):
             self.link(node, blocked_spec)

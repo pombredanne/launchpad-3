@@ -260,7 +260,14 @@ class Project(SQLBase, BugTargetBase, HasSpecificationsMixin,
     #      sense here. IBugTarget should be split into two interfaces; one
     #      that makes sense for Project to implement, and one containing the
     #      rest of IBugTarget.
-    bugtargetdisplayname = None
+    @property
+    def bugtargetdisplayname(self):
+        """See IBugTarget."""
+        raise NotImplementedError('Cannot file bugs against a project')
+
+    def createBug(self, bug_params):
+        """See `IBugTarget`."""
+        raise NotImplementedError('Cannot file bugs against a project')
 
     def searchTasks(self, search_params):
         """See `IBugTarget`."""
@@ -282,10 +289,6 @@ class Project(SQLBase, BugTargetBase, HasSpecificationsMixin,
         product_ids = sqlvalues(*self.products)
         return get_bug_tags_open_count(
             "BugTask.product IN (%s)" % ",".join(product_ids), user)
-
-    def createBug(self, bug_params):
-        """See `IBugTarget`."""
-        raise NotImplementedError('Cannot file bugs against a project')
 
     def _getBugTaskContextClause(self):
         """See `BugTargetBase`."""
@@ -316,11 +319,6 @@ class Project(SQLBase, BugTargetBase, HasSpecificationsMixin,
             Question.product = Product.id AND
             Product.project = %s""" % sqlvalues(self.id),
             clauseTables=['Question', 'Product'], distinct=True))
-
-    @property
-    def bugtargetdisplayname(self):
-        """See IBugTarget."""
-        return self.displayname
 
     @property
     def bugtargetname(self):

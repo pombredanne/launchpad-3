@@ -13,7 +13,6 @@ __all__ = [
 
 from zope.interface import Interface, Attribute
 
-from canonical.launchpad import _
 
 class IHasSpecifications(Interface):
     """An object that has specifications attached to it.
