@@ -259,11 +259,7 @@ class Project(SQLBase, BugTargetBase, HasSpecificationsMixin,
     #      sense here. IBugTarget should be split into two interfaces; one
     #      that makes sense for Project to implement, and one containing the
     #      rest of IBugTarget.
-    @property
-    def bugtargetdisplayname(self):
-        """See IBugTarget."""
-        raise NotImplementedError('Cannot file bugs against a project')
-
+    bugtargetdisplayname = None
     def createBug(self, bug_params):
         """See `IBugTarget`."""
         raise NotImplementedError('Cannot file bugs against a project')
