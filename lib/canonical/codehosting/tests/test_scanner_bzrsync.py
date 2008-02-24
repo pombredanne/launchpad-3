@@ -48,9 +48,7 @@ class BzrSyncTestCase(TestCaseWithTransport):
         config.supermirror.warehouse_root_url = (
             local_path_to_url(os.getcwd()) + '/')
         self.factory = LaunchpadObjectFactory()
-        self.db_branch = self.makeDatabaseBranch()
-        self.bzr_tree = self.makeBzrBranchAndTree(self.db_branch)
-        self.bzr_branch = self.bzr_tree.branch
+        self.makeFixtures()
         LaunchpadZopelessLayer.switchDbUser(config.branchscanner.dbuser)
         self.txn = LaunchpadZopelessLayer.txn
         self._setUpAuthor()
@@ -58,6 +56,12 @@ class BzrSyncTestCase(TestCaseWithTransport):
     def tearDown(self):
         config.supermirror.warehouse_root_url = self._warehouse_root_url
         TestCaseWithTransport.tearDown(self)
+
+    def makeFixtures(self):
+        """Makes test fixtures before we switch to the scanner db user."""
+        self.db_branch = self.makeDatabaseBranch()
+        self.bzr_tree = self.makeBzrBranchAndTree(self.db_branch)
+        self.bzr_branch = self.bzr_tree.branch
 
     def syncBazaarBranchToDatabase(self, bzr_branch, db_branch):
         """Sync `bzr_branch` into the database as `db_branch`."""
