@@ -25,8 +25,6 @@ contact any external servers.
 
     >>> print err
     INFO    creating lockfile
-    INFO    No watches to update on http://bugs.example.com
-    INFO    No watches to update on http://bugs.example.com/ni
     INFO    No watches to update on http://bugs.debian.org
     WARNING ExternalBugtracker for BugTrackerType 'EMAILADDRESS' is not
             known.
@@ -49,6 +47,10 @@ First, we create some bug watches to test with:
     ...     BugTrackerType, IBugSet)
     >>> from canonical.launchpad.scripts.checkwatches import (
     ...     BugWatchUpdater)
+    >>> from canonical.launchpad.interfaces import (
+    ...     IPersonSet)
+    >>> sample_person = getUtility(IPersonSet).getByEmail(
+    ...     'test@canonical.com')
 
     >>> example_bug_tracker = BugTracker(
     ...     name="example-bugs",
