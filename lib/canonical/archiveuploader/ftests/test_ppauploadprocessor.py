@@ -613,6 +613,21 @@ class TestPPAUploadProcessor(TestPPAUploadProcessorBase):
             "bar_1.0-1.diff.gz: Section 'badsection' is not valid"]
         self.assertEmail(contents)
 
+    def testMixedUpload(self):
+        """Mixed PPA uploads are rejected with a appropriate message."""
+        upload_dir = self.queueUpload(
+            "bar_1.0-1-mixed", "~name16/ubuntu")
+        self.processUpload(self.uploadprocessor, upload_dir)
+
+        contents = [
+            "Subject: bar_1.0-1_i386.changes rejected",
+            "Upload rejected because it contains binary packages. "
+            "Ensure you are using `debuild -S`, or an equivalent command, "
+            "to generate only the source package before re-uploading. "
+            "See https://help.launchpad.net/PPAQuickStart/ for more "
+            "information."]
+        self.assertEmail(contents)
+
     def testPGPSignatureNotPreserved(self):
         """Email notifications should remove the PGP signature from the
            changes file."""

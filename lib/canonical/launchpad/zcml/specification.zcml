@@ -67,10 +67,10 @@
          canonical.launchpad.event.interfaces.ISQLObjectModifiedEvent"
     handler="canonical.launchpad.subscribers.karma.spec_modified" />
 
-  <!-- these pages are simple enogh they don't need browser code -->
+  <!-- these pages are simple enough they don't need browser code -->
   <browser:pages
-    for="canonical.launchpad.interfaces.ISpecification"
-    permission="zope.Public">
+      for="canonical.launchpad.interfaces.ISpecification"
+      permission="zope.Public">
     <browser:page
       name="+deptree"
       template="../templates/specification-deptree.pt" />
@@ -80,6 +80,12 @@
     <browser:page
       name="+listing-simple"
       template="../templates/specification-listing-simple.pt" />
+    <browser:page
+      name="+listing-detailed"
+      template="../templates/specification-listing-detailed.pt" />
+    <browser:page
+      name="+listing-feedback"
+      template="../templates/specification-listing-feedback.pt" />
     <browser:page
       name="+listing-compact"
       template="../templates/specification-listing-compact.pt" />

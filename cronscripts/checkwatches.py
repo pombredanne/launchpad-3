@@ -28,8 +28,8 @@ class CheckWatches(LaunchpadCronScript):
     def main(self):
         start_time = time.time()
 
-        # checkwatches has been assigned the prefix 'CW.
-        config.launchpad.errorreports.oops_prefix += '-CW'
+        # Append the prefix 'CW' to the default prefix.
+        config.launchpad.errorreports.oops_prefix += 'CW'
         # Don't copy OOPSes to the zlog; we will do that
         # explicitly. See `externalbugtracker.report_oops` and
         # `report_warning`.
