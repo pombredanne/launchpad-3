@@ -13,10 +13,7 @@ tasks currently open, so let's add one.
 There is a link in the affects table to edit the Gentoo task.
 
     >>> soup = find_main_content(user_browser.contents)
-    >>> affects_table = soup.first('table', {'class': 'listing'})
-    >>> for tr in affects_table.tbody.findAll('tr', recursive=False):
-    ...     if tr.td.table:
-    ...         continue
-    ...     print extract_text(tr.td)
-    Mozilla Firefox
-    Gentoo
+    >>> from canonical.launchpad.ftests.bug import print_bug_affects_table
+    >>> print_bug_affects_table(user_browser.contents)
+    Mozilla Firefox ...
+    Gentoo ...

@@ -13,10 +13,7 @@ __all__ = [
     ]
 
 import datetime
-import logging
-import StringIO
 import pytz
-from urllib2 import URLError
 from sqlobject import (
     ForeignKey, IntCol, StringCol, BoolCol, SQLMultipleJoin
     )
@@ -31,21 +28,20 @@ from canonical.database.sqlbase import (
     SQLBase, flush_database_updates, quote, sqlvalues)
 from canonical.launchpad import helpers
 from canonical.launchpad.components.rosettastats import RosettaStats
+from canonical.launchpad.validators.person import public_person_validator
 from canonical.launchpad.database.potmsgset import POTMsgSet
 from canonical.launchpad.database.translationmessage import (
     DummyTranslationMessage, TranslationMessage)
 from canonical.launchpad.interfaces import (
-    ILaunchpadCelebrities, ILibraryFileAliasSet, IPersonSet, IPOFile,
-    IPOFileSet, IPOFileTranslator, ITranslationExporter,
-    ITranslationFileData, ITranslationImporter, IVPOExportSet,
-    NotExportedFromLaunchpad, NotFoundError, OutdatedTranslationError,
-    RosettaImportStatus, TranslationFormatSyntaxError,
-    TranslationFormatInvalidInputError, TranslationPermission,
-    TranslationValidationStatus, ZeroLengthPOExportError)
+    ILaunchpadCelebrities, IPersonSet, IPOFile, IPOFileSet, IPOFileTranslator,
+    ITranslationExporter, ITranslationFileData, ITranslationImporter,
+    IVPOExportSet, NotExportedFromLaunchpad, NotFoundError,
+    OutdatedTranslationError, RosettaImportStatus, TooManyPluralFormsError,
+    TranslationFormatInvalidInputError, TranslationFormatSyntaxError,
+    TranslationPermission, TranslationValidationStatus)
 from canonical.launchpad.translationformat import TranslationMessageData
 from canonical.launchpad.webapp import canonical_url
-from canonical.librarian.interfaces import (
-    ILibrarianClient, UploadFailed)
+from canonical.librarian.interfaces import ILibrarianClient
 
 
 def _check_translation_perms(permission, translators, person):
@@ -218,17 +214,13 @@ class POFile(SQLBase, POFileMixIn):
                        default=None)
     fuzzyheader = BoolCol(dbName='fuzzyheader',
                           notNull=True)
-    lasttranslator = ForeignKey(foreignKey='Person',
-                                dbName='lasttranslator',
-                                notNull=False,
-                                default=None)
+    lasttranslator = ForeignKey(
+        dbName='lasttranslator', foreignKey='Person',
+        validator=public_person_validator, notNull=False, default=None)
 
     date_changed = UtcDateTimeCol(
         dbName='date_changed', notNull=True, default=UTC_NOW)
 
-    license = IntCol(dbName='license',
-                     notNull=False,
-                     default=None)
     currentcount = IntCol(dbName='currentcount',
                           notNull=True,
                           default=0)
@@ -244,21 +236,14 @@ class POFile(SQLBase, POFileMixIn):
     lastparsed = UtcDateTimeCol(dbName='lastparsed',
                                 notNull=False,
                                 default=None)
-    owner = ForeignKey(foreignKey='Person',
-                       dbName='owner',
-                       notNull=True)
+    owner = ForeignKey(
+        dbName='owner', foreignKey='Person',
+        validator=public_person_validator, notNull=True)
     variant = StringCol(dbName='variant',
                         notNull=False,
                         default=None)
     path = StringCol(dbName='path',
                      notNull=True)
-    exportfile = ForeignKey(foreignKey='LibraryFileAlias',
-                            dbName='exportfile',
-                            notNull=False,
-                            default=None)
-    exporttime = UtcDateTimeCol(dbName='exporttime',
-                                notNull=False,
-                                default=None)
     datecreated = UtcDateTimeCol(notNull=True, default=UTC_NOW)
 
     from_sourcepackagename = ForeignKey(foreignKey='SourcePackageName',
@@ -294,14 +279,6 @@ class POFile(SQLBase, POFileMixIn):
     def contributors(self):
         """See `IPOFile`."""
         return getUtility(IPersonSet).getPOFileContributors(self)
-
-    @property
-    def is_cached_export_valid(self):
-        """See `IPOFile`."""
-        if self.exportfile is None:
-            return False
-
-        return self.exporttime >= self.date_changed
 
     def prepareTranslationCredits(self, potmsgset):
         """See `IPOFile`."""
@@ -411,6 +388,20 @@ class POFile(SQLBase, POFileMixIn):
             raise NotFoundError(msgid_text)
         else:
             return translation_message
+
+    def getTranslationsFilteredBy(self, person):
+        """See `IPOFile`."""
+        # We are displaying translations grouped by POTMsgSets,
+        # but since the most common case will be having a single
+        # TranslationMessage per POTMsgSet, we are issuing a slightly
+        # faster SQL query by avoiding a join with POTMsgSet.
+        assert person is not None, "You must provide a person to filter by."
+        return TranslationMessage.select(
+            """
+            TranslationMessage.pofile = %s AND
+            TranslationMessage.submitter = %s
+            """ % sqlvalues(self, person),
+            orderBy=['potmsgset', '-date_created'])
 
     def getPOTMsgSetTranslated(self):
         """See `IPOFile`."""
@@ -607,6 +598,7 @@ class POFile(SQLBase, POFileMixIn):
                 '(POTMsgSet.msgid_plural IS NULL OR (%s))' % plurals_query)
         return query
 
+
     def updateStatistics(self):
         """See `IPOFile`."""
         # make sure all the data is in the db
@@ -729,31 +721,38 @@ class POFile(SQLBase, POFileMixIn):
         #   everything but the messages with errors. We handle it returning a
         #   list of faulty messages.
         import_rejected = False
+        error_text = None
         try:
             errors = translation_importer.importFile(entry_to_import, logger)
         except NotExportedFromLaunchpad:
             # We got a file that was not exported from Rosetta as a non
             # published upload. We log it and select the email template.
             if logger:
-                logger.warning(
+                logger.info(
                     'Error importing %s' % self.title, exc_info=1)
             template_mail = 'poimport-not-exported-from-rosetta.txt'
             import_rejected = True
         except (TranslationFormatSyntaxError,
-                TranslationFormatInvalidInputError):
+                TranslationFormatInvalidInputError), exception:
             # The import failed with a format error. We log it and select the
             # email template.
             if logger:
-                logger.warning(
+                logger.info(
                     'Error importing %s' % self.title, exc_info=1)
             template_mail = 'poimport-syntax-error.txt'
             import_rejected = True
+            error_text = str(exception)
         except OutdatedTranslationError:
             # The attached file is older than the last imported one, we ignore
             # it. We also log this problem and select the email template.
             if logger:
-                logger.warning('Got an old version for %s' % self.title)
+                logger.info('Got an old version for %s' % self.title)
             template_mail = 'poimport-got-old-version.txt'
+            import_rejected = True
+        except TooManyPluralFormsError:
+            if logger:
+                logger.warning("Too many plural forms.")
+            template_mail = 'poimport-too-many-plural-forms.txt'
             import_rejected = True
 
         # Prepare the mail notification.
@@ -769,9 +768,13 @@ class POFile(SQLBase, POFileMixIn):
                 self.language.displayname, self.potemplate.displayname),
             'importer': entry_to_import.importer.displayname,
             'language': self.language.displayname,
+            'language_code': self.language.code,
             'numberofmessages': msgsets_imported,
             'template': self.potemplate.displayname,
             }
+
+        if error_text is not None:
+            replacements['error'] = error_text
 
         if import_rejected:
             # We got an error that prevented us to import any translation, we
@@ -836,49 +839,7 @@ class POFile(SQLBase, POFileMixIn):
         message = template % replacements
         return (subject, message)
 
-    def updateExportCache(self, contents):
-        """See `IPOFile`."""
-        alias_set = getUtility(ILibraryFileAliasSet)
-
-        if self.variant:
-            filename = '%s@%s.po' % (
-                self.language.code, self.variant.encode('UTF-8'))
-        else:
-            filename = '%s.po' % (self.language.code)
-
-        size = len(contents)
-        file = StringIO.StringIO(contents)
-
-
-        # XXX CarlosPerelloMarin 2006-02-27: Added the debugID argument to
-        # help us to debug bug #1887 on production. This will let us track
-        # this librarian import so we can discover why sometimes, the fetch
-        # of it fails.
-        self.exportfile = alias_set.create(
-            filename, size, file, 'application/x-po',
-            debugID='pofile-id-%d' % self.id)
-
-        # Note that UTC_NOW is resolved to the time at the beginning of the
-        # transaction. This is significant because translations could be added
-        # to the database while the export transaction is in progress, and the
-        # export would not include those translations. However, we want to be
-        # able to compare the export time to other datetime object within the
-        # same transaction -- e.g. in is_cached_export_valid. This is
-        # why we call .sync() -- it turns the UTC_NOW reference into an
-        # equivalent datetime object.
-        self.exporttime = UTC_NOW
-        self.sync()
-
-    def fetchExportCache(self):
-        """Return the cached export file, if it exists, or None otherwise."""
-
-        if self.exportfile is None:
-            return None
-        else:
-            alias_set = getUtility(ILibraryFileAliasSet)
-            return alias_set[self.exportfile.id].read()
-
-    def uncachedExport(self, ignore_obsolete=False, force_utf8=False):
+    def export(self, ignore_obsolete=False, force_utf8=False):
         """See `IPOFile`."""
         # Get the exporter for this translation.
         translation_exporter = getUtility(ITranslationExporter)
@@ -886,21 +847,9 @@ class POFile(SQLBase, POFileMixIn):
             translation_exporter.getExporterProducingTargetFileFormat(
                 self.potemplate.source_file_format))
 
-        translation_file = ITranslationFileData(self)
-        if (self.lasttranslator is not None):
-            if self.lasttranslator.preferredemail is None:
-                # We are supposed to have always a valid email address, but
-                # with removed accounts that's not true anymore so we just set
-                # it to 'Unknown' to note we don't know it.
-                email = 'Unknown'
-            else:
-                email = self.lasttranslator.preferredemail.email
-            displayname = self.lasttranslator.displayname
-            translation_file.header.setLastTranslator(email, name=displayname)
-
         # Get the export file.
         exported_file = translation_format_exporter.exportTranslationFiles(
-            [translation_file], ignore_obsolete, force_utf8)
+            [ITranslationFileData(self)], ignore_obsolete, force_utf8)
 
         try:
             file_content = exported_file.read()
@@ -908,50 +857,6 @@ class POFile(SQLBase, POFileMixIn):
             exported_file.close()
 
         return file_content
-
-    def export(self, ignore_obsolete=False):
-        """See `IPOFile`."""
-        if self.is_cached_export_valid and not ignore_obsolete:
-            # Only use the cache if the request includes obsolete messages,
-            # without them, we always do a full export.
-            try:
-                return self.fetchExportCache()
-            except LookupError:
-                # XXX: Carlos Perello Marin 2006-02-24: LookupError is a
-                # workaround for bug #1887. Something produces LookupError
-                # exception and we don't know why. This will allow us to
-                # provide an export in those cases.
-                logging.error(
-                    "Error fetching a cached file from librarian", exc_info=1)
-            except URLError:
-                # There is a problem getting a cached export from Librarian.
-                # Log it and do a full export.
-                logging.warning(
-                    "Error fetching a cached file from librarian", exc_info=1)
-
-        contents = self.uncachedExport()
-
-        if len(contents) == 0:
-            # The export is empty, this is completely broken.
-            raise ZeroLengthPOExportError, "Exporting %s" % self.title
-
-        if not ignore_obsolete:
-            # Update the cache if the request includes obsolete messages.
-            try:
-                self.updateExportCache(contents)
-            except UploadFailed:
-                # For some reason, we were not able to upload the exported
-                # file in librarian, that's fine. It only means that next
-                # time, we will do a full export again.
-                logging.warning(
-                    "Error uploading a cached file into librarian",
-                    exc_info=1)
-
-        return contents
-
-    def invalidateCache(self):
-        """See `IPOFile`."""
-        self.exportfile = None
 
 
 class DummyPOFile(POFileMixIn):
@@ -972,7 +877,6 @@ class DummyPOFile(POFileMixIn):
         self.lasttranslator = None
         UTC = pytz.timezone('UTC')
         self.date_changed  = None
-        self.license = None
         self.lastparsed = None
         self.owner = getUtility(ILaunchpadCelebrities).rosetta_experts
 
@@ -982,7 +886,6 @@ class DummyPOFile(POFileMixIn):
             self.owner = owner
 
         self.path = u'unknown'
-        self.exportfile = None
         self.datecreated = datetime.datetime.now(UTC)
         self.last_touched_pomsgset = None
         self.contributors = []
@@ -1026,11 +929,6 @@ class DummyPOFile(POFileMixIn):
         """See `IPOFile`."""
         return self.potemplate.translationpermission
 
-    @property
-    def is_cached_export_valid(self):
-        """See `IPOFile`."""
-        return False
-
     def canEditTranslations(self, person):
         """See `IPOFile`."""
         return _can_edit_translations(self, person)
@@ -1050,6 +948,10 @@ class DummyPOFile(POFileMixIn):
 
     def emptySelectResults(self):
         return POFile.select("1=2")
+
+    def getTranslationsFilteredBy(self, person):
+        """See `IPOFile`."""
+        return None
 
     def getPOTMsgSetTranslated(self):
         """See `IPOFile`."""
@@ -1136,19 +1038,7 @@ class DummyPOFile(POFileMixIn):
         """See `IRosettaStats`."""
         return 100.0
 
-    def updateExportCache(self, contents):
-        """See `IPOFile`."""
-        raise NotImplementedError
-
-    def export(self):
-        """See `IPOFile`."""
-        raise NotImplementedError
-
-    def uncachedExport(self, ignore_obsolete=False, force_utf8=False):
-        """See `IPOFile`."""
-        raise NotImplementedError
-
-    def invalidateCache(self):
+    def export(self, ignore_obsolete=False, force_utf8=False):
         """See `IPOFile`."""
         raise NotImplementedError
 
@@ -1270,7 +1160,9 @@ class POFileTranslator(SQLBase):
 
     implements(IPOFileTranslator)
     pofile = ForeignKey(foreignKey='POFile', dbName='pofile', notNull=True)
-    person = ForeignKey(foreignKey='Person', dbName='person', notNull=True)
+    person = ForeignKey(
+        dbName='person', foreignKey='Person',
+        validator=public_person_validator, notNull=True)
     latest_message = ForeignKey(foreignKey='TranslationMessage',
         dbName='latest_message', notNull=True)
     date_last_touched = UtcDateTimeCol(dbName='date_last_touched',
@@ -1336,6 +1228,17 @@ class POFileToTranslationFileDataAdapter:
 
             translation_header.number_plural_forms = number_plural_forms
             translation_header.plural_form_expression = plural_form_expression
+
+        if (self._pofile.lasttranslator is not None):
+            email = self._pofile.lasttranslator.safe_email_or_blank
+            if not email:
+                # We are supposed to have always a valid email address, but
+                # with removed accounts or people not wanting to show his
+                # email that's not true anymore so we just set it to 'Unknown'
+                # to note we don't know it.
+                email = 'Unknown'
+            displayname = self._pofile.lasttranslator.displayname
+            translation_header.setLastTranslator(email, name=displayname)
 
         # We need to tag every export from Launchpad so we know whether a
         # later upload should change every translation in our database or

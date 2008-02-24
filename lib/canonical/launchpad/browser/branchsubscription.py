@@ -17,8 +17,8 @@ from canonical.launchpad.interfaces import (
     BranchSubscriptionNotificationLevel, IBranchSubscription,
     ILaunchpadCelebrities)
 from canonical.launchpad.webapp import (
-    LaunchpadFormView, LaunchpadEditFormView,
-    action, canonical_url)
+    action, canonical_url, LaunchpadEditFormView, LaunchpadFormView)
+from canonical.launchpad.webapp.menu import structured
 
 
 class BranchSubscriptionSOP(StructuralObjectPresentation):
@@ -58,8 +58,9 @@ class _BranchSubscriptionView(LaunchpadFormView):
         else:
             lines_message = ''
 
-        message = ('%s<ul><li>%s</li>%s</ul>' % (
-                   initial, notification_level.description, lines_message))
+        format_str = '%%s<ul><li>%%s</li>%s</ul>' % lines_message
+        message = structured(format_str, initial,
+                             notification_level.description)
         self.request.response.addNotification(message)
 
     def optional_max_diff_lines(self, notification_level, max_diff_lines):

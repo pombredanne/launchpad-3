@@ -1,5 +1,6 @@
 #!/usr/bin/python2.4
-# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# Copyright 2004-2008 Canonical Ltd.  All rights reserved.
+# pylint: disable-msg=W0403
 """
 Apply all outstanding schema patches to an existing launchpad database
 
@@ -32,10 +33,10 @@ def main():
 
     # Generate a list of all patches we might want to apply
     patches = []
-    all_patch_files = glob.glob(os.path.join(schema_dir, 'patch-??-??-?.sql'))
+    all_patch_files = glob.glob(os.path.join(schema_dir, 'patch-???-??-?.sql'))
     all_patch_files.sort()
     for patch_file in all_patch_files:
-        m = re.search('patch-(\d\d)-(\d\d)-(\d).sql$', patch_file)
+        m = re.search('patch-(\d\d\d)-(\d\d)-(\d).sql$', patch_file)
         if m is None:
             log.fatal('Invalid patch filename %s' % repr(patch_file))
             sys.exit(1)
@@ -55,23 +56,10 @@ def main():
     # Update comments.
     apply_other(con, 'comments.sql')
 
-    invalidate_cached_translation_exports(con)
-
     # Commit changes
     if options.commit:
         log.debug("Committing changes")
         con.commit()
-
-
-def invalidate_cached_translation_exports(con):
-    """Invalidate all valid cached translation exports.
-
-    This is useful to be sure that code fixes for the export code will be
-    applied always, even for files that didn't get translation updates.
-    """
-    log.info("Invalidating translation exports cached")
-    cur = con.cursor()
-    cur.execute("UPDATE POFile SET exportfile=NULL")
 
 
 def applied_patches(con):

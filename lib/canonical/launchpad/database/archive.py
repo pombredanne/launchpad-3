@@ -26,6 +26,7 @@ from canonical.launchpad.interfaces import (
     ArchivePurpose, IArchive, IArchiveSet, IHasOwner, IHasBuildRecords,
     IBuildSet, ILaunchpadCelebrities, PackagePublishingStatus)
 from canonical.launchpad.webapp.url import urlappend
+from canonical.launchpad.validators.person import public_person_validator
 
 
 class Archive(SQLBase):
@@ -33,7 +34,9 @@ class Archive(SQLBase):
     _table = 'Archive'
     _defaultOrder = 'id'
 
-    owner = ForeignKey(foreignKey='Person', dbName='owner', notNull=False)
+    owner = ForeignKey(
+        dbName='owner', foreignKey='Person',
+        validator=public_person_validator, notNull=False)
 
     description = StringCol(dbName='description', notNull=False, default=None)
 
@@ -43,7 +46,9 @@ class Archive(SQLBase):
     purpose = EnumCol(dbName='purpose', unique=False, notNull=True,
         schema=ArchivePurpose)
 
-    enabled = BoolCol(dbName='enabled', notNull=False, default=True)
+    enabled = BoolCol(dbName='enabled', notNull=True, default=True)
+
+    private = BoolCol(dbName='private', notNull=True, default=False)
 
     authorized_size = IntCol(
         dbName='authorized_size', notNull=False, default=1024)
@@ -129,8 +134,11 @@ class Archive(SQLBase):
 
         return pubconf
 
-    def getBuildRecords(self, build_state=None, name=None, pocket=None):
+    def getBuildRecords(self, build_state=None, name=None, pocket=None,
+                        user=None):
         """See IHasBuildRecords"""
+        # Ignore "user", since anyone already accessing this archive
+        # will implicitly have permission to see it.
         return getUtility(IBuildSet).getBuildsForArchive(
             self, build_state, name, pocket)
 
@@ -187,9 +195,11 @@ class Archive(SQLBase):
                 SourcePackagePublishingHistory.pocket = %s
             """ % sqlvalues(pocket))
 
+        preJoins = ['sourcepackagerelease']
 
         sources = SourcePackagePublishingHistory.select(
-            ' AND '.join(clauses), clauseTables=clauseTables, orderBy=orderBy)
+            ' AND '.join(clauses), clauseTables=clauseTables, orderBy=orderBy,
+            prejoins=preJoins)
 
         return sources
 

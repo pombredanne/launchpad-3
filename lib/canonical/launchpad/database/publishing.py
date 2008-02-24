@@ -23,12 +23,14 @@ from canonical.database.sqlbase import SQLBase, sqlvalues
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
+from canonical.launchpad.database.librarian import LibraryFileAlias
 from canonical.launchpad.interfaces import (
     IArchiveSafePublisher, IBinaryPackageFilePublishing,
     IBinaryPackagePublishingHistory, ISecureBinaryPackagePublishingHistory,
     ISecureSourcePackagePublishingHistory, ISourcePackageFilePublishing,
     ISourcePackagePublishingHistory, PackagePublishingPriority,
     PackagePublishingStatus, PackagePublishingPocket, PoolFileOverwriteError)
+from canonical.launchpad.validators.person import public_person_validator
 from canonical.launchpad.scripts.ftpmaster import ArchiveOverriderError
 
 
@@ -239,7 +241,8 @@ class SecureSourcePackagePublishingHistory(SQLBase, ArchiveSafePublisherBase):
     embargolifted = UtcDateTimeCol(default=None)
     archive = ForeignKey(dbName="archive", foreignKey="Archive", notNull=True)
     removed_by = ForeignKey(
-        dbName="removed_by", foreignKey="Person", default=None)
+        dbName="removed_by", foreignKey="Person",
+        validator=public_person_validator, default=None)
     removal_comment = StringCol(dbName="removal_comment", default=None)
 
     @classmethod
@@ -286,7 +289,8 @@ class SecureBinaryPackagePublishingHistory(SQLBase, ArchiveSafePublisherBase):
     embargolifted = UtcDateTimeCol(default=None)
     archive = ForeignKey(dbName="archive", foreignKey="Archive", notNull=True)
     removed_by = ForeignKey(
-        dbName="removed_by", foreignKey="Person", default=None)
+        dbName="removed_by", foreignKey="Person",
+        validator=public_person_validator, default=None)
     removal_comment = StringCol(dbName="removal_comment", default=None)
 
     @classmethod
@@ -414,7 +418,8 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
     embargo = BoolCol(dbName='embargo', default=False, notNull=True)
     embargolifted = UtcDateTimeCol(default=None)
     removed_by = ForeignKey(
-        dbName="removed_by", foreignKey="Person", default=None)
+        dbName="removed_by", foreignKey="Person",
+        validator=public_person_validator, default=None)
     removal_comment = StringCol(dbName="removal_comment", default=None)
 
     def getPublishedBinaries(self):
@@ -445,8 +450,12 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
         clauseTables = ['Build', 'BinaryPackageRelease', 'BinaryPackageName',
                         'DistroArchSeries']
 
+        preJoins = ['binarypackagerelease',
+                    'binarypackagerelease.binarypackagename']
+
         return BinaryPackagePublishingHistory.select(
-            clause, orderBy=orderBy, clauseTables=clauseTables)
+            clause, orderBy=orderBy, clauseTables=clauseTables,
+            prejoins=preJoins)
 
     @property
     def secure_record(self):
@@ -456,8 +465,58 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
     @property
     def files(self):
         """See `IPublishing`."""
+        preJoins = ['libraryfilealias', 'libraryfilealias.content']
+
         return SourcePackageFilePublishing.selectBy(
-            sourcepackagepublishing=self)
+            sourcepackagepublishing=self).prejoin(preJoins)
+
+    def getSourceAndBinaryLibraryFiles(self):
+        """See `IPublishing`."""
+        sourcesClause = """
+            LibraryFileAlias.id = SourcePackageReleaseFile.libraryfile AND
+            SourcePackageReleaseFile.sourcepackagerelease = %s
+            """ % sqlvalues(self.sourcepackagerelease)
+        sourcesClauseTables = ['SourcePackageReleaseFile']
+
+        binariesClause = """
+            LibraryFileAlias.id = BinaryPackageFile.libraryfile AND
+            BinaryPackageFile.binarypackagerelease =
+                BinaryPackageRelease.id AND
+            BinaryPackageRelease.build=Build.id AND
+            Build.sourcepackagerelease=%s AND
+            DistroArchSeries.distroseries=%s AND
+
+            BinaryPackagePublishingHistory.binarypackagerelease=
+                BinaryPackageRelease.id AND
+            BinaryPackagePublishingHistory.distroarchseries=
+                DistroArchSeries.id AND
+            BinaryPackagePublishingHistory.archive=%s AND
+            BinaryPackagePublishingHistory.pocket=%s AND
+            BinaryPackagePublishingHistory.status=%s
+            """ % sqlvalues(
+                    self.sourcepackagerelease,
+                    self.distroseries,
+                    self.archive,
+                    self.pocket,
+                    PackagePublishingStatus.PUBLISHED)
+        binariesClauseTables = [
+            'BinaryPackageFile', 'BinaryPackagePublishingHistory',
+            'BinaryPackageRelease', 'Build', 'DistroArchSeries']
+
+        preJoins = ['content']
+
+        sourcesQuery = LibraryFileAlias.select(
+            sourcesClause, clauseTables=sourcesClauseTables,
+            prejoins=preJoins)
+        binariesQuery = LibraryFileAlias.select(
+            binariesClause, clauseTables=binariesClauseTables,
+            prejoins=preJoins)
+
+        # I would like to use UNION here to merge the two result sets, but
+        # that silently drops the preJoins.
+        results = list(sourcesQuery)
+        results.extend(list(binariesQuery))
+        return results
 
     @property
     def meta_sourcepackage(self):
@@ -496,11 +555,6 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
         name = release.sourcepackagename.name
         return "%s %s in %s" % (name, release.version,
                                 self.distroseries.name)
-
-    @property
-    def suite_name(self):
-        """See `IPublishing`."""
-        return self.distroseries.suite_name(self.pocket)
 
     def buildIndexStanzaFields(self):
         """See `IPublishing`."""
@@ -614,7 +668,8 @@ class BinaryPackagePublishingHistory(SQLBase, ArchivePublisherBase):
     embargo = BoolCol(dbName='embargo', default=False, notNull=True)
     embargolifted = UtcDateTimeCol(default=None)
     removed_by = ForeignKey(
-        dbName="removed_by", foreignKey="Person", default=None)
+        dbName="removed_by", foreignKey="Person",
+        validator=public_person_validator, default=None)
     removal_comment = StringCol(dbName="removal_comment", default=None)
 
     @property
@@ -636,8 +691,10 @@ class BinaryPackagePublishingHistory(SQLBase, ArchivePublisherBase):
     @property
     def files(self):
         """See `IPublishing`."""
+        preJoins = ['libraryfilealias', 'libraryfilealias.content']
+
         return BinaryPackageFilePublishing.selectBy(
-            binarypackagepublishing=self)
+            binarypackagepublishing=self).prejoin(preJoins)
 
     @property
     def displayname(self):

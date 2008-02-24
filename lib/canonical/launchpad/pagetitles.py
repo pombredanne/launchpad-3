@@ -70,6 +70,17 @@ class ContextDisplayName(SubstitutionHelper):
         return self.text % context.displayname
 
 
+class FilteredTranslationsTitle(SubstitutionHelper):
+    """Return the formatted string with context's title and view's person."""
+    def __call__(self, context, view):
+        if view.person is not None:
+            person = view.person.displayname
+        else:
+            person = 'unknown'
+        return self.text % {'title' : context.title,
+                            'person' : person }
+
+
 class ContextId(SubstitutionHelper):
     """Return the formatted string with context's id."""
     def __call__(self, context, view):
@@ -173,7 +184,19 @@ def branch_listing_cross_product(context, view):
 branch_landing_candidates = ContextDisplayName(smartquote(
     'Landing candidates for "%s"'))
 
-branchmergeproposal_edit = 'Edit branch merge proposal'
+branchmergeproposal_delete = 'Delete proposal to merge branch'
+
+branchmergeproposal_edit = 'Edit proposal to merge branch'
+
+branchmergeproposal_index = 'Proposal to merge branch'
+
+branchmergeproposal_request_review = ViewLabel()
+
+branchmergeproposal_resubmit = ViewLabel()
+
+branchmergeproposal_review = ViewLabel()
+
+branchmergeproposal_work_in_progress = ViewLabel()
 
 branch_register_merge_proposal = 'Propose branch for merging'
 
@@ -347,19 +370,19 @@ build_retry = ContextTitle('Retry %s')
 
 build_rescore = ContextTitle('Rescore %s')
 
+builder_admin = ContextTitle('Administer %s builder')
+
+builder_cancel = ContextTitle('Cancel job for %s')
+
+builder_edit = ContextTitle('Edit build machine %s')
+
+builder_history = ContextTitle('Build history for %s')
+
+builder_index = ContextTitle('Build machine %s')
+
+builder_mode = ContextTitle('Change mode for %s')
+
 builders_index = 'Launchpad build farm'
-
-builder_edit = ContextTitle(smartquote('Edit build machine "%s"'))
-
-builder_index = ContextTitle(smartquote('Build machine "%s"'))
-
-builder_cancel = ContextTitle(smartquote('Cancel job for "%s"'))
-
-builder_mode = ContextTitle(smartquote('Change mode for "%s"'))
-
-builder_admin = ContextTitle(smartquote('Administer "%s" builder'))
-
-builder_history = ContextTitle(smartquote('Build History for "%s"'))
 
 calendar_index = ContextTitle('%s')
 
@@ -429,7 +452,7 @@ distribution_add = 'Register a new distribution'
 
 distribution_allpackages = ContextTitle('All packages in %s')
 
-distribution_bugcontact = ContextTitle('Change bug contact for %s')
+distribution_upstream_bug_report = ContextTitle('Upstream Bug Report for %s')
 
 distribution_change_mirror_admin = 'Change mirror administrator'
 
@@ -474,8 +497,8 @@ distributionsourcepackage_index = ContextTitle('%s')
 distributionsourcepackage_publishinghistory = ContextTitle(
     'Publishing history of %s')
 
-distributionsourcepackage_manage_bugcontacts = ContextTitle(
-    'Bug contacts for %s')
+structural_subscriptions_manage = ContextTitle(
+    'Bug subscriptions for %s')
 
 distributionsourcepackagerelease_index = ContextTitle('%s')
 
@@ -532,6 +555,8 @@ distroserieslanguage_index = ContextTitle('%s')
 distroseriessourcepackagerelease_index = ContextTitle('%s')
 
 distros_index = 'Distributions registered in Launchpad'
+
+edit_bugcontact = ContextTitle('Edit bug contact for %s')
 
 errorservice_config = 'Configure error log'
 
@@ -688,6 +713,8 @@ logintoken_validatesignonlygpg = 'Confirm sign-only OpenPGP key'
 
 logintoken_validateteamemail = 'Confirm e-mail address'
 
+mailinglists_review = 'Pending mailing lists requests'
+
 # main_template has the code to insert one of these titles.
 
 malone_about = 'About Launchpad Bugs'
@@ -830,7 +857,7 @@ def person_branches(context, view):
     """Return the view's heading."""
     return view.heading
 
-person_branch_add = ContextDisplayName('Register a new branch for %s')
+person_branch_add = 'Register a branch'
 
 person_changepassword = 'Change your password'
 
@@ -906,6 +933,9 @@ pofile_edit = ContextTitle(smartquote('Edit "%s" details'))
 
 pofile_export = ContextTitle(smartquote('Download translation for "%s"'))
 
+pofile_filter = FilteredTranslationsTitle(
+    smartquote('Translations by %(person)s in "%(title)s"'))
+
 pofile_index = ContextTitle(smartquote('Translation overview for "%s"'))
 
 def pofile_translate(context, view):
@@ -950,8 +980,6 @@ potemplate_export = ContextTitle(smartquote('Download translations for "%s"'))
 product_add = 'Register a project in Launchpad'
 
 product_admin = ContextTitle('Administer %s in Launchpad')
-
-product_bugcontact = ContextTitle('Edit bug contact for %s')
 
 product_bugs = ContextDisplayName('Bugs in %s')
 
@@ -1076,7 +1104,7 @@ rosetta_index = 'Launchpad Translations'
 
 rosetta_products = 'Projects with Translations in Launchpad'
 
-product_branch_add = ContextDisplayName('Register a new %s branch')
+product_branch_add = 'Register a branch'
 
 def productseries_edit(context, view):
     """Return the page title for changing a product series details."""
@@ -1319,6 +1347,8 @@ standardshipitrequest_new = 'Create a new standard option'
 standardshipitrequest_edit = 'Edit standard option'
 
 team_addmember = ContextBrowsername('Add members to %s')
+
+team_add_my_teams = 'Propose/add one of your teams to another one'
 
 team_contactaddress = ContextDisplayName('%s contact address')
 

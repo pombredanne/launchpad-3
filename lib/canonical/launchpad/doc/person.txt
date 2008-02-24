@@ -150,6 +150,42 @@ To check if a person is an Ubuntero, use IPerson.is_ubuntero:
     >>> foobar.is_ubuntero
     True
 
+=== Looking Up Users by OpenID Identifer ===
+
+Each Launchpad user is assigned an unchanging OpenID identity URL.
+The last component of this URL is specific to the user, and can be
+used to look up the user:
+
+    >>> person = personset.getByOpenIdIdentifier('name12_oid')
+    >>> print person.displayname
+    Sample Person
+
+If we look up a string not associated with any user, None is returned:
+
+    >>> print personset.getByOpenIdIdentifier('no-such-identifier')
+    None
+
+While an identifier may be assigned to a team, it will not be
+returned:
+
+    >>> team = personset.getByName('simple-team')
+    >>> team.isTeam()
+    True
+    >>> team.openid_identifier
+    u'simple-team_oid'
+    >>> print personset.getByOpenIdIdentifier('simple-team_oid')
+    None
+
+Accounts that have not been validated are not returned either:
+
+    >>> person = personset.getByName('matsubara')
+    >>> person.is_valid_person
+    False
+    >>> person.openid_identifier
+    u'matsubara_oid'
+    >>> print personset.getByOpenIdIdentifier('matsubara_oid')
+    None
+
 == Teams ==
 
 As we said above, the Person class is overloaded to represent teams so
@@ -382,6 +418,50 @@ each direct member of that team.
     >>> sorted(contactEmailAddresses(vcs_imports))
     ['david.allouche@canonical.com', 'foo.bar@canonical.com',
      'robertc@robertcollins.net']
+
+
+=== Team Visibility ===
+
+A Team can have its visibility attribute set to PersonVisibility.PUBLIC
+or PersonVisibility.PRIVATE_MEMBERSHIP. To prevent leaking of
+private membership information, private-membership teams are only
+allowed to be connected with a few different database objects. This is
+enforced in the model, but there are also checks in the form handling to
+provide clearer error messages. 
+
+The PublicPersonChoice for interface classes and the public_person_validator
+for SQLObject classes only allow public teams to be assigned to the
+specified field.
+
+The SQLObject validators will raise an InvalidField exception if an 
+invalid team is passed to the constructor or is used to set one of 
+the attributes.
+
+myteam is a private-membership team, so public_person_validator
+will reject it for the BugSubscription.person and 
+BugSubscription.subscribed_by attributes.
+
+    >>> login('foo.bar@canonical.com')
+    >>> from canonical.launchpad.interfaces import (
+    ...     IBugSet, IPersonSet, TeamMembershipStatus)
+    >>> from canonical.launchpad.database import BugSubscription
+    >>> person_set = getUtility(IPersonSet)
+    >>> bug_set = getUtility(IBugSet)
+    >>> myteam = person_set.getByName('myteam')
+    >>> guadamen = person_set.getByName('guadamen')
+    >>> bug = bug_set.get(1)
+    >>> BugSubscription(bug=bug, person=myteam, subscribed_by=guadamen)
+    Traceback (most recent call last):
+    ...
+    InvalidField: Cannot link person
+    (name=myteam, visibility=PRIVATE_MEMBERSHIP) to <BugSubscription...
+    >>> bug_subscription = BugSubscription(bug=bug, person=guadamen,
+    ...                                    subscribed_by=guadamen)
+    >>> bug_subscription.person = myteam
+    Traceback (most recent call last):
+    ...
+    InvalidField: Cannot link person
+    (name=myteam, visibility=PRIVATE_MEMBERSHIP) to <BugSubscription...
 
 
 == Deactivating user accounts ==

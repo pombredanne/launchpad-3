@@ -11,15 +11,19 @@
                   distro get_distroseries_packages subscribers currentrelease
                   releases publishing_history binary_package_names
                   current_publishing_records bug_reporting_guidelines
-                  bugcontacts __getitem__ getVersion bugtasks __eq__ __ne__
-                  searchTasks isBugContact open_bugtasks closed_bugtasks
+                  __getitem__ getVersion bugtasks __eq__ __ne__
+                  searchTasks open_bugtasks closed_bugtasks
                   critical_bugtasks inprogress_bugtasks unassigned_bugtasks
                   new_bugtasks all_bugtasks getUsedBugTags
                   getUsedBugTagsWithOpenCounts bugtargetdisplayname
-                  bugtargetname getMostCommonBugs getBugCounts" />
+                  bugtargetname getMostCommonBugs getBugCounts
+                  bug_subscriptions getSubscriptions
+                  getSubscription parent_subscription_target
+                  getBugNotificationsRecipients" />
     <require
       permission="launchpad.AnyPerson"
-      attributes="addBugContact removeBugContact subscribe createBug" />
+      attributes="addSubscription addBugSubscription
+                  removeBugSubscription createBug" />
 
     <!-- IQuestionTarget -->
     <allow attributes="getQuestion searchQuestions findSimilarQuestions
@@ -76,14 +80,21 @@
              DistributionSourcePackageOverviewMenu
              DistributionSourcePackageBugsMenu " />
 
-  <browser:page
+  <browser:pages
     for="canonical.launchpad.interfaces.IDistributionSourcePackage"
-    name="+index"
-    permission="zope.Public"
-    facet="overview"
     class="canonical.launchpad.browser.DistributionSourcePackageView"
-    template="../templates/distributionsourcepackage-index.pt" />
-  
+    permission="zope.Public">
+    <browser:page
+      name="+index"
+      facet="overview"
+      template="../templates/distributionsourcepackage-index.pt" />
+    <browser:page
+      name="+portlet-publishing-details"
+      facet="overview"
+      template="../templates/distributionsourcepackage-portlet-pub-details.pt"
+      />
+  </browser:pages>
+
   <browser:pages
     for="canonical.launchpad.interfaces.IDistributionSourcePackage"
     class="canonical.launchpad.webapp.publisher.LaunchpadView"
@@ -100,26 +111,9 @@
       template="../templates/distributionsourcepackage-portlet-details.pt"
       />
     <browser:page
-      name="+portlet-publishing-details"
-      facet="overview"
-      template="../templates/distributionsourcepackage-portlet-pub-details.pt"
-      />
-    <browser:page
-      name="+portlet-bugcontacts"
-      facet="bugs"
-      template="../templates/distributionsourcepackage-portlet-bugcontacts.pt" />
-    <browser:page
       name="+portlet-releases"
       template="../templates/distributionsourcepackage-portlet-releases.pt"
       />
   </browser:pages>
-
-  <browser:page
-    for="canonical.launchpad.interfaces.IDistributionSourcePackage"
-    name="+subscribe"
-    permission="launchpad.AnyPerson"
-    facet="bugs"
-    class="canonical.launchpad.browser.distributionsourcepackage.DistributionSourcePackageBugContactsView"
-    template="../templates/distributionsourcepackage-manage-bugcontacts.pt" />
 
 </configure>

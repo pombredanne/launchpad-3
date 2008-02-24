@@ -20,10 +20,12 @@ from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import SQLBase, sqlvalues
+from canonical.launchpad import _
 from canonical.launchpad.interfaces import (
     CannotChangeSubscription, CannotSubscribe, CannotUnsubscribe,
     EmailAddressStatus, IEmailAddressSet, ILaunchpadCelebrities, IMailingList,
     IMailingListSet, IMailingListSubscription, MailingListStatus)
+from canonical.launchpad.validators.person import public_person_validator
 
 
 class MailingList(SQLBase):
@@ -38,14 +40,19 @@ class MailingList(SQLBase):
 
     implements(IMailingList)
 
-    team = ForeignKey(dbName='team', foreignKey='Person')
+    team = ForeignKey(
+        dbName='team', foreignKey='Person',
+        validator=public_person_validator)
 
-    registrant = ForeignKey(dbName='registrant', foreignKey='Person')
+    registrant = ForeignKey(
+        dbName='registrant', foreignKey='Person',
+        validator=public_person_validator)
 
     date_registered = UtcDateTimeCol(notNull=True, default=None)
 
-    reviewer = ForeignKey(dbName='reviewer', foreignKey='Person',
-                          default=None)
+    reviewer = ForeignKey(
+        dbName='reviewer', foreignKey='Person',
+        validator=public_person_validator, default=None)
 
     date_reviewed = UtcDateTimeCol(notNull=True, default=None)
 
@@ -326,6 +333,8 @@ class MailingList(SQLBase):
 class MailingListSet:
     implements(IMailingListSet)
 
+    title = _('Team mailing lists')
+
     def new(self, team, registrant=None):
         """See `IMailingListSet`."""
         assert team.isTeam(), (
@@ -393,7 +402,9 @@ class MailingListSubscription(SQLBase):
 
     implements(IMailingListSubscription)
 
-    person = ForeignKey(dbName='person', foreignKey='Person')
+    person = ForeignKey(
+        dbName='person', foreignKey='Person',
+        validator=public_person_validator)
 
     mailing_list = ForeignKey(dbName='mailing_list', foreignKey='MailingList')
 

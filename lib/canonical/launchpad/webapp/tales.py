@@ -93,11 +93,17 @@ class MenuAPI:
             self._request = get_current_browser_request()
             self._selectedfacetname = None
 
-        # Populate all dictionaries for retrieval of individual Links of any
-        # given facet (e.g. context/menu:bugs/subscribe).
+    def __getattr__(self, attribute_name):
+        """Return a dictionary for retrieval of individual Links.
+
+        It's used with expressions like context/menu:bugs/subscribe.
+        """
         for facet_entry in self.facet():
-            setattr(
-                self, facet_entry.name, self._getFacetLinks(facet_entry.name))
+            if attribute_name == facet_entry.name:
+                menu = self._getFacetLinks(facet_entry.name)
+                object.__setattr__(self, facet_entry.name, menu)
+                return menu
+        raise AttributeError(attribute_name)
 
     def _getFacetLinks(self, facet_name):
         """Return a dictionary with all links available in the given facet.
@@ -685,6 +691,7 @@ class KarmaCategoryImageDisplayAPI(ObjectImageDisplayAPI):
 
     icons_for_karma_categories = {
         'bugs': '/@@/bug',
+        'code': '/@@/branch',
         'translations': '/@@/translation',
         'specs': '/@@/blueprint',
         'answers': '/@@/question'}
@@ -794,7 +801,7 @@ class PersonFormatterAPI(ObjectFormatterExtendedAPI):
             url = '%s/%s' % (url, extra_path)
         image_html = ObjectImageDisplayAPI(person).icon(rootsite=rootsite)
         return '<a href="%s">%s&nbsp;%s</a>' % (
-            url, image_html, person.browsername)
+            url, image_html, cgi.escape(person.browsername))
 
 
 class PillarFormatterAPI(ObjectFormatterExtendedAPI):
@@ -885,7 +892,8 @@ class BugFormatterAPI(ObjectFormatterExtendedAPI):
         if extra_path:
             url = '%s/%s' % (url, extra_path)
         return ('<a href="%s"><img src="/@@/bug" alt=""/>'
-                '&nbsp;Bug #%d: %s</a>' % (url, bug.id, bug.title))
+                '&nbsp;Bug #%d: %s</a>' % (
+                    url, bug.id, cgi.escape(bug.title)))
 
 
 class BugTaskFormatterAPI(ObjectFormatterExtendedAPI):
@@ -901,15 +909,29 @@ class BugTaskFormatterAPI(ObjectFormatterExtendedAPI):
             url = '%s/%s' % (url, extra_path)
         image_html = BugTaskImageDisplayAPI(bugtask).icon()
         return '<a href="%s">%s&nbsp;Bug #%d: %s</a>' % (
-            url, image_html, bugtask.bug.id, bugtask.bug.title)
+            url, image_html, bugtask.bug.id, cgi.escape(bugtask.bug.title))
 
 
 class NumberFormatterAPI:
     """Adapter for converting numbers to formatted strings."""
 
+    implements(ITraversable)
+
     def __init__(self, number):
-        assert not float(number) < 0, "Expected a non-negative number."
         self._number = number
+
+    def traverse(self, name, furtherPath):
+        if name == 'float':
+            if len(furtherPath) != 1:
+                raise TraversalError(
+                    "fmt:float requires a single decimal argument")
+            # coerce the argument to float to ensure it's safe
+            format = furtherPath.pop()
+            return self.float(float(format))
+        elif name == 'bytes':
+            return self.bytes()
+        else:
+            raise TraversalError(name)
 
     def bytes(self):
         """Render number as byte contractions according to IEC60027-2."""
@@ -917,6 +939,7 @@ class NumberFormatterAPI:
         # /Binary_prefixes#Specific_units_of_IEC_60027-2_A.2
         # Note that there is a zope.app.size.byteDisplay() function, but
         # it really limited and doesn't work well enough for us here.
+        assert not float(self._number) < 0, "Expected a non-negative number."
         n = int(self._number)
         if n == 1:
             # Handle the singular case.
@@ -931,6 +954,17 @@ class NumberFormatterAPI:
             # If this is less than 1 KiB, no need for rounding.
             return "%s bytes" % n
         return "%.1f %s" % (n / 1024.0 ** exponent, suffixes[exponent - 1])
+
+    def float(self, format):
+        """Use like tal:content="context/foo/fmt:float/.2".
+
+        Will return a string formatted to the specification provided in
+        the manner Python "%f" formatter works. See
+        http://docs.python.org/lib/typesseq-strings.html for details and
+        doc.displaying-numbers for various examples.
+        """
+        value = "%" + str(format) + "f"
+        return value % float(self._number)
 
 
 class DateTimeFormatterAPI:
@@ -1899,6 +1933,7 @@ class PageMacroDispatcher:
     """Selects a macro, while storing information about page layout.
 
         view/macro:page
+        view/macro:page/onecolumn
         view/macro:page/applicationhome
         view/macro:page/pillarindex
         view/macro:page/freeform
@@ -1996,6 +2031,14 @@ class PageMacroDispatcher:
                 applicationtabs=True,
                 globalsearch=True,
                 portlets=True,
+                structuralheaderobject=True),
+        'onecolumn':
+            # XXX 20080130 mpt: Should eventually become the new 'default'.
+            LayoutElements(
+                applicationborder=True,
+                applicationtabs=True,
+                globalsearch=True,
+                portlets=False,
                 structuralheaderobject=True),
         'applicationhome':
             LayoutElements(

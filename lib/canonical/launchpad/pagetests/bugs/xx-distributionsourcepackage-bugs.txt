@@ -8,7 +8,6 @@ The portlet itself is demonstrated in
 pagtests/soyuz/xx-portlet-publishing-details.  Here, we just show that it
 is present on the page.
 
-    >>> from canonical.launchpad.ftests.test_pages import find_portlet
     >>> anon_browser.open(
     ...     'http://bugs.launchpad.dev/ubuntu/+source/alsa-utils/')
     >>> portlet = find_portlet(anon_browser.contents,

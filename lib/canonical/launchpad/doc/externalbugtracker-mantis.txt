@@ -80,7 +80,10 @@ Collect the Example.com watches:
 
 And have our special Mantis instance process them:
 
-    >>> example_ext_bug_tracker.updateBugWatches(example_bug_tracker.watches)
+    >>> from canonical.launchpad.scripts.checkwatches import BugWatchUpdater
+    >>> bug_watch_updater = BugWatchUpdater(txn)
+    >>> bug_watch_updater.updateBugWatches(
+    ...     example_ext_bug_tracker, example_bug_tracker.watches)
     INFO:...:Updating 1 watches on http://bugs.some.where
 
     >>> for bug_watch in example_bug_tracker.watches:
@@ -127,7 +130,8 @@ updateBugWatches() issues only one request to update all watches:
     >>> getid = attrgetter('id')
 
     >>> example_ext_bug_tracker.trace_calls = True
-    >>> example_ext_bug_tracker.updateBugWatches(
+    >>> bug_watch_updater.updateBugWatches(
+    ...     example_ext_bug_tracker,
     ...     sorted(example_bug_tracker.watches, key=getid))
     INFO:...:Updating 7 watches on http://bugs.some.where
     CALLED _getPage(u'view.php?id=1550')
@@ -188,7 +192,8 @@ updated:
     >>> now = datetime.now(pytz.timezone('UTC'))
     >>> bug_watch.lastchanged = now - timedelta(weeks=2)
     >>> old_last_changed = bug_watch.lastchanged
-    >>> example_ext_bug_tracker.updateBugWatches([bug_watch])
+    >>> bug_watch_updater.updateBugWatches(
+    ...     example_ext_bug_tracker, [bug_watch])
     INFO:...:Updating 1 watches on http://bugs.some.where
 
     >>> bug_watch.lastchanged == old_last_changed

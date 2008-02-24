@@ -25,7 +25,7 @@ from bzrlib.revision import NULL_REVISION
 from canonical.config import config
 from canonical.launchpad.interfaces import (
     BranchSubscriptionNotificationLevel, BugBranchStatus,
-    ILaunchpadCelebrities, IBranchRevisionSet, IBugBranchSet, IBugSet,
+    IBranchRevisionSet, IBugBranchSet, IBugSet,
     IRevisionSet, NotFoundError)
 from canonical.launchpad.mailnotification import (
     send_branch_revision_notifications)
@@ -116,7 +116,6 @@ class BzrSync:
     """
     def __init__(self, trans_manager, branch, logger=None):
         self.trans_manager = trans_manager
-        self._admin = getUtility(ILaunchpadCelebrities).admin
         self.email_from = config.noreply_from_address
 
         if logger is None:
@@ -250,6 +249,7 @@ class BzrSync:
         # of the email as possible, but we don't want to send them until
         # the information has been committed.
         self.initializeEmailQueue()
+        self.karma_events = {}
         self.logger.info("Scanning branch: %s", self.db_branch.unique_name)
         self.logger.info("    from %s", bzr_branch.base)
         # Get the history and ancestry from the branch first, to fail early
@@ -445,8 +445,7 @@ class BzrSync:
                 revision_id=revision_id,
                 log_body=bzr_revision.message,
                 revision_date=revision_date,
-                revision_author=bzr_revision.committer,
-                owner=self._admin,
+                revision_author=bzr_revision.get_apparent_author(),
                 parent_ids=bzr_revision.parent_ids,
                 properties=bzr_revision.properties)
 

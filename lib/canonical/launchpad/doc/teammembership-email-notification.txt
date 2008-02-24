@@ -79,6 +79,7 @@ Now Robert Collins proposes himself as a member of the Ubuntu Team. This
 generates a notification email only to Ubuntu Team administrators.
 
     >>> lifeless = personset.getByName('lifeless')
+    >>> login(lifeless.preferredemail.email)
     >>> lifeless.join(ubuntu_team)
     >>> membership = membershipset.getByPersonAndTeam(lifeless, ubuntu_team)
     >>> membership.status.title
@@ -124,6 +125,7 @@ and each of the team's admins.
     The membership status of Robert Collins (lifeless) in the team Ubuntu
     Team (ubuntu-team) was changed by Mark Shuttleworth (sabdfl) from
     Proposed to Declined.
+    <http://launchpad.dev/~ubuntu-team>
     ----------------------------------------
     From: Ubuntu Team <noreply@launchpad.net>
     To: robertc@robertcollins.net
@@ -131,6 +133,7 @@ and each of the team's admins.
     <BLANKLINE>
     The status of your membership in the team Ubuntu Team (ubuntu-team) was
     changed by Mark Shuttleworth (sabdfl) from Proposed to Declined.
+    <http://launchpad.dev/~ubuntu-team>
     ----------------------------------------
 
 The same goes for approving a proposed member.
@@ -160,6 +163,7 @@ The same goes for approving a proposed member.
     The membership status of Dafydd Harries (daf) in the team Ubuntu Team
     (ubuntu-team) was changed by Mark Shuttleworth (sabdfl) from Proposed to
     Approved.
+    <http://launchpad.dev/~ubuntu-team>
     <BLANKLINE>
     Mark Shuttleworth said:
      This is a nice guy; I like him
@@ -170,6 +174,7 @@ The same goes for approving a proposed member.
     <BLANKLINE>
     The status of your membership in the team Ubuntu Team (ubuntu-team) was
     changed by Mark Shuttleworth (sabdfl) from Proposed to Approved.
+    <http://launchpad.dev/~ubuntu-team>
     <BLANKLINE>
     Mark Shuttleworth said:
      This is a nice guy; I like him
@@ -191,6 +196,7 @@ The same for deactivating a membership.
     The membership status of Dafydd Harries (daf) in the team Ubuntu Team
     (ubuntu-team) was changed by Mark Shuttleworth (sabdfl) from Approved to
     Deactivated.
+    <http://launchpad.dev/~ubuntu-team>
     ----------------------------------------
     From: Ubuntu Team <noreply@launchpad.net>
     To: daf@canonical.com
@@ -198,8 +204,35 @@ The same for deactivating a membership.
     <BLANKLINE>
     The status of your membership in the team Ubuntu Team (ubuntu-team) was
     changed by Mark Shuttleworth (sabdfl) from Approved to Deactivated.
+    <http://launchpad.dev/~ubuntu-team>
     ----------------------------------------
 
+Team admins can propose their teams using the join() method as well, but in
+that case we'll use the requester's (the person proposing the team as the
+other's member) email address in the 'Reply-To' header of the message sent.
+
+    >>> admins = personset.getByName('admins')
+    >>> admins.join(ubuntu_team, requester=sabdfl)
+    >>> transaction.commit()
+    >>> len(stub.test_emails)
+    4 
+    >>> print_distinct_messages_and_recipients(include_reply_to=True)
+    From: Ubuntu Team <noreply@launchpad.net>
+    To: colin.watson@ubuntulinux.com, foo.bar@canonical.com,
+        jeff.waugh@ubuntulinux.com, mark@hbd.com
+    Reply-To: mark@hbd.com
+    Subject: admins wants to join
+    <BLANKLINE>
+    Mark Shuttleworth (sabdfl) wants to make Launchpad Administrators
+    (admins) a member of Ubuntu Team (ubuntu-team), but this is a moderated
+    team, so that membership has to be approved.  You can approve, decline
+    or leave it as proposed by following the link below.
+    <BLANKLINE>
+        http://launchpad.dev/~ubuntu-team/+member/admins
+    <BLANKLINE>
+    Regards,
+    The Launchpad team
+    ----------------------------------------
 
 == Adding new members ==
 
@@ -216,10 +249,11 @@ member.
     >>> print_distinct_messages_and_recipients()
     From: Ubuntu Team <noreply@launchpad.net>
     To: marilize@hbd.com
-    Subject: marilize joined ubuntu-team
+    Subject: You have been added to ubuntu-team
     <BLANKLINE>
     Celso Providelo (cprov) added you as a member of Ubuntu Team (ubuntu-
     team).
+    <http://launchpad.dev/~ubuntu-team>
     <BLANKLINE>
     Regards,
     The Launchpad team
@@ -259,6 +293,7 @@ only be activated if they accept the invitation.
     Celso Providelo (cprov) has invited Mirror Administrators (ubuntu-
     mirror-admins) (which you are an administrator of) to join Ubuntu Team
     (ubuntu-team).
+    <http://launchpad.dev/~ubuntu-team>
     <BLANKLINE>
     You can accept or decline this invitation on the following page:
     <BLANKLINE>
@@ -287,6 +322,7 @@ team which just became a member and to the admins of the hosting team.
     Mark Shuttleworth (sabdfl) has accepted the invitation to make Mirror
     Administrators (ubuntu-mirror-admins) a member of Ubuntu Team (ubuntu-
     team).
+    <http://launchpad.dev/~ubuntu-team>
     <BLANKLINE>
     Mark Shuttleworth said:
      Of course I want to be part of ubuntu!
@@ -318,6 +354,7 @@ Similarly, a notification is sent if the invitation is declined.
     <BLANKLINE>
     Mark Shuttleworth (sabdfl) has declined the invitation to make Landscape
     Developers (landscape-developers) a member of Ubuntu Team (ubuntu-team).
+    <http://launchpad.dev/~ubuntu-team>
     <BLANKLINE>
     Mark Shuttleworth said:
      Landscape has nothing to do with ubuntu, unfortunately.
@@ -339,6 +376,7 @@ passing force_team_add=True to the addMember() method.
     <BLANKLINE>
     Celso Providelo (cprov) added Launchpad Developers (launchpad) (which
     you are a member of) as a member of Ubuntu Team (ubuntu-team).
+    <http://launchpad.dev/~ubuntu-team>
     <BLANKLINE>
     Regards,
     The Launchpad team
@@ -387,10 +425,10 @@ the other team admins.
     >>> print_distinct_messages_and_recipients()
     From: Ubuntu Team <noreply@launchpad.net>
     To: colin.watson@ubuntulinux.com
-    Subject: Team membership about to expire
+    Subject: Your membership in ubuntu-team is about to expire
     <BLANKLINE>
     On ..., nine days from now, your membership
-    of the Ubuntu Team (ubuntu-team) Launchpad team
+    in the Ubuntu Team (ubuntu-team) Launchpad team
     is due to expire.
     <http://launchpad.dev/~ubuntu-team>
     <BLANKLINE>
@@ -424,7 +462,7 @@ ubuntu-team's admins.
     >>> print_distinct_messages_and_recipients()
     From: Ubuntu Team <noreply@launchpad.net>
     To: beta-admin@launchpad.net
-    Subject: Team membership about to expire
+    Subject: launchpad-beta-testers will expire soon from ubuntu-team
     <BLANKLINE>
     On ..., nine days from now, the membership
     of Launchpad Beta Testers (launchpad-beta-testers) (which you are
@@ -458,10 +496,10 @@ renew his own membership.
     >>> print_distinct_messages_and_recipients()
     From: Ubuntu Team <noreply@launchpad.net>
     To: colin.watson@ubuntulinux.com
-    Subject: Team membership about to expire
+    Subject: Your membership in ubuntu-team is about to expire
     <BLANKLINE>
     On ..., nine days from now, your membership
-    of the Ubuntu Team (ubuntu-team) Launchpad team
+    in the Ubuntu Team (ubuntu-team) Launchpad team
     is due to expire.
     <http://launchpad.dev/~ubuntu-team>
     <BLANKLINE>
@@ -480,7 +518,7 @@ renew his own membership.
     >>> print_distinct_messages_and_recipients()
     From: Ubuntu Team <noreply@launchpad.net>
     To: beta-admin@launchpad.net
-    Subject: Team membership about to expire
+    Subject: launchpad-beta-testers will expire soon from ubuntu-team
     <BLANKLINE>
     On ..., nine days from now, the membership
     of Launchpad Beta Testers (launchpad-beta-testers) (which you are
@@ -516,10 +554,10 @@ where he can extend it.
     >>> print_distinct_messages_and_recipients()
     From: Landscape Developers <noreply@launchpad.net>
     To: test@canonical.com
-    Subject: Team membership about to expire
+    Subject: Your membership in landscape-developers is about to expire
     <BLANKLINE>
     On ..., nine days from now, your membership
-    of the Landscape Developers (landscape-developers) Launchpad team
+    in the Landscape Developers (landscape-developers) Launchpad team
     is due to expire.
     <http://launchpad.dev/~landscape-developers>
     <BLANKLINE>
@@ -581,26 +619,29 @@ is automatically renewed.
     <BLANKLINE>
     The membership of Jeff Waugh (jdub) in the Ubuntu Team (ubuntu-team)
     team has been automatically renewed until ...
+    <http://launchpad.dev/~ubuntu-team>
     <BLANKLINE>
     Regards,
     The Launchpad team
     ----------------------------------------
     From: Launchpad Administrators <noreply@launchpad.net>
     To: foo.bar@canonical.com, guilherme.salgado@canonical.com
-    Subject: membership of sabdfl expired
+    Subject: sabdfl expired from team
     <BLANKLINE>
     The membership of Mark Shuttleworth (sabdfl) in the Launchpad
     Administrators (admins) team has expired.
+    <http://launchpad.dev/~admins>
     <BLANKLINE>
     Regards,
     The Launchpad team
     ----------------------------------------
     From: Launchpad Administrators <noreply@launchpad.net>
     To: mark@hbd.com
-    Subject: membership of sabdfl expired
+    Subject: sabdfl expired from team
     <BLANKLINE>
     Your membership in the Launchpad Administrators (admins) team has
     expired.
+    <http://launchpad.dev/~admins>
     <BLANKLINE>
     Regards,
     The Launchpad team
@@ -611,6 +652,7 @@ is automatically renewed.
     <BLANKLINE>
     Your membership in the Ubuntu Team (ubuntu-team) team has been
     automatically renewed until ...
+    <http://launchpad.dev/~ubuntu-team>
     <BLANKLINE>
     Regards,
     The Launchpad team
@@ -655,6 +697,7 @@ sent to all team admins.
     <BLANKLINE>
     Karl Tilbury (karl) renewed their own membership in the Mirror
     Administrators (ubuntu-mirror-admins) team until ...
+    <http://launchpad.dev/~ubuntu-mirror-admins>
     <BLANKLINE>
     Regards,
     The Launchpad team
@@ -694,6 +737,7 @@ notification.
     The membership status of Celso Providelo (cprov) in the team Ubuntu Team
     (ubuntu-team) was changed by Mark Shuttleworth (sabdfl) from Approved to
     Administrator.
+    <http://launchpad.dev/~ubuntu-team>
     ----------------------------------------
     From: Ubuntu Team <noreply@launchpad.net>
     To: celso.providelo@canonical.com
@@ -701,6 +745,7 @@ notification.
     <BLANKLINE>
     The status of your membership in the team Ubuntu Team (ubuntu-team) was
     changed by Mark Shuttleworth (sabdfl) from Approved to Administrator.
+    <http://launchpad.dev/~ubuntu-team>
     ----------------------------------------
 
 If a team admin changes his own membership, the notification sent will clearly
@@ -722,6 +767,7 @@ sent to the team administrators.
     The membership status of Jeff Waugh (jdub) in the team Ubuntu Team
     (ubuntu-team) was changed by the user himself from Administrator to
     Approved.
+    <http://launchpad.dev/~ubuntu-team>
     ----------------------------------------
 
 Deactivating the membership of a team also generates notifications for the
@@ -746,5 +792,6 @@ sense to the members of the team reading it.
     The membership status of Mirror Administrators (ubuntu-mirror-admins) in
     the team Ubuntu Team (ubuntu-team) was changed by Mark Shuttleworth
     (sabdfl) from Approved to Deactivated.
+    <http://launchpad.dev/~ubuntu-team>
     ----------------------------------------
 

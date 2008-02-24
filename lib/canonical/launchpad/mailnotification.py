@@ -62,8 +62,12 @@ class MailWrapper:
             width=width, subsequent_indent=indent,
             replace_whitespace=False, break_long_words=False)
 
-    def format(self, text):
-        """Format the text to be included in an email."""
+    def format(self, text, force_wrap=False):
+        """Format the text to be included in an email.
+
+        If force_wrap is False, only paragraphs containing a single line
+        will be wrapped.
+        """
         wrapped_lines = []
 
         if self.indent_first_line:
@@ -87,6 +91,10 @@ class MailWrapper:
                 # manually.
                 self._text_wrapper.initial_indent = indentation
                 wrapped_lines += self._text_wrapper.wrap(paragraph)
+            elif force_wrap:
+                self._text_wrapper.initial_indent = indentation
+                for line in lines:
+                    wrapped_lines += self._text_wrapper.wrap(line)
             else:
                 # If the user has gone through the trouble of wrapping
                 # the lines, we shouldn't re-wrap them for him.
@@ -303,15 +311,15 @@ class BugNotificationRecipients(NotificationRecipientSet):
             text = "are the bug contact for %s" % distro.displayname
         self._addReason(person, text, reason)
 
-    def addPackageBugContact(self, person, package):
-        """Registers a package bug contact for this bug."""
-        reason = "Bug Contact (%s)" % package.displayname
+    def addStructuralSubscriber(self, person, target):
+        """Registers a structural subscriber to this bug's target."""
+        reason = "Subscriber (%s)" % target.displayname
         if person.isTeam():
-            text = ("are a member of %s, which is a bug contact for %s" %
-                (person.displayname, package.displayname))
+            text = ("are a member of %s, which is subscribed to %s" %
+                (person.displayname, target.displayname))
             reason += " @%s" % person.name
         else:
-            text = "are a bug contact for %s" % package.displayname
+            text = "are subscribed to %s" % target.displayname
         self._addReason(person, text, reason)
 
     def addUpstreamBugContact(self, person, upstream):
@@ -325,7 +333,7 @@ class BugNotificationRecipients(NotificationRecipientSet):
             text = "are the bug contact for %s" % upstream.displayname
         self._addReason(person, text, reason)
 
-    def addUpstreamRegistrant(self, person, upstream):
+    def addRegistrant(self, person, upstream):
         """Registers an upstream product registrant for this bug."""
         reason = "Registrant (%s)" % upstream.displayname
         if person.isTeam():
@@ -364,6 +372,14 @@ def construct_bug_notification(bug, from_address, address, body, subject,
     # Add X-Launchpad-Bug headers.
     for bugtask in bug.bugtasks:
         msg.add_header('X-Launchpad-Bug', bugtask.asEmailHeaderValue())
+
+    # Add X-Launchpad-Bug-Private and ...-Bug-Security-Vulnerability
+    # headers. These are simple yes/no values denoting privacy and
+    # security for the bug.
+    msg.add_header('X-Launchpad-Bug-Private',
+                   (bug.private and 'yes' or 'no'))
+    msg.add_header('X-Launchpad-Bug-Security-Vulnerability',
+                   (bug.security_related and 'yes' or 'no'))
 
     if rationale_header is not None:
         msg.add_header('X-Launchpad-Message-Rationale', rationale_header)
@@ -542,6 +558,7 @@ def generate_bug_add_email(bug, new_recipients=False, reason=None):
     it's just a notification of a new bug report.
     """
     subject = u"[Bug %d] [NEW] %s" % (bug.id, bug.title)
+    contents = ''
 
     if bug.private:
         # This is a confidential bug.
@@ -549,6 +566,10 @@ def generate_bug_add_email(bug, new_recipients=False, reason=None):
     else:
         # This is a public bug.
         visibility = u"Public"
+
+    if bug.security_related:
+        visibility += ' security'
+        contents += '*** This bug is a security vulnerability ***\n\n'
 
     bug_info = []
     # Add information about the affected upstreams and packages.
@@ -566,10 +587,9 @@ def generate_bug_add_email(bug, new_recipients=False, reason=None):
     if bug.tags:
         bug_info.append('\n** Tags: %s' % ' '.join(bug.tags))
 
-    mailwrapper = MailWrapper(width=72)
     if new_recipients:
-        contents = ("You have been subscribed to a %(visibility)s bug:\n\n"
-                    "%(description)s\n\n%(bug_info)s")
+        contents += ("You have been subscribed to a %(visibility)s bug:\n\n"
+                     "%(description)s\n\n%(bug_info)s")
         # The visibility appears mid-phrase so.. hack hack.
         visibility = visibility.lower()
         # XXX: kiko, 2007-03-21:
@@ -579,9 +599,10 @@ def generate_bug_add_email(bug, new_recipients=False, reason=None):
         contents += (
             "\n-- \n%(bug_title)s\n%(bug_url)s\n%(notification_rationale)s")
     else:
-        contents = ("%(visibility)s bug reported:\n\n"
-                    "%(description)s\n\n%(bug_info)s")
+        contents += ("%(visibility)s bug reported:\n\n"
+                     "%(description)s\n\n%(bug_info)s")
 
+    mailwrapper = MailWrapper(width=72)
     contents = contents % {
         'visibility' : visibility, 'bug_url' : canonical_url(bug),
         'bug_info': "\n".join(bug_info), 'bug_title': bug.title,
@@ -1071,12 +1092,13 @@ def notify_invitation_to_join_team(event):
         'reviewer': '%s (%s)' % (reviewer.browsername, reviewer.name),
         'member': '%s (%s)' % (member.browsername, member.name),
         'team': '%s (%s)' % (team.browsername, team.name),
+        'team_url': canonical_url(team),
         'membership_invitations_url':
             "%s/+invitation/%s" % (canonical_url(member), team.name)}
     for address in admin_addrs:
         recipient = getUtility(IPersonSet).getByEmail(address)
         replacements['recipient_name'] = recipient.displayname
-        msg = MailWrapper().format(template % replacements)
+        msg = MailWrapper().format(template % replacements, force_wrap=True)
         simple_sendmail(from_addr, address, subject, msg)
 
 
@@ -1105,20 +1127,23 @@ def notify_team_join(event):
         # notification to the person too.
         member_addrs = contactEmailAddresses(person)
 
-        subject = '%s joined %s' % (person.name, team.name)
+        subject = 'You have been added to %s' % team.name
         templatename = 'new-member-notification.txt'
         if person.isTeam():
             templatename = 'new-member-notification-for-teams.txt'
+            subject = '%s joined %s' % (person.name, team.name)
 
         template = get_email_template(templatename)
         replacements = {
             'reviewer': '%s (%s)' % (reviewer.browsername, reviewer.name),
+            'team_url': canonical_url(team),
             'member': '%s (%s)' % (person.browsername, person.name),
             'team': '%s (%s)' % (team.browsername, team.name)}
         for address in member_addrs:
             recipient = getUtility(IPersonSet).getByEmail(address)
             replacements['recipient_name'] = recipient.displayname
-            msg = MailWrapper().format(template % replacements)
+            msg = MailWrapper().format(
+                template % replacements, force_wrap=True)
             simple_sendmail(from_addr, address, subject, msg)
 
         # The member's email address may be in admin_addrs too; let's remove
@@ -1141,9 +1166,14 @@ def notify_team_join(event):
             'new-member-notification-for-admins.txt')
         subject = '%s joined %s' % (person.name, team.name)
     elif membership.status == proposed:
-        template = get_email_template('pending-membership-approval.txt')
+        if person.isTeam():
+            headers = {"Reply-To": reviewer.preferredemail.email}
+            template = get_email_template(
+                'pending-membership-approval-for-teams.txt')
+        else:
+            headers = {"Reply-To": person.preferredemail.email}
+            template = get_email_template('pending-membership-approval.txt')
         subject = "%s wants to join" % person.name
-        headers = {"Reply-To": person.preferredemail.email}
     else:
         raise AssertionError(
             "Unexpected membership status: %s" % membership.status)
@@ -1151,7 +1181,8 @@ def notify_team_join(event):
     for address in admin_addrs:
         recipient = getUtility(IPersonSet).getByEmail(address)
         replacements['recipient_name'] = recipient.displayname
-        msg = MailWrapper().format(template % replacements)
+        msg = MailWrapper().format(
+            template % replacements, force_wrap=True)
         simple_sendmail(from_addr, address, subject, msg, headers=headers)
 
 
@@ -1424,11 +1455,15 @@ class QuestionModifiedDefaultNotification(QuestionNotification):
             # because we don't create a Message instance for the
             # question description, so we don't have a Message-ID.
 
-            # XXX sinzui 2007-11-27 bug=164435:
-            # SQLObject can refetch the question, so we are using the ids.
-            message_ids = list([message.id
-                                for message in self.question.messages])
-            index = message_ids.index(self.new_message.id)
+            # XXX sinzui 2007-02-01 bug=164435:
+            # Added an assert to gather better Opps information about
+            # the state of the messages.
+            messages = list(self.question.messages)
+            assert self.new_message in messages, (
+                "Question %s: message id %s not in %s." % (
+                    self.question.id, self.new_message.id,
+                    [m.id for m in messages]))
+            index = messages.index(self.new_message)
             if index > 0:
                 headers['References'] = (
                     self.question.messages[index-1].rfc822msgid)

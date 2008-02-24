@@ -218,8 +218,49 @@ class Build(SQLBase):
         self.dependencies = None
         self.createBuildQueueEntry()
 
-    def updateDependencies(self):
+    @property
+    def component_dependencies(self):
         """See `IBuild`."""
+        # XXX cprov 20080204: if a new component is opened/selected for
+        # ubuntu this dictionary will have to be updated. Ideally we
+        # should model ogre in the database, but since a new component
+        # will also require other changes in code, we will simple let this
+        # marked for future reference.
+        return {
+            'main': ['main'],
+            'restricted': ['main', 'restricted'],
+            'universe': ['main', 'restricted',  'universe'],
+            'multiverse': ['main', 'restricted', 'universe', 'multiverse'],
+            'partner' : ['partner'],
+            }
+
+    @property
+    def ogre_components(self):
+        """See `IBuild`."""
+        return self.component_dependencies[self.current_component.name]
+
+    def _parseDependencyToken(self, token):
+        """Parse the given token.
+
+        Raises AssertionError if the given token couldn't be parsed.
+
+        Return a triple containing the corresponding (name, version,
+        relation) for the given dependency token.
+        """
+        # XXX cprov 2006-02-27: it may not work for and'd and or'd syntax.
+        try:
+            name, version, relation = token[0]
+        except ValueError:
+            raise AssertionError(
+                "APT is not dealing correctly with a dependency token "
+                "'%r' from %s (%s) with the following dependencies: %s\n"
+                "It is expected to be a tuple containing only another "
+                "tuple with 3 elements  (name, version, relation)."
+                % (token, self.title, self.id, self.depedencies))
+        return (name, version, relation)
+
+    def _checkDependencyVersion(self, available, required, relation):
+        """Return True if the available version satisfies the context."""
         # This dict maps the package version relationship syntax in lambda
         # functions which returns boolean according the results of
         # apt_pkg.VersionCompare function (see the order above).
@@ -238,9 +279,48 @@ class Build(SQLBase):
             '=': lambda x: x == 0,
             # earlier or equal
             '<=': lambda x: x <= 0,
-            # strictly ealier
+            # strictly earlier
             '<<': lambda x: x == -1
             }
+
+        # Use apt_pkg function to compare versions
+        # it behaves similar to cmp, i.e. returns negative
+        # if first < second, zero if first == second and
+        # positive if first > second.
+        dep_result = apt_pkg.VersionCompare(available, required)
+
+        return version_relation_map[relation](dep_result)
+
+    def _isDependencySatisfied(self, token):
+        """Check if the given dependency token is satisfied.
+
+        Check if the dependency exists, if its version constraint is
+        satisfied and if it is reachable in the build context.
+        """
+        name, version, relation = self._parseDependencyToken(token)
+        dep_candidate = self.distroarchseries.findDepCandidateByName(name)
+
+        if not dep_candidate:
+            return False
+
+        if not self._checkDependencyVersion(
+            dep_candidate.binarypackageversion, version, relation):
+            return False
+
+        if dep_candidate.component not in self.ogre_components:
+            return False
+
+        return True
+
+    def _toAptFormat(self, token):
+        """Rebuild dependencies line in apt format."""
+        name, version, relation = self._parseDependencyToken(token)
+        if relation and version:
+            return '%s (%s %s)' % (name, relation, version)
+        return '%s' % name
+
+    def updateDependencies(self):
+        """See `IBuild`."""
 
         # apt_pkg requires InitSystem to get VersionCompare working properly.
         apt_pkg.InitSystem()
@@ -254,45 +334,9 @@ class Build(SQLBase):
                 "It indicates that something is wrong in buildd-slaves."
                 % (self.title, self.id, self.depedencies))
 
-        missing_deps = []
-        for token in parsed_deps:
-            # XXX cprov 2006-02-27: it may not work for and'd and or'd syntax.
-            try:
-                name, version, relation = token[0]
-            except ValueError:
-                raise AssertionError(
-                    "APT is not dealing correctly with a dependency token "
-                    "'%r' from %s (%s) with the following dependencies: %s\n"
-                    "It is expected to be a tuple containing only another "
-                    "tuple with 3 elements  (name, version, relation)."
-                    % (token, self.title, self.id, self.depedencies))
-
-            dep_candidate = self.distroarchseries.findDepCandidateByName(name)
-            if dep_candidate:
-                # Use apt_pkg function to compare versions
-                # it behaves similar to cmp, i.e. returns negative
-                # if first < second, zero if first == second and
-                # positive if first > second.
-                dep_result = apt_pkg.VersionCompare(
-                    dep_candidate.binarypackageversion, version)
-                # Use the previously mapped result to identify whether
-                # or not the dependency was satisfied.
-                if version_relation_map[relation](dep_result):
-                    # Continue for satisfied dependency.
-                    continue
-
-            # Append missing token.
-            missing_deps.append(token)
-
-        # Rebuild dependencies line in apt format.
-        remaining_deps = []
-        for token in missing_deps:
-            name, version, relation = token[0]
-            if relation and version:
-                token_str = '%s (%s %s)' % (name, relation, version)
-            else:
-                token_str = '%s' % name
-            remaining_deps.append(token_str)
+        remaining_deps = [
+            self._toAptFormat(token) for token in parsed_deps
+            if not self._isDependencySatisfied(token)]
 
         # Update dependencies line
         self.dependencies = ", ".join(remaining_deps)
@@ -477,7 +521,8 @@ class BuildSet:
                 IN(Build.q.distroarchseriesID, archseries_ids))
             )
 
-    def getBuildsForBuilder(self, builder_id, status=None, name=None):
+    def getBuildsForBuilder(self, builder_id, status=None, name=None,
+                            user=None):
         """See `IBuildSet`."""
         queries = []
         clauseTables = []
@@ -494,6 +539,23 @@ class BuildSet:
                            % quote_like(name))
             clauseTables.append('Sourcepackagerelease')
             clauseTables.append('Sourcepackagename')
+
+        queries.append("Archive.id = Build.archive")
+        clauseTables.append('Archive')
+        if user is not None:
+            if not (user.inTeam(getUtility(ILaunchpadCelebrities).admin)
+                    or
+                    user.inTeam(
+                        getUtility(ILaunchpadCelebrities).buildd_admin)):
+                queries.append("""
+                (Archive.private = FALSE
+                 OR %s IN (SELECT TeamParticipation.person
+                       FROM TeamParticipation
+                       WHERE TeamParticipation.person = %s
+                           AND TeamParticipation.team = Archive.owner)
+                )""" % sqlvalues(user, user))
+        else:
+            queries.append("Archive.private = FALSE")
 
         # Ordering according status
         # * SUPERSEDED & All by -datecreated

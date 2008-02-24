@@ -8,7 +8,6 @@ __all__ = [
     ]
 
 import cgi
-from datetime import datetime
 from time import time
 
 from BeautifulSoup import BeautifulSoup
@@ -16,7 +15,6 @@ from BeautifulSoup import BeautifulSoup
 from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 from zope.app.session.interfaces import ISession, IClientIdManager
 from zope.component import getUtility
-from zope.event import notify
 from zope.security.proxy import isinstance as zisinstance
 
 from openid.message import registerNamespaceAlias
@@ -31,13 +29,14 @@ from canonical.launchpad import _
 from canonical.launchpad.interfaces import (
     ILaunchpadOpenIdStoreFactory, ILoginServiceAuthorizeForm,
     ILoginServiceLoginForm, ILoginTokenSet, IOpenIdAuthorizationSet,
-    IOpenIDRPConfigSet, IPersonSet, LoginTokenType, UnexpectedFormData)
+    IOpenIDRPConfigSet, IPersonSet, LoginTokenType, PersonVisibility,
+    UnexpectedFormData)
 from canonical.launchpad.validators.email import valid_email
 from canonical.launchpad.webapp import (
     action, custom_widget, LaunchpadFormView, LaunchpadView)
 from canonical.launchpad.webapp.interfaces import (
-    IPlacelessLoginSource, LoggedOutEvent)
-from canonical.launchpad.webapp.login import logInPerson
+    IPlacelessLoginSource)
+from canonical.launchpad.webapp.login import logInPerson, logoutPerson
 from canonical.launchpad.webapp.vhosts import allvhosts
 from canonical.uuid import generate_uuid
 from canonical.widgets.itemswidgets import LaunchpadRadioWidget
@@ -241,10 +240,17 @@ class OpenIdMixin:
             team = person_set.getByName(team_name)
             if team is None or not team.isTeam():
                 continue
-            # XXX jamesh 2007-12-05 bug=174076:
-            # When private membership teams are added, this method
-            # needs to be updated to not disclose membership of such
-            # teams.
+            # Control access to private teams
+            if team.visibility != PersonVisibility.PUBLIC:
+                # XXX jamesh 2008-02-14 bug=174076:
+
+                # We should have fine grained control of which RPs can
+                # query for which teams, but for now we will let any
+                # RP with an OpenIDRPconfig perform such queries.
+                rpconfig = getUtility(IOpenIDRPConfigSet).getByTrustRoot(
+                    self.openid_request.trust_root)
+                if rpconfig is None:
+                    continue
             if self.user.inTeam(team):
                 memberships.append(team_name)
         openid_response.fields.namespaces.addAlias(LAUNCHPAD_TEAMS_NS, 'lp')
@@ -504,13 +510,7 @@ class LoginServiceAuthorizeView(LoginServiceBaseView):
     # person's name.
     def logout_action(self, action, data):
         # Log the user out and render the login page again.
-        session = ISession(self.request)
-        authdata = session['launchpad.authenticateduser']
-        previous_login = authdata.get('personid')
-        if previous_login is not None:
-            authdata['personid'] = None
-            authdata['logintime'] = datetime.utcnow()
-            notify(LoggedOutEvent(self.request))
+        logoutPerson(self.request)
         # Display the unauthenticated form
         return LoginServiceLoginView(
             self.context, self.request, self.nonce)()

@@ -181,11 +181,13 @@ exception by the publication machinery:
     >>> from canonical.launchpad.webapp.publication import (
     ...     LaunchpadBrowserPublication)
 
+    >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
+    >>> request = LaunchpadTestRequest()
     >>> publication = LaunchpadBrowserPublication(None)
     >>> try:
     ...     cursor.execute('SELECT 1')
     ... except DisconnectionError:
-    ...     publication.handleException(None, None, sys.exc_info(),
+    ...     publication.handleException(None, request, sys.exc_info(),
     ...                                 retry_allowed=True)
     Traceback (most recent call last):
       ...

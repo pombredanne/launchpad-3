@@ -146,8 +146,18 @@
     />
 
   <vocabulary
+    name="PersonActiveMembershipPlusSelf"
+    factory="canonical.launchpad.vocabularies.PersonActiveMembershipPlusSelfVocabulary"
+    />
+
+  <vocabulary
     name="PersonTeamParticipations"
     factory="canonical.launchpad.vocabularies.person_team_participations_vocabulary_factory"
+    />
+
+  <vocabulary
+    name="PPA"
+    factory="canonical.launchpad.vocabularies.PPAVocabulary"
     />
 
   <vocabulary

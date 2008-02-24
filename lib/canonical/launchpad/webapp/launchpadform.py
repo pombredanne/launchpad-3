@@ -206,6 +206,15 @@ class LaunchpadFormView(LaunchpadView):
         self.widget_errors[field_name] = message
         self.errors.append(message)
 
+    @staticmethod
+    def validate_none(self, action, data):
+        """Do not do any validation.
+
+        This is to be used in subclasses that have actions in which no
+        validation is wanted (e.g. a cancel action).
+        """
+        return []
+
     def validate_widgets(self, data, names=None):
         """Validate the named form widgets.
 

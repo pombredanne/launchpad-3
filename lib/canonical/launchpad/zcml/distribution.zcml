@@ -13,7 +13,7 @@
       permission="launchpad.Edit"
       set_attributes="displayname title summary description
                       translationgroup translationpermission
-                      driver members owner bugcontact
+                      driver members owner
                       security_contact upload_admin upload_sender
                       mirror_admin homepage_content icon logo
                       mugshot bug_reporting_guidelines"
@@ -47,6 +47,19 @@
       permission="launchpad.Moderate"
       attributes="newFAQ"
       />
+    <!-- IStructuralSubscriptionTarget -->
+    <allow attributes="bug_subscriptions getSubscriptions
+                       getSubscription getBugNotificationsRecipients
+                       parent_subscription_target" />
+    <require
+        permission="launchpad.AnyPerson"
+        attributes="addSubscription addBugSubscription
+                    removeBugSubscription" />
+    <!-- IHasBugcontact -->
+    <allow attributes="bugcontact" />
+    <require
+        permission="launchpad.Edit"
+        attributes="setBugContact" />
   </content>
 
   <browser:menus
@@ -220,11 +233,6 @@
       template="../templates/distribution-search.pt"
       />
     <browser:page
-      name="+bounties"
-      facet="bounties"
-      template="../templates/related-bounties.pt"
-      />
-    <browser:page
       name="+builds"
       facet="overview"
       template="../templates/distribution-builds.pt"
@@ -235,6 +243,18 @@
      />
   </browser:pages>
 
+  <!-- The bounty system is kept maintained but not available for users.
+  This is achieved by putting it on the PageTestLayer. -->
+  <browser:page
+    for="canonical.launchpad.interfaces.IDistribution"
+    class="canonical.launchpad.browser.DistributionView"
+    facet="bounties"
+    layer="canonical.launchpad.layers.PageTestLayer"
+    name="+bounties"
+    permission="zope.Public"
+    template="../templates/related-bounties.pt"
+  />
+
   <browser:page
     for="canonical.launchpad.interfaces.IDistribution"
     class="canonical.launchpad.browser.DistributionPPASearchView"
@@ -242,6 +262,15 @@
     permission="zope.Public"
     facet="overview"
     template="../templates/distribution-ppa-list.pt"
+    />
+
+  <browser:page
+    for="canonical.launchpad.interfaces.IDistribution"
+    name="+upstreamreport"
+    class="canonical.launchpad.browser.DistributionUpstreamBugReport"
+    permission="zope.Public"
+    facet="bugs"
+    template="../templates/distribution-upstream-bug-report.pt"
     />
 
   <browser:page
@@ -387,15 +416,6 @@
     fields="mirror_admin"
     permission="launchpad.Edit"
     template="../templates/distribution-change-mirror-admin.pt"
-    />
-
-  <browser:page
-    name="+bugcontact"
-    for="canonical.launchpad.interfaces.IDistribution"
-    class="canonical.launchpad.browser.distribution.DistributionBugContactEditView"
-    facet="bugs"
-    permission="launchpad.Edit"
-    template="../templates/distribution-bugcontact.pt"
     />
 
   <browser:page
