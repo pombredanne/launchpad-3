@@ -220,7 +220,8 @@ class ProductSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
     def valid_specifications(self):
         return self.specifications(filter=[SpecificationFilter.VALID])
 
-    def specifications(self, sort=None, quantity=None, filter=None):
+    def specifications(self, sort=None, quantity=None, filter=None,
+                       prejoin_people=True):
         """See IHasSpecifications.
 
         The rules for filtering are that there are three areas where you can
@@ -339,7 +340,9 @@ class ProductSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
 
         # now do the query, and remember to prejoin to people
         results = Specification.select(query, orderBy=order, limit=quantity)
-        return results.prejoin(['assignee', 'approver', 'drafter'])
+        if prejoin_people:
+            results = results.prejoin(['assignee', 'approver', 'drafter'])
+        return results
 
     def searchTasks(self, search_params):
         """See IBugTarget."""

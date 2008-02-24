@@ -5,6 +5,7 @@ __metaclass__ = type
 
 __all__ = [
     'HasSpecificationsView',
+    'SpecificationRoadmapView',
     'RegisterABlueprintButtonView',
     ]
 
@@ -76,10 +77,6 @@ class HasSpecificationsView(LaunchpadView):
     # See https://bugs.launchpad.net/blueprint/+bug/173972.
     def initialize(self):
         mapping = {'name': self.context.displayname}
-        if self.is_person:
-            self.title = _('Specifications involving $name', mapping=mapping)
-        else:
-            self.title = _('Specifications for $name', mapping=mapping)
         if IPerson.providedBy(self.context):
             self.is_person = True
         elif (IDistribution.providedBy(self.context) or
@@ -105,8 +102,15 @@ class HasSpecificationsView(LaunchpadView):
             self.show_target = True
         else:
             raise AssertionError, 'Unknown blueprint listing site'
+
+        if self.is_person:
+            self.title = _('Specifications involving $name', mapping=mapping)
+        else:
+            self.title = _('Specifications for $name', mapping=mapping)
+
         if IHasDrivers.providedBy(self.context):
             self.has_drivers = True
+
         self.batchnav = BatchNavigator(
             self.specs, self.request,
             size=config.launchpad.default_batch_size)
@@ -252,7 +256,7 @@ class HasSpecificationsView(LaunchpadView):
 
         return filter
 
-    @cachedproperty
+    @property
     def specs(self):
         filter = self.spec_filter
         return self.context.specifications(filter=filter)
@@ -305,19 +309,25 @@ class HasSpecificationsView(LaunchpadView):
         is used by the +portlet-latestspecs view.
         """
         return self.context.specifications(sort=SpecificationSort.DATE,
-            quantity=quantity)
+            quantity=quantity, prejoin_people=False)
+
+
+class SpecificationRoadmapView(LaunchpadView):
+    """View for the +roadmap pages for specifications."""
 
     @cachedproperty
     def spec_plan(self):
         """Return the optimised sequence of specs for this target.
 
-        Figure out what the best sequence of implementation is for the
-        specs registered on this target.
+        Figures out what the best sequence of implementation is for the
+        specs registered on this target. Essentially, orders by
+        decreasing priority, but uses recursion to include dependencies
+        (in decreasing order, too, thanks to getDependencyDict()) first.
         """
         filter = [
             SpecificationFilter.INCOMPLETE,
             SpecificationFilter.ACCEPTED]
-        specs = self.context.specifications(filter=filter)
+        specs = self.context.specifications(filter=filter, prejoin_people=False)
         if specs.count() == 0:
             return []
 
@@ -360,3 +370,4 @@ class RegisterABlueprintButtonView:
                 />
               </a>
         """ % canonical_url(target, rootsite='blueprints')
+

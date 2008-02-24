@@ -186,7 +186,7 @@ class Project(SQLBase, BugTargetBase, HasSpecificationsMixin,
         return self.specifications(filter=[SpecificationFilter.VALID])
 
     def specifications(self, sort=None, quantity=None, filter=None,
-                       series=None):
+                       series=None, prejoin_people=True):
         """See `IHasSpecifications`."""
 
         # Make a new list of the filter, so that we do not mutate what we
@@ -250,7 +250,9 @@ class Project(SQLBase, BugTargetBase, HasSpecificationsMixin,
         # now do the query, and remember to prejoin to people
         results = Specification.select(query, orderBy=order, limit=quantity,
             clauseTables=clause_tables)
-        return results.prejoin(['assignee', 'approver', 'drafter'])
+        if prejoin_people:
+            results = results.prejoin(['assignee', 'approver', 'drafter'])
+        return results
 
     # XXX: Bjorn Tillenius 2006-08-17:
     #      A Project shouldn't provide IBugTarget, since it's not really
@@ -550,9 +552,10 @@ class ProjectSeries(HasSpecificationsMixin):
         self.project = project
         self.name = name
 
-    def specifications(self, sort=None, quantity=None, filter=None):
+    def specifications(self, sort=None, quantity=None, filter=None,
+                       prejoin_people=True):
         return self.project.specifications(
-            sort, quantity, filter, self.name)
+            sort, quantity, filter, self.name, prejoin_people=prejoin_people)
 
     @property
     def has_any_specifications(self):

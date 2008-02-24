@@ -496,7 +496,8 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
     def valid_specifications(self):
         return self.specifications(filter=[SpecificationFilter.VALID])
 
-    def specifications(self, sort=None, quantity=None, filter=None):
+    def specifications(self, sort=None, quantity=None, filter=None,
+                       prejoin_people=True):
         """See `IHasSpecifications`."""
 
         # Make a new list of the filter, so that we do not mutate what we
@@ -576,7 +577,9 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
 
         # now do the query, and remember to prejoin to people
         results = Specification.select(query, orderBy=order, limit=quantity)
-        return results.prejoin(['assignee', 'approver', 'drafter'])
+        if prejoin_people:
+            results = results.prejoin(['assignee', 'approver', 'drafter'])
+        return results
 
     def getSpecification(self, name):
         """See `ISpecificationTarget`."""
