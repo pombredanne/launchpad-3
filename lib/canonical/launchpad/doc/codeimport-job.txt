@@ -80,24 +80,12 @@ required to initiate the action.
 
 == Test helpers ==
 
-The print_date_attribute function displays a date attribute of
-CodeImportJob. If the value of the attribute is equal to the "UTC_NOW"
-time of the current transaction, it prints the string "UTC_NOW"
-instead of the actual time value.
+The print_date_attribute function displays a date attribute of an
+object. If the value of the attribute is equal to the "UTC_NOW" time
+of the current transaction, it prints the string "UTC_NOW" instead of
+the actual time value.
 
-    >>> from canonical.database.constants import UTC_NOW
-    >>> from canonical.database.sqlbase import sqlvalues
-    >>> from canonical.launchpad.database import CodeImportJob
-    >>> from canonical.launchpad.ftests import syncUpdate
-    >>> def print_date_attribute(job, attribute):
-    ...     syncUpdate(job)
-    ...     query_template = 'id=%%s AND %s=%%s' % attribute
-    ...     found_job = CodeImportJob.selectOne(
-    ...         query_template % sqlvalues(job.id, UTC_NOW))
-    ...     if found_job is None:
-    ...         print getattr(job, attribute)
-    ...     else:
-    ...         print 'UTC_NOW'
+    >>> from canonical.launchpad.ftests import print_date_attribute
 
 The NewEvents class helps testing the creation of CodeImportEvent
 objects.

@@ -12,16 +12,17 @@ from canonical.launchpad.interfaces import (
     IBranchMergeProposal, IBranchSubscription, IBug, IBugAttachment,
     IBugBranch, IBugNomination, IBugTracker, IBuild, IBuilder, IBuilderSet,
     ICodeImport, ICodeImportJob, ICodeImportJobSet, ICodeImportJobWorkflow,
-    ICodeImportMachine, ICodeImportMachineSet, ICodeImportSet, IDistribution,
-    IDistributionMirror, IDistroSeries, IDistroSeriesLanguage, IEntitlement,
-    IFAQ, IFAQTarget, IHWSubmission, IHasBug, IHasDrivers, IHasOwner,
-    ILanguage, ILanguagePack, ILanguageSet, ILaunchpadCelebrities,
-    IMailingListSet, IMilestone, IPOFile, IPOTemplate, IPOTemplateSubset,
-    IPackageUpload, IPackageUploadQueue, IPackaging, IPerson, IPoll,
-    IPollOption, IPollSubset, IProduct, IProductRelease, IProductReleaseFile,
-    IProductSeries, IQuestion, IQuestionTarget, IRequestedCDs,
-    IShipItApplication, IShippingRequest, IShippingRequestSet, IShippingRun,
-    ISpecification, ISpecificationSubscription, ISprint, ISprintSpecification,
+    ICodeImportMachine, ICodeImportMachineSet, ICodeImportResult,
+    ICodeImportResultSet, ICodeImportSet, IDistribution, IDistributionMirror,
+    IDistroSeries, IDistroSeriesLanguage, IEntitlement, IFAQ, IFAQTarget,
+    IHWSubmission, IHasBug, IHasDrivers, IHasOwner, ILanguage, ILanguagePack,
+    ILanguageSet, ILaunchpadCelebrities, IMailingListSet, IMilestone, IPOFile,
+    IPOTemplate, IPOTemplateSubset, IPackageUpload, IPackageUploadQueue,
+    IPackaging, IPerson, IPoll, IPollOption, IPollSubset, IProduct,
+    IProductRelease, IProductReleaseFile, IProductSeries, IQuestion,
+    IQuestionTarget, IRequestedCDs, IShipItApplication, IShippingRequest,
+    IShippingRequestSet, IShippingRun, ISpecification,
+    ISpecificationSubscription, ISprint, ISprintSpecification,
     IStandardShipItRequest, IStandardShipItRequestSet, ITeam, ITeamMembership,
     ITranslationGroup, ITranslationGroupSet, ITranslationImportQueue,
     ITranslationImportQueueEntry, ITranslator, PersonVisibility)
@@ -893,6 +894,27 @@ class SeeCodeImportMachines(OnlyVcsImportsAndAdmins):
     """
     permission = 'launchpad.View'
     usedfor = ICodeImportMachine
+
+
+class SeeCodeImportResultSet(OnlyVcsImportsAndAdmins):
+    """Control who can see the CodeImportResult listing page.
+
+    Currently, we restrict the visibility of the new code import
+    system to members of ~vcs-imports and Launchpad admins.
+    """
+
+    permission = 'launchpad.View'
+    usedfor = ICodeImportResultSet
+
+
+class SeeCodeImportResults(OnlyVcsImportsAndAdmins):
+    """Control who can see the object view of a CodeImportResult.
+
+    Currently, we restrict the visibility of the new code import
+    system to members of ~vcs-imports and Launchpad admins.
+    """
+    permission = 'launchpad.View'
+    usedfor = ICodeImportResult
 
 
 class EditPOTemplateDetails(EditByOwnersOrAdmins):
