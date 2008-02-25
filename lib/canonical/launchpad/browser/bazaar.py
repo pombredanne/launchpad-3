@@ -18,7 +18,6 @@ import bzrlib
 
 from canonical.cachedproperty import cachedproperty
 from canonical.config import config
-from canonical.lp import decorates
 
 from canonical.launchpad.interfaces import (
     IBazaarApplication, IBranchSet, IProduct, IProductSet, IProductSeriesSet)
@@ -28,6 +27,7 @@ from canonical.launchpad.webapp import (
     stepto)
 import canonical.launchpad.layers
 
+from canonical.lazr import decorates
 
 class BazaarBranchesMenu(ApplicationMenu):
     usedfor = IBazaarApplication
@@ -104,7 +104,8 @@ class ProductInfo:
 
     decorates(IProduct, 'product')
 
-    def __init__(self, product, num_branches, branch_size, elapsed, important):
+    def __init__(
+        self, product, num_branches, branch_size, elapsed, important):
         self.product = product
         self.num_branches = num_branches
         self.branch_size = branch_size
@@ -151,7 +152,8 @@ class ProductInfo:
         elif self.elapsed_since_commit.days == 1:
             commit = "last commit one day old"
         else:
-            commit = "last commit %d days old" % self.elapsed_since_commit.days
+            commit = (
+                "last commit %d days old" % self.elapsed_since_commit.days)
         return "%s, %s" % (size, commit)
 
 
@@ -169,8 +171,10 @@ class BazaarProductView:
         # sub-second, and the query to get the branch count and last commit
         # time runs in approximately 50ms on a vacuumed branch table.
         product_set = getUtility(IProductSet)
-        products = shortlist(product_set.getProductsWithBranches(num_products),
-                             2000, hardlimit=3000)
+        products = shortlist(
+            product_set.getProductsWithBranches(num_products),
+            2000,
+            hardlimit=3000)
 
         # Any product that has a defined user branch for the development
         # product series is shown in another colour.  Given the above
