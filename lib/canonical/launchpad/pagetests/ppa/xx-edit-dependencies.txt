@@ -65,22 +65,31 @@ via the POST form.
 When the 'Edit dependencies' page is loaded it will list all dependencies.
 
     >>> print_ppa_dependencies(admin_browser.contents)
-    This PPA does not contain any dependency.
+    No dependencies recorded for this PPA yet.
 
 
 == Adding dependencies ==
 
-As we can see Celso's PPA does not contain any dependency, let's try
+As we can see Celso's PPA contains no dependencies, let's try
 to add some.
 
 The adding dependency input offers a interface to look for PPAs based
 on the PPA fti and/or the PPA owner's fti via a IHugeVocabulary
 popup. A valid term is the owner username.
 
+Before actually adding any new dependency let's check if the form
+focus is set to the 'dependency_candidate' input field.
+
+    >>> print extract_text(find_main_content(admin_browser.contents))
+    Edit dependencies for PPA for Celso Providelo
+    ...
+    <!--
+    setFocusByName('field.dependency_candidate');
+    // -->
+
 An empty or unknown term results in an error.
 
-    >>> admin_browser.getControl(
-    ...    name='field.dependency_candidate').value = ''
+    >>> admin_browser.getControl("PPA Dependency").value = ''
     >>> admin_browser.getControl("Add Dependency").click()
     >>> messages = get_feedback_messages(admin_browser.contents)
     >>> for msg in messages:
@@ -88,8 +97,7 @@ An empty or unknown term results in an error.
     There is 1 error.
     Choose one dependency to add.
 
-    >>> admin_browser.getControl(
-    ...    name='field.dependency_candidate').value = 'whatever'
+    >>> admin_browser.getControl("PPA Dependency").value = 'whatever'
     >>> admin_browser.getControl("Add Dependency").click()
     >>> messages = get_feedback_messages(admin_browser.contents)
     >>> for msg in messages:
@@ -101,8 +109,7 @@ When a valid PPA is chosen the dependency is added, a notification
 is rendered on top of the page and the list of dependencies available
 for removal is updated.
 
-    >>> admin_browser.getControl(
-    ...    name='field.dependency_candidate').value = 'sabdfl'
+    >>> admin_browser.getControl("PPA Dependency").value = 'sabdfl'
     >>> admin_browser.getControl("Add Dependency").click()
     >>> messages = get_feedback_messages(admin_browser.contents)
     >>> for msg in messages:
@@ -114,8 +121,7 @@ for removal is updated.
 
 Trying to add a dependency that is already recorded results in a error.
 
-    >>> admin_browser.getControl(
-    ...    name='field.dependency_candidate').value = 'sabdfl'
+    >>> admin_browser.getControl("PPA Dependency").value = 'sabdfl'
     >>> admin_browser.getControl("Add Dependency").click()
     >>> messages = get_feedback_messages(admin_browser.contents)
     >>> for msg in messages:
@@ -126,8 +132,7 @@ Trying to add a dependency that is already recorded results in a error.
 Trying to add a dependency for the context PPA itself also results in
 a error.
 
-    >>> admin_browser.getControl(
-    ...    name='field.dependency_candidate').value = 'cprov'
+    >>> admin_browser.getControl("PPA Dependency").value = 'cprov'
     >>> admin_browser.getControl("Add Dependency").click()
     >>> messages = get_feedback_messages(admin_browser.contents)
     >>> for msg in messages:
@@ -137,8 +142,7 @@ a error.
 
 If it's a new dependency everything is fine.
 
-    >>> admin_browser.getControl(
-    ...    name='field.dependency_candidate').value = 'no-priv'
+    >>> admin_browser.getControl("PPA Dependency").value = 'no-priv'
     >>> admin_browser.getControl("Add Dependency").click()
     >>> messages = get_feedback_messages(admin_browser.contents)
     >>> for msg in messages:
@@ -147,10 +151,19 @@ If it's a new dependency everything is fine.
 
 Now Celso's PPA will list Mark's and No-Priv's PPA as its dependencies.
 
-    >>> admin_browser.reload()
     >>> print_ppa_dependencies(admin_browser.contents)
     PPA for Mark Shuttleworth
     PPA for No Privileges Person
+
+When there are recorded dependencies to present the focus is moved to
+the first check box available (the widget name is 'selected_dependencies').
+
+    >>> print extract_text(find_main_content(admin_browser.contents))
+    Dependency added: PPA for No Privileges Person
+    ...
+    <!--
+    setFocusByName('field.selected_dependencies');
+    // -->
 
 The dependencies are also listed in the PPA overview 'sources.list'
 widget.
@@ -171,7 +184,8 @@ widget.
 == Removing dependencies ==
 
 One or more dependencies can be removed via this page, they are
-presented as a MultiCheckboxWidget.
+presented as a vertical array of check-boxes labeled by dependency PPA
+title.
 
 If no dependency is selected and the dependency removal is requested
 an error is raised.
@@ -191,7 +205,9 @@ On successful removals, a notification is rendered and the list of
 dependencies is refreshed.
 
     >>> admin_browser.getControl(
-    ...    name='field.selected_dependencies').value = ['sabdfl', 'no-priv']
+    ...     "PPA for Mark Shuttleworth").selected = True
+    >>> admin_browser.getControl(
+    ...     "PPA for No Privileges Person").selected = True
     >>> admin_browser.getControl("Remove Dependencies").click()
     >>> messages = get_feedback_messages(admin_browser.contents)
     >>> for msg in messages:
@@ -201,7 +217,7 @@ dependencies is refreshed.
     PPA for No Privileges Person
 
     >>> print_ppa_dependencies(admin_browser.contents)
-    This PPA does not contain any dependency.
+    No dependencies recorded for this PPA yet.
 
 And the PPA overview 'sources.list' widget is also up to date.
 
@@ -212,3 +228,4 @@ And the PPA overview 'sources.list' widget is also up to date.
     >>> print text
     deb http://ppa.launchpad.dev/cprov/ubuntu breezy-autotest main
     deb-src http://ppa.launchpad.dev/cprov/ubuntu breezy-autotest main
+

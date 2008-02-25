@@ -5,16 +5,16 @@
 __metaclass__ = type
 
 __all__ = [
-    'ArchiveNavigation',
-    'ArchiveContextMenu',
-    'ArchiveView',
-    'ArchivePackageDeletionView',
-    'ArchiveEditDependenciesView',
+    'archive_to_structualheading',
+    'ArchiveAdminView',
     'ArchiveActivateView',
     'ArchiveBuildsView',
+    'ArchiveContextMenu',
+    'ArchiveEditDependenciesView',
     'ArchiveEditView',
-    'ArchiveAdminView',
-    'archive_to_structualheading',
+    'ArchiveNavigation',
+    'ArchivePackageDeletionView',
+    'ArchiveView',
     ]
 
 from zope.app.form.browser import TextAreaWidget
@@ -26,7 +26,7 @@ from zope.schema import Choice, List
 from zope.schema.vocabulary import SimpleVocabulary, SimpleTerm
 
 from canonical.cachedproperty import cachedproperty
-from canonical.database.sqlbase import flush_database_updates
+from canonical.database.sqlbase import flush_database_caches
 from canonical.launchpad import _
 from canonical.launchpad.browser.build import BuildRecordsView
 from canonical.launchpad.browser.sourceslist import (
@@ -195,7 +195,7 @@ class ArchiveView(ArchiveViewBase, LaunchpadView):
         """
         archive_urls = [self.context.archive_url]
         archive_urls.extend(
-            [dep.dependency.archive_url for dep in self.context.dependencies])
+            dep.dependency.archive_url for dep in self.context.dependencies)
 
         entries = SourcesListEntries(
             self.context.distribution, archive_urls,
@@ -303,7 +303,7 @@ class ArchivePackageDeletionView(ArchiveViewBase, LaunchpadFormView):
         It's called after deletions to eliminate the just-deleted records
         from the widget presented.
         """
-        flush_database_updates()
+        flush_database_caches()
         self.form_fields = self.form_fields.omit('selected_sources')
         self.form_fields = (
             self.createSelectedSourcesField() + self.form_fields)
@@ -386,7 +386,7 @@ class ArchivePackageDeletionView(ArchiveViewBase, LaunchpadFormView):
         # We end up issuing the published_source query twice this way,
         # because we need the original available source vocabulary to
         # validade the the submitted deletion request. Once the deletion
-        # request is validated and performed we call 'flush_database_updates'
+        # request is validated and performed we call 'flush_database_caches'
         # and rebuild the 'selected_sources' widget.
         self.refreshSelectedSourcesWidget()
 
@@ -427,10 +427,12 @@ class ArchiveEditDependenciesView(LaunchpadFormView):
     def focusedElementScript(self):
         """Override `LaunchpadFormView`.
 
-        Ensure focus is only set if there are dependencies actually presented.
+        Move focus to the 'dependency_candidate' input field when there is
+        no recorded dependency to present. Otherwise it will default to
+        the first recorded dependency checkbox.
         """
         if not self.has_dependencies:
-            return ''
+            self.initial_focus_widget = "dependency_candidate"
         return LaunchpadFormView.focusedElementScript(self)
 
     def createSelectedDependenciesField(self):
@@ -464,7 +466,7 @@ class ArchiveEditDependenciesView(LaunchpadFormView):
 
         It's called after removals or additions to present up-to-date results.
         """
-        flush_database_updates()
+        flush_database_caches()
         self.form_fields = self.form_fields.omit('selected_dependencies')
         self.form_fields = (
             self.createSelectedDependenciesField() + self.form_fields)
