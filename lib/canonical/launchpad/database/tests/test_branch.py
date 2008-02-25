@@ -367,6 +367,7 @@ class TestBranchDeletionConsequences(TestCase):
         """break_links allows deleting a code import branch."""
         code_import = self.factory.makeCodeImport()
         code_import_id = code_import.id
+        self.factory.makeCodeImportJob(code_import)
         code_import.branch.destroySelf(break_references=True)
         self.assertRaises(
             SQLObjectNotFound, CodeImport.get, code_import_id)

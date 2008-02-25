@@ -348,19 +348,25 @@ class Branch(SQLBase):
         As well as the dictionaries, this method returns a list of callables
         that may be called to perform the alterations needed.
         """
+        from canonical.launchpad.database.codeimport import CodeImportSet
         alterations = {}
         deletions = {}
         alteration_operations = []
+        deletion_operations = []
         # Merge proposals require their source and target branches to exist.
         for merge_proposal in self.landing_targets:
             deletions[merge_proposal] = _(
                 'This branch is the source branch of this merge proposal.')
+            def delete_merge_proposal():
+                merge_proposal.destroySelf()
+            deletion_operations.append(delete_merge_proposal)
         # Cannot use self.landing_candidates, because it ignores merged
         # merge proposals.
         for merge_proposal in BranchMergeProposal.selectBy(
             target_branch=self):
             deletions[merge_proposal] = _(
                 'This branch is the target branch of this merge proposal.')
+            deletion_operations.append(merge_proposal.destroySelf)
         for merge_proposal in BranchMergeProposal.selectBy(
             dependent_branch=self):
             alterations[merge_proposal] = _(
@@ -372,11 +378,14 @@ class Branch(SQLBase):
         for subscription in self.subscriptions:
             deletions[subscription] = _(
                 'This is a subscription to this branch.')
+            deletion_operations.append(subscription.destroySelf)
         for bugbranch in self.bug_branches:
             deletions[bugbranch] = _('This branch is associated with a bug.')
+            deletion_operations.append(bugbranch.destroySelf)
         for spec_link in self.spec_links:
             deletions[spec_link] = _(
                 'This associates this branch with a specification.')
+            deletion_operations.append(spec_link.destroySelf)
         for series in self.associatedProductSeries():
             alterations[series] = _('This series is linked to this branch.')
             def clear_user_branch():
@@ -389,11 +398,15 @@ class Branch(SQLBase):
         if self.code_import is not None:
             deletions[self.code_import] = _(
                 'This is the import data for this branch.')
-        return alterations, deletions, alteration_operations
+            def delete_code_import():
+                CodeImportSet().delete(self.code_import.id)
+            deletion_operations.append(delete_code_import)
+        return (alterations, deletions, alteration_operations,
+            deletion_operations)
 
     def deletionRequirements(self):
         """See `IBranch`."""
-        alterations, deletions, _ignored = (
+        alterations, deletions, _ignored, _i = (
             self._deletionRequirements())
         result = dict((associated_object, ('alter', reason)) for
             associated_object, reason in alterations.iteritems())
@@ -411,11 +424,11 @@ class Branch(SQLBase):
         This function is guaranteed to perform the operations predicted by
         deletionRequirements, because it uses the same backing function.
         """
-        _alterations, deletions, alteration_operations = (
+        _alterations, _deletions, alteration_operations, deletion_operations = (
             self._deletionRequirements())
-        for item in deletions:
-            item.delete(item.id)
         for operation in alteration_operations:
+            operation()
+        for operation in deletion_operations:
             operation()
 
     def associatedProductSeries(self):
