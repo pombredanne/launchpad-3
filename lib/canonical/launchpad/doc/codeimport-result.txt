@@ -111,7 +111,13 @@ not present.
 
 Then we can test that the results are in the order expected.
 
-    >>> list(result_set.getResultsForImport(sample_import)) == \
-    ...     [newest_result, middle_result, oldest_result]
-    True
+    >>> results = list(result_set.getResultsForImport(sample_import))
+    >>> len(results)
+    3
+    >>> results.index(newest_result)
+    0
+    >>> results.index(middle_result)
+    1
+    >>> results.index(oldest_result)
+    2
 
