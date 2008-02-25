@@ -10,6 +10,7 @@ __all__ = [
     'LaunchpadLayer', 'ZopelessLayer', 'LaunchpadFunctionalLayer',
     'LaunchpadZopelessLayer', 'PageTestLayer', 'TwistedLaunchpadZopelessLayer',
     'LaunchpadScriptLayer', 'ExperimentalLaunchpadZopelessLayer',
+    'TwistedLayer'
     ]
 
 import logging
@@ -56,4 +57,4 @@ from canonical.testing.layers import (
     BaseLayer, DatabaseLayer, LibrarianLayer, FunctionalLayer,
     LaunchpadLayer, ZopelessLayer, LaunchpadFunctionalLayer,
     LaunchpadZopelessLayer, PageTestLayer, TwistedLaunchpadZopelessLayer,
-    LaunchpadScriptLayer)
+    LaunchpadScriptLayer, TwistedLayer)

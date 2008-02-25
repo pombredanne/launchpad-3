@@ -22,6 +22,7 @@ __all__ = [
     'LaunchpadZopelessLayer', 'LaunchpadScriptLayer', 'PageTestLayer',
     'LayerConsistencyError', 'LayerIsolationError',
     'TwistedLaunchpadZopelessLayer', 'ExperimentalLaunchpadZopelessLayer',
+    'TwistedLayer'
     ]
 
 import logging
@@ -622,6 +623,47 @@ class ZopelessLayer(BaseLayer):
         logout()
 
 
+class TwistedLayer(BaseLayer):
+    """A layer for cleaning up the Twisted thread pool."""
+
+    @classmethod
+    @profiled
+    def setUp(cls):
+        pass
+
+    @classmethod
+    @profiled
+    def tearDown(cls):
+        pass
+
+    @classmethod
+    @profiled
+    def testSetUp(cls):
+        from twisted.internet import interfaces, reactor
+        from twisted.python import threadpool
+        if interfaces.IReactorThreads.providedBy(reactor):
+            pool = getattr(reactor, 'threadpool', None)
+            # If the Twisted threadpool has been obliterated (probably by
+            # testTearDown), then re-build it using the values that Twisted
+            # uses.
+            if pool is None:
+                reactor.threadpool = threadpool.ThreadPool(0, 10)
+                reactor.threadpool.start()
+
+    @classmethod
+    @profiled
+    def testTearDown(cls):
+        # Shutdown and obliterate the Twisted threadpool, to plug up leaking
+        # threads.
+        from twisted.internet import interfaces, reactor
+        if interfaces.IReactorThreads.providedBy(reactor):
+            reactor.suggestThreadPoolSize(0)
+            pool = getattr(reactor, 'threadpool', None)
+            if pool is not None:
+                reactor.threadpool.stop()
+                reactor.threadpool = None
+
+
 class LaunchpadFunctionalLayer(LaunchpadLayer, FunctionalLayer):
     """Provides the Launchpad Zope3 application server environment."""
     @classmethod
@@ -891,42 +933,5 @@ class PageTestLayer(LaunchpadFunctionalLayer):
         pass
 
 
-class TwistedLaunchpadZopelessLayer(LaunchpadZopelessLayer):
+class TwistedLaunchpadZopelessLayer(LaunchpadZopelessLayer, TwistedLayer):
     """A layer for cleaning up the Twisted thread pool."""
-
-    @classmethod
-    @profiled
-    def setUp(cls):
-        pass
-
-    @classmethod
-    @profiled
-    def tearDown(cls):
-        pass
-
-    @classmethod
-    @profiled
-    def testSetUp(cls):
-        from twisted.internet import interfaces, reactor
-        from twisted.python import threadpool
-        if interfaces.IReactorThreads.providedBy(reactor):
-            pool = getattr(reactor, 'threadpool', None)
-            # If the Twisted threadpool has been obliterated (probably by
-            # testTearDown), then re-build it using the values that Twisted
-            # uses.
-            if pool is None:
-                reactor.threadpool = threadpool.ThreadPool(0, 10)
-                reactor.threadpool.start()
-
-    @classmethod
-    @profiled
-    def testTearDown(cls):
-        # Shutdown and obliterate the Twisted threadpool, to plug up leaking
-        # threads.
-        from twisted.internet import interfaces, reactor
-        if interfaces.IReactorThreads.providedBy(reactor):
-            reactor.suggestThreadPoolSize(0)
-            pool = getattr(reactor, 'threadpool', None)
-            if pool is not None:
-                reactor.threadpool.stop()
-                reactor.threadpool = None
