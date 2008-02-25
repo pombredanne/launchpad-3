@@ -144,7 +144,8 @@ class LibrarianTestCase(BaseTestCase):
     def testUploadsFail(self):
         # This layer is not particularly useful by itself, as the Librarian
         # cannot function correctly as there is no database setup.
-        # We can test this using remoteAddFile (it does not need the CA loaded)
+        # We can test this using remoteAddFile (it does not need the CA
+        # loaded)
         client = LibrarianClient()
         data = 'This is a test'
         self.failUnlessRaises(

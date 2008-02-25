@@ -149,7 +149,7 @@ def quote_identifier(identifier):
     quote_dict = {'\"': '""', "\\": "\\\\"}
     for dkey in quote_dict.keys():
         if identifier.find(dkey) >= 0:
-            identifier=quote_dict[dkey].join(identifier.split(dkey))
+            identifier = quote_dict[dkey].join(identifier.split(dkey))
     return '"%s"' % identifier
 
 
@@ -250,9 +250,9 @@ def liverebuild(con):
         log.info("Rebuilding fti column on %s", table)
         for id in range(0, max_id, batch_size):
             try:
-                query = "UPDATE %s SET fti=NULL WHERE id BETWEEN %d AND %d" % (
-                    table, id+1, id + batch_size
-                    )
+                query = """
+                    UPDATE %s SET fti=NULL WHERE id BETWEEN %d AND %d
+                    """ % (table, id + 1, id + batch_size)
                 log.debug(query)
                 cur.execute(query)
             except psycopg.Error:
@@ -455,7 +455,8 @@ def setup(con, configuration=DEFAULT_CONFIG):
             r"Convert a string to a tsearch2 query using the preferred "
             r"configuration. eg. "
             r""""SELECT * FROM Bug WHERE fti @@ ftq(''fatal crash'')". """
-            r"The query is lowercased, and multiple words searched using AND.'"
+            r"The query is lowercased, and multiple words searched using "
+            r"AND.'"
             )
     execute(con,
             r"COMMENT ON FUNCTION ftq(text) IS '"
@@ -491,10 +492,7 @@ def setup(con, configuration=DEFAULT_CONFIG):
                 sql.append(
                         "ts2.setweight(ts2.to_tsvector(''default'', coalesce("
                         "substring(ltrim($%d) from 1 for 2500),'''')),"
-                        "CAST($%d AS \\"char\\"))" % (
-                            i + 1, i + 2
-                            )
-                        )
+                        "CAST($%d AS \\"char\\"))" % (i + 1, i + 2))
                 args[i] = new[args[i]]
 
             sql = "SELECT %s AS fti" % "||".join(sql)
@@ -527,7 +525,7 @@ def setup(con, configuration=DEFAULT_CONFIG):
             "Non-english database locales are not supported with launchpad. "
             "Fresh initdb required."
             )
-    r = locale.split('.',1)
+    r = locale.split('.', 1)
     if len(r) > 1:
         assert r[1].upper() in ("UTF8", "UTF-8"), \
                 "Only UTF8 encodings supported. Fresh initdb required."
@@ -661,7 +659,8 @@ def main():
                     log.info("Rebuilding full text index on %s", table)
                     fti(con, table, columns)
                 else:
-                    log.info("No need to rebuild full text index on %s", table)
+                    log.info(
+                        "No need to rebuild full text index on %s", table)
 
 
 if __name__ == '__main__':
