@@ -106,15 +106,6 @@ def FunctionalDocFileSuite(*paths, **kw):
     return suite
 
 
-def PageTestDocFileSuite(*paths, **kw):
-    if not kw.get('stdout_logging'):
-        kw['stdout_logging'] = False
-    # Make sure that paths are resolved relative to our caller
-    kw['package'] = doctest._normalize_module(kw.get('package'))
-    suite = FunctionalDocFileSuite(*paths, **kw)
-    return suite
-
-
 class SpecialOutputChecker(doctest.OutputChecker):
     def output_difference(self, example, got, optionflags):
         if config.chunkydiff is False:
