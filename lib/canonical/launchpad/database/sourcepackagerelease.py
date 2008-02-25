@@ -237,7 +237,8 @@ class SourcePackageRelease(SQLBase):
     def published_archives(self):
         """See `ISourcePacakgeRelease`."""
         archives = set()
-        for pub in self.publishings:
+        publishings = self.publishings.prejoin(['archive'])
+        for pub in publishings:
             archives.add(pub.archive)
 
         return archives
