@@ -303,7 +303,7 @@ class LaunchpadObjectFactory:
         create_bug_params.setBugTarget(product=product)
         return getUtility(IBugSet).createBug(create_bug_params)
 
-    def makeBlueprint(self, product=None):
+    def makeSpecification(self, product=None):
         """Create and return a new, arbitrary Blueprint.
 
         :param product: The product to make the blueprint on.  If one is
