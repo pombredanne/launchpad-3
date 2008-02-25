@@ -10,3 +10,7 @@ be reduced by putting common code in this package.
 #   - refactor authserver client code in shipit to live here
 #   - Twisted XML-RPC client stuff for supermirror SFTP server.
 
+__all__ = [
+    'InMemoryTwistedProxy']
+
+from canonical.authserver.client.twistedclient import InMemoryTwistedProxy
