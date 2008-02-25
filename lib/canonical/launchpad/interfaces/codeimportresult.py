@@ -7,7 +7,7 @@ __all__ = [
     'CodeImportResultStatus', 'ICodeImportResult', 'ICodeImportResultSet']
 
 from zope.interface import Interface
-from zope.schema import Choice, Datetime, Object, Text
+from zope.schema import Choice, Datetime, Int, Object, Text
 
 from canonical.launchpad import _
 from canonical.launchpad.interfaces.codeimport import ICodeImport
@@ -94,6 +94,8 @@ class CodeImportResultStatus(DBEnumeratedType):
 class ICodeImportResult(Interface):
     """A completed code import job."""
 
+    id = Int(readonly=True, required=True)
+
     date_created = Datetime(readonly=True, required=True)
 
     code_import = Object(
@@ -138,3 +140,28 @@ class ICodeImportResult(Interface):
 
 class ICodeImportResultSet(Interface):
     """The set of all CodeImportResults."""
+
+    def new(code_import, machine, requesting_user, log_excerpt, log_file,
+            status, date_job_started):
+        """Create a CodeImportResult with the given details.
+
+        The date the job finished is assumed to be now and so is not
+        passed in as a parameter.
+
+        :param code_import: The code import for which the job was run.
+        :param machine: The machine the job ran on.
+        :param requesting_user: The user that requested the import, if any.
+        :param log_excerpt: The last few lines of the log, or None.
+        :param log_file: A link to the log in the librarian, or None.
+        :param status: A status code from CodeImportResultStatus.
+        :param date_job_started: The date the job started.
+        """
+
+    def getResultsForImport(code_import):
+        """Return an iterable of the results for the given import.
+
+        The results are sorted to have the newest result first.
+
+        :param code_import: The code import to return results for.
+        """
+

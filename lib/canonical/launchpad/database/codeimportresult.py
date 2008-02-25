@@ -54,3 +54,17 @@ class CodeImportResultSet(object):
     """See `ICodeImportResultSet`."""
 
     implements(ICodeImportResultSet)
+
+    def new(self, code_import, machine, requesting_user, log_excerpt,
+            log_file, status, date_job_started):
+        """See `ICodeImportResultSet`."""
+        return CodeImportResult(
+            code_import=code_import, machine=machine,
+            requesting_user=requesting_user, log_excerpt=log_excerpt,
+            log_file=log_file, status=status,
+            date_job_started=date_job_started)
+
+    def getResultsForImport(self, code_import):
+        """See `ICodeImportResultSet`."""
+        return CodeImportResult.selectBy(
+            code_import=code_import, orderBy=['-date_job_started'])
