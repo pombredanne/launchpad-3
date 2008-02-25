@@ -360,16 +360,3 @@ class LaunchpadObjectFactory:
         series.import_branch = import_branch
         syncUpdate(series)
         return series
-
-    def makeSpec(self):
-        """Create a new, arbitrary Specification."""
-        spec = getUtility(ISpecificationSet).new(
-            self.getUniqueString(),
-            self.getUniqueString(),
-            self.getUniqueURL(),
-            self.getUniqueString(),
-            SpecificationDefinitionStatus.APPROVED,
-            self.makePerson(),
-            product=self.makeProduct(),
-            )
-        return spec

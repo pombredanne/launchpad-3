@@ -310,7 +310,7 @@ class TestBranchDeletionConsequences(TestCase):
 
     def test_branchWithSpecRequirements(self):
         """Deletion requirements for a branch with a spec are right."""
-        spec = self.factory.makeSpec()
+        spec = self.factory.makeBlueprint()
         spec.linkBranch(self.branch, self.branch.owner)
         self.assertEqual({self.branch.spec_links[0]:
             ('delete', _(
@@ -319,7 +319,7 @@ class TestBranchDeletionConsequences(TestCase):
 
     def test_branchWithSpecDeletion(self):
         """break_links allows deleting a branch with a spec."""
-        spec = self.factory.makeSpec()
+        spec = self.factory.makeBlueprint()
         spec.linkBranch(self.branch, self.branch.owner)
         spec_branch_id = self.branch.spec_links[0].id
         self.branch.destroySelf(break_references=True)
