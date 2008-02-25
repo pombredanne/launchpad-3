@@ -90,6 +90,7 @@
 
     <browser:pages
         for="canonical.launchpad.interfaces.IBugTrackerSet"
+        class="canonical.launchpad.browser.bugtracker.BugTrackerSetView"
         permission="zope.Public">
         <browser:page
             name="+index"
@@ -98,11 +99,11 @@
     </browser:pages>
 
     <browser:page
-	name="+newbugtracker"
-	for="canonical.launchpad.interfaces.IBugTrackerSet"
-	class="canonical.launchpad.browser.bugtracker.BugTrackerAddView"
-	permission="launchpad.AnyPerson"
-	template="../templates/bugtrackers-add.pt" />
+        name="+newbugtracker"
+        for="canonical.launchpad.interfaces.IBugTrackerSet"
+        class="canonical.launchpad.browser.bugtracker.BugTrackerAddView"
+        permission="launchpad.AnyPerson"
+        template="../templates/bugtrackers-add.pt" />
 
     <!-- BugTrackerAlias -->
     <content class="canonical.launchpad.database.BugTrackerAlias">
