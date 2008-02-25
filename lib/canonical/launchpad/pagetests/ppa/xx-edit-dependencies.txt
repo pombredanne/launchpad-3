@@ -77,7 +77,7 @@ The adding dependency input offers a interface to look for PPAs based
 on the PPA fti and/or the PPA owner's fti via a IHugeVocabulary
 popup. A valid term is the owner username.
 
-An empty or unknown term results in a error.
+An empty or unknown term results in an error.
 
     >>> admin_browser.getControl(
     ...    name='field.dependency_candidate').value = ''
