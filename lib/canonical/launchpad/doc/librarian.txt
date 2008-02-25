@@ -156,7 +156,6 @@ files in the Librarian.
 
     >>> from canonical.librarian.interfaces import ILibrarianClient
     >>> client = getUtility(ILibrarianClient)
-    >>> from canonical.launchpad.database import LibraryFileAlias
     >>> aid = client.addFile(
     ...     'text.txt', len(data), StringIO(data), 'text/plain', NEVER_EXPIRES
     ...     )
@@ -192,7 +191,7 @@ If we abort the transaction, it is still in there
 
 You can also set the expiry date on the file this way too:
 
-    >>> from datetime import datetime, timedelta
+    >>> from datetime import datetime
     >>> from pytz import utc
     >>> url = client.remoteAddFile(
     ...     'text.txt', len(data), StringIO(data), 'text/plain',
