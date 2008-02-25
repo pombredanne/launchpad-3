@@ -86,7 +86,6 @@ from canonical.launchpad.webapp import (
 from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp.dynmenu import DynMenu, neverempty
 from canonical.launchpad.webapp.uri import URI
-from canonical.librarian.interfaces import ILibrarianClient
 from canonical.widgets.product import LicenseWidget, ProductBugTrackerWidget
 from canonical.widgets.textwidgets import StrippedTextWidget
 
@@ -725,7 +724,7 @@ class ProductDownloadFileMixin:
 
     def md5URL(self, file_, release=None):
         """Create a URL for the MD5 digest."""
-        basurl = self.fileURL(file_, release)
+        baseurl = self.fileURL(file_, release)
         return urlappend(baseurl, '+md5')
 
     def processDeleteFiles(self):
