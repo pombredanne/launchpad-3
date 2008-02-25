@@ -195,22 +195,24 @@ class ICodeImportJobWorkflow(Interface):
         :postcondition: `import_job`.logtail == logtail.
         """
 
-   def finishJob(import_job, status, logfile_alias):
-       """Record that a job finished running.
+    def finishJob(import_job, status, logfile_alias):
+        """Record that a job finished running.
 
-       This method creates a CodeImportResult object that records the outcome
-       of the run, deletes `import_job` from the database and creates a new
-       job that is due appropriately far into the future.
+        This method creates a CodeImportResult object that records the outcome
+        of the run, deletes `import_job` from the database and creates a new
+        job that is due appropriately far into the future.
 
-       In the conditions below, let `code_import = import_job.code_import`.
+        In the conditions below, let `code_import = import_job.code_import`.
 
-       :param import_job: `CodeImportJob` with RUNNING state.
-       :param status: outcome of the job as a `CodeImportResultStatus`.
-       :param logfile_alias: `LibraryFileAlias` containing a log file to
-           display to users for diagnostic. May be None.
-       :precondition: `import_job`.state == RUNNING.
-       :postcondition: `import_job` is deleted.
-       :postcondition: `code_import.import_job` is not None.
-       :postcondition: `code_import.import_job.date_due` is
-           import_job.date_due + code_import.effective_update_interval`.
-       """
+        :param import_job: `CodeImportJob` with RUNNING state.
+        :param status: outcome of the job as a `CodeImportResultStatus`.
+        :param logfile_alias: `LibraryFileAlias` containing a log file to
+            display for diagnostics. May be None.
+        :precondition: `import_job`.state == RUNNING.
+        :postcondition: `import_job` is deleted.
+        :postcondition: `code_import.import_job` is not None.
+        :postcondition: `code_import.import_job.date_due` is
+            import_job.date_due + code_import.effective_update_interval`.
+        :postcondition: A `CodeImportResult` was created.
+        :postcondition: A FINISH `CodeImportEvent` was created.
+        """

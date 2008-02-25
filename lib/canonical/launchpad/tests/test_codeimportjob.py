@@ -19,9 +19,9 @@ from canonical.launchpad.database import (
     CodeImportMachine, CodeImportResult)
 
 from canonical.launchpad.interfaces import (
-    CodeImportJobState, CodeImportResultStatus, CodeImportEventType,
+    CodeImportEventType, CodeImportJobState, CodeImportResultStatus,
     CodeImportReviewStatus, ICodeImportEventSet, ICodeImportJobSet,
-    ICodeImportSet, ICodeImportJobWorkflow)
+    ICodeImportJobWorkflow, ICodeImportResultSet, ICodeImportSet, NotFound)
 from canonical.launchpad.ftests import login
 from canonical.launchpad.testing import LaunchpadObjectFactory
 from canonical.testing import LaunchpadFunctionalLayer
@@ -468,7 +468,7 @@ class TestCodeImportJobWorkflowStartJob(unittest.TestCase,
 
 class TestCodeImportJobWorkflowUpdateHeartbeat(unittest.TestCase,
         AssertFailureMixin, AssertSqlDateMixin, AssertEventMixin):
-    """Unit tests for CodeImportJobWorkflow.startJob."""
+    """Unit tests for CodeImportJobWorkflow.updateHeartbeat."""
 
     layer = LaunchpadFunctionalLayer
 
@@ -487,6 +487,97 @@ class TestCodeImportJobWorkflowUpdateHeartbeat(unittest.TestCase,
             "PENDING." % code_import.branch.unique_name,
             getUtility(ICodeImportJobWorkflow).updateHeartbeat,
             job, u'')
+
+
+class TestCodeImportJobWorkflowFinishJob(unittest.TestCase,
+        AssertFailureMixin, AssertSqlDateMixin, AssertEventMixin):
+    """Unit tests for CodeImportJobWorkflow.finishJob."""
+
+    layer = LaunchpadFunctionalLayer
+
+    def setUp(self):
+        login_for_code_imports()
+        self.factory = LaunchpadObjectFactory()
+        self.machine = self.factory.makeCodeImportMachine()
+        self.machine.setOnline()
+
+    def makeRunningJob(self):
+        """Make and return a CodeImportJob object with state==RUNNING.
+
+        This is suitable for passing into finishJob().
+        """
+        code_import = self.factory.makeCodeImport()
+        job = self.factory.makeCodeImportJob(code_import)
+        getUtility(ICodeImportJobWorkflow).startJob(job, self.machine)
+        return job
+
+    # Precondition tests. Only one of these.
+
+    def test_wrongJobState(self):
+        # Calling finishJob with a job whose state is not RUNNING is an error.
+        machine = self.factory.makeCodeImportMachine()
+        code_import = self.factory.makeCodeImport()
+        job = self.factory.makeCodeImportJob(code_import)
+        self.assertFailure(
+            "The CodeImportJob associated with %s is "
+            "RUNNING." % code_import.branch.unique_name,
+            getUtility(ICodeImportJobWorkflow).finishJob,
+            job, CodeImportResultStatus.SUCCESSFUL, None)
+
+    # Postcondition tests. Several of these -- finishJob is quite a
+    # complex function!
+
+    def test_deletesPassedJob(self):
+        # finishJob deletes the job it is passed.
+        running_job = self.makeRunningJob()
+        running_job_id = running_job.id
+        getUtility(ICodeImportJobWorkflow).finishJob(
+            running_job, CodeImportResultStatus.SUCCESSFUL, None)
+        self.assertRaises(
+            NotFound, getUtility(ICodeImportJobSet).getByID, running_job_id)
+
+    def test_createsNewJob(self):
+        # finishJob creates a new CodeImportJob for the given
+        # CodeImport, scheduled appropriately far in the future.
+        running_job = self.makeRunningJob()
+        running_job_date_due = running_job.date_due
+        code_import = running_job.code_import
+        getUtility(ICodeImportJobWorkflow).finishJob(
+            running_job, CodeImportResultStatus.SUCCESSFUL, None)
+        new_job = code_import.import_job
+        self.assert_(new_job is not None)
+        self.assertEqual(new_job.state, CodeImportJobState.PENDING)
+        self.assertEqual(
+            new_job.date_due - running_job.date_due,
+            code_import.effective_update_interval)
+
+    def test_createsResultObject(self):
+        # finishJob creates a CodeImportResult object that contains
+        # all the relevant details from the job object.
+        # This is going to be a long-ass test :/
+        running_job = self.makeRunningJob()
+        running_job_date_due = running_job.date_due
+        code_import = running_job.code_import
+        # Peel off some information about the job here.
+        getUtility(ICodeImportJobWorkflow).finishJob(
+            running_job, CodeImportResultStatus.SUCCESSFUL, None)
+        [result] = getUtility(ICodeImportResultSet).getResultsForImport(
+            code_import)
+        # Assert things about the result here.
+
+    def test_createsFinishCodeImportEvent(self):
+        # finishJob creates a FINISH CodeImportEvent.
+        # And maybe a PUBLISH one sometimes too?
+        running_job = self.makeRunningJob()
+        code_import = running_job.code_import
+        new_events = NewEvents()
+        getUtility(ICodeImportJobWorkflow).finishJob(
+            running_job, CodeImportResultStatus.SUCCESSFUL, None)
+        [finish_event] = list(new_events)
+        self.assertEventLike(
+            finish_event, CodeImportEventType.FINISH,
+            code_import)
+
 
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)
