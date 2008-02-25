@@ -144,7 +144,7 @@ class ViewSpecificationBranch(EditSpecificationBranch):
 
     permission = 'launchpad.View'
 
-    def checkUnauthenticated():
+    def checkUnauthenticated(self):
         return True
 
 
