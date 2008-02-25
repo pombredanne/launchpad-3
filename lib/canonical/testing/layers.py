@@ -153,11 +153,19 @@ class BaseLayer:
     @classmethod
     @profiled
     def testTearDown(cls):
-        # Reset the working directory in case a test didn't restore it
-        os.chdir(BaseLayer.original_working_directory)
+        # Abort if a test failed to restore the current working directory.
+        # We could recover, but that might hide bugs in code.
+
         reset_logging()
+
         del canonical.launchpad.mail.stub.test_emails[:]
+
         BaseLayer.test_name = None
+
+        assert os.getcwd() == BaseLayer.original_working_directory, (
+                "Test failed to restore current working directory.")
+        BaseLayer.original_working_directory = None
+
         cls.check()
 
     @classmethod

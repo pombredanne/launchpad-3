@@ -281,7 +281,6 @@ def setup(con, configuration=DEFAULT_CONFIG):
     try:
         execute(con, 'SELECT * from pg_ts_cfg')
         log.debug('tsearch2 already installed. Updating dictionaries.')
-        update_dicts(con)
         con.commit()
     except psycopg.ProgrammingError:
         con.rollback()
@@ -299,11 +298,6 @@ def setup(con, configuration=DEFAULT_CONFIG):
         print >> c, open(tsearch2_sql_path).read().replace(
                 'public;','ts2, public;'
                 )
-        if get_pgversion(con).startswith('7.4.'):
-            patch_sql_path = os.path.join(
-                    os.path.dirname(__file__), 'regprocedure_update.sql'
-                    )
-            print >> c, open(patch_sql_path).read()
         p.tochild.close()
         rv = p.wait()
         if rv != 0:
@@ -604,43 +598,15 @@ def get_pgversion(con):
 
 def get_tsearch2_sql_path(con):
     pgversion = get_pgversion(con)
-    if pgversion.startswith('8.0.'):
-        path = os.path.join(PGSQL_BASE, '8.0', 'contrib', 'tsearch2.sql')
-    elif pgversion.startswith('8.1.'):
-        path = os.path.join(PGSQL_BASE, '8.1', 'contrib', 'tsearch2.sql')
-    elif pgversion.startswith('8.2.'):
+    if pgversion.startswith('8.2.'):
         path = os.path.join(PGSQL_BASE, '8.2', 'contrib', 'tsearch2.sql')
     elif pgversion.startswith('8.3.'):
         path = os.path.join(PGSQL_BASE, '8.3', 'contrib', 'tsearch2.sql')
-    elif pgversion.startswith('7.4.'):
-        path = os.path.join(PGSQL_BASE, '7.4', 'contrib', 'tsearch2.sql')
-        if not os.path.exists(path):
-            path = os.path.join(PGSQL_BASE, 'contrib', 'tsearch2.sql')
     else:
         raise RuntimeError('Unknown version %s' % pgversion)
 
     assert os.path.exists(path), '%s does not exist' % path
     return path
-
-
-def update_dicts(con):
-    '''Fix paths to the stop word lists.
-
-    The PostgreSQL 7.4 installation had absolute paths to the stop words
-    lists. This path changed with breezy. Update the paths to the
-    newer relative paths.
-    '''
-    if get_pgversion(con).startswith('7.4.'):
-        return
-
-    execute(con, '''
-        UPDATE pg_ts_dict SET dict_initoption='contrib/english.stop'
-        WHERE dict_initoption like '/%/english.stop'
-        ''')
-    execute(con, '''
-        UPDATE pg_ts_dict SET dict_initoption='contrib/russian.stop'
-        WHERE dict_initoption like '/%/russian.stop'
-        ''')
 
 
 def main():
