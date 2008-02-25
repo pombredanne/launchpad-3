@@ -114,10 +114,6 @@ def _can_edit_translations(pofile, person):
     # We should not check the permissions here but use the standard
     # security system.
 
-    # XXX Carlos Perello Marin 2006-02-08 bug=30789:
-    # The check person.id == rosetta_experts.id must be removed as soon as
-    # the is closed.
-
     # Rosetta experts and admins can always edit translations.
     admins = getUtility(ILaunchpadCelebrities).admin
     rosetta_experts = getUtility(ILaunchpadCelebrities).rosetta_experts
