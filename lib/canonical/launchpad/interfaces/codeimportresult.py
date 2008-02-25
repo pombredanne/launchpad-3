@@ -1,6 +1,7 @@
 # Copyright 2007 Canonical Ltd.  All rights reserved.
+# pylint: disable-msg=E0211,E0213
 
-"""Interface classes for CodeImportResults, i.e. completed code import jobs."""
+"""Interface classes for CodeImportResult, i.e. completed code import jobs."""
 
 __metaclass__ = type
 __all__ = [
@@ -11,7 +12,8 @@ from zope.schema import Choice, Datetime, Int, Object, Text
 
 from canonical.launchpad import _
 from canonical.launchpad.interfaces.codeimport import ICodeImport
-from canonical.launchpad.interfaces.codeimportmachine import ICodeImportMachine
+from canonical.launchpad.interfaces.codeimportmachine import \
+     ICodeImportMachine
 from canonical.launchpad.interfaces.librarian import ILibraryFileAlias
 from canonical.launchpad.interfaces.person import IPerson
 from canonical.lazr import (
