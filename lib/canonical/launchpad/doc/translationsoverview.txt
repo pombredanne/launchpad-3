@@ -1,11 +1,11 @@
 = TranslationsOverview =
 
 This class provides a basic overview of the Launchpad Translations component.
-It includes data such as projects which have so far received most translations
-and provides an easy way to figure out projects a certain person has most
-translated for.
+It includes data such as projects which have so far received the most
+translations and provides an easy way to figure out which projects a certain
+person has most translated for.
 
-In order to be able to update KarmaCache table *and* to be able to do the
+In order to be able to update the KarmaCache table *and* to be able to do the
 regular queries (without slowing down the test by running
 cronscripts/foaf-update-karma-cache.py directly), we need to be logged in
 as a 'testadmin'.
@@ -50,11 +50,12 @@ normalizes `size` values into the range [MINIMUM_SIZE, MAXIMUM_SIZE].
     two: 10
     three: 13
 
-== getMostTranslatedPillars ==
+== Getting the most translated pillars ==
 
-Returns a list of dicts listing pillars with most translations karma so far,
-along with a relative weight for each of the pillars in the range of
-[overview.MINIMUM_SIZE, overview.MAXIMUM_SIZE].
+Method getMostTranslatedPillars() returns a list of dicts listing
+pillars with most translations karma so far, along with a relative
+weight for each of the pillars in the range of [overview.MINIMUM_SIZE,
+overview.MAXIMUM_SIZE].
 
     >>> def display_pillars(pillars):
     ...     for pillar in pillars:
@@ -63,7 +64,8 @@ along with a relative weight for each of the pillars in the range of
     >>> display_pillars(overview.getMostTranslatedPillars())
     Evolution: 14
 
-We are adding some translations karma attributed to Carlos for alsa-utils
+Adding some translations karma attributed to Carlos will make
+alsa-utils displayed among the top translated pillars as well.
 
     >>> carlos = person_set.getByName('carlos')
     >>> translations = KarmaCategory.byName('translations')
@@ -71,8 +73,6 @@ We are adding some translations karma attributed to Carlos for alsa-utils
 
     >>> cache_entry = karmacachemanager.new(
     ...     120, carlos.id, translations.id, product_id=alsa_utils.id)
-
-This will make alsa-utils displayed among the top translated pillars as well.
 
     >>> display_pillars(overview.getMostTranslatedPillars())
     alsa-utils: 10

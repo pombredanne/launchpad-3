@@ -1,5 +1,4 @@
 # Copyright 2007 Canonical Ltd.  All rights reserved.
-# pylint: disable-msg=E0611,W0212
 
 __metaclass__ = type
 __all__ = ['TranslationsOverview']
@@ -21,7 +20,7 @@ class TranslationsOverview:
     MAXIMUM_SIZE = 18
 
     def _normalizeSizes(self, pillars, minimum, maximum):
-        """Normalizes pillar sizes into range [MINIMUM_SIZE, MAXIMUM_SIZE]."""
+        """Normalize pillar sizes into range [MINIMUM_SIZE, MAXIMUM_SIZE]."""
         if maximum == minimum:
             multiplier = 0
             offset = 0
