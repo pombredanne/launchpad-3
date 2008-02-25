@@ -7,12 +7,16 @@ __metaclass__ = type
 
 __all__ = [
     'ITranslationsOverview',
+    'MalformedKarmaCacheData',
     ]
 
 from zope.interface import Interface
 from zope.schema import Int
 
 from canonical.launchpad import _
+
+class MalformedKarmaCacheData(Exception):
+    """KarmaCache values are missing product or distribution identifier."""
 
 class ITranslationsOverview(Interface):
     """Overview of Launchpad Translations component."""

@@ -5,7 +5,8 @@ __all__ = ['TranslationsOverview']
 
 from zope.interface import implements
 
-from canonical.launchpad.interfaces import ITranslationsOverview
+from canonical.launchpad.interfaces import (
+    ITranslationsOverview, MalformedKarmaCacheData)
 
 from canonical.database.sqlbase import cursor
 
@@ -86,7 +87,7 @@ class TranslationsOverview:
             elif distro_id is not None:
                 pillar = Distribution.get(distro_id)
             else:
-                raise Exception(
+                raise MalformedKarmaCacheData(
                     "Lots of karma for non-existing product or distribution.")
             all_pillars.append((pillar, relative_karma))
 
