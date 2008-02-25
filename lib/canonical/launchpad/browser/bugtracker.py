@@ -9,6 +9,7 @@ __all__ = [
     'BugTrackerContextMenu',
     'BugTrackerSetContextMenu',
     'BugTrackerView',
+    'BugTrackerSetView',
     'BugTrackerAddView',
     'BugTrackerEditView',
     'BugTrackerNavigation',
@@ -112,6 +113,40 @@ class BugTrackerAddView(LaunchpadFormView):
             contactdetails=data['contactdetails'],
             owner=getUtility(ILaunchBag).user)
         self.next_url = canonical_url(bugtracker)
+
+
+class BugTrackerSetView(LaunchpadView):
+    """View for actions on the bugtracker index pages."""
+    PILLAR_LIMIT = 3
+
+    def initialize(self):
+        self.bugtrackers = list(self.context)
+        bugtrackerset = getUtility(IBugTrackerSet)
+        # The caching of bugtracker pillars here avoids us hitting the
+        # database multiple times for each bugtracker.
+        self._pillar_cache = bugtrackerset.getPillarsForBugtrackers(
+            self.bugtrackers)
+
+    def getPillarData(self, bugtracker):
+        """Return dict of pillars and booleans indicating ellipsis.
+
+        In more detail, the dictionary holds a list of products/projects
+        and a boolean determining whether or not there we omitted
+        pillars by truncating to PILLAR_LIMIT.
+
+        If no pillars are mapped to this bugtracker, returns {}.
+        """
+        if bugtracker not in self._pillar_cache:
+            return {}
+        pillars = self._pillar_cache[bugtracker]
+        if len(pillars) > self.PILLAR_LIMIT:
+            has_more_pillars = True
+        else:
+            has_more_pillars = False
+        return {
+            'pillars': pillars[:self.PILLAR_LIMIT],
+            'has_more_pillars': has_more_pillars
+        }
 
 
 class BugTrackerView(LaunchpadView):
