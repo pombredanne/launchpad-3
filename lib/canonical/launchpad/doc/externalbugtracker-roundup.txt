@@ -128,8 +128,11 @@ Collect the Example.com watches:
 
 And have a Roundup instance process them:
 
+    >>> from canonical.launchpad.scripts.checkwatches import BugWatchUpdater
+    >>> bug_watch_updater = BugWatchUpdater(txn)
     >>> roundup = TestRoundup(txn, example_bug_tracker)
-    >>> roundup.updateBugWatches(example_bug_tracker.watches)
+    >>> bug_watch_updater.updateBugWatches(
+    ...     roundup, example_bug_tracker.watches)
     INFO:...:Updating 1 watches on http://bugs.some.where
     >>> print_bugwatches(example_bug_tracker.watches)
     Remote bug 1: 1
@@ -162,7 +165,8 @@ We'll add some more watches now.
     ...         remotebug=str(remote_bug_id))
 
     >>> roundup.trace_calls = True
-    >>> roundup.updateBugWatches(example_bug_tracker.watches)
+    >>> bug_watch_updater.updateBugWatches(
+    ...     roundup, example_bug_tracker.watches)
     INFO:...:Updating 11 watches on http://bugs.some.where
     CALLED urlopen(u'http://.../issue?...@startwith=0')
 

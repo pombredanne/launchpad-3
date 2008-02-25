@@ -2,6 +2,7 @@
 
 __metaclass__ = type
 
+from cStringIO import StringIO
 import re
 from urlparse import urlunparse
 
@@ -11,18 +12,19 @@ from zope.event import notify
 
 from canonical.config import config
 from canonical.database.sqlbase import rollback
+from canonical.launchpad.helpers import get_email_template
 from canonical.launchpad.interfaces import (
-    ILaunchBag, IMessageSet, IBugEmailCommand, IBugTaskEmailCommand,
-    IBugEditEmailCommand, IBugTaskEditEmailCommand,
-    IMailHandler, CreatedBugWithNoBugTasksError,
-    EmailProcessingError, IUpstreamBugTask, IDistroBugTask,
-    IDistroSeriesBugTask, IWeaklyAuthenticatedPrincipal, IQuestionSet,
-    ISpecificationSet, QuestionStatus)
+    BugAttachmentType, BugNotificationLevel, CreatedBugWithNoBugTasksError,
+    EmailProcessingError, IBugAttachmentSet, IBugEditEmailCommand,
+    IBugEmailCommand, IBugTaskEditEmailCommand, IBugTaskEmailCommand,
+    IDistroBugTask, IDistroSeriesBugTask, ILaunchBag, ILibraryFileAliasSet,
+    IMailHandler, IMessageSet, IQuestionSet, ISpecificationSet,
+    IUpstreamBugTask, IWeaklyAuthenticatedPrincipal, QuestionStatus)
 from canonical.launchpad.mail.commands import emailcommands, get_error_message
-from canonical.launchpad.mail.sendmail import sendmail
+from canonical.launchpad.mail.sendmail import sendmail, simple_sendmail
 from canonical.launchpad.mail.specexploder import get_spec_url_from_moin_mail
 from canonical.launchpad.mailnotification import (
-    send_process_error_notification)
+    MailWrapper, send_process_error_notification)
 from canonical.launchpad.webapp import canonical_url, urlparse
 from canonical.launchpad.webapp.interaction import get_current_principal
 
@@ -105,12 +107,14 @@ def guess_bugtask(bug, person):
                 if person.inTeam(bugtask.distribution.members):
                     return bugtask
                 else:
-                    # Is the person one of the package bug contacts?
-                    distro_sourcepackage = bugtask.distribution.getSourcePackage(
-                        bugtask.sourcepackagename)
-                    if distro_sourcepackage.isBugContact(person):
-                        return bugtask
-
+                    # Is the person one of the package subscribers?
+                    bug_sub = bugtask.target.getSubscription(person)
+                    if bug_sub is not None:
+                        if (bug_sub.bug_notification_level >
+                            BugNotificationLevel.NOTHING):
+                            # The user is subscribed to bug notifications
+                            # for this package
+                            return bugtask
     return None
 
 
@@ -118,8 +122,34 @@ class IncomingEmailError(Exception):
     """Indicates that something went wrong processing the mail."""
 
     def __init__(self, message, failing_command=None):
+        Exception.__init__(self, message)
         self.message = message
         self.failing_command = failing_command
+
+
+def reformat_wiki_text(wiki_text):
+    """Transform moin formatted raw text to readable text."""
+
+    # XXX Tom Berger 2008-02-20:
+    # This implementation is neither correct nor complete.
+    # See https://bugs.launchpad.net/launchpad/+bug/193646
+
+    plain_text = wiki_text
+
+    # Strip macros (anchors, TOC, etc'...)
+    re_macro = re.compile('\[\[.*?\]\]')
+    plain_text = re_macro.sub('', plain_text)
+
+    # sterilize links
+    re_link = re.compile('\[(.*?)\]')
+    plain_text = re_link.sub(
+        lambda match: ' '.join(match.group(1).split(' ')[1:]), plain_text)
+
+    # Strip comments
+    re_comment = re.compile('#.*?$', re.MULTILINE)
+    plain_text = re_comment.sub('', plain_text)
+
+    return plain_text
 
 
 class MaloneHandler:
@@ -160,12 +190,12 @@ class MaloneHandler:
 
         try:
             if len(commands) > 0:
-                current_principal = get_current_principal()
+                cur_principal = get_current_principal()
                 # The security machinery doesn't know about
                 # IWeaklyAuthenticatedPrincipal yet, so do a manual
                 # check. Later we can rely on the security machinery to
                 # cause Unauthorized errors.
-                if IWeaklyAuthenticatedPrincipal.providedBy(current_principal):
+                if IWeaklyAuthenticatedPrincipal.providedBy(cur_principal):
                     if signed_msg.signature is None:
                         error_message = get_error_message('not-signed.txt')
                     else:
@@ -189,6 +219,14 @@ class MaloneHandler:
                 # the bug.
                 add_comment_to_bug = True
                 commands.insert(0, emailcommands.get('bug', [user]))
+            elif user.lower() == 'help':
+                from_user = getUtility(ILaunchBag).user
+                if from_user is not None:
+                    preferredemail = from_user.preferredemail
+                    if preferredemail is not None:
+                        to_address = str(preferredemail.email)
+                        self.sendHelpEmail(to_address)
+                return True
             elif user.lower() != 'edit':
                 # Indicate that we didn't handle the mail.
                 return False
@@ -206,7 +244,8 @@ class MaloneHandler:
                             notify(bug_event)
                             bug_event = None
 
-                        bug, bug_event = command.execute(signed_msg, filealias)
+                        bug, bug_event = command.execute(
+                            signed_msg, filealias)
                         if add_comment_to_bug:
                             messageset = getUtility(IMessageSet)
                             message = messageset.fromEmail(
@@ -218,6 +257,9 @@ class MaloneHandler:
                             bugmessage = bug.linkMessage(message)
                             notify(SQLObjectCreatedEvent(bugmessage))
                             add_comment_to_bug = False
+                        else:
+                            message = bug.initial_message
+                        self.processAttachments(bug, message, signed_msg)
                     elif IBugTaskEmailCommand.providedBy(command):
                         if bugtask_event is not None:
                             if not ISQLObjectCreatedEvent.providedBy(
@@ -261,6 +303,82 @@ class MaloneHandler:
                 error.message, signed_msg, error.failing_command)
 
         return True
+
+    def sendHelpEmail(self, to_address):
+        """Send usage help to `to_address`."""
+        # Get the help text (formatted as MoinMoin markup)
+        help_text = get_email_template('help.txt')
+        help_text = reformat_wiki_text(help_text)
+        # Wrap text
+        mailwrapper = MailWrapper(width=72)
+        help_text = mailwrapper.format(help_text)
+        simple_sendmail(
+            'help@bugs.launchpad.net', to_address,
+            'Launchpad Bug Tracker Email Interface Help',
+            help_text)
+
+    # Some content types indicate that an attachment has a special
+    # purpose. The current set is based on parsing emails from
+    # one mail account and may need to be extended.
+    # Mail signatures are most likely generated by the mail client
+    # and hence contain not data that is interesting except for
+    # mail authentication.
+    # Resource forks of MacOS files are not easily represented outside
+    # MacOS; if a resource fork contains useful debugging information,
+    # the entire MacOS file should be sent encapsulated for example in
+    # MacBinary format.
+    irrelevant_content_types = set((
+        'application/applefile', # the resource fork of a MacOS file
+        'application/pgp-signature',
+        'application/pkcs7-signature',
+        'application/x-pkcs7-signature',
+        'text/x-vcard',))
+
+    def processAttachments(self, bug, message, signed_mail):
+        """Create Bugattachments for "reasonable" mail attachments.
+
+        A mail attachment is stored as a bugattachment if all of the
+        following conditions are met:
+
+            - the content disposition header explicitly says that
+              this is an attachment,
+            - the content type is not "irrelevant". At present,
+              mail signatures, v-cards, and the resource for of MacOS
+              files are considered to be irrelevant.
+        """
+        unnamed_count = 0
+        for part in signed_mail.walk():
+            content_type = part.get_content_type()
+            content_disposition = part.get('Content-disposition', '').lower()
+            if (part.is_multipart()
+                or content_type in self.irrelevant_content_types
+                or not content_disposition.startswith('attachment')):
+                continue
+
+            content = part.get_payload(decode=True)
+            if len(content) == 0:
+                # storing empty files is pointless.
+                continue
+
+            filename = part.get_filename()
+            if filename is None:
+                if unnamed_count:
+                    filename = 'unnamed-%i' % unnamed_count
+                else:
+                    filename = 'unnamed'
+                unnamed_count += 1
+            filealias = getUtility(ILibraryFileAliasSet).create(
+                name=filename, size=len(content), file=StringIO(content),
+                contentType=content_type)
+
+            if content_type in ('text/x-diff', 'text/x-patch'):
+                attach_type = BugAttachmentType.PATCH
+            else:
+                attach_type = BugAttachmentType.UNSPECIFIED
+
+            getUtility(IBugAttachmentSet).create(
+                bug=bug, filealias=filealias, attach_type=attach_type,
+                title=filename, message=message)
 
 
 class AnswerTrackerHandler:
@@ -380,10 +498,12 @@ class SpecificationHandler:
             return False
         our_address = "notifications@%s" % config.launchpad.specs_domain
         # Check for emails that we sent.
-        if signed_msg['X-Loop'] and our_address in signed_msg.get_all('X-Loop'):
+        xloop = signed_msg['X-Loop']
+        if xloop and our_address in signed_msg.get_all('X-Loop'):
             if log and filealias:
                 log.warning(
-                    'Got back a notification we sent: %s' % filealias.http_url)
+                    'Got back a notification we sent: %s' %
+                    filealias.http_url)
             return True
         # Check for emails that Launchpad sent us.
         if signed_msg['Sender'] == config.bounce_address:
@@ -415,7 +535,8 @@ class SpecificationHandler:
                 sendmail(signed_msg, to_addrs=notification_addresses)
 
             elif log is not None:
-                log.debug("Didn't find a corresponding spec for %s" % spec_url)
+                log.debug(
+                    "Didn't find a corresponding spec for %s" % spec_url)
         elif log is not None:
             log.debug("Didn't find a specification URL")
         return True

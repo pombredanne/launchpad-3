@@ -143,7 +143,8 @@ def _assignKarmaUsingQuestionContext(person, question, actionname):
 
 def question_created(question, event):
     """Assign karma to the user which created <question>."""
-    _assignKarmaUsingQuestionContext(question.owner, question, 'questionasked')
+    _assignKarmaUsingQuestionContext(
+        question.owner, question, 'questionasked')
 
 
 def question_modified(question, event):
@@ -156,7 +157,8 @@ def question_modified(question, event):
             user, question, 'questiondescriptionchanged')
 
     if old_question.title != question.title:
-        _assignKarmaUsingQuestionContext(user, question, 'questiontitlechanged')
+        _assignKarmaUsingQuestionContext(
+            user, question, 'questiontitlechanged')
 
 
 QuestionAction2KarmaAction = {
@@ -165,7 +167,7 @@ QuestionAction2KarmaAction = {
     QuestionAction.SETSTATUS: None,
     QuestionAction.COMMENT: 'questioncommentadded',
     QuestionAction.ANSWER: 'questiongaveanswer',
-    QuestionAction.CONFIRM: None, # Handled in giveAnswer() and confirmAnswer()
+    QuestionAction.CONFIRM: None,# Handled in giveAnswer() and confirmAnswer()
     QuestionAction.EXPIRE: None,
     QuestionAction.REJECT: 'questionrejected',
     QuestionAction.REOPEN: 'questionreopened',
@@ -184,7 +186,8 @@ def question_comment_added(questionmessage, event):
 def question_bug_added(questionbug, event):
     """Assign karma to the user which added <questionbug>."""
     question = questionbug.question
-    _assignKarmaUsingQuestionContext(event.user, question, 'questionlinkedtobug')
+    _assignKarmaUsingQuestionContext(
+        event.user, question, 'questionlinkedtobug')
 
 # XXX flacoste 2007-07-13 bug=125849:
 # This should go away once bug #125849 is fixed.
@@ -214,3 +217,26 @@ def faq_edited(faq, event):
     context = get_karma_context_parameters(faq.target)
     if old_faq.content != faq.content or old_faq.title != faq.title:
         user.assignKarma('faqedited', **context)
+
+def branch_created(branch, event):
+    """Assign karma to the user who registered the branch."""
+    if branch.product is None:
+        # No karma for junk branches.
+        return
+    branch.registrant.assignKarma('branchcreated', product=branch.product)
+
+def bug_branch_created(bug_branch, event):
+    """Assign karma to the user who linked the bug to the branch."""
+    product = bug_branch.branch.product
+    if product is None:
+        # No karma for junk branches.
+        return
+    bug_branch.registrant.assignKarma('bugbranchcreated', product=product)
+
+def spec_branch_created(spec_branch, event):
+    """Assign karma to the user who linked the spec to the branch."""
+    product = spec_branch.branch.product
+    if product is None:
+        # No karma for junk branches.
+        return
+    spec_branch.registrant.assignKarma('specbranchcreated', product=product)

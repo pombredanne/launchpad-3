@@ -57,7 +57,6 @@ from zope.schema.vocabulary import (
 from zope.security.proxy import isinstance as zope_isinstance
 
 from canonical.config import config
-from canonical.lp import decorates
 from canonical.launchpad import _
 from canonical.cachedproperty import cachedproperty
 from canonical.launchpad.validators import LaunchpadValidationError
@@ -101,7 +100,7 @@ from canonical.launchpad.webapp.snapshot import Snapshot
 from canonical.launchpad.webapp.tales import PersonFormatterAPI
 from canonical.launchpad.webapp.vocabulary import vocab_factory
 
-from canonical.lazr import EnumeratedType, Item
+from canonical.lazr import decorates, EnumeratedType, Item
 
 from canonical.widgets.bug import BugTagsWidget
 from canonical.widgets.bugtask import (
@@ -946,6 +945,19 @@ class BugTaskEditView(LaunchpadEditFormView):
             if field in read_only_field_names:
                 self.form_fields[field].custom_widget = CustomWidgetFactory(
                     DBItemDisplayWidget)
+
+        if 'importance' not in read_only_field_names:
+            # Users shouldn't be able to set a bugtask's importance to
+            # `UNKOWN`, only bug watches do that.
+            importance_vocab_items = [
+                item for item in BugTaskImportance.items.items
+                if item != BugTaskImportance.UNKNOWN]
+            self.form_fields = self.form_fields.omit('importance')
+            self.form_fields += form.Fields(
+                Choice(__name__='importance',
+                       title=_('Importance'),
+                       values=importance_vocab_items,
+                       default=BugTaskImportance.UNDECIDED))
 
         if self.context.target_uses_malone:
             self.form_fields = self.form_fields.omit('bugwatch')

@@ -348,7 +348,7 @@ class ArchivePackageDeletionView(ArchiveViewBase, LaunchpadFormView):
             self.setFieldError(
                 'deletion_comment', 'Deletion comment is required.')
 
-    @action(_("Delete Packages"), name="delete", validator="validate_delete")
+    @action(_("Request Deletion"), name="delete", validator="validate_delete")
     def action_delete(self, action, data):
         """Perform the deletion of the selected packages.
 

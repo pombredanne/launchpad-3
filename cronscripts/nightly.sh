@@ -53,9 +53,6 @@ python update-pkgcache.py -q
 echo == Updating CVE database `date` ==
 python update-cve.py -q
 
-echo == Updating bugtask target name caches `date` ==
-python update-bugtask-targetnamecaches.py -q
-
 echo == Expiring questions `date` ==
 python expire-questions.py
 
@@ -70,6 +67,9 @@ python checkwatches.py
 
 echo == POFile stats `date` ==
 python rosetta-pofile-stats.py
+
+echo == Updating bugtask target name caches `date` ==
+python update-bugtask-targetnamecaches.py -q
 
 rm -f $LOCK
 

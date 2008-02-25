@@ -38,6 +38,7 @@ __all__ = [
     'MilestoneVocabulary',
     'NonMergedPeopleAndTeamsVocabulary',
     'PackageReleaseVocabulary',
+    'PPAVocabulary',
     'PersonAccountToMergeVocabulary',
     'PersonActiveMembershipVocabulary',
     'PersonActiveMembershipPlusSelfVocabulary',
@@ -75,7 +76,7 @@ from zope.schema.vocabulary import SimpleTerm, SimpleVocabulary
 from zope.security.proxy import isinstance as zisinstance
 
 from canonical.launchpad.database import (
-    Branch, BranchSet, Bounty, Bug, BugTracker, BugWatch, Component,
+    Archive, Branch, BranchSet, Bounty, Bug, BugTracker, BugWatch, Component,
     Country, Distribution, DistroArchSeries, DistroSeries, FeaturedProject,
     KarmaCategory, Language, LanguagePack, MailingList, Milestone, Person,
     PillarName, Processor, ProcessorFamily, Product, ProductRelease,
@@ -85,13 +86,13 @@ from canonical.launchpad.database import (
 from canonical.database.sqlbase import SQLBase, quote_like, quote, sqlvalues
 from canonical.launchpad.helpers import shortlist
 from canonical.launchpad.interfaces import (
-    DistroSeriesStatus, EmailAddressStatus, IBranch, IBugTask, IDistribution,
-    IDistributionSourcePackage, IDistroBugTask, IDistroSeries,
-    IDistroSeriesBugTask, IEmailAddressSet, IFAQ, IFAQTarget, ILanguage,
-    ILaunchBag, IMailingListSet, IMilestoneSet, IPerson, IPersonSet,
-    IPillarName, IProduct, IProductSeries, IProject, ISourcePackage,
-    ISpecification, ITeam,
-    IUpstreamBugTask, LanguagePackType, MailingListStatus, PersonVisibility)
+    ArchivePurpose, DistroSeriesStatus, EmailAddressStatus, IBranch,
+    IBugTask, IDistribution, IDistributionSourcePackage, IDistroBugTask,
+    IDistroSeries, IDistroSeriesBugTask, IEmailAddressSet, IFAQ, IFAQTarget,
+    ILanguage, ILaunchBag, IMailingListSet, IMilestoneSet, IPerson,
+    IPersonSet, IPillarName, IProduct, IProductSeries, IProject,
+    ISourcePackage, ISpecification, ITeam, IUpstreamBugTask, LanguagePackType,
+    MailingListStatus, PersonVisibility)
 
 from canonical.launchpad.webapp.vocabulary import (
     CountableIterator, IHugeVocabulary, NamedSQLObjectHugeVocabulary,
@@ -602,8 +603,7 @@ class UserTeamsParticipationVocabulary(SQLObjectVocabularyBase):
         if launchbag.user:
             user = launchbag.user
             for team in user.teams_participated_in:
-                if (team.visibility is None
-                    or team.visibility == PersonVisibility.PUBLIC):
+                if team.visibility == PersonVisibility.PUBLIC:
                     yield self.toTerm(team)
 
     def getTermByToken(self, token):
@@ -732,24 +732,18 @@ class ValidPersonOrTeamVocabulary(
             extra_clause = ""
 
         if not text:
-            # XXX Edwin Grubbs 2007-12-11 bug=175758
-            # Checking if visibility is None is only
-            # necessary until next cycle.
             query = """
                 Person.id = ValidPersonOrTeamCache.id
-                AND (Person.visibility IS NULL OR Person.visibility = %s)
+                AND Person.visibility = %s
                 """ % quote(PersonVisibility.PUBLIC)
             query += extra_clause
             return Person.select(
                 query, clauseTables=['ValidPersonOrTeamCache'])
 
-        # XXX Edwin Grubbs 2007-12-11 bug=175758
-        # Checking if visibility is None is only
-        # necessary until next cycle.
         name_match_query = """
             Person.id = ValidPersonOrTeamCache.id
             AND Person.fti @@ ftq(%s)
-            AND (Person.visibility IS NULL OR Person.visibility = %s)
+            AND Person.visibility = %s
             """ % (quote(text), quote(PersonVisibility.PUBLIC))
         name_match_query += extra_clause
         name_matches = Person.select(
@@ -758,15 +752,12 @@ class ValidPersonOrTeamVocabulary(
         # Note that we must use lower(email) LIKE rather than ILIKE
         # as ILIKE no longer appears to be hitting the index under PG8.0
 
-        # XXX Edwin Grubbs 2007-12-11 bug=175758
-        # Checking if visibility is None is only
-        # necessary until next cycle.
         email_match_query = """
             EmailAddress.person = Person.id
             AND EmailAddress.person = ValidPersonOrTeamCache.id
             AND EmailAddress.status IN %s
             AND lower(email) LIKE %s || '%%'
-            AND (Person.visibility IS NULL OR Person.visibility = %s)
+            AND Person.visibility = %s
             """ % (sqlvalues(EmailAddressStatus.VALIDATED,
                              EmailAddressStatus.PREFERRED),
                    quote_like(text),
@@ -776,14 +767,11 @@ class ValidPersonOrTeamVocabulary(
             email_match_query,
             clauseTables=['ValidPersonOrTeamCache', 'EmailAddress'])
 
-        # XXX Edwin Grubbs 2007-12-11 bug=175758
-        # Checking if visibility is None is only
-        # necessary until next cycle.
         ircid_match_query = """
             IRCId.person = Person.id
             AND IRCId.person = ValidPersonOrTeamCache.id
             AND lower(IRCId.nickname) = %s
-            AND (Person.visibility IS NULL OR Person.visibility = %s)
+            AND Person.visibility = %s
             """ % (quote(text), quote(PersonVisibility.PUBLIC))
         ircid_match_query += extra_clause
         ircid_matches = Person.select(
@@ -1437,6 +1425,54 @@ class PackageReleaseVocabulary(SQLObjectVocabularyBase):
     def toTerm(self, obj):
         return SimpleTerm(
             obj, obj.id, obj.name + " " + obj.version)
+
+
+class PPAVocabulary(SQLObjectVocabularyBase):
+
+    implements(IHugeVocabulary)
+
+    _table = Archive
+    _orderBy = ['Person.name']
+    _clauseTables = ['Person']
+    _filter = AND(
+        Person.q.id == Archive.q.ownerID,
+        Archive.q.purpose == ArchivePurpose.PPA)
+    displayname = 'Select a PPA'
+
+    def toTerm(self, archive):
+        """See `IVocabulary`."""
+        summary = archive.description.splitlines()[0]
+        return SimpleTerm(archive, archive.owner.name, summary)
+
+    def getTermByToken(self, token):
+        """See `IVocabularyTokenized`."""
+        clause = """
+        %s AND Person.name = %s
+        """ % (self._filter, quote(token))
+
+        obj = self._table.selectOne(
+            clause, clauseTables=self._clauseTables)
+
+        if obj is None:
+            raise LookupError(token)
+        else:
+            return self.toTerm(obj)
+
+    def search(self, query):
+        """Return a resultset of archives.
+
+        This is a helper required by `SQLObjectVocabularyBase.searchForTerms`.
+        """
+        if not query:
+            return self.emptySelectResults()
+
+        query = query.lower()
+        clause = """
+            %s AND (Archive.fti @@ ftq(%s) OR Person.fti @@ ftq(%s))
+        """ % (self._filter, quote(query), quote(query))
+
+        return self._table.select(
+            clause, orderBy=self._orderBy, clauseTables=self._clauseTables)
 
 
 class DistributionVocabulary(NamedSQLObjectVocabulary):

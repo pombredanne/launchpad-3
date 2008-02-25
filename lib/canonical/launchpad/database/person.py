@@ -7,7 +7,9 @@
 
 __metaclass__ = type
 __all__ = [
-    'Person', 'PersonSet', 'SSHKey', 'SSHKeySet', 'WikiName', 'WikiNameSet',
+    'Person', 'PersonSet',
+    'SSHKey', 'SSHKeySet',
+    'WikiName', 'WikiNameSet',
     'JabberID', 'JabberIDSet', 'IrcID', 'IrcIDSet']
 
 from datetime import datetime, timedelta
@@ -77,7 +79,6 @@ from canonical.launchpad.database.pillar import PillarName
 from canonical.launchpad.database.pofile import POFileTranslator
 from canonical.launchpad.database.karma import KarmaAction, Karma
 from canonical.launchpad.database.mentoringoffer import MentoringOffer
-from canonical.launchpad.database.packagebugcontact import PackageBugContact
 from canonical.launchpad.database.shipit import (
     MIN_KARMA_ENTRIES_TO_BE_TRUSTED_ON_SHIPIT, ShippingRequest)
 from canonical.launchpad.database.sourcepackagerelease import (
@@ -95,6 +96,7 @@ from canonical.launchpad.database.teammembership import (
 from canonical.launchpad.database.question import QuestionPersonSearch
 
 from canonical.launchpad.searchbuilder import any
+from canonical.launchpad.validators.person import public_person_validator
 
 
 class ValidPersonOrTeamCache(SQLBase):
@@ -167,7 +169,8 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
     organization = StringCol(default=None)
 
     teamowner = ForeignKey(dbName='teamowner', foreignKey='Person',
-                           default=None)
+                           default=None,
+                           validator=public_person_validator)
 
     sshkeys = SQLMultipleJoin('SSHKey', joinColumn='person')
 
@@ -188,7 +191,8 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
     creation_rationale = EnumCol(enum=PersonCreationRationale, default=None)
     creation_comment = StringCol(default=None)
     registrant = ForeignKey(
-        dbName='registrant', foreignKey='Person', default=None)
+        dbName='registrant', foreignKey='Person', default=None,
+        validator=public_person_validator)
     hide_email_addresses = BoolCol(notNull=True, default=False)
     verbose_bugnotifications = BoolCol(notNull=True, default=True)
 
@@ -393,7 +397,8 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
     def valid_specifications(self):
         return self.specifications(filter=[SpecificationFilter.VALID])
 
-    def specifications(self, sort=None, quantity=None, filter=None):
+    def specifications(self, sort=None, quantity=None, filter=None,
+                       prejoin_people=True):
         """See `IHasSpecifications`."""
 
         # Make a new list of the filter, so that we do not mutate what we
@@ -519,9 +524,10 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
                 query += ' AND Specification.fti @@ ftq(%s) ' % quote(
                     constraint)
 
-        # now do the query, and remember to prejoin to people
         results = Specification.select(query, orderBy=order,
-            limit=quantity, prejoins=['assignee', 'approver', 'drafter'])
+            limit=quantity)
+        if prejoin_people:
+            results = results.prejoin(['assignee', 'approver', 'drafter'])
         return results
 
     def searchQuestions(self, search_text=None,
@@ -620,26 +626,21 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
                              prejoins=["product"])
 
 
+    # XXX Tom Berger 2008-02-14:
+    # The name (and possibly the implementation) of these functions
+    # is no longer appropriate, since it now relies on subscriptions,
+    # rather than package bug contacts.
+    # See bug #191799
     def getBugContactPackages(self):
         """See `IPerson`."""
-        package_bug_contacts = shortlist(
-            PackageBugContact.selectBy(bugcontact=self),
-            longest_expected=25)
-
-        packages_for_bug_contact = [
-            package_bug_contact.distribution.getSourcePackage(
-                package_bug_contact.sourcepackagename)
-            for package_bug_contact in package_bug_contacts]
-
-        packages_for_bug_contact.sort(key=lambda x: x.name)
-
-        return packages_for_bug_contact
+        packages = [sub.target for sub in self.structural_subscriptions
+                    if (sub.distribution is not None and
+                        sub.sourcepackagename is not None)]
+        packages.sort(key=lambda x: x.name)
+        return packages
 
     def getBugContactOpenBugCounts(self, user):
         """See `IPerson`."""
-        # We could use IBugTask.search() to get all the counts, but
-        # that's slow, since we'd need to issue one query per package
-        # and count we want.
         open_bugs_cond = (
             'BugTask.status %s' % search_value_to_where_condition(
                 any(*UNRESOLVED_BUGTASK_STATUSES)))
@@ -659,9 +660,9 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
         conditions = [
             'Bug.id = BugTask.bug',
             open_bugs_cond,
-            'PackageBugContact.bugcontact = %s' % sqlvalues(self),
-            'BugTask.sourcepackagename = PackageBugContact.sourcepackagename',
-            'BugTask.distribution = PackageBugContact.distribution',
+            'StructuralSubscription.subscriber = %s' % sqlvalues(self),
+            'BugTask.sourcepackagename = StructuralSubscription.sourcepackagename',
+            'BugTask.distribution = StructuralSubscription.distribution',
             'Bug.duplicateof is NULL']
         privacy_filter = get_bug_privacy_filter(user)
         if privacy_filter:
@@ -670,7 +671,7 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
         query = """SELECT BugTask.distribution,
                           BugTask.sourcepackagename,
                           %(sums)s
-                   FROM BugTask, Bug, PackageBugContact
+                   FROM BugTask, Bug, StructuralSubscription
                    WHERE %(conditions)s
                    GROUP BY BugTask.distribution, BugTask.sourcepackagename"""
         cur = cursor()
