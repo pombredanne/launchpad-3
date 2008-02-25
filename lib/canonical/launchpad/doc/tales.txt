@@ -285,6 +285,13 @@ title might be interpreted by the browser.
     u'...<img ... src="/@@/blueprint-undefined" />&nbsp;...'
 
 
+=== Projects ===
+
+    >>> product = factory.makeProduct()
+    >>> test_tales('product/fmt:link', product=product)
+    u'<a href=...><img alt="" ... src="/@@/product" />&nbsp;...</a>'
+
+
 == The fmt: namespace to get strings (hiding) ==
 
 PGP blocks, signatures and full-quoted parts of a message can be
