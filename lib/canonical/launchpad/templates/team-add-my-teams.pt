@@ -13,23 +13,29 @@
   <metal:portlets fill-slot="portlets" />
 
   <div metal:fill-slot="main">
+    <p tal:condition="not: view/candidate_teams">
+      None of the teams you administer can be added to this team.
+    </p>
 
-    <tal:can-propose
-      condition="not:context/subscriptionpolicy/enumvalue:RESTRICTED">
-      <div metal:use-macro="context/@@launchpad_form/form">
-        <p metal:fill-slot="extra_info"
-           tal:condition="context/subscriptionpolicy/enumvalue:MODERATED">
-           This is a moderated team, so one of its administrators will have
-           to review any memberships you propose.
-        </p>
+    <tal:has-candidates
+      condition="view/candidate_teams">
+      <tal:can-propose
+        condition="not:context/subscriptionpolicy/enumvalue:RESTRICTED">
+        <div metal:use-macro="context/@@launchpad_form/form">
+          <p metal:fill-slot="extra_info"
+             tal:condition="context/subscriptionpolicy/enumvalue:MODERATED">
+             This is a moderated team, so one of its administrators will have
+             to review any memberships you propose.
+          </p>
+        </div>
+      </tal:can-propose>
+
+      <div tal:condition="context/subscriptionpolicy/enumvalue:RESTRICTED">
+        <h1>This is a restricted team</h1>
+        <p>New members can not be proposed&mdash;they can only be added by one
+        of the team's administrators.</p>
       </div>
-    </tal:can-propose>
-
-    <div tal:condition="context/subscriptionpolicy/enumvalue:RESTRICTED">
-      <h1>This is a restricted team</h1>
-      <p>New members can not be proposed&mdash;they can only be added by one
-      of the team's administrators.</p>
-    </div>
+    </tal:has-candidates>
 
   </div>
 

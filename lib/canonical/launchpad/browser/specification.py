@@ -15,6 +15,7 @@ __all__ = [
     'SpecificationContextMenu',
     'SpecificationNavigation',
     'SpecificationView',
+    'SpecificationSimpleView',
     'SpecificationEditView',
     'SpecificationGoalProposeView',
     'SpecificationGoalDecideView',
@@ -388,9 +389,8 @@ class SpecificationContextMenu(ContextMenu):
 
     def dependencytree(self):
         text = 'Show dependencies'
-        enabled = (
-            bool(self.context.dependencies) or bool(self.context.blocked_specs)
-            )
+        enabled = (bool(self.context.dependencies) or
+                   bool(self.context.blocked_specs))
         return Link('+deptree', text, icon='info', enabled=enabled)
 
     def linksprint(self):
@@ -411,40 +411,16 @@ class SpecificationContextMenu(ContextMenu):
         text = 'Link branch'
         return Link('+linkbranch', text, icon='add')
 
-
-class SpecificationView(LaunchpadView, CanBeMentoredView):
+class SpecificationSimpleView(LaunchpadView, CanBeMentoredView):
+    """Used to render portlets and listing items that need browser code."""
 
     __used_for__ = ISpecification
 
-    def initialize(self):
-        # The review that the user requested on this spec, if any.
-        self.feedbackrequests = []
-        self.notices = []
-        request = self.request
-
-        # establish if a subscription form was posted
-        sub = request.form.get('subscribe')
-        upd = request.form.get('update')
-        unsub = request.form.get('unsubscribe')
-        essential = request.form.get('essential', False)
-        if self.user and request.method == 'POST':
-            if sub is not None:
-                self.context.subscribe(self.user, self.user, essential)
-                self.notices.append("You have subscribed to this spec.")
-            elif upd is not None:
-                self.context.subscribe(self.user, self.user, essential)
-                self.notices.append('Your subscription has been updated.')
-            elif unsub is not None:
-                self.context.unsubscribe(self.user)
-                self.notices.append("You have unsubscribed from this spec.")
-
-        if self.user is not None:
-            # establish if this user has a review queued on this spec
-            self.feedbackrequests = self.context.getFeedbackRequests(self.user)
-            if self.feedbackrequests:
-                msg = "You have %d feedback request(s) on this specification."
-                msg %= len(self.feedbackrequests)
-                self.notices.append(msg)
+    @cachedproperty
+    def feedbackrequests(self):
+        if self.user is None:
+            return []
+        return list(self.context.getFeedbackRequests(self.user))
 
     @property
     def subscription(self):
@@ -461,6 +437,41 @@ class SpecificationView(LaunchpadView, CanBeMentoredView):
     def branch_links(self):
         return [branch_link for branch_link in self.context.branch_links
                 if check_permission('launchpad.View', branch_link.branch)]
+
+
+class SpecificationView(SpecificationSimpleView):
+    """Used to render the main view of a specification."""
+
+    __used_for__ = ISpecification
+
+    def initialize(self):
+        # The review that the user requested on this spec, if any.
+        self.notices = []
+
+        if not self.user:
+            return
+
+        request = self.request
+        if request.method == 'POST':
+            # establish if a subscription form was posted.
+            sub = request.form.get('subscribe')
+            upd = request.form.get('update')
+            unsub = request.form.get('unsubscribe')
+            essential = request.form.get('essential', False)
+            if sub is not None:
+                self.context.subscribe(self.user, self.user, essential)
+                self.notices.append("You have subscribed to this spec.")
+            elif upd is not None:
+                self.context.subscribe(self.user, self.user, essential)
+                self.notices.append('Your subscription has been updated.')
+            elif unsub is not None:
+                self.context.unsubscribe(self.user)
+                self.notices.append("You have unsubscribed from this spec.")
+
+        if self.feedbackrequests:
+            msg = "You have %d feedback request(s) on this specification."
+            msg %= len(self.feedbackrequests)
+            self.notices.append(msg)
 
 
 class SpecificationEditView(SQLObjectEditView):
@@ -638,16 +649,20 @@ class SpecificationSupersedingView(LaunchpadFormView):
 
     @action(_('Continue'), name='supersede')
     def supersede_action(self, action, data):
+        # Store some shorter names to avoid line-wrapping.
+        SUPERSEDED = SpecificationDefinitionStatus.SUPERSEDED
+        NEW = SpecificationDefinitionStatus.NEW
         self.context.superseded_by = data['superseded_by']
         if data['superseded_by'] is not None:
             # set the state to superseded
-            self.context.definition_status = SpecificationDefinitionStatus.SUPERSEDED
+            self.context.definition_status = SUPERSEDED
         else:
             # if the current state is SUPERSEDED and we are now removing the
             # superseded-by then we should move this spec back into the
             # drafting pipeline by resetting its status to NEW
-            if self.context.definition_status == SpecificationDefinitionStatus.SUPERSEDED:
-                self.context.definition_status = SpecificationDefinitionStatus.NEW
+            if (self.context.definition_status == 
+                    SpecificationDefinitionStatus.SUPERSEDED):
+                self.context.definition_status = NEW
         newstate = self.context.updateLifecycleStatus(self.user)
         if newstate is not None:
             self.request.response.addNotification(
@@ -726,7 +741,7 @@ class SpecGraph:
         self.walkSpecsMakingNodes(spec, get_related_specs_fn, link_nodes_fn)
 
     def addBlockedNodes(self, spec):
-        """Add nodes for the specs that the given spec blocks, transitively."""
+        """Add nodes for specs that the given spec blocks, transitively."""
         get_related_specs_fn = attrgetter('blocked_specs')
         def link_nodes_fn(node, blocked_spec):
             self.link(node, blocked_spec)

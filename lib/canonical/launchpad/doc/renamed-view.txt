@@ -36,6 +36,7 @@ update bookmarks.
     >>> print request.response.getHeader('Location')
     http://launchpad.dev/ubuntu/+questions
 
+
 == Handling GET parameters ==
 
 If there was any query parameters on the request, they are appended
@@ -49,6 +50,7 @@ to the redirected URL.
     >>> print request.response.getHeader('Location')
     http://launchpad.dev/ubuntu/+questions?field.status=Open
 
+
 == Redirecting to another virtual host ==
 
 The view also takes an optional 'rootsite' parameter, which will
@@ -61,6 +63,21 @@ change the virtual host used for the redirection.
     u''
     >>> print request.response.getHeader('Location')
     http://answers.launchpad.dev/ubuntu/+questions
+
+
+== Traversal errors ==
+
+If an object cannot be found during traversal, RenamedView will raise
+a NotFound error. For example, requesting a non-existent question will
+raise an error. e.g. http://launchpad.dev/ubuntu/+tickets/foo
+
+    >>> request = LaunchpadTestRequest()
+    >>> view = RenamedView(ubuntu, request, '+tickets')
+    >>> view.publishTraverse(request, u'foo')
+    Traceback (most recent call last):
+     ...
+    NotFound: Object: u'foo', name: <Distribution at...>
+
 
 == Registering from ZCML ==
 

@@ -252,7 +252,6 @@ is still pointing to this old URL (see bug #138090).
 >>> check_not_found("/bugs/bugs")
 >>> check_not_found("/bugs/bugs/1")
 >>> check_redirect("/bugs/1")
->>> check("/bugs/bugtrackers")
 >>> check("/bugs/cve/1999-8979")
 
 Viewing a bug in the context of an upstream where the bug has already
