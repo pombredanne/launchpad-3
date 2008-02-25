@@ -37,32 +37,6 @@ class NewFunctionalTestSetup(FunctionalTestSetup):
 FunctionalTestSetup = NewFunctionalTestSetup
 
 
-class FunctionalTestCase(unittest.TestCase):
-    """Functional test case.
-
-    This functionality should be moved into canonical.testing.
-    """
-    layer = FunctionalLayer
-    def setUp(self):
-        """Prepares for a functional test case."""
-        super(FunctionalTestCase, self).setUp()
-
-    def tearDown(self):
-        """Cleans up after a functional test case."""
-        super(FunctionalTestCase, self).tearDown()
-
-    def getRootFolder(self):
-        """Returns the Zope root folder."""
-        raise NotImplementedError('getRootFolder')
-        #return FunctionalTestSetup().getRootFolder()
-
-    def commit(self):
-        raise NotImplementedError('commit')
-
-    def abort(self):
-        raise NotImplementedError('abort')
-
-
 class StdoutWrapper:
     """A wrapper for sys.stdout.  Writes to this file like object will
     write to whatever sys.stdout is pointing to at the time.
@@ -152,8 +126,8 @@ class SpecialOutputChecker(doctest.OutputChecker):
             newgot = elided_source(example.want, got,
                                    normalize_whitespace=normalize_whitespace)
             if newgot == example.want:
-                # There was no difference.  May be an error in elided_source().
-                # In any case, return the whole thing.
+                # There was no difference.  May be an error in
+                # elided_source().  In any case, return the whole thing.
                 newgot = got
         else:
             newgot = got
