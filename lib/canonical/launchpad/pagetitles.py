@@ -129,7 +129,7 @@ archive_delete_packages = ContextTitle('Delete packages from %s')
 
 archive_edit = ContextTitle('Edit %s')
 
-archive_edit_dependencies = ContextTitle('Edit %s dependencies')
+archive_edit_dependencies = ContextTitle('Edit dependencies for %s')
 
 archive_index = ContextTitle('%s')
 

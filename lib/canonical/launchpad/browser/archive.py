@@ -405,7 +405,7 @@ class ArchivePackageDeletionView(ArchiveViewBase, LaunchpadFormView):
 
 
 class ArchiveEditDependenciesView(LaunchpadFormView):
-    """Archive depedencies view class."""
+    """Archive dependencies view class."""
 
     schema = IArchiveEditDependenciesForm
 
@@ -414,7 +414,7 @@ class ArchiveEditDependenciesView(LaunchpadFormView):
     def setUpFields(self):
         """Override `LaunchpadFormView`.
 
-        In addition to setting schema fields, also initialize
+        In addition to setting schema fields, also initialize the
         'selected_dependencies' field.
 
         See `createSelectedSourcesField` method.
@@ -462,8 +462,7 @@ class ArchiveEditDependenciesView(LaunchpadFormView):
     def refreshSelectedDependenciesWidget(self):
         """Refresh 'selected_dependencies' widget.
 
-        It's called after removals or additions to eliminate to present
-        up-to-date results.
+        It's called after removals or additions to present up-to-date results.
         """
         flush_database_updates()
         self.form_fields = self.form_fields.omit('selected_dependencies')
@@ -479,9 +478,9 @@ class ArchiveEditDependenciesView(LaunchpadFormView):
         return bool(self.context.dependencies)
 
     def validate_remove(self, action, data):
-        """Validate remove parameters.
+        """Validate dependency removal parameters.
 
-        Ensure we have, at least, one dependency selected.
+        Ensure we have at least one dependency selected.
         """
         form.getWidgetsData(self.widgets, 'field', data)
 
@@ -514,9 +513,10 @@ class ArchiveEditDependenciesView(LaunchpadFormView):
         self.request.response.addNotification(structured(notification))
 
     def validate_add(self, action, data):
-        """Validate add dependency parameters.
+        """Validate 'add dependency' parameters.
 
-        Ensure the following contitions
+        Ensure the following conditions
+
          * The dependency_candidate exists (was chosen by the user);
          * The dependency_candidate is not the context PPA (recursive);
          * The dependency_candidate is not yet recorded (duplication).
