@@ -75,7 +75,7 @@ class PersonTeamMembershipCollection(ScopedCollection):
 
     def getEntryPath(self, entry):
         """See `ICollection`."""
-        if self.relationship.relationship_name == 'teams':
+        if self.relationship == 'team_memberships':
             return entry.team.name
         else:
             return entry.member.name
@@ -83,7 +83,7 @@ class PersonTeamMembershipCollection(ScopedCollection):
     def lookupEntry(self, name):
         """Find a membership by team name."""
         for membership in self.collection:
-            if self.relationship.relationship_name == 'teams':
+            if self.relationship == 'team_memberships':
                 if membership.team.name == name:
                     return membership
             else:

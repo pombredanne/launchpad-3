@@ -936,13 +936,8 @@ class MantisLoginHandler(ClientCookie.HTTPRedirectHandler):
          view page via a cookie test page (login_cookie_test.php)
     """
 
-    def redirect_request(self, newurl, req, fp, code, msg, headers):
-        # XXX: The argument order here is different from that in
-        # urllib2.HTTPRedirectHandler. ClientCookie is meant to mimic
-        # urllib2 (and does subclass it), so this is probably a
-        # bug. -- Gavin Panella, 2007-08-27
-
-        scheme, host, path, params, query, fragment = urlparse(newurl)
+    def rewrite_url(self, url):
+        scheme, host, path, params, query, fragment = urlparse(url)
 
         # If we can, skip the login page and submit credentials
         # directly. The query should contain a 'return' parameter
@@ -955,11 +950,13 @@ class MantisLoginHandler(ClientCookie.HTTPRedirectHandler):
             query = cgi.parse_qs(query, True)
             query['username'] = query['password'] = ['guest']
             if 'return' not in query:
-                self.warning(
+                message = (
                     "Mantis redirected us to the login page "
                     "but did not set a return path.")
+                report_warning(message)
+                log.warning(message)
             query = urllib.urlencode(query, True)
-            newurl = urlunparse(
+            url = urlunparse(
                 (scheme, host, path, params, query, fragment))
 
         # XXX: Previous versions of the Mantis external bug tracker
@@ -971,8 +968,16 @@ class MantisLoginHandler(ClientCookie.HTTPRedirectHandler):
         # page because we may end up annoying admins with spurious
         # login attempts. -- Gavin Panella, 2007-08-28.
 
+        return url
+
+    def redirect_request(self, newurl, req, fp, code, msg, headers):
+        # XXX: Gavin Panella 2007-08-27: The argument order here is
+        # different from that in urllib2.HTTPRedirectHandler.
+        # ClientCookie is meant to mimic urllib2 (and does subclass
+        # it), so this is probably a bug.
+
         return ClientCookie.HTTPRedirectHandler.redirect_request(
-            self, newurl, req, fp, code, msg, headers)
+            self, self.rewrite_url(newurl), req, fp, code, msg, headers)
 
 
 class Mantis(ExternalBugTracker):

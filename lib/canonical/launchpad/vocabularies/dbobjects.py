@@ -38,6 +38,7 @@ __all__ = [
     'MilestoneVocabulary',
     'NonMergedPeopleAndTeamsVocabulary',
     'PackageReleaseVocabulary',
+    'PPAVocabulary',
     'PersonAccountToMergeVocabulary',
     'PersonActiveMembershipVocabulary',
     'PersonActiveMembershipPlusSelfVocabulary',
@@ -75,7 +76,7 @@ from zope.schema.vocabulary import SimpleTerm, SimpleVocabulary
 from zope.security.proxy import isinstance as zisinstance
 
 from canonical.launchpad.database import (
-    Branch, BranchSet, Bounty, Bug, BugTracker, BugWatch, Component,
+    Archive, Branch, BranchSet, Bounty, Bug, BugTracker, BugWatch, Component,
     Country, Distribution, DistroArchSeries, DistroSeries, FeaturedProject,
     KarmaCategory, Language, LanguagePack, MailingList, Milestone, Person,
     PillarName, Processor, ProcessorFamily, Product, ProductRelease,
@@ -85,13 +86,13 @@ from canonical.launchpad.database import (
 from canonical.database.sqlbase import SQLBase, quote_like, quote, sqlvalues
 from canonical.launchpad.helpers import shortlist
 from canonical.launchpad.interfaces import (
-    DistroSeriesStatus, EmailAddressStatus, IBranch, IBugTask, IDistribution,
-    IDistributionSourcePackage, IDistroBugTask, IDistroSeries,
-    IDistroSeriesBugTask, IEmailAddressSet, IFAQ, IFAQTarget, ILanguage,
-    ILaunchBag, IMailingListSet, IMilestoneSet, IPerson, IPersonSet,
-    IPillarName, IProduct, IProductSeries, IProject, ISourcePackage,
-    ISpecification, ITeam,
-    IUpstreamBugTask, LanguagePackType, MailingListStatus, PersonVisibility)
+    ArchivePurpose, DistroSeriesStatus, EmailAddressStatus, IBranch,
+    IBugTask, IDistribution, IDistributionSourcePackage, IDistroBugTask,
+    IDistroSeries, IDistroSeriesBugTask, IEmailAddressSet, IFAQ, IFAQTarget,
+    ILanguage, ILaunchBag, IMailingListSet, IMilestoneSet, IPerson,
+    IPersonSet, IPillarName, IProduct, IProductSeries, IProject,
+    ISourcePackage, ISpecification, ITeam, IUpstreamBugTask, LanguagePackType,
+    MailingListStatus, PersonVisibility)
 
 from canonical.launchpad.webapp.vocabulary import (
     CountableIterator, IHugeVocabulary, NamedSQLObjectHugeVocabulary,
@@ -1424,6 +1425,54 @@ class PackageReleaseVocabulary(SQLObjectVocabularyBase):
     def toTerm(self, obj):
         return SimpleTerm(
             obj, obj.id, obj.name + " " + obj.version)
+
+
+class PPAVocabulary(SQLObjectVocabularyBase):
+
+    implements(IHugeVocabulary)
+
+    _table = Archive
+    _orderBy = ['Person.name']
+    _clauseTables = ['Person']
+    _filter = AND(
+        Person.q.id == Archive.q.ownerID,
+        Archive.q.purpose == ArchivePurpose.PPA)
+    displayname = 'Select a PPA'
+
+    def toTerm(self, archive):
+        """See `IVocabulary`."""
+        summary = archive.description.splitlines()[0]
+        return SimpleTerm(archive, archive.owner.name, summary)
+
+    def getTermByToken(self, token):
+        """See `IVocabularyTokenized`."""
+        clause = """
+        %s AND Person.name = %s
+        """ % (self._filter, quote(token))
+
+        obj = self._table.selectOne(
+            clause, clauseTables=self._clauseTables)
+
+        if obj is None:
+            raise LookupError(token)
+        else:
+            return self.toTerm(obj)
+
+    def search(self, query):
+        """Return a resultset of archives.
+
+        This is a helper required by `SQLObjectVocabularyBase.searchForTerms`.
+        """
+        if not query:
+            return self.emptySelectResults()
+
+        query = query.lower()
+        clause = """
+            %s AND (Archive.fti @@ ftq(%s) OR Person.fti @@ ftq(%s))
+        """ % (self._filter, quote(query), quote(query))
+
+        return self._table.select(
+            clause, orderBy=self._orderBy, clauseTables=self._clauseTables)
 
 
 class DistributionVocabulary(NamedSQLObjectVocabulary):

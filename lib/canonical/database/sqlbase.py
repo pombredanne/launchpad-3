@@ -17,7 +17,6 @@ from sqlobject.styles import Style
 
 from zope.interface import implements
 
-from canonical.config import config
 from canonical.database.interfaces import ISQLBase
 
 __all__ = ['SQLBase', 'quote', 'quote_like', 'quoteIdentifier', 'sqlvalues',
@@ -97,7 +96,11 @@ class SQLBase(SQLOS):
     """
     implements(ISQLBase)
     _style = LaunchpadStyle()
-    _randomiseOrder = config.randomise_select_results
+
+    @property
+    def _randomiseOrder(self):
+        from canonical.config import config
+        return config.randomise_select_results
     # Silence warnings in linter script, which complains about all
     # SQLBase-derived objects missing an id.
     id = None
@@ -649,6 +652,7 @@ def connect(user, dbname=None, isolation=DEFAULT_ISOLATION):
 
     Default database name is the one specified in the main configuration file.
     """
+    from canonical.config import config
     con_str = 'dbname=%s' % (dbname or config.dbname)
     if user:
         con_str += ' user=%s' % user

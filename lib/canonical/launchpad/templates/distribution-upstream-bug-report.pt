@@ -15,8 +15,7 @@
     <!--
       td.good { background: lightgreen; }
       td.bad { background: #ffaaaa; }
-      th.numeric { text-align: right }
-      a.numeric { display: block }
+      td.amount a { display: block; }
     -->
     </style>
 </metal:heading>
@@ -100,16 +99,16 @@
             <th colspan="2">Project</th>
             <th>Bug Tracker</th>
             <th>Upstream Contact</th>
-            <th class="numeric">Open</th>
-            <th class="numeric">Triaged</th>
-            <th class="numeric">%</th>
-            <th class="numeric">&Delta;</th>
-            <th class="numeric">Upstream</th>
-            <th class="numeric">%</th>
-            <th class="numeric">&Delta;</th>
-            <th class="numeric">Watch</th>
-            <th class="numeric">%</th>
-            <th class="numeric">&Delta;</th>
+            <th class="amount">Open</th>
+            <th class="amount">Triaged</th>
+            <th class="amount">%</th>
+            <th class="amount">&Delta;</th>
+            <th class="amount">Upstream</th>
+            <th class="amount">%</th>
+            <th class="amount">&Delta;</th>
+            <th class="amount">Watch</th>
+            <th class="amount">%</th>
+            <th class="amount">&Delta;</th>
           </tr>
         </thead>
         <tbody id="upstream-report-content">
@@ -119,16 +118,15 @@
                  tal:content="item/dsp/name"></a>
             </td>
             <tal:has-product condition="item/product">
-              <td>
-                <a tal:attributes="href item/product/fmt:url"
-                   tal:content="item/product/title"></a>
-              </td>
-              <td>
+              <td style="padding-right: 0">
                 <a tal:attributes="href item/series_branch/fmt:url;
                    title string:You can use `bzr branch lp:${item/product/name}' to fetch this project's code"
                    tal:condition="item/series_branch">
-                  <img alt="(branch)" src="/@@/branch" />
-                </a>
+                  <img alt="(branch)" src="/@@/branch" /></a>
+              </td>
+              <td style="padding-left: 0">
+                <a tal:attributes="href item/product/fmt:url"
+                   tal:content="item/product/title"></a>
               </td>
               <tal:has-bugtracker condition="item/bugtracker">
                 <td>
@@ -167,33 +165,28 @@
                        <small>(link)</small></a>
                 </td>
             </tal:has-no-product>
-            <td align="right">
-              <a class="numeric"
-                 tal:attributes="href item/open_bugs_url"
+            <td class="amount">
+              <a tal:attributes="href item/open_bugs_url"
                  tal:content="item/open_bugs"></a>
             </td>
-            <td align="right" tal:attributes="class item/triaged_bugs_class">
-              <a class="numeric"
-                 tal:attributes="href item/triaged_bugs_url"
+            <td tal:attributes="class string:amount ${item/triaged_bugs_class}">
+              <a tal:attributes="href item/triaged_bugs_url"
                  tal:content="item/triaged_bugs"></a>
             </td>
-            <td align="right" tal:attributes="class item/triaged_bugs_class"
+            <td tal:attributes="class string:amount ${item/triaged_bugs_class}"
                 tal:content="item/triaged_bugs_percentage/fmt:float/.2" />
-            <td align="right" tal:attributes="class item/triaged_bugs_class">
-              <a class="numeric"
-                 tal:attributes="href item/triaged_bugs_delta_url"
+            <td tal:attributes="class string:amount ${item/triaged_bugs_class}">
+              <a tal:attributes="href item/triaged_bugs_delta_url"
                  tal:content="item/triaged_bugs_delta"></a>
             </td>
-            <td align="right" tal:attributes="class item/upstream_bugs_class">
-              <a class="numeric"
-                 tal:attributes="href item/upstream_bugs_url"
+            <td tal:attributes="class string:amount ${item/upstream_bugs_class}">
+              <a tal:attributes="href item/upstream_bugs_url"
                  tal:content="item/upstream_bugs"></a>
             </td>
-            <td align="right" tal:attributes="class item/upstream_bugs_class"
+            <td tal:attributes="class string:amount ${item/upstream_bugs_class}"
                 tal:content="item/upstream_bugs_percentage/fmt:float/.2" />
-            <td align="right" tal:attributes="class item/upstream_bugs_class">
-              <a class="numeric"
-                 tal:attributes="href item/upstream_bugs_delta_url"
+            <td tal:attributes="class string:amount ${item/upstream_bugs_class}">
+              <a tal:attributes="href item/upstream_bugs_delta_url"
                  tal:content="item/upstream_bugs_delta"></a>
             </td>
             <tal:upstream-in-launchpad 
@@ -202,13 +195,12 @@
             </tal:upstream-in-launchpad>
             <tal:upstream-not-in-launchpad
                 condition="not: item/official_malone">
-              <td align="right" tal:attributes="class item/watched_bugs_class"
+              <td tal:attributes="class string:amount ${item/watched_bugs_class}"
                   tal:content="item/watched_bugs" />
-              <td align="right" tal:attributes="class item/watched_bugs_class"
+              <td tal:attributes="class string:amount ${item/watched_bugs_class}"
                   tal:content="item/watched_bugs_percentage/fmt:float/.2" />
-              <td align="right" tal:attributes="class item/watched_bugs_class">
-                <a class="numeric"
-                   tal:attributes="href item/watched_bugs_delta_url"
+              <td tal:attributes="class string:amount ${item/watched_bugs_class}">
+                <a tal:attributes="href item/watched_bugs_delta_url"
                    tal:content="item/watched_bugs_delta"></a>
               </td>
             </tal:upstream-not-in-launchpad>
@@ -216,26 +208,26 @@
         </tbody>
         <tfoot id="upstream-report-totals">
           <tr>
-            <td colspan="5" align="right"><b>Totals:</b></td>
-            <td align="right"
+            <td colspan="5" class="amount"><b>Totals:</b></td>
+            <td class="amount"
                 tal:content="view/total/open_bugs" />
-            <td align="right"
+            <td class="amount"
                 tal:content="view/total/triaged_bugs" />
-            <td align="right"
+            <td class="amount"
                 tal:content="view/total/triaged_bugs_percentage/fmt:float/.2" />
-            <td align="right"
+            <td class="amount"
                 tal:content="view/total/triaged_bugs_delta" />
-            <td align="right"
+            <td class="amount"
                 tal:content="view/total/upstream_bugs" />
-            <td align="right"
+            <td class="amount"
                 tal:content="view/total/upstream_bugs_percentage/fmt:float/.2" />
-            <td align="right"
+            <td class="amount"
                 tal:content="view/total/upstream_bugs_delta" />
-            <td align="right"
+            <td class="amount"
                 tal:content="view/total/watched_bugs" />
-            <td align="right"
+            <td class="amount"
                 tal:content="view/total/watched_bugs_percentage/fmt:float/.2" />
-            <td align="right"
+            <td class="amount"
                 tal:content="view/total/watched_bugs_delta" />
           </tr>
         <tfoot>
