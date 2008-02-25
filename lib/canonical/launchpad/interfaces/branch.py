@@ -551,12 +551,6 @@ class IBranch(IHasOwner):
             object needs to be touched.
         """
 
-    def _breakReferences():
-        """Remove all references to a branch.
-
-        This may involve deleting items or setting references to None
-        """
-
     def associatedProductSeries():
         """Return the product series that this branch is associated with.
 
