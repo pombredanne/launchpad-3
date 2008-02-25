@@ -45,7 +45,7 @@ normalizes `size` values into the range [MINIMUM_SIZE, MAXIMUM_SIZE].
     >>> from zope.security.proxy import removeSecurityProxy
     >>> result = removeSecurityProxy(overview)._normalizeSizes(test_list, 0, 3)
     >>> for pillar in result:
-    ...     print "%s: %d" % (pillar['pillar'], pillar['font_size'])
+    ...     print "%s: %d" % (pillar['pillar'], pillar['weight'])
     one: 18
     two: 10
     three: 13
@@ -59,9 +59,8 @@ along with a relative weight for each of the pillars in the range of
     >>> def display_pillars(pillars):
     ...     for pillar in pillars:
     ...         print "%s: %d" % (
-    ...             pillar['pillar'].displayname, pillar['font_size'])
+    ...             pillar['pillar'].displayname, pillar['weight'])
     >>> display_pillars(overview.getMostTranslatedPillars())
-    ...     print "%s: %d" % (pillar['pillar'].displayname, pillar['font_size'])
     Evolution: 14
 
 We are adding some translations karma attributed to Carlos for alsa-utils
