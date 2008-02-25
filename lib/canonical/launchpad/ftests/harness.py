@@ -176,6 +176,3 @@ class LaunchpadFunctionalTestCase(unittest.TestCase):
 
 class LaunchpadZopelessTestCase(unittest.TestCase):
     layer = LaunchpadZopelessLayer
-
-#del LaunchpadFunctionalTestCase
-#del LaunchpadZopelessTestCase
