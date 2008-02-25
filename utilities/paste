@@ -1,8 +1,6 @@
-#!/usr/bin/python2.5
+#!/usr/bin/env python
 
 # Copyright 2004-2008 Canonical Ltd.  All rights reserved.
-
-from __future__ import with_statement
 
 import base64
 import httplib
@@ -47,9 +45,12 @@ def parse_arguments():
 
 def read_auth_file(path):
     path = os.path.expanduser(path)
-    with open(path) as f:
+    f = open(path)
+    try:
         username = f.readline().strip()
         password = f.readline().strip()
+    finally:
+        f.close()
     return username, password
 
 
@@ -83,8 +84,11 @@ def main():
         title = parser.title
 
     if parser.options.file:
-        with open(parser.options.file) as f:
+        f = open(parser.options.file)
+        try:
             content = f.read()
+        finally:
+            f.close()
     else:
         content = sys.stdin.read()
 
