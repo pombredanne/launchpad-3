@@ -18,9 +18,9 @@ We carry on the basic set-up as well, preparing commonly used utilities.
 
     >>> from canonical.database.sqlbase import flush_database_updates
     >>> from canonical.launchpad.database import (
-    ...     KarmaCache, KarmaCategory, SourcePackageName)
+    ...     KarmaCategory, SourcePackageName)
     >>> from canonical.launchpad.interfaces import (
-    ...     IDistributionSet, IKarmaCache, IKarmaCacheManager, IPersonSet,
+    ...     IDistributionSet, IKarmaCacheManager, IPersonSet,
     ...     IProductSet, ITranslationsOverview)
     >>> karmacachemanager = getUtility(IKarmaCacheManager)
     >>> person_set = getUtility(IPersonSet)

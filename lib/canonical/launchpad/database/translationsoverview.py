@@ -5,12 +5,10 @@ __metaclass__ = type
 __all__ = ['TranslationsOverview']
 
 from zope.interface import implements
-from zope.app.form.browser.interfaces import IAddFormCustomization
 
-from canonical.launchpad.interfaces import ITranslationsOverview, NotFoundError
+from canonical.launchpad.interfaces import ITranslationsOverview
 
-from canonical.database.sqlbase import (cursor, flush_database_caches,
-    flush_database_updates, quote_like, quote, SQLBase, sqlvalues)
+from canonical.database.sqlbase import cursor
 
 from canonical.launchpad.database.distribution import Distribution
 from canonical.launchpad.database.product import Product
