@@ -35,3 +35,10 @@ class IBranchRevisionSet(Interface):
 
     def delete(branch_revision_id):
         """Delete the BranchRevision."""
+
+    def getTipRevisionsForBranches(branches):
+        """Get the tip branch revisions for the specified branches.
+
+        The revision objects are prejoined in to reduce the number of
+        database queries issued.
+        """

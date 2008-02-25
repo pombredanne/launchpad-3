@@ -253,8 +253,6 @@ class LaunchpadObjectFactory:
         revision_set = getUtility(IRevisionSet)
         if author is None:
             author = self.getUniqueString('author')
-        # All revisions are owned by the admin user.  Don't ask.
-        admin_user = getUtility(ILaunchpadCelebrities).admin
         for index in range(count):
             revision = revision_set.new(
                 revision_id = self.getUniqueString('revision-id'),
