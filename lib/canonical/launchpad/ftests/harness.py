@@ -15,8 +15,7 @@ from zope.app.rdb.interfaces import IZopeDatabaseAdapter
 from sqlos.interfaces import IConnectionName
 
 from canonical.testing import (
-        BaseLayer, LibrarianLayer, FunctionalLayer, LaunchpadZopelessLayer,
-        )
+    BaseLayer, FunctionalLayer, LaunchpadZopelessLayer)
 from canonical.ftests.pgsql import PgTestSetup
 from canonical.functional import FunctionalTestSetup
 from canonical.config import dbconfig
@@ -75,7 +74,8 @@ def _reconnect_sqlos(dbuser=None, database_config_section='launchpad'):
 
     # Confirm that the SQLOS connection cache has been emptied, so access
     # to SQLBase._connection will get a fresh Tranaction
-    assert len(connCache.keys()) == 0, 'SQLOS appears to have kept connections'
+    assert len(connCache.keys()) == 0, (
+        'SQLOS appears to have kept connections')
 
     # Confirm the database has the right patchlevel
     confirm_dbrevision(cursor())

@@ -9,11 +9,12 @@ that the tearDown methods don't leave things in a mess.
 __metaclass__ = type
 
 import unittest
+
 from zope.app import zapi
-from harness import LaunchpadFunctionalTestCase
 from zope.app.mail.interfaces import IMailer
 
 from canonical.launchpad.database.person import Person
+from canonical.launchpad.ftests.harness import LaunchpadFunctionalTestCase
 from canonical.testing import LaunchpadFunctionalLayer
 
 

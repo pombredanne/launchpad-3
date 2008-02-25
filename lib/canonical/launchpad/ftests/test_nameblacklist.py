@@ -6,7 +6,6 @@ __metaclass__ = type
 
 import unittest
 
-from canonical.database.sqlbase import cursor, sqlvalues
 from canonical.foaf.nickname import is_blacklisted
 from canonical.testing import LaunchpadLayer
 
