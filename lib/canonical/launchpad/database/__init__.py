@@ -125,6 +125,7 @@ from canonical.launchpad.database.revision import *
 from canonical.launchpad.database.gpgkey import *
 from canonical.launchpad.database.archive import *
 from canonical.launchpad.database.emailaddress import *
+from canonical.launchpad.database.oauth import *
 from canonical.launchpad.database.openidserver import *
 from canonical.launchpad.database.entitlement import *
 from canonical.launchpad.database.mailinglist import *
