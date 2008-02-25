@@ -20,8 +20,8 @@ __all__ = [
     'BaseLayer', 'DatabaseLayer', 'LibrarianLayer', 'FunctionalLayer',
     'LaunchpadLayer', 'ZopelessLayer', 'LaunchpadFunctionalLayer',
     'LaunchpadZopelessLayer', 'LaunchpadScriptLayer', 'PageTestLayer',
-    'LayerConsistencyError', 'LayerIsolationError', 'TwistedLayer',
-    'ExperimentalLaunchpadZopelessLayer',
+    'LayerConsistencyError', 'LayerIsolationError',
+    'TwistedLaunchpadZopelessLayer', 'ExperimentalLaunchpadZopelessLayer',
     ]
 
 import logging
@@ -869,7 +869,7 @@ class PageTestLayer(LaunchpadFunctionalLayer):
         pass
 
 
-class TwistedLayer(LaunchpadZopelessLayer):
+class TwistedLaunchpadZopelessLayer(LaunchpadZopelessLayer):
     """A layer for cleaning up the Twisted thread pool."""
 
     @classmethod

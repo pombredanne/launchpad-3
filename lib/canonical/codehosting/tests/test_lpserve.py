@@ -29,7 +29,7 @@ from canonical.codehosting.tests.helpers import deferToThread
 from canonical.config import config
 from canonical.codehosting.tests.servers import Authserver
 
-from canonical.testing import TwistedLayer
+from canonical.testing import TwistedLaunchpadZopelessLayer
 
 
 ROCKETFUEL_ROOT = os.path.dirname(
@@ -38,7 +38,7 @@ ROCKETFUEL_ROOT = os.path.dirname(
 
 class TestLaunchpadServerCommand(TwistedTestCase, TestCaseInTempDir):
 
-    layer = TwistedLayer
+    layer = TwistedLaunchpadZopelessLayer
 
     def setUp(self):
         TestCaseInTempDir.setUp(self)
