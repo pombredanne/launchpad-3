@@ -12,14 +12,13 @@ __all__ = [
 from zope.component import adapts, getUtility
 from zope.schema import Object, Text
 
+from canonical.lazr import decorates
 from canonical.lazr.rest import Collection, Entry, ScopedCollection
 from canonical.lazr.interfaces import IEntry
 from canonical.lazr.rest.schema import CollectionField
 
 from canonical.launchpad.interfaces import (
     IPerson, ITeamMembership, make_person_name_field)
-
-from canonical.lp import decorates
 
 class ITeamMembershipEntry(IEntry):
     """The part of a team membership that we expose through the web service."""
@@ -75,7 +74,7 @@ class PersonTeamMembershipCollection(ScopedCollection):
 
     def getEntryPath(self, entry):
         """See `ICollection`."""
-        if self.relationship == 'team_memberships':
+        if self.relationship.relationship_name == 'teams':
             return entry.team.name
         else:
             return entry.member.name
@@ -83,7 +82,7 @@ class PersonTeamMembershipCollection(ScopedCollection):
     def lookupEntry(self, name):
         """Find a membership by team name."""
         for membership in self.collection:
-            if self.relationship == 'team_memberships':
+            if self.relationship.relationship_name == 'teams':
                 if membership.team.name == name:
                     return membership
             else:
@@ -91,24 +90,3 @@ class PersonTeamMembershipCollection(ScopedCollection):
                     return membership
         else:
             return None
-
-
-class TeamTeamMembershipCollection(ScopedCollection):
-    """A collection of team memberships for a team.
-
-    There will be one membership for each person who's a member of the
-    team.
-    """
-
-    def getEntryPath(self, entry):
-        """See `ICollection`."""
-        return entry.member.name
-
-    def lookupEntry(self, name):
-        """Find a membership by member name."""
-        membership = [membership for membership in self.context
-                      if membership.member.name == name]
-        if len(memberships) == 0:
-            return None
-        else:
-            return memberships[0]
