@@ -37,12 +37,12 @@ from canonical.launchpad import database
 from canonical.launchpad.ftests.harness import LaunchpadZopelessTestSetup
 from canonical.launchpad.interfaces import BranchLifecycleStatus, BranchType
 from canonical.launchpad.webapp.errorlog import globalErrorUtility
-from canonical.testing import TwistedLayer
+from canonical.testing import TwistedLaunchpadZopelessLayer
 
 
 class SSHTestCase(ServerTestCase):
 
-    layer = TwistedLayer
+    layer = TwistedLaunchpadZopelessLayer
     server = None
 
     def installServer(self, server):

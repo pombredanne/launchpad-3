@@ -20,8 +20,9 @@ __all__ = [
     'BaseLayer', 'DatabaseLayer', 'LibrarianLayer', 'FunctionalLayer',
     'LaunchpadLayer', 'ZopelessLayer', 'LaunchpadFunctionalLayer',
     'LaunchpadZopelessLayer', 'LaunchpadScriptLayer', 'PageTestLayer',
-    'LayerConsistencyError', 'LayerIsolationError', 'TwistedLayer',
-    'ExperimentalLaunchpadZopelessLayer',
+    'LayerConsistencyError', 'LayerIsolationError',
+    'TwistedLaunchpadZopelessLayer', 'ExperimentalLaunchpadZopelessLayer',
+    'TwistedLayer'
     ]
 
 import logging
@@ -34,6 +35,7 @@ import psycopg
 import transaction
 
 import zope.app.testing.functional
+from zope.app.testing.functional import ZopePublication
 from zope.component import getUtility, getGlobalSiteManager
 from zope.component.interfaces import ComponentLookupError
 from zope.security.management import getSecurityPolicy
@@ -56,6 +58,19 @@ from canonical.testing.profiled import profiled
 
 
 orig__call__ = zope.app.testing.functional.HTTPCaller.__call__
+
+
+class MockRootFolder:
+    """Implement the minimum functionality required by Z3 ZODB dependencies
+
+    Installed as part of the FunctionalDocFileSuite to allow the http()
+    method (zope.app.testing.functional.HTTPCaller) to work.
+    """
+    @property
+    def _p_jar(self):
+        return self
+    def sync(self):
+        pass
 
 
 class LayerError(Exception):
@@ -508,6 +523,14 @@ class FunctionalLayer(BaseLayer):
         transaction.abort()
         transaction.begin()
 
+        # Fake a root folder to keep Z3 ZODB dependencies happy.
+        from canonical.functional import FunctionalTestSetup
+        fs = FunctionalTestSetup()
+        if not fs.connection:
+            fs.connection = fs.db.open()
+        root = fs.connection.root()
+        root[ZopePublication.root_name] = MockRootFolder()
+
         # Should be impossible, as the CA cannot be unloaded. Something
         # mighty nasty has happened if this is triggered.
         if not is_ca_available():
@@ -598,6 +621,47 @@ class ZopelessLayer(BaseLayer):
                 "This test removed the PermissiveSecurityPolicy and didn't "
                 "restore it.")
         logout()
+
+
+class TwistedLayer(BaseLayer):
+    """A layer for cleaning up the Twisted thread pool."""
+
+    @classmethod
+    @profiled
+    def setUp(cls):
+        pass
+
+    @classmethod
+    @profiled
+    def tearDown(cls):
+        pass
+
+    @classmethod
+    @profiled
+    def testSetUp(cls):
+        from twisted.internet import interfaces, reactor
+        from twisted.python import threadpool
+        if interfaces.IReactorThreads.providedBy(reactor):
+            pool = getattr(reactor, 'threadpool', None)
+            # If the Twisted threadpool has been obliterated (probably by
+            # testTearDown), then re-build it using the values that Twisted
+            # uses.
+            if pool is None:
+                reactor.threadpool = threadpool.ThreadPool(0, 10)
+                reactor.threadpool.start()
+
+    @classmethod
+    @profiled
+    def testTearDown(cls):
+        # Shutdown and obliterate the Twisted threadpool, to plug up leaking
+        # threads.
+        from twisted.internet import interfaces, reactor
+        if interfaces.IReactorThreads.providedBy(reactor):
+            reactor.suggestThreadPoolSize(0)
+            pool = getattr(reactor, 'threadpool', None)
+            if pool is not None:
+                reactor.threadpool.stop()
+                reactor.threadpool = None
 
 
 class LaunchpadFunctionalLayer(LaunchpadLayer, FunctionalLayer):
@@ -869,42 +933,5 @@ class PageTestLayer(LaunchpadFunctionalLayer):
         pass
 
 
-class TwistedLayer(LaunchpadZopelessLayer):
+class TwistedLaunchpadZopelessLayer(LaunchpadZopelessLayer, TwistedLayer):
     """A layer for cleaning up the Twisted thread pool."""
-
-    @classmethod
-    @profiled
-    def setUp(cls):
-        pass
-
-    @classmethod
-    @profiled
-    def tearDown(cls):
-        pass
-
-    @classmethod
-    @profiled
-    def testSetUp(cls):
-        from twisted.internet import interfaces, reactor
-        from twisted.python import threadpool
-        if interfaces.IReactorThreads.providedBy(reactor):
-            pool = getattr(reactor, 'threadpool', None)
-            # If the Twisted threadpool has been obliterated (probably by
-            # testTearDown), then re-build it using the values that Twisted
-            # uses.
-            if pool is None:
-                reactor.threadpool = threadpool.ThreadPool(0, 10)
-                reactor.threadpool.start()
-
-    @classmethod
-    @profiled
-    def testTearDown(cls):
-        # Shutdown and obliterate the Twisted threadpool, to plug up leaking
-        # threads.
-        from twisted.internet import interfaces, reactor
-        if interfaces.IReactorThreads.providedBy(reactor):
-            reactor.suggestThreadPoolSize(0)
-            pool = getattr(reactor, 'threadpool', None)
-            if pool is not None:
-                reactor.threadpool.stop()
-                reactor.threadpool = None

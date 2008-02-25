@@ -34,7 +34,7 @@ from canonical.launchpad.webapp import (
     stepthrough)
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.tales import DateTimeFormatterAPI
-from canonical.lp import decorates
+from canonical.lazr import decorates
 
 
 class BuilderSetNavigation(GetitemNavigation):

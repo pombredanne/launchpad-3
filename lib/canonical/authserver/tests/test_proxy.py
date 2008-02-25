@@ -8,6 +8,7 @@ from bzrlib.transport import Server
 from bzrlib.tests import iter_suite_tests, TestLoader, TestScenarioApplier
 
 from canonical.authserver.client import InMemoryTwistedProxy
+from canonical.testing import TwistedLayer
 
 from twisted.application import strports
 from twisted.web import server, resource, xmlrpc
@@ -34,6 +35,8 @@ class MockXMLRPCObject(xmlrpc.XMLRPC):
 
 
 class TestInMemoryProxy(unittest.TestCase):
+
+    layer = TwistedLayer
 
     def setUp(self):
         self.xmlrpc_resource = MockXMLRPCObject()
