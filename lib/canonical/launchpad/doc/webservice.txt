@@ -181,7 +181,7 @@ original model object. It subclasses Entry, a simple base class that
 defines a constructor.
 
     >>> from zope.component import adapts
-    >>> from canonical.lp import decorates
+    >>> from canonical.lazr import decorates
     >>> from canonical.lazr.rest import Entry
 
     >>> class AuthorEntry(Entry):

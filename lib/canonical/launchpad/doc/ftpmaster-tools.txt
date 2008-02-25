@@ -109,7 +109,9 @@ version.  In the sample data, mozilla-firefox source gives mozilla-firefox
 binary version 0.9.  The 1.0 version comes from the "iceweasel" source, so
 only the 0.9 version is overridden:
 
+  >>> import transaction
   >>> from canonical.launchpad.interfaces import IDistributionSet
+  >>> transaction.abort()
   >>> warty386 = getUtility(IDistributionSet)['ubuntu']['warty']['i386']
   >>> for release in warty386.getBinaryPackage('mozilla-firefox').releases:
   ...     (release.version, release.component.name)

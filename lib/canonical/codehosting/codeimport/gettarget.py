@@ -14,13 +14,13 @@ __all__ = ['ImportdTargetGetter']
 import os
 import shutil
 
-from bzrlib.bzrdir import BzrDir
 from bzrlib.errors import UpToDateFormat
+from bzrlib.transport import get_transport
 from bzrlib.upgrade import upgrade
 from zope.component import getUtility
 
+from canonical.codehosting.codeimport.worker import BazaarBranchStore
 from canonical.launchpad.interfaces import IProductSeriesSet
-from canonical.codehosting.codeimport.publish import mirror_url_from_series
 
 
 class ImportdTargetGetter:
@@ -31,16 +31,16 @@ class ImportdTargetGetter:
         self.workingdir = workingdir
         self.series_id = series_id
         self.push_prefix = push_prefix
+        self._store = BazaarBranchStore(get_transport(self.push_prefix))
 
     def get_target(self):
-        series = getUtility(IProductSeriesSet)[self.series_id]
-        from_location = mirror_url_from_series(self.push_prefix, series)
+        branch = getUtility(IProductSeriesSet)[self.series_id].import_branch
+        from_location = self._store._getMirrorURL(branch)
         self.upgrade_location(from_location)
-        from_control = BzrDir.open(from_location)
         to_location = os.path.join(self.workingdir, 'bzrworking')
         if os.path.isdir(to_location):
             shutil.rmtree(to_location)
-        from_control.sprout(to_location)
+        self._store.pull(branch, to_location)
 
     def upgrade_location(self, location):
         """Upgrade the branch at this location to the current default format.
