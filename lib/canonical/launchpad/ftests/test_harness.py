@@ -10,25 +10,12 @@ __metaclass__ = type
 
 import unittest
 from zope.app import zapi
-from harness import LaunchpadTestCase, LaunchpadFunctionalTestCase
+from harness import LaunchpadFunctionalTestCase
 from zope.app.mail.interfaces import IMailer
 
 from canonical.launchpad.database.person import Person
 from canonical.testing import LaunchpadFunctionalLayer
 
-
-class TestLaunchpadTestCase(LaunchpadTestCase):
-    def test_sampledata(self):
-        con = self.connect()
-        cur = con.cursor()
-        cur.execute("""
-            select count(*) from person
-            where displayname='Mark Shuttleworth'
-            """)
-        r = cur.fetchone()
-        self.failUnlessEqual(r[0], 1, 'sample data not loaded')
-        cur.close()
-        con.close()
 
 class TestLaunchpadFunctionalTestCase(LaunchpadFunctionalTestCase):
     layer = LaunchpadFunctionalLayer
@@ -55,10 +42,8 @@ class TestLaunchpadFunctionalTestCase(LaunchpadFunctionalTestCase):
 
 def test_suite():
     suite = unittest.TestSuite()
-    suite.addTest(unittest.makeSuite(TestLaunchpadTestCase))
     suite.addTest(unittest.makeSuite(TestLaunchpadFunctionalTestCase))
     # And again, to make sure all the setup/teardown stuff is working
-    suite.addTest(unittest.makeSuite(TestLaunchpadTestCase))
     suite.addTest(unittest.makeSuite(TestLaunchpadFunctionalTestCase))
     return suite
 

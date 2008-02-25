@@ -6,15 +6,16 @@ __metaclass__ = type
 
 import unittest
 
-from canonical.launchpad.ftests.harness import (
-    LaunchpadTestCase, LaunchpadTestSetup)
-from canonical.database.sqlbase import sqlvalues
+from canonical.database.sqlbase import cursor, sqlvalues
 from canonical.foaf.nickname import is_blacklisted
+from canonical.testing import LaunchpadLayer
 
-class TestNameBlacklist(LaunchpadTestCase):
+
+class TestNameBlacklist(unittest.TestCase):
+    layer = LaunchpadLayer
+
     def setUp(self):
-        LaunchpadTestCase.setUp(self)
-        self.con = self.connect()
+        self.con = self.layer.connect()
         self.cur = self.con.cursor()
 
         # Create a couple of blacklist entres
@@ -29,10 +30,7 @@ class TestNameBlacklist(LaunchpadTestCase):
             """)
 
     def tearDown(self):
-        """Tear down the test and reset the database."""
         self.con.close()
-        LaunchpadTestSetup().force_dirty_database()
-        LaunchpadTestCase.tearDown(self)
 
     def name_blacklist_match(self, name):
         '''Return the result of the name_blacklist_match stored procedure.'''
@@ -97,10 +95,4 @@ class TestNameBlacklist(LaunchpadTestCase):
 
 
 def test_suite():
-    suite = unittest.TestSuite()
-    suite.addTest(unittest.makeSuite(TestNameBlacklist))
-    return suite
-
-
-if __name__ == '__main__':
-    unittest.main()
+    return unittest.TestLoader().loadTestsFromName(__name__)

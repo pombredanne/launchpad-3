@@ -32,8 +32,7 @@ import sqlos
 from sqlos.connection import connCache
 
 __all__ = [
-    'LaunchpadTestSetup', 'LaunchpadTestCase',
-    'LaunchpadZopelessTestSetup',
+    'LaunchpadTestSetup', 'LaunchpadZopelessTestSetup',
     'LaunchpadFunctionalTestSetup', 'LaunchpadFunctionalTestCase',
     '_disconnect_sqlos', '_reconnect_sqlos'
     ]
@@ -142,29 +141,6 @@ class LaunchpadFunctionalTestSetup(LaunchpadTestSetup):
         super(LaunchpadFunctionalTestSetup, self).tearDown()
 
 
-class LaunchpadTestCase(unittest.TestCase):
-    dbuser = LaunchpadTestSetup.dbuser
-    dbname = LaunchpadTestSetup.dbname
-    template = LaunchpadTestSetup.template
-    # XXX StuartBishop 2006-07-13: Should be Launchpad, but we need to
-    # specify how to change the db user to connect as.
-    layer = LibrarianLayer
-
-    def setUp(self):
-        self._setup = LaunchpadTestSetup()
-        self._setup.dbuser = self.dbuser
-        self._setup.dbname = self.dbname
-        self._setup.template = self.template
-
-        self._setup.setUp()
-
-    def tearDown(self):
-        self._setup.tearDown()
-
-    def connect(self):
-        return self._setup.connect()
-
-
 class LaunchpadFunctionalTestCase(unittest.TestCase):
     # XXX StuartBishop 2006-07-13: Should be LaunchpadFunctional, but we
     # first need to implement a way of specifying the dbuser to connect as.
@@ -201,3 +177,5 @@ class LaunchpadFunctionalTestCase(unittest.TestCase):
 class LaunchpadZopelessTestCase(unittest.TestCase):
     layer = LaunchpadZopelessLayer
 
+#del LaunchpadFunctionalTestCase
+#del LaunchpadZopelessTestCase
