@@ -14,8 +14,8 @@ class TestRevisionAuthor(TestCase):
         LaunchpadZopelessLayer.switchDbUser(config.branchscanner.dbuser)
 
     def testGetNameWithoutEmailReturnsNamePart(self):
-        # name_without_email is equal to the 'name' part of the revision author
-        # information.
+        # name_without_email is equal to the 'name' part of the revision
+        # author information.
         author = RevisionAuthor(name=u'Jonathan Lange <jml@canonical.com>')
         self.assertEqual(u'Jonathan Lange', author.name_without_email)
 
@@ -23,6 +23,24 @@ class TestRevisionAuthor(TestCase):
         # If there is no name in the revision author information,
         # name_without_email is an empty string.
         author = RevisionAuthor(name=u'jml@mumak.net')
+        self.assertEqual('', author.name_without_email)
+
+    def testGetNameWithoutEmailWithNoEmail(self):
+        # If there is no email in the revision author information,
+        # name_without_email is the name.
+        author = RevisionAuthor(name=u'Jonathan Lange')
+        self.assertEqual('Jonathan Lange', author.name_without_email)
+
+    def testGetNameWithoutEmailWithOneWord(self):
+        # If there is no email in the revision author information,
+        # name_without_email is the name.
+        author = RevisionAuthor(name=u'Jonathan.Lange')
+        self.assertEqual('Jonathan.Lange', author.name_without_email)
+
+    def testGetNameWithoutEmailWithBadEmail(self):
+        # If there is an invalid email in the revision author information,
+        # name_without_email is an empty string.
+        author = RevisionAuthor(name=u'jml@localhost')
         self.assertEqual('', author.name_without_email)
 
 

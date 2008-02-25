@@ -13,7 +13,7 @@ from zope.interface import implements
 from sqlobject import (
     ForeignKey, IntCol, StringCol, SQLObjectNotFound, SQLMultipleJoin)
 
-from canonical.database.sqlbase import SQLBase
+from canonical.database.sqlbase import quote, SQLBase
 from canonical.database.constants import DEFAULT
 from canonical.database.datetimecol import UtcDateTimeCol
 
@@ -75,6 +75,8 @@ class RevisionAuthor(SQLBase):
         If there is no name information (i.e. when the revision author only
         supplied their email address), return None.
         """
+        if '@' not in self.name:
+            return self.name
         return email.Utils.parseaddr(self.name)[0]
 
     name_without_email = property(_getNameWithoutEmail)
@@ -177,3 +179,15 @@ class RevisionSet:
         """See `IRevisionSet`."""
         for author in RevisionAuthor.selectBy(email=email.email):
             author.person = email.person
+
+    def getTipRevisionsForBranches(self, branches):
+        """See `IRevisionSet`."""
+        # If there are no branch_ids, then return an empty list.
+        branch_ids = [branch.id for branch in branches]
+        if not branch_ids:
+            return []
+        return Revision.select("""
+            Branch.id in %s AND
+            Revision.revision_id = Branch.last_scanned_id
+            """ % quote(branch_ids),
+            clauseTables=['Branch'], prejoins=['revision_author'])

@@ -1711,3 +1711,11 @@ th.descending {
 .lowerCaseText {
   text-transform: lowercase
 }
+
+div.popupTitle {
+  background: #ffffdc;
+  padding: 0 1em;
+  border: 1px black solid;
+  position: absolute;
+  display: none;
+}

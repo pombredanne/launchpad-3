@@ -1,5 +1,6 @@
 <div
   xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
 >
   <form method="get" name="filter" id="filter_form"
         style="padding-bottom: 0.5em"
@@ -35,7 +36,18 @@ function hookUpFilterSubmission () {
     connect('field.hide_dormant', 'onchange', submit_filter);
   }
 }
-
+function show_commit(id) {
+  var div = document.getElementById('branch-log-' + id);
+  if (div) {
+    div.style.display = "block";
+  }
+}
+function hide_commit(id) {
+  var div = document.getElementById('branch-log-' + id);
+  if (div) {
+    div.style.display = "none";
+  }
+}
 registerLaunchpadFunction(hookUpFilterSubmission);
 </script>
 
@@ -48,21 +60,15 @@ registerLaunchpadFunction(hookUpFilterSubmission);
   <table tal:attributes="class context/table_class" id="branchtable">
     <thead>
       <tr>
-        <th>Name</th>
-        <th tal:condition="context/show_column/author|nothing">
-          Author
-        </th>
+        <th colspan="2">Name</th>
         <th>Status</th>
-        <th>Last Commit</th>
         <th tal:condition="context/show_column/date_created|nothing">
           Registered
         </th>
         <th tal:condition="context/show_column/product|nothing">
           Project
         </th>
-        <th tal:condition="context/show_column/role|nothing">
-          Role
-        </th>
+        <th>Last Commit</th>
       </tr>
     </thead>
     <tbody>
@@ -72,18 +78,13 @@ registerLaunchpadFunction(hookUpFilterSubmission);
         <td>
           <a tal:attributes="href branch/fmt:url;
                              title branch/displayname"
-             tal:content="branch/name/fmt:shorten/30">
+             tal:content="branch/unique_name">
                Name
           </a>
-          <tal:badges replace="structure branch/badges:small"/>
           <em tal:condition="branch/is_development_focus">&nbsp;Current development focus</em>
         </td>
-        <td tal:condition="context/show_column/author|nothing">
-          <a tal:condition="branch/author"
-             tal:attributes="href branch/author/fmt:url"
-             tal:content="branch/author/browsername">
-               Author
-          </a>
+        <td align="right" style="padding-right: 5px">
+          <tal:badges replace="structure branch/badges:small"/>
         </td>
         <td>
           <span tal:condition="not:context/multiple_pages"
@@ -93,22 +94,6 @@ registerLaunchpadFunction(hookUpFilterSubmission);
                 tal:attributes="
                   class string:branchstatus${branch/lifecycle_status/name}">
                   Status</span>
-        </td>
-        <td>
-          <tal:has_commit condition="branch/last_commit">
-            <span class="sortkey"
-                  tal:content="branch/last_commit/fmt:datetime">
-               2005-02-12 13:45 EST
-            </span>
-            <tal:comment replace="nothing">
-              sabdfl - let's keep the approximateduration here rather than
-              using the standard approximatedate
-            </tal:comment>
-            <span tal:attributes="title branch/last_commit/fmt:datetime"
-                  tal:content="branch/elapsed_time/fmt:approximateduration">
-              sometime
-            </span> ago
-          </tal:has_commit>
         </td>
         <td tal:condition="context/show_column/date_created|nothing">
           <span class="sortkey"
@@ -127,9 +112,76 @@ registerLaunchpadFunction(hookUpFilterSubmission);
                Project
           </a>
         </td>
-        <td tal:condition="context/show_column/role|nothing">
-          <span tal:replace="branch/role">Role of the person</span>
-        </td>
+
+        <tal:no_commit condition="not: branch/last_commit">
+          <tal:comment condition="nothing">
+            In order to keep column sorting, just have the
+            message in the last column.
+          </tal:comment>
+          <td>
+            <em>
+              <metal:no-revision-message
+                use-macro="branch/@@+macros/no-revision-message" />
+            </em>
+          </td>
+        </tal:no_commit>
+
+        <tal:has_commit condition="branch/last_commit">
+          <td tal:attributes="onmouseover string:show_commit(${branch/id});
+                              onmouseout string:hide_commit(${branch/id});">
+            <span class="sortkey"
+                  tal:content="branch/revision_date/fmt:datetime">
+               2005-02-12 13:45 EST
+            </span>
+            <tal:comment replace="nothing">
+              sabdfl - let's keep the approximateduration here rather than
+              using the standard approximatedate
+            </tal:comment>
+            <tal:browsable-code condition="not: branch/private">
+              <a tal:attributes="href branch/revision_codebrowse_link"
+                 tal:content="branch/revision_count">1234</a>.
+            </tal:browsable-code>
+            <tal:not-browsable-code condition="branch/private"
+                                    replace="branch/revision_count">
+              1243
+            </tal:not-browsable-code>
+            <span tal:attributes="title branch/revision_date/fmt:datetime"
+                  tal:content="branch/elapsed_time/fmt:approximateduration">
+              sometime
+            </span> ago
+            by
+            <tal:known-person condition="branch/revision_author/person">
+              <tal:person-link
+                  replace="structure branch/revision_author/person/fmt:link"/>
+            </tal:known-person>
+            <tal:unknown-person condition="not: branch/revision_author/person">
+              <strong>
+                <tal:person-text
+                    tal:replace="branch/revision_author/name_without_email">
+                  John Doe
+                </tal:person-text>
+                <tal:person-only-email
+                    condition="not: branch/revision_author/name_without_email">
+                  <tal:not-anonymous condition="context/view/user">
+                    <tal:person-text
+                        tal:replace="branch/revision_author/email">
+                      doe.john@example.com
+                    </tal:person-text>
+                  </tal:not-anonymous>
+                  <tal:anonymous condition="not:context/view/user">
+                    &lt;email address hidden&gt;
+                  </tal:anonymous>
+                </tal:person-only-email>
+              </strong>
+            </tal:unknown-person>
+            <tal:revision-log replace="branch/revision_log/fmt:shorten/40"/>
+            <div class="popupTitle"
+                 tal:attributes="id string:branch-log-${branch/id};
+                                 onmouseover string:hide_commit(${branch/id});"
+                 tal:content="structure branch/revision_log/fmt:text-to-html">
+            </div>
+          </td>
+        </tal:has_commit>
       </tr>
       <tr tal:condition="not:context/batch/total">
         <td tal:attributes="colspan context/column_count">

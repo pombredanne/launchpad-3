@@ -8,7 +8,7 @@ from zope.interface import implements
 
 from sqlobject import ForeignKey, IntCol
 
-from canonical.database.sqlbase import quote, SQLBase
+from canonical.database.sqlbase import SQLBase
 from canonical.launchpad.interfaces import IBranchRevision, IBranchRevisionSet
 
 
@@ -35,16 +35,3 @@ class BranchRevisionSet:
     def delete(self, branch_revision_id):
         """See `IBranchRevisionSet`."""
         BranchRevision.delete(branch_revision_id)
-
-    def getTipRevisionsForBranches(self, branches):
-        """See `IBranchRevisionSet`."""
-        # If there are no branch_ids, then return an empty list.
-        branch_ids = [branch.id for branch in branches]
-        if not branch_ids:
-            return []
-        return BranchRevision.select("""
-            BranchRevision.branch in %s AND
-            BranchRevision.branch = Branch.id AND
-            BranchRevision.sequence = Branch.revision_count
-            """ % quote(branch_ids),
-            clauseTables=['Branch'], prejoins=['revision'])

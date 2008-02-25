@@ -1,6 +1,6 @@
 # Copyright 2007 Canonical Ltd.  All rights reserved.
 
-"""Tests for BranchRevisions."""
+"""Tests for Revisions."""
 
 __metaclass__ = type
 
@@ -12,7 +12,7 @@ from canonical.config import config
 from canonical.database.sqlbase import cursor
 from canonical.launchpad.ftests import login, logout
 from canonical.launchpad.interfaces import (
-    IBranchSet, IBranchRevisionSet)
+    IBranchSet, IRevisionSet)
 from canonical.launchpad.testing import LaunchpadObjectFactory
 
 from canonical.testing import LaunchpadZopelessLayer
@@ -40,7 +40,7 @@ class TestTipRevisionsForBranches(TestCase):
         # Retrieve the updated branches (due to transaction boundaries).
         branch_set = getUtility(IBranchSet)
         self.branches = [branch_set.get(id) for id in branch_ids]
-        self.branch_revision_set = getUtility(IBranchRevisionSet)
+        self.revision_set = getUtility(IRevisionSet)
 
     def tearDown(self):
         logout()
@@ -55,36 +55,37 @@ class TestTipRevisionsForBranches(TestCase):
 
     def testNoBranches(self):
         """Assert that when given an empty list, an empty list is returned."""
-        bs = self.branch_revision_set
-        branch_revisions = bs.getTipRevisionsForBranches([])
-        self.assertEqual([], branch_revisions)
+        bs = self.revision_set
+        revisions = bs.getTipRevisionsForBranches([])
+        self.assertEqual([], revisions)
 
     def testOneBranches(self):
         """When given one branch, one branch revision is returned."""
-        branch_revisions = list(
-            self.branch_revision_set.getTipRevisionsForBranches(
+        revisions = list(
+            self.revision_set.getTipRevisionsForBranches(
                 self.branches[:1]))
         self._breakTransaction()
-        self.assertEqual(1, len(branch_revisions))
-        branch_revision = branch_revisions[0]
-        self.assertEqual(self.branches[0], branch_revision.branch)
-        # By accessing to the revision we can confirm that the revision
-        # has in fact been retrieved already.
-        revision = branch_revision.revision
-        self.assertTrue(revision is not None)
+        self.assertEqual(1, len(revisions))
+        revision = revisions[0]
+        self.assertEqual(self.branches[0].last_scanned_id,
+                         revision.revision_id)
+        # By accessing to the revision_author we can confirm that the
+        # revision author has in fact been retrieved already.
+        revision_author = revision.revision_author
+        self.assertTrue(revision_author is not None)
 
     def testManyBranches(self):
         """Assert multiple branch revisions are returned correctly."""
-        branch_revisions = list(
-            self.branch_revision_set.getTipRevisionsForBranches(
+        revisions = list(
+            self.revision_set.getTipRevisionsForBranches(
                 self.branches))
         self._breakTransaction()
-        self.assertEqual(5, len(branch_revisions))
-        for branch_revision in branch_revisions:
-            # By accessing to the revision we can confirm that the revision
-            # has in fact been retrieved already.
-            revision = branch_revision.revision
-            self.assertTrue(revision is not None)
+        self.assertEqual(5, len(revisions))
+        for revision in revisions:
+            # By accessing to the revision_author we can confirm that the
+            # revision author has in fact been retrieved already.
+            revision_author = revision.revision_author
+            self.assertTrue(revision_author is not None)
 
 
 def test_suite():

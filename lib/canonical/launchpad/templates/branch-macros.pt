@@ -218,4 +218,32 @@
 
 </metal:revision-text>
 
+<metal:no-revision-message define-macro="no-revision-message">
+
+  <tal:not-mirrored condition="not:branch/last_mirrored">
+    <tal:remote-branch tal:condition="branch/branch_type/enumvalue:REMOTE">
+      Revision details not available for <em>remote</em> branches.
+    </tal:remote-branch>
+    <tal:mirrored-branch tal:condition="branch/branch_type/enumvalue:MIRRORED">
+      This branch has not been mirrored yet.
+    </tal:mirrored-branch>
+    <tal:hosted-branch tal:condition="branch/branch_type/enumvalue:HOSTED">
+      This branch has not been pushed to yet.
+    </tal:hosted-branch>
+    <tal:imported-branch tal:condition="branch/branch_type/enumvalue:IMPORTED">
+      This branch has not been imported yet.
+    </tal:imported-branch>
+  </tal:not-mirrored>
+
+  <tal:mirrored condition="branch/last_mirrored">
+    <tal:not-scanned condition="not:branch/last_scanned">
+      This branch has not been scanned yet.
+    </tal:not-scanned>
+    <tal:scanned condition="branch/last_scanned">
+      This branch is empty.
+    </tal:scanned>
+  </tal:mirrored>
+
+</metal:no-revision-message>
+
 </tal:root>

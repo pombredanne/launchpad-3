@@ -931,6 +931,9 @@ class BranchSet:
 
     def getLastCommitForBranches(self, branches):
         """Return a map of branch id to last commit time."""
+
+        # XXX should remove in this branch.
+
         branch_ids = [branch.id for branch in branches]
         if not branch_ids:
             # Return a sensible default if given no branches
