@@ -157,7 +157,9 @@ class RosettaApplication:
     def featured_products(self):
         """See IRosettaApplication."""
         projects = getUtility(ITranslationsOverview)
-        return projects.getMostTranslatedPillars()
+        for project in projects.getMostTranslatedPillars():
+            yield { 'pillar' : project['pillar'],
+                    'font_size' : project['weight'] * 10 }
 
     def translatable_distroseriess(self):
         """See IRosettaApplication."""

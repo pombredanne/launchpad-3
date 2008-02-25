@@ -59,7 +59,7 @@
                             <h2>Translatable projects</h2>
                             <span 
                                tal:repeat="product context/featured_products"
-                               tal:attributes="style string:font-size:${product/font_size}0%;">
+                               tal:attributes="style string:font-size:${product/font_size}%;">
                               <a
                                 tal:attributes="
                                   href string:${product/pillar/fmt:url}/+translations"

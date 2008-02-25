@@ -40,7 +40,7 @@ class TranslationsOverview:
                 real_minimum +
                 (size - offset - real_minimum) * multiplier))
             normalized_sizes.append({'pillar' : pillar,
-                                     'font_size' : new_size })
+                                     'weight' : new_size })
         return normalized_sizes
 
     def getMostTranslatedPillars(self, limit=50):
