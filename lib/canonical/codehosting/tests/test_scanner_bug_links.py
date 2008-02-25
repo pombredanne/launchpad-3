@@ -40,7 +40,7 @@ class RevisionPropertyParsing(BzrSyncTestCase):
 
     def setUp(self):
         BzrSyncTestCase.setUp(self)
-        self.bzrsync = self.makeBzrSync()
+        self.bzrsync = self.makeBzrSync(self.makeDatabaseBranch())
 
     def test_single(self):
         # Parsing a single line should give a dict with a single entry,
@@ -209,12 +209,11 @@ class TestBugLinking(BzrSyncTestCase):
     mainline revision of a branch.
     """
 
-    def setUp(self):
-        factory = LaunchpadObjectFactory()
-        self.bug1 = factory.makeBug()
-        self.bug2 = factory.makeBug()
-        LaunchpadZopelessLayer.txn.commit()
-        BzrSyncTestCase.setUp(self)
+    def makeFixtures(self):
+        super(TestBugLinking, self).makeFixtures()
+        self.bug1 = self.factory.makeBug()
+        self.bug2 = self.factory.makeBug()
+        self.layer.txn.commit()
 
     def getBugURL(self, bug):
         """Get the canonical URL for 'bug'.
@@ -239,7 +238,7 @@ class TestBugLinking(BzrSyncTestCase):
         self.commitRevision(
             rev_id='rev1',
             revprops={'bugs': '%s fixed' % self.getBugURL(self.bug1)})
-        self.syncBranch()
+        self.syncBazaarBranchToDatabase(self.bzr_branch, self.db_branch)
         self.assertStatusEqual(
             self.bug1, self.db_branch, BugBranchStatus.FIXAVAILABLE)
 
@@ -248,8 +247,8 @@ class TestBugLinking(BzrSyncTestCase):
         self.commitRevision(
             rev_id='rev1',
             revprops={'bugs': '%s fixed' % self.getBugURL(self.bug1)})
-        self.syncBranch()
-        self.syncBranch()
+        self.syncBazaarBranchToDatabase(self.bzr_branch, self.db_branch)
+        self.syncBazaarBranchToDatabase(self.bzr_branch, self.db_branch)
         self.assertStatusEqual(
             self.bug1, self.db_branch, BugBranchStatus.FIXAVAILABLE)
 
@@ -279,7 +278,7 @@ class TestBugLinking(BzrSyncTestCase):
             u'merge', committer=self.AUTHOR, rev_id='r3',
             allow_pointless=True)
 
-        self.syncBranch()
+        self.syncBazaarBranchToDatabase(self.bzr_branch, self.db_branch)
         self.assertEqual(
             getUtility(IBugBranchSet).getBugBranch(self.bug1, self.db_branch),
             None,
@@ -292,7 +291,7 @@ class TestBugLinking(BzrSyncTestCase):
         self.commitRevision(
             rev_id='rev1',
             revprops={'bugs': 'https://launchpad.net/bugs/99999 fixed'})
-        self.syncBranch()
+        self.syncBazaarBranchToDatabase(self.bzr_branch, self.db_branch)
         self.assertEqual([], list(self.db_branch.bug_branches))
 
     def test_multipleBugsInProperty(self):
@@ -301,7 +300,8 @@ class TestBugLinking(BzrSyncTestCase):
             rev_id='rev1',
             revprops={'bugs': '%s fixed\n%s fixed' % (
                     self.getBugURL(self.bug1), self.getBugURL(self.bug2))})
-        self.syncBranch()
+        self.syncBazaarBranchToDatabase(self.bzr_branch, self.db_branch)
+
         self.assertStatusEqual(
             self.bug1, self.db_branch, BugBranchStatus.FIXAVAILABLE)
         self.assertStatusEqual(
