@@ -153,8 +153,10 @@ class ICodeImportResultSet(Interface):
         :param code_import: The code import for which the job was run.
         :param machine: The machine the job ran on.
         :param requesting_user: The user that requested the import, if any.
-        :param log_excerpt: The last few lines of the log, or None.
-        :param log_file: A link to the log in the librarian, or None.
+            If None, this means that the job was executed because it was
+            automatically scheduled.
+        :param log_excerpt: The last few lines of the log.
+        :param log_file: A link to the log in the librarian.
         :param status: A status code from CodeImportResultStatus.
         :param date_job_started: The date the job started.
         """

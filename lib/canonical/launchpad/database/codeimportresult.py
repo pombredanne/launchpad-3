@@ -66,5 +66,18 @@ class CodeImportResultSet(object):
 
     def getResultsForImport(self, code_import):
         """See `ICodeImportResultSet`."""
+        # It makes no difference in production whether we sort by
+        # date_job_started or date_job_finished because jobs don't
+        # overlap, which is to say that there's no way for this to
+        # happen:
+        #
+        #     Job A starts for import I
+        #     Job B starts for import I
+        #     Job B finishes for import I
+        #     Job A finishes for import I
+        #
+        # We sort by date_job_started though, because that makes
+        # writing tests easier (date_job_finished is punned with
+        # date_created which is harder to influence from test code).
         return CodeImportResult.selectBy(
             code_import=code_import, orderBy=['-date_job_started'])

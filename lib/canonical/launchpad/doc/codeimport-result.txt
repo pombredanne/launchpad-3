@@ -27,14 +27,32 @@ new() method of ICodeImportResultSet.  It takes as arguments:
 
  * the code import the job was performed for,
  * the machine it was run on,
- * the user who requested the import, if any,
- * an excerpt of the log, if any,
- * a link to the full log in the librarian, again if any,
+ * the user who requested the import, if the import was specifically
+   requested rather than being updated automatically,
+ * an excerpt of the log,
+ * a link to the full log in the librarian,
  * a status code from CodeImportResultStatus, and
  * the date the job started.
 
-We can find suitable values for the required parameters in the sample
-data.
+We first upload a pretend log file to the librarian.
+
+    >>> from canonical.librarian.interfaces import ILibrarianClient
+    >>> from StringIO import StringIO
+    >>> log_data = 'several\nlines\nof\nlog data'
+    >>> log_excerpt = log_data.splitlines()[-1]
+    >>> log_alias_id = getUtility(ILibrarianClient).addFile(
+    ...    'import_log.txt', len(log_data), StringIO(log_data), 'text/plain')
+
+Then commit the transaction, so the external librarian process can see
+it.
+
+    >>> from transaction import commit
+    >>> commit()
+    >>> from canonical.launchpad.interfaces import ILibraryFileAliasSet
+    >>> log_alias = getUtility(ILibraryFileAliasSet)[log_alias_id]
+
+We can find suitable values for the import and machine parameters in
+the sample data.
 
     >>> from canonical.launchpad.interfaces import (
     ...     ICodeImportSet, ICodeImportMachineSet)
@@ -52,7 +70,7 @@ Then create a result object.
     ...     timedelta(days=1))
     >>> from canonical.launchpad.interfaces import CodeImportResultStatus
     >>> new_result = result_set.new(
-    ...     sample_import, sample_machine, None, None, None,
+    ...     sample_import, sample_machine, None, log_excerpt, log_alias,
     ...     CodeImportResultStatus.SUCCESS, time_source.next())
     >>> verifyObject(ICodeImportResult, new_result)
     True
@@ -67,9 +85,12 @@ read-only records of what happened.
     >>> print new_result.requesting_user
     None
     >>> print new_result.log_excerpt
-    None
-    >>> print new_result.log_file
-    None
+    log data
+    >>> print new_result.log_file.read()
+    several
+    lines
+    of
+    log data
     >>> print new_result.status.name
     SUCCESS
     >>> from canonical.launchpad.ftests import print_date_attribute
@@ -83,11 +104,8 @@ read-only records of what happened.
 
 == Retrieving CodeImportResults ==
 
-The CodeImportResult objects for a given import can be retrieved, in
-reverse chronological order (with respect to date_job_started:
-although it doesn't matter in production, as there will never be two
-jobs running for a particular import, it makes things easier to test)
-with the getResultsForImport method.
+The CodeImportResult objects for a given import can be retrieved in
+reverse chronological order with the getResultsForImport method.
 
 We need to create a few result objects before we can test that this
 method works as expected.

@@ -825,7 +825,7 @@ class SeeCodeImportSet(OnlyVcsImportsAndAdmins):
     usedfor = ICodeImportSet
 
 
-class SeeCodeImports(OnlyVcsImportsAndAdmins):
+class SeeCodeImport(OnlyVcsImportsAndAdmins):
     """Control who can see the object view of a CodeImport.
 
     Currently, we restrict the visibility of the new code import
@@ -835,7 +835,7 @@ class SeeCodeImports(OnlyVcsImportsAndAdmins):
     usedfor = ICodeImport
 
 
-class EditCodeImports(OnlyVcsImportsAndAdmins):
+class EditCodeImport(OnlyVcsImportsAndAdmins):
     """Control who can edit the object view of a CodeImport.
 
     Currently, we restrict the visibility of the new code import
@@ -845,7 +845,7 @@ class EditCodeImports(OnlyVcsImportsAndAdmins):
     usedfor = ICodeImport
 
 
-class SeeCodeImportJobs(OnlyVcsImportsAndAdmins):
+class SeeCodeImportJob(OnlyVcsImportsAndAdmins):
     """Control who can see the object view of a CodeImportJob.
 
     Currently, we restrict the visibility of the new code import
@@ -886,7 +886,7 @@ class SeeCodeImportMachineSet(OnlyVcsImportsAndAdmins):
     usedfor = ICodeImportMachineSet
 
 
-class SeeCodeImportMachines(OnlyVcsImportsAndAdmins):
+class SeeCodeImportMachine(OnlyVcsImportsAndAdmins):
     """Control who can see the object view of a CodeImportMachine.
 
     Currently, we restrict the visibility of the new code import
@@ -907,7 +907,7 @@ class SeeCodeImportResultSet(OnlyVcsImportsAndAdmins):
     usedfor = ICodeImportResultSet
 
 
-class SeeCodeImportResults(OnlyVcsImportsAndAdmins):
+class SeeCodeImportResult(OnlyVcsImportsAndAdmins):
     """Control who can see the object view of a CodeImportResult.
 
     Currently, we restrict the visibility of the new code import
