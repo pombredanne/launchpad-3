@@ -24,7 +24,7 @@ from canonical.launchpad.interfaces import (
     IBugTaskSet, IBugTrackerSet, IBugWatchSet,
     ICodeImportSchedulerApplication, IDistroSeriesSet, IFeedsApplication,
     IHWDBApplication, ILanguageSet, ILaunchBag, ILaunchpadStatisticSet,
-    IMailingListApplication, IMaloneApplication, IMessageSet,
+    IMailingListApplication, IMaloneApplication,
     IOpenIdApplication, IPersonSet, IProductSet, IRegistryApplication,
     IRosettaApplication, IShipItApplication, ITranslationGroupSet,
     ITranslationsOverview, IWebServiceApplication)

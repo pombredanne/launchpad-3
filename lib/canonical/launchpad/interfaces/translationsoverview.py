@@ -9,21 +9,10 @@ __all__ = [
     'ITranslationsOverview',
     ]
 
-from zope.component import getUtility
-from zope.interface import Interface, Attribute
-from zope.schema import (
-    Bool, Bytes, Choice, Datetime, Int, List, Object, Text, TextLine)
+from zope.interface import Interface
+from zope.schema import Int
 
 from canonical.launchpad import _
-from canonical.launchpad.fields import (
-    ContentNameField, Title, DuplicateBug, Tag)
-from canonical.launchpad.interfaces.bugtarget import IBugTarget
-from canonical.launchpad.interfaces.launchpad import NotFoundError
-from canonical.launchpad.interfaces.messagetarget import IMessageTarget
-from canonical.launchpad.interfaces.mentoringoffer import ICanBeMentored
-from canonical.launchpad.validators.name import name_validator
-from canonical.launchpad.validators.bugattachment import (
-    bug_attachment_size_constraint)
 
 class ITranslationsOverview(Interface):
     """Overview of Launchpad Translations component."""
