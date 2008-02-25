@@ -81,8 +81,30 @@ https one, depending on a config value.
     ...     ) is not None
     True
 
-    # Let's reset the value of use_https to avoid problems in future tests
-    >>> config.launchpad.vhosts.use_https = False
+However, we can force the use of HTTP by setting the 'X-SCHEME'
+header in the request to 'http', even when 'use_https' is True.
+
+    >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
+    >>> from zope.component import getMultiAdapter
+    >>> from urlparse import urlparse
+    >>> request = LaunchpadTestRequest(
+    ...     environ={'REQUEST_METHOD': 'GET',
+    ...              'X-SCHEME' : 'http' })
+    >>> view = getMultiAdapter((alias,request), name='+index')
+    >>> view.initialize()
+    >>> print urlparse(request.response.getHeader('Location'))[0]
+    http
+
+When the incoming scheme is 'https' then the redirect scheme is
+unaffected.
+
+    >>> request = LaunchpadTestRequest(
+    ...     environ={'REQUEST_METHOD': 'GET',
+    ...              'X-SCHEME' : 'https' })
+    >>> view = getMultiAdapter((alias,request), name='+index')
+    >>> view.initialize()
+    >>> print urlparse(request.response.getHeader('Location'))[0]
+    https
 
 However, we can't access its contents until we have committed
 
