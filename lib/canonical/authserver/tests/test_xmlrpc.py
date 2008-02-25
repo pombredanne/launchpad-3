@@ -14,12 +14,10 @@ from twisted.application import strports
 from canonical.authserver.interfaces import WRITABLE
 from canonical.authserver.tests.harness import AuthserverTacTestSetup
 from canonical.config import config
-from canonical.functional import XMLRPCTestTransport, setUpMockRootFolder
-from canonical.launchpad.ftests.harness import (
-    LaunchpadTestCase, LaunchpadTestSetup)
+from canonical.functional import XMLRPCTestTransport
 from canonical.launchpad.interfaces import BranchType
 from canonical.launchpad.webapp.authentication import SSHADigestEncryptor
-from canonical.testing import LaunchpadFunctionalLayer
+from canonical.testing import LaunchpadLayer, LaunchpadFunctionalLayer
 
 
 UTC = pytz.timezone('UTC')
@@ -32,15 +30,14 @@ def _getPort():
     return int(args[0])
 
 
-class XMLRPCAuthServerTestCase(LaunchpadTestCase):
+class XMLRPCAuthServerTestCase(unittest.TestCase):
     """Base fixture for XMLRPC test case to the AuthServer."""
-
+    layer = LaunchpadLayer
     # Should contain the end-point to test.
     endpoint = ''
 
     def setUp(self):
         """Set up the XML-RPC server."""
-        LaunchpadTestCase.setUp(self)
         AuthserverTacTestSetup().setUp()
         self.server = xmlrpclib.Server('http://localhost:%s%s' % (
             _getPort(), self.endpoint))
@@ -48,9 +45,9 @@ class XMLRPCAuthServerTestCase(LaunchpadTestCase):
     def tearDown(self):
         """Tear down the test and reset the database."""
         AuthserverTacTestSetup().tearDown()
-        LaunchpadTestSetup().force_dirty_database()
-        LaunchpadTestCase.tearDown(self)
- 
+        self.layer.force_dirty_database()
+
+
 class SSHKeysTestMixin:
     """Test the getSSHKeys method.
 
@@ -258,7 +255,6 @@ class PrivateXMLRPCAuthServerTestCase(XMLRPCv2TestCase):
         self.server = xmlrpclib.ServerProxy(
             'http://xmlrpc-private.launchpad.dev:8087/authserver',
             transport=XMLRPCTestTransport())
-        setUpMockRootFolder()
 
     def tearDown(self):
         pass

@@ -195,9 +195,11 @@ class Archive(SQLBase):
                 SourcePackagePublishingHistory.pocket = %s
             """ % sqlvalues(pocket))
 
+        preJoins = ['sourcepackagerelease']
 
         sources = SourcePackagePublishingHistory.select(
-            ' AND '.join(clauses), clauseTables=clauseTables, orderBy=orderBy)
+            ' AND '.join(clauses), clauseTables=clauseTables, orderBy=orderBy,
+            prejoins=preJoins)
 
         return sources
 
