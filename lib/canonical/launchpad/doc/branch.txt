@@ -1116,9 +1116,9 @@ branch.
     >>> [subscription] == requirements.keys()
     True
     >>> action, reason = requirements[subscription]
-    >>> action
+    >>> print action
     'delete'
-    >>> reason
+    >>> print reason
     u'This is a subscription to this branch.'
 
 Deletion can be forced by supplying break_references=True.  This will delete
