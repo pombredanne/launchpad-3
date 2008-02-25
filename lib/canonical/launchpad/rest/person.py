@@ -18,7 +18,7 @@ from canonical.lazr.interfaces import IEntry
 from canonical.lazr.rest.schema import CollectionField
 
 from canonical.launchpad.interfaces import (
-    IPerson, IPersonSet, make_person_name_field)
+    IPerson, IPersonSet, ITeamMembership, make_person_name_field)
 
 from canonical.lp import decorates
 
@@ -30,7 +30,12 @@ class IPersonEntry(IEntry):
     name = make_person_name_field()
     teamowner = Object(schema=IPerson)
     members = CollectionField(value_type=Object(schema=IPerson))
-
+    team_memberships = CollectionField(
+        relationship_name = 'teams',
+        value_type=Object(schema=ITeamMembership), is_entry_container=True)
+    member_memberships = CollectionField(
+        relationship_name = 'members',
+        value_type=Object(schema=ITeamMembership), is_entry_container=True)
 
 class PersonEntry(Entry):
     """A person or team."""
@@ -46,6 +51,18 @@ class PersonEntry(Entry):
         if not self.context.isTeam():
             return None
         return self.context.activemembers
+
+    @property
+    def team_memberships(self):
+        """See `IPersonEntry`."""
+        return self.context.myactivememberships
+
+    @property
+    def member_memberships(self):
+        """See `IPersonEntry`."""
+        if not self.context.isTeam():
+            return None
+        return self.context.getActiveMemberships()
 
 
 class PersonCollection(Collection):

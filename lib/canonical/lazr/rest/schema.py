@@ -21,7 +21,23 @@ class CollectionField(AbstractCollection):
     implements(ICollectionField)
 
     def __init__(self, *args, **kwargs):
+        """Define a container object that's related to some other object.
+
+        This will show up in the web service as a scoped collection.
+
+        :param is_entry_container: By default, scoped collections
+        contain references to entry whose self_link URLs are handled
+        by top-level collections. Set this to true if the self_link
+        URL of an entry should be handled by the scoped collection.
+
+        :param relationship_name: A unique string used to distinguish
+        this collection from other collections of the same kind of object.
+        """
+
         self.is_entry_container = kwargs.setdefault(
             'is_entry_container', False)
         del(kwargs['is_entry_container'])
+        self.relationship_name = kwargs.setdefault(
+            'relationship_name', False)
+        del(kwargs['relationship_name'])
         super(CollectionField, self).__init__(*args, **kwargs)
