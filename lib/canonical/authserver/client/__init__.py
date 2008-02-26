@@ -11,6 +11,38 @@ be reduced by putting common code in this package.
 #   - Twisted XML-RPC client stuff for supermirror SFTP server.
 
 __all__ = [
+    'InMemoryBlockingProxy',
     'InMemoryTwistedProxy']
 
+import xmlrpclib
+
 from canonical.authserver.client.twistedclient import InMemoryTwistedProxy
+
+
+class InMemoryBlockingProxy:
+
+    def __init__(self, xmlrpc_object, method_names):
+        self._xmlrpc_object = xmlrpc_object
+        self._method_names = method_names
+
+    def _faultMaker(self, code, string):
+        def raise_fault(*args):
+            raise xmlrpclib.Fault(code, string)
+        return raise_fault
+
+    def _checkMarshalling(self, function):
+        def call_method(*args):
+            xmlrpclib.dumps(args)
+            result = function(*args)
+            try:
+                xmlrpclib.dumps((result,))
+            except TypeError:
+                raise xmlrpclib.Fault(
+                    8002, "can't serialize output (%r)" % (result,))
+            return result
+        return call_method
+
+    def __getattr__(self, name):
+        if name not in self._method_names:
+            return self._faultMaker(8001, 'function %s not found' % (name,))
+        return self._checkMarshalling(getattr(self._xmlrpc_object, name))

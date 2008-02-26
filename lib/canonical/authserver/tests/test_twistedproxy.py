@@ -60,8 +60,8 @@ class TestTwistedProxyConformance(unittest.TestCase):
     The `server_factory` instance variable is set by the test loader to one of
     `TwistedServer` or `InMemoryServer`. It's expected that `server_factory`
     takes a single `XMLRPC` object as an argument and returns an object that
-    has `setUp`, `tearDown` and `getProxy` methods, with the latter returning
-    a proxy that conforms to these tests.
+    has `setUp`, `tearDown` and `getTwistedProxy` methods, with the latter
+    returning a proxy that conforms to these tests.
 
     The tests are closely bound to `MockXMLRPCObject`.
     """
@@ -78,7 +78,7 @@ class TestTwistedProxyConformance(unittest.TestCase):
 
     def makeProxy(self):
         """Return an instance of the proxy to test."""
-        return self.server.getProxy()
+        return self.server.getTwistedProxy()
 
     def assertContainsRe(self, haystack, needle_re):
         """Assert that a contains something matching a regular expression."""
@@ -167,8 +167,8 @@ class TestTwistedProxyConformance(unittest.TestCase):
 class TwistedServer(Server):
     """A test HTTP server that serves an XML-RPC resource.
 
-    Use `getProxy` to get a real proxy (i.e. a `twisted.web.xmlrpc.Proxy`)
-    that points to the resource.
+    Use `getTwistedProxy` to get a real proxy (i.e. a
+    `twisted.web.xmlrpc.Proxy`) that points to the resource.
     """
 
     def __init__(self, xmlrpc_resource):
@@ -188,7 +188,7 @@ class TwistedServer(Server):
     def tearDown(self):
         self._service.stopService()
 
-    def getProxy(self):
+    def getTwistedProxy(self):
         return xmlrpc.Proxy(self.get_url())
 
 
@@ -207,7 +207,7 @@ class InMemoryServer(Server):
     def tearDown(self):
         pass
 
-    def getProxy(self):
+    def getTwistedProxy(self):
         return InMemoryTwistedProxy(self.xmlrpc_resource)
 
 
