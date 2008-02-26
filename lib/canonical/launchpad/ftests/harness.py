@@ -9,30 +9,28 @@ canonical.testing
 __metaclass__ = type
 
 import unittest
-from zope.component import getUtility
-from zope.component.exceptions import ComponentLookupError
-from zope.app.rdb.interfaces import IZopeDatabaseAdapter
-from sqlos.interfaces import IConnectionName
-
-from canonical.testing import (
-    BaseLayer, FunctionalLayer, LaunchpadZopelessLayer)
-from canonical.ftests.pgsql import PgTestSetup
-from canonical.functional import FunctionalTestSetup
-from canonical.config import dbconfig
-from canonical.database.revision import confirm_dbrevision
-from canonical.database.sqlbase import (
-        cursor, SQLBase, ZopelessTransactionManager,
-        )
-from canonical.lp import initZopeless
-from canonical.launchpad.ftests import login, ANONYMOUS, logout
-from canonical.launchpad.webapp.interfaces import ILaunchpadDatabaseAdapter
 
 import sqlos
 from sqlos.connection import connCache
+from sqlos.interfaces import IConnectionName
+from zope.app.rdb.interfaces import IZopeDatabaseAdapter
+from zope.component import getUtility
+from zope.component.exceptions import ComponentLookupError
+
+from canonical.config import dbconfig
+from canonical.database.revision import confirm_dbrevision
+from canonical.database.sqlbase import (
+    cursor, SQLBase, ZopelessTransactionManager)
+from canonical.ftests.pgsql import PgTestSetup
+from canonical.functional import FunctionalTestSetup
+from canonical.launchpad.webapp.interfaces import ILaunchpadDatabaseAdapter
+from canonical.lp import initZopeless
+from canonical.testing import BaseLayer, LaunchpadZopelessLayer
+
 
 __all__ = [
     'LaunchpadTestSetup', 'LaunchpadZopelessTestSetup',
-    'LaunchpadFunctionalTestSetup', 'LaunchpadFunctionalTestCase',
+    'LaunchpadFunctionalTestSetup',
     '_disconnect_sqlos', '_reconnect_sqlos'
     ]
 
@@ -139,39 +137,6 @@ class LaunchpadFunctionalTestSetup(LaunchpadTestSetup):
         FunctionalTestSetup().tearDown()
         _disconnect_sqlos()
         super(LaunchpadFunctionalTestSetup, self).tearDown()
-
-
-class LaunchpadFunctionalTestCase(unittest.TestCase):
-    # XXX StuartBishop 2006-07-13: Should be LaunchpadFunctional, but we
-    # first need to implement a way of specifying the dbuser to connect as.
-    layer = FunctionalLayer
-    dbuser = None
-    def login(self, user=None):
-        """Login the current zope request as user.
-
-        If no user is provided, ANONYMOUS is used.
-        """
-        if user is None:
-            user = ANONYMOUS
-        login(user)
-        self.__logged_in = True
-
-    def setUp(self, dbuser=None):
-        if dbuser is not None:
-            self.dbuser = dbuser
-        unittest.TestCase.setUp(self)
-        LaunchpadFunctionalTestSetup(dbuser=self.dbuser).setUp()
-        self.__logged_in = False
-
-    def tearDown(self):
-        if self.__logged_in:
-            logout()
-            self.__logged_in = False
-        LaunchpadFunctionalTestSetup(dbuser=self.dbuser).tearDown()
-        unittest.TestCase.tearDown(self)
-
-    def connect(self):
-        return LaunchpadFunctionalTestSetup(dbuser=self.dbuser).connect()
 
 
 class LaunchpadZopelessTestCase(unittest.TestCase):
