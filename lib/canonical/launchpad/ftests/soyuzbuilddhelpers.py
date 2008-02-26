@@ -145,7 +145,9 @@ class OkSlave:
         info = 'OkSlave BUILDING'
         print info
         if 'archives' in args:
-            print "Archives: %s" % sorted(args['archives'])
+            print "Archives:"
+            for archive_line in sorted(args['archives']):
+                print " %s" % archive_line
         else:
             print "No archives set."
         print "Suite: %s" % args['suite']
