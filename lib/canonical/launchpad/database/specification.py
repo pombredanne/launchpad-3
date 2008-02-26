@@ -261,11 +261,9 @@ class Specification(SQLBase, BugLinkTargetMixin):
 
     def getFeedbackRequests(self, person):
         """See ISpecification."""
-        reqlist = []
-        for fbreq in self.feedbackrequests:
-            if fbreq.reviewer.id == person.id:
-                reqlist.append(fbreq)
-        return reqlist
+        fb = SpecificationFeedback.selectBy(
+            specification=self, reviewer=person)
+        return fb.prejoin(['requester'])
 
     def canMentor(self, user):
         """See ICanBeMentored."""
@@ -653,7 +651,8 @@ class HasSpecificationsMixin:
     for other classes that have specifications.
     """
 
-    def specifications(self, sort=None, quantity=None, filter=None):
+    def specifications(self, sort=None, quantity=None, filter=None,
+                       prejoin_people=True):
         """See IHasSpecifications."""
         # this should be implemented by the actual context class
         raise NotImplementedError
@@ -702,7 +701,8 @@ class SpecificationSet(HasSpecificationsMixin):
     def has_any_specifications(self):
         return self.all_specifications.count() != 0
 
-    def specifications(self, sort=None, quantity=None, filter=None):
+    def specifications(self, sort=None, quantity=None, filter=None,
+                       prejoin_people=True):
         """See IHasSpecifications."""
 
         # Make a new list of the filter, so that we do not mutate what we
@@ -792,9 +792,10 @@ class SpecificationSet(HasSpecificationsMixin):
                 query += ' AND Specification.fti @@ ftq(%s) ' % quote(
                     constraint)
 
-        # now do the query, and remember to prejoin to people
         results = Specification.select(query, orderBy=order, limit=quantity)
-        return results.prejoin(['assignee', 'approver', 'drafter'])
+        if prejoin_people:
+            results = results.prejoin(['assignee', 'approver', 'drafter'])
+        return results
 
     def getByURL(self, url):
         """See ISpecificationSet."""
