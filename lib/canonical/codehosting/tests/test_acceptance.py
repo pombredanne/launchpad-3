@@ -24,7 +24,7 @@ from bzrlib.workingtree import WorkingTree
 
 from paramiko import SSHClient, SSHException, MissingHostKeyPolicy
 
-from canonical.authserver.client.twistedclient import get_blocking_proxy
+from canonical.authserver.client import get_blocking_proxy
 from canonical.codehosting.tests.helpers import (
     adapt_suite, deferToThread, ServerTestCase)
 from canonical.codehosting.tests.servers import (

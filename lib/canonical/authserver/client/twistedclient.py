@@ -3,93 +3,11 @@
 """Twisted client code."""
 
 __metaclass__ = type
-__all__ = [
-    'get_blocking_proxy', 'get_twisted_proxy', 'InMemoryTwistedProxy',
-    'TwistedAuthServer']
+__all__ = ['TwistedAuthServer']
 
 import xmlrpclib
 
-from canonical.authserver.database import DatabaseUserDetailsStorageV2
-from canonical.authserver.interfaces import (
-    IHostedBranchStorage, IUserDetailsStorageV2)
-from canonical.authserver.xmlrpc import UserDetailsResourceV2
-
-from twisted.internet import defer
-from twisted.web.xmlrpc import Proxy
-
-from zope.interface.interface import Method
-
-
-def _make_connection_pool():
-    """Construct a ConnectionPool from the database settings in the
-    Launchpad config.
-    """
-    from canonical.config import config
-    from twisted.enterprise.adbapi import ConnectionPool
-    if config.dbhost is None:
-        dbhost = ''
-    else:
-        dbhost = 'host=' + config.dbhost
-    ConnectionPool.min = ConnectionPool.max = 1
-    dbpool = ConnectionPool(
-        'psycopg', 'dbname=%s %s user=%s' % (
-            config.dbname, dbhost, config.authserver.dbuser),
-        cp_reconnect=True)
-    return dbpool
-
-
-def get_twisted_proxy(url):
-    if url == 'fake:///user-details-2':
-        return InMemoryTwistedProxy(
-            UserDetailsResourceV2(
-                DatabaseUserDetailsStorageV2(_make_connection_pool())))
-    return Proxy(url)
-
-
-def get_blocking_proxy(url):
-    return xmlrpclib.ServerProxy(url)
-
-
-def get_method_names_in_interface(interface):
-    for attribute_name in interface:
-        if isinstance(interface[attribute_name], Method):
-            yield attribute_name
-
-
-class InMemoryTwistedProxy:
-
-    debug = False
-
-    def __init__(self, xmlrpc_object):
-        self.xmlrpc_object = xmlrpc_object
-
-    def _checkArgumentsMarshallable(self, args):
-        """Raise a `TypeError` if `args` are not marhallable."""
-        xmlrpclib.dumps(args)
-
-    def _checkReturnValueMarshallable(self, result):
-        try:
-            xmlrpclib.dumps((result,))
-        except TypeError:
-            raise xmlrpclib.Fault(
-                8002, "can't serialize output (%r)" % (result,))
-        return result
-
-    def callRemote(self, method_name, *args):
-        self._checkArgumentsMarshallable(args)
-        try:
-            method = getattr(self.xmlrpc_object, 'xmlrpc_%s' % (method_name,))
-        except AttributeError:
-            return defer.fail(xmlrpclib.Fault(
-                8001, "Method %r does not exist" % (method_name,)))
-        deferred = defer.maybeDeferred(method, *args)
-        if self.debug:
-            def debug(value, message):
-                print '%s%r -> %r (%s)' % (method_name, args, value, message)
-                return value
-            deferred.addCallback(debug, 'SUCCESS')
-            deferred.addErrback(debug, 'FAILURE')
-        return deferred.addCallback(self._checkReturnValueMarshallable)
+from canonical.authserver.client.proxy import get_twisted_proxy
 
 
 class TwistedAuthServer:
