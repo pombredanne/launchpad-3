@@ -17,6 +17,7 @@ __all__ = [
 
 from zope.interface import Interface, Attribute
 from zope.publisher.interfaces import IPublishTraverse
+from zope.schema import Text, List
 from zope.schema.interfaces import IObject
 from canonical.launchpad.webapp.interfaces import ICanonicalUrlData
 
@@ -76,11 +77,19 @@ class ICollectionResource(IHTTPResource, IPublishTraverse):
         :return: A string representation.
         """
 
+    def makeEntryResource(self, entry, request):
+        """Construct an entry resource for the given entry.
+
+        The entry is presumed to be have this collection as its
+        parent.
+        """
+
 
 class IEntry(IJSONPublishable):
     """An entry, exposed as a resource by an IEntryResource."""
 
-    parent_collection_name = Attribute("URI name of the parent collection.")
+    parent_collection_path = List(
+        title=u"Instructions for traversing to the parent collection")
 
     def fragment(self):
         """Return a URI fragment that uniquely identifies this entry.

@@ -46,7 +46,7 @@ Team memberships are objects with their own URLs and data fields.
   >>> salgado_landscape['member_link']
   u'http://api.launchpad.dev/people/salgado'
 
-A TeamMembership object is served as two resources: one in
+A TeamMembership entry is served in two collections: one in
 relationship to the member, another in relationship to the team.
 
   >>> landscape_memberships = webservice(r"""
@@ -59,14 +59,7 @@ relationship to the member, another in relationship to the team.
 
   >>> landscape_salgado = landscape_memberships[1]
   >>> landscape_salgado['self_link']
-  u'http://api.launchpad.dev/people/landscape-developers/member_memberships/salgado'
-
-Apart from the self_link, the two resources are identical.
-
-  >>> del(landscape_salgado['self_link'])
-  >>> del(salgado_landscape['self_link'])
-  >>> sorted(landscape_salgado.items()) == sorted(salgado_landscape.items())
-  True
+  u'http://api.launchpad.dev/people/salgado/team_memberships/landscape-developers'
 
 A list of team memberships is distinct from a list of a team's
 members. Members are people; memberships are, well, memberships.

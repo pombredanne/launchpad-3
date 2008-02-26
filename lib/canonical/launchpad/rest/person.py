@@ -35,7 +35,7 @@ class IPersonEntry(IEntry):
         value_type=Object(schema=ITeamMembership), is_entry_container=True)
     member_memberships = CollectionField(
         relationship_name = 'members',
-        value_type=Object(schema=ITeamMembership), is_entry_container=True)
+        value_type=Object(schema=ITeamMembership))
 
 class PersonEntry(Entry):
     """A person or team."""
@@ -43,7 +43,7 @@ class PersonEntry(Entry):
     decorates(IPersonEntry)
     schema = IPersonEntry
 
-    parent_collection_name = 'people'
+    parent_collection_path = ['people']
 
     @property
     def members(self):

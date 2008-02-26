@@ -42,7 +42,8 @@ class TeamMembershipEntry(Entry):
     decorates(ITeamMembershipEntry)
     schema = ITeamMembershipEntry
 
-    parent_collection_name = 'people'
+    parent_collection_path = ['people', lambda tm: tm.member,
+                              'team_memberships']
 
     @property
     def member(self):

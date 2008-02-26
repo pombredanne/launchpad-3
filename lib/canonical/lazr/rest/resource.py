@@ -140,8 +140,20 @@ class EntryResource(ReadOnlyResource):
         if parent_collection:
             self.parent_collection = parent_collection
         else:
-            self.parent_collection = self.root_resource.publishTraverse(
-                self.request, self.context.parent_collection_name)
+            resource = self.root_resource
+            for fragment in self.context.parent_collection_path:
+                if callable(fragment):
+                    # Ask the context to do the traversal from a
+                    # collection to a specific item in that
+                    # collection.
+                    resource = resource.makeEntryResource(
+                        fragment(self.context), self.request)
+                else:
+                    # Traverse from an entry to one of the entry's
+                    # collections, by name.
+                    resource = resource.publishTraverse(self.request,
+                                                        fragment)
+            self.parent_collection = resource
 
     @property
     def path(self):
@@ -204,7 +216,8 @@ class EntryResource(ReadOnlyResource):
                     key = name + '_link'
                     dict[key] = canonical_url(related_resource,
                                               request=self.request)
-            elif IField.providedBy(element):
+            elif (IField.providedBy(element)
+                  and name != 'parent_collection_path'):
                 # It's a data field; display it as part of the
                 # representation.
                 dict[name] = getattr(self.context, name)
@@ -244,10 +257,7 @@ class CollectionResource(ReadOnlyResource):
         return self.context.getEntryPath(entry)
 
     def makeEntryResource(self, entry, request):
-        """Construct an entry resource for the given entry.
-
-        This is a factory method to be overridden by subclasses.
-        """
+        """See `ICollectionResource`."""
         return EntryResource(entry, request)
 
     def publishTraverse(self, request, name):

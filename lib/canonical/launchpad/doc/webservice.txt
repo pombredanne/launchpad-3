@@ -190,7 +190,7 @@ defines a constructor.
     ...     decorates(IAuthorEntry)
     ...     schema = IAuthorEntry
     ...
-    ...     parent_collection_name = 'authors'
+    ...     parent_collection_path = ['authors']
 
 The "schema" attribute points to the interface class that defines the
 attributes exposed through the web service. Above, "schema" is
@@ -203,10 +203,10 @@ IRecipeEntry, which exposes both "name" and "author".
     ...     decorates(IRecipeEntry)
     ...     schema = IRecipeEntry
     ...
-    ...     parent_collection_name = 'recipes'
+    ...     parent_collection_path = ['recipes']
 
 The comment entry is a little different. Note that it doesn't define
-parent_collection_name. That's because a comment will be delegating
+parent_collection_path. That's because a comment will be delegating
 many of an entry's tasks to the collection that contains it.
 
     >>> class CommentEntry(Entry):
