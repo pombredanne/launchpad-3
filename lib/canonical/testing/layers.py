@@ -933,5 +933,5 @@ class PageTestLayer(LaunchpadFunctionalLayer):
         pass
 
 
-class TwistedLaunchpadZopelessLayer(LaunchpadZopelessLayer, TwistedLayer):
+class TwistedLaunchpadZopelessLayer(TwistedLayer, LaunchpadZopelessLayer):
     """A layer for cleaning up the Twisted thread pool."""
