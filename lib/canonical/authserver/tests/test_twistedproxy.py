@@ -43,7 +43,20 @@ class MockXMLRPCObject(xmlrpc.XMLRPC):
         self.log.append('unpublished')
 
 
-class TestInMemoryProxy(unittest.TestCase):
+class TestTwistedProxyConformance(unittest.TestCase):
+    """Interface conformance tests for Twisted XML-RPC proxies.
+
+    These tests check that our in-memory proxy behaves like a real Twisted
+    XML-RPC proxy. They are parametrized using bzrlib's `TestScenarioApplier`.
+
+    The `server_factory` instance variable is set by the test loader to one of
+    `TwistedServer` or `InMemoryServer`. It's expected that `server_factory`
+    takes a single `XMLRPC` object as an argument and returns an object that
+    has `setUp`, `tearDown` and `getProxy` methods, with the latter returning
+    a proxy that conforms to these tests.
+
+    The tests are closely bound to `MockXMLRPCObject`.
+    """
 
     layer = TwistedLayer
 
@@ -56,6 +69,7 @@ class TestInMemoryProxy(unittest.TestCase):
         self.server.tearDown()
 
     def makeProxy(self):
+        """Return an instance of the proxy to test."""
         return self.server.getProxy()
 
     def assertContainsRe(self, haystack, needle_re):
@@ -84,46 +98,70 @@ class TestInMemoryProxy(unittest.TestCase):
         return deferred.addCallback(check_fault)
 
     def checkLog(self, ignored, expected):
+        """Callback that checks the log on `self.xmlrpc_resource`.
+
+        Asserts that the log on `self.xmlrpc_resource` is equal to `expected`.
+        """
         self.assertEqual(expected, self.xmlrpc_resource.log)
 
     def test_callsUnderlyingImplementation(self):
+        # callRemote('method_name') calls that method on the server.
         proxy = self.makeProxy()
         deferred = proxy.callRemote('success')
         return deferred.addCallback(self.checkLog, ['success'])
 
     def test_passesArguments(self):
+        # Extra argument passed to callRemote are passed on to the remote
+        # method on the server.
         proxy = self.makeProxy()
         deferred = proxy.callRemote('takesArguments', 2, 3, 5)
         return deferred.addCallback(
             self.checkLog, [('takesArguments', (2, 3, 5))])
 
     def test_returnsValue(self):
+        # The value returned from the remote method is returned by callRemote,
+        # albeit as the result of a Deferred.
         proxy = self.makeProxy()
         result = proxy.callRemote('returnsValue', 42)
         result.addCallback(self.assertEqual, 42)
         return result
 
     def test_methodDoesntExist(self):
+        # `callRemote` raises a Fault when we try to call a method that
+        # doesn't exist on the remote object.
         proxy = self.makeProxy()
         return self.assertFault(
             proxy.callRemote('doesntExist', 42), 8001, 'doesntExist')
 
     def test_unpublished(self):
+        # An 'unpublished' method is a method on the remote object that is not
+        # intended to be called remotely. For Twisted XML-RPC resources, this
+        # is a method not prefixed by 'xmlrpc_'. When we call an unpublished
+        # method, the proxy behaves as if it doesn't exist.
         proxy = self.makeProxy()
         return self.assertFault(
             proxy.callRemote('unpublished', 42), 8001, 'unpublished')
 
     def test_unsupportedTypeForParameter(self):
+        # Only certain types can go over the wire. If we pass in bad arguments
+        # to the proxy, it raises a TypeError.
         proxy = self.makeProxy()
         self.assertRaises(TypeError, proxy.callRemote, 'takesArguments', None)
 
     def test_returnsUnsupportedType(self):
+        # If the remote method returns something that can't go over the wire,
+        # the proxy raises a Fault.
         proxy = self.makeProxy()
         return self.assertFault(
             proxy.callRemote('returnsNone'), 8002, "can't serialize output")
 
 
 class TwistedServer(Server):
+    """A test HTTP server that serves an XML-RPC resource.
+
+    Use `getProxy` to get a real proxy (i.e. a `twisted.web.xmlrpc.Proxy`)
+    that points to the resource.
+    """
 
     def __init__(self, xmlrpc_resource):
         self.xmlrpc_resource = xmlrpc_resource
@@ -147,6 +185,7 @@ class TwistedServer(Server):
 
 
 class InMemoryServer(Server):
+    """A test HTTP server that serves an XML-RPC resource."""
 
     def __init__(self, xmlrpc_resource):
         self.xmlrpc_resource = xmlrpc_resource
