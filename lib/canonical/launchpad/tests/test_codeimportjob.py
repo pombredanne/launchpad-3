@@ -25,7 +25,7 @@ from canonical.launchpad.interfaces import (
     CodeImportReviewStatus, ICodeImportEventSet, ICodeImportJobSet,
     ICodeImportJobWorkflow, ICodeImportResult, ICodeImportResultSet,
     ICodeImportSet, ILibraryFileAliasSet, NotFoundError)
-from canonical.launchpad.ftests import login
+from canonical.launchpad.ftests import login, sync
 from canonical.launchpad.testing import LaunchpadObjectFactory
 from canonical.librarian.interfaces import ILibrarianClient
 from canonical.testing import LaunchpadFunctionalLayer
@@ -512,6 +512,7 @@ class TestCodeImportJobWorkflowFinishJob(unittest.TestCase,
         code_import = self.factory.makeCodeImport()
         job = self.factory.makeCodeImportJob(code_import)
         getUtility(ICodeImportJobWorkflow).startJob(job, self.machine)
+        sync(job)
         return job
 
     # Precondition tests. Only one of these.
@@ -523,7 +524,7 @@ class TestCodeImportJobWorkflowFinishJob(unittest.TestCase,
         job = self.factory.makeCodeImportJob(code_import)
         self.assertFailure(
             "The CodeImportJob associated with %s is "
-            "RUNNING." % code_import.branch.unique_name,
+            "PENDING." % code_import.branch.unique_name,
             getUtility(ICodeImportJobWorkflow).finishJob,
             job, CodeImportResultStatus.SUCCESS, None)
 
@@ -536,9 +537,8 @@ class TestCodeImportJobWorkflowFinishJob(unittest.TestCase,
         running_job_id = running_job.id
         getUtility(ICodeImportJobWorkflow).finishJob(
             running_job, CodeImportResultStatus.SUCCESS, None)
-        self.assertRaises(
-            NotFoundError, getUtility(ICodeImportJobSet).getByID,
-            running_job_id)
+        self.assertEqual(
+            None, getUtility(ICodeImportJobSet).getById(running_job_id))
 
     def test_createsNewJob(self):
         # finishJob() creates a new CodeImportJob for the given
@@ -551,6 +551,7 @@ class TestCodeImportJobWorkflowFinishJob(unittest.TestCase,
         new_job = code_import.import_job
         self.assert_(new_job is not None)
         self.assertEqual(new_job.state, CodeImportJobState.PENDING)
+        self.assertEqual(new_job.machine, None)
         self.assertEqual(
             new_job.date_due - running_job.date_due,
             code_import.effective_update_interval)
@@ -613,8 +614,11 @@ class TestCodeImportJobWorkflowFinishJob(unittest.TestCase,
         # Some result fields are tested in other tests:
         unchecked_result_fields.difference_update(['log_file', 'status'])
 
+        code_import = self.factory.makeCodeImport()
+        removeSecurityProxy(code_import).review_status = \
+            CodeImportReviewStatus.REVIEWED
         self.assertFinishJobPassesThroughJobField(
-            'code_import', 'code_import', self.factory.makeCodeImport())
+            'code_import', 'code_import', code_import)
         unchecked_result_fields.remove('code_import')
         self.assertFinishJobPassesThroughJobField(
             'machine', 'machine', self.factory.makeCodeImportMachine())
@@ -627,7 +631,7 @@ class TestCodeImportJobWorkflowFinishJob(unittest.TestCase,
         unchecked_result_fields.remove('log_excerpt')
         self.assertFinishJobPassesThroughJobField(
             'date_started', 'date_job_started',
-            datetime.datetime())
+            datetime(2008, 1, 1, tzinfo=UTC))
         unchecked_result_fields.remove('date_job_started')
 
         result = self.getResultForJob(self.makeRunningJob())
@@ -643,7 +647,7 @@ class TestCodeImportJobWorkflowFinishJob(unittest.TestCase,
 
     def test_resultStatus(self):
         # finishJob() sets the status appropriately on the result object.
-        for status in CodeImportResultStatus:
+        for status in CodeImportResultStatus.items:
             job = self.makeRunningJob()
             result = self.getResultForJob(job, status)
             self.assertEqual(result.status, status)
@@ -663,19 +667,20 @@ class TestCodeImportJobWorkflowFinishJob(unittest.TestCase,
             self.makeRunningJob(), log_alias=log_alias)
 
         self.assertEqual(
-            result.log_alias.read(), log_data)
+            result.log_file.read(), log_data)
 
     def test_createsFinishCodeImportEvent(self):
         # finishJob() creates a FINISH CodeImportEvent.
         running_job = self.makeRunningJob()
         code_import = running_job.code_import
+        machine = running_job.machine
         new_events = NewEvents()
         getUtility(ICodeImportJobWorkflow).finishJob(
             running_job, CodeImportResultStatus.SUCCESS, None)
         [finish_event] = list(new_events)
         self.assertEventLike(
             finish_event, CodeImportEventType.FINISH,
-            code_import)
+            code_import, machine)
 
 
 def test_suite():

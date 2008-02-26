@@ -339,15 +339,14 @@ The details are tested in unit tests in ../tests/test_codeimportjob.py.
     >>> new_events = NewEvents()
     >>> finished_job_id = running_job.id
     >>> finished_date_due = running_job.date_due
+    >>> from canonical.launchpad.interfaces import CodeImportResultStatus
     >>> workflow.finishJob(
     ...     running_job, CodeImportResultStatus.SUCCESS, None)
 
 The passed in job is now deleted.
 
-    >>> job_set.getById(finished_job_id)
-    Traceback (most recent call last):
-      ...
-    NotFoundError: ...
+    >>> print job_set.getById(finished_job_id)
+    None
 
 And a new one has been created, scheduled appropriately far in the
 future.
@@ -355,9 +354,9 @@ future.
     >>> code_import.import_job.id != finished_job_id
     True
     >>> code_import.effective_update_interval
-    6 hours
+    datetime.timedelta(0, 21600)
     >>> code_import.import_job.date_due - finished_date_due
-    6 hours
+    datetime.timedelta(0, 21600)
 
 A CodeImportResult object has now been created to record the result of
 this run, containing details such as the import worked on, the dates
@@ -377,7 +376,7 @@ the import started and finished and the final status of the run.
     >>> # date_created database column.
     >>> print_date_attribute(result, 'date_created')
     UTC_NOW
-    >>> result.status.name
+    >>> print result.status.name
     SUCCESS
 
 Other details of the result object are checked in the unit tests.
