@@ -18,6 +18,7 @@ from canonical.lazr.interfaces import IEntry
 
 from canonical.launchpad.interfaces import (IPerson, ITeamMembership)
 
+
 class ITeamMembershipEntry(IEntry):
     """The part of a team membership exposed through the web service."""
 
