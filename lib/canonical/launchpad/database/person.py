@@ -661,7 +661,8 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
             'Bug.id = BugTask.bug',
             open_bugs_cond,
             'StructuralSubscription.subscriber = %s' % sqlvalues(self),
-            'BugTask.sourcepackagename = StructuralSubscription.sourcepackagename',
+            'BugTask.sourcepackagename = '
+                'StructuralSubscription.sourcepackagename',
             'BugTask.distribution = StructuralSubscription.distribution',
             'Bug.duplicateof is NULL']
         privacy_filter = get_bug_privacy_filter(user)
