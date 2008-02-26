@@ -1,6 +1,7 @@
 # Copyright 2008 Canonical Ltd.  All rights reserved.
 """Tests of the HWDB submissions parser."""
 
+from cStringIO import StringIO
 from datetime import datetime
 import logging
 import os
@@ -22,77 +23,12 @@ class TestHWDBSubmissionParser(TestCase):
 
     layer = BaseLayer
 
-    submission_count = 0
-
     def setUp(self):
         """Setup the test environment."""
         self.log = logging.getLogger('test_hwdb_submission_parser')
         self.log.setLevel(logging.INFO)
         self.handler = Handler(self)
         self.handler.add(self.log.name)
-
-        sample_data_path = os.path.join(
-            config.root, 'lib', 'canonical', 'launchpad', 'scripts',
-            'tests', 'hardwaretest.xml')
-        self.sample_data = open(sample_data_path).read()
-
-        parsed_sample_data, submission_id = self.runParser(self.sample_data)
-        self.parsed_sample_data = parsed_sample_data
-
-    def assertErrorMessage(self, submission_key, result, message, test):
-        """Search for message in the log entries for submission_key.
-
-        assertErrorMessage requires that
-        (a) a log message starts with "Parsing submisson <submission_key>:"
-        (b) the error message passed as the parameter message appears
-            in a log string that matches (a)
-        (c) result, which is supposed to contain an object representing
-            the result of parsing a submission, is None.
-
-        If all three criteria match, assertErrormessage does not raise any
-        exception.
-        """
-        self.assertEqual(
-            result, None,
-            'The test %s failed: The parsing result is not None.' % test)
-        last_log_messages = []
-        for r in self.handler.records:
-            if r.levelno != logging.ERROR:
-                continue
-            candidate = r.getMessage()
-            if candidate.startswith('Parsing submission %s:'
-                                    % submission_key):
-                if candidate.find(message) > 0:
-                    return
-                else:
-                    last_log_messages.append(candidate)
-        failmsg = [
-            "No error log message for submission %s (testing %s) contained %s"
-                % (submission_key, test, message)]
-        if last_log_messages:
-            failmsg.append('Log messages for the submission:')
-            failmsg.extend(last_log_messages)
-        else:
-            failmsg.append('No messages logged for this submission')
-
-        self.fail('\n'.join(failmsg))
-
-    def runParser(self, sample_data):
-        """Run the HWDB submission parser."""
-        self.submission_count += 1
-        submission_id = 'submission_%i' % self.submission_count
-        result = SubmissionParser(self.log).parseSubmission(sample_data,
-                                                            submission_id)
-        return result, submission_id
-
-    def insertSampledata(self, data, insert_text, where):
-        """Insert text into the sample data `data`.
-
-        Insert the text `insert_text` before the first occurrence of
-        `where` in `data`.
-        """
-        insert_position = data.find(where)
-        return data[:insert_position] + insert_text + data[insert_position:]
 
     def getTimestampETreeNode(self, time_string):
         """Return an Elementtree node for an XML tag with a timestamp."""
@@ -161,335 +97,423 @@ class TestHWDBSubmissionParser(TestCase):
         self.assertRaises(
             ValueError, parser._getValueAttributeAsDateTime, time_node)
 
-    def testBooleanValuesInSummary(self):
-        """Test boolean values in the <summary> section.
-        """
-        # The parser returns either True or False for the nodes
-        # <live_cd>, <private>, <contactable>.
-        boolean_nodes = ('live_cd', 'private', 'contactable')
-        summary = self.parsed_sample_data['summary']
-        for node in boolean_nodes:
-            self.assertEqual(
-                summary[node], False,
-                'Testing parsing result of <%s> in <summary>: Got %s, '
-                    'expected False' % (node, summary[node]))
-        for node in boolean_nodes:
-            sample_data = self.sample_data.replace(
-                '<%s value="False"/>' % node, '<%s value="True"/>' % node)
-            result, submission_id = self.runParser(sample_data)
-            summary = result['summary']
-            self.assertEqual(
-                summary[node], True,
-                'Testing parsing result of <%s> in <summary>: Got %s, '
-                    'expected True' % (node, summary[node]))
-
-    def testSummaryParser(self):
-        """Test of the parser for the XML submission data."""
-
-        # The <summary> section is returned as a simple dictionary.
-        # Possibly missing tags are already catched by the Relax NG
-        # validation, as is invalid content of tags with boolean
-        # or datetime content, hence there is no need to check for
-        # this type of "bad data" here.
-        summary = self.parsed_sample_data['summary']
-        client_expected = {'name': 'hwtest',
-                           'version': '0.9',
-                           'plugins': [{'name': 'architecture_info',
-                                        'version': '1.1'},
-                                       {'name': 'find_network_controllers',
-                                        'version': '2.34'},
-                                       {'name': 'internet_ping',
-                                        'version': '1.1'},
-                                       {'name': 'harddisk_speed',
-                                        'version': '0.7'}
-                                      ]}
+    def testSummary(self):
+        node = etree.fromstring("""
+            <summary>
+                <live_cd value="False"/>
+                <system_id value="f982bb1ab536469cebfd6eaadcea0ffc"/>
+                <distribution value="Ubuntu"/>
+                <distroseries value="7.04"/>
+                <architecture value="amd64"/>
+                <private value="False"/>
+                <contactable value="False"/>
+                <date_created value="2007-09-28T16:09:20.126842"/>
+                <client name="hwtest" version="0.9">
+                    <plugin name="architecture_info" version="1.1"/>
+                    <plugin name="find_network_controllers" version="2.34"/>
+                </client>
+            </summary>
+            """)
+        parser = SubmissionParser(self.log)
+        summary = parser._parseSummary(node)
         utc_tz = pytz.timezone('UTC')
-        summary_expected = {'live_cd': False,
-                            'system_id': 'f982bb1ab536469cebfd6eaadcea0ffc',
-                            'distribution': 'Ubuntu',
-                            'distroseries': '7.04',
-                            'architecture': 'amd64',
-                            'private': False,
-                            'contactable': False,
-                            'date_created': datetime(2007, 9, 28, 16, 9, 20,
-                                                     126842, tzinfo=utc_tz),
-                            'client': client_expected}
-        self.assertEqual(summary, summary_expected,
-                         'Submission parser: Invalid <summary> result')
-
-    def _runPropertyTest(self, properties):
-        """Insert the string properties into the test data and run the parser.
-
-        :return: the parsed properties represented as a Python list.
-
-        The string properties is wrapped into <device>...</device> and
-        appended to the end of the <hal> section of the sample sumission
-        data.
-        """
-        insert_text = ('<device id="555" '
-                       'udi="/org/freedesktop/Hal/devices/bogus">%s</device>')
-        insert_text = insert_text % properties
-        sample_data = self.insertSampledata(
-            data=self.sample_data,
-            insert_text=insert_text,
-            where='</hal>')
-
-        result, submission_id = self.runParser(sample_data)
+        expected_data = {
+            'live_cd': False,
+            'system_id': 'f982bb1ab536469cebfd6eaadcea0ffc',
+            'distribution': 'Ubuntu',
+            'distroseries': '7.04',
+            'architecture': 'amd64',
+            'private': False,
+            'contactable': False,
+            'date_created': datetime(2007, 9, 28, 16, 9, 20, 126842,
+                                     tzinfo=utc_tz),
+            'client': {
+                'name': 'hwtest',
+                'version': '0.9',
+                'plugins': [
+                    {'name': 'architecture_info',
+                     'version': '1.1'},
+                    {'name': 'find_network_controllers',
+                     'version': '2.34'}]}
+            }
+        self.assertEqual(
+            summary, expected_data,
+            'SubmissionParser.parseSummary returned an unexpected result')
         
-        devices = result['hardware']['hal']['devices']
-        devices = [device for device in devices if device['id'] == 555]
-        return devices[0]['properties']
 
-    def testBooleanProperties(self):
-        """Bool properties are converted into {'name': (value, type_string)}
+    def _runPropertyTest(self, xml):
+        parser = SubmissionParser(self.log)
+        node = etree.fromstring(xml)
+        return parser._parseProperty(node)
 
-        type(value) is bool.
-        """
-        property_xml = '<property name="booltest" type="bool">True</property>'
-        properties = self._runPropertyTest(property_xml)
-        self.assertEqual(properties,
-                         {'booltest': (True, 'bool')},
-                         'Invalid parsing result for boolean property %s'
-                             % property_xml)
+    def testBooleanPropertyTypes(self):
+        """Test the parsing result for a boolean property."""
+        for property_type in ('bool', 'dbus.Boolean'):
+            for value in (True, False):
+                xml = ('<property type="%s" name="foo">%s</property>'
+                       % (property_type, value))
+                result = self._runPropertyTest(xml)
+                self.assertEqual(
+                    result, ('foo', (value, property_type)),
+                    'Invalid parsing result for boolean property type %s, '
+                        'expected %s, got %s'
+                    % (property_type, value, result))
 
-        property_xml = (
-            '<property name="booltest" type="bool">False</property>')
-        properties = self._runPropertyTest(property_xml)
-        self.assertEqual(properties,
-                         {'booltest': (False, 'bool')},
-                         'Invalid parsing result for boolean property %s'
-                             % property_xml)
+    def testStringPropertyTypes(self):
+        """String properties are converted into (name, (value, type))."""
+        xml_template = '<property type="%s" name="foo">some text</property>'
+        for property_type in ('str', 'dbus.String', 'dbus.UTF8String'):
+            xml = xml_template % property_type
+            result = self._runPropertyTest(xml)
+            self.assertEqual(
+                result, ('foo', ('some text', property_type)),
+                'Invalid parsing result for string property type %s, '
+                'expected "some text", got "%s"'
+                    % (property_type, result))
 
-        property_xml = ('<property name="booltest" type="dbus.Boolean">'
-                        'False</property>')
-        properties = self._runPropertyTest(property_xml)
-        self.assertEqual(properties,
-                         {'booltest': (False, 'dbus.Boolean')},
-                         'Invalid parsing result for boolean property %s'
-                             % property_xml)
+    def testStringPropertyEncoding(self):
+        """Different encodings are properly handled."""
+        xml_template = '''<?xml version="1.0" encoding="%s"?>
+                          <property type="str" name="foo">%s</property>'''
+        euro_symbol = u'\u20ac'
+        parser = SubmissionParser()
+        for encoding in ('utf-8', 'iso8859-15'):
+            xml = xml_template % (encoding, euro_symbol.encode(encoding))
+            tree = etree.parse(StringIO(xml))
+            parser.docinfo = tree.docinfo
+            node = tree.getroot()
+            result = parser._parseProperty(node)
+            self.assertEqual(result, ('foo', (euro_symbol, 'str')),
+                'Invalid parsing result for string encoding %s, '
+                'expected the Euro symbol (0x20AC), got %s'
+                    % (encoding, repr(result)))
 
-        property_xml = ('<property name="booltest" type="dbus.Boolean">'
-                        'True</property>')
-        properties = self._runPropertyTest(property_xml)
-        self.assertEqual(properties,
-                         {'booltest': (True, 'dbus.Boolean')},
-                         'Invalid parsing result for boolean property %s'
-                             % property_xml)
-
-    def testStringProperties(self):
-        """String properties are converted into {'name': (value, type)}.
-
-        type(value) is string.
-        """
-        property_xml = '<property name="strtest" type="str">abcd</property>'
-        properties = self._runPropertyTest(property_xml)
-        self.assertEqual(properties,
-                         {'strtest': ('abcd', 'str')},
-                         'Invalid parsing result for string property %s'
-                         % property_xml)
-
-        property_xml = ('<property name="strtest" type="dbus.String">abcd'
-                        '</property>')
-        properties = self._runPropertyTest(property_xml)
-        self.assertEqual(properties,
-                         {'strtest': ('abcd', 'dbus.String')},
-                         'Invalid parsing result for string property %s'
-                         % property_xml)
-
-        property_xml = ('<property name="strtest" type="dbus.UTF8String">'
-                       'abcd</property>')
-        properties = self._runPropertyTest(property_xml)
-        self.assertEqual(properties,
-                         {'strtest': ('abcd', 'dbus.UTF8String')},
-                         'Invalid parsing result for string property %s'
-                         % property_xml)
-
-    def testIntegerProperties(self):
-        """Int properties are converted into {'name': (value, type_string)}.
+    def testIntegerPropertyTypes(self):
+        """Int properties are converted into (name, (value, type_string)).
 
         type(value) is int or long, depending on the value.
         """
-        property_template = (
-            '<property name="inttest" type="%s">123</property>')
+        xml_template = '<property name="inttest" type="%s">123</property>'
         for property_type in ('dbus.Byte', 'dbus.Int16', 'dbus.Int32',
                               'dbus.Int64', 'dbus.UInt16', 'dbus.UInt32',
                               'dbus.UInt64', 'int', 'long'):
-            property_xml = property_template % property_type
-            properties = self._runPropertyTest(property_xml)
-            self.assertEqual(properties,
-                             {'inttest': (123, property_type)},
-                             'Invalid parsing result for integer property: '
-                             '%s' % property_xml)
+            xml = xml_template % property_type
+            result = self._runPropertyTest(xml)
+            self.assertEqual(result, ('inttest', (123, property_type)),
+                             'Invalid parsing result for integer property '
+                             'type %s' % property_type)
         # If the value is too large for an int, a Python long is returned.
-        property_xml = """
+        xml = """
             <property name="inttest" type="long">
                 12345678901234567890
             </property>"""
-        properties = self._runPropertyTest(property_xml)
+        properties = self._runPropertyTest(xml)
         self.assertEqual(properties,
-                         {'inttest': (12345678901234567890L,'long')},
-                         'Invalid parsing result for integer property: '
-                         '%s' % property_xml)
+                         ('inttest', (12345678901234567890L, 'long')),
+                         'Invalid parsing result for integer property with '
+                             'a large value')
 
-    def testFloatProperties(self):
-        """Float properties are converted into {'name': (value, type_string)}.
+    def testFloatPropertyTypes(self):
+        """Float properties are converted into ('name', (value, type_string)).
 
         type(value) is float.
         """
-        property_template = ('<property name="floattest" type="%s">'
+        xml_template = ('<property name="floattest" type="%s">'
                             '1.25</property>')
         for property_type in ('dbus.Double', 'float'):
-            property_xml = property_template % property_type
-            properties = self._runPropertyTest(property_xml)
-            self.assertEqual(properties,
-                             {'floattest': (1.25, property_type)},
-                             'Invalid parsing result for float property: '
-                             '%s' % property_xml)
+            xml = xml_template % property_type
+            result = self._runPropertyTest(xml)
+            self.assertEqual(result, ('floattest', (1.25, property_type)),
+                             'Invalid parsing result for float property type: '
+                             '%s' % property_type)
 
-    def testListProperties(self):
-        """List properties are converted into {'name': a_list}.
+    def testListPropertyTypes(self):
+        """List properties are converted into ('name', a_list).
 
         a_list is a Python list, where the list elements represent the
         values of the <value> sub-nodes of the <property>.
         """
-        property_template = """
+        xml_template = """
             <property name="listtest" type="%s">
                 <value type="int">1</value>
-                <value type="int">2</value>
                 <value type="str">a</value>
+                <value type="list">
+                    <value type="int">2</value>
+                    <value type="float">3.4</value>
+                </value>
+                <value type="dict">
+                    <value name="one" type="int">2</value>
+                    <value name="two" type="str">b</value>
+                </value>
             </property>
             """
         for property_type in ('dbus.Array', 'list'):
-            property_xml = property_template % property_type
-            properties = self._runPropertyTest(property_xml)
-            self.assertEqual(properties,
-                             {'listtest': ([(1, 'int'),
-                                            (2, 'int'),
-                                            ('a', 'str')], property_type)},
-                             'Invalid Parsing result for list property: '
-                             '%s' % property_xml)
+            xml = xml_template % property_type
+            result = self._runPropertyTest(xml)
+            self.assertEqual(result,
+                             ('listtest', ([(1, 'int'),
+                                            ('a', 'str'),
+                                            ([(2, 'int'),
+                                              (3.4, 'float')], 'list'),
+                                            ({'one': (2, 'int'),
+                                              'two': ('b', 'str')}, 'dict')],
+                                           property_type)),
+                             'Invalid parsing result for list property: '
+                             '%s' % xml)
 
-    def testDictProperties(self):
-        """List properties are converted into {'name': a_dict}.
+    def testDictPropertyTypes(self):
+        """Dict properties are converted into ('name', a_dict).
 
         a_dict is a Python dictionary, where the items represent the
         values of the <value> sub-nodes of the <property>.
         """
-        property_template = """
+        xml_template = """
             <property name="dicttest" type="%s">
                 <value name="one" type="int">1</value>
-                <value name="two" type="int">2</value>
-                <value name="three" type="str">a</value>
+                <value name="two" type="str">a</value>
+                <value name="three" type="list">
+                    <value type="int">2</value>
+                    <value type="float">3.4</value>
+                </value>
+                <value name="four" type="dict">
+                    <value name="five" type="int">2</value>
+                    <value name="six" type="str">b</value>
+                </value>
             </property>
             """
         for property_type in ('dbus.Dictionary', 'dict'):
-            property_xml = property_template % property_type
-            properties = self._runPropertyTest(property_xml)
-            self.assertEqual(properties,
-                             {'dicttest': ({'one': (1, 'int'),
-                                            'two': (2, 'int'),
-                                            'three': ('a', 'str')},
-                                           property_type)},
-                             'Invalid Parsing result for dict property: '
-                             '%s' % property_xml)
+            xml = xml_template % property_type
+            result = self._runPropertyTest(xml)
+            self.assertEqual(
+                result,
+                ('dicttest', ({'one': (1, 'int'),
+                               'two': ('a', 'str'),
+                               'three': ([(2, 'int'),
+                                          (3.4, 'float')], 'list'),
+                               'four': ({'five': (2, 'int'),
+                                         'six': ('b', 'str')}, 'dict')},
+                              property_type)),
+                'Invalid parsing result for dict property: %s' % xml)
 
-    def testDuplicateProperty(self):
-        """Two properties with the same name in one set are invalid."""
-        sample_data = self.sample_data
-        duplicate_property = (
-            '<property name="info.parent" type="dbus.String">xxx</property>')
-        insert_at = 'udi="/org/freedesktop/Hal/devices/platform_bluetooth">'
-        sample_data = sample_data.replace(
-            insert_at, insert_at + duplicate_property)
+    def testProperties(self):
+        """A set of properties is converted into a dictionary."""
+        node = etree.fromstring("""
+            <container>
+                <property name="one" type="int">1</property>
+                <property name="two" type="str">a</property>
+            </container>
+            """)
+        parser = SubmissionParser(self.log)
+        result = parser._parseProperties(node)
+        self.assertEqual(result,
+                         {'one': (1, 'int'),
+                          'two': ('a', 'str')},
+                         'Invalid parsing result for a property set')
 
-        result, submission_id = self.runParser(sample_data)
-        self.assertErrorMessage(
-            submission_id, result,
-            '<property name="info.parent"> found more than once in <device>',
-            'Detection of duplicate properties')
-        
-    def testHalData(self):
+        # Duplicate property names raise a ValueError
+        node = etree.fromstring("""
+            <container>
+                <property name="one" type="int">1</property>
+                <property name="one" type="str">a</property>
+            </container>
+            """)
+        self.assertRaises(ValueError, parser._parseProperties, node)
+
+
+    def testDevice(self):
+        """A device node is converted into a dictionary."""
+        test = self
+        def _parseProperties(self, node):
+            test.assertTrue(isinstance(self, SubmissionParser))
+            test.assertEqual(node.tag, 'device')
+            return 'parsed properties'
+        parser = SubmissionParser(self.log)
+        parser._parseProperties = lambda node: _parseProperties(parser, node)
+
+        node = etree.fromstring("""
+            <device id="2" udi="/org/freedesktop/Hal/devices/acpi_CPU0"
+                    parent="1">
+                <property name="info.product" type="str">
+                    Intel(R) Core(TM)2 CPU
+                </property>
+            </device>
+            """)
+        result = parser._parseDevice(node)
+        self.assertEqual(result,
+                         {'id': 2,
+                          'udi': '/org/freedesktop/Hal/devices/acpi_CPU0',
+                          'parent': 1,
+                          'properties': 'parsed properties'},
+                         'Invalid parsing result for <device> (2)')
+
+        # the attribute "parent" may be omitted.
+        node = etree.fromstring("""
+            <device id="1" udi="/org/freedesktop/Hal/devices/computer">
+                <property name="info.product" type="str">Computer</property>
+            </device>
+            """)
+        result = parser._parseDevice(node)
+        self.assertEqual(result,
+                         {'id': 1,
+                          'udi': '/org/freedesktop/Hal/devices/computer',
+                          'parent': None,
+                          'properties': 'parsed properties'},
+                         'Invalid parsing result for <device> (1)')
+
+    def testHal(self):
         """The <hal> node is converted into a Python dict."""
-        hal_data = self.parsed_sample_data['hardware']['hal']
-        expected_device_1 = {
-            'udi': '/org/freedesktop/Hal/devices/platform_bluetooth',
-            'id': 0,
-            'parent': '130',
-            'properties': {
-                'storage.size': (0, 'dbus.UInt64'),
-                'info.parent': ('/org/freedesktop/Hal/devices/computer',
-                                'dbus.String'),
-                'info.bus': ('platform', 'dbus.String'),
-                'test.only': ({'blah': (1234, 'dbus.Int32'),
-                               'foo': ('bar', 'dbus.String')},
-                              'dbus.Dictionary'),
-                'info.capabilities': ([('button', 'dbus.String')],
-                                      'dbus.Array'),
-                'linux.acpi_type': (11, 'dbus.Int32'),
-                'button.has_state': (False, 'dbus.Boolean')}}
-        expected_device_2 = {
-            'udi': '/org/freedesktop/Hal/devices/computer',
-            'id': 130,
-            'parent': None,
-            'properties': {'info.bus': ('unknown', 'dbus.String')}}
+        test = self
+        def _parseDevice(self, node):
+            test.assertTrue(isinstance(self, SubmissionParser))
+            test.assertEqual(node.tag, 'device')
+            return 'parsed device node'
+        parser = SubmissionParser(self.log)
+        parser._parseDevice = lambda node: _parseDevice(parser, node)
 
-        self.assertEqual(
-            hal_data,
-            {'version': '0.5.8.1',
-             'devices': [expected_device_1, expected_device_2]},
-            'Unexpected parsing result for <hal> data')
+        node = etree.fromstring("""
+            <hal version="0.5.9.1">
+                <device/>
+                <device/>
+            </hal>
+            """)
+        result = parser._parseHAL(node)
+        self.assertEqual(result,
+                         {'version': '0.5.9.1',
+                          'devices': ['parsed device node',
+                                      'parsed device node']},
+                         'Invalid parsing result for <hal>')
 
-    def testProcessorsData(self):
+    def testProcessors(self):
         """The <processors> node is converted into a Python list.
 
         The list elements represent the <processor> nodes.
         """
-        processors_data = self.parsed_sample_data['hardware']['processors']
-        expected_data = [
-            {'id': 123,
-             'name': '0',
-             'properties': {'cpu_mhz': (1000.0, 'float'),
-                            'flags': ([('fpu', 'str'),
-                                       ('vme', 'str'),
-                                       ('de', 'str')],
-                                      'list'),
-                            'wp': (True, 'bool')}}]
-        self.assertEqual(processors_data, expected_data,
-                         'Unexpected parsing result for <processors> data')
-        
-    def testAliasesData(self):
+        test = self
+        def _parseProperties(self, node):
+            test.assertTrue(isinstance(self, SubmissionParser))
+            test.assertEqual(node.tag, 'processor')
+            return 'parsed properties'
+        parser = SubmissionParser(self.log)
+        parser._parseProperties = lambda node: _parseProperties(parser, node)
+
+        node = etree.fromstring("""
+            <processors>
+                <processor id="123" name="0">
+                    <property/>
+                </processor>
+                <processor id="124" name="1">
+                    <property/>
+                </processor>
+            </processors>
+            """)
+        result = parser._parseProcessors(node)
+        self.assertEqual(result,
+                         [{'id': 123,
+                           'name': '0',
+                           'properties': 'parsed properties'},
+                          {'id': 124,
+                           'name': '1',
+                           'properties': 'parsed properties'}],
+                         'Invalid parsing result for <processors>')
+
+    def testAliases(self):
         """The <aliases> node is converted into a Python list.
 
         The list elements represent the <alias> nodes.
         """
-        aliases_data = self.parsed_sample_data['hardware']['aliases']
-        expected_data = [
-            {'target': 65,
-             'model': 'QuickPrint 9876',
-             'vendor': 'Medion'}]
-        self.assertEqual(aliases_data, expected_data,
-                         'Unexpected parsing result for <aliases> data')
+        parser = SubmissionParser(self.log)
+        node = etree.fromstring("""
+            <aliases>
+                <alias target="1">
+                    <vendor>Artec</vendor>
+                    <model>Ultima 2000</model>
+                </alias>
+                <alias target="2">
+                    <vendor>Medion</vendor>
+                    <model>MD 4394</model>
+                </alias>
+            </aliases>
+            """)
+        result = parser._parseAliases(node)
+        self.assertEqual(result,
+                         [{'target': 1,
+                           'vendor': 'Artec',
+                           'model': 'Ultima 2000'},
+                          {'target': 2,
+                           'vendor': 'Medion',
+                           'model': 'MD 4394'}],
+                         'Invalid parsing result for <aliases>')
 
-    def testLsbReleaseData(self):
+    def testHardware(self):
+        """The <hardware> tag is converted into a dictionary."""
+        test = self
+
+        def _parseHAL(self, node):
+            test.assertTrue(isinstance(self, SubmissionParser))
+            test.assertEqual(node.tag, 'hal')
+            return 'parsed HAL data'
+
+        def _parseProcessors(self, node):
+            test.assertTrue(isinstance(self, SubmissionParser))
+            test.assertEqual(node.tag, 'processors')
+            return 'parsed processor data'
+
+        def _parseAliases(self, node):
+            test.assertTrue(isinstance(self, SubmissionParser))
+            test.assertEqual(node.tag, 'aliases')
+            return 'parsed alias data'
+
+        parser = SubmissionParser(self.log)
+        parser._parseHAL = lambda node: _parseHAL(parser, node)
+        parser._parseProcessors = lambda node: _parseProcessors(parser, node)
+        parser._parseAliases = lambda node: _parseAliases(parser, node)
+        parser._setHardwareSectionParsers()
+
+        node = etree.fromstring("""
+            <hardware>
+                <hal/>
+                <processors/>
+                <aliases/>
+            </hardware>
+            """)
+        result = parser._parseHardware(node)
+        self.assertEqual(result,
+                         {'hal': 'parsed HAL data',
+                          'processors': 'parsed processor data',
+                          'aliases': 'parsed alias data'},
+                         'Invalid parsing result for <hardware>')
+
+    def testLsbRelease(self):
         """The <lsbrelease> node is converted into a Python dictionary.
 
         Each dict item represents a <property> sub-node.
         """
-        lsbrelease_data = self.parsed_sample_data['software']['lsbrelease']
-        expected_data = {
-            'release': ('7.04', 'str'),
-            'codename': ('feisty', 'str'),
-            'dict_example': (
-                {'a': ('value for key a', 'str'),
-                 'b': (1234, 'int')},
-                'dict'),
-            'distributor-id': ('Ubuntu', 'str'),
-            'description': ('Ubuntu 7.04', 'str')}
+        node = etree.fromstring("""
+            <lsbrelease>
+                <property name="release" type="str">
+                    7.04
+                </property>
+                <property name="codename" type="str">
+                    feisty
+                </property>
+                <property name="distributor-id" type="str">
+                    Ubuntu
+                </property>
+                <property name="description" type="str">
+                    Ubuntu 7.04
+                </property>
+            </lsbrelease>
+            """)
+        parser = SubmissionParser(self.log)
+        result = parser._parseLSBRelease(node)
+        self.assertEqual(result,
+                         {'distributor-id': ('Ubuntu', 'str'),
+                          'release': ('7.04', 'str'),
+                          'codename': ('feisty', 'str'),
+                          'description': ('Ubuntu 7.04', 'str')},
+                         'Invalid parsing result for <lsbrelease>')
 
-        self.assertEqual(lsbrelease_data, expected_data,
-                         'Unexpected parsing result for <lsbrelease> data')
-
-    def testPackagesData(self):
+    def testPackages(self):
         """The <packages> node is converted into a Python dictionary.
 
         Each dict item represents a <package> sub-node as
@@ -497,23 +521,51 @@ class TestHWDBSubmissionParser(TestCase):
         is a dictionary representing the <property> sub-nodes of a
         <package> node.
         """
-        packages_data = self.parsed_sample_data['software']['packages']
-        expected_data = {
-            'metacity': {
-                'installed_size': (868352, 'int'),
-                'section': ('x11', 'str'),
-                'summary': ('A lightweight GTK2 based Window Manager', 'str'),
-                'priority': ('optional', 'str'),
-                'source': ('metacity', 'str'),
-                'version': ('1:2.18.2-0ubuntu1.1', 'str'),
-                'size': (429128, 'int')}}
-
-        self.assertEqual(packages_data, expected_data,
-                         'Unexpected parsing result for <packages> data')
+        node = etree.fromstring("""
+            <packages>
+                <package name="metacity">
+                    <property name="installed_size" type="int">
+                        868352
+                    </property>
+                    <property name="section" type="str">
+                        x11
+                    </property>
+                    <property name="summary" type="str">
+                        A lightweight GTK2 based Window Manager
+                    </property>
+                    <property name="priority" type="str">
+                        optional
+                    </property>
+                    <property name="source" type="str">
+                        metacity
+                    </property>
+                    <property name="version" type="str">
+                        1:2.18.2-0ubuntu1.1
+                    </property>
+                    <property name="size" type="int">
+                        429128
+                    </property>
+                </package>
+            </packages>
+            """)
+        parser = SubmissionParser(self.log)
+        result = parser._parsePackages(node)
+        self.assertEqual(result,
+                         {'metacity':
+                          {'installed_size': (868352, 'int'),
+                           'priority': ('optional', 'str'),
+                           'section': ('x11', 'str'),
+                           'size': (429128, 'int'),
+                           'source': ('metacity', 'str'),
+                           'summary':
+                               ('A lightweight GTK2 based Window Manager',
+                                'str'),
+                           'version': ('1:2.18.2-0ubuntu1.1', 'str')}},
+                         'Invalid parsing result for <packages>')
 
     def testDuplicatePackage(self):
         """Two <package> nodes with the same name are rejected."""
-        test_data = """
+        node = etree.fromstring("""
             <packages>
                 <package name="foo">
                     <property name="size" type="int">10000</property>
@@ -522,87 +574,253 @@ class TestHWDBSubmissionParser(TestCase):
                     <property name="size" type="int">10000</property>
                 </package>
             </packages>
-        """
-        tree = etree.fromstring(test_data)
-        self.assertRaises(ValueError, SubmissionParser()._parsePackages, tree)
+            """)
+        self.assertRaises(ValueError, SubmissionParser()._parsePackages, node)
 
-    def testXorgData(self):
+    def testXorg(self):
         """The <xorg> node is converted into a Python dictionary."""
-        xorg_data = self.parsed_sample_data['software']['xorg']
-        expected_data = {
-            'version': '1.3.0',
-            'drivers': {
-                'fglrx': {'device': 12,
-                          'version': '1.23',
-                          'name': 'fglrx',
-                          'class': 'X.Org Video Driver'}}}
+        node = etree.fromstring("""
+            <xorg version="1.1">
+                <driver name="fglrx" version="1.23"
+                        class="X.Org Video Driver" device="12"/>
+                <driver name="kbd" version="1.2.1"
+                        class="X.Org XInput driver" device="15"/>
 
-        self.assertEqual(xorg_data, expected_data,
-                         'Unexpected parsing result for <xorg> data')
+            </xorg>
+            """)
+        parser = SubmissionParser(self.log)
+        result = parser._parseXOrg(node)
+        self.assertEqual(result,
+                         {'version': '1.1',
+                         'drivers': {'fglrx': {'name': 'fglrx',
+                                               'version': '1.23',
+                                               'class': 'X.Org Video Driver',
+                                               'device': 12},
+                                     'kbd': {'name': 'kbd',
+                                             'version': '1.2.1',
+                                             'class': 'X.Org XInput driver',
+                                             'device': 15}}},
+                         'Invalid parsing result for <xorg>')
 
     def testDuplicateXorgDriver(self):
         """Two <driver> nodes in <xorg> with the same name are rejected."""
-        test_data = """
+        node = etree.fromstring("""
             <xorg>
                 <driver name="mouse" class="X.Org XInput driver"/>
                 <driver name="mouse" class="X.Org XInput driver"/>
             </xorg>
+            """)
+        self.assertRaises(ValueError, SubmissionParser()._parseXOrg, node)
+
+    def testSoftwareSection(self):
+        """Test SubissionParser._parseSoftware
+
+        Ensure that all sub-parsers are properly called.
         """
-        tree = etree.fromstring(test_data)
-        self.assertRaises(ValueError, SubmissionParser()._parseXOrg, tree)
+        test = self
+        def _parseLSBRelease(self, node):
+            test.assertTrue(isinstance(self, SubmissionParser))
+            test.assertEqual(node.tag, 'lsbrelease')
+            return 'parsed lsb release'
 
-    def testQuestionsData(self):
+        def _parsePackages(self, node):
+            test.assertTrue(isinstance(self, SubmissionParser))
+            test.assertEqual(node.tag, 'packages')
+            return 'parsed packages'
+
+        def _parseXOrg(self, node):
+            test.assertTrue(isinstance(self, SubmissionParser))
+            test.assertEqual(node.tag, 'xorg')
+            return 'parsed xorg'
+
+        parser = SubmissionParser()
+        parser._parseLSBRelease = lambda node: _parseLSBRelease(parser, node)
+        parser._parsePackages = lambda node: _parsePackages(parser, node)
+        parser._parseXOrg = lambda node: _parseXOrg(parser, node)
+        parser._setSoftwareSectionParsers()
+
+        node = etree.fromstring("""
+            <software>
+                <lsbrelease/>
+                <packages/>
+                <xorg/>
+            </software>
+            """)
+        result = parser._parseSoftware(node)
+        self.assertEqual(result,
+                         {'lsbrelease': 'parsed lsb release',
+                          'packages': 'parsed packages',
+                          'xorg': 'parsed xorg'},
+                         'Invalid parsing result for <softwar>')
+
+    def testMultipleChoiceQuestion(self):
         """The <questions> node is converted into a Python dictionary."""
-        questions_data = self.parsed_sample_data['questions']
+        node = etree.fromstring("""
+            <questions>
+                <question name="detected_network_controllers"
+                          plugin="find_network_controllers">
+                    <target id="42">
+                        <driver>ipw3945</driver>
+                    </target>
+                    <target id="43"/>
+                    <command/>
+                    <answer type="multiple_choice">pass</answer>
+                    <answer_choices>
+                        <value type="str">fail</value>
+                        <value type="str">pass</value>
+                        <value type="str">skip</value>
+                    </answer_choices>
+                    <comment>
+                        The WLAN adapter drops the connection very frequently.
+                    </comment>
+                </question>
+            </questions>
+            """)
+        parser = SubmissionParser()
+        result = parser._parseQuestions(node)
+        self.assertEqual(
+            result,
+            [{'name': 'detected_network_controllers',
+              'plugin': 'find_network_controllers',
+              'targets': [{'id': 42,
+                           'drivers': ['ipw3945']},
+                          {'id': 43,
+                           'drivers': []}],
+              'answer': {'type': 'multiple_choice',
+                         'value': 'pass'},
+              'answer_choices': [('fail', 'str'),
+                                 ('pass', 'str'),
+                                 ('skip', 'str')],
+              'comment': 'The WLAN adapter drops the connection very '
+                         'frequently.'}],
+            'Invalid parsing result for multiple choice question')
+                         
 
-        expected_question_1 = {
-            'name': 'detected_network_controllers',
-            'plugin': 'find_network_controllers',
-            'targets': [{'id': 42,
-                         'drivers': ['ipw3945']},
-                        {'id': 43,
-                         'drivers': []}],
-            'answer': {'type': 'multiple_choice',
-                       'value': 'pass'},
-            'answer_choices': [('fail', 'str'),
-                               ('pass', 'str'),
-                               ('skip', 'str')],
-            'comment': 'The WLAN adapter drops the connection very '
-                       'frequently.'}
-        expected_question_2 = {
-            'name': 'internet_ping',
-            'plugin': 'internet_ping',
-            'targets': [
-                {'drivers': [],
-                 'id': 23}],
-            'answer': {
-                'type': 'multiple_choice',
-                'value': 'pass'},
-            'answer_choices': [
-                ('fail', 'str'),
-                ('pass', 'str'),
-                ('skip', 'str')]}
-        expected_question_3 = {
-            'name': 'harddisk_speed',
-            'plugin': 'harddisk_speed',
-            'answer': {
-                'type': 'measurement',
-                'value': '38.4',
-                'unit': 'MB/sec'},
-            'targets': [
-                {'drivers': [],
-                 'id': 87}],
-                        'command': 'hdparm -t /dev/sda'}
+    def testMeasurementQuestion(self):
+        """The <questions> node is converted into a Python dictionary."""
+        node = etree.fromstring("""
+            <questions>
+                <question name="harddisk_speed"
+                          plugin="harddisk_speed">
+                    <target id="87"/>
+                    <command>hdparm -t /dev/sda</command>
+                    <answer type="measurement" unit="MB/sec">38.4</answer>
+                </question>
+            </questions>
+            """)
+        parser = SubmissionParser()
+        result = parser._parseQuestions(node)
+        self.assertEqual(
+            result,
+            [{
+              'name': 'harddisk_speed',
+              'plugin': 'harddisk_speed',
+              'answer': {'type': 'measurement',
+                         'value': '38.4',
+                         'unit': 'MB/sec'},
+              'targets': [{'drivers': [],
+                           'id': 87}],
+              'command': 'hdparm -t /dev/sda'}],
+            'Invalid parsing result for measurement question')
+                         
+    def testMainParser(self):
+        """Test SubmissionParser.parseMainSections
 
+        Ensure that all sub-parsers are properly called.
+        """
+        test = self
+        def _parseSummary(self, node):
+            test.assertTrue(isinstance(self, SubmissionParser))
+            test.assertEqual(node.tag, 'summary')
+            return 'parsed summary'
 
-        expected_data = [
-            expected_question_1, expected_question_2, expected_question_3]
+        def _parseHardware(self, node):
+            test.assertTrue(isinstance(self, SubmissionParser))
+            test.assertEqual(node.tag, 'hardware')
+            return 'parsed hardware'
 
-        self.assertEqual(questions_data, expected_data,
-                         'Unexpected parsing result for <questions> data')
+        def _parseSoftware(self, node):
+            test.assertTrue(isinstance(self, SubmissionParser))
+            test.assertEqual(node.tag, 'software')
+            return 'parsed software'
 
+        def _parseQuestions(self, node):
+            test.assertTrue(isinstance(self, SubmissionParser))
+            test.assertEqual(node.tag, 'questions')
+            return 'parsed questions'
+
+        parser = SubmissionParser(self.log)
+        parser._parseSummary = lambda node: _parseSummary(parser, node)
+        parser._parseHardware = lambda node: _parseHardware(parser, node)
+        parser._parseSoftware = lambda node: _parseSoftware(parser, node)
+        parser._parseQuestions = lambda node: _parseQuestions(parser, node)
+        parser._setMainSectionParsers()
+
+        node = etree.fromstring("""
+            <system>
+                <summary/>
+                <hardware/>
+                <software/>
+                <questions/>
+            </system>
+            """)
+
+        expected_data = {
+            'summary': 'parsed summary',
+            'hardware': 'parsed hardware',
+            'software': 'parsed software',
+            'questions':  'parsed questions'}
+
+        result = parser.parseMainSections(node)
+        self.assertEqual(result, expected_data,
+            'SubmissionParser.parseSubmission returned an unexpected result')
+
+    def testSubmissionParser(self):
+        """Test the entire parser."""
+        sample_data_path = os.path.join(
+            config.root, 'lib', 'canonical', 'launchpad', 'scripts',
+            'tests', 'hardwaretest.xml')
+        sample_data = open(sample_data_path).read()
+        parser = SubmissionParser()
+        result = parser.parseSubmission(sample_data, 'parser test 1')
+        self.assertNotEqual(result, None,
+                            'Valid submission data rejected by '
+                            'SubmissionParser.parseSubmission')
+
+        # parseSubmission returns None, if the submitted data is not
+        # well-formed XML...
+        result = parser.parseSubmission(
+            sample_data.replace('<summary', '<inconsitent_opening_tag'),
+            'parser test 2')
+        self.assertEqual(result, None,
+                         'Not-well-formed XML data accepted by '
+                         'SubmissionParser.parseSubmission')
         
+        # ...or if RelaxNG validation fails...
+        result = parser.parseSubmission(
+            sample_data.replace('<summary', '<summary foo="bar"'),
+            'parser test 3')
+        self.assertEqual(result, None,
+                         'XML data that does pass the Relax NG validation '
+                         'accepted by SubmissionParser.parseSubmission')
 
+        # ...or if the parser detects an inconsistency, like a
+        # property set containing two properties with the same name.
+        result = parser.parseSubmission(
+            sample_data.replace(
+                '<property name="info.parent"',
+                """<property name="info.parent" type="dbus.String">
+                       foo
+                   </property>
+                   <property name="info.parent"
+                """,
+                1),
+            'parser test 4')
+        self.assertEqual(result, None,
+                         'XML data that does pass the Relax NG validation '
+                         'accepted by SubmissionParser.parseSubmission')
+        
+        
 
 def test_suite():
     return TestLoader().loadTestsFromName(__name__)

@@ -52,6 +52,9 @@ class SubmissionParser:
             path = os.path.join(directory, relax_ng_filename)
             relax_ng_doc = etree.parse(path)
             self.validator[version] = etree.RelaxNG(relax_ng_doc)
+        self._setMainSectionParsers()
+        self._setHardwareSectionParsers()
+        self._setSoftwareSectionParsers()
 
     def _logError(self, message, submission_key):
         self.logger.error(
@@ -101,9 +104,7 @@ class SubmissionParser:
         return value == 'True'
 
     def _getValueAttributeAsString(self, node):
-        """Return the value of the attribute "value".
-
-        """
+        """Return the value of the attribute "value"."""
         # The Relax NG validation ensures that the attribute exists.
         return node.attrib['value']
 
@@ -219,10 +220,7 @@ class SubmissionParser:
                     '<value>: %s' % (self.submission_key, repr(value)))
             return (value == 'True', type_)
         elif type_ in ('str', 'dbus.String', 'dbus.UTF8String'):
-            encoding = self.docinfo.encoding
-            if encoding is None:
-                encoding = 'ascii'
-            return (node.text.strip().decode(encoding), type_)
+            return (node.text.strip(), type_)
         elif type_ in ('dbus.Byte', 'dbus.Int16', 'dbus.Int32', 'dbus.Int64',
                        'dbus.UInt16', 'dbus.UInt32', 'dbus.UInt64', 'int',
                        'long'):
@@ -247,7 +245,7 @@ class SubmissionParser:
             # the if/elif expressions above.
             raise AssertionError(
                 'Parsing submission %s: Unexpected <property> or <value> '
-                    'type: %s' % type_)
+                    'type: %s' % (self.submission_key, type_))
 
     def _parseProperty(self, property_node):
         """Parse a <property> node.
@@ -289,8 +287,11 @@ class SubmissionParser:
                  _parseProperties for details).
         """
         device_data = {'id': int(device_node.get('id')),
-                       'udi': device_node.get('udi'),
-                       'parent': device_node.get('parent', None)}
+                       'udi': device_node.get('udi')}
+        parent = device_node.get('parent', None)
+        if parent is not None:
+            parent = int(parent.strip())
+        device_data['parent'] = parent
         device_data['properties'] = self._parseProperties(device_node)
         return device_data
     
@@ -367,6 +368,12 @@ class SubmissionParser:
         'processors': _parseProcessors,
         'aliases': _parseAliases}
 
+    def _setHardwareSectionParsers(self):
+        self._parse_hardware_section = {
+            'hal': self._parseHAL,
+            'processors': self._parseProcessors,
+            'aliases': self._parseAliases}
+
     def _parseHardware(self, hardware_node):
         """Parse the <hardware> part of a submission.
 
@@ -377,7 +384,7 @@ class SubmissionParser:
         hardware_data = {}
         for node in hardware_node.getchildren():
             parser = self._parse_hardware_section[node.tag]
-            result = parser(self, node)
+            result = parser(node)
             hardware_data[node.tag] = result
         return hardware_data
 
@@ -449,6 +456,12 @@ class SubmissionParser:
         'packages': _parsePackages,
         'xorg': _parseXOrg}
 
+    def _setSoftwareSectionParsers(self):
+        self._parse_software_section = {
+            'lsbrelease': self._parseLSBRelease,
+            'packages': self._parsePackages,
+            'xorg': self._parseXOrg}
+
     def _parseSoftware(self, software_node):
         """Parse the <software> section of a submission.
 
@@ -461,7 +474,7 @@ class SubmissionParser:
         software_data = {}
         for node in software_node.getchildren():
             parser = self._parse_software_section[node.tag]
-            result = parser(self, node)
+            result = parser(node)
             software_data[node.tag] = result
         return software_data
 
@@ -573,11 +586,27 @@ class SubmissionParser:
             questions.append(question)
         return questions
 
-    _parse_system = {
-        'summary': _parseSummary,
-        'hardware': _parseHardware,
-        'software': _parseSoftware,
-        'questions': _parseQuestions}
+    def _setMainSectionParsers(self):
+        self._parse_system = {
+            'summary': self._parseSummary,
+            'hardware': self._parseHardware,
+            'software': self._parseSoftware,
+            'questions': self._parseQuestions}
+
+    def parseMainSections(self, submission_doc):
+        # The RelaxNG validation ensures that submission_doc has exactly
+        # four sub-nodes and that the names of the sub-nodes appear in the
+        # keys of self._parse_system.
+        submission_data = {}
+        try:
+            for node in submission_doc.getchildren():
+                parser = self._parse_system[node.tag]
+                submission_data[node.tag] = parser(node)
+        except ValueError, value:
+            self._logError(value, self.submission_key)
+            return None
+        return submission_data
+        
 
     def parseSubmission(self, submission, submission_key):
         """Parse the data of a HWDB submission.
@@ -591,16 +620,5 @@ class SubmissionParser:
         submission_doc  = self._getValidatedEtree(submission, submission_key)
         if submission_doc is None:
             return None
-        submission_data = {}
 
-        # The RelaxNG validation ensures that submission_doc has exactly
-        # four sub-nodes and that the names of the sub-nodes appear in the
-        # keys of self._parse_system.
-        try:
-            for node in submission_doc.getchildren():
-                parser = self._parse_system[node.tag]
-                submission_data[node.tag] = parser(self, node)
-        except ValueError, value:
-            self._logError(value, submission_key)
-            return None
-        return submission_data
+        return self.parseMainSections(submission_doc)
