@@ -4,9 +4,11 @@
 
 __metaclass__ = type
 
+from unittest import TestCase, TestLoader
+
 import psycopg
 import transaction
-from unittest import TestCase, TestLoader
+from zope.component import getUtility
 
 from canonical.config import config
 from canonical.database.sqlbase import cursor
@@ -14,15 +16,15 @@ from canonical.launchpad.ftests import login, logout
 from canonical.launchpad.interfaces import (
     IBranchSet, IRevisionSet)
 from canonical.launchpad.testing import LaunchpadObjectFactory
-
 from canonical.testing import LaunchpadZopelessLayer
-
-from zope.component import getUtility
 
 
 class TestTipRevisionsForBranches(TestCase):
     """Test that the tip revisions get returned properly."""
 
+    # The LaunchpadZopelessLayer is used as the setUp needs to
+    # switch database users in order to create revisions for the
+    # test branches.
     layer = LaunchpadZopelessLayer
 
     def setUp(self):
@@ -57,7 +59,7 @@ class TestTipRevisionsForBranches(TestCase):
         """Assert that when given an empty list, an empty list is returned."""
         bs = self.revision_set
         revisions = bs.getTipRevisionsForBranches([])
-        self.assertEqual([], revisions)
+        self.assertTrue(revisions is None)
 
     def testOneBranches(self):
         """When given one branch, one branch revision is returned."""

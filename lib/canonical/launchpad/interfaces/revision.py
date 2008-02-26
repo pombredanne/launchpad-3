@@ -99,4 +99,7 @@ class IRevisionSet(Interface):
 
         The revision_authors are prejoined in to reduce the number of
         database queries issued.
+
+        :return: ResultSet containing `Revision` or None if no matching
+            revisions found.
         """

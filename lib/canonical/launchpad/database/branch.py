@@ -929,28 +929,6 @@ class BranchSet:
             results = results.limit(branch_count)
         return results
 
-    def getLastCommitForBranches(self, branches):
-        """Return a map of branch id to last commit time."""
-
-        # XXX should remove in this branch.
-
-        branch_ids = [branch.id for branch in branches]
-        if not branch_ids:
-            # Return a sensible default if given no branches
-            return {}
-        cur = cursor()
-        cur.execute("""
-            SELECT Branch.id, Revision.revision_date
-            FROM Branch
-            LEFT OUTER JOIN Revision
-            ON Branch.last_scanned_id = Revision.revision_id
-            WHERE Branch.id IN %s
-            """
-            % quote(branch_ids))
-        commits = dict(cur.fetchall())
-        return dict([(branch, commits.get(branch.id, None))
-                     for branch in branches])
-
     def getBranchesForOwners(self, people):
         """Return the branches that are owned by the people specified."""
         owner_ids = [person.id for person in people]

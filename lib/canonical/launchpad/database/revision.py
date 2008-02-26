@@ -69,7 +69,8 @@ class RevisionAuthor(SQLBase):
 
     name = StringCol(notNull=True, alternateID=True)
 
-    def _getNameWithoutEmail(self):
+    @property
+    def name_without_email(self):
         """Return the name of the revision author without the email address.
 
         If there is no name information (i.e. when the revision author only
@@ -78,8 +79,6 @@ class RevisionAuthor(SQLBase):
         if '@' not in self.name:
             return self.name
         return email.Utils.parseaddr(self.name)[0]
-
-    name_without_email = property(_getNameWithoutEmail)
 
     email = StringCol(notNull=False, default=None)
     person = ForeignKey(dbName='person', foreignKey='Person', notNull=False,
@@ -182,10 +181,10 @@ class RevisionSet:
 
     def getTipRevisionsForBranches(self, branches):
         """See `IRevisionSet`."""
-        # If there are no branch_ids, then return an empty list.
+        # If there are no branch_ids, then return None.
         branch_ids = [branch.id for branch in branches]
         if not branch_ids:
-            return []
+            return None
         return Revision.select("""
             Branch.id in %s AND
             Revision.revision_id = Branch.last_scanned_id

@@ -778,9 +778,6 @@ class IBranchSet(Interface):
         :type visible_by_user: `IPerson` or None
         """
 
-    def getLastCommitForBranches(branches):
-        """Return a map of branch to last commit time."""
-
     def getBranchesForOwners(people):
         """Return the branches that are owned by the people specified."""
 

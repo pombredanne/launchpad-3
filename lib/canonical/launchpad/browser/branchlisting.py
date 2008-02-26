@@ -12,8 +12,8 @@ __all__ = [
     ]
 
 from datetime import datetime
-import pytz
 
+import pytz
 from zope.component import getUtility
 from zope.interface import implements
 from zope.formlib import form
@@ -121,12 +121,6 @@ class BranchListingBatchNavigator(TableBatchNavigator):
         return list(self.currentBatch())
 
     @cachedproperty
-    def last_commit(self):
-        """Get the last commit times for the current batch."""
-        return getUtility(IBranchSet).getLastCommitForBranches(
-            self._branches_for_current_batch)
-
-    @cachedproperty
     def has_bug_branch_links(self):
         """Return a set of branch ids that should show bug badges."""
         bug_branches = getUtility(IBugBranchSet).getBugBranchesForBranches(
@@ -152,9 +146,12 @@ class BranchListingBatchNavigator(TableBatchNavigator):
         """Return a set of branch ids that should show blueprint badges."""
         revisions = getUtility(IRevisionSet).getTipRevisionsForBranches(
             self._branches_for_current_batch)
-        # Key the revisions by revision id.
-        revision_map = dict((revision.revision_id, revision)
-                            for revision in revisions)
+        if revisions is None:
+            revision_map = {}
+        else:
+            # Key the revisions by revision id.
+            revision_map = dict((revision.revision_id, revision)
+                                for revision in revisions)
         # Return a dict keyed on branch id.
         return dict((branch.id, revision_map.get(branch.last_scanned_id))
                      for branch in self._branches_for_current_batch)
