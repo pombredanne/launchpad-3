@@ -61,7 +61,7 @@ class TestCodeImportJobSet(unittest.TestCase):
         self.assertEqual(no_job, None)
 
 
-class TestCodeImportSetGetJobForMachine(unittest.TestCase):
+class TestCodeImportJobSetGetJobForMachine(unittest.TestCase):
     """Tests for the CodeImportJobSet.getJobForMachine method.
 
     For brevity, these test cases describe jobs using specs: a 2- or 3-tuple:

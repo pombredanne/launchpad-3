@@ -31,6 +31,6 @@ class ICodeImportScheduler(Interface):
 
         When the code import infrastructure is in place, this method
         will select the most appropriate job for the machine, mark it
-        has having started on said machine and return its id, or 0 if
+        as having started on said machine and return its id, or 0 if
         there are no jobs pending.
         """
