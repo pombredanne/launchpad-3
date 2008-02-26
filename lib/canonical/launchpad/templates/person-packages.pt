@@ -18,7 +18,9 @@
 
   <div id="packages">
 
-  <tal:maintained-packages condition="context/getLatestMaintainedPackages">
+  <tal:maintained-packages 
+    define="sourcepackagereleases context/getLatestMaintainedPackages"
+    condition="sourcepackagereleases">
 
   <h2>Maintained packages</h2>
 
@@ -35,16 +37,14 @@
       </tr>
     </thead>
     <tbody>
-    <tal:block define="
-        sourcepackagereleases context/getLatestMaintainedPackages">
-      <div metal:use-macro="template/macros/sourcepackagerelease-rows" />
-    </tal:block>
+    <div metal:use-macro="template/macros/sourcepackagerelease-rows" />
     </tbody>
   </table>
   </tal:maintained-packages>
 
   <tal:uploaded-packages
-    condition="context/getLatestUploadedButNotMaintainedPackages">
+    define="sourcepackagereleases context/getLatestUploadedButNotMaintainedPackages"
+    condition="sourcepackagereleases">
 
   <h2>Uploaded packages</h2>
 
@@ -61,15 +61,13 @@
       </tr>
     </thead>
 
-    <tal:block define="
-        sourcepackagereleases context/getLatestUploadedButNotMaintainedPackages">
-      <div metal:use-macro="template/macros/sourcepackagerelease-rows" />
-    </tal:block>
+    <div metal:use-macro="template/macros/sourcepackagerelease-rows" />
   </table>
   </tal:uploaded-packages>
 
   <tal:ppa-packages
-    condition="view/getLatestUploadedPPAPackages">
+    define="sourcepackagereleases view/getLatestUploadedPPAPackages"
+    condition="sourcepackagereleases">
 
   <h2>PPA packages</h2>
 
@@ -86,10 +84,7 @@
       </tr>
     </thead>
 
-    <tal:block define="
-        sourcepackagereleases view/getLatestUploadedPPAPackages">
-      <div metal:use-macro="template/macros/sourcepackagerelease-ppa-rows" />
-    </tal:block>
+    <div metal:use-macro="template/macros/sourcepackagerelease-ppa-rows" />
   </table>
   </tal:ppa-packages>
 
