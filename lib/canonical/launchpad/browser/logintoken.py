@@ -365,8 +365,8 @@ class ValidateGPGKeyView(BaseLoginTokenView, LaunchpadFormView):
 
         if signature.fingerprint != self.context.fingerprint:
             self.addError(_(
-                'The key used to sign the content (${fprint}) not the key '
-                'you were registering',
+                'The key used to sign the content (${fprint}) is not the '
+                'key you were registering',
                 mapping=dict(fprint=signature.fingerprint)))
             return
 
