@@ -399,7 +399,7 @@ class Branch(SQLBase):
             deletions[self.code_import] = _(
                 'This is the import data for this branch.')
             def delete_code_import():
-                CodeImportSet().delete(self.code_import.id)
+                CodeImportSet().delete(self.code_import)
             deletion_operations.append(delete_code_import)
         return (alterations, deletions, alteration_operations,
             deletion_operations)
