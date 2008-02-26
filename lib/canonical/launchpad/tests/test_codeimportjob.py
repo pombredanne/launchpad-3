@@ -24,7 +24,7 @@ from canonical.launchpad.interfaces import (
     CodeImportEventType, CodeImportJobState, CodeImportResultStatus,
     CodeImportReviewStatus, ICodeImportEventSet, ICodeImportJobSet,
     ICodeImportJobWorkflow, ICodeImportResult, ICodeImportResultSet,
-    ICodeImportSet, ILibraryFileAliasSet, NotFoundError)
+    ICodeImportSet, ILibraryFileAliasSet)
 from canonical.launchpad.ftests import login, sync
 from canonical.launchpad.testing import LaunchpadObjectFactory
 from canonical.librarian.interfaces import ILibrarianClient
