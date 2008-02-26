@@ -6,21 +6,18 @@ __metaclass__ = type
 
 import unittest
 
-from canonical.launchpad.ftests.harness import (
-    LaunchpadTestCase, LaunchpadTestSetup)
+from canonical.testing import LaunchpadLayer
 
 
-class TestPersonSortKey(LaunchpadTestCase):
+class TestPersonSortKey(unittest.TestCase):
+    layer = LaunchpadLayer
+
     def setUp(self):
-        LaunchpadTestCase.setUp(self)
-        self.con = self.connect()
+        self.con = self.layer.connect()
         self.cur = self.con.cursor()
 
     def tearDown(self):
-        """Tear down the test and reset the database."""
         self.con.close()
-        LaunchpadTestSetup().force_dirty_database()
-        LaunchpadTestCase.tearDown(self)
 
     def person_sort_key(self, displayname, name):
         '''Calls the person_sort_key stored procedure
@@ -83,10 +80,4 @@ class TestPersonSortKey(LaunchpadTestCase):
 
 
 def test_suite():
-    suite = unittest.TestSuite()
-    suite.addTest(unittest.makeSuite(TestPersonSortKey))
-    return suite
-
-
-if __name__ == '__main__':
-    unittest.main()
+    return unittest.TestLoader().loadTestsFromName(__name__)

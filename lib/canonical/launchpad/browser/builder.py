@@ -201,11 +201,13 @@ class BuilderView(CommonBuilderView, BuildRecordsView):
         # Auto Build System, getting slave building something sane.
         return '<p>Cancel (%s). Not implemented yet.</p>' % builder_id
 
-    def defaultBuildState(self):
+    @property
+    def default_build_state(self):
         """Present all jobs by default."""
         return None
 
-    def showBuilderInfo(self):
+    @property
+    def show_builder_info(self):
         """Hide Builder info, see BuildRecordsView for further details"""
         return False
 

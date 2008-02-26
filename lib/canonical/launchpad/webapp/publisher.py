@@ -331,7 +331,8 @@ def canonical_url(
 
     if view_name is not None:
         if queryMultiAdapter((obj, request), name=view_name) is None:
-            raise AssertionError('%s is not a valid view name.' % view_name)
+            raise AssertionError('View "%s" is not registered for "%s".' %
+                (view_name, obj.__class__.__name__))
         urlparts.insert(0, view_name)
 
     if rootsite is None:
