@@ -56,7 +56,7 @@ def make_sftp_server():
 
 
 def make_bzr_ssh_server():
-    authserver = AuthserverWithKeys('testuser', 'testteam')
+    authserver = NullAuthserverWithKeys('testuser', 'testteam')
     branches_root = config.codehosting.branches_root
     mirror_root = config.supermirror.branchesdest
     return BazaarSSHCodeHostingServer(authserver, branches_root, mirror_root)

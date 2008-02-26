@@ -22,6 +22,7 @@ from canonical.launchpad.interfaces import (
     BranchCreationException, BranchType, IBranchSet, IPersonSet, IProductSet,
     UnknownBranchTypeError)
 from canonical.launchpad.ftests import login, logout, ANONYMOUS
+from canonical.launchpad.scripts import execute_zcml_for_scripts
 from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.database.sqlbase import (
     clear_current_connection_cache, ZopelessTransactionManager)
@@ -49,6 +50,7 @@ def getTxnManager():
     # FIXME: That uses a protected attribute in ZopelessTransactionManager
     # -- David Allouche 2005-02-16
     if ZopelessTransactionManager._installed is None:
+        execute_zcml_for_scripts()
         return initZopeless(implicitBegin=False)
     else:
         return ZopelessTransactionManager._installed
