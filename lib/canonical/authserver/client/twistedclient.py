@@ -24,9 +24,27 @@ class InMemoryTwistedProxy:
     def __init__(self, xmlrpc_object):
         self.xmlrpc_object = xmlrpc_object
 
+    def _checkArgumentsMarshallable(self, args):
+        """Raise a `TypeError` if `args` are not marhallable."""
+        xmlrpclib.dumps(args)
+
+    def _checkReturnValueMarshallable(self, result):
+        try:
+            xmlrpclib.dumps((result,))
+        except TypeError:
+            raise xmlrpclib.Fault(
+                8002, "can't serialize output (%r)" % (result,))
+        return result
+
     def callRemote(self, method_name, *args):
-        return defer.maybeDeferred(
-            getattr(self.xmlrpc_object, 'xmlrpc_%s' % (method_name,)), *args)
+        self._checkArgumentsMarshallable(args)
+        try:
+            method = getattr(self.xmlrpc_object, 'xmlrpc_%s' % (method_name,))
+        except AttributeError:
+            return defer.fail(xmlrpclib.Fault(
+                8001, "Method %r does not exist" % (method_name,)))
+        deferred = defer.maybeDeferred(method, *args)
+        return deferred.addCallback(self._checkReturnValueMarshallable)
 
 
 class TwistedAuthServer:

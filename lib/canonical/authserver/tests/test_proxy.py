@@ -4,6 +4,8 @@
 
 __metaclass__ = type
 
+import re
+
 from bzrlib.transport import Server
 from bzrlib.tests import iter_suite_tests, TestLoader, TestScenarioApplier
 
@@ -22,6 +24,9 @@ class MockXMLRPCObject(xmlrpc.XMLRPC):
         xmlrpc.XMLRPC.__init__(self)
         self.log = []
 
+    def xmlrpc_returnsNone(self):
+        return None
+
     def xmlrpc_returnsValue(self, value):
         return value
 
@@ -32,6 +37,10 @@ class MockXMLRPCObject(xmlrpc.XMLRPC):
     def xmlrpc_takesArguments(self, *args):
         self.log.append(('takesArguments', args))
         return ''
+
+    def unpublished(self):
+        """This method should never be called over XML-RPC."""
+        self.log.append('unpublished')
 
 
 class TestInMemoryProxy(unittest.TestCase):
@@ -48,6 +57,31 @@ class TestInMemoryProxy(unittest.TestCase):
 
     def makeProxy(self):
         return self.server.getProxy()
+
+    def assertContainsRe(self, haystack, needle_re):
+        """Assert that a contains something matching a regular expression."""
+        if not re.search(needle_re, haystack):
+            if '\n' in haystack or len(haystack) > 60:
+                # a long string, format it in a more readable way
+                raise AssertionError(
+                        'pattern "%s" not found in\n"""\\\n%s"""\n'
+                        % (needle_re, haystack))
+            else:
+                raise AssertionError('pattern "%s" not found in "%s"'
+                        % (needle_re, haystack))
+
+    def assertFault(self, deferred, code, regex):
+        """Assert that `deferred` will errback with a an XML-RPC Fault.
+
+        The fault is expected to have the given `code` and have a message that
+        `regex` matches (in Python terms, 'searches').
+        """
+        deferred = self.assertFailure(deferred, xmlrpc.Fault)
+        def check_fault(fault):
+            self.assertEqual(code, fault.faultCode)
+            self.assertContainsRe(fault.faultString, regex)
+            return fault
+        return deferred.addCallback(check_fault)
 
     def checkLog(self, ignored, expected):
         self.assertEqual(expected, self.xmlrpc_resource.log)
@@ -69,9 +103,24 @@ class TestInMemoryProxy(unittest.TestCase):
         result.addCallback(self.assertEqual, 42)
         return result
 
-    # - Method doesn't exist
-    # - Method exists but isn't "published".
-    # - Unsupported types explode properly
+    def test_methodDoesntExist(self):
+        proxy = self.makeProxy()
+        return self.assertFault(
+            proxy.callRemote('doesntExist', 42), 8001, 'doesntExist')
+
+    def test_unpublished(self):
+        proxy = self.makeProxy()
+        return self.assertFault(
+            proxy.callRemote('unpublished', 42), 8001, 'unpublished')
+
+    def test_unsupportedTypeForParameter(self):
+        proxy = self.makeProxy()
+        self.assertRaises(TypeError, proxy.callRemote, 'takesArguments', None)
+
+    def test_returnsUnsupportedType(self):
+        proxy = self.makeProxy()
+        return self.assertFault(
+            proxy.callRemote('returnsNone'), 8002, "can't serialize output")
 
 
 class TwistedServer(Server):
