@@ -79,7 +79,6 @@ from canonical.launchpad.database.pillar import PillarName
 from canonical.launchpad.database.pofile import POFileTranslator
 from canonical.launchpad.database.karma import KarmaAction, Karma
 from canonical.launchpad.database.mentoringoffer import MentoringOffer
-from canonical.launchpad.database.packagebugcontact import PackageBugContact
 from canonical.launchpad.database.shipit import (
     MIN_KARMA_ENTRIES_TO_BE_TRUSTED_ON_SHIPIT, ShippingRequest)
 from canonical.launchpad.database.sourcepackagerelease import (
@@ -398,7 +397,8 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
     def valid_specifications(self):
         return self.specifications(filter=[SpecificationFilter.VALID])
 
-    def specifications(self, sort=None, quantity=None, filter=None):
+    def specifications(self, sort=None, quantity=None, filter=None,
+                       prejoin_people=True):
         """See `IHasSpecifications`."""
 
         # Make a new list of the filter, so that we do not mutate what we
@@ -524,9 +524,10 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
                 query += ' AND Specification.fti @@ ftq(%s) ' % quote(
                     constraint)
 
-        # now do the query, and remember to prejoin to people
         results = Specification.select(query, orderBy=order,
-            limit=quantity, prejoins=['assignee', 'approver', 'drafter'])
+            limit=quantity)
+        if prejoin_people:
+            results = results.prejoin(['assignee', 'approver', 'drafter'])
         return results
 
     def searchQuestions(self, search_text=None,
