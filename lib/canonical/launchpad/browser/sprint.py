@@ -549,9 +549,9 @@ class SprintAttendeesCsvExportView(LaunchpadView):
                  'Arriving',
                  'Leaving')]
         for attendance in self.context.attendances:
-            irc_nicknames = ', '.join(sorted(
+            irc_nicknames = ', '.join(sorted(set(
                 [ircid.nickname for ircid
-                 in attendance.attendee.ircnicknames]))
+                 in attendance.attendee.ircnicknames])))
             rows.append(
                 (attendance.attendee.name,
                  attendance.attendee.displayname,
