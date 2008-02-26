@@ -126,15 +126,6 @@ class BaseTestCase(unittest.TestCase):
                 'Launchpad database should be available but is not.'
                 )
 
-    def testWorkingDirectoryRestored(self):
-        # This test is run twice to detect if the current working
-        # directory is reset as expected.
-        self.failIfEqual(os.getcwd(), '/var/tmp')
-        os.chdir('/var/tmp')
-        self.failUnlessEqual(os.getcwd(), '/var/tmp')
-
-    testWorkingDirectoryRestored2 = testWorkingDirectoryRestored
-
 
 class LibrarianTestCase(BaseTestCase):
     layer = LibrarianLayer
