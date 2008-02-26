@@ -190,22 +190,28 @@
     </a><tal:revno condition="not: rev_no/branch/code_is_browseable"
                    replace="rev_no/sequence">1</tal:revno>.
     By
-    <strong>
-      <tal:not-anonymous condition="view/user">
-        <span tal:replace="rev_no/revision/revision_author/name">
-          John Doe &lt;john.doe@example.com&gt;
-        </span>
-      </tal:not-anonymous>
-      <tal:anonymous condition="not:view/user">
-        <span
-            tal:replace="rev_no/revision/revision_author/name_without_email">
-          John Doe
-        </span>
-        <tal:author-has-email condition="rev_no/revision/revision_author/email">
-          &lt;email address hidden&gt;
-        </tal:author-has-email>
-      </tal:anonymous>
-    </strong>
+    <tal:revision-author define="revision_author rev_no/revision/revision_author">
+      <tal:known-person condition="revision_author/person">
+        <tal:person-link replace="structure revision_author/person/fmt:link"/>
+      </tal:known-person>
+      <tal:unknown-person condition="not: revision_author/person">
+        <strong>
+          <tal:not-anonymous condition="view/user"
+                             replace="revision_author/name">
+              John Doe &lt;john.doe@example.com&gt;
+          </tal:not-anonymous>
+          <tal:anonymous condition="not:view/user">
+            <tal:author-name replace="revision_author/name_without_email">
+              John Doe
+            </tal:author-name>
+            <tal:author-has-email condition="rev_no/revision/revision_author/email">
+              &lt;email address hidden&gt;
+            </tal:author-has-email>
+          </tal:anonymous>
+        </strong>
+      </tal:unknown-person>
+    </tal:revision-author>
+
     <tal:revision-date
         attributes="title rev_no/revision/revision_date/fmt:datetime"
         content="rev_no/revision/revision_date/fmt:displaydate"

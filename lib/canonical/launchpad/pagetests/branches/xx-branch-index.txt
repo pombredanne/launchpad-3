@@ -32,7 +32,9 @@ We display the recent revisions of a branch if it has been scanned. There's a
 === Revision information ===
 
 Underneath that heading we see the ten most-recent revisions of the branch in
-reverse-chronological order.
+reverse-chronological order.  If the revision author has been linked to a
+Launchpad person, then a link to the person is shown rather than the
+text of the revision author.
 
     >>> def print_revisions(browser):
     ...     revisions = find_tags_by_class(
@@ -44,9 +46,9 @@ reverse-chronological order.
     6. By foo &lt;foo@localhost&gt; on 2005-10-31
     5. By foo &lt;foo@localhost&gt; on 2005-10-31
     4. By bar@localhost on 2005-10-31
-    3. By Sample Committer &lt;test@canonical.com&gt; on 2005-10-31
-    2. By Sample Committer &lt;test@canonical.com&gt; on 2005-10-31
-    1. By Sample Committer &lt;test@canonical.com&gt; on 2005-10-31
+    3. By Sample Person on 2005-10-31
+    2. By Sample Person on 2005-10-31
+    1. By Sample Person on 2005-10-31
 
 Each of the revision numbers are now anchors to codebrowse (for public
 branches).
@@ -71,9 +73,9 @@ addresses.
     6. By foo &lt;email address hidden&gt; on 2005-10-31
     5. By foo &lt;email address hidden&gt; on 2005-10-31
     4. By &lt;email address hidden&gt; on 2005-10-31
-    3. By Sample Committer &lt;email address hidden&gt; on 2005-10-31
-    2. By Sample Committer &lt;email address hidden&gt; on 2005-10-31
-    1. By Sample Committer &lt;email address hidden&gt; on 2005-10-31
+    3. By Sample Person on 2005-10-31
+    2. By Sample Person on 2005-10-31
+    1. By Sample Person on 2005-10-31
 
 
 === Commit messages ===
