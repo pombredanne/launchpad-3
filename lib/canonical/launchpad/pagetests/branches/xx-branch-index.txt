@@ -118,13 +118,17 @@ helpful message.
     This branch has not been mirrored yet.
 
 We don't want to use the word 'mirrored' for hosted or imported branches,
-because those branches are only mirrored internally. "Published" is a better
-word for these.
+because those branches are only mirrored internally.
 
     >>> browser.open('http://code.launchpad.dev/~name12/gnome-terminal/pushed')
     >>> print extract_text(find_tag_by_id(browser.contents, 'recent-revisions'))
     Recent revisions
-    This branch has not been published yet.
+    This branch has not been pushed to yet.
+
+    >>> browser.open('http://code.launchpad.dev/~vcs-imports/evolution/main')
+    >>> print extract_text(find_tag_by_id(browser.contents, 'recent-revisions'))
+    Recent revisions
+    This branch has not been imported yet.
 
 If a branch has been mirrored, but not scanned, we display a different message.
 This is helpful particularly for hosted and imported branches, which are
