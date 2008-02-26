@@ -198,7 +198,6 @@ class CodeImportJobWorkflow:
         naked_job.heartbeat = UTC_NOW
         naked_job.logtail = logtail
 
-
     def finishJob(self, import_job, status, logfile_alias):
         """See `ICodeImportJobWorkflow`."""
         assert import_job.state == CodeImportJobState.RUNNING, (
@@ -213,6 +212,9 @@ class CodeImportJobWorkflow:
             requesting_user=import_job.requesting_user,
             log_file=logfile_alias, status=status,
             date_job_started=import_job.date_started)
+        # CodeImportJobWorkflow is the only class that is allowed to delete
+        # CodeImportJob objects, there is no method in the ICodeImportJob
+        # interface to do this. So we must use removeSecurityProxy here.
         naked_job = removeSecurityProxy(import_job)
         naked_job.destroySelf()
         self.newJob(code_import)
