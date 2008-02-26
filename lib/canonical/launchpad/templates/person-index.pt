@@ -179,8 +179,11 @@
 	  <tal:block condition="view/userIsParticipant">
 	    <p tal:condition="view/teamMailingListIsAvailable">
 	      <tal:block tal:condition="view/userIsSubscribedToList">
-		<form class="actions" name="unsubscribe"
-		      action="" method="post">
+		<form class="actions"
+		      name="unsubscribe"
+		      id="form.list.unsubscribe"
+		      action=""
+		      method="post">
 		  You are subscribed to the team mailing list.
 		  (<a href="#" onclick="parentNode.submit(); return false"
 		      >Unsubscribe</a>)

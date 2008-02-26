@@ -243,6 +243,23 @@ has an active mailing list.
     >>> browser.getLink('Unsubscribe')
     <Link ...>
 
+Clicking the link will unsubscribe you from the list immediately.
+
+    # Oops! One-click submit links use JavaScript, which the test
+    # browser doesn't understand.  It looks like we will have to
+    # submit the form manually.
+    >>> unsubscribe = browser.getForm('form.list.unsubscribe')
+    >>> unsubscribe.submit()
+    >>> print get_feedback_messages(browser.contents)
+
+    >>> browser.open('http://launchpad.dev/~rosetta-admins')
+    >>> print extract_text(
+    ... 	find_portlet(browser.contents, 'Your involvement'))
+    Your involvement
+    You are the owner of this team.
+    You are not subscribed to the team mailing list.
+    (Subscribe)
+
 The Ubuntu translators team, which does not have any lists configured,
 does not show the links.
 
