@@ -52,7 +52,15 @@ Packages listed in the PPA section of this page are filtered so that
 if the user is not allowed to see a private package they are not present
 in the list.  Private packages are defined as those which are only
 published in a private archive; if they are published in a private
-archive *and* a non-private archive, they are deemed to be non-private.
+archive *and* a non-private archive, they are deemed to be non-private
+because if a package is not exclusively in a private PPA it cannot be
+really private if someone can see it somewhere else.  This situation is
+going to be very rare, however it does cover one important scenario: the
+embargoed archive implementation.  Here, private security uploads and
+builds will take place in a private archive and once verified will be
+simply copied across archives to the primary Ubuntu archive.  At that
+point it makes no sense to keep the package private any more, because
+it's available to anyone anyway.
 
 Let's make a helper function to print the PPA packages from the page:
 
