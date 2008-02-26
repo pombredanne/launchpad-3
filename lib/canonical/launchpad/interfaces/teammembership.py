@@ -5,11 +5,19 @@
 
 __metaclass__ = type
 
-__all__ = ['ITeamMembership', 'ITeamMembershipSet', 'ITeamMember',
-           'ITeamParticipation', 'DAYS_BEFORE_EXPIRATION_WARNING_IS_SENT']
+__all__ = [
+    'DAYS_BEFORE_EXPIRATION_WARNING_IS_SENT',
+    'ITeamMember',
+    'ITeamMembership',
+    'ITeamMembershipSet',
+    'ITeamParticipation',
+    'TeamMembershipStatus',
+    ]
 
 from zope.schema import Choice, Int, Text
 from zope.interface import Interface, Attribute
+
+from canonical.lazr import DBEnumeratedType, DBItem
 
 from canonical.launchpad import _
 from canonical.launchpad.fields import PublicPersonChoice
@@ -18,6 +26,67 @@ from canonical.launchpad.fields import PublicPersonChoice
 # either inviting him to renew his own membership or asking him to get a team
 # admin to do so, depending on the team's renewal policy.
 DAYS_BEFORE_EXPIRATION_WARNING_IS_SENT = 7
+
+
+class TeamMembershipStatus(DBEnumeratedType):
+    """TeamMembership Status
+
+    According to the policies specified by each team, the membership status of
+    a given member can be one of multiple different statuses. More information
+    can be found in the TeamMembership spec.
+    """
+
+    PROPOSED = DBItem(1, """
+        Proposed
+
+        You are a proposed member of this team. To become an active member
+        your subscription has to be approved by one of the team's
+        administrators.
+        """)
+
+    APPROVED = DBItem(2, """
+        Approved
+
+        You are an active member of this team.
+        """)
+
+    ADMIN = DBItem(3, """
+        Administrator
+
+        You are an administrator of this team.
+        """)
+
+    DEACTIVATED = DBItem(4, """
+        Deactivated
+
+        Your subscription to this team has been deactivated.
+        """)
+
+    EXPIRED = DBItem(5, """
+        Expired
+
+        Your subscription to this team is expired.
+        """)
+
+    DECLINED = DBItem(6, """
+        Declined
+
+        Your proposed subscription to this team has been declined.
+        """)
+
+    INVITED = DBItem(7, """
+        Invited
+
+        You have been invited as a member of this team. In order to become an
+        actual member, you have to accept the invitation.
+        """)
+
+    INVITATION_DECLINED = DBItem(8, """
+        Invitation declined
+
+        You have been invited as a member of this team but the invitation has
+        been declined.
+        """)
 
 
 class ITeamMembership(Interface):
