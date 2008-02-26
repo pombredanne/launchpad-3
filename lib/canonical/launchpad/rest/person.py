@@ -31,10 +31,8 @@ class IPersonEntry(IEntry):
     teamowner = Object(schema=IPerson)
     members = CollectionField(value_type=Object(schema=IPerson))
     team_memberships = CollectionField(
-        relationship_name = 'teams',
-        value_type=Object(schema=ITeamMembership), is_entry_container=True)
+        value_type=Object(schema=ITeamMembership))
     member_memberships = CollectionField(
-        relationship_name = 'members',
         value_type=Object(schema=ITeamMembership))
 
 class PersonEntry(Entry):

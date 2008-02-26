@@ -9,19 +9,17 @@ __all__ = [
     'PersonTeamMembershipCollection'
     ]
 
-from zope.component import adapts, getUtility
+from zope.component import adapts
 from zope.schema import Object, Text
 
 from canonical.lazr import decorates
-from canonical.lazr.rest import Collection, Entry, ScopedCollection
+from canonical.lazr.rest import Entry, ScopedCollection
 from canonical.lazr.interfaces import IEntry
-from canonical.lazr.rest.schema import CollectionField
 
-from canonical.launchpad.interfaces import (
-    IPerson, ITeamMembership, make_person_name_field)
+from canonical.launchpad.interfaces import (IPerson, ITeamMembership)
 
 class ITeamMembershipEntry(IEntry):
-    """The part of a team membership that we expose through the web service."""
+    """The part of a team membership exposed through the web service."""
 
     # XXX leonardr 2008-01-28 bug=186702 A much better solution would
     # let us reuse or copy fields from IPerson.
@@ -75,19 +73,12 @@ class PersonTeamMembershipCollection(ScopedCollection):
 
     def getEntryPath(self, entry):
         """See `ICollection`."""
-        if self.relationship.relationship_name == 'teams':
-            return entry.team.name
-        else:
-            return entry.member.name
+        return entry.team.name
 
     def lookupEntry(self, name):
         """Find a membership by team name."""
         for membership in self.collection:
-            if self.relationship.relationship_name == 'teams':
-                if membership.team.name == name:
-                    return membership
-            else:
-                if membership.team.name == name:
-                    return membership
+            if membership.team.name == name:
+                return membership
         else:
             return None
