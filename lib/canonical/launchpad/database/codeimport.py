@@ -125,9 +125,15 @@ class CodeImportSet:
 
     def delete(self, code_import):
         """See `ICodeImportSet`."""
-        from canonical.launchpad.database import CodeImportJob
+        from canonical.launchpad.database import (
+            CodeImportJob,
+            CodeImportEventSet,
+        )
         if code_import.import_job is not None:
             CodeImportJob.delete(code_import.import_job.id)
+        event_set = CodeImportEventSet()
+        for event in event_set.getEventsForCodeImport(code_import):
+            event.destroySelf()
         CodeImport.delete(code_import.id)
 
     def getAll(self):

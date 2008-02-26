@@ -3,7 +3,10 @@
 """Unit tests for methods of CodeImport and CodeImportSet."""
 import unittest
 
+from sqlobject import SQLObjectNotFound
+
 from canonical.launchpad.database import (
+    CodeImportEvent,
     CodeImportJobSet,
     CodeImportSet,
     )
@@ -33,6 +36,14 @@ class TestCodeImportDeletion(unittest.TestCase):
         CodeImportSet().delete(code_import)
         job = CodeImportJobSet().getById(job_id)
         assert job is None
+
+    def test_deleteIncludesEvent(self):
+        code_import_event = self.factory.makeCodeImportEvent()
+        code_import_event_id = code_import_event.id
+        CodeImportEvent.get(code_import_event_id)
+        CodeImportSet().delete(code_import_event.code_import)
+        self.assertRaises(
+            SQLObjectNotFound, CodeImportEvent.get, code_import_event_id)
 
 
 def test_suite():

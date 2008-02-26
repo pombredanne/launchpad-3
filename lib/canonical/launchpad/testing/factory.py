@@ -26,6 +26,7 @@ from canonical.launchpad.interfaces import (
     IBugSet,
     ICodeImportJobWorkflow,
     ICodeImportMachineSet,
+    ICodeImportEventSet,
     ICodeImportSet,
     ILaunchpadCelebrities,
     IPersonSet,
@@ -344,6 +345,12 @@ class LaunchpadObjectFactory:
             return code_import_set.new(
                 registrant, branch, rcs_type=RevisionControlSystems.CVS,
                 cvs_root=cvs_root, cvs_module=cvs_module)
+
+    def makeCodeImportEvent(self):
+        code_import = self.makeCodeImport()
+        person = self.makePerson()
+        code_import_event_set = getUtility(ICodeImportEventSet)
+        return code_import_event_set.newCreate(code_import, person)
 
     def makeCodeImportJob(self, code_import):
         """Create and return a new code import job for the given import.
