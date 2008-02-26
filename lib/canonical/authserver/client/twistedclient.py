@@ -3,7 +3,7 @@
 """Twisted client code."""
 
 __metaclass__ = type
-__all__ = ['InMemoryTwistedProxy']
+__all__ = ['InMemoryTwistedProxy', 'TwistedAuthServer']
 
 import xmlrpclib
 
