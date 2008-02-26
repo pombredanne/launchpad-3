@@ -25,16 +25,24 @@ class MockXMLRPCObject(xmlrpc.XMLRPC):
         self.log = []
 
     def xmlrpc_returnsNone(self):
+        """This method returns None.
+
+        Used to check that our proxies correctly handle methods that return
+        types of objects that are not unsupported by XML-RPC.
+        """
         return None
 
     def xmlrpc_returnsValue(self, value):
+        """Used to check that the proxy passes on the return value."""
         return value
 
     def xmlrpc_success(self):
+        """Used to check that the proxy actually calls underlying methods."""
         self.log.append('success')
         return ''
 
     def xmlrpc_takesArguments(self, *args):
+        """Used to check the proxy passes in arguments from the client."""
         self.log.append(('takesArguments', args))
         return ''
 
