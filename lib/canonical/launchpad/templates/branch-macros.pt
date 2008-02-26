@@ -201,7 +201,9 @@
             tal:replace="rev_no/revision/revision_author/name_without_email">
           John Doe
         </span>
-        &lt;email address hidden&gt;
+        <tal:author-has-email condition="rev_no/revision/revision_author/email">
+          &lt;email address hidden&gt;
+        </tal:author-has-email>
       </tal:anonymous>
     </strong>
     <tal:revision-date
