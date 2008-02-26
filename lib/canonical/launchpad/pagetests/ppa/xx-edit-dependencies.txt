@@ -77,16 +77,6 @@ The adding dependency input offers a interface to look for PPAs based
 on the PPA fti and/or the PPA owner's fti via a IHugeVocabulary
 popup. A valid term is the owner username.
 
-Before actually adding any new dependency let's check if the form
-focus is set to the 'dependency_candidate' input field.
-
-    >>> print extract_text(find_main_content(admin_browser.contents))
-    Edit dependencies for PPA for Celso Providelo
-    ...
-    <!--
-    setFocusByName('field.dependency_candidate');
-    // -->
-
 An empty or unknown term results in an error.
 
     >>> admin_browser.getControl("PPA Dependency").value = ''
@@ -154,16 +144,6 @@ Now Celso's PPA will list Mark's and No-Priv's PPA as its dependencies.
     >>> print_ppa_dependencies(admin_browser.contents)
     PPA for Mark Shuttleworth
     PPA for No Privileges Person
-
-When there are recorded dependencies to present the focus is moved to
-the first check box available (the widget name is 'selected_dependencies').
-
-    >>> print extract_text(find_main_content(admin_browser.contents))
-    Dependency added: PPA for No Privileges Person
-    ...
-    <!--
-    setFocusByName('field.selected_dependencies');
-    // -->
 
 The dependencies are also listed in the PPA overview 'sources.list'
 widget.
