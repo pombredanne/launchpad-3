@@ -1,17 +1,21 @@
 # Copyright 2008 Canonical Ltd.  All rights reserved.
 
 __metaclass__ = type
-__all__ = ['OAuthAccessToken', 'OAuthConsumer', 'OAuthConsumerSet',
-           'OAuthNonce', 'OAuthRequestToken']
+__all__ = [
+    'OAuthAccessToken',
+    'OAuthConsumer',
+    'OAuthConsumerSet',
+    'OAuthNonce',
+    'OAuthRequestToken']
 
 from zope.interface import implements
 
 from sqlobject import BoolCol, ForeignKey, StringCol
 
-from canonical.database.sqlbase import SQLBase
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
+from canonical.database.sqlbase import SQLBase
 
 from canonical.launchpad.interfaces import (
     IOAuthAccessToken, IOAuthConsumer, IOAuthConsumerSet, IOAuthNonce,
@@ -34,6 +38,8 @@ class OAuthConsumerSet:
 
     def new(self, key, secret=''):
         """See `IOAuthConsumerSet`."""
+        assert self.getByKey(key) is None, (
+            "The key '%s' is already in use by another consumer." % key)
         return OAuthConsumer(key=key, secret=secret)
 
     def getByKey(self, key):

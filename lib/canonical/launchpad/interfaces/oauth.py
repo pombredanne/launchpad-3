@@ -5,8 +5,13 @@
 
 __metaclass__ = type
 
-__all__ = ['IOAuthAccessToken', 'IOAuthConsumer', 'IOAuthConsumerSet', 
-           'IOAuthNonce', 'IOAuthRequestToken', 'OAuthPermission']
+__all__ = [
+    'IOAuthAccessToken',
+    'IOAuthConsumer',
+    'IOAuthConsumerSet', 
+    'IOAuthNonce',
+    'IOAuthRequestToken',
+    'OAuthPermission']
 
 from zope.schema import Bool, Choice, Datetime, Object, TextLine
 from zope.interface import Interface
@@ -23,35 +28,35 @@ class OAuthPermission(DBEnumeratedType):
     UNAUTHORIZED = DBItem(10, """
         Not authorized
 
-        User didn't authorize the consumer to act on his behalf.
+        The user didn't authorize the consumer to act on his behalf.
         """)
 
     READ_PUBLIC = DBItem(20, """
         Read public data
 
-        Consumer can act on the user's behalf but only for reading public
+        The consumer can act on the user's behalf but only for reading public
         data.
         """)
 
     WRITE_PUBLIC = DBItem(30, """
         Read and write public data
 
-        Consumer can act on the user's behalf but only for reading/writing
-        public data.
+        The consumer can act on the user's behalf but only for reading and
+        writing public data.
         """)
 
     READ_PRIVATE = DBItem(40, """
         Read public and private data
 
-        Consumer can act on the user's behalf but only for reading
-        public/private data.
+        The consumer can act on the user's behalf but only for reading
+        public and private data.
         """)
 
     WRITE_PRIVATE = DBItem(50, """
-        Read/write public and private data
+        Read and write public and private data
 
-        Consumer can act on the user's behalf for reading and writing
-        public/private data.
+        The consumer can act on the user's behalf for reading and writing
+        public and private data.
         """)
 
 
@@ -60,40 +65,90 @@ class IOAuthConsumer(Interface):
     
     date_created = Datetime(
         title=_('Date created'), required=True, readonly=True)
-    disabled = Bool(title=_('Disabled?'), required=False, readonly=False)
-    key = TextLine(title=_('Key'), required=True, readonly=True)
-    secret = TextLine(title=_('Secret'), required=False, readonly=False)
+    disabled = Bool(
+        title=_('Disabled?'), required=False, readonly=False,
+        description=_('Disabled consumers are not allowed to access any '
+                      'protected resources.'))
+    key = TextLine(
+        title=_('Key'), required=True, readonly=True,
+        description=_('The unique key which identifies a consumer. It is '
+                      'included by the consumer in each request made.'))
+    secret = TextLine(
+        title=_('Secret'), required=False, readonly=False,
+        description=_('The secret which, if not empty, should be used by the '
+                      'consumer to sign its requests.'))
 
 
 class IOAuthConsumerSet(Interface):
     """The set of OAuth consumers."""
 
     def new(key, secret=''):
-        """Return the newly created consumer."""
+        """Return the newly created consumer.
+
+        You must make sure the given `key` is not already in use by another
+        consumer before trying to create a new one.
+
+        The `secret` defaults to an empty string because most consumers will
+        be open source desktop applications for which it wouldn't be actually
+        secret.
+
+        :param key: The unique key which will be associated with the new
+            consumer.
+        :param secret: A secret which should be used by the consumer to sign
+            its requests.
+        :raises AssertionError: When `key` is already in use by another
+            consumer.
+        """
 
     def getByKey(key):
-        """Return the consumer for the given key."""
+        """Return the consumer with the given key.
+
+        If there's no consumer with the given key, return None.
+
+        :param key: The unique key associated with a consumer.
+        """
     
 
 class IOAuthToken(Interface):
-    """Base class for IOAuthRequestToken and IOAuthAccessToken."""
+    """Base class for `IOAuthRequestToken` and `IOAuthAccessToken`.
+    
+    This class contains the commonalities of the two token classes we actually
+    care about and shall not be used on its own.
+    """
 
-    consumer = Object(schema=IOAuthConsumer, title=_('The consumer.'))
+    consumer = Object(
+        schema=IOAuthConsumer, title=_('The consumer.'),
+        description=_("The consumer which will access Launchpad on the "
+                      "user's behalf."))
     person = Object(
-        schema=IPerson, title=_('Person'), required=False, readonly=False)
+        schema=IPerson, title=_('Person'), required=False, readonly=False,
+        description=_('The user on whose behalf the consumer is accessing.'))
     permission = Choice(
         title=_('Permission'), required=False, readonly=False,
-        vocabulary=OAuthPermission)
+        vocabulary=OAuthPermission,
+        description=_('The permission granted by the user to this consumer.'))
     date_created = Datetime(
         title=_('Date created'), required=True, readonly=True)
     date_expires = Datetime(
-        title=_('Date expires'), required=False, readonly=False)
-    key = TextLine(title=_('Key'), required=True, readonly=True)
-    secret = TextLine(title=_('Secret'), required=True, readonly=True)
+        title=_('Date expires'), required=False, readonly=False,
+        description=_('From this date onwards this token can not be used '
+                      'by the consumer to access protected resources.'))
+    key = TextLine(
+        title=_('Key'), required=True, readonly=True,
+        description=_('The key used to identify this token.  It is included '
+                      'by the consumer in each request.'))
+    secret = TextLine(
+        title=_('Secret'), required=True, readonly=True,
+        description=_('The secret associated with this token.  It is used '
+                      'by the consumer to sign its requests.'))
 
 
 class IOAuthAccessToken(IOAuthToken):
-    """A token used by a consumer to access protected resources in LP."""
+    """A token used by a consumer to access protected resources in LP.
+
+    It's created automatically once a user logs in and grants access to a
+    consumer.  The consumer then exchanges an `IOAuthRequestToken` for it.
+    """
 
 
 class IOAuthRequestToken(IOAuthToken):
@@ -104,18 +159,21 @@ class IOAuthRequestToken(IOAuthToken):
     """
 
     date_reviewed = Datetime(
-        title=_('Date reviewed'), required=True, readonly=True)
+        title=_('Date reviewed'), required=True, readonly=True,
+        description=_('The date in which the user authorized (or not) the '
+                      'consumer to access his protected resources on '
+                      'Launchpad.'))
 
 
 class IOAuthNonce(Interface):
     """The unique (nonce,timestamp) for requests from a given consumer.
 
-    This is used to prevent replay attacks.
+    The nonce value (which is unique for all requests with that timestamp)
+    is generated by the consumer and included, together with the timestamp,
+    in each request made.  It's used to prevent replay attacks.
     """
 
     request_timestamp = Datetime(
         title=_('Date issued'), required=True, readonly=True)
     consumer = Object(schema=IOAuthConsumer, title=_('The consumer.'))
     nonce = TextLine(title=_('Nonce'), required=True, readonly=True)
-
-

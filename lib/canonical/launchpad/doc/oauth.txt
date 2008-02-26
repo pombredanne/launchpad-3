@@ -21,3 +21,15 @@ OAuthConsumerSet utility.
 
     >>> consumer_set.getByKey('asdfg') == consumer
     True
+
+    >>> print consumer_set.getByKey('gfdsa')
+    None
+
+As mentioned above, the keys are unique, so we can't create a second Consumer
+with the same key.
+
+    >>> consumer_set.new(key='asdfg')
+    Traceback (most recent call last):
+    ...
+    AssertionError: ...
+

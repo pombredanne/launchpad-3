@@ -20,4 +20,3 @@
           interface="canonical.launchpad.interfaces.IOAuthConsumerSet"/>
   </securedutility>
 </configure>
-
