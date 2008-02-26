@@ -609,7 +609,7 @@ class Branch(SQLBase):
         """See `IBranch`."""
         if break_references:
             self._breakReferences()
-        if break_references or self.canBeDeleted():
+        if self.canBeDeleted():
             # Delete any branch revisions.
             branch_ancestry = BranchRevision.selectBy(branch=self)
             for branch_revision in branch_ancestry:
