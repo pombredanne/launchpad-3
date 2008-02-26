@@ -91,22 +91,39 @@ class BranchMergeProposal(SQLBase):
     date_reviewed = UtcDateTimeCol(notNull=False, default=None)
     date_queued = UtcDateTimeCol(notNull=False, default=None)
 
-    def _transitionState(self, next_state, invalid_states=None):
+    def isValidTransition(self, next_state, user=None):
+        """See `IBranchMergeProposal`."""
+        [wip, needs_review, code_approved, rejected,
+         merged, merge_failed, queued, superseded
+         ] = BranchMergeProposalStatus.items
+        # Superseded and Merged are truely terminal, so nothing is valid.
+        if self.queue_status in (merged, superseded):
+            return False
+        # Rejected is mostly terminal, can only resubmit.
+        elif self.queue_status == rejected:
+            return next_state == superseded
+        # Queued can only be transitioned to merged or merge failed.
+        # Dequeing is a special case.
+        elif self.queue_status == queued:
+            return next_state in (merged, merge_failed)
+        # If the proposal has been approved, any transition is valid.
+        elif self.queue_status == code_approved:
+            return True
+        # Transitioning to code approved, rejected or queued from
+        # work in progress, needs review or merge failed needs the
+        # user to be a valid reviewer, other states are fine.
+        else:
+            if next_state in (code_approved, rejected, queued):
+                return self.isPersonValidReviewer(user)
+            else:
+                return True
+
+    def _transitionState(self, next_state, user=None):
         """Update the queue_status of the proposal.
 
         Raise an error if the proposal is in a final state.
         """
-        if invalid_states is None:
-            invalid_states = BRANCH_MERGE_PROPOSAL_FINAL_STATES
-        if self.queue_status in invalid_states:
-            raise BadStateTransition(
-                'Invalid state transition for merge proposal: %s -> %s'
-                % (self.queue_status.title, next_state.title))
-        # The only valid transitions for queued proposals are to mark
-        # as either merged, or merge failed.
-        if (self.queue_status == BranchMergeProposalStatus.QUEUED and
-            next_state not in (BranchMergeProposalStatus.MERGED,
-                               BranchMergeProposalStatus.MERGE_FAILED)):
+        if not self.isValidTransition(next_state, user):
             raise BadStateTransition(
                 'Invalid state transition for merge proposal: %s -> %s'
                 % (self.queue_status.title, next_state.title))
@@ -150,7 +167,7 @@ class BranchMergeProposal(SQLBase):
         if not self.isPersonValidReviewer(reviewer):
             raise UserNotBranchReviewer
         # Check the current state of the proposal.
-        self._transitionState(next_state)
+        self._transitionState(next_state, reviewer)
         # Record the reviewer
         self.reviewer = reviewer
         self.date_reviewed = UTC_NOW
@@ -227,13 +244,14 @@ class BranchMergeProposal(SQLBase):
 
     def mergeFailed(self, merger):
         """See `IBranchMergeProposal`."""
-        self._transitionState(BranchMergeProposalStatus.MERGE_FAILED)
+        self._transitionState(BranchMergeProposalStatus.MERGE_FAILED, merger)
         self.merger = merger
 
     def markAsMerged(self, merged_revno=None, date_merged=None,
                      merge_reporter=None):
         """See `IBranchMergeProposal`."""
-        self._transitionState(BranchMergeProposalStatus.MERGED)
+        self._transitionState(
+            BranchMergeProposalStatus.MERGED, merge_reporter)
         self.merged_revno = merged_revno
         self.merge_reporter = merge_reporter
 
@@ -252,9 +270,7 @@ class BranchMergeProposal(SQLBase):
         # You can transition from REJECTED to SUPERSEDED, but
         # not from MERGED or SUPERSEDED.
         self._transitionState(
-            BranchMergeProposalStatus.SUPERSEDED,
-            invalid_states=[BranchMergeProposalStatus.MERGED,
-                            BranchMergeProposalStatus.SUPERSEDED])
+            BranchMergeProposalStatus.SUPERSEDED, registrant)
         # This sync update is needed as the add landing target does
         # a database query to identify if there are any active proposals
         # with the same source and target branches.
