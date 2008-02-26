@@ -84,6 +84,7 @@ class MailingListSyncScript(LaunchpadCronScript):
         :param source_url: the base url of the source
         """
         # This can't be done at module global scope.
+        # pylint: disable-msg=F0401
         from Mailman import mm_cfg
         # Start by rsync'ing over the entire $vardir/lists, $vardir/archives,
         # $vardir/backups, and $vardir/mhonarc directories.  We specifically
@@ -113,6 +114,7 @@ class MailingListSyncScript(LaunchpadCronScript):
     def fixHostnames(self):
         """Fix up the host names in Mailman and the LP database."""
         # These can't be done at module global scope.
+        # pylint: disable-msg=F0401
         from Mailman import Utils
         from Mailman import mm_cfg
         from Mailman.MailList import MailList

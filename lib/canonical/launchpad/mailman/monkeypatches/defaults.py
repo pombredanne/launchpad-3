@@ -1,6 +1,7 @@
 # Copyright 2007 Canonical Ltd.  All rights reserved.
 
 # Pick up the standard Mailman defaults
+# pylint: disable-msg=W0401
 from Mailman.Defaults import *
 
 # Use a name for the site list that is very unlikely to conflict with any
@@ -28,6 +29,7 @@ QRUNNERS = [
     ]
 
 # Other list defaults.
+# pylint: disable-msg=E0602
 DEFAULT_GENERIC_NONMEMBER_ACTION = 3 # Discard
 DEFAULT_SEND_REMINDERS = No
 DEFAULT_SEND_WELCOME_MSG = Yes

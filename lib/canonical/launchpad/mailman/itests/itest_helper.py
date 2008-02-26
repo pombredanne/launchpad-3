@@ -171,6 +171,7 @@ class LogWatcher:
     def __init__(self, log_file):
         # Import this here since sys.path isn't set up properly when this
         # module is imported.
+        # pylint: disable-msg=F0401
         from Mailman.mm_cfg import LOG_DIR
         self._log_path = os.path.join(LOG_DIR, log_file)
         self._last_size = get_size(self._log_path)
@@ -235,6 +236,7 @@ def beta_program_enable(team_name):
 
 def collect_archive_message_ids(team_name):
     """Collect all the X-Message-Id values in the team's archived messages."""
+    # pylint: disable-msg=F0401
     from Mailman.mm_cfg import VAR_PREFIX
     mhonarc_path = os.path.join(VAR_PREFIX, 'mhonarc', 'itest-one')
     message_ids = []
@@ -279,6 +281,7 @@ def num_requests_pending(list_name):
     """
     # Import this here because paths aren't set up correctly in the module
     # globals.
+    # pylint: disable-msg=F0401
     from Mailman.MailList import MailList
     # The list must be locked to make this query.
     mailing_list = MailList(list_name)
@@ -305,6 +308,7 @@ def create_list(team_name):
     browser.getLink('Configure mailing list').click()
     browser.getControl('Apply for Mailing List').click()
     review_list(team_name)
+    # pylint: disable-msg=F0401
     from Mailman.Utils import list_names
     assert team_name in list_names(), (
         'Mailing list was not created: %s' % list_names())
@@ -345,6 +349,7 @@ def prepare_for_sync():
     # Tweak each of the mailing lists by essentially breaking their host_name
     # and web_page_urls.  These will get repaired by the sync script.  Do this
     # before we copy so that the production copy will have the busted values.
+    # pylint: disable-msg=F0401
     from Mailman import mm_cfg
     from Mailman.MailList import MailList
     from Mailman.Utils import list_names
@@ -394,6 +399,7 @@ def dump_list_info():
     from canonical.launchpad.ftests import login, logout
     from canonical.launchpad.interfaces import IEmailAddressSet, IPersonSet
     from zope.component import getUtility
+    # pylint: disable-msg=F0401
     from Mailman import mm_cfg
     from Mailman.MailList import MailList
     from Mailman.Utils import list_names

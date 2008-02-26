@@ -18,6 +18,7 @@ import xmlrpclib
 
 from cStringIO import StringIO
 
+# pylint: disable-msg=F0401
 from Mailman import Utils
 from Mailman import mm_cfg
 from Mailman.Logging.Syslog import syslog
@@ -46,7 +47,8 @@ def log_exception():
 
 
 class XMLRPCRunner(Runner):
-    """A Mailman 'queue runner' for talking to the Launchpad XMLRPC service."""
+    """A Mailman 'queue runner' for talking to the Launchpad XMLRPC service.
+    """
 
     # We increment this every time we see an actual change in the data coming
     # from Launchpad.  We write this to the xmlrpc log file for better
@@ -326,8 +328,10 @@ class XMLRPCRunner(Runner):
                 os.makedirs(path)
             # We have to use a bare except here because of the legacy string
             # exceptions that Mailman can raise.
+            # pylint: disable-msg=W0702
             except:
-                syslog('xmlrpc', 'List creation error for team: %s', team_name)
+                syslog('xmlrpc',
+                       'List creation error for team: %s', team_name)
                 log_exception()
                 return False
             else:
@@ -367,6 +371,7 @@ class XMLRPCRunner(Runner):
                     mlist.Unlock()
             # We have to use a bare except here because of the legacy string
             # exceptions that Mailman can raise.
+            # pylint: disable-msg=W0702
             except:
                 syslog('xmlrpc',
                        'List modification error for team: %s', team_name)
@@ -420,8 +425,10 @@ class XMLRPCRunner(Runner):
                     os.chdir(old_cwd)
             # We have to use a bare except here because of the legacy string
             # exceptions that Mailman can raise.
+            # pylint: disable-msg=W0702
             except:
-                syslog('xmlrpc', 'List deletion error for team: %s', team_name)
+                syslog('xmlrpc',
+                       'List deletion error for team: %s', team_name)
                 log_exception()
                 statuses[team_name] = 'failure'
             else:

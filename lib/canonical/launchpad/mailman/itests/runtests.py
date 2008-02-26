@@ -11,6 +11,7 @@ import shutil
 import doctest
 import optparse
 import unittest
+# pylint: disable-msg=W0403
 import itest_helper
 
 sys.path.insert(0, itest_helper.TOP)
@@ -18,6 +19,7 @@ sys.path.insert(1, os.path.join(itest_helper.TOP, 'mailman'))
 
 from canonical.database.sqlbase import cursor
 from canonical.launchpad.scripts import execute_zcml_for_scripts
+# pylint: disable-msg=F0401
 from Mailman.mm_cfg import QUEUE_DIR, VAR_PREFIX
 
 execute_zcml_for_scripts()
