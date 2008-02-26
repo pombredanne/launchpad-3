@@ -20,17 +20,24 @@ from canonical.authserver.client.twistedclient import InMemoryTwistedProxy
 
 
 class InMemoryBlockingProxy:
+    """ServerProxy work-a-like that calls methods directly."""
 
     def __init__(self, xmlrpc_object, method_names):
         self._xmlrpc_object = xmlrpc_object
         self._method_names = method_names
 
     def _faultMaker(self, code, string):
+        """Return a callable that raises a Fault when called."""
         def raise_fault(*args):
             raise xmlrpclib.Fault(code, string)
         return raise_fault
 
     def _checkMarshalling(self, function):
+        """Decorate function to check it for marshallability.
+
+        Checks the arguments and return values for whether or not they can
+        be passed via XML-RPC. Mostly, this means checking for None.
+        """
         def call_method(*args):
             xmlrpclib.dumps(args)
             result = function(*args)
