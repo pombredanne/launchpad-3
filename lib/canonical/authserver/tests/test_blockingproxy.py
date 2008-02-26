@@ -61,11 +61,11 @@ class MockXMLRPCObject:
         self.log.append('unpublished')
 
 
-class TestTwistedProxyConformance(unittest.TestCase):
-    """Interface conformance tests for Twisted XML-RPC proxies.
+class TestBlockingProxyConformance(unittest.TestCase):
+    """Interface conformance tests for blocking XML-RPC proxies.
 
-    These tests check that our in-memory proxy behaves like a real Twisted
-    XML-RPC proxy. They are parametrized using bzrlib's `TestScenarioApplier`.
+    These tests check that our in-memory proxy behaves like a real xmlrpclib
+    `ServerProxy`. They are parametrized using bzrlib's `TestScenarioApplier`.
 
     The `server_factory` instance variable is set by the test loader to one of
     `TwistedServer` or `InMemoryServer`. It's expected that `server_factory`
