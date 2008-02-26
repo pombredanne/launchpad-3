@@ -528,8 +528,8 @@ class TestCodeImportJobWorkflowFinishJob(unittest.TestCase,
             getUtility(ICodeImportJobWorkflow).finishJob,
             job, CodeImportResultStatus.SUCCESS, None)
 
-    # Postcondition tests. Several of these -- finishJob is quite a
-    # complex function!
+    # Postcondition tests. Several of these -- finishJob is quite a complex
+    # function!
 
     def test_deletesPassedJob(self):
         # finishJob() deletes the job it is passed.
@@ -541,8 +541,8 @@ class TestCodeImportJobWorkflowFinishJob(unittest.TestCase,
             None, getUtility(ICodeImportJobSet).getById(running_job_id))
 
     def test_createsNewJob(self):
-        # finishJob() creates a new CodeImportJob for the given
-        # CodeImport, scheduled appropriately far in the future.
+        # finishJob() creates a new CodeImportJob for the given CodeImport,
+        # scheduled appropriately far in the future.
         running_job = self.makeRunningJob()
         running_job_date_due = running_job.date_due
         code_import = running_job.code_import
@@ -557,8 +557,7 @@ class TestCodeImportJobWorkflowFinishJob(unittest.TestCase,
             code_import.effective_update_interval)
 
     def test_createsResultObject(self):
-        # finishJob() creates a CodeImportResult object for the given
-        # import.
+        # finishJob() creates a CodeImportResult object for the given import.
         running_job = self.makeRunningJob()
         running_job_date_due = running_job.date_due
         code_import = running_job.code_import
@@ -604,8 +603,8 @@ class TestCodeImportJobWorkflowFinishJob(unittest.TestCase,
             " %r." % (value, from_field, to_field))
 
     def test_resultObjectFields(self):
-        # The CodeImportResult object that finishJob creates contains
-        # all the relevant details from the job object.
+        # The CodeImportResult object that finishJob creates contains all the
+        # relevant details from the job object.
 
         unchecked_result_fields = set(ICodeImportResult)
 
@@ -615,6 +614,8 @@ class TestCodeImportJobWorkflowFinishJob(unittest.TestCase,
         unchecked_result_fields.difference_update(['log_file', 'status'])
 
         code_import = self.factory.makeCodeImport()
+        # XXX MichaelHudson 2008-02026, bug=193876: When the referenced bug is
+        # fixed, we will be able to do this much more nicely than this.
         removeSecurityProxy(code_import).review_status = \
             CodeImportReviewStatus.REVIEWED
         self.assertFinishJobPassesThroughJobField(
@@ -653,8 +654,8 @@ class TestCodeImportJobWorkflowFinishJob(unittest.TestCase,
             self.assertEqual(result.status, status)
 
     def test_resultLogFile(self):
-        # If you pass a link to a file in the librarian to
-        # finishJob(), it gets set on the result object.
+        # If you pass a link to a file in the librarian to finishJob(), it
+        # gets set on the result object.
         log_data = 'several\nlines\nof\nlog data'
         log_excerpt = log_data.splitlines()[-1]
         log_alias_id = getUtility(ILibrarianClient).addFile(
