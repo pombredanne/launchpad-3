@@ -49,7 +49,7 @@ def make_launchpad_server():
 
 
 def make_sftp_server():
-    authserver = AuthserverWithKeys('testuser', 'testteam')
+    authserver = NullAuthserverWithKeys('testuser', 'testteam')
     branches_root = config.codehosting.branches_root
     mirror_root = config.supermirror.branchesdest
     return SFTPCodeHostingServer(authserver, branches_root, mirror_root)
@@ -209,6 +209,18 @@ class AuthserverWithKeysMixin:
         """Return the public key string used by 'testuser' for auth."""
         return keys.getPublicKeyString(
             data=open(sibpath(__file__, 'id_dsa.pub'), 'rb').read())
+
+
+class NullAuthserverWithKeys(AuthserverWithKeysMixin):
+
+    def setUp(self):
+        self.setUpTestUser()
+
+    def get_url(self):
+        return config.codehosting.authserver
+
+    def tearDown(self):
+        return defer.succeed(None)
 
 
 class AuthserverWithKeys(AuthserverOutOfProcess, AuthserverWithKeysMixin):
