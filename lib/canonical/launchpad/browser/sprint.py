@@ -540,6 +540,7 @@ class SprintAttendeesCsvExportView(LaunchpadView):
         rows = [('Launchpad username',
                  'Display name',
                  'Email',
+                 'IRC nickname',
                  'Phone',
                  'Organization',
                  'City',
@@ -548,10 +549,14 @@ class SprintAttendeesCsvExportView(LaunchpadView):
                  'Arriving',
                  'Leaving')]
         for attendance in self.context.attendances:
+            irc_nicknames = ', '.join(sorted(
+                [ircid.nickname for ircid
+                 in attendance.attendee.ircnicknames]))
             rows.append(
                 (attendance.attendee.name,
                  attendance.attendee.displayname,
                  attendance.attendee.safe_email_or_blank,
+                 irc_nicknames,
                  attendance.attendee.phone,
                  attendance.attendee.organization,
                  attendance.attendee.city,
