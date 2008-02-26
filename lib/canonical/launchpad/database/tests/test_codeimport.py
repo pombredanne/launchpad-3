@@ -11,7 +11,6 @@ from canonical.launchpad.database import (
     CodeImportSet,
     CodeImportResult,
     )
-from canonical.launchpad.ftests import syncUpdate
 from canonical.launchpad.testing import LaunchpadObjectFactory
 from canonical.testing import LaunchpadZopelessLayer
 

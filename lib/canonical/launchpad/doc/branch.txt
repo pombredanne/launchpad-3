@@ -458,8 +458,8 @@ of the enumerated types: BranchSubscriptionDiffSize, and
 BranchSubscriptionNotificationLevel.
 
     >>> from canonical.launchpad.interfaces import (
-    ...     BranchSubscriptionDiffSize, BranchSubscriptionNotificationLevel)
-    ...     IPerson, IBranchSubscription)
+    ...     BranchSubscriptionDiffSize, BranchSubscriptionNotificationLevel,
+    ...     IBranchSubscription)
     >>> sabdfl = personset.getByName('sabdfl')
     >>> sabdfl.subscribed_branches.count()
     0

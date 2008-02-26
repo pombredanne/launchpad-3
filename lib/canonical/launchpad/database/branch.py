@@ -424,8 +424,8 @@ class Branch(SQLBase):
         This function is guaranteed to perform the operations predicted by
         deletionRequirements, because it uses the same backing function.
         """
-        _alterations, _deletions, alteration_operations, deletion_operations = (
-            self._deletionRequirements())
+        (_alterations, _deletions, alteration_operations,
+            deletion_operations) = self._deletionRequirements()
         for operation in alteration_operations:
             operation()
         for operation in deletion_operations:
