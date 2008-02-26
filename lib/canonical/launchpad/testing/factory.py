@@ -19,6 +19,7 @@ from canonical.launchpad.interfaces import (
     BranchMergeProposalStatus,
     BranchSubscriptionNotificationLevel,
     BranchType,
+    CodeImportResultStatus,
     CodeImportReviewStatus,
     CreateBugParams,
     EmailAddressStatus,
@@ -27,6 +28,7 @@ from canonical.launchpad.interfaces import (
     ICodeImportJobWorkflow,
     ICodeImportMachineSet,
     ICodeImportEventSet,
+    ICodeImportResultSet,
     ICodeImportSet,
     ILaunchpadCelebrities,
     IPersonSet,
@@ -369,6 +371,17 @@ class LaunchpadObjectFactory:
         The machine will be in the OFFLINE state."""
         hostname = self.getUniqueString('machine-')
         return getUtility(ICodeImportMachineSet).new(hostname)
+
+    def makeCodeImportResult(self):
+        code_import = self.makeCodeImport()
+        machine = self.makeCodeImportMachine()
+        requesting_user = self.makePerson()
+        log_excerpt = self.getUniqueString()
+        status = CodeImportResultStatus.FAILURE
+        started = time_counter().next()
+        return getUtility(ICodeImportResultSet).new(code_import, machine,
+            requesting_user, log_excerpt, log_file=None, status=status,
+            date_job_started=started)
 
     def makeSeries(self, user_branch=None, import_branch=None):
         """Create a new, arbitrary ProductSeries.

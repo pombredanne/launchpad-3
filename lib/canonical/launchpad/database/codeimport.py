@@ -128,12 +128,16 @@ class CodeImportSet:
         from canonical.launchpad.database import (
             CodeImportJob,
             CodeImportEventSet,
+            CodeImportResultSet,
         )
         if code_import.import_job is not None:
             CodeImportJob.delete(code_import.import_job.id)
         event_set = CodeImportEventSet()
         for event in event_set.getEventsForCodeImport(code_import):
             event.destroySelf()
+        result_set = CodeImportResultSet()
+        for result in result_set.getResultsForImport(code_import):
+            result.destroySelf()
         CodeImport.delete(code_import.id)
 
     def getAll(self):

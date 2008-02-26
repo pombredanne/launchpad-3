@@ -9,6 +9,7 @@ from canonical.launchpad.database import (
     CodeImportEvent,
     CodeImportJobSet,
     CodeImportSet,
+    CodeImportResult,
     )
 from canonical.launchpad.ftests import syncUpdate
 from canonical.launchpad.testing import LaunchpadObjectFactory
@@ -44,6 +45,14 @@ class TestCodeImportDeletion(unittest.TestCase):
         CodeImportSet().delete(code_import_event.code_import)
         self.assertRaises(
             SQLObjectNotFound, CodeImportEvent.get, code_import_event_id)
+
+    def test_deleteIncludesResult(self):
+        code_import_result = self.factory.makeCodeImportResult()
+        code_import_result_id = code_import_result.id
+        CodeImportResult.get(code_import_result_id)
+        CodeImportSet().delete(code_import_result.code_import)
+        self.assertRaises(
+            SQLObjectNotFound, CodeImportResult.get, code_import_result_id)
 
 
 def test_suite():
