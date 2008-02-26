@@ -2008,6 +2008,49 @@ class PersonView(LaunchpadView, FeedsMixin):
         """
         return self.userIsActiveMember()
 
+    def userCanSubscribeToList(self):
+        """Return true if the user can subscribe to this team's
+        mailing list.
+
+        Team membership is not pre-requisite to subscribing to the
+        list.
+
+        If you are already subscribed, then False is returned.
+        """
+        # XXX mars 2008-02-26:
+        # For the mailing list beta test.
+        if not self.isBetaUser:
+            return False
+
+        if self.teamMailingListIsAvailable():
+            # If we are already subscribed, then we can not subscribe again.
+            return not self.userIsSubscribedToList()
+        else:
+            return False
+
+    def userIsSubscribedToList(self):
+        """Return true if the user is subscribed to the team mailing
+        list, either directly or indirectly.
+
+        Note that this does not mean that the list is usable.  It is
+        an error to ask if the user is subscribed to a mailing list
+        that doesn't exist.
+        """
+        if self.user is None:
+            return False
+
+        mailing_list = self.context.mailing_list
+        assert mailing_list
+        has_subscription = bool(mailing_list.getSubscription(self.user))
+        return has_subscription
+
+    def teamMailingListIsAvailable(self):
+        """Return true if the team mailing list is available for
+        subscription.
+        """
+        mailing_list = self.context.mailing_list
+        return mailing_list is not None #and mailing_list.isUsable()
+
     def obfuscatedEmail(self):
         if self.context.preferredemail is not None:
             return obfuscateEmail(self.context.preferredemail.email)

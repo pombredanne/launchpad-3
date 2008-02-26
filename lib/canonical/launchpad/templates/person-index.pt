@@ -151,6 +151,9 @@
           <tal:block condition="not: view/userIsOwner">
             <p tal:condition="view/userIsActiveMember">
               You are a member of this team.
+	      <tal:block tal:condition="view/userCanRequestToLeave">
+		(<a href="+leave">Leave the team</a>)
+	      </tal:block>
             </p>
             <p tal:condition="not: view/userIsActiveMember">
               <tal:foo tal:condition="not: view/userIsParticipant">
@@ -173,6 +176,22 @@
               </tal:foo>
             </p>
           </tal:block>
+	  <tal:block condition="view/userIsParticipant">
+	    <p tal:condition="view/teamMailingListIsAvailable">
+	      <tal:block tal:condition="view/userIsSubscribedToList">
+		<form class="actions" name="unsubscribe"
+		      action="" method="post">
+		  You are subscribed to the team mailing list.
+		  (<a href="#" onclick="parentNode.submit(); return false"
+		      >Unsubscribe</a>)
+		</form>
+	      </tal:block>
+	      <tal:block tal:condition="view/userCanSubscribeToList">
+		You are not subscribed to the team mailing list.
+		(<a href="/people/+me/+editemails">Subscribe</a>)
+	      </tal:block>
+	    </p>
+	  </tal:block>
         </tal:block>
       </div>
       </div>
