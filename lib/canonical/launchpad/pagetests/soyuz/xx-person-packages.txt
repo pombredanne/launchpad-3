@@ -178,7 +178,7 @@ It still shows up:
     iceweasel   PPA for Mark Shuttleworth - Ubuntu Warty 1.0
         2006-04-11 None - -
 
-No we'll unpublish it in the primary archive.
+Now we'll unpublish it in the primary archive.
 
     >>> login("foo.bar@canonical.com")
     >>> from canonical.launchpad.interfaces import (
