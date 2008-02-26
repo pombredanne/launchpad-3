@@ -495,13 +495,19 @@ class ShipItRequestView(GeneralFormView):
                 quantities[arch] = intOrZero(kw.get(field_name))
                 total_cds += quantities[arch]
 
+        # This is only necessary because we're allowing users to request
+        # Server CDs on shipit.ubuntu.com and so we need to use the standard
+        # option's flavour in those cases.
+        flavour = self.flavour
+        if request_type_id:
+            flavour = request_type.flavour
         # Here we set both requested and approved quantities. This is not a
         # problem because if this order needs manual approval, it'll be
         # flagged as pending approval, meaning that somebody will have to
         # check (and possibly change) its approved quantities before it can be
         # shipped.
         current_order.setQuantities(
-            {request_type.flavour: quantities}, distroseries=self.series)
+            {flavour: quantities}, distroseries=self.series)
 
         # Make sure that subsequent queries will see the RequestedCDs objects
         # created/updated when we set the order quantities above.
