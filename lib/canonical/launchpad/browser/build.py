@@ -208,7 +208,7 @@ class BuildRecordsView(LaunchpadView):
 
         # request context build records according the selected state
         builds = self.context.getBuildRecords(
-            build_state=self.state, name=self.text)
+            build_state=self.state, name=self.text, user=self.user)
         self.batchnav = BatchNavigator(builds, self.request)
         # We perform this extra step because we don't what to issue one
         # extra query to retrieve the BuildQueue for each Build (batch item)
@@ -242,7 +242,7 @@ class BuildRecordsView(LaunchpadView):
             }
         # include pristine (not yet assigned to a builder) builds
         # if requested.
-        if self.showBuilderInfo():
+        if self.show_builder_info:
             extra_state_map = {
                 'building': BuildStatus.BUILDING,
                 'pending': BuildStatus.NEEDSBUILD,
@@ -258,7 +258,7 @@ class BuildRecordsView(LaunchpadView):
                 raise UnexpectedFormData(
                     'No suitable state found for value "%s"' % tag)
         else:
-            self.state = self.defaultBuildState()
+            self.state = self.default_build_state
 
         # build a dictionary with organized information for rendering
         # the HTML <select> section.
@@ -278,15 +278,17 @@ class BuildRecordsView(LaunchpadView):
                 dict(name=name, value=tag, selected=selected)
                 )
 
-    def defaultBuildState(self):
-        """Return the build state to be present as default.
+    @property
+    def default_build_state(self):
+        """The build state to be present as default.
 
         It allows the callsites to control which default status they
         want to present when the page is first loaded.
         """
         return BuildStatus.BUILDING
 
-    def showBuilderInfo(self):
+    @property
+    def show_builder_info(self):
         """Control the presentation of builder information.
 
         It allows the callsite to control if they want a builder column
@@ -294,7 +296,8 @@ class BuildRecordsView(LaunchpadView):
         """
         return True
 
-    def searchName(self):
+    @property
+    def search_name(self):
         """Control the presentation of search box."""
         return True
 

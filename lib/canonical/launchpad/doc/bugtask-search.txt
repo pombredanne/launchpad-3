@@ -87,7 +87,7 @@ bugs return all of Firefox' bugs.
 
     >>> login('foo.bar@canonical.com')
     >>> from canonical.launchpad.ftests import syncUpdate
-    >>> firefox.bugcontact = no_priv
+    >>> firefox.setBugContact(no_priv, no_priv)
     >>> syncUpdate(firefox)
 
     >>> found_bugtasks = bugtask_set.search(no_priv_bug_contact)
@@ -99,26 +99,6 @@ bugs return all of Firefox' bugs.
     >>> for target_name in sorted(found_targets):
     ...     print target_name
     Mozilla Firefox
-
-
-=== Package bug contact ===
-
-If No Privileges Person is added as a bug contact for mozilla-firefox,
-searching for his bugs returns all bugs in this package, as well as the
-previous bugs (since he is also a bug contact for the Firefox product).
-
-    >>> ubuntu_firefox.addBugContact(no_priv)
-    >>> found_bugtasks = bugtask_set.search(no_priv_bug_contact)
-    >>> found_bugtasks.count() == (
-    ...     firefox_bugs.count() + ubuntu_firefox_bugs.count())
-    True
-
-    >>> found_targets = set(
-    ...     bugtask.target.bugtargetdisplayname for bugtask in found_bugtasks)
-    >>> for target_name in sorted(found_targets):
-    ...     print target_name
-    Mozilla Firefox
-    mozilla-firefox (Ubuntu)
 
 
 === Distribution bug contact ===
@@ -133,7 +113,7 @@ twice.
     >>> ubuntu_bugs.count() > 0
     True
 
-    >>> ubuntu.bugcontact = no_priv
+    >>> ubuntu.setBugContact(no_priv, no_priv)
     >>> syncUpdate(ubuntu)
     >>> found_bugtasks = bugtask_set.search(no_priv_bug_contact)
     >>> found_bugtasks.count() == firefox_bugs.count() + ubuntu_bugs.count()

@@ -32,7 +32,9 @@ from canonical.launchpad.webapp import (
     ApplicationMenu, GetitemNavigation, Link, Navigation,
     StandardLaunchpadFacets, canonical_url, enabled_with_permission,
     stepthrough)
+from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.tales import DateTimeFormatterAPI
+from canonical.lazr import decorates
 
 
 class BuilderSetNavigation(GetitemNavigation):
@@ -146,12 +148,45 @@ class BuilderSetView(CommonBuilderView):
         return bool(self.buildQueueDepthByArch)
 
 
+class HiddenBuilder:
+    """Overrides a IBuilder building a private job.
+
+    This class modifies IBuilder attributes that should not be exposed
+    while building a job for private job (private PPA or Security).
+    """
+    decorates(IBuilder)
+
+    failnotes = None
+    currentjob = None
+    builderok = False
+
+    def __init__(self, context):
+        self.context = context
+
+    @property
+    def status(self):
+        if self.context.manual:
+            mode = 'MANUAL'
+        else:
+            mode = 'AUTO'
+
+        return "NOT OK: (%s)" % mode
+
+
 class BuilderView(CommonBuilderView, BuildRecordsView):
     """Default Builder view class
 
-    Implements useful actions and colect useful set for the pagetemplate.
+    Implements useful actions for the page template.
     """
     __used_for__ = IBuilder
+
+    def __init__(self, context, request):
+        current_job = context.currentjob
+        if current_job and not check_permission(
+            'launchpad.View', current_job.build):
+            # Cloak the builder.
+            context = HiddenBuilder(context)
+        super(BuilderView, self).__init__(context, request)
 
     def cancelBuildJob(self):
         """Cancel curent job in builder."""
@@ -166,18 +201,22 @@ class BuilderView(CommonBuilderView, BuildRecordsView):
         # Auto Build System, getting slave building something sane.
         return '<p>Cancel (%s). Not implemented yet.</p>' % builder_id
 
-    def defaultBuildState(self):
+    @property
+    def default_build_state(self):
         """Present all jobs by default."""
         return None
 
-    def showBuilderInfo(self):
+    @property
+    def show_builder_info(self):
         """Hide Builder info, see BuildRecordsView for further details"""
         return False
+
 
 class BuilderSetAddView(AddView):
     """Builder add view
 
-    Extends zope AddView and uses IBuilderSet utitlity to create a new IBuilder
+    Extends zope AddView and uses IBuilderSet utitlity to create a new
+    IBuilder.
     """
     __used_for__ = IBuilderSet
 

@@ -47,6 +47,12 @@
       factory="canonical.launchpad.browser.BranchBadges"
       />
 
+  <subscriber
+      for="canonical.launchpad.interfaces.IBranch
+           canonical.launchpad.event.interfaces.ISQLObjectCreatedEvent"
+      handler="canonical.launchpad.subscribers.karma.branch_created"
+      />
+
     <browser:menus
         module="canonical.launchpad.browser"
         classes="BranchContextMenu" />
@@ -168,13 +174,18 @@
       permission="launchpad.Edit"
       template="../templates/branch-delete.pt" />
 
-  <browser:page
-      name="+mirror-status"
+  <browser:pages
       for="canonical.launchpad.interfaces.IBranch"
       class="canonical.launchpad.browser.BranchMirrorStatusView"
       facet="branches"
-      permission="launchpad.View"
-      template="../templates/branch-mirror-status.pt" />
+      permission="launchpad.View">
+    <browser:page
+        name="+mirror-status"
+        template="../templates/branch-mirror-status.pt" />
+    <browser:page
+        name="+messages"
+        template="../templates/branch-messages.pt" />
+  </browser:pages>
 
   <browser:page
       name="+reassign"

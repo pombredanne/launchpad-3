@@ -15,8 +15,9 @@ import os
 
 import pytz
 
-from zope.interface import implements
 from zope.component import getUtility
+from zope.event import notify
+from zope.interface import implements
 
 from sqlobject import (
     ForeignKey, IntCol, StringCol, BoolCol, SQLMultipleJoin, SQLRelatedJoin,
@@ -46,7 +47,9 @@ from canonical.launchpad.database.branchmergeproposal import (
     BranchMergeProposal)
 from canonical.launchpad.database.branchrevision import BranchRevision
 from canonical.launchpad.database.branchsubscription import BranchSubscription
+from canonical.launchpad.validators.person import public_person_validator
 from canonical.launchpad.database.revision import Revision
+from canonical.launchpad.event import SQLObjectCreatedEvent
 from canonical.launchpad.mailnotification import NotificationRecipientSet
 from canonical.launchpad.webapp import urlappend
 
@@ -70,11 +73,17 @@ class Branch(SQLBase):
     private = BoolCol(default=False, notNull=True)
 
     registrant = ForeignKey(
-        dbName='registrant', foreignKey='Person', notNull=True)
-    owner = ForeignKey(dbName='owner', foreignKey='Person', notNull=True)
-    author = ForeignKey(dbName='author', foreignKey='Person', default=None)
+        dbName='registrant', foreignKey='Person',
+        validator=public_person_validator, notNull=True)
+    owner = ForeignKey(
+        dbName='owner', foreignKey='Person',
+        validator=public_person_validator, notNull=True)
+    author = ForeignKey(
+        dbName='author', foreignKey='Person',
+        validator=public_person_validator, default=None)
     reviewer = ForeignKey(
-        dbName='reviewer', foreignKey='Person', default=None)
+        dbName='reviewer', foreignKey='Person',
+        validator=public_person_validator, default=None)
 
     product = ForeignKey(dbName='product', foreignKey='Product', default=None)
 
@@ -756,6 +765,7 @@ class BranchSet:
                 BranchSubscriptionNotificationLevel.NOEMAIL,
                 BranchSubscriptionDiffSize.NODIFF)
 
+        notify(SQLObjectCreatedEvent(branch))
         return branch
 
     def delete(self, branch):

@@ -17,7 +17,7 @@ from zope.interface import Attribute, Interface
 from zope.schema import Choice, Datetime, Int
 
 from canonical.launchpad import _
-from canonical.launchpad.fields import Summary, Whiteboard
+from canonical.launchpad.fields import PublicPersonChoice, Summary, Whiteboard
 from canonical.lazr import DBEnumeratedType, DBItem
 
 
@@ -114,7 +114,7 @@ class IBranchMergeProposal(Interface):
         title=_('DB ID'), required=True, readonly=True,
         description=_("The tracking number for this question."))
 
-    registrant = Choice(
+    registrant = PublicPersonChoice(
         title=_('Person'), required=True,
         vocabulary='ValidPersonOrTeam', readonly=True,
         description=_('The person who registered the landing target.'))
@@ -154,9 +154,15 @@ class IBranchMergeProposal(Interface):
         description=_("The commit message that should be used when merging "
                       "the source branch."))
 
-    queue_position = Attribute(_("The position in the queue."))
+    queue_position = Int(
+        title=_("Queue Position"), required=False, readonly=True,
+        description=_("The position in the queue."))
 
-    queuer = Attribute(_("The person that queued up the branch."))
+    queuer = Choice(
+        title=_('Queuer'), vocabulary='ValidPerson',
+        required=False, readonly=True,
+        description=_("The person that queued up the branch."))
+
     queued_revision_id = Attribute(
         _("The revision id that has been queued for landing."))
 

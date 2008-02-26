@@ -24,6 +24,7 @@ from canonical.launchpad.interfaces import (
     HWSubmissionProcessingStatus, IHWSubmission, IHWSubmissionSet,
     IHWSystemFingerprint, IHWSystemFingerprintSet, ILaunchpadCelebrities,
     ILibraryFileAliasSet, IPersonSet)
+from canonical.launchpad.validators.person import public_person_validator
 
 
 class HWSubmission(SQLBase):
@@ -39,7 +40,8 @@ class HWSubmission(SQLBase):
     private = BoolCol(notNull=True)
     contactable = BoolCol(notNull=True)
     submission_key = StringCol(notNull=True)
-    owner = ForeignKey(dbName='owner', foreignKey='Person')
+    owner = ForeignKey(
+        dbName='owner', foreignKey='Person', validator=public_person_validator)
     distroarchseries = ForeignKey(dbName='DistroArchSeries',
                                   foreignKey='DistroArchSeries',
                                   notNull=True)
@@ -106,7 +108,8 @@ class HWSubmissionSet:
             raw_emailaddress=emailaddress)
 
     def _userHasAccessClause(self, user):
-        """Limit results of HWSubmission queries to rows the user can access."""
+        """Limit results of HWSubmission queries to rows the user can access.
+        """
         admins = getUtility(ILaunchpadCelebrities).admin
         if user is None:
             return " AND NOT HWSubmission.private"
@@ -167,7 +170,6 @@ class HWSubmissionSet:
     def submissionIdExists(self, submission_key):
         """See `IHWSubmissionSet`."""
         rows = HWSubmission.selectBy(submission_key=submission_key)
-        return bool(rows)
         return rows.count() > 0
 
     def setOwnership(self, email):

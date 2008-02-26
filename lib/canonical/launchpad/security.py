@@ -12,16 +12,17 @@ from canonical.launchpad.interfaces import (
     IBranchMergeProposal, IBranchSubscription, IBug, IBugAttachment,
     IBugBranch, IBugNomination, IBugTracker, IBuild, IBuilder, IBuilderSet,
     ICodeImport, ICodeImportJob, ICodeImportJobSet, ICodeImportJobWorkflow,
-    ICodeImportMachine, ICodeImportMachineSet, ICodeImportSet, IDistribution,
-    IDistributionMirror, IDistroSeries, IDistroSeriesLanguage, IEntitlement,
-    IFAQ, IFAQTarget, IHWSubmission, IHasBug, IHasDrivers, IHasOwner,
-    ILanguage, ILanguagePack, ILanguageSet, ILaunchpadCelebrities,
-    IMailingListSet, IMilestone, IPOFile, IPOTemplate, IPOTemplateSubset,
-    IPackageUpload, IPackageUploadQueue, IPackaging, IPerson, IPoll,
-    IPollOption, IPollSubset, IProduct, IProductRelease, IProductReleaseFile,
-    IProductSeries, IQuestion, IQuestionTarget, IRequestedCDs,
-    IShipItApplication, IShippingRequest, IShippingRequestSet, IShippingRun,
-    ISpecification, ISpecificationSubscription, ISprint, ISprintSpecification,
+    ICodeImportMachine, ICodeImportMachineSet, ICodeImportResult,
+    ICodeImportResultSet, ICodeImportSet, IDistribution, IDistributionMirror,
+    IDistroSeries, IDistroSeriesLanguage, IEntitlement, IFAQ, IFAQTarget,
+    IHWSubmission, IHasBug, IHasDrivers, IHasOwner, ILanguage, ILanguagePack,
+    ILanguageSet, ILaunchpadCelebrities, IMailingListSet, IMilestone, IPOFile,
+    IPOTemplate, IPOTemplateSubset, IPackageUpload, IPackageUploadQueue,
+    IPackaging, IPerson, IPoll, IPollOption, IPollSubset, IProduct,
+    IProductRelease, IProductReleaseFile, IProductSeries, IQuestion,
+    IQuestionTarget, IRequestedCDs, IShipItApplication, IShippingRequest,
+    IShippingRequestSet, IShippingRun, ISpecification,
+    ISpecificationSubscription, ISprint, ISprintSpecification,
     IStandardShipItRequest, IStandardShipItRequestSet, ITeam, ITeamMembership,
     ITranslationGroup, ITranslationGroupSet, ITranslationImportQueue,
     ITranslationImportQueueEntry, ITranslator, PersonVisibility)
@@ -448,10 +449,7 @@ class ViewPublicOrPrivateTeamMembers(AuthorizationBase):
 
     def checkUnauthenticated(self):
         """Unauthenticated users can only view public memberships."""
-        # XXX Edwin Grubbs 2007-12-11 bug=175758
-        # Checking if visibility is None is only necessary until next cycle.
-        if (self.obj.visibility is None
-            or self.obj.visibility == PersonVisibility.PUBLIC):
+        if self.obj.visibility == PersonVisibility.PUBLIC:
             return True
         return False
 
@@ -462,10 +460,7 @@ class ViewPublicOrPrivateTeamMembers(AuthorizationBase):
         Only a team member or a Launchpad admin can view a
         private membership.
         """
-        # XXX Edwin Grubbs 2007-12-11 bug=175758
-        # Checking if visibility is None is only necessary until next cycle.
-        if (self.obj.visibility is None
-            or self.obj.visibility == PersonVisibility.PUBLIC):
+        if self.obj.visibility == PersonVisibility.PUBLIC:
             return True
         admins = getUtility(ILaunchpadCelebrities).admin
         if user.inTeam(admins) or user.inTeam(self.obj):
@@ -830,7 +825,7 @@ class SeeCodeImportSet(OnlyVcsImportsAndAdmins):
     usedfor = ICodeImportSet
 
 
-class SeeCodeImports(OnlyVcsImportsAndAdmins):
+class SeeCodeImport(OnlyVcsImportsAndAdmins):
     """Control who can see the object view of a CodeImport.
 
     Currently, we restrict the visibility of the new code import
@@ -840,7 +835,7 @@ class SeeCodeImports(OnlyVcsImportsAndAdmins):
     usedfor = ICodeImport
 
 
-class EditCodeImports(OnlyVcsImportsAndAdmins):
+class EditCodeImport(OnlyVcsImportsAndAdmins):
     """Control who can edit the object view of a CodeImport.
 
     Currently, we restrict the visibility of the new code import
@@ -850,7 +845,7 @@ class EditCodeImports(OnlyVcsImportsAndAdmins):
     usedfor = ICodeImport
 
 
-class SeeCodeImportJobs(OnlyVcsImportsAndAdmins):
+class SeeCodeImportJob(OnlyVcsImportsAndAdmins):
     """Control who can see the object view of a CodeImportJob.
 
     Currently, we restrict the visibility of the new code import
@@ -891,7 +886,7 @@ class SeeCodeImportMachineSet(OnlyVcsImportsAndAdmins):
     usedfor = ICodeImportMachineSet
 
 
-class SeeCodeImportMachines(OnlyVcsImportsAndAdmins):
+class SeeCodeImportMachine(OnlyVcsImportsAndAdmins):
     """Control who can see the object view of a CodeImportMachine.
 
     Currently, we restrict the visibility of the new code import
@@ -899,6 +894,27 @@ class SeeCodeImportMachines(OnlyVcsImportsAndAdmins):
     """
     permission = 'launchpad.View'
     usedfor = ICodeImportMachine
+
+
+class SeeCodeImportResultSet(OnlyVcsImportsAndAdmins):
+    """Control who can see the CodeImportResult listing page.
+
+    Currently, we restrict the visibility of the new code import
+    system to members of ~vcs-imports and Launchpad admins.
+    """
+
+    permission = 'launchpad.View'
+    usedfor = ICodeImportResultSet
+
+
+class SeeCodeImportResult(OnlyVcsImportsAndAdmins):
+    """Control who can see the object view of a CodeImportResult.
+
+    Currently, we restrict the visibility of the new code import
+    system to members of ~vcs-imports and Launchpad admins.
+    """
+    permission = 'launchpad.View'
+    usedfor = ICodeImportResult
 
 
 class EditPOTemplateDetails(EditByOwnersOrAdmins):
@@ -1071,6 +1087,22 @@ class EditBuildRecord(AdminByBuilddAdmin):
             return True
 
         return False
+
+
+class ViewBuildRecord(EditBuildRecord):
+    permission = 'launchpad.View'
+
+    def checkAuthenticated(self, user):
+        """Private restricts to admins, BuilddAdmins, archive members."""
+        if not self.obj.archive.private:
+            # Anyone can see non-private archives.
+            return True
+
+        return EditBuildRecord.checkAuthenticated(self, user)
+
+    def checkUnauthenticated(self):
+        """Unauthenticated users can see the build if it's not private."""
+        return not self.obj.archive.private
 
 
 class AdminQuestion(AdminByAdminsTeam):
@@ -1335,21 +1367,21 @@ class ViewHWSubmission(AuthorizationBase):
 
 
 class ViewArchive(AuthorizationBase):
-    """Restrict viewing of private PPAs.
+    """Restrict viewing of private archives.
 
     Only admins or members of a team with a private membership can
-    view the PPA.
+    view the archive.
     """
     permission = 'launchpad.View'
     usedfor = IArchive
 
     def checkAuthenticated(self, user):
-        """Verify that the user can view the PPA.
+        """Verify that the user can view the archive.
 
-        Anyone can see a public PPA.
+        Anyone can see a public archive.
 
         Only a team member or a Launchpad admin can view a
-        private PPA.
+        private archive.
         """
         # No further checks are required if the archive is not private.
         if not self.obj.private:
@@ -1357,7 +1389,13 @@ class ViewArchive(AuthorizationBase):
 
         # Admins and this archive's owner or team members are allowed.
         admins = getUtility(ILaunchpadCelebrities).admin
-        return user.inTeam(self.obj.owner) or user.inTeam(admins)
+        if user.inTeam(admins):
+            return True
+
+        if self.obj.owner and user.inTeam(self.obj.owner):
+            return True
+
+        return False
 
     def checkUnauthenticated(self):
         """Unauthenticated users can see the PPA if it's not private."""

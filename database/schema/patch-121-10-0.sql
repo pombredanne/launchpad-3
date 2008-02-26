@@ -8,7 +8,7 @@ ALTER TABLE BranchMergeProposal
 ALTER TABLE BranchMergeProposal
   DROP CONSTRAINT branchmergeproposal_source_branch_key;
 
-CREATE INDEX branchmergeproposal_superseded_by
-  ON BranchMergeProposal(superseded_by);
+CREATE INDEX branchmergeproposal__superseded_by__idx
+  ON BranchMergeProposal(superseded_by) WHERE superseded_by IS NOT NULL;
 
 INSERT INTO LaunchpadDatabaseRevision VALUES (121, 10, 0);

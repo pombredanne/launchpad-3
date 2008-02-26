@@ -21,8 +21,10 @@ from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import SQLBase, sqlvalues
 from canonical.launchpad.database.codeimportresult import CodeImportResult
 from canonical.launchpad.interfaces import (
-    CodeImportJobState, CodeImportReviewStatus, ICodeImportEventSet,
-    ICodeImportJob, ICodeImportJobSet, ICodeImportJobWorkflow)
+    CodeImportJobState, CodeImportMachineState, CodeImportReviewStatus,
+    ICodeImportEventSet, ICodeImportJob, ICodeImportJobSet,
+    ICodeImportJobWorkflow, ICodeImportResultSet)
+from canonical.launchpad.validators.person import public_person_validator
 
 
 class CodeImportJob(SQLBase):
@@ -47,6 +49,7 @@ class CodeImportJob(SQLBase):
 
     requesting_user = ForeignKey(
         dbName='requesting_user', foreignKey='Person',
+        validator=public_person_validator,
         notNull=False, default=None)
 
     ordering = IntCol(notNull=False, default=None)
@@ -158,3 +161,62 @@ class CodeImportJobWorkflow:
         removeSecurityProxy(import_job).requesting_user = user
         getUtility(ICodeImportEventSet).newRequest(
             import_job.code_import, user)
+
+    def startJob(self, import_job, machine):
+        """See `ICodeImportJobWorkflow`."""
+        assert import_job.state == CodeImportJobState.PENDING, (
+            "The CodeImportJob associated with %s is %s."
+            % (import_job.code_import.branch.unique_name,
+               import_job.state.name))
+        assert machine.state == CodeImportMachineState.ONLINE, (
+            "The machine %s is %s."
+            % (machine.hostname, machine.state.name))
+        # CodeImportJobWorkflow is the only class that is allowed to set the
+        # date_created, heartbeat, logtail, machine and state attributes of
+        # CodeImportJob, they are not settable through ICodeImportJob. So we
+        # must use removeSecurityProxy here.
+        naked_job = removeSecurityProxy(import_job)
+        naked_job.date_started = UTC_NOW
+        naked_job.heartbeat = UTC_NOW
+        naked_job.logtail = u''
+        naked_job.machine = machine
+        naked_job.state = CodeImportJobState.RUNNING
+        getUtility(ICodeImportEventSet).newStart(
+            import_job.code_import, machine)
+
+    def updateHeartbeat(self, import_job, logtail):
+        """See `ICodeImportJobWorkflow`."""
+        assert import_job.state == CodeImportJobState.RUNNING, (
+            "The CodeImportJob associated with %s is %s."
+            % (import_job.code_import.branch.unique_name,
+               import_job.state.name))
+        # CodeImportJobWorkflow is the only class that is allowed to
+        # set the heartbeat and logtail attributes of CodeImportJob,
+        # they are not settable through ICodeImportJob. So we must use
+        # removeSecurityProxy here.
+        naked_job = removeSecurityProxy(import_job)
+        naked_job.heartbeat = UTC_NOW
+        naked_job.logtail = logtail
+
+    def finishJob(self, import_job, status, logfile_alias):
+        """See `ICodeImportJobWorkflow`."""
+        assert import_job.state == CodeImportJobState.RUNNING, (
+            "The CodeImportJob associated with %s is %s."
+            % (import_job.code_import.branch.unique_name,
+               import_job.state.name))
+        code_import = import_job.code_import
+        machine = import_job.machine
+        getUtility(ICodeImportResultSet).new(
+            code_import=code_import, machine=machine,
+            log_excerpt=import_job.logtail,
+            requesting_user=import_job.requesting_user,
+            log_file=logfile_alias, status=status,
+            date_job_started=import_job.date_started)
+        # CodeImportJobWorkflow is the only class that is allowed to delete
+        # CodeImportJob objects, there is no method in the ICodeImportJob
+        # interface to do this. So we must use removeSecurityProxy here.
+        naked_job = removeSecurityProxy(import_job)
+        naked_job.destroySelf()
+        self.newJob(code_import)
+        getUtility(ICodeImportEventSet).newFinish(
+            code_import, machine)

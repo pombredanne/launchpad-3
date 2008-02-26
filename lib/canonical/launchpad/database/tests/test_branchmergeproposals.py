@@ -8,7 +8,7 @@ from unittest import TestCase, TestLoader
 
 from canonical.launchpad.ftests import ANONYMOUS, login, logout
 from canonical.launchpad.interfaces import (
-    BadStateTransition, BranchMergeProposalStatus)
+    BadStateTransition, BranchMergeProposalStatus, EmailAddressStatus)
 from canonical.launchpad.testing import LaunchpadObjectFactory
 
 from canonical.testing import LaunchpadFunctionalLayer
@@ -36,7 +36,9 @@ class TestBranchMergeProposalTransitions(TestCase):
         TestCase.setUp(self)
         login(ANONYMOUS)
         self.factory = LaunchpadObjectFactory()
-        self.target_branch = self.factory.makeBranch()
+        owner = self.factory.makePerson(
+            email_address_status=EmailAddressStatus.VALIDATED)
+        self.target_branch = self.factory.makeBranch(owner=owner)
         login(self.target_branch.owner.preferredemail.email)
 
     def assertProposalState(self, proposal, state):
@@ -188,7 +190,9 @@ class TestBranchMergeProposalQueueing(TestCase):
         TestCase.setUp(self)
         login(ANONYMOUS)
         factory = LaunchpadObjectFactory()
-        self.target_branch = factory.makeBranch()
+        owner = factory.makePerson(
+            email_address_status=EmailAddressStatus.VALIDATED)
+        self.target_branch = factory.makeBranch(owner=owner)
         login(self.target_branch.owner.preferredemail.email)
         self.proposals = [
             factory.makeBranchMergeProposal(self.target_branch)
