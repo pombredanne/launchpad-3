@@ -261,10 +261,11 @@ But we don't yet have Edubuntu DVDs on amazon. :-(
 
 == Requesting Server CDs ==
 
-We have some 7.10 server CDs that will be out of date soon, so we decided to
-allow users to request them on shipit.ubuntu.com.  They're presented as
-separate options and the user can't mix server and desktop CDs in a single
-request (this will be fixed before we switch to shipping hardy).
+We have some 7.10 server CDs that will be out of date soon, so we
+decided to allow users to request them on shipit.ubuntu.com.  They're
+presented as separate options and the user can't mix server and desktop
+CDs in a single request (this will be fixed before we switch to shipping
+hardy).
 
     >>> browser.open('http://shipit.ubuntu.dev/myrequest')
     >>> browser.title
