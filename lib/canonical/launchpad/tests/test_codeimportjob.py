@@ -8,6 +8,8 @@ __all__ = ['NewEvents', 'test_suite']
 
 from datetime import datetime
 from pytz import UTC
+import StringIO
+import transaction
 import unittest
 
 from zope.component import getUtility
@@ -21,11 +23,12 @@ from canonical.launchpad.database import (
 from canonical.launchpad.interfaces import (
     CodeImportEventType, CodeImportJobState, CodeImportResultStatus,
     CodeImportReviewStatus, ICodeImportEventSet, ICodeImportJobSet,
-    ICodeImportJobWorkflow, ICodeImportResultSet, ICodeImportSet, NotFound)
+    ICodeImportJobWorkflow, ICodeImportResult, ICodeImportResultSet,
+    ICodeImportSet, ILibraryFileAliasSet, NotFound)
 from canonical.launchpad.ftests import login
 from canonical.launchpad.testing import LaunchpadObjectFactory
+from canonical.librarian.interfaces import ILibrarianClient
 from canonical.testing import LaunchpadFunctionalLayer
-
 
 def login_for_code_imports():
     """Login as a member of the vcs-imports team.
@@ -528,7 +531,7 @@ class TestCodeImportJobWorkflowFinishJob(unittest.TestCase,
     # complex function!
 
     def test_deletesPassedJob(self):
-        # finishJob deletes the job it is passed.
+        # finishJob() deletes the job it is passed.
         running_job = self.makeRunningJob()
         running_job_id = running_job.id
         getUtility(ICodeImportJobWorkflow).finishJob(
@@ -537,7 +540,7 @@ class TestCodeImportJobWorkflowFinishJob(unittest.TestCase,
             NotFound, getUtility(ICodeImportJobSet).getByID, running_job_id)
 
     def test_createsNewJob(self):
-        # finishJob creates a new CodeImportJob for the given
+        # finishJob() creates a new CodeImportJob for the given
         # CodeImport, scheduled appropriately far in the future.
         running_job = self.makeRunningJob()
         running_job_date_due = running_job.date_due
@@ -552,22 +555,113 @@ class TestCodeImportJobWorkflowFinishJob(unittest.TestCase,
             code_import.effective_update_interval)
 
     def test_createsResultObject(self):
-        # finishJob creates a CodeImportResult object that contains
-        # all the relevant details from the job object.
-        # This is going to be a long-ass test :/
+        # finishJob() creates a CodeImportResult object for the given
+        # import.
         running_job = self.makeRunningJob()
         running_job_date_due = running_job.date_due
         code_import = running_job.code_import
-        # Peel off some information about the job here.
+        result_set = getUtility(ICodeImportResultSet)
+        # Before calling finishJob() there are no CodeImportResults for the
+        # given import...
+        results = list(result_set.getResultsForImport(code_import))
+        self.assertEqual(len(results), 0)
         getUtility(ICodeImportJobWorkflow).finishJob(
             running_job, CodeImportResultStatus.SUCCESSFUL, None)
+        # ... and after, there is exactly one.
+        results = list(result_set.getResultsForImport(code_import))
+        self.assertEqual(len(results), 1)
+
+    def getResultForJob(self, job, status=CodeImportResultStatus.SUCCESSFUL,
+                        log_alias=None):
+        """Call finishJob() on job and return the created result."""
+        code_import = job.code_import
+        getUtility(ICodeImportJobWorkflow).finishJob(
+            job, status, log_alias)
         [result] = getUtility(ICodeImportResultSet).getResultsForImport(
             code_import)
-        # Assert things about the result here.
+        return job
+
+    def assertFinishJobPassesThroughJobField(self, from_field, to_field,
+                                             value):
+        """Assert that an attribute is carried from the job to the result.
+
+        XXX moar explanations!"""
+        job = self.makeRunningJob()
+        # There are ways of setting all the fields through other workflow
+        # methods -- e.g. calling requestJob to set requesting_user -- but
+        # using removeSecurityProxy and forcing here is expedient.
+        setattr(removeSecurityProxy(job), from_field, value)
+        result = self.getResultForJob(job)
+        self.assertEqual(
+            value, getattr(result, to_field),
+            "Value %r in job field %r was not passed through to result field"
+            " %r." % (value, from_field, to_field))
+
+    def test_resultObjectFields(self):
+        # The CodeImportResult object that finishJob creates contains
+        # all the relevant details from the job object.
+
+        unchecked_result_fields = set(ICodeImportResult)
+
+        # We don't care about 'id'!
+        unchecked_result_fields.remove('id')
+        # Some result fields are tested in other tests:
+        unchecked_result_fields.difference_update(['log_file', 'status'])
+
+        self.assertFinishJobPassesThroughJobField(
+            'code_import', 'code_import', self.factory.makeCodeImport())
+        unchecked_result_fields.remove('code_import')
+        self.assertFinishJobPassesThroughJobField(
+            'machine', 'machine', self.factory.makeCodeImportMachine())
+        unchecked_result_fields.remove('machine')
+        self.assertFinishJobPassesThroughJobField(
+            'requesting_user', 'requesting_user', self.factory.makePerson())
+        unchecked_result_fields.remove('requesting_user')
+        self.assertFinishJobPassesThroughJobField(
+            'logtail', 'log_excerpt', "some pretend log output")
+        unchecked_result_fields.remove('log_excerpt')
+        self.assertFinishJobPassesThroughJobField(
+            'date_started', 'date_job_started',
+            datetime.datetime())
+        unchecked_result_fields.remove('date_job_started')
+
+        result = self.getResultForJob(self.makeRunningJob())
+        self.assertSqlAttributeEqualsDate(result, 'date_created', UTC_NOW)
+        # date_job_finished is punned with date_created
+        unchecked_result_fields.difference_update(
+            ['date_created', 'date_job_finished'])
+
+        # By now we should have checked all the result fields.
+        self.assertEqual(
+            set(), unchecked_result_fields,
+            "These result field not checked %r!" % unchecked_result_fields)
+
+    def test_resultStatus(self):
+        # finishJob() sets the status appropriately on the result object.
+        for status in CodeImportResultStatus:
+            job = self.makeRunningJob()
+            result = self.getResultForJob(job, status)
+            self.assertEqual(result.status, status)
+
+    def test_resultLogFile(self):
+        # If you pass a link to a file in the librarian to
+        # finishJob(), it gets set on the result object.
+        log_data = 'several\nlines\nof\nlog data'
+        log_excerpt = log_data.splitlines()[-1]
+        log_alias_id = getUtility(ILibrarianClient).addFile(
+           'import_log.txt', len(log_data),
+           StringIO.StringIO(log_data), 'text/plain')
+        transaction.commit()
+        log_alias = getUtility(ILibraryFileAliasSet)[log_alias_id]
+
+        result = self.getResultForJob(
+            self.makeRunningJob(), log_alias=log_alias)
+
+        self.assertEqual(
+            result.log_alias.read(), log_data)
 
     def test_createsFinishCodeImportEvent(self):
-        # finishJob creates a FINISH CodeImportEvent.
-        # And maybe a PUBLISH one sometimes too?
+        # finishJob() creates a FINISH CodeImportEvent.
         running_job = self.makeRunningJob()
         code_import = running_job.code_import
         new_events = NewEvents()
