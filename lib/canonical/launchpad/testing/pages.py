@@ -21,8 +21,13 @@ from zope.app.testing.functional import HTTPCaller, SimpleCookie
 from zope.proxy import ProxyBase
 from zope.testbrowser.testing import Browser
 
-from canonical.functional import PageTestDocFileSuite, SpecialOutputChecker
+from canonical.functional import SpecialOutputChecker
 from canonical.testing import PageTestLayer
+
+
+default_optionflags = (doctest.REPORT_NDIFF |
+                       doctest.NORMALIZE_WHITESPACE |
+                       doctest.ELLIPSIS)
 
 
 class UnstickyCookieHTTPCaller(HTTPCaller):
@@ -497,16 +502,17 @@ def PageTestSuite(storydir, package=None, setUp=setUpGlobs):
 
     # Add unnumbered tests to the suite individually.
     checker = SpecialOutputChecker()
-    suite = PageTestDocFileSuite(
+    suite = doctest.DocFileSuite(
         package=package, checker=checker,
-        layer=PageTestLayer, setUp=setUp,
+        optionflags=default_optionflags, setUp=setUp,
         *[os.path.join(storydir, filename)
           for filename in unnumberedfilenames])
+    suite.layer = PageTestLayer
 
     # Add numbered tests to the suite as a single story.
-    storysuite = PageTestDocFileSuite(
+    storysuite = doctest.DocFileSuite(
         package=package, checker=checker,
-        layer=PageTestLayer, setUp=setUp,
+        optionflags=default_optionflags, setUp=setUp,
         *[os.path.join(storydir, filename)
           for filename in numberedfilenames])
     suite.addTest(PageStoryTestCase(abs_storydir, storysuite))

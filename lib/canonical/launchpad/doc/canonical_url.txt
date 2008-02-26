@@ -423,12 +423,12 @@ the view's name.
     ...     request=DummyRequest('https://mandrill.example.org:23'))
     u'http://bugs.launchpad.dev/countries/England/+towns'
 
-Giving an incorrect name will trigger an assertion failure.
+Giving an unregistered view name will trigger an assertion failure.
 
     >>> canonical_url(country_instance, view_name="+does-not-exist",
     ...     request=DummyRequest('https://mandrill.example.org:23'))
     Traceback (most recent call last):
-    AssertionError: +does-not-exist is not a valid view name.
+    AssertionError: View "+does-not-exist" is not registered for "Country".
 
 
 == The 'nearest' helper function ==
