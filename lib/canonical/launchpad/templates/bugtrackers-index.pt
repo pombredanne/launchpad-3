@@ -34,22 +34,39 @@
       <tr>
         <th>Title</th>
         <th>Home Page</th>
+        <th>Linked Projects</th>
+        <th class="type">Type</th>
         <th class="amount">Watches</th>
-        <th class="type">Tracker Type</th>
       </tr>
     </thead>
 
     <tbody>
-      <tr tal:repeat="bugtracker context">
+      <tr tal:repeat="bugtracker view/bugtrackers">
           <td><a tal:attributes="href bugtracker/name"
                  tal:content="bugtracker/title">$Bugtracker.title
               </a></td>
           <td><a class="link-external"
                  tal:attributes="href bugtracker/baseurl"
                  tal:content="bugtracker/baseurl">$Bugtracker.baseurl</a></td>
-          <td class="amount" tal:content="bugtracker/watches/count">bugcount</td>
+            <td tal:define="pillar_data python:view.getPillarData(bugtracker)">
+            <tal:pillars condition="pillar_data">
+              <tal:pillar-entry repeat="pillar pillar_data/pillars">
+                  <a tal:attributes="href pillar/fmt:url"
+                     tal:content="pillar/displayname"
+                     ></a><tal:comma condition="not: repeat/pillar/end">, </tal:comma>
+              </tal:pillar-entry>
+              <tal:many-pillars
+                condition="pillar_data/has_more_pillars">
+                  &hellip;
+              </tal:many-pillars>
+            </tal:pillars>
+            <tal:no-pillars condition="not: pillar_data">
+                &mdash;
+            </tal:no-pillars>
+          </td>
           <td class="type"
             tal:content="bugtracker/bugtrackertype/title">bugtrackertype</td>
+          <td class="amount" tal:content="bugtracker/watches/count">bugcount</td>
       </tr>
     </tbody>
   </table>

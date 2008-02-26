@@ -2751,11 +2751,10 @@ class TeamAddMyTeamsView(LaunchpadFormView):
 
     def setUpFields(self):
         terms = []
-        for team in self.user.getAdministratedTeams():
-            if team not in self.context.activemembers:
-                text = '<a href="%s">%s</a>' % (
-                    canonical_url(team), team.displayname)
-                terms.append(SimpleTerm(team, team.name, text))
+        for team in self.candidate_teams:
+            text = '<a href="%s">%s</a>' % (
+                canonical_url(team), team.displayname)
+            terms.append(SimpleTerm(team, team.name, text))
         self.form_fields = form.Fields(
             List(__name__='teams',
                  title=_(''),
@@ -2767,6 +2766,25 @@ class TeamAddMyTeamsView(LaunchpadFormView):
     def setUpWidgets(self, context=None):
         super(TeamAddMyTeamsView, self).setUpWidgets(context)
         self.widgets['teams'].display_label = False
+
+    @cachedproperty
+    def candidate_teams(self):
+        """Return the set of teams that can be added/proposed for the context.
+
+        We return only teams that the user can administer, that aren't already
+        a member in the context or that the context isn't a member of. (Of
+        course, the context is also omitted.)
+        """
+        candidates = []
+        for team in self.user.getAdministratedTeams():
+            if team == self.context:
+                continue
+            elif team in self.context.activemembers:
+                continue
+            elif self.context.hasParticipationEntryFor(team):
+                continue
+            candidates.append(team)
+        return candidates
 
     @action(_("Cancel"), name="cancel",
             validator=LaunchpadFormView.validate_none)
@@ -2780,7 +2798,11 @@ class TeamAddMyTeamsView(LaunchpadFormView):
                                'Please select the team(s) you want to be '
                                'member(s) of this team.')
 
-    @action(_("Continue"), name="continue")
+    def hasCandidates(self, action):
+        """Return whether the user has teams to propose."""
+        return len(self.candidate_teams) > 0
+
+    @action(_("Continue"), name="continue", condition=hasCandidates)
     def continue_action(self, action, data):
         """Make the selected teams join this team."""
         context = self.context

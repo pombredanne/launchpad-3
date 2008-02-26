@@ -409,6 +409,7 @@ class SourcePackageRelease(SQLBase):
             'PackageUpload',
             'PackageUploadSource',
             ]
+        preJoins= ['changesfile']
         query = """
         PackageUpload.id = PackageUploadSource.packageupload AND
         PackageUpload.distroseries = %s AND
@@ -417,7 +418,7 @@ class SourcePackageRelease(SQLBase):
         """ % sqlvalues(self.upload_distroseries, self,
                         PackageUploadStatus.DONE)
         queue_record = PackageUpload.selectOne(
-            query, clauseTables=clauseTables)
+            query, clauseTables=clauseTables, prejoins=preJoins)
 
         if not queue_record:
             return None
