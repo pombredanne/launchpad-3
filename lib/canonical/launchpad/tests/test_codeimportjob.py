@@ -24,7 +24,7 @@ from canonical.launchpad.interfaces import (
     CodeImportEventType, CodeImportJobState, CodeImportResultStatus,
     CodeImportReviewStatus, ICodeImportEventSet, ICodeImportJobSet,
     ICodeImportJobWorkflow, ICodeImportResult, ICodeImportResultSet,
-    ICodeImportSet, ILibraryFileAliasSet, NotFound)
+    ICodeImportSet, ILibraryFileAliasSet, NotFoundError)
 from canonical.launchpad.ftests import login
 from canonical.launchpad.testing import LaunchpadObjectFactory
 from canonical.librarian.interfaces import ILibrarianClient
@@ -525,7 +525,7 @@ class TestCodeImportJobWorkflowFinishJob(unittest.TestCase,
             "The CodeImportJob associated with %s is "
             "RUNNING." % code_import.branch.unique_name,
             getUtility(ICodeImportJobWorkflow).finishJob,
-            job, CodeImportResultStatus.SUCCESSFUL, None)
+            job, CodeImportResultStatus.SUCCESS, None)
 
     # Postcondition tests. Several of these -- finishJob is quite a
     # complex function!
@@ -535,9 +535,10 @@ class TestCodeImportJobWorkflowFinishJob(unittest.TestCase,
         running_job = self.makeRunningJob()
         running_job_id = running_job.id
         getUtility(ICodeImportJobWorkflow).finishJob(
-            running_job, CodeImportResultStatus.SUCCESSFUL, None)
+            running_job, CodeImportResultStatus.SUCCESS, None)
         self.assertRaises(
-            NotFound, getUtility(ICodeImportJobSet).getByID, running_job_id)
+            NotFoundError, getUtility(ICodeImportJobSet).getByID,
+            running_job_id)
 
     def test_createsNewJob(self):
         # finishJob() creates a new CodeImportJob for the given
@@ -546,7 +547,7 @@ class TestCodeImportJobWorkflowFinishJob(unittest.TestCase,
         running_job_date_due = running_job.date_due
         code_import = running_job.code_import
         getUtility(ICodeImportJobWorkflow).finishJob(
-            running_job, CodeImportResultStatus.SUCCESSFUL, None)
+            running_job, CodeImportResultStatus.SUCCESS, None)
         new_job = code_import.import_job
         self.assert_(new_job is not None)
         self.assertEqual(new_job.state, CodeImportJobState.PENDING)
@@ -566,12 +567,12 @@ class TestCodeImportJobWorkflowFinishJob(unittest.TestCase,
         results = list(result_set.getResultsForImport(code_import))
         self.assertEqual(len(results), 0)
         getUtility(ICodeImportJobWorkflow).finishJob(
-            running_job, CodeImportResultStatus.SUCCESSFUL, None)
+            running_job, CodeImportResultStatus.SUCCESS, None)
         # ... and after, there is exactly one.
         results = list(result_set.getResultsForImport(code_import))
         self.assertEqual(len(results), 1)
 
-    def getResultForJob(self, job, status=CodeImportResultStatus.SUCCESSFUL,
+    def getResultForJob(self, job, status=CodeImportResultStatus.SUCCESS,
                         log_alias=None):
         """Call finishJob() on job and return the created result."""
         code_import = job.code_import
@@ -579,13 +580,17 @@ class TestCodeImportJobWorkflowFinishJob(unittest.TestCase,
             job, status, log_alias)
         [result] = getUtility(ICodeImportResultSet).getResultsForImport(
             code_import)
-        return job
+        return result
 
     def assertFinishJobPassesThroughJobField(self, from_field, to_field,
                                              value):
         """Assert that an attribute is carried from the job to the result.
 
-        XXX moar explanations!"""
+        This helper creates a job, sets the `from_field` attribute on
+        it to value, and then checks that this gets copied to the
+        `to_field` attribute on the result that gets created when
+        finishJob() is called on the job.
+        """
         job = self.makeRunningJob()
         # There are ways of setting all the fields through other workflow
         # methods -- e.g. calling requestJob to set requesting_user -- but
@@ -666,7 +671,7 @@ class TestCodeImportJobWorkflowFinishJob(unittest.TestCase,
         code_import = running_job.code_import
         new_events = NewEvents()
         getUtility(ICodeImportJobWorkflow).finishJob(
-            running_job, CodeImportResultStatus.SUCCESSFUL, None)
+            running_job, CodeImportResultStatus.SUCCESS, None)
         [finish_event] = list(new_events)
         self.assertEventLike(
             finish_event, CodeImportEventType.FINISH,

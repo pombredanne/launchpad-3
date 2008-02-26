@@ -339,14 +339,14 @@ The details are tested in unit tests in ../tests/test_codeimportjob.py.
     >>> finished_job_id = running_job.id
     >>> finished_date_due = running_job.date_due
     >>> workflow.finishJob(
-    ...     running_job, CodeImportResultStatus.SUCCESSFUL, None)
+    ...     running_job, CodeImportResultStatus.SUCCESS, None)
 
 The passed in job is now deleted.
 
     >>> job_set.getById(finished_job_id)
     Traceback (most recent call last):
       ...
-    NotFound: ...
+    NotFoundError: ...
 
 And a new one has been created, scheduled appropriately far in the
 future.
@@ -377,7 +377,7 @@ the import started and finished and the final status of the run.
     >>> print_date_attribute(result, 'date_created')
     UTC_NOW
     >>> result.status.name
-    SUCCESSFUL
+    SUCCESS
 
 Other details of the result object are checked in the unit tests.
 
