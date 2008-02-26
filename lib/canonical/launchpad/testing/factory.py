@@ -349,6 +349,7 @@ class LaunchpadObjectFactory:
                 cvs_root=cvs_root, cvs_module=cvs_module)
 
     def makeCodeImportEvent(self):
+        """Create and return a CodeImportEvent."""
         code_import = self.makeCodeImport()
         person = self.makePerson()
         code_import_event_set = getUtility(ICodeImportEventSet)
@@ -373,6 +374,7 @@ class LaunchpadObjectFactory:
         return getUtility(ICodeImportMachineSet).new(hostname)
 
     def makeCodeImportResult(self):
+        """Create and return a new CodeImportResult."""
         code_import = self.makeCodeImport()
         machine = self.makeCodeImportMachine()
         requesting_user = self.makePerson()

@@ -345,8 +345,8 @@ class Branch(SQLBase):
         key, and the value is a user-facing string explaining why the item
         is affected.
 
-        As well as the dictionaries, this method returns a list of callables
-        that may be called to perform the alterations needed.
+        As well as the dictionaries, this method returns two list of callables
+        that may be called to perform the alterations and deletions needed.
         """
         from canonical.launchpad.database.codeimport import CodeImportSet
         alterations = {}
