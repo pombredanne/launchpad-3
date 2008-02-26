@@ -1826,13 +1826,12 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
         """See `IPerson`."""
         return self._latestSeriesQuery(uploader_only=True)
 
-    def getLatestUploadedPPAPackages(self, user):
+    def getLatestUploadedPPAPackages(self):
         """See `IPerson`."""
         return self._latestSeriesQuery(
             uploader_only=True, ppa_only=True)
 
-    def _latestSeriesQuery(self, uploader_only=False, ppa_only=False,
-                           user=None):
+    def _latestSeriesQuery(self, uploader_only=False, ppa_only=False):
         """Return the sourcepackagereleases (SPRs) related to this person.
 
         :param uploader_only: controls if we are interested in SPRs where
@@ -1844,10 +1843,6 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
         :param ppa_only: controls if we are interested only in source
             package releases targeted to any PPAs or, if False, sources targeted
             to primary archives.
-
-        :param user: if passed, will only return SPRs that the user is
-            allowed to see; that is any SPRs from private archives where
-            the user has no permission will not be included in the results.
 
         Active 'ppa_only' flag is usually associated with active 'uploader_only'
         because there shouldn't be any sense of maintainership for packages
@@ -1875,18 +1870,6 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
         else:
             clauses.append(
                 'archive.purpose != %s' % quote(ArchivePurpose.PPA))
-
-        if user is not None:
-            if not user.inTeam(getUtility(ILaunchpadCelebrities).admin):
-                clauses.append("""
-                    (Archive.private = FALSE
-                     OR %s IN (SELECT TeamParticipation.person
-                               FROM TeamParticipation
-                               WHERE TeamParticipation.person = %s
-                                   AND TeamParticipation.team = Archive.owner)
-                    )""" % sqlvalues(user, user))
-        else:
-            clauses.append("Archive.private = FALSE")
 
         query_clause = " AND ".join(clauses)
         query = """

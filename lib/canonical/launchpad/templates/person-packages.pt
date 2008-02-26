@@ -162,7 +162,8 @@
     This macro expects the following variables defined:
     :sourcepackagereleases: A list of SourcePackageRelease objects
   </tal:comment>
-  <tr tal:repeat="sourcepackagerelease sourcepackagereleases">
+  <tr tal:repeat="sourcepackagerelease sourcepackagereleases"
+      class="ppa_row">
   <tal:block define="spr sourcepackagerelease;
                      distroseries spr/upload_distroseries;
                      ppa spr/upload_archive">

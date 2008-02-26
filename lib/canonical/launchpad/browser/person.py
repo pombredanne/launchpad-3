@@ -2062,7 +2062,25 @@ class PersonView(LaunchpadView, FeedsMixin):
         Results are filtered according to the permission of the requesting
         user to see private archives.
         """
-        return self.context.getLatestUploadedPPAPackages(self.user)
+        packages = self.context.getLatestUploadedPPAPackages()
+
+        # For each package we find out which archives it was published in.
+        # If the user has permission to see any of those archives then
+        # the user is permitted to see the package.
+        #
+        # Ideally this check should be done in getLatestUploadedPPAPackages()
+        # but formulating the SQL query is virtually impossible!
+        results = []
+        for package in packages:
+            # Make a shallow copy to remove the Zope security.
+            archives = set(package.published_archives)
+            # Ensure the SPR.upload_archive is also considered.
+            archives.add(package.upload_archive)
+            for archive in archives:
+                if check_permission('launchpad.View', archive):
+                    results.append(package)
+                    break
+        return results
 
 
 class PersonIndexView(XRDSContentNegotiationMixin, PersonView):

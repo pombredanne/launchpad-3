@@ -238,8 +238,11 @@ class SourcePackageRelease(SQLBase):
         """See `ISourcePacakgeRelease`."""
         archives = set()
         publishings = self.publishings.prejoin(['archive'])
+        live_states = (PackagePublishingStatus.PENDING,
+                       PackagePublishingStatus.PUBLISHED)
         for pub in publishings:
-            archives.add(pub.archive)
+            if pub.status in live_states:
+                archives.add(pub.archive)
 
         return archives
 
