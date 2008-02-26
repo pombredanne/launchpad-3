@@ -103,9 +103,35 @@ databases.  To do this, we'll use a helper, but first we need to stop Mailman.
 
     >>> from canonical.launchpad.mailman import runmailman
     >>> runmailman.stop_mailman(quiet=True)
+
+In a typical synchronization situation, the production Launchpad database is
+copied to staging at a different time than when the production Mailman data is
+copied.  Synchronization does not happen directly to staging's Mailman
+directory, but instead, it's rsync'd to a temporary location on staging, and
+then sync'd by this script from the local temporary location.  This ensures
+that the final sync happens pretty quickly and is not dependent on any
+connection between production and staging, but it means that the Mailman data
+may not exactly match the state of the Launchpad database.
+
+For example, it's is possible that a mailing list exists in Launchpad but not
+in the Mailman data if the Mailman data was copied first.  Because of the way
+we operationally copy data from production to staging, this generally won't
+happen, so we don't handle it.
+
+The reverse is also possible -- there could be a mailing list in Mailman
+that's not in Launchpad if the Mailman data was copied second (because the
+list was created between the time the Launchpad database was copied and the
+Mailman data was copied).  In this case, we just delete the list from Mailman.
+That way if the list is created in Launchpad on staging, the Mailman list will
+also be created.
+
     >>> source_dir = itest_helper.prepare_for_sync()
 
-Here's what these lists look like before they're sync'd.
+Our simulation now has a staging database that has been copied, but the
+Mailman data has not yet been copied.  Let's take a look at what staging's
+Mailman and Launchpad data looks like, before the Mailman data is sync'd.
+Note that fake-team is created by the prepare_for_sync() helper and
+illustrates a mailing list that exists in Mailman but not in Launchpad.
 
     >>> itest_helper.dump_list_info()
     fake-team
@@ -119,8 +145,9 @@ Here's what these lists look like before they're sync'd.
         contact@example.com
         itest-two@lists.prod.launchpad.dev
 
-Do the sync by calling the script.  We must set the LPCONFIG environment
-variable for the script to find the correct launchpad.conf file.
+Do the Mailman synchronization by calling the script.  We must set the
+LPCONFIG environment variable for the script to find the correct
+launchpad.conf file.
 
     >>> from canonical.config import config
     >>> from subprocess import *

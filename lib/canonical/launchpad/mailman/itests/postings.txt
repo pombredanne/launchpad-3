@@ -344,10 +344,10 @@ not need to re-subscribe to the mailing list.
     >>> inject('itest-one', """\
     ... From: aperson@example.org
     ... To: itest-one@lists.launchpad.dev
-    ... Subject: A non-team member post
+    ... Subject: A posting from a member once again
     ... Message-ID: <ninth-injection>
     ...
-    ... Hi, I am not a team member.
+    ... Hi, I am a team member again!
     ... """)
     >>> smtp_watcher.wait()
 
@@ -359,9 +359,9 @@ not need to re-subscribe to the mailing list.
     ...     print message['sender']
     ...     print message['subject']
     itest-one-bounces+anne.person=example.com@lists.launchpad.dev
-    [Itest-one] A non-team member post
+    [Itest-one] A posting from a member once again
     itest-one-bounces+archive=mail-archive.com@lists.launchpad.dev
-    [Itest-one] A non-team member post
+    [Itest-one] A posting from a member once again
 
 
 == Preventing archiver forgeries ==
