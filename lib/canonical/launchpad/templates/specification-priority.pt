@@ -16,6 +16,12 @@
 
 <div metal:fill-slot="main">
 
+      <div>
+        <tal:icon replace="structure context/image:icon" />
+        <a tal:attributes="href context/fmt:url" tal:content="context/title"
+        >Blueprint title</a>:
+      </div>
+
   <div metal:use-macro="context/@@launchpad_editform/editform">
 
     <p metal:fill-slot="extra_info">

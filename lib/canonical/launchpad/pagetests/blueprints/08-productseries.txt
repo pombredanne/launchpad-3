@@ -6,20 +6,24 @@ In terms of feature management for release series and for distroseriess, we
 want to target one of these specs to the 1.0 series. We will use the "e4x"
 specification.
 
-First we load the page to target to the series. We can see two potential
-series candidates, the "trunk" and the "1.0" series.
+First we load the page to target to the series.
 
-  >>> print http(r"""
-  ... GET /firefox/+spec/e4x/+setproductseries HTTP/1.1
-  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
-  ... """)
-  HTTP/1.1 200 Ok
-  ...
-  <option value="">(no value)</option>
-  <option value="2">firefox 1.0</option>
-  <option value="1">firefox trunk</option>
-  ...
+    >>> browser.addHeader(
+    ...     'Authorization', 'Basic celso.providelo@canonical.com:cprov')
+    >>> browser.open('http://blueprints.launchpad.dev/firefox/+spec/e4x')
+    >>> browser.getLink('Propose as goal').click()
+    >>> back_link = browser.getLink('Support E4X in EcmaScript')
+    >>> back_link.url
+    'http://blueprints.launchpad.dev/firefox/+spec/e4x'
 
+We can see two potential series candidates, the "trunk" and the "1.0" series.
+
+    >>> print find_main_content(user_browser.contents)
+    <...
+    <option value="">(no value)</option>
+    <option value="2">firefox 1.0</option>
+    <option value="1">firefox trunk</option>
+    ...
 
 Now, we POST the form and expect to be redirected to the spec home page.
 Note that we use a user who DOES NOT have the "driver" role on that series,
