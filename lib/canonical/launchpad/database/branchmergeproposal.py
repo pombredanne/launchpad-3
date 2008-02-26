@@ -41,10 +41,10 @@ VALID_TRANSITION_GRAPH = {
     BranchMergeProposalStatus.REJECTED: [
         BranchMergeProposalStatus.SUPERSEDED,
         ],
-    # Merged is truely terminal, so nothing is valid.
+    # Merged is truly terminal, so nothing is valid.
     BranchMergeProposalStatus.MERGED: [],
-    # It is valid to transition to any state, although additional user
-    # checks are requried.
+    # It is valid to transition to any state from merge failed, although
+    # additional user checks are requried.
     BranchMergeProposalStatus.MERGE_FAILED:
         BranchMergeProposalStatus.items,
     # Queued can only be transitioned to merged or merge failed.
@@ -53,9 +53,10 @@ VALID_TRANSITION_GRAPH = {
         BranchMergeProposalStatus.MERGED,
         BranchMergeProposalStatus.MERGE_FAILED,
         ],
-    # Superseded is truely terminal, so nothing is valid.
+    # Superseded is truly terminal, so nothing is valid.
     BranchMergeProposalStatus.SUPERSEDED: [],
     }
+
 
 class BranchMergeProposal(SQLBase):
     """A relationship between a person and a branch."""
