@@ -156,6 +156,11 @@
     />
 
   <vocabulary
+    name="PPA"
+    factory="canonical.launchpad.vocabularies.PPAVocabulary"
+    />
+
+  <vocabulary
     name="Product"
     factory="canonical.launchpad.vocabularies.ProductVocabulary"
     />
