@@ -3,18 +3,16 @@
 __metaclass__ = type
 
 import unittest
-from harness import LaunchpadTestCase, LaunchpadTestSetup
 
-class KarmaSampleDataTestCase(LaunchpadTestCase):
-    def tearDown(self):
-        """Tear down the test and reset the database."""
-        LaunchpadTestSetup().force_dirty_database()
-        LaunchpadTestCase.tearDown(self)
+from canonical.testing import LaunchpadLayer
+
+class KarmaSampleDataTestCase(unittest.TestCase):
+    layer = LaunchpadLayer
 
     def test_karma_sample_data(self):
         # Test to ensure that all sample karma events are far enough in
         # the past that they won't decay over time.
-        con = self.connect()
+        con = self.layer.connect()
         cur = con.cursor()
         cur.execute("""
             SELECT COUNT(*) FROM Karma
@@ -22,15 +20,8 @@ class KarmaSampleDataTestCase(LaunchpadTestCase):
             """)
         dud_rows = cur.fetchone()[0]
         self.failUnlessEqual(
-                dud_rows, 0, 'Karma time bombs added to sampledata'
-                )
+                dud_rows, 0, 'Karma time bombs added to sampledata')
 
 
 def test_suite():
-    suite = unittest.TestSuite()
-    suite.addTest(unittest.makeSuite(KarmaSampleDataTestCase))
-    return suite
-
-
-if __name__ == '__main__':
-    unittest.main()
+    return unittest.TestLoader().loadTestsFromName(__name__)

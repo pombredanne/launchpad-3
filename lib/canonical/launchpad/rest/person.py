@@ -20,7 +20,7 @@ from canonical.lazr.rest.schema import CollectionField
 from canonical.launchpad.interfaces import (
     IPerson, IPersonSet, make_person_name_field)
 
-from canonical.lp import decorates
+from canonical.lazr import decorates
 
 class IPersonEntry(IEntry):
     """The part of a person that we expose through the web service."""

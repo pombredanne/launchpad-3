@@ -32,7 +32,7 @@ from canonical.launchpad.browser.build import BuildRecordsView
 from canonical.launchpad.browser.sourceslist import (
     SourcesListEntries, SourcesListEntriesView)
 from canonical.launchpad.interfaces import (
-    ArchivePurpose, IArchive, IArchiveEditDependenciesForm,
+    ArchivePurpose, BuildStatus, IArchive, IArchiveEditDependenciesForm,
     IArchivePackageDeletionForm, IArchiveSet, IBuildSet, IHasBuildRecords,
     ILaunchpadCelebrities, IPPAActivateForm, IStructuralHeaderPresentation,
     NotFoundError, PackagePublishingStatus)
@@ -364,7 +364,7 @@ class ArchivePackageDeletionView(ArchiveViewBase, LaunchpadFormView):
             self.setFieldError(
                 'deletion_comment', 'Deletion comment is required.')
 
-    @action(_("Delete Packages"), name="delete", validator="validate_delete")
+    @action(_("Request Deletion"), name="delete", validator="validate_delete")
     def action_delete(self, action, data):
         """Perform the deletion of the selected packages.
 
@@ -603,6 +603,14 @@ class ArchiveBuildsView(BuildRecordsView):
     """Build Records View for IArchive."""
 
     __used_for__ = IHasBuildRecords
+
+    @property
+    def default_build_state(self):
+        """See `IBuildRecordsView`.
+
+        Present NEEDSBUILD build records by default for PPAs.
+        """
+        return BuildStatus.NEEDSBUILD
 
 
 class BaseArchiveEditView(LaunchpadEditFormView):

@@ -3,7 +3,7 @@
 The Buildd Slave scanner is able to run over the build jobs being
 processed in the current BuildFarm and collect information about the
 status of the process, collect the results of finished jobs and
-automaticaly dispatch new jobs to idle slaves.
+automatically dispatch new jobs to idle slaves.
 
     >>> from canonical.buildmaster.master import BuilddMaster
 
@@ -26,7 +26,7 @@ And create a utility function to make tests easier to read.
     ...    return len(stub.test_emails) == last_stub_mail_count + 3
 
 The master also requires an 'logging' instance to not compromise the
-standard output with noisely output.
+standard output with noisily output.
 
     >>> import logging
 
@@ -61,7 +61,7 @@ which consists of "<Build.id>-<BuildQueue.id>".
 
 First let's emulate a sane and a lost slave. The SaneSlave returns a
 job identifier that exists in our sampledata, but the LostSlave
-returns a completly bogus one.
+returns a completely bogus one.
 
 The the mock slave.clean() method is modified to print a message for
 testing purposes.
@@ -130,7 +130,7 @@ passed an 'archives' property in the args dictionary.
 
 The archives are passed from the buildmaster and controls what archives
 exist in the apt sources.list.  If nothing is passed, the chroot's default
-list applies, otherwise the passed list is used.  This behaviour is required
+list applies, otherwise the passed list is used.  This behavior is required
 in build slaves because some jobs may only depend on certain archives and
 hence certain package dependencies.
 
@@ -527,7 +527,7 @@ the build record to FULLYBUILT, as the process-upload would do:
     >>> from canonical.launchpad.interfaces import BuildStatus
     >>> bqItem10.build.buildstate = BuildStatus.FULLYBUILT
 
-Now the updateBuild should recognise this build record as a
+Now the updateBuild should recognize this build record as a
 Successfully built and uploaded procedure, not sending any
 notification and updating the build information:
 
@@ -549,7 +549,7 @@ Cleanup in preparation for the next test:
 
     >>> bqItem10.destroySelf()
 
-WAITING -> GIVENBACK - slave requested build record to be reschedulled.
+WAITING -> GIVENBACK - slave requested build record to be rescheduled.
 
     >>> bqItem11 = a_build.createBuildQueueEntry()
     >>> setupBuildQueue(bqItem11, a_builder)
@@ -697,7 +697,7 @@ Remove build upload results root
 
     >>> bm = BuilddMaster(logging.getLogger(), local_transaction)
 
-Retrive a known DistroArchSeries
+Retrieve a known DistroArchSeries
 
     >>> from canonical.launchpad.interfaces import IDistributionSet
     >>> hoary_i386 = getUtility(IDistributionSet)['ubuntu']['hoary']['i386']
@@ -712,12 +712,12 @@ Create a totally bogus CHROOT
     >>> p = PocketChroot(distroarchseriesID=hoary_i386.id,
     ...                  pocket=pocket, chroot=chroot)
 
-Setup a buildd-slave instance for a successfull 'scan' procedure.
+Setup a buildd-slave instance for a successful 'scan' procedure.
 
     >>> from canonical.buildd.ftests import BuilddSlaveTestSetup
     >>> BuilddSlaveTestSetup().setUp()
 
-Initialiase the BuildMaster with all available distroarchseries.
+Initialise the BuildMaster with all available distroarchseries.
 Because the sampledata builders are busy we issue and warning stating that.
 
     >>> from canonical.launchpad.interfaces import IDistroArchSeriesSet
@@ -742,7 +742,7 @@ We are done here, let's stop the buildd-slave instance:
 == Build Dispatching ==
 
 Build dispatching can be entirely done via IBuilder content class via
-the the following API:
+the following API:
 
  * findCandidate:  returns a suitable BuildQueue candidate
  * dispatchBuildCandidate: dispatch a build for a given candidate.

@@ -152,6 +152,7 @@ from canonical.launchpad.interfaces.translationfileformat import *
 from canonical.launchpad.interfaces.translationimporter import *
 from canonical.launchpad.interfaces.translationmessage import *
 from canonical.launchpad.interfaces.translations import *
+from canonical.launchpad.interfaces.translationsoverview import *
 from canonical.launchpad.interfaces.question import *
 from canonical.launchpad.interfaces.questionbug import *
 from canonical.launchpad.interfaces.questioncollection import *
