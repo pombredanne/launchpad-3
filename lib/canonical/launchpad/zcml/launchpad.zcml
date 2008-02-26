@@ -355,6 +355,14 @@ these URLs in Apache.
   permission="zope.Public"
   />
 
+
+<adapter
+  provides="canonical.launchpad.interfaces.IStructuralObjectPresentation"
+  for="zope.interface.Interface"
+  factory="canonical.launchpad.browser.launchpad.DefaultStructuralObjectPresentation"
+  permission="zope.Public"
+  />
+
 <browser:page
   for="zope.interface.Interface"
   class="canonical.launchpad.browser.StructuralHeaderPresentationView"

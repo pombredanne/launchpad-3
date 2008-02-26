@@ -27,6 +27,7 @@ __all__ = [
     'SpecificationTreeImageTag',
     'SpecificationTreeDotOutput',
     'SpecificationSetView',
+    'SpecificationSHP',
     ]
 
 import cgi
@@ -1087,3 +1088,13 @@ class SpecificationSetView(AppFrontPageSearchView, HasSpecificationsView):
         if search_text is not None:
             url += '?searchtext=' + search_text
         self.next_url = url
+
+
+class SpecificationSHP(StructuralHeaderPresentation):
+
+    def getIntroHeading(self):
+        return "Blueprint for %s" % cgi.escape(self.context.target.title)
+
+    def getMainHeading(self):
+        return self.context.title
+
