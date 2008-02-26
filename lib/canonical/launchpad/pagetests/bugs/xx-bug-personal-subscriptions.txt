@@ -94,7 +94,7 @@ first subscribing one of Foo Bar's teams.
 
 Now the subscribe link says 'Subscribe/Unsubscribe'.
 
-  >>> subscribe_link = browser.getLink('Subscribe/')
+  >>> subscribe_link = browser.getLink('Subscribe')
   >>> subscribe_link.text
   'Subscribe/Unsubscribe'
 
@@ -205,11 +205,13 @@ tag.string, due to https://launchpad.net/bugs/62634
   ...   print tag.renderContents()
   You have been unsubscribed from this bug and 1 duplicate (<a...#2</a>)...
 
-(There are no longer any indirect subscribers, because Steve was
+(Except for Mark, who has a structural subscription to the target,
+there are no longer any indirect subscribers, because Steve was
 unsubscribed from the dupes and thus is no longer indirectly subscribed
 to bug #3.)
 
   >>> print_indirect_subscribers(stevea_browser.contents)
+  Mark Shuttleworth
 
 Let's repeat this example, with Steve subscribed to two different dupes,
 to see how the unsubscribe notification changes slightly, because he
@@ -290,3 +292,4 @@ up in the indirect subscriptions.
 (ubuntu-team is no longer an indirect subscriber.)
 
   >>> print_indirect_subscribers(foobar_browser.contents)
+  Mark Shuttleworth

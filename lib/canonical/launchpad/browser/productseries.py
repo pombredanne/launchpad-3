@@ -58,6 +58,7 @@ from canonical.launchpad.webapp import (
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp.dynmenu import DynMenu
+from canonical.launchpad.webapp.menu import structured
 from canonical.lazr.enum import EnumeratedType, Item, use_template
 from canonical.widgets import SinglePopupWidget
 from canonical.widgets.itemswidgets import LaunchpadRadioWidget
@@ -451,10 +452,11 @@ class ProductSeriesView(LaunchpadView, TranslationsMixin):
                 productseries=self.context)
 
             self.request.response.addInfoNotification(
+                structured(
                 'Thank you for your upload. The file content will be'
                 ' reviewed soon by an admin and then imported into Launchpad.'
                 ' You can track its status from the <a href="%s/+imports">'
-                'Translation Import Queue</a>' % canonical_url(self.context))
+                'Translation Import Queue</a>' % canonical_url(self.context)))
 
         elif is_tar_filename(filename):
             # Add the whole tarball to the import queue.
@@ -464,12 +466,13 @@ class ProductSeriesView(LaunchpadView, TranslationsMixin):
 
             if num > 0:
                 self.request.response.addInfoNotification(
+                    structured(
                     'Thank you for your upload. %d files from the tarball'
                     ' will be reviewed soon by an admin and then imported'
                     ' into Launchpad. You can track its status from the'
                     ' <a href="%s/+imports">Translation Import Queue</a>' % (
                         num,
-                        canonical_url(self.context)))
+                        canonical_url(self.context))))
             else:
                 self.request.response.addWarningNotification(
                     "Nothing has happened. The tarball you uploaded does not"

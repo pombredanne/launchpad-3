@@ -49,6 +49,7 @@ from canonical.launchpad.database.language import Language
 from canonical.launchpad.database.languagepack import LanguagePack
 from canonical.launchpad.database.milestone import Milestone
 from canonical.launchpad.database.packaging import Packaging
+from canonical.launchpad.validators.person import public_person_validator
 from canonical.launchpad.database.potemplate import POTemplate
 from canonical.launchpad.database.publishing import (
     BinaryPackagePublishingHistory, SourcePackagePublishingHistory)
@@ -71,9 +72,8 @@ from canonical.launchpad.interfaces import (
     IPublishedPackageSet, ICanPublishPackages, ISourcePackage,
     ISourcePackageName, ISourcePackageNameSet, LanguagePackType,
     NotFoundError, PackagePublishingPocket, PackagePublishingStatus,
-    PackageUploadStatus, pocketsuffix, SpecificationFilter,
-    SpecificationGoalStatus, SpecificationSort,
-    SpecificationImplementationStatus)
+    PackageUploadStatus, SpecificationFilter, SpecificationGoalStatus,
+    SpecificationSort, SpecificationImplementationStatus)
 
 
 class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
@@ -101,9 +101,11 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
     parent_series =  ForeignKey(
         dbName='parent_series', foreignKey='DistroSeries', notNull=False)
     owner = ForeignKey(
-        dbName='owner', foreignKey='Person', notNull=True)
+        dbName='owner', foreignKey='Person',
+        validator=public_person_validator, notNull=True)
     driver = ForeignKey(
-        foreignKey="Person", dbName="driver", notNull=False, default=None)
+        dbName="driver", foreignKey="Person",
+        validator=public_person_validator, notNull=False, default=None)
     lucilleconfig = StringCol(notNull=False, default=None)
     changeslist = StringCol(notNull=False, default=None)
     nominatedarchindep = ForeignKey(
@@ -281,10 +283,6 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         """See `IBugTarget`."""
         return self.distribution.bug_reporting_guidelines
 
-    def suite_name(self, pocket):
-        """See `IDistroSeries`."""
-        return self.name + pocketsuffix[pocket]
-
     def canUploadToPocket(self, pocket):
         """See IDistroSeries."""
         # Allow everything for distroseries in FROZEN state.
@@ -413,7 +411,8 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
     def all_specifications(self):
         return self.specifications(filter=[SpecificationFilter.ALL])
 
-    def specifications(self, sort=None, quantity=None, filter=None):
+    def specifications(self, sort=None, quantity=None, filter=None,
+                       prejoin_people=True):
         """See IHasSpecifications.
 
         In this case the rules for the default behaviour cover three things:
@@ -522,9 +521,10 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
                 query += ' AND Specification.fti @@ ftq(%s) ' % quote(
                     constraint)
 
-        # now do the query, and remember to prejoin to people
         results = Specification.select(query, orderBy=order, limit=quantity)
-        return results.prejoin(['assignee', 'approver', 'drafter'])
+        if prejoin_people:
+            results = results.prejoin(['assignee', 'approver', 'drafter'])
+        return results
 
     def getSpecification(self, name):
         """See ISpecificationTarget."""
@@ -862,11 +862,16 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         return [BinaryPackageRelease.get(pubrecord.binarypackagerelease)
                 for pubrecord in result]
 
-    def getBuildRecords(self, build_state=None, name=None, pocket=None):
+    def getBuildRecords(self, build_state=None, name=None, pocket=None,
+                        user=None):
         """See IHasBuildRecords"""
-        # find out the distroarchseries in question
+        # Ignore "user", since it would not make any difference to the
+        # records returned here (private builds are only in PPA right
+        # now).
+
+        # Find out the distroarchseries in question.
         arch_ids = [arch.id for arch in self.architectures]
-        # use facility provided by IBuildSet to retrieve the records
+        # Use the facility provided by IBuildSet to retrieve the records.
         return getUtility(IBuildSet).getBuildsByArchIds(
             arch_ids, build_state, name, pocket)
 
@@ -1004,6 +1009,7 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         if cache is None:
             log.debug("Creating new binary cache entry.")
             cache = DistroSeriesPackageCache(
+                archive=self.main_archive,
                 distroseries=self,
                 binarypackagename=binarypackagename)
 

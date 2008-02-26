@@ -104,7 +104,8 @@ h2, h3, h4, h5, h6 { margin-top: 1em; }
 
 .exception {color: #cc0000;}
 .discreet, .lesser {font-size: 80%;}
-.offline {text-align: center; max-width: 30em; margin: 2em auto;}
+.offline {text-align: center; width: 100%; margin: 2em auto !important;}
+/* That !important is necessary only while #nonhelp exists. */
 .unavailable {color: #999; background: none;}
 .oopsid {color: #cc0000; font-weight: bold;}
 
@@ -150,14 +151,12 @@ td.error {
 .debugging.message, .debugging .message {
   background-image: url(/@@/info);
 }
-/* Guidelines, e.g. bug reporting guidelines. Content is typically
- * provided by users, and rendered by text-to-html. Child elements
- * are thus expected to be paragraphs.
- */
-.guidelines {
-  font-weight: bold;
-  background-color: #fafca9; border: 1px solid #999;
-  margin: 0; padding: 0 1em;
+.whiteboard {
+  color: #666;
+}
+/* When shown as in a definition description, indent slightly. */
+dd .whiteboard {
+  padding-left: 1em;
 }
 
 /* --- Form controls --- */
@@ -186,7 +185,7 @@ table.listing div.actions {
 /* XXX 20080110 mpt: We make textareas slightly narrower in IE to avoid the
 right side being clipped (bug 156202). This should be rechecked post-2.0. */
 textarea {width: 100%;}
-* html textarea {width: 95%;}
+/* This is currently overridden for Internet Explorer in main-template.pt. */
 
 table.form {margin-top: 1em; margin-bottom: 1em; width: 100%;}
 /* XXX: this is just to make tables look more consistent when used in a
@@ -818,6 +817,8 @@ border. */
   position: relative;
 }
 * html #container {margin-top: 0; position: static;} /* fixes in IE6 */
+/* The one-column layout doesn't need the main column pushed to the right: */
+body.onecolumn #container {padding-left: 20px;}
 
 /* Something private for a public project has a cordon inside the tabs: */
 #container.private {background: url(/@@/private-bg) left 28px repeat-x;}
@@ -1639,7 +1640,7 @@ table.listing tfoot td {border: 1px solid #d2d2d2;}
 table.listing thead td {border: none;}
 tr.highlight {background-color: #ff9;}
 table.listing tr.note {font-size: smaller;}
-tr.amount, td.amount {text-align: right;}
+.amount {text-align: right;}
 table.listing th, table.listing td {padding: 0.25em;}
 /* We don't want extra padding on nested tables, such as batch navigation. */
 table.listing table th, table.listing table td {padding: 0;}

@@ -61,7 +61,7 @@ class MilestoneContextMenu(ContextMenu):
 
     usedfor = IMilestone
 
-    links = ['edit', 'admin']
+    links = ['edit', 'admin', 'subscribe']
 
     @enabled_with_permission('launchpad.Edit')
     def edit(self):
@@ -78,6 +78,11 @@ class MilestoneContextMenu(ContextMenu):
         # that can/must be administrated.
         enabled = not IProjectMilestone.providedBy(self.context)
         return Link('+admin', text, icon='edit', enabled=enabled)
+
+    def subscribe(self):
+        enabled = not IProjectMilestone.providedBy(self.context)
+        return Link('+subscribe', 'Subscribe to bug mail',
+                    icon='edit', enabled=enabled)
 
 
 class MilestoneView(LaunchpadView):
@@ -154,12 +159,35 @@ class MilestoneAddView(LaunchpadFormView):
 
 
 class MilestoneEditView(LaunchpadEditFormView):
+    """A view for editing milestone properties.
+
+    This view supports editing of properties such as the name, the date it is
+    expected to complete, the milestone description, and whether or not it is
+    visible (i.e. active).
+    """
 
     schema = IMilestone
-    field_names = ['name', 'dateexpected', 'description']
+    field_names = ['name', 'visible', 'dateexpected', 'description']
     label = "Modify milestone details"
 
     custom_widget('dateexpected', DateWidget)
+
+    @action(_('Update'), name='update')
+    def update_action(self, action, data):
+        self.updateContextFromData(data)
+        self.next_url = canonical_url(self.context)
+
+
+class MilestoneAdminEditView(LaunchpadEditFormView):
+    """A view for administering the milestone.
+
+    This view allows an administrator to change the productseries and
+    distroseries.
+    """
+
+    schema = IMilestone
+    field_names = ['productseries', 'distroseries']
+    label = "Modify milestone details"
 
     @action(_('Update'), name='update')
     def update_action(self, action, data):

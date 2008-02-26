@@ -32,6 +32,7 @@ from zope.schema.vocabulary import SimpleVocabulary, SimpleTerm
 
 from canonical.cachedproperty import cachedproperty
 from canonical.launchpad import _
+from canonical.launchpad.fields import PublicPersonChoice
 from canonical.launchpad.helpers import (
     browserLanguages, is_english_variant, preferred_or_request_languages)
 from canonical.launchpad.browser.faqcollection import FAQCollectionMenu
@@ -44,6 +45,7 @@ from canonical.launchpad.webapp import (
     action, canonical_url, custom_widget, LaunchpadFormView, Link,
     safe_action, stepto, stepthrough, urlappend)
 from canonical.launchpad.webapp.batching import BatchNavigator
+from canonical.launchpad.webapp.menu import structured
 from canonical.widgets import LabeledMultiCheckBoxWidget
 
 
@@ -607,13 +609,15 @@ class ManageAnswerContactView(UserSupportLanguagesMixin, LaunchpadFormView):
         for team in sorted(self.administrated_teams, key=sort_key):
             terms.append(SimpleTerm(team, team.name, team.displayname))
 
+        public_person_choice = PublicPersonChoice(
+            vocabulary=SimpleVocabulary(terms))
         return form.FormField(
             List(
                 __name__='answer_contact_teams',
                 title=_("Let the following teams be an answer contact for "
                         "$context",
                         mapping=dict(context=self.context.displayname)),
-                value_type=Choice(vocabulary=SimpleVocabulary(terms)),
+                value_type=public_person_choice,
                 required=False),
             custom_widget=self.custom_widgets['answer_contact_teams'])
 
@@ -689,10 +693,11 @@ class ManageAnswerContactView(UserSupportLanguagesMixin, LaunchpadFormView):
             person_or_team.addLanguage(getUtility(ILanguageSet)['en'])
             team_mapping = {'name' : person_or_team.name,
                             'displayname' : person_or_team.displayname}
-            response.addNotification(
-                _("English was added to ${displayname}'s "
-                  '<a href="/~${name}/+editlanguages">preferred '
-                  'languages</a>.', mapping=team_mapping))
+            msgid = _("English was added to ${displayname}'s "
+                      '<a href="/~${name}/+editlanguages">preferred '
+                      'languages</a>.',
+                      mapping=team_mapping)
+            response.addNotification(structured(msgid))
         else:
             if len(browserLanguages(self.request)) > 0:
                 languages = browserLanguages(self.request)
@@ -701,11 +706,11 @@ class ManageAnswerContactView(UserSupportLanguagesMixin, LaunchpadFormView):
             for language in languages:
                 person_or_team.addLanguage(language)
             language_str = ', '.join([lang.displayname for lang in languages])
-            response.addNotification(
-                _('<a href="/people/+me/+editlanguages">Your preferred '
-                  'languages</a> were updated to include your browser '
-                  'languages: $languages.',
-                  mapping={'languages' : language_str}))
+            msgid = _('<a href="/people/+me/+editlanguages">Your preferred '
+                      'languages</a> were updated to include your browser '
+                      'languages: $languages.',
+                      mapping={'languages' : language_str})
+            response.addNotification(structured(msgid))
 
 
 class QuestionTargetFacetMixin:

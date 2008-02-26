@@ -117,7 +117,7 @@ class IPOTemplate(IRosettaStats):
             "translations based on the name."),
         required=True)
 
-    translation_domain = Text(
+    translation_domain = TextLine(
         title=_("Translation domain"),
         description=_("The translation domain for a translation template. "
             "Used with PO file format when generating MO files for inclusion "
@@ -372,9 +372,6 @@ class IPOTemplate(IRosettaStats):
     def hasPluralMessage():
         """Test whether this template has any message sets which are plural
         message sets."""
-
-    def invalidateCache():
-        """Invalidate the cached export for all pofiles."""
 
     def export():
         """Return a serialized version as a string using its native format."""

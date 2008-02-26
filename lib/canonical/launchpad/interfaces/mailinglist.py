@@ -25,6 +25,7 @@ from zope.interface import Interface
 from zope.schema import Choice, Datetime, Object, Set, Text, TextLine
 
 from canonical.launchpad import _
+from canonical.launchpad.fields import PublicPersonChoice
 from canonical.launchpad.interfaces import IEmailAddress
 from canonical.launchpad.webapp.interfaces import ILaunchpadApplication
 from canonical.lazr.enum import DBEnumeratedType, DBItem
@@ -227,13 +228,13 @@ class PostedMessageStatus(DBEnumeratedType):
 class IMailingList(Interface):
     """A mailing list."""
 
-    team = Choice(
+    team = PublicPersonChoice(
         title=_('Team'),
         description=_('The team that this mailing list is associated with.'),
         vocabulary='ValidTeam',
         required=True, readonly=True)
 
-    registrant = Choice(
+    registrant = PublicPersonChoice(
         title=_('Registrant'),
         description=_('The person who registered the mailing list.'),
         vocabulary='ValidPersonOrTeam',
@@ -244,7 +245,7 @@ class IMailingList(Interface):
         description=_('The date on which this mailing list was registered.'),
         required=True, readonly=True)
 
-    reviewer = Choice(
+    reviewer = PublicPersonChoice(
         title=_('Reviewer'),
         description=_(
             'The person who reviewed this mailing list registration, or '
@@ -447,6 +448,11 @@ class IMailingList(Interface):
 class IMailingListSet(Interface):
     """A set of mailing lists."""
 
+    title = TextLine(
+        title=_('Title'),
+        description=_('The hard coded title.'),
+        readonly=True)
+
     def new(team, registrant=None):
         """Register a new team mailing list.
 
@@ -582,7 +588,7 @@ class IMailingListAPIView(Interface):
 class IMailingListSubscription(Interface):
     """A mailing list subscription."""
 
-    person = Choice(
+    person = PublicPersonChoice(
         title=_('Person'),
         description=_('The person who is subscribed to this mailing list.'),
         vocabulary='ValidTeamMember',

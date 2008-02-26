@@ -163,26 +163,33 @@ class ErrorReport:
         url = msg.getheader('url')
         duration = int(msg.getheader('duration', '-1'))
 
+        # Explicitely use an iterator so we can process the file
+        # sequentially. In most instances the iterator will actually
+        # be the file object passed in because file objects should
+        # support iteration.
+        lines = iter(msg.fp)
+
+        # Request variables until the first blank line.
         req_vars = []
-        lines = msg.fp.readlines()
-        for linenum, line in enumerate(lines):
+        for line in lines:
             line = line.strip()
-            if not line:
+            if line == '':
                 break
             key, value = line.split('=', 1)
             req_vars.append((urllib.unquote(key), urllib.unquote(value)))
 
+        # Statements until the next blank line.
         statements = []
-        lines = lines[linenum+1:]
-        for linenum, line in enumerate(lines):
+        for line in lines:
             line = line.strip()
-            if not line:
+            if line == '':
                 break
             startend, statement = line.split(' ', 1)
             start, end = startend.split('-')
             statements.append((int(start), int(end), statement))
 
-        tb_text = ''.join(lines[linenum+1:])
+        # The rest is traceback.
+        tb_text = ''.join(lines)
 
         return cls(id, exc_type, exc_value, date, pageid, tb_text,
                    username, url, duration, req_vars, statements)
@@ -192,26 +199,25 @@ class ErrorReportingUtility:
     implements(IErrorReportingUtility)
 
     _ignored_exceptions = set(['Unauthorized', 'TranslationUnavailable'])
-    copy_to_zlog = False
 
-    lasterrordate = None
+    lasterrordir = None
     lastid = 0
 
     def __init__(self):
-        self.copy_to_zlog = config.launchpad.errorreports.copy_to_zlog
         self.lastid_lock = threading.Lock()
 
-    def _findLastOopsId(self, directory):
-        """Find the last error number used by this Launchpad instance
+    def _findLastOopsIdFilename(self, directory):
+        """Find details of the last OOPS reported in the given directory.
 
-        The purpose of this function is to not repeat sequence numbers
-        if the Launchpad instance is restarted.
+        This function only considers OOPSes with the currently
+        configured oops_prefix.
 
-        This method is not thread safe, and only intended to be called
-        from the constructor.
+        :return: a tuple (oops_id, oops_filename), which will be (0,
+            None) if no OOPS is found.
         """
         prefix = config.launchpad.errorreports.oops_prefix
         lastid = 0
+        lastfilename = None
         for filename in os.listdir(directory):
             oopsid = filename.rsplit('.', 1)[1]
             if not oopsid.startswith(prefix):
@@ -219,13 +225,51 @@ class ErrorReportingUtility:
             oopsid = oopsid[len(prefix):]
             if oopsid.isdigit() and int(oopsid) > lastid:
                 lastid = int(oopsid)
-        return lastid
+                lastfilename = filename
+        return lastid, lastfilename
+
+    def _findLastOopsId(self, directory):
+        """Find the last error number used by this Launchpad instance.
+
+        The purpose of this function is to not repeat sequence numbers
+        if the Launchpad instance is restarted.
+
+        This method is not thread safe, and only intended to be called
+        from the constructor.
+        """
+        return self._findLastOopsIdFilename(directory)[0]
 
     def getOopsReport(self, time):
         """Return the contents of the OOPS report logged at 'time'."""
         oops_filename = self.getOopsFilename(
             self._findLastOopsId(self.errordir(time)), time)
         oops_report = open(oops_filename, 'r')
+        try:
+            return ErrorReport.read(oops_report)
+        finally:
+            oops_report.close()
+
+    def getLastOopsReport(self):
+        """Return the last ErrorReport reported with the current config.
+
+        This should only be used in integration tests.
+
+        Note that this function only checks for OOPSes reported today
+        and yesterday (to avoid midnight bugs where an OOPS is logged
+        at 23:59:59 but not checked for until 0:00:01), and ignores
+        OOPSes recorded longer ago.
+
+        Returns None if no OOPS is found.
+        """
+        now = datetime.datetime.now(UTC)
+        directory = self.errordir(now)
+        oopsid, filename = self._findLastOopsIdFilename(directory)
+        if filename is None:
+            directory = self.errordir(now - datetime.timedelta(days=1))
+            oopsid, filename = self._findLastOopsIdFilename(directory)
+            if filename is None:
+                return None
+        oops_report = open(os.path.join(directory, filename), 'r')
         try:
             return ErrorReport.read(oops_report)
         finally:
@@ -243,10 +287,10 @@ class ErrorReportingUtility:
             now = datetime.datetime.now(UTC)
         date = now.strftime('%Y-%m-%d')
         errordir = os.path.join(config.launchpad.errorreports.errordir, date)
-        if date != self.lasterrordate:
+        if errordir != self.lasterrordir:
             self.lastid_lock.acquire()
             try:
-                self.lasterrordate = date
+                self.lasterrordir = errordir
                 # make sure the directory exists
                 try:
                     os.makedirs(errordir)
@@ -382,7 +426,7 @@ class ErrorReportingUtility:
             if request:
                 request.oopsid = oopsid
 
-            if self.copy_to_zlog:
+            if config.launchpad.errorreports.copy_to_zlog:
                 self._do_copy_to_zlog(now, strtype, strurl, info, oopsid)
         finally:
             info = None

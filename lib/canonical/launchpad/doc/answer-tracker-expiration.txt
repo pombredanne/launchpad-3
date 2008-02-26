@@ -82,6 +82,17 @@ somebody are subject to expiration.
     >>> old_open_question.target.addAnswerContact(salgado)
     True
 
+    # Link it to a FAQ item for the same reason. We are setting the
+    # attribute directly, because using the linkFAQ API would update
+    # the last updates date of the question and remove it from the expiration
+    # set.
+    >>> from zope.security.proxy import removeSecurityProxy
+    >>> login('foo.bar@canonical.com')
+    >>> faq = old_open_question.target.newFAQ(
+    ...     salgado, 'Why everyone think this is weird.',
+    ...     "That's an easy one. It's because it is!")
+    >>> removeSecurityProxy(old_open_question).faq = faq
+
     # A question linked to an non-Invalid bug is not expirable.
     >>> from canonical.launchpad.interfaces import BugTaskStatus, IBugSet
     >>> fixed_bug = getUtility(IBugSet).get(9)

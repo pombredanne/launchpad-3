@@ -11,21 +11,24 @@ __all__ = [
     'ISpecificationFeedback',
     ]
 
-from zope.interface import Interface, Attribute
-from zope.schema import Choice, Int, Text
+from zope.interface import Interface
+from zope.schema import Int, Text
 
 from canonical.launchpad import _
+from canonical.launchpad.fields import PublicPersonChoice
 
 class ISpecificationFeedback(Interface):
     """The queue entry for a specification on a person, including a message
     from the person who put it in their queue."""
 
-    reviewer = Choice(title=_('Feedback From?'), required=True,
+    reviewer = PublicPersonChoice(
+        title=_('Feedback From?'), required=True,
         vocabulary='ValidPersonOrTeam', readonly=True,
         description=_("Select the person who you would like to give you "
         "some feedback on this specification."))
-    requester = Choice(title=_("The person who requested this feedback."),
-            vocabulary='ValidPersonOrTeam', required=True)
+    requester = PublicPersonChoice(
+        title=_("The person who requested this feedback."),
+        vocabulary='ValidPersonOrTeam', required=True)
     specification = Int(title=_('Specification ID'), required=True,
         readonly=True)
     queuemsg = Text(title=_("Message"), required=False,

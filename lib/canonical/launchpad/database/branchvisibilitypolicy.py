@@ -22,6 +22,7 @@ from canonical.database.sqlbase import SQLBase
 from canonical.launchpad.helpers import shortlist
 from canonical.launchpad.interfaces import (
     BranchVisibilityRule, IBranchVisibilityTeamPolicy, IProduct, IProject)
+from canonical.launchpad.validators.person import public_person_validator
 
 
 class BranchVisibilityTeamPolicy(SQLBase):
@@ -32,7 +33,9 @@ class BranchVisibilityTeamPolicy(SQLBase):
 
     project = ForeignKey(dbName='project', foreignKey='Project')
     product = ForeignKey(dbName='product', foreignKey='Product')
-    team = ForeignKey(dbName='team', foreignKey='Person', default=None)
+    team = ForeignKey(
+        dbName='team', foreignKey='Person',
+        validator=public_person_validator, default=None)
     rule = EnumCol(
         dbName="policy", enum=BranchVisibilityRule, notNull=True,
         default=BranchVisibilityRule.PUBLIC)

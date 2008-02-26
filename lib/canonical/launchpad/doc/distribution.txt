@@ -215,6 +215,7 @@ name even if it differs:
     source: u'linux-source-2.6.15'
     binary: u'linux-2.6.12'
 
+
 == Distribution Sorting ==
 
 If you ask for all the distributions in the DistributionSet you should get
@@ -335,7 +336,7 @@ incomplete source is uploaded).
 
 === Launchpad Usage ===
 
-A distribution can specify if it uses Malone, Rosetta, or Answers 
+A distribution can specify if it uses Malone, Rosetta, or Answers
 officially. Ubuntu uses all of them:
 
     >>> ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
@@ -345,7 +346,7 @@ officially. Ubuntu uses all of them:
     True
     >>> ubuntu.official_answers
     True
-    
+
 While Debian uses none:
 
     >>> debian.official_malone
@@ -453,6 +454,7 @@ We can get only valid specs (those that are not obsolete or superseded):
  ...     print spec.name
  kde-desktopfile-langpacks
 
+
 == Milestones ==
 
 We can use IDistribution.milestones to get all milestones associated with any
@@ -511,6 +513,7 @@ the distribution in question:
 
     >>> [archive.owner.name for archive in debian.getAllPPAs()]
     []
+
 
 === Searching PPAs ===
 
@@ -623,13 +626,12 @@ Records in DONE also do not trigger pending-acceptance state in PPAs:
       >>> syncUpdate(queue)
       >>> queue.status.name
       'DONE'
-      
+
       >>> ubuntu.getPendingAcceptancePPAs().count()
       0
 
 
 == Retrieving only pending-acceptance PPAs ==
-
 
 'getPendingPublicationPPAs'lookup will only return PPA which have
 PENDING publishing records, it's used in 'publish-distro' in '--ppa'
@@ -640,66 +642,80 @@ Nothing is pending-publication in sampledata:
       >>> ubuntu.getPendingPublicationPPAs().count()
       0
 
-Making cprov PPA pending publication by creating a new source
-publishing record: 
+We can make Celso's PPA pending publication by copying a published
+source to another location within the PPA.
 
-      >>> from canonical.database.constants import UTC_NOW
-      >>> from canonical.launchpad.database.publishing import (
-      ...     SecureSourcePackagePublishingHistory, 
-      ...     SecureBinaryPackagePublishingHistory) 
-      >>> from canonical.launchpad.interfaces import PackagePublishingStatus
+      >>> cprov_src = cprov.archive.getPublishedSources()[0]
 
-      >>> pmount = hoary.getSourcePackage('pmount')
-      >>> pmount_spr = pmount.currentrelease.sourcepackagerelease
+      >>> warty = ubuntu['warty']
+      >>> pocket_release = PackagePublishingPocket.RELEASE
+      >>> src_pub = cprov_src.copyTo(warty, pocket_release, cprov.archive)
+      >>> print src_pub.status.name
+      PENDING
 
-      >>> src_pub = SecureSourcePackagePublishingHistory(
-      ...     distroseries=hoary, sourcepackagerelease=pmount_spr,
-      ...     component=pmount_spr.component, section=pmount_spr.section,
-      ...     embargo=False, datecreated=UTC_NOW,
-      ...     status=PackagePublishingStatus.PENDING,
-      ...     pocket=PackagePublishingPocket.RELEASE,
-      ...     archive=cprov.archive)
-
-      >>> pending_ppas = ubuntu.getPendingPublicationPPAs()
-      >>> [pending_ppa] = pending_ppas
+      >>> [pending_ppa] = ubuntu.getPendingPublicationPPAs()
       >>> pending_ppa.id == cprov.archive.id
       True
 
-Publishing the record removing cprov PPA from pending-publication
-state: 
+Publishing the record will exclude Celso's PPA from
+pending-publication state:
 
+      >>> from canonical.launchpad.interfaces import PackagePublishingStatus
       >>> src_pub.status = PackagePublishingStatus.PUBLISHED
       >>> syncUpdate(src_pub)
 
       >>> ubuntu.getPendingPublicationPPAs().count()
       0
 
-Binary pending publications also moves PPA to the pending-publication
-state: 
+We can also make Celso's PPA pending publication by deleting a published
+source.
 
-      >>> hoary_i386 = hoary['i386']
-      >>> pmount_bin = hoary_i386.getBinaryPackage('pmount')
-      >>> pmount_bpr = pmount_bin.currentrelease.binarypackagerelease
+      >>> src_pub = cprov_src.requestDeletion(cprov, 'go away !')
+      >>> syncUpdate(src_pub)
 
-      >>> bin_pub = SecureBinaryPackagePublishingHistory(
-      ...     binarypackagerelease=pmount_bpr,
-      ...     distroarchseries=hoary_i386, priority=pmount_bpr.priority,
-      ...     component=pmount_bpr.component, section=pmount_bpr.section,
-      ...     datecreated=UTC_NOW, embargo=False, archive=cprov.archive,
-      ...     status=PackagePublishingStatus.PENDING,
-      ...     pocket=PackagePublishingPocket.RELEASE)
-
-      >>> pending_ppas = ubuntu.getPendingPublicationPPAs()
-      >>> [pending_ppa] = pending_ppas
+      >>> [pending_ppa] = ubuntu.getPendingPublicationPPAs()
       >>> pending_ppa.id == cprov.archive.id
       True
 
-Similarly to sources, binary publishing the record removes the PPA
-from pending-publication state:
+      >>> from canonical.database.constants import UTC_NOW
+      >>> src_pub.scheduleddeletiondate = UTC_NOW
+      >>> syncUpdate(src_pub)
+      >>> ubuntu.getPendingPublicationPPAs().count()
+      0
+
+Binary pending publications also moves PPA to the pending-publication
+state:
+
+      >>> cprov_bin = cprov.archive.getAllPublishedBinaries()[0]
+      >>> bin_pub = cprov_bin.copyTo(warty, pocket_release, cprov.archive)
+      >>> print bin_pub.status.name
+      PENDING
+
+      >>> [pending_ppa] = ubuntu.getPendingPublicationPPAs()
+      >>> pending_ppa.id == cprov.archive.id
+      True
+
+Similarly to sources, publishing the binary will exclude Celso's PPA from
+pending-publication state:
 
       >>> bin_pub.status = PackagePublishingStatus.PUBLISHED
       >>> syncUpdate(bin_pub)
 
+      >>> ubuntu.getPendingPublicationPPAs().count()
+      0
+
+A binary deletion will also make Celso's PPA pending publication.
+
+      >>> bin_pub = cprov_bin.requestDeletion(cprov, 'go away !')
+      >>> syncUpdate(bin_pub)
+
+      >>> [pending_ppa] = ubuntu.getPendingPublicationPPAs()
+      >>> pending_ppa.id == cprov.archive.id
+      True
+
+      >>> from canonical.database.constants import UTC_NOW
+      >>> bin_pub.scheduleddeletiondate = UTC_NOW
+      >>> syncUpdate(bin_pub)
       >>> ubuntu.getPendingPublicationPPAs().count()
       0
 

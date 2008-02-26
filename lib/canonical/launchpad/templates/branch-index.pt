@@ -11,16 +11,6 @@
 >
 <body>
 
-<style metal:fill-slot="head_epilogue">
-div.revision {
-  padding-bottom: 1em;
-}
-
-div.revision p {
-  margin-left: 2.5em;
-}
-</style>
-
 <metal:leftportlets fill-slot="portlets">
   <div tal:replace="structure context/@@+portlet-details" />
   <div tal:replace="structure context/@@+portlet-subscribers" />
@@ -58,16 +48,6 @@ div.revision p {
       </tal:not-junk-branch>
       <tal:mirrored-branch tal:condition="context/branch_type/enumvalue:MIRRORED">
         <tr><th>Location:</th><td tal:content="context/url" /></tr>
-        <tr>
-          <th>Last mirrored:</th>
-          <tal:mirrored-yet tal:condition="context/last_mirrored">
-            <td tal:attributes="title context/last_mirrored/fmt:datetime"
-                tal:content="context/last_mirrored/fmt:approximatedate"/>
-          </tal:mirrored-yet>
-          <tal:not-mirror-yet tal:condition="not:context/last_mirrored">
-            <td>Not mirrored yet</td>
-          </tal:not-mirror-yet>
-        </tr>
         <tal:mirror-failures tal:replace="structure context/@@+mirror-status" />
       </tal:mirrored-branch>
       <tal:remote-branch tal:condition="context/branch_type/enumvalue:REMOTE">
@@ -133,9 +113,7 @@ div.revision p {
                 You cannot upload to this branch. Members of
                 <a tal:attributes="href context/owner/fmt:url"
                    tal:content="context/owner/browsername">Team</a>
-                can upload to this branch. You may want to
-                <a tal:attributes="href string:${context/owner/fmt:url}/+join">join
-                the team</a>.
+                can upload to this branch.
               </td>
             </tr>
           </tal:cannot-upload>
@@ -172,20 +150,12 @@ div.revision p {
     </tbody>
   </table>
 
+  <tal:branch-errors tal:replace="structure context/@@+messages" />
+
   <p tal:condition="context/summary"
      tal:content="structure context/summary/fmt:text-to-html">
     $Branch.summary goes here. This should be quite short, just a single
     paragraph of text really, giving the branch highlights.
-  </p>
-
-  <tal:comment condition="nothing">
-    <!-- XXX This David Allouche 2006-04-09
-         Style attribute is evil, but bold text makes the mirror error
-         difficult to read. Checked with mpt about that. -->
-  </tal:comment>
-  <p tal:condition="view/mirror_of_ssh" id="mirror-of-ssh"
-       class="warning message" style="font-weight: normal">
-    Launchpad cannot mirror this branch because its URL uses sftp or bzr+ssh.
   </p>
 
   <tal:whiteboard condition="context/whiteboard">
@@ -233,7 +203,9 @@ div.revision p {
         <metal:landing-target use-macro="context/@@+macros/merge-proposal"/>
       </tal:landing-candidate>
     </tal:proposals>
-    <a href="+landing-candidates">more&#8230;</a>
+    <tal:show-link condition="view/show_candidate_more_link">
+      <a href="+landing-candidates">more&#8230;</a>
+    </tal:show-link>
   </div>
 
   <div id="recent-revisions">
@@ -258,15 +230,12 @@ div.revision p {
     </tal:mirrored>
   </p>
 
-  <tal:history-available condition="context/revision_count">
-    <div class="revision"
-         tal:repeat="rev_no context/latest_revisions"
-         tal:define="codebrowse view/codebrowse_url"
-         tal:attributes="id string:rev${rev_no/sequence}">
-
-      <metal:landing-target use-macro="context/@@+macros/revision-text"/>
-    </div>
+  <tal:history-available condition="context/revision_count"
+                         define="branch context;
+                                 revisions branch/latest_revisions">
+    <metal:landing-target use-macro="branch/@@+macros/branch-revisions"/>
   </tal:history-available>
+
   </div>
 
   <tal:has-related-bugs condition="context/related_bugs">

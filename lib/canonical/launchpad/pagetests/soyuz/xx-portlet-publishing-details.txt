@@ -14,9 +14,9 @@ into account any overrides applied since the package was uploaded.
 
     >>> print extract_text(browser.contents)
     "alsa-utils" versions published in Ubuntu
-    Warty (1.0.9a-4): main / base
-    Hoary (1.0.9a-4ubuntu1): main / base
-    Warty (1.0.8-1ubuntu1): main / base
+    Warty (1.0.9a-4): main/base
+    Hoary (1.0.9a-4ubuntu1): main/base
+    Warty (1.0.8-1ubuntu1): main/base
 
 When a source package has never been published, the portlet will say so.
 
@@ -38,4 +38,4 @@ only Warty is active.
 
     >>> print extract_text(browser.contents)
     "cdrkit" versions published in Ubuntu
-    Warty (1.0): main / editors
+    Warty (1.0): main/editors

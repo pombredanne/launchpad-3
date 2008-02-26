@@ -45,7 +45,8 @@ from sqlos.interfaces import ISelectResults
 
 from canonical.launchpad import _
 from canonical.launchpad.fields import (
-    ProductNameField, StrippedTextLine, Summary, Tag)
+    ProductNameField, PublicPersonChoice,
+    StrippedTextLine, Summary, Tag)
 from canonical.launchpad.interfaces.component import IComponent
 from canonical.launchpad.interfaces.launchpad import IHasDateCreated, IHasBug
 from canonical.launchpad.interfaces.mentoringoffer import ICanBeMentored
@@ -323,7 +324,7 @@ class IBugTask(IHasDateCreated, IHasBug, ICanBeMentored):
         default=BugTaskImportance.UNDECIDED)
     statusexplanation = Text(
         title=_("Status notes (optional)"), required=False)
-    assignee = Choice(
+    assignee = PublicPersonChoice(
         title=_('Assigned to'), required=False, vocabulary='ValidAssignee')
     bugtargetdisplayname = Text(
         title=_("The short, descriptive name of the target"), readonly=True)
@@ -918,12 +919,14 @@ class IBugTaskSet(Interface):
         Exactly one of product, distribution or distroseries must be provided.
         """
 
-    def findExpirableBugTasks(min_days_old, bug=None, target=None):
+    def findExpirableBugTasks(min_days_old, user, bug=None, target=None):
         """Return a list of bugtasks that are at least min_days_old.
 
         :param min_days_old: An int representing the minimum days of
             inactivity for a bugtask to be considered expirable. Setting
             this parameter to 0 will return all bugtask that can expire.
+        :param user: The `IPerson` doing the search. Only bugs the user
+            has permission to view are returned.
         :param bug: An `IBug`. If a bug is provided, only bugtasks that belong
             to the bug may be returned. If bug is None, all bugs are searched.
         :param target: An `IBugTarget`. If a target is provided, only

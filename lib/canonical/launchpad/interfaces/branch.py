@@ -40,7 +40,8 @@ from zope.schema import Bool, Int, Choice, Text, TextLine, Datetime
 from canonical.config import config
 
 from canonical.launchpad import _
-from canonical.launchpad.fields import Title, Summary, URIField, Whiteboard
+from canonical.launchpad.fields import (
+    PublicPersonChoice, Summary, Title, URIField, Whiteboard)
 from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.interfaces import IHasOwner
 from canonical.launchpad.webapp.interfaces import ITableBatchNavigator
@@ -57,14 +58,11 @@ class BranchLifecycleStatus(DBEnumeratedType):
     Essentially, this tells us what the author of the branch thinks of the
     code in the branch.
     """
-    sort_order = (
-        'MATURE', 'DEVELOPMENT', 'EXPERIMENTAL', 'MERGED', 'ABANDONED', 'NEW')
 
     NEW = DBItem(1, """
         New
 
-        This branch has just been created, and we know nothing else about
-        it.
+        This branch has just been created.
         """)
 
     EXPERIMENTAL = DBItem(10, """
@@ -124,7 +122,7 @@ class BranchType(DBEnumeratedType):
         Mirrored
 
         Primarily hosted elsewhere and is periodically mirrored
-        from the remote location into Launchpad.
+        from the external location into Launchpad.
         """)
 
     IMPORTED = DBItem(3, """
@@ -328,10 +326,8 @@ class IBranch(IHasOwner):
         allow_query=False,
         allow_fragment=False,
         trailing_slash=False,
-        description=_("The URL where the Bazaar branch is hosted. This is "
-            "the URL used to checkout the branch. The only branch format "
-            "supported is that of the Bazaar revision control system, see "
-            "www.bazaar-vcs.org for more information."))
+        description=_("This is the external location where the Bazaar "
+                      "branch is hosted."))
 
     whiteboard = Whiteboard(title=_('Whiteboard'), required=False,
         description=_('Notes on the current status of the branch.'))
@@ -345,16 +341,23 @@ class IBranch(IHasOwner):
         default=False)
 
     # People attributes
-    owner = Choice(title=_('Owner'), required=True, vocabulary='ValidOwner',
-        description=_("Branch owner, either a valid Person or Team."))
-    author = Choice(
+    registrant = Attribute("The user that registered the branch.")
+    owner = PublicPersonChoice(
+        title=_('Owner'), required=True,
+        vocabulary='PersonActiveMembershipPlusSelf',
+        description=_("Either yourself or a team you are a member of. "
+                      "This controls who can modify the branch."))
+    author = PublicPersonChoice(
         title=_('Author'), required=False, vocabulary='ValidPersonOrTeam',
         description=_("The author of the branch. Leave blank if the author "
                       "does not have a Launchpad account."))
-    reviewer = Choice(
+    reviewer = PublicPersonChoice(
         title=_('Reviewer'), required=False, vocabulary='ValidPersonOrTeam',
         description=_("The reviewer of a branch is the person or team that "
                       "is responsible for authorising code to be merged."))
+
+    code_reviewer = Attribute(
+        "The reviewer if set, otherwise the owner of the branch.")
 
     # Product attributes
     product = Choice(
@@ -493,6 +496,9 @@ class IBranch(IHasOwner):
             merge request.
         """
 
+    def getMergeQueue():
+        """The proposals that are QUEUED to land on this branch."""
+
     def revisions_since(timestamp):
         """Revisions in the history that are more recent than timestamp."""
 
@@ -548,16 +554,22 @@ class IBranch(IHasOwner):
         """Remove the person's subscription to this branch."""
 
     def getBranchRevision(sequence):
-        """Gets the BranchRevision for the given sequence number.
+        """Get the `BranchRevision` for the given sequence number.
 
-        If no such BranchRevision exists, None is returned.
+        If no such `BranchRevision` exists, None is returned.
+        """
+
+    def getBranchRevisionByRevisionId(revision_id):
+        """Get the `BranchRevision for the given revision id.
+
+        If no such `BranchRevision` exists, None is returned.
         """
 
     def createBranchRevision(sequence, revision):
-        """Create a new BranchRevision for this branch."""
+        """Create a new `BranchRevision` for this branch."""
 
     def getTipRevision():
-        """Returns the Revision associated with the last_scanned_id.
+        """Return the `Revision` associated with the `last_scanned_id`.
 
         Will return None if last_scanned_id is None, or if the id
         is not found (as in a ghost revision).

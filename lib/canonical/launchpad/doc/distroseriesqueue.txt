@@ -55,9 +55,13 @@ launchpad.Edit on the records:
   >>> from canonical.launchpad.ftests import login
   >>> login("foo.bar@canonical.com")
 
-  >>> from canonical.launchpad.interfaces import IDistributionSet
+  >>> from canonical.launchpad.interfaces import (
+  ...     IComponentSet, IDistributionSet)
+  >>> from canonical.launchpad.database import ComponentSelection
   >>> ubuntu = getUtility(IDistributionSet)['ubuntu']
   >>> hoary = ubuntu['hoary']
+  >>> universe = getUtility(IComponentSet)['universe']
+  >>> trash = ComponentSelection(distroseries=hoary, component=universe)
 
 Construct an upload.
 
@@ -107,7 +111,7 @@ Make the modification real in the DB (XXX cprov 20051209: see bug #3889)
   >>> for item in accepted_queue:
   ...     for source in item.sources:
   ...         print source.sourcepackagerelease.name
-  ...     item.realiseUpload(mock_logger)
+  ...     pub_records = item.realiseUpload(mock_logger)
   ed
   DEBUG: Publishing source ed/0.2-20 to ubuntu/hoary
   DEBUG: Publishing build to ubuntu/hoary/i386
@@ -626,33 +630,19 @@ UNAPPROVED queue items are expected to be private:
 
   >>> priv_qitem = getUtility(IPackageUploadSet)[5]
 
-Anonymous don't have access any kind of access to both, private and
-public queue items:
+Anonymous can view all queue items, public and private ones.
 
   >>> login(ANONYMOUS)
-
-  >>> pub_qitem.displayname
-  Traceback (most recent call last):
-  ...
-  Unauthorized: (<PackageUpload ..., 'displayname', 'launchpad.View')
-
-  >>> priv_qitem.displayname
-  Traceback (most recent call last):
-  ...
-  Unauthorized: (<PackageUpload ..., 'displayname', 'launchpad.View')
-
-A normal user may see the public, but not the private, and can't act
-in both of them:
-
-  >>> login('test@canonical.com')
 
   >>> pub_qitem.displayname
   u'mozilla-firefox'
 
   >>> priv_qitem.displayname
-  Traceback (most recent call last):
-  ...
-  Unauthorized: (<PackageUpload ..., 'displayname', 'launchpad.View')
+  u'netapplet-1.0.0.tar.gz'
+
+A normal user can't act on both of them:
+
+  >>> login('test@canonical.com')
 
   >>> pub_qitem.setDone()
   Traceback (most recent call last):
@@ -663,7 +653,6 @@ in both of them:
   Traceback (most recent call last):
   ...
   Unauthorized: (<PackageUpload ..., 'setDone', 'launchpad.Edit')
-
 
 Only the members of distroseries drivers in question have
 launchpad.Edit on a packageupload record.

@@ -25,6 +25,7 @@ from canonical.launchpad.mail import format_address, simple_sendmail
 from canonical.launchpad.mailnotification import MailWrapper
 from canonical.launchpad.helpers import (
     contactEmailAddresses, get_email_template)
+from canonical.launchpad.validators.person import public_person_validator
 from canonical.launchpad.interfaces import (
     DAYS_BEFORE_EXPIRATION_WARNING_IS_SENT, ILaunchpadCelebrities,
     IPersonSet, ITeamMembership, ITeamMembershipSet, ITeamParticipation,
@@ -42,9 +43,12 @@ class TeamMembership(SQLBase):
     _defaultOrder = 'id'
 
     team = ForeignKey(dbName='team', foreignKey='Person', notNull=True)
-    person = ForeignKey(dbName='person', foreignKey='Person', notNull=True)
+    person = ForeignKey(
+        dbName='person', foreignKey='Person',
+        validator=public_person_validator, notNull=True)
     reviewer = ForeignKey(
-        dbName='reviewer', foreignKey='Person', default=None)
+        dbName='reviewer', foreignKey='Person',
+        validator=public_person_validator, default=None)
     status = EnumCol(
         dbName='status', notNull=True, enum=TeamMembershipStatus)
     datejoined = UtcDateTimeCol(
@@ -83,6 +87,7 @@ class TeamMembership(SQLBase):
             team.displayname, config.noreply_from_address)
         replacements = {'member_name': member.unique_displayname,
                         'team_name': team.unique_displayname,
+                        'team_url': canonical_url(team),
                         'dateexpires': self.dateexpires.strftime('%Y-%m-%d')}
         subject = '%s extended their membership' % member.name
         template = get_email_template('membership-member-renewed.txt')
@@ -90,7 +95,8 @@ class TeamMembership(SQLBase):
         for address in admins_addrs:
             recipient = getUtility(IPersonSet).getByEmail(address)
             replacements['recipient_name'] = recipient.displayname
-            msg = MailWrapper().format(template % replacements)
+            msg = MailWrapper().format(
+                template % replacements, force_wrap=True)
             simple_sendmail(from_addr, address, subject, msg)
 
     def sendAutoRenewalNotification(self):
@@ -103,6 +109,7 @@ class TeamMembership(SQLBase):
             team.displayname, config.noreply_from_address)
         replacements = {'member_name': member.unique_displayname,
                         'team_name': team.unique_displayname,
+                        'team_url': canonical_url(team),
                         'dateexpires': self.dateexpires.strftime('%Y-%m-%d')}
         subject = '%s renewed automatically' % member.name
 
@@ -116,7 +123,8 @@ class TeamMembership(SQLBase):
         for address in member_addrs:
             recipient = getUtility(IPersonSet).getByEmail(address)
             replacements['recipient_name'] = recipient.displayname
-            msg = MailWrapper().format(template % replacements)
+            msg = MailWrapper().format(
+                template % replacements, force_wrap=True)
             simple_sendmail(from_addr, address, subject, msg)
 
         template_name = 'membership-auto-renewed-bulk.txt'
@@ -126,7 +134,8 @@ class TeamMembership(SQLBase):
         for address in admins_addrs:
             recipient = getUtility(IPersonSet).getByEmail(address)
             replacements['recipient_name'] = recipient.displayname
-            msg = MailWrapper().format(template % replacements)
+            msg = MailWrapper().format(
+                template % replacements, force_wrap=True)
             simple_sendmail(from_addr, address, subject, msg)
 
     def canChangeExpirationDate(self, person):
@@ -150,7 +159,8 @@ class TeamMembership(SQLBase):
 
         assert self.canChangeExpirationDate(user), (
             "This user can't change this membership's expiration date.")
-        assert date is None or date > datetime.now(pytz.timezone('UTC')), (
+        UTC = pytz.timezone('UTC')
+        assert date is None or date.date() >= datetime.now(UTC).date(), (
             "The given expiration date must be None or be in the future: %s"
             % date.strftime('%Y-%m-%d'))
         self.dateexpires = date
@@ -164,14 +174,15 @@ class TeamMembership(SQLBase):
             "This membership's expiration date must be in the future: %s"
             % self.dateexpires.strftime('%Y-%m-%d'))
         member = self.person
+        team = self.team
         if member.isTeam():
             recipient = member.teamowner
             templatename = 'membership-expiration-warning-bulk.txt'
+            subject = '%s will expire soon from %s' % (member.name, team.name)
         else:
             recipient = member
             templatename = 'membership-expiration-warning-personal.txt'
-        team = self.team
-        subject = 'Team membership about to expire'
+            subject = 'Your membership in %s is about to expire' % team.name
 
         if team.renewal_policy == TeamMembershipRenewalPolicy.ONDEMAND:
             how_to_renew = (
@@ -319,6 +330,7 @@ class TeamMembership(SQLBase):
             'member_name': member.unique_displayname,
             'recipient_name': member.displayname,
             'team_name': team.unique_displayname,
+            'team_url': canonical_url(team),
             'old_status': old_status.title,
             'new_status': new_status.title,
             'reviewer_name': reviewer_name,
@@ -329,7 +341,7 @@ class TeamMembership(SQLBase):
                    % {'member': member.name, 'team': team.name})
         if new_status == TeamMembershipStatus.EXPIRED:
             template_name = 'membership-expired'
-            subject = 'membership of %s expired' % member.name
+            subject = '%s expired from team' % member.name
         elif (new_status == TeamMembershipStatus.APPROVED and
               old_status != TeamMembershipStatus.ADMIN):
             if old_status == TeamMembershipStatus.INVITED:
@@ -360,7 +372,8 @@ class TeamMembership(SQLBase):
             for address in admins_emails:
                 recipient = getUtility(IPersonSet).getByEmail(address)
                 replacements['recipient_name'] = recipient.displayname
-                msg = MailWrapper().format(admins_template % replacements)
+                msg = MailWrapper().format(
+                    admins_template % replacements, force_wrap=True)
                 simple_sendmail(from_addr, address, subject, msg)
 
         # The member can be a team without any members, and in this case we
@@ -374,7 +387,8 @@ class TeamMembership(SQLBase):
             for address in member_email:
                 recipient = getUtility(IPersonSet).getByEmail(address)
                 replacements['recipient_name'] = recipient.displayname
-                msg = MailWrapper().format(member_template % replacements)
+                msg = MailWrapper().format(
+                    member_template % replacements, force_wrap=True)
                 simple_sendmail(from_addr, address, subject, msg)
 
 

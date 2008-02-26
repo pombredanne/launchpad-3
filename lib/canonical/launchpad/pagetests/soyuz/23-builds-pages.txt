@@ -115,8 +115,6 @@ initialised' one (fix bug #52704)
   ...     browser.contents, 'builds_list')[0].renderContents()
   <BLANKLINE>
   ...
-  ...NEEDSBUILD...
-  ...i386 build of at 0.00 in ubuntu warty RELEASE...
   ...SUPERSEDED...
   ...i386 build of at 0.00 in ubuntu warty RELEASE...
   ...SUPERSEDED...
@@ -191,7 +189,7 @@ view if there are no GET arguments.
   >>> browser.open("http://launchpad.dev/debian/+builds")
   >>> print extract_text(
   ...     find_tag_by_id(browser.contents, 'no-default-result'))
-  No packages currently building.
+  No 'Currently building' build records.
   >>> find_tag_by_id(browser.contents, 'empty-result') is None
   True
 
@@ -230,7 +228,7 @@ First load only 'No packages currently building' message is presented.
 
   >>> print extract_text(
   ...     find_tag_by_id(browser.contents, 'no-default-result'))
-  No packages currently building.
+  No build records.
   >>> find_tag_by_id(browser.contents, 'empty-result') is None
   True
 

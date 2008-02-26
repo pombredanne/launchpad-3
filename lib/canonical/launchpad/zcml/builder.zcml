@@ -107,14 +107,10 @@
             name="+builds-list"
             facet="overview"
             />
-    </browser:pages>
-
-    <browser:pages
-        for="canonical.launchpad.interfaces.IBuilder"
-        permission="zope.Public">
         <browser:page
             template="../templates/builder-portlet-details.pt"
             name="+portlet-details"
+            facet="overview"
             />
     </browser:pages>
 
@@ -134,7 +130,7 @@
         for="canonical.launchpad.interfaces.IBuilder"
         schema="canonical.launchpad.interfaces.IBuilder"
         facet="overview"
-        fields="name title description processor url manual owner vm_host"
+        fields="name title description processor url owner"
         permission="launchpad.Edit"
         template="../templates/builder-edit.pt"
         >
@@ -156,7 +152,8 @@
         schema="canonical.launchpad.interfaces.IBuilder"
         label="Administer builder"
         facet="overview"
-        fields="name title description processor url manual owner trusted builderok failnotes vm_host"
+        fields="name title description processor url manual owner
+                trusted builderok failnotes vm_host active"
         permission="launchpad.Admin"
         template="../templates/builder-admin.pt"
         />

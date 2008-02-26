@@ -49,7 +49,7 @@ def construct_email_notifications(bug_notifications):
 
     if comment is not None:
         if comment == bug.initial_message:
-            dummy, text = generate_bug_add_email(bug)
+            subject, text = generate_bug_add_email(bug)
         else:
             text = comment.text_contents
         text_notifications.append(text)
@@ -138,6 +138,9 @@ def get_email_notifications(bug_notifications, date_emailed=None):
         - Must be related to the same bug.
         - Must contain at most one comment.
     """
+    # Avoid spurious lint about possibly undefined loop variables.
+    notification = None
+    # Copy bug_notifications because we will modify it as we go.
     bug_notifications = list(bug_notifications)
     while bug_notifications:
         found_comment = False
@@ -153,7 +156,10 @@ def get_email_notifications(bug_notifications, date_emailed=None):
             if notification.is_comment and found_comment:
                 # Oops, found a second comment, stop batching.
                 break
-            if (notification.bug, notification.message.owner) != (bug, person):
+            if notification.bug != bug:
+                # Found a different change, stop batching.
+                break
+            if notification.message.owner != person:
                 # Ah, we've found a change made by somebody else; time
                 # to stop batching too.
                 break
@@ -168,6 +174,8 @@ def get_email_notifications(bug_notifications, date_emailed=None):
         # being sent, so catch and log all exceptions.
         try:
             yield construct_email_notifications(notification_batch)
+        except (KeyboardInterrupt, SystemExit):
+            raise
         except:
             _log_exception_and_restart_transaction()
 

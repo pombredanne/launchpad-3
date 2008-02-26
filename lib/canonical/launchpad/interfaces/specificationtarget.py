@@ -13,7 +13,6 @@ __all__ = [
 
 from zope.interface import Interface, Attribute
 
-from canonical.launchpad import _
 
 class IHasSpecifications(Interface):
     """An object that has specifications attached to it.
@@ -39,7 +38,8 @@ class IHasSpecifications(Interface):
     latest_completed_specifications = Attribute(
         "The 5 specifications most recently completed for this context.")
 
-    def specifications(quantity=None, sort=None, filter=None):
+    def specifications(quantity=None, sort=None, filter=None,
+                       prejoin_people=True):
         """Specifications for this target.
 
         The sort is a dbschema which indicates the preferred sort order. The
@@ -51,6 +51,10 @@ class IHasSpecifications(Interface):
         decide what its own appropriate "default" filter is. In some cases,
         it will show all specs, in others, all approved specs, and in
         others, all incomplete specs.
+
+        If prejoin_people=False is specified, then the assignee, drafter
+        and approver will not be prejoined. This can be used in
+        situations in which these are not rendered.
         """
 
 

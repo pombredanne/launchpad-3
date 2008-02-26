@@ -238,6 +238,13 @@
         />
 
     <adapter
+        for="float"
+        provides="zope.app.traversing.interfaces.IPathAdapter"
+        factory="canonical.launchpad.webapp.tales.NumberFormatterAPI"
+        name="fmt"
+        />
+
+    <adapter
         for="types.NoneType"
         provides="zope.app.traversing.interfaces.IPathAdapter"
         factory="canonical.launchpad.webapp.tales.NoneFormatter"
@@ -294,12 +301,58 @@
         />
 
     <adapter
+        for="canonical.launchpad.interfaces.IBugBranch"
+        provides="zope.app.traversing.interfaces.IPathAdapter"
+        factory="canonical.launchpad.webapp.tales.BugBranchFormatterAPI"
+        name="fmt"
+        />
+
+    <adapter
         for="canonical.launchpad.interfaces.IBugTask"
         provides="zope.app.traversing.interfaces.IPathAdapter"
         factory="canonical.launchpad.webapp.tales.BugTaskFormatterAPI"
         name="fmt"
         />
 
+    <adapter
+        for="canonical.launchpad.interfaces.IBranchSubscription"
+        provides="zope.app.traversing.interfaces.IPathAdapter"
+        factory="canonical.launchpad.webapp.tales.BranchSubscriptionFormatterAPI"
+        name="fmt"
+        />
+
+    <adapter
+        for="canonical.launchpad.interfaces.IBranchMergeProposal"
+        provides="zope.app.traversing.interfaces.IPathAdapter"
+        factory="canonical.launchpad.webapp.tales.BranchMergeProposalFormatterAPI"
+        name="fmt"
+        />
+
+    <adapter
+        for="canonical.launchpad.interfaces.ICodeImport"
+        provides="zope.app.traversing.interfaces.IPathAdapter"
+        factory="canonical.launchpad.webapp.tales.CodeImportFormatterAPI"
+        name="fmt"
+        />
+    <adapter
+        for="canonical.launchpad.interfaces.IProductSeries"
+        provides="zope.app.traversing.interfaces.IPathAdapter"
+        factory="canonical.launchpad.webapp.tales.ProductSeriesFormatterAPI"
+        name="fmt"
+        />
+
+    <adapter
+        for="canonical.launchpad.interfaces.ISpecification"
+        provides="zope.app.traversing.interfaces.IPathAdapter"
+        factory="canonical.launchpad.webapp.tales.SpecificationFormatterAPI"
+        name="fmt"
+        />
+    <adapter
+        for="canonical.launchpad.interfaces.ISpecificationBranch"
+        provides="zope.app.traversing.interfaces.IPathAdapter"
+        factory="canonical.launchpad.webapp.tales.SpecificationBranchFormatterAPI"
+        name="fmt"
+        />
     <adapter
         for="*"
         provides="zope.app.traversing.interfaces.IPathAdapter"
@@ -312,26 +365,6 @@
         component="canonical.launchpad.webapp.authentication.authService"
         provides="canonical.launchpad.webapp.interfaces.IPlacelessAuthUtility"
         permission="zope.Public"
-        />
-
-    <subscriber
-        for="canonical.launchpad.webapp.interfaces.IAfterTraverseEvent"
-        handler="canonical.launchpad.webapp.authentication.handle"
-        />
-
-    <subscriber
-        for="zope.app.publication.interfaces.IBeforeTraverseEvent"
-        handler="canonical.launchpad.webapp.authentication.handle"
-        />
-
-    <subscriber
-        for="canonical.launchpad.webapp.interfaces.ILoggedInEvent"
-        handler="canonical.launchpad.webapp.authentication.handle"
-        />
-
-    <subscriber
-        for="canonical.launchpad.webapp.interfaces.ILoggedOutEvent"
-        handler="canonical.launchpad.webapp.authentication.handle"
         />
 
     <subscriber

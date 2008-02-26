@@ -7,7 +7,6 @@ ARCHIVEROOT=/srv/launchpad.net/ubuntu-archive/ubuntu
 MISCROOT=$ARCHIVEROOT/../ubuntu-misc
 LOCKROOT=$ARCHIVEROOT/..
 GERMINATEROOT=$ARCHIVEROOT/../ubuntu-germinate
-SEEDS=http://people.ubuntu.com/~ubuntu-archive/seeds
 
 ## Check to see if another germinate run is in progress
 
@@ -39,7 +38,7 @@ for component in main universe restricted; do
 done
 
 > "$MISCROOT/more-extra.override.$suite.main.new"
-for distro in ubuntu kubuntu edubuntu xubuntu gobuntu; do
+for distro in ubuntu kubuntu edubuntu xubuntu gobuntu kubuntu-kde4; do
   DISTRO="$(echo $distro | tr a-z A-Z)"
   germinate_suite="$distro.$suite"
   if [ "$distro" = gobuntu ]; then
@@ -47,8 +46,6 @@ for distro in ubuntu kubuntu edubuntu xubuntu gobuntu; do
   else
     germinate_components=main,universe,restricted
   fi
-  # We use the STRUCTURE file to figure out which tasks to generate.
-  wget -q -O "$DISTRO-STRUCTURE" "$SEEDS/$germinate_suite/STRUCTURE"
   for arch in i386 amd64 lpia powerpc sparc ia64 hppa; do
     # Grab local copy of Packages and InstallerPackages files
     for component in main universe restricted; do
@@ -59,6 +56,10 @@ for distro in ubuntu kubuntu edubuntu xubuntu gobuntu; do
     # Run germinate
     echo " **************** $distro/$suite/$arch ********************* " >> germinate.output
     germinate --no-rdepends -s "$germinate_suite" -d "$suite" -c "$germinate_components" -a $arch >> germinate.output 2>&1
+
+    # The structure file is generally useful; keep per distro/suite/arch
+    # copies for convenience
+    cp structure structure_"$distro"_"$suite"_"$arch"
 
     # Keep per distro/suite/arch copies of 'all' and 'all.sources' for anastacia
     cp all all_"$distro"_"$suite"_"$arch"
@@ -74,10 +75,9 @@ for distro in ubuntu kubuntu edubuntu xubuntu gobuntu; do
     # We need to fetch a number of seeds so that we can generate Task fields
     # for them. This changes over time and differs from derivative to
     # derivative, so it's best to just fetch them all.
-    taskseeds="$(cut -d: -f1 "$DISTRO-STRUCTURE" | xargs -n1 | sort -u)"
+    taskseeds="$(cut -d: -f1 structure | xargs -n1 | sort -u)"
 
     for seed in $taskseeds; do
-      wget -q -O "$DISTRO-$seed.seedtext" "$SEEDS/$germinate_suite/$seed"
       cp "$seed" "$seed"_"$distro"_"$suite"_"$arch"
     done
     echo " ********************************************************************** " >> germinate.output
@@ -86,10 +86,10 @@ for distro in ubuntu kubuntu edubuntu xubuntu gobuntu; do
 
     ## Generate apt-ftparchive 'extra' overrides for Task: fields
     for seed in $taskseeds; do
-      if ! grep -iq '^Task-' "$DISTRO-$seed.seedtext"; then
+      if ! grep -iq '^Task-' "$seed.seedtext"; then
 	continue
       fi
-      if grep -iq '^Task-Per-Derivative:' "$DISTRO-$seed.seedtext"; then
+      if grep -iq '^Task-Per-Derivative:' "$seed.seedtext"; then
 	task="$distro-$seed"
       else
 	# If a seed is not per-derivative, then we only honour it for Ubuntu,

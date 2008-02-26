@@ -80,7 +80,7 @@ have been subscribed:
     False
 
     >>> subscriber_names(bug)
-    [u'name16']
+    [u'name16', u'ubuntu-team']
 
 Likewise, filing a security-related bug on Firefox will subscribe the
 security contact, the Ubuntu team, to the bug.

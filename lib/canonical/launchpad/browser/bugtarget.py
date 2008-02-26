@@ -45,11 +45,14 @@ from canonical.launchpad.interfaces import (
     IFrontPageBugAddForm, IProjectBugAddForm, UNRESOLVED_BUGTASK_STATUSES,
     BugTaskStatus)
 from canonical.launchpad.webapp import (
-    canonical_url, LaunchpadView, LaunchpadFormView, action, custom_widget,
+    LaunchpadFormView, LaunchpadView, action, canonical_url, custom_widget,
     safe_action, urlappend)
+from canonical.launchpad.webapp.authorization import check_permission
 from canonical.widgets.bug import BugTagsWidget
 from canonical.widgets.launchpadtarget import LaunchpadTargetWidget
 from canonical.launchpad.vocabularies import ValidPersonOrTeamVocabulary
+from canonical.launchpad.webapp.menu import structured
+
 
 class FileBugData:
     """Extra data to be added to the bug."""
@@ -163,7 +166,8 @@ class FileBugViewBase(LaunchpadFormView):
         """Return the list of field names to display."""
         context = self.context
         field_names = ['title', 'comment', 'tags', 'security_related',
-                       'bug_already_reported_as']
+                       'bug_already_reported_as', 'filecontent', 'patch',
+                       'attachment_description']
         if (IDistribution.providedBy(context) or
             IDistributionSourcePackage.providedBy(context)):
             field_names.append('packagename')
@@ -393,10 +397,38 @@ class FileBugViewBase(LaunchpadFormView):
                 'A comment with additional information was added to the'
                 ' bug report.')
 
-        if extra_data.attachments:
+        # XXX 2007-01-19 gmb:
+        #     We need to have a proper FileUpload widget rather than
+        #     this rather hackish solution.
+        attachment = self.request.form.get(self.widgets['filecontent'].name)
+        if attachment or extra_data.attachments:
             # Attach all the comments to a single empty comment.
             attachment_comment = bug.newMessage(
                 owner=self.user, subject=bug.followup_subject(), content=None)
+
+            # Deal with attachments added in the filebug form.
+            if attachment:
+                # We convert slashes in filenames to hyphens to avoid
+                # problems.
+                filename = attachment.filename.replace('/', '-')
+
+                # If the user hasn't entered a description for the
+                # attachment we use its name.
+                file_description = None
+                if 'attachment_description' in data:
+                    file_description = data['attachment_description']
+                if file_description is None:
+                    file_description = filename
+
+                bug.addAttachment(
+                    owner=self.user, file_=StringIO(data['filecontent']),
+                    filename=filename, description=file_description,
+                    comment=attachment_comment, is_patch=data['patch'])
+
+                notifications.append(
+                    'The file "%s" was attached to the bug report.' %
+                        cgi.escape(filename))
+
             for attachment in extra_data.attachments:
                 bug.addAttachment(
                     owner=self.user, file_=attachment['content'],
@@ -430,16 +462,17 @@ class FileBugViewBase(LaunchpadFormView):
             self.request.response.addNotification(notification)
         if bug.security_related:
             self.request.response.addNotification(
-                'Security-related bugs are by default <span title="Private '
-                'bugs are visible only to their direct subscribers.">private'
-                '</span>. You may choose to <a href="+secrecy">publically '
-                'disclose</a> this bug.')
+                structured(
+                'Security-related bugs are by default private '
+                '(visible only to their direct subscribers). '
+                'You may choose to <a href="+secrecy">publicly '
+                'disclose</a> this bug.'))
         if bug.private and not bug.security_related:
             self.request.response.addNotification(
-                'This bug report has been marked as <span title="Private '
-                'bugs are visible only to their direct subscribers.">private'
-                '</span>. You may choose to <a href="+secrecy">change '
-                'this</a>.')
+                structured(
+                'This bug report has been marked private '
+                '(visible only to its direct subscribers). '
+                'You may choose to <a href="+secrecy">change this</a>.'))
 
         self.request.response.redirect(canonical_url(bug.bugtasks[0]))
 
@@ -533,35 +566,26 @@ class FileBugViewBase(LaunchpadFormView):
             return LaunchpadFormView.showOptionalMarker(self, field_name)
 
     def getRelevantBugTask(self, bug):
-        """Return the first bugtask from this bug that's relevant in
-        the current context.
+        """Return the first bugtask from this bug that's relevant in the
+        current context.
 
-        XXX Gavin Panella 2007-07-13:
-        This is a pragmatic function, not general purpose. It
-        tries to find a bugtask that can be used to pretty-up the
-        page, making it more user-friendly and informative. It's not
-        concerned by total accuracy, and will return the first
-        'relevant' bugtask it finds even if there are other
-        candidates. Be warned!
+        This is a pragmatic function, not general purpose. It tries to
+        find a bugtask that can be used to pretty-up the page, making
+        it more user-friendly and informative. It's not concerned by
+        total accuracy, and will return the first 'relevant' bugtask
+        it finds even if there are other candidates. Be warned!
         """
         context = self.context
-        bugtasks = bug.bugtasks
 
-        if IDistribution.providedBy(context):
-            def isRelevant(bugtask, context):
-                return bugtask.distribution == context
-        elif IProject.providedBy(context):
-            def isRelevant(bugtask, context):
-                return bugtask.pillar.project == context
+        if IProject.providedBy(context):
+            contexts = set(context.products)
         else:
-            def isRelevant(bugtask, context):
-                return bugtask.target == context
+            contexts = [context]
 
-        for bugtask in bugtasks:
-            if isRelevant(bugtask, context):
+        for bugtask in bug.bugtasks:
+            if bugtask.target in contexts or bugtask.pillar in contexts:
                 return bugtask
-        else:
-            return None
+        return None
 
 
 class FileBugAdvancedView(FileBugViewBase):
@@ -678,6 +702,8 @@ class FileBugGuidedView(FileBugViewBase):
             duplicateof = bug.duplicateof
             if duplicateof is not None:
                 bug = duplicateof
+            if not check_permission('launchpad.View', bug):
+                continue
             if bug not in matching_bugs:
                 matching_bugs.append(bug)
                 if len(matching_bugs) >= matching_bugs_limit:
