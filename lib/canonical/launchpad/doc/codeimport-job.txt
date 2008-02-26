@@ -128,6 +128,7 @@ If date_due is in the past, then the job is overdue.
 Owing to the fleeting nature of time, if date_due is the time of the
 current transaction, then the job is overdue.
 
+    >>> from canonical.database.constants import UTC_NOW
     >>> set_date_due(import_job, UTC_NOW)
     >>> import_job.isOverdue()
     True
