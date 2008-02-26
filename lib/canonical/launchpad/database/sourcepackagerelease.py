@@ -409,7 +409,7 @@ class SourcePackageRelease(SQLBase):
             'PackageUpload',
             'PackageUploadSource',
             ]
-        preJoins= ['changesfile']
+        preJoins = ['changesfile']
         query = """
         PackageUpload.id = PackageUploadSource.packageupload AND
         PackageUpload.distroseries = %s AND

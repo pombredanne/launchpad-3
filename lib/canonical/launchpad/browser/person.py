@@ -2068,8 +2068,9 @@ class PersonView(LaunchpadView, FeedsMixin):
         # If the user has permission to see any of those archives then
         # the user is permitted to see the package.
         #
-        # Ideally this check should be done in getLatestUploadedPPAPackages()
-        # but formulating the SQL query is virtually impossible!
+        # Ideally this check should be done in
+        # IPerson.getLatestUploadedPPAPackages() but formulating the SQL
+        # query is virtually impossible!
         results = []
         for package in packages:
             # Make a shallow copy to remove the Zope security.
