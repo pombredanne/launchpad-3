@@ -17,8 +17,6 @@ __all__ = [
     'HasAnnouncementsView',
     ]
 
-import cgi
-
 from zope.interface import Interface
 
 from zope.schema import Choice, TextLine
@@ -164,7 +162,7 @@ class AnnouncementRetargetView(LaunchpadFormView):
             self.setFieldError('target',
                 "There is no project with the name '%s'. "
                 "Please check that name and try again." %
-                cgi.escape(self.request.form.get("field.target")))
+                self.request.form.get("field.target"))
             return
 
         if not check_permission('launchpad.Edit', target):
