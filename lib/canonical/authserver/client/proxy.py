@@ -25,8 +25,7 @@ from zope.interface.interface import Method
 
 def get_twisted_proxy(url):
     if url == 'fake:///user-details-2':
-        pool = _make_connection_pool()
-        storage = DatabaseUserDetailsStorageV2(pool)
+        storage = DatabaseUserDetailsStorageV2(None)
         xmlrpc = UserDetailsResourceV2(storage)
         return InMemoryTwistedProxy(xmlrpc)
     return Proxy(url)
@@ -34,11 +33,10 @@ def get_twisted_proxy(url):
 
 def get_blocking_proxy(url):
     if url == 'fake:///user-details-2':
-        pool = _make_connection_pool()
         method_names = (
             list(get_method_names_in_interface(IUserDetailsStorageV2))
             + list(get_method_names_in_interface(IHostedBranchStorage)))
-        storage = DatabaseUserDetailsStorageV2(pool)
+        storage = DatabaseUserDetailsStorageV2(None)
         return InMemoryBlockingProxy(storage, method_names)
     return xmlrpclib.ServerProxy(url)
 
