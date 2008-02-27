@@ -53,25 +53,25 @@ distinct titles than their original:
     Your age:
     >>> print MyForm1.get('name').title
     Your name:
-    
+
 The interface attribute points to the correct interface:
 
     >>> MyForm1.get('age').interface is MyForm1
     True
-    
+
 And the original field wasn't updated:
 
     >>> print MyModel.get('age').title
     Number of years since birth
     >>> MyModel.get('name').interface is MyModel
     True
-    
+
 Using the exclude form of the directive, you could get an equivalent to
 MyForm1 using the following:
 
     >>> class MyForm2(Interface):
     ...     use_template(Initiated, exclude=['illuminated', 'fancy_value'])
-    
+
     >>> sorted(MyForm2.names())
     ['age', 'name']
 
