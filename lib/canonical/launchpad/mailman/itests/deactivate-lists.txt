@@ -27,7 +27,6 @@ this stanza can be removed.
     >>> browser.getControl('Apply for Mailing List').click()
 
     >>> list_one = itest_helper.review_list('itest-one')
-    >>> itest_helper.wait_for_mailman()
     >>> from Mailman.Utils import list_names
     >>> sorted(name for name in list_names() if name.startswith('itest-'))
     ['itest-one']
@@ -43,12 +42,14 @@ Because the mailing list is active, there is no archived backup file.
 
 The team administrator can deactivate the list through the web.
 
+    >>> serial_watcher = itest_helper.LogWatcher('serial')
     >>> browser.open('http://launchpad.dev/~itest-one/+mailinglist')
     >>> browser.getControl('Deactivate this Mailing List').click()
-    >>> itest_helper.wait_for_mailman()
+    >>> serial_watcher.wait()
 
 As far as Mailman is concerned, the mailing list no longer exists.
 
+    >>> import time; time.sleep(2)
     >>> sorted(name for name in list_names() if name.startswith('itest-'))
     []
 
