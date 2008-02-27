@@ -34,6 +34,7 @@ import psycopg
 import transaction
 
 import zope.app.testing.functional
+from zope.app.testing.functional import ZopePublication
 from zope.component import getUtility, getGlobalSiteManager
 from zope.component.interfaces import ComponentLookupError
 from zope.security.management import getSecurityPolicy
@@ -56,6 +57,19 @@ from canonical.testing.profiled import profiled
 
 
 orig__call__ = zope.app.testing.functional.HTTPCaller.__call__
+
+
+class MockRootFolder:
+    """Implement the minimum functionality required by Z3 ZODB dependencies
+
+    Installed as part of FunctionalLayer.testSetUp() to allow the http()
+    method (zope.app.testing.functional.HTTPCaller) to work.
+    """
+    @property
+    def _p_jar(self):
+        return self
+    def sync(self):
+        pass
 
 
 class LayerError(Exception):
@@ -519,6 +533,14 @@ class FunctionalLayer(BaseLayer):
     def testSetUp(cls):
         transaction.abort()
         transaction.begin()
+
+        # Fake a root folder to keep Z3 ZODB dependencies happy.
+        from canonical.functional import FunctionalTestSetup
+        fs = FunctionalTestSetup()
+        if not fs.connection:
+            fs.connection = fs.db.open()
+        root = fs.connection.root()
+        root[ZopePublication.root_name] = MockRootFolder()
 
         # Should be impossible, as the CA cannot be unloaded. Something
         # mighty nasty has happened if this is triggered.
