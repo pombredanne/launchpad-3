@@ -534,6 +534,28 @@ imported and linked to the bug.
     ...     print cve.displayname
     CVE-1991-9911
 
+We need to update the karma values.
+
+    >>> commit()
+    >>> import subprocess
+    >>> process = subprocess.Popen(
+    ...     'cronscripts/foaf-update-karma-cache.py', shell=True,
+    ...     stdin=subprocess.PIPE, stdout=subprocess.PIPE,
+    ...     stderr=subprocess.PIPE)
+    >>> (out, err) = process.communicate()
+    >>> print err
+    INFO    creating lockfile
+    INFO    Updating Launchpad karma caches
+    INFO    Step A: Calculating individual KarmaCache entries
+    INFO    Step B: Rebuilding KarmaTotalCache
+    INFO    Step C: Calculating KarmaCache sums
+    INFO    Finished updating Launchpad karma caches
+    <BLANKLINE>
+    >>> print out
+    <BLANKLINE>
+    >>> process.returncode
+    0
+
 However, the user who authored the comment containing the CVE reference
 doesn't get any karma from this since they aren't a valid Launchpad
 user, having been created during the import process.
@@ -545,13 +567,13 @@ user, having been created during the import process.
     >>> latest_message.owner.karma
     0
 
-If, on the other hand, an imported comment was authored by a valid
-Launchpad user, that user will receive karma as usual. Foo Bar is the
-author of the next comment that will be imported.
+Karma is only awarded for actions that occur within Launchpad. If an
+imported comment was authored by a valid Launchpad user, that user will
+receive no karma.
 
     >>> foo_bar = getUtility(IPersonSet).getByName('name16')
     >>> foo_bar.karma
-    241
+    0
 
     >>> external_debbugs.debbugs_db._data_file = (
     ...     'debbugs-comments-cve-valid-user.txt')
@@ -564,21 +586,29 @@ author of the next comment that will be imported.
     CVE-1999-0593
 
     >>> commit()
-    >>> flush_database_updates()
+
+    >>> import subprocess
+    >>> process = subprocess.Popen(
+    ...     'cronscripts/foaf-update-karma-cache.py', shell=True,
+    ...     stdin=subprocess.PIPE, stdout=subprocess.PIPE,
+    ...     stderr=subprocess.PIPE)
+    >>> (out, err) = process.communicate()
+    >>> print err
+    INFO    creating lockfile
+    INFO    Updating Launchpad karma caches
+    INFO    Step A: Calculating individual KarmaCache entries
+    INFO    Step B: Rebuilding KarmaTotalCache
+    INFO    Step C: Calculating KarmaCache sums
+    INFO    Finished updating Launchpad karma caches
+    <BLANKLINE>
+    >>> print out
+    <BLANKLINE>
+    >>> process.returncode
+    0
+
     >>> foo_bar = getUtility(IPersonSet).getByName('name16')
-
-# This test will always fail.
-
     >>> foo_bar.karma
-
-If we try to import the comments from a bug whose comments log doesn't
-exist or can't be parsed we will get a warning. We can demonstrate this
-by forcing importBugComments to fail on our Test DebBugs bugtracker.
-
-    >>> external_debbugs.debbugs_db.fail_on_load_log = True
-    >>> external_debbugs.importBugComments(bug_watch)
-    WARNING:...:Unable to import comments for DebBugs bug #1234.
-    Could not parse comment log.
+    0
 
 Comments for bugs in the archive can also be imported:
 

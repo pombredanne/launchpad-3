@@ -559,14 +559,19 @@ class Bug(SQLBase):
 
         return bugmsg.message
 
-    def linkMessage(self, message, bugwatch=None):
+    def linkMessage(self, message, bugwatch=None, owner=None):
         """See `IBug`."""
         if message not in self.messages:
+            if owner is not None:
+                message_owner = owner
+            else:
+                message_owner = message.owner
+
             result = BugMessage(bug=self, message=message,
                 bugwatch=bugwatch)
             getUtility(IBugWatchSet).fromText(
-                message.text_contents, self, message.owner)
-            self.findCvesInText(message.text_contents, message.owner)
+                message.text_contents, self, message_owner)
+            self.findCvesInText(message.text_contents, message_owner)
             return result
 
     def addWatch(self, bugtracker, remotebug, owner):
