@@ -1,3 +1,4 @@
+== Leaving the team ==
 
   Logged in as 'name16', go to the team named 'ubuntu-team' home page.
 
@@ -54,3 +55,34 @@
   ...
   ...Join...
   ...
+
+
+== Team overview page quick-links ==
+
+A member of a team can quickly leave a team by using the links on the
+team's overview page.
+
+    >>> browser = setupBrowser(auth='Basic carlos@canonical.com:test')
+    >>> browser.open('http://launchpad.dev/~admins')
+    >>> print extract_text(
+    ... 	find_portlet(browser.contents, 'Your involvement'))
+    Your involvement
+    You are a member of this team.
+    (Leave the team)
+
+    >>> browser.getLink('Leave the team').click()
+    >>> print browser.url
+    http://launchpad.dev/%7Eadmins/+leave
+
+Team owners do not have the option to leave.
+
+    >>> browser.open('http://launchpad.dev/~testing-spanish-team')
+    >>> print extract_text(
+    ... 	find_portlet(browser.contents, 'Your involvement'))
+    Your involvement
+    You are the owner of this team.
+
+    >>> browser.getLink('Leave the team')
+    Traceback (most recent call last):
+    ...
+    LinkNotFoundError
