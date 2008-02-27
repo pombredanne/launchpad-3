@@ -166,7 +166,8 @@ class Sprint(SQLBase):
     def all_specifications(self):
         return self.specifications(filter=[SpecificationFilter.ALL])
 
-    def specifications(self, sort=None, quantity=None, filter=None):
+    def specifications(self, sort=None, quantity=None, filter=None,
+                       prejoin_people=True):
         """See IHasSpecifications."""
 
         query = self.spec_filter_clause(filter=filter)
@@ -199,10 +200,11 @@ class Sprint(SQLBase):
                          '-SprintSpecification.date_created',
                          'Specification.id']
 
-        # now do the query, and remember to prejoin to people
         results = Specification.select(query, orderBy=order, limit=quantity,
             clauseTables=['SprintSpecification'])
-        return results.prejoin(['assignee', 'approver', 'drafter'])
+        if prejoin_people:
+            results = results.prejoin(['assignee', 'approver', 'drafter'])
+        return results
 
     def specificationLinks(self, sort=None, quantity=None, filter=None):
         """See `ISprint`."""

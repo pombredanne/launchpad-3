@@ -272,10 +272,12 @@ class SourcePackageView(BuildRecordsView, TranslationsMixin):
     def browserLanguages(self):
         return helpers.browserLanguages(self.request)
 
-    def searchName(self):
+    @property
+    def search_name(self):
         return False
 
-    def defaultBuildState(self):
+    @property
+    def default_build_state(self):
         """Default build state for sourcepackage builds.
 
         This overrides the default that is set on BuildRecordsView."""

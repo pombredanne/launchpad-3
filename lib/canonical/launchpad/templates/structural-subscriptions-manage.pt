@@ -28,7 +28,7 @@
 <div metal:fill-slot="main">
  
   <p>
-    Subscribers automatically receives e-mail notifications
+    Subscribers automatically receive e-mail notifications
     of all public bugs.
     You can change these bugmail settings at any time.
   </p>

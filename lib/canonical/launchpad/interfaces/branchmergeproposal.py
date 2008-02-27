@@ -195,6 +195,9 @@ class IBranchMergeProposal(Interface):
     conversation = Attribute(
         _("The discussion of this merge proposal"))
 
+    def isValidTransition(next_state, user=None):
+        """True if it is valid for user update the proposal to next_state."""
+
     def setAsWorkInProgress():
         """Set the state of the merge proposal to 'Work in progress'.
 
