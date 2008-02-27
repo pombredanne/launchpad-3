@@ -7,6 +7,7 @@ import cgi
 from canonical.launchpad.interfaces import ITranslator
 from canonical.launchpad.webapp import (
     LaunchpadEditFormView, LaunchpadFormView, action, canonical_url)
+from canonical.launchpad.webapp.menu import structured
 
 __all__ = [
     'TranslatorEditView',
@@ -38,7 +39,8 @@ class TranslatorEditView(LaunchpadEditFormView):
                 cgi.escape(existing_translator.translator.displayname))
 
             self.setFieldError('language',
-                '%s is already a translator for this language' % (
+                structured(
+                    '%s is already a translator for this language' %
                     existing_translator_link))
 
     @property

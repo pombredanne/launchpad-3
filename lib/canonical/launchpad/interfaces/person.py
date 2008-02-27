@@ -31,7 +31,6 @@ __all__ = [
     'PersonVisibility',
     'TeamContactMethod',
     'TeamMembershipRenewalPolicy',
-    'TeamMembershipStatus',
     'TeamSubscriptionPolicy',
     'make_person_name_field',
     ]
@@ -62,6 +61,8 @@ from canonical.launchpad.interfaces.launchpad import (
     IHasIcon, IHasLogo, IHasMugshot)
 from canonical.launchpad.interfaces.questioncollection import (
     IQuestionCollection, QUESTION_STATUS_DEFAULT_SEARCH)
+from canonical.launchpad.interfaces.teammembership import (
+    TeamMembershipStatus)
 from canonical.launchpad.interfaces.validation import (
     validate_new_team_email, validate_new_person_email)
 
@@ -246,67 +247,6 @@ class TeamMembershipRenewalPolicy(DBEnumeratedType):
 
         Memberships are automatically renewed when they expire and a note is
         sent to the member and to team admins.
-        """)
-
-
-class TeamMembershipStatus(DBEnumeratedType):
-    """TeamMembership Status
-
-    According to the policies specified by each team, the membership status of
-    a given member can be one of multiple different statuses. More information
-    can be found in the TeamMembership spec.
-    """
-
-    PROPOSED = DBItem(1, """
-        Proposed
-
-        You are a proposed member of this team. To become an active member
-        your subscription has to be approved by one of the team's
-        administrators.
-        """)
-
-    APPROVED = DBItem(2, """
-        Approved
-
-        You are an active member of this team.
-        """)
-
-    ADMIN = DBItem(3, """
-        Administrator
-
-        You are an administrator of this team.
-        """)
-
-    DEACTIVATED = DBItem(4, """
-        Deactivated
-
-        Your subscription to this team has been deactivated.
-        """)
-
-    EXPIRED = DBItem(5, """
-        Expired
-
-        Your subscription to this team is expired.
-        """)
-
-    DECLINED = DBItem(6, """
-        Declined
-
-        Your proposed subscription to this team has been declined.
-        """)
-
-    INVITED = DBItem(7, """
-        Invited
-
-        You have been invited as a member of this team. In order to become an
-        actual member, you have to accept the invitation.
-        """)
-
-    INVITATION_DECLINED = DBItem(8, """
-        Invitation declined
-
-        You have been invited as a member of this team but the invitation has
-        been declined.
         """)
 
 
