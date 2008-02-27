@@ -31,6 +31,7 @@
   <content class="canonical.launchpad.database.Person">
     <allow interface="canonical.launchpad.interfaces.IPersonPublic"/>
     <allow interface="canonical.launchpad.interfaces.IHasTranslationImports"/>
+    <allow interface="canonical.launchpad.interfaces.IHasStanding"/>
 
     <require
       permission="launchpad.View"
@@ -42,7 +43,7 @@
       />
     <require
       permission="launchpad.Edit"
-      set_schema="canonical.launchpad.interfaces.IPerson"
+      set_schema="canonical.launchpad.interfaces.IPersonPublic"
       />
     <require
       permission="launchpad.Special"
@@ -59,7 +60,7 @@
       />
     <require
       permission="launchpad.Admin"
-      interface="canonical.launchpad.interfaces.IHasStanding"
+      set_schema="canonical.launchpad.interfaces.IHasStanding"
       />
   </content>
 
