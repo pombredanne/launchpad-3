@@ -124,7 +124,7 @@ And finally, we can make announcements on an IDistribution, too:
     ...  latest in KDE goodness!""",
     ...  publication_date=datetime(2007, 11, 3, 7, 0, 0, tzinfo=pytz.utc))
 
-Let's commit these to the database.
+Let's flush these to the database.
 
     >>> flush_database_updates()
 
@@ -159,6 +159,9 @@ of published items that are visible to everyone.
 
 Note that products that are part of a project will show all the project
 announcements, and vice versa.
+
+    >>> import transaction
+    >>> transaction.commit()
 
     >>> for pillar in [tomcat, derby, apache, kubuntu]:
     ...   print pillar.name
@@ -250,14 +253,12 @@ current date and time:
     >>> print apache_oss.date_announced
     None
     >>> apache_oss.set_publication_date(NOW)
-    >>> flush_database_updates()
     >>> apache_oss.date_announced is not None
     True
 
 And you can reset the date of publication:
 
     >>> apache_oss.set_publication_date(None)
-    >>> flush_database_updates()
 
 
 == Retargeting ==
@@ -283,7 +284,6 @@ You can ask an announcement to delete itself permanently.
 
     >>> old_id = kubuntu_release.id
     >>> kubuntu_release.destroySelf()
-    >>> flush_database_updates()
     >>> print kubuntu.getAnnouncement(old_id)
     None
 
