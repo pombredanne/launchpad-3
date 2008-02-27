@@ -515,6 +515,7 @@ class IBranch(IHasOwner):
     code_is_browseable = Attribute(
         "Is the code in this branch accessable through codebrowse?")
 
+    # Don't use Object-- that would cause an import loop with ICodeImport
     code_import = Attribute("The associated CodeImport, if any.")
 
     def getBzrUploadURL(person=None):
@@ -549,12 +550,6 @@ class IBranch(IHasOwner):
             object that must be deleted or altered, operation is either
             "delete" or "alter", and reason is a string explaining why the
             object needs to be touched.
-        """
-
-    def _breakReferences():
-        """Remove all references to a branch.
-
-        This may involve deleting items or setting references to None
         """
 
     def associatedProductSeries():

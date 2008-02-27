@@ -305,11 +305,11 @@ def canonical_url(
     If there is no request available, the protocol, host and port are taken
     from the root_url given in launchpad.conf.
 
-    Raises NoCanonicalUrl if a canonical url is not available.
     :param path_only_if_possible: If the protocol and hostname can be omitted
         for the current request, return a url containing only the path.
     :param view_name: Provide the canonical url for the specified view,
         rather than the default view.
+    :raises: NoCanonicalUrl if a canonical url is not available.
     """
     urlparts = [urldata.path
                 for urldata in canonical_urldata_iterator(obj)
@@ -331,7 +331,8 @@ def canonical_url(
 
     if view_name is not None:
         if queryMultiAdapter((obj, request), name=view_name) is None:
-            raise AssertionError('%s is not a valid view name.' % view_name)
+            raise AssertionError('View "%s" is not registered for "%s".' %
+                (view_name, obj.__class__.__name__))
         urlparts.insert(0, view_name)
 
     if rootsite is None:
@@ -683,7 +684,7 @@ class RenamedView:
 
     def publishTraverse(self, request, name):
         """See zope.publisher.interfaces.browser.IBrowserPublisher."""
-        raise NotFound(name)
+        raise NotFound(name, self.context)
 
     def browserDefault(self, request):
         """See zope.publisher.interfaces.browser.IBrowserPublisher."""

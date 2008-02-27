@@ -6,7 +6,8 @@ template uploads.
 
     >>> ff_owner_browser = setupBrowser(auth='Basic test@canonical.com:test')
     >>> ff_owner_browser.open(
-    ...     'http://translations.launchpad.dev/firefox/1.0/+translations-upload')
+    ...     'http://translations.launchpad.dev/firefox/1.0/'
+    ...     '+translations-upload')
     >>> 'Upload either a single file' in ff_owner_browser.contents
     True
 
@@ -348,3 +349,17 @@ And also a truncated tarball inside a bzip2 wrapper:
   ...     print tag
   <div...>Nothing has happened...
 
+Or even files that are not really tar.gz files even if the filename
+says that.
+
+  >>> evo_owner_browser.open(
+  ...     'http://translations.launchpad.dev/evolution/trunk/'
+  ...     '+translations-upload')
+  >>> evo_owner_browser.getControl('File').add_file(
+  ...     StringIO('foo'), 'application/x-gzip', test_file_name)
+  >>> evo_owner_browser.getControl('Request Upload').click()
+  >>> evo_owner_browser.url
+  'http://translations.launchpad.dev/evolution/trunk/+translations-upload'
+  >>> get_feedback_messages(evo_owner_browser.contents)
+  [u'Nothing has happened. The tarball you uploaded does not contain any file
+     that the system can understand.']

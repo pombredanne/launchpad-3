@@ -73,13 +73,20 @@ We also have image:icon for KarmaCategory:
     <img ... title="Specification Tracking" src="/@@/blueprint" />
     <img ... title="Translations in Rosetta" src="/@@/translation" />
 
+We also have an icon for bugs.
+
+    >>> from canonical.launchpad.interfaces import IBugSet
+    >>> bug = getUtility(IBugSet).get(1)
+    >>> print test_tales("bug/image:icon", bug=bug)
+    <img ... src="/@@/bug" />
+
 
 == The fmt: namespace to get strings ==
 
 datetimes can be formatted with fmt:date, fmt:time, fmt:datetime and
 fmt:rfc822utcdatetime.
 
-   >>> from datetime import datetime, timedelta
+   >>> from datetime import datetime
    >>> dt = datetime(2005, 4, 1, 16, 22)
    >>> test_tales('dt/fmt:date', dt=dt)
    '2005-04-01'
@@ -187,7 +194,6 @@ For branches, fmt:link links to the branch page.
 
 For bugs, fmt:link takes to the bug redirect page.
 
-    >>> from canonical.launchpad.interfaces import IBugSet
     >>> bug = getUtility(IBugSet).get(1)
     >>> test_tales("bug/fmt:link", bug=bug)
     u'<a href=".../bugs/1"><img ...src="/@@/bug" />&nbsp;Bug #1: Firefox does
@@ -274,19 +280,26 @@ Merge proposals also have a link formatter, which displays branch titles:
 === Blueprints ===
 
     >>> login('test@canonical.com')
-    >>> specification = factory.makeSpec()
+    >>> specification = factory.makeSpecification()
     >>> test_tales("specification/fmt:link", specification=specification)
     u'...<img ... src="/@@/blueprint-undefined" />&nbsp;...'
 
 
 === Blueprint branches ===
 
-    >>> specification = factory.makeSpec()
+    >>> specification = factory.makeSpecification()
     >>> branch = factory.makeBranch()
     >>> specification_branch = specification.linkBranch(branch, branch.owner)
     >>> test_tales("specification_branch/fmt:link",
     ...     specification_branch=specification_branch)
     u'...<img ... src="/@@/blueprint-undefined" />&nbsp;...'
+
+
+=== Projects ===
+
+    >>> product = factory.makeProduct()
+    >>> test_tales('product/fmt:link', product=product)
+    u'<a href=...><img alt="" ... src="/@@/product" />&nbsp;...</a>'
 
 
 == The fmt: namespace to get strings (hiding) ==

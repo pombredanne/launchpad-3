@@ -893,6 +893,7 @@ class PillarFormatterAPI(CustomizableFormatter):
     formatted string."""
 
     _link_summary_template = '%(displayname)s'
+    _link_permission = 'zope.Public'
 
     def _link_summary_values(self):
         return {'displayname': self._context.displayname}

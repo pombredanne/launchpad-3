@@ -19,7 +19,7 @@ from canonical.database.enumcol import EnumCol
 from canonical.launchpad.interfaces import (
     IMessage, IQuestionMessage, QuestionAction, QuestionStatus)
 
-from canonical.lp import decorates
+from canonical.lazr import decorates
 
 
 class QuestionMessage(SQLBase):
