@@ -207,14 +207,15 @@ menu item to "Don't subscribe".
 Links to subscribe and unsubscribe from the mailing lists are also
 available from the team's Overview page.
 
-The subscribe link is visible on the testing-spanish team's Overview
+The subscribe link is visible on the admin team's Overview
 page, because Carlos hasn't subscribed yet.
 
-    >>> browser.open('http://launchpad.dev/~testing-spanish-team')
+    >>> browser.open('http://launchpad.dev/~admins')
     >>> print extract_text(
     ... 	find_portlet(browser.contents, 'Your involvement'))
     Your involvement
-    You are the owner of this team.
+    You are a member of this team.
+    (Leave the team)
     You are not subscribed to the team mailing list.
     (Subscribe)
     >>> browser.getLink('Subscribe')

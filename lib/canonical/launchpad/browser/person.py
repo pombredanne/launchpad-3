@@ -1974,7 +1974,7 @@ class PersonView(LaunchpadView, FeedsMixin):
         subscription.
         """
         mailing_list = self.context.mailing_list
-        return mailing_list is not None #and mailing_list.isUsable()
+        return mailing_list is not None and mailing_list.isUsable()
 
     def getURLToAssignedBugsInProgress(self):
         """Return an URL to a page which lists all bugs assigned to this
