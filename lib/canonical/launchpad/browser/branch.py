@@ -35,6 +35,7 @@ from canonical.cachedproperty import cachedproperty
 from canonical.config import config
 from canonical.database.constants import UTC_NOW
 
+from canonical.launchpad import _
 from canonical.launchpad.browser.branchref import BranchRef
 from canonical.launchpad.browser.feeds import BranchFeedLink, FeedsMixin
 from canonical.launchpad.browser.launchpad import StructuralObjectPresentation
@@ -572,7 +573,8 @@ class BranchDeletionView(LaunchpadFormView):
     schema = IBranch
     field_names = []
 
-    def displayDeletionRequirements(self):
+    @cachedproperty
+    def display_deletion_requirements(self):
         """Normal deletion requirements, indication of permissions.
 
         :return: A list of tuples of (item, action, reason, allowed)
@@ -587,12 +589,12 @@ class BranchDeletionView(LaunchpadFormView):
     def all_permitted(self):
         """Return True if all deletion requirements are permitted, else False.
 
-        Uses displayDeletionRequirements as its source data
+        Uses display_deletion_requirements as its source data.
         """
         return len([item for item, action, reason, allowed in
-            self.displayDeletionRequirements() if not allowed]) == 0
+            self.display_deletion_requirements if not allowed]) == 0
 
-    @action('Delete Branch', name='delete_branch',
+    @action('Delete', name='delete_branch',
             condition=lambda x, y: x.all_permitted())
     def delete_branch_action(self, action, data):
         branch = self.context
@@ -620,7 +622,7 @@ class BranchDeletionView(LaunchpadFormView):
         branch = self.context
         row_dict = {'delete': [], 'alter': [], 'break_link': []}
         for item, action, reason, allowed in (
-            self.displayDeletionRequirements()):
+            self.display_deletion_requirements):
             if IBugBranch.providedBy(item):
                 action = 'break_link'
             elif ISpecificationBranch.providedBy(item):
@@ -633,6 +635,10 @@ class BranchDeletionView(LaunchpadFormView):
                   }
             row_dict[action].append(row)
         return row_dict
+
+    @action(_('Cancel'), name='cancel', validator='validate_cancel')
+    def cancel_action(self, action, data):
+        """Do nothing and go back to the branch page."""
 
 
 class BranchEditView(BranchEditFormView, BranchNameValidationMixin):
