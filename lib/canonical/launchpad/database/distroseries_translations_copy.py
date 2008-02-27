@@ -14,6 +14,7 @@ from canonical.database.postgresql import allow_sequential_scans, drop_tables
 from canonical.database.sqlbase import (
     cursor, flush_database_updates, quote, sqlvalues)
 from canonical.launchpad.interfaces.looptuner import ITunableLoop
+from canonical.launchpad.interfaces.translations import TranslationConstants
 from canonical.launchpad.database.pofile import POFile
 from canonical.launchpad.utilities.looptuner import LoopTuner
 
@@ -275,6 +276,12 @@ def _prepare_translationmessage_batch(
     """
     batch_clause = (
         "holding.id >= %s AND holding.id < %s" % sqlvalues(start_id, end_id))
+
+    identical_msgstrs = " AND ".join([
+        "COALESCE(holding.msgstr%d, -1) = COALESCE(tm.msgstr%d, -1)" % (
+            form, form)
+        for form in xrange(TranslationConstants.MAX_PLURAL_FORMS)])
+
     cur = cursor()
     cur.execute("""
         DELETE FROM %s AS holding
@@ -282,11 +289,8 @@ def _prepare_translationmessage_batch(
         WHERE %s AND
             holding.potmsgset = tm.potmsgset AND
             holding.pofile = tm.pofile AND
-            COALESCE(holding.msgstr0, -1) = COALESCE(tm.msgstr0, -1) AND
-            COALESCE(holding.msgstr1, -1) = COALESCE(tm.msgstr1, -1) AND
-            COALESCE(holding.msgstr2, -1) = COALESCE(tm.msgstr2, -1) AND
-            COALESCE(holding.msgstr3, -1) = COALESCE(tm.msgstr3, -1)
-        """ % (holding_table, batch_clause))
+            %s
+        """ % (holding_table, batch_clause, identical_msgstrs))
 
     # Deactivate current/imported translation messages we're about to replace
     # with better ones from the parent.
@@ -332,16 +336,23 @@ def _prepare_translationmessage_merge(
     # the child series.  Finally, we only replace translations in the child
     # with ones from the parent if the replacement is newer than the
     # translation the child already has.
+    is_complete = [
+        ("(msgstr%d IS NOT NULL OR COALESCE(Language.pluralforms, 2) <= %d)"
+         % (form, form))
+        for form in xrange(1, TranslationConstants.MAX_PLURAL_FORMS)]
+
+    query_parts = {
+        'is_complete': " AND ".join(is_complete),
+        }
+    query_parts.update(query_parameters)
+
     where_clause = """
         is_current AND
         %(pofile_holding_table)s.language = Language.id AND
         potmsgset = POTMsgSet.id AND
         potmsgset = temp_equiv_potmsgset.id AND
         msgstr0 IS NOT NULL AND
-        (potmsgset.msgid_plural IS NULL OR (
-         (msgstr1 IS NOT NULL OR COALESCE(Language.pluralforms,2) <= 1) AND
-         (msgstr2 IS NOT NULL OR COALESCE(Language.pluralforms,2) <= 2) AND
-         (msgstr3 IS NOT NULL OR COALESCE(Language.pluralforms,2) <= 3))) AND
+        (potmsgset.msgid_plural IS NULL OR (%(is_complete)s)) AND
         NOT EXISTS (
             SELECT *
             FROM TranslationMessage better
@@ -358,7 +369,7 @@ def _prepare_translationmessage_merge(
                   (COALESCE(better.msgstr3, -1) =
                     COALESCE(source.msgstr3, -1))))
         )
-        """ % query_parameters
+        """ % query_parts
     joined_tables = ['temp_equiv_potmsgset', 'POTMsgSet', 'Language']
     copier.extract('TranslationMessage', joins=['POFile'],
         where_clause=where_clause, external_joins=joined_tables,

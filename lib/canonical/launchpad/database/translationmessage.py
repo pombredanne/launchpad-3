@@ -20,7 +20,7 @@ from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import SQLBase
 from canonical.launchpad.interfaces import (
     ITranslationMessage, ITranslationMessageSet, RosettaTranslationOrigin,
-    TranslationValidationStatus)
+    TranslationConstants, TranslationValidationStatus)
 from canonical.launchpad.validators.person import public_person_validator
 
 
@@ -72,10 +72,15 @@ class DummyTranslationMessage(TranslationMessageMixIn):
         self.submitter = None
         self.date_reviewed = None
         self.reviewer = None
+
+        assert TranslationConstants.MAX_PLURAL_FORMS == 4, (
+            "Change this code to support %d plural forms"
+            % TranslationConstants.MAX_PLURAL_FORMS)
         self.msgstr0 = None
         self.msgstr1 = None
         self.msgstr2 = None
         self.msgstr3 = None
+
         self.comment = None
         self.origin = RosettaTranslationOrigin.ROSETTAWEB
         self.validation_status = TranslationValidationStatus.UNKNOWN
@@ -117,6 +122,10 @@ class TranslationMessage(SQLBase, TranslationMessageMixIn):
     reviewer = ForeignKey(
         dbName='reviewer', foreignKey='Person',
         validator=public_person_validator, notNull=False, default=None)
+
+    assert TranslationConstants.MAX_PLURAL_FORMS == 4, (
+        "Change this code to support %d plural forms"
+        % TranslationConstants.MAX_PLURAL_FORMS)
     msgstr0 = ForeignKey(
         foreignKey='POTranslation', dbName='msgstr0', notNull=True)
     msgstr1 = ForeignKey(
@@ -213,6 +222,9 @@ class TranslationMessage(SQLBase, TranslationMessageMixIn):
     @cachedproperty
     def translations(self):
         """See `ITranslationMessage`."""
+        assert TranslationConstants.MAX_PLURAL_FORMS == 4, (
+            "Change this code to support %d plural forms"
+            % TranslationConstants.MAX_PLURAL_FORMS)
         msgstrs = [self.msgstr0, self.msgstr1, self.msgstr2, self.msgstr3]
         translations = []
         # Return translations for no more plural forms than the POFile knows.

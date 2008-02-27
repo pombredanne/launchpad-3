@@ -17,6 +17,7 @@ from canonical.launchpad import _
 from canonical.launchpad.interfaces.language import ILanguage
 from canonical.launchpad.interfaces.pofile import IPOFile
 from canonical.launchpad.interfaces.potemplate import IPOTemplate
+from canonical.launchpad.interfaces.translations import TranslationConstants
 
 
 class IVPOExportSet(Interface):
@@ -139,6 +140,9 @@ class IVPOExport(Interface):
         title=_("Whether this message was imported"),
         readonly=True, required=True)
 
+    assert TranslationConstants.MAX_PLURAL_FORMS == 4, (
+        "Change this code to support %d plural forms"
+        % TranslationConstants.MAX_PLURAL_FORMS)
     translation0 = Text(
         title=u"See ITranslationMessage.msgstr0",
         readonly=True, required=False)

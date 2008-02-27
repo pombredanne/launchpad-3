@@ -9,6 +9,7 @@ from canonical.launchpad.interfaces.person import IPerson
 from canonical.launchpad.interfaces.pofile import IPOFile
 from canonical.launchpad.interfaces.potmsgset import IPOTMsgSet
 from canonical.launchpad.interfaces.potranslation import IPOTranslation
+from canonical.launchpad.interfaces.translations import TranslationConstants
 from canonical.lazr import DBEnumeratedType, DBItem
 
 __metaclass__ = type
@@ -109,6 +110,9 @@ class ITranslationMessage(Interface):
             "The person who did the review and accepted current translations"
             ), readonly=False, required=False, schema=IPerson)
 
+    assert TranslationConstants.MAX_PLURAL_FORMS == 4, (
+        "Change this code to support %d plural forms"
+        % TranslationConstants.MAX_PLURAL_FORMS)
     msgstr0 = Object(
         title=_("Translation for plural form 0 (if any)"),
         required=False, schema=IPOTranslation)

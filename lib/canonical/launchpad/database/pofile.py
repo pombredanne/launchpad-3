@@ -1,4 +1,4 @@
-# Copyright 2004-2007 Canonical Ltd.  All rights reserved.
+# Copyright 2004-2008 Canonical Ltd.  All rights reserved.
 # pylint: disable-msg=E0611,W0212,W0231
 
 """`SQLObject` implementation of `IPOFile` interface."""
@@ -37,8 +37,9 @@ from canonical.launchpad.interfaces import (
     ITranslationExporter, ITranslationFileData, ITranslationImporter,
     IVPOExportSet, NotExportedFromLaunchpad, NotFoundError,
     OutdatedTranslationError, RosettaImportStatus, TooManyPluralFormsError,
-    TranslationFormatInvalidInputError, TranslationFormatSyntaxError,
-    TranslationPermission, TranslationValidationStatus)
+    TranslationConstants, TranslationFormatInvalidInputError,
+    TranslationFormatSyntaxError, TranslationPermission,
+    TranslationValidationStatus)
 from canonical.launchpad.translationformat import TranslationMessageData
 from canonical.launchpad.webapp import canonical_url
 from canonical.librarian.interfaces import ILibrarianClient
@@ -455,9 +456,8 @@ class POFile(SQLBase, POFileMixIn):
                 POTMsgSet.potemplate = %s AND
                 (TranslationMessage.id IS NULL OR
                  (NOT TranslationMessage.is_fuzzy AND (%s))))
-            """ % tuple(
-                sqlvalues(self, self.potemplate) +
-                (' OR '.join(incomplete_check),))
+            """ % (quote(self), quote(self.potemplate),
+                   ' OR '.join(incomplete_check))
         return POTMsgSet.select(query, orderBy='POTMsgSet.sequence')
 
     def getPOTMsgSetWithNewSuggestions(self):
@@ -496,6 +496,11 @@ class POFile(SQLBase, POFileMixIn):
         # TranslationMessage objects for empty strings in imported files), all
         # the 'imported.msgstr? IS NOT NULL' conditions can be removed because
         # they will not be needed anymore.
+        not_null_clauses = [
+            "imported.msgstr%d IS NOT NULL" % form
+            for form in xrange(TranslationConstants.MAX_PLURAL_FORMS)]
+        not_nulls = " OR ".join(not_null_clauses)
+
         results = POTMsgSet.select('''POTMsgSet.id IN (
             SELECT POTMsgSet.id
             FROM POTMsgSet
@@ -512,11 +517,8 @@ class POFile(SQLBase, POFileMixIn):
             WHERE
                 POTMsgSet.sequence > 0 AND
                 POTMsgSet.potemplate = %s AND
-                (imported.msgstr0 IS NOT NULL OR
-                 imported.msgstr1 IS NOT NULL OR
-                 imported.msgstr2 IS NOT NULL OR
-                 imported.msgstr3 IS NOT NULL))
-            ''' % sqlvalues(self, self.potemplate),
+                (%s))
+            ''' % (quote(self), quote(self.potemplate), not_nulls),
             orderBy='POTmsgSet.sequence')
 
         return results
@@ -633,6 +635,10 @@ class POFile(SQLBase, POFileMixIn):
         # TranslationMessage objects for empty strings in imported files), all
         # the 'imported.msgstr? IS NOT NULL' conditions can be removed because
         # they will not be needed anymore.
+        not_null_clauses = [
+            "imported.msgstr%d IS NOT NULL" % form
+            for form in xrange(TranslationConstants.MAX_PLURAL_FORMS)]
+        not_nulls = " OR ".join(not_null_clauses)
         query.append('''NOT EXISTS (
             SELECT TranslationMessage.id
             FROM TranslationMessage AS imported
@@ -641,10 +647,7 @@ class POFile(SQLBase, POFileMixIn):
                 imported.pofile = TranslationMessage.pofile AND
                 imported.is_imported IS TRUE AND
                 NOT imported.was_fuzzy_in_last_import AND
-                (imported.msgstr0 IS NOT NULL OR
-                 imported.msgstr1 IS NOT NULL OR
-                 imported.msgstr2 IS NOT NULL OR
-                 imported.msgstr3 IS NOT NULL))''')
+                (%s))''' % not_nulls)
         query.append('TranslationMessage.potmsgset = POTMsgSet.id')
         query.append('POTMsgSet.sequence > 0')
         rosetta = TranslationMessage.select(
@@ -769,6 +772,7 @@ class POFile(SQLBase, POFileMixIn):
             'importer': entry_to_import.importer.displayname,
             'language': self.language.displayname,
             'language_code': self.language.code,
+            'max_plural_forms': TranslationConstants.MAX_PLURAL_FORMS,
             'numberofmessages': msgsets_imported,
             'template': self.potemplate.displayname,
             }

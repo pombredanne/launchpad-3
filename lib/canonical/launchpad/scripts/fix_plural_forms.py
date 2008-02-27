@@ -10,9 +10,10 @@ __all__ = [
 
 from sqlobject import SQLObjectNotFound
 
+from canonical.database.sqlbase import sqlvalues, cursor
 from canonical.launchpad.database.pofile import POFile
 from canonical.launchpad.database.translationmessage import TranslationMessage
-from canonical.database.sqlbase import sqlvalues, cursor
+from canonical.launchpad.interfaces import TranslationConstants
 from canonical.launchpad.translationformat.gettext_po_parser import (
     POHeader, plural_form_mapper)
 
@@ -52,6 +53,10 @@ def fix_pofile_plurals(pofile, logger, ztm):
         for message in pluralmessages:
             logger.debug("\tFixing translations for '%s'" % (
                 message.potmsgset.singular_text))
+
+            assert TranslationConstants.MAX_PLURAL_FORMS == 4, (
+                "Change this code to support %d plural forms"
+                % TranslationConstants.MAX_PLURAL_FORMS)
             old_translations = [message.msgstr0, message.msgstr1,
                                 message.msgstr2, message.msgstr3]
             message.msgstr0 = old_translations[plural_forms_mapping[0]]
