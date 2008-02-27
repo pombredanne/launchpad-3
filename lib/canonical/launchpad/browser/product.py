@@ -720,7 +720,7 @@ class ProductDownloadFileMixin:
             release = self.context
         url = urlappend(canonical_url(release), '+download')
         url = urlappend(url, file_.filename)
-        return URI(url).replace(scheme='http')
+        return str(URI(url).replace(scheme='http'))
 
     def md5URL(self, file_, release=None):
         """Create a URL for the MD5 digest."""
