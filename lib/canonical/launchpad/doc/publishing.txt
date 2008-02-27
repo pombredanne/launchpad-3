@@ -283,6 +283,40 @@ previous broken implementation in this area.
     foo-bin 666 in breezy-autotest i386 UPDATES
 
 
+== getSourceAndBinaryLibraryFiles ==
+
+This method retrieves LibraryFileAlias records for all source and binary
+files associated with this publication.
+
+Using the same Ubuntu source publishing example as above:
+
+    >>> for file in source.getSourceAndBinaryLibraryFiles():
+    ...     print file.filename
+    foo.dsc
+    foo-bin_all.deb
+    foo-bin_all.deb
+
+We can also publish a package in a PPA and query on its files:
+
+    >>> from canonical.launchpad.interfaces import IPersonSet
+    >>> cprov = getUtility(IPersonSet).getByName('cprov')
+    >>> ppa_source = test_publisher.getPubSource(
+    ...     status=PackagePublishingStatus.PUBLISHED,
+    ...     archive=cprov.archive)
+    >>> ppa_binaries= test_publisher.getPubBinaries(
+    ...     pub_source=ppa_source,
+    ...     status=PackagePublishingStatus.PUBLISHED)
+
+    >>> for file in ppa_source.getSourceAndBinaryLibraryFiles():
+    ...     print file.filename
+    foo.dsc
+    foo-bin_all.deb
+    foo-bin_all.deb
+
+Notice that some files appear twice if they are published in more than one
+architecture (e.g. for arch-all files).
+
+
 == Secure Source Publishing ==
 
 'secure_record' returns a ISecureSourcePackagePublishing instance

@@ -237,6 +237,9 @@ class IBugTrackerSet(Interface):
         of bugwatches for each tracker, from highest to lowest.
         """
 
+    def getPillarsForBugtrackers(bug_trackers):
+        """Return dict mapping bugtrackers to lists of pillars."""
+
 
 class IBugTrackerAlias(Interface):
     """Another URL for a remote bug system.

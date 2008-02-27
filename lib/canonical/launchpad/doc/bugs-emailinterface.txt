@@ -1890,11 +1890,13 @@ transformed to be a bit more readable as a plain text document.
     ... # A comment line
     ... Some Text. [[Macro()]]
     ... Don't push the [#boom red button]!
+    ... See you in {{{#launchpad}}}.
     ... """
     >>> print reformat_wiki_text(wiki_text)
     = Sample Wiki Text =
     Some Text.
     Don't push the red button!
+    See you in {{{#launchpad}}}.
 
 
 == Email attachments ==
