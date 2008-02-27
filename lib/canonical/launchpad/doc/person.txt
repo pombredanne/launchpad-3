@@ -509,8 +509,7 @@ will reject it for the BugSubscription.person and
 BugSubscription.subscribed_by attributes.
 
     >>> login('foo.bar@canonical.com')
-    >>> from canonical.launchpad.interfaces import (
-    ...     IBugSet, IPersonSet, TeamMembershipStatus)
+    >>> from canonical.launchpad.interfaces import IBugSet, IPersonSet
     >>> from canonical.launchpad.database import BugSubscription
     >>> person_set = getUtility(IPersonSet)
     >>> bug_set = getUtility(IBugSet)
@@ -944,12 +943,11 @@ and ILanguage.
 We can get the list of translators that did some translation in Launchpad and
 expressed their interest for a concrete language.
 
-    >>> from canonical.launchpad.interfaces import (
-    ...     ILanguageSet, IPersonSet, IKarmaCacheManager)
+    >>> from canonical.launchpad.interfaces import ILanguageSet
  
-    # Sample data is not complete for this test, so we need to note that another
-    # Spanish translator expressed its interest on doing Spanish translations.
-    # That other person is Foo Bar (name16).
+    # Sample data is not complete for this test, so we need to note that
+    # another Spanish translator expressed its interest on doing Spanish
+    # translations.  That other person is Foo Bar (name16).
     >>> personset = getUtility(IPersonSet)
     >>> foo_bar = personset.getByName('name16')
     >>> print foo_bar.displayname
