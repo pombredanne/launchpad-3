@@ -20,7 +20,7 @@ from twisted.trial.unittest import TestCase as TrialTestCase
 
 from canonical.authserver.client.twistedclient import TwistedAuthServer
 from canonical.codehosting import sshserver
-from canonical.codehosting.tests.servers import AuthserverWithKeysInProcess
+from canonical.codehosting.tests.servers import NullAuthserverWithKeys
 from canonical.config import config
 from canonical.testing.layers import TwistedLaunchpadZopelessLayer
 
@@ -312,8 +312,7 @@ class TestPublicKeyFromLaunchpadChecker(TrialTestCase):
 
     def setUp(self):
         self.valid_login = 'testuser'
-        self.authserver = AuthserverWithKeysInProcess(
-            self.valid_login, 'testteam')
+        self.authserver = NullAuthserverWithKeys(self.valid_login, 'testteam')
         self.authserver.setUp()
         self.authserver_client = TwistedAuthServer(
             config.codehosting.authserver)

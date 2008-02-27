@@ -5,9 +5,8 @@
 __metaclass__ = type
 
 __all__ = [
-    'Authserver', 'AuthserverWithKeys', 'CodeHostingServer',
-    'SSHCodeHostingServer', 'make_bzr_ssh_server', 'make_launchpad_server',
-    'make_sftp_server']
+    'CodeHostingServer', 'SSHCodeHostingServer', 'make_bzr_ssh_server',
+    'make_launchpad_server', 'make_sftp_server', 'NullAuthserverWithKeys']
 
 
 import gc
@@ -99,68 +98,6 @@ class ConnectionTrackingParamikoVendor(ssh.ParamikoVendor):
             connection.close()
 
 
-class Authserver(Server):
-
-    def __init__(self):
-        self.authserver = None
-
-    def setUp(self):
-        self.authserver = AuthserverService()
-        self.authserver.startService()
-
-    def tearDown(self):
-        return self.authserver.stopService()
-
-    def get_url(self):
-        return config.codehosting.authserver
-
-
-class AuthserverTac(TacTestSetup):
-    """Handler for running the Authserver .tac file.
-
-    Used to run the authserver out-of-process.
-    """
-    def setUpRoot(self):
-        pass
-
-    @property
-    def root(self):
-        return ''
-
-    @property
-    def tacfile(self):
-        import canonical
-        return os.path.abspath(os.path.join(
-            os.path.dirname(canonical.__file__), os.pardir, os.pardir,
-            'daemons/authserver.tac'
-            ))
-
-    @property
-    def pidfile(self):
-        return '/tmp/authserver.pid'
-
-    @property
-    def logfile(self):
-        return '/tmp/authserver.log'
-
-
-class AuthserverOutOfProcess(Server):
-    """Server to run the authserver out-of-process."""
-
-    def __init__(self):
-        self.tachandler = AuthserverTac()
-
-    def setUp(self):
-        self.tachandler.setUp()
-
-    def tearDown(self):
-        self.tachandler.tearDown()
-        return defer.succeed(None)
-
-    def get_url(self):
-        return config.codehosting.authserver
-
-
 class AuthserverWithKeysMixin:
     """Server to run the authserver, setting up SSH key configuration."""
 
@@ -221,28 +158,6 @@ class NullAuthserverWithKeys(AuthserverWithKeysMixin):
 
     def tearDown(self):
         return defer.succeed(None)
-
-
-class AuthserverWithKeys(AuthserverOutOfProcess, AuthserverWithKeysMixin):
-
-    def __init__(self, testUser, testTeam):
-        AuthserverOutOfProcess.__init__(self)
-        AuthserverWithKeysMixin.__init__(self, testUser, testTeam)
-
-    def setUp(self):
-        self.setUpTestUser()
-        AuthserverOutOfProcess.setUp(self)
-
-
-class AuthserverWithKeysInProcess(Authserver, AuthserverWithKeysMixin):
-
-    def __init__(self, testUser, testTeam):
-        Authserver.__init__(self)
-        AuthserverWithKeysMixin.__init__(self, testUser, testTeam)
-
-    def setUp(self):
-        self.setUpTestUser()
-        Authserver.setUp(self)
 
 
 class FakeLaunchpadServer(LaunchpadServer):
