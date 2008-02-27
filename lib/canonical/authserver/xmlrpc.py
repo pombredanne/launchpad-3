@@ -1,9 +1,5 @@
 # Copyright 2004-2008 Canonical Ltd.  All rights reserved.
 
-import threading
-
-from twisted.internet import defer, threads
-from twisted.python.util import mergeFunctionMetadata
 from twisted.web import xmlrpc
 
 from zope.interface.interface import Method
@@ -11,6 +7,7 @@ from zope.interface.interface import Method
 from canonical.authserver.interfaces import (
     IBranchDetailsStorage, IHostedBranchStorage, IUserDetailsStorage,
     IUserDetailsStorageV2)
+from canonical.twistedsupport import defer_to_thread
 
 
 def get_method_names_in_interface(interface):
@@ -27,28 +24,6 @@ def defer_methods_to_threads(obj, *interfaces):
                 continue
             setattr(obj, name, defer_to_thread(getattr(obj, name)))
             used_names.add(name)
-
-
-def defer_to_thread(function):
-    """Run in a thread and return a Deferred that fires when done."""
-
-    def decorated(*args, **kwargs):
-        deferred = defer.Deferred()
-
-        def run_in_thread():
-            return threads._putResultInDeferred(
-                deferred, function, args, kwargs)
-
-        t = threading.Thread(target=run_in_thread)
-        t.start()
-
-        def join(passed_through):
-            t.join()
-            return passed_through
-
-        return deferred.addBoth(join)
-
-    return mergeFunctionMetadata(function, decorated)
 
 
 class UserDetailsResource(xmlrpc.XMLRPC):
