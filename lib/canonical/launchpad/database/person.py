@@ -661,7 +661,8 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
             'Bug.id = BugTask.bug',
             open_bugs_cond,
             'StructuralSubscription.subscriber = %s' % sqlvalues(self),
-            'BugTask.sourcepackagename = StructuralSubscription.sourcepackagename',
+            'BugTask.sourcepackagename = '
+                'StructuralSubscription.sourcepackagename',
             'BugTask.distribution = StructuralSubscription.distribution',
             'Bug.duplicateof is NULL']
         privacy_filter = get_bug_privacy_filter(user)
@@ -1483,6 +1484,12 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
             email.status = EmailAddressStatus.NEW
         params = BugTaskSearchParams(self, assignee=self)
         for bug_task in self.searchTasks(params):
+            # If the bugtask has a conjoined master we don't try to
+            # update it, since we will update it correctly when we
+            # update its conjoined master (see bug 193983).
+            if bug_task.conjoined_master is not None:
+                continue
+
             # XXX flacoste 2007/11/26 The comparison using id in the assert
             # below works around a nasty intermittent failure.
             # See bug #164635.
