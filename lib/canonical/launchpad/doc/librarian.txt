@@ -106,6 +106,10 @@ unaffected.
     >>> print urlparse(request.response.getHeader('Location'))[0]
     https
 
+Reset 'use_https' to its original state.
+
+    >>> config.launchpad.vhosts.use_https = False
+
 However, we can't access its contents until we have committed
 
     >>> alias.open()
