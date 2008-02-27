@@ -1,10 +1,10 @@
 # Copyright 2006 Canonical Ltd.  All rights reserved.
+# pylint: disable-msg=W0231
 
 """Helper classes for testing ExternalSystem."""
 
 __metaclass__ = type
 
-import email
 import os
 import re
 import urlparse
@@ -126,6 +126,7 @@ def set_bugwatch_error_type(bug_watch, error_type):
 
 class OOPSHook:
     def install(self):
+        self.reset()
         self.original_report_oops = externalbugtracker.report_oops
         externalbugtracker.report_oops = self.reportOOPS
 
@@ -138,9 +139,9 @@ class OOPSHook:
             message=message, properties=properties, info=info)
         return self.oops_info
 
-    @property
-    def oopsed(self):
-        return hasattr(self, 'oops_info')
+    def reset(self):
+        if hasattr(self, 'oops_info'):
+            del self.oops_info
 
     @property
     def formatted_oops_info(self):

@@ -34,7 +34,7 @@ from canonical.launchpad.webapp import (
     stepthrough)
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.tales import DateTimeFormatterAPI
-from canonical.lp import decorates
+from canonical.lazr import decorates
 
 
 class BuilderSetNavigation(GetitemNavigation):
@@ -201,11 +201,13 @@ class BuilderView(CommonBuilderView, BuildRecordsView):
         # Auto Build System, getting slave building something sane.
         return '<p>Cancel (%s). Not implemented yet.</p>' % builder_id
 
-    def defaultBuildState(self):
+    @property
+    def default_build_state(self):
         """Present all jobs by default."""
         return None
 
-    def showBuilderInfo(self):
+    @property
+    def show_builder_info(self):
         """Hide Builder info, see BuildRecordsView for further details"""
         return False
 
