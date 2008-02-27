@@ -218,8 +218,10 @@ page, because Carlos hasn't subscribed yet.
     (Leave the team)
     You are not subscribed to the team mailing list.
     (Subscribe)
-    >>> browser.getLink('Subscribe')
-    <Link ...>
+    >>> browser.getLink('Subscribe').click()
+    >>> print browser.url
+    http://launchpad.dev/~carlos/+editemails
+
 
 The unsubscribe link is visible for the rosetta admins team, which
 has an active mailing list.
@@ -263,10 +265,20 @@ Clicking the link will unsubscribe you from the list immediately.
     (Subscribe)
 
 The Ubuntu translators team, which does not have any lists configured,
-does not show the links.
+does not show either link.
 
     >>> browser.open('http://launchpad.dev/~ubuntu-translators')
     >>> print extract_text(
     ... 	find_portlet(browser.contents, 'Your involvement'))
     Your involvement
     You are the owner of this team.
+
+    >>> browser.getLink('Subscribe')
+    Traceback (most recent call last):
+    ...
+    LinkNotFoundError
+
+    >>> browser.getLink('Unsubscribe')
+    Traceback (most recent call last):
+    ...
+    LinkNotFoundError
