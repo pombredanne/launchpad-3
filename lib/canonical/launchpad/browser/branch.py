@@ -52,6 +52,7 @@ from canonical.launchpad.webapp import (
     LaunchpadEditFormView, action, custom_widget)
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.badge import Badge, HasBadgeBase
+from canonical.launchpad.webapp.menu import structured
 from canonical.launchpad.webapp.uri import URI
 
 from canonical.lazr import decorates
@@ -446,14 +447,15 @@ class BranchNameValidationMixin:
         # name conflict.
         if branch is not None and branch != self.context:
             self.setFieldError('name',
+                structured(
                 "Name already in use. You are the registrant of "
                 "<a href=\"%s\">%s</a>,  the unique identifier of that "
                 "branch is \"%s\". Change the name of that branch, or use "
-                "a name different from \"%s\" for this branch."
-                % (quote(canonical_url(branch)),
-                   quote(branch.displayname),
-                   quote(branch.unique_name),
-                   quote(branch_name)))
+                "a name different from \"%s\" for this branch.",
+                canonical_url(branch),
+                branch.displayname,
+                branch.unique_name,
+                branch_name))
 
 
 class BranchEditFormView(LaunchpadEditFormView):
@@ -713,8 +715,8 @@ class BranchAddView(LaunchpadFormView, BranchNameValidationMixin):
             "junk branches.")
         self.setFieldError(
             'product',
-            "You are not allowed to create branches in %s."
-            % (quote(product.displayname)))
+            "You are not allowed to create branches in %s." %
+            product.displayname)
 
     def getAuthor(self, data):
         """A method that is overridden in the derived classes."""

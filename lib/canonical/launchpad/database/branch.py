@@ -948,14 +948,6 @@ class BranchSet:
         return dict([(branch, commits.get(branch.id, None))
                      for branch in branches])
 
-    def getBranchesForOwners(self, people):
-        """Return the branches that are owned by the people specified."""
-        owner_ids = [person.id for person in people]
-        if not owner_ids:
-            return []
-        branches = Branch.select('Branch.owner in %s' % quote(owner_ids))
-        return branches.prejoin(['product'])
-
     def _generateBranchClause(self, query, visible_by_user):
         # If the visible_by_user is a member of the Launchpad admins team,
         # then don't filter the results at all.
