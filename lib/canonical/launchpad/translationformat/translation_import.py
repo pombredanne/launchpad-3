@@ -113,6 +113,10 @@ class ExistingPOFileInDatabase:
             "ON pt%d.id = TranslationMessage.msgstr%d" % (form, form, form)
             for form in xrange(TranslationConstants.MAX_PLURAL_FORMS)]
 
+        translations = [
+            "pt%d.translation AS translation%d" % (form, form)
+            for form in xrange(TranslationConstants.MAX_PLURAL_FORMS)]
+
         sql = '''
         SELECT
             POMsgId.msgid AS msgid,
@@ -122,10 +126,7 @@ class ExistingPOFileInDatabase:
             is_fuzzy,
             is_current,
             is_imported,
-            pt0.translation as translation0,
-            pt1.translation as translation1,
-            pt2.translation as translation2,
-            pt3.translation as translation3
+            %s
           FROM TranslationMessage
             JOIN POFile ON
               TranslationMessage.pofile=POFile.id AND POFile.id=%s
@@ -138,7 +139,8 @@ class ExistingPOFileInDatabase:
               POMsgID_Plural.id=POTMsgSet.msgid_plural
           WHERE
                 is_current or is_imported
-          ''' % (quote(self.pofile), '\n'.join(msgstr_joins))
+          ''' % (quote(self.pofile), ','.join(translations),
+                 '\n'.join(msgstr_joins))
         cur = cursor()
         cur.execute(sql)
         rows = cur.fetchall()
