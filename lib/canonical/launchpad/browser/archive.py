@@ -188,17 +188,9 @@ class ArchiveView(ArchiveViewBase, LaunchpadView):
             self.selected_status_filter.value)
 
     def setupSourcesListEntries(self):
-        """Setup of the sources list entries widget.
-
-        The 'sources.list' snippet corresponding to this PPA will also
-        contain entries for its dependencies.
-        """
-        archive_urls = [self.context.archive_url]
-        archive_urls.extend(
-            dep.dependency.archive_url for dep in self.context.dependencies)
-
+        """Setup of the sources list entries widget."""
         entries = SourcesListEntries(
-            self.context.distribution, archive_urls,
+            self.context.distribution, self.context.archive_url,
             self.context.series_with_sources)
         self.sources_list_entries = SourcesListEntriesView(
             entries, self.request)

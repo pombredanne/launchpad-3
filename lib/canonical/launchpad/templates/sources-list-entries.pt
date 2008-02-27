@@ -22,18 +22,18 @@
   </div>
 
   <tal:comment condition="nothing">
-   No extra spacing is important in the <pre> content to allow users
+   No extra spacing is important in the 'pre' content to allow users
    to copy'n paste it.
   </tal:comment>
 
   <pre style="border: 1px solid gray; padding: 0.3em" id="sources-list-entries">
-<tal:archive_bin repeat="archive_url context/archive_urls"
-  >deb <a tal:attributes="href archive_url" tal:content="archive_url"
+deb <a tal:attributes="href context/archive_url"
+       tal:content="context/archive_url"
     /> <span id="series-deb" tal:content="view/default_series_name"
-    >gutsy</span> main</tal:archive_bin>
-<tal:archive_src repeat="archive_url context/archive_urls"
-  >deb-src <a tal:attributes="href archive_url" tal:content="archive_url"
+    >gutsy</span> main
+deb-src <a tal:attributes="href context/archive_url"
+           tal:content="context/archive_url"
     /> <span id="series-deb-src" tal:content="view/default_series_name"
-    >gutsy</span> main</tal:archive_src></pre>
+    >gutsy</span> main</pre>
 
 </tal:root>

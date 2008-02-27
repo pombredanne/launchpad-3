@@ -145,20 +145,19 @@ Now Celso's PPA will list Mark's and No-Priv's PPA as its dependencies.
     PPA for Mark Shuttleworth
     PPA for No Privileges Person
 
-The dependencies are also listed in the PPA overview 'sources.list'
-widget.
+The dependencies are presented in a separated section (bellow the
+sources.list widget) associated with a warning, telling the users to
+consider the dependencies in their systems if it becomes necessary.
 
-    >>> anon_browser.open('http://launchpad.dev/~cprov/+archive')
-    >>> results = find_tag_by_id(
-    ...     anon_browser.contents, 'sources-list-entries')
-    >>> text = extract_text(results)
-    >>> print text
-    deb http://ppa.launchpad.dev/cprov/ubuntu breezy-autotest main
-    deb http://ppa.launchpad.dev/sabdfl/ubuntu breezy-autotest main
-    deb http://ppa.launchpad.dev/no-priv/ubuntu breezy-autotest main
-    deb-src http://ppa.launchpad.dev/cprov/ubuntu breezy-autotest main
-    deb-src http://ppa.launchpad.dev/sabdfl/ubuntu breezy-autotest main
-    deb-src http://ppa.launchpad.dev/no-priv/ubuntu breezy-autotest main
+    >>> user_browser.open('http://launchpad.dev/~cprov/+archive')
+    >>> print extract_text(
+    ...     find_tag_by_id(user_browser.contents, 'ppa-dependencies'))
+    PPA dependencies
+    When installing packages from this PPA you may need to enable one
+    or more of the following PPAs, which have been considered for
+    building packages in this context.
+    PPA for Mark Shuttleworth (included ... ago)
+    PPA for No Privileges Person (included ... ago)
 
 
 == Removing dependencies ==
@@ -199,13 +198,10 @@ dependencies is refreshed.
     >>> print_ppa_dependencies(admin_browser.contents)
     No dependencies recorded for this PPA yet.
 
-And the PPA overview 'sources.list' widget is also up to date.
+Once the dependencies are removed, the 'dependency-section' (including
+the warning message) are omitted from the PPA overview page
 
-    >>> anon_browser.open('http://launchpad.dev/~cprov/+archive')
-    >>> results = find_tag_by_id(
-    ...     anon_browser.contents, 'sources-list-entries')
-    >>> text = extract_text(results)
-    >>> print text
-    deb http://ppa.launchpad.dev/cprov/ubuntu breezy-autotest main
-    deb-src http://ppa.launchpad.dev/cprov/ubuntu breezy-autotest main
+    >>> user_browser.open('http://launchpad.dev/~cprov/+archive')
+    >>> print find_tag_by_id(user_browser.contents, 'ppa-dependencies')
+    None
 
