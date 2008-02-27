@@ -16,7 +16,6 @@ __all__ = [
     'BranchMergeProposalWorkInProgressView',
     ]
 
-from zope.component import getUtility
 from zope.interface import Interface
 from zope.schema import Int
 
@@ -31,7 +30,6 @@ from canonical.launchpad.interfaces import (
     BranchMergeProposalStatus,
     BranchType,
     IBranchMergeProposal,
-    ILaunchpadCelebrities,
     IStructuralObjectPresentation)
 from canonical.launchpad.webapp import (
     canonical_url, ContextMenu, Link, enabled_with_permission,
