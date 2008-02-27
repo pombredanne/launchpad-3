@@ -15,7 +15,6 @@ import unittest
 from zope.component import getUtility
 
 from canonical.config import config
-from canonical.launchpad.ftests.harness import LaunchpadZopelessTestCase
 from canonical.launchpad.database.publishing import (
     SecureSourcePackagePublishingHistory,
     SecureBinaryPackagePublishingHistory)
@@ -24,14 +23,16 @@ from canonical.launchpad.interfaces import (
 from canonical.launchpad.scripts import FakeLogger
 from canonical.launchpad.scripts.ftpmaster import (
     SoyuzScriptError, PackageRemover)
+from canonical.testing import LaunchpadZopelessLayer
 
 
-class TestRemovePackageScript(LaunchpadZopelessTestCase):
+class TestRemovePackageScript(unittest.TestCase):
     """Test invokation of the remove-package.py script.
 
     Uses subprocess to invoke the script file with usual arguments and
     probe the expected results in the database.
     """
+    layer = LaunchpadZopelessLayer
 
     def runRemovePackage(self, extra_args=[]):
         """Run lp-remove-package.py, returning the result and output.
@@ -86,12 +87,12 @@ class TestRemovePackageScript(LaunchpadZopelessTestCase):
         self.assertEqual(num_bin_deleted_before + 4, num_bin_deleted_after)
 
 
-class TestPackageRemover(LaunchpadZopelessTestCase):
+class TestPackageRemover(unittest.TestCase):
     """Test the PackageRemover class.
 
     Perform tests directly on the script class.
     """
-
+    layer = LaunchpadZopelessLayer
     user_name = 'sabdfl'
     removal_comment = 'fooooooo'
 

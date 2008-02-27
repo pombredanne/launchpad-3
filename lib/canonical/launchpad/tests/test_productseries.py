@@ -15,7 +15,6 @@ from canonical.database.sqlbase import flush_database_updates
 from canonical.launchpad.database.productseries import (
     DatePublishedSyncError, ProductSeries, NoImportBranchError)
 from canonical.launchpad.ftests import login
-from canonical.launchpad.ftests.harness import LaunchpadZopelessTestCase
 from canonical.launchpad.interfaces import (
     IProductSeriesSet, IProductSet, ImportStatus, RevisionControlSystems)
 from canonical.testing import LaunchpadZopelessLayer, LaunchpadFunctionalLayer
@@ -179,11 +178,12 @@ class TestImportUpdated(ImportdTestCase):
         self.assertEqual(str(series.datelastsynced), str(UTC_NOW))
 
 
-class SyncIntervalTestCase(LaunchpadZopelessTestCase):
+class SyncIntervalTestCase(TestCase):
     """When a VCS import is approved, we set the syncinterval column
     to indicate how often the import should be updated.  Imports from
     different revision control systems get different rates by default.
     """
+    layer = LaunchpadZopelessLayer
 
     def getSampleSeries(self):
         """Get a sample product series without any source details."""
@@ -215,9 +215,9 @@ class SyncIntervalTestCase(LaunchpadZopelessTestCase):
         self.assertEquals(series.syncinterval, datetime.timedelta(hours=12))
 
 
-class TestProductSeriesSearchImports(LaunchpadZopelessTestCase):
-    """Tests for ProductSeriesSet.searchImports().
-    """
+class TestProductSeriesSearchImports(TestCase):
+    """Tests for ProductSeriesSet.searchImports()."""
+    layer = LaunchpadZopelessLayer
 
     def setUp(self):
         """Prepare by deleting all the import data in the sample data.

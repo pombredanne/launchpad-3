@@ -3,14 +3,15 @@
 
 import unittest
 
-from canonical.launchpad.ftests.harness import LaunchpadZopelessTestCase
 from canonical.launchpad.interfaces import ArchivePurpose
 from canonical.launchpad.scripts.ftpmasterbase import (
     PackageLocationError, build_package_location)
+from canonical.testing import LaunchpadZopelessLayer
 
 
-class TestPackageLocation(LaunchpadZopelessTestCase):
+class TestPackageLocation(unittest.TestCase):
     """Test the `PackageLocation` class."""
+    layer = LaunchpadZopelessLayer
 
     def getPackageLocation(self, distribution_name='ubuntu', suite=None,
                            purpose=None, person_name=None):

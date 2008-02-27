@@ -15,7 +15,7 @@ from zope.security.proxy import removeSecurityProxy
 
 from canonical.launchpad.browser.branch import (
     BranchAddView, BranchMirrorStatusView)
-from canonical.launchpad.ftests.harness import login, logout, ANONYMOUS
+from canonical.launchpad.ftests import login, logout, ANONYMOUS
 from canonical.launchpad.helpers import truncate_text
 from canonical.launchpad.interfaces import (
     BranchLifecycleStatus, BranchType, IBranchSet, IPersonSet, IProductSet)

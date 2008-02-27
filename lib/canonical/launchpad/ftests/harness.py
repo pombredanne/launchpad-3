@@ -8,8 +8,6 @@ canonical.testing
 
 __metaclass__ = type
 
-import unittest
-
 import sqlos
 from sqlos.connection import connCache
 from sqlos.interfaces import IConnectionName
@@ -25,7 +23,7 @@ from canonical.ftests.pgsql import PgTestSetup
 from canonical.functional import FunctionalTestSetup
 from canonical.launchpad.webapp.interfaces import ILaunchpadDatabaseAdapter
 from canonical.lp import initZopeless
-from canonical.testing import BaseLayer, LaunchpadZopelessLayer
+from canonical.testing import BaseLayer
 
 
 __all__ = [
@@ -33,6 +31,7 @@ __all__ = [
     'LaunchpadFunctionalTestSetup',
     '_disconnect_sqlos', '_reconnect_sqlos'
     ]
+
 
 def _disconnect_sqlos():
     try:
@@ -59,6 +58,7 @@ def _disconnect_sqlos():
         connection.rollback()
         del connCache[key]
     sqlos.connection.connCache.clear()
+
 
 def _reconnect_sqlos(dbuser=None, database_config_section='launchpad'):
     _disconnect_sqlos()
@@ -137,7 +137,3 @@ class LaunchpadFunctionalTestSetup(LaunchpadTestSetup):
         FunctionalTestSetup().tearDown()
         _disconnect_sqlos()
         super(LaunchpadFunctionalTestSetup, self).tearDown()
-
-
-class LaunchpadZopelessTestCase(unittest.TestCase):
-    layer = LaunchpadZopelessLayer

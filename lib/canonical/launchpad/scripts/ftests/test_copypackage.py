@@ -8,7 +8,6 @@ import sys
 import unittest
 
 from canonical.config import config
-from canonical.launchpad.ftests.harness import LaunchpadZopelessTestCase
 from canonical.launchpad.scripts import FakeLogger
 from canonical.launchpad.scripts.ftpmaster import (
     PackageLocationError, PackageCopier, SoyuzScriptError)
@@ -16,10 +15,12 @@ from canonical.launchpad.database.publishing import (
     SecureSourcePackagePublishingHistory,
     SecureBinaryPackagePublishingHistory)
 from canonical.launchpad.interfaces import PackagePublishingStatus
+from canonical.testing import LaunchpadZopelessLayer
 
 
-class TestCopyPackageScript(LaunchpadZopelessTestCase):
+class TestCopyPackageScript(unittest.TestCase):
     """Test the copy-package.py script."""
+    layer = LaunchpadZopelessLayer
 
     def runCopyPackage(self, extra_args=None):
         """Run copy-package.py, returning the result and output.
@@ -73,8 +74,9 @@ class TestCopyPackageScript(LaunchpadZopelessTestCase):
         self.assertEqual(num_bin_pub + 4, num_bin_pub_after)
 
 
-class TestCopyPackage(LaunchpadZopelessTestCase):
+class TestCopyPackage(unittest.TestCase):
     """Test the CopyPackageHelper class."""
+    layer = LaunchpadZopelessLayer
 
     def setUp(self):
         """Anotate pending publishing records provided in the sampledata.
@@ -82,8 +84,6 @@ class TestCopyPackage(LaunchpadZopelessTestCase):
         The records annotated will be excluded during the operation checks,
         see checkCopies().
         """
-        LaunchpadZopelessTestCase.setUp(self)
-
         pending_sources = SecureSourcePackagePublishingHistory.selectBy(
             status=PackagePublishingStatus.PENDING)
         self.sources_pending_ids = [pub.id for pub in pending_sources]

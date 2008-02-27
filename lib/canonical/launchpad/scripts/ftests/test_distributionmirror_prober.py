@@ -22,7 +22,6 @@ from canonical.launchpad.interfaces import PackagePublishingPocket
 from canonical.launchpad.webapp.uri import URI
 from canonical.launchpad.daemons.tachandler import TacTestSetup
 from canonical.launchpad.database import DistributionMirror, DistroSeries
-from canonical.launchpad.ftests.harness import LaunchpadZopelessTestCase
 from canonical.tests.test_twisted import TwistedTestCase
 from canonical.launchpad.scripts import distributionmirror_prober
 from canonical.launchpad.scripts.distributionmirror_prober import (
@@ -35,6 +34,7 @@ from canonical.launchpad.scripts.distributionmirror_prober import (
     restore_http_proxy, MultiLock, OVERALL_REQUESTS, RequestManager)
 from canonical.launchpad.scripts.ftests.distributionmirror_http_server import (
     DistributionMirrorTestHTTPServer)
+from canonical.testing import LaunchpadZopelessLayer
 
 
 class HTTPServerTestSetup(TacTestSetup):
@@ -512,10 +512,11 @@ class TestRedirectAwareProberFactoryAndProtocol(TestCase):
         self.failUnless(protocol.transport.disconnecting)
 
 
-class TestMirrorCDImageProberCallbacks(LaunchpadZopelessTestCase):
-    dbuser = config.distributionmirrorprober.dbuser
+class TestMirrorCDImageProberCallbacks(TestCase):
+    layer = LaunchpadZopelessLayer
 
     def setUp(self):
+        self.layer.switchDbUser(config.distributionmirrorprober.dbuser)
         self.logger = logging.getLogger('distributionmirror-prober')
         self.logger.errorCalled = False
         def error(msg):
@@ -581,7 +582,8 @@ class TestMirrorCDImageProberCallbacks(LaunchpadZopelessTestCase):
         self.failUnless(self.logger.errorCalled)
 
 
-class TestArchiveMirrorProberCallbacks(LaunchpadZopelessTestCase):
+class TestArchiveMirrorProberCallbacks(TestCase):
+    layer = LaunchpadZopelessLayer
 
     def setUp(self):
         mirror = DistributionMirror.get(1)
@@ -645,10 +647,11 @@ class TestArchiveMirrorProberCallbacks(LaunchpadZopelessTestCase):
             SQLObjectNotFound, mirror_distro_series_source.sync)
 
 
-class TestProbeFunctionSemaphores(LaunchpadZopelessTestCase):
+class TestProbeFunctionSemaphores(TestCase):
     """Make sure we use one DeferredSemaphore for each hostname when probing
     mirrors.
     """
+    layer = LaunchpadZopelessLayer
 
     def setUp(self):
         self.logger = None

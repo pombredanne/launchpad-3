@@ -11,17 +11,15 @@ from unittest import TestCase, TestLoader
 from zope.component import getUtility
 
 from canonical.config import config
-from canonical.database.sqlbase import flush_database_updates
 from canonical.launchpad.database.build import Build
 from canonical.launchpad.database.publishing import (
     SecureSourcePackagePublishingHistory)
-from canonical.launchpad.ftests.harness import LaunchpadZopelessTestCase
 from canonical.launchpad.interfaces import (
     BuildStatus, IComponentSet)
 from canonical.launchpad.scripts import FakeLogger
 from canonical.launchpad.scripts.buildd import RetryDepwait
 from canonical.launchpad.scripts.base import LaunchpadScriptFailure
-from canonical.testing import LaunchpadLayer
+from canonical.testing import LaunchpadLayer, LaunchpadZopelessLayer
 
 
 class TestCronscriptBase(TestCase):
@@ -82,8 +80,9 @@ class TestCronscriptBase(TestCase):
         self.assertRuns(runner=self.runBuilddRetryDepwait)
 
 
-class TestRetryDepwait(LaunchpadZopelessTestCase):
+class TestRetryDepwait(TestCase):
     """Test RetryDepwait buildd script class."""
+    layer = LaunchpadZopelessLayer
 
     def setUp(self):
         """Store the number of pending builds present before run the tests."""
