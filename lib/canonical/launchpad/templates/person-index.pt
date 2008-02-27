@@ -177,8 +177,8 @@
             </p>
           </tal:block>
 	  <tal:block condition="view/userIsParticipant">
-	    <p tal:condition="view/teamMailingListIsAvailable">
-	      <tal:block tal:condition="view/userIsSubscribedToList">
+	    <p tal:condition="view/team_has_mailing_list">
+	      <tal:block tal:condition="view/user_is_subscribed_to_list">
 		<form class="actions"
 		      name="unsubscribe"
 		      id="form.list.unsubscribe"
@@ -189,7 +189,7 @@
 		      >Unsubscribe</a>)
 		</form>
 	      </tal:block>
-	      <tal:block tal:condition="view/userCanSubscribeToList">
+	      <tal:block tal:condition="view/user_can_subscribe_to_list">
 		You are not subscribed to the team mailing list.
 		(<a href="/people/+me/+editemails">Subscribe</a>)
 	      </tal:block>
