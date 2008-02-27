@@ -14,7 +14,7 @@ from zope.interface import implements
 from canonical.config import config
 from canonical.launchpad.interfaces import (
     EmailAddressStatus, IEmailAddressSet, IMailingListAPIView,
-    IMailingListSet, MailingListStatus)
+    IMailingListSet, IPersonSet, MailingListStatus, PersonalStanding)
 from canonical.launchpad.webapp import LaunchpadXMLRPCView
 from canonical.launchpad.xmlrpc import faults
 
@@ -167,3 +167,11 @@ class MailingListAPIView(LaunchpadXMLRPCView):
         return (email_address is not None and
                 email_address.status in (EmailAddressStatus.VALIDATED,
                                          EmailAddressStatus.PREFERRED))
+
+    def inGoodStanding(self, address):
+        """See `IMailingListAPIView`."""
+        person = getUtility(IPersonSet).getByEmail(address)
+        if person is None or person.isTeam():
+            return False
+        return person.personal_standing in (PersonalStanding.GOOD,
+                                            PersonalStanding.EXCELLENT)
