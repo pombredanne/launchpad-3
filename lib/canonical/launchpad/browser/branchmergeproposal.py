@@ -76,56 +76,49 @@ class BranchMergeProposalContextMenu(ContextMenu):
         text = 'Delete proposal to merge'
         return Link('+delete', text, icon='edit')
 
+    def _enabledForStatus(self, next_state):
+        """True if the next_state is a valid transition for the current user.
+
+        Return False if the current state is next_state.
+        """
+        status = self.context.queue_status
+        if status == next_state:
+            return False
+        else:
+            return self.context.isValidTransition(next_state, self.user)
+
     @enabled_with_permission('launchpad.Edit')
     def set_work_in_progress(self):
         text = 'Work in progress'
-
-        status = self.context.queue_status
-        if status in BRANCH_MERGE_PROPOSAL_FINAL_STATES:
-            enabled = False
-        else:
-            enabled = status != BranchMergeProposalStatus.WORK_IN_PROGRESS
-
+        enabled = self._enabledForStatus(
+            BranchMergeProposalStatus.WORK_IN_PROGRESS)
         return Link('+work-in-progress', text, icon='edit', enabled=enabled)
 
     @enabled_with_permission('launchpad.Edit')
     def request_review(self):
         text = 'Request review'
-
-        status = self.context.queue_status
-        if status in BRANCH_MERGE_PROPOSAL_FINAL_STATES:
-            enabled = False
-        else:
-            enabled = status != BranchMergeProposalStatus.NEEDS_REVIEW
-
+        enabled = self._enabledForStatus(
+            BranchMergeProposalStatus.NEEDS_REVIEW)
         return Link('+request-review', text, icon='edit', enabled=enabled)
 
     @enabled_with_permission('launchpad.Edit')
     def review(self):
         text = 'Review proposal'
-        # Enable the review option if the proposal is reviewable, and the
-        # user is a reviewer.
-        if self.user is None:
-            enabled = False
-        else:
-            lp_admins = getUtility(ILaunchpadCelebrities).admin
-            valid_reviewer = (self.context.isPersonValidReviewer(self.user) or
-                              self.user.inTeam(lp_admins))
-            enabled = self.context.isMergable() and valid_reviewer
+        enabled = self._enabledForStatus(
+            BranchMergeProposalStatus.CODE_APPROVED)
         return Link('+review', text, icon='edit', enabled=enabled)
 
     @enabled_with_permission('launchpad.Edit')
     def merge(self):
         text = 'Mark as merged'
-        # Disable the link if the proposal is not in a mergable state.
-        enabled = self.context.isMergable()
+        enabled = self._enabledForStatus(
+            BranchMergeProposalStatus.MERGED)
         return Link('+merged', text, icon='edit', enabled=enabled)
 
     @enabled_with_permission('launchpad.Edit')
     def resubmit(self):
         text = 'Resubmit proposal'
-        enabled = self.context.queue_status not in (
-            BranchMergeProposalStatus.MERGED,
+        enabled = self._enabledForStatus(
             BranchMergeProposalStatus.SUPERSEDED)
         return Link('+resubmit', text, icon='edit', enabled=enabled)
 
