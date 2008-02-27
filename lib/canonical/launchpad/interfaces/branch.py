@@ -781,9 +781,6 @@ class IBranchSet(Interface):
     def getLastCommitForBranches(branches):
         """Return a map of branch to last commit time."""
 
-    def getBranchesForOwners(people):
-        """Return the branches that are owned by the people specified."""
-
     def getBranchesForPerson(
         person, lifecycle_statuses=DEFAULT_BRANCH_STATUS_IN_LISTING,
         visible_by_user=None, sort_by=None, hide_dormant=False):
