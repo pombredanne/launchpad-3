@@ -257,7 +257,7 @@ class ArchivePackageDeletionView(ArchiveViewBase, LaunchpadFormView):
 
         Ensure focus is only set if there are sources actually presented.
         """
-        if not self.has_published_sources:
+        if not self.has_sources_for_deletion:
             return ''
         return LaunchpadFormView.focusedElementScript(self)
 
@@ -298,7 +298,7 @@ class ArchivePackageDeletionView(ArchiveViewBase, LaunchpadFormView):
 
     @property
     def sources(self):
-        """Query source publishing records.
+        """Query undeleted source publishing records.
 
         Consider the 'name_filter' form value.
         """
@@ -307,15 +307,13 @@ class ArchivePackageDeletionView(ArchiveViewBase, LaunchpadFormView):
         else:
             name_filter = None
 
-        return self.context.getPublishedSources(
-            name=name_filter, status=PackagePublishingStatus.PUBLISHED)
+        return self.context.getSourcesForDeletion(name=name_filter)
 
     @cachedproperty
-    def has_published_sources(self):
+    def has_sources_for_deletion(self):
         """Whether or not the PPA has published source packages."""
-        published_sources = self.context.getPublishedSources(
-            status=PackagePublishingStatus.PUBLISHED)
-        return bool(published_sources)
+        undeleted_sources = self.context.getSourcesForDeletion()
+        return bool(undeleted_sources)
 
     @property
     def available_sources_size(self):
