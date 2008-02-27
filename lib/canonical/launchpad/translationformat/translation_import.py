@@ -139,7 +139,7 @@ class ExistingPOFileInDatabase:
               POMsgID_Plural.id=POTMsgSet.msgid_plural
           WHERE
                 is_current or is_imported
-          ''' % (quote(self.pofile), ','.join(translations),
+          ''' % (','.join(translations), quote(self.pofile),
                  '\n'.join(msgstr_joins))
         cur = cursor()
         cur.execute(sql)
