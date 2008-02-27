@@ -829,30 +829,6 @@ Lets make gnome terminal have a user branch as the dev focus.
     thunderbird    1 None
 
 
-== Getting branches by owner ==
-
-In order to facilitate getting the branches for all the teams that a
-person is a member of, we need to be able to get branches owned by
-arbitrary people.
-
-    >>> branchset.getBranchesForOwners([])
-    []
-    >>> owners = [personset.getByName('launchpad')]
-    >>> branches = branchset.getBranchesForOwners(owners)
-    >>> import operator
-    >>> for branch in sorted(branches, key=operator.attrgetter('unique_name')):
-    ...     print branch.unique_name
-    ~launchpad/gnome-terminal/launchpad
-
-    >>> owners.append(personset.getByName('ddaa'))
-    >>> branches = branchset.getBranchesForOwners(owners)
-    >>> for branch in sorted(branches, key=operator.attrgetter('unique_name')):
-    ...     print branch.unique_name
-    ~ddaa/+junk/junkcode
-    ~ddaa/gnome-terminal/dev
-    ~launchpad/gnome-terminal/launchpad
-
-
 == Getting all branches for a person ==
 
 Batching of the branch pages relies (ideally) on a quick simple query
