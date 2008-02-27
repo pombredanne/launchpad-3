@@ -2108,6 +2108,11 @@ class PersonIndexView(XRDSContentNegotiationMixin, PersonView):
 
     xrds_template = ViewPageTemplateFile("../templates/person-xrds.pt")
 
+    def initialize(self):
+        super(PersonIndexView, self).initialize()
+        if self.request.method == "POST":
+            self.processForm()
+
     @cachedproperty
     def enable_xrds_discovery(self):
         """Only enable discovery if person is OpenID enabled."""
@@ -2119,26 +2124,22 @@ class PersonIndexView(XRDSContentNegotiationMixin, PersonView):
         return canonical_url(OpenIDPersistentIdentity(self.context))
 
     def processForm(self):
-        if self.request.method != "POST":
-            # Nothing to do.
-            return
-
         mailing_list = self.context.mailing_list
         if mailing_list is None:
             raise UnexpectedFormData(
-                "This team does not have a mailing list.")
+                _("This team does not have a mailing list."))
         if not self.user:
-            raise UnexpectedFormData(
-                "You must be logged in to unsubscribe.")
+            raise Unauthorized(
+                _("You must be logged in to unsubscribe."))
         try:
             mailing_list.unsubscribe(self.user)
         except CannotUnsubscribe, err:
-            self.response.addErrorNotification(
+            self.request.response.addErrorNotification(
                 _("You could not be unsubscribed from the team mailing "
                   "list: ${reason}",
                   mapping={'reason': str(err)}))
         else:
-            self.response.addInfoNotification(
+            self.request.response.addInfoNotification(
                 _("You were successfully unsubscribed from the team "
                   "mailing list."))
 

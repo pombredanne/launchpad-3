@@ -251,6 +251,7 @@ Clicking the link will unsubscribe you from the list immediately.
     >>> unsubscribe = browser.getForm('form.list.unsubscribe')
     >>> unsubscribe.submit()
     >>> print get_feedback_messages(browser.contents)
+    [u'You were successfully unsubscribed from the team mailing list.']
 
     >>> browser.open('http://launchpad.dev/~rosetta-admins')
     >>> print extract_text(
