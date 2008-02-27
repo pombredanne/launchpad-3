@@ -50,7 +50,7 @@ def getTxnManager():
     # FIXME: That uses a protected attribute in ZopelessTransactionManager
     # -- David Allouche 2005-02-16
     if ZopelessTransactionManager._installed is None:
-        execute_zcml_for_scripts()
+        execute_zcml_for_scripts(use_web_security=True)
         return initZopeless(implicitBegin=False)
     else:
         return ZopelessTransactionManager._installed
