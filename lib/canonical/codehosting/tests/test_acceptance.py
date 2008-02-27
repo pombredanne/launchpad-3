@@ -26,8 +26,7 @@ from paramiko import SSHClient, SSHException, MissingHostKeyPolicy
 
 from canonical.authserver.xmlrpc import defer_to_thread
 from canonical.authserver.client import get_blocking_proxy
-from canonical.codehosting.tests.helpers import (
-    adapt_suite, ServerTestCase)
+from canonical.codehosting.tests.helpers import adapt_suite, ServerTestCase
 from canonical.codehosting.tests.servers import (
     make_bzr_ssh_server, make_sftp_server)
 from canonical.codehosting import branch_id_to_path
@@ -38,6 +37,7 @@ from canonical.launchpad.ftests.harness import LaunchpadZopelessTestSetup
 from canonical.launchpad.interfaces import BranchLifecycleStatus, BranchType
 from canonical.launchpad.webapp.errorlog import globalErrorUtility
 from canonical.testing import TwistedLaunchpadZopelessLayer
+from canonical.twistedsupport import defer_to_thread
 
 
 class SSHTestCase(ServerTestCase):
