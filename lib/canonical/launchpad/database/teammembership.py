@@ -500,13 +500,13 @@ def _cleanTeamParticipation(member, team):
 
             (
                 SELECT person
-                FROM TeamParticipation 
+                FROM TeamParticipation
                 WHERE team IN (
                     -- Other subteams of the given team. If the member is a
                     -- participant in any of them, he shall not be kicked.
                     SELECT person
                     FROM TeamParticipation JOIN Person ON (person = Person.id)
-                    WHERE team = %(team_id)s 
+                    WHERE team = %(team_id)s
                         AND person NOT IN (%(member_team_and_subteams_ids)s) 
                         AND teamowner IS NOT NULL)
 
@@ -514,7 +514,7 @@ def _cleanTeamParticipation(member, team):
 
                 -- Direct members of our team.
                 SELECT person
-                FROM TeamMembership 
+                FROM TeamMembership
                 WHERE status IN (%(active_states)s)
                     AND team = %(team_id)s
             )
@@ -531,7 +531,7 @@ def _cleanTeamParticipation(member, team):
     if len(superteams) > 0:
         superteams_ids = ",".join(str(team.id) for team in superteams)
         team_and_superteams_ids = ",".join(
-            str(team.id) for team in itertools.chain([team], superteams))
+            str(team.id) for team in [team] + superteams)
     else:
         superteams_ids = '-1'
         team_and_superteams_ids = team.id
@@ -545,20 +545,20 @@ def _cleanTeamParticipation(member, team):
             -- All the people that /may/ be kicked (participants of the
             -- given member).
             SELECT person
-            FROM TeamParticipation 
+            FROM TeamParticipation
             WHERE team = %(member_id)s
 
             EXCEPT
 
             (
                 SELECT person
-                FROM TeamParticipation 
+                FROM TeamParticipation
                 WHERE team IN (
                     -- Teams in which our dear member must be a participant in
                     -- order not to be kicked from this superteam.
                     SELECT person
                     FROM TeamParticipation JOIN Person ON (person = Person.id)
-                    WHERE team = %(superteam_id)s 
+                    WHERE team = %(superteam_id)s
                         AND person NOT IN (%(team_and_superteams_ids)s) 
                         AND teamowner IS NOT NULL)
 
@@ -571,7 +571,7 @@ def _cleanTeamParticipation(member, team):
                 WHERE status IN (%(active_states)s)
                     AND team = %(superteam_id)s
             )
-        )""" 
+        )"""
     for superteam in superteams:
         replacements.update(dict(superteam_id=superteam.id))
         cur.execute(query % replacements)
