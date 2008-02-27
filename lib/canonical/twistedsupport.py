@@ -24,6 +24,10 @@ def defer_to_thread(function):
 
         t = threading.Thread(target=run_in_thread)
         t.start()
-        return deferred
+
+        def join_thread(pass_through):
+            t.join()
+            return pass_through
+        return deferred.addBoth(join_thread)
 
     return mergeFunctionMetadata(function, decorated)
