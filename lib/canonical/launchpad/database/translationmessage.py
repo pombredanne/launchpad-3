@@ -134,6 +134,7 @@ class TranslationMessage(SQLBase, TranslationMessageMixIn):
         foreignKey='POTranslation', dbName='msgstr2', notNull=True)
     msgstr3 = ForeignKey(
         foreignKey='POTranslation', dbName='msgstr3', notNull=True)
+
     comment = StringCol(
         dbName='comment', notNull=False, default=None)
     origin = EnumCol(
