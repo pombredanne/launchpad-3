@@ -340,9 +340,14 @@ def _prepare_translationmessage_merge(
         ("(msgstr%d IS NOT NULL OR COALESCE(Language.pluralforms, 2) <= %d)"
          % (form, form))
         for form in xrange(1, TranslationConstants.MAX_PLURAL_FORMS)]
+    same_strings = [
+        "(COALESCE(better.msgstr%d, -1) = COALESCE(source.msgstr%d, -1))" % (
+            form, form)
+        for form in xrange(TranslationConstants.MAX_PLURAL_FORMS)]
 
     query_parts = {
         'is_complete': " AND ".join(is_complete),
+        'same_strings': " AND ".join(same_strings),
         }
     query_parts.update(query_parameters)
 
@@ -360,14 +365,7 @@ def _prepare_translationmessage_merge(
                 better.pofile = %(pofile_holding_table)s.new_id AND
                 better.potmsgset = temp_equiv_potmsgset.new_id AND
                 (better.date_created >= source.date_created OR
-                 ((COALESCE(better.msgstr0, -1) =
-                    COALESCE(source.msgstr0, -1)) AND
-                  (COALESCE(better.msgstr1, -1) =
-                    COALESCE(source.msgstr1, -1)) AND
-                  (COALESCE(better.msgstr2, -1) =
-                    COALESCE(source.msgstr2, -1)) AND
-                  (COALESCE(better.msgstr3, -1) =
-                    COALESCE(source.msgstr3, -1))))
+                 (%(same_strings)s))
         )
         """ % query_parts
     joined_tables = ['temp_equiv_potmsgset', 'POTMsgSet', 'Language']
