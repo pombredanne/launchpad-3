@@ -84,6 +84,28 @@ class TestBranchSet(TestCase):
             self.branch_set.getLatestBranchesForProduct(self.product, 5))
         self.assertEqual(original_branches[1:], latest_branches)
 
+    def test_getHostedBranchesForPerson(self):
+        """The hosted branches for a person are all of the branches without
+        urls that are owned by that person, or a team that the person is in.
+        """
+        branch_owner = getUtility(IPersonSet).get(12)
+        login(branch_owner.preferredemail.email)
+        try:
+            branch_set = getUtility(IBranchSet)
+            branches = sorted(
+                branch.unique_name for branch in
+                branch_set.getHostedBranchesForPerson(branch_owner))
+            expected = [
+                u'~landscape-developers/landscape/trunk',
+                u'~name12/gnome-terminal/mirrored',
+                u'~name12/gnome-terminal/pushed',
+                u'~name12/gnome-terminal/scanned',
+                u'~name12/landscape/feature-x',
+                ]
+            self.assertEqual(expected, branches)
+        finally:
+            logout()
+
 
 class TestBranchSetDormancyClause(TestCase):
     """Test that the dormancy clause correctly selects branches."""
