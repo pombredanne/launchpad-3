@@ -70,7 +70,6 @@ class ExecOnlySession:
             raise
         log.msg('Running: %r, %r, %r'
                 % (executable, arguments, self.environment))
-        print "SPAWNING BAZAAR PROCESS"
         self._transport = self.reactor.spawnProcess(
             protocol, executable, arguments, env=self.environment)
 
