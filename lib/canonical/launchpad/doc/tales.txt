@@ -73,6 +73,13 @@ We also have image:icon for KarmaCategory:
     <img ... title="Specification Tracking" src="/@@/blueprint" />
     <img ... title="Translations in Rosetta" src="/@@/translation" />
 
+We also have an icon for bugs.
+
+    >>> from canonical.launchpad.interfaces import IBugSet
+    >>> bug = getUtility(IBugSet).get(1)
+    >>> print test_tales("bug/image:icon", bug=bug)
+    <img ... src="/@@/bug" />
+
 
 == The fmt: namespace to get strings ==
 
@@ -129,6 +136,9 @@ to a content object.  There are currently links defined for:
   * bugs
   * bug tasks
 
+
+=== Person entries ===
+
 For a person or team, fmt:link gives us a link to that person's page,
 containing the person name and an icon.
 
@@ -168,6 +178,9 @@ that the links and images are pointing at the right hostname.
     >>> test_tales("person/fmt:link:bugs/foo/bar", person=spiv)
     u'<a href="http://bugs.launchpad.dev/~spiv/foo/bar"><img...src="http://bugs.launchpad.dev/@@/person-inactive"...'
 
+
+=== Branches ===
+
 For branches, fmt:link links to the branch page.
 
     >>> from canonical.launchpad.interfaces import IBranchSet
@@ -176,19 +189,23 @@ For branches, fmt:link links to the branch page.
     >>> test_tales("branch/fmt:link", branch=branch)
     u'<a href=".../~name12/gnome-terminal/main" title="GNOME Terminal Mainline"><img src="/@@/branch"...>&nbsp;~name12/gnome-terminal/main</a>'
 
+
+=== Bugs ===
+
 For bugs, fmt:link takes to the bug redirect page.
 
-    >>> from canonical.launchpad.interfaces import IBugSet
     >>> bug = getUtility(IBugSet).get(1)
     >>> test_tales("bug/fmt:link", bug=bug)
-    u'<a href=".../bugs/1"><img src="/@@/bug"...>&nbsp;Bug #1: Firefox does not support SVG</a>'
+    u'<a href=".../bugs/1"><img ...src="/@@/bug" />&nbsp;Bug #1: Firefox does
+    not support SVG</a>'
 
 For bugtasks, fmt:link shows the severity bug icon, and links to the
 appropriate project's bug.
 
     >>> bugtask = bug.bugtasks[0]
     >>> test_tales("bugtask/fmt:link", bugtask=bugtask)
-    u'<a href=".../firefox/+bug/1"><img ...src="/@@/bug-low" />&nbsp;Bug #1: Firefox does not support SVG</a>'
+    u'<a href=".../firefox/+bug/1"><img ...src="/@@/bug-low" />&nbsp;Bug #1:
+    Firefox does not support SVG</a>'
 
 Bug titles may contain markup (when describing issue regarding markup).
 Their titles are escaped so that they display correctly. This also
@@ -197,12 +214,82 @@ title might be interpreted by the browser.
 
     >>> bug.title = "Opps<br/><script>alert('XSS')</script>"
     >>> test_tales("bug/fmt:link", bug=getUtility(IBugSet).get(1))
-    u'<a href=".../bugs/1"><img src="/@@/bug"...>&nbsp;Bug #1:
+    u'<a href=".../bugs/1"><img ...src="/@@/bug" />&nbsp;Bug #1:
       Opps&lt;br/&gt;&lt;script&gt;alert(\'XSS\')&lt;/script&gt;</a>'
 
     >>> test_tales("bugtask/fmt:link", bugtask=bugtask)
     u'<a href=".../firefox/+bug/1"><img ...src="/@@/bug-low" />&nbsp;Bug #1:
       Opps&lt;br/&gt;&lt;script&gt;alert(\'XSS\')&lt;/script&gt;</a>'
+
+
+=== Branch subscriptions ===
+
+    >>> from canonical.launchpad.testing import LaunchpadObjectFactory
+    >>> factory = LaunchpadObjectFactory()
+    >>> subscription = factory.makeBranchSubscription('My Branch',
+    ...     'My Person')
+    >>> test_tales("subscription/fmt:link", subscription=subscription)
+    u'Subscription of My Person to My Branch'
+
+
+=== Merge proposals ===
+
+    >>> login('foo.bar@canonical.com')
+    >>> proposal = factory.makeBranchMergeProposal()
+    >>> proposal.source_branch.title = 'baz'
+    >>> proposal.target_branch.title = 'qux'
+    >>> test_tales("proposal/fmt:link", proposal=proposal)
+    u'<a href="...">Proposed merge of baz into qux</a>'
+
+
+=== Bug branches ===
+
+    >>> login('test@canonical.com')
+    >>> branch = factory.makeBranch()
+    >>> bug = factory.makeBug()
+    >>> bugbranch = bug.addBranch(branch, branch.owner)
+    >>> test_tales("bugbranch/fmt:link", bugbranch=bugbranch)
+    u'<a href="...+bug..."><img .../>&nbsp;Bug #...</a>'
+
+
+=== Code imports ===
+
+    >>> login('foo.bar@canonical.com')
+    >>> code_import = factory.makeCodeImport()
+    >>> test_tales("code_import/fmt:link", code_import=code_import)
+    u'<a href="...+code-import">Import of...</a>'
+
+
+=== Product series ===
+
+    >>> product_series = factory.makeSeries()
+    >>> test_tales("product_series/fmt:link", product_series=product_series)
+    u'... Series: ...'
+
+
+=== Blueprints ===
+
+    >>> login('test@canonical.com')
+    >>> specification = factory.makeSpec()
+    >>> test_tales("specification/fmt:link", specification=specification)
+    u'...<img ... src="/@@/blueprint-undefined" />&nbsp;...'
+
+
+=== Blueprint branches ===
+
+    >>> specification = factory.makeSpec()
+    >>> branch = factory.makeBranch()
+    >>> specification_branch = specification.linkBranch(branch, branch.owner)
+    >>> test_tales("specification_branch/fmt:link",
+    ...     specification_branch=specification_branch)
+    u'...<img ... src="/@@/blueprint-undefined" />&nbsp;...'
+
+
+=== Projects ===
+
+    >>> product = factory.makeProduct()
+    >>> test_tales('product/fmt:link', product=product)
+    u'<a href=...><img alt="" ... src="/@@/product" />&nbsp;...</a>'
 
 
 == The fmt: namespace to get strings (hiding) ==

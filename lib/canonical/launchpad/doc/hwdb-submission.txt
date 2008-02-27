@@ -166,8 +166,8 @@ The field `emailaddress` must contain a formally valid email address.
 All fields are required.
 
     >>> for field in ('field.date_created', 'field.format', 'field.private',
-    ...     'field.contactable', 'field.submission_key', 
-    ...     'field.emailaddress', 'field.distribution', 
+    ...     'field.contactable', 'field.submission_key',
+    ...     'field.emailaddress', 'field.distribution',
     ...     'field.distroseries', 'field.architecture', 'field.system',
     ...     'field.submission_data'):
     ...     invalid_form = form.copy()
@@ -176,17 +176,17 @@ All fields are required.
     ...     submit_view = getView(app, '+submit', request)
     ...     submit_view.initialize()
     ...     submit_view.widget_errors
-    {'date_created': 'Required field is missing'}
-    {'format': 'Required field is missing'}
-    {'private': 'Required field is missing'}
-    {'contactable': 'Required field is missing'}
-    {'submission_key': 'Required field is missing'}
-    {'emailaddress': 'Required field is missing'}
-    {'distribution': 'Required field is missing'}
-    {'distroseries': 'Required field is missing'}
-    {'architecture': 'Required field is missing'}
-    {'system': 'Required field is missing'}
-    {'submission_data': 'Required field is missing'}
+    {'date_created': u'Required field is missing'}
+    {'format': u'Required field is missing'}
+    {'private': u'Required field is missing'}
+    {'contactable': u'Required field is missing'}
+    {'submission_key': u'Required field is missing'}
+    {'emailaddress': u'Required field is missing'}
+    {'distribution': u'Required field is missing'}
+    {'distroseries': u'Required field is missing'}
+    {'architecture': u'Required field is missing'}
+    {'system': u'Required field is missing'}
+    {'submission_data': u'Required field is missing'}
 
 Teams can be owners of submissions.
 
