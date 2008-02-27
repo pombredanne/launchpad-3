@@ -6,12 +6,14 @@ __metaclass__ = type
 
 __all__ = [
     'CodeImportSetView',
+    'CodeImportNewView',
     'CodeImportView',
     ]
 
 
 from canonical.launchpad import _
-from canonical.launchpad.interfaces import CodeImportReviewStatus
+from canonical.launchpad.interfaces import (
+    CodeImportReviewStatus, ICodeImport)
 from canonical.launchpad.webapp import LaunchpadView
 from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.widgets import LaunchpadDropdownWidget
@@ -78,3 +80,29 @@ class CodeImportView(LaunchpadView):
     def initialize(self):
         """See `LaunchpadView.initialize`."""
         self.title = "Code Import for %s" % (self.context.product.name,)
+
+class CodeImportNewView(LaunchpadFormView):
+    """The view to request a new code import."""
+
+    schema = ICodeImport
+    field_names = [
+        'product', 'rcs_type', 'svn_branch_url', 'cvs_root', 'cvs_module'
+        ]
+
+    @action(_('Continue'), name='continue')
+    def continue_action(self, action, data):
+        xxx
+
+    @action('Cancel', name='cancel', validator='validate_cancel')
+    def cancel_action(self, action, data):
+        """Do nothing and go back to the code rootsite."""
+        self.next_url = xxx
+
+    def validate(self, data):
+        # If the user has specified a subversion url, we need
+        # to make sure that there isn't already an import with
+        # that url.
+
+        # If the user has specified cvs, then we need to make
+        # sure that there isn't already an import with those
+        # values.

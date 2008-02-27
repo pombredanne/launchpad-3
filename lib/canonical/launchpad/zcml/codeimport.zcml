@@ -76,4 +76,12 @@
     permission="launchpad.View"
     />
 
+  <browser:page
+    for="canonical.launchpad.interfaces.ICodeImportSet"
+    class="canonical.launchpad.browser.CodeImportNewView"
+    name="+new"
+    template="../templates/codeimport-new.pt"
+    permission="launchpad.AnyPerson"
+    />
+
 </configure>
