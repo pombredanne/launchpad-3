@@ -21,7 +21,8 @@
       icingroot string:${rooturl}+icing/rev${revno};
       site_message modules/canonical.config/config/launchpad/site_message;
       devmode modules/canonical.config/config/devmode;
-      is_demo modules/canonical.config/config/launchpad/is_demo"
+      is_demo modules/canonical.config/config/launchpad/is_demo;
+      is_edge modules/canonical.config/config/launchpad/is_edge"
 >
   <head>
     <title tal:content="CONTEXTS/fmt:pagetitle">Launchpad</title>
@@ -48,6 +49,20 @@
     >html, body {background-image: url(/@@/demo) !important;}</style>
     <style tal:condition="site_message" type="text/css"
     >#help {top: 47px !important;}</style>
+
+    <tal:XXX condition="nothing">
+      20080131 mpt: We make text fields slightly narrower in IE to avoid the
+      right side being clipped (bug 156202). This should be rechecked post-2.0.
+      The two rules are separate because IE6 ignores the first one, and ignores
+      them both if they're together.
+    </tal:XXX>
+    <!--[if lte IE 7]>
+      <style type="text/css">
+        input[type="text"] {width: 95%}
+        textarea {width: 95%;}
+      </style>
+    <![endif]-->
+
     <!--[if IE 7]>
       <style type="text/css">
         #container {margin-top: 28px; position: static;}
@@ -314,12 +329,13 @@
             &copy;&nbsp;2004-2008&nbsp;<a
                 href="http://canonical.com/">Canonical&nbsp;Ltd.</a>
           <tal:block>
-              | build
+              | Version 1.2.3 | build
               <tal:block condition="revno" replace="revno" />
               <tal:block condition="not: revno">unknown</tal:block>
           </tal:block>
           <tal:devmode condition="devmode">| DEVMODE</tal:devmode>
           <tal:demo condition="is_demo">| DEMO</tal:demo>
+          <tal:edge condition="is_edge">| EDGE</tal:edge>
         </div>
         <ul style="clear: both; margin-top:20px;" tal:condition="nothing">
             <li>Facet name:
@@ -359,7 +375,7 @@
         <div id="help-bottom">&nbsp;</div>
       </div>
     </div>
-    <div id="menupreload" style="visibility:hidden" 
+    <div id="menupreload" style="visibility:hidden"
       xml:lang="en" lang="en" dir="ltr">
       <ul class="menu" lpm:mid="root">
         <tal:condition condition="request/lp:person">

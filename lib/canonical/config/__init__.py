@@ -8,12 +8,17 @@ environment variable, and defaults to 'default'
 
 __metaclass__ = type
 
+
 import os
 import logging
 from urlparse import urlparse, urlunparse
 
 import zope.thread
 import ZConfig
+
+from canonical.lazr.config import ImplicitTypeSchema
+from canonical.lazr.interfaces.config import ConfigErrors
+
 
 # LPCONFIG specifies the config to use, which corresponds to a subdirectory
 # of configs. LPCONFIG_SECTION specifies the <canonical> section inside that
@@ -25,6 +30,7 @@ SECTION_ENVIRONMENT_VARIABLE = 'LPCONFIG_SECTION'
 DEFAULT_SECTION = 'default'
 DEFAULT_CONFIG = 'default'
 
+
 class CanonicalConfig(object):
     """
     Singleton configuration, accessed via the `config` module global.
@@ -32,34 +38,8 @@ class CanonicalConfig(object):
     Cached copies are kept in thread locals ensuring the configuration
     is thread safe (not that this will be a problem if we stick with
     simple configuration).
-
-    >>> from canonical.config import config
-    >>> config.dbhost
-    'localhost'
-    >>> config.launchpad.db_statement_timeout is None
-    True
-    >>> config.launchpad.dbuser
-    'launchpad'
-    >>> config.librarian.dbuser
-    'librarian'
-    >>> config.librarian.upload_host
-    'localhost'
-    >>> config.librarian.upload_port
-    59090
-    >>> config.librarian.download_host
-    'localhost'
-    >>> config.librarian.download_port
-    58000
-
-    There are also some automatically generated config items
-
-    >>> import os.path, canonical
-    >>> os.path.join(config.root, 'lib', 'canonical') == os.path.dirname(
-    ...     canonical.__file__)
-    True
-    >>> config.name == os.environ.get('LPCONFIG', DEFAULT_SECTION)
-    True
     """
+    _config = None
     _cache = zope.thread.local()
     _default_config_section = os.environ.get(
             SECTION_ENVIRONMENT_VARIABLE, DEFAULT_SECTION
@@ -78,7 +58,6 @@ class CanonicalConfig(object):
 
     def getConfig(self, section=None):
         """Return the ZConfig configuration"""
-
         if section is None:
             section = self._default_config_section
 
@@ -90,7 +69,7 @@ class CanonicalConfig(object):
         schemafile = os.path.join(os.path.dirname(__file__), 'schema.xml')
         configfile = os.path.join(
                 os.path.dirname(__file__), os.pardir, os.pardir, os.pardir,
-                'configs',os.environ.get(
+                'configs', os.environ.get(
                     CONFIG_ENVIRONMENT_VARIABLE, DEFAULT_CONFIG),
                 'launchpad.conf'
                 )
@@ -102,6 +81,43 @@ class CanonicalConfig(object):
                 self._magic_settings(branch, root)
                 return branch
         raise KeyError, section
+
+    def _getConfig(self):
+        """Get the schema and config for this environment.
+
+        The config is will be loaded only when there is not a config.
+        Repeated calls to this method will not cause the config to reload.
+        """
+        if self._config is not None:
+            return
+
+        if self._default_config_section != 'default':
+            environ_dir = self._default_config_section
+        else:
+            environ_dir = os.environ.get(
+                    CONFIG_ENVIRONMENT_VARIABLE, DEFAULT_CONFIG)
+        here = os.path.dirname(__file__)
+        config_dir = os.path.join(
+            here, os.pardir, os.pardir, os.pardir, 'configs', environ_dir)
+        schema_file = os.path.join(here, 'schema-lazr.conf')
+        config_file = os.path.join(config_dir, 'launchpad-lazr.conf')
+
+        # Monkey patch the Section class to store it's ZConfig counterpart.
+        # The Section instance will failover to the ZConfig instance when
+        # the key does not exist. This is for the transitionary period
+        # where ZConfig and lazr.config are concurrently loaded.
+        from canonical.lazr.config import ImplicitTypeSection
+        ImplicitTypeSection._zconfig = self.getConfig()
+        ImplicitTypeSection.__getattr__ = failover_to_zconfig(
+            ImplicitTypeSection.__getattr__)
+
+        schema = ImplicitTypeSchema(schema_file)
+        self._config = schema.load(config_file)
+        try:
+            self._config.validate()
+        except ConfigErrors, error:
+            message = '\n'.join([str(e) for e in error.errors])
+            self.fail(message)
 
     def _magic_settings(self, config, root_options):
         """Modify the config, adding automatically generated settings"""
@@ -125,11 +141,87 @@ class CanonicalConfig(object):
         config.servers = root_options.servers
 
     def __getattr__(self, name):
+        self._getConfig()
+        try:
+            return getattr(self._config, name)
+        except AttributeError:
+            # Fail over to the ZConfig instance.
+            pass
         return getattr(self.getConfig(), name)
 
     def default_section(self):
         return self._default_config_section
     default_section = property(default_section)
+
+
+# Transitionary functions and classes.
+
+def failover_to_zconfig(func):
+    """Return a decorated function that will failover to ZConfig."""
+
+    def failover_getattr(self, name):
+        """Failover to the ZConfig section.
+
+        To ease the transition to lazr.config, the Section object's
+        __getattr__ is decorated with a function that accesses the
+        ZConfig.
+        """
+        # This method may access protected members.
+        # pylint: disable-msg=W0212
+        try:
+            # Try to get the value of the section key from ZConfig.
+            # e.g. config.section.key
+            z_section = getattr(self._zconfig, self.name)
+            z_key_value = getattr(z_section, name)
+            is_zconfig = True
+        except AttributeError:
+            is_zconfig = False
+
+        try:
+            # Try to get the value of the section key from lazr.config.
+            # e.g. config.section.key
+            lazr_value = func(self, name)
+        except AttributeError:
+            lazr_value = None
+
+        if not is_zconfig and lazr_value is None:
+            # The callsite was converted to lazr config, but has an error.
+            raise AttributeError(
+                "ZConfig or lazr.config instances have no attribute '%s'." %
+                name)
+        elif lazr_value is not None:
+            # The callsite was converted to lazr.config. It is assumed
+            # that the once a key is added to the config, all callsites
+            # are adapted.
+            return lazr_value
+        else:
+            # The callsite is using ZConfig, it must be adapted.
+            raise_warning(
+                "Callsite requests a nonexistent key: '%s.%s'." %
+                (self.name, name))
+            return z_key_value
+
+    return failover_getattr
+
+
+class UnconvertedConfigWarning(UserWarning):
+    """A Warning that the callsite is using ZConfig."""
+
+
+def raise_warning(message):
+    """Raise a UnconvertedConfigWarning if the warning is enabled.
+
+    When the environmental variable ENABLE_DEPRECATED_ZCONFIG_WARNINGS is
+    'true' a warning is emitted.
+    """
+    import warnings
+    is_enabled = os.environ.get('ENABLE_DEPRECATED_ZCONFIG_WARNINGS', 'false')
+    if is_enabled == 'true':
+        warnings.warn(
+            message,
+            UnconvertedConfigWarning,
+            stacklevel=2)
+
 
 config = CanonicalConfig()
 

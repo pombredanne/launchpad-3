@@ -14,15 +14,21 @@ Here we have some imports and utility fetch.
     >>> import transaction
     >>> from zope.component import getUtility
     >>> from canonical.database.sqlbase import flush_database_updates
-    >>> from canonical.launchpad.interfaces import ITranslationImportQueue
-    >>> from canonical.launchpad.interfaces import ILaunchpadCelebrities
-    >>> from canonical.launchpad.interfaces import RosettaImportStatus
-    >>> from canonical.launchpad.database import ProductSeries
-    >>> from canonical.launchpad.database import DistroSeries
-    >>> from canonical.launchpad.database import SourcePackageName
-    >>> from canonical.launchpad.ftests import login
+    >>> from canonical.launchpad.interfaces import (
+    ...     IDistributionSet, IDistroSeries, ILaunchpadCelebrities,
+    ...     IProductSet, ITranslationImportQueue, ISourcePackageNameSet,
+    ...     RosettaImportStatus)
+    >>> from canonical.launchpad.database import (
+    ...     DistroSeries, ProductSeries, SourcePackageName)
+    >>> from canonical.launchpad.ftests import login, sync, syncUpdate
+
     >>> translationimportqueue = getUtility(ITranslationImportQueue)
     >>> rosetta_experts = getUtility(ILaunchpadCelebrities).rosetta_experts
+
+    >>> distroset = getUtility(IDistributionSet)
+    >>> packageset = getUtility(ISourcePackageNameSet)
+    >>> productset = getUtility(IProductSet)
+
 
 Login as a user without privileges.
 
@@ -889,15 +895,34 @@ no sense at all.
 
 == getPillarObjectsWithImports ==
 
-This method returns all objects which have entries in the translation
-import queue waiting to be imported.  Object can be a Product or
-a DistroSeries.
+    >>> # Helper functions
+    >>> def get_target_names(status=None):
+    ...     """Call getPillarObjectsWithImports, return list of names/titles.
+    ...     """
+    ...     result = []
+    ...     queue = translationimportqueue.getPillarObjectsWithImports(status)
+    ...     for object in queue:
+    ...         if IDistroSeries.providedBy(object):
+    ...             name = "%s/%s" % (object.distribution.name, object.name)
+    ...         else:
+    ...             name = object.name
+    ...         result.append("%s %s" % (name, object.displayname))
+    ...     return result
 
-To test it, we need to add a few items to the queue first, so lets
-start with adding a single item to a source package inside Hoary
-distroseries:
+    >>> def print_list(strings):
+    ...     """Print list of strings as list of lines."""
+    ...     for string in strings:
+    ...         print string
 
-    >>> from canonical.launchpad.interfaces.distribution import IDistributionSet
+getPillarObjectsWithImports() returns all objects that have entries in
+the translation import queue waiting to be imported.  Object can be a
+Product or a DistroSeries.
+
+The user uploads two translations into Hoary and Warty respectively, as
+well as one for the Firefox trunk series.
+
+    >>> from canonical.launchpad.interfaces.distribution import (
+    ...     IDistributionSet)
     >>> ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
     >>> hoary_distroseries = ubuntu.getSeries('hoary')
     >>> evolution_sourcepackagename = (
@@ -907,9 +932,6 @@ distroseries:
     ...      distroseries=hoary_distroseries,
     ...      sourcepackagename=evolution_sourcepackagename)
 
-Now, lets add another which will be ignored since we are setting this
-distroseries with defer_translation_imports = True.
-
     >>> warty_distroseries = ubuntu.getSeries('warty')
     >>> entry3 = translationimportqueue.addOrUpdateEntry(
     ...     u'po/sr.po', 'foo', True, rosetta_experts,
@@ -917,23 +939,19 @@ distroseries with defer_translation_imports = True.
     ...      sourcepackagename=evolution_sourcepackagename)
     >>> print entry3.status.name
     NEEDS_REVIEW
-    >>> warty_distroseries.defer_translation_imports = True
 
-Next, lets add one item to a ProductSeries as well:
-
-    >>> productseries = ProductSeries.get(1)
+    >>> firefox = productset['firefox']
+    >>> productseries = firefox.getSeries('trunk')
     >>> entry2 = translationimportqueue.addOrUpdateEntry(
     ...     'foo/bar.pot', 'foo content', True,
     ...     rosetta_experts, productseries=productseries)
-    >>> transaction.commit()
+    >>> flush_database_updates()
 
-The list of objects with approved entries should still be empty, since
-we haven't approved any.
+The list of objects with approved entries is still empty, since we haven't
+approved any.
 
-    >>> importqueues = translationimportqueue.getPillarObjectsWithImports(
-    ...     RosettaImportStatus.APPROVED)
-    >>> len(importqueues)
-    0
+    >>> print_list(sorted(get_target_names(RosettaImportStatus.APPROVED)))
+
     >>> print entry3.status.name
     NEEDS_REVIEW
 
@@ -949,15 +967,16 @@ Now we approve these entries (we need to be Rosetta administrator to do this).
 If we re-get the list of objects which have approved entries, we'll
 get these recently approved ones.
 
-    >>> importqueues = translationimportqueue.getPillarObjectsWithImports(
-    ...     RosettaImportStatus.APPROVED)
-    >>> len(importqueues)
-    2
+    >>> print_list(sorted(get_target_names(RosettaImportStatus.APPROVED)))
+    firefox         Mozilla Firefox
+    ubuntu/hoary    Hoary
 
 Lets check that the returned entries are actually the same ones we submitted.
 Each of the objects returned provides a getFirstEntryToImport method
 which returns the TranslationImportQueueEntry which is next up for import.
 
+    >>> importqueues = translationimportqueue.getPillarObjectsWithImports(
+    ...     RosettaImportStatus.APPROVED)
     >>> sortedqueues = sorted(importqueues,
     ...                       cmp=lambda x,y: cmp(y.title, x.title))
     >>> queue1 = sortedqueues[0]
@@ -980,6 +999,51 @@ review.
     >>> print entry3.status.name
     NEEDS_REVIEW
 
+    >>> print_list(sorted(get_target_names()))
+    evolution       Evolution
+    firefox         Mozilla Firefox
+    ubuntu/hoary    Hoary
+    ubuntu/warty    Warty
+
+Administrators temporarily block translation imports to Warty.
+
+    >>> warty_distroseries.defer_translation_imports = True
+    >>> syncUpdate(warty_distroseries)
+
+While imports are blocked, Warty does not show up as having pending
+imports.
+
+    >>> print_list(sorted(get_target_names()))
+    evolution       Evolution
+    firefox         Mozilla Firefox
+    ubuntu/hoary    Hoary
+
+An administrator deactivates Firefox, thinking that the project is being
+run in violation of Launchpad policies.
+
+    >>> firefox.active = False
+    >>> syncUpdate(firefox)
+
+Now that Firefox is inactive, it no longer shows up as having pending
+imports.
+
+    >>> print_list(sorted(get_target_names()))
+    evolution       Evolution
+    ubuntu/hoary    Hoary
+
+The administrator realizes that there has been a mistake, and makes
+Firefox active again.
+
+    >>> firefox.active = True
+    >>> syncUpdate(firefox)
+
+The import request for Firefox was not removed, so Firefox is listed as
+having pending imports again.
+
+    >>> print_list(sorted(get_target_names()))
+    evolution       Evolution
+    firefox         Mozilla Firefox
+    ubuntu/hoary    Hoary
 
 == addOrUpdateEntry() ==
 
@@ -1141,26 +1205,7 @@ TranslationImportQueue.getPillarObjectsWithImports first lists distro
 series (ordered by distro name and series name), followed by products
 (ordered by name).
 
-    >>> from canonical.launchpad.interfaces import (
-    ...     IDistributionSet, IDistroSeries, IProductSet,
-    ...     ISourcePackageNameSet)
-
-    >>> distroset = getUtility(IDistributionSet)
-    >>> packageset = getUtility(ISourcePackageNameSet)
-    >>> productset = getUtility(IProductSet)
-
-    >>> def list_target_names(status=None):
-    ...     """Print names returned by getPillarObjectsWithImports.
-    ...     """
-    ...     queue = translationimportqueue.getPillarObjectsWithImports(status)
-    ...     for object in queue:
-    ...         if IDistroSeries.providedBy(object):
-    ...             name = "%s/%s" % (object.distribution.name, object.name)
-    ...         else:
-    ...             name = object.name
-    ...         print name, object.displayname
-
-    >>> list_target_names()
+    >>> print_list(get_target_names(RosettaImportStatus.APPROVED))
     ubuntu/hoary    Hoary
     evolution       Evolution
     firefox         Mozilla Firefox
@@ -1216,7 +1261,7 @@ upstream, some were produced right here in Launchpad.
 The targets (distro series or products) that these requests are for are
 always listed in the same, predictable order.
 
-    >>> list_target_names()
+    >>> print_list(get_target_names())
     debian/sarge        Sarge
     debian/woody        Woody
     kubuntu/krunch      Krunch
@@ -1228,7 +1273,7 @@ always listed in the same, predictable order.
 
     >>> for status in RosettaImportStatus.items:
     ...     print "%s:" % status.name
-    ...     list_target_names(status)
+    ...     print_list(get_target_names(status))
     APPROVED:
     kubuntu/krunch      Krunch
     ubuntu/hoary        Hoary
@@ -1247,4 +1292,110 @@ always listed in the same, predictable order.
     firefox             Mozilla Firefox
     BLOCKED:
     ubuntu/grumpy       Grumpy
+
+
+== cleanUpQueue ==
+
+The queue is cleaned up regularly.  This removes entries that are either
+DELETED or IMPORTED and get too old.
+
+Here we start out with an empty queue.
+
+    >>> for entry in translationimportqueue:
+    ...     translationimportqueue.remove(entry)
+    >>> print_queue_entries()
+
+cleanUpQueue() returns the number of entries it purges.  If there is
+nothing to purge, it returns zero.
+
+    >>> translationimportqueue.cleanUpQueue()
+    0
+
+
+=== Deleted Entries ===
+
+The user requests an upload, then marks the request as DELETED.
+
+    >>> entry = translationimportqueue.addOrUpdateEntry(
+    ...     u'po/nl.po', 'hoi', True, rosetta_experts,
+    ...      productseries=evolution_productseries)
+    >>> entry.status = RosettaImportStatus.DELETED
+
+The entry stays on the queue long enough to make it a candidate for
+purging.
+
+    >>> now = datetime.datetime.now(UTC)
+    >>> stale = now - datetime.timedelta(4)
+    >>> entry.date_status_changed = stale
+    >>> flush_database_updates()
+    >>> print_queue_entries()
+    evolution   | None        | po/nl.po
+
+The entry is deleted as part of the next cleanup.
+
+    >>> translationimportqueue.cleanUpQueue()
+    1
+
+    >>> print_queue_entries()
+
+
+=== Imported Entries ===
+
+The user re-uploads the file after fixing some problem.  This time it is
+imported successfully, ending up in the IMPORTED state.
+
+    >>> entry = translationimportqueue.addOrUpdateEntry(
+    ...     u'po/nl.po', 'hoi', True, rosetta_experts,
+    ...      productseries=evolution_productseries)
+    >>> entry.status = RosettaImportStatus.IMPORTED
+    >>> print_queue_entries()
+    evolution   | None        | po/nl.po
+
+This request, too, is deleted when left in this state for longer than a
+few days.
+
+    >>> entry.date_status_changed = stale
+    >>> flush_database_updates()
+    >>> translationimportqueue.cleanUpQueue()
+    1
+
+    >>> print_queue_entries()
+
+
+=== Deactivated Products ===
+
+A user sets up Jokosher for translation, and uploads a template.
+
+    >>> jokosher = productset['jokosher']
+    >>> jokosher_trunk = jokosher.getSeries('trunk')
+    >>> jokosher.official_rosetta = True
+    >>> syncUpdate(jokosher)
+    >>> jokosher_subset = potemplateset.getSubset(productseries=jokosher_trunk)
+    >>> template = jokosher_subset.new(
+    ...     'jokosher', 'jokosher', 'jokosher.pot', rosetta_experts)
+    >>> syncUpdate(template)
+    >>> entry = create_product_request('jokosher', 'jokosher')
+    >>> syncUpdate(entry)
+    >>> print_queue_entries()
+    jokosher    | jokosher    | messages.pot
+
+The entry sits on the queue; there is no reason for anyone to purge it.
+
+    >>> translationimportqueue.cleanUpQueue()
+    0
+    >>> print_queue_entries()
+    jokosher    | jokosher    | messages.pot
+
+An administrator finds that this registration of the Jokosher project
+does not satisfy Launchpad policy, and disables it.
+
+    >>> jokosher.active = False
+    >>> syncUpdate(jokosher)
+
+The request is now eligible for purging.  Since the Jokosher product is
+no longer usable, there is no point in keeping the entry on the queue.
+
+    >>> translationimportqueue.cleanUpQueue()
+    1
+    >>> print_queue_entries()
 

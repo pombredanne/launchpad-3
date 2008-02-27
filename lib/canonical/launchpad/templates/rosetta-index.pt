@@ -28,7 +28,7 @@
                         </form>
                         <p id="application-summary">
                           Launchpad helps you build a community to
-                          translate your project into into almost any
+                          translate your project into almost any
                           language. Translators use this simple web
                           interface to contribute translations in a
                           wiki-style of collaboration.
@@ -57,16 +57,18 @@
                         <div class="three column middle">
 
                             <h2>Translatable projects</h2>
-                            <ul class="product">
-                              <li tal:repeat="product context/featured_products">
-                                <a
-                                  tal:attributes="href string:/${product/name}/+translations"
-                                  tal:content="product/title"
-                                />
-                              </li>
-                            </ul>
+                            <span 
+                               tal:repeat="product context/featured_products"
+                               tal:attributes="style string:font-size:${product/font_size}%;">
+                              <a
+                                tal:attributes="
+                                  href string:${product/pillar/fmt:url}/+translations"
+                                tal:content="product/pillar/displayname" />
+                            </span>
+                            <div>
                             <a href="+products-with-translations">
                               &raquo; List all translatable projects...</a>
+                            </div>
 
                         </div>
                         <div class="three column right">

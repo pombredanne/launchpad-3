@@ -20,7 +20,7 @@ from canonical.lazr.rest.schema import CollectionField
 
 from canonical.launchpad.interfaces import IPerson, IPersonSet
 
-from canonical.lp import decorates
+from canonical.lazr import decorates
 
 
 class IPersonEntry(IEntry):
