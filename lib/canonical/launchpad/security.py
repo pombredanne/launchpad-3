@@ -137,6 +137,10 @@ class EditSpecificationBranch(AuthorizationBase):
     permission = 'launchpad.Edit'
 
     def checkAuthenticated(self, user):
+        """See `IAuthorization.checkAuthenticated`.
+
+        :return: True or False.
+        """
         return True
 
 
@@ -145,6 +149,10 @@ class ViewSpecificationBranch(EditSpecificationBranch):
     permission = 'launchpad.View'
 
     def checkUnauthenticated(self):
+        """See `IAuthorization.checkUnauthenticated`.
+
+        :return: True or False.
+        """
         return True
 
 
