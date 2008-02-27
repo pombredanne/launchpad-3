@@ -31,9 +31,10 @@ from canonical.launchpad.browser.build import BuildRecordsView
 from canonical.launchpad.browser.sourceslist import (
     SourcesListEntries, SourcesListEntriesView)
 from canonical.launchpad.interfaces import (
-    ArchivePurpose, IArchive, IArchivePackageDeletionForm, IArchiveSet,
-    IBuildSet, IHasBuildRecords, ILaunchpadCelebrities, IPPAActivateForm,
-    IStructuralHeaderPresentation, NotFoundError, PackagePublishingStatus)
+    ArchivePurpose, BuildStatus, IArchive, IArchivePackageDeletionForm,
+    IArchiveSet, IBuildSet, IHasBuildRecords, ILaunchpadCelebrities,
+    IPPAActivateForm, IStructuralHeaderPresentation, NotFoundError,
+    PackagePublishingStatus)
 from canonical.launchpad.webapp import (
     action, canonical_url, custom_widget, enabled_with_permission,
     stepthrough, ContextMenu, LaunchpadEditFormView,
@@ -433,6 +434,14 @@ class ArchiveBuildsView(BuildRecordsView):
     """Build Records View for IArchive."""
 
     __used_for__ = IHasBuildRecords
+
+    @property
+    def default_build_state(self):
+        """See `IBuildRecordsView`.
+
+        Present NEEDSBUILD build records by default for PPAs.
+        """
+        return BuildStatus.NEEDSBUILD
 
 
 class BaseArchiveEditView(LaunchpadEditFormView):

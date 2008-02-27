@@ -17,6 +17,7 @@ import pytz
 from zope.component import getUtility
 from canonical.launchpad.interfaces import (
     BranchMergeProposalStatus,
+    BranchSubscriptionNotificationLevel,
     BranchType,
     CodeImportReviewStatus,
     CreateBugParams,
@@ -37,6 +38,7 @@ from canonical.launchpad.interfaces import (
     SpecificationDefinitionStatus,
     UnknownBranchTypeError,
     )
+from canonical.launchpad.ftests import syncUpdate
 
 
 def time_counter(origin=None, delta=timedelta(seconds=5)):
@@ -104,7 +106,7 @@ class LaunchpadObjectFactory:
             self.getUniqueString('domain'), self.getUniqueString('path'))
 
     def makePerson(self, email=None, name=None, password=None,
-                   email_address_status=None):
+                   email_address_status=None, displayname=None):
         """Create and return a new, arbitrary Person.
 
         :param email: The email address for the new person.
@@ -115,6 +117,7 @@ class LaunchpadObjectFactory:
             person.
         :param email_address_status: If specified, the status of the email
             address is set to the email_address_status.
+        :param displayname: The display name to use for the person.
         """
         if email is None:
             email = self.getUniqueString('email')
@@ -131,7 +134,7 @@ class LaunchpadObjectFactory:
         # been created this way can be logged in.
         person, email = getUtility(IPersonSet).createPersonAndEmail(
             email, rationale=PersonCreationRationale.UNKNOWN, name=name,
-            password=password)
+            password=password, displayname=displayname)
         # To make the person someone valid in Launchpad, validate the
         # email.
         if email_address_status == EmailAddressStatus.VALIDATED:
@@ -228,6 +231,19 @@ class LaunchpadObjectFactory:
             raise AssertionError('Unknown status: %s' % set_state)
 
         return proposal
+
+    def makeBranchSubscription(self, branch_title=None,
+                               person_displayname=None):
+        """Create a BranchSubscription.
+
+        :param branch_title: The title to use for the created Branch
+        :param person_displayname: The displayname for the created Person
+        """
+        branch = self.makeBranch(title=branch_title)
+        person = self.makePerson(displayname=person_displayname,
+            email_address_status=EmailAddressStatus.VALIDATED)
+        return branch.subscribe(person,
+            BranchSubscriptionNotificationLevel.NOEMAIL, None)
 
     def makeRevisionsForBranch(self, branch, count=5, author=None,
                                date_generator=None):
@@ -346,3 +362,31 @@ class LaunchpadObjectFactory:
         The machine will be in the OFFLINE state."""
         hostname = self.getUniqueString('machine-')
         return getUtility(ICodeImportMachineSet).new(hostname)
+
+    def makeSeries(self, user_branch=None, import_branch=None):
+        """Create a new, arbitrary ProductSeries.
+
+        :param user_branch: If supplied, the branch to set as
+            ProductSeries.user_branch.
+        :param import_branch: If supplied, the branch to set as
+            ProductSeries.import_branch.
+        """
+        product = self.makeProduct()
+        series = product.newSeries(product.owner, self.getUniqueString(),
+            self.getUniqueString(), user_branch)
+        series.import_branch = import_branch
+        syncUpdate(series)
+        return series
+
+    def makeSpec(self):
+        """Create a new, arbitrary Specification."""
+        spec = getUtility(ISpecificationSet).new(
+            self.getUniqueString(),
+            self.getUniqueString(),
+            self.getUniqueURL(),
+            self.getUniqueString(),
+            SpecificationDefinitionStatus.APPROVED,
+            self.makePerson(),
+            product=self.makeProduct(),
+            )
+        return spec
