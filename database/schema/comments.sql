@@ -85,7 +85,6 @@ COMMENT ON COLUMN BranchSubscription.person IS 'The person or team associated wi
 COMMENT ON COLUMN BranchSubscription.branch IS 'The branch associated with the person or team.';
 COMMENT ON COLUMN BranchSubscription.notification_level IS 'The level of email the person wants to receive from branch updates.';
 COMMENT ON COLUMN BranchSubscription.max_diff_lines IS 'If the generated diff for a revision is larger than this number, then the diff is not sent in the notification email.';
-COMMENT ON COLUMN BranchSubscription.review_level IS 'The level of email the person wants to receive from review activity';
 
 -- BranchVisibilityPolicy
 
@@ -302,16 +301,6 @@ COMMENT ON TABLE CodeReviewMessage IS 'A message that is part of a code review d
 COMMENT ON COLUMN CodeReviewMessage.branch_merge_proposal IS 'The merge proposal that is being discussed.';
 COMMENT ON COLUMN CodeReviewMessage.message IS 'The actual message.';
 COMMENT ON COLUMN CodeReviewMessage.vote IS 'The reviewer''s vote for this message.';
-
--- CodeReviewVote
-
-COMMENT ON TABLE CodeReviewVote IS 'Reference to a person''s last vote in a code review discussion.';
-COMMENT ON COLUMN CodeReviewVote.branch_merge_proposal IS 'The BranchMergeProposal for the code review.';
-COMMENT ON COLUMN CodeReviewVote.reviewer IS 'The person performing the review.';
-COMMENT ON COLUMN CodeReviewVote.review_type IS 'The aspect of the code being reviewed.';
-COMMENT ON COLUMN CodeReviewVote.registrant IS 'The person who registered this vote';
-COMMENT ON COLUMN CodeReviewVote.vote_message IS 'The message associated with the vote';
-COMMENT ON COLUMN CodeReviewVote.date_created IS 'The date this vote reference was created';
 
 -- CVE
 
