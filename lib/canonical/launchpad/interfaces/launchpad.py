@@ -1,4 +1,4 @@
-# Copyright 2004 Canonical Ltd.  All rights reserved.
+# Copyright 2004-2008 Canonical Ltd.  All rights reserved.
 # pylint: disable-msg=E0211,E0213,W0611
 
 """Interfaces pertaining to the launchpad application.
@@ -8,7 +8,7 @@ Note that these are not interfaces to application content objects.
 __metaclass__ = type
 
 from zope.interface import Interface, Attribute
-from zope.schema import Bool, Choice, Int, TextLine
+from zope.schema import Bool, Choice, Int, Text, TextLine
 from persistent import IPersistent
 
 from canonical.launchpad import _
@@ -33,6 +33,7 @@ __all__ = [
     'IBreadcrumb',
     'ICrowd',
     'IFeedsApplication',
+    'IHWDBApplication',
     'IHasAppointedDriver',
     'IHasAssignee',
     'IHasBug',
@@ -45,7 +46,7 @@ __all__ = [
     'IHasProduct',
     'IHasProductAndAssignee',
     'IHasSecurityContact',
-    'IHWDBApplication',
+    'IHasStanding',
     'ILaunchBag',
     'ILaunchpadCelebrities',
     'ILaunchpadRoot',
@@ -381,6 +382,22 @@ class IHasMugshot(Interface):
     # Each of the objects that implements this needs a custom schema, so
     # here we can just use Attributes
     mugshot = Attribute("The 192x192 mugshot.")
+
+
+class IHasStanding(Interface):
+    """An object that can have personal standing."""
+
+    personal_standing = Choice(
+        title=_('Personal standing'),
+        required=True,
+        vocabulary='PersonalStanding',
+        description=_('The standing of a person for non-member mailing list '
+                      'posting privileges.'))
+
+    personal_standing_reason = Text(
+        title=_('Reason for personal standing'),
+        required=False,
+        description=_("The reason the person's standing is what it is."))
 
 
 class IAging(Interface):

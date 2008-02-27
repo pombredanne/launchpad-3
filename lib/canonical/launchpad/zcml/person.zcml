@@ -57,6 +57,10 @@
       permission="launchpad.Admin"
       attributes="deactivateAllMembers"
       />
+    <require
+      permission="launchpad.Admin"
+      interface="canonical.launchpad.interfaces.IHasStanding"
+      />
   </content>
 
   <browser:menus

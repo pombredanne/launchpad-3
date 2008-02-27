@@ -1,4 +1,4 @@
-# Copyright 2004-2007 Canonical Ltd.  All rights reserved.
+# Copyright 2004-2008 Canonical Ltd.  All rights reserved.
 # pylint: disable-msg=E0211,E0213
 
 """Person interfaces."""
@@ -17,8 +17,8 @@ __all__ = [
     'IPersonChangePassword',
     'IPersonClaim',
     'IPersonEditRestricted',
-    'IPersonPublic',
     'IPersonEntry',
+    'IPersonPublic',
     'IPersonSet',
     'IPersonViewRestricted',
     'IRequestPeopleMerge',
@@ -29,6 +29,7 @@ __all__ = [
     'JoinNotAllowed',
     'PersonCreationRationale',
     'PersonVisibility',
+    'PersonalStanding',
     'TeamContactMethod',
     'TeamMembershipRenewalPolicy',
     'TeamSubscriptionPolicy',
@@ -58,7 +59,7 @@ from canonical.launchpad.interfaces.mentoringoffer import (
 from canonical.launchpad.interfaces.specificationtarget import (
     IHasSpecifications)
 from canonical.launchpad.interfaces.launchpad import (
-    IHasIcon, IHasLogo, IHasMugshot)
+    IHasIcon, IHasLogo, IHasMugshot, IHasStanding)
 from canonical.launchpad.interfaces.questioncollection import (
     IQuestionCollection, QUESTION_STATUS_DEFAULT_SEARCH)
 from canonical.launchpad.interfaces.teammembership import (
@@ -99,6 +100,43 @@ class AccountStatus(DBEnumeratedType):
 
 INACTIVE_ACCOUNT_STATUSES = [
     AccountStatus.DEACTIVATED, AccountStatus.SUSPENDED]
+
+
+class PersonalStanding(DBEnumeratedType):
+    """A person's standing.
+
+    Standing is currently (just) used to determine whether a person's posts to
+    a mailing list require first-post moderation or not.  Any person with good
+    or excellent standing may post directly to the mailing list without
+    moderation.  Any person with unknown or poor standing must have their
+    first-posts moderated.
+    """
+
+    UNKNOWN = DBItem(0, """
+        Unknown standing
+
+        Nothing about this person's standing is known.
+        """)
+
+    POOR = DBItem(100, """
+        Poor standing
+
+        This person has poor standing.
+        """)
+
+    GOOD = DBItem(200, """
+        Good standing
+
+        This person has good standing and may post to a mailing list without
+        being subject to first-post moderation rules.
+        """)
+
+    EXCELLENT = DBItem(300, """
+        Excellent standing
+
+        This person has excellent standing and may post to a mailing list
+        without being subject to first-post moderation rules.
+        """)
 
 
 class PersonCreationRationale(DBEnumeratedType):
@@ -1106,6 +1144,7 @@ class IPersonPublic(IHasSpecifications, IHasMentoringOffers,
         :target: An object providing `IBugTarget` to search within.
         """
 
+
 class IPersonViewRestricted(Interface):
     """IPerson attributes that require launchpad.View permission."""
 
@@ -1215,7 +1254,8 @@ class IPersonEditRestricted(Interface):
         """
 
 
-class IPerson(IPersonPublic, IPersonViewRestricted, IPersonEditRestricted):
+class IPerson(IPersonPublic, IPersonViewRestricted, IPersonEditRestricted,
+              IHasStanding):
     """A Person."""
 
 
