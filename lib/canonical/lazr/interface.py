@@ -25,7 +25,7 @@ def use_template(template, include=None, exclude=None):
 
     if include and exclude:
         raise ValueError(
-            "you cannot use include and exclude at the same time.")
+            "you cannot use 'include' and 'exclude' at the same time.")
 
     if exclude is None:
         exclude = []
@@ -36,8 +36,10 @@ def use_template(template, include=None, exclude=None):
 
     for name in include:
         field = copy(template.get(name))
-        # Field are ordered based on a counter in the Field class. We want
-        # the new fields to be re-ordered, so we need to use that property.
+        # Fields are ordered based on a global counter in the Field class.
+        # We want the new fields to be re-ordered, so we need to use that
+        # property. This makes sure that these fields sort in the order
+        # specified, even if other fields are subsequently defined.
         if isinstance(field, Field):
             Field.order += 1
             field.order = Field.order

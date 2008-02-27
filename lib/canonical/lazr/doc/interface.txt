@@ -81,7 +81,7 @@ It is an error to use both arguments:
     ...     use_template(MyModel, include=['age'], exclude=['name'])
     Traceback (most recent call last):
       ...
-    ValueError: you cannot use include and exclude at the same time.
+    ValueError: you cannot use 'include' and 'exclude' at the same time.
 
 If neither include, nor exclude are used. The new interface is an exact
 copy of the template:
