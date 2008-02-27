@@ -723,7 +723,7 @@ class LaunchpadZopelessLayer(ZopelessLayer, LaunchpadLayer):
     @classmethod
     @profiled
     def abort(cls):
-        LaunnchpadZopelessLayer.txn.abort()
+        LaunchpadZopelessLayer.txn.abort()
 
     @classmethod
     @profiled
