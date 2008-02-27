@@ -9,6 +9,9 @@ Note that every Layer should define all of setUp, tearDown, testSetUp
 and testTearDown. If you don't do this, a base class' method will be called
 instead probably breaking something.
 
+Preferred style is to not use the 'cls' argument to Layer class methods,
+as this is unambguious.
+
 TODO: Make the Zope3 test runner handle multiple layers per test instead
 of one, forcing us to attempt to make some sort of layer tree.
 -- StuartBishop 20060619
@@ -127,7 +130,7 @@ class BaseLayer:
     @classmethod
     @profiled
     def setUp(cls):
-        cls.isSetUp = True
+        BaseLayer.isSetUp = True
 
         # Kill any Librarian left running from a previous test run.
         LibrarianTestSetup().killTac()
@@ -143,12 +146,12 @@ class BaseLayer:
     @classmethod
     @profiled
     def tearDown(cls):
-        cls.isSetUp = False
+        BaseLayer.isSetUp = False
 
     @classmethod
     @profiled
     def testSetUp(cls):
-        cls.check()
+        BaseLayer.check()
 
         # Tests and test infrastruture sometimes needs to know the test
         # name.  The testrunner doesn't provide this, so we have to do
@@ -168,7 +171,7 @@ class BaseLayer:
         reset_logging()
         del canonical.launchpad.mail.stub.test_emails[:]
         BaseLayer.test_name = None
-        cls.check()
+        BaseLayer.check()
 
     @classmethod
     @profiled
@@ -220,23 +223,23 @@ class LibrarianLayer(BaseLayer):
     @classmethod
     @profiled
     def setUp(cls):
-        if not cls._reset_between_tests:
+        if not LibrarianLayer._reset_between_tests:
             raise LayerInvariantError(
                     "_reset_between_tests changed before LibrarianLayer "
                     "was actually used."
                     )
         LibrarianTestSetup().setUp()
-        cls._check_and_reset()
+        LibrarianLayer._check_and_reset()
 
     @classmethod
     @profiled
     def tearDown(cls):
-        if not cls._reset_between_tests:
+        if not LibrarianLayer._reset_between_tests:
             raise LayerInvariantError(
                     "_reset_between_tests not reset before LibrarianLayer "
                     "shutdown"
                     )
-        cls._check_and_reset()
+        LibrarianLayer._check_and_reset()
         LibrarianTestSetup().tearDown()
 
     @classmethod
@@ -256,20 +259,20 @@ class LibrarianLayer(BaseLayer):
                     "the Librarian is restarted if it absolutetly must be "
                     "shutdown: " + str(e)
                     )
-        if cls._reset_between_tests:
+        if LibrarianLayer._reset_between_tests:
             LibrarianTestSetup().clear()
 
     @classmethod
     @profiled
     def testSetUp(cls):
-        cls._check_and_reset()
+        LibrarianLayer._check_and_reset()
 
     @classmethod
     @profiled
     def testTearDown(cls):
-        if cls._hidden:
-            cls.reveal()
-        cls._check_and_reset()
+        if LibrarianLayer._hidden:
+            LibrarianLayer.reveal()
+        LibrarianLayer._check_and_reset()
 
     # The hide and reveal methods mess with the config. Store the
     # original values so things can be recovered.
@@ -290,17 +293,17 @@ class LibrarianLayer(BaseLayer):
         We do this by altering the configuration so the Librarian client
         looks for the Librarian server on the wrong port.
         """
-        cls._hidden = True
-        if cls._fake_upload_socket is None:
+        LibrarianLayer._hidden = True
+        if LibrarianLayer._fake_upload_socket is None:
             # Bind to a socket, but don't listen to it.  This way we
             # guarantee that connections to the given port will fail.
-            cls._fake_upload_socket = socket.socket(
+            LibrarianLayer._fake_upload_socket = socket.socket(
                 socket.AF_INET, socket.SOCK_STREAM)
             assert config.librarian.upload_host == 'localhost', (
                 'Can only hide librarian if it is running locally')
-            cls._fake_upload_socket.bind(('127.0.0.1', 0))
+            LibrarianLayer._fake_upload_socket.bind(('127.0.0.1', 0))
 
-        host, port = cls._fake_upload_socket.getsockname()
+        host, port = LibrarianLayer._fake_upload_socket.getsockname()
         config.librarian.upload_port = port
 
     @classmethod
@@ -310,8 +313,8 @@ class LibrarianLayer(BaseLayer):
 
         This just involves restoring the config to the original value.
         """
-        cls._hidden = False
-        config.librarian.upload_port = cls._orig_librarian_port
+        LibrarianLayer._hidden = False
+        config.librarian.upload_port = LibrarianLayer._orig_librarian_port
 
 
 # We store a reference to the DB-API connect method here when we
@@ -330,7 +333,7 @@ class DatabaseLayer(BaseLayer):
     @classmethod
     @profiled
     def setUp(cls):
-        cls.force_dirty_database()
+        DatabaseLayer.force_dirty_database()
 
     @classmethod
     @profiled
@@ -338,7 +341,7 @@ class DatabaseLayer(BaseLayer):
         # Don't leave the DB lying around or it might break tests
         # that depend on it not being there on startup, such as found
         # in test_layers.py
-        cls.force_dirty_database()
+        DatabaseLayer.force_dirty_database()
         # Imported here to avoid circular import issues. This
         # functionality should be migrated into this module at some
         # point. -- StuartBishop 20060712
@@ -352,7 +355,7 @@ class DatabaseLayer(BaseLayer):
         # functionality should be migrated into this module at some
         # point. -- StuartBishop 20060712
         from canonical.launchpad.ftests.harness import LaunchpadTestSetup
-        if cls._reset_between_tests:
+        if DatabaseLayer._reset_between_tests:
             LaunchpadTestSetup().setUp()
         # Ensure that the database is connectable. Because we might have
         # just created it, keep trying for a few seconds incase PostgreSQL
@@ -360,7 +363,7 @@ class DatabaseLayer(BaseLayer):
         attempts = 60
         for count in range(0, attempts):
             try:
-                cls.connect().close()
+                DatabaseLayer.connect().close()
             except psycopg.Error:
                 if count == attempts - 1:
                     raise
@@ -368,23 +371,23 @@ class DatabaseLayer(BaseLayer):
             else:
                 break
 
-        if cls.use_mockdb is True:
-            cls.installMockDb()
+        if DatabaseLayer.use_mockdb is True:
+            DatabaseLayer.installMockDb()
 
     @classmethod
     @profiled
     def testTearDown(cls):
-        if cls.use_mockdb is True:
-            cls.uninstallMockDb()
+        if DatabaseLayer.use_mockdb is True:
+            DatabaseLayer.uninstallMockDb()
 
         # Ensure that the database is connectable
-        cls.connect().close()
+        DatabaseLayer.connect().close()
 
         # Imported here to avoid circular import issues. This
         # functionality should be migrated into this module at some
         # point. -- StuartBishop 20060712
         from canonical.launchpad.ftests.harness import LaunchpadTestSetup
-        if cls._reset_between_tests:
+        if DatabaseLayer._reset_between_tests:
             LaunchpadTestSetup().tearDown()
 
     use_mockdb = False
@@ -393,7 +396,7 @@ class DatabaseLayer(BaseLayer):
     @classmethod
     @profiled
     def installMockDb(cls):
-        assert cls.mockdb_mode is None, 'mock db already installed'
+        assert DatabaseLayer.mockdb_mode is None, 'mock db already installed'
 
         from canonical.testing.mockdb import (
                 script_filename, ScriptRecorder, ScriptPlayer,
@@ -407,32 +410,32 @@ class DatabaseLayer(BaseLayer):
         # mock db script.
         filename = script_filename(test_key)
         if os.path.exists(filename):
-            cls.mockdb_mode = 'replay'
-            cls.script = ScriptPlayer(test_key)
+            DatabaseLayer.mockdb_mode = 'replay'
+            DatabaseLayer.script = ScriptPlayer(test_key)
         else:
-            cls.mockdb_mode = 'record'
-            cls.script = ScriptRecorder(test_key)
+            DatabaseLayer.mockdb_mode = 'record'
+            DatabaseLayer.script = ScriptRecorder(test_key)
 
         global _org_connect
         _org_connect = psycopg.connect
         # Proxy real connections with our mockdb.
         def fake_connect(*args, **kw):
-            return cls.script.connect(_org_connect, *args, **kw)
+            return DatabaseLayer.script.connect(_org_connect, *args, **kw)
         psycopg.connect = fake_connect
 
     @classmethod
     @profiled
     def uninstallMockDb(cls):
-        if cls.mockdb_mode is None:
+        if DatabaseLayer.mockdb_mode is None:
             return # Already uninstalled
 
         # Store results if we are recording
-        if cls.mockdb_mode == 'record':
-            cls.script.store()
-            assert os.path.exists(cls.script.script_filename), (
+        if DatabaseLayer.mockdb_mode == 'record':
+            DatabaseLayer.script.store()
+            assert os.path.exists(DatabaseLayer.script.script_filename), (
                     "Stored results but no script on disk.")
 
-        cls.mockdb_mode = None
+        DatabaseLayer.mockdb_mode = None
         global _org_connect
         psycopg.connect = _org_connect
         _org_connect = None
@@ -495,7 +498,7 @@ class FunctionalLayer(BaseLayer):
     @classmethod
     @profiled
     def setUp(cls):
-        cls.isSetUp = True
+        FunctionalLayer.isSetUp = True
         from canonical.functional import FunctionalTestSetup
         FunctionalTestSetup().setUp()
 
@@ -512,7 +515,7 @@ class FunctionalLayer(BaseLayer):
     @classmethod
     @profiled
     def tearDown(cls):
-        cls.isSetUp = False
+        FunctionalLayer.isSetUp = False
         # Signal Layer cannot be torn down fully
         raise NotImplementedError
 
@@ -561,7 +564,7 @@ class ZopelessLayer(BaseLayer):
     @classmethod
     @profiled
     def setUp(cls):
-        cls.isSetUp = True
+        ZopelessLayer.isSetUp = True
         execute_zcml_for_scripts()
 
         # Assert that execute_zcml_for_scripts did what it says it does.
@@ -579,7 +582,7 @@ class ZopelessLayer(BaseLayer):
     @classmethod
     @profiled
     def tearDown(cls):
-        cls.isSetUp = False
+        ZopelessLayer.isSetUp = False
         # Signal Layer cannot be torn down fully
         raise NotImplementedError
 
@@ -693,8 +696,8 @@ class LaunchpadZopelessLayer(ZopelessLayer, LaunchpadLayer):
             raise LayerIsolationError(
                 "Last test using Zopeless failed to tearDown correctly"
                 )
-        cls.txn = initZopeless()
-        LaunchpadZopelessTestSetup.txn = cls.txn
+        LaunchpadZopelessLayer.txn = initZopeless()
+        LaunchpadZopelessTestSetup.txn = LaunchpadZopelessLayer.txn
 
         # Connect SQLOS
         from canonical.launchpad.ftests.harness import _reconnect_sqlos
@@ -703,8 +706,8 @@ class LaunchpadZopelessLayer(ZopelessLayer, LaunchpadLayer):
     @classmethod
     @profiled
     def testTearDown(cls):
-        cls.txn.abort()
-        cls.txn.uninstall()
+        LaunchpadZopelessLayer.txn.abort()
+        LaunchpadZopelessLayer.txn.uninstall()
         if ZopelessTransactionManager._installed is not None:
             raise LayerInvariantError(
                 "Failed to uninstall ZopelessTransactionManager"
@@ -715,17 +718,17 @@ class LaunchpadZopelessLayer(ZopelessLayer, LaunchpadLayer):
     @classmethod
     @profiled
     def commit(cls):
-        cls.txn.commit()
+        LaunchpadZopelessLayer.txn.commit()
 
     @classmethod
     @profiled
     def abort(cls):
-        cls.txn.abort()
+        LaunchpadZopelessLayer.txn.abort()
 
     @classmethod
     @profiled
     def switchDbUser(cls, dbuser):
-        cls.alterConnection(dbuser=dbuser)
+        LaunchpadZopelessLayer.alterConnection(dbuser=dbuser)
 
     @classmethod
     @profiled
@@ -736,10 +739,10 @@ class LaunchpadZopelessLayer(ZopelessLayer, LaunchpadLayer):
         from canonical.launchpad.ftests.harness import (
                 LaunchpadZopelessTestSetup
                 )
-        cls.txn.abort()
-        cls.txn.uninstall()
-        cls.txn = initZopeless(**kw)
-        LaunchpadZopelessTestSetup.txn = cls.txn
+        LaunchpadZopelessLayer.txn.abort()
+        LaunchpadZopelessLayer.txn.uninstall()
+        LaunchpadZopelessLayer.txn = initZopeless(**kw)
+        LaunchpadZopelessTestSetup.txn = LaunchpadZopelessLayer.txn
 
 class ExperimentalLaunchpadZopelessLayer(LaunchpadZopelessLayer):
     """LaunchpadZopelessLayer using the mock database."""
@@ -856,27 +859,29 @@ class PageTestLayer(LaunchpadFunctionalLayer):
             access_logger.log(MockHTTPTask(response._response, first_line))
             return response
 
-        cls.orig__call__ = zope.app.testing.functional.HTTPCaller.__call__
+        PageTestLayer.orig__call__ = (
+                zope.app.testing.functional.HTTPCaller.__call__)
         zope.app.testing.functional.HTTPCaller.__call__ = my__call__
-        cls.resetBetweenTests(True)
+        PageTestLayer.resetBetweenTests(True)
 
     @classmethod
     @profiled
     def tearDown(cls):
-        cls.resetBetweenTests(True)
-        zope.app.testing.functional.HTTPCaller.__call__ = cls.orig__call__
+        PageTestLayer.resetBetweenTests(True)
+        zope.app.testing.functional.HTTPCaller.__call__ = (
+                PageTestLayer.orig__call__)
 
     @classmethod
     @profiled
     def startStory(cls):
         DatabaseLayer.testSetUp()
         LibrarianLayer.testSetUp()
-        cls.resetBetweenTests(False)
+        PageTestLayer.resetBetweenTests(False)
 
     @classmethod
     @profiled
     def endStory(cls):
-        cls.resetBetweenTests(True)
+        PageTestLayer.resetBetweenTests(True)
         LibrarianLayer.testTearDown()
         DatabaseLayer.testTearDown()
 
