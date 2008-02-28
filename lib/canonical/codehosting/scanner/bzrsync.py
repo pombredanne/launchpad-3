@@ -234,12 +234,6 @@ class BzrSync:
         self.db_branch = None
         self.bzr_history = None
 
-    def _parseBugLine(self, line):
-        return self._bug_linker._parseBugLine()
-
-    def extractBugInfo(self, bug_property):
-        return self._bug_linker.extractBugInfo(bug_property)
-
     def syncBranchAndClose(self, bzr_branch=None):
         """Synchronize the database with a Bazaar branch and close resources.
 
@@ -559,11 +553,8 @@ class BzrSync:
                         self.db_branch.unique_name, sequence, first_line)
                     self.pending_emails.append(
                         (message, revision_diff, subject))
-                self.createBugBranchLinksForRevision(db_revision, revision)
-
-    def createBugBranchLinksForRevision(self, db_revision, bzr_revision):
-        return self._bug_linker.createBugBranchLinksForRevision(
-            db_revision, bzr_revision)
+                self._bug_linker.createBugBranchLinksForRevision(
+                    db_revision, revision)
 
     def updateBranchStatus(self):
         """Update the branch-scanner status in the database Branch table."""
