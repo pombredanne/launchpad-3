@@ -86,7 +86,7 @@ We also have an icon for bugs.
 datetimes can be formatted with fmt:date, fmt:time, fmt:datetime and
 fmt:rfc822utcdatetime.
 
-   >>> from datetime import datetime, timedelta
+   >>> from datetime import datetime
    >>> dt = datetime(2005, 4, 1, 16, 22)
    >>> test_tales('dt/fmt:date', dt=dt)
    '2005-04-01'
@@ -270,14 +270,14 @@ title might be interpreted by the browser.
 === Blueprints ===
 
     >>> login('test@canonical.com')
-    >>> specification = factory.makeSpec()
+    >>> specification = factory.makeSpecification()
     >>> test_tales("specification/fmt:link", specification=specification)
     u'...<img ... src="/@@/blueprint-undefined" />&nbsp;...'
 
 
 === Blueprint branches ===
 
-    >>> specification = factory.makeSpec()
+    >>> specification = factory.makeSpecification()
     >>> branch = factory.makeBranch()
     >>> specification_branch = specification.linkBranch(branch, branch.owner)
     >>> test_tales("specification_branch/fmt:link",

@@ -463,6 +463,16 @@ class IBranch(IHasOwner):
     date_last_modified = Datetime(
         title=_('Date Last Modified'), required=True, readonly=False)
 
+    def destroySelf(break_references=False):
+        """Delete the specified branch.
+
+        BranchRevisions associated with this branch will also be deleted.
+        :param break_references: If supplied, break any references to this
+            branch by deleting items with mandatory references and
+            NULLing other references.
+        :raise: CannotDeleteBranch if the branch cannot be deleted.
+        """
+
     def latest_revisions(quantity=10):
         """A specific number of the latest revisions in that branch."""
 
@@ -505,6 +515,9 @@ class IBranch(IHasOwner):
     code_is_browseable = Attribute(
         "Is the code in this branch accessable through codebrowse?")
 
+    # Don't use Object-- that would cause an import loop with ICodeImport
+    code_import = Attribute("The associated CodeImport, if any.")
+
     def getBzrUploadURL(person=None):
         """Return the URL for this person to push to the branch.
 
@@ -528,6 +541,15 @@ class IBranch(IHasOwner):
         A branch is considered deletable if it has no revisions, is not
         linked to any bugs, specs, productseries, or code imports, and
         has no subscribers.
+        """
+
+    def deletionRequirements():
+        """Determine what is required to delete this branch.
+
+        :return: a dict of {object: (operation, reason)}, where object is the
+            object that must be deleted or altered, operation is either
+            "delete" or "alter", and reason is a string explaining why the
+            object needs to be touched.
         """
 
     def associatedProductSeries():
@@ -672,9 +694,6 @@ class IBranchSet(Interface):
         If product is None (indicating a +junk branch) then the owner must not
         be a team, except for the special case of the ~vcs-imports celebrity.
         """
-
-    def delete(branch):
-        """Delete the specified branch."""
 
     def getByUniqueName(unique_name, default=None):
         """Find a branch by its ~owner/product/name unique name.
