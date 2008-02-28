@@ -55,6 +55,15 @@ class Archive(SQLBase):
 
     whiteboard = StringCol(dbName='whiteboard', notNull=False, default=None)
 
+    sources_cached = IntCol(
+        dbName='sources_cached', notNull=False, default=0)
+
+    binaries_cached = IntCol(
+        dbName='binaries_cached', notNull=False, default=0)
+
+    package_description_cache = StringCol(
+        dbName='package_description_cache', notNull=False, default=None)
+
     @property
     def title(self):
         """See `IArchive`."""
