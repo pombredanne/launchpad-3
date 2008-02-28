@@ -279,7 +279,8 @@ class BranchMergeProposal(SQLBase):
 
     def mergeFailed(self, merger):
         """See `IBranchMergeProposal`."""
-        self._transitionToState(BranchMergeProposalStatus.MERGE_FAILED, merger)
+        self._transitionToState(BranchMergeProposalStatus.MERGE_FAILED,
+            merger)
         self.merger = merger
 
     def markAsMerged(self, merged_revno=None, date_merged=None,
