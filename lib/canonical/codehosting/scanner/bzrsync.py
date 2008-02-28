@@ -394,8 +394,8 @@ class BzrSync:
         self.logger.info("Retrieving ancestry from database.")
         self.db_ancestry, self.db_history, self.db_branch_revision_map = (
             self.db_branch.getScannerData())
-        self._branch_mailer.initializeEmailQueue(
-            initial_scan=not bool(self.db_history))
+        initial_scan = (len(self.db_history) == 0)
+        self._branch_mailer.initializeEmailQueue(initial_scan)
 
     def retrieveBranchDetails(self, bzr_branch):
         """Retrieve ancestry from the the bzr branch on disk."""
