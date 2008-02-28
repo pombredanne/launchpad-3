@@ -99,19 +99,26 @@ class LaunchpadStyle(Style):
 
 
 class RandomiseOrderDescriptor:
-    """Return True or False whether the SQL query should be random order.
+    """Return whether or not SQL queries should randomise results.
+
+    This object is used to exchange the randomise_select_results setting
+    between SQLBase class (and its descendants) and SQLObject.SelectResults.
 
     The testrunner environment is configured to show random ordered
-    query results.
+    query results. Queries that do not use DISTINCT or SET use the
+    random() function in the ORDER BY clause.
 
         >>> from canonical.config import config
         >>> config.randomise_select_results
         True
 
-    The select results class decides whether to randomise the order by
-    checking a SQLBase._randomiseOrder attribute that is assigned to
-    a local variable. The _randomiseOrder attribute is an instance of
-    RandomiseOrderDescriptor.
+    The SelectResults class decides whether to randomise the order by
+    checking the SQLBase._randomiseOrder class attribute that is assigned
+    to a local variable. The _randomiseOrder attribute is an instance of
+    RandomiseOrderDescriptor. When the class attribute is assigned to a
+    local variable, the variable should hold the config's state, not the
+    object. See bug 196329, where a property (a descriptor bound to an
+    instance) was passed instead of called during the assignment.
 
         >>> SQLBase.__dict__['_randomiseOrder']
         <canonical.database.sqlbase.RandomiseOrderDescriptor object ...>
@@ -120,8 +127,8 @@ class RandomiseOrderDescriptor:
         >>> randomiseOrder
         True
 
-    When the config setting is set to False, so to is the select results
-    class's variable.
+    When the config setting is False, that value is passed to
+    randomiseOrder when the descriptor is accessed.
 
         >>> config.randomise_select_results = False
         >>> randomiseOrder = SQLBase._randomiseOrder
