@@ -3,31 +3,41 @@
 """Useful tools for interacting with Twisted."""
 
 __metaclass__ = type
-__all__ = ['defer_to_thread']
+__all__ = ['defer_to_thread', 'MethodDeferrer']
 
 
-import threading
+from zope.interface.interface import Method
 
-from twisted.internet import defer, threads
+from twisted.internet import threads
 from twisted.python.util import mergeFunctionMetadata
+
+
+class MethodDeferrer:
+
+    def __init__(self, wrapped_object, *interfaces):
+        self._original = wrapped_object
+        self._published_methods = []
+        for interface in interfaces:
+            self._published_methods.extend(
+                self._getMethodNamesInInterface(interface))
+
+    def _getMethodNamesInInterface(self, interface):
+        for attribute_name in interface:
+            if isinstance(interface[attribute_name], Method):
+                yield attribute_name
+
+    def __getattr__(self, name):
+        if name in self._published_methods:
+            return defer_to_thread(getattr(self._original, name))
+        raise AttributeError(name)
 
 
 def defer_to_thread(function):
     """Run in a thread and return a Deferred that fires when done."""
 
     def decorated(*args, **kwargs):
-        deferred = defer.Deferred()
-
-        def run_in_thread():
-            return threads._putResultInDeferred(
-                deferred, function, args, kwargs)
-
-        t = threading.Thread(target=run_in_thread)
-        t.start()
-
-        def join_thread(pass_through):
-            t.join()
-            return pass_through
-        return deferred.addBoth(join_thread)
+        return threads.deferToThread(function, *args, **kwargs)
 
     return mergeFunctionMetadata(function, decorated)
+
+
