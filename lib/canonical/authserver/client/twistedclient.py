@@ -5,8 +5,6 @@
 __metaclass__ = type
 __all__ = ['TwistedAuthServer']
 
-import xmlrpclib
-
 from canonical.authserver.client.proxy import get_twisted_proxy
 
 

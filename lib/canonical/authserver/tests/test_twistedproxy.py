@@ -172,6 +172,7 @@ class TwistedServer(Server):
     """
 
     def __init__(self, xmlrpc_resource):
+        super(TwistedServer, self).__init__()
         self.xmlrpc_resource = xmlrpc_resource
         self._service = None
 
@@ -196,6 +197,7 @@ class InMemoryServer(Server):
     """A test HTTP server that serves an XML-RPC resource."""
 
     def __init__(self, xmlrpc_resource):
+        super(InMemoryServer, self).__init__()
         self.xmlrpc_resource = xmlrpc_resource
 
     def setUp(self):
