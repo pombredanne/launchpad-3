@@ -6,7 +6,7 @@ __metaclass__ = type
 import os
 import subprocess
 import sys
-from unittest import TestCase, TestLoader
+import unittest
 
 from zope.component import getUtility
 
@@ -22,7 +22,7 @@ from canonical.launchpad.scripts.base import LaunchpadScriptFailure
 from canonical.testing import LaunchpadLayer, LaunchpadZopelessLayer
 
 
-class TestCronscriptBase(TestCase):
+class TestCronscriptBase(unittest.TestCase):
     """Buildd cronscripts test classes."""
     layer = LaunchpadLayer
 
@@ -80,7 +80,7 @@ class TestCronscriptBase(TestCase):
         self.assertRuns(runner=self.runBuilddRetryDepwait)
 
 
-class TestRetryDepwait(TestCase):
+class TestRetryDepwait(unittest.TestCase):
     """Test RetryDepwait buildd script class."""
     layer = LaunchpadZopelessLayer
 
@@ -151,4 +151,4 @@ class TestRetryDepwait(TestCase):
         self.assertEqual(depwait_build.buildqueue_record.lastscore, 255)
 
 def test_suite():
-    return TestLoader().loadTestsFromName(__name__)
+    return unittest.TestLoader().loadTestsFromName(__name__)

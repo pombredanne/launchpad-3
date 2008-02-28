@@ -4,7 +4,7 @@
 
 import datetime
 import pytz
-from unittest import TestCase, TestLoader
+import unittest
 
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
@@ -20,7 +20,7 @@ from canonical.launchpad.interfaces import (
 from canonical.testing import LaunchpadZopelessLayer, LaunchpadFunctionalLayer
 
 
-class ImportdTestCase(TestCase):
+class ImportdTestCase(unittest.TestCase):
 
     layer = LaunchpadZopelessLayer
 
@@ -28,7 +28,7 @@ class ImportdTestCase(TestCase):
         LaunchpadZopelessLayer.switchDbUser(config.importd.dbuser)
 
 
-class TestDeleteImport(TestCase):
+class TestDeleteImport(unittest.TestCase):
 
     layer = LaunchpadFunctionalLayer
 
@@ -178,7 +178,7 @@ class TestImportUpdated(ImportdTestCase):
         self.assertEqual(str(series.datelastsynced), str(UTC_NOW))
 
 
-class SyncIntervalTestCase(TestCase):
+class SyncIntervalTestCase(unittest.TestCase):
     """When a VCS import is approved, we set the syncinterval column
     to indicate how often the import should be updated.  Imports from
     different revision control systems get different rates by default.
@@ -215,7 +215,7 @@ class SyncIntervalTestCase(TestCase):
         self.assertEquals(series.syncinterval, datetime.timedelta(hours=12))
 
 
-class TestProductSeriesSearchImports(TestCase):
+class TestProductSeriesSearchImports(unittest.TestCase):
     """Tests for ProductSeriesSet.searchImports()."""
     layer = LaunchpadZopelessLayer
 
@@ -299,4 +299,4 @@ class TestProductSeriesSearchImports(TestCase):
 
 
 def test_suite():
-    return TestLoader().loadTestsFromName(__name__)
+    return unittest.TestLoader().loadTestsFromName(__name__)

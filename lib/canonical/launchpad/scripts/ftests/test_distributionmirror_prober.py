@@ -8,7 +8,7 @@ import httplib
 import logging
 import os
 from StringIO import StringIO
-from unittest import TestCase, TestLoader
+import unittest
 
 from twisted.internet import reactor, defer
 from twisted.python.failure import Failure
@@ -216,7 +216,7 @@ class FakeFactory(RedirectAwareProberFactory):
         self.redirectedTo = url
 
 
-class TestProberFactoryRequestTimeoutRatioWithoutTwisted(TestCase):
+class TestProberFactoryRequestTimeoutRatioWithoutTwisted(unittest.TestCase):
     """Tests to ensure we stop issuing requests on a given host if the
     requests/timeouts ratio on that host is too low.
 
@@ -365,7 +365,7 @@ class TestProberFactoryRequestTimeoutRatioWithTwisted(TwistedTestCase):
         return self.assertFailure(d, ConnectionSkipped)
 
 
-class TestMultiLock(TestCase):
+class TestMultiLock(unittest.TestCase):
 
     def setUp(self):
         self.lock_one = defer.DeferredLock()
@@ -444,7 +444,7 @@ class TestMultiLock(TestCase):
         self.assertEquals(self.count, 1, "self.callback should have run.")
 
 
-class TestRedirectAwareProberFactoryAndProtocol(TestCase):
+class TestRedirectAwareProberFactoryAndProtocol(unittest.TestCase):
 
     def test_redirect_resets_timeout(self):
         prober = RedirectAwareProberFactory('http://foo.bar')
@@ -512,7 +512,7 @@ class TestRedirectAwareProberFactoryAndProtocol(TestCase):
         self.failUnless(protocol.transport.disconnecting)
 
 
-class TestMirrorCDImageProberCallbacks(TestCase):
+class TestMirrorCDImageProberCallbacks(unittest.TestCase):
     layer = LaunchpadZopelessLayer
 
     def setUp(self):
@@ -582,7 +582,7 @@ class TestMirrorCDImageProberCallbacks(TestCase):
         self.failUnless(self.logger.errorCalled)
 
 
-class TestArchiveMirrorProberCallbacks(TestCase):
+class TestArchiveMirrorProberCallbacks(unittest.TestCase):
     layer = LaunchpadZopelessLayer
 
     def setUp(self):
@@ -647,7 +647,7 @@ class TestArchiveMirrorProberCallbacks(TestCase):
             SQLObjectNotFound, mirror_distro_series_source.sync)
 
 
-class TestProbeFunctionSemaphores(TestCase):
+class TestProbeFunctionSemaphores(unittest.TestCase):
     """Make sure we use one DeferredSemaphore for each hostname when probing
     mirrors.
     """
@@ -736,7 +736,7 @@ class TestProbeFunctionSemaphores(TestCase):
         restore_http_proxy(orig_proxy)
 
 
-class TestCDImageFileListFetching(TestCase):
+class TestCDImageFileListFetching(unittest.TestCase):
 
     def test_no_cache(self):
         url = 'http://releases.ubuntu.com/.manifest'
@@ -746,4 +746,4 @@ class TestCDImageFileListFetching(TestCase):
 
 
 def test_suite():
-    return TestLoader().loadTestsFromName(__name__)
+    return unittest.TestLoader().loadTestsFromName(__name__)
