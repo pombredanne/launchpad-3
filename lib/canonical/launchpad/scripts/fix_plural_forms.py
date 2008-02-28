@@ -1,4 +1,4 @@
-# Copyright 2007 Canonical Ltd. All rights reserved.
+# Copyright 2007-2008 Canonical Ltd. All rights reserved.
 
 """Functions for fixing mismatched plural form translations."""
 
@@ -54,15 +54,11 @@ def fix_pofile_plurals(pofile, logger, ztm):
             logger.debug("\tFixing translations for '%s'" % (
                 message.potmsgset.singular_text))
 
-            assert TranslationConstants.MAX_PLURAL_FORMS == 4, (
-                "Change this code to support %d plural forms"
-                % TranslationConstants.MAX_PLURAL_FORMS)
-            old_translations = [message.msgstr0, message.msgstr1,
-                                message.msgstr2, message.msgstr3]
-            message.msgstr0 = old_translations[plural_forms_mapping[0]]
-            message.msgstr1 = old_translations[plural_forms_mapping[1]]
-            message.msgstr2 = old_translations[plural_forms_mapping[2]]
-            message.msgstr3 = old_translations[plural_forms_mapping[3]]
+            new_translations = [
+                message.all_msgstrs[plural_forms_mapping[form]]
+                for form in xrange(TranslationConstants.MAX_PLURAL_FORMS)]
+
+            message.setTranslations(new_translations)
 
         # We also need to update the header so we don't try to re-do the
         # migration in the future.

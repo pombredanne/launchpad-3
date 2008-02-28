@@ -1,4 +1,4 @@
-# Copyright 2005-2007 Canonical Ltd.  All rights reserved.
+# Copyright 2005-2008 Canonical Ltd.  All rights reserved.
 # pylint: disable-msg=E0211,E0213
 
 from zope.interface import Interface, Attribute
@@ -128,6 +128,13 @@ class ITranslationMessage(Interface):
         title=_("Translation for plural form 3 (if any)"),
         required=False, schema=IPOTranslation)
 
+    all_msgstrs = List(
+        title=_("All msgstr attributes"),
+        description=_("""
+            All translations [msgstr0, msgstr1, ...] for this message,
+            including any empty ones.
+            """), readonly=True, required=True)
+
     translations = List(
         title=_("Translations for this message"),
         description=_("""
@@ -187,6 +194,15 @@ class ITranslationMessage(Interface):
     plural_forms = Int(
         title=_("Number of plural form translations in this translation."),
         readonly=True, required=True)
+
+    def setTranslations(translations):
+        """Set translations to given list.
+
+        The argument must be a list.  The msgstr* attributes will be set to
+        the corresponding elements of the list.  If the list is not long
+        enough to cover all msgstr* attributes, the remaining msgstrs are set
+        to None.
+        """
 
     # Used in a script to remove upstream translations.
     def destroySelf():
