@@ -243,6 +243,10 @@ has an active mailing list.
     You are the owner of this team.
     You are subscribed to the team mailing list.
     (Unsubscribe)
+    function leaveList() {
+    getElement('form.list.unsubscribe').submit();
+    }
+    connect('leave-mailing-list', 'onclick', leaveList);
     >>> browser.getLink('Unsubscribe')
     <Link ...>
 
@@ -254,7 +258,7 @@ Clicking the link will unsubscribe you from the list immediately.
     >>> unsubscribe = browser.getForm('form.list.unsubscribe')
     >>> unsubscribe.submit()
     >>> print get_feedback_messages(browser.contents)
-    [u'You were successfully unsubscribed from the team mailing list.']
+    [u'You have been unsubscribed from the team mailing list.']
 
     >>> browser.open('http://launchpad.dev/~rosetta-admins')
     >>> print extract_text(
