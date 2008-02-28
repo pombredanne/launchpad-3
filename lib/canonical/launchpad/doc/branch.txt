@@ -776,21 +776,6 @@ scanned ID is.
     False
 
 
-== Getting last commit time for branches ==
-
-There is not sufficient correct data in the sample code to make this
-right, but we still want to test the corner cases.
-
-    >>> branchset.getLastCommitForBranches([])
-    {}
-    >>> branch = branchset.get(1)
-    >>> branchset.getLastCommitForBranches([branch])
-    {<Branch ...>: None}
-    >>> another = branchset.get(2)
-    >>> branchset.getLastCommitForBranches([branch, another])
-    {<Branch ...>: None, <Branch ...>: None}
-
-
 == Getting the development focus branches for products ==
 
 One of the primary initial code pages will be the "products with code" page.

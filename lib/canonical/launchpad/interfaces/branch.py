@@ -797,9 +797,6 @@ class IBranchSet(Interface):
         :type visible_by_user: `IPerson` or None
         """
 
-    def getLastCommitForBranches(branches):
-        """Return a map of branch to last commit time."""
-
     def getBranchesForPerson(
         person, lifecycle_statuses=DEFAULT_BRANCH_STATUS_IN_LISTING,
         visible_by_user=None, sort_by=None, hide_dormant=False):
