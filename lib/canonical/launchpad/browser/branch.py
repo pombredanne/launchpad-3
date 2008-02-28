@@ -166,7 +166,7 @@ class BranchContextMenu(ContextMenu):
              'browse_revisions',
              'reassign', 'subscription', 'addsubscriber', 'associations',
              'registermerge', 'landingcandidates', 'linkbug',
-             'linkblueprint']
+             'link_blueprint']
 
     def whiteboard(self):
         text = 'Edit whiteboard'
@@ -243,7 +243,7 @@ class BranchContextMenu(ContextMenu):
         text = 'Link to bug report'
         return Link('+linkbug', text, icon='edit')
 
-    def linkblueprint(self):
+    def link_blueprint(self):
         text = 'Link to blueprint'
         # Since the blueprints are only related to products, there is no
         # point showing this link if the branch is junk.

@@ -246,7 +246,14 @@ class BranchTraversalMixin:
         branch_name = self.request.stepstogo.consume()
         if branch_name is not None:
             branch = self.context.getBranch(product_name, branch_name)
-            if branch is not None:
+            if branch is not None and branch.product is not None:
+                # The launch bag contains "stuff of interest" related to where
+                # the user is traversing to.  When a user traverses over a
+                # product, the product gets added to the launchpad by the
+                # traversal machinery, however when traversing to a branch, we
+                # short circuit it somewhat by looking for a two part key (in
+                # addition to the user) to identify the branch, and as such
+                # the product wasn't being added to the bag by the internals.
                 getUtility(IOpenLaunchBag).add(branch.product)
             return branch
         else:

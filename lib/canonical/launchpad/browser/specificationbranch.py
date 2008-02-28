@@ -5,12 +5,10 @@
 __metaclass__ = type
 
 __all__ = [
-    'BranchLinkToSpecView',
+    'BranchLinkToSpecificationView',
     'SpecificationBranchStatusView',
     'SpecificationBranchBranchInlineEditView',
     ]
-
-import cgi
 
 from canonical.launchpad import _
 from canonical.launchpad.interfaces import ISpecificationBranch
@@ -47,7 +45,10 @@ class SpecificationBranchStatusView(LaunchpadEditFormView):
 
 
 class SpecificationBranchBranchInlineEditView(SpecificationBranchStatusView):
-    """Inline edit view for specification branch details."""
+    """Inline edit view for specification branch details.
+
+    This view is used to control the in page editing from the branch page.
+    """
 
     initial_focus_widget = None
     label = None
@@ -69,14 +70,14 @@ class SpecificationBranchBranchInlineEditView(SpecificationBranchStatusView):
         return canonical_url(self.branch)
 
 
-class BranchLinkToSpecView(LaunchpadFormView):
+class BranchLinkToSpecificationView(LaunchpadFormView):
     """The view to create spec-branch links."""
 
     schema = ISpecificationBranch
     # In order to have the specification field rendered using the appropriate
     # widget, we set the LaunchpadFormView attribute for_input to True
     # to get the read only fields rendered as input widgets.
-    for_input=True
+    for_input = True
 
     field_names = ['specification', 'summary']
 
@@ -96,7 +97,8 @@ class BranchLinkToSpecView(LaunchpadFormView):
         """Do nothing and go back to the branch page."""
 
     def validate(self, data):
-        """Make sure that this bug isn't already linked to the branch."""
+        """Ensure that this specification isn't already linked to the branch.
+        """
         if 'specification' not in data:
             return
 
@@ -106,4 +108,4 @@ class BranchLinkToSpecView(LaunchpadFormView):
                 self.setFieldError(
                     'specification',
                     'The blueprint "%s" is already linked to this branch'
-                    % cgi.escape(link_spec.title))
+                    % link_spec.title)

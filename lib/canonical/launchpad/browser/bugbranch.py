@@ -29,7 +29,7 @@ class BugBranchAddView(LaunchpadFormView):
     # In order to have the branch field rendered using the appropriate
     # widget, we set the LaunchpadFormView attribute for_input to True
     # to get the read only fields rendered as input widgets.
-    for_input=True
+    for_input = True
 
     field_names = ['branch', 'status', 'whiteboard']
 
@@ -125,7 +125,7 @@ class BranchLinkToBugView(LaunchpadFormView):
     # In order to have the bug field rendered using the appropriate
     # widget, we set the LaunchpadFormView attribute for_input to True
     # to get the read only fields rendered as input widgets.
-    for_input=True
+    for_input = True
 
     field_names = ['bug', 'status', 'whiteboard']
 

@@ -29,9 +29,9 @@ If the user is not logged in, they will be asked to log in.
     ...         for tag in tags:
     ...             print extract_text(tag)
 
-When linking from a branch to a spec, a select widget is used.  This
-widget is populated with the specs for the product that the branch is
-associated with.
+When linking from a branch to a spec, a select widget is used as a
+method for selecting values.  This widget is populated with the
+product's blueprints.
 
     >>> browser = setupBrowser(auth="Basic test@canonical.com:test")
     >>> browser.open(
@@ -75,6 +75,18 @@ The blueprint page shows the linked branches in a portlet.
     >>> print extract_text(find_portlet(browser.contents, 'Branches'))
     Branches
     release-0.8: Mozilla Firefox 0.8
+
+Again, attempting to link to the same branch gives an error.
+
+    >>> browser.getLink('Link to branch').click()
+    >>> browser.getControl('Branch').value = '~sabdfl/firefox/release-0.8'
+    >>> browser.getControl('Continue').click()
+    >>> for message in get_feedback_messages(browser.contents):
+    ...     print message
+    There is 1 error.
+    This branch has already been linked to the blueprint
+
+    >>> browser.getControl('Cancel').click()
 
 
 == Editing a Branch Link ==
