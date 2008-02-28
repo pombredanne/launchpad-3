@@ -35,7 +35,7 @@ class TranslationMessageMixIn:
         """See `ITranslationMessage`."""
         assert isinstance(translations, list), "Argument is not a list."
 
-        assert TranslationConstants.MAX_PLURAL_FORMS == 4, (
+        assert TranslationConstants.MAX_PLURAL_FORMS == 6, (
             "Change this code to support %d plural forms."
             % TranslationConstants.MAX_PLURAL_FORMS)
         if len(translations) > 0:
@@ -57,6 +57,16 @@ class TranslationMessageMixIn:
             self.msgstr3 = translations[3]
         else:
             self.msgstr3 = None
+
+        if len(translations) > 4:
+            self.msgstr4 = translations[4]
+        else:
+            self.msgstr4 = None
+
+        if len(translations) > 5:
+            self.msgstr5 = translations[5]
+        else:
+            self.msgstr5 = None
 
     @cachedproperty
     def plural_forms(self):
@@ -253,10 +263,11 @@ class TranslationMessage(SQLBase, TranslationMessageMixIn):
     @cachedproperty
     def all_msgstrs(self):
         """See `ITranslationMessage`."""
-        assert TranslationConstants.MAX_PLURAL_FORMS == 4, (
+        assert TranslationConstants.MAX_PLURAL_FORMS == 6, (
             "Change this code to support %d plural forms."
             % TranslationConstants.MAX_PLURAL_FORMS)
-        return [self.msgstr0, self.msgstr1, self.msgstr2, self.msgstr3]
+        return [self.msgstr0, self.msgstr1, self.msgstr2, self.msgstr3,
+                self.msgstr4, self.msgstr5]
 
     @cachedproperty
     def translations(self):
