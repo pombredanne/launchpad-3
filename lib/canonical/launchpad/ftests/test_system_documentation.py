@@ -446,11 +446,6 @@ special = {
             optionflags=default_optionflags, layer=LaunchpadZopelessLayer,
             setUp=bugNotificationSendingSetUp,
             tearDown=bugNotificationSendingTearDown),
-    'branch-status-client.txt': LayeredDocFileSuite(
-            '../doc/branch-status-client.txt',
-            setUp=branchStatusSetUp, tearDown=branchStatusTearDown,
-            layer=LaunchpadZopelessLayer
-            ),
     'translationimportqueue.txt': FunctionalDocFileSuite(
             '../doc/translationimportqueue.txt',
             setUp=setUp, tearDown=tearDown, layer=LaunchpadFunctionalLayer
