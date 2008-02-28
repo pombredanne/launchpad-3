@@ -11,7 +11,6 @@ __all__ = ['cmd_launchpad_server']
 
 
 import sys
-import xmlrpclib
 
 from bzrlib.commands import Command, register_command
 from bzrlib.option import Option
