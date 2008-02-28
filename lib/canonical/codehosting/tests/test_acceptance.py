@@ -10,7 +10,6 @@ import os
 import sys
 import thread
 import unittest
-import xmlrpclib
 
 import bzrlib.branch
 from bzrlib.builtins import cmd_branch, cmd_push
