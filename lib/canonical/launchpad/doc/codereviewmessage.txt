@@ -17,12 +17,10 @@ about.
 
 CodeReviewMessages are created from their BranchMergeProposals:
 
-    >>> login('test@canonical.com')
+    >>> login('foo.bar@canonical.com')
     >>> from canonical.launchpad.testing import LaunchpadObjectFactory
     >>> factory = LaunchpadObjectFactory()
     >>> merge_proposal = factory.makeBranchMergeProposal()
-    >>> from canonical.launchpad.database import BranchMergeProposal
-    >>> merge_proposal = BranchMergeProposal.get(merge_proposal.id)
     >>> person = factory.makePerson()
     >>> message = merge_proposal.createMessage(
     ...     person, 'Please merge', 'This patch is very nice.')
