@@ -223,10 +223,8 @@ class BranchMailer:
         diff_levels = (BranchSubscriptionNotificationLevel.DIFFSONLY,
                        BranchSubscriptionNotificationLevel.FULL)
 
-        for subscription in self.db_branch.subscriptions:
-            if subscription.notification_level in diff_levels:
-                self.subscribers_want_notification = True
-                break
+        subscriptions = self.db_branch.getSubscriptionsByLevel(diff_levels)
+        self.subscribers_want_notification = (subscriptions.count() > 0)
 
         # If db_history is empty, then this is the initial scan of the
         # branch.  We only want to send one email for the initial scan
