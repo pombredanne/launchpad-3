@@ -37,7 +37,7 @@ import psycopg
 import transaction
 
 import zope.app.testing.functional
-from zope.app.testing.functional import ZopePublication
+from zope.app.testing.functional import FunctionalTestSetup, ZopePublication
 from zope.component import getUtility, getGlobalSiteManager
 from zope.component.interfaces import ComponentLookupError
 from zope.security.management import getSecurityPolicy
@@ -499,7 +499,6 @@ class FunctionalLayer(BaseLayer):
     @profiled
     def setUp(cls):
         FunctionalLayer.isSetUp = True
-        from canonical.functional import FunctionalTestSetup
         FunctionalTestSetup().setUp()
 
         # Assert that FunctionalTestSetup did what it says it does
@@ -526,7 +525,6 @@ class FunctionalLayer(BaseLayer):
         transaction.begin()
 
         # Fake a root folder to keep Z3 ZODB dependencies happy.
-        from canonical.functional import FunctionalTestSetup
         fs = FunctionalTestSetup()
         if not fs.connection:
             fs.connection = fs.db.open()
