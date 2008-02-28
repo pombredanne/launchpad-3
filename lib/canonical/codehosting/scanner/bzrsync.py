@@ -322,19 +322,6 @@ class BzrSync:
         self._bug_linker = BugBranchLinker(self.db_branch)
         self._branch_mailer = BranchMailer(self.trans_manager, self.db_branch)
 
-    def initializeEmailQueue(self, initial_scan):
-        self._branch_mailer.initializeEmailQueue(initial_scan)
-
-    def generateEmailForRemovedRevisions(self, removed_history):
-        self._branch_mailer.generateEmailForRemovedRevisions(removed_history)
-
-    def generateEmailForRevision(self, bzr_branch, bzr_revision, sequence):
-        self._branch_mailer.generateEmailForRevision(
-            bzr_branch, bzr_revision, sequence)
-
-    def sendRevisionNotificationEmails(self):
-        self._branch_mailer.sendRevisionNotificationEmails(self.bzr_history)
-
     def close(self):
         """Explicitly release resources."""
         # release the read lock on the bzrlib branch
@@ -390,7 +377,7 @@ class BzrSync:
         self.deleteBranchRevisions(branchrevisions_to_delete)
         self.insertBranchRevisions(bzr_branch, branchrevisions_to_insert)
         self.trans_manager.commit()
-        self.sendRevisionNotificationEmails()
+        self._branch_mailer.sendRevisionNotificationEmails(self.bzr_history)
         # The Branch table is modified by other systems, including the web UI,
         # so we need to update it in a short transaction to avoid causing
         # timeouts in the webapp. This opens a small race window where the
@@ -407,7 +394,8 @@ class BzrSync:
         self.logger.info("Retrieving ancestry from database.")
         self.db_ancestry, self.db_history, self.db_branch_revision_map = (
             self.db_branch.getScannerData())
-        self.initializeEmailQueue(initial_scan=not bool(self.db_history))
+        self._branch_mailer.initializeEmailQueue(
+            initial_scan=not bool(self.db_history))
 
     def retrieveBranchDetails(self, bzr_branch):
         """Retrieve ancestry from the the bzr branch on disk."""
@@ -456,7 +444,7 @@ class BzrSync:
         removed_history = db_history[common_len:]
         added_history = bzr_history[common_len:]
 
-        self.generateEmailForRemovedRevisions(removed_history)
+        self._branch_mailer.generateEmailForRemovedRevisions(removed_history)
 
         # Merged (non-history) revisions in the database and the bzr branch.
         old_merged = db_ancestry.difference(db_history)
@@ -499,7 +487,6 @@ class BzrSync:
                                   self.curr, self.last, revision_id)
                 continue
             self.syncOneRevision(revision)
-
 
     def syncOneRevision(self, bzr_revision):
         """Import the revision with the given revision_id.
@@ -618,7 +605,8 @@ class BzrSync:
                     self.logger.debug("%d of %d: %s is a ghost",
                                       self.curr, self.last, revision_id)
                     continue
-                self.generateEmailForRevision(bzr_branch, revision, sequence)
+                self._branch_mailer.generateEmailForRevision(
+                    bzr_branch, revision, sequence)
                 self._bug_linker.createBugBranchLinksForRevision(
                     db_revision, revision)
 
