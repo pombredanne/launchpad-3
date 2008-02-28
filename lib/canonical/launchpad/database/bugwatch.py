@@ -204,13 +204,14 @@ class BugWatch(SQLBase):
             "already been imported for %s." % (comment_id, self.title))
 
         # When linking the message we force the owner being used to the
-        # Bug Importer celebrity. This allows us to avoid trying to
+        # Bug Watch Updater celebrity. This allows us to avoid trying to
         # assign karma to the authors of imported comments, since karma
         # should only be assigned for actions that occur within
         # Launchpad.
-        bug_importer = getUtility(ILaunchpadCelebrities).bug_importer
+        bug_watch_updater = getUtility(
+            ILaunchpadCelebrities).bug_watch_updater
         bug_message = self.bug.linkMessage(message, bugwatch=self,
-            owner=bug_importer)
+            owner=bug_watch_updater)
 
 
 class BugWatchSet(BugSetBase):

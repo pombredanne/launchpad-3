@@ -225,3 +225,115 @@ examining the BugMessages which link the messages to the bug.
 
     >>> bug_message_two.bugwatch == bug_watch
     True
+
+
+== Importing comments with CVE references ==
+
+If a comment contains a CVE reference, that CVE reference will be
+imported and linked to the bug. We will use an example DebBugs
+ExternalBugTracker to demonstrate this:
+
+    >>> from canonical.launchpad.ftests.externalbugtracker import (
+    ...     TestDebBugs, TestDebianBug)
+    >>> from canonical.launchpad.interfaces import (
+    ...     IBugSet, IBugTrackerSet)
+    >>> import transaction
+
+    >>> debbugs = getUtility(IBugTrackerSet).getByName('debbugs')
+    >>> no_priv = getUtility(IPersonSet).getByEmail(
+    ...     'no-priv@canonical.com')
+    >>> no_priv_bug = TestDebianBug(
+    ...     reporter_email=no_priv.preferredemail.email, id=1234)
+    >>> bug = getUtility(IBugSet).get(4)
+    >>> bug_watch = bug.addWatch(debbugs, '1234', no_priv)
+
+    >>> external_debbugs = TestDebBugs(transaction,
+    ...     debbugs, {'1234': no_priv_bug})
+    >>> external_debbugs.debbugs_db._data_file = (
+    ...     'debbugs-comments-cve.txt')
+    >>> external_debbugs.importBugComments(bug_watch)
+    INFO:...:Imported 1 comments for remote bug 1234...
+
+    >>> for cve in bug.cves:
+    ...     print cve.displayname
+    CVE-1991-9911
+
+We need to update the karma values.
+
+    >>> commit()
+    >>> import subprocess
+    >>> process = subprocess.Popen(
+    ...     'cronscripts/foaf-update-karma-cache.py', shell=True,
+    ...     stdin=subprocess.PIPE, stdout=subprocess.PIPE,
+    ...     stderr=subprocess.PIPE)
+    >>> (out, err) = process.communicate()
+    >>> print err
+    INFO    creating lockfile
+    INFO    Updating Launchpad karma caches
+    INFO    Step A: Calculating individual KarmaCache entries
+    INFO    Step B: Rebuilding KarmaTotalCache
+    INFO    Step C: Calculating KarmaCache sums
+    INFO    Finished updating Launchpad karma caches
+    <BLANKLINE>
+    >>> print out
+    <BLANKLINE>
+    >>> process.returncode
+    0
+
+However, the user who authored the comment containing the CVE reference
+doesn't get any karma from this since they aren't a valid Launchpad
+user, having been created during the import process.
+
+    >>> latest_message = bug.messages[-1]
+    >>> print latest_message.owner.displayname
+    Teun Vink
+
+    >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
+    >>> latest_message.owner.karma
+    0
+
+Karma is only awarded for actions that occur within Launchpad. If an
+imported comment was authored by a valid Launchpad user, that user will
+receive no karma.
+
+    >>> foo_bar = getUtility(IPersonSet).getByName('name16')
+    >>> foo_bar.karma
+    0
+
+    >>> LaunchpadZopelessLayer.switchDbUser(config.checkwatches.dbuser)
+    >>> external_debbugs.debbugs_db._data_file = (
+    ...     'debbugs-comments-cve-valid-user.txt')
+    >>> external_debbugs.importBugComments(bug_watch)
+    INFO:...:Imported 1 comments for remote bug 1234...
+
+    >>> for cve in sorted([cve.displayname for cve in bug.cves]):
+    ...     print cve
+    CVE-1991-9911
+    CVE-1999-0593
+
+    >>> commit()
+
+    >>> import subprocess
+    >>> process = subprocess.Popen(
+    ...     'cronscripts/foaf-update-karma-cache.py', shell=True,
+    ...     stdin=subprocess.PIPE, stdout=subprocess.PIPE,
+    ...     stderr=subprocess.PIPE)
+    >>> (out, err) = process.communicate()
+    >>> print err
+    INFO    creating lockfile
+    INFO    Updating Launchpad karma caches
+    INFO    Step A: Calculating individual KarmaCache entries
+    INFO    Step B: Rebuilding KarmaTotalCache
+    INFO    Step C: Calculating KarmaCache sums
+    INFO    Finished updating Launchpad karma caches
+    <BLANKLINE>
+    >>> print out
+    <BLANKLINE>
+    >>> process.returncode
+    0
+
+    >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
+    >>> foo_bar = getUtility(IPersonSet).getByName('name16')
+    >>> foo_bar.karma
+    0
+
