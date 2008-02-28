@@ -438,15 +438,19 @@ class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin,
         # and make sure this change is immediately available
         flush_database_updates()
 
+    def __hash__(self):
+        """See `ISourcePackage`."""
+        return hash(self.distroseries.id) ^ hash(self.sourcepackagename.id)
+
     def __eq__(self, other):
-        """See canonical.launchpad.interfaces.ISourcePackage."""
+        """See `ISourcePackage`."""
         return (
             (ISourcePackage.providedBy(other)) and
             (self.distroseries.id == other.distroseries.id) and
             (self.sourcepackagename.id == other.sourcepackagename.id))
 
     def __ne__(self, other):
-        """See canonical.launchpad.interfaces.ISourcePackage."""
+        """See `ISourcePackage`."""
         return not self.__eq__(other)
 
     def getBuildRecords(self, build_state=None, name=None, pocket=None,

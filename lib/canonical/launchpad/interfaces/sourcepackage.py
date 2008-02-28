@@ -90,6 +90,13 @@ class ISourcePackage(IBugTarget):
         """Return the source package release with the given version in this
         distro series, or None."""
 
+    def __hash__():
+        """Sourcepackage hash method.
+
+        This makes them useable as dictionary keys. Which is required since
+        __eq__ is provided.
+        """
+
     def __eq__(other):
         """Sourcepackage comparison method.
 

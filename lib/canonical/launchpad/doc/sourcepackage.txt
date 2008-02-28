@@ -373,9 +373,12 @@ Zero or more spaces may appear between the ":" and the "#".
 
 Lastly, note that sourcepackages know how to compare to each other:
 
-    >>> hoary_firefox_one = SourcePackage(sourcepackagename=firefox, distroseries=hoary)
-    >>> hoary_firefox_two = SourcePackage(sourcepackagename=firefox, distroseries=hoary)
-    >>> warty_firefox = SourcePackage(sourcepackagename=firefox, distroseries=warty)
+    >>> hoary_firefox_one = SourcePackage(
+    ...     sourcepackagename=firefox, distroseries=hoary)
+    >>> hoary_firefox_two = SourcePackage(
+    ...     sourcepackagename=firefox, distroseries=hoary)
+    >>> warty_firefox = SourcePackage(
+    ...     sourcepackagename=firefox, distroseries=warty)
 
     >>> hoary_firefox_one == hoary_firefox_two
     True
@@ -383,6 +386,21 @@ Lastly, note that sourcepackages know how to compare to each other:
     True
     >>> hoary_firefox_one == warty_firefox
     False
+
+And they can be used as dictionary keys also:
+
+    >>> hash(hoary_firefox_one) == hash(hoary_firefox_two)
+    True
+    >>> hash(hoary_firefox_one) != hash(warty_firefox)
+    True
+
+    >>> a_map = {}
+    >>> a_map[hoary_firefox_one] = 'hoary'
+    >>> a_map[warty_firefox] = 'warty'
+    >>> a_map[hoary_firefox_two]
+    'hoary'
+    >>> a_map[warty_firefox]
+    'warty'
 
 
 == Direct Packagings ==
