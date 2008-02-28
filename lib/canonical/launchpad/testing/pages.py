@@ -21,8 +21,13 @@ from zope.app.testing.functional import HTTPCaller, SimpleCookie
 from zope.proxy import ProxyBase
 from zope.testbrowser.testing import Browser
 
-from canonical.functional import PageTestDocFileSuite, SpecialOutputChecker
+from canonical.functional import SpecialOutputChecker
 from canonical.testing import PageTestLayer
+
+
+default_optionflags = (doctest.REPORT_NDIFF |
+                       doctest.NORMALIZE_WHITESPACE |
+                       doctest.ELLIPSIS)
 
 
 class UnstickyCookieHTTPCaller(HTTPCaller):
@@ -134,8 +139,13 @@ def find_portlet(content, name):
 
 
 def find_main_content(content):
-    """Find and return the main content area of the page"""
-    return find_tag_by_id(content, 'maincontent')
+    """Return the main content of the page, excluding any portlets."""
+    main_content = find_tag_by_id(content, 'maincontent')
+    if main_content is None:
+        # One-column pages don't use a <div id="maincontent">, so we
+        # use the next best thing: <div id="container">.
+        main_content = find_tag_by_id(content, 'container')
+    return main_content
 
 
 def get_feedback_messages(content):
@@ -492,16 +502,17 @@ def PageTestSuite(storydir, package=None, setUp=setUpGlobs):
 
     # Add unnumbered tests to the suite individually.
     checker = SpecialOutputChecker()
-    suite = PageTestDocFileSuite(
+    suite = doctest.DocFileSuite(
         package=package, checker=checker,
-        layer=PageTestLayer, setUp=setUp,
+        optionflags=default_optionflags, setUp=setUp,
         *[os.path.join(storydir, filename)
           for filename in unnumberedfilenames])
+    suite.layer = PageTestLayer
 
     # Add numbered tests to the suite as a single story.
-    storysuite = PageTestDocFileSuite(
+    storysuite = doctest.DocFileSuite(
         package=package, checker=checker,
-        layer=PageTestLayer, setUp=setUp,
+        optionflags=default_optionflags, setUp=setUp,
         *[os.path.join(storydir, filename)
           for filename in numberedfilenames])
     suite.addTest(PageStoryTestCase(abs_storydir, storysuite))

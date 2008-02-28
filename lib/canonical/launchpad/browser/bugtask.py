@@ -57,7 +57,6 @@ from zope.schema.vocabulary import (
 from zope.security.proxy import isinstance as zope_isinstance
 
 from canonical.config import config
-from canonical.lp import decorates
 from canonical.launchpad import _
 from canonical.cachedproperty import cachedproperty
 from canonical.launchpad.validators import LaunchpadValidationError
@@ -101,7 +100,7 @@ from canonical.launchpad.webapp.snapshot import Snapshot
 from canonical.launchpad.webapp.tales import PersonFormatterAPI
 from canonical.launchpad.webapp.vocabulary import vocab_factory
 
-from canonical.lazr import EnumeratedType, Item
+from canonical.lazr import decorates, EnumeratedType, Item
 
 from canonical.widgets.bug import BugTagsWidget
 from canonical.widgets.bugtask import (
@@ -2057,7 +2056,7 @@ class BugTaskSearchListingView(LaunchpadFormView, FeedsMixin):
             if self.getFieldError(name):
                 self.setFieldError(
                     name, error_message %
-                        cgi.escape(self.request.get('field.%s' % name)))
+                        self.request.get('field.%s' % name))
 
     @property
     def isUpstreamProduct(self):

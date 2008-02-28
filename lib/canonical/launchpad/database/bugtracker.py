@@ -217,7 +217,7 @@ class BugTrackerSet:
     table = BugTracker
 
     def __init__(self):
-        self.title = 'Bug trackers registered in Malone'
+        self.title = 'Bug trackers registered in Launchpad'
 
     def get(self, bugtracker_id, default=None):
         """See `IBugTrackerSet`."""
@@ -323,6 +323,22 @@ class BugTrackerSet:
         else:
             return result
 
+    def getPillarsForBugtrackers(self, bugtrackers):
+        """See `IBugTrackerSet`."""
+        from canonical.launchpad.database.product import Product
+        from canonical.launchpad.database.project import Project
+        ids = [str(b.id) for b in bugtrackers]
+        products = Product.select(
+            "bugtracker in (%s)" % ",".join(ids), orderBy="name")
+        projects = Project.select(
+            "bugtracker in (%s)" % ",".join(ids), orderBy="name")
+        ret = {}
+        for product in products:
+            ret.setdefault(product.bugtracker, []).append(product)
+        for project in projects:
+            ret.setdefault(project.bugtracker, []).append(project)
+        return ret
+
 
 class BugTrackerAlias(SQLBase):
     """See `IBugTrackerAlias`."""
@@ -342,3 +358,4 @@ class BugTrackerAliasSet:
     def queryByBugTracker(self, bugtracker):
         """See IBugTrackerSet."""
         return self.table.selectBy(bugtracker=bugtracker.id)
+

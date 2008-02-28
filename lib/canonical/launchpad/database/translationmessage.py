@@ -1,4 +1,4 @@
-# Copyright 2007 Canonical Ltd.  All rights reserved.
+# Copyright 2007-2008 Canonical Ltd.  All rights reserved.
 
 __metaclass__ = type
 __all__ = [
@@ -27,9 +27,36 @@ from canonical.launchpad.validators.person import public_person_validator
 class TranslationMessageMixIn:
     """This class is not designed to be used directly.
 
-    You should inherite from it and implement full ITranslationMessage
+    You should inherit from it and implement the full `ITranslationMessage`
     interface to use the methods and properties defined here.
     """
+
+    def setTranslations(self, translations):
+        """See `ITranslationMessage`."""
+        assert isinstance(translations, list), "Argument is not a list."
+
+        assert TranslationConstants.MAX_PLURAL_FORMS == 4, (
+            "Change this code to support %d plural forms."
+            % TranslationConstants.MAX_PLURAL_FORMS)
+        if len(translations) > 0:
+            self.msgstr0 = translations[0]
+        else:
+            self.msgstr0 = None
+
+        if len(translations) > 1:
+            self.msgstr1 = translations[1]
+        else:
+            self.msgstr1 = None
+
+        if len(translations) > 2:
+            self.msgstr2 = translations[2]
+        else:
+            self.msgstr2 = None
+
+        if len(translations) > 3:
+            self.msgstr3 = translations[3]
+        else:
+            self.msgstr3 = None
 
     @cachedproperty
     def plural_forms(self):
@@ -73,15 +100,7 @@ class DummyTranslationMessage(TranslationMessageMixIn):
         self.date_reviewed = None
         self.reviewer = None
 
-        assert TranslationConstants.MAX_PLURAL_FORMS == 6, (
-            "Change this code to support %d plural forms"
-            % TranslationConstants.MAX_PLURAL_FORMS)
-        self.msgstr0 = None
-        self.msgstr1 = None
-        self.msgstr2 = None
-        self.msgstr3 = None
-        self.msgstr4 = None
-        self.msgstr5 = None
+        self.setTranslations([])
 
         self.comment = None
         self.origin = RosettaTranslationOrigin.ROSETTAWEB
@@ -99,6 +118,11 @@ class DummyTranslationMessage(TranslationMessageMixIn):
             self.translations = [None]
         else:
             self.translations = [None] * self.plural_forms
+
+    @property
+    def all_msgstrs(self):
+        """See `ITranslationMessage`."""
+        return [None] * TranslationConstants.MAX_PLURAL_FORMS
 
     def destroySelf(self):
         """See `ITranslationMessage`."""
@@ -126,7 +150,7 @@ class TranslationMessage(SQLBase, TranslationMessageMixIn):
         validator=public_person_validator, notNull=False, default=None)
 
     assert TranslationConstants.MAX_PLURAL_FORMS == 6, (
-        "Change this code to support %d plural forms"
+        "Change this code to support %d plural forms."
         % TranslationConstants.MAX_PLURAL_FORMS)
     msgstr0 = ForeignKey(
         foreignKey='POTranslation', dbName='msgstr0', notNull=True)
@@ -227,13 +251,17 @@ class TranslationMessage(SQLBase, TranslationMessageMixIn):
         return self._SO_get_was_fuzzy_in_last_import()
 
     @cachedproperty
+    def all_msgstrs(self):
+        """See `ITranslationMessage`."""
+        assert TranslationConstants.MAX_PLURAL_FORMS == 4, (
+            "Change this code to support %d plural forms."
+            % TranslationConstants.MAX_PLURAL_FORMS)
+        return [self.msgstr0, self.msgstr1, self.msgstr2, self.msgstr3]
+
+    @cachedproperty
     def translations(self):
         """See `ITranslationMessage`."""
-        assert TranslationConstants.MAX_PLURAL_FORMS == 6, (
-            "Change this code to support %d plural forms"
-            % TranslationConstants.MAX_PLURAL_FORMS)
-        msgstrs = [self.msgstr0, self.msgstr1, self.msgstr2, self.msgstr3,
-            self.msgstr4, self.msgstr5]
+        msgstrs = self.all_msgstrs
         translations = []
         # Return translations for no more plural forms than the POFile knows.
         for msgstr in msgstrs[:self.plural_forms]:

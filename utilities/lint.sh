@@ -3,6 +3,8 @@
 # Runs xmlint, pyflakes and pylint on files changed from parent branch.
 # Use '-v' to run pylint under stricter conditions with additional messages.
 
+utilitiesdir=`dirname $0`
+[ -z "$utilitiesdir" ] && utilitiesdir=.
 
 # Fail if any of the required tools are not installed.
 if ! which pylint >/dev/null; then
@@ -19,7 +21,7 @@ elif ! which pyflakes >/dev/null; then
     exit 1
 fi
 
-function bzr {
+bzr() {
     # For pylint to operate properly, PYTHONPATH must point to the ./lib
     # directory in the launchpad tree. This directory includes a bzrlib. When
     # this script calls bzr, we want it to use the system bzrlib, not the one
@@ -48,9 +50,6 @@ if [ -z "$1" ]; then
         # No uncommitted changes in the tree, lint changes relative to the
         # parent.
         rev=`bzr info | sed '/parent branch:/!d; s/ *parent branch: /ancestor:/'`
-        # XXX sinzui 2007-11-18 bug=163612:
-        # The bzr+ssh protocol causes an exception; fallback to sftp.
-        rev=`echo $rev | sed 's/bzr+ssh:/sftp:/'`
         rev_option="-r $rev"
     elif [ $diff_status -eq 1 ] ; then
         # Uncommitted changes in the tree, lint those changes.
@@ -125,13 +124,26 @@ fi
 xmlfiles=`echo "$files" | grep -E '(xml|zcml|pt)$'`
 xmllint_notices=""
 if [ ! -z "$xmlfiles" ]; then
-    xmllint_notices=`xmllint --noout $xmlfiles 2>&1 | sed -e '/Entity/,+2d'`
+    xmllint_notices=`xmllint --noout $xmlfiles 2>&1 |
+        sed -e '/Entity/,+2d; {/StartTag/N; /define-slot="doctype"/,+1d}'`
 fi
 if [ ! -z "$xmllint_notices" ]; then
     echo ""
     echo ""
     echo "== XmlLint notices =="
     group_lines_by_file "$xmllint_notices"
+fi
+
+
+doctestfiles=`echo "$files" | grep -E '/(doc|pagetests|f?tests)/.*txt$'`
+if [ ! -z "$doctestfiles" ]; then
+    pyflakes_doctest_notices=`$utilitiesdir/pyflakes-doctest.py $doctestfiles`
+    if [ ! -z "$pyflakes_doctest_notices" ]; then
+        echo ""
+        echo ""
+        echo "== Pyflakes Doctest notices =="
+        group_lines_by_file "$pyflakes_doctest_notices"
+    fi
 fi
 
 

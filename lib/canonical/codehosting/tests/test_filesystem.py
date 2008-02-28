@@ -11,10 +11,11 @@ from bzrlib import errors
 from bzrlib.tests import TestCaseWithTransport
 
 from canonical.codehosting import branch_id_to_path
+from canonical.codehosting.tests.helpers import (
+    adapt_suite, deferToThread, CodeHostingTestProviderAdapter,
+    ServerTestCase)
 from canonical.codehosting.tests.servers import (
     make_launchpad_server, make_sftp_server)
-from canonical.codehosting.tests.helpers import (
-    CodeHostingTestProviderAdapter, ServerTestCase, adapt_suite, deferToThread)
 
 from canonical.testing import TwistedLayer
 
@@ -118,8 +119,8 @@ class TestFilesystem(ServerTestCase, TestCaseWithTransport):
 
     @deferToThread
     def test_make_team_branch_directory(self):
-        # You can make a branch directory under a team directory that you are a
-        # member of (so long as it's a real product), though.
+        # You can make a branch directory under a team directory that you are
+        # a member of (so long as it's a real product).
         transport = self.getTransport()
         transport.mkdir('~testteam/firefox/shiny-new-thing')
         self.assertTrue(
@@ -187,8 +188,8 @@ class TestFilesystem(ServerTestCase, TestCaseWithTransport):
 
     @deferToThread
     def test_non_bzr_directory_inside_branch(self):
-        # Users can only create Bazaar control directories (e.g. '.bzr') inside
-        # a branch. Other directories are strictly forbidden.
+        # Users can only create Bazaar control directories (e.g. '.bzr')
+        # inside a branch. Other directories are strictly forbidden.
         transport = self.getTransport()
         transport.mkdir('~testuser/+junk/banana')
         self.assertTransportRaises(
@@ -198,8 +199,8 @@ class TestFilesystem(ServerTestCase, TestCaseWithTransport):
     @deferToThread
     @wait_for_disconnect
     def test_non_bzr_file_inside_branch(self):
-        # Users can only create Bazaar control directories (e.g. '.bzr') inside
-        # a branch. Files are not allowed.
+        # Users can only create Bazaar control directories (e.g. '.bzr')
+        # inside a branch. Files are not allowed.
         transport = self.getTransport()
         transport.mkdir('~testuser/+junk/banana')
         self.assertTransportRaises(
@@ -256,6 +257,18 @@ class TestFilesystem(ServerTestCase, TestCaseWithTransport):
         transport.mkdir('branch/.bzr/dir1/foo')
         transport.rename('branch/.bzr/dir1', 'branch/.bzr/dir2')
         self.assertEqual(['dir2'], transport.list_dir('branch/.bzr'))
+
+    @deferToThread
+    @wait_for_disconnect
+    def test_make_directory_twice(self):
+        # The transport raises a `FileExists` error if we try to make a
+        # directory that already exists.
+        transport = self.getTransport('~testuser/+junk')
+        transport.mkdir('branch')
+        transport.mkdir('branch/.bzr')
+        transport.mkdir('branch/.bzr/dir1')
+        self.assertRaises(
+            errors.FileExists, transport.mkdir, 'branch/.bzr/dir1')
 
 
 class TestErrorMessages(ServerTestCase, TestCaseWithTransport):
@@ -316,7 +329,8 @@ class TestErrorMessages(ServerTestCase, TestCaseWithTransport):
 
 def test_suite():
     # Parametrize the tests so they run against the SFTP server and a Bazaar
-    # smart server. This ensures that both services provide the same behaviour.
+    # smart server. This ensures that both services provide the same
+    # behaviour.
     servers = [make_sftp_server, make_launchpad_server]
     adapter = CodeHostingTestProviderAdapter(servers)
     loader = unittest.TestLoader()

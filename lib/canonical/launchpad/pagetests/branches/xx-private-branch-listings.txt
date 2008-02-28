@@ -142,16 +142,16 @@ listing tab.
     today...
 
     >>> print_landscape_code_listing(no_priv_browser)
-    testing-branch             New
+    ~no-priv/landscape/testing-branch      New   ...
 
     >>> print_landscape_code_listing(landscape_dev_browser)
-    feature-x  Sample Person   New
-    trunk      Sample Person   New
+    ~name12/landscape/feature-x            New   ...
+    ~landscape-developers/landscape/trunk  New   ...
 
     >>> print_landscape_code_listing(admin_browser)
-    feature-x  Sample Person   New
-    trunk      Sample Person   New
-    testing-branch             New
+    ~name12/landscape/feature-x            New   ...
+    ~landscape-developers/landscape/trunk  New   ...
+    ~no-priv/landscape/testing-branch      New   ...
 
 
 == Person code listing pages ==
@@ -193,21 +193,21 @@ viewable branches.
 
     >>> print_person_code_listing(landscape_dev_browser)
     Total of 12 branches listed
-    feature-x ... landscape Author
-    trunk ... landscape Author
+    ~name12/landscape/feature-x            New   landscape ...
+    ~landscape-developers/landscape/trunk  New   landscape ...
     >>> print_person_code_listing(landscape_dev_browser, '/+authoredbranches')
     Total of 5 branches listed
-    feature-x ... landscape
-    trunk ... landscape
+    ~name12/landscape/feature-x            New   landscape ...
+    ~landscape-developers/landscape/trunk  New   landscape ...
 
     >>> print_person_code_listing(admin_browser)
     Total of 12 branches listed
-    feature-x ... landscape Author
-    trunk ... landscape Author
+    ~name12/landscape/feature-x            New   landscape ...
+    ~landscape-developers/landscape/trunk  New   landscape ...
     >>> print_person_code_listing(admin_browser, '/+authoredbranches')
     Total of 5 branches listed
-    feature-x ... landscape
-    trunk ... landscape
+    ~name12/landscape/feature-x            New   landscape ...
+    ~landscape-developers/landscape/trunk  New   landscape ...
 
 
 == Bug branch links ==

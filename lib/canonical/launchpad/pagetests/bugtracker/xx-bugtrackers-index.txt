@@ -1,0 +1,80 @@
+= Bug trackers in Launchpad =
+
+The homepage of our bug tracker hierarchy presents a table with all
+bugtrackers currently registered:
+
+    >>> user_browser.open('http://launchpad.dev/bugs/bugtrackers')
+    >>> table = find_tag_by_id(user_browser.contents, 'trackers')
+    >>> print extract_text(table)
+    Title              Home Page                Linked... Type         Watches
+    Debian Bug tracker http://bugs.debian.org   &mdash;   Debbugs         5
+    Email bugtracker   mailto:bugs@example.com  &mdash;   Email Address   0
+    GNU Savannah...    http://savannah.gnu.org/ &mdash;   GNU...          0
+    ...
+
+The watch counts match the number of bugs listed, of course:
+
+    >>> user_browser.getLink("Debian Bug tracker").click()
+    >>> nav = find_tags_by_class(user_browser.contents, 
+    ...     'batch-navigation-index')
+    >>> print extract_text(nav[0])
+    1 &rarr; 5 of 5 results
+
+The listing also displays projects and projects linked to bug trackers.
+Let's link a pair to debbugs:
+
+    >>> def link_to_debbugs(name):
+    ...     admin_browser.open("http://launchpad.dev/%s/+edit" % name)
+    ...     admin_browser.getControl("In a registered bug tracker").click()
+    ...     bt = admin_browser.getControl(name="field.bugtracker.bugtracker")
+    ...     bt.value = ["3"]
+    ...     admin_browser.getControl("Change").click()
+    ...
+    >>> link_to_debbugs('upstart')
+    >>> link_to_debbugs('derby')
+
+And re-render the table:
+
+    >>> user_browser.open('http://launchpad.dev/bugs/bugtrackers')
+    >>> table = find_tag_by_id(user_browser.contents, 'trackers')
+    >>> print extract_text(table)
+    Title                       Home Page
+            Linked Projects                          Type         Watches
+    Debian Bug tracker          http://bugs.debian.org
+            Derby, Upstart                           Debbugs      5
+    ...
+    >>> user_browser.getLink("Upstart").click()
+    >>> user_browser.url
+    'http://launchpad.dev/upstart'
+
+Add a third and a fourth to show ellipsizing:
+
+    >>> link_to_debbugs('a52dec')
+    >>> link_to_debbugs('iso-codes')
+
+    >>> user_browser.open('http://launchpad.dev/bugs/bugtrackers')
+    >>> table = find_tag_by_id(user_browser.contents, 'trackers')
+    >>> print extract_text(table)
+    Title                       Home Page
+            Linked Projects                          Type         Watches
+    Debian Bug tracker          http://bugs.debian.org
+            a52dec, Derby, iso-codes &hellip;    Debbugs      5
+    ...
+
+Note that projects linked to bugtrackers are also linked:
+
+    >>> print extract_text(table)
+    Title                       Home Page
+            Linked Projects                          Type         Watches
+    ...
+    GnomeGBug GTracker          http://bugzilla.gnome.org/bugs
+            GNOME                                Bugzilla     2
+    ...
+
+There's also convenient link to take you to the page where you register a
+new tracker:
+
+    >>> user_browser.getLink("Register another bug tracker").click()
+    >>> user_browser.url
+    'http://launchpad.dev/bugs/bugtrackers/+newbugtracker'
+

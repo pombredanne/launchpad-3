@@ -29,7 +29,6 @@ from zope.interface import implements
 from canonical.cachedproperty import cachedproperty
 from canonical.config import config
 from canonical import encoding
-from canonical.database.constants import UTC_NOW
 from canonical.database.sqlbase import flush_database_updates, commit
 from canonical.launchpad.scripts import log, debbugs
 from canonical.launchpad.interfaces import (
@@ -361,140 +360,6 @@ class ExternalBugTracker:
         report_oops(message, properties, info)
         # Also put it in the log.
         log.error(message, exc_info=info)
-
-    def updateBugWatches(self, bug_watches):
-        """Update the given bug watches."""
-        # Save the url for later, since we might need it to report an
-        # error after a transaction has been aborted.
-        bug_tracker_url = self.baseurl
-
-        # Some tests pass a list of bug watches whilst checkwatches.py
-        # will pass a SelectResults instance. We convert bug_watches to a
-        # list here to ensure that were're doing sane things with it
-        # later on.
-        bug_watches = list(bug_watches)
-
-        # We limit the number of watches we're updating by the
-        # ExternalBugTracker's batch_size. In an ideal world we'd just
-        # slice the bug_watches list but for the sake of testing we need
-        # to ensure that the list of bug watches is ordered by remote
-        # bug id before we do so.
-        remote_ids = sorted(
-            [bug_watch.remotebug for bug_watch in bug_watches])
-        if self.batch_size is not None:
-            remote_ids = remote_ids[:self.batch_size]
-
-            for bug_watch in list(bug_watches):
-                if bug_watch.remotebug not in remote_ids:
-                    bug_watches.remove(bug_watch)
-
-        self.info("Updating %i watches on %s" %
-                  (len(bug_watches), bug_tracker_url))
-
-        bug_watch_ids = [bug_watch.id for bug_watch in bug_watches]
-        bug_watches_by_remote_bug = self._getBugWatchesByRemoteBug(
-            bug_watch_ids)
-
-        # Do things in a fixed order, mainly to help with testing.
-        bug_ids_to_update = sorted(bug_watches_by_remote_bug)
-
-        try:
-            self.initializeRemoteBugDB(bug_ids_to_update)
-        except Exception, error:
-            # We record the error against all the bugwatches that should
-            # have been updated before re-raising it. We also update the
-            # bug watches' lastchecked dates so that checkwatches
-            # doesn't keep trying to update them every time it runs.
-            errortype = get_bugwatcherrortype_for_error(error)
-            for bugwatch in bug_watches:
-                bugwatch.lastchecked = UTC_NOW
-                bugwatch.last_error_type = errortype
-            raise
-
-        # Again, fixed order here to help with testing.
-        bug_ids = sorted(bug_watches_by_remote_bug.keys())
-        for bug_id in bug_ids:
-            bug_watches = bug_watches_by_remote_bug[bug_id]
-            local_ids = ", ".join(str(watch.bug.id) for watch in bug_watches)
-            try:
-                new_remote_status = None
-                new_malone_status = None
-                new_remote_importance = None
-                new_malone_importance = None
-                error = None
-
-                # XXX: 2007-10-17 Graham Binns
-                #      This nested set of try:excepts isn't really
-                #      necessary and can be refactored out when bug
-                #      136391 is dealt with.
-                try:
-                    new_remote_status = self.getRemoteStatus(bug_id)
-                    new_malone_status = self.convertRemoteStatus(
-                        new_remote_status)
-
-                    new_remote_importance = self.getRemoteImportance(bug_id)
-                    new_malone_importance = self.convertRemoteImportance(
-                        new_remote_importance)
-                except InvalidBugId:
-                    error = BugWatchErrorType.INVALID_BUG_ID
-                    self.warning(
-                        "Invalid bug %r on %s (local bugs: %s)." % (
-                            bug_id, self.baseurl, local_ids),
-                        properties=[
-                            ('bug_id', bug_id),
-                            ('local_ids', local_ids)],
-                        info=sys.exc_info())
-                except BugNotFound:
-                    error = BugWatchErrorType.BUG_NOT_FOUND
-                    self.warning(
-                        "Didn't find bug %r on %s (local bugs: %s)." % (
-                            bug_id, self.baseurl, local_ids),
-                        properties=[
-                            ('bug_id', bug_id),
-                            ('local_ids', local_ids)],
-                        info=sys.exc_info())
-
-                for bug_watch in bug_watches:
-                    bug_watch.lastchecked = UTC_NOW
-                    bug_watch.last_error_type = error
-                    if new_malone_status is not None:
-                        bug_watch.updateStatus(new_remote_status,
-                            new_malone_status)
-                    if new_malone_importance is not None:
-                        bug_watch.updateImportance(new_remote_importance,
-                            new_malone_importance)
-                    if (ISupportsCommentImport.providedBy(self) and
-                        self.import_comments):
-                        self.importBugComments(bug_watch)
-
-            except (KeyboardInterrupt, SystemExit):
-                # We should never catch KeyboardInterrupt or SystemExit.
-                raise
-            except Exception, error:
-                # If something unexpected goes wrong, we shouldn't break the
-                # updating of the other bugs.
-
-                # Restart the transaction so that subsequent
-                # bug watches will get recorded.
-                self.txn.abort()
-                self.txn.begin()
-                bug_watches_by_remote_bug = self._getBugWatchesByRemoteBug(
-                    bug_watch_ids)
-
-                # We record errors against the bug watches and update
-                # their lastchecked dates so that we don't try to
-                # re-check them every time checkwatches runs.
-                errortype = get_bugwatcherrortype_for_error(error)
-                for bugwatch in bug_watches:
-                    bugwatch.lastchecked = UTC_NOW
-                    bugwatch.last_error_type = errortype
-
-                self.error(
-                    "Failure updating bug %r on %s (local bugs: %s)." % (
-                        bug_id, bug_tracker_url, local_ids),
-                    properties=[
-                        ('bug_id', bug_id),
-                        ('local_ids', local_ids)])
 
     def importBugComments(self, bug_watch):
         """See `ISupportsCommentImport`."""
@@ -1008,7 +873,6 @@ class DebBugs(ExternalBugTracker):
         # Need to flush databse updates, so that the bug watch knows it
         # is linked from a bug task.
         flush_database_updates()
-        self.updateBugWatches([bug_watch])
 
         return bug
 
@@ -1072,13 +936,8 @@ class MantisLoginHandler(ClientCookie.HTTPRedirectHandler):
          view page via a cookie test page (login_cookie_test.php)
     """
 
-    def redirect_request(self, newurl, req, fp, code, msg, headers):
-        # XXX: The argument order here is different from that in
-        # urllib2.HTTPRedirectHandler. ClientCookie is meant to mimic
-        # urllib2 (and does subclass it), so this is probably a
-        # bug. -- Gavin Panella, 2007-08-27
-
-        scheme, host, path, params, query, fragment = urlparse(newurl)
+    def rewrite_url(self, url):
+        scheme, host, path, params, query, fragment = urlparse(url)
 
         # If we can, skip the login page and submit credentials
         # directly. The query should contain a 'return' parameter
@@ -1091,11 +950,13 @@ class MantisLoginHandler(ClientCookie.HTTPRedirectHandler):
             query = cgi.parse_qs(query, True)
             query['username'] = query['password'] = ['guest']
             if 'return' not in query:
-                self.warning(
+                message = (
                     "Mantis redirected us to the login page "
                     "but did not set a return path.")
+                report_warning(message)
+                log.warning(message)
             query = urllib.urlencode(query, True)
-            newurl = urlunparse(
+            url = urlunparse(
                 (scheme, host, path, params, query, fragment))
 
         # XXX: Previous versions of the Mantis external bug tracker
@@ -1107,8 +968,16 @@ class MantisLoginHandler(ClientCookie.HTTPRedirectHandler):
         # page because we may end up annoying admins with spurious
         # login attempts. -- Gavin Panella, 2007-08-28.
 
+        return url
+
+    def redirect_request(self, newurl, req, fp, code, msg, headers):
+        # XXX: Gavin Panella 2007-08-27: The argument order here is
+        # different from that in urllib2.HTTPRedirectHandler.
+        # ClientCookie is meant to mimic urllib2 (and does subclass
+        # it), so this is probably a bug.
+
         return ClientCookie.HTTPRedirectHandler.redirect_request(
-            self, newurl, req, fp, code, msg, headers)
+            self, self.rewrite_url(newurl), req, fp, code, msg, headers)
 
 
 class Mantis(ExternalBugTracker):
