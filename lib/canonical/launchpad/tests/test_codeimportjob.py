@@ -137,11 +137,14 @@ class TestCodeImportJobSetGetJobForMachine(unittest.TestCase):
         self.assertNoJobSelected()
 
     def test_mostOverdueJobsFirst(self):
-        # The job that was due longest ago should be selected.
-        self.makeJob(CodeImportJobState.PENDING, -5)
-        self.makeJob(CodeImportJobState.PENDING, -2)
-        self.assertJobIsSelected(
-            self.makeJob(CodeImportJobState.PENDING, -10))
+        # The job that was due longest ago should be selected, then the next
+        # longest, etc.
+        five_seconds_ago = self.makeJob(CodeImportJobState.PENDING, -5)
+        two_seconds_ago = self.makeJob(CodeImportJobState.PENDING, -2)
+        ten_seconds_ago = self.makeJob(CodeImportJobState.PENDING, -10)
+        self.assertJobIsSelected(ten_seconds_ago)
+        self.assertJobIsSelected(five_seconds_ago)
+        self.assertJobIsSelected(two_seconds_ago)
 
     def test_requestedJobWins(self):
         # A job that is requested by a user is selected over ones that
@@ -158,19 +161,26 @@ class TestCodeImportJobSetGetJobForMachine(unittest.TestCase):
         person_a = self.factory.makePerson()
         person_b = self.factory.makePerson()
         person_c = self.factory.makePerson()
-        self.makeJob(CodeImportJobState.PENDING, -5, person_b)
-        self.makeJob(CodeImportJobState.PENDING, -2, person_a)
-        self.assertJobIsSelected(
-            self.makeJob(CodeImportJobState.PENDING, -10, person_c))
+        five_seconds_ago = self.makeJob(
+            CodeImportJobState.PENDING, -5, person_b)
+        two_seconds_ago = self.makeJob(
+            CodeImportJobState.PENDING, -2, person_a)
+        ten_seconds_ago = self.makeJob(
+            CodeImportJobState.PENDING, -10, person_c)
+        self.assertJobIsSelected(ten_seconds_ago)
+        self.assertJobIsSelected(five_seconds_ago)
+        self.assertJobIsSelected(two_seconds_ago)
 
     def test_independentOfCreationOrder(self):
         # The order the jobs are created doesn't affect the outcome (the way
         # the other tests are written, an implementation that returned the
         # most recently created due job would pass).
-        desired_job = self.makeJob(CodeImportJobState.PENDING, -10)
-        self.makeJob(CodeImportJobState.PENDING, -5)
-        self.makeJob(CodeImportJobState.PENDING, -2)
-        self.assertJobIsSelected(desired_job)
+        ten_seconds_ago = self.makeJob(CodeImportJobState.PENDING, -10)
+        five_seconds_ago = self.makeJob(CodeImportJobState.PENDING, -5)
+        two_seconds_ago = self.makeJob(CodeImportJobState.PENDING, -2)
+        self.assertJobIsSelected(ten_seconds_ago)
+        self.assertJobIsSelected(five_seconds_ago)
+        self.assertJobIsSelected(two_seconds_ago)
 
     def test_notReturnedTwice(self):
         # Once a job has been selected by getJobForMachine, it should not be

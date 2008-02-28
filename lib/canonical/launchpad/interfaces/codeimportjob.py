@@ -122,7 +122,11 @@ class ICodeImportJobPublic(Interface):
     """Parts of the CodeImportJob interface that need to be public.
 
     These are accessed by the getJobForMachine XML-RPC method, requests to
-    which are not authenticated."""
+    which are not authenticated.
+    """
+    # XXX MichaelHudson 2008-02-18 bug=196345: This interface can go away when
+    # we implement endpoint specific authentication for the private xml-rpc
+    # server.
 
     id = Int(readonly=True, required=True)
 
@@ -140,10 +144,19 @@ class ICodeImportJobSetPublic(Interface):
     """Parts of the CodeImportJobSet interface that need to be public.
 
     These are accessed by the getJobForMachine XML-RPC method, requests to
-    which are not authenticated."""
+    which are not authenticated.
+    """
+    # XXX MichaelHudson 2008-02-28 bug=196345: This interface can go away when
+    # we implement endpoint specific authentication for the private xml-rpc
+    # server.
 
     def getJobForMachine(machine):
-        """XXX."""
+        """Select a job for the given machine to run and mark it as started.
+
+        This method selects a job that is due to be run for running on the
+        given machine and calls ICodeImportJobWorkflowPublic.startJob() on it.
+        It will return None if there is no such job.
+        """
 
 
 class ICodeImportJobWorkflow(Interface):
@@ -202,7 +215,14 @@ class ICodeImportJobWorkflow(Interface):
         """
 
 class ICodeImportJobWorkflowPublic(Interface):
-    """XXX."""
+    """Parts of the CodeImportJobWorkflow interface that need to be public.
+
+    These are accessed by the getJobForMachine XML-RPC method, requests to
+    which are not authenticated.
+    """
+    # XXX MichaelHudson 2008-02-28 bug=196345: This interface can go away when
+    # we implement endpoint specific authentication for the private xml-rpc
+    # server.
 
     def startJob(import_job, machine):
         """Record that `machine` is about to start work on `import_job`.

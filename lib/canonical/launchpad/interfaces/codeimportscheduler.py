@@ -29,8 +29,7 @@ class ICodeImportScheduler(Interface):
     def getJobForMachine(hostname):
         """Get a job to run on the slave 'hostname'.
 
-        When the code import infrastructure is in place, this method
-        will select the most appropriate job for the machine, mark it
-        as having started on said machine and return its id, or 0 if
-        there are no jobs pending.
+        This method selects the most appropriate job for the machine,
+        mark it as having started on said machine and return its id,
+        or 0 if there are no jobs pending.
         """

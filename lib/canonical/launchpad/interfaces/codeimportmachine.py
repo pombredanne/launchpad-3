@@ -123,6 +123,9 @@ class ICodeImportMachinePublic(Interface):
 
     These are accessed by the getJobForMachine XML-RPC method, requests to
     which are not authenticated."""
+    # XXX MichaelHudson 2008-02-28 bug=196345: This interface can go away when
+    # we implement endpoint specific authentication for the private xml-rpc
+    # server.
 
     id = Int(readonly=True, required=True)
 
@@ -154,6 +157,9 @@ class ICodeImportMachineSetPublic(Interface):
 
     These are accessed by the getJobForMachine XML-RPC method, requests to
     which are not authenticated."""
+    # XXX MichaelHudson 2008-02-28 bug=196345: This interface can go away when
+    # we implement endpoint specific authentication for the private xml-rpc
+    # server.
 
     def getByHostname(hostname):
         """Retrieve the code import machine for a hostname.
