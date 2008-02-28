@@ -124,7 +124,7 @@ class TranslationMessage(SQLBase, TranslationMessageMixIn):
         validator=public_person_validator, notNull=False, default=None)
 
     assert TranslationConstants.MAX_PLURAL_FORMS == 4, (
-        "Change this code to support %d plural forms"
+        "Change this class and its interface to support %d plural forms."
         % TranslationConstants.MAX_PLURAL_FORMS)
     msgstr0 = ForeignKey(
         foreignKey='POTranslation', dbName='msgstr0', notNull=True)
@@ -224,7 +224,7 @@ class TranslationMessage(SQLBase, TranslationMessageMixIn):
     def translations(self):
         """See `ITranslationMessage`."""
         assert TranslationConstants.MAX_PLURAL_FORMS == 4, (
-            "Change this code to support %d plural forms"
+            "Change this code to support %d plural forms."
             % TranslationConstants.MAX_PLURAL_FORMS)
         msgstrs = [self.msgstr0, self.msgstr1, self.msgstr2, self.msgstr3]
         translations = []
