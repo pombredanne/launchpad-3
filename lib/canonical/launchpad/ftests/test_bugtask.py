@@ -93,6 +93,14 @@ class BugTaskSearchBugsElsewhereTest(unittest.TestCase):
 
         flush_database_updates()
 
+    def tearDownBugsElsewhereTests(self):
+        """Resets the modified bugtasks to their original statuses."""
+        self.firefox_upstream.transitionToStatus(
+            self.old_firefox_status, getUtility(ILaunchBag).user)
+        self.thunderbird_upstream.transitionToStatus(
+            self.old_thunderbird_status, getUtility(ILaunchBag).user)
+        flush_database_updates()
+
     def assertBugTaskIsPendingBugWatchElsewhere(self, bugtask):
         """Assert the the bugtask is pending a bug watch elsewhere.
 
