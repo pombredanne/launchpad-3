@@ -73,13 +73,15 @@ class DummyTranslationMessage(TranslationMessageMixIn):
         self.date_reviewed = None
         self.reviewer = None
 
-        assert TranslationConstants.MAX_PLURAL_FORMS == 4, (
+        assert TranslationConstants.MAX_PLURAL_FORMS == 6, (
             "Change this code to support %d plural forms"
             % TranslationConstants.MAX_PLURAL_FORMS)
         self.msgstr0 = None
         self.msgstr1 = None
         self.msgstr2 = None
         self.msgstr3 = None
+        self.msgstr4 = None
+        self.msgstr5 = None
 
         self.comment = None
         self.origin = RosettaTranslationOrigin.ROSETTAWEB
@@ -123,7 +125,7 @@ class TranslationMessage(SQLBase, TranslationMessageMixIn):
         dbName='reviewer', foreignKey='Person',
         validator=public_person_validator, notNull=False, default=None)
 
-    assert TranslationConstants.MAX_PLURAL_FORMS == 4, (
+    assert TranslationConstants.MAX_PLURAL_FORMS == 6, (
         "Change this code to support %d plural forms"
         % TranslationConstants.MAX_PLURAL_FORMS)
     msgstr0 = ForeignKey(
@@ -134,6 +136,11 @@ class TranslationMessage(SQLBase, TranslationMessageMixIn):
         foreignKey='POTranslation', dbName='msgstr2', notNull=True)
     msgstr3 = ForeignKey(
         foreignKey='POTranslation', dbName='msgstr3', notNull=True)
+    msgstr4 = ForeignKey(
+        foreignKey='POTranslation', dbName='msgstr4', notNull=True)
+    msgstr5 = ForeignKey(
+        foreignKey='POTranslation', dbName='msgstr5', notNull=True)
+
     comment = StringCol(
         dbName='comment', notNull=False, default=None)
     origin = EnumCol(
@@ -222,10 +229,11 @@ class TranslationMessage(SQLBase, TranslationMessageMixIn):
     @cachedproperty
     def translations(self):
         """See `ITranslationMessage`."""
-        assert TranslationConstants.MAX_PLURAL_FORMS == 4, (
+        assert TranslationConstants.MAX_PLURAL_FORMS == 6, (
             "Change this code to support %d plural forms"
             % TranslationConstants.MAX_PLURAL_FORMS)
-        msgstrs = [self.msgstr0, self.msgstr1, self.msgstr2, self.msgstr3]
+        msgstrs = [self.msgstr0, self.msgstr1, self.msgstr2, self.msgstr3,
+            self.msgstr4, self.msgstr5]
         translations = []
         # Return translations for no more plural forms than the POFile knows.
         for msgstr in msgstrs[:self.plural_forms]:

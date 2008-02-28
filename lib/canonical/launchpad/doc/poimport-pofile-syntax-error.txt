@@ -253,6 +253,7 @@ shows how to get that information corrected if need be.  Hopefully it
 will show Mark how other Arabic translators have worked around the
 problem.
 
+    >>> from canonical.launchpad.interfaces import TranslationConstants
     >>> pofile = potemplate.newPOFile('ar')
     >>> pofile_contents = r'''
     ... msgid ""
@@ -260,12 +261,13 @@ problem.
     ... "PO-Revision-Date: 2005-07-01 08:35+0100\n"
     ... "Last-Translator: Foo <no-priv@canonical.com>\n"
     ... "Content-Type: text/plain; charset=UTF-8\n"
-    ... "Plural-Forms: nplurals=6; plural=0\n"
+    ... "Plural-Forms: nplurals=%d; plural=0\n"
     ... "X-Rosetta-Export-Date: %s\n"
     ...
     ... msgid "foo"
     ... msgstr "bar"
-    ... ''' % datetime.datetime.now(UTC).isoformat()
+    ... ''' % (TranslationConstants.MAX_PLURAL_FORMS + 1,
+    ...        datetime.datetime.now(UTC).isoformat())
     >>> entry = translation_import_queue.addOrUpdateEntry(
     ...     pofile.path, pofile_contents, False, person,
     ...     productseries=series, potemplate=potemplate, pofile=pofile)
@@ -285,7 +287,7 @@ problem.
     Mozilla Firefox trunk to Launchpad.
     <BLANKLINE>
     We were unable to import it because it declares more plural forms than
-    Launchpad can currently handle.  The maximum supported is 4.
+    Launchpad can currently handle.  The maximum supported is 6.
     <BLANKLINE>
     Please see if you can get by with fewer plural forms.  You can find
     Launchpad's default plural-forms information for Arabic (ar) here:

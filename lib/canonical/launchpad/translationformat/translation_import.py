@@ -113,6 +113,10 @@ class ExistingPOFileInDatabase:
             "ON pt%d.id = TranslationMessage.msgstr%d" % (form, form, form)
             for form in xrange(TranslationConstants.MAX_PLURAL_FORMS)]
 
+        translations = [
+            "pt%d.translation AS translation%d" % (form, form)
+            for form in xrange(TranslationConstants.MAX_PLURAL_FORMS)]
+
         sql = '''
         SELECT
             POMsgId.msgid AS msgid,
@@ -122,10 +126,7 @@ class ExistingPOFileInDatabase:
             is_fuzzy,
             is_current,
             is_imported,
-            pt0.translation as translation0,
-            pt1.translation as translation1,
-            pt2.translation as translation2,
-            pt3.translation as translation3
+            %s
           FROM TranslationMessage
             JOIN POFile ON
               TranslationMessage.pofile=POFile.id AND POFile.id=%s
@@ -138,16 +139,18 @@ class ExistingPOFileInDatabase:
               POMsgID_Plural.id=POTMsgSet.msgid_plural
           WHERE
                 is_current or is_imported
-          ''' % (quote(self.pofile), '\n'.join(msgstr_joins))
+          ''' % (','.join(translations), quote(self.pofile),
+                 '\n'.join(msgstr_joins))
         cur = cursor()
         cur.execute(sql)
         rows = cur.fetchall()
 
-        assert TranslationConstants.MAX_PLURAL_FORMS == 4, (
+        assert TranslationConstants.MAX_PLURAL_FORMS == 6, (
             "Change this code to support %d plural forms"
             % TranslationConstants.MAX_PLURAL_FORMS)
         for (msgid, msgid_plural, context, date, is_fuzzy, is_current,
-             is_imported, msgstr0, msgstr1, msgstr2, msgstr3) in rows:
+             is_imported, msgstr0, msgstr1, msgstr2, msgstr3, msgstr4,
+             msgstr5) in rows:
             if is_current:
                 look_at = self.messages
             elif is_imported:
@@ -167,7 +170,7 @@ class ExistingPOFileInDatabase:
                 message.context = context
                 message.msgid_plural = msgid_plural
 
-            assert TranslationConstants.MAX_PLURAL_FORMS == 4, (
+            assert TranslationConstants.MAX_PLURAL_FORMS == 6, (
                 "Change this code to support %d plural forms"
                 % TranslationConstants.MAX_PLURAL_FORMS)
             if msgstr0 is not None:
@@ -178,6 +181,10 @@ class ExistingPOFileInDatabase:
                 message.addTranslation(2, msgstr2)
             if msgstr3 is not None:
                 message.addTranslation(3, msgstr3)
+            if msgstr4 is not None:
+                message.addTranslation(4, msgstr4)
+            if msgstr5 is not None:
+                message.addTranslation(5, msgstr5)
 
             message.fuzzy = is_fuzzy
 

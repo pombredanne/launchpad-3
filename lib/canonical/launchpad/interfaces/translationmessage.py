@@ -110,7 +110,7 @@ class ITranslationMessage(Interface):
             "The person who did the review and accepted current translations"
             ), readonly=False, required=False, schema=IPerson)
 
-    assert TranslationConstants.MAX_PLURAL_FORMS == 4, (
+    assert TranslationConstants.MAX_PLURAL_FORMS == 6, (
         "Change this code to support %d plural forms"
         % TranslationConstants.MAX_PLURAL_FORMS)
     msgstr0 = Object(
@@ -127,6 +127,14 @@ class ITranslationMessage(Interface):
 
     msgstr3 = Object(
         title=_("Translation for plural form 3 (if any)"),
+        required=False, schema=IPOTranslation)
+
+    msgstr4 = Object(
+        title=_("Translation for plural form 4 (if any)"),
+        required=False, schema=IPOTranslation)
+
+    msgstr5 = Object(
+        title=_("Translation for plural form 5 (if any)"),
         required=False, schema=IPOTranslation)
 
     translations = List(

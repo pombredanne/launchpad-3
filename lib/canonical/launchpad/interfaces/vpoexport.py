@@ -140,21 +140,30 @@ class IVPOExport(Interface):
         title=_("Whether this message was imported"),
         readonly=True, required=True)
 
-    assert TranslationConstants.MAX_PLURAL_FORMS == 4, (
+    assert TranslationConstants.MAX_PLURAL_FORMS == 6, (
         "Change this code to support %d plural forms"
         % TranslationConstants.MAX_PLURAL_FORMS)
     translation0 = Text(
-        title=u"See ITranslationMessage.msgstr0",
+        title=u"See `ITranslationMessage.msgstr0`",
         readonly=True, required=False)
 
     translation1 = Text(
-        title=u"See ITranslationMessage.msgstr1",
+        title=u"See `ITranslationMessage.msgstr1`",
         readonly=True, required=False)
 
     translation2 = Text(
-        title=u"See ITranslationMessage.msgstr2",
+        title=u"See `ITranslationMessage.msgstr2`",
         readonly=True, required=False)
 
     translation3 = Text(
-        title=u"See ITranslationMessage.msgstr3",
+        title=u"See `ITranslationMessage.msgstr3`",
         readonly=True, required=False)
+
+    translation4 = Text(
+        title=u"See `ITranslationMessage.msgstr4`",
+        readonly=True, required=False)
+
+    translation5 = Text(
+        title=u"See `ITranslationMessage.msgstr5`",
+        readonly=True, required=False)
+
