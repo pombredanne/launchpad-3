@@ -211,7 +211,7 @@ class BugWatch(SQLBase):
         bug_watch_updater = getUtility(
             ILaunchpadCelebrities).bug_watch_updater
         bug_message = self.bug.linkMessage(message, bugwatch=self,
-            owner=bug_watch_updater)
+            user=bug_watch_updater)
 
 
 class BugWatchSet(BugSetBase):

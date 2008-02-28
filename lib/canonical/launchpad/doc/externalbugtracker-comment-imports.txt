@@ -242,13 +242,13 @@ ExternalBugTracker to demonstrate this:
     >>> debbugs = getUtility(IBugTrackerSet).getByName('debbugs')
     >>> no_priv = getUtility(IPersonSet).getByEmail(
     ...     'no-priv@canonical.com')
-    >>> no_priv_bug = TestDebianBug(
+    >>> test_debian_bug = TestDebianBug(
     ...     reporter_email=no_priv.preferredemail.email, id=1234)
     >>> bug = getUtility(IBugSet).get(4)
     >>> bug_watch = bug.addWatch(debbugs, '1234', no_priv)
 
     >>> external_debbugs = TestDebBugs(transaction,
-    ...     debbugs, {'1234': no_priv_bug})
+    ...     debbugs, {'1234': test_debian_bug})
     >>> external_debbugs.debbugs_db._data_file = (
     ...     'debbugs-comments-cve.txt')
     >>> external_debbugs.importBugComments(bug_watch)
