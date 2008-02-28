@@ -13,11 +13,12 @@ from zope.component import getUtility
 from canonical.config import config
 from canonical.database.sqlbase import flush_database_updates
 from canonical.testing import LaunchpadLayer
-from canonical.launchpad.ftests.harness import LaunchpadZopelessTestCase
 from canonical.launchpad.interfaces import (
     IDistributionSet, DistroSeriesStatus)
 from canonical.launchpad.scripts.base import LaunchpadScriptFailure
 from canonical.launchpad.scripts.ftpmaster import LpQueryDistro
+from canonical.testing import LaunchpadZopelessLayer
+
 
 class TestLpQueryDistroScript(unittest.TestCase):
     """Test the lp-query-distro.py script."""
@@ -110,8 +111,9 @@ class TestLpQueryDistroScript(unittest.TestCase):
             err.strip(), 'ERROR   Action does not accept defined suite.')
 
 
-class TestLpQueryDistro(LaunchpadZopelessTestCase):
+class TestLpQueryDistro(unittest.TestCase):
     """Test the LpQueryDistro class."""
+    layer = LaunchpadZopelessLayer
 
     def setUp(self):
         self.test_output = None
@@ -124,11 +126,11 @@ class TestLpQueryDistro(LaunchpadZopelessTestCase):
         return lp_query_distro
 
     def presenter(self, *args):
-         """Test result presenter.
+        """Test result presenter.
 
-         It stores results in self.test_output for later test-inspection.
-         """
-         self.test_output = '%s' % args
+        It stores results in self.test_output for later test-inspection.
+        """
+        self.test_output = '%s' % args
 
     def testSuccessfullyAction(self):
         """Check if the 'current' action is executed sucessfully."""

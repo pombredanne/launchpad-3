@@ -1,26 +1,63 @@
-#!/usr/bin/python
+#!/usr/bin/env python
+
+# Copyright 2004-2008 Canonical Ltd.  All rights reserved.
 
 import base64
 import httplib
 import os
+import pwd
 import sys
 import urllib
+import webbrowser
+
+from optparse import OptionParser
 from urlparse import urljoin
 
-paste_host = 'pastebin.canonical.com'
-paste_path = ''
-auth_file = os.path.expanduser('~/.canonical_paste_auth')
+# Should we be able to override any of these?
+AUTH_FILE = '~/.canonical_paste_auth'
+PASTE_HOST = 'pastebin.canonical.com'
+PASTE_PATH = ''
+
+
+def parse_arguments():
+    parser = OptionParser(usage='%prog [options] [title] < stdin')
+    parser.add_option('-b', '--browser',
+                      default=False, action='store_true',
+                      help='Open web browser to the pastebin.')
+    parser.add_option('-s', '--syntax',
+                      default='text', type='string',
+                      help='The syntax of the pastebin.')
+    parser.add_option('-f', '--file',
+                      type='string',
+                      help='File to pastebin instead of stdin.')
+    options, arguments = parser.parse_args()
+    if len(arguments) == 0:
+        parser.title = None
+    elif len(arguments) == 1:
+        parser.title = arguments[0]
+    else:
+        parser.error('Too many arguments')
+        # Does not return
+    parser.options = options
+    parser.arguments = arguments
+    return parser
+
 
 def read_auth_file(path):
-    f = file(path)
-    username = f.readline().strip()
-    password = f.readline().strip()
-    f.close()
-    return (username, password)
+    path = os.path.expanduser(path)
+    f = open(path)
+    try:
+        username = f.readline().strip()
+        password = f.readline().strip()
+    finally:
+        f.close()
+    return username, password
+
 
 def make_basic_auth_header(username, password):
     auth = '%s:%s' % (username, password)
     return 'Basic %s' % base64.encodestring(auth).strip()
+
 
 def https_post_form_with_auth(host, path, form, auth):
     form_data = urllib.urlencode(form).strip()
@@ -33,19 +70,49 @@ def https_post_form_with_auth(host, path, form, auth):
         })
     return connection.getresponse()
 
-if __name__ == '__main__':
-    poster = os.environ.get("USER")
-    syntax = 'text'
-    if len(sys.argv) > 1:
-        title = sys.argv[1]
-    else:
+
+def main():
+    parser = parse_arguments()
+    try:
+        poster = os.environ['USER']
+    except KeyError:
+        poster = pwd.getpwuid(os.getuid()).pw_name
+
+    if parser.title is None:
         title = "The loser %s didn't even add a title" % poster
-    form = (('poster', poster), ('title', title), ('syntax', syntax), ('content', sys.stdin.read()))
-    username, password = read_auth_file(auth_file)
+    else:
+        title = parser.title
+
+    if parser.options.file:
+        f = open(parser.options.file)
+        try:
+            content = f.read()
+        finally:
+            f.close()
+    else:
+        content = sys.stdin.read()
+
+    form = (
+        ('poster', poster),
+        ('title', title),
+        ('syntax', parser.options.syntax),
+        ('content', content),
+        )
+
+    # Figure out the authentication.
+    username, password = read_auth_file(AUTH_FILE)
     auth = make_basic_auth_header(username, password)
-    response = https_post_form_with_auth(paste_host, paste_path, form, auth)
+
+    response = https_post_form_with_auth(PASTE_HOST, PASTE_PATH, form, auth)
     location = response.getheader('Location')
     if location:
-      print urljoin('https://' + paste_host, location)
+        url = urljoin('https://' + PASTE_HOST, location)
+        print url
+        if parser.options.browser:
+            webbrowser.open(url)
     else:
-      print 'Unexpected response:\n%s' % response.getheaders()
+        print 'Unexpected response:\n%s' % response.getheaders()
+
+
+if __name__ == '__main__':
+    main()

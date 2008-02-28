@@ -8,7 +8,6 @@ from unittest import TestCase, TestLoader
 
 from zope.component import getUtility
 
-from canonical.functional import setUpMockRootFolder
 from canonical.launchpad.interfaces import (
     IDistributionSet, IProductSet, ISourcePackageNameSet, IPackagingUtil)
 from canonical.launchpad.ftests import login, logout
@@ -22,12 +21,6 @@ class TestBrowserDeletePackaging(TestCase):
     layer = PageTestLayer
 
     def setUp(self):
-
-        # XXX: We need to call setUpMockRootFolder for the publication
-        # machinery to work, so we can use TestBrowser. Bug #176146.
-        # -- David Allouche  2007-12-13
-        setUpMockRootFolder()
-
         self.user_browser = setupBrowser(
             auth="Basic no-priv@canonical.com:test")
 
