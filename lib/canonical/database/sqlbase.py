@@ -104,9 +104,8 @@ class RandomiseOrderDescriptor:
     This object is used to exchange the randomise_select_results setting
     between SQLBase class (and its descendants) and SQLObject.SelectResults.
 
-    The testrunner environment is configured to show random ordered
-    query results. Queries that do not use DISTINCT or SET use the
-    random() function in the ORDER BY clause.
+    The testrunner environment is configured so that random() is appended
+    to the ORDER BY clause of queries that do not use DISTINCT or SET.
 
         >>> from canonical.config import config
         >>> config.randomise_select_results
