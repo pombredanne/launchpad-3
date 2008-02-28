@@ -30,7 +30,9 @@ __all__ = [
 import logging
 import os
 import socket
+import sys
 import time
+from unittest import TestCase, TestResult
 from urllib import urlopen
 
 import psycopg
@@ -170,18 +172,35 @@ class BaseLayer:
     @classmethod
     @profiled
     def testTearDown(cls):
-        # Abort if a test failed to restore the current working directory.
-        # We could recover, but that might hide bugs in code.
+
+        # Get our current working directory, handling the case where it no
+        # longer exists (!).
+        try:
+            cwd = os.getcwd()
+        except OSError:
+            cwd = None
+
+        # Handle a changed working directory. If the test succeeded,
+        # add an error. Then restore the working directory so the test
+        # run can continue.
+        if cwd != BaseLayer.original_working_directory:
+            test_result = BaseLayer.getCurrentTestResult()
+            if test_result.wasSuccessful():
+                test_case = BaseLayer.getCurrentTestCase()
+                try:
+                    raise LayerIsolationError(
+                            "Test failed to restore working directory.")
+                except:
+                    test_result.addError(test_case, sys.exc_info())
+            os.chdir(BaseLayer.original_working_directory)
+
+        BaseLayer.original_working_directory = None
 
         reset_logging()
 
         del canonical.launchpad.mail.stub.test_emails[:]
 
         BaseLayer.test_name = None
-
-        assert os.getcwd() == BaseLayer.original_working_directory, (
-                "Test failed to restore current working directory.")
-        BaseLayer.original_working_directory = None
 
         BaseLayer.check()
 
@@ -222,6 +241,38 @@ class BaseLayer:
         if socket.getdefaulttimeout() is not None:
             raise LayerIsolationError(
                 "Test didn't reset the socket default timeout.")
+
+    @classmethod
+    def getCurrentTestResult(cls):
+        """Return the TestResult currently in play."""
+        import inspect
+        frame = inspect.currentframe()
+        try:
+            while True:
+                f_self = frame.f_locals.get('self', None)
+                if isinstance(f_self, TestResult):
+                    return frame.f_locals['self']
+                frame = frame.f_back
+        finally:
+            del frame # As per no-leak stack inspection in Python reference.
+
+    @classmethod
+    def getCurrentTestCase(cls):
+        """Return the test currently in play."""
+        import inspect
+        frame = inspect.currentframe()
+        try:
+            while True:
+                f_self = frame.f_locals.get('self', None)
+                if isinstance(f_self, TestCase):
+                    return f_self
+                f_test = frame.f_locals.get('test', None)
+                if isinstance(f_test, TestCase):
+                    return f_test
+                frame = frame.f_back
+            return frame.f_locals['test']
+        finally:
+            del frame # As per no-leak stack inspection in Python reference.
 
 
 class LibrarianLayer(BaseLayer):
@@ -755,6 +806,7 @@ class LaunchpadZopelessLayer(ZopelessLayer, LaunchpadLayer):
         LaunchpadZopelessLayer.txn.uninstall()
         LaunchpadZopelessLayer.txn = initZopeless(**kw)
         LaunchpadZopelessTestSetup.txn = LaunchpadZopelessLayer.txn
+
 
 class ExperimentalLaunchpadZopelessLayer(LaunchpadZopelessLayer):
     """LaunchpadZopelessLayer using the mock database."""
