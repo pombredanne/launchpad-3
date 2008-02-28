@@ -405,11 +405,29 @@ And they can be used as dictionary keys also:
 
 == Direct Packagings ==
 
+The direct packaging returns the IPackaging related to the source
+package.
+
     >>> print sp.direct_packaging
     None
     >>> print hoary_firefox_one.direct_packaging.productseries.title
     Mozilla Firefox Series: 1.0
     >>> print warty_firefox.direct_packaging.productseries.title
+    Mozilla Firefox Series: trunk
+
+If multiple product series link to a sourcepackage, direct packaging
+returns the last one:
+
+    >>> from canonical.launchpad.interfaces import IProductSet
+    >>> firefox_product = getUtility(IProductSet).getByName('firefox')
+    >>> firefox_trunk = firefox_product.getSeries('trunk')
+    >>> PackagingUtil().createPackaging(
+    ...     sourcepackagename=firefox,
+    ...     distroseries=hoary,
+    ...     productseries=firefox_trunk,
+    ...     packaging=PackagingType.PRIME,
+    ...     owner=foobar)
+    >>> print hoary_firefox_one.direct_packaging.productseries.title
     Mozilla Firefox Series: trunk
 
 

@@ -310,11 +310,16 @@ class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin,
     @property
     def direct_packaging(self):
         """See `ISourcePackage`."""
-        # get any packagings matching this sourcepackage
+        # XXX flacoste 2008-02-28 For some crack reasons, it is possible
+        # for multiple productseries (of the same product) to state that they
+        # are packaged in the same source package. This creates all sort of
+        # weirdness documented in bug #196774. But in order to work around bug
+        # #181770, use a sort order that will be stable. I guess it makes the
+        # most sense to return the latest one.
         return Packaging.selectFirstBy(
             sourcepackagename=self.sourcepackagename,
             distroseries=self.distroseries,
-            orderBy='packaging')
+            orderBy=['packaging', '-datecreated'])
 
     @property
     def packaging(self):
