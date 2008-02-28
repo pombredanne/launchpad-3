@@ -151,6 +151,7 @@
     <include file="vpoexport.zcml" />
     <include file="vpotexport.zcml" />
     <include file="archive.zcml" />
+    <include file="archivedependency.zcml" />
     <include file="webservice.zcml" />
 
     <include file="fields.zcml" />

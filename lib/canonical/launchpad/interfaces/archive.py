@@ -10,6 +10,7 @@ __all__ = [
     'IArchive',
     'IPPAActivateForm',
     'IArchivePackageDeletionForm',
+    'IArchiveEditDependenciesForm',
     'IArchiveSet',
     ]
 
@@ -57,6 +58,10 @@ class IArchive(IHasOwner):
 
     distribution = Attribute(
         "The distribution that uses or is used by this archive.")
+
+    dependencies = Attribute(
+        "Archive dependencies recorded for this archive and ordered by owner "
+        "displayname.")
 
     archive_url = Attribute("External archive URL.")
 
@@ -148,6 +153,37 @@ class IArchive(IHasOwner):
         :return: True or False
         """
 
+    def getArchiveDependency(dependency):
+        """Return the `IArchiveDependency` object for the given dependency.
+
+        'dependency' is an `IArchive` object.
+
+        Return None if a corresponding object could not be found.
+        """
+
+    def removeArchiveDependency(dependency):
+        """Remove the `IArchiveDependency` record for the given dependency.
+
+        'dependency' is an `IArchive` object.
+        """
+
+    def addArchiveDependency(dependency):
+        """Record an archive dependency record for the context archive.
+
+        'dependency' is an `IArchive` object.
+
+        Raises AssertionError if given 'dependency' matches the one of the
+        following conditions:
+
+         * is the archive itself,
+         * is not a PPA,
+         * is already recorded.
+
+        Return a `IArchiveDependency` object targeted to the context
+        `IArchive` requiring 'dependency' `IArchive`.
+        """
+
+
 class IPPAActivateForm(Interface):
     """Schema used to activate PPAs."""
 
@@ -173,6 +209,14 @@ class IArchivePackageDeletionForm(Interface):
     deletion_comment = TextLine(
         title=_("Deletion comment"), required=False,
         description=_("The reason why the package is being deleted."))
+
+
+class IArchiveEditDependenciesForm(Interface):
+    """Schema used to edit dependencies setings within a archive."""
+
+    dependency_candidate = Choice(
+        title=_('PPA Dependency'), required=False, vocabulary='PPA',
+        description=_("Add a new PPA dependency."))
 
 
 class IArchiveSet(Interface):

@@ -6,7 +6,7 @@ records to disk, including configuration and indexes.
 
     >>> from canonical.launchpad.webapp.testing import verifyObject
     >>> from canonical.launchpad.interfaces import (
-    ...     ArchivePurpose, IPerson, IPersonSet, IArchiveSet, IArchive,
+    ...     ArchivePurpose, IPersonSet, IArchiveSet, IArchive,
     ...     IDistributionSet)
 
     >>> cprov = getUtility(IPersonSet).getByName('cprov')
@@ -629,6 +629,114 @@ Usual methods from Publisher Configuration are preserved:
     ['main', 'restricted', 'universe', 'multiverse']
 
 
+== Archive dependencies ==
+
+An Archive can depend on one or more other archives, such
+relationships affects mainly its builds, which will be querying build
+dependencies also in dependent archives, and its client system which
+will have to enable apt to look for package dependencies in the
+dependent archive as well.
+
+Currently only one level of dependency is supported, i.e., PPA X
+depends on PPA Y, if PPA W wants to use packages of PPA X it will have
+to depend also on PPA Y, otherwise it won't be able to install all the
+required dependencies when building.
+
+    >>> def print_dependencies(archive):
+    ...     dependencies = archive.dependencies
+    ...     if not dependencies:
+    ...         print "No dependencies recorded."
+    ...         return
+    ...     for dep in dependencies:
+    ...         print dep.dependency.title
+
+Celso's PPA has no dependencies stored in the sampledata.
+
+    >>> print_dependencies(cprov.archive)
+    No dependencies recorded.
+
+We will make Celso's PPA to depend on Mark's PPA.
+
+    >>> sabdfl = getUtility(IPersonSet).getByName('sabdfl')
+    >>> archive_dependency = cprov.archive.addArchiveDependency(
+    ...     sabdfl.archive)
+
+The `IArchiveDependency` object simply maps the desired relationship.
+
+    >>> print archive_dependency.archive.title
+    PPA for Celso Providelo
+
+    >>> print archive_dependency.dependency.title
+    PPA for Mark Shuttleworth
+
+The archive dependency is immediately recorded on Celso's PPA.
+
+    >>> print_dependencies(cprov.archive)
+    PPA for Mark Shuttleworth
+
+'getArchiveDependency' returns the corresponding `IArchiveDependency`
+for a give 'dependency' if it exists, otherwise it returns None.
+
+    >>> print cprov.archive.getArchiveDependency(
+    ...     sabdfl.archive).dependency.title
+    PPA for Mark Shuttleworth
+
+    >>> no_priv = getUtility(IPersonSet).getByName('no-priv')
+    >>> print cprov.archive.getArchiveDependency(no_priv.archive)
+    None
+
+As mentioned above, the archive dependency engine doesn't follow
+cross dependencies. When a PPA depends only on Celso's PPA it might
+result in issues while building package if a required package
+dependency is published in Mark's PPA.
+
+    >>> print_dependencies(no_priv.archive)
+    No dependencies recorded.
+
+    >>> archive_dependency = no_priv.archive.addArchiveDependency(
+    ...     cprov.archive)
+
+    >>> print_dependencies(no_priv.archive)
+    PPA for Celso Providelo
+
+`IArchive.addArchiveDependency` raises an error if the given
+'dependency' violates the system overall constraints.
+
+'dependency' is already records (duplicated).
+
+    >>> no_priv.archive.addArchiveDependency(cprov.archive)
+    Traceback (most recent call last):
+    ...
+    AssertionError: This dependency is already recorded.
+
+'dependency' and target archive are the same.
+
+    >>> no_priv.archive.addArchiveDependency(no_priv.archive)
+    Traceback (most recent call last):
+    ...
+    AssertionError: An archive should not depend on itself.
+
+A 'dependency' must be a PPA, other archives (PRIMARY, PARTNER or
+EMBARGOED) are explicitly forbidden because we want to analyse the
+impacts carefully when it's time.
+
+    >>> ubuntu = no_priv.archive.distribution
+    >>> no_priv.archive.addArchiveDependency(ubuntu.main_archive)
+    Traceback (most recent call last):
+    ...
+    AssertionError: Archive dependencies only applies to PPAs.
+
+'removeArchiveDependency' allow us to purge a recorded 'dependency'.
+
+    >>> print_dependencies(no_priv.archive)
+    PPA for Celso Providelo
+
+    >>> no_priv.archive.removeArchiveDependency(cprov.archive)
+
+    >>> print_dependencies(no_priv.archive)
+    No dependencies recorded.
+
+
 == IArchiveSet Utility ==
 
 This utility provides useful methods to deal with IArchive in other
@@ -649,7 +757,7 @@ A new Archive can be created by passing a name and an owner
     True
 
 We can take the opportunity to check if the default 'authorized_size'
-corresponds to what we state in our policy, 1024 Mbytes:
+corresponds to what we state in our policy, 1024 MiB:
 
     >>> name16.archive.authorized_size
     1024
