@@ -30,7 +30,6 @@ via email.
     ...     """Create a new person who is also a beta tester."""
     ...     person = new_person(name)
     ...     beta_testers.addMember(person, reviewer=salgado)
-    ...     assert person.hasParticipationEntryFor(beta_testers)
     ...     return person
 
 

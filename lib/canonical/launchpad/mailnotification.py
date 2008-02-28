@@ -1976,7 +1976,7 @@ def notify_mailinglist_activated(mailinglist, event):
         #
         # Only send an invitation to Beta testers, because they are
         # the only people that can sign up for the list!
-        if not person.hasParticipationEntryFor(beta_testers):
+        if not person.inTeam(beta_testers):
             continue
 
         to_address = [str(person.preferredemail.email)]
