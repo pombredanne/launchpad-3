@@ -21,7 +21,7 @@ class TestPackageLocation(unittest.TestCase):
 
     def testSetupLocationForPRIMARY(self):
         """`PackageLocation` for PRIMARY archives."""
-        location= self.getPackageLocation()
+        location = self.getPackageLocation()
         self.assertEqual(location.distribution.name, 'ubuntu')
         self.assertEqual(location.distroseries.name, 'hoary')
         self.assertEqual(location.pocket.name, 'RELEASE')
@@ -30,8 +30,8 @@ class TestPackageLocation(unittest.TestCase):
 
     def testSetupLocationForPPA(self):
         """`PackageLocation` for PPA archives."""
-        location= self.getPackageLocation(purpose=ArchivePurpose.PPA,
-                                          person_name='cprov')
+        location = self.getPackageLocation(purpose=ArchivePurpose.PPA,
+                                           person_name='cprov')
         self.assertEqual(location.distribution.name, 'ubuntu')
         self.assertEqual(location.distroseries.name, 'hoary')
         self.assertEqual(location.pocket.name, 'RELEASE')
@@ -40,7 +40,7 @@ class TestPackageLocation(unittest.TestCase):
 
     def testSetupLocationForPARTNER(self):
         """`PackageLocation` for PARTNER archives."""
-        location= self.getPackageLocation(purpose=ArchivePurpose.PARTNER)
+        location = self.getPackageLocation(purpose=ArchivePurpose.PARTNER)
         self.assertEqual(location.distribution.name, 'ubuntu')
         self.assertEqual(location.distroseries.name, 'hoary')
         self.assertEqual(location.pocket.name, 'RELEASE')

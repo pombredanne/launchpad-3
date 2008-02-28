@@ -106,8 +106,8 @@ class TestPackageRemover(unittest.TestCase):
         Allow tests to use a set of default options and pass an
         inactive logger to PackageRemover.
         """
-        test_args=['-s', suite,
-                   '-d', distribution_name ]
+        test_args = ['-s', suite,
+                     '-d', distribution_name]
 
         # Always operate with 'confirm_all' activated. Input requests are
         # very unlikely to be useful inside tests.

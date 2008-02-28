@@ -102,10 +102,10 @@ class TestCopyPackage(unittest.TestCase):
         Allow tests to use a set of default options and pass an
         inactive logger to PackageCopier.
         """
-        test_args=['-s', from_suite,
-                   '-d', from_distribution,
-                   '--to-suite', to_suite,
-                   '--to-distribution', to_distribution]
+        test_args = ['-s', from_suite,
+                     '-d', from_distribution,
+                     '--to-suite', to_suite,
+                     '--to-distribution', to_distribution]
 
         if confirm_all:
             test_args.append('-y')
@@ -376,27 +376,6 @@ class TestCopyPackage(unittest.TestCase):
         self.assertRaisesWithContent(
             PackageLocationError,
             "Could not find a PPA for slatibartfast",
-            copy_helper.mainTask)
-
-    def testCrossPartnerCopiesFails(self):
-        """Check that it fails when cross-PARTNER copies are requested.
-
-        SoyuzScriptError is raised for cross-PARTNER copies, packages
-        published in PARTNER archive can only be copied within PARTNER
-        archive.
-        """
-        copy_helper = self.getCopier(from_partner=True)
-
-        self.assertRaisesWithContent(
-            SoyuzScriptError,
-            "Cross-PARTNER copies are not allowed.",
-            copy_helper.mainTask)
-
-        copy_helper = self.getCopier(to_partner=True)
-
-        self.assertRaisesWithContent(
-            SoyuzScriptError,
-            "Cross-PARTNER copies are not allowed.",
             copy_helper.mainTask)
 
     def testCrossPartnerCopiesFails(self):
