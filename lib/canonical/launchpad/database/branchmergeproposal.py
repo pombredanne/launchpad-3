@@ -126,18 +126,12 @@ class BranchMergeProposal(SQLBase):
 
     @property
     def conversation(self):
-        root_selection = CodeReviewMessage.select(
+        return CodeReviewMessage.selectOne(
             """id in (SELECT CodeReviewMessage.id
                       FROM CodeReviewMessage, Message
                       WHERE (branch_merge_proposal = %d AND
                              CodeReviewMessage.message = Message.id)
                       ORDER BY Message.datecreated LIMIT 1)""" % self.id)
-        root_list = list(root_selection)
-        if root_selection.count() == 0:
-            return None
-        else:
-            assert root_selection.count() < 2
-            return list(root_list)[0]
 
     date_queued = UtcDateTimeCol(notNull=False, default=None)
 
