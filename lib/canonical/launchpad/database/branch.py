@@ -380,11 +380,11 @@ class Branch(SQLBase):
                 'This is a subscription to this branch.')
             deletion_operations.append(subscription.destroySelf)
         for bugbranch in self.bug_branches:
-            deletions[bugbranch] = _('This branch is associated with a bug.')
+            deletions[bugbranch] = _('This bug is linked to this branch.')
             deletion_operations.append(bugbranch.destroySelf)
         for spec_link in self.spec_links:
             deletions[spec_link] = _(
-                'This associates this branch with a specification.')
+                'This blueprint is linked to this branch.')
             deletion_operations.append(spec_link.destroySelf)
         for series in self.associatedProductSeries():
             alterations[series] = _('This series is linked to this branch.')
