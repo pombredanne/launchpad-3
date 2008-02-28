@@ -58,6 +58,7 @@ from canonical.launchpad.webapp import (
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp.dynmenu import DynMenu
+from canonical.launchpad.webapp.menu import structured
 from canonical.lazr.enum import EnumeratedType, Item, use_template
 from canonical.widgets import SinglePopupWidget
 from canonical.widgets.itemswidgets import LaunchpadRadioWidget
@@ -299,9 +300,12 @@ def get_series_branch_error(product, branch):
     Returns an HTML error message on error, and None otherwise.
     """
     if branch.product != product:
-        return ('<a href="%s">%s</a> is not a branch of <a href="%s">%s</a>.'
-                % (canonical_url(branch), quote(branch.unique_name),
-                   canonical_url(product), quote(product.displayname)))
+        return structured(
+            '<a href="%s">%s</a> is not a branch of <a href="%s">%s</a>.',
+            canonical_url(branch),
+            branch.unique_name,
+            canonical_url(product),
+            product.displayname)
     return None
 
 
@@ -395,7 +399,7 @@ class ProductSeriesView(LaunchpadView, TranslationsMixin):
             spn = spns[ubuntupkg]
         except NotFoundError:
             self.request.response.addErrorNotification(
-                'Invalid source package name %s' % cgi.escape(ubuntupkg))
+                'Invalid source package name %s' % ubuntupkg)
             self.has_errors = True
             return
         # set the packaging record for this productseries in the current
@@ -451,10 +455,11 @@ class ProductSeriesView(LaunchpadView, TranslationsMixin):
                 productseries=self.context)
 
             self.request.response.addInfoNotification(
+                structured(
                 'Thank you for your upload. The file content will be'
                 ' reviewed soon by an admin and then imported into Launchpad.'
                 ' You can track its status from the <a href="%s/+imports">'
-                'Translation Import Queue</a>' % canonical_url(self.context))
+                'Translation Import Queue</a>' % canonical_url(self.context)))
 
         elif is_tar_filename(filename):
             # Add the whole tarball to the import queue.
@@ -464,12 +469,13 @@ class ProductSeriesView(LaunchpadView, TranslationsMixin):
 
             if num > 0:
                 self.request.response.addInfoNotification(
+                    structured(
                     'Thank you for your upload. %d files from the tarball'
                     ' will be reviewed soon by an admin and then imported'
                     ' into Launchpad. You can track its status from the'
                     ' <a href="%s/+imports">Translation Import Queue</a>' % (
                         num,
-                        canonical_url(self.context)))
+                        canonical_url(self.context))))
             else:
                 self.request.response.addWarningNotification(
                     "Nothing has happened. The tarball you uploaded does not"
@@ -751,11 +757,12 @@ class ProductSeriesSourceView(LaunchpadEditFormView):
                     cvsroot, cvsmodule, cvsbranch)
                 if self.context != series and series is not None:
                     self.addError(
+                        structured(
                         "Those CVS details are already specified for"
-                        " <a href=\"%s\">%s %s</a>."
-                        % (quote(canonical_url(series)),
-                           quote(series.product.displayname),
-                           quote(series.displayname)))
+                        " <a href=\"%s\">%s %s</a>.",
+                        canonical_url(series),
+                        series.product.displayname,
+                        series.displayname))
 
         elif rcstype == UIRevisionControlSystems.SVN:
             data['rcstype'] = RevisionControlSystems.SVN
@@ -768,11 +775,12 @@ class ProductSeriesSourceView(LaunchpadEditFormView):
                     svnrepository)
                 if self.context != series and series is not None:
                     self.setFieldError('svnrepository',
+                        structured(
                         "This Subversion branch URL is already specified for"
-                        " <a href=\"%s\">%s %s</a>."
-                        % (quote(canonical_url(series)),
-                           quote(series.product.displayname),
-                           quote(series.displayname)))
+                        " <a href=\"%s\">%s %s</a>.",
+                        canonical_url(series),
+                        series.product.displayname,
+                        series.displayname))
 
         if self.resettoautotest_action.submitted():
             if rcstype is None or rcstype == UIRevisionControlSystems.BZR:

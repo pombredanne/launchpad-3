@@ -4,14 +4,26 @@ __metaclass__ = type
 
 import unittest
 
+from zope.component import getUtility
+from sqlobject.include.validators import InvalidField
+
 from canonical.database.sqlbase import flush_database_updates
 from canonical.launchpad.ftests import login
 from canonical.launchpad.database import Person
 from canonical.testing import LaunchpadFunctionalLayer
+from canonical.launchpad.interfaces import IPersonSet
+from canonical.launchpad.database import (
+    AnswerContact, Bug, BugTask, BugSubscription, Specification)
 
 
 class TestPerson(unittest.TestCase):
     layer = LaunchpadFunctionalLayer
+
+    def setUp(self):
+        login('foo.bar@canonical.com')
+        self.person_set = getUtility(IPersonSet)
+        self.myteam = self.person_set.getByName('myteam')
+        self.guadamen = self.person_set.getByName('guadamen')
 
     def test_deactivateAccount_copes_with_names_already_in_use(self):
         """When a user deactivates his account, its name is changed.
@@ -62,6 +74,41 @@ class TestPerson(unittest.TestCase):
         self.failUnlessEqual(
             sample_person._getDirectMemberIParticipateIn(ubuntu_team),
             warty_team)
+
+    def test_AnswerContact_person_validator(self):
+        answer_contact = AnswerContact.select(limit=1)[0]
+        self.assertRaises(
+            InvalidField,
+            setattr, answer_contact, 'person', self.myteam)
+
+    def test_Bug_person_validator(self):
+        bug = Bug.select(limit=1)[0]
+        for attr_name in ['owner', 'who_made_private']:
+            self.assertRaises(
+                InvalidField,
+                setattr, bug, attr_name, self.myteam)
+
+    def test_BugTask_person_validator(self):
+        bug_task = BugTask.select(limit=1)[0]
+        for attr_name in ['assignee', 'owner']:
+            self.assertRaises(
+                InvalidField,
+                setattr, bug_task, attr_name, self.myteam)
+
+    def test_BugSubscription_person_validator(self):
+        bug_subscription = BugSubscription.select(limit=1)[0]
+        self.assertRaises(
+            InvalidField,
+            setattr, bug_subscription, 'person', self.myteam)
+
+    def test_Specification_person_validator(self):
+        specification = Specification.select(limit=1)[0]
+        for attr_name in ['assignee', 'drafter', 'approver', 'owner',
+                          'goal_proposer', 'goal_decider', 'completer',
+                          'starter']:
+            self.assertRaises(
+                InvalidField,
+                setattr, specification, attr_name, self.myteam)
 
 
 def test_suite():

@@ -26,7 +26,6 @@ __all__ = [
     'ProductChangeTranslatorsView',
     'ProductReviewView',
     'ProductAddSeriesView',
-    'ProductBugContactEditView',
     'ProductReassignmentView',
     'ProductRdfView',
     'ProductSetFacets',
@@ -39,7 +38,6 @@ __all__ = [
     'PillarSearchItem',
     ]
 
-import cgi
 from operator import attrgetter
 
 import zope.security.interfaces
@@ -55,10 +53,10 @@ from canonical.config import config
 from canonical.launchpad import _
 from canonical.launchpad.interfaces import (
     BranchListingSort, IBranchSet, IBugTracker, ICountry, IDistribution,
-    IHasIcon, ILaunchBag, ILaunchpadCelebrities, IPillarNameSet, IProduct,
-    IProductSeries, IProductSet, IProject, ITranslationImportQueue,
-    License, NotFoundError, RESOLVED_BUGTASK_STATUSES,
-    UnsafeFormGetSubmissionError)
+    IHasIcon, ILaunchBag, ILaunchpadCelebrities, ILibraryFileAliasSet,
+    IPillarNameSet, IProduct, IProductSeries, IProductSet, IProject,
+    ITranslationImportQueue, License, NotFoundError,
+    RESOLVED_BUGTASK_STATUSES, UnsafeFormGetSubmissionError)
 from canonical.launchpad import helpers
 from canonical.launchpad.browser.announcement import HasAnnouncementsView
 from canonical.launchpad.browser.branding import BrandingChangeView
@@ -81,13 +79,13 @@ from canonical.launchpad.browser.seriesrelease import (
 from canonical.launchpad.browser.sprint import SprintsMixinDynMenu
 from canonical.launchpad.mail import format_address, simple_sendmail
 from canonical.launchpad.webapp import (
-    action, ApplicationMenu, canonical_url, ContextMenu, custom_widget,
-    enabled_with_permission, LaunchpadView, LaunchpadEditFormView,
-    LaunchpadFormView, Link, Navigation, sorted_version_numbers,
-    StandardLaunchpadFacets, stepto, stepthrough, structured)
+    ApplicationMenu, ContextMenu, LaunchpadEditFormView, LaunchpadFormView,
+    LaunchpadView, Link, Navigation, StandardLaunchpadFacets, action,
+    canonical_url, custom_widget, enabled_with_permission,
+    sorted_version_numbers, stepthrough, stepto, structured, urlappend)
 from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp.dynmenu import DynMenu, neverempty
-from canonical.librarian.interfaces import ILibrarianClient
+from canonical.launchpad.webapp.uri import URI
 from canonical.widgets.product import LicenseWidget, ProductBugTrackerWidget
 from canonical.widgets.textwidgets import StrippedTextWidget
 
@@ -290,7 +288,7 @@ class ProductOverviewMenu(ApplicationMenu):
         'edit', 'branding', 'driver', 'reassign', 'top_contributors',
         'mentorship', 'distributions', 'packages', 'files', 'branch_add',
         'series_add', 'announce', 'announcements', 'administer',
-        'branch_visibility', 'rdf']
+        'branch_visibility', 'rdf', 'subscribe']
 
     @enabled_with_permission('launchpad.Edit')
     def edit(self):
@@ -368,6 +366,10 @@ class ProductOverviewMenu(ApplicationMenu):
     def branch_visibility(self):
         text = 'Define branch visibility'
         return Link('+branchvisibility', text, icon='edit')
+
+    def subscribe(self):
+        text = 'Subscribe to bug mail'
+        return Link('+subscribe', text, icon='edit')
 
 
 class ProductBugsMenu(ApplicationMenu):
@@ -716,15 +718,14 @@ class ProductDownloadFileMixin:
         """Create a download URL for the `LibraryFileAlias`."""
         if release is None:
             release = self.context
-        return "%s/+download/%s" % (canonical_url(release),
-                                    file_.filename)
+        url = urlappend(canonical_url(release), '+download')
+        url = urlappend(url, file_.filename)
+        return str(URI(url).replace(scheme='http'))
 
     def md5URL(self, file_, release=None):
         """Create a URL for the MD5 digest."""
-        if release is None:
-            release = self.context
-        return "%s/+download/%s/+md5" % (canonical_url(release),
-                                         file_.filename)
+        baseurl = self.fileURL(file_, release)
+        return urlappend(baseurl, '+md5')
 
     def processDeleteFiles(self):
         """If the 'delete_files' button was pressed, process the deletions."""
@@ -882,9 +883,10 @@ class ProductReviewView(ProductEditView):
     def validate(self, data):
         if data.get('private_bugs') and self.context.bugcontact is None:
             self.setFieldError('private_bugs',
-                'Set a <a href="%s/+bugcontact">bug contact</a> '
-                'for this project first.' %
-                canonical_url(self.context, rootsite="bugs"))
+                structured(
+                    'Set a <a href="%s/+bugcontact">bug contact</a> '
+                    'for this project first.',
+                    canonical_url(self.context, rootsite="bugs")))
 
 
 class ProductAddSeriesView(LaunchpadFormView):
@@ -967,15 +969,10 @@ class Icon:
     """An icon for use with image:icon."""
 
     def __init__(self, library_id):
-        self.library_id = library_id
+        self.library_alias = getUtility(ILibraryFileAliasSet)[library_id]
 
     def getURL(self):
-        http_url = getUtility(
-            ILibrarianClient).getURLForAlias(self.library_id)
-        if config.launchpad.vhosts.use_https:
-            return http_url.replace('http', 'https', 1)
-        else:
-            return http_url
+        return self.library_alias.getURL()
 
 
 class PillarSearchItem:
@@ -1154,88 +1151,6 @@ class ProductAddView(ProductAddViewBase):
             license_info=data['license_info'])
         self.notifyFeedbackMailingList()
         notify(ObjectCreatedEvent(self.product))
-
-
-class ProductBugContactEditView(LaunchpadEditFormView):
-    """Browser view class for editing the product bug contact."""
-
-    schema = IProduct
-    field_names = ['bugcontact']
-
-    @action('Change', name='change')
-    def change_action(self, action, data):
-        """Redirect to the product page with a success message."""
-        self.updateContextFromData(data)
-
-        product = self.context
-
-        bugcontact = product.bugcontact
-        if bugcontact:
-            contact_display_value = None
-            if bugcontact.preferredemail:
-                # The bug contact was set to a new person or team.
-                contact_display_value = bugcontact.preferredemail.email
-            else:
-                # The bug contact doesn't have a preferred email address,
-                # so it must be a team.
-                assert bugcontact.isTeam(), (
-                    "Expected bug contact with no email address "
-                    "to be a team.")
-                contact_display_value = bugcontact.browsername
-
-            self.request.response.addNotification(
-                "Successfully changed the bug contact to %s" %
-                contact_display_value)
-        else:
-            # The bug contact was set to noone.
-            self.request.response.addNotification(
-                "Successfully cleared the bug contact. There is no longer a "
-                "contact address that will receive all bugmail for this "
-                "project. You can set the bug contact again at any time.")
-
-        self.request.response.redirect(canonical_url(product))
-
-    def validate(self, data):
-        """Validates the new bug contact for the product.
-
-        The following values are valid as bug contacts:
-            * None, indicating that the bug contact field for the product
-              should be cleard in change_action().
-            * A valid Person (email address or launchpad id).
-            * A valid Team of which the current user is an administrator.
-
-        If the the bug contact entered does not meet any of the above criteria
-        then the submission will fail and the user will be notified of the
-        error.
-        """
-        # data will not have a bugcontact entry in cases where the bugcontact
-        # the user entered is valid according to the ValidPersonOrTeam
-        # vocabulary (i.e. is not a Person, Team or None).
-        if not data.has_key('bugcontact'):
-            self.setFieldError(
-                'bugcontact',
-                'You must choose a valid person or team to be the bug contact'
-                ' for %s.' %
-                cgi.escape(self.context.displayname))
-
-            return
-
-        contact = data['bugcontact']
-
-        if (contact is not None and contact.isTeam() and
-            contact not in self.user.getAdministratedTeams()):
-            error = (
-                "You cannot set %(team)s as the bug contact for "
-                "%(project)s because you are not an administrator of that "
-                "team.<br />If you believe that %(team)s should be the bug"
-                " contact for %(project)s, please notify one of the "
-                "<a href=\"%(url)s\">%(team)s administrators</a>."
-
-                % {'team': cgi.escape(contact.displayname),
-                   'project': cgi.escape(self.context.displayname),
-                   'url': canonical_url(contact, rootsite='mainsite')
-                          + '/+members'})
-            self.setFieldError('bugcontact', error)
 
 
 class ProductReassignmentView(ObjectReassignmentView):

@@ -1,6 +1,4 @@
 # Copyright 2004-2007 Canonical Ltd.  All rights reserved.
-# XXX: Aaron Bentley 2008-01-21: This is due to the unreachable loom test.
-# Will be removed when looms are enabled.
 # pylint: disable-msg=W0101
 
 """Acceptance tests for Supermirror SFTP server's bzr support."""
@@ -17,31 +15,31 @@ import xmlrpclib
 import bzrlib.branch
 from bzrlib.builtins import cmd_branch, cmd_push
 from bzrlib.errors import (
-    BzrCommandError, NotBranchError, TransportNotPossible)
-# XXX: Aaron Bentley 2008-01-21: loom plugin is not yet supported
-# from bzrlib.plugins.loom import branch as loom_branch
+    BzrCommandError, LockFailed, NotBranchError, TransportNotPossible)
 from bzrlib.repofmt.weaverepo import RepositoryFormat7
 from bzrlib.repository import format_registry
-
-from bzrlib.errors import LockFailed
 
 from bzrlib.urlutils import local_path_from_url
 from bzrlib.tests import default_transport, TestCaseWithTransport
 from bzrlib.workingtree import WorkingTree
+
+from paramiko import SSHClient, SSHException, MissingHostKeyPolicy
 
 from canonical.codehosting.tests.helpers import (
     adapt_suite, deferToThread, ServerTestCase)
 from canonical.codehosting.tests.servers import (
     make_bzr_ssh_server, make_sftp_server)
 from canonical.codehosting import branch_id_to_path
+from canonical.config import config
 from canonical.database.constants import UTC_NOW
 from canonical.launchpad import database
 from canonical.launchpad.ftests.harness import LaunchpadZopelessTestSetup
 from canonical.launchpad.interfaces import BranchLifecycleStatus, BranchType
+from canonical.launchpad.webapp.errorlog import globalErrorUtility
 from canonical.testing import TwistedLayer
 
 
-class SSHTestCase(ServerTestCase, TestCaseWithTransport):
+class SSHTestCase(ServerTestCase):
 
     layer = TwistedLayer
     server = None
@@ -265,6 +263,7 @@ class AcceptanceTests(SSHTestCase):
         else:
             url = None
         return database.Branch(
+            registrant=owner,
             name=branch_name, owner=owner, author=owner, product=product,
             url=url, title=None, lifecycle_status=BranchLifecycleStatus.NEW,
             summary=None, home_page=None, whiteboard=None, private=private,
@@ -511,23 +510,8 @@ class AcceptanceTests(SSHTestCase):
 
     @deferToThread
     def test_can_push_loom_branch(self):
-        # XXX: Aaron Bentley 2008-01-21: loom plugin is not yet supported
-        return
-        from bzrlib.plugins.loom import loom_branch
         # We can push and pull a loom branch.
-        tree = self.make_branch_and_tree('loom')
-        tree.lock_write()
-        try:
-            tree.branch.nick = 'bottom-thread'
-            loom_branch.loomify(tree.branch)
-        finally:
-            tree.unlock()
-        loomtree = tree.bzrdir.open_workingtree()
-        loomtree.lock_write()
-        loomtree.branch.new_thread('bottom-thread')
-        loomtree.commit('this is a commit', rev_id='commit-1')
-        loomtree.unlock()
-        loomtree.branch.record_loom('sample loom')
+        tree = self.makeLoomBranchAndTree('loom')
         remote_url = self.getTransportURL('~testuser/+junk/loom')
         self.push('loom', remote_url)
         self.assertBranchesMatch('loom', remote_url)
@@ -612,6 +596,72 @@ class SmartserverTests(SSHTestCase):
         self.assertIn("Project 'no-such-product' does not exist.", str(error))
 
 
+class OOPSReportingSmartserverTests(SSHTestCase):
+    """Acceptance tests for the ssh server that involve OOPS reporting."""
+
+    def setUp(self):
+        SSHTestCase.setUp(self)
+        self._oops_prefix = config.launchpad.errorreports.oops_prefix
+        self._errordir = config.launchpad.errorreports.errordir
+        self._copy_to_zlog = config.launchpad.errorreports.copy_to_zlog
+        errorreports = config.codehosting
+        config.launchpad.errorreports.oops_prefix = errorreports.oops_prefix
+        config.launchpad.errorreports.errordir = errorreports.errordir
+        config.launchpad.errorreports.copy_to_zlog = errorreports.copy_to_zlog
+
+    def tearDown(self):
+        SSHTestCase.tearDown(self)
+        config.launchpad.errorreports.oops_prefix = self._oops_prefix
+        config.launchpad.errorreports.errordir = self._errordir
+        config.launchpad.errorreports.copy_to_zlog = self._copy_to_zlog
+
+    def test_oops_reported_on_unhandled_exception(self):
+        # We have to examine the oops reports in the main thread because
+        # canonical.config.config is a thread-locals object, but we have to do
+        # ssh client things in another thread, as the server runs in the
+        # twisted reactor in the main thread.
+
+        # Note the last oops reported before we start.
+        existing_report = globalErrorUtility.getLastOopsReport()
+
+        real_stderr = sys.stderr
+        sys.stderr = StringIO()
+
+        @deferToThread
+        def cause_exception_in_ssh_server():
+            """Trigger an unhandled exception in the code hosting ssh server.
+
+            What we do is attempt to execute some command other than 'bzr
+            serve', which works but is thoroughly arbitrary.
+            """
+            ssh_client = SSHClient()
+            # Connect to unrecognized hosts freely:
+            ssh_client.set_missing_host_key_policy(MissingHostKeyPolicy())
+            ssh_client.connect(
+                'localhost', 22222, 'sabdfl',
+                key_filename=os.path.join(os.environ['HOME'], '.ssh/id_dsa'))
+            try:
+                ssh_client.exec_command('sleep')
+            except SSHException:
+                pass
+            ssh_client.close()
+
+        defer_cause_exception = cause_exception_in_ssh_server()
+
+        def check_new_oops_has_been_reported(ignored):
+            """Check that there has been a new OOPS report logged."""
+            new_report = globalErrorUtility.getLastOopsReport()
+            self.assertNotEqual(new_report, None)
+            if existing_report is not None:
+                self.assertNotEqual(new_report.id, existing_report.id)
+            self.assertIn('Not allowed to execute', new_report.value)
+
+        def restore_stderr(ignored):
+            sys.stderr = real_stderr
+
+        return defer_cause_exception.addCallback(
+            check_new_oops_has_been_reported).addBoth(restore_stderr)
+
 def make_server_tests(base_suite, servers):
     from canonical.codehosting.tests.helpers import (
         CodeHostingTestProviderAdapter)
@@ -640,5 +690,8 @@ def test_suite():
             base_suite, [make_sftp_server, make_bzr_ssh_server]))
     suite.addTest(make_server_tests(
             unittest.makeSuite(SmartserverTests), [make_bzr_ssh_server]))
+    suite.addTest(make_server_tests(
+            unittest.makeSuite(OOPSReportingSmartserverTests),
+            [make_bzr_ssh_server]))
     suite.addTest(make_smoke_tests(unittest.makeSuite(SmokeTest)))
     return suite

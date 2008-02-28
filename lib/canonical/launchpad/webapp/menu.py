@@ -3,8 +3,12 @@
 
 __metaclass__ = type
 __all__ = [
+    'enabled_with_permission',
+    'escape',
     'nearest_context_with_adapter',
     'nearest_adapter',
+    'structured',
+    'translate_if_msgid',
     'FacetMenu',
     'ApplicationMenu',
     'ContextMenu',
@@ -12,22 +16,21 @@ __all__ = [
     'LinkData',
     'FacetLink',
     'MenuLink',
-    'structured',
-    'enabled_with_permission',
     ]
 
 import cgi
+
+from zope.i18n import translate, Message, MessageID
 from zope.interface import implements
-from canonical.lp import decorates
+
+from canonical.lazr import decorates
 
 from canonical.launchpad.webapp.interfaces import (
     IMenuBase, IFacetMenu, IApplicationMenu, IContextMenu,
-    IFacetLink, ILink, ILinkData, IStructuredString
-    )
-
+    IFacetLink, ILink, ILinkData, IStructuredString)
 from canonical.launchpad.webapp.publisher import (
-    canonical_url, canonical_url_iterator, UserAttributeCache
-    )
+    canonical_url, canonical_url_iterator,
+    get_current_browser_request, UserAttributeCache)
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.uri import InvalidURIError, URI
 from canonical.launchpad.webapp.vhosts import allvhosts
@@ -38,6 +41,7 @@ class structured:
     implements(IStructuredString)
 
     def __init__(self, text, *replacements, **kwreplacements):
+        text = translate_if_i18n(text)
         self.text = text
         if replacements and kwreplacements:
             raise TypeError(
@@ -45,13 +49,14 @@ class structured:
                 "arguments to structured(), not both.")
         if replacements:
             self.escapedtext = text % tuple(
-                cgi.escape(replacement) for replacement in replacements)
+                cgi.escape(unicode(replacement))
+                for replacement in replacements)
         elif kwreplacements:
             self.escapedtext = text % dict(
-                (key, cgi.escape(value))
+                (key, cgi.escape(unicode(value)))
                 for key, value in kwreplacements.iteritems())
         else:
-            self.escapedtext = self.text
+            self.escapedtext = unicode(text)
 
     def __repr__(self):
         return "<structured-string '%s'>" % self.text
@@ -80,7 +85,8 @@ def nearest_adapter(obj, interface):
 
     This might be an adapter for the object given as an argument.
 
-    Return None if there is no object that has such an adapter in the url chain.
+    :return None: if there is no object that has such an adapter in the url
+        chain.
 
     This will often be used with an interface of IFacetMenu, when looking up
     the facet menu for a particular context.
@@ -289,7 +295,8 @@ class FacetMenu(MenuBase):
         return link
 
     def _get_link(self, name):
-        return IFacetLink(self._filterLink(name, MenuBase._get_link(self, name)))
+        return IFacetLink(
+            self._filterLink(name, MenuBase._get_link(self, name)))
 
     def iterlinks(self, requesturi=None, selectedfacetname=None):
         """See IFacetMenu."""
@@ -322,7 +329,8 @@ class enabled_with_permission:
     """Function decorator that disables the output link unless the current
     user has the given permission on the context.
 
-    This class is instantiated by programmers who want to apply this decorator.
+    This class is instantiated by programmers who want to apply this
+    decorator.
 
     Use it like:
 
@@ -355,3 +363,50 @@ class enabled_with_permission:
             return link
         return enable_if_allowed
 
+
+##
+## Helpers for working with normal, structured, and internationalized
+## text.
+##
+
+# XXX mars 2008-2-12:
+# This entire block should be extracted into its own module, along
+# with the structured() class.
+
+
+def escape(message):
+    """Performs translation and sanitizes any HTML present in the message.
+
+    A plain string message will be sanitized ("&", "<" and ">" are
+    converted to HTML-safe sequences).  Passing a message that
+    provides the `IStructuredString` interface will return a unicode
+    string that has been properly escaped.  Passing an instance of a
+    Zope internationalized message will cause the message to be
+    translated, then santizied.
+
+    :param message: This may be a string, `zope.i18n.Message`,
+    	`zope.i18n.MessageID`, or an instance of `IStructuredString`.
+    """
+    if IStructuredString.providedBy(message):
+        return message.escapedtext
+    else:
+        # It is possible that the message is wrapped in an
+        # internationalized object, so we need to translate it
+        # first. See bug #54987.
+        return cgi.escape(
+            unicode(
+                translate_if_i18n(message)))
+
+
+def translate_if_i18n(obj_or_msgid):
+    """Translate an internationalized object, returning the result.
+
+    Returns any other type of object untouched.
+    """
+    if isinstance(obj_or_msgid, (Message, MessageID)):
+        return translate(
+            obj_or_msgid,
+            context=get_current_browser_request())
+    else:
+        # Just text (or something unknown).
+        return obj_or_msgid

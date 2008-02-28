@@ -5,18 +5,88 @@
 
 __metaclass__ = type
 
-__all__ = ['ITeamMembership', 'ITeamMembershipSet', 'ITeamMember',
-           'ITeamParticipation', 'DAYS_BEFORE_EXPIRATION_WARNING_IS_SENT']
+__all__ = [
+    'DAYS_BEFORE_EXPIRATION_WARNING_IS_SENT',
+    'ITeamMember',
+    'ITeamMembership',
+    'ITeamMembershipSet',
+    'ITeamParticipation',
+    'TeamMembershipStatus',
+    ]
 
 from zope.schema import Choice, Int, Text
 from zope.interface import Interface, Attribute
 
+from canonical.lazr import DBEnumeratedType, DBItem
+
 from canonical.launchpad import _
+from canonical.launchpad.fields import PublicPersonChoice
 
 # One week before a membership expires we send a notification to the member,
 # either inviting him to renew his own membership or asking him to get a team
 # admin to do so, depending on the team's renewal policy.
 DAYS_BEFORE_EXPIRATION_WARNING_IS_SENT = 7
+
+
+class TeamMembershipStatus(DBEnumeratedType):
+    """TeamMembership Status
+
+    According to the policies specified by each team, the membership status of
+    a given member can be one of multiple different statuses. More information
+    can be found in the TeamMembership spec.
+    """
+
+    PROPOSED = DBItem(1, """
+        Proposed
+
+        You are a proposed member of this team. To become an active member
+        your subscription has to be approved by one of the team's
+        administrators.
+        """)
+
+    APPROVED = DBItem(2, """
+        Approved
+
+        You are an active member of this team.
+        """)
+
+    ADMIN = DBItem(3, """
+        Administrator
+
+        You are an administrator of this team.
+        """)
+
+    DEACTIVATED = DBItem(4, """
+        Deactivated
+
+        Your subscription to this team has been deactivated.
+        """)
+
+    EXPIRED = DBItem(5, """
+        Expired
+
+        Your subscription to this team is expired.
+        """)
+
+    DECLINED = DBItem(6, """
+        Declined
+
+        Your proposed subscription to this team has been declined.
+        """)
+
+    INVITED = DBItem(7, """
+        Invited
+
+        You have been invited as a member of this team. In order to become an
+        actual member, you have to accept the invitation.
+        """)
+
+    INVITATION_DECLINED = DBItem(8, """
+        Invitation declined
+
+        You have been invited as a member of this team but the invitation has
+        been declined.
+        """)
 
 
 class ITeamMembership(Interface):
@@ -33,11 +103,13 @@ class ITeamMembership(Interface):
             "If this is an active membership, it contains the date in which "
             "the membership was approved. If this is a proposed membership, "
             "it contains the date the user asked to join."))
-    dateexpires = Text(title=_("Date Expires"), required=False, readonly=False)
+    dateexpires = Text(title=_("Date Expires"),
+                       required=False, readonly=False)
     reviewercomment = Text(title=_("Reviewer Comment"), required=False,
                            readonly=False)
-    status= Int(title=_("If Membership was approved or not"), required=True,
-                readonly=True)
+    status = Choice(title=_("If Membership was approved or not"),
+                    vocabulary='TeamMembershipStatus',
+                    required=True, readonly=True)
 
     statusname = Attribute("Status Name")
 
@@ -140,10 +212,11 @@ class ITeamMembershipSet(Interface):
 class ITeamMember(Interface):
     """The interface used in the form to add a new member to a team."""
 
-    newmember = Choice(title=_('New member'), required=True,
-                       vocabulary='ValidTeamMember',
-                       description=_("The user or team which is going to be "
-                                     "added as the new member of this team."))
+    newmember = PublicPersonChoice(
+        title=_('New member'), required=True,
+        vocabulary='ValidTeamMember',
+        description=_("The user or team which is going to be "
+                        "added as the new member of this team."))
 
 
 class ITeamParticipation(Interface):

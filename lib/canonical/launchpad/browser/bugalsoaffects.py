@@ -26,9 +26,9 @@ from canonical.launchpad.interfaces import (
     UnrecognizedBugTrackerURL, validate_new_distrotask, valid_upstreamtask)
 from canonical.launchpad.event import SQLObjectCreatedEvent
 from canonical.launchpad.validators import LaunchpadValidationError
-
 from canonical.launchpad.webapp import (
     custom_widget, action, canonical_url, LaunchpadFormView, LaunchpadView)
+from canonical.launchpad.webapp.menu import structured
 
 from canonical.widgets.itemswidgets import LaunchpadRadioWidget
 from canonical.widgets import SearchForUpstreamPopupWidget, StrippedTextWidget
@@ -216,11 +216,13 @@ class ChooseProductStep(AlsoAffectsStep):
                     "series.")
                 sourcepackage = series.getSourcePackage(
                     bugtask.sourcepackagename)
-                self.request.response.addWarningNotification(_(dedent("""
+                self.request.response.addWarningNotification(
+                    structured(
+                    _("""
                     This package is linked to an inactive upstream.  You
                     can <a href="%(package_url)s/+edit-packaging">fix it</a>
-                    to avoid this step in the future.""")),
-                    package_url=canonical_url(sourcepackage))
+                    to avoid this step in the future."""),
+                    package_url=canonical_url(sourcepackage)))
                 return
 
             try:
@@ -240,13 +242,19 @@ class ChooseProductStep(AlsoAffectsStep):
         if distroseries is not None:
             sourcepackage = distroseries.getSourcePackage(
                 bugtask.sourcepackagename)
-            self.request.response.addInfoNotification(_(dedent("""
+
+            self.request.response.addInfoNotification(
+                self._needProjectNotice(bugtask, sourcepackage))
+
+    def _needProjectNotice(self, bugtask, sourcepackage):
+        return structured(
+            _("""
                 Please select the appropriate upstream project. This step can
                 be avoided by <a href="%(package_url)s/+edit-packaging"
                 >updating the packaging information for
-                %(full_package_name)s</a>.""")),
-                full_package_name=bugtask.bugtargetdisplayname,
-                package_url=canonical_url(sourcepackage))
+                %(full_package_name)s</a>."""),
+            full_package_name=bugtask.bugtargetdisplayname,
+            package_url=canonical_url(sourcepackage))
 
     def validateStep(self, data):
         if data.get('product'):
@@ -268,11 +276,12 @@ class ChooseProductStep(AlsoAffectsStep):
         search_url = self.widgets['product'].popupHref()
         self.setFieldError(
             'product',
-            'There is no project in Launchpad named "%s". Please '
-            '<a href="%s">search for it</a> as it may be registered with '
-            'a different name.' % (
-                cgi.escape(entered_product),
-                cgi.escape(search_url, quote=True)))
+            structured(
+                'There is no project in Launchpad named "%s". Please '
+                '<a href="%s">search for it</a> as it may be registered with '
+                'a different name.',
+                entered_product,
+                search_url))
 
     def main_action(self, data):
         """Inject the selected product into the form and set the next_view to
@@ -394,12 +403,14 @@ class BugTaskCreationStep(AlsoAffectsStep):
             # implementation; most of the time it will be only one bug.
             for other_bug in other_bugs_already_watching:
                 self.request.response.addInfoNotification(
+                    structured(
                     '<a href="%(bug_url)s">Bug #%(bug_id)s</a> also links'
                     ' to the added bug watch'
                     ' (%(bugtracker_name)s #%(remote_bug)s).',
-                    bug_url=canonical_url(other_bug), bug_id=other_bug.id,
+                    bug_url=canonical_url(other_bug),
+                    bug_id=str(other_bug.id),
                     bugtracker_name=extracted_bugtracker.name,
-                    remote_bug=extracted_bug)
+                    remote_bug=extracted_bug))
 
             # Make sure that we don't add duplicate bug watches.
             bug_watch = task_added.bug.getBugWatch(
@@ -455,8 +466,7 @@ class DistroBugTaskCreationStep(BugTaskCreationStep):
                 "Bug watches can not be added for %s, as it uses Launchpad"
                 " as its official bug tracker. Alternatives are to add a"
                 " watch for another project, or a comment containing a"
-                " URL to the related bug report." % cgi.escape(
-                    target.displayname))
+                " URL to the related bug report." % target.displayname)
 
         distribution = data.get('distribution')
         sourcepackagename = data.get('sourcepackagename')
@@ -468,11 +478,12 @@ class DistroBugTaskCreationStep(BugTaskCreationStep):
                 getUtility(ILaunchpadCelebrities).launchpad)
             self.setFieldError(
                 'sourcepackagename',
+                structured(
                 'There is no package in %s named "%s". If it should'
-                ' be here, <a href="%s">report this as a bug</a>.' % (
-                    cgi.escape(distribution.displayname),
-                    cgi.escape(entered_package),
-                    cgi.escape(filebug_url, quote=True)))
+                ' be here, <a href="%s">report this as a bug</a>.',
+                distribution.displayname,
+                entered_package,
+                filebug_url))
         else:
             try:
                 validate_new_distrotask(

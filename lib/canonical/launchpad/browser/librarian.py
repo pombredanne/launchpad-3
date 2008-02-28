@@ -24,13 +24,23 @@ class LibraryFileAliasView(LaunchpadView):
 
     def initialize(self):
         """Redirect the request to the URL of the file in the Librarian."""
-        self.request.response.redirect(self.context.getURL())
-        
+        # Redirect based on the scheme of the request, as set by Apache in the
+        # 'X-SCHEME' environment variable.  Note that only some requests for
+        # librarian files are allowed to come in via http as most are forced
+        # to https via Apache redirection.
+        request_scheme = self.request.get('X-SCHEME')
+        if request_scheme == 'http':
+            redirect_to = self.context.http_url
+        else:
+            redirect_to = self.context.getURL()
+        self.request.response.redirect(redirect_to)
+
+
 class LibraryFileAliasMD5View(LaunchpadView):
     """View to show the MD5 digest for a librarian file."""
-    
+
     __used_for__ = ILibraryFileAlias
-    
+
     def render(self):
         """Return the plain text MD5 signature"""
         self.request.response.setHeader('Content-type', 'text/plain')

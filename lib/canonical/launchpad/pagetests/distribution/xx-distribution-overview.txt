@@ -34,3 +34,10 @@ Others do not have series:
     >>> print find_portlet(anon_browser.contents, 'Major current versions')
     None
 
+
+= Bug subscriptions =
+
+    >>> user_browser.open('http://launchpad.dev/ubuntu')
+    >>> user_browser.getLink('Subscribe to bug mail').click()
+    >>> print user_browser.url
+    http://launchpad.dev/ubuntu/+subscribe

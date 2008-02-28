@@ -61,8 +61,8 @@ class OpenIDRPConfigAddView(LaunchpadFormView):
             allowed_sreg=data['allowed_sreg'],
             creation_rationale=data['creation_rationale'])
         self.request.response.addInfoNotification(
-            _('Created RP configuration for %(trust_root)s.'),
-            trust_root=data['trust_root'])
+            _('Created RP configuration for ${trust_root}.',
+            mapping=dict(trust_root=data['trust_root'])))
 
     @property
     def next_url(self):
@@ -83,8 +83,8 @@ class OpenIDRPConfigEditView(LaunchpadEditFormView):
         """Save the RP configuration."""
         if self.updateContextFromData(data):
             self.request.response.addInfoNotification(
-                _('Updated RP configuration for %(trust_root)s.'),
-                trust_root=self.context.trust_root)
+                _('Updated RP configuration for ${trust_root}.',
+                mapping=dict(trust_root=self.context.trust_root)))
 
     @action(_('Remove'), name='remove')
     def remove_action(self, action, data):
@@ -92,8 +92,8 @@ class OpenIDRPConfigEditView(LaunchpadEditFormView):
         trust_root = self.context.trust_root
         self.context.destroySelf()
         self.request.response.addInfoNotification(
-            _('Removed RP configuration for %(trust_root)s.'),
-            trust_root=trust_root)
+            _('Removed RP configuration for ${trust_root}.',
+            mapping=dict(trust_root=trust_root)))
 
     @property
     def next_url(self):

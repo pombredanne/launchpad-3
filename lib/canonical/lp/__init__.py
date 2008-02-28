@@ -1,35 +1,33 @@
 # Copyright 2004 Canonical Ltd.  All rights reserved.
 
+"""This module provides the Zopeless PG environment.
+
+This module is deprecated.
+"""
+
+# This module uses a different naming convention to support the callsites.
+# pylint: disable-msg=C0103
+
 __metaclass__ = type
 
-import sys, os, warnings
-from types import ClassType
-from zope.interface.advice import addClassAdvisor
-from zope.interface import classImplements
-from zope.i18n import MessageIDFactory
-
-from sqlobject import connectionForURI
-from canonical.database.sqlbase import (
-        ZopelessTransactionManager, DEFAULT_ISOLATION, AUTOCOMMIT_ISOLATION,
-        READ_COMMITTED_ISOLATION, SERIALIZABLE_ISOLATION
-        )
+import os
 
 from canonical.config import config
+from canonical.database.sqlbase import (
+        AUTOCOMMIT_ISOLATION, DEFAULT_ISOLATION, READ_COMMITTED_ISOLATION,
+        SERIALIZABLE_ISOLATION, ZopelessTransactionManager)
 
 import psycopgda.adapter
 
-# Single MessageIDFactory for everyone
-from canonical.launchpad import _
 
 __all__ = [
     'DEFAULT_ISOLATION', 'AUTOCOMMIT_ISOLATION',
     'READ_COMMITTED_ISOLATION', 'SERIALIZABLE_ISOLATION',
     'dbname', 'dbhost', 'dbuser', 'isZopeless', 'initZopeless',
-    'decorates', 'Passthrough',
     ]
 
 # Allow override by environment variables for backwards compatibility.
-# This was needed to allow tests to propogate settings to spawned processes.
+# This was needed to allow tests to propagate settings to spawned processes.
 # However, now we just have a single environment variable (LAUNCHPAD_CONF)
 # which specifies which section of the config file to use instead,
 # Note that an empty host is different to 'localhost', as the latter
@@ -40,6 +38,7 @@ __all__ = [
 dbname = os.environ.get('LP_DBNAME', config.dbname)
 dbhost = os.environ.get('LP_DBHOST', config.dbhost or '')
 dbuser = os.environ.get('LP_DBUSER', config.launchpad.dbuser)
+
 
 _typesRegistered = False
 def registerTypes():
@@ -64,6 +63,7 @@ def registerTypes():
     the converters are working as expected.
 
     '''
+    # pylint: disable-msg=W0603
     global _typesRegistered
     if not _typesRegistered:
         psycopgda.adapter.registerTypes(psycopgda.adapter.PG_ENCODING)
@@ -71,18 +71,22 @@ def registerTypes():
 
 registerTypes()
 
+
 def isZopeless():
     """Returns True if we are running in the Zopeless environment"""
+    # pylint: disable-msg=W0212
     return ZopelessTransactionManager._installed is not None
+
 
 def initZopeless(debug=False, dbname=None, dbhost=None, dbuser=None,
                  implicitBegin=True, isolation=DEFAULT_ISOLATION):
+    """Initialize the Zopeless environment."""
     registerTypes()
     if dbuser is None:
         # Nothing calling initZopeless should be connecting as the
         # 'launchpad' user, which is the default.
         # StuartBishop 20050923
-        #warnings.warn(
+        # warnings.warn(
         #        "Passing dbuser parameter to initZopeless will soon "
         #        "be mandatory", DeprecationWarning, stacklevel=2
         #        )
@@ -105,83 +109,4 @@ def initZopeless(debug=False, dbname=None, dbhost=None, dbuser=None,
     return ZopelessTransactionManager('postgres://%s%s/%s' % (
         dbuser, dbhost, dbname,
         ), debug=debug, implicitBegin=implicitBegin, isolation=isolation)
-
-def decorates(interface, context='context'):
-    """Make an adapter into a decorator.
-
-    Use like:
-
-      class RosettaProject:
-          implements(IRosettaProject)
-          decorates(IProject)
-
-          def __init__(self, context):
-              self.context = context
-
-          def methodFromRosettaProject(self):
-              return self.context.methodFromIProject()
-
-    If you want to use a different name than "context" then you can explicitly
-    say so:
-
-      class RosettaProject:
-          implements(IRosettaProject)
-          decorates(IProject, context='project')
-
-          def __init__(self, project):
-              self.project = project
-
-          def methodFromRosettaProject(self):
-              return self.project.methodFromIProject()
-
-    The adapter class will implement the interface it is decorating.
-
-    The minimal decorator looks like this:
-
-      class RosettaProject:
-          decorates(IProject)
-
-          def __init__(self, context):
-              self.context = context
-
-    """
-    frame = sys._getframe(1)
-    locals = frame.f_locals
-
-    # Try to make sure we were called from a class def
-    if (locals is frame.f_globals) or ('__module__' not in locals):
-        raise TypeError("decorates can be used only from a class definition.")
-
-    locals['__decorates_advice_data__'] = interface, context
-    addClassAdvisor(_decorates_advice, depth=2)
-
-def _decorates_advice(cls):
-    interface, contextvar = cls.__dict__['__decorates_advice_data__']
-    del cls.__decorates_advice_data__
-    if type(cls) is ClassType:
-        raise TypeError('cannot use decorates() on a classic class: %s' %
-                        cls)
-    classImplements(cls, interface)
-    for name in interface:
-        if not hasattr(cls, name):
-            setattr(cls, name, Passthrough(name, contextvar))
-    return cls
-
-class Passthrough:
-
-    def __init__(self, name, contextvar):
-        self.name = name
-        self.contextvar = contextvar
-
-    def __get__(self, inst, cls=None):
-        if inst is None:
-            return self
-        else:
-            return getattr(getattr(inst, self.contextvar), self.name)
-
-    def __set__(self, inst, value):
-        setattr(getattr(inst, self.contextvar), self.name, value)
-
-    def __delete__(self, inst):
-        raise NotImplementedError
 

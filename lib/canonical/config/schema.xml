@@ -297,6 +297,15 @@ k            </description>
                 production database.
             </description>
         </key>
+        <key name="is_edge" datatype="boolean" default="false">
+            <description>
+                If true, the main template will display "EDGE" in the
+                footer. This, along with the displayed version number which
+                is one level ahead of the current production version, will
+                further alert users that the server is running pre-production
+                level code. Also displayed on edge is a unique site message.
+            </description>
+        </key>
         <key name="site_message" datatype="string" default="">
             <description>
             If this is provided, the message given in the string will appear
@@ -968,9 +977,10 @@ k            </description>
 
     <sectiontype name="supermirror" extends="database_options">
         <key name="dbuser" datatype="string" default="supermirror" />
-        <key name="branchesdest" datatype="string" default="/var/tmp/sm-ng/mirrors" />
+        <key name="branchesdest" datatype="string"
+             default="/var/tmp/sm-ng/mirrors" />
         <key name="masterlock" datatype="string"
-        default="/var/tmp/sm-ng/masterlock" />
+             default="/var/tmp/sm-ng/masterlock" />
         <key name="maximum_workers" datatype="integer" default="4"/>
         <key name="worker_timeout" datatype="integer" default="900">
           <description>
@@ -1018,6 +1028,7 @@ k            </description>
         <key name="spew" datatype="boolean" required="no" default="no" />
         <key name="logfile" datatype="string" required="no" default="-" />
         <key name="debug_logfile" datatype="string" required="no" />
+        <key name="bzr_lp_prefix" datatype="string" default="lp:"/>
         <key name="smartserver_root" datatype="canonical.config.urlbase"
             default="bzr+ssh://%(user)s@bazaar.launchpad.net/">
             <description>
@@ -1045,7 +1056,7 @@ k            </description>
             <example>http://bazaar.launchpad.net/</example>
         </key>
         <key name="codebrowse_root" datatype="canonical.config.urlbase"
-             default="http://codebrowse.launchpad.net/">
+             default="http://bazaar.launchpad.net/">
             <description>
                 The URL prefix for links to the Bazaar code browser.
                 Links are formed by appending the branch's unique name
@@ -1053,6 +1064,30 @@ k            </description>
             </description>
             <example>http://codebrowse.launchpad.net/</example>
         </key>
+
+        <!-- XXX MichaelHudson 2008-02-11: This is copy-pasted from
+             the script_errorreports sectiontype but doesn't mark
+             oops_prefix as required so a config with no codehosting
+             section can still be loaded.  This smelly hack will
+             hopefully go away when we switch to LazrConfig. -->
+
+        <key name="errordir" datatype="string" required="no">
+            <description>
+                Directory to write error reports to.
+            </description>
+        </key>
+        <key name="oops_prefix" datatype="string" required="no">
+            <description>
+                A prefix for "OOPS" codes for this script.
+            </description>
+        </key>
+        <key name="copy_to_zlog" datatype="boolean">
+            <description>
+                Should exceptions be sent to the log as well as being
+                saved to disk?
+            </description>
+        </key>
+
     </sectiontype>
 
     <sectiontype name="authserver" extends="database_options">
@@ -1091,6 +1126,18 @@ k            </description>
           <description>
               The default value of the update interval of a code import from
               Subversion, in seconds.
+          </description>
+        </key>
+        <key name="bazaar_branch_store" datatype="string"
+             required="no" default="sftp://hoover@escudero/srv/importd/www/">
+          <description>
+            Where the Bazaar imports are stored.
+          </description>
+        </key>
+        <key name="foreign_tree_store" datatype="string"
+             required="no" default="sftp://hoover@escudero/srv/importd/sources/">
+          <description>
+            Where the tarballs of foreign branches are uploaded for storage.
           </description>
         </key>
     </sectiontype>

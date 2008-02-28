@@ -22,12 +22,12 @@ from zope.interface import implements
 from canonical.launchpad.interfaces import (
     BugTaskSearchParams, IAuthServerApplication, IBazaarApplication, IBugSet,
     IBugTaskSet, IBugTrackerSet, IBugWatchSet,
-    ICodeImportSchedulerApplication, IDistroSeriesSet, IEmailAddressSet,
-    IFeedsApplication, IHWDBApplication, ILanguageSet, ILaunchBag,
-    ILaunchpadStatisticSet, IMailingListApplication, IMaloneApplication,
+    ICodeImportSchedulerApplication, IDistroSeriesSet, IFeedsApplication,
+    IHWDBApplication, ILanguageSet, ILaunchBag, ILaunchpadStatisticSet,
+    IMailingListApplication, IMaloneApplication,
     IOpenIdApplication, IPersonSet, IProductSet, IRegistryApplication,
     IRosettaApplication, IShipItApplication, ITranslationGroupSet,
-    IWebServiceApplication)
+    ITranslationsOverview, IWebServiceApplication)
 from canonical.lazr.rest import ServiceRootResource
 
 class AuthServerApplication:
@@ -156,8 +156,10 @@ class RosettaApplication:
 
     def featured_products(self):
         """See IRosettaApplication."""
-        products = getUtility(IProductSet)
-        return products.featuredTranslatables()
+        projects = getUtility(ITranslationsOverview)
+        for project in projects.getMostTranslatedPillars():
+            yield { 'pillar' : project['pillar'],
+                    'font_size' : project['weight'] * 10 }
 
     def translatable_distroseriess(self):
         """See IRosettaApplication."""
@@ -196,4 +198,6 @@ class WebServiceApplication(ServiceRootResource):
     # See ServiceRootResource for more on top_level_collections
     @property
     def top_level_collections(self):
-        return { 'people' : getUtility(IPersonSet) }
+        return { 'bugtasks' : getUtility(IBugTaskSet),
+                 'bugs' : getUtility(IBugSet),
+                 'people' : getUtility(IPersonSet) }

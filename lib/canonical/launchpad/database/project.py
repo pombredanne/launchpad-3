@@ -21,7 +21,8 @@ from canonical.database.enumcol import EnumCol
 
 from canonical.launchpad.interfaces import (
     IFAQCollection, IHasIcon, IHasLogo, IHasMugshot,
-    IProduct, IProject, IProjectSeries, IProjectSet, ISearchableByQuestionOwner,
+    IProduct, IProject, IProjectSeries, IProjectSet,
+    ISearchableByQuestionOwner,
     ImportStatus, NotFoundError, QUESTION_STATUS_DEFAULT_SEARCH,
     SpecificationFilter, SpecificationImplementationStatus,
     SpecificationSort, SprintSpecificationStatus, TranslationPermission)
@@ -38,6 +39,7 @@ from canonical.launchpad.database.language import Language
 from canonical.launchpad.database.mentoringoffer import MentoringOffer
 from canonical.launchpad.database.milestone import ProjectMilestone
 from canonical.launchpad.database.announcement import MakesAnnouncements
+from canonical.launchpad.validators.person import public_person_validator
 from canonical.launchpad.database.product import Product
 from canonical.launchpad.database.productseries import ProductSeries
 from canonical.launchpad.database.projectbounty import ProjectBounty
@@ -59,7 +61,9 @@ class Project(SQLBase, BugTargetBase, HasSpecificationsMixin,
     _table = "Project"
 
     # db field names
-    owner = ForeignKey(foreignKey='Person', dbName='owner', notNull=True)
+    owner = ForeignKey(
+        dbName='owner', foreignKey='Person',
+        validator=public_person_validator, notNull=True)
     name = StringCol(dbName='name', notNull=True)
     displayname = StringCol(dbName='displayname', notNull=True)
     title = StringCol(dbName='title', notNull=True)
@@ -68,7 +72,8 @@ class Project(SQLBase, BugTargetBase, HasSpecificationsMixin,
     datecreated = UtcDateTimeCol(dbName='datecreated', notNull=True,
         default=UTC_NOW)
     driver = ForeignKey(
-        foreignKey="Person", dbName="driver", notNull=False, default=None)
+        dbName="driver", foreignKey="Person",
+        validator=public_person_validator, notNull=False, default=None)
     homepageurl = StringCol(dbName='homepageurl', notNull=False, default=None)
     homepage_content = StringCol(default=None)
     icon = ForeignKey(
@@ -181,7 +186,7 @@ class Project(SQLBase, BugTargetBase, HasSpecificationsMixin,
         return self.specifications(filter=[SpecificationFilter.VALID])
 
     def specifications(self, sort=None, quantity=None, filter=None,
-                       series=None):
+                       series=None, prejoin_people=True):
         """See `IHasSpecifications`."""
 
         # Make a new list of the filter, so that we do not mutate what we
@@ -242,10 +247,11 @@ class Project(SQLBase, BugTargetBase, HasSpecificationsMixin,
                       % sqlvalues(series))
             clause_tables.append('ProductSeries')
 
-        # now do the query, and remember to prejoin to people
         results = Specification.select(query, orderBy=order, limit=quantity,
             clauseTables=clause_tables)
-        return results.prejoin(['assignee', 'approver', 'drafter'])
+        if prejoin_people:
+            results = results.prejoin(['assignee', 'approver', 'drafter'])
+        return results
 
     # XXX: Bjorn Tillenius 2006-08-17:
     #      A Project shouldn't provide IBugTarget, since it's not really
@@ -254,6 +260,9 @@ class Project(SQLBase, BugTargetBase, HasSpecificationsMixin,
     #      that makes sense for Project to implement, and one containing the
     #      rest of IBugTarget.
     bugtargetdisplayname = None
+    def createBug(self, bug_params):
+        """See `IBugTarget`."""
+        raise NotImplementedError('Cannot file bugs against a project')
 
     def searchTasks(self, search_params):
         """See `IBugTarget`."""
@@ -275,10 +284,6 @@ class Project(SQLBase, BugTargetBase, HasSpecificationsMixin,
         product_ids = sqlvalues(*self.products)
         return get_bug_tags_open_count(
             "BugTask.product IN (%s)" % ",".join(product_ids), user)
-
-    def createBug(self, bug_params):
-        """See `IBugTarget`."""
-        raise NotImplementedError('Cannot file bugs against a project')
 
     def _getBugTaskContextClause(self):
         """See `BugTargetBase`."""
@@ -309,11 +314,6 @@ class Project(SQLBase, BugTargetBase, HasSpecificationsMixin,
             Question.product = Product.id AND
             Product.project = %s""" % sqlvalues(self.id),
             clauseTables=['Question', 'Product'], distinct=True))
-
-    @property
-    def bugtargetdisplayname(self):
-        """See IBugTarget."""
-        return self.displayname
 
     @property
     def bugtargetname(self):
@@ -545,9 +545,10 @@ class ProjectSeries(HasSpecificationsMixin):
         self.project = project
         self.name = name
 
-    def specifications(self, sort=None, quantity=None, filter=None):
+    def specifications(self, sort=None, quantity=None, filter=None,
+                       prejoin_people=True):
         return self.project.specifications(
-            sort, quantity, filter, self.name)
+            sort, quantity, filter, self.name, prejoin_people=prejoin_people)
 
     @property
     def has_any_specifications(self):

@@ -19,7 +19,7 @@ from zope.schema import Datetime, Int, Choice, Text, TextLine, Float
 from zope.app.form.browser.interfaces import IAddFormCustomization
 
 from canonical.launchpad import _
-from canonical.launchpad.fields import Summary, Title
+from canonical.launchpad.fields import Summary, Title, PublicPersonChoice
 from canonical.launchpad.validators.name import name_validator
 from canonical.launchpad.interfaces import IHasOwner, IMessageTarget
 
@@ -155,14 +155,15 @@ class IBounty(IHasOwner, IMessageTarget):
     difficulty = Choice(
         title=_('Difficulty'), vocabulary=BountyDifficulty,
         default=BountyDifficulty.NORMAL)
-    reviewer = Choice(title=_('The bounty reviewer.'), required=False,
+    reviewer = PublicPersonChoice(
+        title=_('The bounty reviewer.'), required=False,
         description=_("The person who is responsible for deciding whether "
         "the bounty is awarded, and to whom if there are multiple "
         "claimants."), vocabulary='ValidPersonOrTeam')
     datecreated = Datetime(
             title=_('Date Created'), required=True, readonly=True,
             )
-    owner = Choice(
+    owner = PublicPersonChoice(
         title=_('Owner'),
         required=True,
         vocabulary='ValidOwner',

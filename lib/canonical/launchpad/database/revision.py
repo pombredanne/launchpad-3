@@ -8,18 +8,21 @@ __all__ = [
 
 import email
 
+from zope.component import getUtility
 from zope.interface import implements
 from sqlobject import (
     ForeignKey, IntCol, StringCol, SQLObjectNotFound, SQLMultipleJoin)
 
-from canonical.database.sqlbase import SQLBase, sqlvalues
+from canonical.database.sqlbase import quote, SQLBase
 from canonical.database.constants import DEFAULT
 from canonical.database.datetimecol import UtcDateTimeCol
 
 from canonical.launchpad.interfaces import (
+    EmailAddressStatus, IEmailAddressSet,
     IRevision, IRevisionAuthor, IRevisionParent, IRevisionProperty,
     IRevisionSet)
 from canonical.launchpad.helpers import shortlist
+from canonical.launchpad.validators.person import public_person_validator
 
 
 class Revision(SQLBase):
@@ -27,7 +30,6 @@ class Revision(SQLBase):
 
     implements(IRevision)
 
-    owner = ForeignKey(dbName='owner', foreignKey='Person', notNull=True)
     date_created = UtcDateTimeCol(notNull=True, default=DEFAULT)
     log_body = StringCol(notNull=True)
     gpgkey = ForeignKey(dbName='gpgkey', foreignKey='GPGKey', default=None)
@@ -67,15 +69,35 @@ class RevisionAuthor(SQLBase):
 
     name = StringCol(notNull=True, alternateID=True)
 
-    def _getNameWithoutEmail(self):
+    @property
+    def name_without_email(self):
         """Return the name of the revision author without the email address.
 
         If there is no name information (i.e. when the revision author only
         supplied their email address), return None.
         """
+        if '@' not in self.name:
+            return self.name
         return email.Utils.parseaddr(self.name)[0]
 
-    name_without_email = property(_getNameWithoutEmail)
+    email = StringCol(notNull=False, default=None)
+    person = ForeignKey(dbName='person', foreignKey='Person', notNull=False,
+                        validator=public_person_validator, default=None)
+
+    def linkToLaunchpadPerson(self):
+        """See `IRevisionAuthor`."""
+        if self.person is not None or self.email is None:
+            return False
+        lp_email = getUtility(IEmailAddressSet).getByEmail(self.email)
+        # If not found, we didn't link this person.
+        if lp_email is None:
+            return False
+        # Only accept an email address that is validated.
+        if lp_email.status != EmailAddressStatus.NEW:
+            self.person = lp_email.person
+            return True
+        else:
+            return False
 
 
 class RevisionParent(SQLBase):
@@ -112,7 +134,18 @@ class RevisionSet:
     def getByRevisionId(self, revision_id):
         return Revision.selectOneBy(revision_id=revision_id)
 
-    def new(self, revision_id, log_body, revision_date, revision_author, owner,
+    def _createRevisionAuthor(self, revision_author):
+        """Extract out the email and check to see if it matches a Person."""
+        email_address = email.Utils.parseaddr(revision_author)[1]
+        # If there is no @, then it isn't a real email address.
+        if '@' not in email_address:
+            email_address = None
+
+        author = RevisionAuthor(name=revision_author, email=email_address)
+        author.linkToLaunchpadPerson()
+        return author
+
+    def new(self, revision_id, log_body, revision_date, revision_author,
             parent_ids, properties):
         """See IRevisionSet.new()"""
         if properties is None:
@@ -121,13 +154,12 @@ class RevisionSet:
         try:
             author = RevisionAuthor.byName(revision_author)
         except SQLObjectNotFound:
-            author = RevisionAuthor(name=revision_author)
+            author = self._createRevisionAuthor(revision_author)
 
         revision = Revision(revision_id=revision_id,
                             log_body=log_body,
                             revision_date=revision_date,
-                            revision_author=author,
-                            owner=owner)
+                            revision_author=author)
         seen_parents = set()
         for sequence, parent_id in enumerate(parent_ids):
             if parent_id in seen_parents:
@@ -141,3 +173,20 @@ class RevisionSet:
             RevisionProperty(revision=revision, name=name, value=value)
 
         return revision
+
+    def checkNewVerifiedEmail(self, email):
+        """See `IRevisionSet`."""
+        for author in RevisionAuthor.selectBy(email=email.email):
+            author.person = email.person
+
+    def getTipRevisionsForBranches(self, branches):
+        """See `IRevisionSet`."""
+        # If there are no branch_ids, then return None.
+        branch_ids = [branch.id for branch in branches]
+        if not branch_ids:
+            return None
+        return Revision.select("""
+            Branch.id in %s AND
+            Revision.revision_id = Branch.last_scanned_id
+            """ % quote(branch_ids),
+            clauseTables=['Branch'], prejoins=['revision_author'])

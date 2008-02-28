@@ -338,9 +338,6 @@ All the teams the person is an active member of.
     >>> mirrors_admins in person_active_membership
     False
 
-    >>> person_active_membership.getQuery() is None
-    True
-
     >>> term = person_active_membership.getTerm(launchpad_team)
     >>> print term.token, term.value.displayname, term.title
     launchpad Launchpad Developers Launchpad Developers
@@ -929,8 +926,8 @@ concerned).
     # Just use None as the context.
     >>> branch_vocabulary = vocabulary_registry.get(None, "Branch")
     >>> def print_vocab_branches(vocab, search):
-    ...     for branch in vocab.search(search):
-    ...         print branch.unique_name
+    ...     for term in vocab.searchForTerms(search):
+    ...         print term.value.unique_name
 
     >>> print_vocab_branches(branch_vocabulary, 'main')
     ~name12/firefox/main
@@ -949,6 +946,11 @@ concerned).
     ~carlos/evolution/2.0
     ~vcs-imports/evolution/import
     ~vcs-imports/evolution/main
+
+A search with the full branch unique name should also find the branch.
+
+    >>> print_vocab_branches(branch_vocabulary, '~name12/firefox/main')
+    ~name12/firefox/main
 
 The tokens used by terms retrieved from BranchVocabulary use the
 branch unique name as an ID:
@@ -1006,6 +1008,15 @@ then the product of the branch is used to restrict the query.
 
     >>> print_vocab_branches(branch_vocabulary, 'vcs-imports')
     ~vcs-imports/gnome-terminal/import
+
+If a full unique name is entered that has a different product, the
+branch is not part of the vocabulary.
+
+    >>> print_vocab_branches(branch_vocabulary, '~name12/gnome-terminal/main')
+    ~name12/gnome-terminal/main
+
+    >>> print_vocab_branches(branch_vocabulary, '~name12/firefox/main')
+
 
 The BranchRestrictedOnProduct behaves the same way as the more generic
 BranchVocabulary with respect to the tokens and privacy awareness.
@@ -1780,6 +1791,77 @@ https://bugs.edge.launchpad.net/blueprint/+bug/139385 for more details).
 
     >>> list(vocab.search('*'))
     []
+
+
+=== PPA ===
+
+The PPA vocabulary contains all the PPAs available in a particular
+collection. It provides the IHugeVocabulary interface.
+
+    >>> from canonical.launchpad.webapp.testing import verifyObject
+    >>> from canonical.launchpad.webapp.vocabulary import IHugeVocabulary
+
+    >>> vocabulary = vocabulary_registry.get(None, 'PPA')
+    >>> verifyObject(IHugeVocabulary, vocabulary)
+    True
+
+    >>> print vocabulary.displayname
+    Select a PPA
+
+Iterations over the PPA vocabulary will return on PPA archives.
+
+    >>> sorted([term.value.owner.name for term in vocabulary])
+    [u'cprov', u'no-priv', u'sabdfl']
+
+PPA vocabulary terms contain:
+
+ * token: the PPA owner name;
+ * value: the IArchive object;
+ * title: the first line of the PPA description text.
+
+    >>> cprov_ppa = vocabulary.getTermByToken('cprov')
+
+    >>> print cprov_ppa.token
+    cprov
+
+    >>> print cprov_ppa.value
+    <Archive ...>
+
+    >>> print cprov_ppa.title
+    packages to help my friends.
+
+Not found terms result in LookupError.
+
+    >>> vocabulary.getTermByToken('foobar')
+    Traceback (most recent call last):
+    ...
+    LookupError: foobar
+
+PPA vocabulary searches consider the owner FTI and the PPA FTI itself.
+
+    >>> cprov_search = vocabulary.search('cprov')
+    >>> cprov_search.count() == 1
+    True
+    >>> print cprov_search[0].owner.name
+    cprov
+
+    >>> celso_search = vocabulary.search('celso')
+    >>> celso_search.count() == 1
+    True
+    >>> print celso_search[0].owner.name
+    cprov
+
+    >>> friends_search = vocabulary.search('friends')
+    >>> friends_search.count() == 1
+    True
+    >>> print friends_search[0].description
+    packages to help my friends.
+
+Queries on empty strings also results in a valid SelectResults.
+
+    >>> empty_search = vocabulary.search('')
+    >>> empty_search.count() == 0
+    True
 
 
 # XXX Tom Berger 2007-07-05: document more vocabularies here, particularly

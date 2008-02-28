@@ -31,8 +31,8 @@ from canonical.launchpad.layers import setFirstLayer
 from canonical.launchpad.tests.mail_helpers import pop_notifications
 from canonical.launchpad.webapp.authorization import LaunchpadSecurityPolicy
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
+from canonical.launchpad.webapp.tests import test_notifications
 from canonical.testing import (
-    ExperimentalLaunchpadZopelessLayer,
     LaunchpadZopelessLayer, LaunchpadFunctionalLayer,DatabaseLayer,
     FunctionalLayer)
 
@@ -416,8 +416,7 @@ special = {
     'buildd-scoring.txt': LayeredDocFileSuite(
             '../doc/buildd-scoring.txt',
             setUp=builddmasterSetUp,
-            layer=LaunchpadZopelessLayer, optionflags=default_optionflags,
-            stdout_logging_level=logging.DEBUG
+            layer=LaunchpadZopelessLayer, optionflags=default_optionflags
             ),
     'buildd-queuebuilder.txt': LayeredDocFileSuite(
             '../doc/buildd-queuebuilder.txt',
@@ -580,6 +579,13 @@ special = {
             optionflags=default_optionflags,
             layer=LaunchpadFunctionalLayer,
             ),
+    'checkwatches-cli-switches.txt':
+            LayeredDocFileSuite(
+                '../doc/checkwatches-cli-switches.txt',
+                setUp=checkwatchesSetUp,
+                tearDown=tearDown,
+                optionflags=default_optionflags, layer=LaunchpadZopelessLayer
+                ),
     'externalbugtracker-bugzilla.txt':
             LayeredDocFileSuite(
                 '../doc/externalbugtracker-bugzilla.txt',
@@ -601,9 +607,23 @@ special = {
                 tearDown=tearDown,
                 optionflags=default_optionflags, layer=LaunchpadZopelessLayer
                 ),
+    'externalbugtracker-comment-imports.txt':
+            LayeredDocFileSuite(
+                '../doc/externalbugtracker-comment-imports.txt',
+                setUp=checkwatchesSetUp,
+                tearDown=tearDown,
+                optionflags=default_optionflags, layer=LaunchpadZopelessLayer
+                ),
     'externalbugtracker-debbugs.txt':
             LayeredDocFileSuite(
                 '../doc/externalbugtracker-debbugs.txt',
+                setUp=checkwatchesSetUp,
+                tearDown=tearDown,
+                optionflags=default_optionflags, layer=LaunchpadZopelessLayer
+                ),
+    'externalbugtracker-emailaddress.txt':
+            LayeredDocFileSuite(
+                '../doc/externalbugtracker-emailaddress.txt',
                 setUp=checkwatchesSetUp,
                 tearDown=tearDown,
                 optionflags=default_optionflags, layer=LaunchpadZopelessLayer
@@ -706,7 +726,16 @@ special = {
             '../doc/publishing.txt',
             layer=LaunchpadZopelessLayer, optionflags=default_optionflags
             ),
-
+    'sourcepackagerelease-build-lookup.txt': LayeredDocFileSuite(
+            '../doc/sourcepackagerelease-build-lookup.txt',
+            layer=LaunchpadZopelessLayer, optionflags=default_optionflags
+            ),
+    'notification-text-escape.txt': DocFileSuite(
+            '../doc/notification-text-escape.txt',
+	    setUp=test_notifications.setUp,
+	    tearDown=test_notifications.tearDown,
+	    optionflags=default_optionflags
+	    ),
     }
 
 

@@ -111,7 +111,7 @@ class SpecificationFeedbackClearingView:
             # list for the general case, so convert it to a list
             clearedreqs = [clearedreqs,]
 
-        queue_length = len(self.context.getFeedbackRequests(self.user))
+        queue_length = self.context.getFeedbackRequests(self.user).count()
         number_cleared = 0
         msg = 'Cleared requests from: '
         for clearedreq in clearedreqs:
@@ -130,5 +130,4 @@ class SpecificationFeedbackClearingView:
             self.request.response.redirect(canonical_url(self.context))
 
         return self.process_status
-
 
