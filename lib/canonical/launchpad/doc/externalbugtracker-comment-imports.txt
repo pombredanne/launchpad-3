@@ -56,12 +56,14 @@ above.
     ...         '2': "Example comment the second",
     ...         '3': "Example comment the third"}
     ...
+    ...     poster_tuple = ("Joe Bloggs", "joe.bloggs@example.com")
+    ...
     ...     def getCommentIds(self, bug_watch):
     ...         return sorted(self.comment_dict.keys())
     ...
     ...     def getPosterForComment(self, bug_watch, comment_id):
     ...         """Return a tuple of (displayname, email)."""
-    ...         return "Joe Bloggs", "joe.bloggs@example.com"
+    ...         return self.poster_tuple
     ...
     ...     def getMessageForComment(self, bug_watch, comment_id, poster):
     ...         """Return a Message object for a comment."""
@@ -230,29 +232,14 @@ examining the BugMessages which link the messages to the bug.
 == Importing comments with CVE references ==
 
 If a comment contains a CVE reference, that CVE reference will be
-imported and linked to the bug. We will use an example DebBugs
-ExternalBugTracker to demonstrate this:
+imported and linked to the bug. We well add a comment to our
+CommentImportingExternalBugTracker instance in order to demonstrate
+this.
 
-    >>> from canonical.launchpad.ftests.externalbugtracker import (
-    ...     TestDebBugs, TestDebianBug)
-    >>> from canonical.launchpad.interfaces import (
-    ...     IBugSet, IBugTrackerSet)
-    >>> import transaction
-
-    >>> debbugs = getUtility(IBugTrackerSet).getByName('debbugs')
-    >>> no_priv = getUtility(IPersonSet).getByEmail(
-    ...     'no-priv@canonical.com')
-    >>> test_debian_bug = TestDebianBug(
-    ...     reporter_email=no_priv.preferredemail.email, id=1234)
-    >>> bug = getUtility(IBugSet).get(4)
-    >>> bug_watch = bug.addWatch(debbugs, '1234', no_priv)
-
-    >>> external_debbugs = TestDebBugs(transaction,
-    ...     debbugs, {'1234': test_debian_bug})
-    >>> external_debbugs.debbugs_db._data_file = (
-    ...     'debbugs-comments-cve.txt')
-    >>> external_debbugs.importBugComments(bug_watch)
-    INFO:...:Imported 1 comments for remote bug 1234...
+    >>> external_bugtracker.comment_dict['5'] = (
+    ...     "A comment containing a CVE entry: CVE-1991-9911.")
+    >>> external_bugtracker.importBugComments(bug_watch)
+    INFO:...:Imported 1 comments for remote bug 123456...
 
     >>> for cve in bug.cves:
     ...     print cve.displayname
@@ -286,7 +273,7 @@ user, having been created during the import process.
 
     >>> latest_message = bug.messages[-1]
     >>> print latest_message.owner.displayname
-    Teun Vink
+    Joe Bloggs
 
     >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
     >>> latest_message.owner.karma
@@ -294,16 +281,20 @@ user, having been created during the import process.
 
 Karma is only awarded for actions that occur within Launchpad. If an
 imported comment was authored by a valid Launchpad user, that user will
-receive no karma.
+receive no karma. We'll demonstrate this by making an comment which
+includes a CVE reference appear to come from a valid Launchpad user.
 
     >>> foo_bar = getUtility(IPersonSet).getByName('name16')
     >>> foo_bar.karma
     0
 
+    >>> external_bugtracker.poster_tuple = (
+    ...     foo_bar.displayname, foo_bar.preferredemail.email)
+    >>> external_bugtracker.comment_dict['6'] = (
+    ...     "Another comment, another CVE: CVE-1999-0593.")
+
     >>> LaunchpadZopelessLayer.switchDbUser(config.checkwatches.dbuser)
-    >>> external_debbugs.debbugs_db._data_file = (
-    ...     'debbugs-comments-cve-valid-user.txt')
-    >>> external_debbugs.importBugComments(bug_watch)
+    >>> external_bugtracker.importBugComments(bug_watch)
     INFO:...:Imported 1 comments for remote bug 1234...
 
     >>> for cve in sorted([cve.displayname for cve in bug.cves]):
@@ -331,6 +322,14 @@ receive no karma.
     <BLANKLINE>
     >>> process.returncode
     0
+
+The owner of the comment is Foo Bar.
+
+    >>> latest_message = bug.messages[-1]
+    >>> print latest_message.owner.displayname
+    Foo Bar
+
+But Foo Bar has in fact received no karma for making the CVE link.
 
     >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
     >>> foo_bar = getUtility(IPersonSet).getByName('name16')
