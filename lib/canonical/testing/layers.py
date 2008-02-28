@@ -184,14 +184,8 @@ class BaseLayer:
         # add an error. Then restore the working directory so the test
         # run can continue.
         if cwd != BaseLayer.original_working_directory:
-            test_result = BaseLayer.getCurrentTestResult()
-            if test_result.wasSuccessful():
-                test_case = BaseLayer.getCurrentTestCase()
-                try:
-                    raise LayerIsolationError(
-                            "Test failed to restore working directory.")
-                except:
-                    test_result.addError(test_case, sys.exc_info())
+            BaseLayer.flagTestIsolationFailure(
+                    "Test failed to restore working directory.")
             os.chdir(BaseLayer.original_working_directory)
 
         BaseLayer.original_working_directory = None
@@ -241,6 +235,25 @@ class BaseLayer:
         if socket.getdefaulttimeout() is not None:
             raise LayerIsolationError(
                 "Test didn't reset the socket default timeout.")
+
+    @classmethod
+    def flagTestIsolationFailure(cls, message):
+        """Handle a breakdown in test isolation.
+
+        If the test that broke isolation thinks it succeeded,
+        add an error. If the test failed, don't add a notification
+        as the isolation breakdown is probably just fallout.
+
+        The layer that detected the isolation failure still needs to
+        repair the damage, or in the worst case abort the test run.
+        """
+        test_result = BaseLayer.getCurrentTestResult()
+        if test_result.wasSuccessful():
+            test_case = BaseLayer.getCurrentTestCase()
+            try:
+                raise LayerIsolationError(message)
+            except:
+                test_result.addError(test_case, sys.exc_info())
 
     @classmethod
     def getCurrentTestResult(cls):
