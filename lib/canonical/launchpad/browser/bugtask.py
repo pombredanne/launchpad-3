@@ -2210,7 +2210,7 @@ class BugTaskSearchListingView(LaunchpadFormView, FeedsMixin):
         bugtaskset = getUtility(IBugTaskSet)
         expirable_bugtasks = bugtaskset.findExpirableBugTasks(
             0, user=self.user, target=self.context)
-        count = len(expirable_bugtasks)
+        count = expirable_bugtasks.count()
         label = self._bugOrBugs(count)
         url = "%s/+expirable-bugs" % canonical_url(self.context)
         return dict(count=count, url=url, label=label)
