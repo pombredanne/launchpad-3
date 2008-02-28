@@ -184,7 +184,8 @@ class TwistedServer(Server):
         self._service.startService()
 
     def get_url(self):
-        return 'http://localhost:%s/xmlrpc' % (self._service._port.getHost().port)
+        return 'http://localhost:%s/xmlrpc' % (
+            self._service._port.getHost().port)
 
     def tearDown(self):
         self._service.stopService()

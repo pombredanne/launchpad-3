@@ -16,8 +16,5 @@ __all__ = [
     'InMemoryBlockingProxy',
     'InMemoryTwistedProxy']
 
-from canonical.authserver.client.proxy import (
-    get_blocking_proxy, get_twisted_proxy, InMemoryBlockingProxy,
-    InMemoryTwistedProxy)
-
+from canonical.authserver.client.proxy import *
 
