@@ -46,7 +46,6 @@ __all__ = [
     'IHasProduct',
     'IHasProductAndAssignee',
     'IHasSecurityContact',
-    'IHasStanding',
     'ILaunchBag',
     'ILaunchpadCelebrities',
     'ILaunchpadRoot',
@@ -382,22 +381,6 @@ class IHasMugshot(Interface):
     # Each of the objects that implements this needs a custom schema, so
     # here we can just use Attributes
     mugshot = Attribute("The 192x192 mugshot.")
-
-
-class IHasStanding(Interface):
-    """An object that can have personal standing."""
-
-    personal_standing = Choice(
-        title=_('Personal standing'),
-        required=True,
-        vocabulary='PersonalStanding',
-        description=_('The standing of a person for non-member mailing list '
-                      'posting privileges.'))
-
-    personal_standing_reason = Text(
-        title=_('Reason for personal standing'),
-        required=False,
-        description=_("The reason the person's standing is what it is."))
 
 
 class IAging(Interface):

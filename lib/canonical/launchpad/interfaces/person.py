@@ -9,6 +9,7 @@ __all__ = [
     'AccountStatus',
     'IAdminPeopleMergeSchema',
     'IAdminTeamMergeSchema',
+    'IHasStanding',
     'INACTIVE_ACCOUNT_STATUSES',
     'INewPerson',
     'INewPersonForm',
@@ -59,7 +60,7 @@ from canonical.launchpad.interfaces.mentoringoffer import (
 from canonical.launchpad.interfaces.specificationtarget import (
     IHasSpecifications)
 from canonical.launchpad.interfaces.launchpad import (
-    IHasIcon, IHasLogo, IHasMugshot, IHasStanding)
+    IHasIcon, IHasLogo, IHasMugshot)
 from canonical.launchpad.interfaces.questioncollection import (
     IQuestionCollection, QUESTION_STATUS_DEFAULT_SEARCH)
 from canonical.launchpad.interfaces.teammembership import (
@@ -403,6 +404,24 @@ def make_person_name_field():
                 "letter or number, and containing only letters, "
                 "numbers, dots, hyphens, or plus signs.")
             )
+
+
+# This has to be defined here to avoid circular import problems.
+class IHasStanding(Interface):
+    """An object that can have personal standing."""
+
+    personal_standing = Choice(
+        title=_('Personal standing'),
+        required=True,
+        vocabulary=PersonalStanding,
+        description=_('The standing of a person for non-member mailing list '
+                      'posting privileges.'))
+
+    personal_standing_reason = Text(
+        title=_('Reason for personal standing'),
+        required=False,
+        description=_("The reason the person's standing is what it is."))
+
 
 class IPersonPublic(IHasSpecifications, IHasMentoringOffers,
                     IQuestionCollection, IHasLogo, IHasMugshot, IHasIcon):
