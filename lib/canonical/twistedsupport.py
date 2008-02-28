@@ -6,9 +6,7 @@ __metaclass__ = type
 __all__ = ['defer_to_thread']
 
 
-import threading
-
-from twisted.internet import defer, threads
+from twisted.internet import threads
 from twisted.python.util import mergeFunctionMetadata
 
 
@@ -16,18 +14,8 @@ def defer_to_thread(function):
     """Run in a thread and return a Deferred that fires when done."""
 
     def decorated(*args, **kwargs):
-        deferred = defer.Deferred()
-
-        def run_in_thread():
-            return threads._putResultInDeferred(
-                deferred, function, args, kwargs)
-
-        t = threading.Thread(target=run_in_thread)
-        t.start()
-
-        def join_thread(pass_through):
-            t.join()
-            return pass_through
-        return deferred.addBoth(join_thread)
+        return threads.deferToThread(function, *args, **kwargs)
 
     return mergeFunctionMetadata(function, decorated)
+
+
