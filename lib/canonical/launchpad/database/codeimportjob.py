@@ -24,7 +24,7 @@ from canonical.launchpad.interfaces import (
     CodeImportJobState, CodeImportMachineState, CodeImportReviewStatus,
     ICodeImportEventSet, ICodeImportJob, ICodeImportJobPublic,
     ICodeImportJobSet, ICodeImportJobSetPublic, ICodeImportJobWorkflow,
-    ICodeImportJobWorkflowPublic)
+    ICodeImportJobWorkflowPublic, ICodeImportResultSet)
 from canonical.launchpad.validators.person import public_person_validator
 
 
@@ -212,3 +212,26 @@ class CodeImportJobWorkflow:
         naked_job = removeSecurityProxy(import_job)
         naked_job.heartbeat = UTC_NOW
         naked_job.logtail = logtail
+
+    def finishJob(self, import_job, status, logfile_alias):
+        """See `ICodeImportJobWorkflow`."""
+        assert import_job.state == CodeImportJobState.RUNNING, (
+            "The CodeImportJob associated with %s is %s."
+            % (import_job.code_import.branch.unique_name,
+               import_job.state.name))
+        code_import = import_job.code_import
+        machine = import_job.machine
+        getUtility(ICodeImportResultSet).new(
+            code_import=code_import, machine=machine,
+            log_excerpt=import_job.logtail,
+            requesting_user=import_job.requesting_user,
+            log_file=logfile_alias, status=status,
+            date_job_started=import_job.date_started)
+        # CodeImportJobWorkflow is the only class that is allowed to delete
+        # CodeImportJob objects, there is no method in the ICodeImportJob
+        # interface to do this. So we must use removeSecurityProxy here.
+        naked_job = removeSecurityProxy(import_job)
+        naked_job.destroySelf()
+        self.newJob(code_import)
+        getUtility(ICodeImportEventSet).newFinish(
+            code_import, machine)
