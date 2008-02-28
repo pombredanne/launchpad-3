@@ -30,6 +30,15 @@ execute_zcml_for_scripts()
 from canonical.lp import initZopeless
 transactionmgr = initZopeless(dbuser=dbuser)
 
+def switch_db_user(dbuser, commit_first=True):
+    global transactionmgr
+    if commit_first:
+        transactionmgr.commit()
+    else:
+        transactionmgr.abort()
+    transactionmgr.uninstall()
+    transactionmgr = initZopeless(dbuser=dbuser)
+
 #
 # We don't really depend on everything from canonical.launchpad.database and
 # canonical.launchpad.interfaces, but it's good to have this available in the
@@ -37,6 +46,7 @@ transactionmgr = initZopeless(dbuser=dbuser)
 #
 from canonical.launchpad.database import *
 from canonical.launchpad.interfaces import *
+from canonical.launchpad.testing import LaunchpadObjectFactory
 
 from zope.interface.verify import verifyObject
 

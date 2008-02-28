@@ -11,6 +11,7 @@ import shutil
 import doctest
 import optparse
 import unittest
+# pylint: disable-msg=W0403
 import itest_helper
 
 sys.path.insert(0, itest_helper.TOP)
@@ -18,6 +19,7 @@ sys.path.insert(1, os.path.join(itest_helper.TOP, 'mailman'))
 
 from canonical.database.sqlbase import cursor
 from canonical.launchpad.scripts import execute_zcml_for_scripts
+# pylint: disable-msg=F0401
 from Mailman.mm_cfg import QUEUE_DIR, VAR_PREFIX
 
 execute_zcml_for_scripts()
@@ -91,7 +93,7 @@ def integrationTestCleanUp(test):
     # Now delete any mailing lists still hanging around.  We don't care if
     # this fails because it means the list doesn't exist.  While we're at it,
     # remove any related archived backup files.
-    for team_name in ('itest-one', 'itest-two', 'itest-three'):
+    for team_name in ('itest-one', 'itest-two', 'itest-three', 'fake-team'):
         try:
             itest_helper.run_mailman('./rmlist', '-a', team_name)
         except itest_helper.IntegrationTestFailure:
