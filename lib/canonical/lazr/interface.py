@@ -37,9 +37,9 @@ def use_template(template, include=None, exclude=None):
     for name in include:
         field = copy(template.get(name))
         # Fields are ordered based on a global counter in the Field class.
-        # We want the new fields to be re-ordered, so we need to use that
-        # property. This makes sure that these fields sort in the order
-        # specified, even if other fields are subsequently defined.
+        # We increment and use Field.order to reorder the copied fields. 
+        # If fields are subsequently defined, they they will follow the
+        # copied fields.
         if isinstance(field, Field):
             Field.order += 1
             field.order = Field.order
