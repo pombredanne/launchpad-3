@@ -159,10 +159,6 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
         notNull=True, default=False)
     translation_focus = ForeignKey(dbName='translation_focus',
         foreignKey='DistroSeries', notNull=False, default=None)
-    source_package_caches = SQLMultipleJoin('DistributionSourcePackageCache',
-                                            joinColumn="distribution",
-                                            orderBy="name",
-                                            prejoins=['sourcepackagename'])
     date_created = UtcDateTimeCol(notNull=False, default=UTC_NOW)
     language_pack_admin = ForeignKey(
         dbName='language_pack_admin', foreignKey='Person',
@@ -699,7 +695,23 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
         return getUtility(IBuildSet).getBuildsByArchIds(
             arch_ids, build_state, name, pocket)
 
-    def removeOldCacheItems(self, log):
+    def getSourcePackageCaches(self, archive=None):
+        """See `IDistribution`."""
+        if archive is not None:
+            archives = [archive.id]
+        else:
+            archives = self.all_distro_archive_ids
+
+        caches = DistributionSourcePackageCache.select("""
+            distribution = %s AND
+            archive IN %s
+        """ % sqlvalues(self, archives),
+        orderBy="name",
+        prejoins=['sourcepackagename'])
+
+        return caches
+
+    def removeOldCacheItems(self, archive, log):
         """See `IDistribution`."""
 
         # Get the set of source package names to deal with.
@@ -707,39 +719,39 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
             SourcePackagePublishingHistory.distroseries =
                 DistroSeries.id AND
             DistroSeries.distribution = %s AND
-            SourcePackagePublishingHistory.archive IN %s AND
+            SourcePackagePublishingHistory.archive = %s AND
             SourcePackagePublishingHistory.sourcepackagerelease =
                 SourcePackageRelease.id AND
             SourcePackageRelease.sourcepackagename =
                 SourcePackageName.id AND
             SourcePackagePublishingHistory.dateremoved is NULL
-            """ % sqlvalues(self, self.all_distro_archive_ids),
+            """ % sqlvalues(self, archive),
             distinct=True,
             clauseTables=['SourcePackagePublishingHistory', 'DistroSeries',
                 'SourcePackageRelease']))
 
         # Remove the cache entries for packages we no longer publish.
-        for cache in self.source_package_caches:
+        for cache in self.getSourcePackageCaches(archive):
             if cache.sourcepackagename not in spns:
                 log.debug(
                     "Removing source cache for '%s' (%s)"
                     % (cache.name, cache.id))
                 cache.destroySelf()
 
-    def updateCompleteSourcePackageCache(self, log, ztm):
+    def updateCompleteSourcePackageCache(self, archive, log, ztm):
         """See `IDistribution`."""
         # Get the set of source package names to deal with.
         spns = list(SourcePackageName.select("""
             SourcePackagePublishingHistory.distroseries =
                 DistroSeries.id AND
             DistroSeries.distribution = %s AND
-            SourcePackagePublishingHistory.archive IN %s AND
+            SourcePackagePublishingHistory.archive = %s AND
             SourcePackagePublishingHistory.sourcepackagerelease =
                 SourcePackageRelease.id AND
             SourcePackageRelease.sourcepackagename =
                 SourcePackageName.id AND
             SourcePackagePublishingHistory.dateremoved is NULL
-            """ % sqlvalues(self, self.all_distro_archive_ids),
+            """ % sqlvalues(self, archive),
             distinct=True,
             clauseTables=['SourcePackagePublishingHistory', 'DistroSeries',
                 'SourcePackageRelease']))
@@ -748,14 +760,14 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
         counter = 0
         for spn in spns:
             log.debug("Considering source '%s'" % spn.name)
-            self.updateSourcePackageCache(spn, log)
+            self.updateSourcePackageCache(spn, archive, log)
             counter += 1
             if counter > 49:
                 counter = 0
                 log.debug("Committing")
                 ztm.commit()
 
-    def updateSourcePackageCache(self, sourcepackagename, log):
+    def updateSourcePackageCache(self, sourcepackagename, archive, log):
         """See `IDistribution`."""
 
         # Get the set of published sourcepackage releases.
@@ -766,10 +778,9 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
             SourcePackagePublishingHistory.distroseries =
                 DistroSeries.id AND
             DistroSeries.distribution = %s AND
-            SourcePackagePublishingHistory.archive IN %s AND
+            SourcePackagePublishingHistory.archive = %s AND
             SourcePackagePublishingHistory.dateremoved is NULL
-            """ % sqlvalues(sourcepackagename, self,
-                            self.all_distro_archive_ids),
+            """ % sqlvalues(sourcepackagename, self, archive),
             orderBy='id',
             clauseTables=['SourcePackagePublishingHistory', 'DistroSeries'],
             distinct=True))
@@ -781,12 +792,13 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
         # Find or create the cache entry.
         cache = DistributionSourcePackageCache.selectOne("""
             distribution = %s AND
+            archive = %s AND
             sourcepackagename = %s
-            """ % sqlvalues(self.id, sourcepackagename.id))
+            """ % sqlvalues(self, archive, sourcepackagename))
         if cache is None:
             log.debug("Creating new source cache entry.")
             cache = DistributionSourcePackageCache(
-                archive=self.main_archive,
+                archive=archive,
                 distribution=self,
                 sourcepackagename=sourcepackagename)
 
@@ -834,9 +846,11 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
         # be short like "at", both things which users do search for.
         dspcaches = DistributionSourcePackageCache.select("""
             distribution = %s AND
+            archive IN %s AND
             (fti @@ ftq(%s) OR
              DistributionSourcePackageCache.name ILIKE '%%' || %s || '%%')
-            """ % (quote(self.id), quote(text), quote_like(text)),
+            """ % (quote(self), quote(self.all_distro_archive_ids),
+                   quote(text), quote_like(text)),
             orderBy=[SQLConstant('rank(fti, ftq(%s)) DESC' % quote(text))],
             prejoins=["sourcepackagename"])
         return [dspc.distributionsourcepackage for dspc in dspcaches]
@@ -980,10 +994,18 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
             """ % sqlvalues(active_statuses))
 
         if text:
+            orderBy.extend(
+                [SQLConstant('rank(Archive.fti, ftq(%s)) DESC' % quote(text)),
+                 SQLConstant('rank(Person.fti, ftq(%s)) DESC' % quote(text))])
+
             clauses.append("""
-            ((Person.fti @@ ftq(%s) OR
-            Archive.description LIKE '%%' || %s || '%%'))
-            """ % (quote(text), quote_like(text)))
+            (Person.fti @@ ftq(%s) OR
+             Archive.fti @@ ftq(%s) OR
+             EXISTS (SELECT 1 FROM DistributionSourcePackageCache WHERE
+                     archive = Archive.id AND fti @@ ftq(%s)) OR
+             EXISTS (SELECT 1 FROM DistroseriesPackageCache WHERE
+                     archive = Archive.id AND fti @@ ftq(%s)))
+            """ % sqlvalues(text, text, text, text))
 
         if user is not None:
             if not user.inTeam(getUtility(ILaunchpadCelebrities).admin):

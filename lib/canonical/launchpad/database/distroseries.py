@@ -130,8 +130,6 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
     architectures = SQLMultipleJoin(
         'DistroArchSeries', joinColumn='distroseries',
         orderBy='architecturetag')
-    binary_package_caches = SQLMultipleJoin('DistroSeriesPackageCache',
-        joinColumn='distroseries', orderBy='name')
     language_packs = SQLMultipleJoin(
         'LanguagePack', joinColumn='distroseries', orderBy='-date_exported')
     sections = SQLRelatedJoin(
@@ -917,7 +915,22 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
             return section
         raise NotFoundError(name)
 
-    def removeOldCacheItems(self, log):
+    def getBinaryPackageCaches(self, archive=None):
+        """See IDistroSeries."""
+        if archive is not None:
+            archives = [archive.id]
+        else:
+            archives = self.distribution.all_distro_archive_ids
+
+        caches = DistroSeriesPackageCache.select("""
+            distroseries = %s AND
+            archive IN %s
+        """ % sqlvalues(self, archives),
+        orderBy="name")
+
+        return caches
+
+    def removeOldCacheItems(self, archive, log):
         """See IDistroSeries."""
 
         # get the set of package names that should be there
@@ -925,27 +938,27 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
             BinaryPackagePublishingHistory.distroarchseries =
                 DistroArchSeries.id AND
             DistroArchSeries.distroseries = %s AND
-            BinaryPackagePublishingHistory.archive IN %s AND
+            BinaryPackagePublishingHistory.archive = %s AND
             BinaryPackagePublishingHistory.binarypackagerelease =
                 BinaryPackageRelease.id AND
             BinaryPackageRelease.binarypackagename =
                 BinaryPackageName.id AND
             BinaryPackagePublishingHistory.dateremoved is NULL
-            """ % sqlvalues(self, self.distribution.all_distro_archive_ids),
+            """ % sqlvalues(self, archive),
             distinct=True,
             clauseTables=['BinaryPackagePublishingHistory',
                           'DistroArchSeries',
                           'BinaryPackageRelease']))
 
         # remove the cache entries for binary packages we no longer want
-        for cache in self.binary_package_caches:
+        for cache in self.getBinaryPackageCaches(archive):
             if cache.binarypackagename not in bpns:
                 log.debug(
                     "Removing binary cache for '%s' (%s)"
                     % (cache.name, cache.id))
                 cache.destroySelf()
 
-    def updateCompletePackageCache(self, log, ztm):
+    def updateCompletePackageCache(self, archive, log, ztm):
         """See IDistroSeries."""
 
         # get the set of package names to deal with
@@ -953,13 +966,13 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
             BinaryPackagePublishingHistory.distroarchseries =
                 DistroArchSeries.id AND
             DistroArchSeries.distroseries = %s AND
-            BinaryPackagePublishingHistory.archive IN %s AND
+            BinaryPackagePublishingHistory.archive = %s AND
             BinaryPackagePublishingHistory.binarypackagerelease =
                 BinaryPackageRelease.id AND
             BinaryPackageRelease.binarypackagename =
                 BinaryPackageName.id AND
             BinaryPackagePublishingHistory.dateremoved is NULL
-            """ % sqlvalues(self, self.distribution.all_distro_archive_ids),
+            """ % sqlvalues(self, archive),
             distinct=True,
             clauseTables=['BinaryPackagePublishingHistory',
                           'DistroArchSeries',
@@ -970,7 +983,7 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         counter = 0
         for bpn in bpns:
             log.debug("Considering binary '%s'" % bpn.name)
-            self.updatePackageCache(bpn, log)
+            self.updatePackageCache(bpn, archive, log)
             counter += 1
             if counter > 99:
                 counter = 0
@@ -978,7 +991,7 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
                     log.debug("Committing")
                     ztm.commit()
 
-    def updatePackageCache(self, binarypackagename, log):
+    def updatePackageCache(self, binarypackagename, archive, log):
         """See IDistroSeries."""
 
         # get the set of published binarypackagereleases
@@ -989,10 +1002,9 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
             BinaryPackagePublishingHistory.distroarchseries =
                 DistroArchSeries.id AND
             DistroArchSeries.distroseries = %s AND
-            BinaryPackagePublishingHistory.archive IN %s AND
+            BinaryPackagePublishingHistory.archive = %s AND
             BinaryPackagePublishingHistory.dateremoved is NULL
-            """ % sqlvalues(binarypackagename, self,
-                            self.distribution.all_distro_archive_ids),
+            """ % sqlvalues(binarypackagename, self, archive),
             orderBy='-datecreated',
             clauseTables=['BinaryPackagePublishingHistory',
                           'DistroArchSeries'],
@@ -1004,12 +1016,13 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         # find or create the cache entry
         cache = DistroSeriesPackageCache.selectOne("""
             distroseries = %s AND
+            archive = %s AND
             binarypackagename = %s
-            """ % sqlvalues(self.id, binarypackagename.id))
+            """ % sqlvalues(self, archive, binarypackagename))
         if cache is None:
             log.debug("Creating new binary cache entry.")
             cache = DistroSeriesPackageCache(
-                archive=self.main_archive,
+                archive=archive,
                 distroseries=self,
                 binarypackagename=binarypackagename)
 
@@ -1035,10 +1048,13 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
     def searchPackages(self, text):
         """See IDistroSeries."""
         drpcaches = DistroSeriesPackageCache.select("""
-            distroseries = %s AND (
-            fti @@ ftq(%s) OR
+            distroseries = %s AND
+            archive IN %s AND
+            (fti @@ ftq(%s) OR
             DistroSeriesPackageCache.name ILIKE '%%' || %s || '%%')
-            """ % (quote(self.id), quote(text), quote_like(text)),
+            """ % (quote(self),
+                   quote(self.distribution.all_distro_archive_ids),
+                   quote(text), quote_like(text)),
             selectAlso='rank(fti, ftq(%s)) AS rank' % sqlvalues(text),
             orderBy=['-rank'],
             prejoins=['binarypackagename'],
