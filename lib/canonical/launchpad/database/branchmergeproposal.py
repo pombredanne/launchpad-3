@@ -124,9 +124,20 @@ class BranchMergeProposal(SQLBase):
     date_review_requested = UtcDateTimeCol(notNull=False, default=None)
     date_reviewed = UtcDateTimeCol(notNull=False, default=None)
 
-    conversation = ForeignKey(
-        dbName='conversation', foreignKey='CodeReviewMessage', notNull=False,
-        default=None)
+    @property
+    def conversation(self):
+        root_selection = CodeReviewMessage.select(
+            """id in (SELECT CodeReviewMessage.id
+                      FROM CodeReviewMessage, Message
+                      WHERE (branch_merge_proposal = %d AND
+                             CodeReviewMessage.message = Message.id)
+                      ORDER BY Message.datecreated LIMIT 1)""" % self.id)
+        root_list = list(root_selection)
+        if root_selection.count() == 0:
+            return None
+        else:
+            assert root_selection.count() < 2
+            return list(root_list)[0]
 
     date_queued = UtcDateTimeCol(notNull=False, default=None)
 
@@ -350,8 +361,5 @@ class BranchMergeProposal(SQLBase):
         msg = Message(parent=parent_message, owner=owner,
                       rfc822msgid=msgid, subject=subject)
         chunk = MessageChunk(message=msg, content=content, sequence=1)
-        crmsg = CodeReviewMessage(
+        return CodeReviewMessage(
             branch_merge_proposal=self, message=msg, vote=vote)
-        if self.conversation is None:
-            self.conversation = crmsg
-        return crmsg

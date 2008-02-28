@@ -3,6 +3,8 @@
 """Unit tests for CodeReviewMessage"""
 
 import unittest
+from zope.security.proxy import removeSecurityProxy
+
 from canonical.launchpad.interfaces import CodeReviewVote
 from canonical.testing import LaunchpadFunctionalLayer
 from canonical.launchpad.ftests import login
@@ -14,12 +16,14 @@ class TestCodeReviewMessage(unittest.TestCase):
 
     def setUp(self):
         unittest.TestCase.setUp(self)
-        login('test@canonical.com')
+        login('foo.bar@canonical.com')
         self.factory = LaunchpadObjectFactory()
-        self.bmp = self.factory.makeProposalToMerge()
+        self.bmp = self.factory.makeBranchMergeProposal()
         self.submitter = self.factory.makePerson()
         self.reviewer = self.factory.makePerson()
-        self.bmp2 = self.factory.makeProposalToMerge()
+        self.bmp2 = self.factory.makeBranchMergeProposal()
+        self.bmp = removeSecurityProxy(self.bmp)
+        self.bmp2 = removeSecurityProxy(self.bmp2)
 
     def test_create_root_message(self):
         message = self.bmp.createMessage(
