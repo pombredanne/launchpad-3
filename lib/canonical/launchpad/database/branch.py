@@ -380,7 +380,7 @@ class Branch(SQLBase):
         return BranchSubscription.select(
             "BranchSubscription.branch = Branch.id "
             "AND BranchSubscription.notification_level IN %s"
-            % (tuple(notification_levels),),
+            % sqlvalues(notification_levels),
             clauseTables=['Branch'])
 
     def hasSubscription(self, person):
