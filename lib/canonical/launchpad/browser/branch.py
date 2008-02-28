@@ -580,7 +580,7 @@ class BranchDeletionView(LaunchpadFormView):
             # them to the code listing for the owner.
             self.next_url = canonical_url(branch.owner)
             message = "Branch %s deleted." % branch.unique_name
-            getUtility(IBranchSet).delete(branch)
+            branch.destroySelf()
             self.request.response.addNotification(message)
         else:
             self.request.response.addNotification(
