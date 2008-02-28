@@ -79,8 +79,10 @@ Log in and kick off the update. The importing of comments, which is
 controlled by a configuration option, is disabled here and will be
 tested later.
 
+    >>> from canonical.launchpad.scripts.checkwatches import BugWatchUpdater
+    >>> bug_watch_updater = BugWatchUpdater(txn)
     >>> external_debbugs.import_comments = False
-    >>> external_debbugs.updateBugWatches(bug_watches)
+    >>> bug_watch_updater.updateBugWatches(external_debbugs, bug_watches)
     INFO:...:Updating 5 watches on http://bugs.some.where
 
     >>> for bug_watch in bug_watches:
@@ -283,7 +285,6 @@ summary, and the description as the description.
     ...
 
     >>> bug = external_debbugs.importBug(debian, '322535')
-    INFO:...:Updating 1 watches on http://bugs.some.where
 
     >>> print bug.title
     evolution: Multiple format string vulnerabilities in Evolution
@@ -360,7 +361,6 @@ gets notified about it.
     None
     >>> bug = external_debbugs.importBug(debian, '1234')
     WARNING:...:Unknown Debian package (debbugs #1234): no-such-package
-    INFO:...:Updating 1 watches on http://bugs.debian.org
 
     >>> [debian_task] = bug.bugtasks
     >>> debian_task.distribution.name
@@ -372,20 +372,23 @@ gets notified about it.
 === Syncing status ===
 
 After the bug watch has been created for the imported bug, the status is
-synced immediately.
+not synced immediately. The status will be updated the next time all the
+bug watches for this bug tracker gets updated. This is to avoid making
+one request per imported bug.
 
     >>> external_debbugs = TestDebBugs(
     ...     txn, debbugs, {'1234': TestDebianBug(status='done', id=1234)})
-    >>> expected_status = external_debbugs.convertRemoteStatus(
+    >>> real_status = external_debbugs.convertRemoteStatus(
     ...     external_debbugs.getRemoteStatus('1234'))
-    >>> expected_status.name
+    >>> real_status.name
     'FIXRELEASED'
     >>> bug = external_debbugs.importBug(debian, '1234')
-    INFO:...:Updating 1 watches on http://bugs.debian.org
 
     >>> [debian_task] = bug.bugtasks
     >>> debian_task.status.name
-    'FIXRELEASED'
+    'NEW'
+    >>> print debian_task.bugwatch.lastchecked
+    None
 
 
 === Reporter already registered in Launchpad ===
@@ -400,7 +403,6 @@ valid e-mail address), he still won't be subscribed to the imported bug.
     ...     reporter_email=no_priv.preferredemail.email, id=1234)
     >>> external_debbugs = TestDebBugs(txn, debbugs, {'1234': no_priv_bug})
     >>> bug = external_debbugs.importBug(debian, '1234')
-    INFO:...:Updating 1 watches on http://bugs.debian.org
 
     >>> bug.owner.name
     u'no-priv'

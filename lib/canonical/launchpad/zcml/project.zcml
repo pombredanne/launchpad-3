@@ -179,9 +179,6 @@
       name="+assignments"
       template="../templates/specificationtarget-assignments.pt" />
     <browser:page
-      name="+roadmap"
-      template="../templates/specificationtarget-roadmap.pt" />
-    <browser:page
       name="+portlet-latestspecs"
       template="../templates/specificationtarget-portlet-latestspecs.pt" />
   </browser:pages>

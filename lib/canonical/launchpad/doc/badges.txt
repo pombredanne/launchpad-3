@@ -195,7 +195,7 @@ as illustrated by the printed method calls.
     <img alt="bug" width="14" height="14" src="/@@/bug" title="Linked to a bug"/>
 
 When showing listings of Foos, you often want to decorate them with
-`canonical.lp.decorates`.  By having the DecoratedFoo inherit from the
+`canonical.lazr.decorates`.  By having the DecoratedFoo inherit from the
 FooBadges class, we provide two things: a default implementation for
 each of the badge methods; and direct implementation of IHasBadges.
 This allows the decorated class to provide an alternative method to
@@ -204,9 +204,9 @@ of the bug badge is determined by the users ability to see the bugs for
 any bug branch links. On listings we don't want to do 100 queries
 just to check bug badges. The batch handler for branches executes a
 single query for the BugBranch links for the branches in the batch and
-that is used to contruct the DecoratedBranch.
+that is used to construct the DecoratedBranch.
 
-    >>> from canonical.lp import decorates
+    >>> from canonical.lazr import decorates
     >>> class DecoratedFoo(FooBadges):
     ...     decorates(IFoo, 'foo')
     ...     def __init__(self, foo):

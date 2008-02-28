@@ -520,8 +520,7 @@ class IBugAddForm(IBug):
             vocabulary="DistributionUsingMalone")
     owner = Int(title=_("Owner"), required=True)
     comment = Text(
-        title=_('Further information, steps to reproduce,'
-                ' version information, etc.'),
+        title=_('Further information'),
         required=False)
     bug_already_reported_as = Choice(
         title=_("This bug has already been reported as ..."), required=False,

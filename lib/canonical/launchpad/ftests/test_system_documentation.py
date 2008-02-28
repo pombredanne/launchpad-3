@@ -579,6 +579,13 @@ special = {
             optionflags=default_optionflags,
             layer=LaunchpadFunctionalLayer,
             ),
+    'checkwatches-cli-switches.txt':
+            LayeredDocFileSuite(
+                '../doc/checkwatches-cli-switches.txt',
+                setUp=checkwatchesSetUp,
+                tearDown=tearDown,
+                optionflags=default_optionflags, layer=LaunchpadZopelessLayer
+                ),
     'externalbugtracker-bugzilla.txt':
             LayeredDocFileSuite(
                 '../doc/externalbugtracker-bugzilla.txt',

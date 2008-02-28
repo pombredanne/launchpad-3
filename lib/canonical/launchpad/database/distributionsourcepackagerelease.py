@@ -25,7 +25,7 @@ from canonical.launchpad.database.build import Build
 from canonical.launchpad.database.publishing import \
     SourcePackagePublishingHistory
 
-from canonical.lp import decorates
+from canonical.lazr import decorates
 
 
 class DistributionSourcePackageRelease:

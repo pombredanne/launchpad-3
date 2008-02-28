@@ -150,6 +150,15 @@ class TestBranchMergeProposalTransitions(TestCase):
         """Superseded is a terminal state, so no transitions are valid."""
         self.assertTerminatingState(BranchMergeProposalStatus.SUPERSEDED)
 
+    def test_valid_transition_graph_is_complete(self):
+        """The valid transition graph should have a key for all possible
+        queue states."""
+        from canonical.launchpad.database.branchmergeproposal import (
+            VALID_TRANSITION_GRAPH)
+        keys = VALID_TRANSITION_GRAPH.keys()
+        all_states = BranchMergeProposalStatus.items
+        self.assertEqual(sorted(all_states), sorted(keys),
+                         "Missing possible states from the transition graph.")
 
 class TestBranchMergeProposalCanReview(TestCase):
     """Test the different cases that makes a branch deletable or not."""
