@@ -123,9 +123,12 @@ class CodeImportSet:
         getUtility(ICodeImportEventSet).newCreate(code_import, registrant)
         return code_import
 
-    def delete(self, id):
+    def delete(self, code_import):
         """See `ICodeImportSet`."""
-        CodeImport.delete(id)
+        from canonical.launchpad.database import CodeImportJob
+        if code_import.import_job is not None:
+            CodeImportJob.delete(code_import.import_job.id)
+        CodeImport.delete(code_import.id)
 
     def getAll(self):
         """See `ICodeImportSet`."""
