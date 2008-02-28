@@ -6,13 +6,10 @@ from cStringIO import StringIO
 import httplib
 import logging
 import sys
-import unittest
 import xmlrpclib
 
-from zope.app.testing.functional import (
-    FunctionalTestSetup, HTTPCaller)
+from zope.app.testing.functional import HTTPCaller
 from zope.security.management import endInteraction, queryInteraction
-
 from zope.testing import doctest
 from zope.testing.loggingsupport import Handler
 
@@ -23,40 +20,11 @@ from canonical.launchpad.webapp.interaction import (
 from canonical.testing import FunctionalLayer
 
 
-class NewFunctionalTestSetup(FunctionalTestSetup):
-    """Wrap standard FunctionalTestSetup to ensure it is only called
-       from tests specifying a valid Layer.
-    """
-    def __init__(self, *args, **kw):
-        from canonical.testing import ZopelessLayer
-        assert FunctionalLayer.isSetUp or ZopelessLayer.isSetUp, """
-                FunctionalTestSetup invoked at an inappropriate time.
-                May only be invoked in the FunctionalLayer or ZopelessLayer
-                """
-        super(NewFunctionalTestSetup, self).__init__(*args, **kw)
-FunctionalTestSetup = NewFunctionalTestSetup
-
-
-class StdoutWrapper:
-    """A wrapper for sys.stdout.  Writes to this file like object will
-    write to whatever sys.stdout is pointing to at the time.
-
-    The purpose of this class is to allow doctest to capture log
-    messages.  Since doctest replaces sys.stdout, configuring the
-    logging module to send messages to sys.stdout before running the
-    tests will not result in the output being captured.  Using an
-    instance of this class solves the problem.
-    """
-    def __getattr__(self, attr):
-        return getattr(sys.stdout, attr)
-
-
 class StdoutHandler(Handler):
     def emit(self, record):
         Handler.emit(self, record)
-        print >> StdoutWrapper(), '%s:%s:%s' % (
-                    record.levelname, record.name, self.format(record)
-                    )
+        print >> sys.stdout, '%s:%s:%s' % (
+            record.levelname, record.name, self.format(record))
 
 
 def FunctionalDocFileSuite(*paths, **kw):
@@ -184,7 +152,3 @@ class XMLRPCTestTransport(xmlrpclib.Transport):
         """Return our custom HTTPCaller HTTPConnection."""
         host, extra_headers, x509 = self.get_host_info(host)
         return HTTPCallerHTTPConnection(host)
-
-
-if __name__ == '__main__':
-    unittest.main()

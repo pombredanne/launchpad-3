@@ -53,7 +53,7 @@ class TestCodeImport(TestCase):
         code_import = self.factory.makeCodeImport()
         branch = code_import.branch
         self.assertEqual(code_import, branch.code_import)
-        CodeImportSet().delete(code_import.id)
+        CodeImportSet().delete(code_import)
         self.assertEqual(None, branch.code_import)
 
 

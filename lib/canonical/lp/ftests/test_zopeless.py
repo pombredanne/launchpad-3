@@ -1,37 +1,31 @@
 """
 Tests to make sure that initZopeless works as expected.
 """
-import unittest, warnings, sys, psycopg
 from threading import Thread
+import unittest
+import warnings
 
-from zope.testing.doctest import DocTestSuite
+import psycopg
 from sqlobject import StringCol, IntCol
+from zope.testing.doctest import DocTestSuite
 
+from canonical.database.sqlbase import SQLBase, alreadyInstalledMsg
+from canonical.ftests.pgsql import PgTestSetup
 from canonical.lp import initZopeless
-from canonical.database.sqlbase import (
-        SQLBase, alreadyInstalledMsg, cursor, connect, DEFAULT_ISOLATION,
-        AUTOCOMMIT_ISOLATION, READ_COMMITTED_ISOLATION, SERIALIZABLE_ISOLATION,
-        )
-from canonical.ftests.pgsql import PgTestCase, PgTestSetup
-from canonical.functional import FunctionalTestSetup
-from canonical.testing import LaunchpadLayer, ZopelessLayer
-from threading import Thread
-from zope.testing.doctest import DocTestSuite
-
-from sqlobject import StringCol, IntCol
+from canonical.testing import LaunchpadLayer
 
 
 class MoreBeer(SQLBase):
     '''Simple SQLObject class used for testing'''
-    # test_sqlos defines a Beer SQLObject already, so we call this one MoreBeer
-    # to avoid confusing SQLObject.
+    # test_sqlos defines a Beer SQLObject already, so we call this one
+    # MoreBeer to avoid confusing SQLObject.
     _columns = [
         StringCol('name', alternateID=True, notNull=True),
         IntCol('rating', default=None),
         ]
 
 
-class TestInitZopeless(PgTestCase):
+class TestInitZopeless(unittest.TestCase):
     layer = LaunchpadLayer
 
     def test_initZopelessTwice(self):
@@ -44,9 +38,9 @@ class TestInitZopeless(PgTestCase):
             # Calling initZopeless with the same arguments twice should return
             # the exact same object twice, but also emit a warning.
             try:
-                tm1 = initZopeless(dbname=self.dbname, dbhost='',
+                tm1 = initZopeless(dbname=PgTestSetup().dbname, dbhost='',
                         dbuser='launchpad')
-                tm2 = initZopeless(dbname=self.dbname, dbhost='',
+                tm2 = initZopeless(dbname=PgTestSetup().dbname, dbhost='',
                         dbuser='launchpad')
                 self.failUnless(tm1 is tm2)
                 self.failUnless(self.warned)
@@ -62,12 +56,12 @@ class TestInitZopeless(PgTestCase):
         self.warned = True
 
 
-class TestZopeless(PgTestCase):
+class TestZopeless(unittest.TestCase):
     layer = LaunchpadLayer
 
     def setUp(self):
-        PgTestCase.setUp(self)
-        self.tm = initZopeless(dbname=self.dbname, dbuser='launchpad')
+        self.tm = initZopeless(dbname=PgTestSetup().dbname,
+                               dbuser='launchpad')
         MoreBeer.createTable()
         self.tm.commit()
 
@@ -171,7 +165,7 @@ class TestZopeless(PgTestCase):
         self.tm.commit()
 
         # Make another change from a non-SQLObject connection, and commit that
-        conn = psycopg.connect('dbname=' + self.dbname)
+        conn = psycopg.connect('dbname=' + PgTestSetup().dbname)
         cur = conn.cursor()
         cur.execute("BEGIN TRANSACTION;")
         cur.execute("UPDATE MoreBeer SET rating=4 "

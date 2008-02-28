@@ -776,21 +776,6 @@ scanned ID is.
     False
 
 
-== Getting last commit time for branches ==
-
-There is not sufficient correct data in the sample code to make this
-right, but we still want to test the corner cases.
-
-    >>> branchset.getLastCommitForBranches([])
-    {}
-    >>> branch = branchset.get(1)
-    >>> branchset.getLastCommitForBranches([branch])
-    {<Branch ...>: None}
-    >>> another = branchset.get(2)
-    >>> branchset.getLastCommitForBranches([branch, another])
-    {<Branch ...>: None, <Branch ...>: None}
-
-
 == Getting the development focus branches for products ==
 
 One of the primary initial code pages will be the "products with code" page.
@@ -827,30 +812,6 @@ Lets make gnome terminal have a user branch as the dev focus.
     iso-codes      1 None
     landscape      2 None
     thunderbird    1 None
-
-
-== Getting branches by owner ==
-
-In order to facilitate getting the branches for all the teams that a
-person is a member of, we need to be able to get branches owned by
-arbitrary people.
-
-    >>> branchset.getBranchesForOwners([])
-    []
-    >>> owners = [personset.getByName('launchpad')]
-    >>> branches = branchset.getBranchesForOwners(owners)
-    >>> import operator
-    >>> for branch in sorted(branches, key=operator.attrgetter('unique_name')):
-    ...     print branch.unique_name
-    ~launchpad/gnome-terminal/launchpad
-
-    >>> owners.append(personset.getByName('ddaa'))
-    >>> branches = branchset.getBranchesForOwners(owners)
-    >>> for branch in sorted(branches, key=operator.attrgetter('unique_name')):
-    ...     print branch.unique_name
-    ~ddaa/+junk/junkcode
-    ~ddaa/gnome-terminal/dev
-    ~launchpad/gnome-terminal/launchpad
 
 
 == Getting all branches for a person ==
@@ -1117,9 +1078,9 @@ branch.
     True
     >>> action, reason = requirements[subscription]
     >>> print action
-    'delete'
+    delete
     >>> print reason
-    u'This is a subscription to this branch.'
+    This is a subscription to this branch.
 
 Deletion can be forced by supplying break_references=True.  This will delete
 items that have mandantory references to this branch, and alter items with
