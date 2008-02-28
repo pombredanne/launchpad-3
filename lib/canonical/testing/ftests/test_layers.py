@@ -7,10 +7,11 @@ to confirm that the environment hasn't been corrupted by tests
 __metaclass__ = type
 
 from cStringIO import StringIO
-import psycopg
+import os
 from urllib import urlopen
 import unittest
 
+import psycopg
 from zope.component import getUtility, ComponentLookupError
 
 from canonical.config import config, dbconfig
@@ -134,7 +135,8 @@ class LibrarianTestCase(BaseTestCase):
     def testUploadsFail(self):
         # This layer is not particularly useful by itself, as the Librarian
         # cannot function correctly as there is no database setup.
-        # We can test this using remoteAddFile (it does not need the CA loaded)
+        # We can test this using remoteAddFile (it does not need the CA
+        # loaded)
         client = LibrarianClient()
         data = 'This is a test'
         self.failUnlessRaises(
