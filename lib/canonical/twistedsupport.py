@@ -13,6 +13,7 @@ from twisted.python.util import mergeFunctionMetadata
 
 
 class MethodDeferrer:
+    """Wraps an object's publihed methods in `defer_to_thread`."""
 
     def __init__(self, wrapped_object, *interfaces):
         self._original = wrapped_object
