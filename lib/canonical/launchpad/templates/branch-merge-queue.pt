@@ -15,10 +15,6 @@
 <metal:portlets fill-slot="portlets">
 </metal:portlets>
 
-<p metal:fill-slot="help-XXXX">
-  HELP TEXT HERE
-</p>
-
 <div metal:fill-slot="main">
 
   <tal:branch-link define="branch context">

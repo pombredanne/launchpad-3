@@ -369,25 +369,13 @@ class BranchMergeProposalReviewView(MergeProposalEditView,
     label = "Review proposal to merge"
 
     @property
-    def initial_values(self):
-        # Default to reviewing the tip of the source branch.
-        return {'revision_number': self.context.source_branch.revision_count}
-
-    @property
     def adapters(self):
         return {ReviewForm: self.context}
 
     @property
-    def next_url(self):
-        return canonical_url(self.context)
-
-
-class ReviewBranchMergeProposalView(MergeProposalEditView,
-                                    UnmergedRevisionsMixin):
-    """The view to approve or reject a merge proposal."""
-
-    schema = ReviewForm
-    label = "Review proposal to merge"
+    def initial_values(self):
+        # Default to reviewing the tip of the source branch.
+        return {'revision_number': self.context.source_branch.revision_count}
 
     @action('Approve', name='approve')
     def approve_action(self, action, data):
@@ -514,13 +502,36 @@ class BranchMergeProposalEnqueueView(MergeProposalEditView,
     label = "Queue branch for merging"
 
     @property
+    def initial_values(self):
+        # If the user is a valid reviewer, then default the revision
+        # number to be the tip.
+        if self.context.isPersonValidReviewer(self.user):
+            revision_number = self.context.source_branch.revision_count
+        else:
+            revision_number = self._getRevisionNumberForRevisionId(
+                self.context.reviewed_revision_id)
+
+        return {'revision_number': revision_number}
+
+    @property
     def adapters(self):
         return {EnqueueForm: self.context}
+
+    def setUpFields(self):
+        super(BranchMergeProposalEnqueueView, self).setUpFields()
+        # If the user is not a valid reviewer for the target branch,
+        # then the revision number should be read only.
+        if not self.context.isPersonValidReviewer(self.user):
+            self.form_fields['revision_number'].for_display = True
 
     @action('Enqueue', name='enqueue')
     def enqueue_action(self, action, data):
         """Update the whiteboard and go back to the source branch."""
-        self.context.enqueue(self.user, self._getRevisionId(data))
+        if self.context.isPersonValidReviewer(self.user):
+            revision_id = self._getRevisionId(data)
+        else:
+            revision_id = self.context.reviewed_revision_id
+        self.context.enqueue(self.user, revision_id)
         self.updateContextFromData(data)
 
     @action('Cancel', name='cancel', validator='validate_cancel')
@@ -529,19 +540,10 @@ class BranchMergeProposalEnqueueView(MergeProposalEditView,
 
     def validate(self, data):
         """Ensure that the proposal is in an appropriate state."""
-        if self.context.queue_status == BranchMergeProposalStatus.MERGED:
-            self.addError("The merge proposal is not an a valid state to "
-                          "review.")
-        elif (self.context.queue_status ==
-              BranchMergeProposalStatus.CODE_APPROVED):
-            # This is a good transition.
-            pass
-        elif self.context.isPersonValidReviewer(self.user):
-            # This person can transition the code appropriately.
-            pass
-        else:
-            self.addError("The merge proposal needs to be approved before "
-                          "it can be queued for landing.")
+        if not self.context.isValidTransition(
+            BranchMergeProposalStatus.QUEUED, self.user):
+            self.addError(
+                "The merge proposal is not an a valid state to enqueue.")
 
         self._validateRevisionNumber(data, 'enqueued')
 
