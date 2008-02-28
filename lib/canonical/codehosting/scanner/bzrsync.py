@@ -108,48 +108,10 @@ def get_revision_message(bzr_branch, bzr_revision):
     return outf.getvalue()
 
 
-class BzrSync:
-    """Import version control metadata from a Bazaar branch into the database.
+class BugBranchLinker:
 
-    If the contructor succeeds, a read-lock for the underlying bzrlib branch is
-    held, and must be released by calling the `close` method.
-    """
-    def __init__(self, trans_manager, branch, logger=None):
-        self.trans_manager = trans_manager
-        self.email_from = config.noreply_from_address
-
-        if logger is None:
-            logger = logging.getLogger(self.__class__.__name__)
-        self.logger = logger
-
-        self.db_branch = branch
-
-    def initializeEmailQueue(self):
-        """Create an email queue and determine whether to create diffs.
-
-        In order to avoid creating diffs when no one is interested in seeing
-        it, we check all the branch subscriptions first, and decide here
-        whether or not to generate the revision diffs as the branch is scanned.
-
-        See XXX comment in `sendRevisionNotificationEmails` for the reason
-        behind the queue itself.
-        """
-        self.pending_emails = []
-        self.subscribers_want_notification = False
-
-        diff_levels = (BranchSubscriptionNotificationLevel.DIFFSONLY,
-                       BranchSubscriptionNotificationLevel.FULL)
-        for subscription in self.db_branch.subscriptions:
-            if subscription.notification_level in diff_levels:
-                self.subscribers_want_notification = True
-                break
-
-    def close(self):
-        """Explicitly release resources."""
-        # release the read lock on the bzrlib branch
-        # prevent further use of that object
-        self.db_branch = None
-        self.bzr_history = None
+    def __init__(self, db_branch):
+        self.db_branch = db_branch
 
     def _parseBugLine(self, line):
         """Parse a line from a bug property.
@@ -213,6 +175,70 @@ class BzrSync:
                 continue
             bug_statuses[bug] = status
         return bug_statuses
+
+    def createBugBranchLinksForRevision(self, db_revision, bzr_revision):
+        bug_property = bzr_revision.properties.get('bugs', None)
+        if bug_property is None:
+            return
+        bug_set = getUtility(IBugSet)
+        for bug_id, status in self.extractBugInfo(bug_property).iteritems():
+            try:
+                bug = bug_set.get(bug_id)
+            except NotFoundError:
+                pass
+            else:
+                set_bug_branch_status(bug, self.db_branch, status)
+
+
+class BzrSync:
+    """Import version control metadata from a Bazaar branch into the database.
+
+    If the contructor succeeds, a read-lock for the underlying bzrlib branch is
+    held, and must be released by calling the `close` method.
+    """
+    def __init__(self, trans_manager, branch, logger=None):
+        self.trans_manager = trans_manager
+        self.email_from = config.noreply_from_address
+
+        if logger is None:
+            logger = logging.getLogger(self.__class__.__name__)
+        self.logger = logger
+
+        self.db_branch = branch
+        self._bug_linker = BugBranchLinker(self.db_branch)
+
+    def initializeEmailQueue(self):
+        """Create an email queue and determine whether to create diffs.
+
+        In order to avoid creating diffs when no one is interested in seeing
+        it, we check all the branch subscriptions first, and decide here
+        whether or not to generate the revision diffs as the branch is scanned.
+
+        See XXX comment in `sendRevisionNotificationEmails` for the reason
+        behind the queue itself.
+        """
+        self.pending_emails = []
+        self.subscribers_want_notification = False
+
+        diff_levels = (BranchSubscriptionNotificationLevel.DIFFSONLY,
+                       BranchSubscriptionNotificationLevel.FULL)
+        for subscription in self.db_branch.subscriptions:
+            if subscription.notification_level in diff_levels:
+                self.subscribers_want_notification = True
+                break
+
+    def close(self):
+        """Explicitly release resources."""
+        # release the read lock on the bzrlib branch
+        # prevent further use of that object
+        self.db_branch = None
+        self.bzr_history = None
+
+    def _parseBugLine(self, line):
+        return self._bug_linker._parseBugLine()
+
+    def extractBugInfo(self, bug_property):
+        return self._bug_linker.extractBugInfo(bug_property)
 
     def syncBranchAndClose(self, bzr_branch=None):
         """Synchronize the database with a Bazaar branch and close resources.
@@ -536,17 +562,8 @@ class BzrSync:
                 self.createBugBranchLinksForRevision(db_revision, revision)
 
     def createBugBranchLinksForRevision(self, db_revision, bzr_revision):
-        bug_property = bzr_revision.properties.get('bugs', None)
-        if bug_property is None:
-            return
-        bug_set = getUtility(IBugSet)
-        for bug_id, status in self.extractBugInfo(bug_property).iteritems():
-            try:
-                bug = bug_set.get(bug_id)
-            except NotFoundError:
-                pass
-            else:
-                set_bug_branch_status(bug, self.db_branch, status)
+        return self._bug_linker.createBugBranchLinksForRevision(
+            db_revision, bzr_revision)
 
     def updateBranchStatus(self):
         """Update the branch-scanner status in the database Branch table."""
