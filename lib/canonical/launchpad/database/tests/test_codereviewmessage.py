@@ -30,7 +30,7 @@ class TestCodeReviewMessage(unittest.TestCase):
             self.submitter, 'Message subject', 'Message content')
         self.assertEqual(None, message.vote)
         self.assertEqual(self.submitter, message.message.owner)
-        self.assertEqual(message, self.bmp.conversation)
+        self.assertEqual(message, self.bmp.root_message)
         self.assertEqual('Message subject', message.message.subject)
         self.assertEqual('Message content', message.message.chunks[0].content)
 
@@ -40,7 +40,7 @@ class TestCodeReviewMessage(unittest.TestCase):
         reply = self.bmp.createMessage(
             self.reviewer, 'Reply subject', 'Reply content',
             CodeReviewVote.TWEAK, message)
-        self.assertEqual(message, self.bmp.conversation)
+        self.assertEqual(message, self.bmp.root_message)
         self.assertEqual(message.message.id, reply.message.parent.id)
         self.assertEqual(message.message, reply.message.parent)
         self.assertEqual('Reply subject', reply.message.subject)
@@ -53,7 +53,7 @@ class TestCodeReviewMessage(unittest.TestCase):
         new_message = self.bmp.createMessage(
             self.reviewer, 'New subject', 'New content', CodeReviewVote.TWEAK)
         self.assertEqual(
-            self.bmp.conversation.message, new_message.message.parent)
+            self.bmp.root_message.message, new_message.message.parent)
 
     def test_reply_with_wrong_merge_proposal(self):
         message = self.bmp.createMessage(

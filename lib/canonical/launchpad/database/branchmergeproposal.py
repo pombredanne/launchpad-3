@@ -125,13 +125,15 @@ class BranchMergeProposal(SQLBase):
     date_reviewed = UtcDateTimeCol(notNull=False, default=None)
 
     @property
-    def conversation(self):
-        return CodeReviewMessage.selectOne(
-            """id in (SELECT CodeReviewMessage.id
-                      FROM CodeReviewMessage, Message
-                      WHERE (branch_merge_proposal = %d AND
-                             CodeReviewMessage.message = Message.id)
-                      ORDER BY Message.datecreated LIMIT 1)""" % self.id)
+    def root_message(self):
+        return CodeReviewMessage.selectOne("""
+            CodeReviewMessage.id in (
+                SELECT CodeReviewMessage.id
+                    FROM CodeReviewMessage, Message
+                    WHERE CodeReviewMessage.branch_merge_proposal = %d AND
+                          CodeReviewMessage.message = Message.id
+                    ORDER BY Message.datecreated LIMIT 1)
+            """ % self.id)
 
     date_queued = UtcDateTimeCol(notNull=False, default=None)
 
@@ -345,8 +347,8 @@ class BranchMergeProposal(SQLBase):
         assert owner is not None, 'Merge proposal messages need a sender'
         parent_message = None
         if parent is None:
-            if self.conversation is not None:
-                parent_message = self.conversation.message
+            if self.root_message is not None:
+                parent_message = self.root_message.message
         else:
             assert parent.branch_merge_proposal == self, \
                     'Replies must use the same merge proposal as their parent'

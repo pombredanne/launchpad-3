@@ -192,8 +192,8 @@ class IBranchMergeProposal(Interface):
         title=_('Date Reviewed'), required=False, readonly=True)
     date_queued = Datetime(
         title=_('Date Queued'), required=False, readonly=True)
-    conversation = Attribute(
-        _("The discussion of this merge proposal"))
+    root_message = Attribute(
+        _("The first message in discussion of this merge proposal"))
 
     def isValidTransition(next_state, user=None):
         """True if it is valid for user update the proposal to next_state."""

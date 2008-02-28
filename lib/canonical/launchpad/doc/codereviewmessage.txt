@@ -28,18 +28,18 @@ CodeReviewMessages are created from their BranchMergeProposals:
     ...     person, 'Please merge', 'This patch is very nice.')
 
 The first message to be created is the root of the code review
-conversation, and is assigned to BranchMergeProposal.conversation.
+conversation, and is assigned to BranchMergeProposal.root_message.
 
-    >>> merge_proposal.conversation == message
+    >>> merge_proposal.root_message == message
     True
 
-Subsequent messages are marked as replies to the conversation root, by
+Subsequent messages are marked as replies to the root_message, by
 default.
 
     >>> from canonical.launchpad.interfaces import CodeReviewVote
     >>> message2 = merge_proposal.createMessage(
     ...     person, 'No!', 'You are ugly and stupid', CodeReviewVote.VETO)
-    >>> message2.message.parent == merge_proposal.conversation.message
+    >>> message2.message.parent == merge_proposal.root_message.message
     True
 
 Messages can be marked as replies to particular messages.
