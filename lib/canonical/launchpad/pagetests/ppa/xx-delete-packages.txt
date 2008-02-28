@@ -288,7 +288,7 @@ when:
  2. The new source version in the series builds a smaller set of
     binaries than the previous version.
 
-In order to reproduce this we will user SoyuzTestPublisher to create a
+In order to reproduce this we will use SoyuzTestPublisher to create a
 SUPERSEDED source with a PUBLISHED binary in No Privileged Person's PPA.
 
     >>> from zope.component import getUtility

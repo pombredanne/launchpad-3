@@ -19,7 +19,7 @@ from canonical.archivepublisher.config import Config as PubConfig
 from canonical.config import config
 from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import (
-    cursor, SQLBase, sqlvalues, quote_like, quote)
+    cursor, quote, quote_like, sqlvalues, SQLBase)
 from canonical.launchpad.database.publishing import (
     SourcePackagePublishingHistory, BinaryPackagePublishingHistory)
 from canonical.launchpad.database.librarian import LibraryFileContent
@@ -215,7 +215,7 @@ class Archive(SQLBase):
         """ % sqlvalues(self)]
 
         has_published_binaries_clause = """
-            EXISTS ((SELECT TRUE FROM
+            EXISTS (SELECT TRUE FROM
                 BinaryPackagePublishingHistory bpph,
                 BinaryPackageRelease bpr, Build
             WHERE
@@ -223,11 +223,11 @@ class Archive(SQLBase):
                 bpph.status = %s AND
                 bpph.binarypackagerelease = bpr.id AND
                 bpr.build = Build.id AND
-                Build.sourcepackagerelease = SourcePackageRelease.id))
+                Build.sourcepackagerelease = SourcePackageRelease.id)
         """ % sqlvalues(self, PackagePublishingStatus.PUBLISHED)
 
         clauses.append("""
-           ((%s OR SourcePackagePublishingHistory.status = %s))
+           (%s OR SourcePackagePublishingHistory.status = %s)
         """ % (has_published_binaries_clause,
                quote(PackagePublishingStatus.PUBLISHED)))
 
