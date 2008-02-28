@@ -20,7 +20,6 @@ __all__ = [
     'BranchMergeProposalWorkInProgressView',
     ]
 
-from zope.component import getUtility
 from zope.interface import Interface
 from zope.schema import Int
 
@@ -35,7 +34,6 @@ from canonical.launchpad.interfaces import (
     BranchMergeProposalStatus,
     BranchType,
     IBranchMergeProposal,
-    ILaunchpadCelebrities,
     IStructuralObjectPresentation)
 from canonical.launchpad.webapp import (
     canonical_url, ContextMenu, Link, enabled_with_permission,
@@ -289,17 +287,13 @@ class MergeProposalEditView(LaunchpadEditFormView,
     """A base class for merge proposal edit views."""
 
     @property
-    def initial_values(self):
-        # Default to reviewing the tip of the source branch.
-        return {'revision_number': self.context.source_branch.revision_count}
-
-    @property
-    def adapters(self):
-        return {ReviewForm: self.context}
-
-    @property
     def next_url(self):
-        return canonical_url(self.context)
+        # Since the property stops inherited classes from specifying
+        # an explicit next_url, have this property look for a _next_url
+        # and use that if found, and if one is not set, then use the
+        # canonical_url of the context (the merge proposal itself) as
+        # the default.
+        return getattr(self, '_next_url', canonical_url(self.context))
 
     def _getRevisionId(self, data):
         """Translate the revision number that was entered into a revision id.
@@ -359,7 +353,7 @@ class BranchMergeProposalResubmitView(MergeProposalEditView,
         proposal = self.context.resubmit(self.user)
         self.request.response.addInfoNotification(_(
             "Please update the whiteboard for the new proposal."))
-        self.next_url = canonical_url(proposal) + "/+edit"
+        self._next_url = canonical_url(proposal) + "/+edit"
 
     @action('Cancel', name='cancel', validator='validate_cancel')
     def cancel_action(self, action, data):
@@ -453,12 +447,11 @@ class BranchMergeProposalDeleteView(MergeProposalEditView):
         """Delete the merge proposal and go back to the source branch."""
         self.context.deleteProposal()
         # Override the next url to be the source branch.
-        self.next_url = canonical_url(self.source_branch)
+        self._next_url = canonical_url(self.source_branch)
 
     @action('Cancel', name='cancel', validator='validate_cancel')
     def cancel_action(self, action, data):
         """Do nothing and go back to the source branch."""
-        self.next_url = canonical_url(self.context)
 
 
 class BranchMergeProposalMergedView(LaunchpadEditFormView):

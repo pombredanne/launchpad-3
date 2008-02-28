@@ -28,6 +28,36 @@ from canonical.launchpad.interfaces import (
 from canonical.launchpad.validators.person import public_person_validator
 
 
+VALID_TRANSITION_GRAPH = {
+    # It is valid to transition to any state from work in progress or needs
+    # review, although additional user checks are requried.
+    BranchMergeProposalStatus.WORK_IN_PROGRESS:
+        BranchMergeProposalStatus.items,
+    BranchMergeProposalStatus.NEEDS_REVIEW:
+        BranchMergeProposalStatus.items,
+    # If the proposal has been approved, any transition is valid.
+    BranchMergeProposalStatus.CODE_APPROVED: BranchMergeProposalStatus.items,
+    # Rejected is mostly terminal, can only resubmitted.
+    BranchMergeProposalStatus.REJECTED: [
+        BranchMergeProposalStatus.SUPERSEDED,
+        ],
+    # Merged is truly terminal, so nothing is valid.
+    BranchMergeProposalStatus.MERGED: [],
+    # It is valid to transition to any state from merge failed, although
+    # additional user checks are requried.
+    BranchMergeProposalStatus.MERGE_FAILED:
+        BranchMergeProposalStatus.items,
+    # Queued can only be transitioned to merged or merge failed.
+    # Dequeing is a special case.
+    BranchMergeProposalStatus.QUEUED: [
+        BranchMergeProposalStatus.MERGED,
+        BranchMergeProposalStatus.MERGE_FAILED,
+        ],
+    # Superseded is truly terminal, so nothing is valid.
+    BranchMergeProposalStatus.SUPERSEDED: [],
+    }
+
+
 class BranchMergeProposal(SQLBase):
     """A relationship between a person and a branch."""
 
@@ -96,29 +126,17 @@ class BranchMergeProposal(SQLBase):
         [wip, needs_review, code_approved, rejected,
          merged, merge_failed, queued, superseded
          ] = BranchMergeProposalStatus.items
-        # Superseded and Merged are truely terminal, so nothing is valid.
-        if self.queue_status in (merged, superseded):
-            return False
-        # Rejected is mostly terminal, can only resubmit.
-        elif self.queue_status == rejected:
-            return next_state == superseded
-        # Queued can only be transitioned to merged or merge failed.
-        # Dequeing is a special case.
-        elif self.queue_status == queued:
-            return next_state in (merged, merge_failed)
-        # If the proposal has been approved, any transition is valid.
-        elif self.queue_status == code_approved:
-            return True
         # Transitioning to code approved, rejected or queued from
         # work in progress, needs review or merge failed needs the
         # user to be a valid reviewer, other states are fine.
-        else:
-            if next_state in (code_approved, rejected, queued):
-                return self.isPersonValidReviewer(user)
-            else:
-                return True
+        if (next_state in (code_approved, rejected, queued) and
+            self.queue_status in (wip, needs_review, merge_failed)):
+            if not self.isPersonValidReviewer(user):
+                return False
 
-    def _transitionState(self, next_state, user=None):
+        return next_state in VALID_TRANSITION_GRAPH[self.queue_status]
+
+    def _transitionToState(self, next_state, user=None):
         """Update the queue_status of the proposal.
 
         Raise an error if the proposal is in a final state.
@@ -137,12 +155,12 @@ class BranchMergeProposal(SQLBase):
 
     def setAsWorkInProgress(self):
         """See `IBranchMergeProposal`."""
-        self._transitionState(BranchMergeProposalStatus.WORK_IN_PROGRESS)
+        self._transitionToState(BranchMergeProposalStatus.WORK_IN_PROGRESS)
         self.date_review_requested = None
 
     def requestReview(self):
         """See `IBranchMergeProposal`."""
-        self._transitionState(BranchMergeProposalStatus.NEEDS_REVIEW)
+        self._transitionToState(BranchMergeProposalStatus.NEEDS_REVIEW)
         self.date_review_requested = UTC_NOW
 
     def isPersonValidReviewer(self, reviewer):
@@ -167,7 +185,7 @@ class BranchMergeProposal(SQLBase):
         if not self.isPersonValidReviewer(reviewer):
             raise UserNotBranchReviewer
         # Check the current state of the proposal.
-        self._transitionState(next_state, reviewer)
+        self._transitionToState(next_state, reviewer)
         # Record the reviewer
         self.reviewer = reviewer
         self.date_reviewed = UTC_NOW
@@ -243,13 +261,14 @@ class BranchMergeProposal(SQLBase):
 
     def mergeFailed(self, merger):
         """See `IBranchMergeProposal`."""
-        self._transitionState(BranchMergeProposalStatus.MERGE_FAILED, merger)
+        self._transitionToState(
+            BranchMergeProposalStatus.MERGE_FAILED, merger)
         self.merger = merger
 
     def markAsMerged(self, merged_revno=None, date_merged=None,
                      merge_reporter=None):
         """See `IBranchMergeProposal`."""
-        self._transitionState(
+        self._transitionToState(
             BranchMergeProposalStatus.MERGED, merge_reporter)
         self.merged_revno = merged_revno
         self.merge_reporter = merge_reporter
@@ -268,7 +287,7 @@ class BranchMergeProposal(SQLBase):
         """See `IBranchMergeProposal`."""
         # You can transition from REJECTED to SUPERSEDED, but
         # not from MERGED or SUPERSEDED.
-        self._transitionState(
+        self._transitionToState(
             BranchMergeProposalStatus.SUPERSEDED, registrant)
         # This sync update is needed as the add landing target does
         # a database query to identify if there are any active proposals

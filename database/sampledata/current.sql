@@ -8295,6 +8295,8 @@ INSERT INTO standardshipitrequest (id, quantityx86, quantityppc, quantityamd64, 
 INSERT INTO standardshipitrequest (id, quantityx86, quantityppc, quantityamd64, isdefault, flavour, description) VALUES (12, 8, 0, 2, false, 2, NULL);
 INSERT INTO standardshipitrequest (id, quantityx86, quantityppc, quantityamd64, isdefault, flavour, description) VALUES (13, 5, 0, 0, true, 3, NULL);
 INSERT INTO standardshipitrequest (id, quantityx86, quantityppc, quantityamd64, isdefault, flavour, description) VALUES (14, 1, 0, 0, false, 3, NULL);
+INSERT INTO standardshipitrequest (id, quantityx86, quantityppc, quantityamd64, isdefault, flavour, description) VALUES (15, 3, 0, 2, false, 4, NULL);
+INSERT INTO standardshipitrequest (id, quantityx86, quantityppc, quantityamd64, isdefault, flavour, description) VALUES (16, 1, 0, 1, false, 4, NULL);
 
 
 ALTER TABLE standardshipitrequest ENABLE TRIGGER ALL;
