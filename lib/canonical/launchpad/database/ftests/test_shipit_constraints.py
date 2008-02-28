@@ -8,14 +8,12 @@ import psycopg
 
 from canonical.database.sqlbase import quote
 from canonical.launchpad.interfaces import ShippingRequestStatus
-from canonical.launchpad.ftests.harness import (
-    LaunchpadFunctionalTestCase, LaunchpadTestSetup)
+from canonical.testing import LaunchpadLayer
 
 
-class ShipitConstraintsTestCase(LaunchpadFunctionalTestCase):
-    # XXX sinzui 2007-07-12 bug=125569
-    # This test should subclass unittest.TestCase. Some reworking
-    # is required to migrate this test.
+class ShipitConstraintsTestCase(unittest.TestCase):
+    layer = LaunchpadLayer
+
     def shipped(self, cur, id):
         cur.execute("""
             SELECT shipped IS NOT NULL FROM ShippingRequest WHERE id=%(id)s
@@ -38,14 +36,14 @@ class ShipitConstraintsTestCase(LaunchpadFunctionalTestCase):
 
     def testDupeAdminRequests(self):
         # Duplicate shipments are ignored if the recipient is shipit-admins
-        cur = self.connect().cursor()
+        cur = self.layer.connect().cursor()
         for i in range(0, 3):
             self.insert(cur, 'shipit-admins')
 
     def testDupes(self):
         # Only one uncancelled, possibly approved unshipped order
         # per user.
-        con = self.connect()
+        con = self.layer.connect()
         cur = con.cursor()
 
         # Clear out any existing requests for user stub
@@ -95,15 +93,8 @@ class ShipitConstraintsTestCase(LaunchpadFunctionalTestCase):
         self.failUnlessRaises(psycopg.Error, self.insert, cur)
         cur.execute("ROLLBACK TO SAVEPOINT attempt2")
 
-    def tearDown(self):
-        """Tear down this test and recycle the database."""
-        # XXX sinzui 2007-07-12 bug=125569
-        # Use the DatabaseLayer mechanism to tear this test down.
-        LaunchpadTestSetup().force_dirty_database()
-        LaunchpadFunctionalTestCase.tearDown(self)
-
 
 def test_suite():
     """Create the test suite.."""
-    return unittest.makeSuite(ShipitConstraintsTestCase)
+    return unittest.TestLoader().loadTestsFromName(__name__)
 
