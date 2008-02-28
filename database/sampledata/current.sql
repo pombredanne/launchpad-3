@@ -1802,7 +1802,7 @@ INSERT INTO distributionsourcepackagecache (id, distribution, sourcepackagename,
  -- Sample Person <test@canonical.com> Tue, 10 Feb 2006 10:10:08 +0300', 1);
 INSERT INTO distributionsourcepackagecache (id, distribution, sourcepackagename, name, binpkgnames, binpkgsummaries, binpkgdescriptions, fti, changelog, archive) VALUES (9, 1, 22, 'linux-source-2.6.15', '', '', '', NULL, NULL, 1);
 INSERT INTO distributionsourcepackagecache (id, distribution, sourcepackagename, name, binpkgnames, binpkgsummaries, binpkgdescriptions, fti, changelog, archive) VALUES (10, 1, 23, 'foobar', '', '', '', NULL, NULL, 1);
-INSERT INTO distributionsourcepackagecache (id, distribution, sourcepackagename, name, binpkgnames, binpkgsummaries, binpkgdescriptions, fti, changelog, archive) VALUES (11, 1, 27, 'commercialpackage', '', '', '', NULL, NULL, 1);
+INSERT INTO distributionsourcepackagecache (id, distribution, sourcepackagename, name, binpkgnames, binpkgsummaries, binpkgdescriptions, fti, changelog, archive) VALUES (11, 1, 27, 'commercialpackage', '', '', '', NULL, NULL, 12);
 
 
 ALTER TABLE distributionsourcepackagecache ENABLE TRIGGER ALL;
