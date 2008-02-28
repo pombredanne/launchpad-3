@@ -2139,15 +2139,15 @@ class PersonIndexView(XRDSContentNegotiationMixin, PersonView):
                 _("You must be logged in to unsubscribe."))
         try:
             mailing_list.unsubscribe(self.user)
-        except CannotUnsubscribe, err:
+        except CannotUnsubscribe:
             self.request.response.addErrorNotification(
                 _("You could not be unsubscribed from the team mailing "
-                  "list: ${reason}",
-                  mapping={'reason': str(err)}))
+                  "list."))
         else:
             self.request.response.addInfoNotification(
-                _("You were successfully unsubscribed from the team "
+                _("You have been unsubscribed from the team "
                   "mailing list."))
+        self.request.response.redirect(canonical_url(self.context))
 
 
 class PersonRelatedProjectsView(LaunchpadView):

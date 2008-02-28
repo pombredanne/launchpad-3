@@ -184,9 +184,21 @@
 		      id="form.list.unsubscribe"
 		      action=""
 		      method="post">
+
 		  You are subscribed to the team mailing list.
-		  (<a href="#" onclick="parentNode.submit(); return false"
-		      >Unsubscribe</a>)
+		  (<a id="leave-mailing-list" href="#">Unsubscribe</a>)
+
+		  <script type="text/javascript">
+		    function leaveList() {
+		    getElement('form.list.unsubscribe').submit();
+		    }
+		    connect('leave-mailing-list', 'onclick', leaveList);
+		  </script>
+
+		  <noscript>
+		    <input type="submit" value="Unsubscribe" />
+		  </noscript>
+
 		</form>
 	      </tal:block>
 	      <tal:block tal:condition="view/user_can_subscribe_to_list">
