@@ -109,6 +109,7 @@ def get_revision_message(bzr_branch, bzr_revision):
 
 
 class BugBranchLinker:
+    """Links branches to bugs based on revision metadata."""
 
     def __init__(self, db_branch):
         self.db_branch = db_branch
@@ -176,7 +177,12 @@ class BugBranchLinker:
             bug_statuses[bug] = status
         return bug_statuses
 
-    def createBugBranchLinksForRevision(self, db_revision, bzr_revision):
+    def createBugBranchLinksForRevision(self, bzr_revision):
+        """Create bug-branch links for a revision.
+
+        This looks inside the 'bugs' property of the given Bazaar revision and
+        creates a BugBranch record for each bug mentioned.
+        """
         bug_property = bzr_revision.properties.get('bugs', None)
         if bug_property is None:
             return
@@ -191,6 +197,7 @@ class BugBranchLinker:
 
 
 class BranchMailer:
+    """Handles mail notifications for changes to the code in a branch."""
 
     def __init__(self, trans_manager, db_branch):
         self.trans_manager = trans_manager
@@ -215,31 +222,45 @@ class BranchMailer:
 
         diff_levels = (BranchSubscriptionNotificationLevel.DIFFSONLY,
                        BranchSubscriptionNotificationLevel.FULL)
+
         for subscription in self.db_branch.subscriptions:
             if subscription.notification_level in diff_levels:
                 self.subscribers_want_notification = True
                 break
+
         # If db_history is empty, then this is the initial scan of the
         # branch.  We only want to send one email for the initial scan
         # of a branch, not one for each revision.
         self.initial_scan = initial_scan
 
     def generateEmailForRemovedRevisions(self, removed_history):
-        # When the history is shortened, and email is sent that says this.
-        # This will never happen for a newly scanned branch, so not checking
-        # that here.
-        if self.subscribers_want_notification:
-            number_removed = len(removed_history)
-            if number_removed > 0:
-                if number_removed == 1:
-                    contents = '1 revision was removed from the branch.'
-                else:
-                    contents = ('%d revisions were removed from the branch.'
-                                % number_removed)
-                # No diff is associated with the removed email.
-                self.pending_emails.append((contents, '', None))
+        """Notify subscribers of removed revisions.
+
+        When the history is shortened, and email is sent that says this. This
+        will never happen for a newly scanned branch, so not checking that
+        here.
+        """
+        if not self.subscribers_want_notification:
+            return
+        number_removed = len(removed_history)
+        if number_removed > 0:
+            if number_removed == 1:
+                contents = '1 revision was removed from the branch.'
+            else:
+                contents = ('%d revisions were removed from the branch.'
+                            % number_removed)
+            # No diff is associated with the removed email.
+            self.pending_emails.append((contents, '', None))
 
     def generateEmailForRevision(self, bzr_branch, bzr_revision, sequence):
+        """Generate an email for a revision for later sending.
+
+        :param bzr_branch: The branch being scanned.
+        :param bzr_revision: The revision that we are sending the email about.
+            This is assumed to be in the main-line history of the branch. (Not
+            just the ancestry).
+        :param sequence: The revision number of `bzr_revision`.
+        """
         if (not self.initial_scan
             and self.subscribers_want_notification):
             message = get_revision_message(bzr_branch, bzr_revision)
@@ -307,9 +328,10 @@ class BranchMailer:
 class BzrSync:
     """Import version control metadata from a Bazaar branch into the database.
 
-    If the contructor succeeds, a read-lock for the underlying bzrlib branch is
-    held, and must be released by calling the `close` method.
+    If the constructor succeeds, a read-lock for the underlying bzrlib branch
+    is held, and must be released by calling the `close` method.
     """
+
     def __init__(self, trans_manager, branch, logger=None):
         self.trans_manager = trans_manager
         self.email_from = config.noreply_from_address
@@ -321,13 +343,6 @@ class BzrSync:
         self.db_branch = branch
         self._bug_linker = BugBranchLinker(self.db_branch)
         self._branch_mailer = BranchMailer(self.trans_manager, self.db_branch)
-
-    def close(self):
-        """Explicitly release resources."""
-        # release the read lock on the bzrlib branch
-        # prevent further use of that object
-        self.db_branch = None
-        self.bzr_history = None
 
     def syncBranchAndClose(self, bzr_branch=None):
         """Synchronize the database with a Bazaar branch and close resources.
@@ -342,7 +357,6 @@ class BzrSync:
             self.syncBranch(bzr_branch)
         finally:
             bzr_branch.unlock()
-            self.close()
 
     def syncBranch(self, bzr_branch):
         """Synchronize the database view of a branch with Bazaar data.
@@ -607,8 +621,7 @@ class BzrSync:
                     continue
                 self._branch_mailer.generateEmailForRevision(
                     bzr_branch, revision, sequence)
-                self._bug_linker.createBugBranchLinksForRevision(
-                    db_revision, revision)
+                self._bug_linker.createBugBranchLinksForRevision(revision)
 
     def updateBranchStatus(self):
         """Update the branch-scanner status in the database Branch table."""
