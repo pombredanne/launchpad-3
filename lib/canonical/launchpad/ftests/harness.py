@@ -12,6 +12,7 @@ import sqlos
 from sqlos.connection import connCache
 from sqlos.interfaces import IConnectionName
 from zope.app.rdb.interfaces import IZopeDatabaseAdapter
+from zope.app.testing.functional import FunctionalTestSetup
 from zope.component import getUtility
 from zope.component.exceptions import ComponentLookupError
 
@@ -20,10 +21,9 @@ from canonical.database.revision import confirm_dbrevision
 from canonical.database.sqlbase import (
     cursor, SQLBase, ZopelessTransactionManager)
 from canonical.ftests.pgsql import PgTestSetup
-from canonical.functional import FunctionalTestSetup
 from canonical.launchpad.webapp.interfaces import ILaunchpadDatabaseAdapter
 from canonical.lp import initZopeless
-from canonical.testing import BaseLayer
+from canonical.testing import BaseLayer, FunctionalLayer, ZopelessLayer
 
 
 __all__ = [
@@ -125,7 +125,14 @@ class LaunchpadZopelessTestSetup(LaunchpadTestSetup):
 
 
 class LaunchpadFunctionalTestSetup(LaunchpadTestSetup):
+    def _checkLayerInvariants(self):
+        assert FunctionalLayer.isSetUp or ZopelessLayer.isSetUp, """
+                FunctionalTestSetup invoked at an inappropriate time.
+                May only be invoked in the FunctionalLayer or ZopelessLayer
+                """
+
     def setUp(self, dbuser=None):
+        self._checkLayerInvariants()
         if dbuser is not None:
             self.dbuser = dbuser
         _disconnect_sqlos()
@@ -134,6 +141,7 @@ class LaunchpadFunctionalTestSetup(LaunchpadTestSetup):
         _reconnect_sqlos(self.dbuser)
 
     def tearDown(self):
+        self._checkLayerInvariants()
         FunctionalTestSetup().tearDown()
         _disconnect_sqlos()
         super(LaunchpadFunctionalTestSetup, self).tearDown()
