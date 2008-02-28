@@ -126,11 +126,11 @@ class TestLpQueryDistro(unittest.TestCase):
         return lp_query_distro
 
     def presenter(self, *args):
-         """Test result presenter.
+        """Test result presenter.
 
-         It stores results in self.test_output for later test-inspection.
-         """
-         self.test_output = '%s' % args
+        It stores results in self.test_output for later test-inspection.
+        """
+        self.test_output = '%s' % args
 
     def testSuccessfullyAction(self):
         """Check if the 'current' action is executed sucessfully."""
