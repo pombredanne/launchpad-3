@@ -173,7 +173,8 @@
     <th style="vertical-align: top;">I would like:</th>
     <td tal:define="selected_id view/selected_standardrequest">
 
-      <tal:standard-request condition="not: view/should_show_custom_request">
+      <div id="standard-options"
+           tal:condition="not: view/should_show_custom_request">
         <div tal:repeat="request_type view/standardShipItRequests">
           <label>
             <input type="radio" name="ordertype"
@@ -190,7 +191,7 @@
         your students, or if you are distributing CDs at a conference or other
         organized event.
         </p>
-      </tal:standard-request>
+      </div>
 
       <tal:custom-request condition="view/should_show_custom_request">
         <br />
