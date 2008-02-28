@@ -2,30 +2,17 @@
 
 from twisted.web import xmlrpc
 
-from zope.interface.interface import Method
-
 from canonical.authserver.interfaces import (
-    IBranchDetailsStorage, IUserDetailsStorage, IUserDetailsStorageV2)
-from canonical.twistedsupport import defer_to_thread
-
-
-def get_method_names_in_interface(interface):
-    for attribute_name in interface:
-        if isinstance(interface[attribute_name], Method):
-            yield attribute_name
-
-
-def defer_methods_to_threads(obj, interface):
-    for name in get_method_names_in_interface(interface):
-        setattr(obj, name, defer_to_thread(getattr(obj, name)))
+    IBranchDetailsStorage, IHostedBranchStorage, IUserDetailsStorage,
+    IUserDetailsStorageV2)
+from canonical.twistedsupport import MethodDeferrer
 
 
 class UserDetailsResource(xmlrpc.XMLRPC):
 
     def __init__(self, storage, debug=False):
         xmlrpc.XMLRPC.__init__(self)
-        self.storage = storage
-        defer_methods_to_threads(self.storage, IUserDetailsStorage)
+        self.storage = MethodDeferrer(storage, IUserDetailsStorage)
         self.debug = debug
 
     def xmlrpc_getUser(self, loginID):
@@ -65,8 +52,8 @@ class UserDetailsResourceV2(xmlrpc.XMLRPC):
 
     def __init__(self, storage, debug=False):
         xmlrpc.XMLRPC.__init__(self)
-        self.storage = storage
-        defer_methods_to_threads(self.storage, IUserDetailsStorageV2)
+        self.storage = MethodDeferrer(
+            storage, IUserDetailsStorageV2, IHostedBranchStorage)
         self.debug = debug
 
     def xmlrpc_getUser(self, loginID):
@@ -141,8 +128,7 @@ class BranchDetailsResource(xmlrpc.XMLRPC):
 
     def __init__(self, storage, debug=False):
         xmlrpc.XMLRPC.__init__(self)
-        self.storage = storage
-        defer_methods_to_threads(self.storage, IBranchDetailsStorage)
+        self.storage = MethodDeferrer(storage, IBranchDetailsStorage)
         self.debug = debug
 
     def xmlrpc_getBranchPullQueue(self, branch_type):
