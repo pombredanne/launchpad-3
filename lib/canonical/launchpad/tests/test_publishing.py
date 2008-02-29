@@ -266,6 +266,26 @@ class TestNativePublishingBase(unittest.TestCase, SoyuzTestPublisher):
         """Tear down blows the pool dir away."""
         shutil.rmtree(self.config.distroroot)
 
+    def getPubSource(self, *args, **kwargs):
+        """Overrides `SoyuzTestPublisher.getPubSource`.
+
+        Commits the transaction before returning, this way the rest of
+        the test will immediately notice the just-created records.
+        """
+        source = SoyuzTestPublisher.getPubSource(self, *args, **kwargs)
+        self.layer.commit()
+        return source
+
+    def getPubBinaries(self, *args, **kwargs):
+        """Overrides `SoyuzTestPublisher.getPubBinaries`.
+
+        Commits the transaction before returning, this way the rest of
+        the test will immediately notice the just-created records.
+        """
+        binaries = SoyuzTestPublisher.getPubBinaries(self, *args, **kwargs)
+        self.layer.commit()
+        return binaries
+
     def checkSourcePublication(self, source, status):
         """Assert the source publications has the given status.
 
