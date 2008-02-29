@@ -864,7 +864,8 @@ class DebBugs(ExternalBugTracker):
         reporter_name, reporter_email = self.getSubmitter(remote_bug)
         reporter = getUtility(IPersonSet).ensurePerson(
             reporter_email, reporter_name, PersonCreationRationale.BUGIMPORT,
-            comment='when importing debbugs bug #%s' % remote_bug)
+            comment='when importing bug #%s from %s' % (
+                remote_bug, self.baseurl))
         package_name = self.getTarget(remote_bug)
         package = bug_target.getSourcePackage(package_name)
         if package is not None:
@@ -873,8 +874,8 @@ class DebBugs(ExternalBugTracker):
             # Debbugs requires all bugs to be targeted to a package, so
             # it shouldn't be empty.
             self.warning(
-                'Unknown Debian package (debbugs #%s): %s' % (
-                    remote_bug, package_name))
+                'Unknown %s package (#%s at %s): %s' % (
+                    bug_target.name, remote_bug, self.baseurl, package_name))
         summary, description = self.getSummaryAndDescription(remote_bug)
         bug = bug_target.createBug(
             CreateBugParams(
