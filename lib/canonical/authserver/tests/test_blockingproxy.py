@@ -10,11 +10,11 @@ from bzrlib.transport import Server
 from bzrlib.tests import iter_suite_tests, TestLoader, TestScenarioApplier
 
 from canonical.authserver.client import InMemoryBlockingProxy
+from canonical.authserver.tests.servers import (
+    make_xmlrpc_resource, TwistedServer)
 from canonical.testing import TwistedLayer
 from canonical.twistedsupport import defer_to_thread
 
-from twisted.application import strports
-from twisted.web import server, resource, xmlrpc
 from twisted.trial import unittest
 
 
@@ -84,7 +84,9 @@ class TestBlockingProxyConformance(unittest.TestCase):
 
     def setUp(self):
         self.xmlrpc_resource = MockXMLRPCObject()
-        self.server = self.server_factory(self.xmlrpc_resource)
+        self.server = self.server_factory(
+            make_xmlrpc_resource(
+                self.xmlrpc_resource, self.xmlrpc_resource._getMethods()))
         self.server.setUp()
 
     def tearDown(self):
@@ -166,50 +168,13 @@ class TestBlockingProxyConformance(unittest.TestCase):
             8002, "can't serialize output", proxy.returnsNone)
 
 
-class TwistedServer(Server):
-    """A test HTTP server that serves an XML-RPC resource.
-
-    Use `getBlockingProxy` to get a real proxy (i.e. an
-    `xmlrpclib.ServerProxy`) that points to the resource.
-    """
-
-    def __init__(self, xmlrpc_object):
-        super(TwistedServer, self).__init__()
-        self.xmlrpc_resource = self._makeResource(xmlrpc_object)
-        self._service = None
-
-    def _makeResource(self, xmlrpc_object):
-        method_names = xmlrpc_object._getMethods()
-        xmlrpc_resource = xmlrpc.XMLRPC()
-        for method_name in method_names:
-            method = getattr(xmlrpc_object, method_name)
-            setattr(xmlrpc_resource, 'xmlrpc_%s' % method_name, method)
-        return xmlrpc_resource
-
-    def setUp(self):
-        root = resource.Resource()
-        root.putChild('xmlrpc', self.xmlrpc_resource)
-        site = server.Site(root)
-        self._service = strports.service('tcp:0', site)
-        self._service.startService()
-
-    def get_url(self):
-        return 'http://localhost:%s/xmlrpc' % (
-            self._service._port.getHost().port)
-
-    def tearDown(self):
-        self._service.stopService()
-
-    def getBlockingProxy(self):
-        return xmlrpclib.ServerProxy(self.get_url())
-
-
 class InMemoryServer(Server):
     """An in-memory server that serves an XML-RPC resource."""
 
-    def __init__(self, xmlrpc_object):
+    def __init__(self, xmlrpc_resource):
         super(InMemoryServer, self).__init__()
-        self.xmlrpc_object = xmlrpc_object
+        self.xmlrpc_object = xmlrpc_resource.original
+        self.published_methods = xmlrpc_resource.published_methods
 
     def setUp(self):
         pass
@@ -222,7 +187,7 @@ class InMemoryServer(Server):
 
     def getBlockingProxy(self):
         return InMemoryBlockingProxy(
-            self.xmlrpc_object, self.xmlrpc_object._getMethods())
+            self.xmlrpc_object, self.published_methods)
 
 
 def load_tests(tests, module, loader):

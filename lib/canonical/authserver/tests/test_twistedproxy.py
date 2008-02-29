@@ -4,16 +4,14 @@
 
 __metaclass__ = type
 
-import re
-
 from bzrlib.transport import Server
 from bzrlib.tests import iter_suite_tests, TestLoader, TestScenarioApplier
 
 from canonical.authserver.client import InMemoryTwistedProxy
+from canonical.authserver.tests.servers import TwistedServer
 from canonical.testing import TwistedLayer
 
-from twisted.application import strports
-from twisted.web import server, resource, xmlrpc
+from twisted.web import xmlrpc
 from twisted.trial import unittest
 
 
@@ -150,36 +148,6 @@ class TestTwistedProxyConformance(unittest.TestCase):
         proxy = self.makeProxy()
         return self.assertFault(
             proxy.callRemote('returnsNone'), 8002, "can't serialize output")
-
-
-class TwistedServer(Server):
-    """A test HTTP server that serves an XML-RPC resource.
-
-    Use `getTwistedProxy` to get a real proxy (i.e. a
-    `twisted.web.xmlrpc.Proxy`) that points to the resource.
-    """
-
-    def __init__(self, xmlrpc_resource):
-        super(TwistedServer, self).__init__()
-        self.xmlrpc_resource = xmlrpc_resource
-        self._service = None
-
-    def setUp(self):
-        root = resource.Resource()
-        root.putChild('xmlrpc', self.xmlrpc_resource)
-        site = server.Site(root)
-        self._service = strports.service('tcp:0', site)
-        self._service.startService()
-
-    def get_url(self):
-        return 'http://localhost:%s/xmlrpc' % (
-            self._service._port.getHost().port)
-
-    def tearDown(self):
-        self._service.stopService()
-
-    def getTwistedProxy(self):
-        return xmlrpc.Proxy(self.get_url())
 
 
 class InMemoryServer(Server):
