@@ -37,9 +37,9 @@ Any Person object (either a person or a team) implements IPerson...
     >>> verifyObject(IHasTranslationImports, ubuntu_team)
     True
 
-...and IHasStanding.
+...and IHasStanding.  Teams can technically also have standing, but it's
+meaningless because teams cannot post to mailing lists.
 
-    # While teams technically also have standing, it really makes no sense.
     >>> IHasStanding.providedBy(foobar)
     True
     >>> verifyObject(IHasStanding, foobar)
@@ -150,17 +150,18 @@ And now with the same name of a existing account
 
 === Personal standing ===
 
-People have a property called 'personal standing', which affects for example
-their ability to post to mailing lists they are not members of.  It's a form
-of automatic moderation.  Most people have unknown standing, which is the
-default.
+People have a property called 'personal standing', which affects for
+example their ability to post to mailing lists they are not members of.
+It's a form of automatic moderation.  Most people have unknown standing,
+which is the default.
 
     >>> login('foo.bar@canonical.com')
     >>> lifeless.personal_standing
     <DBItem PersonalStanding.UNKNOWN...
 
-A person also has a reason for why their standing is what it is.  The default
-here is no reason.
+A person also has a reason for why their standing is what it is.  The
+default value of None means that no reason for the personal_standing
+value is available.
 
     >>> print lifeless.personal_standing_reason
     None
@@ -171,7 +172,8 @@ reason for the change.
     >>> from canonical.launchpad.interfaces import PersonalStanding
     >>> lifeless.personal_standing = PersonalStanding.GOOD
     >>> lifeless.personal_standing_reason = 'Such a cool guy!'
-    >>> flush_database_updates()
+    >>> from canonical.launchpad.ftests import syncUpdate
+    >>> syncUpdate(lifeless)
 
     >>> lifeless.personal_standing
     <DBItem PersonalStanding.GOOD...
@@ -189,7 +191,6 @@ Non-administrators may not change a person's standing.
     Traceback (most recent call last):
     ...
     Unauthorized: ...
-    >>> flush_database_updates()
 
     >>> logout()
     >>> login('foo.bar@canonical.com')
@@ -214,7 +215,7 @@ To check if a person is an Ubuntero, use IPerson.is_ubuntero:
     True
 
 
-=== Looking Up Users by OpenID Identifer ===
+=== Looking Up Users by OpenID Identifier ===
 
 Each Launchpad user is assigned an unchanging OpenID identity URL.
 The last component of this URL is specific to the user, and can be
