@@ -298,7 +298,7 @@ class Bug(SQLBase):
         # view all bugs.
         bugtasks = getUtility(IBugTaskSet).findExpirableBugTasks(
             0, getUtility(ILaunchpadCelebrities).janitor, bug=self)
-        return len(bugtasks) > 0
+        return bugtasks.count() > 0
 
     @property
     def initial_message(self):

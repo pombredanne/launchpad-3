@@ -8,13 +8,12 @@ import unittest
 
 from zope.component import getUtility
 
-from canonical.functional import FunctionalDocFileSuite
 from canonical.launchpad.interfaces import (
     IDistributionSet, IProductSet)
 from canonical.launchpad.interfaces.ftests.test_bugtarget import (
     bugtarget_filebug)
-from canonical.launchpad.ftests.test_system_documentation import (
-    default_optionflags, setUp, tearDown)
+from canonical.launchpad.testing.systemdocs import (
+    LayeredDocFileSuite, setUp, tearDown)
 from canonical.testing import LaunchpadFunctionalLayer
 
 def distributionSourcePackageSetUp(test):
@@ -57,9 +56,8 @@ def test_suite():
         ]
 
     for setUpMethod in setUpMethods:
-        test = FunctionalDocFileSuite('structural-subscription-target.txt',
+        test = LayeredDocFileSuite('structural-subscription-target.txt',
             setUp=setUpMethod, tearDown=tearDown,
-            optionflags=default_optionflags, package=__name__,
             layer=LaunchpadFunctionalLayer)
         suite.addTest(test)
 
