@@ -11,8 +11,8 @@ from bzrlib.transport import Server
 from bzrlib.tests import iter_suite_tests, TestLoader, TestScenarioApplier
 
 from canonical.authserver.client import InMemoryBlockingProxy
-from canonical.authserver.xmlrpc import defer_to_thread
 from canonical.testing import TwistedLayer
+from canonical.twistedsupport import defer_to_thread
 
 from twisted.application import strports
 from twisted.web import server, resource, xmlrpc
