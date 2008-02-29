@@ -66,7 +66,17 @@ class StdoutHandler(Handler):
 
 
 def LayeredDocFileSuite(*args, **kw):
-    """Create a DocFileSuite with a layer."""
+    """Create a DocFileSuite, optionally applying a layer to it.
+
+    In addition to the standard DocFileSuite arguments, the following
+    optional keyword arguments are accepted:
+
+    :param stdout_logging: If True, log messages are sent to the
+      doctest's stdout (defaults to True).
+    :param stdout_logging_level: The logging level for the above.
+    :param layer: A Zope test runner layer to apply to the tests (by
+      default no layer is applied).
+    """
     kw.setdefault('optionflags', default_optionflags)
     kw.setdefault('parser', default_parser)
 
