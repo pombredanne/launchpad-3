@@ -860,7 +860,6 @@ class DebBugs(ExternalBugTracker):
         """Import a remote bug into Launchpad."""
         assert IDistribution.providedBy(bug_target), (
             'We assume debbugs is used only by a distribution (Debian).')
-        debian_bug = self._findBug(remote_bug)
         reporter_name, reporter_email = self.getSubmitter(remote_bug)
         reporter = getUtility(IPersonSet).ensurePerson(
             reporter_email, reporter_name, PersonCreationRationale.BUGIMPORT,
