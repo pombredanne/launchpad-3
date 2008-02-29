@@ -19,6 +19,8 @@ from canonical.archivepublisher.config import Config as PubConfig
 from canonical.config import config
 from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import cursor, SQLBase, sqlvalues, quote_like
+from canonical.launchpad.database.distributionsourcepackagecache import (
+    DistributionSourcePackageCache)
 from canonical.launchpad.database.publishing import (
     SourcePackagePublishingHistory, BinaryPackagePublishingHistory)
 from canonical.launchpad.database.librarian import LibraryFileContent
@@ -54,12 +56,6 @@ class Archive(SQLBase):
         dbName='authorized_size', notNull=False, default=1024)
 
     whiteboard = StringCol(dbName='whiteboard', notNull=False, default=None)
-
-    sources_cached = IntCol(
-        dbName='sources_cached', notNull=False, default=0)
-
-    binaries_cached = IntCol(
-        dbName='binaries_cached', notNull=False, default=0)
 
     package_description_cache = StringCol(
         dbName='package_description_cache', notNull=False, default=None)
@@ -420,6 +416,23 @@ class Archive(SQLBase):
             permission = False
 
         return permission
+
+    def updateArchiveCache(self):
+        """See `IArchive`."""
+        cache_contents = set()
+
+        cache_contents.add(self.owner.name)
+        cache_contents.add(self.owner.displayname)
+
+        sources_cached = DistributionSourcePackageCache.selectBy(
+            archive=self)
+
+        for cache in sources_cached:
+            cache_contents.add(cache.name)
+            cache_contents.add(cache.binpkgnames)
+            cache_contents.add(cache.binpkgsummaries)
+
+        self.package_description_cache = " ".join(cache_contents)
 
 
 class ArchiveSet:

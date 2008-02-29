@@ -83,6 +83,22 @@ No data matches the non-existent search string "bustmybuffers".
     >>> len(find_tags_by_class(browser.contents, 'ppa_batch_row'))
     0
 
+We have to update the archive caches, in order to be able to search
+them properly, see doc/package-archive.txt.
+
+    >>> from zope.component import getUtility
+
+    >>> from canonical.database.sqlbase import flush_database_updates
+    >>> from canonical.launchpad.interfaces import IDistributionSet
+    >>> from canonical.launchpad.ftests import ANONYMOUS, login, logout
+
+    >>> login(ANONYMOUS)
+    >>> ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
+    >>> for archive in ubuntu.getAllPPAs():
+    ...     archive.updateArchiveCache()
+    >>> logout()
+    >>> flush_database_updates()
+
 In the three sample data PPAs, only one matches the search string "Celso".
 
     >>> field = browser.getControl("PPAs containing:")
@@ -97,9 +113,7 @@ In the three sample data PPAs, only one matches the search string "Celso".
 Let's start by adding an extra package to Celso's archive:
 
     >>> import transaction
-    >>> from canonical.database.sqlbase import flush_database_updates
     >>> from canonical.launchpad.ftests.ppa import publishToPPA
-    >>> from canonical.launchpad.ftests import ANONYMOUS, login, logout
     >>> login(ANONYMOUS)
     >>> publishToPPA("cprov", "warty", "commercialpackage", "1.0-1")
     >>> logout()

@@ -994,18 +994,13 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
             """ % sqlvalues(active_statuses))
 
         if text:
-            orderBy.extend(
-                [SQLConstant('rank(Archive.fti, ftq(%s)) DESC' % quote(text)),
-                 SQLConstant('rank(Person.fti, ftq(%s)) DESC' % quote(text))])
+            orderBy.insert(
+                0, SQLConstant(
+                    'rank(Archive.fti, ftq(%s)) DESC' % quote(text)))
 
             clauses.append("""
-            (Person.fti @@ ftq(%s) OR
-             Archive.fti @@ ftq(%s) OR
-             EXISTS (SELECT 1 FROM DistributionSourcePackageCache WHERE
-                     archive = Archive.id AND fti @@ ftq(%s)) OR
-             EXISTS (SELECT 1 FROM DistroseriesPackageCache WHERE
-                     archive = Archive.id AND fti @@ ftq(%s)))
-            """ % sqlvalues(text, text, text, text))
+                Archive.fti @@ ftq(%s)
+            """ % sqlvalues(text))
 
         if user is not None:
             if not user.inTeam(getUtility(ILaunchpadCelebrities).admin):

@@ -55,14 +55,6 @@ class IArchive(IHasOwner):
         title=_("Purpose of archive."), required=True, readonly=True,
         )
 
-    sources_caches = Int(
-        title=_("Number of sources"),
-        description=_("Number of source packages cached for this Archive"))
-
-    binaries_caches = Int(
-        title=_("Number of binaries"),
-        description=_("Number of binary packages cached for this Archive"))
-
     package_description_cache = Attribute(
         "Concatenation of the source and binary packages published in this "
         "archive. Its content is used for indexed searches across archives.")
@@ -158,6 +150,17 @@ class IArchive(IHasOwner):
         not allowed.  However some archive types allow this.
 
         :return: True or False
+        """
+
+    def updateArchiveCache():
+        """Concentrate cached information about the archive contents.
+
+        Group the relevant package information (source name, binary names,
+        binary summaries) strings in the IArchive.package_description_cache
+        search indexes (fti).
+
+        Also include owner 'name' and 'displayname' to avoid inpecting the
+        Person table indexes while searching.
         """
 
 class IPPAActivateForm(Interface):
