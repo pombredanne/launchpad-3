@@ -22,6 +22,8 @@
   </tal:branch-link>
   <h1>Branch merge queue</h1>
 
+  <div id="merge-queue">
+
   <table tal:condition="view/merge_queue" class="listing">
     <thead>
       <tr>
@@ -70,6 +72,7 @@
     The queue is empty.
   </p>
 
+  </div>
 </div>
 
 </body>
