@@ -42,11 +42,15 @@ The method that imports a bug is importBug(). It requires the target, in
 which the bug should be imported into, and the remote bug number. At the
 moment only distributions are supported as the bug target.
 
+    >>> from canonical.launchpad.scripts.checkwatches import BugWatchUpdater
+    >>> from canonical.testing import LaunchpadZopelessLayer
     >>> debian = getUtility(IDistributionSet).getByName('debian')
     >>> external_bugtracker._bugs['3'] =  {
     ...     'package': 'evolution',
     ...     'reporter': ("Joe Bloggs", "joe.bloggs@example.com")}
-    >>> bug = external_bugtracker.importBug(debian, '3')
+    >>> bug_watch_updater = BugWatchUpdater(LaunchpadZopelessLayer.txn)
+    >>> bug = bug_watch_updater.importBug(
+    ...     external_bugtracker, bugtracker, debian, '3')
 
 The summary and descriptions of the imported bugs are what was returned
 by getSummaryAndDescription().
@@ -114,7 +118,8 @@ the script gets notified about it.
     ...     'reporter': ("Joe Bloggs", "joe.bloggs@example.com")}
     >>> print debian.getSourcePackage('no-such-package')
     None
-    >>> bug = external_bugtracker.importBug(debian, '5')
+    >>> bug = bug_watch_updater.importBug(
+    ...     external_bugtracker, bugtracker, debian, '5')
     WARNING:...:Unknown debian package (#5 at http://...): no-such-package
 
     >>> [added_task] = bug.bugtasks
@@ -148,7 +153,8 @@ valid e-mail address), he still won't be subscribed to the imported bug.
     >>> external_bugtracker._bugs['7'] = {
     ...     'package': 'evolution',
     ...     'reporter': ('Not Used', no_priv.preferredemail.email)}
-    >>> bug = external_bugtracker.importBug(debian, '7')
+    >>> bug = bug_watch_updater.importBug(
+    ...     external_bugtracker, bugtracker, debian, '7')
 
     >>> bug.owner.name
     u'no-priv'

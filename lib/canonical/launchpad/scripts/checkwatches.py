@@ -12,15 +12,16 @@ import sys
 from zope.component import getUtility
 
 from canonical.database.constants import UTC_NOW
-from canonical.database.sqlbase import commit
+from canonical.database.sqlbase import commit, flush_database_updates
 from canonical.launchpad.components import externalbugtracker
 from canonical.launchpad.components.externalbugtracker import (
     BugNotFound, BugTrackerConnectError, InvalidBugId, UnparseableBugData,
     UnparseableBugTrackerVersion, UnsupportedBugTrackerVersion,
     UnknownBugTrackerTypeError)
 from canonical.launchpad.interfaces import (
-    BugWatchErrorType, ILaunchpadCelebrities, IBugTrackerSet,
-    ISupportsCommentImport)
+    BugWatchErrorType, CreateBugParams, IBugTrackerSet, IBugWatchSet,
+    IDistribution, ILaunchpadCelebrities, IPersonSet, ISupportsCommentImport,
+    PersonCreationRationale)
 from canonical.launchpad.webapp.interfaces import IPlacelessAuthUtility
 from canonical.launchpad.webapp.interaction import (
     setupInteraction, endInteraction)
@@ -331,3 +332,52 @@ class BugWatchUpdater(object):
                         ('bug_id', bug_id),
                         ('local_ids', local_ids)])
 
+    def importBug(self, external_bugtracker, bugtracker, bug_target,
+                  remote_bug):
+        """Import a remote bug into Launchpad.
+
+        :param external_bugtracker: An ISupportsBugImport, which talks
+            to the external bug tracker.
+        :param bugtracker: An IBugTracker, to which the created bug
+            watch will be linked. 
+        :param bug_target: An IBugTarget, to which the created bug will
+            be linked.
+        :param remote_bug: The remote bug id as a string.
+
+        :return: The created Launchpad bug.
+        """
+        assert IDistribution.providedBy(bug_target), (
+            'Only imports of bugs for a distribution is implemented.')
+        reporter_name, reporter_email = external_bugtracker.getReporter(
+            remote_bug)
+        reporter = getUtility(IPersonSet).ensurePerson(
+            reporter_email, reporter_name, PersonCreationRationale.BUGIMPORT,
+            comment='when importing bug #%s from %s' % (
+                remote_bug, external_bugtracker.baseurl))
+        package_name = external_bugtracker.getTarget(remote_bug)
+        package = bug_target.getSourcePackage(package_name)
+        if package is not None:
+            bug_target = package
+        else:
+            external_bugtracker.warning(
+                'Unknown %s package (#%s at %s): %s' % (
+                    bug_target.name, remote_bug,
+                    external_bugtracker.baseurl, package_name))
+        summary, description = external_bugtracker.getSummaryAndDescription(
+            remote_bug)
+        bug = bug_target.createBug(
+            CreateBugParams(
+                reporter, summary, description, subscribe_reporter=False))
+
+        [added_task] = bug.bugtasks
+        bug_watch = getUtility(IBugWatchSet).createBugWatch(
+            bug=bug,
+            owner=getUtility(ILaunchpadCelebrities).bug_watch_updater,
+            bugtracker=bugtracker, remotebug=remote_bug)
+
+        added_task.bugwatch = bug_watch
+        # Need to flush databse updates, so that the bug watch knows it
+        # is linked from a bug task.
+        flush_database_updates()
+
+        return bug
