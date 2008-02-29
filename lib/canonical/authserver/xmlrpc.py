@@ -1,12 +1,18 @@
-# Copyright 2004 Canonical Ltd.  All rights reserved.
+# Copyright 2004-2008 Canonical Ltd.  All rights reserved.
 
 from twisted.web import xmlrpc
+
+from canonical.authserver.interfaces import (
+    IBranchDetailsStorage, IHostedBranchStorage, IUserDetailsStorage,
+    IUserDetailsStorageV2)
+from canonical.twistedsupport import MethodDeferrer
+
 
 class UserDetailsResource(xmlrpc.XMLRPC):
 
     def __init__(self, storage, debug=False):
         xmlrpc.XMLRPC.__init__(self)
-        self.storage = storage
+        self.storage = MethodDeferrer(storage, IUserDetailsStorage)
         self.debug = debug
 
     def xmlrpc_getUser(self, loginID):
@@ -25,8 +31,7 @@ class UserDetailsResource(xmlrpc.XMLRPC):
         """
         if self.debug:
             print 'authUser(%r, %r)' % (loginID, sshaDigestedPassword)
-        return self.storage.authUser(loginID,
-                                     sshaDigestedPassword.decode('base64'))
+        return self.storage.authUser(loginID, sshaDigestedPassword)
 
     def xmlrpc_getSSHKeys(self, loginID):
         """Retrieve SSH public keys for a given user
@@ -47,7 +52,8 @@ class UserDetailsResourceV2(xmlrpc.XMLRPC):
 
     def __init__(self, storage, debug=False):
         xmlrpc.XMLRPC.__init__(self)
-        self.storage = storage
+        self.storage = MethodDeferrer(
+            storage, IUserDetailsStorageV2, IHostedBranchStorage)
         self.debug = debug
 
     def xmlrpc_getUser(self, loginID):
@@ -122,7 +128,7 @@ class BranchDetailsResource(xmlrpc.XMLRPC):
 
     def __init__(self, storage, debug=False):
         xmlrpc.XMLRPC.__init__(self)
-        self.storage = storage
+        self.storage = MethodDeferrer(storage, IBranchDetailsStorage)
         self.debug = debug
 
     def xmlrpc_getBranchPullQueue(self, branch_type):
