@@ -3,14 +3,15 @@
 """A utility module for the update-bugtasktargetnamecaches.py cronscript."""
 
 __metaclass__ = type
-__all__ = ['BugTaskTargetNameCachesTunableLoop']
+__all__ = ['BugTaskTargetNameCacheUpdater']
 
 from zope.component import getUtility
 from zope.interface import implements
 
 from canonical.database.sqlbase import quote
-from canonical.launchpad.database import BugTask
+from canonical.launchpad.interfaces import IBugTaskSet
 from canonical.launchpad.interfaces.looptuner import ITunableLoop
+from canonical.launchpad.utilities.looptuner import LoopTuner
 
 
 class BugTaskTargetNameCachesTunableLoop(object):
@@ -24,6 +25,7 @@ class BugTaskTargetNameCachesTunableLoop(object):
         self.transaction = transaction
         self.logger = logger
         self.start_at_id = start_at_id
+        self.bugtask_set = getUtility(IBugTaskSet)
 
     def isDone(self):
         """See `ITunableLoop`."""
@@ -38,7 +40,8 @@ class BugTaskTargetNameCachesTunableLoop(object):
         See `ITunableLoop`.
         """
         offset = self.start_at_id
-        bugtasks = BugTask.select(orderBy="id")[offset:offset + chunk_size]
+        bugtasks = self.bugtask_set.dangerousGetAllTasks()[
+            offset:offset + chunk_size]
 
         self.logger.info("Updating %i BugTasks (starting id: %i)." %
             (chunk_size, self.start_at_id))
@@ -55,4 +58,22 @@ class BugTaskTargetNameCachesTunableLoop(object):
 
         self.transaction.commit()
 
+
+class BugTaskTargetNameCacheUpdater:
+    """A runnable class which updates the bugtask target name caches."""
+
+    def __init__(self, transaction, logger):
+        self.transaction = transaction
+        self.logger = logger
+
+    def run(self):
+        """Update the bugtask target name caches."""
+        self.logger.info("Updating targetname cache of bugtasks.")
+        loop = BugTaskTargetNameCachesTunableLoop(
+            self.transaction, self.logger)
+
+        loop_tuner = LoopTuner(loop, 1)
+        loop_tuner.run()
+
+        self.logger.info("Finished updating targetname cache of bugtasks.")
 

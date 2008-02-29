@@ -1864,5 +1864,5 @@ class BugTaskSet:
 
     def dangerousGetAllTasks(self):
         """DO NOT USE THIS METHOD. For details, see `IBugTaskSet`"""
-        return BugTask.select()
+        return BugTask.select(orderBy='id')
 

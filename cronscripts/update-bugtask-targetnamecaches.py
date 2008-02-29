@@ -8,8 +8,7 @@ import _pythonpath
 
 from canonical.launchpad.scripts.base import LaunchpadCronScript
 from canonical.launchpad.scripts.bugtasktargetnamecaches import (
-    BugTaskTargetNameCachesTunableLoop)
-from canonical.launchpad.utilities.looptuner import LoopTuner
+    BugTaskTargetNameCacheUpdater)
 from canonical.config import config
 
 
@@ -20,14 +19,8 @@ class UpdateBugTaskTargetNameCaches(LaunchpadCronScript):
     example, an IDistribution being renamed.
     """
     def main(self):
-        self.logger.info("Updating targetname cache of bugtasks.")
-        loop = BugTaskTargetNameCachesTunableLoop(self.txn, self.logger)
-
-        loop_tuner = LoopTuner(loop, 1)
-        loop_tuner.run()
-
-        self.logger.info("Finished updating targetname cache of bugtasks.")
-
+        updater = BugTaskTargetNameCacheUpdater(self.txn, self.logger)
+        updater.run()
 
 if __name__ == '__main__':
     script = UpdateBugTaskTargetNameCaches('launchpad-targetnamecacheupdater', 
