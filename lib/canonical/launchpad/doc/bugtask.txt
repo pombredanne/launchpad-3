@@ -717,7 +717,6 @@ listings) to explicit subscribers and Launchpad admins. Public bugs are visible
 to anyone.
 
     >>> from zope.event import notify
-    >>> from zope.publisher.browser import TestRequest
     >>> from canonical.launchpad.event import SQLObjectModifiedEvent
 
 
@@ -778,7 +777,6 @@ results:
 
     >>> from canonical.launchpad.searchbuilder import any
     >>> from canonical.launchpad.interfaces import BugTaskSearchParams
-    >>> from canonical.launchpad.database import Product
     >>> params = BugTaskSearchParams(
     ...     status=any(STATUS_NEW, STATUS_CONFIRMED),
     ...     orderby="id", user=mr_no_privs)
