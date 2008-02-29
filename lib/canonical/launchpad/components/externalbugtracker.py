@@ -34,7 +34,7 @@ from canonical.launchpad.scripts import log, debbugs
 from canonical.launchpad.interfaces import (
     BugTaskImportance, BugTaskStatus, BugTrackerType, BugWatchErrorType,
     IBugWatchSet, IExternalBugTracker, IMessageSet, IPersonSet,
-    PersonCreationRationale, ISupportsCommentImport,
+    PersonCreationRationale, ISupportsBugImport, ISupportsCommentImport,
     UNKNOWN_REMOTE_IMPORTANCE, UNKNOWN_REMOTE_STATUS)
 from canonical.launchpad.webapp import errorlog
 from canonical.launchpad.webapp.url import urlparse
@@ -693,7 +693,7 @@ class DebBugsDatabaseNotFound(BugTrackerConnectError):
 class DebBugs(ExternalBugTracker):
     """A class that deals with communications with a debbugs db."""
 
-    implements(ISupportsCommentImport)
+    implements(ISupportsBugImport, ISupportsCommentImport)
 
     # We don't support different versions of debbugs.
     version = None
