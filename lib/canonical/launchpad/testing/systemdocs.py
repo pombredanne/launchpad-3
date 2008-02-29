@@ -1,6 +1,6 @@
 # Copyright 2008 Canonical Ltd.  All rights reserved.
 
-"""Module docstring goes here."""
+"""Infrastructure for setting up doctests."""
 
 __metaclass__ = type
 __all__ = [
@@ -59,6 +59,12 @@ default_parser = FilePrefixStrippingDocTestParser()
 
 
 class StdoutHandler(Handler):
+    """A logging handler that prints log messages to sys.stdout.
+
+    This causes log messages to become part of the output captured by
+    doctest, making the test cover the logging behaviour of the code
+    being run.
+    """
     def emit(self, record):
         Handler.emit(self, record)
         print >> sys.stdout, '%s:%s:%s' % (
@@ -116,6 +122,7 @@ def LayeredDocFileSuite(*args, **kw):
 
 
 class SpecialOutputChecker(doctest.OutputChecker):
+    """An OutputChecker that runs the 'chunkydiff' checker if appropriate."""
     def output_difference(self, example, got, optionflags):
         if config.chunkydiff is False:
             return doctest.OutputChecker.output_difference(
