@@ -6,10 +6,10 @@
 
 import _pythonpath
 
-from zope.component import getUtility
-
 from canonical.launchpad.scripts.base import LaunchpadCronScript
-from canonical.launchpad.interfaces import IBugTaskSet
+from canonical.launchpad.scripts.bugtasktargetnamecaches import (
+    BugTaskTargetNameCachesTunableLoop)
+from canonical.launchpad.utilities.looptuner import LoopTuner
 from canonical.config import config
 
 
@@ -21,20 +21,11 @@ class UpdateBugTaskTargetNameCaches(LaunchpadCronScript):
     """
     def main(self):
         self.logger.info("Updating targetname cache of bugtasks.")
-        bugtaskset = getUtility(IBugTaskSet)
-        self.txn.begin()
-        # XXX: kiko 2006-03-23:
-        # We use a special API here, which is kinda klunky, but which
-        # allows us to return all bug tasks (even private ones); this should
-        # eventually be changed to a more elaborate permissions scheme,
-        # pending the infrastructure to do so.
-        bugtask_ids = [bugtask.id for bugtask in bugtaskset.dangerousGetAllTasks()]
-        self.txn.commit()
-        for bugtask_id in bugtask_ids:
-            self.txn.begin()
-            bugtask = bugtaskset.get(bugtask_id)
-            bugtask.updateTargetNameCache()
-            self.txn.commit()
+        loop = BugTaskTargetNameCachesTunableLoop(self.txn, self.logger)
+
+        loop_tuner = LoopTuner(loop, 1)
+        loop_tuner.run()
+
         self.logger.info("Finished updating targetname cache of bugtasks.")
 
 
