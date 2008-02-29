@@ -881,13 +881,13 @@ class DebBugs(ExternalBugTracker):
             CreateBugParams(
                 reporter, summary, description, subscribe_reporter=False))
 
-        [debian_task] = bug.bugtasks
+        [added_task] = bug.bugtasks
         bug_watch = getUtility(IBugWatchSet).createBugWatch(
             bug=bug,
             owner=getUtility(ILaunchpadCelebrities).bug_watch_updater,
             bugtracker=self.bugtracker, remotebug=remote_bug)
 
-        debian_task.bugwatch = bug_watch
+        added_task.bugwatch = bug_watch
         # Need to flush databse updates, so that the bug watch knows it
         # is linked from a bug task.
         flush_database_updates()
