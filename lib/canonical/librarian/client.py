@@ -175,8 +175,6 @@ class FileUploadClient:
         try:
             # Send command
             self._sendLine('STORE %d %s' % (size, name))
-            self._sendLine('Content-type: %s' % contentType)
-
             self._sendHeader('Database-Name', config.dbname)
             self._sendHeader('Content-Type', str(contentType))
             if expires is not None:
