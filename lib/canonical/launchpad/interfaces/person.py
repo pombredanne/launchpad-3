@@ -18,7 +18,6 @@ __all__ = [
     'IPersonChangePassword',
     'IPersonClaim',
     'IPersonEditRestricted',
-    'IPersonEntry',
     'IPersonPublic',
     'IPersonSet',
     'IPersonViewRestricted',
