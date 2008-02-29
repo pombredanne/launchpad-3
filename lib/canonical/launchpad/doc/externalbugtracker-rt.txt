@@ -148,7 +148,7 @@ Launchpad.dev bug #10 is the same bug as reported in example.com bug
     >>> sample_person = getUtility(IPersonSet).getByEmail(
     ...     'test@canonical.com')
     >>> example_bugwatch = example_bug.addWatch(
-    ...     example_bug_tracker, 1585, sample_person)
+    ...     example_bug_tracker, '1585', sample_person)
 
     >>> print_bugwatches(example_bug_tracker.watches)
     Remote bug 1585: None

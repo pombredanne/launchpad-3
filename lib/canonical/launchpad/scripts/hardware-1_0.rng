@@ -142,7 +142,7 @@
                     <zeroOrMore>
                         <element name="alias">
                             <attribute name="target">
-                                <text/>
+                                <data type="integer"/>
                             </attribute>
                             <interleave>
                                 <element name="vendor">
@@ -190,7 +190,7 @@
                         <element name="driver">
                             <optional>
                                 <attribute name="device">
-                                    <text/>
+                                    <data type="integer"/>
                                 </attribute>
                             </optional>
                             <attribute name="name">
@@ -265,8 +265,10 @@
                     </choice>
                     <zeroOrMore>
                         <element name="target">
+                            <attribute name="id">
+                                <data type="integer"/>
+                            </attribute>
                             <interleave>
-                                <text/>
                                 <zeroOrMore>
                                     <element name="driver">
                                         <text/>

@@ -83,10 +83,12 @@
     <include file="librarian.zcml" />
     <include file="logintoken.zcml" />
     <include file="mailinglist.zcml" />
+    <include file="mailinglist-events.zcml" />
     <include file="marketing.zcml" />
     <include file="mentoringoffer.zcml" />
     <include file="message.zcml" />
     <include file="milestone.zcml" />
+    <include file="oauth.zcml" />
     <include file="openid.zcml" />
     <include file="packagebugcontact.zcml" />
     <include file="packagerelationship.zcml" />
