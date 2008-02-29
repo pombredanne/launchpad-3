@@ -132,15 +132,15 @@ a codebrowse link on the revision number.
     These are the branches with the most recent revisions.
     release-0.9: Mozilla Firefox 0.9
     registered by Mark Shuttleworth
-      1. By &lt;email address hidden&gt; on 2005-03-09
+      1. By mark.shuttleworth on 2005-03-09
       Import of Mozilla Firefox 0.9
     release--0.9.1: Mozilla Firefox 0.9.1
     registered by Mark Shuttleworth
-      1. By &lt;email address hidden&gt; on 2005-03-09
+      1. By mark.shuttleworth on 2005-03-09
       Import of Mozilla Firefox 0.9.1
     release-0.9.2: Mozilla Firefox 0.9.2
     registered by Mark Shuttleworth
-      1. By &lt;email address hidden&gt; on 2005-03-09
+      1. By mark.shuttleworth on 2005-03-09
       Import of Mozilla Firefox 0.9.2
 
 

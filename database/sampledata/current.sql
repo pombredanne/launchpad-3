@@ -605,6 +605,21 @@ SET search_path = public, pg_catalog;
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 ALTER TABLE announcement DISABLE TRIGGER ALL;
 
 INSERT INTO announcement (id, date_created, date_announced, registrant, product, distribution, project, title, summary, url, active, date_updated) VALUES (1, '2007-11-25 00:44:32.186178', '2007-11-20 03:00:00', 1, NULL, 1, NULL, 'Every Macedonian Student to Use Ubuntu-Powered Computer Workstations', 'The Macedonia Ministry of Education and Science will deploy more than 180,000 workstations running Canonical’s Edubuntu 7.04 as part of its "Computer for Every Child" project.', 'http://www.ubuntu.com/news/macedonia-school-computers', true, NULL);
@@ -675,18 +690,18 @@ ALTER TABLE answercontact ENABLE TRIGGER ALL;
 
 ALTER TABLE archive DISABLE TRIGGER ALL;
 
-INSERT INTO archive (id, "owner", description, enabled, authorized_size, whiteboard, distribution, purpose, private, fti) VALUES (1, NULL, NULL, true, NULL, NULL, 1, 1, false, NULL);
-INSERT INTO archive (id, "owner", description, enabled, authorized_size, whiteboard, distribution, purpose, private, fti) VALUES (2, NULL, NULL, true, NULL, NULL, 2, 1, false, NULL);
-INSERT INTO archive (id, "owner", description, enabled, authorized_size, whiteboard, distribution, purpose, private, fti) VALUES (3, NULL, NULL, true, NULL, NULL, 3, 1, false, NULL);
-INSERT INTO archive (id, "owner", description, enabled, authorized_size, whiteboard, distribution, purpose, private, fti) VALUES (4, NULL, NULL, true, NULL, NULL, 4, 1, false, NULL);
-INSERT INTO archive (id, "owner", description, enabled, authorized_size, whiteboard, distribution, purpose, private, fti) VALUES (5, NULL, NULL, true, NULL, NULL, 5, 1, false, NULL);
-INSERT INTO archive (id, "owner", description, enabled, authorized_size, whiteboard, distribution, purpose, private, fti) VALUES (7, NULL, NULL, true, NULL, NULL, 7, 1, false, NULL);
-INSERT INTO archive (id, "owner", description, enabled, authorized_size, whiteboard, distribution, purpose, private, fti) VALUES (8, NULL, NULL, true, NULL, NULL, 8, 1, false,  NULL);
-INSERT INTO archive (id, "owner", description, enabled, authorized_size, whiteboard, distribution, purpose, private, fti) VALUES (9, 28, 'packages to help my friends.', true, 1024, 'It is not my fault.', 1, 2, false, NULL);
-INSERT INTO archive (id, "owner", description, enabled, authorized_size, whiteboard, distribution, purpose, private, fti) VALUES (10, 1, 'packages to help the humanity (you know, ubuntu)', true, 1024, NULL, 1, 2, false, NULL);
-INSERT INTO archive (id, "owner", description, enabled, authorized_size, whiteboard, distribution, purpose, private, fti) VALUES (11, 52, 'I am not allowed to say, I have no privs.', true, 1024, NULL, 1, 2, false, NULL);
-INSERT INTO archive (id, "owner", description, enabled, authorized_size, whiteboard, distribution, purpose, private, fti) VALUES (12, NULL, 'Partner archive', true, NULL, NULL, 1, 4, false, NULL);
-INSERT INTO archive (id, "owner", description, enabled, authorized_size, whiteboard, distribution, purpose, private, fti) VALUES (13, NULL, 'Partner archive', true, NULL, NULL, 8, 4, false, NULL);
+INSERT INTO archive (id, "owner", description, enabled, authorized_size, whiteboard, distribution, purpose, private, sources_cached, binaries_cached, package_description_cache, fti) VALUES (1, NULL, NULL, true, NULL, NULL, 1, 1, false, NULL, NULL, NULL, NULL);
+INSERT INTO archive (id, "owner", description, enabled, authorized_size, whiteboard, distribution, purpose, private, sources_cached, binaries_cached, package_description_cache, fti) VALUES (2, NULL, NULL, true, NULL, NULL, 2, 1, false, NULL, NULL, NULL, NULL);
+INSERT INTO archive (id, "owner", description, enabled, authorized_size, whiteboard, distribution, purpose, private, sources_cached, binaries_cached, package_description_cache, fti) VALUES (3, NULL, NULL, true, NULL, NULL, 3, 1, false, NULL, NULL, NULL, NULL);
+INSERT INTO archive (id, "owner", description, enabled, authorized_size, whiteboard, distribution, purpose, private, sources_cached, binaries_cached, package_description_cache, fti) VALUES (4, NULL, NULL, true, NULL, NULL, 4, 1, false, NULL, NULL, NULL, NULL);
+INSERT INTO archive (id, "owner", description, enabled, authorized_size, whiteboard, distribution, purpose, private, sources_cached, binaries_cached, package_description_cache, fti) VALUES (5, NULL, NULL, true, NULL, NULL, 5, 1, false, NULL, NULL, NULL, NULL);
+INSERT INTO archive (id, "owner", description, enabled, authorized_size, whiteboard, distribution, purpose, private, sources_cached, binaries_cached, package_description_cache, fti) VALUES (7, NULL, NULL, true, NULL, NULL, 7, 1, false, NULL, NULL, NULL, NULL);
+INSERT INTO archive (id, "owner", description, enabled, authorized_size, whiteboard, distribution, purpose, private, sources_cached, binaries_cached, package_description_cache, fti) VALUES (8, NULL, NULL, true, NULL, NULL, 8, 1, false, NULL, NULL, NULL, NULL);
+INSERT INTO archive (id, "owner", description, enabled, authorized_size, whiteboard, distribution, purpose, private, sources_cached, binaries_cached, package_description_cache, fti) VALUES (9, 28, 'packages to help my friends.', true, 1024, 'It is not my fault.', 1, 2, false, NULL, NULL, NULL, NULL);
+INSERT INTO archive (id, "owner", description, enabled, authorized_size, whiteboard, distribution, purpose, private, sources_cached, binaries_cached, package_description_cache, fti) VALUES (10, 1, 'packages to help the humanity (you know, ubuntu)', true, 1024, NULL, 1, 2, false, NULL, NULL, NULL, NULL);
+INSERT INTO archive (id, "owner", description, enabled, authorized_size, whiteboard, distribution, purpose, private, sources_cached, binaries_cached, package_description_cache, fti) VALUES (11, 52, 'I am not allowed to say, I have no privs.', true, 1024, NULL, 1, 2, false, NULL, NULL, NULL, NULL);
+INSERT INTO archive (id, "owner", description, enabled, authorized_size, whiteboard, distribution, purpose, private, sources_cached, binaries_cached, package_description_cache, fti) VALUES (12, NULL, 'Partner archive', true, NULL, NULL, 1, 4, false, NULL, NULL, NULL, NULL);
+INSERT INTO archive (id, "owner", description, enabled, authorized_size, whiteboard, distribution, purpose, private, sources_cached, binaries_cached, package_description_cache, fti) VALUES (13, NULL, 'Partner archive', true, NULL, NULL, 8, 4, false, NULL, NULL, NULL, NULL);
 
 
 ALTER TABLE archive ENABLE TRIGGER ALL;
@@ -734,7 +749,7 @@ ALTER TABLE binarypackagerelease DISABLE TRIGGER ALL;
 
 INSERT INTO binarypackagerelease (id, binarypackagename, version, summary, description, build, binpackageformat, component, section, priority, shlibdeps, depends, recommends, suggests, conflicts, replaces, provides, essential, installedsize, architecturespecific, fti, datecreated, pre_depends, enhances, breaks) VALUES (6, 6, '1.0', 'foobar is bad', 'foobar should be removed', 6, 1, 1, 1, 40, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, NULL, false, NULL, '2006-12-01 17:50:10.878712', NULL, NULL, NULL);
 INSERT INTO binarypackagerelease (id, binarypackagename, version, summary, description, build, binpackageformat, component, section, priority, shlibdeps, depends, recommends, suggests, conflicts, replaces, provides, essential, installedsize, architecturespecific, fti, datecreated, pre_depends, enhances, breaks) VALUES (12, 8, '0.9', 'Mozilla Firefox Web Browser', 'Mozilla Firefox Web Browser is .....', 2, 1, 1, 1, 10, NULL, 'gcc-3.4-base, libc6 (>= 2.3.2.ds1-4), gcc-3.4 (>= 3.4.1-4sarge1), gcc-3.4 (<< 3.4.2), libstdc++6-dev (>= 3.4.1-4sarge1)', 'gcc-3.4-base, libc6 (>= 2.3.2.ds1-4), gcc-3.4 (>= 3.4.1-4sarge1), gcc-3.4 (<< 3.4.2), libstdc++6-dev (>= 3.4.1-4sarge1)', 'firefox-gnome-support (= 1.0.7-0ubuntu20), latex-xft-fonts, xprint', 'firefox, mozilla-web-browser', 'gnome-mozilla-browser', 'mozilla-firefox', false, NULL, true, NULL, '2005-10-19 17:50:10.874189', 'pmount, foo', 'pmount, bar', 'pmount, baz');
-INSERT INTO binarypackagerelease (id, binarypackagename, version, summary, description, build, binpackageformat, component, section, priority, shlibdeps, depends, recommends, suggests, conflicts, replaces, provides, essential, installedsize, architecturespecific, fti, datecreated, pre_depends, enhances, breaks) VALUES (15, 13, '0.1-1', 'pmount shortdesc', 'pmount description', 7, 1, 1, 1, 40, NULL, 'at (>= 3.14156), linux-2.6.12, tramp-package', NULL, NULL, NULL, NULL, NULL, false, NULL, true, NULL, '2005-10-19 17:50:10.878712', NULL, NULL, NULL);
+INSERT INTO binarypackagerelease (id, binarypackagename, version, summary, description, build, binpackageformat, component, section, priority, shlibdeps, depends, recommends, suggests, conflicts, replaces, provides, essential, installedsize, architecturespecific, fti, datecreated, pre_depends, enhances, breaks) VALUES (15, 13, '0.1-1', 'pmount shortdesc', 'pmount description', 7, 1, 1, 1, 40, NULL, 'at (>= 3.14156), linux-2.6.12, tramp-package', NULL, NULL, NULL, NULL, NULL, false, NULL, false, NULL, '2005-10-19 17:50:10.878712', NULL, NULL, NULL);
 INSERT INTO binarypackagerelease (id, binarypackagename, version, summary, description, build, binpackageformat, component, section, priority, shlibdeps, depends, recommends, suggests, conflicts, replaces, provides, essential, installedsize, architecturespecific, fti, datecreated, pre_depends, enhances, breaks) VALUES (16, 14, '2.6.12.20', 'the kernel of boom', 'this kernel is like the crystal method: a temple of boom', 14, 1, 1, 1, 40, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, NULL, false, NULL, '2005-10-19 17:50:10.878712', NULL, NULL, NULL);
 INSERT INTO binarypackagerelease (id, binarypackagename, version, summary, description, build, binpackageformat, component, section, priority, shlibdeps, depends, recommends, suggests, conflicts, replaces, provides, essential, installedsize, architecturespecific, fti, datecreated, pre_depends, enhances, breaks) VALUES (17, 15, '3.14156', 'at the mountains of madness', 'lovecraft long before enunciated that the mountains were not safe, but you did not believe him', 15, 1, 1, 1, 40, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, NULL, false, NULL, '2005-10-19 17:50:10.878712', NULL, NULL, NULL);
 INSERT INTO binarypackagerelease (id, binarypackagename, version, summary, description, build, binpackageformat, component, section, priority, shlibdeps, depends, recommends, suggests, conflicts, replaces, provides, essential, installedsize, architecturespecific, fti, datecreated, pre_depends, enhances, breaks) VALUES (18, 13, '2:1.9-1', 'pmount shortdesc', 'pmount description', 16, 1, 1, 1, 40, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, NULL, true, NULL, '2005-10-19 17:50:10.878712', NULL, NULL, NULL);
@@ -1335,6 +1350,13 @@ ALTER TABLE codeimportresult DISABLE TRIGGER ALL;
 
 
 ALTER TABLE codeimportresult ENABLE TRIGGER ALL;
+
+
+ALTER TABLE codereviewmessage DISABLE TRIGGER ALL;
+
+
+
+ALTER TABLE codereviewmessage ENABLE TRIGGER ALL;
 
 
 ALTER TABLE component DISABLE TRIGGER ALL;
@@ -1960,10 +1982,10 @@ ALTER TABLE emailaddress ENABLE TRIGGER ALL;
 
 ALTER TABLE entitlement DISABLE TRIGGER ALL;
 
-INSERT INTO entitlement (id, person, entitlement_type, quota, amount_used, date_starts, date_expires, registrant, date_created, approved_by, date_approved, state, whiteboard, is_dirty) VALUES (1, 17, 10, 100, 0, '2007-06-11 12:00:00', '2008-06-11 12:00:00', NULL, '2007-06-10 12:00:00', NULL, NULL, 30, NULL, true);
-INSERT INTO entitlement (id, person, entitlement_type, quota, amount_used, date_starts, date_expires, registrant, date_created, approved_by, date_approved, state, whiteboard, is_dirty) VALUES (2, 17, 20, 200, 0, '2007-06-11 12:00:00', '2008-06-11 12:00:00', NULL, '2007-06-10 12:00:00', NULL, NULL, 30, NULL, true);
-INSERT INTO entitlement (id, person, entitlement_type, quota, amount_used, date_starts, date_expires, registrant, date_created, approved_by, date_approved, state, whiteboard, is_dirty) VALUES (4, 18, 10, 5, 0, '2007-06-11 12:00:00', '2007-06-11 00:00:00', NULL, '2007-06-11 00:44:19.267601', NULL, NULL, 30, NULL, true);
-INSERT INTO entitlement (id, person, entitlement_type, quota, amount_used, date_starts, date_expires, registrant, date_created, approved_by, date_approved, state, whiteboard, is_dirty) VALUES (5, 18, 10, 3, 0, '2007-06-11 12:00:00', '2007-06-11 00:00:00', NULL, '2007-06-11 01:02:48.538842', NULL, NULL, 30, NULL, true);
+INSERT INTO entitlement (id, person, entitlement_type, quota, amount_used, date_starts, date_expires, registrant, date_created, approved_by, date_approved, state, whiteboard, is_dirty, distribution, product, project) VALUES (1, 17, 10, 100, 0, '2007-06-11 12:00:00', '2008-06-11 12:00:00', NULL, '2007-06-10 12:00:00', NULL, NULL, 30, NULL, true, NULL, NULL, NULL);
+INSERT INTO entitlement (id, person, entitlement_type, quota, amount_used, date_starts, date_expires, registrant, date_created, approved_by, date_approved, state, whiteboard, is_dirty, distribution, product, project) VALUES (2, 17, 20, 200, 0, '2007-06-11 12:00:00', '2008-06-11 12:00:00', NULL, '2007-06-10 12:00:00', NULL, NULL, 30, NULL, true, NULL, NULL, NULL);
+INSERT INTO entitlement (id, person, entitlement_type, quota, amount_used, date_starts, date_expires, registrant, date_created, approved_by, date_approved, state, whiteboard, is_dirty, distribution, product, project) VALUES (4, 18, 10, 5, 0, '2007-06-11 12:00:00', '2007-06-11 00:00:00', NULL, '2007-06-11 00:44:19.267601', NULL, NULL, 30, NULL, true, NULL, NULL, NULL);
+INSERT INTO entitlement (id, person, entitlement_type, quota, amount_used, date_starts, date_expires, registrant, date_created, approved_by, date_approved, state, whiteboard, is_dirty, distribution, product, project) VALUES (5, 18, 10, 3, 0, '2007-06-11 12:00:00', '2007-06-11 00:00:00', NULL, '2007-06-11 01:02:48.538842', NULL, NULL, 30, NULL, true, NULL, NULL, NULL);
 
 
 ALTER TABLE entitlement ENABLE TRIGGER ALL;
@@ -3837,6 +3859,34 @@ INSERT INTO nameblacklist (id, regexp, "comment") VALUES (2, '^admin', NULL);
 ALTER TABLE nameblacklist ENABLE TRIGGER ALL;
 
 
+ALTER TABLE oauthaccesstoken DISABLE TRIGGER ALL;
+
+
+
+ALTER TABLE oauthaccesstoken ENABLE TRIGGER ALL;
+
+
+ALTER TABLE oauthconsumer DISABLE TRIGGER ALL;
+
+
+
+ALTER TABLE oauthconsumer ENABLE TRIGGER ALL;
+
+
+ALTER TABLE oauthnonce DISABLE TRIGGER ALL;
+
+
+
+ALTER TABLE oauthnonce ENABLE TRIGGER ALL;
+
+
+ALTER TABLE oauthrequesttoken DISABLE TRIGGER ALL;
+
+
+
+ALTER TABLE oauthrequesttoken ENABLE TRIGGER ALL;
+
+
 ALTER TABLE officialbugtag DISABLE TRIGGER ALL;
 
 
@@ -3867,8 +3917,6 @@ ALTER TABLE openidrpconfig ENABLE TRIGGER ALL;
 
 ALTER TABLE packagebugcontact DISABLE TRIGGER ALL;
 
-INSERT INTO packagebugcontact (id, distribution, sourcepackagename, bugcontact, date_created) VALUES (1, 1, 1, 16, '2006-10-16 18:31:44.328897');
-INSERT INTO packagebugcontact (id, distribution, sourcepackagename, bugcontact, date_created) VALUES (2, 1, 14, 16, '2006-10-16 18:31:44.330261');
 
 
 ALTER TABLE packagebugcontact ENABLE TRIGGER ALL;
@@ -4078,44 +4126,44 @@ ALTER TABLE personlocation ENABLE TRIGGER ALL;
 
 ALTER TABLE pillarname DISABLE TRIGGER ALL;
 
-INSERT INTO pillarname (id, name, product, project, distribution, active) VALUES (1, 'ubuntu', NULL, NULL, 1, true);
-INSERT INTO pillarname (id, name, product, project, distribution, active) VALUES (2, 'redhat', NULL, NULL, 2, true);
-INSERT INTO pillarname (id, name, product, project, distribution, active) VALUES (3, 'debian', NULL, NULL, 3, true);
-INSERT INTO pillarname (id, name, product, project, distribution, active) VALUES (4, 'gentoo', NULL, NULL, 4, true);
-INSERT INTO pillarname (id, name, product, project, distribution, active) VALUES (5, 'kubuntu', NULL, NULL, 5, true);
-INSERT INTO pillarname (id, name, product, project, distribution, active) VALUES (6, 'guadalinex', NULL, NULL, 7, true);
-INSERT INTO pillarname (id, name, product, project, distribution, active) VALUES (7, 'ubuntutest', NULL, NULL, 8, true);
-INSERT INTO pillarname (id, name, product, project, distribution, active) VALUES (8, 'tomcat', 1, NULL, NULL, true);
-INSERT INTO pillarname (id, name, product, project, distribution, active) VALUES (9, 'unassigned', 2, NULL, NULL, false);
-INSERT INTO pillarname (id, name, product, project, distribution, active) VALUES (10, 'arch-mirrors', 3, NULL, NULL, true);
-INSERT INTO pillarname (id, name, product, project, distribution, active) VALUES (11, 'firefox', 4, NULL, NULL, true);
-INSERT INTO pillarname (id, name, product, project, distribution, active) VALUES (12, 'evolution', 5, NULL, NULL, true);
-INSERT INTO pillarname (id, name, product, project, distribution, active) VALUES (13, 'gnome-terminal', 6, NULL, NULL, true);
-INSERT INTO pillarname (id, name, product, project, distribution, active) VALUES (14, 'iso-codes', 7, NULL, NULL, true);
-INSERT INTO pillarname (id, name, product, project, distribution, active) VALUES (15, 'thunderbird', 8, NULL, NULL, true);
-INSERT INTO pillarname (id, name, product, project, distribution, active) VALUES (16, 'applets', 9, NULL, NULL, true);
-INSERT INTO pillarname (id, name, product, project, distribution, active) VALUES (17, 'python-gnome2-dev', 10, NULL, NULL, false);
-INSERT INTO pillarname (id, name, product, project, distribution, active) VALUES (18, 'netapplet', 11, NULL, NULL, true);
-INSERT INTO pillarname (id, name, product, project, distribution, active) VALUES (19, 'a52dec', 12, NULL, NULL, true);
-INSERT INTO pillarname (id, name, product, project, distribution, active) VALUES (20, 'gnomebaker', 13, NULL, NULL, true);
-INSERT INTO pillarname (id, name, product, project, distribution, active) VALUES (21, 'bazaar', 14, NULL, NULL, true);
-INSERT INTO pillarname (id, name, product, project, distribution, active) VALUES (22, 'alsa-utils', 15, NULL, NULL, true);
-INSERT INTO pillarname (id, name, product, project, distribution, active) VALUES (23, 'iso-codes-project', NULL, 6, NULL, true);
-INSERT INTO pillarname (id, name, product, project, distribution, active) VALUES (24, 'apache', NULL, 1, NULL, true);
-INSERT INTO pillarname (id, name, product, project, distribution, active) VALUES (25, 'do-not-use-info-imports', NULL, 2, NULL, false);
-INSERT INTO pillarname (id, name, product, project, distribution, active) VALUES (26, 'launchpad-mirrors', NULL, 3, NULL, true);
-INSERT INTO pillarname (id, name, product, project, distribution, active) VALUES (27, 'mozilla', NULL, 4, NULL, true);
-INSERT INTO pillarname (id, name, product, project, distribution, active) VALUES (28, 'gnome', NULL, 5, NULL, true);
-INSERT INTO pillarname (id, name, product, project, distribution, active) VALUES (29, 'aaa', NULL, 7, NULL, true);
-INSERT INTO pillarname (id, name, product, project, distribution, active) VALUES (30, 'gimp', NULL, 8, NULL, true);
-INSERT INTO pillarname (id, name, product, project, distribution, active) VALUES (31, 'landscape', 16, NULL, NULL, true);
-INSERT INTO pillarname (id, name, product, project, distribution, active) VALUES (32, 'launchpad', 17, NULL, NULL, true);
-INSERT INTO pillarname (id, name, product, project, distribution, active) VALUES (33, 'upstart', 18, NULL, NULL, true);
-INSERT INTO pillarname (id, name, product, project, distribution, active) VALUES (34, 'aptoncd', 19, NULL, NULL, true);
-INSERT INTO pillarname (id, name, product, project, distribution, active) VALUES (35, 'jokosher', 20, NULL, NULL, true);
-INSERT INTO pillarname (id, name, product, project, distribution, active) VALUES (36, 'bzr', 21, NULL, NULL, true);
-INSERT INTO pillarname (id, name, product, project, distribution, active) VALUES (37, 'redfish', 22, NULL, NULL, true);
-INSERT INTO pillarname (id, name, product, project, distribution, active) VALUES (38, 'derby', 23, NULL, NULL, true);
+INSERT INTO pillarname (id, name, product, project, distribution, active, alias_for) VALUES (1, 'ubuntu', NULL, NULL, 1, true, NULL);
+INSERT INTO pillarname (id, name, product, project, distribution, active, alias_for) VALUES (2, 'redhat', NULL, NULL, 2, true, NULL);
+INSERT INTO pillarname (id, name, product, project, distribution, active, alias_for) VALUES (3, 'debian', NULL, NULL, 3, true, NULL);
+INSERT INTO pillarname (id, name, product, project, distribution, active, alias_for) VALUES (4, 'gentoo', NULL, NULL, 4, true, NULL);
+INSERT INTO pillarname (id, name, product, project, distribution, active, alias_for) VALUES (5, 'kubuntu', NULL, NULL, 5, true, NULL);
+INSERT INTO pillarname (id, name, product, project, distribution, active, alias_for) VALUES (6, 'guadalinex', NULL, NULL, 7, true, NULL);
+INSERT INTO pillarname (id, name, product, project, distribution, active, alias_for) VALUES (7, 'ubuntutest', NULL, NULL, 8, true, NULL);
+INSERT INTO pillarname (id, name, product, project, distribution, active, alias_for) VALUES (8, 'tomcat', 1, NULL, NULL, true, NULL);
+INSERT INTO pillarname (id, name, product, project, distribution, active, alias_for) VALUES (9, 'unassigned', 2, NULL, NULL, false, NULL);
+INSERT INTO pillarname (id, name, product, project, distribution, active, alias_for) VALUES (10, 'arch-mirrors', 3, NULL, NULL, true, NULL);
+INSERT INTO pillarname (id, name, product, project, distribution, active, alias_for) VALUES (11, 'firefox', 4, NULL, NULL, true, NULL);
+INSERT INTO pillarname (id, name, product, project, distribution, active, alias_for) VALUES (12, 'evolution', 5, NULL, NULL, true, NULL);
+INSERT INTO pillarname (id, name, product, project, distribution, active, alias_for) VALUES (13, 'gnome-terminal', 6, NULL, NULL, true, NULL);
+INSERT INTO pillarname (id, name, product, project, distribution, active, alias_for) VALUES (14, 'iso-codes', 7, NULL, NULL, true, NULL);
+INSERT INTO pillarname (id, name, product, project, distribution, active, alias_for) VALUES (15, 'thunderbird', 8, NULL, NULL, true, NULL);
+INSERT INTO pillarname (id, name, product, project, distribution, active, alias_for) VALUES (16, 'applets', 9, NULL, NULL, true, NULL);
+INSERT INTO pillarname (id, name, product, project, distribution, active, alias_for) VALUES (17, 'python-gnome2-dev', 10, NULL, NULL, false, NULL);
+INSERT INTO pillarname (id, name, product, project, distribution, active, alias_for) VALUES (18, 'netapplet', 11, NULL, NULL, true, NULL);
+INSERT INTO pillarname (id, name, product, project, distribution, active, alias_for) VALUES (19, 'a52dec', 12, NULL, NULL, true, NULL);
+INSERT INTO pillarname (id, name, product, project, distribution, active, alias_for) VALUES (20, 'gnomebaker', 13, NULL, NULL, true, NULL);
+INSERT INTO pillarname (id, name, product, project, distribution, active, alias_for) VALUES (21, 'bazaar', 14, NULL, NULL, true, NULL);
+INSERT INTO pillarname (id, name, product, project, distribution, active, alias_for) VALUES (22, 'alsa-utils', 15, NULL, NULL, true, NULL);
+INSERT INTO pillarname (id, name, product, project, distribution, active, alias_for) VALUES (23, 'iso-codes-project', NULL, 6, NULL, true, NULL);
+INSERT INTO pillarname (id, name, product, project, distribution, active, alias_for) VALUES (24, 'apache', NULL, 1, NULL, true, NULL);
+INSERT INTO pillarname (id, name, product, project, distribution, active, alias_for) VALUES (25, 'do-not-use-info-imports', NULL, 2, NULL, false, NULL);
+INSERT INTO pillarname (id, name, product, project, distribution, active, alias_for) VALUES (26, 'launchpad-mirrors', NULL, 3, NULL, true, NULL);
+INSERT INTO pillarname (id, name, product, project, distribution, active, alias_for) VALUES (27, 'mozilla', NULL, 4, NULL, true, NULL);
+INSERT INTO pillarname (id, name, product, project, distribution, active, alias_for) VALUES (28, 'gnome', NULL, 5, NULL, true, NULL);
+INSERT INTO pillarname (id, name, product, project, distribution, active, alias_for) VALUES (29, 'aaa', NULL, 7, NULL, true, NULL);
+INSERT INTO pillarname (id, name, product, project, distribution, active, alias_for) VALUES (30, 'gimp', NULL, 8, NULL, true, NULL);
+INSERT INTO pillarname (id, name, product, project, distribution, active, alias_for) VALUES (31, 'landscape', 16, NULL, NULL, true, NULL);
+INSERT INTO pillarname (id, name, product, project, distribution, active, alias_for) VALUES (32, 'launchpad', 17, NULL, NULL, true, NULL);
+INSERT INTO pillarname (id, name, product, project, distribution, active, alias_for) VALUES (33, 'upstart', 18, NULL, NULL, true, NULL);
+INSERT INTO pillarname (id, name, product, project, distribution, active, alias_for) VALUES (34, 'aptoncd', 19, NULL, NULL, true, NULL);
+INSERT INTO pillarname (id, name, product, project, distribution, active, alias_for) VALUES (35, 'jokosher', 20, NULL, NULL, true, NULL);
+INSERT INTO pillarname (id, name, product, project, distribution, active, alias_for) VALUES (36, 'bzr', 21, NULL, NULL, true, NULL);
+INSERT INTO pillarname (id, name, product, project, distribution, active, alias_for) VALUES (37, 'redfish', 22, NULL, NULL, true, NULL);
+INSERT INTO pillarname (id, name, product, project, distribution, active, alias_for) VALUES (38, 'derby', 23, NULL, NULL, true, NULL);
 
 
 ALTER TABLE pillarname ENABLE TRIGGER ALL;
@@ -7377,9 +7425,9 @@ INSERT INTO revisionauthor (id, name, email, person) VALUES (7, 'scott.james.rem
 INSERT INTO revisionauthor (id, name, email, person) VALUES (8, 'andrew.bennetts', NULL, NULL);
 INSERT INTO revisionauthor (id, name, email, person) VALUES (9, 'dave.miller', NULL, NULL);
 INSERT INTO revisionauthor (id, name, email, person) VALUES (10, 'jeff.waugh', NULL, NULL);
-INSERT INTO revisionauthor (id, name, email, person) VALUES (11, 'Sample Committer <test@canonical.com>', NULL, NULL);
-INSERT INTO revisionauthor (id, name, email, person) VALUES (12, 'foo <foo@localhost>', NULL, NULL);
-INSERT INTO revisionauthor (id, name, email, person) VALUES (13, 'bar@localhost', NULL, NULL);
+INSERT INTO revisionauthor (id, name, email, person) VALUES (11, 'Sample Committer <test@canonical.com>', 'test@canonical.com', 12);
+INSERT INTO revisionauthor (id, name, email, person) VALUES (12, 'foo <foo@localhost>', 'foo@localhost', NULL);
+INSERT INTO revisionauthor (id, name, email, person) VALUES (13, 'bar@localhost', 'bar@localhost', NULL);
 
 
 ALTER TABLE revisionauthor ENABLE TRIGGER ALL;
@@ -8247,6 +8295,8 @@ INSERT INTO standardshipitrequest (id, quantityx86, quantityppc, quantityamd64, 
 INSERT INTO standardshipitrequest (id, quantityx86, quantityppc, quantityamd64, isdefault, flavour, description) VALUES (12, 8, 0, 2, false, 2, NULL);
 INSERT INTO standardshipitrequest (id, quantityx86, quantityppc, quantityamd64, isdefault, flavour, description) VALUES (13, 5, 0, 0, true, 3, NULL);
 INSERT INTO standardshipitrequest (id, quantityx86, quantityppc, quantityamd64, isdefault, flavour, description) VALUES (14, 1, 0, 0, false, 3, NULL);
+INSERT INTO standardshipitrequest (id, quantityx86, quantityppc, quantityamd64, isdefault, flavour, description) VALUES (15, 3, 0, 2, false, 4, NULL);
+INSERT INTO standardshipitrequest (id, quantityx86, quantityppc, quantityamd64, isdefault, flavour, description) VALUES (16, 1, 0, 1, false, 4, NULL);
 
 
 ALTER TABLE standardshipitrequest ENABLE TRIGGER ALL;
@@ -8254,6 +8304,10 @@ ALTER TABLE standardshipitrequest ENABLE TRIGGER ALL;
 
 ALTER TABLE structuralsubscription DISABLE TRIGGER ALL;
 
+INSERT INTO structuralsubscription (id, product, productseries, project, milestone, distribution, distroseries, sourcepackagename, subscriber, subscribed_by, bug_notification_level, blueprint_notification_level, date_created, date_last_updated) VALUES (1, NULL, NULL, NULL, NULL, 1, NULL, 1, 16, 16, 40, 10, '2008-01-29 15:12:34.581468', '2008-01-29 15:12:34.581468');
+INSERT INTO structuralsubscription (id, product, productseries, project, milestone, distribution, distroseries, sourcepackagename, subscriber, subscribed_by, bug_notification_level, blueprint_notification_level, date_created, date_last_updated) VALUES (2, NULL, NULL, NULL, NULL, 1, NULL, 14, 16, 16, 40, 10, '2008-01-29 15:12:34.581468', '2008-01-29 15:12:34.581468');
+INSERT INTO structuralsubscription (id, product, productseries, project, milestone, distribution, distroseries, sourcepackagename, subscriber, subscribed_by, bug_notification_level, blueprint_notification_level, date_created, date_last_updated) VALUES (3, 22, NULL, NULL, NULL, NULL, NULL, NULL, 64, 64, 40, 10, '2008-02-06 12:17:13.030376', '2008-02-06 12:17:13.030376');
+INSERT INTO structuralsubscription (id, product, productseries, project, milestone, distribution, distroseries, sourcepackagename, subscriber, subscribed_by, bug_notification_level, blueprint_notification_level, date_created, date_last_updated) VALUES (4, 16, NULL, NULL, NULL, NULL, NULL, NULL, 64, 64, 40, 10, '2008-02-06 12:17:13.030376', '2008-02-06 12:17:13.030376');
 
 
 ALTER TABLE structuralsubscription ENABLE TRIGGER ALL;

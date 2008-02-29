@@ -148,7 +148,7 @@ Launchpad.dev bug #10 is the same bug as reported in example.com bug
     >>> sample_person = getUtility(IPersonSet).getByEmail(
     ...     'test@canonical.com')
     >>> example_bugwatch = example_bug.addWatch(
-    ...     example_bug_tracker, 1585, sample_person)
+    ...     example_bug_tracker, '1585', sample_person)
 
     >>> print_bugwatches(example_bug_tracker.watches)
     Remote bug 1585: None
@@ -156,8 +156,10 @@ Launchpad.dev bug #10 is the same bug as reported in example.com bug
 Our RequestTracker ExternalBugTracker can now process, and retrieve a
 remote status for, the bug watch that we have created.
 
+    >>> from canonical.launchpad.scripts.checkwatches import BugWatchUpdater
+    >>> bug_watch_updater = BugWatchUpdater(txn)
     >>> rt = TestRequestTracker(txn, example_bug_tracker)
-    >>> rt.updateBugWatches(example_bug_tracker.watches)
+    >>> bug_watch_updater.updateBugWatches(rt, example_bug_tracker.watches)
     INFO:...:Updating 1 watches on http://bugs.some.where
 
     >>> print_bugwatches(example_bug_tracker.watches)
@@ -186,7 +188,7 @@ tracker with a variety of statuses.
     ...         remotebug=str(remote_bug_id))
 
     >>> rt.trace_calls = True
-    >>> rt.updateBugWatches(example_bug_tracker.watches)
+    >>> bug_watch_updater.updateBugWatches(rt, example_bug_tracker.watches)
     INFO:...:Updating 5 watches on http://bugs.some.where
     CALLED urlopen(u'REST/1.0/search/ticket/')
 

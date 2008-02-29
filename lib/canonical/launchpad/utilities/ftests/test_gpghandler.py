@@ -16,6 +16,7 @@ class TestImportKeyRing(unittest.TestCase):
         """Get a gpghandler and login"""
         login(ANONYMOUS)
         self.gpg_handler = getUtility(IGPGHandler)
+        self.gpg_handler.resetLocalState()
 
     def tearDown(self):
         """Zero out the gpg database"""

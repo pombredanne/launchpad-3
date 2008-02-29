@@ -2,16 +2,14 @@
 Tests to make sure that SQLOS works as expected in our environment.
 """
 import unittest
-from warnings import warn
 from threading import Thread
 
 import sqlos
 import sqlobject
 import transaction
-import psycopg
 from zope.app.rdb.interfaces import DatabaseException
 
-from canonical.launchpad.ftests.harness import LaunchpadFunctionalTestCase
+from canonical.testing import LaunchpadFunctionalLayer
 
 class Beer(sqlos.SQLOS):
     _columns = [
@@ -19,7 +17,9 @@ class Beer(sqlos.SQLOS):
         sqlobject.IntCol('rating', default=None),
         ]
 
-class TestSQLOS(LaunchpadFunctionalTestCase):
+class TestSQLOS(unittest.TestCase):
+    layer = LaunchpadFunctionalLayer
+
     def setUp(self):
         super(TestSQLOS, self).setUp()
         Beer.createTable()

@@ -32,7 +32,9 @@ We display the recent revisions of a branch if it has been scanned. There's a
 === Revision information ===
 
 Underneath that heading we see the ten most-recent revisions of the branch in
-reverse-chronological order.
+reverse-chronological order.  If the revision author has been linked to a
+Launchpad person, then a link to the person is shown rather than the
+text of the revision author.
 
     >>> def print_revisions(browser):
     ...     revisions = find_tags_by_class(
@@ -44,9 +46,9 @@ reverse-chronological order.
     6. By foo &lt;foo@localhost&gt; on 2005-10-31
     5. By foo &lt;foo@localhost&gt; on 2005-10-31
     4. By bar@localhost on 2005-10-31
-    3. By Sample Committer &lt;test@canonical.com&gt; on 2005-10-31
-    2. By Sample Committer &lt;test@canonical.com&gt; on 2005-10-31
-    1. By Sample Committer &lt;test@canonical.com&gt; on 2005-10-31
+    3. By Sample Person on 2005-10-31
+    2. By Sample Person on 2005-10-31
+    1. By Sample Person on 2005-10-31
 
 Each of the revision numbers are now anchors to codebrowse (for public
 branches).
@@ -54,7 +56,7 @@ branches).
     >>> revision = find_tags_by_class(
     ...         user_browser.contents, 'revision-details', only_first=True)
     >>> print revision.a
-    <a href="http://codebrowse.launchpad.dev/~name12/+junk/junk.dev/revision/6">6</a>
+    <a href="http://bazaar.launchpad.dev/~name12/+junk/junk.dev/revision/6">6</a>
 
 
 === Email addresses ===
@@ -71,9 +73,9 @@ addresses.
     6. By foo &lt;email address hidden&gt; on 2005-10-31
     5. By foo &lt;email address hidden&gt; on 2005-10-31
     4. By &lt;email address hidden&gt; on 2005-10-31
-    3. By Sample Committer &lt;email address hidden&gt; on 2005-10-31
-    2. By Sample Committer &lt;email address hidden&gt; on 2005-10-31
-    1. By Sample Committer &lt;email address hidden&gt; on 2005-10-31
+    3. By Sample Person on 2005-10-31
+    2. By Sample Person on 2005-10-31
+    1. By Sample Person on 2005-10-31
 
 
 === Commit messages ===
@@ -118,13 +120,17 @@ helpful message.
     This branch has not been mirrored yet.
 
 We don't want to use the word 'mirrored' for hosted or imported branches,
-because those branches are only mirrored internally. "Published" is a better
-word for these.
+because those branches are only mirrored internally.
 
     >>> browser.open('http://code.launchpad.dev/~name12/gnome-terminal/pushed')
     >>> print extract_text(find_tag_by_id(browser.contents, 'recent-revisions'))
     Recent revisions
-    This branch has not been published yet.
+    This branch has not been pushed to yet.
+
+    >>> browser.open('http://code.launchpad.dev/~vcs-imports/evolution/main')
+    >>> print extract_text(find_tag_by_id(browser.contents, 'recent-revisions'))
+    Recent revisions
+    This branch has not been imported yet.
 
 If a branch has been mirrored, but not scanned, we display a different message.
 This is helpful particularly for hosted and imported branches, which are
@@ -261,13 +267,13 @@ link is shown.
     ...     browser.contents, "recent-revisions").dl)
     6. By foo... fix bug in bar...
     >>> print browser.getLink('Browse code').url
-    http://codebrowse.launchpad.dev/~name12/+junk/junk.dev/files
+    http://bazaar.launchpad.dev/~name12/+junk/junk.dev/files
 
 In addition, there is a "Browse revisions" link that links to the
 changelog view in codebrowse.
 
     >>> print browser.getLink('Browse revisions').url
-    http://codebrowse.launchpad.dev/~name12/+junk/junk.dev/changes
+    http://bazaar.launchpad.dev/~name12/+junk/junk.dev/changes
 
 If the branch is private, the browse code link is not shown.
 In order to see the private branch, we need to log in as a user that

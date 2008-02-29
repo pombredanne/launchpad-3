@@ -7,21 +7,20 @@ This module is the back-end for scripts/importd-publish.py.
 
 __metaclass__ = type
 
-__all__ = ['ImportdPublisher', 'mirror_url_from_series']
+__all__ = ['ImportdPublisher']
 
 
 import os
 
-from bzrlib.branch import Branch
-from bzrlib.bzrdir import BzrDir
-from bzrlib.errors import NotBranchError
-from bzrlib.transport import get_transport
 from zope.component import getUtility
 
+from bzrlib.transport import get_transport
+from bzrlib.workingtree import WorkingTree
+
+from canonical.codehosting.codeimport.worker import BazaarBranchStore
 from canonical.database.sqlbase import begin, commit
 from canonical.launchpad.interfaces import (
     BranchType, ILaunchpadCelebrities, IBranchSet, IProductSeriesSet)
-from canonical.launchpad.webapp.url import urlappend
 
 
 class ImportdPublisher:
@@ -32,6 +31,7 @@ class ImportdPublisher:
         self.workingdir = workingdir
         self.series_id = series_id
         self.push_prefix = push_prefix
+        self._store = BazaarBranchStore(get_transport(self.push_prefix))
 
     def publish(self):
         begin()
@@ -39,22 +39,8 @@ class ImportdPublisher:
         ensure_series_branch(series)
         branch = series.import_branch
         commit()
-        push_to = mirror_url_from_series(self.push_prefix, series)
         local = os.path.join(self.workingdir, 'bzrworking')
-        bzr_push(local, push_to)
-
-
-def mirror_url_from_series(push_prefix, series):
-    """Give the URL of the internal mirror branch for a vcs import.
-
-    :param series: ProductSeries database object specifying a VCS import.
-    :return: URL of the internal publishing mirror for this import.
-    """
-    assert series.import_branch is not None
-    assert (series.import_branch.owner ==
-            getUtility(ILaunchpadCelebrities).vcs_imports)
-    assert series.import_branch.url is None
-    return urlappend(push_prefix, '%08x' % series.import_branch.id)
+        self._store.push(branch, WorkingTree.open(local))
 
 
 def ensure_series_branch(series):
@@ -76,19 +62,6 @@ def create_branch_for_series(series):
     vcs_imports = getUtility(ILaunchpadCelebrities).vcs_imports
     product = series.product
     branch = getUtility(IBranchSet).new(
-        BranchType.IMPORTED, name, vcs_imports, vcs_imports, product, url=None)
+        BranchType.IMPORTED, name, vcs_imports, vcs_imports, product,
+        url=None)
     return branch
-
-
-def bzr_push(from_location, to_location):
-    """Simple implementation of 'bzr push' that does not depend on the cwd."""
-    branch_from = Branch.open(from_location)
-    try:
-        branch_to = Branch.open(to_location)
-    except NotBranchError:
-        # create a branch.
-        transport = get_transport(to_location).clone('..')
-        transport.mkdir(transport.relpath(to_location))
-        # Do not create a working tree
-        branch_to = BzrDir.create_branch_and_repo(to_location)
-    branch_to.pull(branch_from)

@@ -13,7 +13,7 @@ from zope.interface import implements
 from sqlobject import (
     ForeignKey, IntCol, StringCol, SQLObjectNotFound, SQLMultipleJoin)
 
-from canonical.database.sqlbase import SQLBase
+from canonical.database.sqlbase import quote, SQLBase
 from canonical.database.constants import DEFAULT
 from canonical.database.datetimecol import UtcDateTimeCol
 
@@ -22,6 +22,7 @@ from canonical.launchpad.interfaces import (
     IRevision, IRevisionAuthor, IRevisionParent, IRevisionProperty,
     IRevisionSet)
 from canonical.launchpad.helpers import shortlist
+from canonical.launchpad.validators.person import public_person_validator
 
 
 class Revision(SQLBase):
@@ -68,19 +69,20 @@ class RevisionAuthor(SQLBase):
 
     name = StringCol(notNull=True, alternateID=True)
 
-    def _getNameWithoutEmail(self):
+    @property
+    def name_without_email(self):
         """Return the name of the revision author without the email address.
 
         If there is no name information (i.e. when the revision author only
         supplied their email address), return None.
         """
+        if '@' not in self.name:
+            return self.name
         return email.Utils.parseaddr(self.name)[0]
-
-    name_without_email = property(_getNameWithoutEmail)
 
     email = StringCol(notNull=False, default=None)
     person = ForeignKey(dbName='person', foreignKey='Person', notNull=False,
-                        default=None)
+                        validator=public_person_validator, default=None)
 
     def linkToLaunchpadPerson(self):
         """See `IRevisionAuthor`."""
@@ -176,3 +178,15 @@ class RevisionSet:
         """See `IRevisionSet`."""
         for author in RevisionAuthor.selectBy(email=email.email):
             author.person = email.person
+
+    def getTipRevisionsForBranches(self, branches):
+        """See `IRevisionSet`."""
+        # If there are no branch_ids, then return None.
+        branch_ids = [branch.id for branch in branches]
+        if not branch_ids:
+            return None
+        return Revision.select("""
+            Branch.id in %s AND
+            Revision.revision_id = Branch.last_scanned_id
+            """ % quote(branch_ids),
+            clauseTables=['Branch'], prejoins=['revision_author'])

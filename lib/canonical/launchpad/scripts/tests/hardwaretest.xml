@@ -292,11 +292,12 @@
     <question name="detected_network_controllers"
               plugin="find_network_controllers">
 
-      <!-- target: The ID of the device or software package the question is
-               about. This node may appear multiple times.
-      -->
-      <target>
-        42
+      <!-- target: Information about a device or software package the
+           question is about. The attribute "id" is the ID of a HAL device
+           node or of a software package.
+           This node may appear multiple times.
+       -->
+      <target id="42">
         <!-- driver: The driver which controls the target device. This tag
                  may appear more than once. 
 
@@ -323,7 +324,7 @@
       </target>
 
       <!-- ID of the 88E8055 PCI-E Gigabit Ethernet Controller -->
-      <target>43</target>
+      <target id="43"/>
 
       <!-- command: The command line of an external command required to
                ask this question.
@@ -356,7 +357,7 @@
 
     <question name="internet_ping"
               plugin="internet_ping">
-      <target>23</target>
+      <target id="23"/>
       <command/>
       <answer type="multiple_choice">pass</answer>
       <answer_choices>
@@ -370,7 +371,7 @@
     -->
     <question name="harddisk_speed"
               plugin="harddisk_speed">
-      <target>87</target>
+      <target id="87"/>
       <command>hdparm -t /dev/sda</command>
       <!-- answer: The answer to a "measurement question".
                attribute type: See above.

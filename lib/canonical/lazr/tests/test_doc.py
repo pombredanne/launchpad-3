@@ -5,15 +5,30 @@
 __metaclass__ = type
 __all__ = []
 
-import unittest
 import doctest
+from os import path
+import unittest
+
+
+here = path.dirname(__file__)
+
+docfiles = [
+    '../doc/debug.txt',
+    '../doc/decorates.txt',
+    '../doc/config.txt',
+    '../doc/interface.txt',
+    ]
+
 
 def test_suite():
+    """See `zope.testing.testrunner`."""
     options = (doctest.ELLIPSIS|
                doctest.NORMALIZE_WHITESPACE|
                doctest.REPORT_NDIFF)
     suite = unittest.TestSuite()
-    suite.addTest(doctest.DocFileSuite(
-        '../doc/debug.txt', optionflags=options))
+    for docfile in docfiles:
+        globs = {'__file__' : path.normpath(path.join(here, docfile))}
+        test = doctest.DocFileSuite(docfile, optionflags=options, globs=globs)
+        suite.addTest(test)
     return suite
 

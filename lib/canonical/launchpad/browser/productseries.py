@@ -300,9 +300,12 @@ def get_series_branch_error(product, branch):
     Returns an HTML error message on error, and None otherwise.
     """
     if branch.product != product:
-        return ('<a href="%s">%s</a> is not a branch of <a href="%s">%s</a>.'
-                % (canonical_url(branch), quote(branch.unique_name),
-                   canonical_url(product), quote(product.displayname)))
+        return structured(
+            '<a href="%s">%s</a> is not a branch of <a href="%s">%s</a>.',
+            canonical_url(branch),
+            branch.unique_name,
+            canonical_url(product),
+            product.displayname)
     return None
 
 
@@ -754,11 +757,12 @@ class ProductSeriesSourceView(LaunchpadEditFormView):
                     cvsroot, cvsmodule, cvsbranch)
                 if self.context != series and series is not None:
                     self.addError(
+                        structured(
                         "Those CVS details are already specified for"
-                        " <a href=\"%s\">%s %s</a>."
-                        % (quote(canonical_url(series)),
-                           quote(series.product.displayname),
-                           quote(series.displayname)))
+                        " <a href=\"%s\">%s %s</a>.",
+                        canonical_url(series),
+                        series.product.displayname,
+                        series.displayname))
 
         elif rcstype == UIRevisionControlSystems.SVN:
             data['rcstype'] = RevisionControlSystems.SVN
@@ -771,11 +775,12 @@ class ProductSeriesSourceView(LaunchpadEditFormView):
                     svnrepository)
                 if self.context != series and series is not None:
                     self.setFieldError('svnrepository',
+                        structured(
                         "This Subversion branch URL is already specified for"
-                        " <a href=\"%s\">%s %s</a>."
-                        % (quote(canonical_url(series)),
-                           quote(series.product.displayname),
-                           quote(series.displayname)))
+                        " <a href=\"%s\">%s %s</a>.",
+                        canonical_url(series),
+                        series.product.displayname,
+                        series.displayname))
 
         if self.resettoautotest_action.submitted():
             if rcstype is None or rcstype == UIRevisionControlSystems.BZR:
