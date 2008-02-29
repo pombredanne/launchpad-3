@@ -24,7 +24,7 @@
 
     <browser:menus
         module="canonical.launchpad.browser.build"
-        classes="BuildOverviewMenu" />
+        classes="BuildContextMenu" />
 
     <browser:navigation
         module="canonical.launchpad.browser.build"

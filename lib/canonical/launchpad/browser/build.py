@@ -5,8 +5,8 @@
 __metaclass__ = type
 
 __all__ = [
+    'BuildContextMenu',
     'BuildNavigation',
-    'BuildOverviewMenu',
     'BuildRecordsView',
     'BuildUrl',
     'BuildView',
@@ -18,7 +18,7 @@ from zope.interface import implements
 from canonical.launchpad.interfaces import (
     BuildStatus, IBuild, IBuildQueueSet, IHasBuildRecords, UnexpectedFormData)
 from canonical.launchpad.webapp import (
-    enabled_with_permission, ApplicationMenu, GetitemNavigation,
+    canonical_url, enabled_with_permission, ContextMenu, GetitemNavigation,
     Link, LaunchpadView, StandardLaunchpadFacets)
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.batching import BatchNavigator
@@ -65,11 +65,22 @@ class BuildFacets(StandardLaunchpadFacets):
 
     usedfor = IBuild
 
-class BuildOverviewMenu(ApplicationMenu):
+
+class BuildContextMenu(ContextMenu):
     """Overview menu for build records """
     usedfor = IBuild
-    facet = 'overview'
-    links = ['retry', 'rescore']
+
+    links = ['ppa', 'records', 'retry', 'rescore']
+
+    def ppa(self):
+        return Link(
+                canonical_url(self.context.archive),
+                text='View PPA', enabled=True)
+
+    def records(self):
+        return Link(
+                canonical_url(self.context.archive, view_name='+builds'),
+                text='View build records', enabled=True)
 
     @enabled_with_permission('launchpad.Edit')
     def retry(self):

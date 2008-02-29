@@ -58,7 +58,7 @@ the 'View build records' link.
 The user could return to the 'PPA' overview by using the 'View PPA'
 link:
 
-    >>> anon_browser.getLink('View PPA').href
+    >>> anon_browser.getLink('View PPA').url
     'http://launchpad.dev/~cprov/+archive
 
 The user can navigate to an individual build details:
@@ -85,8 +85,8 @@ The user can navigate to an individual build details:
 From that page the user could return either to the build records listing
 or the PPA overview.
 
-    >>> anon_browser.getLink('View build records').href
-    'http://launchpad.dev/~cprov/+archive/builds'
-    >>> anon_browser.getLink('View PPA').href
+    >>> anon_browser.getLink('View build records').url
+    'http://launchpad.dev/~cprov/+archive/+builds'
+    >>> anon_browser.getLink('View PPA').url
     'http://launchpad.dev/~cprov/+archive'
 
