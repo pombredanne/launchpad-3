@@ -22,7 +22,7 @@ class TestCodeReviewMessage(unittest.TestCase):
         self.reviewer = self.factory.makePerson()
         self.bmp2 = self.factory.makeBranchMergeProposal()
 
-    def test_create_root_message(self):
+    def test_createRootMessage(self):
         message = self.bmp.createMessage(
             self.submitter, 'Message subject', 'Message content')
         self.assertEqual(None, message.vote)
@@ -31,7 +31,7 @@ class TestCodeReviewMessage(unittest.TestCase):
         self.assertEqual('Message subject', message.message.subject)
         self.assertEqual('Message content', message.message.chunks[0].content)
 
-    def test_create_reply_message(self):
+    def test_createReplyMessage(self):
         message = self.bmp.createMessage(
             self.submitter, 'Message subject', 'Message content')
         reply = self.bmp.createMessage(
@@ -44,7 +44,7 @@ class TestCodeReviewMessage(unittest.TestCase):
         self.assertEqual('Reply content', reply.message.chunks[0].content)
         self.assertEqual(CodeReviewVote.TWEAK, reply.vote)
 
-    def test_create_no_parent_message(self):
+    def test_createNoParentMessage(self):
         message = self.bmp.createMessage(
             self.submitter, 'Message subject', 'Message content')
         new_message = self.bmp.createMessage(
@@ -52,7 +52,7 @@ class TestCodeReviewMessage(unittest.TestCase):
         self.assertEqual(
             self.bmp.root_message.message, new_message.message.parent)
 
-    def test_reply_with_wrong_merge_proposal(self):
+    def test_replyWithWrongMergeProposal(self):
         message = self.bmp.createMessage(
             self.submitter, 'Message subject', 'Message content')
         self.assertRaises(AssertionError, self.bmp2.createMessage,

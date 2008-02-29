@@ -26,7 +26,7 @@ CodeReviewMessages are created from their BranchMergeProposals:
     ...     person, 'Please merge', 'This patch is very nice.')
 
 The first message to be created is the root of the code review
-conversation, and is assigned to BranchMergeProposal.root_message.
+conversation, and is available as BranchMergeProposal.root_message.
 
     >>> merge_proposal.root_message == message
     True
