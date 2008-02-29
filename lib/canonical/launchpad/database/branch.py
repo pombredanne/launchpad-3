@@ -464,6 +464,15 @@ class Branch(SQLBase):
             person=person, branch=self)
         return subscription
 
+    def getSubscriptionsByLevel(self, notification_levels):
+        """See `IBranch`."""
+        notification_levels = [level.value for level in notification_levels]
+        return BranchSubscription.select(
+            "BranchSubscription.branch = Branch.id "
+            "AND BranchSubscription.notification_level IN (%s)"
+            % ', '.join(sqlvalues(*notification_levels)),
+            clauseTables=['Branch'])
+
     def hasSubscription(self, person):
         """See `IBranch`."""
         return self.getSubscription(person) is not None
