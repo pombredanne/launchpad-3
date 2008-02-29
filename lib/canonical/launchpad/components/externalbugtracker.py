@@ -840,16 +840,33 @@ class DebBugs(ExternalBugTracker):
             [debian_bug.status, severity] + debian_bug.tags)
         return new_remote_status
 
+    def getSubmitter(self, remote_bug):
+        """See ISupportsBugImport."""
+        debian_bug = self._findBug(remote_bug)
+        reporter_name, reporter_email = parseaddr(debian_bug.originator)
+        return reporter_name, reporter_email
+
+    def getTarget(self, remote_bug):
+        """See ISupportsBugImport."""
+        debian_bug = self._findBug(remote_bug)
+        return debian_bug.package
+
+    def getSummaryAndDescription(self, remote_bug):
+        """See ISupportsBugImport."""
+        debian_bug = self._findBug(remote_bug)
+        return debian_bug.subject, debian_bug.description
+
     def importBug(self, bug_target, remote_bug):
         """Import a remote bug into Launchpad."""
         assert IDistribution.providedBy(bug_target), (
             'We assume debbugs is used only by a distribution (Debian).')
         debian_bug = self._findBug(remote_bug)
-        reporter_name, reporter_email = parseaddr(debian_bug.originator)
+        reporter_name, reporter_email = self.getSubmitter(remote_bug)
         reporter = getUtility(IPersonSet).ensurePerson(
             reporter_email, reporter_name, PersonCreationRationale.BUGIMPORT,
             comment='when importing debbugs bug #%s' % remote_bug)
-        package = bug_target.getSourcePackage(debian_bug.package)
+        package_name = self.getTarget(remote_bug)
+        package = bug_target.getSourcePackage(package_name)
         if package is not None:
             bug_target = package
         else:
@@ -857,11 +874,11 @@ class DebBugs(ExternalBugTracker):
             # it shouldn't be empty.
             self.warning(
                 'Unknown Debian package (debbugs #%s): %s' % (
-                    remote_bug, debian_bug.package))
+                    remote_bug, package_name))
+        summary, description = self.getSummaryAndDescription(remote_bug)
         bug = bug_target.createBug(
             CreateBugParams(
-                reporter, debian_bug.subject, debian_bug.description,
-                subscribe_reporter=False))
+                reporter, summary, description, subscribe_reporter=False))
 
         [debian_task] = bug.bugtasks
         bug_watch = getUtility(IBugWatchSet).createBugWatch(
