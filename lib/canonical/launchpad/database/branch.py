@@ -1131,7 +1131,7 @@ class BranchSet:
                 FROM Branch
                 WHERE
                     Branch.owner = %(person)s
-                OR Branch.author = %(person)s
+                OR Branch.registrant = %(person)s
                 )
             %(lifecycle_clause)s
             %(dormant_clause)s
@@ -1154,18 +1154,26 @@ class BranchSet:
             self._generateBranchClause(query, visible_by_user),
             orderBy=self._listingSortToOrderBy(sort_by))
 
+    def getBranchesOwnedByPerson(self, person, lifecycle_statuses=None,
+                                 visible_by_user=None, sort_by=None,
+                                 hide_dormant=False):
+        """See `IBranchSet`."""
+        lifecycle_clause = self._lifecycleClause(lifecycle_statuses)
+        dormant_clause = self._dormantClause(hide_dormant)
+        query = 'Branch.owner = %s %s %s' % (
+            person.id, lifecycle_clause, dormant_clause)
+        return BranchWithSortKeys.select(
+            self._generateBranchClause(query, visible_by_user),
+            orderBy=self._listingSortToOrderBy(sort_by))
+
     def getBranchesRegisteredByPerson(self, person, lifecycle_statuses=None,
                                       visible_by_user=None, sort_by=None,
                                       hide_dormant=False):
         """See `IBranchSet`."""
         lifecycle_clause = self._lifecycleClause(lifecycle_statuses)
         dormant_clause = self._dormantClause(hide_dormant)
-        query = ('''
-            Branch.owner = %s AND
-            (Branch.author is NULL OR
-            Branch.author != %s) %s %s
-            '''
-            % (person.id, person.id, lifecycle_clause, dormant_clause))
+        query = 'Branch.registrant = %s %s %s' % (
+            person.id, lifecycle_clause, dormant_clause)
         return BranchWithSortKeys.select(
             self._generateBranchClause(query, visible_by_user),
             orderBy=self._listingSortToOrderBy(sort_by))

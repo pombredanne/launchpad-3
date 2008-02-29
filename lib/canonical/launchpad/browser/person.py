@@ -13,7 +13,6 @@ __all__ = [
     'PersonAddView',
     'PersonAnswersMenu',
     'PersonAssignedBugTaskSearchListingView',
-    'PersonAuthoredBranchesView',
     'PersonBranchesMenu',
     'PersonBranchesView',
     'PersonBrandingView',
@@ -48,6 +47,7 @@ __all__ = [
     'PersonLatestQuestionsView',
     'PersonNavigation',
     'PersonOverviewMenu',
+    'PersonOwnedBranchesView',
     'PersonRdfView',
     'PersonRegisteredBranchesView',
     'PersonRelatedBugsView',
@@ -632,18 +632,23 @@ class PersonBranchesMenu(ApplicationMenu):
 
     usedfor = IPerson
     facet = 'branches'
-    links = ['authored', 'registered', 'subscribed', 'addbranch']
+    links = ['all_related', 'registered', 'owned', 'subscribed', 'addbranch']
 
-    def authored(self):
-        text = 'Show authored branches'
-        return Link('+authoredbranches', text, icon='branch')
+    def all_related(self):
+        text = 'All related'
+        return Link(canonical_url(self.context, rootsite='code'),
+                    text, icon='branch')
+
+    def owned(self):
+        text = 'Owned'
+        return Link('+ownedbranches', text, icon='branch')
 
     def registered(self):
-        text = 'Show registered branches'
+        text = 'Registered'
         return Link('+registeredbranches', text, icon='branch')
 
     def subscribed(self):
-        text = 'Show subscribed branches'
+        text = 'Subscribed'
         return Link('+subscribedbranches', text, icon='branch')
 
     def addbranch(self):
@@ -3544,24 +3549,24 @@ class PersonBranchesView(BranchListingView):
             return 'Team Branch'
 
 
-class PersonAuthoredBranchesView(BranchListingView):
-    """View for branch listing for a person's authored branches."""
+class PersonRegisteredBranchesView(BranchListingView):
+    """View for branch listing for a person's registered branches."""
 
     extra_columns = ('product',)
-    heading_template = 'Bazaar branches authored by %(displayname)s'
-    no_sort_by = (BranchListingSort.AUTHOR,)
+    heading_template = 'Bazaar branches registered by %(displayname)s'
+    no_sort_by = (BranchListingSort.REGISTRANT,)
 
     def _branches(self, lifecycle_status, show_dormant):
-        return getUtility(IBranchSet).getBranchesAuthoredByPerson(
+        return getUtility(IBranchSet).getBranchesRegisteredByPerson(
             self.context, lifecycle_status, self.user, self.sort_by,
             show_dormant)
 
 
-class PersonRegisteredBranchesView(BranchListingView):
-    """View for branch listing for a person's registered branches."""
+class PersonOwnedBranchesView(BranchListingView):
+    """View for branch listing for a person's owned branches."""
 
-    extra_columns = ('author', 'product')
-    heading_template = 'Bazaar branches registered by %(displayname)s'
+    extra_columns = ('product',)
+    heading_template = 'Bazaar branches owned by %(displayname)s'
     no_sort_by = (BranchListingSort.REGISTRANT,)
 
     def _branches(self, lifecycle_status, show_dormant):
@@ -3573,7 +3578,7 @@ class PersonRegisteredBranchesView(BranchListingView):
 class PersonSubscribedBranchesView(BranchListingView):
     """View for branch listing for a person's subscribed branches."""
 
-    extra_columns = ('author', 'product')
+    extra_columns = ('product',)
     heading_template = 'Bazaar branches subscribed to by %(displayname)s'
 
     def _branches(self, lifecycle_status, show_dormant):
