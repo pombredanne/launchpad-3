@@ -508,7 +508,7 @@ def PageTestSuite(storydir, package=None, setUp=setUpGlobs):
     # Add numbered tests to the suite as a single story.
     storysuite = LayeredDocFileSuite(
         package=package, checker=checker, stdout_logging=False,
-        layer=PageTestLayer, setUp=setUp,
+        setUp=setUp,
         *[os.path.join(storydir, filename)
           for filename in numberedfilenames])
     suite.addTest(PageStoryTestCase(stripped_storydir, storysuite))

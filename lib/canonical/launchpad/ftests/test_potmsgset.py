@@ -9,14 +9,12 @@ __metaclass__ = type
 
 __all__ = []
 
-from canonical.functional import FunctionalDocFileSuite
 from canonical.testing import LaunchpadFunctionalLayer
-from canonical.launchpad.ftests.test_system_documentation import (
-    default_optionflags, setUp, tearDown)
+from canonical.launchpad.testing.systemdocs import (
+    LayeredDocFileSuite, setUp, tearDown)
 
 
 def test_suite():
-    return FunctionalDocFileSuite(
+    return LayeredDocFileSuite(
         'potmsgset-update-translation.txt', setUp=setUp, tearDown=tearDown,
-        optionflags=default_optionflags, package=__name__,
         layer=LaunchpadFunctionalLayer)

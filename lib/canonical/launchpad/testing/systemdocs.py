@@ -6,18 +6,28 @@ __metaclass__ = type
 __all__ = [
     'LayeredDocFileSuite',
     'SpecialOutputChecker',
+    'setUp',
+    'setGlobs',
     'strip_prefix',
+    'tearDown',
     ]
 
 import logging
 import os
 import sys
 
+import transaction
+from zope.component import getUtility, getView
 from zope.testing import doctest
 from zope.testing.loggingsupport import Handler
 
 from canonical.chunkydiff import elided_source
 from canonical.config import config
+from canonical.database.sqlbase import flush_database_updates
+from canonical.launchpad.ftests import ANONYMOUS, login, logout
+from canonical.launchpad.interfaces import ILaunchBag
+from canonical.launchpad.layers import setFirstLayer
+from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 
 
 default_optionflags = (doctest.REPORT_NDIFF |
@@ -88,7 +98,7 @@ def LayeredDocFileSuite(*args, **kw):
             test._stdout_logger.uninstall()
         kw['tearDown'] = tearDown
 
-    layer = kw.pop('layer')
+    layer = kw.pop('layer', None)
     suite = doctest.DocFileSuite(*args, **kw)
     if layer is not None:
         suite.layer = layer
@@ -113,3 +123,46 @@ class SpecialOutputChecker(doctest.OutputChecker):
             newgot = got
         return doctest.OutputChecker.output_difference(
             self, example, newgot, optionflags)
+
+
+def create_view(context, name, form=None, layer=None, server_url=None,
+                method='GET'):
+    """Return a view based on the given arguments.
+
+    :param context: The context for the view.
+    :param name: The web page the view should handle.
+    :param form: A dictionary with the form keys.
+    :param layer: The layer where the page we are interested in is located.
+    :param server_url: The URL from where this request was done.
+    :param method: The method used in the request. Defaults to 'GET'.
+    :return: The view class for the given context and the name.
+    """
+    request = LaunchpadTestRequest(
+        form=form, SERVER_URL=server_url, method=method)
+    if layer is not None:
+        setFirstLayer(request, layer)
+    return getView(context, name, request)
+
+
+def setGlobs(test):
+    """Add the common globals for testing system documentation."""
+    test.globs['ANONYMOUS'] = ANONYMOUS
+    test.globs['login'] = login
+    test.globs['logout'] = logout
+    test.globs['ILaunchBag'] = ILaunchBag
+    test.globs['getUtility'] = getUtility
+    test.globs['transaction'] = transaction
+    test.globs['flush_database_updates'] = flush_database_updates
+    test.globs['create_view'] = create_view
+
+
+def setUp(test):
+    """Setup the common globals and login for testing system documentation."""
+    setGlobs(test)
+    # Set up an anonymous interaction.
+    login(ANONYMOUS)
+
+
+def tearDown(test):
+    """Tear down the common system documentation test."""
+    logout()

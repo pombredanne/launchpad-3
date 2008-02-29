@@ -7,10 +7,9 @@ lib/canonical/launchpad/doc.
 
 import logging
 import os
-import transaction
 import unittest
 
-from zope.component import getUtility, getView
+from zope.component import getUtility
 from zope.security.management import setSecurityPolicy
 
 from canonical.authserver.tests.harness import AuthserverTacTestSetup
@@ -22,13 +21,12 @@ from canonical.launchpad.ftests import mailinglists_helper
 from canonical.launchpad.ftests.bug import (
     create_old_bug, summarize_bugtasks, sync_bugtasks)
 from canonical.launchpad.interfaces import (
-    CreateBugParams, IBugTaskSet, IDistributionSet, ILanguageSet, ILaunchBag,
+    CreateBugParams, IBugTaskSet, IDistributionSet, ILanguageSet,
     IPersonSet)
-from canonical.launchpad.layers import setFirstLayer
-from canonical.launchpad.testing.systemdocs import LayeredDocFileSuite, default_optionflags
+from canonical.launchpad.testing.systemdocs import (
+    LayeredDocFileSuite, setUp, setGlobs, tearDown)
 from canonical.launchpad.tests.mail_helpers import pop_notifications
 from canonical.launchpad.webapp.authorization import LaunchpadSecurityPolicy
-from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 from canonical.launchpad.webapp.tests import test_notifications
 from canonical.testing import (
     LaunchpadZopelessLayer, LaunchpadFunctionalLayer,DatabaseLayer,
@@ -37,48 +35,6 @@ from canonical.testing import (
 
 here = os.path.dirname(os.path.realpath(__file__))
 
-
-def create_view(context, name, form=None, layer=None, server_url=None,
-                method='GET'):
-    """Return a view based on the given arguments.
-
-    :param context: The context for the view.
-    :param name: The web page the view should handle.
-    :param form: A dictionary with the form keys.
-    :param layer: The layer where the page we are interested in is located.
-    :param server_url: The URL from where this request was done.
-    :param method: The method used in the request. Defaults to 'GET'.
-    :return: The view class for the given context and the name.
-    """
-    request = LaunchpadTestRequest(
-        form=form, SERVER_URL=server_url, method=method)
-    if layer is not None:
-        setFirstLayer(request, layer)
-    return getView(context, name, request)
-
-
-def setGlobs(test):
-    """Add the common globals for testing system documentation."""
-    test.globs['ANONYMOUS'] = ANONYMOUS
-    test.globs['login'] = login
-    test.globs['logout'] = logout
-    test.globs['ILaunchBag'] = ILaunchBag
-    test.globs['getUtility'] = getUtility
-    test.globs['transaction'] = transaction
-    test.globs['flush_database_updates'] = flush_database_updates
-    test.globs['create_view'] = create_view
-
-
-def setUp(test):
-    """Setup the common globals and login for testing system documentation."""
-    setGlobs(test)
-    # Set up an anonymous interaction.
-    login(ANONYMOUS)
-
-
-def tearDown(test):
-    """Tear down the common system documentation test."""
-    logout()
 
 def checkwatchesSetUp(test):
     """Setup the check watches script tests."""
