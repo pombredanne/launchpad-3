@@ -415,8 +415,8 @@ package.
     >>> print warty_firefox.direct_packaging.productseries.title
     Mozilla Firefox Series: trunk
 
-If multiple product series link to a sourcepackage, direct packaging
-returns the last one:
+If multiple product series link to a sourcepackage, direct_packaging
+returns the last packaging added:
 
     >>> from canonical.launchpad.interfaces import IProductSet
     >>> firefox_product = getUtility(IProductSet).getByName('firefox')
