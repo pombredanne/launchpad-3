@@ -11,7 +11,6 @@ from zope.component import getUtility
 
 from canonical.config import config
 from canonical.database.sqlbase import sqlvalues
-from canonical.launchpad.ftests.harness import LaunchpadZopelessTestCase
 from canonical.launchpad.scripts import FakeLogger
 from canonical.launchpad.scripts.ftpmaster import (
     ObsoleteDistroseries, SoyuzScriptError)
@@ -22,10 +21,12 @@ from canonical.launchpad.database.publishing import (
     SourcePackagePublishingHistory)
 from canonical.launchpad.interfaces import (
     DistroSeriesStatus, IDistributionSet, PackagePublishingStatus)
+from canonical.testing import LaunchpadZopelessLayer
 
 
-class TestObsoleteDistroseriesScript(LaunchpadZopelessTestCase):
+class TestObsoleteDistroseriesScript(unittest.TestCase):
     """Test the obsolete-distroseries.py script."""
+    layer = LaunchpadZopelessLayer
 
     def runCopyPackage(self, extra_args=None):
         """Run obsolete-distroseries.py, returning the result and output.
@@ -61,13 +62,12 @@ class TestObsoleteDistroseriesScript(LaunchpadZopelessTestCase):
             "Expected %s, got %s" % (expected, err))
 
 
-class TestObsoleteDistroseries(LaunchpadZopelessTestCase):
+class TestObsoleteDistroseries(unittest.TestCase):
     """Test the ObsoleteDistroseries class."""
+    layer = LaunchpadZopelessLayer
 
     def setUp(self):
         """Set up test data common to all test cases."""
-        LaunchpadZopelessTestCase.setUp(self)
-
         self.warty = getUtility(IDistributionSet)['ubuntu']['warty']
 
         # Re-process the returned list otherwise it ends up being a list

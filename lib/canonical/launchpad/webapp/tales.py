@@ -930,9 +930,9 @@ class BranchFormatterAPI(ObjectFormatterExtendedAPI):
             author = branch.owner.name
         return {
             'author': author,
-            'display_name': branch.displayname,
+            'display_name': cgi.escape(branch.displayname),
             'name': branch.name,
-            'title': title,
+            'title': cgi.escape(title),
             'unique_name' : branch.unique_name,
             'url': url,
             }
@@ -967,7 +967,7 @@ class BranchSubscriptionFormatterAPI(CustomizableFormatter):
         """Provide values for template substitution"""
         return {
             'person': self._context.person.displayname,
-            'branch': self._context.branch.title,
+            'branch': self._context.branch.displayname,
         }
 
 

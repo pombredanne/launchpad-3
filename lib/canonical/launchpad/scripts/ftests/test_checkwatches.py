@@ -5,7 +5,7 @@
 __metaclass__ = type
 __all__ = []
 
-from unittest import TestLoader
+import unittest
 
 from zope.component import getUtility
 
@@ -13,13 +13,15 @@ from canonical.config import config
 from canonical.database.sqlbase import commit
 from canonical.launchpad.ftests import login
 from canonical.launchpad.ftests.externalbugtracker import new_bugtracker
-from canonical.launchpad.ftests.harness import LaunchpadZopelessTestCase
 from canonical.launchpad.interfaces import (BugTaskStatus, BugTrackerType,
     IBugSet, IBugTaskSet, ILaunchpadCelebrities, IPersonSet,
     IProductSet, IQuestionSet)
+from canonical.testing import LaunchpadZopelessLayer
 
-class TestCheckwatches(LaunchpadZopelessTestCase):
+
+class TestCheckwatches(unittest.TestCase):
     """Tests for the bugwatch updating system."""
+    layer = LaunchpadZopelessLayer
 
     def setUp(self):
         """Set up bugs, watches and questions to test with."""
@@ -59,7 +61,7 @@ class TestCheckwatches(LaunchpadZopelessTestCase):
             bug_with_question, sample_person,
             product=getUtility(IProductSet).getByName('firefox'))
         self.bugwatch_with_question = bug_with_question.addWatch(
-            bugtracker, 1, sample_person)
+            bugtracker, '1', sample_person)
         self.bugtask_with_question.bugwatch = self.bugwatch_with_question
         commit()
 
@@ -85,5 +87,6 @@ class TestCheckwatches(LaunchpadZopelessTestCase):
             (BugTaskStatus.INPROGRESS.title,
             self.bugtask_with_question.status.title))
 
+
 def test_suite():
-    return TestLoader().loadTestsFromName(__name__)
+    return unittest.TestLoader().loadTestsFromName(__name__)
