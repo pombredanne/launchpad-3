@@ -6,12 +6,10 @@ __metaclass__ = type
 
 import xmlrpclib
 
-from bzrlib.transport import Server
 from bzrlib.tests import iter_suite_tests, TestLoader, TestScenarioApplier
 
-from canonical.authserver.client import InMemoryBlockingProxy
 from canonical.authserver.tests.servers import (
-    make_xmlrpc_resource, TwistedServer)
+    make_xmlrpc_resource, InMemoryServer, TwistedServer)
 from canonical.testing import TwistedLayer
 from canonical.twistedsupport import defer_to_thread
 
@@ -166,28 +164,6 @@ class TestBlockingProxyConformance(unittest.TestCase):
         proxy = self.makeProxy()
         self.assertRaisesFault(
             8002, "can't serialize output", proxy.returnsNone)
-
-
-class InMemoryServer(Server):
-    """An in-memory server that serves an XML-RPC resource."""
-
-    def __init__(self, xmlrpc_resource):
-        super(InMemoryServer, self).__init__()
-        self.xmlrpc_object = xmlrpc_resource.original
-        self.published_methods = xmlrpc_resource.published_methods
-
-    def setUp(self):
-        pass
-
-    def get_url(self):
-        return None
-
-    def tearDown(self):
-        pass
-
-    def getBlockingProxy(self):
-        return InMemoryBlockingProxy(
-            self.xmlrpc_object, self.published_methods)
 
 
 def load_tests(tests, module, loader):

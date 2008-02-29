@@ -4,11 +4,9 @@
 
 __metaclass__ = type
 
-from bzrlib.transport import Server
 from bzrlib.tests import iter_suite_tests, TestLoader, TestScenarioApplier
 
-from canonical.authserver.client import InMemoryTwistedProxy
-from canonical.authserver.tests.servers import TwistedServer
+from canonical.authserver.tests.servers import InMemoryServer, TwistedServer
 from canonical.testing import TwistedLayer
 
 from twisted.web import xmlrpc
@@ -148,26 +146,6 @@ class TestTwistedProxyConformance(unittest.TestCase):
         proxy = self.makeProxy()
         return self.assertFault(
             proxy.callRemote('returnsNone'), 8002, "can't serialize output")
-
-
-class InMemoryServer(Server):
-    """An in-memory server that serves an XML-RPC resource."""
-
-    def __init__(self, xmlrpc_resource):
-        super(InMemoryServer, self).__init__()
-        self.xmlrpc_resource = xmlrpc_resource
-
-    def setUp(self):
-        pass
-
-    def get_url(self):
-        return None
-
-    def tearDown(self):
-        pass
-
-    def getTwistedProxy(self):
-        return InMemoryTwistedProxy(self.xmlrpc_resource)
 
 
 def load_tests(tests, module, loader):

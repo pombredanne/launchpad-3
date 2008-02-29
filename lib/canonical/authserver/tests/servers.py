@@ -8,6 +8,8 @@ __all__ = ['make_xmlrpc_resource', 'TwistedServer']
 import xmlrpclib
 
 from bzrlib.transport import Server
+from canonical.authserver.client import (
+    InMemoryBlockingProxy, InMemoryTwistedProxy)
 
 from twisted.application import strports
 from twisted.web import server, resource, xmlrpc
@@ -26,6 +28,31 @@ def make_xmlrpc_resource(xmlrpc_object, methods_to_publish):
     xmlrpc_resource.original = xmlrpc_object
     xmlrpc_resource.published_methods = list(methods_to_publish)
     return xmlrpc_resource
+
+
+class InMemoryServer(Server):
+    """An in-memory server that serves an XML-RPC resource."""
+
+    def __init__(self, xmlrpc_resource):
+        super(InMemoryServer, self).__init__()
+        self.xmlrpc_resource = xmlrpc_resource
+
+    def setUp(self):
+        pass
+
+    def get_url(self):
+        return None
+
+    def tearDown(self):
+        pass
+
+    def getBlockingProxy(self):
+        xmlrpc_object = self.xmlrpc_resource.original
+        published_methods = self.xmlrpc_resource.published_methods
+        return InMemoryBlockingProxy(xmlrpc_object, published_methods)
+
+    def getTwistedProxy(self):
+        return InMemoryTwistedProxy(self.xmlrpc_resource)
 
 
 class TwistedServer(Server):
