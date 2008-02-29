@@ -15,7 +15,6 @@ from canonical.archivepublisher.config import Config
 from canonical.archivepublisher.diskpool import DiskPool
 from canonical.config import config
 from canonical.database.constants import UTC_NOW
-from canonical.database.sqlbase import commit
 from canonical.launchpad.ftests.harness import (
     LaunchpadZopelessTestCase)
 from canonical.launchpad.database.publishing import (
@@ -59,7 +58,6 @@ class SoyuzTestPublisher:
         alias_id = library.addFile(
             filename, len(filecontent), StringIO(filecontent),
             'application/text')
-        commit()
         return getUtility(ILibraryFileAliasSet)[alias_id]
 
     def getPubSource(self, sourcename='foo', version='666', component='main',
