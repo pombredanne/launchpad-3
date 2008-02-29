@@ -489,7 +489,34 @@ BranchSubscriptionNotificationLevel.
     0
 
 
-== Branches related to a person ==
+We can get the subscribers for a branch based on their level of
+subscription. From the example above, we see that sabdfl has a 'FULL'
+subscription to `gterm_dev`.
+
+    >>> def print_names(persons):
+    ...     """Print the name of each person on a new line."""
+    ...     for person in persons:
+    ...         print person.person.name
+
+    >>> subscription = gterm_dev.subscribe(
+    ...     sabdfl,
+    ...     BranchSubscriptionNotificationLevel.FULL,
+    ...     BranchSubscriptionDiffSize.FIVEKLINES)
+
+    >>> print_names(gterm_dev.getSubscriptionsByLevel([
+    ...     BranchSubscriptionNotificationLevel.FULL]))
+    sabdfl
+
+    >>> print_names(gterm_dev.getSubscriptionsByLevel([
+    ...     BranchSubscriptionNotificationLevel.DIFFSONLY]))
+
+    >>> print_names(gterm_dev.getSubscriptionsByLevel([
+    ...     BranchSubscriptionNotificationLevel.DIFFSONLY,
+    ...     BranchSubscriptionNotificationLevel.FULL]))
+    sabdfl
+
+
+== branches_root related to a person ==
 
 Finally, you can get the list of related branches for a person, that includes
 the branches registered, authored and subscribed to by this person.
