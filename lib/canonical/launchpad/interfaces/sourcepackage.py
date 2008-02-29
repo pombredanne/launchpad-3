@@ -93,8 +93,8 @@ class ISourcePackage(IBugTarget):
     def __hash__():
         """Sourcepackage hash method.
 
-        This makes them useable as dictionary keys. Which is required since
-        __eq__ is provided.
+        This is required to make source packages useable as dictionary 
+        keeps since the __eq__ method is provided.
         """
 
     def __eq__(other):

@@ -55,7 +55,7 @@ Clicking this button deletes the corresponding packaging association.
                                     1.0.8-1ubuntu1
 
 
-== Multiple package link ==
+== Multiple package links ==
 
 It is possible for multiple product series to be linked to the same
 sourcepackage. When this is the case, only the latest is displayed and
