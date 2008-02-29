@@ -1,9 +1,9 @@
 = Reviewing a person =
 
-A person's +review page is available to Launchpad administrators so that they
-can change certain aspects of the person's account.  For example, the
-administrator can change the person's user name, display name, password, and
-standing.
+A person's +review page is available to Launchpad administrators so that
+they can change certain aspects of the person's account.  For example,
+the administrator can change the person's user name, display name,
+password, and standing.
 
 
 == Changing names ==
@@ -86,13 +86,14 @@ current value'.
 
 == Personal standing ==
 
-A person's standing is used to control how they are allowed to post to mailing
-lists to which they are not subscribed.  For example, a person in good
-standing can post to any public mailing list on Launchpad.
+A person's standing is used to control how they are allowed to post to
+mailing lists to which they are not subscribed.  For example, a person
+in good standing can post to any public mailing list on Launchpad.
 
-A person's standing is usually determined by automatically based on their
-posting behavior and the approval of any held non-member posts.  However, the
-Launchpad administrator can manually change a person's standing.
+A person's standing is usually determined automatically based on their
+posting behavior and the approval of any held non-member posts.
+However, the Launchpad administrator can manually change a person's
+standing.
 
 A person starts out with unknown standing.
 
@@ -121,7 +122,7 @@ The administrator has four choices of standing for the user.
     >>> print admin_browser.getControl('Personal standing').displayValue[0]
     Unknown standing
 
-In addition, the Launchpad administrator can provide a reason for why the
+Optionally, the Launchpad administrator can provide a reason for why the
 standing is what it is.
 
     >>> admin_browser.getControl('Personal standing').value = ['POOR']

@@ -140,6 +140,7 @@ class File(static.File):
 class DigestSearchResource(resource.Resource):
     def __init__(self, storage):
         self.storage = storage
+        resource.Resource.__init__(self)
 
     def render_GET(self, request):
         try:
