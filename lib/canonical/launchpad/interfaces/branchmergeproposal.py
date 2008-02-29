@@ -192,6 +192,7 @@ class IBranchMergeProposal(Interface):
         title=_('Date Reviewed'), required=False, readonly=True)
     date_queued = Datetime(
         title=_('Date Queued'), required=False, readonly=True)
+    # Cannote use Object as this would cause circular dependencies.
     root_message = Attribute(
         _("The first message in discussion of this merge proposal"))
 
