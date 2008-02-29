@@ -50,9 +50,6 @@ class ArchiveNavigation(Navigation):
 
     usedfor = IArchive
 
-    def breadcrumb(self):
-        return self.context.title
-
     @stepthrough('+build')
     def traverse_build(self, name):
         try:
