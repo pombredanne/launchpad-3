@@ -41,7 +41,7 @@ class ISupportsCommentImport(IExternalBugTracker):
 class ISupportsBugImport(IExternalBugTracker):
     """A an external bug tracker that supports bug imports."""
 
-    def getSubmitter(remote_bug):
+    def getReporter(remote_bug):
         """Return the person who submitted the given bug.
 
         A tuple of (display name, email) is returned.

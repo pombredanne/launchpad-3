@@ -14,7 +14,7 @@ methods.
     ...
     ...     _bugs = {}
     ...
-    ...     def getSubmitter(self, remote_bug):
+    ...     def getReporter(self, remote_bug):
     ...         display_name, email = self._bugs[remote_bug]['reporter']
     ...         return display_name, email
     ...     def getSummaryAndDescription(self, remote_bug):
@@ -56,7 +56,7 @@ by getSummaryAndDescription().
     >>> bug.description
     u'Sample description 3.'
 
-The bug reporter, as returned by getSubmitter(), got automatically created.
+The bug reporter, as returned by getReporter(), got automatically created.
 
     >>> getUtility(IPersonSet).getByEmail('joe.bloggs@example.com') is not None
     True

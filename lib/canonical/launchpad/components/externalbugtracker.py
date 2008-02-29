@@ -365,7 +365,7 @@ class ExternalBugTracker:
         """Import a remote bug into Launchpad."""
         assert IDistribution.providedBy(bug_target), (
             'Only imports of bugs for a distribution is implemented.')
-        reporter_name, reporter_email = self.getSubmitter(remote_bug)
+        reporter_name, reporter_email = self.getReporter(remote_bug)
         reporter = getUtility(IPersonSet).ensurePerson(
             reporter_email, reporter_name, PersonCreationRationale.BUGIMPORT,
             comment='when importing bug #%s from %s' % (
@@ -875,7 +875,7 @@ class DebBugs(ExternalBugTracker):
             [debian_bug.status, severity] + debian_bug.tags)
         return new_remote_status
 
-    def getSubmitter(self, remote_bug):
+    def getReporter(self, remote_bug):
         """See ISupportsBugImport."""
         debian_bug = self._findBug(remote_bug)
         reporter_name, reporter_email = parseaddr(debian_bug.originator)
