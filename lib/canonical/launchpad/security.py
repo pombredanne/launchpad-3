@@ -12,16 +12,17 @@ from canonical.launchpad.interfaces import (
     IBranchMergeProposal, IBranchSubscription, IBug, IBugAttachment,
     IBugBranch, IBugNomination, IBugTracker, IBuild, IBuilder, IBuilderSet,
     ICodeImport, ICodeImportJob, ICodeImportJobSet, ICodeImportJobWorkflow,
-    ICodeImportMachine, ICodeImportMachineSet, ICodeImportSet, IDistribution,
-    IDistributionMirror, IDistroSeries, IDistroSeriesLanguage, IEntitlement,
-    IFAQ, IFAQTarget, IHWSubmission, IHasBug, IHasDrivers, IHasOwner,
-    ILanguage, ILanguagePack, ILanguageSet, ILaunchpadCelebrities,
-    IMailingListSet, IMilestone, IPOFile, IPOTemplate, IPOTemplateSubset,
-    IPackageUpload, IPackageUploadQueue, IPackaging, IPerson, IPoll,
-    IPollOption, IPollSubset, IProduct, IProductRelease, IProductReleaseFile,
-    IProductSeries, IQuestion, IQuestionTarget, IRequestedCDs,
-    IShipItApplication, IShippingRequest, IShippingRequestSet, IShippingRun,
-    ISpecification, ISpecificationSubscription, ISprint, ISprintSpecification,
+    ICodeImportMachine, ICodeImportMachineSet, ICodeImportResult,
+    ICodeImportResultSet, ICodeImportSet, IDistribution, IDistributionMirror,
+    IDistroSeries, IDistroSeriesLanguage, IEntitlement, IFAQ, IFAQTarget,
+    IHWSubmission, IHasBug, IHasDrivers, IHasOwner, ILanguage, ILanguagePack,
+    ILanguageSet, ILaunchpadCelebrities, IMailingListSet, IMilestone, IPOFile,
+    IPOTemplate, IPOTemplateSubset, IPackageUpload, IPackageUploadQueue,
+    IPackaging, IPerson, IPoll, IPollOption, IPollSubset, IProduct,
+    IProductRelease, IProductReleaseFile, IProductSeries, IQuestion,
+    IQuestionTarget, IRequestedCDs, IShipItApplication, IShippingRequest,
+    IShippingRequestSet, IShippingRun, ISpecification, ISpecificationBranch,
+    ISpecificationSubscription, ISprint, ISprintSpecification,
     IStandardShipItRequest, IStandardShipItRequestSet, ITeam, ITeamMembership,
     ITranslationGroup, ITranslationGroupSet, ITranslationImportQueue,
     ITranslationImportQueueEntry, ITranslator, PersonVisibility)
@@ -128,6 +129,31 @@ class EditDistributionMirrorByOwnerOrDistroOwnerOrMirrorAdminsOrAdmins(
         return (user.inTeam(self.obj.owner) or user.inTeam(admins) or
                 user.inTeam(self.obj.distribution.owner) or
                 user.inTeam(self.obj.distribution.mirror_admin))
+
+
+class EditSpecificationBranch(AuthorizationBase):
+
+    usedfor = ISpecificationBranch
+    permission = 'launchpad.Edit'
+
+    def checkAuthenticated(self, user):
+        """See `IAuthorization.checkAuthenticated`.
+
+        :return: True or False.
+        """
+        return True
+
+
+class ViewSpecificationBranch(EditSpecificationBranch):
+
+    permission = 'launchpad.View'
+
+    def checkUnauthenticated(self):
+        """See `IAuthorization.checkUnauthenticated`.
+
+        :return: True or False.
+        """
+        return True
 
 
 class EditSpecificationByTargetOwnerOrOwnersOrAdmins(AuthorizationBase):
@@ -556,6 +582,26 @@ class SeriesDrivers(AuthorizationBase):
         return user.inTeam(admins)
 
 
+class ViewProductSeries(AuthorizationBase):
+
+    usedfor = IProductSeries
+    permision = 'launchpad.View'
+
+    def checkUnauthenticated(self):
+        """See `IAuthorization.checkUnauthenticated`.
+
+        :return: True or False.
+        """
+        return True
+
+    def checkAuthenticated(self, user):
+        """See `IAuthorization.checkAuthenticated`.
+
+        :return: True or False.
+        """
+        return True
+
+
 class EditProductSeries(EditByRegistryExpertsOrOwnersOrAdmins):
     usedfor = IProductSeries
 
@@ -824,7 +870,7 @@ class SeeCodeImportSet(OnlyVcsImportsAndAdmins):
     usedfor = ICodeImportSet
 
 
-class SeeCodeImports(OnlyVcsImportsAndAdmins):
+class SeeCodeImport(OnlyVcsImportsAndAdmins):
     """Control who can see the object view of a CodeImport.
 
     Currently, we restrict the visibility of the new code import
@@ -834,7 +880,7 @@ class SeeCodeImports(OnlyVcsImportsAndAdmins):
     usedfor = ICodeImport
 
 
-class EditCodeImports(OnlyVcsImportsAndAdmins):
+class EditCodeImport(OnlyVcsImportsAndAdmins):
     """Control who can edit the object view of a CodeImport.
 
     Currently, we restrict the visibility of the new code import
@@ -844,7 +890,7 @@ class EditCodeImports(OnlyVcsImportsAndAdmins):
     usedfor = ICodeImport
 
 
-class SeeCodeImportJobs(OnlyVcsImportsAndAdmins):
+class SeeCodeImportJob(OnlyVcsImportsAndAdmins):
     """Control who can see the object view of a CodeImportJob.
 
     Currently, we restrict the visibility of the new code import
@@ -885,7 +931,7 @@ class SeeCodeImportMachineSet(OnlyVcsImportsAndAdmins):
     usedfor = ICodeImportMachineSet
 
 
-class SeeCodeImportMachines(OnlyVcsImportsAndAdmins):
+class SeeCodeImportMachine(OnlyVcsImportsAndAdmins):
     """Control who can see the object view of a CodeImportMachine.
 
     Currently, we restrict the visibility of the new code import
@@ -893,6 +939,27 @@ class SeeCodeImportMachines(OnlyVcsImportsAndAdmins):
     """
     permission = 'launchpad.View'
     usedfor = ICodeImportMachine
+
+
+class SeeCodeImportResultSet(OnlyVcsImportsAndAdmins):
+    """Control who can see the CodeImportResult listing page.
+
+    Currently, we restrict the visibility of the new code import
+    system to members of ~vcs-imports and Launchpad admins.
+    """
+
+    permission = 'launchpad.View'
+    usedfor = ICodeImportResultSet
+
+
+class SeeCodeImportResult(OnlyVcsImportsAndAdmins):
+    """Control who can see the object view of a CodeImportResult.
+
+    Currently, we restrict the visibility of the new code import
+    system to members of ~vcs-imports and Launchpad admins.
+    """
+    permission = 'launchpad.View'
+    usedfor = ICodeImportResult
 
 
 class EditPOTemplateDetails(EditByOwnersOrAdmins):
@@ -1211,6 +1278,10 @@ class BranchSubscriptionEdit(AuthorizationBase):
         """
         admins = getUtility(ILaunchpadCelebrities).admin
         return user.inTeam(self.obj.person) or user.inTeam(admins)
+
+
+class BranchSubscriptionView(BranchSubscriptionEdit):
+    permission = 'launchpad.View'
 
 
 class BranchMergeProposalView(AuthorizationBase):

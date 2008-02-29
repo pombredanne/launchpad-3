@@ -4,7 +4,7 @@
 
 import datetime
 import pytz
-from unittest import TestCase, TestLoader
+import unittest
 
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
@@ -15,13 +15,12 @@ from canonical.database.sqlbase import flush_database_updates
 from canonical.launchpad.database.productseries import (
     DatePublishedSyncError, ProductSeries, NoImportBranchError)
 from canonical.launchpad.ftests import login
-from canonical.launchpad.ftests.harness import LaunchpadZopelessTestCase
 from canonical.launchpad.interfaces import (
     IProductSeriesSet, IProductSet, ImportStatus, RevisionControlSystems)
 from canonical.testing import LaunchpadZopelessLayer, LaunchpadFunctionalLayer
 
 
-class ImportdTestCase(TestCase):
+class ImportdTestCase(unittest.TestCase):
 
     layer = LaunchpadZopelessLayer
 
@@ -29,7 +28,7 @@ class ImportdTestCase(TestCase):
         LaunchpadZopelessLayer.switchDbUser(config.importd.dbuser)
 
 
-class TestDeleteImport(TestCase):
+class TestDeleteImport(unittest.TestCase):
 
     layer = LaunchpadFunctionalLayer
 
@@ -179,11 +178,12 @@ class TestImportUpdated(ImportdTestCase):
         self.assertEqual(str(series.datelastsynced), str(UTC_NOW))
 
 
-class SyncIntervalTestCase(LaunchpadZopelessTestCase):
+class SyncIntervalTestCase(unittest.TestCase):
     """When a VCS import is approved, we set the syncinterval column
     to indicate how often the import should be updated.  Imports from
     different revision control systems get different rates by default.
     """
+    layer = LaunchpadZopelessLayer
 
     def getSampleSeries(self):
         """Get a sample product series without any source details."""
@@ -215,9 +215,9 @@ class SyncIntervalTestCase(LaunchpadZopelessTestCase):
         self.assertEquals(series.syncinterval, datetime.timedelta(hours=12))
 
 
-class TestProductSeriesSearchImports(LaunchpadZopelessTestCase):
-    """Tests for ProductSeriesSet.searchImports().
-    """
+class TestProductSeriesSearchImports(unittest.TestCase):
+    """Tests for ProductSeriesSet.searchImports()."""
+    layer = LaunchpadZopelessLayer
 
     def setUp(self):
         """Prepare by deleting all the import data in the sample data.
@@ -299,4 +299,4 @@ class TestProductSeriesSearchImports(LaunchpadZopelessTestCase):
 
 
 def test_suite():
-    return TestLoader().loadTestsFromName(__name__)
+    return unittest.TestLoader().loadTestsFromName(__name__)

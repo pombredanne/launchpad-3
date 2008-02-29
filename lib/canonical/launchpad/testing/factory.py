@@ -17,7 +17,9 @@ import pytz
 from zope.component import getUtility
 from canonical.launchpad.interfaces import (
     BranchMergeProposalStatus,
+    BranchSubscriptionNotificationLevel,
     BranchType,
+    CodeImportResultStatus,
     CodeImportReviewStatus,
     CreateBugParams,
     EmailAddressStatus,
@@ -25,6 +27,8 @@ from canonical.launchpad.interfaces import (
     IBugSet,
     ICodeImportJobWorkflow,
     ICodeImportMachineSet,
+    ICodeImportEventSet,
+    ICodeImportResultSet,
     ICodeImportSet,
     ILaunchpadCelebrities,
     IPersonSet,
@@ -37,6 +41,7 @@ from canonical.launchpad.interfaces import (
     SpecificationDefinitionStatus,
     UnknownBranchTypeError,
     )
+from canonical.launchpad.ftests import syncUpdate
 
 
 def time_counter(origin=None, delta=timedelta(seconds=5)):
@@ -104,7 +109,7 @@ class LaunchpadObjectFactory:
             self.getUniqueString('domain'), self.getUniqueString('path'))
 
     def makePerson(self, email=None, name=None, password=None,
-                   email_address_status=None):
+                   email_address_status=None, displayname=None):
         """Create and return a new, arbitrary Person.
 
         :param email: The email address for the new person.
@@ -115,6 +120,7 @@ class LaunchpadObjectFactory:
             person.
         :param email_address_status: If specified, the status of the email
             address is set to the email_address_status.
+        :param displayname: The display name to use for the person.
         """
         if email is None:
             email = self.getUniqueString('email')
@@ -131,7 +137,7 @@ class LaunchpadObjectFactory:
         # been created this way can be logged in.
         person, email = getUtility(IPersonSet).createPersonAndEmail(
             email, rationale=PersonCreationRationale.UNKNOWN, name=name,
-            password=password)
+            password=password, displayname=displayname)
         # To make the person someone valid in Launchpad, validate the
         # email.
         if email_address_status == EmailAddressStatus.VALIDATED:
@@ -229,6 +235,19 @@ class LaunchpadObjectFactory:
 
         return proposal
 
+    def makeBranchSubscription(self, branch_title=None,
+                               person_displayname=None):
+        """Create a BranchSubscription.
+
+        :param branch_title: The title to use for the created Branch
+        :param person_displayname: The displayname for the created Person
+        """
+        branch = self.makeBranch(title=branch_title)
+        person = self.makePerson(displayname=person_displayname,
+            email_address_status=EmailAddressStatus.VALIDATED)
+        return branch.subscribe(person,
+            BranchSubscriptionNotificationLevel.NOEMAIL, None)
+
     def makeRevisionsForBranch(self, branch, count=5, author=None,
                                date_generator=None):
         """Add `count` revisions to the revision history of `branch`.
@@ -253,8 +272,6 @@ class LaunchpadObjectFactory:
         revision_set = getUtility(IRevisionSet)
         if author is None:
             author = self.getUniqueString('author')
-        # All revisions are owned by the admin user.  Don't ask.
-        admin_user = getUtility(ILaunchpadCelebrities).admin
         for index in range(count):
             revision = revision_set.new(
                 revision_id = self.getUniqueString('revision-id'),
@@ -287,7 +304,7 @@ class LaunchpadObjectFactory:
         create_bug_params.setBugTarget(product=product)
         return getUtility(IBugSet).createBug(create_bug_params)
 
-    def makeBlueprint(self, product=None):
+    def makeSpecification(self, product=None):
         """Create and return a new, arbitrary Blueprint.
 
         :param product: The product to make the blueprint on.  If one is
@@ -329,6 +346,13 @@ class LaunchpadObjectFactory:
                 registrant, branch, rcs_type=RevisionControlSystems.CVS,
                 cvs_root=cvs_root, cvs_module=cvs_module)
 
+    def makeCodeImportEvent(self):
+        """Create and return a CodeImportEvent."""
+        code_import = self.makeCodeImport()
+        person = self.makePerson()
+        code_import_event_set = getUtility(ICodeImportEventSet)
+        return code_import_event_set.newCreate(code_import, person)
+
     def makeCodeImportJob(self, code_import):
         """Create and return a new code import job for the given import.
 
@@ -346,3 +370,30 @@ class LaunchpadObjectFactory:
         The machine will be in the OFFLINE state."""
         hostname = self.getUniqueString('machine-')
         return getUtility(ICodeImportMachineSet).new(hostname)
+
+    def makeCodeImportResult(self):
+        """Create and return a new CodeImportResult."""
+        code_import = self.makeCodeImport()
+        machine = self.makeCodeImportMachine()
+        requesting_user = self.makePerson()
+        log_excerpt = self.getUniqueString()
+        status = CodeImportResultStatus.FAILURE
+        started = time_counter().next()
+        return getUtility(ICodeImportResultSet).new(code_import, machine,
+            requesting_user, log_excerpt, log_file=None, status=status,
+            date_job_started=started)
+
+    def makeSeries(self, user_branch=None, import_branch=None):
+        """Create a new, arbitrary ProductSeries.
+
+        :param user_branch: If supplied, the branch to set as
+            ProductSeries.user_branch.
+        :param import_branch: If supplied, the branch to set as
+            ProductSeries.import_branch.
+        """
+        product = self.makeProduct()
+        series = product.newSeries(product.owner, self.getUniqueString(),
+            self.getUniqueString(), user_branch)
+        series.import_branch = import_branch
+        syncUpdate(series)
+        return series

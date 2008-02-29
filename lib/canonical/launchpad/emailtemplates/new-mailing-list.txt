@@ -1,0 +1,14 @@
+Hello %(user)s,
+
+%(team)s has a new team mailing list.
+
+If you would like to subscribe to the list, please use the link below
+to update your Mailing List Subscription preferences.
+
+  To subscribe:
+
+      %(subscribe_url)s
+
+
+Regards,
+The Launchpad team

@@ -18,7 +18,6 @@ __all__ = [
     'IPersonClaim',
     'IPersonEditRestricted',
     'IPersonPublic',
-    'IPersonEntry',
     'IPersonSet',
     'IPersonViewRestricted',
     'IRequestPeopleMerge',
@@ -31,22 +30,18 @@ __all__ = [
     'PersonVisibility',
     'TeamContactMethod',
     'TeamMembershipRenewalPolicy',
-    'TeamMembershipStatus',
     'TeamSubscriptionPolicy',
-    'make_person_name_field',
     ]
 
 
 from zope.formlib.form import NoInputData
-from zope.schema import Bool, Choice, Datetime, Int, Object, Text, TextLine
+from zope.schema import Bool, Choice, Datetime, Int, Text, TextLine
 from zope.interface import Attribute, Interface
 from zope.interface.exceptions import Invalid
 from zope.interface.interface import invariant
 from zope.component import getUtility
 
 from canonical.lazr import DBEnumeratedType, DBItem, EnumeratedType, Item
-from canonical.lazr.interfaces import IEntry
-from canonical.lazr.rest.schema import CollectionField
 
 from canonical.launchpad import _
 
@@ -62,6 +57,8 @@ from canonical.launchpad.interfaces.launchpad import (
     IHasIcon, IHasLogo, IHasMugshot)
 from canonical.launchpad.interfaces.questioncollection import (
     IQuestionCollection, QUESTION_STATUS_DEFAULT_SEARCH)
+from canonical.launchpad.interfaces.teammembership import (
+    TeamMembershipStatus)
 from canonical.launchpad.interfaces.validation import (
     validate_new_team_email, validate_new_person_email)
 
@@ -249,67 +246,6 @@ class TeamMembershipRenewalPolicy(DBEnumeratedType):
         """)
 
 
-class TeamMembershipStatus(DBEnumeratedType):
-    """TeamMembership Status
-
-    According to the policies specified by each team, the membership status of
-    a given member can be one of multiple different statuses. More information
-    can be found in the TeamMembership spec.
-    """
-
-    PROPOSED = DBItem(1, """
-        Proposed
-
-        You are a proposed member of this team. To become an active member
-        your subscription has to be approved by one of the team's
-        administrators.
-        """)
-
-    APPROVED = DBItem(2, """
-        Approved
-
-        You are an active member of this team.
-        """)
-
-    ADMIN = DBItem(3, """
-        Administrator
-
-        You are an administrator of this team.
-        """)
-
-    DEACTIVATED = DBItem(4, """
-        Deactivated
-
-        Your subscription to this team has been deactivated.
-        """)
-
-    EXPIRED = DBItem(5, """
-        Expired
-
-        Your subscription to this team is expired.
-        """)
-
-    DECLINED = DBItem(6, """
-        Declined
-
-        Your proposed subscription to this team has been declined.
-        """)
-
-    INVITED = DBItem(7, """
-        Invited
-
-        You have been invited as a member of this team. In order to become an
-        actual member, you have to accept the invitation.
-        """)
-
-    INVITATION_DECLINED = DBItem(8, """
-        Invitation declined
-
-        You have been invited as a member of this team but the invitation has
-        been declined.
-        """)
-
-
 class TeamSubscriptionPolicy(DBEnumeratedType):
     """Team Subscription Policies
 
@@ -409,23 +345,6 @@ class INewPerson(Interface):
         description=_("The reason why you're creating this profile."))
 
 
-def make_person_name_field():
-    """Construct a PersonNameField.
-
-    This is used to define both IPerson and IPersonEntry. This is
-    not a long-term solution.
-
-    XXX leonardr 2008-01-28 bug=186702
-    """
-    return PersonNameField(
-            title=_('Name'), required=True, readonly=False,
-            constraint=name_validator,
-            description=_(
-                "A short unique name, beginning with a lower-case "
-                "letter or number, and containing only letters, "
-                "numbers, dots, hyphens, or plus signs.")
-            )
-
 class IPersonPublic(IHasSpecifications, IHasMentoringOffers,
                     IQuestionCollection, IHasLogo, IHasMugshot, IHasIcon):
     """Public attributes for a Person."""
@@ -433,7 +352,14 @@ class IPersonPublic(IHasSpecifications, IHasMentoringOffers,
     id = Int(
             title=_('ID'), required=True, readonly=True,
             )
-    name = make_person_name_field()
+    name = PersonNameField(
+            title=_('Name'), required=True, readonly=False,
+            constraint=name_validator,
+            description=_(
+                "A short unique name, beginning with a lower-case "
+                "letter or number, and containing only letters, "
+                "numbers, dots, hyphens, or plus signs.")
+            )
     displayname = StrippedTextLine(
             title=_('Display Name'), required=True, readonly=False,
             description=_("Your name as you would like it displayed "
@@ -1277,14 +1203,6 @@ class IPersonEditRestricted(Interface):
 
 class IPerson(IPersonPublic, IPersonViewRestricted, IPersonEditRestricted):
     """A Person."""
-
-
-class IPersonEntry(IEntry):
-    """The part of a person that we expose through the web service."""
-
-    name = make_person_name_field()
-    teamowner = Object(schema=IPerson)
-    members = CollectionField(value_type=Object(schema=IPerson))
 
 
 class INewPersonForm(IPerson):
