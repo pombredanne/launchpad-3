@@ -449,8 +449,6 @@ them if they didn't exist already:
 No notifications will be generated for the imported comments:
 
     >>> from canonical.launchpad.interfaces import IBugNotificationSet
-    >>> from canonical.launchpad.scripts.bugnotification import (
-    ...     get_email_notifications)
     >>> pending_notifications = getUtility(
     ...     IBugNotificationSet).getNotificationsToSend()
     >>> len(pending_notifications)
