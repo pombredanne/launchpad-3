@@ -317,7 +317,8 @@ class IBranchMergeProposal(Interface):
         source branch since it branched off the target branch.
         """
 
-    def createMessage(owner, subject, content=None, vote=None, parent=None):
+    def createMessage(owner, subject, content=None, vote=None, parent=None,
+                      _date_created=None):
         """Create an ICodeReviewMessage associated with this merge proposal.
 
         :param owner: The person who the message is from.
@@ -326,6 +327,9 @@ class IBranchMergeProposal(Interface):
             unspecified, the text of the merge proposal is used.
         :param parent: The previous CodeReviewMessage in the thread.  If
             unspecified, the root message is used.
+        :param _date_created: The date the message was created.  Provided only
+            for testing purposes, as it can break
+            BranchMergeProposal.root_message.
         """
 
     def deleteProposal():

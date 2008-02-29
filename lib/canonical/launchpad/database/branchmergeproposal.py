@@ -343,7 +343,7 @@ class BranchMergeProposal(SQLBase):
             prejoins=['revision'], orderBy='-sequence')
 
     def createMessage(self, owner, subject, content=None, vote=None,
-                      parent=None):
+                      parent=None, _date_created=None):
         """See IBranchMergeProposal.createMessage"""
         assert owner is not None, 'Merge proposal messages need a sender'
         parent_message = None
@@ -355,8 +355,14 @@ class BranchMergeProposal(SQLBase):
                     'Replies must use the same merge proposal as their parent'
             parent_message = parent.message
         msgid = make_msgid('codereview')
+        # Can't pass None into Message constructor to get the default, so
+        # we have to supply datecreated only when we want to override the
+        # default.
+        kwargs = {}
+        if _date_created is not None:
+            kwargs['datecreated'] = _date_created
         msg = Message(parent=parent_message, owner=owner,
-                      rfc822msgid=msgid, subject=subject)
+                      rfc822msgid=msgid, subject=subject, **kwargs)
         chunk = MessageChunk(message=msg, content=content, sequence=1)
         return CodeReviewMessage(
             branch_merge_proposal=self, message=msg, vote=vote)
