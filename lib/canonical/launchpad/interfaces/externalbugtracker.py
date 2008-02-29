@@ -41,17 +41,17 @@ class ISupportsCommentImport(IExternalBugTracker):
 class ISupportsBugImport(IExternalBugTracker):
     """A an external bug tracker that supports bug imports."""
 
-    def getReporter(remote_bug):
+    def getBugReporter(remote_bug):
         """Return the person who submitted the given bug.
 
         A tuple of (display name, email) is returned.
         """
 
-    def getSummaryAndDescription(remote_bug):
+    def getBugSummaryAndDescription(remote_bug):
         """Return a tuple of summary and description for the given bug."""
 
-    def getTarget(remote_bug):
-        """Return the specific target of the bug.
+    def getBugTargetName(remote_bug):
+        """Return the specific target name of the bug.
 
         Return None if no target can be determined.
         """

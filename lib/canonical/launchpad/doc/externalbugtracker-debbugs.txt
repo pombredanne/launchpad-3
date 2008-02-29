@@ -258,13 +258,13 @@ report.
     >>> print report['From']
     Moritz Muehlenhoff <jmm@inutil.org>
 
-    >>> name, email = external_debbugs.getReporter('322535')
+    >>> name, email = external_debbugs.getBugReporter('322535')
     >>> print name
     Moritz Muehlenhoff
     >>> print email
     jmm@inutil.org
 
-The getSummaryAndDescription method reads the bug report from the
+The getBugSummaryAndDescription method reads the bug report from the
 debbugs db, and creates a Launchpad bug report, using the debbugs
 subject as the summary, and the description as the description.
 
@@ -282,7 +282,7 @@ subject as the summary, and the description as the description.
     for details. 2.3.7 fixes all these issues.
     ...
 
-    >>> summary, description = external_debbugs.getSummaryAndDescription(
+    >>> summary, description = external_debbugs.getBugSummaryAndDescription(
     ...     '322535')
     >>> print summary
     evolution: Multiple format string vulnerabilities in Evolution
@@ -298,10 +298,10 @@ subject as the summary, and the description as the description.
     for details. 2.3.7 fixes all these issues.
     ...
 
-Which package to file the bug against is determined by the getTarget()
-method.
+Which package to file the bug against is determined by the
+getBugTargetName() method.
 
-    >>> print external_debbugs.getTarget('322535')
+    >>> print external_debbugs.getBugTargetName('322535')
     evolution
 
 

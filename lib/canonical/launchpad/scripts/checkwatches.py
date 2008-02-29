@@ -348,13 +348,13 @@ class BugWatchUpdater(object):
         """
         assert IDistribution.providedBy(bug_target), (
             'Only imports of bugs for a distribution is implemented.')
-        reporter_name, reporter_email = external_bugtracker.getReporter(
+        reporter_name, reporter_email = external_bugtracker.getBugReporter(
             remote_bug)
         reporter = getUtility(IPersonSet).ensurePerson(
             reporter_email, reporter_name, PersonCreationRationale.BUGIMPORT,
             comment='when importing bug #%s from %s' % (
                 remote_bug, external_bugtracker.baseurl))
-        package_name = external_bugtracker.getTarget(remote_bug)
+        package_name = external_bugtracker.getBugTargetName(remote_bug)
         package = bug_target.getSourcePackage(package_name)
         if package is not None:
             bug_target = package
@@ -363,7 +363,7 @@ class BugWatchUpdater(object):
                 'Unknown %s package (#%s at %s): %s' % (
                     bug_target.name, remote_bug,
                     external_bugtracker.baseurl, package_name))
-        summary, description = external_bugtracker.getSummaryAndDescription(
+        summary, description = external_bugtracker.getBugSummaryAndDescription(
             remote_bug)
         bug = bug_target.createBug(
             CreateBugParams(

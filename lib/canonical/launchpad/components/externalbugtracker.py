@@ -839,18 +839,18 @@ class DebBugs(ExternalBugTracker):
             [debian_bug.status, severity] + debian_bug.tags)
         return new_remote_status
 
-    def getReporter(self, remote_bug):
+    def getBugReporter(self, remote_bug):
         """See ISupportsBugImport."""
         debian_bug = self._findBug(remote_bug)
         reporter_name, reporter_email = parseaddr(debian_bug.originator)
         return reporter_name, reporter_email
 
-    def getTarget(self, remote_bug):
+    def getBugTargetName(self, remote_bug):
         """See ISupportsBugImport."""
         debian_bug = self._findBug(remote_bug)
         return debian_bug.package
 
-    def getSummaryAndDescription(self, remote_bug):
+    def getBugSummaryAndDescription(self, remote_bug):
         """See ISupportsBugImport."""
         debian_bug = self._findBug(remote_bug)
         return debian_bug.subject, debian_bug.description

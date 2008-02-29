@@ -1,6 +1,6 @@
 = ExternalBugTracker bug imports =
 
-Some ExternalBugTracker implementation supports importing bugs from the
+Some ExternalBugTracker implementations support importing bugs from the
 remote bug tracker into Launchpad. They indicate that they support doing
 this by implementing ISupportsBugImport, and implement all the specified
 methods. They can be used to pass on to BugWatchUpdater.importBug() to
@@ -15,14 +15,14 @@ import bugs from that bug tracker.
     ...
     ...     _bugs = {}
     ...
-    ...     def getReporter(self, remote_bug):
+    ...     def getBugReporter(self, remote_bug):
     ...         display_name, email = self._bugs[remote_bug]['reporter']
     ...         return display_name, email
-    ...     def getSummaryAndDescription(self, remote_bug):
+    ...     def getBugSummaryAndDescription(self, remote_bug):
     ...         return (
     ...             "Sample summary %s" % remote_bug,
     ...             "Sample description %s." % remote_bug)
-    ...     def getTarget(self, remote_bug):
+    ...     def getBugTargetName(self, remote_bug):
     ...         return self._bugs[remote_bug]['package']
 
     >>> from canonical.launchpad.interfaces import (
@@ -56,16 +56,17 @@ distributions are supported as the bug target.
     ...     external_bugtracker, bugtracker, debian, '3')
 
 The summary and descriptions of the imported bugs are what was returned
-by getSummaryAndDescription().
+by getBugSummaryAndDescription().
 
     >>> bug.title
     u'Sample summary 3'
     >>> bug.description
     u'Sample description 3.'
 
-The bug reporter, as returned by getReporter(), got automatically created.
+The bug reporter, as returned by getBugReporter(), got automatically created.
 
-    >>> getUtility(IPersonSet).getByEmail('joe.bloggs@example.com') is not None
+    >>> getUtility(IPersonSet).getByEmail(
+    ...     'joe.bloggs@example.com') is not None
     True
     >>> print bug.owner.displayname
     Joe Bloggs
