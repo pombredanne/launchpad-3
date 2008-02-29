@@ -13,13 +13,13 @@ from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.sqlbase import SQLBase
 from canonical.launchpad.interfaces import (
-    IHasOwner, IPackageDiff, IPackageDiffSet)
+    IPackageDiff, IPackageDiffSet)
 
 
 class PackageDiff(SQLBase):
     """A Package Diff request."""
 
-    implements(IHasOwner, IPackageDiff)
+    implements(IPackageDiff)
 
     _defaultOrder = ['id']
 
