@@ -35,6 +35,7 @@ from canonical.launchpad.interfaces import (
 
 from canonical.launchpad.database.build import Build
 from canonical.launchpad.database.files import SourcePackageReleaseFile
+from canonical.launchpad.database.packagediff import PackageDiff
 from canonical.launchpad.validators.person import public_person_validator
 from canonical.launchpad.database.publishing import (
     SourcePackagePublishingHistory)
@@ -396,7 +397,7 @@ class SourcePackageRelease(SQLBase):
             'PackageUpload',
             'PackageUploadSource',
             ]
-        preJoins= ['changesfile']
+        preJoins = ['changesfile']
         query = """
         PackageUpload.id = PackageUploadSource.packageupload AND
         PackageUpload.distroseries = %s AND
@@ -469,3 +470,7 @@ class SourcePackageRelease(SQLBase):
                 sourcepackagename=self.sourcepackagename,
                 distroseries=self.upload_distroseries)
 
+    def requestDiffTo(self, requester, to_source):
+        """See ISourcePackageRelease."""
+        return PackageDiff(
+            from_source=self, to_source=to_source, requester=requester)

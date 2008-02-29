@@ -14,15 +14,16 @@ from zope.interface import Interface, Attribute
 from zope.schema import Choice, Datetime, Object
 
 from canonical.launchpad import _
-from canonical.launchpad.interfaces import IHasOwner
 from canonical.launchpad.interfaces.librarian import ILibraryFileAlias
 
 
-class IPackageDiff(IHasOwner):
+class IPackageDiff(Interface):
     """Package diff request and storage.
 
-    See doc/packagediff.txt for details about the attributes.
+    See doc/package-diff.txt for details about the attributes.
     """
+    from_source = Attribute(_(u"The base ISourcePackageRelease."))
+    to_source = Attribute(_(u"The target ISourcePackageRelease."))
 
     date_requested = Datetime(
         title=_(u'Date Requested'), required=True)
@@ -33,11 +34,6 @@ class IPackageDiff(IHasOwner):
         vocabulary='ValidPerson',
         description=_("The person requesting the diff."))
 
-    # XXX cprov 20080211: pending proper vovabularies for
-    # SourcePackageRelease.
-    from_source = Attribute(_(u"The base ISourcePackageRelease."))
-    to_source = Attribute(_(u"The target ISourcePackageRelease."))
-
     date_fulfilled = Datetime(
         title=_(u'Date Fulfilled'), required=False)
 
@@ -45,6 +41,8 @@ class IPackageDiff(IHasOwner):
         schema=ILibraryFileAlias,
         title=_(u"The ILibraryFileAlias contaning the diff."),
         required=False)
+
+    title = Attribute(_(u"The Package diff title"))
 
 
 class IPackageDiffSet(Interface):

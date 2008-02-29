@@ -8,7 +8,6 @@
   <!-- PackageDiff -->
   <content class="canonical.launchpad.database.PackageDiff">
     <allow interface="canonical.launchpad.interfaces.IPackageDiff"/>
-    <allow interface="canonical.launchpad.interfaces.IHasOwner"/>
   </content>
 
 

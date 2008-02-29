@@ -169,3 +169,12 @@ class ISourcePackageRelease(Interface):
         raise DownloadFailed if we are not able to fetch the file from
             :tarball_alias:.
         """
+
+    def requestDiffTo(requester, to_source):
+        """Request a package diff from the context source to a given source.
+
+        :param: requester: it's the diff request, any valid IPerson;
+        :param: to_source: it's the ISourcePackageRelease to diff against.
+
+        :return: the corresponding IPackageDiff record.
+        """

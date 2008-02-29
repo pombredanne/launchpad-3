@@ -17,7 +17,8 @@ from canonical.launchpad.interfaces import (
 
 
 class PackageDiff(SQLBase):
-    """A Queue item for Lucille."""
+    """A Package Diff request."""
+
     implements(IHasOwner, IPackageDiff)
 
     _defaultOrder = ['id']
@@ -31,16 +32,24 @@ class PackageDiff(SQLBase):
         dbName="from_source", foreignKey='SourcePackageRelease', notNull=True)
 
     to_source = ForeignKey(
-        dbName="to_source", foreignKey='SourcePackageRelease', notNull=False)
+        dbName="to_source", foreignKey='SourcePackageRelease', notNull=True)
 
-    date_fulfilled = UtcDateTimeCol(notNull=False)
+    date_fulfilled = UtcDateTimeCol(notNull=False, default=None)
 
     diff_content = ForeignKey(
-        dbName="diff_content", foreignKey='LibraryFileAlias', notNull=False)
+        dbName="diff_content", foreignKey='LibraryFileAlias',
+        notNull=False, default=None)
+
+    @property
+    def title(self):
+        """See `IPackageDiff`."""
+        return 'Package diff from %s to %s' % (
+            self.from_source.title, self.to_source.title)
 
     def performDiff(self):
         """See `IPackageDiff`."""
         pass
+
 
 class PackageDiffSet:
     """This class is to deal with Distribution related stuff"""
