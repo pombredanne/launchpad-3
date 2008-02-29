@@ -365,12 +365,12 @@ class ExternalBugTracker:
         """Import a remote bug into Launchpad."""
         assert IDistribution.providedBy(bug_target), (
             'Only imports of bugs for a distribution is implemented.')
-        reporter_name, reporter_email = self.getReporter(remote_bug)
+        reporter_name, reporter_email = self.getBugReporter(remote_bug)
         reporter = getUtility(IPersonSet).ensurePerson(
             reporter_email, reporter_name, PersonCreationRationale.BUGIMPORT,
             comment='when importing bug #%s from %s' % (
                 remote_bug, self.baseurl))
-        package_name = self.getTarget(remote_bug)
+        package_name = self.getBugTargetName(remote_bug)
         package = bug_target.getSourcePackage(package_name)
         if package is not None:
             bug_target = package
@@ -378,7 +378,7 @@ class ExternalBugTracker:
             self.warning(
                 'Unknown %s package (#%s at %s): %s' % (
                     bug_target.name, remote_bug, self.baseurl, package_name))
-        summary, description = self.getSummaryAndDescription(remote_bug)
+        summary, description = self.getBugSummaryAndDescription(remote_bug)
         bug = bug_target.createBug(
             CreateBugParams(
                 reporter, summary, description, subscribe_reporter=False))
@@ -875,18 +875,18 @@ class DebBugs(ExternalBugTracker):
             [debian_bug.status, severity] + debian_bug.tags)
         return new_remote_status
 
-    def getReporter(self, remote_bug):
+    def getBugReporter(self, remote_bug):
         """See ISupportsBugImport."""
         debian_bug = self._findBug(remote_bug)
         reporter_name, reporter_email = parseaddr(debian_bug.originator)
         return reporter_name, reporter_email
 
-    def getTarget(self, remote_bug):
+    def getBugTargetName(self, remote_bug):
         """See ISupportsBugImport."""
         debian_bug = self._findBug(remote_bug)
         return debian_bug.package
 
-    def getSummaryAndDescription(self, remote_bug):
+    def getBugSummaryAndDescription(self, remote_bug):
         """See ISupportsBugImport."""
         debian_bug = self._findBug(remote_bug)
         return debian_bug.subject, debian_bug.description
