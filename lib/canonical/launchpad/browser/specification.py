@@ -408,7 +408,7 @@ class SpecificationContextMenu(ContextMenu):
 
     @enabled_with_permission('launchpad.AnyPerson')
     def linkbranch(self):
-        text = 'Link branch'
+        text = 'Link to branch'
         return Link('+linkbranch', text, icon='add')
 
 class SpecificationSimpleView(LaunchpadView, CanBeMentoredView):
@@ -566,14 +566,14 @@ class SpecificationRetargetingView(LaunchpadFormView):
             self.setFieldError('target',
                 "There is no project with the name '%s'. "
                 "Please check that name and try again." %
-                cgi.escape(self.request.form.get("field.target")))
+                self.request.form.get("field.target"))
             return
 
         if target.getSpecification(self.context.name) is not None:
             self.setFieldError('target',
                 'There is already a blueprint with this name for %s. '
                 'Please change the name of this blueprint and try again.' %
-                cgi.escape(target.displayname))
+                target.displayname)
             return
 
     @action(_('Retarget Blueprint'), name='retarget')
@@ -1045,7 +1045,7 @@ class SpecificationLinkBranchView(LaunchpadFormView):
 
     schema = ISpecificationBranch
     field_names = ['branch', 'summary']
-    label = _('Link branch to specification')
+    label = _('Link branch to blueprint')
 
     def validate(self, data):
         branch = data.get('branch')
@@ -1053,13 +1053,17 @@ class SpecificationLinkBranchView(LaunchpadFormView):
             branchlink = self.context.getBranchLink(branch)
             if branchlink is not None:
                 self.setFieldError('branch', 'This branch has already '
-                                   'been linked to the specification')
+                                   'been linked to the blueprint')
 
-    @action(_('Link to Specification'), name='link')
-    def link_action(self, action, data):
+    @action(_('Continue'), name='continue')
+    def continue_action(self, action, data):
         self.context.linkBranch(branch=data['branch'],
                                 registrant=self.user,
                                 summary=data['summary'])
+
+    @action(_('Cancel'), name='cancel', validator='validate_cancel')
+    def cancel_action(self, action, data):
+        """Do nothing and go back to the blueprint page."""
 
     @property
     def next_url(self):

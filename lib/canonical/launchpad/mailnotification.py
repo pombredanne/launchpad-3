@@ -29,8 +29,8 @@ from canonical.launchpad.interfaces import (
     BranchSubscriptionDiffSize, BranchSubscriptionNotificationLevel, IBranch,
     IBugTask, IEmailAddressSet, ILaunchpadCelebrities,
     INotificationRecipientSet, IPerson, IPersonSet, ISpecification,
-    ITeamMembershipSet, IUpstreamBugTask, QuestionAction,
-    TeamMembershipStatus, UnknownRecipientError)
+    ITeamMembershipSet, IUpstreamBugTask, MailingListStatus,
+    QuestionAction, TeamMembershipStatus, UnknownRecipientError)
 from canonical.launchpad.mail import (
     sendmail, simple_sendmail, simple_sendmail_from_person, format_address)
 from canonical.launchpad.components.bug import BugDelta
@@ -1933,3 +1933,59 @@ def notify_specification_subscription_modified(specsub, event):
          'blueprint_url' : canonical_url(spec)})
     for address in contactEmailAddresses(person):
         simple_sendmail_from_person(user, address, subject, body)
+
+def notify_mailinglist_activated(mailinglist, event):
+    """Notify the active members of a team and its subteams that a mailing
+    list is available.
+    """
+    # We will use the setting of the date_activated field as a hint
+    # that this list is new, and that noboby has subscribed yet.  See
+    # `MailingList.transitionToStatus()` for the details.
+    old_date = event.object_before_modification.date_activated
+    new_date = event.object.date_activated
+    list_looks_new = (old_date is None) and (new_date is not None)
+
+    if not (list_looks_new and mailinglist.isUsable()):
+        return
+
+    team = mailinglist.team
+    from_address = format_address(
+        team.displayname, config.noreply_from_address)
+    headers = {}
+    subject = "New Mailing List for %s" % team.displayname
+    template = get_email_template('new-mailing-list.txt')
+    editemails_url = '%s/+editemails'
+
+    def contacts_for(person):
+        # Recursively gather all of the active members of a team and
+        # of every sub-team.
+        members = set()
+        if person.isTeam():
+            [ members.update(contacts_for(member))
+              for member in person.activemembers ]
+        elif person.preferredemail is not None:
+            members.add(person)
+        return members
+
+    beta_testers = getUtility(ILaunchpadCelebrities).launchpad_beta_testers
+
+    for person in contacts_for(team):
+
+        # XXX mars 2008-02-21:
+        # This should be removed when the Mailing List Beta is over.
+        #
+        # Only send an invitation to Beta testers, because they are
+        # the only people that can sign up for the list!
+        if not person.inTeam(beta_testers):
+            continue
+
+        to_address = [str(person.preferredemail.email)]
+        replacements = {
+            'user': person.displayname,
+            'team': team.displayname,
+            'team_url': canonical_url(team),
+            'subscribe_url': editemails_url % canonical_url(person),
+            }
+        body = MailWrapper(72).format(template % replacements,
+                                      force_wrap=True)
+        simple_sendmail(from_address, to_address, subject, body, headers)

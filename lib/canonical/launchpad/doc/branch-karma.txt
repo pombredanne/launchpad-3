@@ -1,4 +1,4 @@
-= Karam for branch related activity =
+= Karma for branch related activity =
 
 We want people to register their branches on Launchpad, and also to
 link their branches to bugs and specs, so we give them some karma for
@@ -55,7 +55,7 @@ As long as it is not a junk branch.
 
 You get karma for linking a blueprint to a branch.
 
-    >>> blueprint = factory.makeBlueprint(product=fooix)
+    >>> blueprint = factory.makeSpecification(product=fooix)
     >>> branch_link = blueprint.linkBranch(branch, eric)
     Karma added: action=specbranchcreated, product=fooix, person=eric
 
