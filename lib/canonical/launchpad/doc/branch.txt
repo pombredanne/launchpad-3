@@ -862,17 +862,6 @@ sort order, the sort is by lifecycle, product, author, name).
     New ~landscape-developers/landscape/trunk
     New ~name12/+junk/junk.contrib
 
-    >>> branches = branchset.getBranchesAuthoredByPerson(
-    ...     sample_person, visible_by_user=sample_person)
-    >>> for branch in branches:
-    ...     print branch.lifecycle_status.title, branch.unique_name
-    New ~name12/firefox/main
-    Merged ~name12/gnome-terminal/slowness
-    Experimental ~name12/gnome-terminal/klingon
-    New ~name12/landscape/feature-x
-    New ~landscape-developers/landscape/trunk
-    New ~name12/+junk/junk.contrib
-
     >>> for branch in branchset.getBranchesRegisteredByPerson(
     ...     sample_person, sort_by=BranchListingSort.PRODUCT):
     ...     print branch.lifecycle_status.title, branch.unique_name

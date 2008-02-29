@@ -1142,18 +1142,6 @@ class BranchSet:
             self._generateBranchClause(query, visible_by_user),
             orderBy=self._listingSortToOrderBy(sort_by))
 
-    def getBranchesAuthoredByPerson(self, person, lifecycle_statuses=None,
-                                    visible_by_user=None, sort_by=None,
-                                    hide_dormant=False):
-        """See `IBranchSet`."""
-        lifecycle_clause = self._lifecycleClause(lifecycle_statuses)
-        dormant_clause = self._dormantClause(hide_dormant)
-        query = 'Branch.author = %s %s %s' % (
-            person.id, lifecycle_clause, dormant_clause)
-        return BranchWithSortKeys.select(
-            self._generateBranchClause(query, visible_by_user),
-            orderBy=self._listingSortToOrderBy(sort_by))
-
     def getBranchesOwnedByPerson(self, person, lifecycle_statuses=None,
                                  visible_by_user=None, sort_by=None,
                                  hide_dormant=False):
