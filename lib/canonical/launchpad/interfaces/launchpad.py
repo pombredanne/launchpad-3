@@ -1,4 +1,4 @@
-# Copyright 2004 Canonical Ltd.  All rights reserved.
+# Copyright 2004-2008 Canonical Ltd.  All rights reserved.
 # pylint: disable-msg=E0211,E0213,W0611
 
 """Interfaces pertaining to the launchpad application.
@@ -8,7 +8,7 @@ Note that these are not interfaces to application content objects.
 __metaclass__ = type
 
 from zope.interface import Interface, Attribute
-from zope.schema import Bool, Choice, Int, TextLine
+from zope.schema import Bool, Choice, Int, Text, TextLine
 from persistent import IPersistent
 
 from canonical.launchpad import _
@@ -33,6 +33,7 @@ __all__ = [
     'IBreadcrumb',
     'ICrowd',
     'IFeedsApplication',
+    'IHWDBApplication',
     'IHasAppointedDriver',
     'IHasAssignee',
     'IHasBug',
@@ -45,7 +46,6 @@ __all__ = [
     'IHasProduct',
     'IHasProductAndAssignee',
     'IHasSecurityContact',
-    'IHWDBApplication',
     'ILaunchBag',
     'ILaunchpadCelebrities',
     'ILaunchpadRoot',
