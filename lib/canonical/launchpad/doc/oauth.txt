@@ -1,4 +1,4 @@
-= OAuth =
+= OAuth (http://oauth.net/core/1.0/) =
 
 This is a mechanism for allowing a third party application to access
 Launchpad on a user's behalf.  These applications are identified by a
@@ -7,10 +7,10 @@ unique key and are stored as OAuthConsumers.
 These applications (also called consumers) are managed by the
 OAuthConsumerSet utility.
 
-    >>> from zope.component import getUtility
     >>> from canonical.launchpad.webapp.testing import verifyObject
     >>> from canonical.launchpad.interfaces import (
-    ...     IOAuthConsumer, IOAuthConsumerSet)
+    ...     IOAuthConsumer, IOAuthConsumerSet, IOAuthRequestToken,
+    ...     IPersonSet, OAuthPermission)
     >>> consumer_set = getUtility(IOAuthConsumerSet)
     >>> verifyObject(IOAuthConsumerSet, consumer_set)
     True
@@ -33,3 +33,23 @@ with the same key.
     ...
     AssertionError: ...
 
+== Request tokens ==
+
+When a consumer wants to access protected resources on Launchpad, it must
+first ask for an OAuthRequestToken, which is then used when the consumer sends
+the user to the Launchpad authorization page.  The request tokens are created
+using IOAuthConsumer.newRequestToken().
+
+    >>> request_token = consumer.newRequestToken()
+    >>> verifyObject(IOAuthRequestToken, request_token)
+    True
+
+Initially, these tokens don't have a person or permission associated with as
+the consumer doesn't know what's the user's identity on Launchpad.
+
+    >>> print request_token.person
+    None
+    >>> print request_token.permission
+    None
+    >>> print request_token.date_reviewed
+    None

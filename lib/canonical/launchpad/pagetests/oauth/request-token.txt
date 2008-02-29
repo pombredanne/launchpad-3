@@ -1,0 +1,33 @@
+= Asking for a request token =
+
+Our sample consumer (whose key is 'foobar123451432') asks Launchpad for a
+request token which may later be exchanged for an access token.
+
+    >>> import time
+    >>> from urllib import urlencode
+    >>> data = dict(
+    ...     oauth_consumer_key='foobar123451432',
+    ...     oauth_version='1.0',
+    ...     oauth_signature_method='PLAINTEXT',
+    ...     oauth_signature='',
+    ...     oauth_timestamp=time.time(),
+    ...     oauth_nonce='4572616e48616d6d65724c61686176')
+    >>> anon_browser.open(
+    ...     'http://launchpad.dev/+request-token', data=urlencode(data))
+
+    >>> print anon_browser.contents
+    oauth_token=...&oauth_token_secret=...
+
+If the consumer is not registered in Launchpad, we respond with a 401 status.
+
+    >>> data2 = data.copy()
+    >>> data2['oauth_consumer_key'] = 'a'
+    >>> print http(r"""
+    ... GET /+request-token?%s HTTP/1.1
+    ... Host: launchpad.dev
+    ... """ % urlencode(data2))
+    HTTP/1.1 401 Unauthorized
+    ...
+    WWW-Authenticate: OAuth realm="https://api.launchpad.net"
+    <BLANKLINE>
+

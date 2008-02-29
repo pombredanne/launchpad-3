@@ -1,5 +1,5 @@
 # Copyright 2008 Canonical Ltd.  All rights reserved.
-# pylint: disable-msg=E0213
+# pylint: disable-msg=E0211,E0213
 
 """OAuth interfaces."""
 
@@ -77,6 +77,16 @@ class IOAuthConsumer(Interface):
         title=_('Secret'), required=False, readonly=False,
         description=_('The secret which, if not empty, should be used by the '
                       'consumer to sign its requests.'))
+
+    def newRequestToken():
+        """Return a new `IOAuthRequestToken` with a random key and secret.
+
+        Also sets the token's date_expires to `REQUEST_TOKEN_VALIDITY` hours
+        from the creation date (now).
+
+        The other attributes of the token are supposed to be set whenever the
+        user logs into Launchpad and grants (or not) access to this consumer.
+        """
 
 
 class IOAuthConsumerSet(Interface):

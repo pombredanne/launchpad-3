@@ -204,6 +204,13 @@
       permission="zope.Public"
       />
 
+  <!-- OAuth-related pages. -->
+  <browser:page
+      for="canonical.launchpad.webapp.interfaces.ILaunchpadApplication"
+      name="+request-token"
+      class="canonical.launchpad.browser.OAuthRequestTokenView"
+      permission="zope.Public" />
+
 
   <!-- Declare robots.txt file for the root -->
   <browser:page

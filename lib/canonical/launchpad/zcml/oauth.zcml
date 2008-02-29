@@ -19,4 +19,9 @@
       <allow
           interface="canonical.launchpad.interfaces.IOAuthConsumerSet"/>
   </securedutility>
+
+  <content class="canonical.launchpad.database.OAuthRequestToken">
+      <allow interface="canonical.launchpad.interfaces.IOAuthRequestToken"/>
+  </content>
+
 </configure>
