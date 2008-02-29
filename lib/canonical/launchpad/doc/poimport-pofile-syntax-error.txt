@@ -243,31 +243,28 @@ forms.  The same error is given.
 
 == Too many plural forms ==
 
-Next Mark, eclectic polyglot that he is, uploads an Arabic translation
-defining six plural forms.  Unfortunately only up to 4 forms are
-supported in Launchpad.  He receives a message about this.
+Next Mark, eclectic polyglot that he is, uploads an Arabic translation.
+He mistakenly defines seven instead of six plural forms.  That would be
+fine but Launchpad only supports up to six forms.  He receives a message
+about this.
 
-Since it's painful to find out that Launchpad doesn't support your
-language, the email points to Launchpad's information about Arabic and
-shows how to get that information corrected if need be.  Hopefully it
-will show Mark how other Arabic translators have worked around the
-problem.
+The email points to Launchpad's information about Arabic and shows how
+to get that information corrected if need be.
 
-    >>> from canonical.launchpad.interfaces import TranslationConstants
     >>> pofile = potemplate.newPOFile('ar')
+    >>> # PO file with nplurals=7, a value we can't handle.
     >>> pofile_contents = r'''
     ... msgid ""
     ... msgstr ""
     ... "PO-Revision-Date: 2005-07-01 08:35+0100\n"
     ... "Last-Translator: Foo <no-priv@canonical.com>\n"
     ... "Content-Type: text/plain; charset=UTF-8\n"
-    ... "Plural-Forms: nplurals=%d; plural=0\n"
+    ... "Plural-Forms: nplurals=7; plural=0\n"
     ... "X-Rosetta-Export-Date: %s\n"
     ...
     ... msgid "foo"
     ... msgstr "bar"
-    ... ''' % (TranslationConstants.MAX_PLURAL_FORMS + 1,
-    ...        datetime.datetime.now(UTC).isoformat())
+    ... ''' % datetime.datetime.now(UTC).isoformat()
     >>> entry = translation_import_queue.addOrUpdateEntry(
     ...     pofile.path, pofile_contents, False, person,
     ...     productseries=series, potemplate=potemplate, pofile=pofile)
@@ -307,4 +304,31 @@ problem.
     <BLANKLINE>
     The Launchpad team
     <BLANKLINE>
+
+Once Mark has checked the language page and corrected the number of
+plural forms, the file imports just fine.
+
+    >>> # Same PO file as before, but with nplurals=6.
+    >>> pofile_contents = r'''
+    ... msgid ""
+    ... msgstr ""
+    ... "PO-Revision-Date: 2005-07-01 08:35+0100\n"
+    ... "Last-Translator: Foo <no-priv@canonical.com>\n"
+    ... "Content-Type: text/plain; charset=UTF-8\n"
+    ... "Plural-Forms: nplurals=6; plural=0\n"
+    ... "X-Rosetta-Export-Date: %s\n"
+    ...
+    ... msgid "foo"
+    ... msgstr "bar"
+    ... ''' % datetime.datetime.now(UTC).isoformat()
+    >>> entry = translation_import_queue.addOrUpdateEntry(
+    ...     pofile.path, pofile_contents, False, person,
+    ...     productseries=series, potemplate=potemplate, pofile=pofile)
+    >>> transaction.commit()
+    >>> entry.status = RosettaImportStatus.APPROVED
+    >>> (subject, message) = pofile.importFromQueue(entry)
+
+    >>> print entry.status.name
+    IMPORTED
+
 
