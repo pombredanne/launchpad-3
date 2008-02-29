@@ -24,6 +24,12 @@ from zope.interface.interface import Method
 
 
 def get_twisted_proxy(url):
+    """Return a Twisted XML-RPC proxy for `url`.
+
+    :param url: The URL of an XML-RPC service. Sometimes this can be a
+        'fake:///' URL. See the module docstring for details.
+    :return: An object that behaves like a `twisted.web.xmlrpc.Proxy`.
+    """
     if url == 'fake:///user-details-2':
         storage = DatabaseUserDetailsStorageV2(None)
         xmlrpc = UserDetailsResourceV2(storage)
@@ -32,6 +38,12 @@ def get_twisted_proxy(url):
 
 
 def get_blocking_proxy(url):
+    """Return an XML-RPC proxy for `url`.
+
+    :param url: The URL of an XML-RPC service. Sometimes this can be a
+        'fake:///' URL. See the module docstring for details.
+    :return: An object that behaves like an `xmlrpclib.ServerProxy`.
+    """
     if url == 'fake:///user-details-2':
         method_names = (
             list(get_method_names_in_interface(IUserDetailsStorageV2))
@@ -41,25 +53,13 @@ def get_blocking_proxy(url):
     return xmlrpclib.ServerProxy(url)
 
 
-def _make_connection_pool():
-    """Construct a ConnectionPool from the database settings in the
-    Launchpad config.
-    """
-    from canonical.config import config
-    from twisted.enterprise.adbapi import ConnectionPool
-    if config.dbhost is None:
-        dbhost = ''
-    else:
-        dbhost = 'host=' + config.dbhost
-    ConnectionPool.min = ConnectionPool.max = 1
-    dbpool = ConnectionPool(
-        'psycopg', 'dbname=%s %s user=%s' % (
-            config.dbname, dbhost, config.authserver.dbuser),
-        cp_reconnect=True)
-    return dbpool
-
-
 def get_method_names_in_interface(interface):
+    """Generate a sequence of the method names defined on `interface`.
+
+    :param interface: A Zope `Interface`.
+    :return: A generator that yields the names of the methods on the
+        interface. No ordering is defined.
+    """
     for attribute_name in interface:
         if isinstance(interface[attribute_name], Method):
             yield attribute_name
@@ -102,8 +102,7 @@ class InMemoryBlockingProxy:
 
 
 class InMemoryTwistedProxy:
-
-    debug = False
+    """Twisted `Proxy` work-a-like that calls methods directly."""
 
     def __init__(self, xmlrpc_object):
         self.xmlrpc_object = xmlrpc_object
@@ -113,6 +112,14 @@ class InMemoryTwistedProxy:
         xmlrpclib.dumps(args)
 
     def _checkReturnValueMarshallable(self, result):
+        """Raise a fault if `result` is not marshallable.
+
+        Mostly, this is used to check if `result` is not `None`. This method
+        can be used as a Twisted callback.
+
+        :param result: The return value to check.
+        :return: `result`, unmodified.
+        """
         try:
             xmlrpclib.dumps((result,))
         except TypeError:
@@ -121,6 +128,17 @@ class InMemoryTwistedProxy:
         return result
 
     def callRemote(self, method_name, *args):
+        """Call `method_name` on the XML-RPC resource.
+
+        :param method_name: The name of a method to call. `callRemote` will
+            call the method called 'xmlrpc_' + method_name on the underlying
+            resource.
+        :param args: The arguments to pass to the method.
+        :return: A `Deferred` that fires with the return value of the
+            underlying method. If the method raises an error, or a fault, or
+            there is an XML-RPC protocol violation, the `Deferred` will
+            errback.
+        """
         self._checkArgumentsMarshallable(args)
         try:
             method = getattr(self.xmlrpc_object, 'xmlrpc_%s' % (method_name,))
@@ -128,10 +146,4 @@ class InMemoryTwistedProxy:
             return defer.fail(xmlrpclib.Fault(
                 8001, "Method %r does not exist" % (method_name,)))
         deferred = defer.maybeDeferred(method, *args)
-        if self.debug:
-            def debug(value, message):
-                print '%s%r -> %r (%s)' % (method_name, args, value, message)
-                return value
-            deferred.addCallback(debug, 'SUCCESS')
-            deferred.addErrback(debug, 'FAILURE')
         return deferred.addCallback(self._checkReturnValueMarshallable)

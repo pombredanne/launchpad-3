@@ -1,6 +1,6 @@
 # Copyright 2008 Canonical Ltd.  All rights reserved.
 
-"""Tests for the in-memory `ServerProxy` objects."""
+"""Tests for the in-memory `twisted.web.xmlrpc.Proxy` objects."""
 
 __metaclass__ = type
 
@@ -17,8 +17,8 @@ from twisted.web import server, resource, xmlrpc
 from twisted.trial import unittest
 
 
-class MockXMLRPCObject(xmlrpc.XMLRPC):
-    """XML-RPC object that logs all of its calls."""
+class MockXMLRPCTwistedResource(xmlrpc.XMLRPC):
+    """A Twisted XML-RPC resource that logs all of its calls."""
 
     def __init__(self):
         xmlrpc.XMLRPC.__init__(self)
@@ -63,13 +63,13 @@ class TestTwistedProxyConformance(unittest.TestCase):
     has `setUp`, `tearDown` and `getTwistedProxy` methods, with the latter
     returning a proxy that conforms to these tests.
 
-    The tests are closely bound to `MockXMLRPCObject`.
+    The tests are closely bound to `MockXMLRPCTwistedResource`.
     """
 
     layer = TwistedLayer
 
     def setUp(self):
-        self.xmlrpc_resource = MockXMLRPCObject()
+        self.xmlrpc_resource = MockXMLRPCTwistedResource()
         self.server = self.server_factory(self.xmlrpc_resource)
         self.server.setUp()
 
@@ -80,28 +80,16 @@ class TestTwistedProxyConformance(unittest.TestCase):
         """Return an instance of the proxy to test."""
         return self.server.getTwistedProxy()
 
-    def assertContainsRe(self, haystack, needle_re):
-        """Assert that a contains something matching a regular expression."""
-        if not re.search(needle_re, haystack):
-            if '\n' in haystack or len(haystack) > 60:
-                # a long string, format it in a more readable way
-                raise AssertionError(
-                        'pattern "%s" not found in\n"""\\\n%s"""\n'
-                        % (needle_re, haystack))
-            else:
-                raise AssertionError('pattern "%s" not found in "%s"'
-                        % (needle_re, haystack))
-
-    def assertFault(self, deferred, code, regex):
+    def assertFault(self, deferred, code, message_substring):
         """Assert that `deferred` will errback with a an XML-RPC Fault.
 
         The fault is expected to have the given `code` and have a message that
-        `regex` matches (in Python terms, 'searches').
+        contains `message_substring`.
         """
         deferred = self.assertFailure(deferred, xmlrpc.Fault)
         def check_fault(fault):
             self.assertEqual(code, fault.faultCode)
-            self.assertContainsRe(fault.faultString, regex)
+            self.assertIn(message_substring, fault.faultString)
             return fault
         return deferred.addCallback(check_fault)
 
@@ -119,7 +107,7 @@ class TestTwistedProxyConformance(unittest.TestCase):
         return deferred.addCallback(self.checkLog, ['success'])
 
     def test_passesArguments(self):
-        # Extra argument passed to callRemote are passed on to the remote
+        # Extra arguments passed to callRemote are passed on to the remote
         # method on the server.
         proxy = self.makeProxy()
         deferred = proxy.callRemote('takesArguments', 2, 3, 5)
@@ -195,7 +183,7 @@ class TwistedServer(Server):
 
 
 class InMemoryServer(Server):
-    """A test HTTP server that serves an XML-RPC resource."""
+    """An in-memory server that serves an XML-RPC resource."""
 
     def __init__(self, xmlrpc_resource):
         super(InMemoryServer, self).__init__()

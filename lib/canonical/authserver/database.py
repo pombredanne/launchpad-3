@@ -50,6 +50,9 @@ def getTxnManager():
     # FIXME: That uses a protected attribute in ZopelessTransactionManager
     # -- David Allouche 2005-02-16
     if ZopelessTransactionManager._installed is None:
+        # The authserver methods use getUtility. That needs ZCML to work. We
+        # do the set up here because these methods are (in tests) invoked
+        # directly from subprocesses.
         execute_zcml_for_scripts(use_web_security=True)
         return initZopeless(implicitBegin=False)
     else:

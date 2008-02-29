@@ -1,10 +1,9 @@
 # Copyright 2008 Canonical Ltd.  All rights reserved.
 
-"""Tests for the in-memory `ServerProxy` objects."""
+"""Tests for in-memory `xmlrpclib.ServerProxy` objects."""
 
 __metaclass__ = type
 
-import re
 import xmlrpclib
 
 from bzrlib.transport import Server
@@ -20,7 +19,12 @@ from twisted.trial import unittest
 
 
 class MockXMLRPCObject:
-    """XML-RPC object that logs all of its calls."""
+    """XML-RPC object that logs all of its calls.
+
+    This is just a regular object that implements a blocking API, with a
+    couple of helpers to make it easier for our tests to publish its methods
+    over XML-RPC.
+    """
 
     def __init__(self):
         self.log = []
@@ -90,26 +94,14 @@ class TestBlockingProxyConformance(unittest.TestCase):
         """Return an instance of the proxy to test."""
         return self.server.getBlockingProxy()
 
-    def assertContainsRe(self, haystack, needle_re):
-        """Assert that a contains something matching a regular expression."""
-        if not re.search(needle_re, haystack):
-            if '\n' in haystack or len(haystack) > 60:
-                # a long string, format it in a more readable way
-                raise AssertionError(
-                        'pattern "%s" not found in\n"""\\\n%s"""\n'
-                        % (needle_re, haystack))
-            else:
-                raise AssertionError('pattern "%s" not found in "%s"'
-                        % (needle_re, haystack))
-
-    def assertRaisesFault(self, code, regex, function, *arguments):
+    def assertRaisesFault(self, code, message_substring, function, *args):
         """Assert that `function` raises a particular Fault.
 
         Asserts that the Fault's code and string match what we expect.
         """
-        exception = self.assertRaises(xmlrpclib.Fault, function, *arguments)
+        exception = self.assertRaises(xmlrpclib.Fault, function, *args)
         self.assertEqual(code, exception.faultCode)
-        self.assertContainsRe(exception.faultString, regex)
+        self.assertIn(message_substring, exception.faultString)
 
     def assertLogMatches(self, expected):
         """Assert that the log on `xmlrpc_resource` matches `expected`."""
@@ -117,14 +109,14 @@ class TestBlockingProxyConformance(unittest.TestCase):
 
     @defer_to_thread
     def test_callsUnderlyingImplementation(self):
-        # callRemote('method_name') calls that method on the server.
+        # `proxy.<method_name>()` calls that method on the server.
         proxy = self.makeProxy()
         proxy.success()
         self.assertLogMatches(['success'])
 
     @defer_to_thread
     def test_passesArguments(self):
-        # Extra argument passed to a proxied method are passed on to the
+        # Extra arguments passed to a proxied method are passed on to the
         # remote method on the server.
         proxy = self.makeProxy()
         proxy.takesArguments(2, 3, 5)
@@ -150,8 +142,10 @@ class TestBlockingProxyConformance(unittest.TestCase):
     def test_unpublished(self):
         # An 'unpublished' method is a method on the remote object that is not
         # intended to be called remotely. For Twisted XML-RPC resources, this
-        # is a method not prefixed by 'xmlrpc_'. When we call an unpublished
-        # method, the proxy behaves as if it doesn't exist.
+        # is a method not prefixed by 'xmlrpc_'. In this test environment,
+        # this is a method not returned by MockXMLRPCObject._getMethods. When
+        # we call an unpublished method, the proxy behaves as if it doesn't
+        # exist.
         proxy = self.makeProxy()
         self.assertRaisesFault(
             8001, 'function unpublished not found', proxy.unpublished)
@@ -211,7 +205,7 @@ class TwistedServer(Server):
 
 
 class InMemoryServer(Server):
-    """A test HTTP server that serves an XML-RPC resource."""
+    """An in-memory server that serves an XML-RPC resource."""
 
     def __init__(self, xmlrpc_object):
         super(InMemoryServer, self).__init__()
