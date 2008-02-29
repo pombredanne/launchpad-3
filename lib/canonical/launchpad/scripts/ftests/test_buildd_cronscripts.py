@@ -6,20 +6,23 @@ __metaclass__ = type
 import os
 import subprocess
 import sys
-from unittest import TestCase, TestLoader
+import unittest
+
+from zope.component import getUtility
 
 from canonical.config import config
-from canonical.database.sqlbase import flush_database_updates
 from canonical.launchpad.database.build import Build
-from canonical.launchpad.ftests.harness import LaunchpadZopelessTestCase
-from canonical.launchpad.interfaces import BuildStatus
+from canonical.launchpad.database.publishing import (
+    SecureSourcePackagePublishingHistory)
+from canonical.launchpad.interfaces import (
+    BuildStatus, IComponentSet)
 from canonical.launchpad.scripts import FakeLogger
 from canonical.launchpad.scripts.buildd import RetryDepwait
 from canonical.launchpad.scripts.base import LaunchpadScriptFailure
-from canonical.testing import LaunchpadLayer
+from canonical.testing import LaunchpadLayer, LaunchpadZopelessLayer
 
 
-class TestCronscriptBase(TestCase):
+class TestCronscriptBase(unittest.TestCase):
     """Buildd cronscripts test classes."""
     layer = LaunchpadLayer
 
@@ -77,8 +80,9 @@ class TestCronscriptBase(TestCase):
         self.assertRuns(runner=self.runBuilddRetryDepwait)
 
 
-class TestRetryDepwait(LaunchpadZopelessTestCase):
+class TestRetryDepwait(unittest.TestCase):
     """Test RetryDepwait buildd script class."""
+    layer = LaunchpadZopelessLayer
 
     def setUp(self):
         """Store the number of pending builds present before run the tests."""
@@ -120,18 +124,31 @@ class TestRetryDepwait(LaunchpadZopelessTestCase):
     def testWorkingRun(self):
         """Modify sampledata and expects a new pending build to be created."""
         depwait_build = Build.get(12)
+
+        # Moving the target source to universe, so it can reach the only
+        # published binary we have in sampledata.
+        source_release = depwait_build.distributionsourcepackagerelease
+        pub_id = source_release.publishing_history[0].id
+        secure_pub = SecureSourcePackagePublishingHistory.get(pub_id)
+        secure_pub.component = getUtility(IComponentSet)['universe']
+
+        # Make it dependend on the only binary that can be satisfied in
+        # the sampledata.
         depwait_build.dependencies = 'pmount'
-        flush_database_updates()
+
+        self.layer.commit()
 
         retry_depwait = self.getRetryDepwait()
         retry_depwait.main()
         self.layer.commit()
 
+        # Reload the build record after the multiple commits.
+        depwait_build = Build.get(12)
         self.assertEqual(
             self.number_of_pending_builds + 1,
             self.getPendingBuilds().count())
         self.assertEqual(depwait_build.buildstate.name, 'NEEDSBUILD')
-        self.assertEqual(depwait_build.buildqueue_record.lastscore, 1005)
+        self.assertEqual(depwait_build.buildqueue_record.lastscore, 255)
 
 def test_suite():
-    return TestLoader().loadTestsFromName(__name__)
+    return unittest.TestLoader().loadTestsFromName(__name__)

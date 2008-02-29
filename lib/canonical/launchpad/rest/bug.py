@@ -10,7 +10,7 @@ __all__ = [
     ]
 
 from zope.component import adapts
-from zope.schema import Bool, Datetime, Int, List, Object, Text, TextLine
+from zope.schema import Bool, Datetime, Int, List, Object, Text
 
 from canonical.lazr.rest import Collection, Entry
 from canonical.lazr.rest.schema import CollectionField
@@ -19,7 +19,7 @@ from canonical.launchpad.rest.messagetarget import IMessageTargetEntry
 from canonical.launchpad.interfaces import IBug, IBugTask, IPerson
 from canonical.launchpad.fields import (
     ContentNameField, Tag, Title)
-from canonical.lp import decorates
+from canonical.lazr import decorates
 
 
 class IBugEntry(IMessageTargetEntry):
@@ -101,21 +101,23 @@ class BugEntry(Entry):
 
     parent_collection_name = 'bugs'
 
-    def fragment(self):
-        """See `IEntry`."""
-        return str(self.context.id)
-
     @property
     def duplicate_of(self):
+        """See `IBug`."""
         return self.context.duplicateof
 
     @property
     def followup_subject(self):
+        """See `IBug`."""
         return self.context.followup_subject()
 
 
 class BugCollection(Collection):
     """A collection of bugs, as exposed through the web service."""
+
+    def getEntryPath(self, entry):
+        """See `ICollection`."""
+        return str(entry.id)
 
     def lookupEntry(self, name_or_id):
         """Find a Bug by name or ID."""

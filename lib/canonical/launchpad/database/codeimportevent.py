@@ -23,6 +23,7 @@ from canonical.launchpad.interfaces import (
     CodeImportEventDataType, CodeImportEventType,
     ICodeImportEvent, ICodeImportEventSet, ICodeImportEventToken,
     CodeImportMachineOfflineReason, RevisionControlSystems)
+from canonical.launchpad.validators.person import public_person_validator
 from canonical.lazr.enum import DBItem
 
 
@@ -39,7 +40,8 @@ class CodeImportEvent(SQLBase):
     code_import = ForeignKey(
         dbName='code_import', foreignKey='CodeImport', default=None)
     person = ForeignKey(
-        dbName='person', foreignKey='Person', default=None)
+        dbName='person', foreignKey='Person',
+        validator=public_person_validator, default=None)
     machine = ForeignKey(
         dbName='machine', foreignKey='CodeImportMachine', default=None)
 
@@ -158,6 +160,22 @@ class CodeImportEventSet:
             event=event, data_type=CodeImportEventDataType.MESSAGE,
             data_value=message)
         return event
+
+    def newStart(self, code_import, machine):
+        """See `ICodeImportEventSet`."""
+        assert code_import is not None, "code_import must not be None"
+        assert machine is not None, "machine must not be None"
+        return CodeImportEvent(
+            event_type=CodeImportEventType.START,
+            code_import=code_import, machine=machine)
+
+    def newFinish(self, code_import, machine):
+        """See `ICodeImportEventSet`."""
+        assert code_import is not None, "code_import must not be None"
+        assert machine is not None, "machine must not be None"
+        return CodeImportEvent(
+            event_type=CodeImportEventType.FINISH,
+            code_import=code_import, machine=machine)
 
     def _recordSnapshot(self, event, code_import):
         """Record a snapshot of the code import in the event data."""

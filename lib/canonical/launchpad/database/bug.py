@@ -25,14 +25,14 @@ from sqlobject import SQLMultipleJoin, SQLRelatedJoin
 from sqlobject import SQLObjectNotFound
 
 from canonical.launchpad.interfaces import (
-    BugAttachmentType, BugTaskStatus, DistroSeriesStatus, IBug,
-    IBugAttachmentSet, IBugBecameQuestionEvent, IBugBranch, IBugSet,
+    BugAttachmentType, BugTaskStatus, BugTrackerType, DistroSeriesStatus,
+    IBug, IBugAttachmentSet, IBugBecameQuestionEvent, IBugBranch, IBugSet,
     IBugTaskSet, IBugWatchSet, ICveSet, IDistribution, IDistroBugTask,
     IDistroSeries, IDistroSeriesBugTask, ILaunchpadCelebrities,
     ILibraryFileAliasSet, IMessage, IProduct, IProductSeries,
     IProductSeriesBugTask, IQuestionTarget, ISourcePackage,
-    IUpstreamBugTask, NominationError, NominationSeriesObsoleteError,
-    NotFoundError, UNRESOLVED_BUGTASK_STATUSES)
+    IStructuralSubscriptionTarget, IUpstreamBugTask, NominationError,
+    NominationSeriesObsoleteError, NotFoundError, UNRESOLVED_BUGTASK_STATUSES)
 from canonical.launchpad.helpers import shortlist
 from canonical.database.sqlbase import cursor, SQLBase, sqlvalues
 from canonical.database.constants import UTC_NOW
@@ -56,6 +56,7 @@ from canonical.launchpad.database.bugsubscription import BugSubscription
 from canonical.launchpad.database.mentoringoffer import MentoringOffer
 from canonical.launchpad.database.person import Person
 from canonical.launchpad.database.pillar import pillar_sort_key
+from canonical.launchpad.validators.person import public_person_validator
 from canonical.launchpad.event.sqlobjectevent import (
     SQLObjectCreatedEvent, SQLObjectDeletedEvent, SQLObjectModifiedEvent)
 from canonical.launchpad.mailnotification import BugNotificationRecipients
@@ -152,7 +153,9 @@ class Bug(SQLBase):
     title = StringCol(notNull=True)
     description = StringCol(notNull=False,
                             default=None)
-    owner = ForeignKey(dbName='owner', foreignKey='Person', notNull=True)
+    owner = ForeignKey(
+        dbName='owner', foreignKey='Person',
+        validator=public_person_validator, notNull=True)
     duplicateof = ForeignKey(
         dbName='duplicateof', foreignKey='Bug', default=None)
     datecreated = UtcDateTimeCol(notNull=True, default=UTC_NOW)
@@ -160,7 +163,8 @@ class Bug(SQLBase):
     private = BoolCol(notNull=True, default=False)
     date_made_private = UtcDateTimeCol(notNull=False, default=None)
     who_made_private = ForeignKey(
-        dbName='who_made_private', foreignKey='Person', default=None)
+        dbName='who_made_private', foreignKey='Person',
+        validator=public_person_validator, default=None)
     security_related = BoolCol(notNull=True, default=False)
 
     # useful Joins
@@ -294,7 +298,7 @@ class Bug(SQLBase):
         # view all bugs.
         bugtasks = getUtility(IBugTaskSet).findExpirableBugTasks(
             0, getUtility(ILaunchpadCelebrities).janitor, bug=self)
-        return len(bugtasks) > 0
+        return bugtasks.count() > 0
 
     @property
     def initial_message(self):
@@ -472,44 +476,23 @@ class Bug(SQLBase):
                 if recipients is not None:
                     recipients.addAssignee(bugtask.assignee)
 
-            # Bug contacts are indirect subscribers.
-            if (IDistroBugTask.providedBy(bugtask) or
-                IDistroSeriesBugTask.providedBy(bugtask)):
-                if bugtask.distribution is not None:
-                    distribution = bugtask.distribution
-                else:
-                    distribution = bugtask.distroseries.distribution
+            if IStructuralSubscriptionTarget.providedBy(bugtask.target):
+                also_notified_subscribers.update(
+                    bugtask.target.getBugNotificationsRecipients(recipients))
 
-                if distribution.bugcontact:
-                    also_notified_subscribers.add(distribution.bugcontact)
-                    if recipients is not None:
-                        recipients.addDistroBugContact(
-                            distribution.bugcontact, distribution)
+            if bugtask.milestone is not None:
+                also_notified_subscribers.update(
+                    bugtask.milestone.getBugNotificationsRecipients(
+                    recipients))
 
-                if bugtask.sourcepackagename:
-                    sourcepackage = distribution.getSourcePackage(
-                        bugtask.sourcepackagename)
-                    for pbc in sourcepackage.bugcontacts:
-                        also_notified_subscribers.add(pbc.bugcontact)
-                        if recipients is not None:
-                            recipients.addPackageBugContact(pbc.bugcontact,
-                                                           sourcepackage)
-            else:
-                if IUpstreamBugTask.providedBy(bugtask):
-                    product = bugtask.product
-                else:
-                    assert IProductSeriesBugTask.providedBy(bugtask)
-                    product = bugtask.productseries.product
-                if product.bugcontact:
-                    also_notified_subscribers.add(product.bugcontact)
-                    if recipients is not None:
-                        recipients.addUpstreamBugContact(
-                            product.bugcontact, product)
-                else:
-                    also_notified_subscribers.add(product.owner)
-                    if recipients is not None:
-                        recipients.addUpstreamRegistrant(
-                            product.owner, product)
+            # If the target's bug contact isn't set,
+            # we add the owner as a subscriber.
+            pillar = bugtask.pillar
+            if pillar.bugcontact is None:
+                also_notified_subscribers.add(pillar.owner)
+                if recipients is not None:
+                    recipients.addRegistrant(
+                        pillar.owner, pillar)
 
         # Direct subscriptions always take precedence over indirect
         # subscriptions.
@@ -934,6 +917,14 @@ class Bug(SQLBase):
 
     def getBugWatch(self, bugtracker, remote_bug):
         """See `IBug`."""
+        # If the bug tracker is of BugTrackerType.EMAILADDRESS we can
+        # never tell if a bug is already being watched upstream, since
+        # the remotebug field for such bug watches contains either '' or
+        # an RFC822 message ID. In these cases, then, we always return
+        # None for the sake of sanity.
+        if bugtracker.bugtrackertype == BugTrackerType.EMAILADDRESS:
+            return None
+
         # XXX: BjornT 2006-10-11:
         # This matching is a bit fragile, since bugwatch.remotebug
         # is a user editable text string. We should improve the

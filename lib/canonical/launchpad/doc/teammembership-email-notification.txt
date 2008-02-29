@@ -23,13 +23,8 @@ for the member.
 
     >>> import email
     >>> from canonical.launchpad.mail import stub
-    >>> def pop_notifications():
-    ...     stub.test_emails.sort(by_to_addrs)
-    ...     notifications = [
-    ...         email.message_from_string(raw_message)
-    ...         for fromaddr, toaddrs, raw_message in stub.test_emails]
-    ...     stub.test_emails = []
-    ...     return notifications
+    >>> from canonical.launchpad.tests.mail_helpers import (
+    ...     pop_notifications, print_distinct_emails)
 
     >>> from zope.component import getUtility
     >>> from canonical.launchpad.interfaces import (
@@ -43,42 +38,12 @@ for the member.
     >>> sampleperson = personset.getByName('name12')
     >>> ubuntu_team = personset.getByName('ubuntu-team')
 
-    >>> def print_distinct_messages_and_recipients(include_reply_to=False):
-    ...     """Pop all messages from stub.test_emails and print them with
-    ...      their recipients.
-    ...
-    ...     Since the same message may be sent more than once (for different
-    ...     recipients), we print each distinct message only once and group
-    ...     all recipients of that message together.
-    ...     """
-    ...     distinct_bodies = {}
-    ...     for message in pop_notifications():
-    ...         recipients = set(
-    ...             recipient.strip()
-    ...             for recipient in message['To'].split(','))
-    ...         body = message.get_payload()
-    ...         # Strip the first line as it's different for each recipient.
-    ...         body = body[body.find('\n')+1:]
-    ...         if body not in distinct_bodies:
-    ...             distinct_bodies[body] = (message, recipients)
-    ...         else:
-    ...             message, existing_recipients = distinct_bodies[body]
-    ...             distinct_bodies[body] = (
-    ...                 message, existing_recipients.union(recipients))
-    ...     for body in sorted(distinct_bodies):
-    ...         message, recipients = distinct_bodies[body]
-    ...         print 'From:', message['From']
-    ...         print 'To:', ", ".join(sorted(recipients))
-    ...         if include_reply_to:
-    ...             print 'Reply-To:', message['Reply-To']
-    ...         print 'Subject:', message['Subject'] #doctest: -NORMALIZE_WHITESPACE
-    ...         print body #doctest: -NORMALIZE_WHITESPACE
-    ...         print "-"*40
 
 Now Robert Collins proposes himself as a member of the Ubuntu Team. This
 generates a notification email only to Ubuntu Team administrators.
 
     >>> lifeless = personset.getByName('lifeless')
+    >>> login(lifeless.preferredemail.email)
     >>> lifeless.join(ubuntu_team)
     >>> membership = membershipset.getByPersonAndTeam(lifeless, ubuntu_team)
     >>> membership.status.title
@@ -87,7 +52,7 @@ generates a notification email only to Ubuntu Team administrators.
     >>> transaction.commit()
     >>> len(stub.test_emails)
     4
-    >>> print_distinct_messages_and_recipients(include_reply_to=True)
+    >>> print_distinct_emails(include_reply_to=True)
     From: Ubuntu Team <noreply@launchpad.net>
     To: colin.watson@ubuntulinux.com, foo.bar@canonical.com,
         jeff.waugh@ubuntulinux.com, mark@hbd.com
@@ -115,7 +80,7 @@ and each of the team's admins.
     >>> len(stub.test_emails)
     5
 
-    >>> print_distinct_messages_and_recipients()
+    >>> print_distinct_emails()
     From: Ubuntu Team <noreply@launchpad.net>
     To: colin.watson@ubuntulinux.com, foo.bar@canonical.com,
         jeff.waugh@ubuntulinux.com, mark@hbd.com
@@ -153,7 +118,7 @@ The same goes for approving a proposed member.
     >>> stub.test_emails.sort(by_to_addrs)
     >>> len(stub.test_emails)
     5
-    >>> print_distinct_messages_and_recipients()
+    >>> print_distinct_emails()
     From: Ubuntu Team <noreply@launchpad.net>
     To: colin.watson@ubuntulinux.com, foo.bar@canonical.com,
         jeff.waugh@ubuntulinux.com, mark@hbd.com
@@ -186,7 +151,7 @@ The same for deactivating a membership.
     >>> stub.test_emails.sort(by_to_addrs)
     >>> len(stub.test_emails)
     5
-    >>> print_distinct_messages_and_recipients()
+    >>> print_distinct_emails()
     From: Ubuntu Team <noreply@launchpad.net>
     To: colin.watson@ubuntulinux.com, foo.bar@canonical.com,
         jeff.waugh@ubuntulinux.com, mark@hbd.com
@@ -206,6 +171,32 @@ The same for deactivating a membership.
     <http://launchpad.dev/~ubuntu-team>
     ----------------------------------------
 
+Team admins can propose their teams using the join() method as well, but in
+that case we'll use the requester's (the person proposing the team as the
+other's member) email address in the 'Reply-To' header of the message sent.
+
+    >>> admins = personset.getByName('admins')
+    >>> admins.join(ubuntu_team, requester=sabdfl)
+    >>> transaction.commit()
+    >>> len(stub.test_emails)
+    4 
+    >>> print_distinct_emails(include_reply_to=True)
+    From: Ubuntu Team <noreply@launchpad.net>
+    To: colin.watson@ubuntulinux.com, foo.bar@canonical.com,
+        jeff.waugh@ubuntulinux.com, mark@hbd.com
+    Reply-To: mark@hbd.com
+    Subject: admins wants to join
+    <BLANKLINE>
+    Mark Shuttleworth (sabdfl) wants to make Launchpad Administrators
+    (admins) a member of Ubuntu Team (ubuntu-team), but this is a moderated
+    team, so that membership has to be approved.  You can approve, decline
+    or leave it as proposed by following the link below.
+    <BLANKLINE>
+        http://launchpad.dev/~ubuntu-team/+member/admins
+    <BLANKLINE>
+    Regards,
+    The Launchpad team
+    ----------------------------------------
 
 == Adding new members ==
 
@@ -219,7 +210,7 @@ member.
     >>> transaction.commit()
     >>> len(stub.test_emails)
     5
-    >>> print_distinct_messages_and_recipients()
+    >>> print_distinct_emails()
     From: Ubuntu Team <noreply@launchpad.net>
     To: marilize@hbd.com
     Subject: You have been added to ubuntu-team
@@ -258,7 +249,7 @@ only be activated if they accept the invitation.
     >>> transaction.commit()
     >>> len(stub.test_emails)
     1
-    >>> print_distinct_messages_and_recipients()
+    >>> print_distinct_emails()
     From: Ubuntu Team <noreply@launchpad.net>
     To: mark@hbd.com
     Subject: Invitation for ubuntu-mirror-admins to join
@@ -286,7 +277,7 @@ team which just became a member and to the admins of the hosting team.
 
     >>> len(stub.test_emails)
     5
-    >>> print_distinct_messages_and_recipients()
+    >>> print_distinct_emails()
     From: Ubuntu Team <noreply@launchpad.net>
     To: colin.watson@ubuntulinux.com, foo.bar@canonical.com,
         jeff.waugh@ubuntulinux.com, karl@canonical.com, mark@hbd.com
@@ -318,7 +309,7 @@ Similarly, a notification is sent if the invitation is declined.
 
     >>> len(stub.test_emails)
     6
-    >>> print_distinct_messages_and_recipients()
+    >>> print_distinct_emails()
     From: Ubuntu Team <noreply@launchpad.net>
     To: colin.watson@ubuntulinux.com, foo.bar@canonical.com,
         guilherme.salgado@canonical.com, jeff.waugh@ubuntulinux.com,
@@ -342,7 +333,7 @@ passing force_team_add=True to the addMember() method.
     >>> transaction.commit()
     >>> len(stub.test_emails)
     4
-    >>> print_distinct_messages_and_recipients()
+    >>> print_distinct_emails()
     From: Ubuntu Team <noreply@launchpad.net>
     To: foo.bar@canonical.com
     Subject: launchpad joined ubuntu-team
@@ -395,7 +386,7 @@ the other team admins.
     'ADMIN'
     >>> kamion_on_ubuntu_team.sendExpirationWarningEmail()
     >>> transaction.commit()
-    >>> print_distinct_messages_and_recipients()
+    >>> print_distinct_emails()
     From: Ubuntu Team <noreply@launchpad.net>
     To: colin.watson@ubuntulinux.com
     Subject: Your membership in ubuntu-team is about to expire
@@ -432,7 +423,7 @@ ubuntu-team's admins.
     >>> flush_database_updates()
     >>> beta_testers_on_ubuntu_team.sendExpirationWarningEmail()
     >>> transaction.commit()
-    >>> print_distinct_messages_and_recipients()
+    >>> print_distinct_emails()
     From: Ubuntu Team <noreply@launchpad.net>
     To: beta-admin@launchpad.net
     Subject: launchpad-beta-testers will expire soon from ubuntu-team
@@ -466,7 +457,7 @@ renew his own membership.
     >>> flush_database_updates()
     >>> kamion_on_ubuntu_team.sendExpirationWarningEmail()
     >>> transaction.commit()
-    >>> print_distinct_messages_and_recipients()
+    >>> print_distinct_emails()
     From: Ubuntu Team <noreply@launchpad.net>
     To: colin.watson@ubuntulinux.com
     Subject: Your membership in ubuntu-team is about to expire
@@ -488,7 +479,7 @@ renew his own membership.
 
     >>> beta_testers_on_ubuntu_team.sendExpirationWarningEmail()
     >>> transaction.commit()
-    >>> print_distinct_messages_and_recipients()
+    >>> print_distinct_emails()
     From: Ubuntu Team <noreply@launchpad.net>
     To: beta-admin@launchpad.net
     Subject: launchpad-beta-testers will expire soon from ubuntu-team
@@ -524,7 +515,7 @@ where he can extend it.
     >>> flush_database_updates()
     >>> sampleperson_on_landscape.sendExpirationWarningEmail()
     >>> transaction.commit()
-    >>> print_distinct_messages_and_recipients()
+    >>> print_distinct_emails()
     From: Landscape Developers <noreply@launchpad.net>
     To: test@canonical.com
     Subject: Your membership in landscape-developers is about to expire
@@ -585,7 +576,7 @@ is automatically renewed.
     >>> len(stub.test_emails)
     7
 
-    >>> print_distinct_messages_and_recipients()
+    >>> print_distinct_emails()
     From: Ubuntu Team <noreply@launchpad.net>
     To: colin.watson@ubuntulinux.com, foo.bar@canonical.com, mark@hbd.com
     Subject: jdub renewed automatically
@@ -663,7 +654,7 @@ sent to all team admins.
     >>> len(stub.test_emails)
     1
 
-    >>> print_distinct_messages_and_recipients()
+    >>> print_distinct_emails()
     From: Mirror Administrators <noreply@launchpad.net>
     To: mark@hbd.com
     Subject: karl extended their membership
@@ -701,7 +692,7 @@ notification.
     ...     cprov_membership, TeamMembershipStatus.ADMIN, reviewer=sabdfl)
     >>> len(stub.test_emails)
     5
-    >>> print_distinct_messages_and_recipients()
+    >>> print_distinct_emails()
     From: Ubuntu Team <noreply@launchpad.net>
     To: colin.watson@ubuntulinux.com, foo.bar@canonical.com,
         jeff.waugh@ubuntulinux.com, mark@hbd.com
@@ -731,7 +722,7 @@ sent to the team administrators.
     ...           reviewer=jdub)
     >>> len(stub.test_emails)
     4
-    >>> print_distinct_messages_and_recipients()
+    >>> print_distinct_emails()
     From: Ubuntu Team <noreply@launchpad.net>
     To: celso.providelo@canonical.com, colin.watson@ubuntulinux.com,
         foo.bar@canonical.com, mark@hbd.com
@@ -756,7 +747,7 @@ sense to the members of the team reading it.
     >>> len(stub.test_emails)
     5
 
-    >>> print_distinct_messages_and_recipients()
+    >>> print_distinct_emails()
     From: Ubuntu Team <noreply@launchpad.net>
     To: celso.providelo@canonical.com, colin.watson@ubuntulinux.com,
         foo.bar@canonical.com, karl@canonical.com, mark@hbd.com

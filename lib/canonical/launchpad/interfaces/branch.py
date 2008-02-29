@@ -40,7 +40,8 @@ from zope.schema import Bool, Int, Choice, Text, TextLine, Datetime
 from canonical.config import config
 
 from canonical.launchpad import _
-from canonical.launchpad.fields import Title, Summary, URIField, Whiteboard
+from canonical.launchpad.fields import (
+    PublicPersonChoice, Summary, Title, URIField, Whiteboard)
 from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.interfaces import IHasOwner
 from canonical.launchpad.webapp.interfaces import ITableBatchNavigator
@@ -340,16 +341,17 @@ class IBranch(IHasOwner):
         default=False)
 
     # People attributes
-    owner = Choice(
+    registrant = Attribute("The user that registered the branch.")
+    owner = PublicPersonChoice(
         title=_('Owner'), required=True,
         vocabulary='PersonActiveMembershipPlusSelf',
         description=_("Either yourself or a team you are a member of. "
                       "This controls who can modify the branch."))
-    author = Choice(
+    author = PublicPersonChoice(
         title=_('Author'), required=False, vocabulary='ValidPersonOrTeam',
         description=_("The author of the branch. Leave blank if the author "
                       "does not have a Launchpad account."))
-    reviewer = Choice(
+    reviewer = PublicPersonChoice(
         title=_('Reviewer'), required=False, vocabulary='ValidPersonOrTeam',
         description=_("The reviewer of a branch is the person or team that "
                       "is responsible for authorising code to be merged."))
@@ -461,6 +463,16 @@ class IBranch(IHasOwner):
     date_last_modified = Datetime(
         title=_('Date Last Modified'), required=True, readonly=False)
 
+    def destroySelf(break_references=False):
+        """Delete the specified branch.
+
+        BranchRevisions associated with this branch will also be deleted.
+        :param break_references: If supplied, break any references to this
+            branch by deleting items with mandatory references and
+            NULLing other references.
+        :raise: CannotDeleteBranch if the branch cannot be deleted.
+        """
+
     def latest_revisions(quantity=10):
         """A specific number of the latest revisions in that branch."""
 
@@ -494,11 +506,17 @@ class IBranch(IHasOwner):
             merge request.
         """
 
+    def getMergeQueue():
+        """The proposals that are QUEUED to land on this branch."""
+
     def revisions_since(timestamp):
         """Revisions in the history that are more recent than timestamp."""
 
     code_is_browseable = Attribute(
         "Is the code in this branch accessable through codebrowse?")
+
+    # Don't use Object-- that would cause an import loop with ICodeImport
+    code_import = Attribute("The associated CodeImport, if any.")
 
     def getBzrUploadURL(person=None):
         """Return the URL for this person to push to the branch.
@@ -523,6 +541,15 @@ class IBranch(IHasOwner):
         A branch is considered deletable if it has no revisions, is not
         linked to any bugs, specs, productseries, or code imports, and
         has no subscribers.
+        """
+
+    def deletionRequirements():
+        """Determine what is required to delete this branch.
+
+        :return: a dict of {object: (operation, reason)}, where object is the
+            object that must be deleted or altered, operation is either
+            "delete" or "alter", and reason is a string explaining why the
+            object needs to be touched.
         """
 
     def associatedProductSeries():
@@ -668,9 +695,6 @@ class IBranchSet(Interface):
         be a team, except for the special case of the ~vcs-imports celebrity.
         """
 
-    def delete(branch):
-        """Delete the specified branch."""
-
     def getByUniqueName(unique_name, default=None):
         """Find a branch by its ~owner/product/name unique name.
 
@@ -772,12 +796,6 @@ class IBranchSet(Interface):
             and subscribers of the branch, and to LP admins.
         :type visible_by_user: `IPerson` or None
         """
-
-    def getLastCommitForBranches(branches):
-        """Return a map of branch to last commit time."""
-
-    def getBranchesForOwners(people):
-        """Return the branches that are owned by the people specified."""
 
     def getBranchesForPerson(
         person, lifecycle_statuses=DEFAULT_BRANCH_STATUS_IN_LISTING,

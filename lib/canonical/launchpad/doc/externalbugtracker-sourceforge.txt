@@ -129,7 +129,7 @@ Launchpad.dev bug #10 is the same bug as reported in example.com bug
     >>> sample_person = getUtility(IPersonSet).getByEmail(
     ...     'test@canonical.com')
     >>> example_bugwatch = example_bug.addWatch(
-    ...     example_bug_tracker, 1722250, sample_person)
+    ...     example_bug_tracker, '1722250', sample_person)
 
     >>> print_bugwatches(example_bug_tracker.watches)
     Remote bug 1722250: None
@@ -137,8 +137,11 @@ Launchpad.dev bug #10 is the same bug as reported in example.com bug
 Our SourceForge ExternalBugTracker can now process, and retrieve a
 remote status for, the bug watch that we have created.
 
+    >>> from canonical.launchpad.scripts.checkwatches import BugWatchUpdater
+    >>> bug_watch_updater = BugWatchUpdater(txn)
     >>> sourceforge = TestSourceForge(txn, example_bug_tracker)
-    >>> sourceforge.updateBugWatches(example_bug_tracker.watches)
+    >>> bug_watch_updater.updateBugWatches(
+    ...     sourceforge, example_bug_tracker.watches)
     INFO:...:Updating 1 watches on http://bugs.some.where
     >>> print_bugwatches(example_bug_tracker.watches)
     Remote bug 1722250: Open:None
@@ -176,7 +179,8 @@ even if we pass it 10 bug watches to update only one will actually be
 updated:
 
     >>> sourceforge.trace_calls = True
-    >>> sourceforge.updateBugWatches(sorted(example_bug_tracker.watches))
+    >>> bug_watch_updater.updateBugWatches(
+    ...     sourceforge, sorted(example_bug_tracker.watches))
     INFO:...:Updating 1 watches on http://bugs.some.where
     CALLED _getPage(u'support/tracker.php?aid=1722250')
 
@@ -184,7 +188,8 @@ For the sake of this test we can set the bug tracker's batch_size to
 None so that it will process all the updates at once:
 
     >>> sourceforge.batch_size = None
-    >>> sourceforge.updateBugWatches(example_bug_tracker.watches)
+    >>> bug_watch_updater.updateBugWatches(
+    ...     sourceforge, example_bug_tracker.watches)
     INFO:...:Updating 10 watches on http://bugs.some.where
     CALLED _getPage(u'support/tracker.php?aid=1722250')
     CALLED _getPage(u'support/tracker.php?aid=1722251')

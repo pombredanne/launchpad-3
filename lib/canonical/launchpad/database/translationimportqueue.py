@@ -18,7 +18,7 @@ from zope.interface import implements
 from zope.component import getUtility
 from sqlobject import SQLObjectNotFound, StringCol, ForeignKey, BoolCol
 
-from canonical.database.sqlbase import quote_like, SQLBase, sqlvalues
+from canonical.database.sqlbase import cursor, quote_like, SQLBase, sqlvalues
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.constants import UTC_NOW, DEFAULT
 from canonical.database.enumcol import EnumCol
@@ -30,6 +30,7 @@ from canonical.launchpad.interfaces import (
     ITranslationImportQueueEntry, NotFoundError, RosettaImportStatus,
     TranslationFileFormat)
 from canonical.librarian.interfaces import ILibrarianClient
+from canonical.launchpad.validators.person import public_person_validator
 
 
 # Number of days when the DELETED and IMPORTED entries are removed from the
@@ -44,8 +45,9 @@ class TranslationImportQueueEntry(SQLBase):
     path = StringCol(dbName='path', notNull=True)
     content = ForeignKey(foreignKey='LibraryFileAlias', dbName='content',
         notNull=False)
-    importer = ForeignKey(foreignKey='Person', dbName='importer',
-        notNull=True)
+    importer = ForeignKey(
+        dbName='importer', foreignKey='Person',
+        validator=public_person_validator, notNull=True)
     dateimported = UtcDateTimeCol(dbName='dateimported', notNull=True,
         default=DEFAULT)
     sourcepackagename = ForeignKey(foreignKey='SourcePackageName',
@@ -664,6 +666,8 @@ class TranslationImportQueue:
         # fileobj in a tarfile._Stream instance. We can get rid of this
         # when we upgrade to python2.5 everywhere.
         #       -- kiko, 2008-02-08
+        num_files = 0
+
         if content.startswith('BZh'):
             mode = "r|bz2"
         elif content.startswith('\037\213'):
@@ -671,9 +675,9 @@ class TranslationImportQueue:
         elif content[257:262] == 'ustar':
             mode = "r|tar"
         else:
-            mode = "r"
+            # Not a tarball, we ignore it.
+            return num_files
 
-        num_files = 0
         try:
             tarball = tarfile.open('', mode, StringIO(content))
         except tarfile.ReadError:
@@ -807,8 +811,8 @@ class TranslationImportQueue:
 
         query = [
             'ProductSeries.product = Product.id',
-            'TranslationImportQueueEntry.productseries = ProductSeries.id'
-            ]
+            'TranslationImportQueueEntry.productseries = ProductSeries.id',
+            'Product.active IS TRUE']
         if status is not None:
             query.append(status_clause)
 
@@ -911,20 +915,30 @@ class TranslationImportQueue:
 
     def cleanUpQueue(self):
         """See ITranslationImportQueue."""
-        # Get DELETED and IMPORTED entries.
+        cur = cursor()
+
+        # Delete outdated DELETED and IMPORTED entries.
         delta = datetime.timedelta(DAYS_TO_KEEP)
         last_date = datetime.datetime.utcnow() - delta
-        res = TranslationImportQueueEntry.select(
-            "(status = %s OR status = %s) AND date_status_changed < %s" %
-                sqlvalues(RosettaImportStatus.DELETED.value,
-                          RosettaImportStatus.IMPORTED.value,
-                          last_date))
+        cur.execute("""
+            DELETE FROM TranslationImportQueueEntry
+            WHERE
+            (status = %s OR status = %s) AND date_status_changed < %s
+            """ % sqlvalues(RosettaImportStatus.DELETED.value,
+                            RosettaImportStatus.IMPORTED.value,
+                            last_date))
+        n_entries = cur.rowcount
 
-        n_entries = res.count()
-
-        # Delete the entries.
-        for entry in res:
-            self.remove(entry)
+        # Delete entries belonging to inactive product series.
+        cur.execute("""
+            DELETE FROM TranslationImportQueueEntry AS entry
+            USING ProductSeries AS series, Product AS product
+            WHERE
+                entry.productseries = series.id AND
+                series.product = product.id AND
+                product.active IS FALSE
+            """)
+        n_entries += cur.rowcount
 
         return n_entries
 

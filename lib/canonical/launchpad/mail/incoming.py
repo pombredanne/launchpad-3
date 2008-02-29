@@ -8,6 +8,7 @@ from cStringIO import StringIO as cStringIO
 from email.Utils import getaddresses, parseaddr
 import email.Errors
 import re
+import sys
 
 import transaction
 from zope.component import getUtility
@@ -15,15 +16,19 @@ from zope.interface import directlyProvides, directlyProvidedBy
 
 from canonical.uuid import generate_uuid
 from canonical.launchpad.interfaces import (
-    IGPGHandler, ILibraryFileAliasSet, IMailHandler, IMailBox, IPerson,
-    IWeaklyAuthenticatedPrincipal, GPGVerificationError)
+    GPGVerificationError, IGPGHandler, ILibraryFileAliasSet, IMailBox,
+    IPerson, IWeaklyAuthenticatedPrincipal)
+from canonical.launchpad.webapp.errorlog import (
+    ErrorReportingUtility, ScriptRequest)
+from canonical.launchpad.webapp.interaction import get_current_principal
 from canonical.launchpad.webapp.interfaces import IPlacelessAuthUtility
 from canonical.launchpad.webapp.interaction import setupInteraction
+from canonical.launchpad.mail.commands import get_error_message
 from canonical.launchpad.mail.handlers import mail_handlers
 from canonical.launchpad.mail.signedmessage import signed_message_from_string
-from canonical.launchpad.mailnotification import notify_errors_list
+from canonical.launchpad.mailnotification import (
+    notify_errors_list, send_process_error_notification)
 from canonical.librarian.interfaces import UploadFailed
-
 
 # Match '\n' and '\r' line endings. That is, all '\r' that are not
 # followed by a # '\n', and all '\n' that are not preceded by a '\r'.
@@ -100,6 +105,29 @@ def authenticateEmail(mail):
     return principal
 
 
+class MailErrorUtility(ErrorReportingUtility):
+    """An error utility that doesn't ignore exceptions."""
+
+    _ignored_exceptions = set()
+
+
+def report_oops(file_alias_url=None, error_msg=None):
+    """Record an OOPS for the current exception and return the OOPS ID."""
+    info = sys.exc_info()
+    properties = []
+    if file_alias_url is not None:
+        properties.append(('Sent message', file_alias_url))
+    if error_msg is not None:
+        properties.append(('Error message', error_msg))
+    request = ScriptRequest(properties)
+    request.principal = get_current_principal()
+    errorUtility = MailErrorUtility()
+    errorUtility.raising(info, request)
+    assert request.oopsid is not None, (
+        'MailErrorUtility failed to generate an OOPS.')
+    return request.oopsid
+
+
 def handleMail(trans=transaction):
     # First we define an error handler. We define it as a local
     # function, to avoid having to pass a lot of parameters.
@@ -109,14 +137,22 @@ def handleMail(trans=transaction):
         It does the following:
 
             * deletes the current mail from the mailbox
-            * sends error_msg and file_alias_url to the errors list if
-              notify is True
+            * records an OOPS with error_msg and file_alias_url
+              if notify is True
             * commits the current transaction to ensure that the
               message gets sent
         """
         mailbox.delete(mail_id)
         if notify:
-            notify_errors_list(error_msg, file_alias_url)
+            msg = signed_message_from_string(raw_mail)
+            oops_id = report_oops(
+                file_alias_url=file_alias_url,
+                error_msg=error_msg)
+            send_process_error_notification(
+                msg['From'],
+                'Submit Request Failure',
+                get_error_message('oops.txt', oops_id=oops_id),
+                msg)
         trans.commit()
 
     log = getLogger('process-mail')
@@ -252,7 +288,8 @@ def handleMail(trans=transaction):
                 # exception, we simply log the error and delete the
                 # email, so that it doesn't stop the rest of the emails
                 # from being processed.
-                mailbox.delete(mail_id)
+                _handle_error(
+                    "Unhandled exception", file_alias_url)
                 log = getLogger('canonical.launchpad.mail')
                 if file_alias_url is not None:
                     email_info = file_alias_url

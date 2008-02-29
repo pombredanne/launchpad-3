@@ -29,13 +29,15 @@ from canonical.launchpad import _
 from canonical.launchpad.interfaces import (
     ILaunchpadOpenIdStoreFactory, ILoginServiceAuthorizeForm,
     ILoginServiceLoginForm, ILoginTokenSet, IOpenIdAuthorizationSet,
-    IOpenIDRPConfigSet, IPersonSet, LoginTokenType, UnexpectedFormData)
+    IOpenIDRPConfigSet, IPersonSet, LoginTokenType, PersonVisibility,
+    UnexpectedFormData)
 from canonical.launchpad.validators.email import valid_email
 from canonical.launchpad.webapp import (
     action, custom_widget, LaunchpadFormView, LaunchpadView)
 from canonical.launchpad.webapp.interfaces import (
     IPlacelessLoginSource)
 from canonical.launchpad.webapp.login import logInPerson, logoutPerson
+from canonical.launchpad.webapp.menu import structured
 from canonical.launchpad.webapp.vhosts import allvhosts
 from canonical.uuid import generate_uuid
 from canonical.widgets.itemswidgets import LaunchpadRadioWidget
@@ -239,10 +241,17 @@ class OpenIdMixin:
             team = person_set.getByName(team_name)
             if team is None or not team.isTeam():
                 continue
-            # XXX jamesh 2007-12-05 bug=174076:
-            # When private membership teams are added, this method
-            # needs to be updated to not disclose membership of such
-            # teams.
+            # Control access to private teams
+            if team.visibility != PersonVisibility.PUBLIC:
+                # XXX jamesh 2008-02-14 bug=174076:
+
+                # We should have fine grained control of which RPs can
+                # query for which teams, but for now we will let any
+                # RP with an OpenIDRPconfig perform such queries.
+                rpconfig = getUtility(IOpenIDRPConfigSet).getByTrustRoot(
+                    self.openid_request.trust_root)
+                if rpconfig is None:
+                    continue
             if self.user.inTeam(team):
                 memberships.append(team_name)
         openid_response.fields.namespaces.addAlias(LAUNCHPAD_TEAMS_NS, 'lp')
@@ -549,17 +558,20 @@ class LoginServiceLoginView(LoginServiceBaseView):
                     "Your account details have not been found. Please "
                     "check your subscription email address and try again."))
             elif person.isTeam():
-                self.addError(_(
-                    "The email address <strong>%s</strong> can not be used "
-                    "to log in as it belongs to a team." % email))
+                self.addError(
+                    structured(_(
+                    "The email address <strong>${email}</strong> can not be "
+                    "used to log in as it belongs to a team.",
+                    mapping=dict(email=email))))
         elif action == 'createaccount':
             if person is not None and person.is_valid_person:
                 self.addError(_(
-                    "Sorry, someone has already registered the %s email "
-                    "address.  If this is you and you've forgotten your "
-                    "password, just choose the 'I've forgotten my "
+                    "Sorry, someone has already registered the ${email} "
+                    "email address.  If this is you and you've forgotten "
+                    "your password, just choose the 'I've forgotten my "
                     "password' option below and we'll allow you to "
-                    "change it." % cgi.escape(email)))
+                    "change it.",
+                    mapping=dict(email=cgi.escape(email))))
             else:
                 # This is either an email address we've never seen or it's
                 # associated with an unvalidated profile, so we just move
@@ -575,10 +587,12 @@ class LoginServiceLoginView(LoginServiceBaseView):
         if principal is not None and principal.validate(password):
             person = getUtility(IPersonSet).getByEmail(email)
             if person.preferredemail is None:
-                self.addError(_(
-                    "The email address '%s' has not yet been confirmed. We "
-                    "sent an email to that address with instructions on how "
-                    "to confirm that it belongs to you." % email))
+                self.addError(
+                        _(
+                    "The email address '${email}' has not yet been confirmed. "
+                    "We sent an email to that address with instructions on "
+                    "how to confirm that it belongs to you.",
+                    mapping=dict(email=email)))
                 self.token = getUtility(ILoginTokenSet).new(
                     person, email, email, LoginTokenType.VALIDATEEMAIL)
                 self.token.sendEmailValidationRequest(

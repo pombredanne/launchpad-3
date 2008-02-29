@@ -17,16 +17,31 @@ from sqlobject.styles import Style
 
 from zope.interface import implements
 
-from canonical.config import config
 from canonical.database.interfaces import ISQLBase
 
-__all__ = ['SQLBase', 'quote', 'quote_like', 'quoteIdentifier', 'sqlvalues',
-           'ZopelessTransactionManager', 'ConflictingTransactionManagerError',
-           'flush_database_updates', 'flush_database_caches', 'cursor',
-           'begin', 'commit', 'rollback', 'alreadyInstalledMsg', 'connect',
-           'AUTOCOMMIT_ISOLATION', 'READ_COMMITTED_ISOLATION',
-           'SERIALIZABLE_ISOLATION', 'DEFAULT_ISOLATION',
-           'clear_current_connection_cache', 'expire_from_cache']
+__all__ = [
+    'alreadyInstalledMsg',
+    'AUTOCOMMIT_ISOLATION',
+    'begin',
+    'clear_current_connection_cache',
+    'commit',
+    'ConflictingTransactionManagerError',
+    'connect',
+    'cursor',
+    'DEFAULT_ISOLATION',
+    'expire_from_cache',
+    'flush_database_caches',
+    'flush_database_updates',
+    'quote',
+    'quote_like',
+    'quoteIdentifier',
+    'RandomiseOrderDescriptor',
+    'READ_COMMITTED_ISOLATION',
+    'rollback',
+    'SERIALIZABLE_ISOLATION',
+    'SQLBase',
+    'sqlvalues',
+    'ZopelessTransactionManager',]
 
 # As per badly documented psycopg 1 constants
 AUTOCOMMIT_ISOLATION = 0
@@ -83,6 +98,47 @@ class LaunchpadStyle(Style):
         return table.__str__()
 
 
+class RandomiseOrderDescriptor:
+    """Return whether or not SQL queries should randomise results.
+
+    This object is used to exchange the randomise_select_results setting
+    between SQLBase class (and its descendants) and SQLObject.SelectResults.
+
+    The testrunner environment is configured so that random() is appended
+    to the ORDER BY clause of queries that do not use DISTINCT or SET.
+
+        >>> from canonical.config import config
+        >>> config.randomise_select_results
+        True
+
+    The SelectResults class decides whether to randomise the order by
+    checking the SQLBase._randomiseOrder class attribute that is assigned
+    to a local variable. The _randomiseOrder attribute is an instance of
+    RandomiseOrderDescriptor. When the class attribute is assigned to a
+    local variable, the variable should hold the config's state, not the
+    object. See bug 196329, where a property (a descriptor bound to an
+    instance) was passed instead of called during the assignment.
+
+        >>> SQLBase.__dict__['_randomiseOrder']
+        <canonical.database.sqlbase.RandomiseOrderDescriptor object ...>
+
+        >>> randomiseOrder = SQLBase._randomiseOrder
+        >>> randomiseOrder
+        True
+
+    When the config setting is False, that value is passed to
+    randomiseOrder when the descriptor is accessed.
+
+        >>> config.randomise_select_results = False
+        >>> randomiseOrder = SQLBase._randomiseOrder
+        >>> randomiseOrder
+        False
+    """
+    def __get__(self, obj, type=None):
+        from canonical.config import config
+        return config.randomise_select_results
+
+
 class SQLBase(SQLOS):
     """Base class to use instead of SQLObject/SQLOS.
 
@@ -97,7 +153,9 @@ class SQLBase(SQLOS):
     """
     implements(ISQLBase)
     _style = LaunchpadStyle()
-    _randomiseOrder = config.randomise_select_results
+
+    _randomiseOrder = RandomiseOrderDescriptor()
+
     # Silence warnings in linter script, which complains about all
     # SQLBase-derived objects missing an id.
     id = None
@@ -649,6 +707,7 @@ def connect(user, dbname=None, isolation=DEFAULT_ISOLATION):
 
     Default database name is the one specified in the main configuration file.
     """
+    from canonical.config import config
     con_str = 'dbname=%s' % (dbname or config.dbname)
     if user:
         con_str += ' user=%s' % user

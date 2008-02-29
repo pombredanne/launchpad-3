@@ -15,7 +15,7 @@ from zope.security.proxy import removeSecurityProxy
 
 from canonical.launchpad.browser.branch import (
     BranchAddView, BranchMirrorStatusView)
-from canonical.launchpad.ftests.harness import login, logout, ANONYMOUS
+from canonical.launchpad.ftests import login, logout, ANONYMOUS
 from canonical.launchpad.helpers import truncate_text
 from canonical.launchpad.interfaces import (
     BranchLifecycleStatus, BranchType, IBranchSet, IPersonSet, IProductSet)
@@ -41,7 +41,7 @@ class TestBranchView(unittest.TestCase):
         self.assertEqual(
             truncate_text(branch.mirror_status_message,
                           branch_view.MAXIMUM_STATUS_MESSAGE_LENGTH) + ' ...',
-            branch_view.mirror_status_message())
+            branch_view.mirror_status_message)
 
     def testMirrorStatusMessage(self):
         """mirror_status_message on the view is the same as on the branch."""
@@ -54,10 +54,10 @@ class TestBranchView(unittest.TestCase):
             "branch.mirror_status_message longer than expected: %r"
             % (branch.mirror_status_message,))
         self.assertEqual(
-            branch.mirror_status_message, branch_view.mirror_status_message())
+            branch.mirror_status_message, branch_view.mirror_status_message)
         self.assertEqual(
             "This is a short error message.",
-            branch_view.mirror_status_message())
+            branch_view.mirror_status_message)
 
     def testBranchAddRequestsMirror(self):
         """Registering a mirrored branch requests a mirror."""

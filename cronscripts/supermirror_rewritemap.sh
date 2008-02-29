@@ -15,10 +15,6 @@ else
     exit 1
 fi
 
-# We want to override any value that's been set so that
-# when this script is run it always uses LPCONFIG=lpnet1
-export LPCONFIG=lpnet1
-
 cd  /srv/launchpad.net/production/launchpad/cronscripts
 
 LOCK=/var/lock/smrewrite.lock

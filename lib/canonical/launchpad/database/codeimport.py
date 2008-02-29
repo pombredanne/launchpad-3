@@ -26,6 +26,7 @@ from canonical.launchpad.database.productseries import ProductSeries
 from canonical.launchpad.interfaces import (
     CodeImportReviewStatus, ICodeImport, ICodeImportEventSet, ICodeImportSet,
     ILaunchpadCelebrities, NotFoundError, RevisionControlSystems)
+from canonical.launchpad.validators.person import public_person_validator
 
 
 class CodeImport(SQLBase):
@@ -37,11 +38,15 @@ class CodeImport(SQLBase):
     date_created = UtcDateTimeCol(notNull=True, default=DEFAULT)
     branch = ForeignKey(dbName='branch', foreignKey='Branch',
                         notNull=True)
-    registrant = ForeignKey(dbName='registrant', foreignKey='Person',
-                            notNull=True)
-    owner = ForeignKey(dbName='owner', foreignKey='Person', notNull=True)
-    assignee = ForeignKey(dbName='assignee', foreignKey='Person',
-                          notNull=False, default=None)
+    registrant = ForeignKey(
+        dbName='registrant', foreignKey='Person',
+        validator=public_person_validator, notNull=True)
+    owner = ForeignKey(
+        dbName='owner', foreignKey='Person',
+        validator=public_person_validator, notNull=True)
+    assignee = ForeignKey(
+        dbName='assignee', foreignKey='Person',
+        validator=public_person_validator, notNull=False, default=None)
 
     @property
     def product(self):
@@ -118,9 +123,12 @@ class CodeImportSet:
         getUtility(ICodeImportEventSet).newCreate(code_import, registrant)
         return code_import
 
-    def delete(self, id):
+    def delete(self, code_import):
         """See `ICodeImportSet`."""
-        CodeImport.delete(id)
+        from canonical.launchpad.database import CodeImportJob
+        if code_import.import_job is not None:
+            CodeImportJob.delete(code_import.import_job.id)
+        CodeImport.delete(code_import.id)
 
     def getAll(self):
         """See `ICodeImportSet`."""

@@ -1,6 +1,4 @@
-validators in here should be trivial bits of code, such as name.py.
-This is because they need to be kept in sync with their corresponding
-database constraints.
-
--- StuartBishop 20050523
-
+Validators in this directory are either simple functions that correspond
+to database constraints such as valid_name(name), or they can be
+subclasses of sqlobject.include.validators.Validator such as
+PersonValidatorBase.

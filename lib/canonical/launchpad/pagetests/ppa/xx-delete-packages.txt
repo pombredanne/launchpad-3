@@ -94,11 +94,12 @@ Foo Bar can select one or more sources to be deleted and the
     ...     name='field.name_filter').value = ''
     >>> admin_browser.getControl(
     ...    name='field.selected_sources').value = ['27']
-    >>> admin_browser.getControl("Delete Packages").click()
+    >>> admin_browser.getControl("Request Deletion").click()
     >>> messages = get_feedback_messages(admin_browser.contents)
     >>> for msg in messages:
     ...     print msg
     There is 1 error.
+    Read the page help to understand how removals work.
     Deletion comment is required.
 
     >>> print_ppa_packages(admin_browser.contents)
@@ -111,12 +112,13 @@ Deletion requires, at least, one selected a source, otherwise an error
 is issued.
 
     >>> admin_browser.getControl("Deletion comment").value = "DO IT"
-    >>> admin_browser.getControl("Delete Packages").click()
+    >>> admin_browser.getControl("Request Deletion").click()
     >>> messages = get_feedback_messages(admin_browser.contents)
     >>> for msg in messages:
     ...     print msg
     There is 1 error.
     No sources selected.
+    Read the page help to understand how removals work.
 
 Once the deletion is successfully requested, Foo Bar sees an
 informational message containing the summary of the action
@@ -126,7 +128,7 @@ performed. The results should not include the just-deleted source.
     >>> admin_browser.getControl(
     ...    name='field.selected_sources').value = ['27']
     >>> admin_browser.getControl("Deletion comment").value = "DO IT"
-    >>> admin_browser.getControl("Delete Packages").click()
+    >>> admin_browser.getControl("Request Deletion").click()
 
     >>> messages = get_feedback_messages(admin_browser.contents)
     >>> for msg in messages:
@@ -134,6 +136,7 @@ performed. The results should not include the just-deleted source.
     Source and binaries deleted by Foo Bar request:
     cdrkit 1.0 in breezy-autotest
     Deletion comment: DO IT
+    Read the page help to understand how removals work.
 
     >>> print_ppa_packages(admin_browser.contents)
     Source           Published   Status     Series          Section
@@ -208,7 +211,7 @@ Multiple packages can be deleted in one single batch.
     ...    name='field.selected_sources').value = ['28', '29']
     >>> admin_browser.getControl(
     ...    "Deletion comment").value = "DO IT AGAIN !"
-    >>> admin_browser.getControl("Delete Packages").click()
+    >>> admin_browser.getControl("Request Deletion").click()
 
     >>> messages = get_feedback_messages(admin_browser.contents)
     >>> for msg in messages:
@@ -237,7 +240,7 @@ previous state to check if the bug 185922 is really fixed.
     ...    name='field.selected_sources').value = ['28', '29']
     >>> re_post_browser.getControl(
     ...    "Deletion comment").value = "DO IT AGAIN !"
-    >>> re_post_browser.getControl("Delete Packages").click()
+    >>> re_post_browser.getControl("Request Deletion").click()
 
     >>> print extract_text(find_main_content(re_post_browser.contents))
     Delete packages from PPA for Celso Providelo
@@ -266,3 +269,9 @@ published source packages.
     >>> print extract_text(find_main_content(admin_browser.contents))
     Delete packages from PPA for No Privileges Person
     This PPA does not contain any source packages published.
+
+The user can go back to the PPA index page using the breadcrumb link.
+
+    >>> admin_browser.getLink('PPA for No Privileges Person').click()
+    >>> admin_browser.title
+    'PPA for No Privileges Person'

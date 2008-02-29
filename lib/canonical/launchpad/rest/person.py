@@ -14,21 +14,21 @@ from zope.component import adapts, getUtility
 from zope.schema import Object
 
 from canonical.lazr.rest import Collection, Entry, ScopedCollection
+from canonical.lazr.interface import use_template
 from canonical.lazr.interfaces import IEntry
 from canonical.lazr.rest.schema import CollectionField
 
-from canonical.launchpad.interfaces import (
-    IPerson, IPersonSet, make_person_name_field)
+from canonical.launchpad.interfaces import IPerson, IPersonSet
 
-from canonical.lp import decorates
+from canonical.lazr import decorates
+
 
 class IPersonEntry(IEntry):
     """The part of a person that we expose through the web service."""
+    use_template(IPerson, include=["name"])
 
-    # XXX leonardr 2008-01-28 bug=186702 A much better solution would
-    # let us reuse or copy fields from IPerson.
-    name = make_person_name_field()
-    teamowner = Object(schema=IPerson)
+    teamowner = Object(schema=IPerson, title=u"Team owner")
+
     members = CollectionField(value_type=Object(schema=IPerson))
 
 
@@ -40,10 +40,6 @@ class PersonEntry(Entry):
 
     parent_collection_name = 'people'
 
-    def fragment(self):
-        """See `IEntry`."""
-        return self.context.name
-
     @property
     def members(self):
         """See `IPersonEntry`."""
@@ -54,6 +50,10 @@ class PersonEntry(Entry):
 
 class PersonCollection(Collection):
     """A collection of people."""
+
+    def getEntryPath(self, entry):
+        """See `ICollection`."""
+        return entry.name
 
     def lookupEntry(self, name):
         """Find a person by name."""

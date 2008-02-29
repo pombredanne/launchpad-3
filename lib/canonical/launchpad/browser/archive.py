@@ -6,14 +6,14 @@ __metaclass__ = type
 
 __all__ = [
     'ArchiveNavigation',
-    'ArchiveFacets',
-    'ArchiveOverviewMenu',
+    'ArchiveContextMenu',
     'ArchiveView',
     'ArchivePackageDeletionView',
     'ArchiveActivateView',
     'ArchiveBuildsView',
     'ArchiveEditView',
     'ArchiveAdminView',
+    'archive_to_structualheading',
     ]
 
 from zope.app.form.browser import TextAreaWidget
@@ -31,13 +31,14 @@ from canonical.launchpad.browser.build import BuildRecordsView
 from canonical.launchpad.browser.sourceslist import (
     SourcesListEntries, SourcesListEntriesView)
 from canonical.launchpad.interfaces import (
-    ArchivePurpose, IArchive, IArchivePackageDeletionForm, IArchiveSet,
-    IBuildSet, IHasBuildRecords, ILaunchpadCelebrities, IPPAActivateForm,
-    NotFoundError, PackagePublishingStatus)
+    ArchivePurpose, BuildStatus, IArchive, IArchivePackageDeletionForm,
+    IArchiveSet, IBuildSet, IHasBuildRecords, ILaunchpadCelebrities,
+    IPPAActivateForm, IStructuralHeaderPresentation, NotFoundError,
+    PackagePublishingStatus)
 from canonical.launchpad.webapp import (
     action, canonical_url, custom_widget, enabled_with_permission,
-    stepthrough, ApplicationMenu, LaunchpadEditFormView, LaunchpadFormView,
-    LaunchpadView, Link, Navigation, StandardLaunchpadFacets)
+    stepthrough, ContextMenu, LaunchpadEditFormView,
+    LaunchpadFormView, LaunchpadView, Link, Navigation)
 from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp.menu import structured
 from canonical.widgets import LabeledMultiCheckBoxWidget
@@ -50,8 +51,6 @@ class ArchiveNavigation(Navigation):
     usedfor = IArchive
 
     def breadcrumb(self):
-        if self.context.purpose == ArchivePurpose.PPA:
-            return "PPA"
         return self.context.title
 
     @stepthrough('+build')
@@ -66,18 +65,10 @@ class ArchiveNavigation(Navigation):
             return None
 
 
-class ArchiveFacets(StandardLaunchpadFacets):
-    """The links that will appear in the facet menu for an IArchive."""
-
-    usedfor = IArchive
-    enable_only = ['overview']
-
-
-class ArchiveOverviewMenu(ApplicationMenu):
+class ArchiveContextMenu(ContextMenu):
     """Overview Menu for IArchive."""
 
     usedfor = IArchive
-    facet = 'overview'
     links = ['admin', 'edit', 'builds', 'delete']
 
     @enabled_with_permission('launchpad.Admin')
@@ -358,7 +349,7 @@ class ArchivePackageDeletionView(ArchiveViewBase, LaunchpadFormView):
             self.setFieldError(
                 'deletion_comment', 'Deletion comment is required.')
 
-    @action(_("Delete Packages"), name="delete", validator="validate_delete")
+    @action(_("Request Deletion"), name="delete", validator="validate_delete")
     def action_delete(self, action, data):
         """Perform the deletion of the selected packages.
 
@@ -444,6 +435,14 @@ class ArchiveBuildsView(BuildRecordsView):
 
     __used_for__ = IHasBuildRecords
 
+    @property
+    def default_build_state(self):
+        """See `IBuildRecordsView`.
+
+        Present NEEDSBUILD build records by default for PPAs.
+        """
+        return BuildStatus.NEEDSBUILD
+
 
 class BaseArchiveEditView(LaunchpadEditFormView):
 
@@ -453,6 +452,10 @@ class BaseArchiveEditView(LaunchpadEditFormView):
     @action(_("Save"), name="save")
     def action_save(self, action, data):
         self.updateContextFromData(data)
+        self.next_url = canonical_url(self.context)
+
+    @action(_("Cancel"), name="cancel", validator='validate_cancel')
+    def action_cancel(self, action, data):
         self.next_url = canonical_url(self.context)
 
 
@@ -468,3 +471,8 @@ class ArchiveAdminView(BaseArchiveEditView):
     field_names = ['enabled', 'private', 'authorized_size', 'whiteboard']
     custom_widget(
         'whiteboard', TextAreaWidget, height=10, width=30)
+
+
+def archive_to_structualheading(archive):
+    """Adapts an `IArchive` into an `IStructuralHeaderPresentation`."""
+    return IStructuralHeaderPresentation(archive.owner)

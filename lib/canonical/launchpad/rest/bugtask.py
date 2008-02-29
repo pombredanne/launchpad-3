@@ -11,7 +11,7 @@ __all__ = [
 
 
 from zope.component import adapts
-from zope.schema import Bool, Choice, Datetime, Int, Object, Text, TextLine
+from zope.schema import Bool, Choice, Datetime, Object, Text
 
 from canonical.lazr.interfaces import IEntry
 from canonical.lazr.rest import Collection, Entry
@@ -19,7 +19,7 @@ from canonical.lazr.rest.schema import CollectionField
 
 from canonical.launchpad.interfaces import (
     BugTaskImportance, BugTaskStatus, IBug, IBugTask, IPerson)
-from canonical.lp import decorates
+from canonical.lazr import decorates
 
 
 class IBugTaskEntry(IEntry):
@@ -92,10 +92,6 @@ class BugTaskEntry(Entry):
 
     parent_collection_name = 'bugtasks'
 
-    def fragment(self):
-        """See `IEntry`."""
-        return str(self.context.id)
-
     @property
     def status_explanation(self):
         """Perform a simple name mapping."""
@@ -119,6 +115,10 @@ class BugTaskEntry(Entry):
 
 class BugTaskCollection(Collection):
     """A collection of bugtasks."""
+
+    def getEntryPath(self, entry):
+        """See `ICollection`."""
+        return str(entry.context.id)
 
     def lookupEntry(self, id):
         """Find a BugTask by ID."""
