@@ -192,12 +192,46 @@ and last current translation is not hidden either.
 
 == translations & all_msgstrs ==
 
+The translations attribute is a list containing all translation strings
+for the message, up to and including the last plural form it can have.
+
+For a regular single-form message, that's always one.
+
+    >>> login('foo.bar@canonical.com')
     >>> message = potmsgset.getCurrentTranslationMessage(serbian)
     >>> message.translations
     [u'new']
 
-The all_msgstrs attribute gives us the full list of translations for
-all supported plural forms, even if they are None.
+If the message has no actual translation, the translations attribute
+contains just a None.
+
+    >>> empty_message = potmsgset.updateTranslation(
+    ...     pofile_sr, carlos, {}, is_fuzzy=False, is_imported=False,
+    ...     lock_timestamp=datetime.now(UTC))
+    >>> empty_message.translations
+    [None]
+
+For a message with plurals, it's the POFile's number of plural forms.
+
+    >>> spanish = getUtility(ILanguageSet)['es']
+    >>> plural_potmsgset = potemplate.getPOTMsgSetByMsgIDText('%d contact')
+    >>> plural_message = plural_potmsgset.getCurrentTranslationMessage(
+    ...     spanish)
+    >>> plural_message.translations
+    [u'%d contacto', u'%d contactos']
+
+If the message does not translate all those forms, we get None entries
+in the list.
+
+    >>> empty_message = plural_potmsgset.updateTranslation(
+    ...     pofile_sr, carlos, {}, is_fuzzy=False, is_imported=False,
+    ...     lock_timestamp=datetime.now(UTC))
+    >>> empty_message.translations
+    [None, None, None]
+
+The all_msgstrs attribute is simpler.  It gives us the full list of
+translations for all supported plural forms, even if they are None.
+These are POTranslation references, not strings.
 
     >>> for translation in message.all_msgstrs:
     ...     if translation is None:
@@ -208,35 +242,6 @@ all supported plural forms, even if they are None.
     None
     None
     None
-
-== destroySelf ==
-
-(Note: keep this test last because of tearDown())
-
-With this method, we allow to remove a submission, it comes from SQLObject,
-but we test it here to be sure it appears in our public interface.
-
-We will need extra permissions to use this method.
-
-    >>> from canonical.launchpad.ftests.harness import (
-    ...     LaunchpadFunctionalTestSetup)
-    >>> LaunchpadFunctionalTestSetup(dbuser='rosettaadmin').setUp()
-
-Select an existing ITranslationMessage and try to remove it.
-
-    >>> translationmessage = TranslationMessage.get(1)
-    >>> translationmessage.destroySelf()
-
-It should not exist now.
-
-    >>> translationmessage = TranslationMessage.get(1)
-    Traceback (most recent call last):
-    ...
-    SQLObjectNotFound:...
-
-    # NOTE: Once this has executed, you may experience strange
-    # failures.  Keep this test at the bottom.
-    >>> LaunchpadFunctionalTestSetup().tearDown()
 
 
 == Composing SQL involving plural forms ==

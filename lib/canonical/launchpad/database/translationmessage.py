@@ -45,7 +45,7 @@ def make_plurals_sql_fragment(fragment, separator="AND"):
     :param fragment: a piece of SQL text to repeat for each msgstr*, using
         "%(form)d" to represent the number of each form: "msgstr%(form)d IS
         NOT NULL".  Parentheses are added.
-    :param separator: string to insert between the repeated clauses, e.g. 
+    :param separator: string to insert between the repeated clauses, e.g.
         "AND" (default) or "OR".  Spaces are added.
     """
     return make_plurals_fragment("(%s)" % fragment, " %s " % separator)
