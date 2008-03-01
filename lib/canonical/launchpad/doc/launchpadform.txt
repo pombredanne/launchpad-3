@@ -248,9 +248,9 @@ Check that form wide errors can be reported:
   >>> view.setUpWidgets()
   >>> data = {}
   >>> view._validate(None, data)
-  ['your password may not be the same as your name']
+  [u'your password may not be the same as your name']
   >>> view.form_wide_errors
-  ['your password may not be the same as your name']
+  [u'your password may not be the same as your name']
 
 Check that widget specific errors can be reported:
 
@@ -262,9 +262,9 @@ Check that widget specific errors can be reported:
   >>> view.setUpWidgets()
   >>> data = {}
   >>> view._validate(None, data)
-  ['your password must not be "password"']
+  [u'your password must not be "password"']
   >>> view.widget_errors
-  {'password': 'your password must not be "password"'}
+  {'password': u'your password must not be "password"'}
 
 The base template used for LaunchpadFormView classes takes care of
 displaying these errors in the appropriate locations.

@@ -8,7 +8,7 @@ from zope.interface import implements
 
 from sqlobject import ForeignKey, IntCol
 
-from canonical.database.sqlbase import cursor, SQLBase, sqlvalues
+from canonical.database.sqlbase import SQLBase
 from canonical.launchpad.interfaces import IBranchRevision, IBranchRevisionSet
 
 
@@ -33,5 +33,5 @@ class BranchRevisionSet:
     implements(IBranchRevisionSet)
 
     def delete(self, branch_revision_id):
-        """See IBranchRevisionSet."""
+        """See `IBranchRevisionSet`."""
         BranchRevision.delete(branch_revision_id)

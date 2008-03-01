@@ -9,13 +9,13 @@ __all__ = []
 import unittest
 
 from canonical.config import config
-from canonical.launchpad.ftests.harness import LaunchpadZopelessTestCase
 from canonical.launchpad.interfaces.branch import BranchURIField
 from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.webapp.vhosts import allvhosts
+from canonical.testing import LaunchpadZopelessLayer
 
 
-class TestBranchURIField(LaunchpadZopelessTestCase):
+class TestBranchURIField(unittest.TestCase):
     """Test the validation logic for Branch URI fields.
 
     Users can register their external Bazaar branches on Launchpad by providing
@@ -28,9 +28,9 @@ class TestBranchURIField(LaunchpadZopelessTestCase):
     change. Further, branches cannot be on the root of a site, nor are users
     allowed to register a branch that is already being mirrored.
     """
+    layer = LaunchpadZopelessLayer
 
     def setUp(self):
-        LaunchpadZopelessTestCase.setUp(self)
         self.field = BranchURIField()
 
     def listLaunchpadDomains(self):

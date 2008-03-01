@@ -1289,6 +1289,7 @@ class SpecificationVocabulary(NamedSQLObjectVocabulary):
 
     def __iter__(self):
         launchbag = getUtility(ILaunchBag)
+        target = None
         product = launchbag.product
         if product is not None:
             target = product

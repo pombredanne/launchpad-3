@@ -14,7 +14,6 @@
 <metal:leftportlets fill-slot="portlets">
   <div tal:replace="structure context/@@+portlet-details" />
   <div tal:replace="structure context/@@+portlet-subscribers" />
-  <div tal:replace="structure context/@@+portlet-specifications" />
 </metal:leftportlets>
 
 <div metal:fill-slot="main">
@@ -211,23 +210,9 @@
   <div id="recent-revisions">
   <h2 style="clear: both">Recent revisions</h2>
 
-  <p tal:condition="not:context/revision_count">
-    <tal:not-mirrored condition="not:context/last_mirrored">
-      <tal:mirror condition="context/url">
-        This branch has not been mirrored yet.
-      </tal:mirror>
-      <tal:no-mirror condition="not:context/url">
-        This branch has not been published yet.
-      </tal:no-mirror>
-    </tal:not-mirrored>
-    <tal:mirrored condition="context/last_mirrored">
-      <tal:not-scanned condition="not:context/last_scanned">
-        This branch has not been scanned yet.
-      </tal:not-scanned>
-      <tal:scanned condition="context/last_scanned">
-        This branch is empty.
-      </tal:scanned>
-    </tal:mirrored>
+  <p tal:condition="not:context/revision_count"
+     tal:define="branch context">
+    <metal:no-revision-message use-macro="context/@@+macros/no-revision-message" />
   </p>
 
   <tal:history-available condition="context/revision_count"
@@ -248,6 +233,19 @@
       </tal:bugs>
     </div>
   </tal:has-related-bugs>
+
+  <tal:has-related-blueprints condition="context/spec_links">
+    <div id="related-blueprints">
+      <h2>Related blueprints</h2>
+      <tal:blueprints tal:define="branch context;
+                                  show_edit python:True;
+                                  show_whiteboard python:True;">
+        <metal:spec-branch-links
+            use-macro="context/@@+macros/spec-branch-links"/>
+      </tal:blueprints>
+    </div>
+  </tal:has-related-blueprints>
+
 
       <div class="related">
 

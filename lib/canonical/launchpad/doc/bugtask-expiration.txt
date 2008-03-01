@@ -44,7 +44,7 @@ Looking back 9,999 days, findExpirableBugTasks() reports that there are
 no expirable bugtasks in the sampledata.
 
     >>> expirable_bugtasks = bugtaskset.findExpirableBugTasks(9999, None)
-    >>> len(expirable_bugtasks)
+    >>> expirable_bugtasks.count()
     0
 
 
@@ -203,7 +203,7 @@ returned. The oldest bug in this test is 351 days old, the youngest is
 31 days old. There are no bugs older than 351 days.
 
     >>> expirable_bugtasks = bugtaskset.findExpirableBugTasks(351, None)
-    >>> len(expirable_bugtasks)
+    >>> expirable_bugtasks.count()
     0
 
 While there are bugtasks older than 350 days in the data, the hoary
@@ -211,7 +211,7 @@ bugtask does not display because its bug has other bugtasks that are
 valid.
 
     >>> expirable_bugtasks = bugtaskset.findExpirableBugTasks(350, None)
-    >>> len(expirable_bugtasks)
+    >>> expirable_bugtasks.count()
     0
 
     >>> hoary_bugtask.bug.can_expire

@@ -2,10 +2,13 @@
 
 __metaclass__ = type
 
-from canonical.launchpad.ftests.harness import LaunchpadFunctionalTestCase
 import unittest
 
-class TestAnnotations(LaunchpadFunctionalTestCase):
+from canonical.testing import LaunchpadFunctionalLayer
+
+
+class TestAnnotations(unittest.TestCase):
+    layer = LaunchpadFunctionalLayer
 
     def test_case(self):
         from canonical.launchpad.webapp.zodb import handle_before_traversal
