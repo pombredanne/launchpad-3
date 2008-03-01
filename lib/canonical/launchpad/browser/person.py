@@ -3529,7 +3529,7 @@ class PersonAnswersMenu(ApplicationMenu):
 class PersonBranchesView(BranchListingView):
     """View for branch listing for a person."""
 
-    extra_columns = ('author', 'product', 'role')
+    extra_columns = ('product',)
     heading_template = 'Bazaar branches related to %(displayname)s'
 
     def _branches(self, lifecycle_status, show_dormant):
@@ -3541,17 +3541,6 @@ class PersonBranchesView(BranchListingView):
     def _subscribed_branches(self):
         return set(getUtility(IBranchSet).getBranchesSubscribedByPerson(
             self.context, [], self.user))
-
-    def roleForBranch(self, branch):
-        person = self.context
-        if branch.author == person:
-            return 'Author'
-        elif branch.owner == person:
-            return 'Registrant'
-        elif branch in self._subscribed_branches:
-            return 'Subscriber'
-        else:
-            return 'Team Branch'
 
 
 class PersonAuthoredBranchesView(BranchListingView):
@@ -3570,7 +3559,7 @@ class PersonAuthoredBranchesView(BranchListingView):
 class PersonRegisteredBranchesView(BranchListingView):
     """View for branch listing for a person's registered branches."""
 
-    extra_columns = ('author', 'product')
+    extra_columns = ('product',)
     heading_template = 'Bazaar branches registered by %(displayname)s'
     no_sort_by = (BranchListingSort.REGISTRANT,)
 
@@ -3583,7 +3572,7 @@ class PersonRegisteredBranchesView(BranchListingView):
 class PersonSubscribedBranchesView(BranchListingView):
     """View for branch listing for a person's subscribed branches."""
 
-    extra_columns = ('author', 'product')
+    extra_columns = ('product',)
     heading_template = 'Bazaar branches subscribed to by %(displayname)s'
 
     def _branches(self, lifecycle_status, show_dormant):
