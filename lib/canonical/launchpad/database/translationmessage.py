@@ -2,8 +2,10 @@
 
 __metaclass__ = type
 __all__ = [
-    'TranslationMessage',
     'DummyTranslationMessage',
+    'make_plurals_sql_fragment',
+    'make_plurals_fragment',
+    'TranslationMessage',
     'TranslationMessageSet'
     ]
 
@@ -24,39 +26,37 @@ from canonical.launchpad.interfaces import (
 from canonical.launchpad.validators.person import public_person_validator
 
 
+def make_plurals_fragment(fragment, separator):
+    """Repeat text fragment for each plural form, separated by separator.
+
+    Inside fragment, use "%(form)d" to represent the applicable plural
+    form number.
+    """
+    return separator.join([
+        fragment % {'form': form}
+        for form in xrange(TranslationConstants.MAX_PLURAL_FORMS)])
+
+
+def make_plurals_sql_fragment(fragment, separator="AND"):
+    """Compose SQL fragment consisting of clauses for each plural form.
+
+    Creates fragments like "msgstr0 IS NOT NULL AND msgstr1 IS NOT NULL" etc.
+
+    :param fragment: a piece of SQL text to repeat for each msgstr*, using
+        "%(form)d" to represent the number of each form: "msgstr%(form)d IS
+        NOT NULL".  Parentheses are added.
+    :param separator: string to insert between the repeated clauses, e.g. 
+        "AND" (default) or "OR".  Spaces are added.
+    """
+    return make_plurals_fragment("(%s)" % fragment, " %s " % separator)
+
+
 class TranslationMessageMixIn:
     """This class is not designed to be used directly.
 
     You should inherit from it and implement the full `ITranslationMessage`
     interface to use the methods and properties defined here.
     """
-
-    def setTranslations(self, translations):
-        """See `ITranslationMessage`."""
-        assert isinstance(translations, list), "Argument is not a list."
-
-        assert TranslationConstants.MAX_PLURAL_FORMS == 4, (
-            "Change this code to support %d plural forms."
-            % TranslationConstants.MAX_PLURAL_FORMS)
-        if len(translations) > 0:
-            self.msgstr0 = translations[0]
-        else:
-            self.msgstr0 = None
-
-        if len(translations) > 1:
-            self.msgstr1 = translations[1]
-        else:
-            self.msgstr1 = None
-
-        if len(translations) > 2:
-            self.msgstr2 = translations[2]
-        else:
-            self.msgstr2 = None
-
-        if len(translations) > 3:
-            self.msgstr3 = translations[3]
-        else:
-            self.msgstr3 = None
 
     @cachedproperty
     def plural_forms(self):
@@ -100,7 +100,8 @@ class DummyTranslationMessage(TranslationMessageMixIn):
         self.date_reviewed = None
         self.reviewer = None
 
-        self.setTranslations([])
+        for form in xrange(TranslationConstants.MAX_PLURAL_FORMS):
+            setattr(self, 'msgstr%d' % form, None)
 
         self.comment = None
         self.origin = RosettaTranslationOrigin.ROSETTAWEB
@@ -249,10 +250,9 @@ class TranslationMessage(SQLBase, TranslationMessageMixIn):
     @cachedproperty
     def all_msgstrs(self):
         """See `ITranslationMessage`."""
-        assert TranslationConstants.MAX_PLURAL_FORMS == 4, (
-            "Change this code to support %d plural forms."
-            % TranslationConstants.MAX_PLURAL_FORMS)
-        return [self.msgstr0, self.msgstr1, self.msgstr2, self.msgstr3]
+        return [
+            getattr(self, 'msgstr%d' % form)
+            for form in xrange(TranslationConstants.MAX_PLURAL_FORMS)]
 
     @cachedproperty
     def translations(self):

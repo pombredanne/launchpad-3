@@ -141,7 +141,7 @@ class IVPOExport(Interface):
         readonly=True, required=True)
 
     assert TranslationConstants.MAX_PLURAL_FORMS == 4, (
-        "Change this code to support %d plural forms"
+        "Change this code to support %d plural forms."
         % TranslationConstants.MAX_PLURAL_FORMS)
     translation0 = Text(
         title=u"See ITranslationMessage.msgstr0",

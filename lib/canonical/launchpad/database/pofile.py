@@ -31,7 +31,7 @@ from canonical.launchpad.components.rosettastats import RosettaStats
 from canonical.launchpad.validators.person import public_person_validator
 from canonical.launchpad.database.potmsgset import POTMsgSet
 from canonical.launchpad.database.translationmessage import (
-    DummyTranslationMessage, TranslationMessage)
+    DummyTranslationMessage, make_plurals_sql_fragment, TranslationMessage)
 from canonical.launchpad.interfaces import (
     ILaunchpadCelebrities, IPersonSet, IPOFile, IPOFileSet, IPOFileTranslator,
     ITranslationExporter, ITranslationFileData, ITranslationImporter,
@@ -491,10 +491,8 @@ class POFile(SQLBase, POFileMixIn):
         # TranslationMessage objects for empty strings in imported files), all
         # the 'imported.msgstr? IS NOT NULL' conditions can be removed because
         # they will not be needed anymore.
-        not_null_clauses = [
-            "imported.msgstr%d IS NOT NULL" % form
-            for form in xrange(TranslationConstants.MAX_PLURAL_FORMS)]
-        not_nulls = " OR ".join(not_null_clauses)
+        not_nulls = make_plurals_sql_fragment(
+            "imported.msgstr%(form)d IS NOT NULL", "OR")
 
         results = POTMsgSet.select('''POTMsgSet.id IN (
             SELECT POTMsgSet.id
@@ -630,10 +628,8 @@ class POFile(SQLBase, POFileMixIn):
         # TranslationMessage objects for empty strings in imported files), all
         # the 'imported.msgstr? IS NOT NULL' conditions can be removed because
         # they will not be needed anymore.
-        not_null_clauses = [
-            "imported.msgstr%d IS NOT NULL" % form
-            for form in xrange(TranslationConstants.MAX_PLURAL_FORMS)]
-        not_nulls = " OR ".join(not_null_clauses)
+        not_nulls = make_plurals_sql_fragment(
+            "imported.msgstr%(form)d IS NOT NULL", "OR")
         query.append('''NOT EXISTS (
             SELECT TranslationMessage.id
             FROM TranslationMessage AS imported
