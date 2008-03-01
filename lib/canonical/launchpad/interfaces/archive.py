@@ -8,10 +8,10 @@ __metaclass__ = type
 __all__ = [
     'ArchivePurpose',
     'IArchive',
-    'IPPAActivateForm',
-    'IArchivePackageDeletionForm',
     'IArchiveEditDependenciesForm',
+    'IArchivePackageDeletionForm',
     'IArchiveSet',
+    'IPPAActivateForm',
     ]
 
 from zope.interface import Interface, Attribute

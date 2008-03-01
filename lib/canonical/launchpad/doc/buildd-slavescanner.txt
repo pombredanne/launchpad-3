@@ -904,7 +904,8 @@ Similarly, PPA builds pass the 'archives' arguments:
 
     >>> candidate.destroySelf()
 
-Make Celso's PPA depending on Mark's PPA:
+A PPA can depend on another PPA. We can make Celso's PPA depend on
+Mark's PPA:
 
     >>> from canonical.testing import LaunchpadZopelessLayer
 
@@ -919,7 +920,7 @@ Make Celso's PPA depending on Mark's PPA:
     >>> LaunchpadZopelessLayer.switchDbUser(test_dbuser)
     >>> login(ANONYMOUS)
 
-No we can see that a build from Celso's PPA will be able to install
+Now we can see that a build from Celso's PPA will be able to install
 dependencies from Mark's PPA.
 
     >>> a_builder.setSlaveForTesting(OkSlave())

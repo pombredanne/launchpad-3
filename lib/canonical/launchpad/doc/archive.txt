@@ -6,8 +6,8 @@ records to disk, including configuration and indexes.
 
     >>> from canonical.launchpad.webapp.testing import verifyObject
     >>> from canonical.launchpad.interfaces import (
-    ...     ArchivePurpose, IPersonSet, IArchiveSet, IArchive,
-    ...     IDistributionSet)
+    ...     ArchivePurpose, IArchiveSet, IArchive, IDistributionSet,
+    ...     IPersonSet)
 
     >>> cprov = getUtility(IPersonSet).getByName('cprov')
     >>> cprov_archive = cprov.archive
@@ -702,7 +702,7 @@ dependency is published in Mark's PPA.
 `IArchive.addArchiveDependency` raises an error if the given
 'dependency' violates the system overall constraints.
 
-'dependency' is already records (duplicated).
+'dependency' is already recorded (duplicated).
 
     >>> no_priv.archive.addArchiveDependency(cprov.archive)
     Traceback (most recent call last):
@@ -716,9 +716,9 @@ dependency is published in Mark's PPA.
     ...
     AssertionError: An archive should not depend on itself.
 
-A 'dependency' must be a PPA, other archives (PRIMARY, PARTNER or
-EMBARGOED) are explicitly forbidden because we want to analyse the
-impacts carefully when it's time.
+A 'dependency' can only be a PPA. Other archives (PRIMARY, PARTNER or
+EMBARGOED) are explicitly forbidden until we can analyse the impact of
+allowing them.
 
     >>> ubuntu = no_priv.archive.distribution
     >>> no_priv.archive.addArchiveDependency(ubuntu.main_archive)
