@@ -9,7 +9,6 @@ from canonical.launchpad.interfaces.person import IPerson
 from canonical.launchpad.interfaces.pofile import IPOFile
 from canonical.launchpad.interfaces.potmsgset import IPOTMsgSet
 from canonical.launchpad.interfaces.potranslation import IPOTranslation
-from canonical.launchpad.interfaces.translations import TranslationConstants
 from canonical.lazr import DBEnumeratedType, DBItem
 
 __metaclass__ = type
@@ -202,15 +201,6 @@ class ITranslationMessage(Interface):
     plural_forms = Int(
         title=_("Number of plural form translations in this translation."),
         readonly=True, required=True)
-
-    def setTranslations(translations):
-        """Set translations to given list.
-
-        The argument must be a list.  The msgstr* attributes will be set to
-        the corresponding elements of the list.  If the list is not long
-        enough to cover all msgstr* attributes, the remaining msgstrs are set
-        to None.
-        """
 
     # Used in a script to remove upstream translations.
     def destroySelf():

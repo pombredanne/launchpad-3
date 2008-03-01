@@ -16,7 +16,7 @@ from zope.interface import implements
 
 from operator import attrgetter
 
-from canonical.database.sqlbase import cursor, quote, sqlvalues
+from canonical.database.sqlbase import cursor, quote
 
 from canonical.cachedproperty import cachedproperty
 from canonical.config import config

@@ -54,11 +54,12 @@ def fix_pofile_plurals(pofile, logger, ztm):
             logger.debug("\tFixing translations for '%s'" % (
                 message.potmsgset.singular_text))
 
-            new_translations = [
-                message.all_msgstrs[plural_forms_mapping[form]]
-                for form in xrange(TranslationConstants.MAX_PLURAL_FORMS)]
-
-            message.setTranslations(new_translations)
+            for form in xrange(TranslationConstants.MAX_PLURAL_FORMS):
+                new_form = plural_forms_mapping[form]
+                assert new_form < TranslationConstants.MAX_PLURAL_FORMS, (
+                    "Translation with plural form %d in plurals mapping." %
+                    new_form)
+                setattr(message, 'msgstr%d' % form, new_form)
 
         # We also need to update the header so we don't try to re-do the
         # migration in the future.

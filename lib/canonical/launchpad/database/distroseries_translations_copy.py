@@ -14,8 +14,9 @@ from canonical.database.postgresql import allow_sequential_scans, drop_tables
 from canonical.database.sqlbase import (
     cursor, flush_database_updates, quote, sqlvalues)
 from canonical.launchpad.interfaces.looptuner import ITunableLoop
-from canonical.launchpad.interfaces.translations import TranslationConstants
 from canonical.launchpad.database.pofile import POFile
+from canonical.launchpad.database.translationmessage import (
+    make_plurals_sql_fragment)
 from canonical.launchpad.utilities.looptuner import LoopTuner
 
 
@@ -277,10 +278,9 @@ def _prepare_translationmessage_batch(
     batch_clause = (
         "holding.id >= %s AND holding.id < %s" % sqlvalues(start_id, end_id))
 
-    identical_msgstrs = " AND ".join([
-        "COALESCE(holding.msgstr%d, -1) = COALESCE(tm.msgstr%d, -1)" % (
-            form, form)
-        for form in xrange(TranslationConstants.MAX_PLURAL_FORMS)])
+    identical_msgstrs = make_plurals_sql_fragment(
+        "COALESCE(holding.msgstr%(form)d, -1) = "
+        "COALESCE(tm.msgstr%(form)d, -1)")
 
     cur = cursor()
     cur.execute("""
@@ -336,18 +336,13 @@ def _prepare_translationmessage_merge(
     # the child series.  Finally, we only replace translations in the child
     # with ones from the parent if the replacement is newer than the
     # translation the child already has.
-    is_complete = [
-        ("(msgstr%d IS NOT NULL OR COALESCE(Language.pluralforms, 2) <= %d)"
-         % (form, form))
-        for form in xrange(1, TranslationConstants.MAX_PLURAL_FORMS)]
-    same_strings = [
-        "(COALESCE(better.msgstr%d, -1) = COALESCE(source.msgstr%d, -1))" % (
-            form, form)
-        for form in xrange(TranslationConstants.MAX_PLURAL_FORMS)]
-
     query_parts = {
-        'is_complete': " AND ".join(is_complete),
-        'same_strings': " AND ".join(same_strings),
+        'is_complete': make_plurals_sql_fragment(
+            "msgstr%(form)d IS NOT NULL OR "
+            "COALESCE(Language.pluralforms, 2) <= %(form)d"),
+        'same_strings': make_plurals_sql_fragment(
+            "COALESCE(better.msgstr%(form)d, -1) = "
+            "COALESCE(source.msgstr%(form)d, -1)"),
         }
     query_parts.update(query_parameters)
 
