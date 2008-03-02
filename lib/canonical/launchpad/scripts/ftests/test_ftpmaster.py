@@ -3,18 +3,12 @@
 
 __metaclass__ = type
 
-from unittest import TestLoader
-import shutil
-import subprocess
-import os
-import sys
+import unittest
 
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import config
-from canonical.testing import LaunchpadZopelessLayer
-from canonical.launchpad.ftests.harness import LaunchpadZopelessTestCase
 from canonical.launchpad.database.component import ComponentSelection
 from canonical.launchpad.interfaces import (
     IDistributionSet, IComponentSet, ISectionSet, PackagePublishingPocket,
@@ -22,6 +16,8 @@ from canonical.launchpad.interfaces import (
 from canonical.launchpad.scripts import FakeLogger
 from canonical.launchpad.scripts.ftpmaster import (
     ArchiveOverrider, ArchiveOverriderError)
+from canonical.testing import LaunchpadZopelessLayer
+
 
 class LocalLogger(FakeLogger):
     """Local log facility """
@@ -39,13 +35,12 @@ class LocalLogger(FakeLogger):
         self.logs.append("%s %s" % (prefix, ' '.join(stuff)))
 
 
-class TestArchiveOverrider(LaunchpadZopelessTestCase):
+class TestArchiveOverrider(unittest.TestCase):
     layer = LaunchpadZopelessLayer
-    dbuser = config.archivepublisher.dbuser
 
     def setUp(self):
         """Setup the test environment and retrieve useful instances."""
-        LaunchpadZopelessTestCase.setUp(self)
+        self.layer.switchDbUser(config.archivepublisher.dbuser)
         self.log = LocalLogger()
 
         self.ubuntu = getUtility(IDistributionSet)['ubuntu']
@@ -519,4 +514,4 @@ class TestArchiveOverrider(LaunchpadZopelessTestCase):
 
 
 def test_suite():
-    return TestLoader().loadTestsFromName(__name__)
+    return unittest.TestLoader().loadTestsFromName(__name__)

@@ -212,10 +212,13 @@ class ProberFactory(protocol.ClientFactory):
         host_requests[self.request_host] += 1
         reactor.connectTCP(self.connect_host, self.connect_port, self)
 
+    connector = None
+
     def failWithTimeoutError(self):
         host_timeouts[self.request_host] += 1
         self.failed(ProberTimeout(self.url, self.timeout))
-        self.connector.disconnect()
+        if self.connector is not None:
+            self.connector.disconnect()
 
     def startedConnecting(self, connector):
         self.connector = connector
