@@ -12,7 +12,6 @@ We will need extra permissions to use this method.
     ...     TranslationMessage)
     >>> from canonical.launchpad.ftests.harness import (
     ...     LaunchpadFunctionalTestSetup)
-    >>> #LaunchpadFunctionalTestSetup(dbuser='rosettaadmin').setUp()
 
 Select an existing ITranslationMessage and try to remove it.
 
@@ -25,9 +24,4 @@ It should not exist now.
     Traceback (most recent call last):
     ...
     SQLObjectNotFound:...
-
-    # NOTE: Once this has executed, you may experience strange
-    # failures.  Keep this test at the bottom.
-    >>> #LaunchpadFunctionalTestSetup().tearDown()
-
 
