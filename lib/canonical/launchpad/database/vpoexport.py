@@ -97,12 +97,6 @@ class VPOExportSet:
 
         return self._select(where=where)
 
-    def get_potemplate_rows(self, potemplate):
-        """See IVPOExportSet."""
-        where = 'potemplate = %s' % sqlvalues(potemplate.id)
-
-        return self._select(where=where)
-
     def _get_distroseries_pofiles(self, series, date=None, component=None,
         languagepack=None):
         """Return a SQL query of PO files which would be contained in an
