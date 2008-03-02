@@ -967,7 +967,7 @@ class BranchSubscriptionFormatterAPI(CustomizableFormatter):
         """Provide values for template substitution"""
         return {
             'person': self._context.person.displayname,
-            'branch': self._context.branch.title,
+            'branch': self._context.branch.displayname,
         }
 
 

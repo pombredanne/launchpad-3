@@ -9,32 +9,32 @@ import unittest
 from zope.component import getUtility
 
 from canonical.database.sqlbase import flush_database_updates
+from canonical.launchpad.ftests import ANONYMOUS, login, logout
 from canonical.launchpad.ftests.bug import create_old_bug, sync_bugtasks
-from canonical.launchpad.ftests.harness import LaunchpadFunctionalTestCase
 from canonical.launchpad.interfaces import (
     BugTaskStatus, IBugSet, IBugTaskSet, IBugWatchSet, IDistributionSet,
     ILaunchBag, IProductSet, IProjectSet, IUpstreamBugTask)
+from canonical.testing import LaunchpadFunctionalLayer
 
 
-class BugTaskSearchBugsElsewhereTest(LaunchpadFunctionalTestCase):
+class BugTaskSearchBugsElsewhereTest(unittest.TestCase):
     """Tests for searching bugs filtering on related bug tasks.
 
     It also acts as a helper class, which makes related doctests more
-    readable, since they can use methods from this class."""
+    readable, since they can use methods from this class.
+    """
+    layer = LaunchpadFunctionalLayer
 
     def __init__(self, methodName='runTest', helper_only=False):
         """If helper_only is True, set up it only as a helper class."""
         if not helper_only:
-            LaunchpadFunctionalTestCase.__init__(self, methodName=methodName)
+            unittest.TestCase.__init__(self, methodName=methodName)
 
     def setUp(self):
-        LaunchpadFunctionalTestCase.setUp(self)
-        distroset = getUtility(IDistributionSet)
+        login(ANONYMOUS)
 
-        self.login('test@canonical.com')
-
-        # We don't need to be logged in to run the tests.
-        self.login(user=None)
+    def tearDown(self):
+        logout()
 
     def _getBugTaskByTarget(self, bug, target):
         """Return a bug's bugtask for the given target."""
@@ -92,11 +92,6 @@ class BugTaskSearchBugsElsewhereTest(LaunchpadFunctionalTestCase):
             BugTaskStatus.FIXRELEASED, getUtility(ILaunchBag).user)
 
         flush_database_updates()
-
-    def tearDown(self):
-        self.login('test@canonical.com')
-        self.tearDownBugsElsewhereTests()
-        LaunchpadFunctionalTestCase.tearDown(self)
 
     def tearDownBugsElsewhereTests(self):
         """Resets the modified bugtasks to their original statuses."""
@@ -221,13 +216,13 @@ class BugTaskSearchBugsElsewhereTest(LaunchpadFunctionalTestCase):
                 bugtask.id, bugtask.target.displayname))
 
 
-class BugTaskSetFindExpirableBugTasksTest(LaunchpadFunctionalTestCase):
+class BugTaskSetFindExpirableBugTasksTest(unittest.TestCase):
     """Test `BugTaskSet.findExpirableBugTasks()` behaviour."""
+    layer = LaunchpadFunctionalLayer
 
     def setUp(self):
         """Setup the zope interaction and create expirable bugtasks."""
-        LaunchpadFunctionalTestCase.setUp(self)
-        self.login('test@canonical.com')
+        login('test@canonical.com')
         self.user = getUtility(ILaunchBag).user
         self.distribution = getUtility(IDistributionSet).getByName('ubuntu')
         self.distroseries = self.distribution.getSeries('hoary')
@@ -248,6 +243,9 @@ class BugTaskSetFindExpirableBugTasksTest(LaunchpadFunctionalTestCase):
                 bug=bugtasks[-1].bug, owner=self.user,
                 productseries=self.productseries))
         sync_bugtasks(bugtasks)
+
+    def tearDown(self):
+        logout()
 
     def testSupportedTargetParam(self):
         """The target param supports a limited set of BugTargets.
@@ -293,11 +291,5 @@ class BugTaskSetFindExpirableBugTasksTest(LaunchpadFunctionalTestCase):
 
 
 def test_suite():
-    suite = unittest.TestSuite()
-    suite.addTest(unittest.TestLoader().loadTestsFromName(__name__))
-    return suite
-
-
-if __name__ == '__main__':
-    unittest.main()
+    return unittest.TestLoader().loadTestsFromName(__name__)
 

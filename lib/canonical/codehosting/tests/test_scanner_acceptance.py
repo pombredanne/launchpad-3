@@ -8,7 +8,7 @@ __metaclass__ = type
 
 import os
 from os.path import join, isdir, exists
-from shutil import rmtree
+from shutil import rmtree, move
 from subprocess import Popen, PIPE
 from unittest import TestLoader
 
@@ -114,7 +114,7 @@ class BranchScannerTest(BranchTestCase):
         # makeLoomBranchAndTree creates the branch in a test-specific sandbox.
         # We want to put it in the store.
         loom_tree = self.makeLoomBranchAndTree('loom')
-        os.rename(loom_tree.basedir, destination)
+        move(loom_tree.basedir, destination)
         loom_branch = bzrlib.branch.Branch.open(destination)
         self.installTestBranch(self.db_branch, loom_branch)
 

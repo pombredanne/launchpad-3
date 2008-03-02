@@ -1,7 +1,9 @@
 = VPOExport and VPOExportSet =
 
 POExport is a database view on POFile, POTemplate, TranslationMessage,
-and related tables that is used to facilitate translation exports.
+and related tables that is used to facilitate translation exports.  The
+VPOExport and VPOExportSet classes act as a Python interface to those
+tables.
 
     >>> from zope.component import getUtility
     >>> from canonical.launchpad.interfaces import (
