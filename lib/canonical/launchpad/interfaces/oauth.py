@@ -88,6 +88,13 @@ class IOAuthConsumer(Interface):
         user logs into Launchpad and grants (or not) access to this consumer.
         """
 
+    def getRequestToken(key):
+        """Return the `IOAuthRequestToken` with the given key.
+
+        If the token with the given key does not exist or is associated with
+        another consumer, return None.
+        """
+
 
 class IOAuthConsumerSet(Interface):
     """The set of OAuth consumers."""
@@ -171,9 +178,10 @@ class IOAuthRequestToken(IOAuthToken):
         description=_('The date in which the user authorized (or not) the '
                       'consumer to access his protected resources on '
                       'Launchpad.'))
-    is_used = Bool(
-        title=_('Has this token been used?'), required=False, readonly=True,
-        description=_('An used request token can only be exchanged for an '
+    is_reviewed = Bool(
+        title=_('Has this token been reviewed?'),
+        required=False, readonly=True,
+        description=_('A reviewed request token can only be exchanged for an '
                       'access token (in case the user granted access).'))
 
     def review(user, permission):
@@ -183,6 +191,16 @@ class IOAuthRequestToken(IOAuthToken):
         cause this token to be marked as used, meaning it can only be
         exchanged for an access token with the same permission, consumer and 
         person.
+        """
+
+    def createAccessToken():
+        """Create an `IOAuthAccessToken` identical to this request token.
+
+        After the access token is created, this one is deleted as it can't be
+        used anymore.
+
+        You must not attempt to create an access token if the request token
+        hasn't been reviewed or if its permission is UNAUTHORIZED.
         """
 
 

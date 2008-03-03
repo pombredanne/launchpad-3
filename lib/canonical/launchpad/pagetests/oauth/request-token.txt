@@ -9,7 +9,7 @@ a request token which may later be exchanged for an access token.
     ...     oauth_consumer_key='foobar123451432',
     ...     oauth_version='1.0',
     ...     oauth_signature_method='PLAINTEXT',
-    ...     oauth_signature='',
+    ...     oauth_signature='&',
     ...     oauth_timestamp=time.time(),
     ...     oauth_nonce='4572616e48616d6d65724c61686176')
     >>> anon_browser.open(
