@@ -5,6 +5,7 @@ __metaclass__ = type
 __all__ = ['SourcePackageRelease']
 
 import datetime
+import operator
 import pytz
 from StringIO import StringIO
 import re
@@ -237,14 +238,14 @@ class SourcePackageRelease(SQLBase):
     def published_archives(self):
         """See `ISourcePacakgeRelease`."""
         archives = set()
-        publishings = self.publishings.prejoin(['archive']).orderBy('id')
+        publishings = self.publishings.prejoin(['archive'])
         live_states = (PackagePublishingStatus.PENDING,
                        PackagePublishingStatus.PUBLISHED)
         for pub in publishings:
             if pub.status in live_states:
                 archives.add(pub.archive)
 
-        return archives
+        return sorted(archives, key=operator.attrgetter('id'))
 
     def addFile(self, file):
         """See ISourcePackageRelease."""

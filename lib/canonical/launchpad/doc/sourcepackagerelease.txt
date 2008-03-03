@@ -28,8 +28,8 @@ SourcePackageRelease is published in.
 
     >>> for archive in spr.published_archives:
     ...     print archive.title
-    Primary Archive for Ubuntu Test
     Primary Archive for Ubuntu Linux
+    Primary Archive for Ubuntu Test
 
 'age' is a special property that performs on-the-fly:
 {{{
