@@ -1941,7 +1941,8 @@ class PersonView(LaunchpadView, FeedsMixin):
         mailing list, and if they do not already have a subscription.
         """
         # XXX mars 2008-02-26:
-        # Remove this check after the mailing list beta test.
+        # Remove this check after the mailing list beta test is complete.
+        # See bug #190974.
         if not self.isBetaUser:
             return False
 

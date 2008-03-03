@@ -22,7 +22,7 @@ contact address.
     beta testers won't work.  It works on launchpad.net because the mailing
     list beta testers team is different than the launchpad beta testers team.
     This isn't the case for the testrunner.  Again, all this will go away when
-    the feature goes public.
+    the feature goes public. See bug #190974.
     >>> from canonical.launchpad.ftests import mailinglists_helper
     >>> mailinglists_helper.beta_program_enable('admins')
     >>> mailinglists_helper.beta_program_enable('testing-spanish-team')
