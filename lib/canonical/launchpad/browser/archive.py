@@ -66,7 +66,11 @@ class ArchiveContextMenu(ContextMenu):
     """Overview Menu for IArchive."""
 
     usedfor = IArchive
-    links = ['admin', 'edit', 'builds', 'delete']
+    links = ['ppa', 'admin', 'edit', 'builds', 'delete']
+
+    def ppa(self):
+        text = 'View PPA'
+        return Link(canonical_url(self.context), text, icon='info')
 
     @enabled_with_permission('launchpad.Admin')
     def admin(self):

@@ -59,7 +59,7 @@ The user could return to the 'PPA' overview by using the 'View PPA'
 link:
 
     >>> anon_browser.getLink('View PPA').url
-    'http://launchpad.dev/~cprov/+archive
+    'http://launchpad.dev/~cprov/+archive'
 
 The user can navigate to an individual build details:
 
