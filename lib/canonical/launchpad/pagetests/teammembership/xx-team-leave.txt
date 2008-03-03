@@ -68,11 +68,20 @@ team's overview page.
     ... 	find_portlet(browser.contents, 'Your involvement'))
     Your involvement
     You are a member of this team.
-    (Leave the team)
-
-    >>> browser.getLink('Leave the team').click()
+    >>> browser.getControl('Leave the Team').click()
     >>> print browser.url
-    http://launchpad.dev/%7Eadmins/+leave
+    http://launchpad.dev/~admins
+
+    # The 'Leave' link should be gone.
+    >>> browser.getControl('Leave the Team')
+    Traceback (most recent call last):
+    ...
+    LookupError: label 'Leave the Team'
+
+    # And the 'Join' link should have returned.
+    >>> browser.getLink('Join the team')
+    <Link ...>
+
 
 Team owners do not have the option to leave.
 
@@ -82,7 +91,7 @@ Team owners do not have the option to leave.
     Your involvement
     You are the owner of this team.
 
-    >>> browser.getLink('Leave the team')
+    >>> browser.getControl('Leave the Team')
     Traceback (most recent call last):
     ...
-    LinkNotFoundError
+    LookupError: label 'Leave the Team'

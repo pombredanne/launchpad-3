@@ -215,7 +215,6 @@ page, because Carlos hasn't subscribed yet.
     ... 	find_portlet(browser.contents, 'Your involvement'))
     Your involvement
     You are a member of this team.
-    (Leave the team)
     You are not subscribed to the team mailing list.
     (Subscribe)
     >>> browser.getLink('Subscribe').click()
@@ -242,21 +241,12 @@ has an active mailing list.
     Your involvement
     You are the owner of this team.
     You are subscribed to the team mailing list.
-    (Unsubscribe)
-    function leaveList() {
-    getElement('form.list.unsubscribe').submit();
-    }
-    connect('leave-mailing-list', 'onclick', leaveList);
-    >>> browser.getLink('Unsubscribe')
-    <Link ...>
+    >>> browser.getControl('Unsubscribe')
+    <SubmitControl name='unsubscribe' type='submit'>
 
 Clicking the link will unsubscribe you from the list immediately.
 
-    # Oops! One-click submit links use JavaScript, which the test
-    # browser doesn't understand.  It looks like we will have to
-    # submit the form manually.
-    >>> unsubscribe = browser.getForm('form.list.unsubscribe')
-    >>> unsubscribe.submit()
+    >>> browser.getControl('Unsubscribe').click()
     >>> print get_feedback_messages(browser.contents)
     [u'You have been unsubscribed from the team mailing list.']
 

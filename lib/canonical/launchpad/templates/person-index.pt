@@ -150,9 +150,15 @@
           </tal:block>
           <tal:block condition="not: view/userIsOwner">
             <p tal:condition="view/userIsActiveMember">
-              You are a member of this team.
 	      <tal:block tal:condition="view/userCanRequestToLeave">
-		(<a href="+leave">Leave the team</a>)
+		<form class="actions"
+		      name="unsubscribe"
+		      id="form.list.unsubscribe"
+		      action="+leave"
+		      method="post">
+		  You are a member of this team.
+		  <input type="submit" name="leave" value="Leave the Team" />
+		</form>
 	      </tal:block>
             </p>
             <p tal:condition="not: view/userIsActiveMember">
@@ -184,21 +190,8 @@
 		      id="form.list.unsubscribe"
 		      action=""
 		      method="post">
-
 		  You are subscribed to the team mailing list.
-		  (<a id="leave-mailing-list" href="#">Unsubscribe</a>)
-
-		  <script type="text/javascript">
-		    function leaveList() {
-		    getElement('form.list.unsubscribe').submit();
-		    }
-		    connect('leave-mailing-list', 'onclick', leaveList);
-		  </script>
-
-		  <noscript>
-		    <input type="submit" value="Unsubscribe" />
-		  </noscript>
-
+		  <input type="submit" name="unsubscribe" value="Unsubscribe" />
 		</form>
 	      </tal:block>
 	      <tal:block tal:condition="view/user_can_subscribe_to_list">
