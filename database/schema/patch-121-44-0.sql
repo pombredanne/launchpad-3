@@ -14,4 +14,11 @@ ALTER TABLE OauthNonce DROP CONSTRAINT oauthnonce_nonce_key;
 ALTER TABLE OauthNonce
     ADD CONSTRAINT oauthnonce_nonce_token_key UNIQUE (nonce, access_token);
 
+-- Fix the reviewed_request constraint because nobody ever taught postgres
+-- that "select (false = false = false)" is true.
+ALTER TABLE OAuthRequestToken DROP CONSTRAINT reviewed_request;
+ALTER TABLE OAuthRequestToken ADD CONSTRAINT reviewed_request
+    CHECK (date_reviewed IS NULL = person IS NULL
+           AND date_reviewed IS NULL = permission IS NULL);
+
 INSERT INTO LaunchpadDatabaseRevision VALUES (121, 44, 0);
