@@ -1935,16 +1935,13 @@ class PersonView(LaunchpadView, FeedsMixin):
 
     @property
     def user_can_subscribe_to_list(self):
-        """Return true if the user can subscribe to this team's
-        mailing list.
+        """Can the user can subscribe to this team's mailing list?
 
-        Team membership is not pre-requisite to subscribing to the
-        list.
-
-        If you are already subscribed, then False is returned.
+        A user can subscribe to the list if the team has an active
+        mailing list, and if they do not already have a subscription.
         """
         # XXX mars 2008-02-26:
-        # For the mailing list beta test.
+        # Remove this check after the mailing list beta test.
         if not self.isBetaUser:
             return False
 
@@ -1956,26 +1953,24 @@ class PersonView(LaunchpadView, FeedsMixin):
 
     @property
     def user_is_subscribed_to_list(self):
-        """Return true if the user is subscribed to the team mailing
-        list, either directly or indirectly.
+        """Is the user subscribed to the team's mailing list?
 
-        Note that this does not mean that the list is usable.  It is
-        an error to ask if the user is subscribed to a mailing list
+        Subscriptions hang around even if the list is deactivated, etc.
+
+        It is an error to ask if the user is subscribed to a mailing list
         that doesn't exist.
         """
         if self.user is None:
             return False
 
         mailing_list = self.context.mailing_list
-        assert mailing_list
+        assert mailing_list is not None, "This team has no mailing list."
         has_subscription = bool(mailing_list.getSubscription(self.user))
         return has_subscription
 
     @property
     def team_has_mailing_list(self):
-        """Return true if the team mailing list is available for
-        subscription.
-        """
+        """Is the team mailing list available for subscription?"""
         mailing_list = self.context.mailing_list
         return mailing_list is not None and mailing_list.isUsable()
 
@@ -2130,6 +2125,11 @@ class PersonIndexView(XRDSContentNegotiationMixin, PersonView):
         return canonical_url(OpenIDPersistentIdentity(self.context))
 
     def processForm(self):
+        if not self.request.form.get('unsubscribe'):
+            raise UnexpectedFormData(
+                "The mailng list unsubscribe form handler did not receive "
+                "the correct form fields.")
+
         mailing_list = self.context.mailing_list
         if mailing_list is None:
             raise UnexpectedFormData(
