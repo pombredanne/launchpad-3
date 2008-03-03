@@ -5,25 +5,22 @@ Test the examples included in the system documentation in
 lib/canonical/launchpad/translationformat/doc.
 """
 
-import unittest
 import logging
 import os
-from zope.testing.doctest import REPORT_NDIFF, NORMALIZE_WHITESPACE, ELLIPSIS
-from zope.testing.doctest import DocFileSuite
+import unittest
 
-from canonical.functional import FunctionalDocFileSuite
-from canonical.launchpad.ftests.test_system_documentation import (
-    setUp, tearDown)
+from canonical.launchpad.testing.systemdocs import (
+    LayeredDocFileSuite, setUp, tearDown)
 from canonical.testing import LaunchpadFunctionalLayer
+
 
 here = os.path.dirname(os.path.realpath(__file__))
 
-default_optionflags = REPORT_NDIFF | NORMALIZE_WHITESPACE | ELLIPSIS
 
 # Files that have special needs can construct their own suite
 special = {
-    'gettext_po_parser.txt': DocFileSuite(
-        '../doc/gettext_po_parser.txt', optionflags=default_optionflags)
+    'gettext_po_parser.txt': LayeredDocFileSuite(
+        '../doc/gettext_po_parser.txt', stdout_logging=False)
     }
 
 
@@ -55,9 +52,9 @@ def test_suite():
 
     for filename in filenames:
         path = os.path.join('../doc/', filename)
-        one_test = FunctionalDocFileSuite(
+        one_test = LayeredDocFileSuite(
             path, setUp=setUp, tearDown=tearDown,
-            layer=LaunchpadFunctionalLayer, optionflags=default_optionflags,
+            layer=LaunchpadFunctionalLayer,
             stdout_logging_level=logging.WARNING
             )
         suite.addTest(one_test)

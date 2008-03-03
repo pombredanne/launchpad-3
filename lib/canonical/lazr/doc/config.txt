@@ -912,6 +912,21 @@ bool.
     >>> convert('True or False')
     'True or False'
 
+When the argument is the word 'none', None is returned. The token in the
+config means the key has no value.
+
+    >>> print convert('none')
+    None
+    >>> print convert('None')
+    None
+    >>> print convert('nonE')
+    None
+
+    >>> convert('none today')
+    'none today'
+    >>> convert('nonevident')
+    'nonevident'
+
 When the argument is an unbroken sequence of numbers, an int is
 returned. The number may have a leading positive or negative. Octal and
 hex notation is not supported.

@@ -16,6 +16,7 @@ docfiles = [
     '../doc/debug.txt',
     '../doc/decorates.txt',
     '../doc/config.txt',
+    '../doc/interface.txt',
     ]
 
 

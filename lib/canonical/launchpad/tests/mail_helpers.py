@@ -35,3 +35,46 @@ def pop_notifications(sort_key=None, commit=True):
     stub.test_emails = []
 
     return sorted(notifications, key=sort_key)
+
+
+def print_emails(include_reply_to=False, group_similar=False):
+    """Pop all messages from stub.test_emails and print them with
+     their recipients.
+
+    Since the same message may be sent more than once (for different
+    recipients), setting 'group_similar' will print each distinct
+    message only once and group all recipients of that message
+    together in the 'To:' field.  It will also strip the first line of
+    the email body.  (The line with "Hello Foo," which is likely
+    distinct for each recipient.)
+    """
+    distinct_bodies = {}
+    for message in pop_notifications():
+        recipients = set(
+            recipient.strip()
+            for recipient in message['To'].split(','))
+        body = message.get_payload()
+        if group_similar:
+            # Strip the first line as it's different for each recipient.
+            body = body[body.find('\n')+1:]
+        if body in distinct_bodies and group_similar:
+            message, existing_recipients = distinct_bodies[body]
+            distinct_bodies[body] = (
+                message, existing_recipients.union(recipients))
+        else:
+            distinct_bodies[body] = (message, recipients)
+    for body in sorted(distinct_bodies):
+        message, recipients = distinct_bodies[body]
+        print 'From:', message['From']
+        print 'To:', ", ".join(sorted(recipients))
+        if include_reply_to:
+            print 'Reply-To:', message['Reply-To']
+        print 'Subject:', message['Subject']
+        print body
+        print "-"*40
+
+
+def print_distinct_emails(include_reply_to=False):
+    """A convenient shortcut for `print_emails`(group_similar=True)."""
+    return print_emails(group_similar=True,
+                        include_reply_to=include_reply_to)

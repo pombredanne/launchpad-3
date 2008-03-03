@@ -5,22 +5,20 @@
 
 __metaclass__ = type
 
-from unittest import TestLoader
+import unittest
 
 from zope.component import getUtility
 
 from canonical.config import config
-from canonical.launchpad.ftests.harness import (
-    LaunchpadZopelessTestCase)
 from canonical.launchpad.interfaces import IDistributionSet
+from canonical.testing import LaunchpadZopelessLayer
 
 
-class TestConfig(LaunchpadZopelessTestCase):
-
-    dbuser = config.archivepublisher.dbuser
+class TestConfig(unittest.TestCase):
+    layer = LaunchpadZopelessLayer
 
     def setUp(self):
-        LaunchpadZopelessTestCase.setUp(self)
+        self.layer.switchDbUser(config.archivepublisher.dbuser)
         self.ubuntutest = getUtility(IDistributionSet)['ubuntutest']
 
     def testInstantiate(self):
@@ -59,4 +57,4 @@ class TestConfig(LaunchpadZopelessTestCase):
 
 
 def test_suite():
-    return TestLoader().loadTestsFromName(__name__)
+    return unittest.TestLoader().loadTestsFromName(__name__)
