@@ -575,6 +575,14 @@ class IBranch(IHasOwner):
     def unsubscribe(person):
         """Remove the person's subscription to this branch."""
 
+    def getSubscriptionsByLevel(notification_levels):
+        """Return the subscriptions that are at the given notification levels.
+
+        :param notification_levels: An iterable of
+            `BranchSubscriptionNotificationLevel`s
+        :return: An SQLObject query result.
+        """
+
     def getBranchRevision(sequence):
         """Get the `BranchRevision` for the given sequence number.
 
