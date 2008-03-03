@@ -48,7 +48,7 @@ class OAuthConsumer(SQLBase):
         while OAuthRequestToken.selectOneBy(key=key) is not None:
             key = ''.join(
                 random.choice(characters) for count in range(key_length))
-        secret_length = 20
+        secret_length = 80
         secret = ''.join(
             random.choice(characters) for count in range(secret_length))
         date_expires = (datetime.now(pytz.timezone('UTC'))
