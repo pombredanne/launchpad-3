@@ -221,10 +221,10 @@ class TranslationImportQueueView(HasTranslationImportsView):
         """Return the entries in the queue for this context."""
         target, file_extension, import_status = (
             self.getEntriesFilteringOptions())
-        if file_extension is not None:
-            extensions = [file_extension]
-        else:
+        if file_extension is None:
             extensions = None
+        else:
+            extensions = [file_extension]
 
         return self.context.getAllEntries(
                 target=target, import_status=import_status,

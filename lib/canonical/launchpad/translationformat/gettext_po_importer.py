@@ -1,4 +1,4 @@
-# Copyright 2006-2007 Canonical Ltd.  All rights reserved.
+# Copyright 2006-2008 Canonical Ltd.  All rights reserved.
 
 __metaclass__ = type
 
@@ -55,10 +55,10 @@ class GettextPOImporter:
             translation_import_queue_entry.content.id)
 
         pofile = translation_import_queue_entry.pofile
-        if pofile is not None:
-            pluralformula = pofile.language.pluralexpression
-        else:
+        if pofile is None:
             pluralformula = None
+        else:
+            pluralformula = pofile.language.pluralexpression
         parser = POParser(pluralformula)
         return parser.parse(self.content.read())
 

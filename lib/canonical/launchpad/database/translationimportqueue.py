@@ -94,7 +94,7 @@ class TranslationImportQueueEntry(SQLBase):
         """See ITranslationImportQueueEntry."""
         importer = getUtility(ITranslationImporter)
         assert importer.isTemplateName(self.path), (
-                "We cannot handle file %s here: not a template." % self.path)
+            "We cannot handle file %s here: not a template." % self.path)
 
         # It's an IPOTemplate
         potemplate_set = getUtility(IPOTemplateSet)
@@ -107,9 +107,14 @@ class TranslationImportQueueEntry(SQLBase):
     def _guessed_potemplate_for_pofile_from_path(self):
         """Return an `IPOTemplate` that we think is related to this entry.
 
-        We get it based on the path of the entry and the `IPOTemplate`'s one.
-        So if both are on the same directory and there are no other
-        `IPOTemplates` in the same directory, we have a winner.
+        We make this guess by matching the path of the queue entry with those
+        of the `IPOTemplate`s for the same product series, or for the same
+        distro series and source package name (whichever applies to this
+        request).
+
+        So if there is a candidate template in the same directory as the
+        request's translation file, and we find no other templates in the same
+        directory in the database, we have a winner.
         """
         importer = getUtility(ITranslationImporter)
         potemplateset = getUtility(IPOTemplateSet)
@@ -147,10 +152,10 @@ class TranslationImportQueueEntry(SQLBase):
 
         # We have a winner, but to be 100% sure, we should not have
         # a template file pending of being imported in our queue.
-        if self.productseries is not None:
-            target = self.productseries
-        else:
+        if self.productseries is None:
             target = self.sourcepackage
+        else:
+            target = self.productseries
 
         entries = translationimportqueue.getAllEntries(
             target=target,
@@ -198,7 +203,7 @@ class TranslationImportQueueEntry(SQLBase):
             # The entry has an IPOFile associated where it should be imported.
             return self.pofile
         elif (self.potemplate is not None and
-            importer.isTemplateName(self.path)):
+              importer.isTemplateName(self.path)):
             # The entry has an IPOTemplate associated where it should be
             # imported.
             return self.potemplate
@@ -325,9 +330,9 @@ class TranslationImportQueueEntry(SQLBase):
         # detect the right IPOFile.
         # Let's try to guess the language.
         if not importer.isTranslationName(self.path):
-            # Don't recognize this as a translation file with name consisting
-            # of language code and format extension.  Look for existing
-            # translation file based on path match.
+            # We don't recognize this as a translation file with a name
+            # consisting of language code and format extension.  Look for an
+            # existing translation file based on path match.
             return self._guessed_pofile_from_path
 
         filename = os.path.basename(self.path)
@@ -340,7 +345,7 @@ class TranslationImportQueueEntry(SQLBase):
     def _guess_multiple_directories_with_pofile(self):
         """Return `IPOFile` that we think is related to this entry, or None.
 
-        Multi directory trees layout are non-standard layouts where the .pot
+        Multi-directory tree layouts are non-standard layouts where the .pot
         file and its .po files are stored in different directories.  We only
         know of this happening with gettext files.
 
@@ -786,7 +791,7 @@ class TranslationImportQueue:
                     ' ISourcePackage')
         if status is not None:
             queries.append('status = %s' % sqlvalues(status))
-        if file_extensions is not None and len(file_extensions) > 0:
+        if file_extensions:
             extension_clauses = [
                 "path LIKE '%%' || %s" % quote_like(extension)
                 for extension in file_extensions]
@@ -994,10 +999,10 @@ class HasTranslationImportsMixin:
     def getTranslationImportQueueEntries(self, import_status=None,
                                          file_extension=None):
         """See `IHasTranslationImports`."""
-        if file_extension is not None:
-            extensions = [file_extension]
-        else:
+        if file_extension is None:
             extensions = None
+        else:
+            extensions = [file_extension]
         translation_import_queue = TranslationImportQueue()
         return translation_import_queue.getAllEntries(
             self, import_status=import_status, file_extensions=extensions)

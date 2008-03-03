@@ -1,4 +1,4 @@
-# Copyright 2005-2007 Canonical Ltd.  All rights reserved.
+# Copyright 2005-2008 Canonical Ltd.  All rights reserved.
 
 __metaclass__ = type
 
@@ -269,8 +269,11 @@ class TranslationImporter:
     @cachedproperty
     def template_suffixes(self):
         """See `ITranslationImporter`."""
-        return sorted(set([
-            importer.template_suffix for importer in importers.itervalues()]))
+        # Several formats (particularly the various gettext variants) can have
+        # the same template suffix.
+        unique_suffixes = set(
+            importer.template_suffix for importer in importers.values())
+        return sorted(unique_suffixes)
 
     def isTemplateName(self, path):
         """See `ITranslationImporter`."""
