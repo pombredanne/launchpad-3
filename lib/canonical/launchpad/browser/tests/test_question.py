@@ -10,19 +10,14 @@ __all__ = []
 
 import unittest
 
-from zope.testing.doctest import DocFileSuite
-
-from canonical.functional import FunctionalDocFileSuite
-from canonical.launchpad.ftests.test_system_documentation import (
-    default_optionflags, setUp, tearDown)
+from canonical.launchpad.testing.systemdocs import (
+    LayeredDocFileSuite, setUp, tearDown)
 from canonical.testing import LaunchpadFunctionalLayer
 
 def test_suite():
     suite = unittest.TestSuite()
-    suite.addTest(DocFileSuite('questioncontextmenu.txt',
-                  optionflags=default_optionflags))
-    suite.addTest(FunctionalDocFileSuite('question-subscribe_me.txt',
-                  optionflags=default_optionflags, package=__name__,
+    suite.addTest(LayeredDocFileSuite('questioncontextmenu.txt'))
+    suite.addTest(LayeredDocFileSuite('question-subscribe_me.txt',
                   setUp=setUp, tearDown=tearDown,
                   layer=LaunchpadFunctionalLayer))
     return suite
