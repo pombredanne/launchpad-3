@@ -104,6 +104,14 @@ class IArchive(IHasOwner):
         :return: SelectResults containing `ISourcePackagePublishingHistory`.
         """
 
+    def getSourcesForDeletion(name=None):
+        """All `ISourcePackagePublishingHistory` available for deletion.
+
+        :param: name: optional source name filter (SQL LIKE)
+
+        :return: SelectResults containing `ISourcePackagePublishingHistory`.
+        """
+
     def getPublishedOnDiskBinaries(name=None, version=None, status=None,
                                    distroarchseries=None, exact_match=False):
         """Unique `IBinaryPackagePublishingHistory` target to this archive.

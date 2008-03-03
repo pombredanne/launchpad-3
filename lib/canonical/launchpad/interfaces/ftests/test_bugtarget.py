@@ -18,12 +18,11 @@ import unittest
 
 from zope.component import getUtility
 
-from canonical.functional import FunctionalDocFileSuite
 from canonical.launchpad.interfaces import (
     BugTaskStatus, CreateBugParams, IBugTaskSet, IDistribution,
     IDistributionSet, ILaunchBag, IProductSet, IProjectSet)
-from canonical.launchpad.ftests.test_system_documentation import (
-    default_optionflags, setUp, tearDown)
+from canonical.launchpad.testing.systemdocs import (
+    LayeredDocFileSuite, setUp, tearDown)
 from canonical.testing import LaunchpadFunctionalLayer
 
 
@@ -177,9 +176,8 @@ def test_suite():
         ]
 
     for setUpMethod in setUpMethods:
-        test = FunctionalDocFileSuite('bugtarget-questiontarget.txt',
+        test = LayeredDocFileSuite('bugtarget-questiontarget.txt',
             setUp=setUpMethod, tearDown=tearDown,
-            optionflags=default_optionflags, package=__name__,
             layer=LaunchpadFunctionalLayer)
         suite.addTest(test)
 
@@ -189,9 +187,8 @@ def test_suite():
     setUpMethods.append(projectSetUp)
 
     for setUpMethod in setUpMethods:
-        test = FunctionalDocFileSuite('bugtarget-bugcount.txt',
+        test = LayeredDocFileSuite('bugtarget-bugcount.txt',
             setUp=setUpMethod, tearDown=tearDown,
-            optionflags=default_optionflags, package=__name__,
             layer=LaunchpadFunctionalLayer)
         suite.addTest(test)
 
