@@ -18,7 +18,16 @@ $Id: test.py 25177 2004-06-02 13:17:31Z jim $
 """
 import sys, os, psycopg, time, logging, warnings, re
 
-os.setpgrp() # So test_on_merge.py can reap its children
+
+if os.getsid(0) == os.getsid(os.getppid()):
+    # We need to become the process group leader so test_on_merge.py
+    # can reap its children.
+    #
+    # Note that if setpgrp() is used to move a process from one
+    # process group to another (as is done by some shells when
+    # creating pipelines), then both process groups must be part of
+    # the same session.
+    os.setpgrp()
 
 # Make tests run in a timezone no launchpad developers live in.
 # Our tests need to run in any timezone.
