@@ -171,6 +171,19 @@ class IOAuthRequestToken(IOAuthToken):
         description=_('The date in which the user authorized (or not) the '
                       'consumer to access his protected resources on '
                       'Launchpad.'))
+    is_used = Bool(
+        title=_('Has this token been used?'), required=False, readonly=True,
+        description=_('An used request token can only be exchanged for an '
+                      'access token (in case the user granted access).'))
+
+    def review(user, permission):
+        """Grant :permission: as :user: to this token's consumer.
+
+        Set this token's person, permission and date_reviewed.  This will also
+        cause this token to be marked as used, meaning it can only be
+        exchanged for an access token with the same permission, consumer and 
+        person.
+        """
 
 
 class IOAuthNonce(Interface):

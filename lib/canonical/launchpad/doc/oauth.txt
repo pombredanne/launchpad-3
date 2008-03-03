@@ -54,3 +54,21 @@ Launchpad.
     None
     >>> print request_token.date_reviewed
     None
+
+Once the user reviews (approve/decline) the consumer's request, the token is
+considered used and can only be exchanged for an access token (when the access
+is granted by the user).
+
+    >>> salgado = getUtility(IPersonSet).getByName('salgado')
+    >>> request_token.review(salgado, OAuthPermission.UNAUTHORIZED)
+
+    >>> from datetime import datetime
+    >>> import pytz
+    >>> print request_token.person.name
+    salgado
+    >>> request_token.permission
+    <DBItem OAuthPermission.UNAUTHORIZED...
+    >>> request_token.date_reviewed <= datetime.now(pytz.timezone('UTC'))
+    True
+    >>> request_token.is_used
+    True

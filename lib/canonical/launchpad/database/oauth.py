@@ -98,6 +98,19 @@ class OAuthRequestToken(OAuthToken):
 
     date_reviewed = UtcDateTimeCol(default=None, notNull=False)
 
+    def review(self, user, permission):
+        """See `IOAuthConsumer`."""
+        assert not self.is_used, (
+            "Request tokens can be used (reviewed) only once.")
+        self.date_reviewed = datetime.now(pytz.timezone('UTC'))
+        self.person = user
+        self.permission = permission
+
+    @property
+    def is_used(self):
+        """See `IOAuthConsumer`."""
+        return self.date_reviewed is not None
+
 
 class OAuthNonce(SQLBase):
     """See `IOAuthNonce`."""
