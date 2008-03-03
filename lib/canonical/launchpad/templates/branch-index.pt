@@ -14,7 +14,6 @@
 <metal:leftportlets fill-slot="portlets">
   <div tal:replace="structure context/@@+portlet-details" />
   <div tal:replace="structure context/@@+portlet-subscribers" />
-  <div tal:replace="structure context/@@+portlet-specifications" />
 </metal:leftportlets>
 
 <div metal:fill-slot="main">
@@ -240,6 +239,19 @@
       </tal:bugs>
     </div>
   </tal:has-related-bugs>
+
+  <tal:has-related-blueprints condition="context/spec_links">
+    <div id="related-blueprints">
+      <h2>Related blueprints</h2>
+      <tal:blueprints tal:define="branch context;
+                                  show_edit python:True;
+                                  show_whiteboard python:True;">
+        <metal:spec-branch-links
+            use-macro="context/@@+macros/spec-branch-links"/>
+      </tal:blueprints>
+    </div>
+  </tal:has-related-blueprints>
+
 
       <div class="related">
 

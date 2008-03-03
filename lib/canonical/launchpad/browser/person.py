@@ -120,7 +120,7 @@ from canonical.launchpad.interfaces import (
     IEmailAddressSet, IGPGHandler, IGPGKeySet, IIrcIDSet, IJabberIDSet,
     ILanguageSet, ILaunchBag, ILoginTokenSet, IMailingListSet, INewPerson,
     IPOTemplateSet, IPasswordEncryptor, IPerson, IPersonChangePassword,
-    IPersonClaim, IPersonSet, IPollSet, IPollSubset,
+    IPersonClaim, IPersonSet, IPollSet, IPollSubset, IOpenLaunchBag,
     IRequestPreferredLanguages, ISSHKeySet, ISignedCodeOfConductSet, ITeam,
     ITeamMembership, ITeamMembershipSet, ITeamReassignment, IWikiNameSet,
     LoginTokenType, NotFoundError, PersonCreationRationale, PersonVisibility,
@@ -245,7 +245,17 @@ class BranchTraversalMixin:
     def traverse(self, product_name):
         branch_name = self.request.stepstogo.consume()
         if branch_name is not None:
-            return self.context.getBranch(product_name, branch_name)
+            branch = self.context.getBranch(product_name, branch_name)
+            if branch is not None and branch.product is not None:
+                # The launch bag contains "stuff of interest" related to where
+                # the user is traversing to.  When a user traverses over a
+                # product, the product gets added to the launch bag by the
+                # traversal machinery, however when traversing to a branch, we
+                # short circuit it somewhat by looking for a two part key (in
+                # addition to the user) to identify the branch, and as such
+                # the product isnt't being added to the bag by the internals.
+                getUtility(IOpenLaunchBag).add(branch.product)
+            return branch
         else:
             return super(BranchTraversalMixin, self).traverse(product_name)
 

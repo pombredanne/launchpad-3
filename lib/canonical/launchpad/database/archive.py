@@ -18,7 +18,8 @@ from zope.interface import implements
 from canonical.archivepublisher.config import Config as PubConfig
 from canonical.config import config
 from canonical.database.enumcol import EnumCol
-from canonical.database.sqlbase import cursor, SQLBase, sqlvalues, quote_like
+from canonical.database.sqlbase import (
+    cursor, quote, quote_like, sqlvalues, SQLBase)
 from canonical.launchpad.database.publishing import (
     SourcePackagePublishingHistory, BinaryPackagePublishingHistory)
 from canonical.launchpad.database.librarian import LibraryFileContent
@@ -197,6 +198,53 @@ class Archive(SQLBase):
 
         preJoins = ['sourcepackagerelease']
 
+        sources = SourcePackagePublishingHistory.select(
+            ' AND '.join(clauses), clauseTables=clauseTables, orderBy=orderBy,
+            prejoins=preJoins)
+
+        return sources
+
+    def getSourcesForDeletion(self, name=None):
+        """See `IArchive`."""
+        clauses = ["""
+            SourcePackagePublishingHistory.archive = %s AND
+            SourcePackagePublishingHistory.sourcepackagerelease =
+                SourcePackageRelease.id AND
+            SourcePackageRelease.sourcepackagename =
+                SourcePackageName.id
+        """ % sqlvalues(self)]
+
+        has_published_binaries_clause = """
+            EXISTS (SELECT TRUE FROM
+                BinaryPackagePublishingHistory bpph,
+                BinaryPackageRelease bpr, Build
+            WHERE
+                bpph.archive = %s AND
+                bpph.status = %s AND
+                bpph.binarypackagerelease = bpr.id AND
+                bpr.build = Build.id AND
+                Build.sourcepackagerelease = SourcePackageRelease.id)
+        """ % sqlvalues(self, PackagePublishingStatus.PUBLISHED)
+
+        clauses.append("""
+           (%s OR SourcePackagePublishingHistory.status = %s)
+        """ % (has_published_binaries_clause,
+               quote(PackagePublishingStatus.PUBLISHED)))
+
+
+        clauseTables = ['SourcePackageRelease', 'SourcePackageName']
+
+        order_const = "debversion_sort_key(SourcePackageRelease.version)"
+        desc_version_order = SQLConstant(order_const+" DESC")
+        orderBy = ['SourcePackageName.name', desc_version_order,
+                   '-SourcePackagePublishingHistory.id']
+
+        if name is not None:
+            clauses.append("""
+                    SourcePackageName.name LIKE '%%' || %s || '%%'
+                """ % quote_like(name))
+
+        preJoins = ['sourcepackagerelease']
         sources = SourcePackagePublishingHistory.select(
             ' AND '.join(clauses), clauseTables=clauseTables, orderBy=orderBy,
             prejoins=preJoins)
