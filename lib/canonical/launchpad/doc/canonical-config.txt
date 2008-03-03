@@ -46,8 +46,8 @@ launchpad.testrunner.conf, which extends the default conf.
     'testrunner'
     >>> config.filename
     '.../configs/testrunner/launchpad-lazr.conf'
-    >>> config.extends.name
-    'schema-lazr.conf'
+    >>> config.extends.filename
+    '.../configs/default/launchpad-lazr.conf'
 
 
 == Transition from ZConfig to LAZR ==
