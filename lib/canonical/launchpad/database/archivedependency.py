@@ -18,6 +18,7 @@ from canonical.launchpad.interfaces import IArchiveDependency
 
 
 class ArchiveDependency(SQLBase):
+    """See `IArchiveDependency`."""
 
     implements(IArchiveDependency)
 

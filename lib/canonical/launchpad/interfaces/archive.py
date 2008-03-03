@@ -6,6 +6,7 @@
 __metaclass__ = type
 
 __all__ = [
+    'ArchiveDependencyError',
     'ArchivePurpose',
     'IArchive',
     'IArchiveEditDependenciesForm',
@@ -20,6 +21,17 @@ from zope.schema import Bool, Choice, Int, Text, TextLine
 from canonical.launchpad import _
 from canonical.launchpad.interfaces import IHasOwner
 from canonical.lazr import DBEnumeratedType, DBItem
+
+
+class ArchiveDependencyError(Exception):
+    """Raised when an `IArchiveDependency` does not fit the context archive.
+
+    A given dependency is considered inappropriate when:
+
+     * It is the archive itself,
+     * It is not a PPA,
+     * It is already recorded.
+    """
 
 
 class IArchive(IHasOwner):
@@ -156,31 +168,26 @@ class IArchive(IHasOwner):
     def getArchiveDependency(dependency):
         """Return the `IArchiveDependency` object for the given dependency.
 
-        'dependency' is an `IArchive` object.
-
-        Return None if a corresponding object could not be found.
+        :param dependency: is an `IArchive` object.
+        :return: `IArchiveDependency` or None if a corresponding object
+            could not be found.
         """
 
     def removeArchiveDependency(dependency):
         """Remove the `IArchiveDependency` record for the given dependency.
 
-        'dependency' is an `IArchive` object.
+        :param dependency: is an `IArchive` object.
         """
 
     def addArchiveDependency(dependency):
         """Record an archive dependency record for the context archive.
 
-        'dependency' is an `IArchive` object.
+        Raises `ArchiveDependencyError` if given 'dependency' does not fit
+        the context archive.
 
-        Raises AssertionError if given 'dependency' matches the one of the
-        following conditions:
-
-         * is the archive itself,
-         * is not a PPA,
-         * is already recorded.
-
-        Return a `IArchiveDependency` object targeted to the context
-        `IArchive` requiring 'dependency' `IArchive`.
+        :param dependency: is an `IArchive` object.
+        :return: a `IArchiveDependency` object targeted to the context
+            `IArchive` requiring 'dependency' `IArchive`.
         """
 
 
@@ -212,7 +219,7 @@ class IArchivePackageDeletionForm(Interface):
 
 
 class IArchiveEditDependenciesForm(Interface):
-    """Schema used to edit dependencies setings within a archive."""
+    """Schema used to edit dependencies settings within a archive."""
 
     dependency_candidate = Choice(
         title=_('PPA Dependency'), required=False, vocabulary='PPA',

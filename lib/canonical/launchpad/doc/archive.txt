@@ -675,7 +675,7 @@ The archive dependency is immediately recorded on Celso's PPA.
     PPA for Mark Shuttleworth
 
 'getArchiveDependency' returns the corresponding `IArchiveDependency`
-for a give 'dependency' if it exists, otherwise it returns None.
+for a given 'dependency' if it exists, otherwise it returns None.
 
     >>> print cprov.archive.getArchiveDependency(
     ...     sabdfl.archive).dependency.title
@@ -707,14 +707,14 @@ dependency is published in Mark's PPA.
     >>> no_priv.archive.addArchiveDependency(cprov.archive)
     Traceback (most recent call last):
     ...
-    AssertionError: This dependency is already recorded.
+    ArchiveDependencyError: This dependency is already recorded.
 
 'dependency' and target archive are the same.
 
     >>> no_priv.archive.addArchiveDependency(no_priv.archive)
     Traceback (most recent call last):
     ...
-    AssertionError: An archive should not depend on itself.
+    ArchiveDependencyError: An archive should not depend on itself.
 
 A 'dependency' can only be a PPA. Other archives (PRIMARY, PARTNER or
 EMBARGOED) are explicitly forbidden until we can analyse the impact of
@@ -724,7 +724,7 @@ allowing them.
     >>> no_priv.archive.addArchiveDependency(ubuntu.main_archive)
     Traceback (most recent call last):
     ...
-    AssertionError: Archive dependencies only applies to PPAs.
+    ArchiveDependencyError: Archive dependencies only applies to PPAs.
 
 'removeArchiveDependency' allow us to purge a recorded 'dependency'.
 

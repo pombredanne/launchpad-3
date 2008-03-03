@@ -19,6 +19,6 @@ class IArchiveDependency(Interface):
 
     date_created = Attribute("Instant when the dependency was created.")
 
-    archive = Attribute("Archive affected by this dependency")
+    archive = Attribute("Archive affected by this dependency.")
 
     dependency = Attribute("Dependency archive.")

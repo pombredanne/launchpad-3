@@ -26,8 +26,9 @@ from canonical.launchpad.database.publishing import (
     SourcePackagePublishingHistory, BinaryPackagePublishingHistory)
 from canonical.launchpad.database.librarian import LibraryFileContent
 from canonical.launchpad.interfaces import (
-    ArchivePurpose, IArchive, IArchiveSet, IHasOwner, IHasBuildRecords,
-    IBuildSet, ILaunchpadCelebrities, PackagePublishingStatus)
+    ArchiveDependencyError, ArchivePurpose, IArchive, IArchiveSet,
+    IHasOwner, IHasBuildRecords, IBuildSet, ILaunchpadCelebrities,
+    PackagePublishingStatus)
 from canonical.launchpad.webapp.url import urlappend
 from canonical.launchpad.validators.person import public_person_validator
 
@@ -443,13 +444,16 @@ class Archive(SQLBase):
     def addArchiveDependency(self, dependency):
         """See `IArchive`."""
         if dependency == self:
-            raise AssertionError("An archive should not depend on itself.")
+            raise ArchiveDependencyError(
+                "An archive should not depend on itself.")
 
         if dependency.purpose != ArchivePurpose.PPA:
-            raise AssertionError("Archive dependencies only applies to PPAs.")
+            raise ArchiveDependencyError(
+                "Archive dependencies only applies to PPAs.")
 
         if self.getArchiveDependency(dependency):
-            raise AssertionError("This dependency is already recorded.")
+            raise ArchiveDependencyError(
+                "This dependency is already recorded.")
 
         return ArchiveDependency(archive=self, dependency=dependency)
 
