@@ -1,6 +1,34 @@
 # Copyright 2008 Canonical Ltd.  All rights reserved.
 
-"""Proxies that connect to XML-RPC servers."""
+"""XML-RPC proxies that do *not* connect to XML-RPC servers.
+
+Some Launchpad components work by talking to XML-RPC servers. When we test
+these components, we want them to have access to the APIs provided by the
+XML-RPC servers, without necessarily *running* any XML-RPC servers.
+Specifically, we want to test the codehosting system without necessarily
+testing the authserver.
+
+This module provides alternative XML-RPC 'proxy' classes. Instead of
+marshalling the XML-RPC request, sending the request over HTTP, waiting for a
+response, then unmarshalling and returning the response, these proxies just
+call the underlying API. When our tests use these 'in-memory proxies', they
+don't need to launch and shutdown the XML-RPC server, making them more
+reliable and generally faster.
+
+There are two in-memory proxies. One behaves like `xmlrpclib.ServerProxy` and
+is used in code that does blocking network I/O. The other behaves like
+`twisted.web.xmlrpc.Proxy` and is used in code that does non-blocking,
+Twisted-style asynchronous I/O.
+
+The decision to use the in-memory proxies is made by the two wrappers we
+provide: `get_blocking_proxy` and `get_twisted_proxy`. When given a URL like
+'fake:///user-details-2', these methods will return an in-memory proxy. When
+given an HTTP url, they will return a real XML-RPC proxy.
+
+Note: All Launchpad code that talks to the authserver should use these methods
+to acquire an XML-RPC client.
+"""
+
 
 __metaclass__ = type
 __all__ = [
