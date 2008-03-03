@@ -33,6 +33,7 @@ Consumer with the same key.
     ...
     AssertionError: ...
 
+
 == Request tokens ==
 
 When a consumer wants to access protected resources on Launchpad, it
@@ -43,6 +44,13 @@ request tokens are created using IOAuthConsumer.newRequestToken().
     >>> request_token = consumer.newRequestToken()
     >>> verifyObject(IOAuthRequestToken, request_token)
     True
+
+The token's key and secret have a length of 20 and 80 respectively.
+
+    >>> len(request_token.key)
+    20
+    >>> len(request_token.secret)
+    80
 
 Initially, a token does not have a person or permission associated
 with it as the consumer doesn't know what the user's identity is on

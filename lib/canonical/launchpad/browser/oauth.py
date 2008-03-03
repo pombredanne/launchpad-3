@@ -10,6 +10,10 @@ from canonical.launchpad.interfaces import IOAuthConsumerSet
 from canonical.launchpad.webapp import LaunchpadView
 
 
+# The challenge included in responses with a 401 status.
+CHALLENGE = 'OAuth realm="https://api.launchpad.net"'
+
+
 class OAuthRequestTokenView(LaunchpadView):
     """Where consumers can ask for a request token."""
 
@@ -23,13 +27,14 @@ class OAuthRequestTokenView(LaunchpadView):
         consumer = getUtility(IOAuthConsumerSet).getByKey(
             form.get('oauth_consumer_key'))
 
+        if consumer is None:
+            self.request.unauthorized(CHALLENGE)
+            return u''
         # XXX: 2008-02-27, salgado: We should verify the signature here, but
         # for now it doesn't make much sense since in the beginning all our
         # consumer secrets will be empty.
-        challenge = 'OAuth realm="https://api.launchpad.net"'
-        if consumer is None:
-            self.request.unauthorized(challenge)
-            return u''
+        assert consumer.secret == '', (
+            'We should not have any consumers with non-empty keys.')
         token = consumer.newRequestToken()
         body = u'oauth_token=%s&oauth_token_secret=%s' % (
             token.key, token.secret)
