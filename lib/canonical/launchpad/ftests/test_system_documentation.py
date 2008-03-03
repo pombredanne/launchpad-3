@@ -648,7 +648,7 @@ special = {
             tearDown=test_notifications.tearDown,
             stdout_logging=False, layer=None
             ),
-    'translationmessage-destroy.txt': FunctionalDocFileSuite(
+    'translationmessage-destroy.txt': LayeredDocFileSuite(
             '../doc/translationmessage-destroy.txt',
             setUp=translationMessageDestroySetUp,
             tearDown=translationMessageDestroyTearDown,
