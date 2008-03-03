@@ -11,6 +11,7 @@ __all__ = [
     'IArchive',
     'IArchiveEditDependenciesForm',
     'IArchivePackageDeletionForm',
+    'IArchiveEditDependenciesForm',
     'IArchiveSet',
     'IPPAActivateForm',
     ]
