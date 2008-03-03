@@ -45,10 +45,6 @@ required. Lines that start with a hash (#) are comments.
     # This section is required, and it defines all the keys for its category.
     [section-2.app-b]
     key1: True
-    # These sections define a common set of required keys and default values.
-    [section_3.template]
-    key1: 17
-    key2: 3.1415
     # This section is optional; it uses the keys defined
     # by section_3.template.
     [section_3.app_a.optional]
@@ -57,9 +53,16 @@ required. Lines that start with a hash (#) are comments.
     [section_3.app_b]
     key2: changed
     key3: unique
+    # These sections define a common set of required keys and default values.
+    [section_3.template]
+    key1: 17
+    key2: 3.1415
     # This section is optional.
     [section-5.optional]
     key1: something
+    # This section has a name similar to a category.
+    [section_33]
+    key1: fnord
 
     >>> schema = ConfigSchema(base_conf)
     >>> verifyObject(IConfigSchema, schema)
@@ -81,6 +84,7 @@ over in a loop as needed.
     section_1
     section_3.app_a
     section_3.app_b
+    section_33
 
 You can check if the schema contains a section name, and that can be
 used to access the SchemaSection as a subscript.
@@ -390,6 +394,7 @@ configured.
     section-5
     section_1
     section_3.app_b
+    section_33
 
 You can check if a section name is in a config.
 
@@ -677,6 +682,7 @@ The config's sections are updated with 'section_3.app_a' too.
     section_1
     section_3.app_a
     section_3.app_b
+    section_33
 
 A config file may state that it extends its schema (to clearly connect
 the config to the schema). The schema can also be pushed to reset the
@@ -740,6 +746,7 @@ keys ('key1' and 'key5') for 'section_1' were restored.
     section-5
     section_1
     section_3.app_b
+    section_33
 
     >>> for key in sorted(config['section_1']):
     ...     print key, ':', config['section_1'][key]
