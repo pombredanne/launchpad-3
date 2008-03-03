@@ -25,8 +25,8 @@ OAuthConsumerSet utility.
     >>> print consumer_set.getByKey('gfdsa')
     None
 
-As mentioned above, the keys are unique, so we can't create a second Consumer
-with the same key.
+As mentioned above, the keys are unique, so we can't create a second
+Consumer with the same key.
 
     >>> consumer_set.new(key='asdfg')
     Traceback (most recent call last):
@@ -35,17 +35,18 @@ with the same key.
 
 == Request tokens ==
 
-When a consumer wants to access protected resources on Launchpad, it must
-first ask for an OAuthRequestToken, which is then used when the consumer sends
-the user to the Launchpad authorization page.  The request tokens are created
-using IOAuthConsumer.newRequestToken().
+When a consumer wants to access protected resources on Launchpad, it
+must first ask for an OAuthRequestToken, which is then used when the
+consumer sends the user to the Launchpad authorization page.  The
+request tokens are created using IOAuthConsumer.newRequestToken().
 
     >>> request_token = consumer.newRequestToken()
     >>> verifyObject(IOAuthRequestToken, request_token)
     True
 
-Initially, these tokens don't have a person or permission associated with as
-the consumer doesn't know what's the user's identity on Launchpad.
+Initially, a token does not have a person or permission associated
+with it as the consumer doesn't know what the user's identity is on
+Launchpad.
 
     >>> print request_token.person
     None

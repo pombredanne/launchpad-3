@@ -1,7 +1,7 @@
 = Asking for a request token =
 
-Our sample consumer (whose key is 'foobar123451432') asks Launchpad for a
-request token which may later be exchanged for an access token.
+Our sample consumer (whose key is 'foobar123451432') asks Launchpad for
+a request token which may later be exchanged for an access token.
 
     >>> import time
     >>> from urllib import urlencode
@@ -18,7 +18,8 @@ request token which may later be exchanged for an access token.
     >>> print anon_browser.contents
     oauth_token=...&oauth_token_secret=...
 
-If the consumer is not registered in Launchpad, we respond with a 401 status.
+If the consumer is not registered in Launchpad, we respond with a 401
+status.
 
     >>> data2 = data.copy()
     >>> data2['oauth_consumer_key'] = 'a'

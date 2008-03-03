@@ -106,8 +106,6 @@ class IOAuthConsumerSet(Interface):
             consumer.
         :param secret: A secret which should be used by the consumer to sign
             its requests.
-        :raises AssertionError: When `key` is already in use by another
-            consumer.
         """
 
     def getByKey(key):
