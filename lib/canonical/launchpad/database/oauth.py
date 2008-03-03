@@ -8,6 +8,10 @@ __all__ = [
     'OAuthNonce',
     'OAuthRequestToken']
 
+import random
+import pytz
+from datetime import datetime, timedelta
+
 from zope.interface import implements
 
 from sqlobject import BoolCol, ForeignKey, StringCol
@@ -22,6 +26,10 @@ from canonical.launchpad.interfaces import (
     IOAuthRequestToken, OAuthPermission)
 
 
+# How many hours should a request token be valid for?
+REQUEST_TOKEN_VALIDITY = 12
+
+
 class OAuthConsumer(SQLBase):
     """See `IOAuthConsumer`."""
     implements(IOAuthConsumer)
@@ -30,6 +38,23 @@ class OAuthConsumer(SQLBase):
     disabled = BoolCol(notNull=True, default=False)
     key = StringCol(notNull=True)
     secret = StringCol(notNull=False, default='')
+
+    def newRequestToken(self):
+        """See `IOAuthConsumer`."""
+        characters = '0123456789bcdfghjklmnpqrstvwxzBCDFGHJKLMNPQRSTVWXZ'
+        key_length = 20
+        key = ''.join(
+            random.choice(characters) for count in range(key_length))
+        while OAuthRequestToken.selectOneBy(key=key) is not None:
+            key = ''.join(
+                random.choice(characters) for count in range(key_length))
+        secret_length = 20
+        secret = ''.join(
+            random.choice(characters) for count in range(secret_length))
+        date_expires = (datetime.now(pytz.timezone('UTC'))
+                        + timedelta(hours=REQUEST_TOKEN_VALIDITY))
+        return OAuthRequestToken(
+            consumer=self, key=key, secret=secret, date_expires=date_expires)
 
 
 class OAuthConsumerSet:
@@ -50,8 +75,10 @@ class OAuthConsumerSet:
 class OAuthToken(SQLBase):
     """See `IOAuthToken`."""
 
-    consumer = ForeignKey(dbName='consumer', notNull=True)
-    person = ForeignKey(dbName='person', notNull=False, default=None)
+    consumer = ForeignKey(
+        dbName='consumer', foreignKey='OAuthConsumer', notNull=True)
+    person = ForeignKey(
+        dbName='person', foreignKey='Person', notNull=False, default=None)
     permission = EnumCol(
         enum=OAuthPermission, notNull=False, default=None)
     date_created = UtcDateTimeCol(default=UTC_NOW, notNull=True)
@@ -76,6 +103,7 @@ class OAuthNonce(SQLBase):
     """See `IOAuthNonce`."""
     implements(IOAuthNonce)
 
-    consumer = ForeignKey(dbName='consumer', notNull=True)
+    consumer = ForeignKey(
+        dbName='consumer', foreignKey='OAuthConsumer', notNull=True)
     request_timestamp = UtcDateTimeCol(default=UTC_NOW, notNull=True)
     nonce = StringCol(notNull=True)
