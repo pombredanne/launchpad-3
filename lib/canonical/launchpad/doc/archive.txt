@@ -6,7 +6,7 @@ records to disk, including configuration and indexes.
 
     >>> from canonical.launchpad.webapp.testing import verifyObject
     >>> from canonical.launchpad.interfaces import (
-    ...     ArchivePurpose, IPerson, IPersonSet, IArchiveSet, IArchive,
+    ...     ArchivePurpose, IPersonSet, IArchiveSet, IArchive,
     ...     IDistributionSet)
 
     >>> cprov = getUtility(IPersonSet).getByName('cprov')
@@ -510,6 +510,49 @@ decreases.
     >>> flush_database_updates()
     >>> cprov_archive.number_of_binaries
     2
+
+
+== Sources available for deletions ==
+
+'getSourcesForDeletion' is the base for '+delete-packages' page on PPA
+context it allows us to lookup for `ISourcePackagePublishingHistory`
+records which were not deleted yet.
+
+ 1. source publication is in PUBLISHED status OR
+ 2. source contains one or more binary publication in PUBLISHED status.
+
+    >>> cprov_archive.getSourcesForDeletion().count()
+    2
+
+This method can optionally receive a source package name filter (SQL
+LIKE) to restrict its result.
+
+    >>> cprov_archive.getSourcesForDeletion(name='ice').count()
+    1
+
+If only the source publication is DELETED, leaving its binary behind,
+it continues to be considered 'available for deletion'.
+
+    >>> removal_candidate = cprov_archive.getPublishedSources(
+    ...     name='ice')[0]
+    >>> removal_candidate.getPublishedBinaries().count()
+    1
+
+    >>> unused = removal_candidate.requestDeletion(cprov, 'go away !')
+    >>> flush_database_updates()
+
+    >>> cprov_archive.getSourcesForDeletion(name='ice').count()
+    1
+
+The source publication is only excluded from 'deletion list' when its
+binary is also DELETED.
+
+    >>> for bin in removal_candidate.getPublishedBinaries():
+    ...     unused = bin.requestDeletion(cprov, 'go away !')
+    >>> flush_database_updates()
+
+    >>> cprov_archive.getSourcesForDeletion(name='ice').count()
+    0
 
 
 == Build Lookup ==
