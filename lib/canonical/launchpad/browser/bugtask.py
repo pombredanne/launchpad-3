@@ -78,7 +78,8 @@ from canonical.launchpad.interfaces import (
     IProject, IRemoveQuestionFromBugTaskForm, ISourcePackage,
     IUpstreamBugTask, IUpstreamProductBugTaskSearch, NotFoundError,
     RESOLVED_BUGTASK_STATUSES, UNRESOLVED_BUGTASK_STATUSES,
-    UnexpectedFormData, valid_upstreamtask, validate_distrotask)
+    UnexpectedFormData, valid_upstreamtask, validate_distrotask,
+    IBugMessageSet)
 
 from canonical.launchpad.searchbuilder import all, any, NULL
 
@@ -138,6 +139,11 @@ def get_comments_for_bugtask(bugtask, truncate=False):
         # sure that the BugComment is already created.
         assert comments.has_key(message_id), message_id
         comments[message_id].bugattachments.append(attachment)
+    imported_bug_messages = getUtility(IBugMessageSet).getImportedBugMessages(
+        bugtask.bug)
+    for bug_message in imported_bug_messages:
+        message_id = bug_message.message.id
+        comments[message_id].bugwatch = bug_message.bugwatch
     comments = sorted(comments.values(), key=attrgetter("index"))
     current_title = bugtask.bug.title
     for comment in comments:

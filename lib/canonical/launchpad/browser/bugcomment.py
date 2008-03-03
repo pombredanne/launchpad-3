@@ -21,12 +21,9 @@ def build_comments_from_chunks(chunks, bugtask, truncate=False):
     index = 0
     for chunk in chunks:
         message_id = chunk.message.id
-        bug_message = getUtility(IBugMessageSet).getByBugAndMessage(
-            bugtask.bug, chunk.message)
         bug_comment = comments.get(message_id)
         if bug_comment is None:
-            bug_comment = BugComment(index, chunk.message, bugtask,
-                bug_message.bugwatch)
+            bug_comment = BugComment(index, chunk.message, bugtask)
             comments[message_id] = bug_comment
             index += 1
         bug_comment.chunks.append(chunk)
@@ -50,10 +47,10 @@ class BugComment:
     """
     implements(IBugComment)
 
-    def __init__(self, index, message, bugtask, bugwatch=None):
+    def __init__(self, index, message, bugtask):
         self.index = index
         self.bugtask = bugtask
-        self.bugwatch = bugwatch
+        self.bugwatch = None
 
         self.title = message.title
         self.display_title = False

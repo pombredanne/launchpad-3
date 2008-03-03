@@ -10,7 +10,7 @@ from zope.interface import implements
 
 from sqlobject import ForeignKey
 
-from canonical.database.sqlbase import SQLBase
+from canonical.database.sqlbase import SQLBase, sqlvalues
 from canonical.launchpad.interfaces import IBugMessage, IBugMessageSet
 from canonical.launchpad.database.message import Message, MessageChunk
 
@@ -49,4 +49,10 @@ class BugMessageSet:
     def getByBugAndMessage(self, bug, message):
         """See canonical.launchpad.interfaces.IBugMessageSet."""
         return BugMessage.selectOneBy(bug=bug, message=message)
+
+    def getImportedBugMessages(self, bug):
+        """See IBugMessageSet."""
+        return BugMessage.select("""
+            BugMessage.bug = %s AND
+            BugMessage.bugwatch IS NOT NULL""" % sqlvalues(bug))
 

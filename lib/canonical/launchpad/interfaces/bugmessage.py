@@ -58,6 +58,9 @@ class IBugMessageSet(Interface):
         Return None if no such IBugMesssage exists.
         """
 
+    def getImportedBugMessages(bug):
+        """XXX"""
+
 
 class IBugMessageAddForm(Interface):
     """Schema used to build the add form for bug comment/attachment."""
