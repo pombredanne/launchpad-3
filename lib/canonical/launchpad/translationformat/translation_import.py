@@ -1,4 +1,4 @@
-# Copyright 2005-2007 Canonical Ltd.  All rights reserved.
+# Copyright 2005-2008 Canonical Ltd.  All rights reserved.
 
 __metaclass__ = type
 
@@ -10,6 +10,7 @@ __all__ = [
 
 import gettextpo
 import datetime
+import os
 import pytz
 from zope.component import getUtility
 from zope.interface import implements
@@ -216,6 +217,7 @@ class ExistingPOFileInDatabase:
         else:
             return False
 
+
 class TranslationImporter:
     """Handle translation resources imports."""
 
@@ -256,13 +258,39 @@ class TranslationImporter:
 
     @cachedproperty
     def supported_file_extensions(self):
-        """See ITranslationImporter."""
+        """See `ITranslationImporter`."""
         file_extensions = []
 
         for importer in importers.itervalues():
             file_extensions.extend(importer.file_extensions)
 
         return sorted(set(file_extensions))
+
+    @cachedproperty
+    def template_suffixes(self):
+        """See `ITranslationImporter`."""
+        # Several formats (particularly the various gettext variants) can have
+        # the same template suffix.
+        unique_suffixes = set(
+            importer.template_suffix for importer in importers.values())
+        return sorted(unique_suffixes)
+
+    def isTemplateName(self, path):
+        """See `ITranslationImporter`."""
+        for importer in importers.itervalues():
+            if path.endswith(importer.template_suffix):
+                return True
+        return False
+
+    def isTranslationName(self, path):
+        """See `ITranslationImporter`."""
+        base_name, suffix = os.path.splitext(path)
+        if suffix not in self.supported_file_extensions:
+            return False
+        for importer_suffix in self.template_suffixes:
+            if path.endswith(importer_suffix):
+                return False
+        return True
 
     def getTranslationFileFormat(self, file_extension, file_contents):
         """See `ITranslationImporter`."""
