@@ -23,6 +23,14 @@ Let's get one from the database:
    >>> spr.dateuploaded
    datetime.datetime(...)
 
+published_archives returns a set of all the archives that this
+SourcePackageRelease is published in.
+
+    >>> for archive in spr.published_archives:
+    ...     print archive.title
+    Primary Archive for Ubuntu Linux
+    Primary Archive for Ubuntu Test
+
 'age' is a special property that performs on-the-fly:
 {{{
 NOW - dateuploaded
@@ -144,7 +152,6 @@ IDistroSeries API:
 
   >>> from canonical.launchpad.interfaces import (
   ...     IDistributionSet, ISourcePackageNameSet, IGPGKeySet)
-  >>> from canonical.database.constants import UTC_NOW
   >>> from canonical.launchpad.interfaces import SourcePackageUrgency
 
   >>> hoary = getUtility(IDistributionSet)['ubuntu']['hoary']
