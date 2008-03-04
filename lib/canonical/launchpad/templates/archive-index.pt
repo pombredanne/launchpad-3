@@ -39,6 +39,26 @@
 
       <tal:entries replace="structure view/sources_list_entries" />
 
+      <div id="ppa-dependencies" tal:condition="context/dependencies">
+
+        <h3>PPA dependencies</h3>
+
+        <p class="warning message">When installing packages from
+          this PPA you may need to enable one or more of the following
+          PPAs, which have been considered for building packages in
+          this context.</p>
+
+        <ul>
+           <li tal:repeat="dependency context/dependencies">
+             <a tal:attributes="href dependency/dependency/fmt:url"
+                tal:content="dependency/dependency/title" />
+             (included <span
+               tal:replace="dependency/date_created/fmt:displaydate" />)
+           </li>
+        </ul>
+
+      </div> <!-- ppa-dependencies -->
+
       <h2>Packages</h2>
 
       <p tal:condition="not: ppa_active">

@@ -1,4 +1,4 @@
-# Copyright 2006-2007 Canonical Ltd.  All rights reserved.
+# Copyright 2006-2008 Canonical Ltd.  All rights reserved.
 
 __metaclass__ = type
 
@@ -37,6 +37,7 @@ class GettextPOImporter:
     content_type = 'application/x-po'
 
     file_extensions = ['.po', '.pot']
+    template_suffix = '.pot'
 
     uses_source_string_msgids = False
 
@@ -53,11 +54,11 @@ class GettextPOImporter:
         self.content = librarian_client.getFileByAlias(
             translation_import_queue_entry.content.id)
 
-        if translation_import_queue_entry.pofile is not None:
-            pluralformula = (
-                translation_import_queue_entry.pofile.language.pluralexpression)
-        else:
+        pofile = translation_import_queue_entry.pofile
+        if pofile is None:
             pluralformula = None
+        else:
+            pluralformula = pofile.language.pluralexpression
         parser = POParser(pluralformula)
         return parser.parse(self.content.read())
 

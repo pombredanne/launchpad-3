@@ -1,4 +1,4 @@
-# Copyright 2005-2007 Canonical Ltd.  All rights reserved.
+# Copyright 2005-2008 Canonical Ltd.  All rights reserved.
 
 __metaclass__ = type
 
@@ -10,13 +10,14 @@ __all__ = [
 
 import gettextpo
 import datetime
+import os
 import pytz
 from zope.component import getUtility
 from zope.interface import implements
 
 from operator import attrgetter
 
-from canonical.database.sqlbase import cursor, sqlvalues
+from canonical.database.sqlbase import cursor, quote
 
 from canonical.cachedproperty import cachedproperty
 from canonical.config import config
@@ -24,7 +25,7 @@ from canonical.launchpad.interfaces import (
     IPersonSet, ITranslationExporter, ITranslationImporter,
     NotExportedFromLaunchpad, OutdatedTranslationError,
     PersonCreationRationale, RosettaImportStatus, TranslationConflict,
-    TranslationFileFormat)
+    TranslationConstants, TranslationFileFormat)
 from canonical.launchpad.translationformat.kde_po_importer import (
     KdePOImporter)
 from canonical.launchpad.translationformat.gettext_po_importer import (
@@ -108,44 +109,48 @@ class ExistingPOFileInDatabase:
 
 
     def _fetchDBRows(self):
+        msgstr_joins = [
+            "LEFT OUTER JOIN POTranslation pt%d "
+            "ON pt%d.id = TranslationMessage.msgstr%d" % (form, form, form)
+            for form in xrange(TranslationConstants.MAX_PLURAL_FORMS)]
+
+        translations = [
+            "pt%d.translation AS translation%d" % (form, form)
+            for form in xrange(TranslationConstants.MAX_PLURAL_FORMS)]
+
         sql = '''
         SELECT
             POMsgId.msgid AS msgid,
             POMsgID_Plural.msgid AS msgid_plural,
             context,
-            pt0.translation as translation0,
-            pt1.translation as translation1,
-            pt2.translation as translation2,
-            pt3.translation as translation3,
             date_reviewed,
             is_fuzzy,
             is_current,
-            is_imported
+            is_imported,
+            %s
           FROM TranslationMessage
             JOIN POFile ON
               TranslationMessage.pofile=POFile.id AND POFile.id=%s
             JOIN POTMsgSet ON
               POTMsgSet.id=TranslationMessage.potmsgset
-            LEFT OUTER JOIN POTranslation pt0 ON
-              pt0.id=TranslationMessage.msgstr0
-            LEFT OUTER JOIN POTranslation pt1 ON
-              pt1.id=TranslationMessage.msgstr1
-            LEFT OUTER JOIN POTranslation pt2 ON
-              pt2.id=TranslationMessage.msgstr2
-            LEFT OUTER JOIN POTranslation pt3 ON
-              pt3.id=TranslationMessage.msgstr3
+            %s
             JOIN POMsgID ON
               POMsgID.id=POTMsgSet.msgid_singular
             LEFT OUTER JOIN POMsgID AS POMsgID_Plural ON
               POMsgID_Plural.id=POTMsgSet.msgid_plural
           WHERE
                 is_current or is_imported
-          '''
+          ''' % (','.join(translations), quote(self.pofile),
+                 '\n'.join(msgstr_joins))
         cur = cursor()
-        cur.execute(sql % sqlvalues(self.pofile))
+        cur.execute(sql)
+        rows = cur.fetchall()
 
-        for (msgid, msgid_plural, context, msgstr0, msgstr1, msgstr2, msgstr3,
-             date, is_fuzzy, is_current, is_imported) in cur.fetchall():
+        assert TranslationConstants.MAX_PLURAL_FORMS == 4, (
+            "Change this code to support %d plural forms"
+            % TranslationConstants.MAX_PLURAL_FORMS)
+        for (msgid, msgid_plural, context, date, is_fuzzy, is_current,
+             is_imported, msgstr0, msgstr1, msgstr2, msgstr3) in rows:
             if is_current:
                 look_at = self.messages
             elif is_imported:
@@ -165,6 +170,9 @@ class ExistingPOFileInDatabase:
                 message.context = context
                 message.msgid_plural = msgid_plural
 
+            assert TranslationConstants.MAX_PLURAL_FORMS == 4, (
+                "Change this code to support %d plural forms"
+                % TranslationConstants.MAX_PLURAL_FORMS)
             if msgstr0 is not None:
                 message.addTranslation(0, msgstr0)
             if msgstr1 is not None:
@@ -173,6 +181,7 @@ class ExistingPOFileInDatabase:
                 message.addTranslation(2, msgstr2)
             if msgstr3 is not None:
                 message.addTranslation(3, msgstr3)
+
             message.fuzzy = is_fuzzy
 
     def markMessageAsSeen(self, message):
@@ -216,6 +225,7 @@ class ExistingPOFileInDatabase:
         else:
             return False
 
+
 class TranslationImporter:
     """Handle translation resources imports."""
 
@@ -256,13 +266,39 @@ class TranslationImporter:
 
     @cachedproperty
     def supported_file_extensions(self):
-        """See ITranslationImporter."""
+        """See `ITranslationImporter`."""
         file_extensions = []
 
         for importer in importers.itervalues():
             file_extensions.extend(importer.file_extensions)
 
         return sorted(set(file_extensions))
+
+    @cachedproperty
+    def template_suffixes(self):
+        """See `ITranslationImporter`."""
+        # Several formats (particularly the various gettext variants) can have
+        # the same template suffix.
+        unique_suffixes = set(
+            importer.template_suffix for importer in importers.values())
+        return sorted(unique_suffixes)
+
+    def isTemplateName(self, path):
+        """See `ITranslationImporter`."""
+        for importer in importers.itervalues():
+            if path.endswith(importer.template_suffix):
+                return True
+        return False
+
+    def isTranslationName(self, path):
+        """See `ITranslationImporter`."""
+        base_name, suffix = os.path.splitext(path)
+        if suffix not in self.supported_file_extensions:
+            return False
+        for importer_suffix in self.template_suffixes:
+            if path.endswith(importer_suffix):
+                return False
+        return True
 
     def getTranslationFileFormat(self, file_extension, file_contents):
         """See `ITranslationImporter`."""

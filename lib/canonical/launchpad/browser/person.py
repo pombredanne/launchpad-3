@@ -13,7 +13,6 @@ __all__ = [
     'PersonAddView',
     'PersonAnswersMenu',
     'PersonAssignedBugTaskSearchListingView',
-    'PersonAuthoredBranchesView',
     'PersonBranchesMenu',
     'PersonBranchesView',
     'PersonBrandingView',
@@ -48,6 +47,7 @@ __all__ = [
     'PersonLatestQuestionsView',
     'PersonNavigation',
     'PersonOverviewMenu',
+    'PersonOwnedBranchesView',
     'PersonRdfView',
     'PersonRegisteredBranchesView',
     'PersonRelatedBugsView',
@@ -642,18 +642,23 @@ class PersonBranchesMenu(ApplicationMenu):
 
     usedfor = IPerson
     facet = 'branches'
-    links = ['authored', 'registered', 'subscribed', 'addbranch']
+    links = ['all_related', 'registered', 'owned', 'subscribed', 'addbranch']
 
-    def authored(self):
-        text = 'Show authored branches'
-        return Link('+authoredbranches', text, icon='branch')
+    def all_related(self):
+        text = 'All related'
+        return Link(canonical_url(self.context, rootsite='code'),
+                    text, icon='branch')
+
+    def owned(self):
+        text = 'Owned'
+        return Link('+ownedbranches', text, icon='branch')
 
     def registered(self):
-        text = 'Show registered branches'
+        text = 'Registered'
         return Link('+registeredbranches', text, icon='branch')
 
     def subscribed(self):
-        text = 'Show subscribed branches'
+        text = 'Subscribed'
         return Link('+subscribedbranches', text, icon='branch')
 
     def addbranch(self):
@@ -2068,6 +2073,33 @@ class PersonView(LaunchpadView, FeedsMixin):
         if mailing_list is None:
             return None
         return mailing_list.archive_url
+
+    def getLatestUploadedPPAPackages(self):
+        """Return the sourcepackagereleases uploaded to PPAs by this person.
+
+        Results are filtered according to the permission of the requesting
+        user to see private archives.
+        """
+        packages = self.context.getLatestUploadedPPAPackages()
+
+        # For each package we find out which archives it was published in.
+        # If the user has permission to see any of those archives then
+        # the user is permitted to see the package.
+        #
+        # Ideally this check should be done in
+        # IPerson.getLatestUploadedPPAPackages() but formulating the SQL
+        # query is virtually impossible!
+        results = []
+        for package in packages:
+            # Make a shallow copy to remove the Zope security.
+            archives = set(package.published_archives)
+            # Ensure the SPR.upload_archive is also considered.
+            archives.add(package.upload_archive)
+            for archive in archives:
+                if check_permission('launchpad.View', archive):
+                    results.append(package)
+                    break
+        return results
 
 
 class PersonIndexView(XRDSContentNegotiationMixin, PersonView):
@@ -3529,7 +3561,7 @@ class PersonAnswersMenu(ApplicationMenu):
 class PersonBranchesView(BranchListingView):
     """View for branch listing for a person."""
 
-    extra_columns = ('author', 'product', 'role')
+    extra_columns = ('product',)
     heading_template = 'Bazaar branches related to %(displayname)s'
 
     def _branches(self, lifecycle_status, show_dormant):
@@ -3542,36 +3574,25 @@ class PersonBranchesView(BranchListingView):
         return set(getUtility(IBranchSet).getBranchesSubscribedByPerson(
             self.context, [], self.user))
 
-    def roleForBranch(self, branch):
-        person = self.context
-        if branch.author == person:
-            return 'Author'
-        elif branch.owner == person:
-            return 'Registrant'
-        elif branch in self._subscribed_branches:
-            return 'Subscriber'
-        else:
-            return 'Team Branch'
-
-
-class PersonAuthoredBranchesView(BranchListingView):
-    """View for branch listing for a person's authored branches."""
-
-    extra_columns = ('product',)
-    heading_template = 'Bazaar branches authored by %(displayname)s'
-    no_sort_by = (BranchListingSort.AUTHOR,)
-
-    def _branches(self, lifecycle_status, show_dormant):
-        return getUtility(IBranchSet).getBranchesAuthoredByPerson(
-            self.context, lifecycle_status, self.user, self.sort_by,
-            show_dormant)
-
 
 class PersonRegisteredBranchesView(BranchListingView):
     """View for branch listing for a person's registered branches."""
 
-    extra_columns = ('author', 'product')
+    extra_columns = ('product',)
     heading_template = 'Bazaar branches registered by %(displayname)s'
+    no_sort_by = (BranchListingSort.REGISTRANT,)
+
+    def _branches(self, lifecycle_status, show_dormant):
+        return getUtility(IBranchSet).getBranchesRegisteredByPerson(
+            self.context, lifecycle_status, self.user, self.sort_by,
+            show_dormant)
+
+
+class PersonOwnedBranchesView(BranchListingView):
+    """View for branch listing for a person's owned branches."""
+
+    extra_columns = ('product',)
+    heading_template = 'Bazaar branches owned by %(displayname)s'
     no_sort_by = (BranchListingSort.REGISTRANT,)
 
     def _branches(self, lifecycle_status, show_dormant):
@@ -3583,7 +3604,7 @@ class PersonRegisteredBranchesView(BranchListingView):
 class PersonSubscribedBranchesView(BranchListingView):
     """View for branch listing for a person's subscribed branches."""
 
-    extra_columns = ('author', 'product')
+    extra_columns = ('product',)
     heading_template = 'Bazaar branches subscribed to by %(displayname)s'
 
     def _branches(self, lifecycle_status, show_dormant):
