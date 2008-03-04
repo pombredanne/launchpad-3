@@ -43,16 +43,7 @@ class OAuthConsumer(SQLBase):
 
     def newRequestToken(self):
         """See `IOAuthConsumer`."""
-        characters = '0123456789bcdfghjklmnpqrstvwxzBCDFGHJKLMNPQRSTVWXZ'
-        key_length = 20
-        key = ''.join(
-            random.choice(characters) for count in range(key_length))
-        while OAuthRequestToken.selectOneBy(key=key) is not None:
-            key = ''.join(
-                random.choice(characters) for count in range(key_length))
-        secret_length = 80
-        secret = ''.join(
-            random.choice(characters) for count in range(secret_length))
+        key, secret = create_token_key_and_secret(table=OAuthRequestToken)
         date_expires = (datetime.now(pytz.timezone('UTC'))
                         + timedelta(hours=REQUEST_TOKEN_VALIDITY))
         return OAuthRequestToken(
@@ -144,14 +135,13 @@ class OAuthNonce(SQLBase):
     nonce = StringCol(notNull=True)
 
 
-# XXX: Use this in OAuthConsumer.newRequestToken() as well.
 def create_token_key_and_secret(table):
     """Create a key and secret for an OAuth token.
 
     :table: The table in which the key/secret are going to be used. Must be
         one of OAuthAccessToken or OAuthRequestToken.
 
-    The key will have a lenght of 20 and we'll make sure it's not yet in the
+    The key will have a length of 20 and we'll make sure it's not yet in the
     given table.  The secret will have a length of 80.
     """
     characters = '0123456789bcdfghjklmnpqrstvwxzBCDFGHJKLMNPQRSTVWXZ'

@@ -52,8 +52,6 @@ class OAuthAccessTokenView(LaunchpadView):
         (or is not associated with the consumer), the signature does not match
         or no permission has been granted by the user, respond with a 401.
         """
-        # XXX: The consumer check shall probably be factored out into a common
-        # class as it's identical here.
         form = self.request.form
         consumer = getUtility(IOAuthConsumerSet).getByKey(
             form.get('oauth_consumer_key'))
