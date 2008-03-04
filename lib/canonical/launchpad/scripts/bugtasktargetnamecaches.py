@@ -73,7 +73,7 @@ class BugTaskTargetNameCacheUpdater:
         loop = BugTaskTargetNameCachesTunableLoop(
             self.transaction, self.logger)
 
-        loop_tuner = LoopTuner(loop, 1)
+        loop_tuner = LoopTuner(loop, 5)
         loop_tuner.run()
 
         self.logger.info("Updated %i bugtask targetname caches." %
