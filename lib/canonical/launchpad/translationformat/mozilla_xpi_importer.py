@@ -111,8 +111,12 @@ class MozillaZipFile:
         """Update message's file_references with full path."""
         if self.filename is not None:
             # Include self.filename to this entry's file reference.
+            if self.filename.endswith('.jar'):
+                filename = '%s!' % self.filename
+            else:
+                filename = self.filename
             message.file_references_list = [
-                os.path.join(self.filename, file_reference)
+                os.path.join(filename, file_reference)
                 for file_reference in message.file_references_list]
         # Fill file_references field based on the list of files we
         # found.

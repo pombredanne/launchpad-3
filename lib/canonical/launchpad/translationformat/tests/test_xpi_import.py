@@ -183,7 +183,7 @@ class XpiTestCase(unittest.TestCase):
                 self.assertEquals(message.singular_text, u'FooZilla!')
                 self.assertEquals(
                     message.filereferences,
-                    u'en-US.xpi/chrome/en-US.jar/test1.dtd(foozilla.name)')
+                    u'en-US.xpi/chrome/en-US.jar!/test1.dtd(foozilla.name)')
                 self.assertEquals(message.sourcecomment, None)
 
             elif message.msgid_singular.msgid == u'foozilla.play.fire':
@@ -193,7 +193,7 @@ class XpiTestCase(unittest.TestCase):
                     message.singular_text, u'Do you want to play with fire?')
                 self.assertEquals(
                     message.filereferences,
-                    u'en-US.xpi/chrome/en-US.jar/test1.dtd' +
+                    u'en-US.xpi/chrome/en-US.jar!/test1.dtd' +
                         u'(foozilla.play.fire)')
                 self.assertEquals(
                     message.sourcecomment,
@@ -206,7 +206,7 @@ class XpiTestCase(unittest.TestCase):
                     message.singular_text, u'\u0414\u0430\u043d=Day')
                 self.assertEquals(
                     message.filereferences,
-                    u'en-US.xpi/chrome/en-US.jar/test1.properties:5' +
+                    u'en-US.xpi/chrome/en-US.jar!/test1.properties:5' +
                         u'(foozilla.utf8)')
                 self.assertEquals(message.sourcecomment, None)
             elif message.msgid_singular.msgid == u'foozilla.menu.accesskey':
@@ -216,7 +216,7 @@ class XpiTestCase(unittest.TestCase):
                     message.singular_text, u'foozilla.menu.accesskey')
                 self.assertEquals(
                     message.filereferences,
-                    u'en-US.xpi/chrome/en-US.jar/subdir/test2.dtd' +
+                    u'en-US.xpi/chrome/en-US.jar!/subdir/test2.dtd' +
                         u'(foozilla.menu.accesskey)')
                 # The comment shows the key used when there is no translation,
                 # which is noted as the en_US translation.
@@ -229,7 +229,7 @@ class XpiTestCase(unittest.TestCase):
                     message.singular_text, u'foozilla.menu.commandkey')
                 self.assertEquals(
                     message.filereferences,
-                    u'en-US.xpi/chrome/en-US.jar/subdir/test2.dtd' +
+                    u'en-US.xpi/chrome/en-US.jar!/subdir/test2.dtd' +
                         u'(foozilla.menu.commandkey)')
                 # The comment shows the key used when there is no translation,
                 # which is noted as the en_US translation.
