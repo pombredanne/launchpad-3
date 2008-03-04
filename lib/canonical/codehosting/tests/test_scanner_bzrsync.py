@@ -886,6 +886,11 @@ class TestBzrSyncNoEmail(BzrSyncTestCase):
         BzrSyncTestCase.setUp(self)
         stub.test_emails = []
 
+    def assertNoPendingEmails(self, bzrsync):
+        self.assertEqual(
+            len(bzrsync._branch_mailer.pending_emails), 0,
+            "There should be no pending emails.")
+
     def test_no_subscribers(self):
         self.assertEqual(self.db_branch.subscribers.count(), 0,
                          "There should be no subscribers to the branch.")
@@ -893,15 +898,13 @@ class TestBzrSyncNoEmail(BzrSyncTestCase):
     def test_empty_branch(self):
         bzrsync = self.makeBzrSync(self.db_branch)
         bzrsync.syncBranchAndClose()
-        self.assertEqual(len(bzrsync.pending_emails), 0,
-                         "There should be no pending emails.")
+        self.assertNoPendingEmails(bzrsync)
 
     def test_import_revision(self):
         self.commitRevision()
         bzrsync = self.makeBzrSync(self.db_branch)
         bzrsync.syncBranchAndClose()
-        self.assertEqual(len(bzrsync.pending_emails), 0,
-                         "There should be no pending emails.")
+        self.assertNoPendingEmails(bzrsync)
 
     def test_import_uncommit(self):
         self.commitRevision()
@@ -911,8 +914,7 @@ class TestBzrSyncNoEmail(BzrSyncTestCase):
         self.uncommitRevision()
         bzrsync = self.makeBzrSync(self.db_branch)
         bzrsync.syncBranchAndClose()
-        self.assertEqual(len(bzrsync.pending_emails), 0,
-                         "There should be no pending emails.")
+        self.assertNoPendingEmails(bzrsync)
 
     def test_import_recommit(self):
         # No emails should have been generated.
@@ -926,8 +928,7 @@ class TestBzrSyncNoEmail(BzrSyncTestCase):
         self.commitRevision('second')
         bzrsync = self.makeBzrSync(self.db_branch)
         bzrsync.syncBranchAndClose()
-        self.assertEqual(len(bzrsync.pending_emails), 0,
-                         "There should be no pending emails.")
+        self.assertNoPendingEmails(bzrsync)
 
 
 class TestRevisionProperty(BzrSyncTestCase):

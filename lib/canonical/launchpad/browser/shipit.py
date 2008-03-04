@@ -225,11 +225,11 @@ class ShipItRequestView(GeneralFormView):
         # amazon.com. -- Guilherme Salgado, 2007-09-24
         return u''
         if self.flavour == ShipItFlavour.UBUNTU:
-            return ViewPageTemplateFile('../templates/shipit-ubuntu-dvds.pt')(
-                self)
+            return ViewPageTemplateFile(
+                '../templates/shipit-ubuntu-dvds.pt')(self)
         elif self.flavour == ShipItFlavour.KUBUNTU:
-            return ViewPageTemplateFile('../templates/shipit-kubuntu-dvds.pt')(
-                self)
+            return ViewPageTemplateFile(
+                '../templates/shipit-kubuntu-dvds.pt')(self)
         else:
             # We don't have DVDs for Edubuntu. :-(
             return u''
@@ -298,10 +298,10 @@ class ShipItRequestView(GeneralFormView):
 
     @property
     def initial_values(self):
-        """Get initial values from this user's current request, if there's one.
+        """Initial values from this user's current order, if there's one.
 
-        If this user has no current request, then get the initial values from
-        the last shipped request made by this user.
+        If this user has no current order, then get the initial values from
+        the last shipped order made by this user.
         """
         field_values = {}
         user = getUtility(ILaunchBag).user
@@ -332,8 +332,16 @@ class ShipItRequestView(GeneralFormView):
 
     def standardShipItRequests(self):
         """Return all standard ShipIt Requests sorted by quantity of CDs."""
-        requests = getUtility(IStandardShipItRequestSet).getByFlavour(
-            self.flavour, self.user)
+        request_set = getUtility(IStandardShipItRequestSet)
+        requests = request_set.getByFlavour(self.flavour, self.user)
+        # XXX: Guilherme Salgado, 2008-02-22: Evil hack to allow users to
+        # request Ubuntu Server CDs on https://shipit.ubuntu.com/.  A more
+        # reasonable solution will replace this one before we start shipping
+        # Hardy.  When removing this hack, one should remember to remove the
+        # rest of it, from the process() method of this view.
+        if self.flavour == ShipItFlavour.UBUNTU:
+            server_requests = request_set.getByFlavour(ShipItFlavour.SERVER)
+            requests = list(requests) + list(server_requests)
         return sorted(requests, key=attrgetter('totalCDs'))
 
     @cachedproperty
@@ -430,8 +438,8 @@ class ShipItRequestView(GeneralFormView):
             current_order = getUtility(IShippingRequestSet).new(
                 self.user, kw.get('recipientdisplayname'), kw.get('country'),
                 kw.get('city'), kw.get('addressline1'), kw.get('phone'),
-                kw.get('addressline2'), kw.get('province'), kw.get('postcode'),
-                kw.get('organization'), reason)
+                kw.get('addressline2'), kw.get('province'),
+                kw.get('postcode'), kw.get('organization'), reason)
             if self.should_show_custom_request:
                 msg = ('Request accepted. Please note that special requests '
                        'can take up to <strong>ten weeks<strong> to deliver. '
@@ -463,7 +471,16 @@ class ShipItRequestView(GeneralFormView):
             assert not self._extra_fields
             request_type = getUtility(IStandardShipItRequestSet).get(
                 request_type_id)
-            if request_type is None or request_type.flavour != self.flavour:
+            allowed_flavour = False
+            if self.flavour == ShipItFlavour.UBUNTU:
+                # We're currently accepting requests for Desktop/Server CDs on
+                # shipit.ubuntu.com/myrequest.  Soon we'll use a separate page
+                # for that and drop this.
+                allowed_flavour = request_type.flavour in [
+                    ShipItFlavour.UBUNTU, ShipItFlavour.SERVER]
+            else:
+                allowed_flavour = request_type.flavour == self.flavour
+            if request_type is None or not allowed_flavour:
                 # Either a shipit admin removed this option after the user
                 # loaded the page or the user is poisoning the form.
                 return ("The option you chose was not found. Please select "
@@ -478,13 +495,19 @@ class ShipItRequestView(GeneralFormView):
                 quantities[arch] = intOrZero(kw.get(field_name))
                 total_cds += quantities[arch]
 
+        # This is only necessary because we're allowing users to request
+        # Server CDs on shipit.ubuntu.com and so we need to use the standard
+        # option's flavour in those cases.
+        flavour = self.flavour
+        if request_type_id:
+            flavour = request_type.flavour
         # Here we set both requested and approved quantities. This is not a
         # problem because if this order needs manual approval, it'll be
         # flagged as pending approval, meaning that somebody will have to
         # check (and possibly change) its approved quantities before it can be
         # shipped.
         current_order.setQuantities(
-            {self.flavour: quantities}, distroseries=self.series)
+            {flavour: quantities}, distroseries=self.series)
 
         # Make sure that subsequent queries will see the RequestedCDs objects
         # created/updated when we set the order quantities above.
@@ -492,7 +515,8 @@ class ShipItRequestView(GeneralFormView):
 
         current_flavours = current_order.getContainedFlavours()
 
-        max_size_for_auto_approval = ShipItConstants.max_size_for_auto_approval
+        max_size_for_auto_approval = (
+            ShipItConstants.max_size_for_auto_approval)
         new_total_of_cds = current_order.getTotalCDs()
         shipped_orders = self.user.shippedShipItRequestsOfCurrentSeries()
         if new_total_of_cds > max_size_for_auto_approval:
@@ -566,8 +590,8 @@ class ShipItRequestView(GeneralFormView):
         country = data['country']
         if shipit_postcode_required(country) and not data['postcode']:
             errors.append(LaunchpadValidationError(_(
-                "Shipping to your country requires a postcode, but you didn't "
-                "provide one. Please enter one below.")))
+                "Shipping to your country requires a postcode, but you "
+                "didn't provide one. Please enter one below.")))
 
         if self.quantity_fields_mapping:
             total_cds = 0
@@ -607,7 +631,8 @@ class ShippingRequestsView:
 
     @cachedproperty
     def shipitrequests(self):
-        return shortlist(self.batchNavigator.currentBatch(), longest_expected=100)
+        return shortlist(
+            self.batchNavigator.currentBatch(), longest_expected=100)
 
     @cachedproperty
     def totals_for_shipitrequests(self):
@@ -941,8 +966,9 @@ class ShippingRequestApproveOrDenyView(
         return not (self.context.isCancelled() or self.context.isShipped())
 
 
-class ShippingRequestAdminView(GeneralFormView, ShippingRequestAdminMixinView):
-    """The page where admins can create new requests or change existing ones."""
+class ShippingRequestAdminView(
+        GeneralFormView, ShippingRequestAdminMixinView):
+    """Where admins can make new orders or change existing ones."""
 
     quantity_fields_mapping = {
         ShipItFlavour.UBUNTU:
@@ -995,18 +1021,18 @@ class ShippingRequestAdminView(GeneralFormView, ShippingRequestAdminMixinView):
         country = data['country']
         if shipit_postcode_required(country) and not data['postcode']:
             errors.append(LaunchpadValidationError(_(
-                "Shipping to your country requires a postcode, but you didn't "
-                "provide one. Please enter one below.")))
+                "Shipping to your country requires a postcode, but you "
+                "didn't provide one. Please enter one below.")))
 
         if errors:
             raise WidgetsError(errors)
 
     def process(self, *args, **kw):
         # All requests created through the admin UI have the shipit_admin
-        # celeb as the recipient. This is so because shipit administrators have
-        # to be able to create requests on behalf of people who don't have a
-        # Launchpad account, and only the shipit_admin celeb is allowed to
-        # have more than one open request at a time.
+        # celeb as the recipient. This is so because shipit administrators
+        # have to be able to create requests on behalf of people who don't
+        # have a Launchpad account, and only the shipit_admin celeb is allowed
+        # to have more than one open request at a time.
         shipit_admin = getUtility(ILaunchpadCelebrities).shipit_admin
         form = self.request.form
         quantities = {}

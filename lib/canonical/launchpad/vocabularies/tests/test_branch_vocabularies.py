@@ -8,7 +8,7 @@ from unittest import TestCase, TestLoader
 
 from zope.component import getUtility
 
-from canonical.launchpad.ftests.harness import login, logout, ANONYMOUS
+from canonical.launchpad.ftests import login, logout, ANONYMOUS
 from canonical.launchpad.interfaces import IBranchSet, IProductSet
 from canonical.launchpad.testing import LaunchpadObjectFactory
 from canonical.launchpad.vocabularies.dbobjects import (

@@ -43,10 +43,11 @@ feature is exposed.
     >>> list_one.welcome_message = 'Greetings team members!'
     >>> list_one.review(lpadmin, MailingListStatus.APPROVED)
     >>> logout()
+    >>> serial_watcher = itest_helper.LogWatcher('serial')
     >>> from canonical.database.sqlbase import commit
     >>> commit()
 
-    >>> itest_helper.wait_for_mailman()
+    >>> serial_watcher.wait()
     >>> from Mailman.Utils import list_names
     >>> sorted(name for name in list_names() if name.startswith('itest-'))
     ['itest-one']
@@ -62,11 +63,12 @@ what that is on the Mailman side.
 Once the list is created, the team owner can change the welcome message
 through the web.
 
+    >>> serial_watcher.resync()
     >>> browser.open('http://launchpad.dev/~itest-one/+mailinglist')
     >>> browser.getControl('Welcome message text').value = (
     ...     'Salutations team members!')
     >>> browser.getControl('Save').click()
-    >>> itest_helper.wait_for_mailman()
+    >>> serial_watcher.wait()
 
     # Reload the MailList object so that Mailman gets the updated data.
     >>> mailing_list.Load()

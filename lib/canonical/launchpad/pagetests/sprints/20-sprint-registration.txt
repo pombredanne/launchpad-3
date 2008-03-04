@@ -137,13 +137,29 @@ In order to make it easy to organize a meeting, we provide a facility
 for exporting the list of attendees in CSV format to registered users,
 drivers, owners, and admins.
 
+First, we add a couple of IRC nicknames for Carlos.
+
+    >>> from canonical.launchpad.ftests import login, logout
+    >>> from canonical.launchpad.interfaces import IPersonSet
+    >>> from canonical.launchpad.database import IrcID
+    >>> from zope.component import getUtility
+    >>> login('carlos@canonical.com')
+    >>> carlos = getUtility(IPersonSet).getByName('carlos')
+    >>> IrcID(person=carlos, network='freenode', nickname='carlos')
+    <IrcID at ...>
+    >>> IrcID(person=carlos, network='QuakeNet', nickname='qarlos')
+    <IrcID at ...>
+    >>> sorted([ircid.nickname for ircid in carlos.ircnicknames])
+    [u'carlos', u'qarlos']
+    >>> logout()
+
     >>> browser.getLink('Export attendees to CSV').click()
     >>> print browser.headers['content-type']
     text/csv
     >>> print browser.contents
-    Launchpad username,Display name,Email,Phone,Organization,City,Country,Timezone,Arriving,Leaving
-    carlos,Carlos Perelló Marín,carlos@canonical.com,,,,,,2006-01-10T09:00:00Z,2006-02-12T05:41:00Z
-    name12,Sample Person,,,,,,Australia/Perth,2006-01-10T01:00:00Z,2006-02-12T07:30:00Z
+    Launchpad username,Display name,Email,IRC nickname,Phone,Organization,City,Country,Timezone,Arriving,Leaving
+    carlos,Carlos Perelló Marín,carlos@canonical.com,"carlos, qarlos",,,,,,2006-01-10T09:00:00Z,2006-02-12T05:41:00Z
+    name12,Sample Person,,,,,,,Australia/Perth,2006-01-10T01:00:00Z,2006-02-12T07:30:00Z
     <BLANKLINE>
 
     >>> carlos_browser = setupBrowser(auth='Basic carlos@canonical.com:test')
