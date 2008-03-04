@@ -298,9 +298,9 @@ class BranchView(LaunchpadView, FeedsMixin):
         timestamp = datetime.now(pytz.UTC) - timedelta(days=days)
         return self.context.revisions_since(timestamp).count()
 
-    def author_is_owner(self):
-        """Is the branch author set and equal to the registrant?"""
-        return self.context.author == self.context.owner
+    def owner_is_registrant(self):
+        """Is the branch owner the registrant?"""
+        return self.context.owner == self.context.registrant
 
     @property
     def codebrowse_url(self):
