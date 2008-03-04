@@ -53,6 +53,10 @@ def getTxnManager():
         # The authserver methods use getUtility. That needs ZCML to work. We
         # do the set up here because these methods are (in tests) invoked
         # directly from subprocesses.
+        #
+        # We set use_web_security to True in order to take advantage of the
+        # existing Zope security model. This is used to make sure that people
+        # don't gain access to branches which out to be hidden from them.
         execute_zcml_for_scripts(use_web_security=True)
         return initZopeless(implicitBegin=False)
     else:
