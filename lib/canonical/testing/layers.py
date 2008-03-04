@@ -98,8 +98,8 @@ class LayerIsolationError(LayerError):
     This generally indicates a test has screwed up by not resetting
     something correctly to the default state.
 
-    The test suite should abort as further test failures may well
-    be spurious.
+    The test suite should abort if it cannot clean up the mess as further
+    test failures may well be spurious.
     """
 
 
@@ -201,11 +201,11 @@ class BaseLayer:
         BaseLayer.check()
 
         # Objects with __del__ methods cannot participate in refence cycles.
-        # Pick up memory leaks now rather than when Launchpad crashes due
-        # to a leak.
+        # Fail tests with memory leaks now rather than when Launchpad crashes
+        # due to a leak because someone ignored the warnings.
         gc.collect()
         if gc.garbage:
-            raise LayerIsolationError(
+            BaseLayer.flagTestIsolationFailure(
                     "Test left uncollectable garbage\n"
                     "%s (referenced from %s)"
                     % (gc.garbage, gc.get_referrers(*gc.garbage)))
