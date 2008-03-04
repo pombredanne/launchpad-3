@@ -972,8 +972,8 @@ Of course, it's also computed and set when a bugtask is created.
     >>> print err
     INFO creating lockfile
     INFO Updating targetname cache of bugtasks.
-    INFO Updating 1 BugTasks (starting id: 0).
-    INFO Updating...BugTasks...
+    INFO Updating up to 1 BugTasks (starting id: 0).
+    INFO Updating up to...BugTasks...
     INFO Finished updating targetname cache of bugtasks.
 
     >>> process.returncode
@@ -1005,8 +1005,8 @@ it can also be invoked directly.
     >>> updater = BugTaskTargetNameCacheUpdater(transaction, logger)
     >>> updater.run()
     INFO Updating targetname cache of bugtasks.
-    INFO Updating 1 BugTasks (starting id: 0).
-    INFO Updating...BugTasks...
+    INFO Updating up to 1 BugTasks (starting id: 0).
+    INFO Updating up to...BugTasks...
     INFO Finished updating targetname cache of bugtasks.
 
     >>> flush_database_caches()
