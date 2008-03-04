@@ -114,6 +114,16 @@ class SystemErrorView:
         else:
             return ''
 
+    def maybeShowLinkifiedOops(self):
+        """Return linkified OOPS if logged in as a Launchpad Developer."""
+        oopsid = self.request.oopsid
+        oops_root_url = config.launchpad.oops_root_url
+        if self.specialuser:
+            return ('<a href=%s><code class="oopsid">%s</code></a>') % (
+                    oops_root_url+oopsid, oopsid)
+        else:
+            return '<code class="oopsid">%s</code>' % oopsid
+
     def render_as_text(self):
         """Render the exception as text.
 
