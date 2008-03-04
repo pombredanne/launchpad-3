@@ -86,8 +86,8 @@ def upload_request(request):
     # Create a FileUploadProtocol, and instrument it for testing:
     server = FileUploadProtocol()
 
-    #  * hook _storeFile to dispatch straight to newFile.store without spawning
-    #    a thread.
+    #  * hook _storeFile to dispatch straight to newFile.store without
+    #    spawning a thread.
     from twisted.internet import defer
     server._storeFile = lambda: defer.maybeDeferred(server.newFile.store)
 
@@ -96,7 +96,8 @@ def upload_request(request):
     server.connectionMade()
 
     #  * give it a fake factory (itself!), and a fake library.
-    server.factory = server; server.fileLibrary = MockLibrary()
+    server.factory = server
+    server.fileLibrary = MockLibrary()
 
     # Feed in the request
     server.dataReceived(request.replace('\n', '\r\n'))
