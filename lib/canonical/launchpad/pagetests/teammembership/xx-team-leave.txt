@@ -90,8 +90,5 @@ Team owners do not have the option to leave.
     ... 	find_portlet(browser.contents, 'Your involvement'))
     Your involvement
     You are the owner of this team.
-
     >>> browser.getControl('Leave the Team')
-    Traceback (most recent call last):
-    ...
-    LookupError: label 'Leave the Team'
+    <SubmitControl name='leave' type='submit'>
