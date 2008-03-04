@@ -18,13 +18,13 @@ from canonical.launchpad.database.potemplate import POTemplate
 from canonical.launchpad.database.potmsgset import POTMsgSet
 from canonical.launchpad.database.translationmessage import TranslationMessage
 
-from canonical.launchpad.interfaces.TranslationFileFormat import PO, KDEPO
+from canonical.launchpad.interfaces import TranslationFileFormat
 
 def getOrCreatePOMsgID(msgid):
     try:
         pomsgid = POMsgID.byMsgid(msgid)
     except SQLObjectNotFound:
-        pomsgid = POMsgID(msgid)
+        pomsgid = POMsgID(msgid=msgid)
     return pomsgid
 
 def migrate_potemplate(potemplate, logger, ztm):
@@ -33,7 +33,7 @@ def migrate_potemplate(potemplate, logger, ztm):
     plural_prefix = u'_n: '
     context_prefix = u'_: '
 
-    assert(potemplate.source_file_format == PO)
+    assert(potemplate.source_file_format == TranslationFileFormat.PO)
 
     potmsgsets = POTMsgSet.select("""
       POTMsgSet.potemplate = %s AND
@@ -112,16 +112,16 @@ def migrate_potemplate(potemplate, logger, ztm):
                         message.msgstr3 =  potranslations[3]
 
 
-    potemplate.source_file_format = KDEPO
+    potemplate.source_file_format = TranslationFileFormat.KDEPO
     # Commit a PO template one by one.
-    #ztm.commit()
+    ztm.commit()
 
 
 def migrate_potemplates(ztm, logger):
     """Go through all non-KDE PO templates and migrate to KDEPO as needed."""
 
     potemplates = POTemplate.select("""source_file_format=%s AND
-      id IN
+    POTemplate.id IN
         (SELECT potemplate
           FROM POTMsgSet
           JOIN POMsgID ON POMsgID.id = POTMsgSet.msgid_singular
@@ -129,14 +129,14 @@ def migrate_potemplates(ztm, logger):
                 POTMsgSet.msgid_plural IS NULL AND
                 (POMsgID.msgid LIKE '_n: %%' OR POMsgID.msgid LIKE '_: %%')
           LIMIT 1)
-      """ % sqlvalues(PO),
+      """ % sqlvalues(TranslationFileFormat.PO),
       clauseTables=['POTMsgSet', 'POMsgID'],
       distinct=True)
 
     count = potemplates.count()
     index = 0
     for potemplate in potemplates:
+        index += 1
         logger.info("Migrating POTemplate %s [%d/%d]" % (
             potemplate.displayname, index, count))
         migrate_potemplate(potemplate, logger, ztm)
-        index += 1

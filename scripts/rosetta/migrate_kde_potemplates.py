@@ -28,5 +28,5 @@ class MigrateKDEPOTemplatesScript(LaunchpadScript):
 if __name__ == '__main__':
     script = MigrateKDEPOTemplatesScript(
         'canonical.launchpad.scripts.migrate_kde_potemplates',
-        dbuser=config.rosetta.rosettaadmin.dbuser)
+        dbuser=config.rosetta.poimport.dbuser)
     script.run()
