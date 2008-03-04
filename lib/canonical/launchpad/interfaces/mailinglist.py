@@ -15,7 +15,6 @@ __all__ = [
     'IMailingListSubscription',
     'MailingListAutoSubscribePolicy',
     'MailingListStatus',
-    'PersonalStanding',
     'PostedMessageStatus',
     'is_participant_in_beta_program'
     ]
@@ -158,43 +157,6 @@ class MailingListAutoSubscribePolicy(DBEnumeratedType):
 
         The user is automatically subscribed to any team mailing list when she
         is added to the team, regardless of who joins her to the team.
-        """)
-
-
-class PersonalStanding(DBEnumeratedType):
-    """A person's standing.
-
-    Standing is currently (just) used to determine whether a person's posts to
-    a mailing list require first-post moderation or not.  Any person with good
-    or excellent standing may post directly to the mailing list without
-    moderation.  Any person with unknown or poor standing must have their
-    first-posts moderated.
-    """
-
-    UNKNOWN = DBItem(0, """
-        Unknown standing
-
-        Nothing about this person's standing is known.
-        """)
-
-    POOR = DBItem(100, """
-        Poor standing
-
-        This person has poor standing.
-        """)
-
-    GOOD = DBItem(200, """
-        Good standing
-
-        This person has good standing and may post to a mailing list without
-        being subject to first-post moderation rules.
-        """)
-
-    EXCELLENT = DBItem(300, """
-        Excellent standing
-
-        This person has excellent standing and may post to a mailing list
-        without being subject to first-post moderation rules.
         """)
 
 
