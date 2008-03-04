@@ -36,15 +36,7 @@ class OAuthRequestTokenView(LaunchpadView):
         if consumer is None:
             consumer = consumer_set.new(key=consumer_key)
 
-        if form.get('oauth_signature_method') != 'PLAINTEXT':
-            # XXX: 2008-03-04, salgado: Only the PLAINTEXT method is supported
-            # now. Others will be implemented later.
-            self.request.response.setStatus(400)
-            return u''
-
-        expected_signature = "&%s" % consumer.secret
-        if expected_signature != form.get('oauth_signature'):
-            self.request.unauthorized(CHALLENGE)
+        if not check_signature(self.request):
             return u''
 
         token = consumer.newRequestToken()
@@ -76,9 +68,7 @@ class OAuthAccessTokenView(LaunchpadView):
             self.request.unauthorized(CHALLENGE)
             return u''
 
-        consumer_secret, token_secret = form.get('oauth_signature').split('&')
-        if consumer_secret != consumer.secret or token_secret != token.secret:
-            self.request.unauthorized(CHALLENGE)
+        if not check_signature(self.request):
             return u''
 
         if (not token.is_reviewed
@@ -90,3 +80,31 @@ class OAuthAccessTokenView(LaunchpadView):
         body = u'oauth_token=%s&oauth_token_secret=%s' % (
             access_token.key, access_token.secret)
         return body
+
+
+def check_signature(request):
+    """Check that the request is correctly signed.
+
+    If the signature is incorrect or its method is not supported, set the
+    appropriate status in the response and return False.
+    """
+    form = request.form
+    if form.get('oauth_signature_method') != 'PLAINTEXT':
+        # XXX: 2008-03-04, salgado: Only the PLAINTEXT method is supported
+        # now. Others will be implemented later.
+        request.response.setStatus(400)
+        return False
+
+    consumer = getUtility(IOAuthConsumerSet).getByKey(
+        form.get('oauth_consumer_key'))
+    token = consumer.getRequestToken(form.get('oauth_token'))
+    if token is not None:
+        token_secret = token.secret
+    else:
+        token_secret = ''
+    expected_signature = "&".join([consumer.secret, token_secret])
+    if expected_signature != form.get('oauth_signature'):
+        request.unauthorized(CHALLENGE)
+        return False
+
+    return True
