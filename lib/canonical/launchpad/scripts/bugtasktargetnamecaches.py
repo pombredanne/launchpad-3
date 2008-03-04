@@ -20,38 +20,40 @@ class BugTaskTargetNameCachesTunableLoop(object):
 
     total_updated = 0
 
-    def __init__(self, transaction, logger, start_at_id=0):
+    def __init__(self, transaction, logger, offset=0):
         self.transaction = transaction
         self.logger = logger
-        self.start_at_id = start_at_id
+        self.offset = offset
         self.bugtask_set = getUtility(IBugTaskSet)
 
     def isDone(self):
         """See `ITunableLoop`."""
         # When the main loop has no more BugTasks to process it sets
-        # start_at_id to None. Until then, it always has a numerical
+        # offset to None. Until then, it always has a numerical
         # value.
-        return self.start_at_id is None
+        return self.offset is None
 
     def __call__(self, chunk_size):
         """Retrieve a batch of BugTasks and update their targetname caches.
 
         See `ITunableLoop`.
         """
-        offset = self.start_at_id
+        offset = self.offset
         bugtasks = self.bugtask_set.dangerousGetAllTasks()[
             offset:offset + chunk_size]
 
-        self.logger.info("Updating %i BugTasks (starting id: %i)." %
-            (chunk_size, self.start_at_id))
-        self.start_at_id = None
+        self.logger.info("Updating up to %i BugTasks (starting id: %i)." %
+            (chunk_size, offset))
+
+        self.offset = None
         self.transaction.begin()
         for bugtask in bugtasks:
             # We set the starting point of the next batch to the BugTask
-            # after the one we're looking at now. If there aren't any
+            # id after the one we're looking at now. If there aren't any
             # bugtasks this loop will run for 0 iterations and start_id
             # will remain set to None.
-            self.start_at_id = bugtask.id + 1
+            offset += 1
+            self.offset = offset
             bugtask.updateTargetNameCache()
             self.total_updated += 1
 
@@ -74,5 +76,7 @@ class BugTaskTargetNameCacheUpdater:
         loop_tuner = LoopTuner(loop, 1)
         loop_tuner.run()
 
+        self.logger.info("Updated %i bugtask targetname caches." %
+            loop.total_updated)
         self.logger.info("Finished updating targetname cache of bugtasks.")
 
