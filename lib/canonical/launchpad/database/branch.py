@@ -718,6 +718,11 @@ class BranchSet:
         except SQLObjectNotFound:
             return default
 
+    def getBranch(self, owner, product, branch_name):
+        """See `IBranchSet`."""
+        return Branch.selectOneBy(
+            owner=owner, product=product, name=branch_name)
+
     def _checkVisibilityPolicy(self, creator, owner, product):
         """Return a tuple of private flag and person or team to subscribe.
 
