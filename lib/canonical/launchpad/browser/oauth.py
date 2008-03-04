@@ -46,7 +46,7 @@ class OAuthRequestTokenView(LaunchpadView):
 
 
 class OAuthAccessTokenView(LaunchpadView):
-    """Where consumers exchange a request token for an access token."""
+    """Where consumers may exchange a request token for an access token."""
 
     def __call__(self):
         """Create an access token and include its key/secret in the response.
