@@ -90,6 +90,14 @@ Creating a CodeImport object creates a corresponding CodeImportEvent.
     >>> [event.event_type.name for event in cvs_events]
     ['CREATE']
 
+The CodeImportSet is also able to retrieve the code imports with the
+specified root and module.
+
+    >>> existing_import = code_import_set.getByCVSDetails(
+    ...     cvs_root=cvs_root, cvs_module=cvs_module)
+    >>> cvs_import == existing_import
+    True
+
 
 === Import from Subversion ===
 
@@ -110,6 +118,14 @@ Creating a CodeImport object creates a corresponding CodeImportEvent.
     >>> svn_events = event_set.getEventsForCodeImport(svn_import)
     >>> [event.event_type.name for event in svn_events]
     ['CREATE']
+
+The CodeImportSet is also able to retrieve the code imports with the
+specified subversion branch url.
+
+    >>> existing_import = code_import_set.getBySVNDetails(
+    ...     svn_branch_url=svn_url)
+    >>> svn_import == existing_import
+    True
 
 
 == Creating a CodeImport from existing data ==

@@ -20,11 +20,12 @@ from canonical.cachedproperty import cachedproperty
 from canonical.config import config
 
 from canonical.launchpad.interfaces import (
-    IBazaarApplication, IBranchSet, IProduct, IProductSet, IProductSeriesSet)
+    IBazaarApplication, IBranchSet, ICodeImportSet,
+    IProduct, IProductSet, IProductSeriesSet)
 from canonical.launchpad.helpers import shortlist
 from canonical.launchpad.webapp import (
-    ApplicationMenu, enabled_with_permission, LaunchpadView, Link, Navigation,
-    stepto)
+    ApplicationMenu, canonical_url, enabled_with_permission, LaunchpadView,
+    Link, Navigation, stepto)
 import canonical.launchpad.layers
 
 from canonical.lazr import decorates
@@ -48,15 +49,19 @@ class BazaarApplicationView(LaunchpadView):
     def series_set(self):
         return getUtility(IProductSeriesSet)
 
+    @property
     def branch_count(self):
         return getUtility(IBranchSet).count()
 
+    @property
     def product_count(self):
         return getUtility(IProductSet).getProductsWithBranches().count()
 
+    @property
     def branches_with_bugs_count(self):
         return getUtility(IBranchSet).countBranchesWithAssociatedBugs()
 
+    @property
     def import_count(self):
         return self.series_set.searchImports().count()
 
