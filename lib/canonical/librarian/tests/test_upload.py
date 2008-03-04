@@ -3,10 +3,7 @@
 
 __metaclass__ = type
 
-import unittest
-
-from zope.testing.doctest import DocFileSuite
-
+from canonical.launchpad.testing.systemdocs import LayeredDocFileSuite
 from canonical.librarian.libraryprotocol import FileUploadProtocol
 from canonical.librarian.storage import WrongDatabaseError
 
@@ -120,9 +117,7 @@ def upload_request(request):
 
 
 def test_suite():
-    suite = unittest.TestSuite()
-    suite.addTest(
-        DocFileSuite("./test_upload.txt",
-                     globs={'upload_request': upload_request}))
-    return suite
+    return LayeredDocFileSuite(
+        'test_upload.txt', globs={'upload_request': upload_request},
+        stdout_logging=False)
 
