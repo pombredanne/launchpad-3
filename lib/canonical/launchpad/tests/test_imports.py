@@ -1,10 +1,7 @@
 # Copyright 2004-2005 Canonical Ltd.  All rights reserved.
 
-
-import unittest
-from zope.testing.doctest import DocFileSuite, DocTestSuite
+from canonical.launchpad.testing.systemdocs import LayeredDocFileSuite
 
 def test_suite():
-    suite = unittest.TestSuite([DocFileSuite('test_imports.txt')])
-    return suite
+    return LayeredDocFileSuite('test_imports.txt')
 
