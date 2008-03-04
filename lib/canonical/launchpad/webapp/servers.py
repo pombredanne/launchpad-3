@@ -349,7 +349,7 @@ class WebServiceRequestPublicationFactory(
         """
         result = super(WebServiceRequestPublicationFactory, self).canHandle(
             environment)
-        return result and config.launchpad.vhosts.expose_webservice
+        return result and config.vhosts.expose_webservice
 
 
 class NotFoundRequestPublicationFactory:

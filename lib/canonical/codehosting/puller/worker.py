@@ -78,11 +78,11 @@ def get_canonical_url_for_branch_name(unique_name):
     The actual `canonical_url` function cannot be used because we do not have
     access to real content objects.
     """
-    if config.launchpad.vhosts.use_https:
+    if config.vhosts.use_https:
         scheme = 'https'
     else:
         scheme = 'http'
-    hostname = config.launchpad.vhosts.code.hostname
+    hostname = config.vhost.code.hostname
     return scheme + '://' + hostname + '/~' + unique_name
 
 
@@ -167,7 +167,7 @@ class PullerWorker:
         if self.source.startswith('/'):
             return
         uri = URI(self.source)
-        launchpad_domain = config.launchpad.vhosts.mainsite.hostname
+        launchpad_domain = config.vhost.mainsite.hostname
         if uri.underDomain(launchpad_domain):
             raise BadUrlLaunchpad(self.source)
         if uri.scheme in ['sftp', 'bzr+ssh']:
