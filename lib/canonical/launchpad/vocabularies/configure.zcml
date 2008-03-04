@@ -156,6 +156,11 @@
     />
 
   <vocabulary
+    name="PPA"
+    factory="canonical.launchpad.vocabularies.PPAVocabulary"
+    />
+
+  <vocabulary
     name="Product"
     factory="canonical.launchpad.vocabularies.ProductVocabulary"
     />
@@ -183,6 +188,11 @@
   <vocabulary
     name="ProjectProductsUsingMalone"
     factory="canonical.launchpad.vocabularies.project_products_using_malone_vocabulary_factory"
+    />
+
+  <vocabulary
+    name="Specification"
+    factory="canonical.launchpad.vocabularies.SpecificationVocabulary"
     />
 
   <vocabulary

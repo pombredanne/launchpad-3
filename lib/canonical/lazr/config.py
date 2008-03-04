@@ -8,10 +8,12 @@ __all__ = [
     'Config',
     'ConfigData',
     'ConfigSchema',
+    'ImplicitTypeSchema',
+    'ImplicitTypeSection',
     'Section',
     'SectionSchema',]
 
-from ConfigParser import NoSectionError, SafeConfigParser
+from ConfigParser import NoSectionError, RawConfigParser
 import copy
 from os.path import abspath, basename, dirname
 import re
@@ -24,7 +26,7 @@ from canonical.lazr.interfaces import (
     InvalidSectionNameError, ISection, ISectionSchema, IStackableConfig,
     NoCategoryError, NoConfigError, RedefinedSectionError, UnknownKeyError,
     UnknownSectionError)
-from canonical.lp import decorates
+from canonical.lazr.decorates import decorates
 
 
 def read_content(filename):
@@ -37,9 +39,139 @@ def read_content(filename):
     return raw_data
 
 
+class SectionSchema:
+    """See `ISectionSchema`."""
+    implements(ISectionSchema)
+
+    def __init__(self, name, options, is_optional=False):
+        """Create an `ISectionSchema` from the name and options.
+
+        :param name: A string. The name of the ISectionSchema.
+        :param options: A dict of the key-value pairs in the ISectionSchema.
+        :param is_optional: A boolean. Is this section schema optional?
+        :raise `RedefinedKeyError`: if a keys is redefined in SectionSchema.
+        """
+        # This method should raise RedefinedKeyError if the schema file
+        # redefines a key, but SafeConfigParser swallows redefined keys.
+        self.name = name
+        self._options = options
+        self.optional = is_optional
+
+    def __iter__(self):
+        """See `ISectionSchema`"""
+        return self._options.iterkeys()
+
+    def __contains__(self, name):
+        """See `ISectionSchema`"""
+        return name in self._options
+
+    def __getitem__(self, key):
+        """See `ISectionSchema`"""
+        return self._options[key]
+
+
+class Section:
+    """See `ISection`."""
+    implements(ISection)
+    decorates(ISectionSchema, context='schema')
+
+    def __init__(self, schema):
+        """Create an `ISection` from schema.
+
+        :param schema: The ISectionSchema that defines this ISection.
+        """
+        self.schema = schema
+        self._options = dict([(key, schema[key]) for key in schema])
+
+    def __getitem__(self, key):
+        """See `ISection`"""
+        return self._options[key]
+
+    def __getattr__(self, name):
+        """See `ISection`."""
+        if name in self._options:
+            return self._options[name]
+        else:
+            raise AttributeError(
+                "No section key named %s." % name)
+
+    def update(self, items):
+        """Update the keys with new values.
+
+        :return: A list of `UnknownKeyError`s if the section does not have
+            the key. An empty list is returned if there are no errors.
+        """
+        errors = []
+        for key, value in items:
+            if key in self._options:
+                self._options[key] = value
+            else:
+                msg = "%s does not have a %s key." % (self.name, key)
+                errors.append(UnknownKeyError(msg))
+        return errors
+
+    def clone(self):
+        """Return a copy of this section.
+
+        The extension mechanism requires a copy of a section to prevent
+        mutation.
+        """
+        return copy.deepcopy(self)
+
+
+class ImplicitTypeSection(Section):
+    """See `ISection`.
+
+    ImplicitTypeSection supports implicit conversion of key values to
+    simple datatypes. It accepts the same section data as Section; the
+    datatype information is not embedded in the schema or the config file.
+    """
+    re_types = re.compile(r'''
+        (?P<false> ^false$) |
+        (?P<true> ^true$) |
+        (?P<none> ^none$) |
+        (?P<int> ^[+-]?\d+$) |
+        (?P<str> ^.*$)
+        ''', re.IGNORECASE | re.VERBOSE)
+
+    def _convert(self, value):
+        """Return the value as the datatype the str appears to be.
+
+        Conversion rules:
+        * bool: a single word, 'true' or 'false', case insensitive.
+        * int: a single word that is a number. Signed is supported,
+            hex and octal numbers are not.
+        * str: anything else.
+        """
+        match = self.re_types.match(value)
+        if match.group('false'):
+            return False
+        elif match.group('true'):
+            return True
+        elif match.group('none'):
+            return None
+        elif match.group('int'):
+            return int(value)
+        else:
+            # match.group('str'); just return the value.
+            return value
+
+    def __getitem__(self, key):
+        """See `ISection`."""
+        value = super(ImplicitTypeSection, self).__getitem__(key)
+        return self._convert(value)
+
+    def __getattr__(self, name):
+        """See `ISection`."""
+        value = super(ImplicitTypeSection, self).__getattr__(name)
+        return self._convert(value)
+
+
 class ConfigSchema:
     """See `IConfigSchema`."""
     implements(IConfigSchema, IConfigLoader)
+
+    _section_factory = Section
 
     def __init__(self, filename):
         """Load a configuration schema from the provided filename.
@@ -51,14 +183,14 @@ class ConfigSchema:
             ill-formed.
         """
         # XXX sinzui 2007-12-13:
-        # SafeConfigParser permits redefinition and non-ascii characters.
+        # RawConfigParser permits redefinition and non-ascii characters.
         # The raw schema data is examined before creating a config.
         self.filename = filename
         self.name = basename(filename)
         self._section_schemas = {}
         self._category_names = []
         raw_schema = self._getRawSchema(filename)
-        parser = SafeConfigParser()
+        parser = RawConfigParser()
         parser.readfp(raw_schema, filename)
         self._setSectionSchemasAndCategoryNames(parser)
 
@@ -138,6 +270,11 @@ class ConfigSchema:
         return (section_name, category_name,  is_template, is_optional)
 
     @property
+    def section_factory(self):
+        """See `IConfigSchema`."""
+        return self._section_factory
+
+    @property
     def category_names(self):
         """See `IConfigSchema`."""
         return self._category_names
@@ -172,7 +309,8 @@ class ConfigSchema:
         sections = {}
         for section_schema in self:
             if not section_schema.optional:
-                sections[section_schema.name] = Section(section_schema)
+                sections[section_schema.name] = self.section_factory(
+                    section_schema)
         return sections
 
     def load(self, filename):
@@ -195,6 +333,16 @@ class ConfigSchema:
         config = Config(self)
         config.push(filename, conf_data)
         return config
+
+
+class ImplicitTypeSchema(ConfigSchema):
+    """See `IConfigSchema`.
+
+    ImplicitTypeSchema creates a config that supports implicit datatyping
+    of section key values.
+    """
+
+    _section_factory = ImplicitTypeSection
 
 
 class ConfigData:
@@ -330,7 +478,7 @@ class Config:
         if confs is None:
             confs = []
         encoding_errors = self._verifyEncoding(conf_data)
-        parser = SafeConfigParser()
+        parser = RawConfigParser()
         parser.readfp(StringIO.StringIO(conf_data), conf_filename)
         confs.append((conf_filename, parser, encoding_errors))
         if parser.has_option('meta', 'extends'):
@@ -378,7 +526,8 @@ class Config:
             if section_name not in self.data:
                 # Create the optional section from the schema.
                 section_schema = self.schema[section_name]
-                sections[section_name] = Section(section_schema)
+                sections[section_name] = self.schema.section_factory(
+                    section_schema)
             # Update the section with the parser options.
             items = parser.items(section_name)
             section_errors = sections[section_name].update(items)
@@ -437,86 +586,6 @@ class Config:
                 return index + 1
         # The config data was not found in the overlays.
         raise NoConfigError('No config with name: %s.' % conf_name)
-
-
-class SectionSchema:
-    """See `ISectionSchema`."""
-    implements(ISectionSchema)
-
-    def __init__(self, name, options, is_optional=False):
-        """Create an `ISectionSchema` from the name and options.
-
-        :param name: A string. The name of the ISectionSchema.
-        :param options: A dict of the key-value pairs in the ISectionSchema.
-        :param is_optional: A boolean. Is this section schema optional?
-        :raise `RedefinedKeyError`: if a keys is redefined in SectionSchema.
-        """
-        # This method should raise RedefinedKeyError if the schema file
-        # redefines a key, but SafeConfigParser swallows redefined keys.
-        self.name = name
-        self._options = options
-        self.optional = is_optional
-
-    def __iter__(self):
-        """See `ISectionSchema`"""
-        return self._options.iterkeys()
-
-    def __contains__(self, name):
-        """See `ISectionSchema`"""
-        return name in self._options
-
-    def __getitem__(self, key):
-        """See `ISectionSchema`"""
-        return self._options[key]
-
-
-class Section:
-    """See `ISection`."""
-    implements(ISection)
-    decorates(ISectionSchema, context='schema')
-
-    def __init__(self, schema):
-        """Create an `ISection` from schema.
-
-        :param schema: The ISectionSchema that defines this ISection.
-        """
-        self.schema = schema
-        self._options = dict([(key, schema[key]) for key in schema])
-
-    def __getitem__(self, key):
-        """See `ISection`"""
-        return self._options[key]
-
-    def __getattr__(self, name):
-        """See `ISection`."""
-        if name in self._options:
-            return self._options[name]
-        else:
-            raise AttributeError(
-                "No section key named %s." % name)
-
-    def update(self, items):
-        """Update the keys with new values.
-
-        :return: A list of `UnknownKeyError`s if the section does not have
-            the key. An empty list is returned if there are no errors.
-        """
-        errors = []
-        for key, value in items:
-            if key in self._options:
-                self._options[key] = value
-            else:
-                msg = "%s does not have a %s key." % (self.name, key)
-                errors.append(UnknownKeyError(msg))
-        return errors
-
-    def clone(self):
-        """Return a copy of this section.
-
-        The extension mechanism requires a copy of a section to prevent
-        mutation.
-        """
-        return copy.deepcopy(self)
 
 
 class Category:

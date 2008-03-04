@@ -21,7 +21,7 @@ the information in the configuration file.
     >>> from canonical.lazr.interfaces import IConfigSchema
 
     >>> base_conf = path.normpath(path.join(
-    ...     path.dirname(__file__), '..', 'ftests', 'testfiles', 'base.conf'))
+    ...     path.dirname(__file__), '..', 'tests', 'data', 'base.conf'))
 
 The config file contains sections enclosed in square brackets ([]).
 The section name may be divided into major and minor categories using a
@@ -68,7 +68,7 @@ required. Lines that start with a hash (#) are comments.
     >>> schema.name
     'base.conf'
     >>> schema.filename
-    '...ftests/testfiles/base.conf'
+    '...tests/data/base.conf'
 
 A schema is made up of multiple SchemaSections. They can be iterated
 over in a loop as needed.
@@ -221,22 +221,22 @@ Schema files that contain non-ASCII characters raise a
 UnicodeDecodeError.
 
     >>> testfiles_dir = path.normpath(path.join(
-    ...     path.dirname(__file__), '..', 'ftests', 'testfiles'))
-    >>> ConfigSchema('%s/%s' % (testfiles_dir, 'bad-nonascii.conf'))
+    ...     path.dirname(__file__), '..', 'tests', 'data'))
+    >>> ConfigSchema(path.join(testfiles_dir, 'bad-nonascii.conf'))
     Traceback (most recent call last):
       ...
     UnicodeDecodeError: ...
 
 Keys without sections raise MissingSectionHeaderError.
 
-    >>> ConfigSchema('%s/%s' % (testfiles_dir, 'bad-sectionless.conf'))
+    >>> ConfigSchema(path.join(testfiles_dir, 'bad-sectionless.conf'))
     Traceback (most recent call last):
       ...
     MissingSectionHeaderError: File contains no section headers. ...
 
 Redefining a section in a config file will raise a RedefinedSectionError.
 
-    >>> ConfigSchema('%s/%s' % (testfiles_dir, 'bad-redefined-section.conf'))
+    >>> ConfigSchema(path.join(testfiles_dir, 'bad-redefined-section.conf'))
     Traceback (most recent call last):
       ...
     RedefinedSectionError: ...
@@ -248,8 +248,7 @@ Redefining a section in a config file will raise a RedefinedSectionError.
 Defining a section that belongs to many categories will raise
 a InvalidSectionNameError.
 
-    >>> ConfigSchema('%s/%s' % (
-    ...     testfiles_dir, 'bad-invalid-name.conf'))
+    >>> ConfigSchema(path.join(testfiles_dir, 'bad-invalid-name.conf'))
     Traceback (most recent call last):
       ...
     InvalidSectionNameError: [category.other_category.name.optional] ...
@@ -257,8 +256,7 @@ a InvalidSectionNameError.
 As does using non word characters other than a dot or dash in the
 section name.
 
-    >>> ConfigSchema('%s/%s' % (
-    ...     testfiles_dir, 'bad-invalid-name-chars.conf'))
+    >>> ConfigSchema(path.join(testfiles_dir, 'bad-invalid-name-chars.conf'))
     Traceback (most recent call last):
       ...
     InvalidSectionNameError: [$category.name_part.optional] ...
@@ -276,7 +274,7 @@ methods to return a Config instance.
 
 The load() method accepts a filename.
 
-    >>> local_conf = '%s/%s' % (testfiles_dir,  'local.conf')
+    >>> local_conf = path.join(testfiles_dir,  'local.conf')
     >>> config = schema.load(local_conf)
 
 Passing a filename to a non-existent file will raise an IOError.
@@ -291,16 +289,17 @@ keyword arg. The filename arg must be passed if the file-like object
 does not have a name attribute.
 
     >>> import StringIO
-    >>> bad_data = '\n'.join([
-    ...     "[meta]",
-    ...     "metakey: unsupported",
-    ...     "[unknown-section]",
-    ...     "key1 = value1",
-    ...     "[section_1]",
-    ...     "keyn: unknown key",
-    ...     "key1: bad character in caf\xc3)",
-    ...     "[section_3.template]",
-    ...     "key1: schema suffixes are not permitted"])
+    >>> from textwrap import dedent
+    >>> bad_data = dedent("""
+    ...     [meta]
+    ...     metakey: unsupported
+    ...     [unknown-section]
+    ...     key1 = value1
+    ...     [section_1]
+    ...     keyn: unknown key
+    ...     key1: bad character in caf\xc3)
+    ...     [section_3.template]
+    ...     key1: schema suffixes are not permitted""")
     >>> schema.loadFile(StringIO.StringIO(bad_data))
     Traceback (most recent call last):
       ...
@@ -353,7 +352,7 @@ schema. This config was loaded before local.conf because its sections
 and values are required to be in place before local.conf applies its
 changes.
 
-    >>> shared_conf = '%s/%s' % (testfiles_dir,  'shared.conf')
+    >>> shared_conf = path.join(testfiles_dir,  'shared.conf')
     >>> shared_file = open(shared_conf, 'r')
     >>> raw_conf = shared_file.read()
     >>> shared_file.close()
@@ -370,7 +369,7 @@ the configuration.
     >>> config.name
     'local.conf'
     >>> config.filename
-    '...ftests/testfiles/local.conf'
+    '...tests/data/local.conf'
 
 The config can access the schema via the schema property.
 
@@ -474,6 +473,13 @@ from above....
 
     >>> section_1.name
     'section_1'
+
+The Section's type is the same type as the ConfigSchema.section_factory.
+
+    >>> section_1
+    <canonical.lazr.config.Section object at ...>
+    >>> config.schema.section_factory
+    <class 'canonical.lazr.config.Section'>
 
 A key can be verified to be in a Section.
 
@@ -602,10 +608,10 @@ updated when the unparsed data is pushed onto the config.
     key4 : F&#028c;k yeah!
     key5 : local value
 
-    >>> test_data = '\n'.join([
-    ...     "[section_1]",
-    ...     "key1: test1",
-    ...     "key5:"])
+    >>> test_data = dedent("""
+    ...     [section_1]
+    ...     key1: test1
+    ...     key5:""")
     >>> config.push('test config', test_data)
 
     >>> for key in sorted(config['section_1']):
@@ -677,11 +683,11 @@ the config to the schema). The schema can also be pushed to reset the
 values in the config to the schema's default values.
 
     >>> extender_conf_name = path.normpath(path.join(
-    ...     path.dirname(__file__), '..', 'ftests', 'testfiles',
+    ...     path.dirname(__file__), '..', 'tests', 'data',
     ...     'extender.conf'))
-    >>> extender_conf_data = '\n'.join([
-    ...     "[meta]",
-    ...     "extends: base.conf"])
+    >>> extender_conf_data = dedent("""
+    ...     [meta]
+    ...     extends: base.conf""")
     >>> config.push(extender_conf_name, extender_conf_data)
     >>> for config_data in config.overlays:
     ...     print config_data.name
@@ -777,6 +783,7 @@ a bad name.
 
 Sections appear to be attributes of the config.
 
+    >>> config = schema.load(local_conf)
     >>> config.section_1 is config['section_1']
     True
 
@@ -809,7 +816,7 @@ have a section that matches the identifier name.
 Section keys can be accessed directly as members.
 
     >>> config.section_1.key2
-    'bar and baz'
+    'sharing is fun'
     >>> config.section_3.app_b.key2
     'changed'
 
@@ -820,3 +827,130 @@ AttributeError.
     Traceback (most recent call last):
       ...
     AttributeError: No section key named non_key.
+
+
+== Implicit data typing ==
+
+The ImplicitTypeSchema can create configs that support implicit
+datatypes. The value of a Section key is automatically converted from
+str to the type the value appears to be. Implicit typing does not add
+any validation support; it adds type casting conveniences for the
+developer.
+
+An ImplicitTypeSchema can be used to parse the same schema and conf
+files that Schema uses.
+
+    >>> from canonical.lazr.config import ImplicitTypeSchema
+
+    >>> implicit_schema = ImplicitTypeSchema(base_conf)
+    >>> verifyObject(IConfigSchema, implicit_schema)
+    True
+
+The config loaded by ImplicitTypeSchema is the same class with the same
+sections as is made by Schema.
+
+    >>> implicit_config = implicit_schema.load(local_conf)
+    >>> implicit_config
+    <canonical.lazr.config.Config object at ...>
+    >>> config
+    <canonical.lazr.config.Config object at ...>
+
+    >>> sections = sorted(section.name for section in config)
+    >>> implicit_sections = sorted(
+    ...     section.name for section in implicit_config)
+    >>> implicit_sections == sections
+    True
+
+    >>> verifyObject(ISection, implicit_config['section_3.app_b'])
+    True
+
+But the type of sections in the config support implicit typing.
+
+    >>> implicit_config['section_3.app_b']
+    <canonical.lazr.config.ImplicitTypeSection object at ...>
+
+ImplicitTypeSection, in contrast to Section, converts values that
+appear to be integer or boolean into ints and bools.
+
+    >>> config['section_3.app_b']['key1']
+    '17'
+    >>> implicit_config['section_3.app_b']['key1']
+    17
+
+    >>> config['section-2.app-b']['key1']
+    'True'
+    >>> implicit_config['section-2.app-b']['key1']
+    True
+
+The value is also converted when it is accessed as an attribute.
+
+    >>> implicit_config.section_3.app_b.key1
+    17
+
+    >>> implicit_config['section-2.app-b'].key1
+    True
+
+ImplicitTypeSection uses a private method that employs heuristic rules
+to convert strings into simple types. It may return a str, bool, or int.
+When the argument is the word 'true' or 'false' (in any case), a bool is
+returned. Values like 'yes', 'no', '0', and '1' are not converted to
+bool.
+
+    >>> convert = implicit_config['section_1']._convert
+
+    >>> convert('false')
+    False
+    >>> convert('TRUE')
+    True
+    >>> convert('tRue')
+    True
+
+    >>> convert('yes')
+    'yes'
+    >>> convert('1')
+    1
+    >>> convert('True or False')
+    'True or False'
+
+When the argument is the word 'none', None is returned. The token in the
+config means the key has no value.
+
+    >>> print convert('none')
+    None
+    >>> print convert('None')
+    None
+    >>> print convert('nonE')
+    None
+
+    >>> convert('none today')
+    'none today'
+    >>> convert('nonevident')
+    'nonevident'
+
+When the argument is an unbroken sequence of numbers, an int is
+returned. The number may have a leading positive or negative. Octal and
+hex notation is not supported.
+
+    >>> convert('0')
+    0
+    >>> convert('2001')
+    2001
+    >>> convert('-55')
+    -55
+    >>> convert('+404')
+    404
+    >>> convert('0100')
+    100
+
+    >>> convert('2001-01-01')
+    '2001-01-01'
+    >>> convert('1000*60*5')
+    '1000*60*5'
+    >>> convert('1000 * 60 * 5')
+    '1000 * 60 * 5'
+    >>> convert('1,024')
+    '1,024'
+    >>> convert('0.5')
+    '0.5'
+    >>> convert('0x100')
+    '0x100'

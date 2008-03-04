@@ -71,6 +71,7 @@ from canonical.launchpad.database.languagepack import *
 from canonical.launchpad.database.translationgroup import *
 from canonical.launchpad.database.translationimportqueue import *
 from canonical.launchpad.database.translationmessage import *
+from canonical.launchpad.database.translationsoverview import *
 from canonical.launchpad.database.translator import *
 from canonical.launchpad.database.processor import *
 from canonical.launchpad.database.branch import *
@@ -125,7 +126,9 @@ from canonical.launchpad.database.revision import *
 from canonical.launchpad.database.gpgkey import *
 from canonical.launchpad.database.archive import *
 from canonical.launchpad.database.emailaddress import *
+from canonical.launchpad.database.oauth import *
 from canonical.launchpad.database.openidserver import *
 from canonical.launchpad.database.entitlement import *
 from canonical.launchpad.database.mailinglist import *
 from canonical.launchpad.database.hwdb import *
+from canonical.launchpad.database.archivedependency import *

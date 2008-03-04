@@ -104,7 +104,8 @@ h2, h3, h4, h5, h6 { margin-top: 1em; }
 
 .exception {color: #cc0000;}
 .discreet, .lesser {font-size: 80%;}
-.offline {text-align: center; max-width: 30em; margin: 2em auto;}
+.offline {text-align: center; width: 100%; margin: 2em auto !important;}
+/* That !important is necessary only while #nonhelp exists. */
 .unavailable {color: #999; background: none;}
 .oopsid {color: #cc0000; font-weight: bold;}
 
@@ -1639,7 +1640,7 @@ table.listing tfoot td {border: 1px solid #d2d2d2;}
 table.listing thead td {border: none;}
 tr.highlight {background-color: #ff9;}
 table.listing tr.note {font-size: smaller;}
-tr.amount, td.amount {text-align: right;}
+.amount {text-align: right;}
 table.listing th, table.listing td {padding: 0.25em;}
 /* We don't want extra padding on nested tables, such as batch navigation. */
 table.listing table th, table.listing table td {padding: 0;}
@@ -1710,4 +1711,12 @@ th.descending {
 
 .lowerCaseText {
   text-transform: lowercase
+}
+
+div.popupTitle {
+  background: #ffffdc;
+  padding: 0 1em;
+  border: 1px black solid;
+  position: absolute;
+  display: none;
 }

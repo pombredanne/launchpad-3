@@ -1,87 +1,92 @@
 = Creating Specification Branch Links =
 
-It is possible to create a link between a specification with the "Link
-Branch" menu item on the specification page:
+Blueprints (aka Specifications) and branches can be linked to show
+intention of the branch to implement the blueprint.
 
-  >>> user_browser.open('http://blueprints.launchpad.dev/ubuntu/'
-  ...                   '+spec/media-integrity-check')
-  >>> user_browser.getLink('Link branch').click()
-  >>> print user_browser.url
-  http://blueprints.launchpad.dev/ubuntu/+spec/media-integrity-check/+linkbranch
+Blueprints and branches can be linked together from either the
+default blueprint page or the default branch page.
 
-When creating a link to a branch, the link must not already exist.
-There exists a link between the media-integrity-check branch and the
-junk.dev branch, so we get an error:
+== From the branch page ==
 
-  >>> user_browser.getControl('Branch').value = '~name12/+junk/junk.dev'
-  >>> user_browser.getControl('Summary').value = 'Summary text'
-  >>> user_browser.getControl('Link to Specification').click()
-  >>> print user_browser.url
-  http://blueprints.launchpad.dev/ubuntu/+spec/media-integrity-check/+linkbranch
+There is a "Link to blueprint" item in the actions menu that is visible
+to everybody but which links to a page restricted with the
+launchpad.AnyPerson permission.
 
-  >>> for tag in find_tags_by_class(user_browser.contents, 'message'):
-  ...     print tag.renderContents()
-  There is 1 error.
-  <BLANKLINE>
-  This branch has already been linked to the specification
+If the user is not logged in, they will be asked to log in.
 
-If we pick a different branch, the we can successfully create the
-link:
+    >>> anon_browser.open(
+    ...     'http://code.launchpad.dev/~name12/firefox/main')
+    >>> anon_browser.getLink('Link to blueprint').click()
+    Traceback (most recent call last):
+    ...
+    Unauthorized: (...launchpad.AnyPerson')
 
-  >>> user_browser.getControl('Branch').value = '~name12/+junk/junk.contrib'
-  >>> user_browser.getControl('Link to Specification').click()
-  >>> print user_browser.url
-  http://blueprints.launchpad.dev/ubuntu/+spec/media-integrity-check
+    >>> def printSpecBranchLinks(browser):
+    ...     tags = find_tags_by_class(browser.contents, 'spec-branch-summary')
+    ...     if len(tags) == 0:
+    ...         print 'No spec branch links'
+    ...     else:
+    ...         for tag in tags:
+    ...             print extract_text(tag)
 
+When linking from a branch to a spec, a select widget is used as a
+method for selecting values.  This widget is populated with the
+product's blueprints.
 
-== Linked Branches Portlet ==
+    >>> browser = setupBrowser(auth="Basic test@canonical.com:test")
+    >>> browser.open(
+    ...     'http://code.launchpad.dev/~name12/firefox/main')
+    >>> printSpecBranchLinks(browser)
+    No spec branch links
 
-If there are any branches linked to the specification, then a branches
-portlet will be visible:
+    >>> browser.getLink('Link to blueprint').click()
+    >>> browser.title
+    'Link branch ...Mozilla Firefox Mainline... to a blueprint'
 
-  >>> print find_portlet(user_browser.contents, 'Branches')
-  <...
-  <ul class="branch">
-  <li>
-  <a href="http://code.launchpad.dev/~name12/+junk/junk.dev">Ubuntu Junk Code</a>
-  <a href="/ubuntu/+spec/media-integrity-check/+branch/name12/+junk/junk.dev"><img src="/@@/edit" title="Change this branch link" /></a><br />
-  <i>This branch should fix the issue</i>
-  </li>
-  <li>
-  <a href="http://code.launchpad.dev/~name12/+junk/junk.contrib">Junk Code Contributions</a>
-  <a href="/ubuntu/+spec/media-integrity-check/+branch/name12/+junk/junk.contrib"><img src="/@@/edit" title="Change this branch link" /></a><br />
-  <i>Summary text</i>
-  </li>
-  </ul>
-  ...
+    >>> browser.getControl('Blueprint').value = ['canvas']
+    >>> browser.getControl('Continue').click()
+    >>> printSpecBranchLinks(browser)
+    Support &lt;canvas&gt; Objects (Medium) - edit
 
-Note that the edit links are not displayed if the user is not logged
-in:
+Attempting to link to the same blueprint again gives an error.
 
-  >>> anon_browser.open('http://blueprints.launchpad.dev/ubuntu/'
-  ...                   '+spec/media-integrity-check')
-  >>> print find_portlet(anon_browser.contents, 'Branches')
-  <...
-  <li>
-  <a href="http://code.launchpad.dev/~name12/+junk/junk.contrib">Junk Code Contributions</a>
-  <br />
-  <i>Summary text</i>
-  </li>
-  ...
+    >>> browser.getLink('Link to blueprint').click()
+    >>> browser.getControl('Blueprint').value = ['canvas']
+    >>> browser.getControl('Continue').click()
+    >>> for message in get_feedback_messages(browser.contents):
+    ...     print message
+    There is 1 error.
+    The blueprint "Support &lt;canvas&gt; Objects" is already linked to this branch
 
 
-Similar to the portlet on the specification page, there is a list of
-linked specifications on the branch page:
+== From the blueprint page ==
 
-  >>> user_browser.open('http://launchpad.dev/~name12/+junk/junk.contrib')
-  >>> print find_portlet(user_browser.contents, 'Blueprints')
-  <...
-  <li>
-  <a href="http://blueprints.launchpad.dev/ubuntu/+spec/media-integrity-check">CD Media Integrity Check</a>
-  <a href="/ubuntu/+spec/media-integrity-check/+branch/name12/+junk/junk.contrib"><img src="/@@/edit" title="Change this blueprint link" /></a><br />
-  <i>Summary text</i>
-  </li>
-  ...
+The main blueprint page has an action 'Link to branch'.  This allows
+the user to specify a branch to link to the blueprint.
+
+    >>> browser.open(
+    ...     'http://blueprints.launchpad.dev/firefox/+spec/svg-support')
+    >>> browser.getLink('Link to branch').click()
+    >>> browser.getControl('Branch').value = '~sabdfl/firefox/release-0.8'
+    >>> browser.getControl('Continue').click()
+
+The blueprint page shows the linked branches in a portlet.
+
+    >>> print extract_text(find_portlet(browser.contents, 'Branches'))
+    Branches
+    release-0.8: Mozilla Firefox 0.8
+
+Again, attempting to link to the same branch gives an error.
+
+    >>> browser.getLink('Link to branch').click()
+    >>> browser.getControl('Branch').value = '~sabdfl/firefox/release-0.8'
+    >>> browser.getControl('Continue').click()
+    >>> for message in get_feedback_messages(browser.contents):
+    ...     print message
+    There is 1 error.
+    This branch has already been linked to the blueprint
+
+    >>> browser.getControl('Cancel').click()
 
 
 == Editing a Branch Link ==
@@ -89,40 +94,46 @@ linked specifications on the branch page:
 The edit link in the branches portlet takes us to a form that can be
 used to edit the summary of the branch link:
 
-  >>> user_browser.open('http://blueprints.launchpad.dev/ubuntu/'
-  ...                   '+spec/media-integrity-check/+branch/name12/'
-  ...                   '+junk/junk.contrib')
-  >>> user_browser.getControl('Summary', index=0).value = 'New summary'
-  >>> user_browser.getControl('Change Summary').click()
-  >>> print user_browser.url
-  http://blueprints.launchpad.dev/ubuntu/+spec/media-integrity-check
+    >>> browser.getLink(url='branch/sabdfl/firefox/release-0.8').click()
+    >>> browser.getControl('Summary').value = 'New summary'
+    >>> browser.getControl('Update').click()
 
 The new summary now appears in the branches portlet:
 
-  >>> print find_portlet(user_browser.contents, 'Branches')
-  <...
-  <li>
-  <a href="http://code.launchpad.dev/~name12/+junk/junk.contrib">Junk Code Contributions</a>
-  <a href="/ubuntu/+spec/media-integrity-check/+branch/name12/+junk/junk.contrib"><img src="/@@/edit" title="Change this branch link" /></a><br />
-  <i>New summary</i>
-  </li>
-  ...
-  
+    >>> print extract_text(find_portlet(browser.contents, 'Branches'))
+    Branches
+    release-0.8: Mozilla Firefox 0.8
+      New summary
+
 
 == Deleting a Branch Link ==
 
 Users can delete the branch link from the branch link page:
 
-  >>> user_browser.open('http://blueprints.launchpad.dev/ubuntu/'
-  ...                   '+spec/media-integrity-check/+branch/name12/'
-  ...                   '+junk/junk.contrib')
-  >>> user_browser.getControl('Delete Link').click()
-  >>> print user_browser.url
-  http://blueprints.launchpad.dev/ubuntu/+spec/media-integrity-check
-
+    >>> browser.getLink(url='+branch/sabdfl/firefox/release-0.8').click()
+    >>> browser.getControl('Delete').click()
 
 The branch is now no longer listed in the portlet:
 
-  >>> portlet = str(find_portlet(user_browser.contents, 'Branches'))
-  >>> '~name12/+junk/junk.contrib' in portlet
-  False
+    >>> print find_portlet(browser.contents, 'Branches')
+    None
+
+
+== Inline editing from the branch page ==
+
+The main branch page has some javascript to show a form to edit
+the spec-branch link.
+
+    >>> browser.open(
+    ...     'http://code.launchpad.dev/~name12/firefox/main')
+    >>> printSpecBranchLinks(browser)
+    Support &lt;canvas&gt; Objects (Medium) - edit
+
+Clicking on the edit link shows the form.  Unfortunately the
+testbrowser cannot handle javascript.  In these situations
+clicking on edit takes the user to the normal edit page for
+the spec-branch link.
+
+    >>> browser.getLink('edit').click()
+    >>> print browser.title
+    Edit blueprint branch status

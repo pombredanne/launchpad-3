@@ -13,7 +13,6 @@ __all__ = [
     'PersonAddView',
     'PersonAnswersMenu',
     'PersonAssignedBugTaskSearchListingView',
-    'PersonAuthoredBranchesView',
     'PersonBranchesMenu',
     'PersonBranchesView',
     'PersonBrandingView',
@@ -48,6 +47,7 @@ __all__ = [
     'PersonLatestQuestionsView',
     'PersonNavigation',
     'PersonOverviewMenu',
+    'PersonOwnedBranchesView',
     'PersonRdfView',
     'PersonRegisteredBranchesView',
     'PersonRelatedBugsView',
@@ -120,7 +120,7 @@ from canonical.launchpad.interfaces import (
     IEmailAddressSet, IGPGHandler, IGPGKeySet, IIrcIDSet, IJabberIDSet,
     ILanguageSet, ILaunchBag, ILoginTokenSet, IMailingListSet, INewPerson,
     IPOTemplateSet, IPasswordEncryptor, IPerson, IPersonChangePassword,
-    IPersonClaim, IPersonSet, IPollSet, IPollSubset,
+    IPersonClaim, IPersonSet, IPollSet, IPollSubset, IOpenLaunchBag,
     IRequestPreferredLanguages, ISSHKeySet, ISignedCodeOfConductSet, ITeam,
     ITeamMembership, ITeamMembershipSet, ITeamReassignment, IWikiNameSet,
     LoginTokenType, NotFoundError, PersonCreationRationale, PersonVisibility,
@@ -153,6 +153,7 @@ from canonical.launchpad.webapp.publisher import LaunchpadView
 from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp.interfaces import IPlacelessLoginSource
 from canonical.launchpad.webapp.login import logoutPerson
+from canonical.launchpad.webapp.menu import structured
 from canonical.launchpad.webapp import (
     ApplicationMenu, ContextMenu, LaunchpadEditFormView, LaunchpadFormView,
     Link, Navigation, StandardLaunchpadFacets, action, canonical_url,
@@ -244,7 +245,17 @@ class BranchTraversalMixin:
     def traverse(self, product_name):
         branch_name = self.request.stepstogo.consume()
         if branch_name is not None:
-            return self.context.getBranch(product_name, branch_name)
+            branch = self.context.getBranch(product_name, branch_name)
+            if branch is not None and branch.product is not None:
+                # The launch bag contains "stuff of interest" related to where
+                # the user is traversing to.  When a user traverses over a
+                # product, the product gets added to the launch bag by the
+                # traversal machinery, however when traversing to a branch, we
+                # short circuit it somewhat by looking for a two part key (in
+                # addition to the user) to identify the branch, and as such
+                # the product isnt't being added to the bag by the internals.
+                getUtility(IOpenLaunchBag).add(branch.product)
+            return branch
         else:
             return super(BranchTraversalMixin, self).traverse(product_name)
 
@@ -631,18 +642,23 @@ class PersonBranchesMenu(ApplicationMenu):
 
     usedfor = IPerson
     facet = 'branches'
-    links = ['authored', 'registered', 'subscribed', 'addbranch']
+    links = ['all_related', 'registered', 'owned', 'subscribed', 'addbranch']
 
-    def authored(self):
-        text = 'Show authored branches'
-        return Link('+authoredbranches', text, icon='branch')
+    def all_related(self):
+        text = 'All related'
+        return Link(canonical_url(self.context, rootsite='code'),
+                    text, icon='branch')
+
+    def owned(self):
+        text = 'Owned'
+        return Link('+ownedbranches', text, icon='branch')
 
     def registered(self):
-        text = 'Show registered branches'
+        text = 'Registered'
         return Link('+registeredbranches', text, icon='branch')
 
     def subscribed(self):
-        text = 'Show subscribed branches'
+        text = 'Subscribed'
         return Link('+subscribedbranches', text, icon='branch')
 
     def addbranch(self):
@@ -1237,7 +1253,8 @@ class PersonClaimView(LaunchpadFormView):
                      % self.context.name)
         elif email.person != self.context:
             if email.person.is_valid_person:
-                error = ("This email address is associated with yet another "
+                error = structured(
+                         "This email address is associated with yet another "
                          "Launchpad profile, which you seem to have used at "
                          "some point. If that's the case, you can "
                          '<a href="/people/+requestmerge'
@@ -1245,17 +1262,18 @@ class PersonClaimView(LaunchpadFormView):
                          "this profile with the other one</a> (you'll "
                          "have to log in with the other profile first, "
                          "though). If that's not the case, please try with a "
-                         "different email address."
-                         % self.context.name)
+                         "different email address.",
+                         self.context.name)
             else:
                 # There seems to be another unvalidated profile for you!
-                error = ("Although this email address is not associated with "
+                error = structured(
+                         "Although this email address is not associated with "
                          "this profile, it's associated with yet another "
                          'one. You can <a href="%s/+claim">claim that other '
                          'profile</a> and then later '
                          '<a href="/people/+requestmerge">combine</a> both '
-                         'of them into a single one.'
-                         % canonical_url(email.person))
+                         'of them into a single one.',
+                         canonical_url(email.person))
         else:
             # Yay! You got the right email this time.
             pass
@@ -2056,6 +2074,33 @@ class PersonView(LaunchpadView, FeedsMixin):
             return None
         return mailing_list.archive_url
 
+    def getLatestUploadedPPAPackages(self):
+        """Return the sourcepackagereleases uploaded to PPAs by this person.
+
+        Results are filtered according to the permission of the requesting
+        user to see private archives.
+        """
+        packages = self.context.getLatestUploadedPPAPackages()
+
+        # For each package we find out which archives it was published in.
+        # If the user has permission to see any of those archives then
+        # the user is permitted to see the package.
+        #
+        # Ideally this check should be done in
+        # IPerson.getLatestUploadedPPAPackages() but formulating the SQL
+        # query is virtually impossible!
+        results = []
+        for package in packages:
+            # Make a shallow copy to remove the Zope security.
+            archives = set(package.published_archives)
+            # Ensure the SPR.upload_archive is also considered.
+            archives.add(package.upload_archive)
+            for archive in archives:
+                if check_permission('launchpad.View', archive):
+                    results.append(package)
+                    break
+        return results
+
 
 class PersonIndexView(XRDSContentNegotiationMixin, PersonView):
     """View class for person +index and +xrds pages."""
@@ -2725,11 +2770,10 @@ class TeamAddMyTeamsView(LaunchpadFormView):
 
     def setUpFields(self):
         terms = []
-        for team in self.user.getAdministratedTeams():
-            if team not in self.context.activemembers:
-                text = '<a href="%s">%s</a>' % (
-                    canonical_url(team), team.displayname)
-                terms.append(SimpleTerm(team, team.name, text))
+        for team in self.candidate_teams:
+            text = '<a href="%s">%s</a>' % (
+                canonical_url(team), team.displayname)
+            terms.append(SimpleTerm(team, team.name, text))
         self.form_fields = form.Fields(
             List(__name__='teams',
                  title=_(''),
@@ -2741,6 +2785,25 @@ class TeamAddMyTeamsView(LaunchpadFormView):
     def setUpWidgets(self, context=None):
         super(TeamAddMyTeamsView, self).setUpWidgets(context)
         self.widgets['teams'].display_label = False
+
+    @cachedproperty
+    def candidate_teams(self):
+        """Return the set of teams that can be added/proposed for the context.
+
+        We return only teams that the user can administer, that aren't already
+        a member in the context or that the context isn't a member of. (Of
+        course, the context is also omitted.)
+        """
+        candidates = []
+        for team in self.user.getAdministratedTeams():
+            if team == self.context:
+                continue
+            elif team in self.context.activemembers:
+                continue
+            elif self.context.hasParticipationEntryFor(team):
+                continue
+            candidates.append(team)
+        return candidates
 
     @action(_("Cancel"), name="cancel",
             validator=LaunchpadFormView.validate_none)
@@ -2754,7 +2817,11 @@ class TeamAddMyTeamsView(LaunchpadFormView):
                                'Please select the team(s) you want to be '
                                'member(s) of this team.')
 
-    @action(_("Continue"), name="continue")
+    def hasCandidates(self, action):
+        """Return whether the user has teams to propose."""
+        return len(self.candidate_teams) > 0
+
+    @action(_("Continue"), name="continue", condition=hasCandidates)
     def continue_action(self, action, data):
         """Make the selected teams join this team."""
         context = self.context
@@ -3110,8 +3177,7 @@ class PersonEditEmailsView(LaunchpadFormView):
         newemail = data['newemail']
         if not valid_email(newemail):
             self.addError(
-                "'%s' doesn't seem to be a valid email address." %
-                cgi.escape(newemail))
+                "'%s' doesn't seem to be a valid email address." % newemail)
             return self.errors
 
         email = getUtility(IEmailAddressSet).getByEmail(newemail)
@@ -3132,12 +3198,15 @@ class PersonEditEmailsView(LaunchpadFormView):
                     '%s/+requestmerge?field.dupeaccount=%s'
                     % (canonical_url(getUtility(IPersonSet)), owner_name))
                 self.addError(
+                    structured(
                     "The email address '%s' is already registered to "
                     '<a href="%s">%s</a>. If you think that is a '
                     'duplicated account, you can <a href="%s">merge it</a> '
-                    "into your account. "
-                    % (email.email, canonical_url(owner),
-                       cgi.escape(owner.browsername), merge_url))
+                    "into your account. ",
+                    email.email,
+                    canonical_url(owner),
+                    owner.browsername,
+                    merge_url))
         return self.errors
 
     @action(_("Add"), name="add_email", validator=validate_action_add_email)
@@ -3492,7 +3561,7 @@ class PersonAnswersMenu(ApplicationMenu):
 class PersonBranchesView(BranchListingView):
     """View for branch listing for a person."""
 
-    extra_columns = ('author', 'product', 'role')
+    extra_columns = ('product',)
     heading_template = 'Bazaar branches related to %(displayname)s'
 
     def _branches(self, lifecycle_status, show_dormant):
@@ -3505,36 +3574,25 @@ class PersonBranchesView(BranchListingView):
         return set(getUtility(IBranchSet).getBranchesSubscribedByPerson(
             self.context, [], self.user))
 
-    def roleForBranch(self, branch):
-        person = self.context
-        if branch.author == person:
-            return 'Author'
-        elif branch.owner == person:
-            return 'Registrant'
-        elif branch in self._subscribed_branches:
-            return 'Subscriber'
-        else:
-            return 'Team Branch'
-
-
-class PersonAuthoredBranchesView(BranchListingView):
-    """View for branch listing for a person's authored branches."""
-
-    extra_columns = ('product',)
-    heading_template = 'Bazaar branches authored by %(displayname)s'
-    no_sort_by = (BranchListingSort.AUTHOR,)
-
-    def _branches(self, lifecycle_status, show_dormant):
-        return getUtility(IBranchSet).getBranchesAuthoredByPerson(
-            self.context, lifecycle_status, self.user, self.sort_by,
-            show_dormant)
-
 
 class PersonRegisteredBranchesView(BranchListingView):
     """View for branch listing for a person's registered branches."""
 
-    extra_columns = ('author', 'product')
+    extra_columns = ('product',)
     heading_template = 'Bazaar branches registered by %(displayname)s'
+    no_sort_by = (BranchListingSort.REGISTRANT,)
+
+    def _branches(self, lifecycle_status, show_dormant):
+        return getUtility(IBranchSet).getBranchesRegisteredByPerson(
+            self.context, lifecycle_status, self.user, self.sort_by,
+            show_dormant)
+
+
+class PersonOwnedBranchesView(BranchListingView):
+    """View for branch listing for a person's owned branches."""
+
+    extra_columns = ('product',)
+    heading_template = 'Bazaar branches owned by %(displayname)s'
     no_sort_by = (BranchListingSort.REGISTRANT,)
 
     def _branches(self, lifecycle_status, show_dormant):
@@ -3546,7 +3604,7 @@ class PersonRegisteredBranchesView(BranchListingView):
 class PersonSubscribedBranchesView(BranchListingView):
     """View for branch listing for a person's subscribed branches."""
 
-    extra_columns = ('author', 'product')
+    extra_columns = ('product',)
     heading_template = 'Bazaar branches subscribed to by %(displayname)s'
 
     def _branches(self, lifecycle_status, show_dormant):
