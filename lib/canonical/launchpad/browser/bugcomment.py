@@ -31,6 +31,12 @@ def build_comments_from_chunks(chunks, bugtask, truncate=False):
         # Once we have all the chunks related to a comment set up,
         # we get the text set up for display.
         comment.setupText(truncate=truncate)
+    # Set up the bug watch for all the imported comments.
+    imported_bug_messages = getUtility(IBugMessageSet).getImportedBugMessages(
+        bugtask.bug)
+    for bug_message in imported_bug_messages:
+        message_id = bug_message.message.id
+        comments[message_id].bugwatch = bug_message.bugwatch
     return comments
 
 
