@@ -38,11 +38,8 @@ handle, and register them for some domains:
     >>> from canonical.launchpad.mail.handlers import mail_handlers
     >>> foo_handler = MockHandler()
     >>> bar_handler = MockHandler(allow_unknown_users=True)
-    >>> error_handler = MockHandler()
     >>> mail_handlers.add('foo.com', foo_handler)
     >>> mail_handlers.add('bar.com', bar_handler)
-    >>> dummy, errors_domain = config.launchpad.errors_address.split('@')
-    >>> mail_handlers.add(errors_domain, error_handler)
 
 We temporarily override the error mails' From address, so that they will
 pass through the authentication stage:
@@ -91,18 +88,28 @@ Now we can see that each handler handled the emails sent to its domain:
 == Unhandled Mail ==
 
 So, what happened to the message that got sent to baz.com? Since there
-wasn't a handler registered for that domain, an error message was sent
-to the errors email address, which is specified in launchpad.conf as
-errors_address.
-
-    >>> len(error_handler.handledMails)
-    0
-    >>> handleMail(zopeless_transaction)
-    WARNING:canonical.launchpad.mail:No X-Original-To header was present in email: ...
-    >>> len(error_handler.handledMails)
-    1
+wasn't a handler registered for that domain, an OOPS was recorded with
+a link to the original message.
 
     >>> from canonical.launchpad.mail import stub
+    >>> print stub.test_emails[-1][2]
+    Content-Type: multipart/mixed...
+    ...
+    To: Sample Person <test@canonical.com>
+    ...
+    Sorry, something went wrong when Launchpad tried processing your mail.
+    We've recorded what happened, and we'll fix it as soon as possible.
+    Apologies for the inconvenience.
+    <BLANKLINE>
+    If this is blocking your work, please file a question at
+    https://answers.edge.launchpad.net/launchpad/+addquestion
+    and include the error ID OOPS-... in the description.
+    ...
+    From: Sample Person <test@canonical.com>
+    To: 123@baz.com
+    Subject: Signed Email
+    ...
+
     >>> stub.test_emails = []
 
 
@@ -396,6 +403,5 @@ empty Return-Path, but there are some broken mailers out there.
     >>> config.malone.bugmail_error_from_address = old_error_from_address
     >>> mail_handlers.add('foo.com', None)
     >>> mail_handlers.add('bar.com', None)
-    >>> mail_handlers.add(errors_domain, None)
     >>> mail_handlers.add('except.com', None)
     >>> LibrarianLayer.reveal()

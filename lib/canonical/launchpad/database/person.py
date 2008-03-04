@@ -56,14 +56,13 @@ from canonical.launchpad.interfaces import (
     IJabberID, IJabberIDSet, ILaunchBag, ILaunchpadCelebrities,
     ILaunchpadStatisticSet, ILoginTokenSet, IMailingListSet,
     INACTIVE_ACCOUNT_STATUSES, IPasswordEncryptor, IPerson, IPersonSet,
-    IPillarNameSet, IProduct, IRevisionSet,
-    ISSHKey, ISSHKeySet, ISignedCodeOfConductSet,
-    ISourcePackageNameSet, ITeam, ITranslationGroupSet, IWikiName,
-    IWikiNameSet, JoinNotAllowed, LoginTokenType,
-    PersonCreationRationale, PersonVisibility,
-    QUESTION_STATUS_DEFAULT_SEARCH, SSHKeyType, ShipItConstants,
-    ShippingRequestStatus, SpecificationDefinitionStatus, SpecificationFilter,
-    SpecificationImplementationStatus, SpecificationSort,
+    IPillarNameSet, IProduct, IRevisionSet, ISSHKey, ISSHKeySet,
+    ISignedCodeOfConductSet, ISourcePackageNameSet, ITeam,
+    ITranslationGroupSet, IWikiName, IWikiNameSet, JoinNotAllowed,
+    LoginTokenType, PersonCreationRationale, PersonVisibility,
+    PersonalStanding, QUESTION_STATUS_DEFAULT_SEARCH, SSHKeyType,
+    ShipItConstants, ShippingRequestStatus, SpecificationDefinitionStatus,
+    SpecificationFilter, SpecificationImplementationStatus, SpecificationSort,
     TeamMembershipRenewalPolicy, TeamMembershipStatus, TeamSubscriptionPolicy,
     UBUNTU_WIKI_URL, UNRESOLVED_BUGTASK_STATUSES)
 
@@ -227,6 +226,12 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
     visibility = EnumCol(
         enum=PersonVisibility,
         default=PersonVisibility.PUBLIC)
+
+    personal_standing = EnumCol(
+        enum=PersonalStanding, default=PersonalStanding.UNKNOWN)
+
+    personal_standing_reason = StringCol(
+        default=None, dbName='personal_standing_reason_text')
 
     def _init(self, *args, **kw):
         """Mark the person as a team when created or fetched from database."""

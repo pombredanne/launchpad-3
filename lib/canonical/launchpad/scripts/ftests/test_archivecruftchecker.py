@@ -7,22 +7,21 @@ just-published 'ubuntutest' archive.
 
 __metaclass__ = type
 
-from unittest import TestLoader
+import os
 import shutil
 import subprocess
-import os
 import sys
+import unittest
 
 from zope.component import getUtility
 
 from canonical.config import config
-from canonical.testing import LaunchpadZopelessLayer
-from canonical.launchpad.ftests.harness import LaunchpadZopelessTestCase
 from canonical.launchpad.interfaces import (
     IDistributionSet, PackagePublishingPocket)
 from canonical.launchpad.scripts.ftests.test_ftpmaster import LocalLogger
 from canonical.launchpad.scripts.ftpmaster import (
     ArchiveCruftChecker, ArchiveCruftCheckerError)
+from canonical.testing import LaunchpadZopelessLayer
 
 # XXX cprov 2006-05-15: {create, remove}TestArchive functions should be
 # moved to the publisher test domain as soon as we have it.
@@ -43,16 +42,15 @@ def removeTestArchive():
     shutil.rmtree("/var/tmp/archive/")
 
 
-class TestArchiveCruftChecker(LaunchpadZopelessTestCase):
+class TestArchiveCruftChecker(unittest.TestCase):
     layer = LaunchpadZopelessLayer
-    dbuser = config.archivepublisher.dbuser
 
     def setUp(self):
         """Setup the test environment.
 
         Retrieve useful instances and create a test archive.
         """
-        LaunchpadZopelessTestCase.setUp(self)
+        self.layer.switchDbUser(config.archivepublisher.dbuser)
         self.log = LocalLogger()
 
         self.ubuntutest = getUtility(IDistributionSet)['ubuntutest']
@@ -62,7 +60,6 @@ class TestArchiveCruftChecker(LaunchpadZopelessTestCase):
 
     def tearDown(self):
         """Clean up test environment and remove the test archive."""
-        LaunchpadZopelessTestCase.tearDown(self)
         removeTestArchive()
 
     def test_initialize_success(self):
@@ -115,4 +112,4 @@ class TestArchiveCruftChecker(LaunchpadZopelessTestCase):
 
 
 def test_suite():
-    return TestLoader().loadTestsFromName(__name__)
+    return unittest.TestLoader().loadTestsFromName(__name__)

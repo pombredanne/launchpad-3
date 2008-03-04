@@ -129,6 +129,7 @@ class ImplicitTypeSection(Section):
     re_types = re.compile(r'''
         (?P<false> ^false$) |
         (?P<true> ^true$) |
+        (?P<none> ^none$) |
         (?P<int> ^[+-]?\d+$) |
         (?P<str> ^.*$)
         ''', re.IGNORECASE | re.VERBOSE)
@@ -147,6 +148,8 @@ class ImplicitTypeSection(Section):
             return False
         elif match.group('true'):
             return True
+        elif match.group('none'):
+            return None
         elif match.group('int'):
             return int(value)
         else:
