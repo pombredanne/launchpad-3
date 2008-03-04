@@ -62,59 +62,57 @@ def set_bug_branch_status(bug, branch, status):
     return bug_branch
 
 
-class BzrSync:
-    """Import version control metadata from a Bazaar branch into the database.
+def get_diff(bzr_branch, bzr_revision):
+    """Return the diff for `bzr_revision` on `bzr_branch`.
 
-    If the contructor succeeds, a read-lock for the underlying bzrlib branch is
-    held, and must be released by calling the `close` method.
+    :param bzr_branch: A `bzrlib.branch.Branch` object.
+    :param bzr_revision: A Bazaar `Revision` object.
+    :return: A byte string that is the diff of the changes introduced by
+        `bzr_revision` on `bzr_branch`.
     """
-    def __init__(self, trans_manager, branch, branch_url=None, logger=None):
-        self.trans_manager = trans_manager
-        self.email_from = config.noreply_from_address
+    repo = bzr_branch.repository
+    if bzr_revision.parent_ids:
+        ids = (bzr_revision.revision_id, bzr_revision.parent_ids[0])
+        tree_new, tree_old = repo.revision_trees(ids)
+    else:
+        # can't get both trees at once, so one at a time
+        tree_new = repo.revision_tree(bzr_revision.revision_id)
+        tree_old = repo.revision_tree(None)
 
-        if logger is None:
-            logger = logging.getLogger(self.__class__.__name__)
-        self.logger = logger
+    diff_content = StringIO()
+    show_diff_trees(tree_old, tree_new, diff_content)
+    raw_diff = diff_content.getvalue()
+    return raw_diff.decode('utf8', 'replace')
 
-        self.db_branch = branch
-        if branch_url is None:
-            branch_url = self.db_branch.url
-        self.bzr_branch = Branch.open(branch_url)
-        self.bzr_branch.lock_read()
-        # We want to generate the email contents as close to the source
-        # of the email as possible, but we don't want to send them until
-        # the information has been committed.
-        self.initializeEmailQueue()
-        self.karma_events = {}
 
-    def initializeEmailQueue(self):
-        """Create an email queue and determine whether to create diffs.
+def get_revision_message(bzr_branch, bzr_revision):
+    """Return the log message for `bzr_revision` on `bzr_branch`.
 
-        In order to avoid creating diffs when no one is interested in seeing
-        it, we check all the branch subscriptions first, and decide here
-        whether or not to generate the revision diffs as the branch is scanned.
+    :param bzr_branch: A `bzrlib.branch.Branch` object.
+    :param bzr_revision: A Bazaar `Revision` object.
+    :return: The commit message entered for `bzr_revision`.
+    """
+    outf = StringIO()
+    lf = log_formatter('long', to_file=outf)
+    rev_id = bzr_revision.revision_id
+    rev1 = rev2 = bzr_branch.revision_id_to_revno(rev_id)
+    if rev1 == 0:
+        rev1 = None
+        rev2 = None
 
-        See XXX comment in `sendRevisionNotificationEmails` for the reason
-        behind the queue itself.
-        """
-        self.pending_emails = []
-        self.subscribers_want_notification = False
+    show_log(bzr_branch,
+             lf,
+             start_revision=rev1,
+             end_revision=rev2,
+             verbose=True)
+    return outf.getvalue()
 
-        diff_levels = (BranchSubscriptionNotificationLevel.DIFFSONLY,
-                       BranchSubscriptionNotificationLevel.FULL)
-        for subscription in self.db_branch.subscriptions:
-            if subscription.notification_level in diff_levels:
-                self.subscribers_want_notification = True
-                break
 
-    def close(self):
-        """Explicitly release resources."""
-        # release the read lock on the bzrlib branch
-        self.bzr_branch.unlock()
-        # prevent further use of that object
-        self.bzr_branch = None
-        self.db_branch = None
-        self.bzr_history = None
+class BugBranchLinker:
+    """Links branches to bugs based on revision metadata."""
+
+    def __init__(self, db_branch):
+        self.db_branch = db_branch
 
     def _parseBugLine(self, line):
         """Parse a line from a bug property.
@@ -179,18 +177,186 @@ class BzrSync:
             bug_statuses[bug] = status
         return bug_statuses
 
-    def syncBranchAndClose(self):
+    def createBugBranchLinksForRevision(self, bzr_revision):
+        """Create bug-branch links for a revision.
+
+        This looks inside the 'bugs' property of the given Bazaar revision and
+        creates a BugBranch record for each bug mentioned.
+        """
+        bug_property = bzr_revision.properties.get('bugs', None)
+        if bug_property is None:
+            return
+        bug_set = getUtility(IBugSet)
+        for bug_id, status in self.extractBugInfo(bug_property).iteritems():
+            try:
+                bug = bug_set.get(bug_id)
+            except NotFoundError:
+                pass
+            else:
+                set_bug_branch_status(bug, self.db_branch, status)
+
+
+class BranchMailer:
+    """Handles mail notifications for changes to the code in a branch."""
+
+    def __init__(self, trans_manager, db_branch):
+        self.trans_manager = trans_manager
+        self.db_branch = db_branch
+        self.pending_emails = []
+        self.subscribers_want_notification = False
+        self.initial_scan = None
+        self.email_from = config.noreply_from_address
+
+    def initializeEmailQueue(self, initial_scan):
+        """Create an email queue and determine whether to create diffs.
+
+        In order to avoid creating diffs when no one is interested in seeing
+        it, we check all the branch subscriptions first, and decide here
+        whether or not to generate the revision diffs as the branch is scanned.
+
+        See XXX comment in `sendRevisionNotificationEmails` for the reason
+        behind the queue itself.
+        """
+        self.pending_emails = []
+        self.subscribers_want_notification = False
+
+        diff_levels = (BranchSubscriptionNotificationLevel.DIFFSONLY,
+                       BranchSubscriptionNotificationLevel.FULL)
+
+        subscriptions = self.db_branch.getSubscriptionsByLevel(diff_levels)
+        self.subscribers_want_notification = (subscriptions.count() > 0)
+
+        # If db_history is empty, then this is the initial scan of the
+        # branch.  We only want to send one email for the initial scan
+        # of a branch, not one for each revision.
+        self.initial_scan = initial_scan
+
+    def generateEmailForRemovedRevisions(self, removed_history):
+        """Notify subscribers of removed revisions.
+
+        When the history is shortened, and email is sent that says this. This
+        will never happen for a newly scanned branch, so not checking that
+        here.
+        """
+        if not self.subscribers_want_notification:
+            return
+        number_removed = len(removed_history)
+        if number_removed > 0:
+            if number_removed == 1:
+                contents = '1 revision was removed from the branch.'
+            else:
+                contents = ('%d revisions were removed from the branch.'
+                            % number_removed)
+            # No diff is associated with the removed email.
+            self.pending_emails.append((contents, '', None))
+
+    def generateEmailForRevision(self, bzr_branch, bzr_revision, sequence):
+        """Generate an email for a revision for later sending.
+
+        :param bzr_branch: The branch being scanned.
+        :param bzr_revision: The revision that we are sending the email about.
+            This is assumed to be in the main-line history of the branch. (Not
+            just the ancestry).
+        :param sequence: The revision number of `bzr_revision`.
+        """
+        if (not self.initial_scan
+            and self.subscribers_want_notification):
+            message = get_revision_message(bzr_branch, bzr_revision)
+            revision_diff = get_diff(bzr_branch, bzr_revision)
+            # Use the first (non blank) line of the commit message
+            # as part of the subject, limiting it to 100 characters
+            # if it is longer.
+            message_lines = [
+                line.strip() for line in bzr_revision.message.split('\n')
+                if len(line.strip()) > 0]
+            if len(message_lines) == 0:
+                first_line = 'no commit message given'
+            else:
+                first_line = message_lines[0]
+                if len(first_line) > SUBJECT_COMMIT_MESSAGE_LENGTH:
+                    offset = SUBJECT_COMMIT_MESSAGE_LENGTH - 3
+                    first_line = first_line[:offset] + '...'
+            subject = '[Branch %s] Rev %s: %s' % (
+                self.db_branch.unique_name, sequence, first_line)
+            self.pending_emails.append(
+                (message, revision_diff, subject))
+
+    def sendRevisionNotificationEmails(self, bzr_history):
+        """Send out the pending emails.
+
+        If this is the first scan of a branch, then we send out a simple
+        notification email saying that the branch has been scanned.
+        """
+        # XXX: thumper 2007-03-28 bug=29744:
+        # The whole reason that this method exists is due to
+        # emails being sent immediately in a zopeless environment.
+        # When bug #29744 is fixed, this method will no longer be
+        # necessary, and the emails should be sent at the source
+        # instead of appending them to the pending_emails.
+        # This method is enclosed in a transaction so emails will
+        # continue to be sent out when the bug is closed without
+        # immediately having to fix this method.
+        # Now that these changes have been committed, send the pending emails.
+        if not self.subscribers_want_notification:
+            return
+        self.trans_manager.begin()
+
+        if self.initial_scan:
+            assert len(self.pending_emails) == 0, (
+                'Unexpected pending emails on new branch.')
+            revision_count = len(bzr_history)
+            if revision_count == 1:
+                revisions = '1 revision'
+            else:
+                revisions = '%d revisions' % revision_count
+            message = ('First scan of the branch detected %s'
+                       ' in the revision history of the branch.' %
+                       revisions)
+            send_branch_revision_notifications(
+                self.db_branch, self.email_from, message, '', None)
+        else:
+            for message, diff, subject in self.pending_emails:
+                send_branch_revision_notifications(
+                    self.db_branch, self.email_from, message, diff,
+                    subject)
+
+        self.trans_manager.commit()
+
+
+class BzrSync:
+    """Import version control metadata from a Bazaar branch into the database.
+
+    If the constructor succeeds, a read-lock for the underlying bzrlib branch
+    is held, and must be released by calling the `close` method.
+    """
+
+    def __init__(self, trans_manager, branch, logger=None):
+        self.trans_manager = trans_manager
+        self.email_from = config.noreply_from_address
+
+        if logger is None:
+            logger = logging.getLogger(self.__class__.__name__)
+        self.logger = logger
+
+        self.db_branch = branch
+        self._bug_linker = BugBranchLinker(self.db_branch)
+        self._branch_mailer = BranchMailer(self.trans_manager, self.db_branch)
+
+    def syncBranchAndClose(self, bzr_branch=None):
         """Synchronize the database with a Bazaar branch and close resources.
 
         Convenience method that implements the proper idiom for the common
         case of calling `syncBranch` and `close`.
         """
+        if bzr_branch is None:
+            bzr_branch = Branch.open(self.db_branch.warehouse_url)
+        bzr_branch.lock_read()
         try:
-            self.syncBranch()
+            self.syncBranch(bzr_branch)
         finally:
-            self.close()
+            bzr_branch.unlock()
 
-    def syncBranch(self):
+    def syncBranch(self, bzr_branch):
         """Synchronize the database view of a branch with Bazaar data.
 
         Several tables must be updated:
@@ -207,10 +373,10 @@ class BzrSync:
           the sync is complete.
         """
         self.logger.info("Scanning branch: %s", self.db_branch.unique_name)
-        self.logger.info("    from %s", self.bzr_branch.base)
+        self.logger.info("    from %s", bzr_branch.base)
         # Get the history and ancestry from the branch first, to fail early
         # if something is wrong with the branch.
-        self.retrieveBranchDetails()
+        self.retrieveBranchDetails(bzr_branch)
         # The BranchRevision, Revision and RevisionParent tables are only
         # written to by the branch-scanner, so they are not subject to
         # write-lock contention. Update them all in a single transaction to
@@ -219,13 +385,11 @@ class BzrSync:
         self.retrieveDatabaseAncestry()
         (revisions_to_insert_or_check, branchrevisions_to_delete,
             branchrevisions_to_insert) = self.planDatabaseChanges()
-        self.syncRevisions(revisions_to_insert_or_check)
+        self.syncRevisions(bzr_branch, revisions_to_insert_or_check)
         self.deleteBranchRevisions(branchrevisions_to_delete)
-        self.insertBranchRevisions(branchrevisions_to_insert)
+        self.insertBranchRevisions(bzr_branch, branchrevisions_to_insert)
         self.trans_manager.commit()
-        # Now that these changes have been committed, send the pending emails.
-        if self.subscribers_want_notification:
-            self.sendRevisionNotificationEmails()
+        self._branch_mailer.sendRevisionNotificationEmails(self.bzr_history)
         # The Branch table is modified by other systems, including the web UI,
         # so we need to update it in a short transaction to avoid causing
         # timeouts in the webapp. This opens a small race window where the
@@ -242,22 +406,20 @@ class BzrSync:
         self.logger.info("Retrieving ancestry from database.")
         self.db_ancestry, self.db_history, self.db_branch_revision_map = (
             self.db_branch.getScannerData())
-        # If db_history is empty, then this is the initial scan of the
-        # branch.  We only want to send one email for the initial scan
-        # of a branch, not one for each revision.
-        self.initial_scan = not bool(self.db_history)
+        initial_scan = (len(self.db_history) == 0)
+        self._branch_mailer.initializeEmailQueue(initial_scan)
 
-    def retrieveBranchDetails(self):
+    def retrieveBranchDetails(self, bzr_branch):
         """Retrieve ancestry from the the bzr branch on disk."""
         self.logger.info("Retrieving ancestry from bzrlib.")
-        self.last_revision = self.bzr_branch.last_revision()
+        self.last_revision = bzr_branch.last_revision()
         # Make bzr_ancestry a set for consistency with db_ancestry.
         bzr_ancestry_ordered = (
-            self.bzr_branch.repository.get_ancestry(self.last_revision))
+            bzr_branch.repository.get_ancestry(self.last_revision))
         first_ancestor = bzr_ancestry_ordered.pop(0)
         assert first_ancestor is None, 'history horizons are not supported'
         self.bzr_ancestry = set(bzr_ancestry_ordered)
-        self.bzr_history = self.bzr_branch.revision_history()
+        self.bzr_history = bzr_branch.revision_history()
 
     def planDatabaseChanges(self):
         """Plan database changes to synchronize with bzrlib data.
@@ -294,19 +456,7 @@ class BzrSync:
         removed_history = db_history[common_len:]
         added_history = bzr_history[common_len:]
 
-        # When the history is shortened, and email is sent that says this.
-        # This will never happen for a newly scanned branch, so not checking
-        # that here.
-        if self.subscribers_want_notification:
-            number_removed = len(removed_history)
-            if number_removed > 0:
-                if number_removed == 1:
-                    contents = '1 revision was removed from the branch.'
-                else:
-                    contents = ('%d revisions were removed from the branch.'
-                                % number_removed)
-                # No diff is associated with the removed email.
-                self.pending_emails.append((contents, '', None))
+        self._branch_mailer.generateEmailForRemovedRevisions(removed_history)
 
         # Merged (non-history) revisions in the database and the bzr branch.
         old_merged = db_ancestry.difference(db_history)
@@ -334,7 +484,7 @@ class BzrSync:
         return (revisions_to_insert_or_check, branchrevisions_to_delete,
             branchrevisions_to_insert)
 
-    def syncRevisions(self, revisions_to_insert_or_check):
+    def syncRevisions(self, bzr_branch, revisions_to_insert_or_check):
         """Import all the revisions added to the ancestry of the branch."""
         self.logger.info("Inserting or checking %d revisions.",
             len(revisions_to_insert_or_check))
@@ -342,14 +492,13 @@ class BzrSync:
         for revision_id in revisions_to_insert_or_check:
             # If the revision is a ghost, it won't appear in the repository.
             try:
-                revision = self.bzr_branch.repository.get_revision(
+                revision = bzr_branch.repository.get_revision(
                     revision_id)
             except NoSuchRevision:
                 self.logger.debug("%d of %d: %s is a ghost",
                                   self.curr, self.last, revision_id)
                 continue
             self.syncOneRevision(revision)
-
 
     def syncOneRevision(self, bzr_revision):
         """Import the revision with the given revision_id.
@@ -449,7 +598,7 @@ class BzrSync:
         for branchrevision in sorted(branchrevisions_to_delete):
             branch_revision_set.delete(branchrevision)
 
-    def insertBranchRevisions(self, branchrevisions_to_insert):
+    def insertBranchRevisions(self, bzr_branch, branchrevisions_to_insert):
         """Insert a batch of BranchRevision rows."""
         self.logger.info("Inserting %d branchrevision records.",
             len(branchrevisions_to_insert))
@@ -463,47 +612,14 @@ class BzrSync:
             # is just in the ancestry so no email is generated.
             if sequence is not None:
                 try:
-                    revision = self.bzr_branch.repository.get_revision(
-                        revision_id)
+                    revision = bzr_branch.repository.get_revision(revision_id)
                 except NoSuchRevision:
                     self.logger.debug("%d of %d: %s is a ghost",
                                       self.curr, self.last, revision_id)
                     continue
-                if (not self.initial_scan
-                    and self.subscribers_want_notification):
-                    message = self.getRevisionMessage(revision)
-                    revision_diff = self.getDiff(revision)
-                    # Use the first (non blank) line of the commit message
-                    # as part of the subject, limiting it to 100 characters
-                    # if it is longer.
-                    message_lines = [
-                        line.strip() for line in revision.message.split('\n')
-                        if len(line.strip()) > 0]
-                    if len(message_lines) == 0:
-                        first_line = 'no commit message given'
-                    else:
-                        first_line = message_lines[0]
-                        if len(first_line) > SUBJECT_COMMIT_MESSAGE_LENGTH:
-                            offset = SUBJECT_COMMIT_MESSAGE_LENGTH - 3
-                            first_line = first_line[:offset] + '...'
-                    subject = '[Branch %s] Rev %s: %s' % (
-                        self.db_branch.unique_name, sequence, first_line)
-                    self.pending_emails.append(
-                        (message, revision_diff, subject))
-                self.createBugBranchLinksForRevision(db_revision, revision)
-
-    def createBugBranchLinksForRevision(self, db_revision, bzr_revision):
-        bug_property = bzr_revision.properties.get('bugs', None)
-        if bug_property is None:
-            return
-        bug_set = getUtility(IBugSet)
-        for bug_id, status in self.extractBugInfo(bug_property).iteritems():
-            try:
-                bug = bug_set.get(bug_id)
-            except NotFoundError:
-                pass
-            else:
-                set_bug_branch_status(bug, self.db_branch, status)
+                self._branch_mailer.generateEmailForRevision(
+                    bzr_branch, revision, sequence)
+                self._bug_linker.createBugBranchLinksForRevision(revision)
 
     def updateBranchStatus(self):
         """Update the branch-scanner status in the database Branch table."""
@@ -520,73 +636,3 @@ class BzrSync:
         if ((last_revision != self.db_branch.last_scanned_id)
                 or (revision_count != self.db_branch.revision_count)):
             self.db_branch.updateScannedDetails(last_revision, revision_count)
-
-    def getDiff(self, bzr_revision):
-        repo = self.bzr_branch.repository
-        if bzr_revision.parent_ids:
-            ids = (bzr_revision.revision_id, bzr_revision.parent_ids[0])
-            tree_new, tree_old = repo.revision_trees(ids)
-        else:
-            # can't get both trees at once, so one at a time
-            tree_new = repo.revision_tree(bzr_revision.revision_id)
-            tree_old = repo.revision_tree(None)
-
-        diff_content = StringIO()
-        show_diff_trees(tree_old, tree_new, diff_content)
-        raw_diff = diff_content.getvalue()
-        return raw_diff.decode('utf8', 'replace')
-
-    def getRevisionMessage(self, bzr_revision):
-        outf = StringIO()
-        lf = log_formatter('long', to_file=outf)
-        rev_id = bzr_revision.revision_id
-        rev1 = rev2 = self.bzr_branch.revision_id_to_revno(rev_id)
-        if rev1 == 0:
-            rev1 = None
-            rev2 = None
-
-        show_log(self.bzr_branch,
-                 lf,
-                 start_revision=rev1,
-                 end_revision=rev2,
-                 verbose=True
-                 )
-        return outf.getvalue()
-
-    def sendRevisionNotificationEmails(self):
-        """Send out the pending emails.
-
-        If this is the first scan of a branch, then we send out a simple
-        notification email saying that the branch has been scanned.
-        """
-        # XXX: thumper 2007-03-28 bug=29744:
-        # The whole reason that this method exists is due to
-        # emails being sent immediately in a zopeless environment.
-        # When bug #29744 is fixed, this method will no longer be
-        # necessary, and the emails should be sent at the source
-        # instead of appending them to the pending_emails.
-        # This method is enclosed in a transaction so emails will
-        # continue to be sent out when the bug is closed without
-        # immediately having to fix this method.
-        self.trans_manager.begin()
-
-        if self.initial_scan:
-            assert len(self.pending_emails) == 0, (
-                'Unexpected pending emails on new branch.')
-            revision_count = len(self.bzr_history)
-            if revision_count == 1:
-                revisions = '1 revision'
-            else:
-                revisions = '%d revisions' % revision_count
-            message = ('First scan of the branch detected %s'
-                       ' in the revision history of the branch.' %
-                       revisions)
-            send_branch_revision_notifications(
-                self.db_branch, self.email_from, message, '', None)
-        else:
-            for message, diff, subject in self.pending_emails:
-                send_branch_revision_notifications(
-                    self.db_branch, self.email_from, message, diff,
-                    subject)
-
-        self.trans_manager.commit()

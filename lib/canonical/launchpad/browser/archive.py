@@ -31,9 +31,10 @@ from canonical.launchpad.browser.build import BuildRecordsView
 from canonical.launchpad.browser.sourceslist import (
     SourcesListEntries, SourcesListEntriesView)
 from canonical.launchpad.interfaces import (
-    ArchivePurpose, IArchive, IArchivePackageDeletionForm, IArchiveSet,
-    IBuildSet, IHasBuildRecords, ILaunchpadCelebrities, IPPAActivateForm,
-    IStructuralHeaderPresentation, NotFoundError, PackagePublishingStatus)
+    ArchivePurpose, BuildStatus, IArchive, IArchivePackageDeletionForm,
+    IArchiveSet, IBuildSet, IHasBuildRecords, ILaunchpadCelebrities,
+    IPPAActivateForm, IStructuralHeaderPresentation, NotFoundError,
+    PackagePublishingStatus)
 from canonical.launchpad.webapp import (
     action, canonical_url, custom_widget, enabled_with_permission,
     stepthrough, ContextMenu, LaunchpadEditFormView,
@@ -256,7 +257,7 @@ class ArchivePackageDeletionView(ArchiveViewBase, LaunchpadFormView):
 
         Ensure focus is only set if there are sources actually presented.
         """
-        if not self.has_published_sources:
+        if not self.has_sources_for_deletion:
             return ''
         return LaunchpadFormView.focusedElementScript(self)
 
@@ -297,7 +298,7 @@ class ArchivePackageDeletionView(ArchiveViewBase, LaunchpadFormView):
 
     @property
     def sources(self):
-        """Query source publishing records.
+        """Query undeleted source publishing records.
 
         Consider the 'name_filter' form value.
         """
@@ -306,15 +307,13 @@ class ArchivePackageDeletionView(ArchiveViewBase, LaunchpadFormView):
         else:
             name_filter = None
 
-        return self.context.getPublishedSources(
-            name=name_filter, status=PackagePublishingStatus.PUBLISHED)
+        return self.context.getSourcesForDeletion(name=name_filter)
 
     @cachedproperty
-    def has_published_sources(self):
+    def has_sources_for_deletion(self):
         """Whether or not the PPA has published source packages."""
-        published_sources = self.context.getPublishedSources(
-            status=PackagePublishingStatus.PUBLISHED)
-        return bool(published_sources)
+        undeleted_sources = self.context.getSourcesForDeletion()
+        return bool(undeleted_sources)
 
     @property
     def available_sources_size(self):
@@ -348,7 +347,7 @@ class ArchivePackageDeletionView(ArchiveViewBase, LaunchpadFormView):
             self.setFieldError(
                 'deletion_comment', 'Deletion comment is required.')
 
-    @action(_("Delete Packages"), name="delete", validator="validate_delete")
+    @action(_("Request Deletion"), name="delete", validator="validate_delete")
     def action_delete(self, action, data):
         """Perform the deletion of the selected packages.
 
@@ -433,6 +432,14 @@ class ArchiveBuildsView(BuildRecordsView):
     """Build Records View for IArchive."""
 
     __used_for__ = IHasBuildRecords
+
+    @property
+    def default_build_state(self):
+        """See `IBuildRecordsView`.
+
+        Present NEEDSBUILD build records by default for PPAs.
+        """
+        return BuildStatus.NEEDSBUILD
 
 
 class BaseArchiveEditView(LaunchpadEditFormView):

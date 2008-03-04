@@ -7,7 +7,7 @@ from zope.component import getUtility
 
 from canonical.launchpad.browser.productseries import (
     ProductSeriesSourceView, UIRevisionControlSystems)
-from canonical.launchpad.ftests.harness import login, logout, ANONYMOUS
+from canonical.launchpad.ftests import login, logout, ANONYMOUS
 from canonical.launchpad.interfaces import IProductSet, RevisionControlSystems
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 from canonical.testing import LaunchpadFunctionalLayer

@@ -44,7 +44,7 @@ class IArchive(IHasOwner):
 
     authorized_size = Int(
         title=_("Authorized PPA size "), required=False,
-        max=(2**30)-1,
+        max=(20 * 1024),
         description=_("Maximum size, in MiB, allowed for this PPA."))
 
     whiteboard = Text(
@@ -95,6 +95,14 @@ class IArchive(IHasOwner):
         :param: pocket: `PackagePublishingPocket` filter.
         :param: exact_match: either or not filter source names by exact
                              matching.
+
+        :return: SelectResults containing `ISourcePackagePublishingHistory`.
+        """
+
+    def getSourcesForDeletion(name=None):
+        """All `ISourcePackagePublishingHistory` available for deletion.
+
+        :param: name: optional source name filter (SQL LIKE)
 
         :return: SelectResults containing `ISourcePackagePublishingHistory`.
         """

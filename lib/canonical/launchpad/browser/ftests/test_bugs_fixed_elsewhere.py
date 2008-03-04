@@ -11,12 +11,11 @@ import unittest
 from zope.component import getUtility
 
 from canonical.database.sqlbase import cursor, sqlvalues
-from canonical.functional import FunctionalDocFileSuite
 from canonical.launchpad.interfaces import (
     BugTaskStatus, CreateBugParams, IDistributionSet, ILaunchBag, IProductSet)
 from canonical.launchpad.ftests import login
-from canonical.launchpad.ftests.test_system_documentation import (
-    default_optionflags, setUp, tearDown)
+from canonical.launchpad.testing.systemdocs import (
+    LayeredDocFileSuite, setUp, tearDown)
 from canonical.testing import LaunchpadFunctionalLayer
 
 
@@ -56,9 +55,8 @@ def test_suite():
         ]
 
     for setUpMethod in setUpMethods:
-        test = FunctionalDocFileSuite('bugs-fixed-elsewhere.txt',
+        test = LayeredDocFileSuite('bugs-fixed-elsewhere.txt',
             setUp=setUpMethod, tearDown=tearDown,
-            optionflags=default_optionflags, package=__name__,
             layer=LaunchpadFunctionalLayer)
         suite.addTest(test)
     return suite

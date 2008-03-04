@@ -127,29 +127,27 @@ class IncomingEmailError(Exception):
         self.failing_command = failing_command
 
 
-def reformat_wiki_text(wiki_text):
+def reformat_wiki_text(text):
     """Transform moin formatted raw text to readable text."""
 
     # XXX Tom Berger 2008-02-20:
     # This implementation is neither correct nor complete.
     # See https://bugs.launchpad.net/launchpad/+bug/193646
 
-    plain_text = wiki_text
-
     # Strip macros (anchors, TOC, etc'...)
     re_macro = re.compile('\[\[.*?\]\]')
-    plain_text = re_macro.sub('', plain_text)
+    text = re_macro.sub('', text)
 
     # sterilize links
     re_link = re.compile('\[(.*?)\]')
-    plain_text = re_link.sub(
-        lambda match: ' '.join(match.group(1).split(' ')[1:]), plain_text)
+    text = re_link.sub(
+        lambda match: ' '.join(match.group(1).split(' ')[1:]), text)
 
     # Strip comments
-    re_comment = re.compile('#.*?$', re.MULTILINE)
-    plain_text = re_comment.sub('', plain_text)
+    re_comment = re.compile('^#.*?$', re.MULTILINE)
+    text = re_comment.sub('', text)
 
-    return plain_text
+    return text
 
 
 class MaloneHandler:
