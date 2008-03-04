@@ -53,6 +53,6 @@ class BugMessageSet:
     def getImportedBugMessages(self, bug):
         """See IBugMessageSet."""
         return BugMessage.select("""
-            BugMessage.bug = %s AND
-            BugMessage.bugwatch IS NOT NULL""" % sqlvalues(bug))
-
+            BugMessage.bug = %s
+            AND BugMessage.bugwatch IS NOT NULL
+            """ % sqlvalues(bug), orderBy='id')

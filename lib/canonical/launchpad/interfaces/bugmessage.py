@@ -59,7 +59,11 @@ class IBugMessageSet(Interface):
         """
 
     def getImportedBugMessages(bug):
-        """XXX"""
+        """Return all the imported IBugMesssages for a bug.
+
+        An IBugMesssage is considered imported if it's linked to a bug
+        watch.
+        """
 
 
 class IBugMessageAddForm(Interface):
