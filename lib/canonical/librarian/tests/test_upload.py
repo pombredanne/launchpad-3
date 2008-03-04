@@ -3,10 +3,7 @@
 
 __metaclass__ = type
 
-import unittest
-
-from zope.testing.doctest import DocFileSuite
-
+from canonical.launchpad.testing.systemdocs import LayeredDocFileSuite
 from canonical.librarian.libraryprotocol import FileUploadProtocol
 from canonical.librarian.storage import WrongDatabaseError
 
@@ -89,8 +86,8 @@ def upload_request(request):
     # Create a FileUploadProtocol, and instrument it for testing:
     server = FileUploadProtocol()
 
-    #  * hook _storeFile to dispatch straight to newFile.store without spawning
-    #    a thread.
+    #  * hook _storeFile to dispatch straight to newFile.store without
+    #    spawning a thread.
     from twisted.internet import defer
     server._storeFile = lambda: defer.maybeDeferred(server.newFile.store)
 
@@ -99,7 +96,8 @@ def upload_request(request):
     server.connectionMade()
 
     #  * give it a fake factory (itself!), and a fake library.
-    server.factory = server; server.fileLibrary = MockLibrary()
+    server.factory = server
+    server.fileLibrary = MockLibrary()
 
     # Feed in the request
     server.dataReceived(request.replace('\n', '\r\n'))
@@ -120,9 +118,7 @@ def upload_request(request):
 
 
 def test_suite():
-    suite = unittest.TestSuite()
-    suite.addTest(
-        DocFileSuite("./test_upload.txt",
-                     globs={'upload_request': upload_request}))
-    return suite
+    return LayeredDocFileSuite(
+        'test_upload.txt', globs={'upload_request': upload_request},
+        stdout_logging=False)
 

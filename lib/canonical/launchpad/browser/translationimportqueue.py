@@ -221,10 +221,14 @@ class TranslationImportQueueView(HasTranslationImportsView):
         """Return the entries in the queue for this context."""
         target, file_extension, import_status = (
             self.getEntriesFilteringOptions())
+        if file_extension is None:
+            extensions = None
+        else:
+            extensions = [file_extension]
 
         return self.context.getAllEntries(
                 target=target, import_status=import_status,
-                file_extension=file_extension)
+                file_extensions=extensions)
 
     def createFilterTargetField(self):
         """Create a field with a vocabulary to filter by target.
