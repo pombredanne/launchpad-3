@@ -32,7 +32,6 @@ this stanza can be removed.
     >>> list_one = itest_helper.review_list('itest-one')
     >>> from canonical.database.sqlbase import commit
     >>> commit()
-    >>> itest_helper.wait_for_mailman()
     >>> from Mailman.Utils import list_names
     >>> sorted(name for name in list_names() if name.startswith('itest-'))
     ['itest-one']
@@ -57,7 +56,7 @@ Inject a message from a non-member into Mailman's incoming queue.
     ...
     ... Hi, I am not a member of Launchpad (yet).
     ... """)
-    >>> vette_watcher.wait_for_growth()
+    >>> vette_watcher.wait()
 
 To prove that the message was never posted, the mbox file should either be
 non-existent or empty.
@@ -94,12 +93,12 @@ equivalent to making it unvalidated.
     ...
     ... Hi, I am not a verified member of Launchpad (yet).
     ... """)
-    >>> vette_watcher.wait_for_growth()
+    >>> vette_watcher.wait()
 
 As above, this message got summarily discarded.
 
-    >>> smtpd.getMailboxSize() <= 0
-    True
+    >>> len(smtpd.getMessages())
+    0
 
 
 == Unsubscribed Launchpad members ==
@@ -110,7 +109,7 @@ or subscribed to its mailing list, she still can't post to it.
 
     >>> print anne.preferredemail.email, anne.preferredemail.statusname
     anne.person@example.com Preferred Email Address
-    >>> smtp_watcher = itest_helper.LogWatcher('smtp')
+    >>> vette_watcher.resync()
     >>> inject('itest-one', """\
     ... From: anne.person@example.com
     ... To: itest-one@lists.launchpad.dev
@@ -119,32 +118,10 @@ or subscribed to its mailing list, she still can't post to it.
     ...
     ... Hi, I am not a member of this team's list (yet).
     ... """)
-    >>> smtp_watcher.wait_for_growth()
 
-However, unlike before, a message does show up in the mbox file.  This is the
-auto discard notification sent to the team's owner.  The message is discarded
-by Mailman's privacy handler because the poster is not a member of the mailing
-list.
-
-    >>> messages = smtpd.getMessages()
-    >>> len(messages)
-    1
-    >>> print messages[0].as_string()
-    Subject: Auto-discard notification
-    From: itest-one-bounces@lists.launchpad.dev
-    To: itest-one-owner@lists.launchpad.dev
-    ...
-    <BLANKLINE>
-    The attached message has been automatically discarded.
-    ...
-    <BLANKLINE>
-    From: anne.person@example.com
-    To: itest-one@lists.launchpad.dev
-    Subject: An unsubscribed post
-    Message-ID: <third-injection>
-    <BLANKLINE>
-    Hi, I am not a member of this team's list (yet).
-    ...
+    >>> vette_watcher.wait()
+    >>> len(smtpd.getMessages())
+    0
 
 
 == Verified and registered member postings ==
@@ -161,12 +138,14 @@ to the mailing list.
     >>> anne.join(team_one)
     >>> list_one.subscribe(anne)
     >>> logout()
+    >>> serial_watcher = itest_helper.LogWatcher('serial')
     >>> commit()
-    >>> itest_helper.wait_for_mailman()
+    >>> serial_watcher.wait()
 
     >>> print anne.preferredemail.email, anne.preferredemail.statusname
     anne.person@example.com Preferred Email Address
-    >>> smtp_watcher.resync()
+    >>> smtp_watcher = itest_helper.LogWatcher('smtp')
+    >>> archive_watcher = itest_helper.LogWatcher('mhonarc')
     >>> smtpd.reset()
     >>> inject('itest-one', """\
     ... From: anne.person@example.com
@@ -176,7 +155,7 @@ to the mailing list.
     ...
     ... Hi, I am now a member of this team's list!
     ... """)
-    >>> smtp_watcher.wait_for_growth()
+    >>> smtp_watcher.wait()
 
 Anne's message got posted to the mailing list.  Two copies were sent; one to
 Anne herself as a member of the mailing list, and another to the
@@ -233,6 +212,7 @@ Here's the copy sent to Anne...
 
 In addition, the in-house MHonArc archiver has archived this message.
 
+    >>> archive_watcher.wait()
     >>> from itest_helper import collect_archive_message_ids
     >>> collect_archive_message_ids('itest-one')
     ['fifth&#45;injection']
@@ -250,15 +230,18 @@ validated yet.
     ...
     ... Hi, I am not a verified member of this team (yet).
     ... """)
-    >>> vette_watcher.wait_for_growth()
-    >>> smtpd.getMailboxSize() <= 0
-    True
+
+    >>> vette_watcher.wait()
+    >>> len(smtpd.getMessages())
+    0
 
 However, once she validates this address, she can post from it.
 
     >>> alternative_email.status = EmailAddressStatus.VALIDATED
+    >>> serial_watcher.resync()
     >>> commit()
-    >>> itest_helper.wait_for_mailman()
+    >>> serial_watcher.wait()
+
     >>> smtp_watcher.resync()
     >>> inject('itest-one', """\
     ... From: aperson@example.org
@@ -268,7 +251,7 @@ However, once she validates this address, she can post from it.
     ...
     ... Hi, I am now a verified member of this team!
     ... """)
-    >>> smtp_watcher.wait_for_growth()
+    >>> smtp_watcher.wait()
     >>> messages = smtpd.getMessages()
     >>> len(messages)
     2
@@ -314,12 +297,71 @@ However, once she validates this address, she can post from it.
 
 There should also be no held requests pending.
 
-    # The mailing list must be locked to make this query.
-    >>> from Mailman.MailList import MailList
-    >>> mailing_list = MailList('itest-one')
-    >>> mailing_list.NumRequestsPending()
+    # Use a helper for complete safety.
+    >>> itest_helper.num_requests_pending('itest-one')
     0
-    >>> mailing_list.Unlock()
+
+
+== Leaving and re-joining the team ==
+
+Anne now leaves the team, but she does not unsubscribe from the mailing list.
+
+    >>> login('foo.bar@canonical.com')
+    >>> anne.leave(team_one)
+    >>> logout()
+    >>> serial_watcher.resync()
+    >>> commit()
+    >>> serial_watcher.wait()
+
+Because she is not a team member, her message is discarded.
+
+    >>> vette_watcher.resync()
+    >>> smtpd.reset()
+    >>> inject('itest-one', """\
+    ... From: aperson@example.org
+    ... To: itest-one@lists.launchpad.dev
+    ... Subject: A non-team member post
+    ... Message-ID: <eighth-injection>
+    ...
+    ... Hi, I am not a team member.
+    ... """)
+    >>> vette_watcher.wait()
+    >>> len(smtpd.getMessages())
+    0
+
+Anne re-joins the team and once again can post to the mailing list.  She does
+not need to re-subscribe to the mailing list.
+
+    >>> login('foo.bar@canonical.com')
+    >>> anne.join(team_one)
+    >>> logout()
+    >>> serial_watcher.resync()
+    >>> commit()
+    >>> serial_watcher.wait()
+
+    >>> smtp_watcher.resync()
+    >>> smtpd.reset()
+    >>> inject('itest-one', """\
+    ... From: aperson@example.org
+    ... To: itest-one@lists.launchpad.dev
+    ... Subject: A posting from a member once again
+    ... Message-ID: <ninth-injection>
+    ...
+    ... Hi, I am a team member again!
+    ... """)
+    >>> smtp_watcher.wait()
+
+    >>> messages = smtpd.getMessages()
+    >>> len(messages)
+    2
+    >>> messages.sort(key=itemgetter('sender'))
+    >>> for message in sorted(messages, key=itemgetter('sender')):
+    ...     print message['sender']
+    ...     print message['subject']
+    itest-one-bounces+anne.person=example.com@lists.launchpad.dev
+    [Itest-one] A posting from a member once again
+    itest-one-bounces+archive=mail-archive.com@lists.launchpad.dev
+    [Itest-one] A posting from a member once again
 
 
 == Preventing archiver forgeries ==
@@ -342,9 +384,10 @@ messages to the list.
     ...
     ... Hi, I am forging me some spam!
     ... """ % config.mailman.archive_address)
-    >>> vette_watcher.wait_for_growth()
-    >>> smtpd.getMailboxSize() <= 0
-    True
+
+    >>> vette_watcher.wait()
+    >>> len(smtpd.getMessages())
+    0
 
 
 == Clean up ==

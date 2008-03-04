@@ -54,7 +54,8 @@ class MozillaHeader:
         """See `ITranslationHeaderData`."""
         name = None
         email = None
-        for event, elem in cElementTree.iterparse(StringIO(self._raw_content)):
+        parse = cElementTree.iterparse(StringIO(self._raw_content))
+        for event, elem in parse:
             if elem.tag == "{http://www.mozilla.org/2004/em-rdf#}contributor":
                 # This file would have more than one contributor, but
                 # we are only getting latest one.
@@ -218,7 +219,7 @@ class DtdFile:
             raise TranslationFormatInvalidInputError, (
                 'Content is not valid UTF-8 text')
 
-        parser=dtdparser.DTDParser()
+        parser = dtdparser.DTDParser()
         parser.set_error_handler(utils.ErrorCounter())
         dtd = MozillaDtdConsumer(parser, filename, self.messages)
         parser.set_dtd_consumer(dtd)
@@ -431,6 +432,7 @@ class MozillaXpiImporter:
     content_type = 'application/zip'
 
     file_extensions = ['.xpi']
+    template_suffix = 'en-US.xpi'
 
     uses_source_string_msgids = True
 

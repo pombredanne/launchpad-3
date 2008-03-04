@@ -8,9 +8,8 @@ from zope.component import getMultiAdapter, getUtility
 
 from canonical.config import config
 from canonical.database.sqlbase import flush_database_updates
-from canonical.launchpad.ftests import login
+from canonical.launchpad.ftests import ANONYMOUS, login, logout
 from canonical.launchpad.systemhomes import ShipItApplication
-from canonical.launchpad.ftests.harness import LaunchpadFunctionalTestCase
 from canonical.launchpad.database import (
     ShippingRequest, ShippingRequestSet, StandardShipItRequest)
 from canonical.launchpad.layers import (
@@ -20,9 +19,11 @@ from canonical.launchpad.interfaces import (
     ShipItFlavour, ShippingRequestPriority, ShippingRequestStatus,
     ShippingRequestType)
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
+from canonical.testing import LaunchpadFunctionalLayer
 
 
-class TestShippingRequestSet(LaunchpadFunctionalTestCase):
+class TestShippingRequestSet(unittest.TestCase):
+    layer = LaunchpadFunctionalLayer
 
     def test_getTotalsForRequests(self):
         requests = ShippingRequest.select(limit=5)
@@ -34,11 +35,12 @@ class TestShippingRequestSet(LaunchpadFunctionalTestCase):
                 and total_approved == request.getTotalApprovedCDs())
 
 
-class TestFraudDetection(LaunchpadFunctionalTestCase):
+class TestFraudDetection(unittest.TestCase):
     """Ensure repeated requests of a given user are marked as PENDING[SPECIAL]
     and requests using an address already used by two other users are marked
     as DUPLICATEDADDRESS.
     """
+    layer = LaunchpadFunctionalLayer
 
     flavours_to_layers_mapping = {
         ShipItFlavour.UBUNTU: ShipItUbuntuLayer,
@@ -58,7 +60,8 @@ class TestFraudDetection(LaunchpadFunctionalTestCase):
         shippingrun = ShippingRequestSet()._create_shipping_run([request.id])
         flush_database_updates()
 
-    def _create_request_and_ship_it(self, flavour, user_email=None, form=None):
+    def _create_request_and_ship_it(self, flavour, user_email=None,
+                                    form=None):
         request = self._make_new_request_through_web(
             flavour, user_email=user_email, form=form)
         self._ship_request(request)
@@ -197,7 +200,8 @@ class TestFraudDetection(LaunchpadFunctionalTestCase):
         self.failIf(request2 in requests)
 
 
-class TestShippingRun(LaunchpadFunctionalTestCase):
+class TestShippingRun(unittest.TestCase):
+    layer = LaunchpadFunctionalLayer
 
     def test_create_shipping_run_sets_requests_count(self):
         requestset = ShippingRequestSet()
@@ -210,11 +214,15 @@ class TestShippingRun(LaunchpadFunctionalTestCase):
         self.failUnless(run.requests_count == len(approved_request_ids))
 
 
-class TestShippingRequest(LaunchpadFunctionalTestCase):
+class TestShippingRequest(unittest.TestCase):
+    layer = LaunchpadFunctionalLayer
 
     def setUp(self):
+        login(ANONYMOUS)
         self.requestset = ShippingRequestSet()
-        LaunchpadFunctionalTestCase.setUp(self)
+
+    def tearDown(self):
+        logout()
 
     def _get_standard_option(self, flavour):
         return StandardShipItRequest.selectBy(flavour=flavour)[0]
@@ -346,4 +354,3 @@ class TestShippingRequest(LaunchpadFunctionalTestCase):
 
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)
-

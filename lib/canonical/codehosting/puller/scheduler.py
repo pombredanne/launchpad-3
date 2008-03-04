@@ -21,11 +21,11 @@ from twisted.internet.protocol import ProcessProtocol
 from twisted.protocols.basic import NetstringReceiver, NetstringParseError
 from twisted.protocols.policies import TimeoutMixin
 from twisted.python import failure
-from twisted.web.xmlrpc import Proxy
 
 from contrib.glock import GlobalLock, LockAlreadyAcquired
 
 import canonical
+from canonical.authserver.client.twistedclient import get_twisted_proxy
 from canonical.cachedproperty import cachedproperty
 from canonical.codehosting import branch_id_to_path
 from canonical.codehosting.puller.worker import (
@@ -51,7 +51,7 @@ class BranchStatusClient:
     """Twisted client for the branch status methods on the authserver."""
 
     def __init__(self):
-        self.proxy = Proxy(config.supermirror.authserver_url)
+        self.proxy = get_twisted_proxy(config.supermirror.authserver_url)
 
     def getBranchPullQueue(self, branch_type):
         return self.proxy.callRemote('getBranchPullQueue', branch_type)

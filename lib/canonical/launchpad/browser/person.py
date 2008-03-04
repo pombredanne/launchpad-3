@@ -120,7 +120,7 @@ from canonical.launchpad.interfaces import (
     IEmailAddressSet, IGPGHandler, IGPGKeySet, IIrcIDSet, IJabberIDSet,
     ILanguageSet, ILaunchBag, ILoginTokenSet, IMailingListSet, INewPerson,
     IPOTemplateSet, IPasswordEncryptor, IPerson, IPersonChangePassword,
-    IPersonClaim, IPersonSet, IPollSet, IPollSubset,
+    IPersonClaim, IPersonSet, IPollSet, IPollSubset, IOpenLaunchBag,
     IRequestPreferredLanguages, ISSHKeySet, ISignedCodeOfConductSet, ITeam,
     ITeamMembership, ITeamMembershipSet, ITeamReassignment, IWikiNameSet,
     LoginTokenType, NotFoundError, PersonCreationRationale, PersonVisibility,
@@ -245,7 +245,17 @@ class BranchTraversalMixin:
     def traverse(self, product_name):
         branch_name = self.request.stepstogo.consume()
         if branch_name is not None:
-            return self.context.getBranch(product_name, branch_name)
+            branch = self.context.getBranch(product_name, branch_name)
+            if branch is not None and branch.product is not None:
+                # The launch bag contains "stuff of interest" related to where
+                # the user is traversing to.  When a user traverses over a
+                # product, the product gets added to the launch bag by the
+                # traversal machinery, however when traversing to a branch, we
+                # short circuit it somewhat by looking for a two part key (in
+                # addition to the user) to identify the branch, and as such
+                # the product isnt't being added to the bag by the internals.
+                getUtility(IOpenLaunchBag).add(branch.product)
+            return branch
         else:
             return super(BranchTraversalMixin, self).traverse(product_name)
 
@@ -2058,6 +2068,33 @@ class PersonView(LaunchpadView, FeedsMixin):
         if mailing_list is None:
             return None
         return mailing_list.archive_url
+
+    def getLatestUploadedPPAPackages(self):
+        """Return the sourcepackagereleases uploaded to PPAs by this person.
+
+        Results are filtered according to the permission of the requesting
+        user to see private archives.
+        """
+        packages = self.context.getLatestUploadedPPAPackages()
+
+        # For each package we find out which archives it was published in.
+        # If the user has permission to see any of those archives then
+        # the user is permitted to see the package.
+        #
+        # Ideally this check should be done in
+        # IPerson.getLatestUploadedPPAPackages() but formulating the SQL
+        # query is virtually impossible!
+        results = []
+        for package in packages:
+            # Make a shallow copy to remove the Zope security.
+            archives = set(package.published_archives)
+            # Ensure the SPR.upload_archive is also considered.
+            archives.add(package.upload_archive)
+            for archive in archives:
+                if check_permission('launchpad.View', archive):
+                    results.append(package)
+                    break
+        return results
 
 
 class PersonIndexView(XRDSContentNegotiationMixin, PersonView):

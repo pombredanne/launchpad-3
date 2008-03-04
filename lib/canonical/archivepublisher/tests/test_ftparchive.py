@@ -19,12 +19,11 @@ from canonical.archivepublisher.diskpool import DiskPool
 from canonical.archivepublisher.tests.util import (
     FakeSourcePublishing, FakeSourceFilePublishing,
     FakeBinaryPublishing, FakeBinaryFilePublishing, FakeLogger)
-from canonical.launchpad.ftests.harness import (
-    LaunchpadZopelessTestCase, LaunchpadZopelessTestSetup)
 from canonical.launchpad.interfaces import (
     ArchivePurpose, IArchiveSet, IDistributionSet, ILibraryFileAliasSet,
     PackagePublishingPriority, PackagePublishingPocket)
 from canonical.librarian.client import LibrarianClient
+from canonical.testing import LaunchpadZopelessLayer
 
 
 def sanitize_feisty_apt_ftparchive_output(text):
@@ -47,11 +46,11 @@ class SamplePublisher:
         self.archive = archive
 
 
-class TestFTPArchive(LaunchpadZopelessTestCase):
-    dbuser = config.archivepublisher.dbuser
+class TestFTPArchive(unittest.TestCase):
+    layer = LaunchpadZopelessLayer
 
     def setUp(self):
-        LaunchpadZopelessTestCase.setUp(self)
+        self.layer.switchDbUser(config.archivepublisher.dbuser)
 
         self.library = LibrarianClient()
         self._distribution = getUtility(IDistributionSet)['ubuntutest']
@@ -72,7 +71,6 @@ class TestFTPArchive(LaunchpadZopelessTestCase):
         self._publisher = SamplePublisher(self._archive)
 
     def tearDown(self):
-        LaunchpadZopelessTestCase.tearDown(self)
         shutil.rmtree(self._config.distroroot)
 
     def _verifyFile(self, filename, directory, output_filter=None):
@@ -109,7 +107,7 @@ class TestFTPArchive(LaunchpadZopelessTestCase):
 
         alias_id = self.library.addFile(
             leafname, len(leafcontent), file(leaf), 'application/text')
-        LaunchpadZopelessTestSetup.txn.commit()
+        self.layer.txn.commit()
         return getUtility(ILibraryFileAliasSet)[alias_id]
 
     def _getFakePubSource(self, sourcename, component, leafname, section, dr):

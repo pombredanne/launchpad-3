@@ -4,17 +4,20 @@
 
 __metaclass__ = type
 
-import unittest, subprocess, os.path, sys
+import os
+import subprocess
+import sys
+import unittest
 
 from zope.component import getUtility
 
-from canonical.launchpad.ftests import login
-from canonical.launchpad.ftests.harness import (
-    LaunchpadFunctionalTestCase, LaunchpadTestSetup)
+from canonical.config import config
+from canonical.database.sqlbase import cursor
 from canonical.launchpad.interfaces import (
     IDistributionSet, IDistroSeriesSet, ILanguageSet, IPOTemplateSet,
     IPersonSet)
-from canonical.config import config
+from canonical.testing import LaunchpadZopelessLayer
+
 
 def get_script():
     """Return the path to update-stats.py."""
@@ -22,25 +25,22 @@ def get_script():
     assert os.path.exists(script), '%s not found' % script
     return script
 
-class UpdateStatsTest(LaunchpadFunctionalTestCase):
+
+class UpdateStatsTest(unittest.TestCase):
     """Test the update-stats.py script."""
-    # XXX sinzui 2007-07-12 bug=125569:
-    # This test should subclass unittest.TestCase. Some reworking
-    # is required to migrate this test.
-    dbuser = 'statistician'
+    layer = LaunchpadZopelessLayer
+
+    def setUp(self):
+        self.layer.switchDbUser('statistician')
 
     def tearDown(self):
-        """Tear down this test and recycle the database."""
-        # XXX sinzui 2007-07-12 bug=125569:
-        # Use the DatabaseLayer mechanism to tear this test down.
-        LaunchpadTestSetup().force_dirty_database()
-        LaunchpadFunctionalTestCase.tearDown(self)
+        # Test uses a subprocess, so force the database to be dirty
+        self.layer.force_dirty_database()
 
     def test_basic(self):
         """Test insert and update operations to LaunchpadStatistic."""
         # Nuke some stats so we know that they are updated
-        con = self.connect()
-        cur = con.cursor()
+        cur = cursor()
 
         # Destroy the LaunchpadStatistic entries so we can confirm they are
         # updated.
@@ -76,7 +76,7 @@ class UpdateStatsTest(LaunchpadFunctionalTestCase):
         num_distroserieslanguage = cur.fetchone()[0]
 
         # Commit our changes so the subprocess can see them
-        con.commit()
+        self.layer.txn.commit()
 
         # Run the update-stats.py script
         cmd = [sys.executable, get_script(), '--quiet']
@@ -97,7 +97,8 @@ class UpdateStatsTest(LaunchpadFunctionalTestCase):
             'update-stats.py was noisy. Emitted:\n%s' % stdout)
 
         # Now confirm it did stuff it is supposed to
-        cur = con.cursor()
+        self.layer.txn.abort()
+        cur = cursor()
 
         # Make sure all DistroSeries.messagecount entries are updated
         cur.execute(
@@ -182,27 +183,22 @@ class UpdateStatsTest(LaunchpadFunctionalTestCase):
             self.failUnless(row[0] >= 0, '%s is invalid' % key)
 
 
-class UpdateTranslationStatsTest(LaunchpadFunctionalTestCase):
+class UpdateTranslationStatsTest(unittest.TestCase):
     """Test exceptional update-stats.py rules."""
+    layer = LaunchpadZopelessLayer
+
     def setUp(self):
         """Setup the Distroseries related objects for these tests."""
-        LaunchpadFunctionalTestCase.setUp(self)
-
         self.distribution = getUtility(IDistributionSet)
         self.distroseriesset = getUtility(IDistroSeriesSet)
         self.languageset = getUtility(ILanguageSet)
         self.potemplateset = getUtility(IPOTemplateSet)
         self.personset = getUtility(IPersonSet)
 
-        # This test needs to do some changes that require admin permissions.
-        login('carlos@canonical.com')
-
     def tearDown(self):
         """Tear down this test and recycle the database."""
-        # XXX sinzui 2007-07-12 bug=125569:
-        # Use the DatabaseLayer mechanism to tear this test down.
-        LaunchpadTestSetup().force_dirty_database()
-        LaunchpadFunctionalTestCase.tearDown(self)
+        # Test uses a subprocess, so force the database to be dirty
+        self.layer.force_dirty_database()
 
     def test_disabled_template(self):
         """Test that Distroseries stats do not include disabled templates."""
@@ -380,13 +376,5 @@ class UpdateTranslationStatsTest(LaunchpadFunctionalTestCase):
 
 def test_suite():
     """Return this module's test suite."""
-    suite = unittest.TestSuite()
-    suite.addTest(unittest.makeSuite(UpdateStatsTest))
-    suite.addTest(
-        unittest.makeSuite(UpdateTranslationStatsTest))
-    return suite
-
-
-if __name__ == '__main__':
-    unittest.main(defaultTest=test_suite)
+    return unittest.TestLoader().loadTestsFromName(__name__)
 
