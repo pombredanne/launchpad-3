@@ -16,7 +16,7 @@ from canonical.lazr import decorates
 from canonical.lazr.rest import Entry, ScopedCollection
 from canonical.lazr.interfaces import IEntry
 
-from canonical.launchpad.interfaces import (IPerson, ITeamMembership)
+from canonical.launchpad.interfaces import IPerson, ITeamMembership
 
 
 class ITeamMembershipEntry(IEntry):
