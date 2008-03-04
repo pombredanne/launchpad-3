@@ -78,8 +78,7 @@ from canonical.launchpad.interfaces import (
     IProject, IRemoveQuestionFromBugTaskForm, ISourcePackage,
     IUpstreamBugTask, IUpstreamProductBugTaskSearch, NotFoundError,
     RESOLVED_BUGTASK_STATUSES, UNRESOLVED_BUGTASK_STATUSES,
-    UnexpectedFormData, valid_upstreamtask, validate_distrotask,
-    IBugMessageSet)
+    UnexpectedFormData, valid_upstreamtask, validate_distrotask)
 
 from canonical.launchpad.searchbuilder import all, any, NULL
 
