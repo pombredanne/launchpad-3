@@ -10,8 +10,11 @@ __metaclass__ = type
 __all__ = [
     'CodeImportJobState',
     'ICodeImportJob',
+    'ICodeImportJobPublic',
     'ICodeImportJobSet',
+    'ICodeImportJobSetPublic',
     'ICodeImportJobWorkflow',
+    'ICodeImportJobWorkflowPublic',
     ]
 
 from zope.interface import Interface
@@ -60,7 +63,6 @@ class ICodeImportJob(Interface):
     # set to be read-only here to force client code to use methods
     # that update the audit trail appropriately.
 
-    id = Int(readonly=True, required=True)
     date_created = Datetime(required=True, readonly=True)
 
     code_import = Object(
@@ -116,6 +118,19 @@ class ICodeImportJob(Interface):
         """
 
 
+class ICodeImportJobPublic(Interface):
+    """Parts of the CodeImportJob interface that need to be public.
+
+    These are accessed by the getJobForMachine XML-RPC method, requests to
+    which are not authenticated.
+    """
+    # XXX MichaelHudson 2008-02-18 bug=196345: This interface can go away when
+    # we implement endpoint specific authentication for the private xml-rpc
+    # server.
+
+    id = Int(readonly=True, required=True)
+
+
 class ICodeImportJobSet(Interface):
     """The set of pending and active code import jobs."""
 
@@ -123,6 +138,24 @@ class ICodeImportJobSet(Interface):
         """Get a `CodeImportJob` by its database id.
 
         :return: A `CodeImportJob` or None if this database id is not found.
+        """
+
+class ICodeImportJobSetPublic(Interface):
+    """Parts of the CodeImportJobSet interface that need to be public.
+
+    These are accessed by the getJobForMachine XML-RPC method, requests to
+    which are not authenticated.
+    """
+    # XXX MichaelHudson 2008-02-28 bug=196345: This interface can go away when
+    # we implement endpoint specific authentication for the private xml-rpc
+    # server.
+
+    def getJobForMachine(machine):
+        """Select a job for the given machine to run and mark it as started.
+
+        This method selects a job that is due to be run for running on the
+        given machine and calls ICodeImportJobWorkflowPublic.startJob() on it.
+        It will return None if there is no such job.
         """
 
 
@@ -166,20 +199,6 @@ class ICodeImportJobWorkflow(Interface):
         :postcondition: A REQUEST `CodeImportEvent` was created.
         """
 
-    def startJob(import_job, machine):
-        """Record that `machine` is about to start work on `import_job`.
-
-        :param import_job: `CodeImportJob` object.
-        :param machine: `CodeImportMachine` that will be working on the job.
-        :precondition: `import_job`.state == PENDING.
-        :precondition: `machine`.state == ONLINE.
-        :postcondition: `import_job`.state == RUNNING.
-        :postcondition: `import_job`.machine == machine.
-        :postcondition: `import_job`.date_started == UTC_NOW.
-        :postcondition: `import_job`.heartbeat == UTC_NOW.
-        :postcondition: A START `CodeImportEvent` was created.
-        """
-
     def updateHeartbeat(import_job, logtail):
         """Updates the heartbeat of a running `CodeImportJob`.
 
@@ -215,4 +234,29 @@ class ICodeImportJobWorkflow(Interface):
             import_job.date_due + code_import.effective_update_interval`.
         :postcondition: A `CodeImportResult` was created.
         :postcondition: A FINISH `CodeImportEvent` was created.
+        """
+
+
+class ICodeImportJobWorkflowPublic(Interface):
+    """Parts of the CodeImportJobWorkflow interface that need to be public.
+
+    These are accessed by the getJobForMachine XML-RPC method, requests to
+    which are not authenticated.
+    """
+    # XXX MichaelHudson 2008-02-28 bug=196345: This interface can go away when
+    # we implement endpoint specific authentication for the private xml-rpc
+    # server.
+
+    def startJob(import_job, machine):
+        """Record that `machine` is about to start work on `import_job`.
+
+        :param import_job: `CodeImportJob` object.
+        :param machine: `CodeImportMachine` that will be working on the job.
+        :precondition: `import_job`.state == PENDING.
+        :precondition: `machine`.state == ONLINE.
+        :postcondition: `import_job`.state == RUNNING.
+        :postcondition: `import_job`.machine == machine.
+        :postcondition: `import_job`.date_started == UTC_NOW.
+        :postcondition: `import_job`.heartbeat == UTC_NOW.
+        :postcondition: A START `CodeImportEvent` was created.
         """
