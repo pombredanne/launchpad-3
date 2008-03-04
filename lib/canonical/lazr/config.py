@@ -219,9 +219,8 @@ class ConfigSchema:
         for name in parser.sections():
             (section_name, category_name,
              is_template, is_optional) = self._parseSectionName(name)
-            if not is_template:
-                continue
-            templates[category_name] = dict(parser.items(name))
+            if is_template:
+                templates[category_name] = dict(parser.items(name))
         for name in parser.sections():
             (section_name, category_name,
              is_template, is_optional) = self._parseSectionName(name)
@@ -302,10 +301,10 @@ class ConfigSchema:
         """See `IConfigSchema`."""
         if name not in self.category_names:
             raise NoCategoryError(name)
-        category_name = '%s.' % name
         section_schemas = []
         for key in self._section_schemas:
-            if key.startswith(category_name):
+            parts = key.split('.')
+            if name == parts[0]:
                 section_schemas.append(self._section_schemas[key])
         return section_schemas
 
@@ -398,10 +397,10 @@ class ConfigData:
         """See `IConfigData`."""
         if name not in self.category_names:
             raise NoCategoryError(name)
-        category_name = '%s.' % name
         sections = []
         for key in self._sections:
-            if key.startswith(category_name):
+            parts = key.split('.')
+            if name == parts[0]:
                 sections.append(self._sections[key])
         return sections
 
