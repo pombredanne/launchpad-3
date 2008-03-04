@@ -18,8 +18,8 @@ a request token which may later be exchanged for an access token.
     >>> print anon_browser.contents
     oauth_token=...&oauth_token_secret=...
 
-If the consumer key is not yet registered, we register it automatically so
-that the application can proceed.
+If the consumer key is not yet registered, we register it automatically
+so that the application can proceed.
 
     >>> from zope.component import getUtility
     >>> from canonical.launchpad.ftests import login, logout
@@ -55,10 +55,10 @@ If the consumer key is empty, we respond with a 401 status.
     WWW-Authenticate: OAuth realm="https://api.launchpad.net"
     <BLANKLINE>
 
-Initially, the only signature method supported is PLAINTEXT, which consists
-of the concatenated values of the consumer secret and token secret, separated
-by a & character. That means, in our case, the signature should be only an
-'&', since there's no token yet and the consumer secret is empty.
+The only signature method supported is PLAINTEXT, which consists of the
+concatenated values of the consumer secret and token secret, separated
+by a & character. That means, in our case, the signature should be only
+an '&', since there's no token yet and the consumer secret is empty.
 
     >>> data['oauth_signature']
     '&'
