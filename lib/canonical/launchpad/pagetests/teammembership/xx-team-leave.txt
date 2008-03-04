@@ -82,7 +82,6 @@ team's overview page.
     >>> browser.getLink('Join the team')
     <Link ...>
 
-
 Team owners do not have the option to leave.
 
     >>> browser.open('http://launchpad.dev/~testing-spanish-team')

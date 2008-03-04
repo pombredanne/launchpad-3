@@ -221,7 +221,6 @@ page, because Carlos hasn't subscribed yet.
     >>> print browser.url
     http://launchpad.dev/~carlos/+editemails
 
-
 The unsubscribe link is visible for the rosetta admins team, which
 has an active mailing list.
 
