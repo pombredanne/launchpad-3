@@ -1935,7 +1935,7 @@ class PersonView(LaunchpadView, FeedsMixin):
 
     @property
     def user_can_subscribe_to_list(self):
-        """Can the user can subscribe to this team's mailing list?
+        """Can the user subscribe to this team's mailing list?
 
         A user can subscribe to the list if the team has an active
         mailing list, and if they do not already have a subscription.
