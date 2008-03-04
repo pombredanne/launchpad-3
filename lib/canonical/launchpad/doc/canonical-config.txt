@@ -89,7 +89,7 @@ lazr.config instance is stored in config._config.
     Traceback (most recent call last):
      ...
     AttributeError: ZConfig or lazr.config instances have no attribute
-    'bad_key'.
+    answertracker.bad_key.
 
 2. When the key is found in the lazr.config instance, the
 lazr.config value is returned. It is assumed that the callsite
