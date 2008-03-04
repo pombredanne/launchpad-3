@@ -16,6 +16,7 @@ from canonical.database.sqlbase import sqlvalues
 from canonical.launchpad.database.pomsgid import POMsgID
 from canonical.launchpad.database.potemplate import POTemplate
 from canonical.launchpad.database.potmsgset import POTMsgSet
+from canonical.launchpad.database.potranslation import POTranslation
 from canonical.launchpad.database.translationmessage import TranslationMessage
 
 from canonical.launchpad.interfaces import TranslationFileFormat
@@ -88,9 +89,17 @@ def migrate_potemplate(potemplate, logger, ztm):
                     # otherwise modify this one in-place.
 
                     unprotected_potmsgset = removeSecurityProxy(potmsgset)
-                    potranslations = (
-                        unprotected_potmsgset._findPOTranslations(
-                            translations))
+                    potranslations = {}
+                    for index in range(len(translations)):
+                        if translations != '':
+                            potranslations[index] = (
+                                POTranslation.getOrCreateTranslation(
+                                    translations[index]))
+                        else:
+                            potranslations[index] = None
+                    if len(potranslations) < 4:
+                        for index in range(len(potranslations), 4):
+                            potranslations[index] = None
                     existing_message = (
                         unprotected_potmsgset._findTranslationMessage(
                             message.pofile, potranslations, 4))
