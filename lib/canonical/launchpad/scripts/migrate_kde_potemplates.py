@@ -1,4 +1,4 @@
-# Copyright 2007 Canonical Ltd. All rights reserved.
+# Copyright 2008 Canonical Ltd. All rights reserved.
 
 """Migrate KDE POTemplates to native support for plural forms and context ."""
 
@@ -27,6 +27,63 @@ def getOrCreatePOMsgID(msgid):
     except SQLObjectNotFound:
         pomsgid = POMsgID(msgid=msgid)
     return pomsgid
+
+def migrate_translations_for_potmsgset(potmsgset, logger, ztm):
+    # Fix translations for this potmsgset as well.
+    messages = TranslationMessage.select(
+        "potmsgset=%s" % sqlvalues(potmsgset))
+    logger.info("Fixing %d TranslationMessages..." % messages.count())
+    for message in messages:
+        msgstrs = message.translations
+        if len(msgstrs) > 0:
+            translations = msgstrs[0].split('\n')
+            # If there is an existing TranslationMessage with
+            # these translations, re-use that and remove this one,
+            # otherwise modify this one in-place.
+
+            unprotected_potmsgset = removeSecurityProxy(potmsgset)
+            potranslations = {}
+            for index in range(len(translations)):
+                if translations != '':
+                    potranslations[index] = (
+                        POTranslation.getOrCreateTranslation(
+                            translations[index]))
+                else:
+                    potranslations[index] = None
+            if len(potranslations) < 4:
+                for index in range(len(potranslations), 4):
+                    potranslations[index] = None
+            existing_message = (
+                unprotected_potmsgset._findTranslationMessage(
+                    message.pofile, potranslations, 4))
+            if existing_message:
+                # Only transfer is_current and is_imported
+                # properties to an existing translation.
+                if existing_message != message:
+                    if message.is_current:
+                        existing_message.is_current = True
+                    if message.is_imported:
+                        existing_message.is_imported = True
+                    # And remove the current message.
+                    message.destroySelf()
+            else:
+                # Modify `message` in-place.
+                message.msgstr0 =  potranslations[0]
+                message.msgstr1 =  potranslations[1]
+                message.msgstr2 =  potranslations[2]
+                message.msgstr3 =  potranslations[3]
+
+def migrate_kde_potemplate_translations(potemplate, logger, ztm):
+    assert(potemplate.source_file_format == TranslationFileFormat.KDEPO)
+
+    potmsgsets = POTMsgSet.select("""
+      POTMsgSet.potemplate = %s AND
+      POTMsgSet.msgid_plural IS NOT NULL
+      """ % sqlvalues(potemplate))
+
+    logger.info("Fixing %d POTMsgSets..." % potmsgsets.count())
+    for potmsgset in potmsgsets:
+        migrate_translations_for_potmsgset(potmsgset, logger, ztm)
 
 def migrate_potemplate(potemplate, logger, ztm):
     """Fix plural translations for PO files with mismatching headers."""
@@ -77,48 +134,7 @@ def migrate_potemplate(potemplate, logger, ztm):
 
         if fix_plurals:
             # Fix translations for this potmsgset as well.
-            messages = TranslationMessage.select(
-                "potmsgset=%s" % sqlvalues(potmsgset))
-            logger.info("Fixing %d TranslationMessages..." % messages.count())
-            for message in messages:
-                msgstrs = message.translations
-                if len(msgstrs) > 0:
-                    translations = msgstrs[0].split('\n')
-                    # If there is an existing TranslationMessage with
-                    # these translations, re-use that and remove this one,
-                    # otherwise modify this one in-place.
-
-                    unprotected_potmsgset = removeSecurityProxy(potmsgset)
-                    potranslations = {}
-                    for index in range(len(translations)):
-                        if translations != '':
-                            potranslations[index] = (
-                                POTranslation.getOrCreateTranslation(
-                                    translations[index]))
-                        else:
-                            potranslations[index] = None
-                    if len(potranslations) < 4:
-                        for index in range(len(potranslations), 4):
-                            potranslations[index] = None
-                    existing_message = (
-                        unprotected_potmsgset._findTranslationMessage(
-                            message.pofile, potranslations, 4))
-                    if existing_message:
-                        # Only transfer is_current and is_imported
-                        # properties to an existing translation.
-                        if existing_message != message:
-                            if message.is_current:
-                                existing_message.is_current = True
-                            if message.is_imported:
-                                existing_message.is_imported = True
-                            # And remove the current message.
-                            message.destroySelf()
-                    else:
-                        # Modify `message` in-place.
-                        message.msgstr0 =  potranslations[0]
-                        message.msgstr1 =  potranslations[1]
-                        message.msgstr2 =  potranslations[2]
-                        message.msgstr3 =  potranslations[3]
+            migrate_translations_for_potmsgset(potmsgset, logger, ztm)
 
 
     potemplate.source_file_format = TranslationFileFormat.KDEPO
@@ -129,6 +145,7 @@ def migrate_potemplate(potemplate, logger, ztm):
 def migrate_potemplates(ztm, logger):
     """Go through all non-KDE PO templates and migrate to KDEPO as needed."""
 
+    # Migrate non-KDE PO templates.
     potemplates = POTemplate.select("""source_file_format=%s AND
     POTemplate.id IN
         (SELECT potemplate
@@ -149,3 +166,24 @@ def migrate_potemplates(ztm, logger):
         logger.info("Migrating POTemplate %s [%d/%d]" % (
             potemplate.displayname, index, count))
         migrate_potemplate(potemplate, logger, ztm)
+
+    # And migrate translations for already re-imported KDE PO templates.
+    potemplates = POTemplate.select("""source_file_format=%s AND
+    POTemplate.id IN
+        (SELECT potemplate
+          FROM POTMsgSet
+          JOIN POMsgID ON POMsgID.id = POTMsgSet.msgid_singular
+          WHERE POTMsgSet.potemplate = POTemplate.id AND
+                POTMsgSet.msgid_plural IS NOT NULL
+          LIMIT 1)
+      """ % sqlvalues(TranslationFileFormat.KDEPO),
+      clauseTables=['POTMsgSet', 'POMsgID'],
+      distinct=True)
+
+    count = potemplates.count()
+    index = 0
+    for potemplate in potemplates:
+        index += 1
+        logger.info("Migrating translations for KDE POTemplate %s [%d/%d]" % (
+            potemplate.displayname, index, count))
+        migrate_kde_potemplate_translations(potemplate, logger, ztm)
