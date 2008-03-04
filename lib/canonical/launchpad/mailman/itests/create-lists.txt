@@ -4,8 +4,7 @@ When a Launchpad user creates a mailing list for a team, and that mailing list
 is approved by a special 'mailing list expert', Mailman will eventually notice
 this and create the mailing list itself.
 
-First, No Privileges Person will create a new team, called 'Team One' through
-the web.
+First, No Privileges Person creates a new team.
 
     >>> import itest_helper
     >>> browser = itest_helper.make_browser()
