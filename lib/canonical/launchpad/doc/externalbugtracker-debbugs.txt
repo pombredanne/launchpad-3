@@ -265,8 +265,8 @@ report.
     jmm@inutil.org
 
 The getBugSummaryAndDescription method reads the bug report from the
-debbugs db, and creates a Launchpad bug report, using the debbugs
-subject as the summary, and the description as the description.
+debbugs db, and returns the debbugs subject as the summary, and the
+description as the description.
 
     >>> print report['Subject']
     evolution: Multiple format string vulnerabilities in Evolution

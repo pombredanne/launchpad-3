@@ -3,8 +3,7 @@
 Some ExternalBugTracker implementations support importing bugs from the
 remote bug tracker into Launchpad. They indicate that they support doing
 this by implementing ISupportsBugImport, and implement all the specified
-methods. They can be used to pass on to BugWatchUpdater.importBug() to
-import bugs from that bug tracker.
+methods.
 
     >>> from zope.interface import implements
     >>> from canonical.launchpad.interfaces import ISupportsBugImport
