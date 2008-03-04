@@ -27,16 +27,19 @@ def build_comments_from_chunks(chunks, bugtask, truncate=False):
             comments[message_id] = bug_comment
             index += 1
         bug_comment.chunks.append(chunk)
-    for comment in comments.values():
-        # Once we have all the chunks related to a comment set up,
-        # we get the text set up for display.
-        comment.setupText(truncate=truncate)
-    # Set up the bug watch for all the imported comments.
+
+    # Set up the bug watch for all the imported comments. We do it
+    # outside the for loop to avoid issuing one db query per comment.
     imported_bug_messages = getUtility(IBugMessageSet).getImportedBugMessages(
         bugtask.bug)
     for bug_message in imported_bug_messages:
         message_id = bug_message.message.id
         comments[message_id].bugwatch = bug_message.bugwatch
+
+    for comment in comments.values():
+        # Once we have all the chunks related to a comment set up,
+        # we get the text set up for display.
+        comment.setupText(truncate=truncate)
     return comments
 
 
