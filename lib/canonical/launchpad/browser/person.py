@@ -2168,8 +2168,8 @@ class PersonIndexView(XRDSContentNegotiationMixin, PersonView):
     def processForm(self):
         if not self.request.form.get('unsubscribe'):
             raise UnexpectedFormData(
-                "The mailng list unsubscribe form handler did not receive "
-                "the correct form fields.")
+                "The mailng list form did not receive the expected form "
+                "fields.")
 
         mailing_list = self.context.mailing_list
         if mailing_list is None:
