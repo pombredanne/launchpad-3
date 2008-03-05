@@ -352,9 +352,10 @@ Overview.)
 Links to subscribe and unsubscribe from the mailing lists are also
 available from the team's Overview page.
 
-The subscribe link is visible on the admin team's Overview
-page, because Carlos hasn't subscribed yet.
+Carlos can see the subscribe link on the admin team's Overview
+page, because he is not subscribed to the team mailing list.
 
+    >>> browser = setupBrowser(auth='Basic carlos@canonical.com:test')
     >>> browser.open('http://launchpad.dev/~admins')
     >>> print extract_text(
     ... 	find_portlet(browser.contents, 'Your involvement'))

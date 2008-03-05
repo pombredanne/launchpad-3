@@ -33,7 +33,7 @@
     </p>
 
     <form class="actions" name="join" action="" method="post">
-      <p tal:condition="view/userMaySubscribeToList">
+      <p tal:condition="view/user_can_subscribe_to_list">
 	<input type="checkbox" name="mailinglist_subscribe"
 	       value="checkbox" />
 	Subscribe me to this team's mailing list.

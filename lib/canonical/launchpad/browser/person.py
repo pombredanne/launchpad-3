@@ -2835,17 +2835,14 @@ class TeamJoinView(PersonView):
         notify_info  = self.request.response.addInfoNotification
         notify_error = self.request.response.addErrorNotification
 
-        if not self.userMaySubscribeToList(self.user):
+        if not self.user_can_subscribe_to_list:
             notify_error(_('Mailing list subscription failed.'))
             return
 
         try:
             self.context.mailing_list.subscribe(self.user)
         except CannotSubscribe, error:
-            notify_error(
-                _('You could not be subscribed to the team mailing '
-                  'list: ${reason}',
-                  mapping={'reason': unicode(error)}))
+            notify_error(_('Mailing list subscription failed.'))
         else:
             policy = self.context.subscriptionpolicy
             if policy == TeamSubscriptionPolicy.MODERATED:
@@ -2856,16 +2853,6 @@ class TeamJoinView(PersonView):
                 notify_info(
                     _("You have been subscribed to this team's "
                       "mailing list"))
-
-    def userMaySubscribeToList(self, user):
-        """Return True if the user may subscribe to the mailing list."""
-        mailing_list = self.context.mailing_list
-        if not mailing_list:
-            return False
-        if not mailing_list.isUsable():
-            return False
-        has_subscription = bool(mailing_list.getSubscription(user))
-        return not has_subscription
 
 
 class TeamAddMyTeamsView(LaunchpadFormView):
