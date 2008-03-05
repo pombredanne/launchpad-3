@@ -50,7 +50,7 @@ class ISupportsBugImport(IExternalBugTracker):
     def getBugSummaryAndDescription(remote_bug):
         """Return a tuple of summary and description for the given bug."""
 
-    def getBugTargetName(self, remote_bug):
+    def getBugTargetName(remote_bug):
         """Return the specific target name of the bug.
 
         Return None if no target can be determined.

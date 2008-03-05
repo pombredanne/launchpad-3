@@ -29,13 +29,12 @@ from zope.interface import implements
 from canonical.cachedproperty import cachedproperty
 from canonical.config import config
 from canonical import encoding
-from canonical.database.sqlbase import flush_database_updates, commit
+from canonical.database.sqlbase import commit
 from canonical.launchpad.scripts import log, debbugs
 from canonical.launchpad.interfaces import (
     BugTaskImportance, BugTaskStatus, BugTrackerType, BugWatchErrorType,
-    CreateBugParams, IBugWatchSet, IDistribution, IExternalBugTracker,
-    ILaunchpadCelebrities, IMessageSet, IPersonSet,
-    PersonCreationRationale, ISupportsCommentImport,
+    IBugWatchSet, IExternalBugTracker, IMessageSet, IPersonSet,
+    PersonCreationRationale, ISupportsBugImport, ISupportsCommentImport,
     UNKNOWN_REMOTE_IMPORTANCE, UNKNOWN_REMOTE_STATUS)
 from canonical.launchpad.webapp import errorlog
 from canonical.launchpad.webapp.url import urlparse
@@ -360,41 +359,6 @@ class ExternalBugTracker:
         report_oops(message, properties, info)
         # Also put it in the log.
         log.error(message, exc_info=info)
-
-    def importBug(self, bug_target, remote_bug):
-        """Import a remote bug into Launchpad."""
-        assert IDistribution.providedBy(bug_target), (
-            'Only imports of bugs for a distribution is implemented.')
-        reporter_name, reporter_email = self.getBugReporter(remote_bug)
-        reporter = getUtility(IPersonSet).ensurePerson(
-            reporter_email, reporter_name, PersonCreationRationale.BUGIMPORT,
-            comment='when importing bug #%s from %s' % (
-                remote_bug, self.baseurl))
-        package_name = self.getBugTargetName(remote_bug)
-        package = bug_target.getSourcePackage(package_name)
-        if package is not None:
-            bug_target = package
-        else:
-            self.warning(
-                'Unknown %s package (#%s at %s): %s' % (
-                    bug_target.name, remote_bug, self.baseurl, package_name))
-        summary, description = self.getBugSummaryAndDescription(remote_bug)
-        bug = bug_target.createBug(
-            CreateBugParams(
-                reporter, summary, description, subscribe_reporter=False))
-
-        [added_task] = bug.bugtasks
-        bug_watch = getUtility(IBugWatchSet).createBugWatch(
-            bug=bug,
-            owner=getUtility(ILaunchpadCelebrities).bug_watch_updater,
-            bugtracker=self.bugtracker, remotebug=remote_bug)
-
-        added_task.bugwatch = bug_watch
-        # Need to flush databse updates, so that the bug watch knows it
-        # is linked from a bug task.
-        flush_database_updates()
-
-        return bug
 
     def importBugComments(self, bug_watch):
         """See `ISupportsCommentImport`."""
@@ -729,7 +693,7 @@ class DebBugsDatabaseNotFound(BugTrackerConnectError):
 class DebBugs(ExternalBugTracker):
     """A class that deals with communications with a debbugs db."""
 
-    implements(ISupportsCommentImport)
+    implements(ISupportsBugImport, ISupportsCommentImport)
 
     # We don't support different versions of debbugs.
     version = None
