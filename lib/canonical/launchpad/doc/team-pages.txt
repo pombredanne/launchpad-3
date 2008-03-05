@@ -66,5 +66,5 @@ Posting malformed data to the team home page raises an error.
     >>> team_home.initialize()
     Traceback (most recent call last):
     ...
-    UnexpectedFormData: The mailng list form did not receive the expected
+    UnexpectedFormData: The mailing list form did not receive the expected
     form fields.
