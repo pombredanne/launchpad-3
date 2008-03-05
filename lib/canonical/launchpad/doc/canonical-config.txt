@@ -46,8 +46,8 @@ launchpad.testrunner.conf, which extends the default conf.
     'testrunner'
     >>> config.filename
     '.../configs/testrunner/launchpad-lazr.conf'
-    >>> config.extends.name
-    'schema-lazr.conf'
+    >>> config.extends.filename
+    '.../configs/default/launchpad-lazr.conf'
 
 
 == Transition from ZConfig to LAZR ==
@@ -89,7 +89,7 @@ lazr.config instance is stored in config._config.
     Traceback (most recent call last):
      ...
     AttributeError: ZConfig or lazr.config instances have no attribute
-    'bad_key'.
+    answertracker.bad_key.
 
 2. When the key is found in the lazr.config instance, the
 lazr.config value is returned. It is assumed that the callsite
@@ -110,18 +110,18 @@ a database category, and the ZConfig does not.
 3. When the key is found in ZConfig, only, the ZConfig value is
 returned. The key was probably a ZConfig section; lazr.config does not
 support multi-sections. For example, the ZConfig instance has nested
-hostnames: 'launchpad.vhosts.blueprints.hostname'.
+hostnames: 'mailman.build.build'.
 
-    >>> config._config.launchpad['vhosts'].blueprints.hostname
+    >>> config._config.mailman['build'].build
     Traceback (most recent call last):
       ...
-    KeyError: 'vhosts'
+    KeyError: 'build'
 
-    >>> config._cache.testrunner.launchpad.vhosts.blueprints.hostname
-    'blueprints.launchpad.dev'
+    >>> config._cache.testrunner.mailman.build.build
+    False
 
-    >>> config.launchpad.vhosts.blueprints.hostname
-    'blueprints.launchpad.dev'
+    >>> config.mailman.build.build
+    False
 
 
 === UnconvertedConfigWarning ===
@@ -149,11 +149,11 @@ key.
     >>> import os
     >>> os.environ['ENABLE_DEPRECATED_ZCONFIG_WARNINGS'] = 'true'
 
-    >>> config.launchpad.vhosts.blueprints.hostname
+    >>> config.mailman.build
     Traceback (most recent call last):
      ...
     UnconvertedConfigWarning: Callsite requests a nonexistent key:
-    'launchpad.vhosts'.
+    'mailman.build'.
 
     >>> os.environ['ENABLE_DEPRECATED_ZCONFIG_WARNINGS'] = 'false'
 
