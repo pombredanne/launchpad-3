@@ -10,7 +10,6 @@ determine whether non-members are allowed to post to a mailing list.
 import socket
 import xmlrpclib
 
-from Mailman import Errors
 from Mailman import mm_cfg
 from Mailman.Logging.Syslog import syslog
 

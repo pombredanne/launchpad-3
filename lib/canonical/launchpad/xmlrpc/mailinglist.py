@@ -97,7 +97,8 @@ class MailingListAPIView(LaunchpadXMLRPCView):
                                            MailingListStatus.UPDATING):
                     mailing_list.transitionToStatus(MailingListStatus.ACTIVE)
                 elif mailing_list.status == MailingListStatus.DEACTIVATING:
-                    mailing_list.transitionToStatus(MailingListStatus.INACTIVE)
+                    mailing_list.transitionToStatus(
+                        MailingListStatus.INACTIVE)
                 else:
                     return faults.UnexpectedStatusReport(
                         team_name, action_status)
