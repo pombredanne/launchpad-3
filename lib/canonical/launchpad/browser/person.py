@@ -3634,7 +3634,7 @@ class PersonAnswersMenu(ApplicationMenu):
 class PersonBranchesView(BranchListingView):
     """View for branch listing for a person."""
 
-    extra_columns = ('author', 'product', 'role')
+    extra_columns = ('product',)
     heading_template = 'Bazaar branches related to %(displayname)s'
 
     def _branches(self, lifecycle_status, show_dormant):
@@ -3646,17 +3646,6 @@ class PersonBranchesView(BranchListingView):
     def _subscribed_branches(self):
         return set(getUtility(IBranchSet).getBranchesSubscribedByPerson(
             self.context, [], self.user))
-
-    def roleForBranch(self, branch):
-        person = self.context
-        if branch.author == person:
-            return 'Author'
-        elif branch.owner == person:
-            return 'Registrant'
-        elif branch in self._subscribed_branches:
-            return 'Subscriber'
-        else:
-            return 'Team Branch'
 
 
 class PersonRegisteredBranchesView(BranchListingView):
