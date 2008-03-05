@@ -291,6 +291,6 @@
   <subscriber
       for="canonical.launchpad.interfaces.IBranch
            canonical.launchpad.event.interfaces.ISQLObjectModifiedEvent"
-      handler="canonical.launchpad.mailnotification.send_branch_modified_notifications" />
+      handler="canonical.launchpad.mailout.branch.send_branch_modified_notifications" />
 
 </configure>
