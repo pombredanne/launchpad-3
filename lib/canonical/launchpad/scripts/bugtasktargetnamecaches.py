@@ -35,12 +35,16 @@ class BugTaskTargetNameCachesTunableLoop(object):
         self.bugtasks = list(getUtility(IBugTaskSet).dangerousGetAllTasks())
         self.transaction.commit()
 
+        # We need to calculate the number of bugtasks that we need to
+        # update based on the inital offset we've been given.
+        self.bugtasks_to_update = len(self.bugtasks[offset:])
+
     def isDone(self):
         """See `ITunableLoop`."""
         # When the main loop has no more BugTasks to process it sets
         # offset to None. Until then, it always has a numerical
         # value.
-        return self.total_updated == len(self.bugtasks)
+        return self.total_updated == self.bugtasks_to_update
 
     def __call__(self, chunk_size):
         """Retrieve a batch of BugTasks and update their targetname caches.
