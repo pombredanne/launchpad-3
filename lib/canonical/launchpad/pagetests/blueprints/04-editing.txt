@@ -126,3 +126,24 @@ Regular users can't access the change status page.
   ...
   Unauthorized:...
 
+Nor can they change a blueprint's priority.
+
+    >>> user_browser.open(
+    ...     'http://blueprints.launchpad.dev/kubuntu/'
+    ...     '+spec/krunch-desktop-plan')
+    >>> user_browser.getLink('Change priority')
+    Traceback (most recent call last):
+    ...
+    LinkNotFoundError
+
+But an administrator can.
+
+    >>> admin_browser.open(
+    ...     'http://blueprints.launchpad.dev/kubuntu/'
+    ...     '+spec/krunch-desktop-plan')
+    >>> admin_browser.getLink('Change priority').click()
+    >>> admin_browser.url
+    'http://blueprints.launchpad.dev/kubuntu/+spec/krunch-desktop-plan/+priority'
+    >>> back_link = user_browser.getLink('The Krunch Desktop Plan')
+    >>> back_link.url
+    'http://blueprints.launchpad.dev/firefox/+spec/krunch-desktop-plan'

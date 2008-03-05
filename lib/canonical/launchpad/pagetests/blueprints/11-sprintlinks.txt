@@ -24,6 +24,13 @@ Then we are going to propose it for the meeting agenda:
   >>> browser.title
   'Put blueprint on sprint agenda'
 
+The page contains a link back to the blueprint, in case we change our
+mind.
+
+    >>> back_link = user_browser.getLink('Support <canvas> Objects')
+    >>> back_link.url
+    'http://blueprints.launchpad.dev/firefox/+spec/canvas'
+
 Now  with a POST, we try to Add the spec to the Guacamole sprint.
 
   >>> sprint_field = browser.getControl(name='field.sprint')
@@ -83,6 +90,9 @@ Now go and change that and verify.
   >>> browser.getLink('Approved').click()
   >>> browser.url
   'http://.../kubuntu/+spec/kde-desktopfile-langpacks/paris'
+  >>> back_link = user_browser.getLink('KDE Desktop File Language Packs')
+  >>> back_link.url
+  'http://blueprints.launchpad.dev/kubuntu/+spec/kde-desktopfile-langpacks'
   >>> browser.getControl('Decline').click()
   >>> 'Declined for the meeting' not in browser.contents
   False

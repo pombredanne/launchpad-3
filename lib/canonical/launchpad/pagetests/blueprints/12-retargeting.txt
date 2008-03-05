@@ -10,6 +10,16 @@ Now, let's make sure we can see the retargeting page for it, as the Foo Bar
 administrator:
 
   >>> admin_browser.getLink("Retarget").click()
+
+The page contains a link back to the blueprint, in case we change our
+mind.
+
+    >>> back_link = user_browser.getLink('Support Native SVG Objects')
+    >>> back_link.url
+    'http://blueprints.launchpad.dev/firefox/+spec/svg-support'
+
+We can move the blueprint to Evolution.
+
   >>> admin_browser.getControl("For").value = "evolution"
   >>> admin_browser.getControl("Retarget Blueprint").click()
   >>> admin_browser.url

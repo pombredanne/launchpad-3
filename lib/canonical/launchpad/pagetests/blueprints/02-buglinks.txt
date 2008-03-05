@@ -34,6 +34,11 @@ This link is only available to registered users:
     >>> user_browser.open(
     ...     'http://launchpad.dev/firefox/+spec/svg-support')
     >>> user_browser.getLink('Link to bug').click()
+    >>> user_browser.url
+    'http://launchpad.dev/firefox/+spec/svg-support'
+    >>> back_link = browser.getLink('SVG Support')
+    >>> back_link.url
+    'http://launchpad.dev/firefox/+spec/svg-support'
 
 To link the bug, the user enters the bug ID and clicks the 'Add'
 button.
@@ -56,9 +61,14 @@ Oops, that was actually the wrong bug. So lets remove the link. This is
 done by using the 'Remove bug link' link.
 
     >>> user_browser.getLink('Remove bug link').click()
+    >>> user_browser.url
+    'http://launchpad.dev/firefox/+spec/svg-support/+unlinkbug'
+    >>> back_link = browser.getLink('SVG Support')
+    >>> back_link.url
+    'http://launchpad.dev/firefox/+spec/svg-support'
 
-The list of linked bugs is displayed. The user select the bug to remove
-and click the 'Remove' button.
+The list of linked bugs is displayed. The user selects the bug to remove
+and clicks the 'Remove' button.
 
     >>> user_browser.getControl('#4: Reflow problems').selected = True
     >>> user_browser.getControl('Remove').click()

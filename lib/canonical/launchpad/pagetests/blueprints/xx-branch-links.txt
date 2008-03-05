@@ -9,6 +9,12 @@ Branch" menu item on the specification page:
   >>> print user_browser.url
   http://blueprints.launchpad.dev/ubuntu/+spec/media-integrity-check/+linkbranch
 
+There is a link back to the branch page, in case you change your mind.
+
+    >>> back_link = user_browser.getLink('CD Media Integrity Check')
+    >>> back_link.url
+    'http://blueprints.launchpad.dev/firefox/+spec/extension-manager-upgrades'
+
 When creating a link to a branch, the link must not already exist.
 There exists a link between the media-integrity-check branch and the
 junk.dev branch, so we get an error:
@@ -92,13 +98,20 @@ used to edit the summary of the branch link:
   >>> user_browser.open('http://blueprints.launchpad.dev/ubuntu/'
   ...                   '+spec/media-integrity-check/+branch/name12/'
   ...                   '+junk/junk.contrib')
+
+Again, there is a link back to the branch page, in case we change our
+mind.
+
+    >>> back_link = user_browser.getLink('CD Media Integrity Check')
+    >>> back_link.url
+    'http://blueprints.launchpad.dev/firefox/+spec/extension-manager-upgrades'
+
+If we change the summary, the new summary appears in the branches portlet.
+
   >>> user_browser.getControl('Summary', index=0).value = 'New summary'
   >>> user_browser.getControl('Change Summary').click()
   >>> print user_browser.url
   http://blueprints.launchpad.dev/ubuntu/+spec/media-integrity-check
-
-The new summary now appears in the branches portlet:
-
   >>> print find_portlet(user_browser.contents, 'Branches')
   <...
   <li>

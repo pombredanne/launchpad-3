@@ -7,13 +7,19 @@ him a message.
 
 First, we load the review request page.
 
-  >>> print http(r"""
-  ... GET /firefox/+spec/canvas/+requestfeedback HTTP/1.1
-  ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
-  ... """)
-  HTTP/1.1 200 Ok
-  ...
+    >>> browser.addHeader('Authorization', 'Basic test@canonical.com:test')
+    >>> browser.open(
+    ...     'http://blueprints.launchpad.dev/firefox/+spec/canvas')
+    >>> browser.getLink('Request feedback').click()
+    >>> browser.url
+    'http://blueprints.launchpad.dev/firefox/+spec/canvas'
 
+This page contains a link back to the blueprint page, in case you change
+your mind.
+
+    >>> back_link = browser.getLink('Support <canvas> Objects')
+    >>> back_link.url
+    'http://blueprints.launchpad.dev/firefox/+spec/canvas'
 
 Now we try to POST to the form behind it. We expect to be redirected to the
 spec home page.

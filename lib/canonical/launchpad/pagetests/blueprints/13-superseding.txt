@@ -16,6 +16,13 @@ modify that to Drafting, so this test will not run standalone.
 >>> 'Drafting' in browser.contents
 True
 
+The page contains a link back to the blueprint, in case we change our
+mind.
+
+    >>> back_link = user_browser.getLink('Extension Manager Upgrades')
+    >>> back_link.url
+    'http://blueprints.launchpad.dev/firefox/+spec/extension-manager-upgrades'
+
 Make sure Bug 4116 stays fixed
 
 >>> browser.open(
