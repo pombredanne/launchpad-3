@@ -1,9 +1,10 @@
 = Developer exceptions =
 
-Confirm that launchpad developers get tracebacks and a linkified OOPS if 
-an exception occurs when they are logged in, and that other users do not.
+Launchpad developers get tracebacks and a linkified OOPS if an exception
+occurs. Other users get no traceback and only the OOPS ID.
 
-Register a page that generates HTTP 500 errors.
+To be able to test, a page that generates HTTP 500 errors is registered.
+Accessing that page gives us the OOPS error page.
 
     >>> from zope.app.tests import ztapi
     >>> class ErrorView(object):
@@ -22,7 +23,7 @@ switch this off for these tests to work
     >>> config.show_tracebacks
     False
 
-First check that Anonymous users don't get tracebacks
+Anonymous users don't get tracebacks.
 
     >>> result = http(r"""
     ... GET /error-test HTTP/1.1
@@ -30,7 +31,7 @@ First check that Anonymous users don't get tracebacks
     >>> 'Traceback' in str(result)
     False
 
-The OOPS ID is displayed but not linkified.
+And the OOPS ID is displayed but not linkified.
 
     >>> print find_main_content(str(result))
     <...
@@ -41,8 +42,8 @@ The OOPS ID is displayed but not linkified.
     in your message.
     ...
 
-Developers logged in via Basic Auth should get tracebacks. In this case,
-we are logged in as the foo.bar@canonical.com user
+Launchpad developers logged in via Basic Auth get tracebacks.
+In this case, we are logged in as the foo.bar@canonical.com user.
 
     >>> result = http(r"""
     ... GET /error-test HTTP/1.1
@@ -51,7 +52,7 @@ we are logged in as the foo.bar@canonical.com user
     >>> 'Traceback' in str(result)
     True
 
-The OOPS ID is displayed and linkified.
+And the OOPS ID is displayed and linkified.
 
     >>> print find_main_content(str(result))
     <...
@@ -62,8 +63,8 @@ The OOPS ID is displayed and linkified.
     in your message.
     ...
 
-Other users logged in via basic auth will not get tracebacks. In this
-case, Carlos
+Other users logged in via basic auth don't get tracebacks. In this
+case, Carlos.
 
     >>> result = http(r"""
     ... GET /error-test HTTP/1.1
@@ -72,7 +73,7 @@ case, Carlos
     >>> 'Traceback' in str(result)
     False
 
-The OOPS ID is displayed but not linkified.
+And the OOPS ID is displayed but not linkified.
 
     >>> print find_main_content(str(result))
     <...
@@ -83,10 +84,11 @@ The OOPS ID is displayed but not linkified.
     in your message.
     ...
 
-
-Reset the show_tracebacks config items
+To avoid affecting other tests, reset the show_tracebacks config item.
 
     >>> config.show_tracebacks = show_tracebacks
+    >>> config.show_tracebacks
+    True
 
 = HTTPCaller handle_errors =
 

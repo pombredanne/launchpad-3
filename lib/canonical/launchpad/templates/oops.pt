@@ -24,7 +24,7 @@
             <a href="https://lists.canonical.com/mailman/listinfo/launchpad-users"
             >launchpad-users mailing list</a> (requires subscription).
             Include the error <abbr>ID</abbr>
-            <tal:oops replace="structure view/maybeShowLinkifiedOops" />
+            <tal:oops replace="structure view/oops_id_text" />
             in your message.
           </p>
           <tal:traceback replace="structure view/maybeShowTraceback" />
