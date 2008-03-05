@@ -2764,6 +2764,11 @@ class PersonBrandingView(BrandingChangeView):
 
 class TeamJoinView(PersonView):
 
+    def initialize(self):
+        super(TeamJoinView, self).initialize()
+        if self.request.method == "POST":
+            self.processForm()
+
     @property
     def join_allowed(self):
         """Is the logged in user allowed to join this team?
@@ -2807,10 +2812,6 @@ class TeamJoinView(PersonView):
 
     def processForm(self):
         request = self.request
-        if request.method != "POST":
-            # Nothing to do
-            return
-
         user = self.user
         context = self.context
         notify_info = self.request.response.addInfoNotification
