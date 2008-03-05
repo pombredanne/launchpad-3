@@ -1,4 +1,5 @@
 #!/usr/bin/python2.4
+# pylint: disable-msg=W0403
 # Copyright 2008 Canonical Ltd.  All rights reserved.
 #
 # Migrate old KDE-style POTemplates to use native Launchpad
