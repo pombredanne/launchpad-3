@@ -682,10 +682,8 @@ most specific information possible.
 Let's demonstrate by searching for "mozilla-firefox", for which there is
 both a source and binary package of that name.
 
-    >>> from canonical.launchpad.interfaces import (
-    ...     ISourcePackageName, IBinaryPackageName)
-
-    >>> package_name_terms = package_name_vocabulary.searchForTerms("mozilla-firefox")
+    >>> package_name_terms = package_name_vocabulary.searchForTerms(
+    ...     "mozilla-firefox")
     >>> package_name_terms.count()
     2
     >>> [(term.token, term.title) for term in package_name_terms]
@@ -1861,6 +1859,14 @@ As mentioned the PPA vocabulary term title only contains the first
 line of the PPA description.
 
     >>> cprov = getUtility(IPersonSet).getByName('cprov')
+
+    >>> cprov.archive.description = "Single line."
+    >>> flush_database_updates()
+
+    >>> cprov_term = vocabulary.getTermByToken('cprov')
+    >>> print cprov_term.title
+    Single line.
+
     >>> cprov.archive.description = "First line\nSecond line."
     >>> flush_database_updates()
 
