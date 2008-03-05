@@ -21,11 +21,12 @@ from canonical.launchpad.interfaces import (
     IPackaging, IPerson, IPoll, IPollOption, IPollSubset, IProduct,
     IProductRelease, IProductReleaseFile, IProductSeries, IQuestion,
     IQuestionTarget, IRequestedCDs, IShipItApplication, IShippingRequest,
-    IShippingRequestSet, IShippingRun, ISpecification,
-    ISpecificationSubscription, ISprint, ISprintSpecification,
-    IStandardShipItRequest, IStandardShipItRequestSet, ITeam, ITeamMembership,
-    ITranslationGroup, ITranslationGroupSet, ITranslationImportQueue,
-    ITranslationImportQueueEntry, ITranslator, PersonVisibility)
+    IShippingRequestSet, IShippingRun, ISourcePackageRelease, ISpecification,
+    ISpecificationBranch, ISpecificationSubscription, ISprint,
+    ISprintSpecification, IStandardShipItRequest, IStandardShipItRequestSet,
+    ITeam, ITeamMembership, ITranslationGroup, ITranslationGroupSet,
+    ITranslationImportQueue, ITranslationImportQueueEntry, ITranslator,
+    PersonVisibility)
 
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.interfaces import IAuthorization
@@ -129,6 +130,31 @@ class EditDistributionMirrorByOwnerOrDistroOwnerOrMirrorAdminsOrAdmins(
         return (user.inTeam(self.obj.owner) or user.inTeam(admins) or
                 user.inTeam(self.obj.distribution.owner) or
                 user.inTeam(self.obj.distribution.mirror_admin))
+
+
+class EditSpecificationBranch(AuthorizationBase):
+
+    usedfor = ISpecificationBranch
+    permission = 'launchpad.Edit'
+
+    def checkAuthenticated(self, user):
+        """See `IAuthorization.checkAuthenticated`.
+
+        :return: True or False.
+        """
+        return True
+
+
+class ViewSpecificationBranch(EditSpecificationBranch):
+
+    permission = 'launchpad.View'
+
+    def checkUnauthenticated(self):
+        """See `IAuthorization.checkUnauthenticated`.
+
+        :return: True or False.
+        """
+        return True
 
 
 class EditSpecificationByTargetOwnerOrOwnersOrAdmins(AuthorizationBase):
@@ -555,6 +581,26 @@ class SeriesDrivers(AuthorizationBase):
                 return True
         admins = getUtility(ILaunchpadCelebrities).admin
         return user.inTeam(admins)
+
+
+class ViewProductSeries(AuthorizationBase):
+
+    usedfor = IProductSeries
+    permision = 'launchpad.View'
+
+    def checkUnauthenticated(self):
+        """See `IAuthorization.checkUnauthenticated`.
+
+        :return: True or False.
+        """
+        return True
+
+    def checkAuthenticated(self, user):
+        """See `IAuthorization.checkAuthenticated`.
+
+        :return: True or False.
+        """
+        return True
 
 
 class EditProductSeries(EditByRegistryExpertsOrOwnersOrAdmins):
@@ -1235,6 +1281,10 @@ class BranchSubscriptionEdit(AuthorizationBase):
         return user.inTeam(self.obj.person) or user.inTeam(admins)
 
 
+class BranchSubscriptionView(BranchSubscriptionEdit):
+    permission = 'launchpad.View'
+
+
 class BranchMergeProposalView(AuthorizationBase):
     permission = 'launchpad.View'
     usedfor = IBranchMergeProposal
@@ -1400,6 +1450,38 @@ class ViewArchive(AuthorizationBase):
     def checkUnauthenticated(self):
         """Unauthenticated users can see the PPA if it's not private."""
         return not self.obj.private
+
+
+class ViewSourcePackageRelease(AuthorizationBase):
+    """Restrict viewing of source packages.
+
+    Packages that are only published in private archives are subject to the
+    same viewing rules as the archive (see class ViewArchive).
+
+    If the package is published in any non-private archive, then it is
+    automatically viewable even if the package is also published in
+    a private archive.
+    """
+    permission = 'launchpad.View'
+    userfor = ISourcePackageRelease
+
+    def checkAuthenticated(self, user):
+        """Verify that the user can view the sourcepackagerelease."""
+        for archive in self.obj.published_archives:
+            if check_permission('launchpad.View', archive):
+                return True
+        return False
+
+    def checkUnauthenticated(self):
+        """Check unauthenticated users.
+
+        Unauthenticated users can see the package as long as it's published
+        in a non-private archive.
+        """
+        for archive in self.obj.published_archives:
+            if not archive.private:
+                return True
+        return False
 
 
 class MailingListApprovalByExperts(AuthorizationBase):

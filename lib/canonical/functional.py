@@ -4,161 +4,13 @@
 
 from cStringIO import StringIO
 import httplib
-import logging
-import sys
-import unittest
 import xmlrpclib
 
-from zope.app.testing.functional import (
-    FunctionalTestSetup, HTTPCaller)
+from zope.app.testing.functional import HTTPCaller
 from zope.security.management import endInteraction, queryInteraction
 
-from zope.testing import doctest
-from zope.testing.loggingsupport import Handler
-
-from canonical.config import config
-from canonical.chunkydiff import elided_source
 from canonical.launchpad.webapp.interaction import (
     get_current_principal, setupInteraction)
-from canonical.testing import FunctionalLayer
-
-
-class NewFunctionalTestSetup(FunctionalTestSetup):
-    """Wrap standard FunctionalTestSetup to ensure it is only called
-       from tests specifying a valid Layer.
-    """
-    def __init__(self, *args, **kw):
-        from canonical.testing import ZopelessLayer
-        assert FunctionalLayer.isSetUp or ZopelessLayer.isSetUp, """
-                FunctionalTestSetup invoked at an inappropriate time.
-                May only be invoked in the FunctionalLayer or ZopelessLayer
-                """
-        super(NewFunctionalTestSetup, self).__init__(*args, **kw)
-FunctionalTestSetup = NewFunctionalTestSetup
-
-
-class FunctionalTestCase(unittest.TestCase):
-    """Functional test case.
-
-    This functionality should be moved into canonical.testing.
-    """
-    layer = FunctionalLayer
-    def setUp(self):
-        """Prepares for a functional test case."""
-        super(FunctionalTestCase, self).setUp()
-
-    def tearDown(self):
-        """Cleans up after a functional test case."""
-        super(FunctionalTestCase, self).tearDown()
-
-    def getRootFolder(self):
-        """Returns the Zope root folder."""
-        raise NotImplementedError('getRootFolder')
-        #return FunctionalTestSetup().getRootFolder()
-
-    def commit(self):
-        raise NotImplementedError('commit')
-
-    def abort(self):
-        raise NotImplementedError('abort')
-
-
-class StdoutWrapper:
-    """A wrapper for sys.stdout.  Writes to this file like object will
-    write to whatever sys.stdout is pointing to at the time.
-
-    The purpose of this class is to allow doctest to capture log
-    messages.  Since doctest replaces sys.stdout, configuring the
-    logging module to send messages to sys.stdout before running the
-    tests will not result in the output being captured.  Using an
-    instance of this class solves the problem.
-    """
-    def __getattr__(self, attr):
-        return getattr(sys.stdout, attr)
-
-
-class StdoutHandler(Handler):
-    def emit(self, record):
-        Handler.emit(self, record)
-        print >> StdoutWrapper(), '%s:%s:%s' % (
-                    record.levelname, record.name, self.format(record)
-                    )
-
-
-def FunctionalDocFileSuite(*paths, **kw):
-    globs = kw.setdefault('globs', {})
-    globs['http'] = HTTPCaller()
-
-    # Set stdout_logging keyword argument to True to make
-    # logging output be sent to stdout, forcing doctests to deal with it.
-    stdout_logging = kw.pop('stdout_logging', True)
-    stdout_logging_level = kw.pop('stdout_logging_level', logging.INFO)
-
-    # Make sure that paths are resolved relative to our caller
-    kw['package'] = doctest._normalize_module(kw.get('package'))
-
-    if 'optionflags' not in kw:
-        old = doctest.set_unittest_reportflags(0)
-        doctest.set_unittest_reportflags(old)
-        kw['optionflags'] = (old
-                             | doctest.ELLIPSIS
-                             | doctest.REPORT_NDIFF
-                             | doctest.NORMALIZE_WHITESPACE)
-
-    kwsetUp = kw.get('setUp')
-    def setUp(test):
-        if kwsetUp is not None:
-            kwsetUp(test)
-        if stdout_logging:
-            log = StdoutHandler('')
-            log.setLoggerLevel(stdout_logging_level)
-            log.install()
-            test.globs['log'] = log
-            # Store as instance attribute so we can uninstall it.
-            test._stdout_logger = log
-    kw['setUp'] = setUp
-
-    kwtearDown = kw.get('tearDown')
-    def tearDown(test):
-        if kwtearDown is not None:
-            kwtearDown(test)
-        if stdout_logging:
-            test._stdout_logger.uninstall()
-    kw['tearDown'] = tearDown
-
-    layer = kw.pop('layer', FunctionalLayer)
-    suite = doctest.DocFileSuite(*paths, **kw)
-    suite.layer = layer
-    return suite
-
-
-def PageTestDocFileSuite(*paths, **kw):
-    if not kw.get('stdout_logging'):
-        kw['stdout_logging'] = False
-    # Make sure that paths are resolved relative to our caller
-    kw['package'] = doctest._normalize_module(kw.get('package'))
-    suite = FunctionalDocFileSuite(*paths, **kw)
-    return suite
-
-
-class SpecialOutputChecker(doctest.OutputChecker):
-    def output_difference(self, example, got, optionflags):
-        if config.chunkydiff is False:
-            return doctest.OutputChecker.output_difference(
-                self, example, got, optionflags)
-
-        if optionflags & doctest.ELLIPSIS:
-            normalize_whitespace = optionflags & doctest.NORMALIZE_WHITESPACE
-            newgot = elided_source(example.want, got,
-                                   normalize_whitespace=normalize_whitespace)
-            if newgot == example.want:
-                # There was no difference.  May be an error in elided_source().
-                # In any case, return the whole thing.
-                newgot = got
-        else:
-            newgot = got
-        return doctest.OutputChecker.output_difference(
-            self, example, newgot, optionflags)
 
 
 class HTTPCallerHTTPConnection(httplib.HTTPConnection):
@@ -219,7 +71,3 @@ class XMLRPCTestTransport(xmlrpclib.Transport):
         """Return our custom HTTPCaller HTTPConnection."""
         host, extra_headers, x509 = self.get_host_info(host)
         return HTTPCallerHTTPConnection(host)
-
-
-if __name__ == '__main__':
-    unittest.main()

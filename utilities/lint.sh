@@ -43,7 +43,7 @@ fi
 
 
 if [ -z "$1" ]; then
-    # No command line argument provided, use the defaut logic.
+    # No command line argument provided, use the default logic.
     bzr diff > /dev/null
     diff_status=$?
     if [ $diff_status -eq 0 ] ; then

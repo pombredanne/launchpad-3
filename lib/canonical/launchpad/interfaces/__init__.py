@@ -100,6 +100,7 @@ from canonical.launchpad.interfaces.mailinglist import *
 from canonical.launchpad.interfaces.mentoringoffer import *
 from canonical.launchpad.interfaces.message import *
 from canonical.launchpad.interfaces.milestone import *
+from canonical.launchpad.interfaces.oauth import *
 from canonical.launchpad.interfaces.openidserver import *
 from canonical.launchpad.interfaces.package import *
 from canonical.launchpad.interfaces.packagerelationship import *
@@ -170,5 +171,5 @@ from canonical.launchpad.interfaces.vpotexport import *
 from canonical.launchpad.interfaces.wikiname import *
 from canonical.launchpad.interfaces.poexportrequest import *
 from canonical.launchpad.interfaces.distrocomponentuploader import *
-
 from canonical.launchpad.interfaces.archive import *
+from canonical.launchpad.interfaces.archivedependency import *

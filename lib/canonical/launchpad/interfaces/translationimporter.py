@@ -100,6 +100,29 @@ class ITranslationImporter(Interface):
         title=u'List of file extensions we have imports for.',
         required=True, readonly=True)
 
+    # Filename suffixes that identify templates.  These do not have to be
+    # CP/M-style "filename extensions" separated from the base file name by a
+    # dot; any suffix will do.
+    template_suffixes = TextLine(
+        title=u'Filename endings that identify templates.', required=True,
+        readonly=True)
+
+    def isTemplateName(path):
+        """Based on filename, is this a template file?
+
+        :param path: file name, possibly including directory component.
+        :return: Boolean: True if `path` identifies this file as a template.
+        """
+
+    def isTranslationName(path):
+        """Based on filename, is this file a translation?
+
+        :param path: file name, possibly including directory component.
+        :return: Boolean: True if `path` identifies this file as a
+            translation.  A template, or a file with an unknown filename
+            extension, is not considered a translation.
+        """
+
     def getTranslationFileFormat(file_extension, file_contents):
         """Return the translation file format for the given file extension.
 

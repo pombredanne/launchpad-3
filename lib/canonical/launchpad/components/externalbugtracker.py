@@ -29,13 +29,12 @@ from zope.interface import implements
 from canonical.cachedproperty import cachedproperty
 from canonical.config import config
 from canonical import encoding
-from canonical.database.sqlbase import flush_database_updates, commit
+from canonical.database.sqlbase import commit
 from canonical.launchpad.scripts import log, debbugs
 from canonical.launchpad.interfaces import (
     BugTaskImportance, BugTaskStatus, BugTrackerType, BugWatchErrorType,
-    CreateBugParams, IBugWatchSet, IDistribution, IExternalBugTracker,
-    ILaunchpadCelebrities, IMessageSet, IPersonSet,
-    PersonCreationRationale, ISupportsCommentImport,
+    IBugWatchSet, IExternalBugTracker, IMessageSet, IPersonSet,
+    PersonCreationRationale, ISupportsBugImport, ISupportsCommentImport,
     UNKNOWN_REMOTE_IMPORTANCE, UNKNOWN_REMOTE_STATUS)
 from canonical.launchpad.webapp import errorlog
 from canonical.launchpad.webapp.url import urlparse
@@ -694,7 +693,7 @@ class DebBugsDatabaseNotFound(BugTrackerConnectError):
 class DebBugs(ExternalBugTracker):
     """A class that deals with communications with a debbugs db."""
 
-    implements(ISupportsCommentImport)
+    implements(ISupportsBugImport, ISupportsCommentImport)
 
     # We don't support different versions of debbugs.
     version = None
@@ -840,41 +839,21 @@ class DebBugs(ExternalBugTracker):
             [debian_bug.status, severity] + debian_bug.tags)
         return new_remote_status
 
-    def importBug(self, bug_target, remote_bug):
-        """Import a remote bug into Launchpad."""
-        assert IDistribution.providedBy(bug_target), (
-            'We assume debbugs is used only by a distribution (Debian).')
+    def getBugReporter(self, remote_bug):
+        """See ISupportsBugImport."""
         debian_bug = self._findBug(remote_bug)
         reporter_name, reporter_email = parseaddr(debian_bug.originator)
-        reporter = getUtility(IPersonSet).ensurePerson(
-            reporter_email, reporter_name, PersonCreationRationale.BUGIMPORT,
-            comment='when importing debbugs bug #%s' % remote_bug)
-        package = bug_target.getSourcePackage(debian_bug.package)
-        if package is not None:
-            bug_target = package
-        else:
-            # Debbugs requires all bugs to be targeted to a package, so
-            # it shouldn't be empty.
-            self.warning(
-                'Unknown Debian package (debbugs #%s): %s' % (
-                    remote_bug, debian_bug.package))
-        bug = bug_target.createBug(
-            CreateBugParams(
-                reporter, debian_bug.subject, debian_bug.description,
-                subscribe_reporter=False))
+        return reporter_name, reporter_email
 
-        [debian_task] = bug.bugtasks
-        bug_watch = getUtility(IBugWatchSet).createBugWatch(
-            bug=bug,
-            owner=getUtility(ILaunchpadCelebrities).bug_watch_updater,
-            bugtracker=self.bugtracker, remotebug=remote_bug)
+    def getBugTargetName(self, remote_bug):
+        """See ISupportsBugImport."""
+        debian_bug = self._findBug(remote_bug)
+        return debian_bug.package
 
-        debian_task.bugwatch = bug_watch
-        # Need to flush databse updates, so that the bug watch knows it
-        # is linked from a bug task.
-        flush_database_updates()
-
-        return bug
+    def getBugSummaryAndDescription(self, remote_bug):
+        """See ISupportsBugImport."""
+        debian_bug = self._findBug(remote_bug)
+        return debian_bug.subject, debian_bug.description
 
     def getCommentIds(self, bug_watch):
         """Return all the comment IDs for a given remote bug."""

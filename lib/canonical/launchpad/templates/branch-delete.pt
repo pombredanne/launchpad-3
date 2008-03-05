@@ -21,23 +21,55 @@
     <metal:branch-link use-macro="context/@@+macros/branch-heading-link"/>
   </tal:branch-link>
   <h1>Delete branch</h1>
+  <tal:deletelist condition="view/branch_deletion_actions/delete">
+    The following items must be <em>deleted</em>:
+    <ul>
+      <tal:actions repeat="row view/branch_deletion_actions/delete">
+        <li>
+          <img src="/@@/no" title="Insufficient privilages"
+               tal:condition="not:row/allowed"/>
+              <tal:item tal:content="structure row/item/fmt:link" />
+              (<tal:reason tal:content="row/reason" />)
+        </li>
+      </tal:actions>
+    </ul>
+  </tal:deletelist>
+  <tal:breaklist condition="view/branch_deletion_actions/break_link">
+    <div>The following links will be <em>broken</em>:</div>
+    <ul>
+      <tal:actions repeat="row view/branch_deletion_actions/break_link">
+        <li>
+          <img src="/@@/no" title="Insufficient privilages"
+               tal:condition="not:row/allowed"/>
+              <tal:item tal:content="structure row/item/fmt:link" />
+              (<tal:reason tal:content="row/reason" />)
+        </li>
+      </tal:actions>
+    </ul>
+  </tal:breaklist>
+  <tal:alterlist condition="view/branch_deletion_actions/alter">
+    <div>The following items will be <em>updated</em>:</div>
+    <ul>
+      <tal:actions repeat="row view/branch_deletion_actions/alter">
+        <li>
+          <img src="/@@/no" title="Insufficient privilages"
+               tal:condition="not:row/allowed"/>
+              <tal:item tal:content="structure row/item/fmt:link" />
+              (<tal:reason tal:content="row/reason" />)
+        </li>
+      </tal:actions>
+    </ul>
+  </tal:alterlist>
+  <p tal:condition="view/all_permitted">
+      Branch deletion is permanent.
+  </p>
+  <p tal:condition="not:view/all_permitted">
+      You do not have permission make all the changes required to delete this
+      Branch.
+  </p>
 
-  <tal:cannot-delete-branch condition="not: context/canBeDeleted">
-    <p>This branch <strong>cannot</strong> be deleted at this time.</p>
-
-    <p>A branch cannot be deleted if it is linked to any bugs or blueprints,
-    or if it has subscribers.</p>
-
-    <p>A branch also cannot be deleted if it has already been pushed to
-    or mirrored.</p>
-  </tal:cannot-delete-branch>
-
-  <tal:can-delete-branch condition="context/canBeDeleted">
-    <p>Branch deletion is permanent.</p>
-    <div metal:use-macro="context/@@launchpad_form/form">
-    </div>
-  </tal:can-delete-branch>
+  <div metal:use-macro="context/@@launchpad_form/form">
+  </div>
 </div><tal:comment condition="nothing"><!-- end main slot --></tal:comment>
-
 </body>
 </html>

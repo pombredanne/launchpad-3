@@ -6,11 +6,10 @@ implementations.
 
 import unittest
 
-from canonical.functional import FunctionalDocFileSuite
 from canonical.launchpad.interfaces.ftests. \
     test_structuralsubscriptiontarget import distributionSetUp, productSetUp
-from canonical.launchpad.ftests.test_system_documentation import (
-    default_optionflags, tearDown)
+from canonical.launchpad.testing.systemdocs import (
+    LayeredDocFileSuite, tearDown)
 from canonical.testing import LaunchpadFunctionalLayer
 
 
@@ -24,9 +23,8 @@ def test_suite():
         ]
 
     for setUpMethod in setUpMethods:
-        test = FunctionalDocFileSuite('has-bug-contact.txt',
+        test = LayeredDocFileSuite('has-bug-contact.txt',
             setUp=setUpMethod, tearDown=tearDown,
-            optionflags=default_optionflags, package=__name__,
             layer=LaunchpadFunctionalLayer)
         suite.addTest(test)
 
