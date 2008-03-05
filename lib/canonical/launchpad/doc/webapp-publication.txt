@@ -1071,6 +1071,92 @@ The feeds implementation always returns the anonymous user.
     >>> IUnauthenticatedPrincipal.providedBy(principal)
     True
 
+The webservice implementation returns the user associated with the
+access token specified in the request.
+
+    >>> import time
+    >>> from canonical.launchpad.interfaces import (
+    ...     IOAuthConsumerSet, IPersonSet, OAuthPermission)
+    >>> salgado = getUtility(IPersonSet).getByName('salgado')
+    >>> consumer = getUtility(IOAuthConsumerSet).getByKey('foobar123451432')
+    >>> token = consumer.newRequestToken()
+    >>> token.review(salgado, OAuthPermission.WRITE_PUBLIC)
+    >>> access_token = token.createAccessToken()
+    >>> form = dict(
+    ...     oauth_consumer_key='foobar123451432',
+    ...     oauth_token=access_token.key,
+    ...     oauth_version='1.0',
+    ...     oauth_signature_method='PLAINTEXT',
+    ...     oauth_signature="&".join([consumer.secret, access_token.secret]),
+    ...     oauth_timestamp=time.time(),
+    ...     oauth_nonce='4572616e48616d6d65724c61686176')
+    >>> dummy, publication = get_request_and_publication('api.launchpad.dev')
+    >>> test_request = LaunchpadTestRequest(form=form)
+    >>> print publication.getPrincipal(test_request).title
+    Guilherme Salgado
+
+If the token is expired, unauthorized or doesn't exist, an Unauthorized
+exception is raised, though.
+
+    # Must login in order to edit the token.
+    >>> login('salgado@ubuntu.com')
+    >>> from datetime import datetime, timedelta
+    >>> import pytz
+    >>> now = datetime.now(pytz.timezone('UTC'))
+    >>> access_token.date_expires = now - timedelta(days=1)
+    >>> syncUpdate(access_token)
+    >>> test_request = LaunchpadTestRequest(form=form)
+    >>> print publication.getPrincipal(test_request).title
+    Traceback (most recent call last):
+    ...
+    Unauthorized: Expired token...
+
+    >>> access_token.date_expires = now + timedelta(days=1)
+    >>> access_token.permission = OAuthPermission.UNAUTHORIZED
+    >>> syncUpdate(access_token)
+    >>> test_request = LaunchpadTestRequest(form=form)
+    >>> print publication.getPrincipal(test_request).title
+    Traceback (most recent call last):
+    ...
+    Unauthorized: Unauthorized token...
+
+    >>> access_token.permission = OAuthPermission.WRITE_PUBLIC
+    >>> syncUpdate(access_token)
+    >>> form2 = form.copy()
+    >>> form2['oauth_token'] += 'z'
+    >>> test_request = LaunchpadTestRequest(form=form2)
+    >>> print publication.getPrincipal(test_request).title
+    Traceback (most recent call last):
+    ...
+    Unauthorized: Unknown access token...
+
+The consumer must be registered as well, and the signature must be
+correct.
+
+    >>> form2 = form.copy()
+    >>> form2['oauth_consumer_key'] += 'z'
+    >>> test_request = LaunchpadTestRequest(form=form2)
+    >>> print publication.getPrincipal(test_request).title
+    Traceback (most recent call last):
+    ...
+    Unauthorized: Unknown consumer (foobar123451432z).
+
+    >>> form2 = form.copy()
+    >>> form2['oauth_signature'] += 'z'
+    >>> test_request = LaunchpadTestRequest(form=form2)
+    >>> print publication.getPrincipal(test_request).title
+    Traceback (most recent call last):
+    ...
+    Unauthorized: Invalid signature.
+
+Last but not least, the nonce specified in the request must either have
+not been used before (in a request with this same token) or its
+timestamp must be +/- 60 seconds of the timestamp associated with the
+nonce stored in our database.
+
+    >>> # TODO!
+
+
 Close the bogus request that was started by the call to
 beforeTraversal, in order to ensure we leave our state sane.
 

@@ -26,6 +26,9 @@
 
   <content class="canonical.launchpad.database.OAuthAccessToken">
       <allow interface="canonical.launchpad.interfaces.IOAuthAccessToken"/>
+      <require
+          permission="launchpad.Edit"
+          set_schema="canonical.launchpad.interfaces.IOAuthAccessToken"/>
   </content>
 
 </configure>

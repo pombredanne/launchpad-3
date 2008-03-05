@@ -144,3 +144,23 @@ permission.
     Traceback (most recent call last):
     ...
     AssertionError: ...
+
+== Access tokens ==
+
+As shown above, access tokens can be created from any reviewed (and
+authorized) request tokens. These tokens are then stored by the consumer and
+included in all further requests made on behalf of the same user, so we need a
+way to retrieve an access token from any consumer.
+
+    >>> consumer.getAccessToken(access_token.key) == access_token
+    True
+
+An access token can only be changed by the person associated with it.
+
+    >>> access_token.permission = OAuthPermission.WRITE_PUBLIC
+    Traceback (most recent call last):
+    ...
+    Unauthorized:...
+    >>> login(access_token.person.preferredemail.email)
+    >>> access_token.permission = OAuthPermission.WRITE_PUBLIC
+

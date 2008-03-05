@@ -4,8 +4,10 @@
 
 __metaclass__ = type
 
+import pytz
 import threading
 import xmlrpclib
+from datetime import datetime
 
 from zope.app.form.browser.widget import SimpleInputWidget
 from zope.app.form.browser.itemswidgets import  MultiDataHelper
@@ -22,6 +24,7 @@ from zope.publisher.browser import (
     BrowserRequest, BrowserResponse, TestRequest)
 from zope.publisher.interfaces import NotFound
 from zope.publisher.xmlrpc import XMLRPCRequest, XMLRPCResponse
+from zope.security.interfaces import Unauthorized
 from zope.security.proxy import isinstance as zope_isinstance
 from zope.security.proxy import removeSecurityProxy
 from zope.server.http.commonaccesslogger import CommonAccessLogger
@@ -34,14 +37,17 @@ from canonical.lazr.interfaces import IFeed
 import canonical.launchpad.layers
 from canonical.launchpad.interfaces import (
     IFeedsApplication, IPrivateApplication, IOpenIdApplication,
-    IShipItApplication, IWebServiceApplication)
+    IShipItApplication, IWebServiceApplication, IOAuthConsumerSet,
+    OAuthPermission)
 
 from canonical.launchpad.webapp.notifications import (
     NotificationRequest, NotificationResponse, NotificationList)
 from canonical.launchpad.webapp.interfaces import (
     ILaunchpadBrowserApplicationRequest, ILaunchpadProtocolError,
     IBasicLaunchpadRequest, IBrowserFormNG, INotificationRequest,
-    INotificationResponse, IPlacelessAuthUtility, UnexpectedFormData)
+    INotificationResponse, IPlacelessAuthUtility, UnexpectedFormData,
+    IPlacelessLoginSource)
+from canonical.launchpad.webapp.authentication import check_oauth_signature
 from canonical.launchpad.webapp.errorlog import ErrorReportRequest
 from canonical.launchpad.webapp.uri import URI
 from canonical.launchpad.webapp.vhosts import allvhosts
@@ -907,6 +913,34 @@ class WebServicePublication(LaunchpadBrowserPublication):
         equivalent of a no-op.
         """
         return (ob, None)
+
+    def getPrincipal(self, request):
+        form = request.form
+        consumer_key = form.get('oauth_consumer_key')
+        consumer = getUtility(IOAuthConsumerSet).getByKey(consumer_key)
+        if consumer is None:
+            raise Unauthorized('Unknown consumer (%s).' % consumer_key)
+        token_key = form.get('oauth_token')
+        token = consumer.getAccessToken(token_key)
+        if token is None:
+            raise Unauthorized('Unknown access token (%s).' % token_key)
+#         nonce = form.get('oauth_nonce')
+#         timestamp = form.get('oauth_timestamp')
+#         try:
+#             token.ensureNonce(nonce, timestamp)
+#         except NonceAlreadyUsed, e:
+#             raise Unauthorized('Invalid nonce/timestamp: %s.' % e)
+        now = datetime.now(pytz.timezone('UTC'))
+        if token.permission == OAuthPermission.UNAUTHORIZED:
+            raise Unauthorized('Unauthorized token (%s).' % token.key)
+        elif token.date_expires <= now:
+            raise Unauthorized('Expired token (%s).' % token.key)
+        elif not check_oauth_signature(request, consumer, token):
+            raise Unauthorized('Invalid signature.')
+        else:
+            # Everything is fine, let's return the principal.
+            pass
+        return getUtility(IPlacelessLoginSource).getPrincipal(token.person.id)
 
 
 class WebServiceClientRequest(LaunchpadBrowserRequest):

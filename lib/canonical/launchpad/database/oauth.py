@@ -49,6 +49,10 @@ class OAuthConsumer(SQLBase):
         return OAuthRequestToken(
             consumer=self, key=key, secret=secret, date_expires=date_expires)
 
+    def getAccessToken(self, key):
+        """See `IOAuthConsumer`."""
+        return OAuthAccessToken.selectOneBy(key=key, consumer=self)
+
     def getRequestToken(self, key):
         """See `IOAuthConsumer`."""
         return OAuthRequestToken.selectOneBy(key=key, consumer=self)

@@ -6,6 +6,7 @@
 __metaclass__ = type
 
 __all__ = [
+    'OAUTH_CHALLENGE',
     'IOAuthAccessToken',
     'IOAuthConsumer',
     'IOAuthConsumerSet',
@@ -20,6 +21,10 @@ from canonical.lazr import DBEnumeratedType, DBItem
 
 from canonical.launchpad import _
 from canonical.launchpad.interfaces.person import IPerson
+
+
+# The challenge included in responses with a 401 status.
+OAUTH_CHALLENGE = 'OAuth realm="https://api.launchpad.net"'
 
 
 class OAuthPermission(DBEnumeratedType):
@@ -86,6 +91,13 @@ class IOAuthConsumer(Interface):
 
         The other attributes of the token are supposed to be set whenever the
         user logs into Launchpad and grants (or not) access to this consumer.
+        """
+
+    def getAccessToken(key):
+        """Return the `IOAuthAccessToken` with the given key.
+
+        If the token with the given key does not exist or is associated with
+        another consumer, return None.
         """
 
     def getRequestToken(key):

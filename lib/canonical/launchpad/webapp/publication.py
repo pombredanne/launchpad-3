@@ -106,7 +106,7 @@ class LaunchpadBrowserPublication(
                 root_object = bag.site
             return root_object
 
-    # the below ovverrides to zopepublication (callTraversalHooks,
+    # the below overrides to zopepublication (callTraversalHooks,
     # afterTraversal, and _maybePlacefullyAuthenticate) make the
     # assumption that there will never be a ZODB "local"
     # authentication service (such as the "pluggable auth service").

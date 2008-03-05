@@ -3,10 +3,11 @@
 __metaclass__ = type
 
 __all__ = [
-    'PlacelessAuthUtility',
-    'SSHADigestEncryptor',
+    'check_oauth_signature',
     'LaunchpadLoginSource',
     'LaunchpadPrincipal',
+    'PlacelessAuthUtility',
+    'SSHADigestEncryptor',
     ]
 
 import binascii
@@ -24,7 +25,8 @@ from zope.app.security.interfaces import ILoginPassword
 from zope.app.security.principalregistry import UnauthenticatedPrincipal
 
 from canonical.config import config
-from canonical.launchpad.interfaces import IPersonSet, IPasswordEncryptor
+from canonical.launchpad.interfaces import (
+    IPersonSet, IPasswordEncryptor, OAUTH_CHALLENGE)
 from canonical.launchpad.webapp.interfaces import IPlacelessAuthUtility
 from canonical.launchpad.webapp.interfaces import IPlacelessLoginSource
 from canonical.launchpad.webapp.interfaces import ILaunchpadPrincipal
@@ -183,6 +185,7 @@ class SSHADigestEncryptor:
         pw2 = (encrypted or '').strip()
         return pw1 == pw2
 
+
 class LaunchpadLoginSource:
     """A login source that uses the launchpad SQL database to look up
     principal information.
@@ -232,10 +235,12 @@ class LaunchpadLoginSource:
         principal.__parent__ = self
         return principal
 
+
 # Fake a containment hierarchy because Zope3 is on crack.
 authService = PlacelessAuthUtility()
 loginSource = LaunchpadLoginSource()
 loginSource.__parent__ = authService
+
 
 class LaunchpadPrincipal:
 
@@ -255,3 +260,28 @@ class LaunchpadPrincipal:
         pw1 = (pw or '').strip()
         pw2 = (self.__pwd or '').strip()
         return encryptor.validate(pw1, pw2)
+
+
+def check_oauth_signature(request, consumer, token):
+    """Check that the given OAuth request is correctly signed.
+
+    If the signature is incorrect or its method is not supported, set the
+    appropriate status in the request's response and return False.
+    """
+    form = request.form
+    if form.get('oauth_signature_method') != 'PLAINTEXT':
+        # XXX: 2008-03-04, salgado: Only the PLAINTEXT method is supported
+        # now. Others will be implemented later.
+        request.response.setStatus(400)
+        return False
+
+    if token is not None:
+        token_secret = token.secret
+    else:
+        token_secret = ''
+    expected_signature = "&".join([consumer.secret, token_secret])
+    if expected_signature != form.get('oauth_signature'):
+        request.unauthorized(OAUTH_CHALLENGE)
+        return False
+
+    return True
