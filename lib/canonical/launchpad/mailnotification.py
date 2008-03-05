@@ -1643,8 +1643,8 @@ def notify_mailinglist_activated(mailinglist, event):
         # of every sub-team.
         members = set()
         if person.isTeam():
-            [ members.update(contacts_for(member))
-              for member in person.activemembers ]
+            for member in person.activemembers:
+                members.update(contacts_for(member))
         elif person.preferredemail is not None:
             members.add(person)
         return members
