@@ -2796,6 +2796,15 @@ class TeamJoinView(PersonView):
             return False
         return not (self.userIsActiveMember() or self.userIsProposedMember())
 
+    @property
+    def team_is_moderated(self):
+        """Is this team a moderated team?
+
+        Return True if the team's subscription policy is MODERATED.
+        """
+        policy = self.context.subscriptionpolicy
+        return policy == TeamSubscriptionPolicy.MODERATED
+
     def processForm(self):
         request = self.request
         if request.method != "POST":
@@ -2804,24 +2813,22 @@ class TeamJoinView(PersonView):
 
         user = self.user
         context = self.context
-        notify_user = self.request.response.addInfoNotification
+        notify_info = self.request.response.addInfoNotification
 
         notification = None
         if 'join' in request.form and self.user_can_request_to_join:
-            policy = context.subscriptionpolicy
             user.join(context)
-
-            if policy == TeamSubscriptionPolicy.MODERATED:
-                notify_user(_('Subscription request pending approval.'))
+            if self.team_is_moderated:
+                notify_info(_('Subscription request pending approval.'))
             else:
-                notify_user(_('Successfully joined ${team}.',
+                notify_info(_('Successfully joined ${team}.',
                         mapping={'team': context.displayname}))
 
             if 'mailinglist_subscribe' in request.form:
                 self._doListSubscription()
 
         elif 'join' in request.form:
-            notify_user(_('You cannot join ${team}.',
+            notify_info(_('You cannot join ${team}.',
                           mapping={'team': context.displayname}))
         elif 'goback' in request.form:
             # User clicked on the 'Go back' button, so we'll simply redirect.
@@ -2844,8 +2851,7 @@ class TeamJoinView(PersonView):
         except CannotSubscribe, error:
             notify_error(_('Mailing list subscription failed.'))
         else:
-            policy = self.context.subscriptionpolicy
-            if policy == TeamSubscriptionPolicy.MODERATED:
+            if self.team_is_moderated:
                 notify_info(
                     _('Your mailing list subscription is awaiting '
                       'approval.'))

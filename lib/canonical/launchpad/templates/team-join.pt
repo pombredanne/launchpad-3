@@ -26,7 +26,7 @@
 
     <h2>Are you sure you want to join this team?</h2>
 
-    <p tal:condition="context/subscriptionpolicy/enumvalue:MODERATED">
+    <p tal:condition="view/team_is_moderated">
       Since this is a moderated team, one of its administrators will have to
       approve your membership before you actually become a member of this
       team.
