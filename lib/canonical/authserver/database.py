@@ -16,6 +16,7 @@ from zope.interface import implements
 from zope.security.interfaces import Unauthorized
 from zope.security.proxy import removeSecurityProxy
 
+from canonical.config import config
 from canonical.launchpad.webapp.authentication import SSHADigestEncryptor
 from canonical.launchpad.database import ScriptActivity
 from canonical.launchpad.interfaces import (
@@ -58,7 +59,8 @@ def getTxnManager():
         # existing Zope security model. This is used to make sure that people
         # don't gain access to branches which out to be hidden from them.
         execute_zcml_for_scripts(use_web_security=True)
-        return initZopeless(implicitBegin=False)
+        return initZopeless(
+            implicitBegin=False, dbuser=config.authserver.dbuser)
     else:
         return ZopelessTransactionManager._installed
 
