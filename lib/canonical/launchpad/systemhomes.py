@@ -195,9 +195,9 @@ class WebServiceApplication(ServiceRootResource):
     """See IWebServiceApplication."""
     implements(IWebServiceApplication)
 
-    # See ServiceRootResource for more on top_level_collections
+    # See ServiceRootResource for more on top_level_collections.
     @property
     def top_level_collections(self):
         return {'bugtasks': getUtility(IBugTaskSet),
                 'bugs': getUtility(IBugSet),
-                'people': getUtility(IPersonSet) }
+                'people': getUtility(IPersonSet)}

@@ -8,7 +8,7 @@ __metaclass__ = type
 __all__ = [
     'IOAuthAccessToken',
     'IOAuthConsumer',
-    'IOAuthConsumerSet', 
+    'IOAuthConsumerSet',
     'IOAuthNonce',
     'IOAuthRequestToken',
     'OAuthPermission']
@@ -62,7 +62,7 @@ class OAuthPermission(DBEnumeratedType):
 
 class IOAuthConsumer(Interface):
     """An application which acts on behalf of a Launchpad user."""
-    
+
     date_created = Datetime(
         title=_('Date created'), required=True, readonly=True)
     disabled = Bool(
@@ -122,11 +122,11 @@ class IOAuthConsumerSet(Interface):
 
         :param key: The unique key associated with a consumer.
         """
-    
+
 
 class IOAuthToken(Interface):
     """Base class for `IOAuthRequestToken` and `IOAuthAccessToken`.
-    
+
     This class contains the commonalities of the two token classes we actually
     care about and shall not be used on its own.
     """
@@ -185,11 +185,11 @@ class IOAuthRequestToken(IOAuthToken):
                       'access token (in case the user granted access).'))
 
     def review(user, permission):
-        """Grant :permission: as :user: to this token's consumer.
+        """Grant `permission` as `user` to this token's consumer.
 
         Set this token's person, permission and date_reviewed.  This will also
         cause this token to be marked as used, meaning it can only be
-        exchanged for an access token with the same permission, consumer and 
+        exchanged for an access token with the same permission, consumer and
         person.
         """
 

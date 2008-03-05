@@ -1,7 +1,8 @@
 = Exchanging a request token for an access token =
 
-Once the user has logged into Launchpad and granted access to the consumer,
-the request token is eligible for being exchanged for an access token.
+Once the user has logged into Launchpad and granted access to the
+consumer, the request token is eligible for being exchanged for an
+access token.
 
     # First we create a new request token and review it.
     >>> from canonical.launchpad.interfaces import (
@@ -54,8 +55,8 @@ before it's been reviewed, though, or it'll get a 401 response.
     HTTP/1.1 401 Unauthorized
     ...
 
-The same will happen if the signature is wrong or if the token's permission is
-UNAUTHORIZED.
+The same will happen if the signature is wrong or if the token's
+permission is UNAUTHORIZED.
 
     >>> data2['oauth_signature'] = '&'.join(['foobar', token.secret])
     >>> print http(r"""
@@ -73,4 +74,3 @@ UNAUTHORIZED.
     ... """ % urlencode(data2))
     HTTP/1.1 401 Unauthorized
     ...
-
