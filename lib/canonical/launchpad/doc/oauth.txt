@@ -40,6 +40,7 @@ When a consumer wants to access protected resources on Launchpad, it
 must first ask for an OAuthRequestToken, which is then used when the
 consumer sends the user to the Launchpad authorization page.
 
+
 === Creating request tokens ===
 
 The request tokens are created using IOAuthConsumer.newRequestToken().
@@ -55,8 +56,8 @@ The token's key and secret have a length of 20 and 80 respectively.
     >>> len(request_token.secret)
     80
 
-Initially, a token does not have a person or permission associated
-with it as the consumer doesn't know what the user's identity is on
+Initially, a token does not have a person or permission associated with
+it as the consumer doesn't know what the user's identity is on
 Launchpad.
 
     >>> print request_token.person
@@ -66,9 +67,9 @@ Launchpad.
     >>> print request_token.date_reviewed
     None
 
-Once the user reviews (approve/decline) the consumer's request, the token is
-considered used and can only be exchanged for an access token (when the access
-is granted by the user).
+Once the user reviews (approve/decline) the consumer's request, the
+token is considered used and can only be exchanged for an access token
+(when the access is granted by the user).
 
     >>> salgado = getUtility(IPersonSet).getByName('salgado')
     >>> request_token.review(salgado, OAuthPermission.WRITE_PUBLIC)
@@ -86,6 +87,7 @@ is granted by the user).
     >>> request_token.is_reviewed
     True
 
+
 === Retrieving request tokens ===
 
 Any consumer can retrieve its request tokens as long as it knows their
@@ -94,7 +96,7 @@ keys.
     >>> consumer.getRequestToken(request_token.key) == request_token
     True
 
-If there is no token with the given key or the existing token is
+If there is no token with the given key, or the existing token is
 associated with another consumer, getRequestToken() will return None.
 
     >>> print consumer.getRequestToken('zzzzzzzz')
@@ -102,6 +104,7 @@ associated with another consumer, getRequestToken() will return None.
     >>> consumer2 = consumer_set.new(key='foobar')
     >>> print consumer2.getRequestToken(request_token.key)
     None
+
 
 === Exchanging request tokens for access tokens ===
 
@@ -120,8 +123,8 @@ After the access token is generated, the access token is deleted.
     >>> print consumer.getRequestToken(request_token.key)
     None
 
-If the request token hasn't been reviewed yet, it can't be used to create an
-access token.
+If the request token hasn't been reviewed yet, it can't be used to
+create an access token.
 
     >>> request_token = consumer.newRequestToken()
     >>> request_token.is_reviewed
