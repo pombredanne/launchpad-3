@@ -115,7 +115,7 @@ from canonical.cachedproperty import cachedproperty
 
 from canonical.launchpad.interfaces import (
     AccountStatus, BranchListingSort, BugTaskSearchParams,
-    BugTaskStatus, CannotUnsubscribe,
+    BugTaskStatus, CannotSubscribe, CannotUnsubscribe,
     DAYS_BEFORE_EXPIRATION_WARNING_IS_SENT, EmailAddressStatus,
     GPGKeyNotFoundError, IBranchSet, ICountry, IEmailAddress,
     IEmailAddressSet, IGPGHandler, IGPGKeySet, IIrcIDSet, IJabberIDSet,
