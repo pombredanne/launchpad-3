@@ -502,6 +502,13 @@ special = {
                 tearDown=tearDown,
                 layer=LaunchpadZopelessLayer
                 ),
+    'externalbugtracker-bug-imports.txt':
+            LayeredDocFileSuite(
+                '../doc/externalbugtracker-bug-imports.txt',
+                setUp=checkwatchesSetUp,
+                tearDown=tearDown,
+                layer=LaunchpadZopelessLayer
+                ),
     'externalbugtracker-bugzilla.txt':
             LayeredDocFileSuite(
                 '../doc/externalbugtracker-bugzilla.txt',

@@ -322,7 +322,7 @@ account is marked as NEW, since we don't know whether it's valid.
     >>> bug.owner.creation_rationale.name
     'BUGIMPORT'
     >>> bug.owner.creation_comment
-    u'when importing debbugs bug #322535'
+    u'when importing bug #322535 from http://...'
 
 No one got subscribed to the created bug, since the relevant people
 already get e-mail notifications via Debbugs.
@@ -360,7 +360,7 @@ gets notified about it.
     >>> print debian.getSourcePackage('no-such-package')
     None
     >>> bug = external_debbugs.importBug(debian, '1234')
-    WARNING:...:Unknown Debian package (debbugs #1234): no-such-package
+    WARNING:...:Unknown debian package (#1234 at http://...): no-such-package
 
     >>> [debian_task] = bug.bugtasks
     >>> debian_task.distribution.name
@@ -449,8 +449,6 @@ them if they didn't exist already:
 No notifications will be generated for the imported comments:
 
     >>> from canonical.launchpad.interfaces import IBugNotificationSet
-    >>> from canonical.launchpad.scripts.bugnotification import (
-    ...     get_email_notifications)
     >>> pending_notifications = getUtility(
     ...     IBugNotificationSet).getNotificationsToSend()
     >>> len(pending_notifications)

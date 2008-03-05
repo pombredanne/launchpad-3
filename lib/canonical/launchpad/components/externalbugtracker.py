@@ -361,6 +361,41 @@ class ExternalBugTracker:
         # Also put it in the log.
         log.error(message, exc_info=info)
 
+    def importBug(self, bug_target, remote_bug):
+        """Import a remote bug into Launchpad."""
+        assert IDistribution.providedBy(bug_target), (
+            'Only imports of bugs for a distribution is implemented.')
+        reporter_name, reporter_email = self.getBugReporter(remote_bug)
+        reporter = getUtility(IPersonSet).ensurePerson(
+            reporter_email, reporter_name, PersonCreationRationale.BUGIMPORT,
+            comment='when importing bug #%s from %s' % (
+                remote_bug, self.baseurl))
+        package_name = self.getBugTargetName(remote_bug)
+        package = bug_target.getSourcePackage(package_name)
+        if package is not None:
+            bug_target = package
+        else:
+            self.warning(
+                'Unknown %s package (#%s at %s): %s' % (
+                    bug_target.name, remote_bug, self.baseurl, package_name))
+        summary, description = self.getBugSummaryAndDescription(remote_bug)
+        bug = bug_target.createBug(
+            CreateBugParams(
+                reporter, summary, description, subscribe_reporter=False))
+
+        [added_task] = bug.bugtasks
+        bug_watch = getUtility(IBugWatchSet).createBugWatch(
+            bug=bug,
+            owner=getUtility(ILaunchpadCelebrities).bug_watch_updater,
+            bugtracker=self.bugtracker, remotebug=remote_bug)
+
+        added_task.bugwatch = bug_watch
+        # Need to flush databse updates, so that the bug watch knows it
+        # is linked from a bug task.
+        flush_database_updates()
+
+        return bug
+
     def importBugComments(self, bug_watch):
         """See `ISupportsCommentImport`."""
         imported_comments = 0
@@ -840,41 +875,21 @@ class DebBugs(ExternalBugTracker):
             [debian_bug.status, severity] + debian_bug.tags)
         return new_remote_status
 
-    def importBug(self, bug_target, remote_bug):
-        """Import a remote bug into Launchpad."""
-        assert IDistribution.providedBy(bug_target), (
-            'We assume debbugs is used only by a distribution (Debian).')
+    def getBugReporter(self, remote_bug):
+        """See ISupportsBugImport."""
         debian_bug = self._findBug(remote_bug)
         reporter_name, reporter_email = parseaddr(debian_bug.originator)
-        reporter = getUtility(IPersonSet).ensurePerson(
-            reporter_email, reporter_name, PersonCreationRationale.BUGIMPORT,
-            comment='when importing debbugs bug #%s' % remote_bug)
-        package = bug_target.getSourcePackage(debian_bug.package)
-        if package is not None:
-            bug_target = package
-        else:
-            # Debbugs requires all bugs to be targeted to a package, so
-            # it shouldn't be empty.
-            self.warning(
-                'Unknown Debian package (debbugs #%s): %s' % (
-                    remote_bug, debian_bug.package))
-        bug = bug_target.createBug(
-            CreateBugParams(
-                reporter, debian_bug.subject, debian_bug.description,
-                subscribe_reporter=False))
+        return reporter_name, reporter_email
 
-        [debian_task] = bug.bugtasks
-        bug_watch = getUtility(IBugWatchSet).createBugWatch(
-            bug=bug,
-            owner=getUtility(ILaunchpadCelebrities).bug_watch_updater,
-            bugtracker=self.bugtracker, remotebug=remote_bug)
+    def getBugTargetName(self, remote_bug):
+        """See ISupportsBugImport."""
+        debian_bug = self._findBug(remote_bug)
+        return debian_bug.package
 
-        debian_task.bugwatch = bug_watch
-        # Need to flush databse updates, so that the bug watch knows it
-        # is linked from a bug task.
-        flush_database_updates()
-
-        return bug
+    def getBugSummaryAndDescription(self, remote_bug):
+        """See ISupportsBugImport."""
+        debian_bug = self._findBug(remote_bug)
+        return debian_bug.subject, debian_bug.description
 
     def getCommentIds(self, bug_watch):
         """Return all the comment IDs for a given remote bug."""
