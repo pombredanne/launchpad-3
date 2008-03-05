@@ -24,36 +24,40 @@ class BugTaskTargetNameCachesTunableLoop(object):
         self.transaction = transaction
         self.logger = logger
         self.offset = offset
-        self.bugtask_set = getUtility(IBugTaskSet)
+        self.total_updated = 0
+
+        self.transaction.begin()
+        self.bugtasks = list(getUtility(IBugTaskSet).dangerousGetAllTasks())
+        self.transaction.commit()
 
     def isDone(self):
         """See `ITunableLoop`."""
         # When the main loop has no more BugTasks to process it sets
         # offset to None. Until then, it always has a numerical
         # value.
-        return self.offset is None
+        return self.total_updated == len(self.bugtasks)
 
     def __call__(self, chunk_size):
         """Retrieve a batch of BugTasks and update their targetname caches.
 
         See `ITunableLoop`.
         """
-        offset = self.offset
-        bugtasks = self.bugtask_set.dangerousGetAllTasks()[
-            offset:offset + chunk_size]
+        # We cast chunk_size to an integer to ensure that we're not
+        # trying to slice using floats or anything similarly foolish.
+        chunk_size = int(chunk_size)
+        bugtasks = self.bugtasks[self.offset:self.offset + chunk_size]
 
-        self.logger.info("Updating up to %i BugTasks (starting id: %i)." %
-            (chunk_size, offset))
+        starting_id = bugtasks[0].id
+        self.logger.info("Updating %i BugTasks (starting id: %i)." %
+            (len(bugtasks), starting_id))
 
-        self.offset = None
         self.transaction.begin()
         for bugtask in bugtasks:
             # We set the starting point of the next batch to the BugTask
             # id after the one we're looking at now. If there aren't any
             # bugtasks this loop will run for 0 iterations and start_id
             # will remain set to None.
-            offset += 1
-            self.offset = offset
+            self.offset += 1
             bugtask.updateTargetNameCache()
             self.total_updated += 1
 
