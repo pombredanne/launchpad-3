@@ -480,7 +480,7 @@ class IMailingListAPIView(Interface):
     """XMLRPC API that Mailman polls for mailing list actions."""
 
     def getPendingActions():
-        """Return all pending mailing list actions.
+        """Get all pending mailing list actions.
 
         In addition, any mailing list for which there are actions pending will
         have their states transitioned to the next node in the workflow.  For
@@ -522,7 +522,7 @@ class IMailingListAPIView(Interface):
         """
 
     def getMembershipInformation(teams):
-        """Return membership information for the listed teams.
+        """Get membership information for the listed teams.
 
         :param teams: The list of team names for which Mailman is requesting
             membership information.
@@ -539,11 +539,21 @@ class IMailingListAPIView(Interface):
         """
 
     def isRegisteredInLaunchpad(address):
-        """Return whether the address is a Launchpad member or not.
+        """Whether the address is a Launchpad member.
 
         :param address: The text email address to check.
         :return: True if the address is a validated or preferred email address
             owned by a Launchpad member.
+        """
+
+    def inGoodStanding(address):
+        """Whether the address is a Launchpad member in good standing.
+
+        :param address: The text email address to check.
+        :return: True if the address is a member of Launchpad in good or
+            better standing (e.g. GOOD or EXCELLENT).  False is returned if
+            the address is not registered in Launchpad, or is assigned to a
+            team.
         """
 
 
