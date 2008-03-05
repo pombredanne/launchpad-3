@@ -13,7 +13,8 @@ from string import Template
 
 from sqlobject import ForeignKey, StringCol
 from zope.component import getUtility
-from zope.interface import implements
+from zope.event import notify
+from zope.interface import implements, providedBy
 
 from canonical.config import config
 from canonical.database.constants import UTC_NOW
@@ -21,11 +22,13 @@ from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import SQLBase, sqlvalues
 from canonical.launchpad import _
+from canonical.launchpad.event import SQLObjectModifiedEvent
 from canonical.launchpad.interfaces import (
     CannotChangeSubscription, CannotSubscribe, CannotUnsubscribe,
     EmailAddressStatus, IEmailAddressSet, ILaunchpadCelebrities, IMailingList,
     IMailingListSet, IMailingListSubscription, MailingListStatus)
 from canonical.launchpad.validators.person import public_person_validator
+from canonical.launchpad.webapp.snapshot import Snapshot
 
 
 class MailingList(SQLBase):
@@ -143,6 +146,7 @@ class MailingList(SQLBase):
                 % (self.status, target_state))
         self.status = target_state
         if target_state == MailingListStatus.ACTIVE:
+            self._setAndNotifyDateActivated()
             email_set = getUtility(IEmailAddressSet)
             email = email_set.getByEmail(self.address)
             if email is None:
@@ -159,6 +163,26 @@ class MailingList(SQLBase):
                 email.status = EmailAddressStatus.VALIDATED
             assert email.person == self.team, (
                 "Email already associated with another team.")
+
+    def _setAndNotifyDateActivated(self):
+        """Set the date_activated field and fire a
+        SQLObjectModified event.
+
+        The date_activated field is only set once - repeated calls
+        will not change the field's value.
+
+        Similarly, the modification event only fires the first time
+        that the field is set.
+        """
+        if self.date_activated is not None:
+            return
+
+        old_mailinglist = Snapshot(self, providing=providedBy(self))
+        self.date_activated = UTC_NOW
+        notify(SQLObjectModifiedEvent(
+                self,
+                object_before_modification=old_mailinglist,
+                edited_fields=['date_activated']))
 
     def deactivate(self):
         """See `IMailingList`."""

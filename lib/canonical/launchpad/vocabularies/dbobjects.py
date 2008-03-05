@@ -1289,6 +1289,7 @@ class SpecificationVocabulary(NamedSQLObjectVocabulary):
 
     def __iter__(self):
         launchbag = getUtility(ILaunchBag)
+        target = None
         product = launchbag.product
         if product is not None:
             target = product
@@ -1441,7 +1442,11 @@ class PPAVocabulary(SQLObjectVocabularyBase):
 
     def toTerm(self, archive):
         """See `IVocabulary`."""
-        summary = archive.description.splitlines()[0]
+        description = archive.description
+        if description is not None:
+            summary = description.splitlines()[0]
+        else:
+            summary = "No description available"
         return SimpleTerm(archive, archive.owner.name, summary)
 
     def getTermByToken(self, token):

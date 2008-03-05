@@ -575,6 +575,14 @@ class IBranch(IHasOwner):
     def unsubscribe(person):
         """Remove the person's subscription to this branch."""
 
+    def getSubscriptionsByLevel(notification_levels):
+        """Return the subscriptions that are at the given notification levels.
+
+        :param notification_levels: An iterable of
+            `BranchSubscriptionNotificationLevel`s
+        :return: An SQLObject query result.
+        """
+
     def getBranchRevision(sequence):
         """Get the `BranchRevision` for the given sequence number.
 
@@ -811,9 +819,9 @@ class IBranchSet(Interface):
         updating ui attributes of the branch, committing code to the
         branch.
         Branches of most interest to a person are their subscribed
-        branches, and the branches that they have registered and authored.
+        branches, and the branches that they have registered or own.
 
-        All branches that are either registered or authored by person
+        All branches that are either registered or owned by person
         are shown, as well as their subscribed branches.
 
         If lifecycle_statuses evaluates to False then branches
@@ -837,12 +845,12 @@ class IBranchSet(Interface):
         :type hide_dormant: Boolean.
         """
 
-    def getBranchesAuthoredByPerson(
+    def getBranchesOwnedByPerson(
         person, lifecycle_statuses=DEFAULT_BRANCH_STATUS_IN_LISTING,
         visible_by_user=None, sort_by=None, hide_dormant=False):
-        """Branches authored by person with appropriate lifecycle.
+        """Branches owned by person with appropriate lifecycle.
 
-        Only branches that are authored by the person are returned.
+        Only branches that are owned by the person are returned.
 
         If lifecycle_statuses evaluates to False then branches
         of any lifecycle_status are returned, otherwise only branches
@@ -870,8 +878,7 @@ class IBranchSet(Interface):
         visible_by_user=None, sort_by=None, hide_dormant=False):
         """Branches registered by person with appropriate lifecycle.
 
-        Only branches registered by the person but *NOT* authored by
-        the person are returned.
+        Only branches registered by the person are returned.
 
         If lifecycle_statuses evaluates to False then branches
         of any lifecycle_status are returned, otherwise only branches
