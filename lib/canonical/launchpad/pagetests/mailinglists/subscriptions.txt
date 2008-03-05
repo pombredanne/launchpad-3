@@ -26,7 +26,7 @@ contact address.
     beta testers won't work.  It works on launchpad.net because the mailing
     list beta testers team is different than the launchpad beta testers team.
     This isn't the case for the testrunner.  Again, all this will go away when
-    the feature goes public.
+    the feature goes public. See bug #190974.
     >>> from canonical.launchpad.ftests import mailinglists_helper
     >>> mailinglists_helper.beta_program_enable('admins')
     >>> mailinglists_helper.beta_program_enable('testing-spanish-team')
@@ -346,3 +346,77 @@ Overview.)
     Traceback (most recent call last):
     ...
     LookupError: name 'mailinglist_subscribe'
+
+== Team page quick-links ==
+
+Links to subscribe and unsubscribe from the mailing lists are also
+available from the team's Overview page.
+
+The subscribe link is visible on the admin team's Overview
+page, because Carlos hasn't subscribed yet.
+
+    >>> browser.open('http://launchpad.dev/~admins')
+    >>> print extract_text(
+    ... 	find_portlet(browser.contents, 'Your involvement'))
+    Your involvement
+    You are a member of this team.
+    You are not subscribed to the team mailing list.
+    (Subscribe)
+    >>> browser.getLink('Subscribe').click()
+    >>> print browser.url
+    http://launchpad.dev/~carlos/+editemails
+
+The unsubscribe link is visible for the rosetta admins team, which
+has an active mailing list.
+
+    # Subscribe to the list using the normal technique.
+    >>> browser.open('http://launchpad.dev/~carlos/')
+    >>> browser.getLink("Change e-mail settings").click()
+    >>> rosetta_admins = browser.getControl(
+    ...     name='field.subscription.rosetta-admins')
+    >>> rosetta_admins.value = ['Preferred address']
+    >>> browser.getControl('Update Subscriptions').click()
+    >>> print rosetta_admins.value
+    ['Preferred address']
+
+    >>> browser.open('http://launchpad.dev/~rosetta-admins')
+    >>> print extract_text(
+    ... 	find_portlet(browser.contents, 'Your involvement'))
+    Your involvement
+    You are the owner of this team.
+    You are subscribed to the team mailing list.
+    >>> browser.getControl('Unsubscribe')
+    <SubmitControl name='unsubscribe' type='submit'>
+
+Clicking the link will unsubscribe you from the list immediately.
+
+    >>> browser.getControl('Unsubscribe').click()
+    >>> print get_feedback_messages(browser.contents)
+    [u'You have been unsubscribed from the team mailing list.']
+
+    >>> browser.open('http://launchpad.dev/~rosetta-admins')
+    >>> print extract_text(
+    ... 	find_portlet(browser.contents, 'Your involvement'))
+    Your involvement
+    You are the owner of this team.
+    You are not subscribed to the team mailing list.
+    (Subscribe)
+
+The Ubuntu translators team, which does not have any lists configured,
+does not show either link.
+
+    >>> browser.open('http://launchpad.dev/~ubuntu-translators')
+    >>> print extract_text(
+    ... 	find_portlet(browser.contents, 'Your involvement'))
+    Your involvement
+    You are the owner of this team.
+
+    >>> browser.getLink('Subscribe')
+    Traceback (most recent call last):
+    ...
+    LinkNotFoundError
+
+    >>> browser.getLink('Unsubscribe')
+    Traceback (most recent call last):
+    ...
+    LinkNotFoundError
