@@ -150,8 +150,8 @@ class TranslationMessage(SQLBase, TranslationMessageMixIn):
         dbName='reviewer', foreignKey='Person',
         validator=public_person_validator, notNull=False, default=None)
 
-    assert TranslationConstants.MAX_PLURAL_FORMS == 4, (
-        "Change this class and its interface to support %d plural forms."
+    assert TranslationConstants.MAX_PLURAL_FORMS == 6, (
+        "Change this code to support %d plural forms."
         % TranslationConstants.MAX_PLURAL_FORMS)
     msgstr0 = ForeignKey(
         foreignKey='POTranslation', dbName='msgstr0', notNull=True)
@@ -161,6 +161,10 @@ class TranslationMessage(SQLBase, TranslationMessageMixIn):
         foreignKey='POTranslation', dbName='msgstr2', notNull=True)
     msgstr3 = ForeignKey(
         foreignKey='POTranslation', dbName='msgstr3', notNull=True)
+    msgstr4 = ForeignKey(
+        foreignKey='POTranslation', dbName='msgstr4', notNull=True)
+    msgstr5 = ForeignKey(
+        foreignKey='POTranslation', dbName='msgstr5', notNull=True)
 
     comment = StringCol(
         dbName='comment', notNull=False, default=None)

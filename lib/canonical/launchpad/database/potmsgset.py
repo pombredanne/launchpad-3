@@ -443,7 +443,7 @@ class POTMsgSet(SQLBase):
             else:
                 origin = RosettaTranslationOrigin.ROSETTAWEB
 
-            assert TranslationConstants.MAX_PLURAL_FORMS == 4, (
+            assert TranslationConstants.MAX_PLURAL_FORMS == 6, (
                 "Change this code to support %d plural forms."
                 % TranslationConstants.MAX_PLURAL_FORMS)
             new_message = TranslationMessage(
@@ -455,6 +455,8 @@ class POTMsgSet(SQLBase):
                 msgstr1=potranslations[1],
                 msgstr2=potranslations[2],
                 msgstr3=potranslations[3],
+                msgstr4=potranslations[4],
+                msgstr5=potranslations[5],
                 validation_status=validation_status)
 
             # It's a fuzzy one.

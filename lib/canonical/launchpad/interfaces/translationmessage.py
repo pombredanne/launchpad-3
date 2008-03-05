@@ -127,6 +127,14 @@ class ITranslationMessage(Interface):
         title=_("Translation for plural form 3 (if any)"),
         required=False, schema=IPOTranslation)
 
+    msgstr4 = Object(
+        title=_("Translation for plural form 4 (if any)"),
+        required=False, schema=IPOTranslation)
+
+    msgstr5 = Object(
+        title=_("Translation for plural form 5 (if any)"),
+        required=False, schema=IPOTranslation)
+
     all_msgstrs = List(
         title=_("All msgstr attributes"),
         description=_("""

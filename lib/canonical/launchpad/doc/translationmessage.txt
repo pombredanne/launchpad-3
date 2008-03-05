@@ -242,6 +242,8 @@ These are POTranslation references, not strings.
     None
     None
     None
+    None
+    None
 
 
 == Composing SQL involving plural forms ==
@@ -260,7 +262,9 @@ for the number of plural forms we support (starting at zero).
     x0x,
     x1x,
     x2x,
-    x3x
+    x3x,
+    x4x,
+    x5x
 
 Composing text like this happens most in WHERE clauses of SQL queries.
 The make_plurals_sql_fragment helper adds some parentheses and spaces
@@ -270,7 +274,9 @@ where you might otherwise forget them--or want to.
     (msgstr0 IS NOT NULL) AND
     (msgstr1 IS NOT NULL) AND
     (msgstr2 IS NOT NULL) AND
-    (msgstr3 IS NOT NULL)
+    (msgstr3 IS NOT NULL) AND
+    (msgstr4 IS NOT NULL) AND
+    (msgstr5 IS NOT NULL)
 
 The sub-clauses don't have to be tied together with AND:
 
@@ -278,5 +284,7 @@ The sub-clauses don't have to be tied together with AND:
     (msgstr0 IS NULL) OR
     (msgstr1 IS NULL) OR
     (msgstr2 IS NULL) OR
-    (msgstr3 IS NULL)
+    (msgstr3 IS NULL) OR
+    (msgstr4 IS NULL) OR
+    (msgstr5 IS NULL)
 
