@@ -99,7 +99,7 @@ class BugEntry(Entry):
     decorates(IBugEntry)
     schema = IBugEntry
 
-    parent_collection_path = ['bugs']
+    _parent_collection_path = ['bugs']
 
     @property
     def duplicate_of(self):

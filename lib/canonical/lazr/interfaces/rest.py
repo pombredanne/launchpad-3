@@ -31,14 +31,14 @@ class ICollectionField(IObject):
 class IHTTPResource(IPublishTraverse, ICanonicalUrlData):
     """An object published through HTTP."""
 
-    def __call__(self):
+    def __call__():
         """Publish the object."""
 
 
 class IJSONPublishable(Interface):
     """An object that can be published as a JSON data structure."""
 
-    def toDataForJSON(self):
+    def toDataForJSON():
         """Return a representation that can be turned into JSON.
 
         The representation must consist entirely of simple data
@@ -52,10 +52,10 @@ class IServiceRootResource(IHTTPResource):
 class IEntryResource(IHTTPResource):
     """A resource that represents an individual Launchpad object."""
 
-    def path(self):
+    def path():
         """Find the URL fragment the entry uses for itself."""
 
-    def do_GET(self):
+    def do_GET():
         """Retrieve this entry.
 
         :return: A string representation.
@@ -65,33 +65,46 @@ class IEntryResource(IHTTPResource):
 class ICollectionResource(IHTTPResource, IPublishTraverse):
     """A resource that represents a collection of entry resources."""
 
-    def path(self):
+    def path():
         """Find the URL fragment that names this collection."""
 
-    def getEntryPath(self, entry):
+    def getEntryPath(entry):
         """Find the URL fragment that names the given entry."""
 
-    def do_GET(self):
+    def do_GET():
         """Retrieve this collection.
 
         :return: A string representation.
         """
 
-    def makeEntryResource(self, entry, request):
+    def makeEntryResource(entry, request):
         """Construct an entry resource for the given entry.
 
         The entry is presumed to be have this collection as its
         parent.
+
+        :param entry: The entry that needs to be made into a resource.
+        :param request: The HTTP request that's being processed.
         """
 
 
 class IEntry(IJSONPublishable):
     """An entry, exposed as a resource by an IEntryResource."""
 
-    parent_collection_path = List(
-        title=u"Instructions for traversing to the parent collection")
+    _parent_collection_path = List(
+        title=u"Instructions for traversing to the parent collection",
+        description=u"This is an alternating list of strings and callables. "
+            "The first element in the list, a string, designates one of the "
+            "web service's top-level collections. The second element (if "
+            "there is one) is a callable which takes the IEntry "
+            "implementation as its only argument. It's expected to return one "
+            "of the entries in the top-level collection. The third element "
+            "(if there is one) is a string which designates one of the scoped "
+            "collections associated with that entry. And so on. Strings and "
+            "callables alternate, traversing the object graph. The list must "
+            "end with a string.")
 
-    def fragment(self):
+    def fragment():
         """Return a URI fragment that uniquely identifies this entry.
 
         This might be the entry's unique ID or some other unique identifier.
@@ -103,19 +116,19 @@ class IEntry(IJSONPublishable):
 class ICollection(Interface):
     """A collection, driven by an ICollectionResource."""
 
-    def lookupEntry(self, name):
+    def lookupEntry(name):
         """Look up an entry in the collection by unique identifier.
 
         :return: An IEntry object.
         """
 
-    def find(self):
+    def find():
         """Retrieve all entries in the collection under the given scope.
 
         :return: A list of IEntry objects.
         """
 
-    def getEntryPath(self, child):
+    def getEntryPath(child):
         """Choose a URL fragment for one of this collection's entries."""
 
 

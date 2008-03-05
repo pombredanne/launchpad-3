@@ -141,7 +141,7 @@ class EntryResource(ReadOnlyResource):
             self.parent_collection = parent_collection
         else:
             resource = self.root_resource
-            for fragment in self.context.parent_collection_path:
+            for fragment in self.context._parent_collection_path:
                 if callable(fragment):
                     # Ask the context to do the traversal from a
                     # collection to a specific item in that
@@ -216,8 +216,7 @@ class EntryResource(ReadOnlyResource):
                     key = name + '_link'
                     dict[key] = canonical_url(related_resource,
                                               request=self.request)
-            elif (IField.providedBy(element)
-                  and name != 'parent_collection_path'):
+            elif IField.providedBy(element) and name[0] != '_':
                 # It's a data field; display it as part of the
                 # representation.
                 dict[name] = getattr(self.context, name)

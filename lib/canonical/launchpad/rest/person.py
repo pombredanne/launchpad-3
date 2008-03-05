@@ -41,7 +41,7 @@ class PersonEntry(Entry):
     decorates(IPersonEntry)
     schema = IPersonEntry
 
-    parent_collection_path = ['people']
+    _parent_collection_path = ['people']
 
     @property
     def members(self):

@@ -273,7 +273,7 @@ defines a constructor.
     ...     decorates(IAuthorEntry)
     ...     schema = IAuthorEntry
     ...
-    ...     parent_collection_path = ['authors']
+    ...     _parent_collection_path = ['authors']
 
 The "schema" attribute points to the interface class that defines the
 attributes exposed through the web service. Above, "schema" is
@@ -287,7 +287,7 @@ ICookbookEntry, which exposes "name" and "author", "recipes", and
     ...     decorates(ICookbookEntry)
     ...     schema = ICookbookEntry
     ...
-    ...     parent_collection_path = ['cookbooks']
+    ...     _parent_collection_path = ['cookbooks']
 
     >>> class DishEntry(Entry):
     ...     """A dish, as exposed through the web service."""
@@ -295,10 +295,10 @@ ICookbookEntry, which exposes "name" and "author", "recipes", and
     ...     decorates(IDishEntry)
     ...     schema = IDishEntry
     ...
-    ...     parent_collection_path = ['dishes']
+    ...     _parent_collection_path = ['dishes']
 
 The comment entry is a little different. Note that it doesn't define
-parent_collection_path. That's because a comment will delegates many
+_parent_collection_path. That's because a comment will delegates many
 of an entry's tasks to whatever collection contains it. This is the
 flip side of the is_entry_container we saw earlier.
 
@@ -309,9 +309,9 @@ flip side of the is_entry_container we saw earlier.
     ...     schema = ICommentEntry
 
 The recipe entry is also different. It defines a
-parent_collection_path of more than one element. A recipe's canonical
+_parent_collection_path of more than one element. A recipe's canonical
 home is 'beneath' the cookbook it was published in. The
-parent_collection_path will be used whether the recipe in question was
+_parent_collection_path will be used whether the recipe in question was
 found in a cookbook's collection of recipes or with some other
 collection (such as the recipes for a specific dish).
 
@@ -320,7 +320,7 @@ collection (such as the recipes for a specific dish).
     ...     decorates(IRecipeEntry)
     ...     schema = IRecipeEntry
     ...
-    ...     parent_collection_path = [
+    ...     _parent_collection_path = [
     ...         'cookbooks', lambda r: r.cookbook, 'recipes']
 
 
@@ -429,10 +429,10 @@ recipes. It'll work with any collection of recipes.
 We also need to define collections of the comments associated with a
 recipe or cookbook. These will be scoped collections too, but they're
 a little different from an cookbook-scoped collection of
-recipes. RecipeEntry defines parent_collection_path and CommentEntry
+recipes. RecipeEntry defines _parent_collection_path and CommentEntry
 doesn't. So the list of comments scoped to a recipe (or cookbook)
 needs to take on some of the duties handled by the kind of collection
-that defines parent_collection_path. Fortunately, there's a predefined
+that defines _parent_collection_path. Fortunately, there's a predefined
 class that works in cases like this one, where the elements are
 indexed by their order within a parent collection:
 OrderBasedScopedCollection.
@@ -600,7 +600,7 @@ You can also traverse from an entry to an associated collection:
 
 Note that the address of a recipe depends on its cookbook, even when
 the path traversed to the recipe doesn't go through a cookbook. This
-is handled by RecipeEntry's parent_collection_path.
+is handled by RecipeEntry's _parent_collection_path.
 
     >>> dish_collection = app.publishTraverse(request, "dishes")
     >>> chicken_dish_resource = dish_collection.publishTraverse(

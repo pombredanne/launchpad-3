@@ -9,6 +9,8 @@ __all__ = [
     'PersonTeamMembershipCollection'
     ]
 
+import operator
+
 from zope.component import adapts
 from zope.schema import Object, Text
 
@@ -41,7 +43,13 @@ class TeamMembershipEntry(Entry):
     decorates(ITeamMembershipEntry)
     schema = ITeamMembershipEntry
 
-    parent_collection_path = ['people', lambda tm: tm.member,
+    # The path to a team membership starts at the top-level collection
+    # of people (thus 'people'). Below that collection is a particular
+    # person: the person who's the 'member' side of the member-team
+    # relationship (thus attrgetter('member')). That person has a
+    # collection of team memberships (thus 'team_memberships'), which
+    # is the parent collection of any particular membership.
+    _parent_collection_path = ['people', operator.attrgetter('member'),
                               'team_memberships']
 
     @property
