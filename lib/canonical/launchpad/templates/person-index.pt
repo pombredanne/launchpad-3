@@ -141,14 +141,7 @@
         <tal:block condition="request/lp:person">
           <tal:block condition="view/userIsOwner">
             <p tal:condition="view/userIsActiveMember">
-		<form class="actions"
-		      name="leave"
-		      id="form.team.leave"
-		      action="+leave"
-		      method="post">
-		  You are the owner of this team.
-		  <input type="submit" name="leave" value="Leave the Team" />
-		</form>
+	      You are the owner of this team.
             </p>
             <p tal:condition="not: view/userIsActiveMember">
               You are the owner of this team,
