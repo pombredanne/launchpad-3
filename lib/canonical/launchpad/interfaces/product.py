@@ -249,7 +249,8 @@ class IProduct(IBugTarget, IHasAppointedDriver, IHasBranchVisibilityPolicy,
         title=_('Notes for the project reviewer'),
         required=False, 
         description=_(
-            "Useful area for LP Admins to make notes about a project."))
+            "Notes on the project, viewable only by reviewers "
+            "(administrators and registry experts)."))
 
 
     licenses = Set(

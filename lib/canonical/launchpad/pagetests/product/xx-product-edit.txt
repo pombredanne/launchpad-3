@@ -177,8 +177,10 @@ empty, then we store some insightful notes in it.
    >>> admin_browser.getControl(name='field.reviewer_whiteboard').value
    ''
    >>> admin_browser.getControl(name='field.reviewer_whiteboard').value = \
-   ... "This project is in a fight with that project"
+   ... """Registered by https://launchpad.net/kurt but orphaned 2007-11-31.
+   ... Contacted the upstream maintainer (bart@foo.com) to discuss handing
+   ... over this project 2007-12-04."""
    >>> admin_browser.getControl(name='field.actions.change').click()
    >>> admin_browser.open('http://launchpad.dev/firefox/+review')
    >>> admin_browser.getControl(name='field.reviewer_whiteboard').value
-   'This project is in a fight with that project'
+   'Registered by https://launchpad.net/kurt but orphaned...'
