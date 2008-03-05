@@ -4,7 +4,7 @@ A team administrator can also deactivate a mailing list.  Mailman handles this
 by archiving and deleting the mailing list data, which allows for easy
 reconstitution later.
 
-First, create the mailing list, which will send a notification messages
+First, create the mailing list, which will send notification messages
 to all the members of the mailing list.  We can ignore these messages.
 
     >>> import itest_helper
