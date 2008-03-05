@@ -72,6 +72,11 @@ informative message regarding the delayed subscription.
     ...		moderated_list.getSubscribedAddresses())
     []
 
+    # The subscription object is in the database, waiting for the
+    # team membership approval.
+    >>> moderated_list.getSubscription(sample_person)
+    <MailingListSubscription ...>
+
 Users joining an open team will be immediately subscribed to the
 team's list.
 
