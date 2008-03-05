@@ -27,6 +27,11 @@ class BugTaskTargetNameCachesTunableLoop(object):
         self.total_updated = 0
 
         self.transaction.begin()
+        # XXX: kiko 2006-03-23:
+        # We use a special API here, which is kinda klunky, but which
+        # allows us to return all bug tasks (even private ones); this should
+        # eventually be changed to a more elaborate permissions scheme,
+        # pending the infrastructure to do so. See bug #198778.
         self.bugtasks = list(getUtility(IBugTaskSet).dangerousGetAllTasks())
         self.transaction.commit()
 
@@ -42,10 +47,16 @@ class BugTaskTargetNameCachesTunableLoop(object):
 
         See `ITunableLoop`.
         """
-        # We cast chunk_size to an integer to ensure that we're not
-        # trying to slice using floats or anything similarly foolish.
+        # XXX 2008-03-05 gmb:
+        #     We cast chunk_size to an integer to ensure that we're not
+        #     trying to slice using floats or anything similarly
+        #     foolish. We shouldn't have to do this, but bug #198767
+        #     means that we do.
         chunk_size = int(chunk_size)
-        bugtasks = self.bugtasks[self.offset:self.offset + chunk_size]
+
+        start = self.offset
+        end = self.offset + chunk_size
+        bugtasks = self.bugtasks[start:end]
 
         starting_id = bugtasks[0].id
         self.logger.info("Updating %i BugTasks (starting id: %i)." %
@@ -77,6 +88,9 @@ class BugTaskTargetNameCacheUpdater:
         loop = BugTaskTargetNameCachesTunableLoop(
             self.transaction, self.logger)
 
+        # We use the LoopTuner class to try and get an ideal number of
+        # bugtasks updated for each iteration of the loop (see the
+        # LoopTuner documentation for more details).
         loop_tuner = LoopTuner(loop, 2)
         loop_tuner.run()
 
