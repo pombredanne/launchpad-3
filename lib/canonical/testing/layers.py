@@ -33,6 +33,7 @@ import logging
 import os
 import socket
 import sys
+import threading
 import time
 from unittest import TestCase, TestResult
 from urllib import urlopen
@@ -155,6 +156,10 @@ class BaseLayer:
     @classmethod
     @profiled
     def testSetUp(cls):
+        # Store currently running threads so we can detect if a test
+        # leaves new threads running.
+        BaseLayer._threads = threading.enumerate()
+
         BaseLayer.check()
 
         BaseLayer.original_working_directory = os.getcwd()
@@ -199,6 +204,17 @@ class BaseLayer:
         BaseLayer.test_name = None
 
         BaseLayer.check()
+
+        # Check for tests that leave live threads around early.
+        # A live thread may be the cause of other failures, such as
+        # uncollectable garbage.
+        new_threads = [
+                thread for thread in threading.enumerate()
+                    if thread not in BaseLayer._threads and thread.isAlive()]
+        if new_threads:
+            BaseLayer.flagTestIsolationFailure(
+                    "Test left new live threads: %s" % repr(new_threads))
+        del BaseLayer._threads
 
         # Objects with __del__ methods cannot participate in refence cycles.
         # Fail tests with memory leaks now rather than when Launchpad crashes
