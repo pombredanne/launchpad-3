@@ -2186,7 +2186,7 @@ BUG_TRACKER_CLASSES = {
     }
 
 
-def get_external_bugtracker(txn, bugtracker):
+def get_external_bugtracker(bugtracker):
     """Return an `ExternalBugTracker` for bugtracker."""
     bugtrackertype = bugtracker.bugtrackertype
     bugtracker_class = BUG_TRACKER_CLASSES.get(bugtracker.bugtrackertype)
