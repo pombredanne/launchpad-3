@@ -4,9 +4,7 @@
 
 __metaclass__ = type
 
-import unittest
-
-from zope.testing import doctest
+from canonical.launchpad.testing.systemdocs import LayeredDocFileSuite
 from canonical.testing import reset_logging
 
 def setUp(test):
@@ -17,10 +15,6 @@ def tearDown(test):
     reset_logging()
 
 def test_suite():
-    return doctest.DocFileSuite(
-            'librarianformatter_noca.txt', setUp=setUp, tearDown=tearDown,
-            optionflags=doctest.NORMALIZE_WHITESPACE | doctest.ELLIPSIS
-            )
-
-if __name__ == '__main__':
-    unittest.main(defaultTest='test_suite')
+    return LayeredDocFileSuite(
+        'librarianformatter_noca.txt',
+        setUp=setUp, tearDown=tearDown, stdout_logging=False)

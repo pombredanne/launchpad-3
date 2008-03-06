@@ -14,7 +14,6 @@
 <metal:leftportlets fill-slot="portlets">
   <div tal:replace="structure context/@@+portlet-details" />
   <div tal:replace="structure context/@@+portlet-subscribers" />
-  <div tal:replace="structure context/@@+portlet-specifications" />
 </metal:leftportlets>
 
 <div metal:fill-slot="main">
@@ -152,11 +151,11 @@
 
   <tal:branch-errors tal:replace="structure context/@@+messages" />
 
-  <p tal:condition="context/summary"
+  <div tal:condition="context/summary" id="branch-summary"
      tal:content="structure context/summary/fmt:text-to-html">
     $Branch.summary goes here. This should be quite short, just a single
     paragraph of text really, giving the branch highlights.
-  </p>
+  </div>
 
   <tal:whiteboard condition="context/whiteboard">
     <h2>Whiteboard</h2>
@@ -235,6 +234,19 @@
     </div>
   </tal:has-related-bugs>
 
+  <tal:has-related-blueprints condition="context/spec_links">
+    <div id="related-blueprints">
+      <h2>Related blueprints</h2>
+      <tal:blueprints tal:define="branch context;
+                                  show_edit python:True;
+                                  show_whiteboard python:True;">
+        <metal:spec-branch-links
+            use-macro="context/@@+macros/spec-branch-links"/>
+      </tal:blueprints>
+    </div>
+  </tal:has-related-blueprints>
+
+
       <div class="related">
 
   <h2>Nearby</h2>
@@ -245,18 +257,16 @@
       </a>
     </li>
     <li>
-      <tal:author condition="context/author">
-        <a tal:attributes="href string:${context/author/fmt:url}/+authoredbranches">
-          Other branches authored by <tal:person
-          replace="context/author/displayname">Author</tal:person>
-        </a>
-      </tal:author>
-      <tal:no-author condition="not:context/author">
-        <a tal:attributes="href string:${context/owner/fmt:url}/+registeredbranches">
-          Other branches registered (and not authored) by <tal:person
-          replace="context/owner/displayname">Owner</tal:person>
-        </a>
-      </tal:no-author>
+      <a tal:attributes="href string:${context/owner/fmt:url}/+ownedbranches">
+        Other branches owned by <tal:person
+        replace="context/owner/displayname">Owner</tal:person>
+      </a>
+    </li>
+    <li tal:condition="not:view/owner_is_registrant">
+      <a tal:attributes="href string:${context/registrant/fmt:url}/+registeredbranches">
+        Other branches registered by <tal:person
+        replace="context/registrant/displayname">Registrant</tal:person>
+      </a>
     </li>
   </ul>
 

@@ -31,7 +31,8 @@ def import_debian_bugs(bugs_to_import):
                 " from LP bug(s) #%s." % (
                     debian_bug, ', '.join(existing_bug_ids)))
             continue
-        bug = external_debbugs.importBug(debian, debian_bug)
+        bug = bug_watch_updater.importBug(
+            external_debbugs, debbugs, debian, debian_bug)
         [debian_task] = bug.bugtasks
         bug_watch_updater.updateBugWatches(
             external_debbugs, [debian_task.bugwatch])
