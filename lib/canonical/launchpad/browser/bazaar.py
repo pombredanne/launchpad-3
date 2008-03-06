@@ -21,7 +21,6 @@ from canonical.config import config
 
 from canonical.launchpad.interfaces import (
     IBazaarApplication, IBranchSet, IProduct, IProductSet, IProductSeriesSet)
-from canonical.launchpad.helpers import shortlist
 from canonical.launchpad.webapp import (
     ApplicationMenu, enabled_with_permission, LaunchpadView, Link, Navigation,
     stepto)
@@ -171,10 +170,7 @@ class BazaarProductView:
         # sub-second, and the query to get the branch count and last commit
         # time runs in approximately 50ms on a vacuumed branch table.
         product_set = getUtility(IProductSet)
-        products = shortlist(
-            product_set.getProductsWithBranches(num_products),
-            2000,
-            hardlimit=3000)
+        products = list(product_set.getProductsWithBranches(num_products))
 
         # Any product that has a defined user branch for the development
         # product series is shown in another colour.  Given the above
