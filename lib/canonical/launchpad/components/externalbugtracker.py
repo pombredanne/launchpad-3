@@ -33,9 +33,9 @@ from canonical.database.sqlbase import commit
 from canonical.launchpad.scripts import log, debbugs
 from canonical.launchpad.interfaces import (
     BugTaskImportance, BugTaskStatus, BugTrackerType, BugWatchErrorType,
-    IBugWatchSet, IExternalBugTracker, IMessageSet, IPersonSet,
-    PersonCreationRationale, ISupportsBugImport, ISupportsCommentImport,
-    UNKNOWN_REMOTE_IMPORTANCE, UNKNOWN_REMOTE_STATUS)
+    IBugWatchSet, IExternalBugTracker, IMessageSet, ISupportsBugImport,
+    ISupportsCommentImport, UNKNOWN_REMOTE_IMPORTANCE,
+    UNKNOWN_REMOTE_STATUS)
 from canonical.launchpad.webapp import errorlog
 from canonical.launchpad.webapp.url import urlparse
 

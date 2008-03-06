@@ -363,8 +363,8 @@ class BugWatchUpdater(object):
                 'Unknown %s package (#%s at %s): %s' % (
                     bug_target.name, remote_bug,
                     external_bugtracker.baseurl, package_name))
-        summary, description = external_bugtracker.getBugSummaryAndDescription(
-            remote_bug)
+        summary, description = (
+            external_bugtracker.getBugSummaryAndDescription(remote_bug))
         bug = bug_target.createBug(
             CreateBugParams(
                 reporter, summary, description, subscribe_reporter=False))
