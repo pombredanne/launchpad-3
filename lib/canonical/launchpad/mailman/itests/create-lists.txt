@@ -27,13 +27,16 @@ this stanza can be removed.
 To request a mailing list, No Privileges Person navigates to the 'Configure
 mailing list' page and registers their application for a mailing list.
 
+    >>> serial_watcher = itest_helper.LogWatcher('serial')
     >>> browser.reload()
     >>> browser.getLink('Configure mailing list').click()
     >>> browser.getControl('Apply for Mailing List').click()
 
 At this point, Mailman has still not created the mailing list.
 
-    >>> itest_helper.wait_for_mailman()
+    # This will time out because no changes have been propagated to Mailman.
+    >>> serial_watcher.wait()
+    'Timed out'
     >>> from Mailman.Utils import list_names
     >>> sorted(name for name in list_names() if name.startswith('itest-'))
     []
@@ -46,7 +49,6 @@ expert' must approve the application.  This cannot currently be done through
 the web, so we'll go behind the scenes to do this.
 
     >>> list_one = itest_helper.review_list('itest-one')
-    >>> itest_helper.wait_for_mailman()
     >>> sorted(name for name in list_names() if name.startswith('itest-'))
     ['itest-one']
 
@@ -74,6 +76,6 @@ mailing list.
     >>> from canonical.launchpad.interfaces import MailingListStatus
     >>> list_two = itest_helper.review_list(
     ...     'itest-two', MailingListStatus.DECLINED)
-    >>> itest_helper.wait_for_mailman()
+
     >>> sorted(name for name in list_names() if name.startswith('itest-'))
     ['itest-one']

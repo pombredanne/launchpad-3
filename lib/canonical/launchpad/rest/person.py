@@ -14,21 +14,21 @@ from zope.component import adapts, getUtility
 from zope.schema import Object
 
 from canonical.lazr.rest import Collection, Entry, ScopedCollection
+from canonical.lazr.interface import use_template
 from canonical.lazr.interfaces import IEntry
 from canonical.lazr.rest.schema import CollectionField
 
-from canonical.launchpad.interfaces import (
-    IPerson, IPersonSet, ITeamMembership, make_person_name_field)
+from canonical.launchpad.interfaces import IPerson, IPersonSet, ITeamMembership
 
 from canonical.lazr import decorates
 
+
 class IPersonEntry(IEntry):
     """The part of a person that we expose through the web service."""
+    use_template(IPerson, include=["name"])
 
-    # XXX leonardr 2008-01-28 bug=186702 A much better solution would
-    # let us reuse or copy fields from IPerson.
-    name = make_person_name_field()
-    teamowner = Object(schema=IPerson)
+    teamowner = Object(schema=IPerson, title=u"Team owner")
+
     members = CollectionField(value_type=Object(schema=IPerson))
     team_memberships = CollectionField(
         value_type=Object(schema=ITeamMembership))

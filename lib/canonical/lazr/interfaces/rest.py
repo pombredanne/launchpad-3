@@ -17,7 +17,7 @@ __all__ = [
 
 from zope.interface import Interface, Attribute
 from zope.publisher.interfaces import IPublishTraverse
-from zope.schema import Text, List
+from zope.schema import List
 from zope.schema.interfaces import IObject
 from canonical.launchpad.webapp.interfaces import ICanonicalUrlData
 
@@ -91,6 +91,8 @@ class ICollectionResource(IHTTPResource, IPublishTraverse):
 class IEntry(IJSONPublishable):
     """An entry, exposed as a resource by an IEntryResource."""
 
+    # Soon, Launchpad's existing Navigation classes will substitute for
+    # web service-specific path information, and this will be removed.
     _parent_collection_path = List(
         title=u"Instructions for traversing to the parent collection",
         description=u"This is an alternating list of strings and callables. "

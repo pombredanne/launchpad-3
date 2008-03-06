@@ -24,7 +24,6 @@ We also need some time and date functions to do translation updates.
     >>> import datetime
     >>> import pytz
     >>> UTC = pytz.timezone('UTC')
-    >>> from canonical.database.sqlbase import flush_database_caches
 
 
 == POTMsgSet.normalizeWhitespaces ==
@@ -336,14 +335,8 @@ But the imported one is unset using an 'empty' TranslationMessage.
 
 An empty TranslationMessage has all the translations set to None.
 
-    >>> print imported.msgstr0
-    None
-    >>> print imported.msgstr1
-    None
-    >>> print imported.msgstr2
-    None
-    >>> print imported.msgstr3
-    None
+    >>> print imported.all_msgstrs
+    [None, None, None, None, None, None]
 
 The same with the fuzzy flags.
 
@@ -557,7 +550,6 @@ the given timestamp.
 
     >>> from datetime import datetime
     >>> from pytz import UTC
-    >>> from canonical.launchpad.interfaces import TranslationConstants
     >>> translationmessage = TranslationMessage.get(2)
     >>> potmsgset = translationmessage.potmsgset
     >>> pofile = translationmessage.pofile
@@ -578,8 +570,7 @@ translation for exactly the same English string, but in a different
 translation template.
 
     >>> from canonical.launchpad.interfaces import (
-    ...     IDistributionSet, IPOTemplateSet, IProductSet,
-    ...     TranslationConstants)
+    ...     IDistributionSet, IPOTemplateSet, IProductSet)
 
 Suggestions between modules depend also on whether the other translation
 template is available to all users or should be ignored because
@@ -720,10 +711,6 @@ Let's restore the flags for next section.
 
 This method returns a set of submissions that have suggested translations
 for the same msgid as the given POTMsgSet across the whole system.
-
-    # This will be needed to call a private method to invalidate an internal
-    # cache.
-    >>> from zope.security.proxy import removeSecurityProxy
 
 We are going to work with the 'man' template in evolution package for
 Ubuntu Hoary distribution.

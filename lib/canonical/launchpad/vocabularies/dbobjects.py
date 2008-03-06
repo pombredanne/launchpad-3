@@ -878,7 +878,8 @@ class PersonActiveMembershipVocabulary:
     def _get_teams(self):
         """The teams that the vocabulary is built from."""
         return [membership.team for membership
-                in self.context.myactivememberships]
+                in self.context.myactivememberships
+                if membership.team.visibility == PersonVisibility.PUBLIC]
 
     def __len__(self):
         """See `IVocabularyTokenized`."""
@@ -1289,6 +1290,7 @@ class SpecificationVocabulary(NamedSQLObjectVocabulary):
 
     def __iter__(self):
         launchbag = getUtility(ILaunchBag)
+        target = None
         product = launchbag.product
         if product is not None:
             target = product
@@ -1441,7 +1443,11 @@ class PPAVocabulary(SQLObjectVocabularyBase):
 
     def toTerm(self, archive):
         """See `IVocabulary`."""
-        summary = archive.description.splitlines()[0]
+        description = archive.description
+        if description is not None:
+            summary = description.splitlines()[0]
+        else:
+            summary = "No description available"
         return SimpleTerm(archive, archive.owner.name, summary)
 
     def getTermByToken(self, token):

@@ -27,7 +27,6 @@ this stanza can be removed.
     >>> browser.getControl('Apply for Mailing List').click()
 
     >>> list_one = itest_helper.review_list('itest-one')
-    >>> itest_helper.wait_for_mailman()
     >>> from Mailman.Utils import list_names
     >>> sorted(name for name in list_names() if name.startswith('itest-'))
     ['itest-one']
@@ -37,8 +36,9 @@ Give the mailing list a welcome message.
     >>> browser.open('http://launchpad.dev/~itest-one/+mailinglist')
     >>> browser.getControl('Welcome message text').value = (
     ...     'Greetings team one members!')
+    >>> serial_watcher = itest_helper.LogWatcher('serial')
     >>> browser.getControl('Save').click()
-    >>> itest_helper.wait_for_mailman()
+    >>> serial_watcher.wait()
 
     >>> from Mailman.MailList import MailList
     >>> mlist = MailList('itest-one', lock=False)
@@ -60,10 +60,11 @@ re-activation.
     >>> from canonical.launchpad.ftests import sync
     >>> sync(list_one)
     >>> list_one.subscribe(anne)
+    >>> serial_watcher.resync()
     >>> from canonical.database.sqlbase import commit
     >>> logout()
     >>> commit()
-    >>> itest_helper.wait_for_mailman()
+    >>> serial_watcher.wait()
     >>> mlist.Load()
     >>> sorted(mlist.getMembers())
     ['anne.person@example.com', 'aperson@example.org',
@@ -71,9 +72,10 @@ re-activation.
 
 Now the team owner deactivates the list.
 
+    >>> serial_watcher.resync()
     >>> browser.getLink('Configure mailing list').click()
     >>> browser.getControl('Deactivate this Mailing List').click()
-    >>> itest_helper.wait_for_mailman()
+    >>> serial_watcher.wait()
 
 As far as Mailman is concerned, the mailing list no longer exists.
 
@@ -83,12 +85,12 @@ As far as Mailman is concerned, the mailing list no longer exists.
 Now the team owner reactivates the list.
 
     >>> browser.getLink('Configure mailing list').click()
+    >>> serial_watcher.resync()
     >>> browser.getControl('Reactivate this Mailing List').click()
-    >>> itest_helper.wait_for_mailman()
+    >>> serial_watcher.wait()
 
 Mailman reports that the mailing list exists again.
 
-    >>> itest_helper.wait_for_mailman()
     >>> sorted(name for name in list_names() if name.startswith('itest-'))
     ['itest-one']
 
