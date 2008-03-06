@@ -367,6 +367,7 @@ class Project(SQLBase, BugTargetBase, HasSpecificationsMixin,
                 FROM Milestone, Product
                 WHERE Product.project = %s
                     AND Milestone.product = product.id
+                    AND Product.active = True
                 GROUP BY Milestone.name
                 %s
                 ORDER BY min(Milestone.dateexpected), Milestone.name
