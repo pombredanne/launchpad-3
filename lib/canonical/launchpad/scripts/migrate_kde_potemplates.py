@@ -28,14 +28,15 @@ def getOrCreatePOMsgID(msgid):
         pomsgid = POMsgID(msgid=msgid)
     return pomsgid
 
-def migrate_translations_for_potmsgset(potmsgset, logger, ztm):
+def migrate_translations_for_potmsgset(potmsgset, from_potmsgset, logger, ztm):
     # Fix translations for this potmsgset as well.
+    # `from_potmsgset` is an old, unmigrated POTMsgSet we are migrating
+    # translations from.
     messages = TranslationMessage.select(
-        "potmsgset=%s" % sqlvalues(potmsgset))
+        "potmsgset=%s" % sqlvalues(from_potmsgset))
     logger.info("Fixing %d TranslationMessages..." % messages.count())
     for message in messages:
         msgstrs = message.translations
-
         # Let's see if translations have only the first plural
         # form defined: if they do, then they need migration.
         single_string = False
@@ -90,18 +91,81 @@ def migrate_translations_for_potmsgset(potmsgset, logger, ztm):
                 message.msgstr3 = potranslations[3]
                 message.msgstr4 = potranslations[4]
                 message.msgstr5 = potranslations[5]
+                if potmsgset != from_potmsgset:
+                    # Point TranslationMessage to a new POTMsgSet.
+                    message.potmsgset = potmsgset
+
 
 def migrate_kde_potemplate_translations(potemplate, logger, ztm):
     assert(potemplate.source_file_format == TranslationFileFormat.KDEPO)
 
-    potmsgsets = POTMsgSet.select("""
-      POTMsgSet.potemplate = %s AND
-      POTMsgSet.msgid_plural IS NOT NULL
-      """ % sqlvalues(potemplate))
+    cur.execute("""
+      SELECT old_msg, new_msg
+        FROM POTMsgSet AS old_msg, POMsgID AS old_msgid,
+             POTMsgSet AS new_msg, POMsgID AS singular, POMsgID AS plural
+        WHERE
+          -- they are both from this template
+          old_msg.potemplate=%s AND
+          new_msg.potemplate=old_msg.potemplate AND
+          -- old one is obsolete
+          old_msg.sequence=0 AND
+          -- old POTMsgSet has a singular form of the form '_n:...',
+          -- and no plural form
+          old_msg.msgid_singular=old_msgid.id
+          AND old_msg.msgid_plural IS NULL AND
+          old_msgid.msgid LIKE '_n: %' AND
+          -- and new POTMsgSet has singular and plural which when joined
+          -- give the old plural form
+          new_msg.msgid_singular=singular.id AND
+          new_msg.msgid_plural=plural.id AND
+          '_n: ' || singular.msgid || E'\n' || plural.msgid = old_msgid.msgid
+          """ % sqlvalues(potemplate))
+    plural_potmsgsets = cur.fetchall()
 
-    logger.info("Fixing %d POTMsgSets..." % potmsgsets.count())
-    for potmsgset in potmsgsets:
-        migrate_translations_for_potmsgset(potmsgset, logger, ztm)
+    logger.info("Migrating translations for %d plural POTMsgSets..." % (
+        len(plural_potmsgsets)))
+    for old_potmsgset_id, new_potmsgset_id in plural_potmsgsets:
+        old_potmsgset = POTMsgSet.get(old_potmsgset_id)
+        new_potmsgset = POTMsgSet.get(new_potmsgset_id)
+        migrate_translations_for_potmsgset(new_potmsgset, old_potmsgset,
+                                           logger, ztm)
+
+    cur.execute("""
+      SELECT old_msg, new_msg
+        FROM POTMsgSet AS old_msg, POMsgID AS old_msgid,
+             POTMsgSet AS new_msg, POMsgID AS new_msgid
+        WHERE
+          -- they are both from this template
+          old_msg.potemplate=%s AND
+          new_msg.potemplate=old_msg.potemplate AND
+          -- old one is obsolete
+          old_msg.sequence=0 AND
+          -- old POTMsgSet has a singular form of the form '_:...',
+          -- and no plural form
+          old_msg.msgid_singular=old_msgid.id
+          AND old_msg.msgid_plural IS NULL AND
+          old_msgid.msgid LIKE '_: %' AND
+          -- and new POTMsgSet has singular and context which when joined
+          -- give the old contextual message
+          new_msg.msgid_singular=new_msgid.id AND
+          '_: ' || new_msg.context || E'\n' || new_msgid.msgid = old_msgid.msgid
+          """ % sqlvalues(potemplate))
+
+    plural_potmsgsets = cur.fetchall()
+
+    logger.info("Migrating translations for %d context POTMsgSets..." % (
+        len(plural_potmsgsets)))
+    for old_potmsgset_id, new_potmsgset_id in plural_potmsgsets:
+        old_potmsgset = POTMsgSet.get(old_potmsgset_id)
+        new_potmsgset = POTMsgSet.get(new_potmsgset_id)
+        messages = TranslationMessage.select(
+            "potmsgset=%s" % sqlvalues(old_potmsgset))
+        logger.info(
+            "Moving %d TranslationMessages from POTMsgSet %d to %d..." % (
+                messages.count(), old_potmsgset_id, new_potmsgset_id))
+        for message in messages:
+            message.potmsgset = new_potmsgset
+
     ztm.commit()
 
 def migrate_potemplate(potemplate, logger, ztm):
@@ -153,18 +217,16 @@ def migrate_potemplate(potemplate, logger, ztm):
 
         if fix_plurals:
             # Fix translations for this potmsgset as well.
-            migrate_translations_for_potmsgset(potmsgset, logger, ztm)
+            migrate_translations_for_potmsgset(potmsgset, potmsgset,
+                                               logger, ztm)
 
 
     potemplate.source_file_format = TranslationFileFormat.KDEPO
     # Commit a PO template one by one.
     ztm.commit()
 
-
-def migrate_potemplates(ztm, logger):
-    """Go through all non-KDE PO templates and migrate to KDEPO as needed."""
-
-    # Migrate translations for already re-imported KDE PO templates.
+def migrate_translations_for_kdepo_templates(ztm, logger):
+    """Migrate translations for already re-imported KDE PO templates."""
     potemplates = POTemplate.select("""source_file_format=%s AND
     POTemplate.id IN
         (SELECT potemplate
@@ -185,7 +247,9 @@ def migrate_potemplates(ztm, logger):
             potemplate.displayname, index, count))
         migrate_kde_potemplate_translations(potemplate, logger, ztm)
 
-    # Migrate non-KDE PO templates.
+def migrate_unmigrated_templates_to_kdepo(ztm, logger):
+    """Go through all non-KDE PO templates and migrate to KDEPO as needed."""
+
     potemplates = POTemplate.select("""source_file_format=%s AND
     POTemplate.id IN
         (SELECT potemplate
@@ -206,3 +270,7 @@ def migrate_potemplates(ztm, logger):
         logger.info("Migrating POTemplate %s [%d/%d]" % (
             potemplate.displayname, index, count))
         migrate_potemplate(potemplate, logger, ztm)
+
+def migrate_potemplates(ztm, logger):
+    migrate_translations_for_kdepo_templates(ztm, logger)
+    migrate_unmigrated_templates_to_kdepo(ztm, logger)
