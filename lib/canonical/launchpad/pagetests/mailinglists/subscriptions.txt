@@ -224,7 +224,6 @@ all.)
     >>> flush_database_updates()
     >>> logout()
 
-
 We also need to confirm that the desired team has a list to subscribe
 to.  We will use Carlos, as he is an administrator for the Rosetta
 Admins team, and he should know if the list is available.
@@ -239,7 +238,6 @@ Admins team, and he should know if the list is available.
     >>> rosetta_admins.displayOptions
     ['Preferred address', "Don't subscribe",
      'carlos@canonical.com', 'carlos@test.com']
-
 
 Now Jdub can apply for team membership and mailing list access.
 
@@ -269,11 +267,10 @@ screen.
     "Jeff Waugh's e-mail addresses"
 
     >>> browser.getControl(
-    ... 	name='field.subscription.rosetta-admins')
+    ...     name='field.subscription.rosetta-admins')
     Traceback (most recent call last):
     ...
     LookupError: name 'field.subscription.rosetta-admins'
-
 
 Jdub will become a member of the team's mailing list as soon as he has
 been approved for the team.
@@ -286,7 +283,6 @@ been approved for the team.
     'http://launchpad.dev/~rosetta-admins/+member/jdub'
     >>> admin_browser.getControl(name='approve').click()
 
-
 His mailing list subscription is now available to be managed.
 
     >>> browser.open('http://launchpad.dev/~jdub/')
@@ -295,11 +291,10 @@ His mailing list subscription is now available to be managed.
     "Jeff Waugh's e-mail addresses"
 
     >>> rosetta_team = browser.getControl(
-    ... 	name='field.subscription.rosetta-admins')
+    ...     name='field.subscription.rosetta-admins')
 
     >>> rosetta_team.displayOptions
     ['Preferred address', "Don't subscribe", 'jeff.waugh@ubuntulinux.com']
-
 
 Jdub's mailing list preferences are preserved when he leaves the team.
 When he requests to re-join, the option to re-subscribe to the mailing
@@ -318,7 +313,6 @@ list is not presented.
     ...
     LookupError: name 'mailinglist_subscribe'
 
-
 Of course, the option to subscribe to the mailing list isn't present
 for teams that don't have mailing lists.
 
@@ -331,7 +325,6 @@ for teams that don't have mailing lists.
     Traceback (most recent call last):
     ...
     LookupError: name 'mailinglist_subscribe'
-
 
 And the option is also missing from the sign-up pages of teams that
 have restricted membership.  (Note that we can only see the join page
@@ -347,6 +340,7 @@ Overview.)
     ...
     LookupError: name 'mailinglist_subscribe'
 
+
 == Team page quick-links ==
 
 Links to subscribe and unsubscribe from the mailing lists are also
@@ -358,7 +352,7 @@ page, because he is not subscribed to the team mailing list.
     >>> browser = setupBrowser(auth='Basic carlos@canonical.com:test')
     >>> browser.open('http://launchpad.dev/~admins')
     >>> print extract_text(
-    ... 	find_portlet(browser.contents, 'Your involvement'))
+    ...     find_portlet(browser.contents, 'Your involvement'))
     Your involvement
     You are a member of this team.
     You are not subscribed to the team mailing list.
@@ -382,7 +376,7 @@ has an active mailing list.
 
     >>> browser.open('http://launchpad.dev/~rosetta-admins')
     >>> print extract_text(
-    ... 	find_portlet(browser.contents, 'Your involvement'))
+    ...     find_portlet(browser.contents, 'Your involvement'))
     Your involvement
     You are the owner of this team.
     You are subscribed to the team mailing list.
@@ -397,7 +391,7 @@ Clicking the link will unsubscribe you from the list immediately.
 
     >>> browser.open('http://launchpad.dev/~rosetta-admins')
     >>> print extract_text(
-    ... 	find_portlet(browser.contents, 'Your involvement'))
+    ...     find_portlet(browser.contents, 'Your involvement'))
     Your involvement
     You are the owner of this team.
     You are not subscribed to the team mailing list.
@@ -408,7 +402,7 @@ does not show either link.
 
     >>> browser.open('http://launchpad.dev/~ubuntu-translators')
     >>> print extract_text(
-    ... 	find_portlet(browser.contents, 'Your involvement'))
+    ...     find_portlet(browser.contents, 'Your involvement'))
     Your involvement
     You are the owner of this team.
 

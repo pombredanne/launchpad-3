@@ -2814,23 +2814,26 @@ class TeamJoinView(PersonView):
         request = self.request
         user = self.user
         context = self.context
-        notify_info = self.request.response.addInfoNotification
+        response = self.request.response
 
         notification = None
         if 'join' in request.form and self.user_can_request_to_join:
             user.join(context)
             if self.team_is_moderated:
-                notify_info(_('Subscription request pending approval.'))
+                response.addInfoNotification(
+                    _('Subscription request pending approval.'))
             else:
-                notify_info(_('Successfully joined ${team}.',
-                        mapping={'team': context.displayname}))
+                response.addInfoNotification(
+                    _('Successfully joined ${team}.',
+                      mapping={'team': context.displayname}))
 
             if 'mailinglist_subscribe' in request.form:
-                self._doListSubscription()
+                self._subscribeToList()
 
         elif 'join' in request.form:
-            notify_info(_('You cannot join ${team}.',
-                          mapping={'team': context.displayname}))
+            response.addInfoNotification(
+                _('You cannot join ${team}.',
+                  mapping={'team': context.displayname}))
         elif 'goback' in request.form:
             # User clicked on the 'Go back' button, so we'll simply redirect.
             pass
@@ -2839,25 +2842,27 @@ class TeamJoinView(PersonView):
                 "Couldn't find any of the expected actions.")
         self.request.response.redirect(canonical_url(context))
 
-    def _doListSubscription(self):
-        notify_info  = self.request.response.addInfoNotification
-        notify_error = self.request.response.addErrorNotification
+    def _subscribeToList(self):
+        """Subscribe the user to the team's mailing list."""
+        response = self.request.response
 
         if not self.user_can_subscribe_to_list:
-            notify_error(_('Mailing list subscription failed.'))
+            response.addErrorNotification(
+                _('Mailing list subscription failed.'))
             return
 
         try:
             self.context.mailing_list.subscribe(self.user)
         except CannotSubscribe, error:
-            notify_error(_('Mailing list subscription failed.'))
+            response.addErrorNotification(
+                _('Mailing list subscription failed.'))
         else:
             if self.team_is_moderated:
-                notify_info(
+                response.addInfoNotification(
                     _('Your mailing list subscription is awaiting '
                       'approval.'))
             else:
-                notify_info(
+                response.addInfoNotification(
                     _("You have been subscribed to this team's "
                       "mailing list"))
 

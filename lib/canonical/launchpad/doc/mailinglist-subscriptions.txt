@@ -4,10 +4,12 @@ Members of a team, either direct or indirect, may subscribe to that team's
 mailing list, if it has one.  To illustrate, we'll first create a bunch of
 people, a team and its team mailing list.
 
+    # We'll need this throughout the test script.
+    >>> from canonical.launchpad.ftests import syncUpdate
+
     >>> from canonical.launchpad.ftests.mailinglists_helper import (
     ...     get_alternative_email, new_person)
     >>> anne = new_person('Anne')
-    >>> flush_database_updates()
 
 Anne gets two email addresses.  One is her preferred address...
 
@@ -20,7 +22,6 @@ Anne gets two email addresses.  One is her preferred address...
     u'aperson@example.org'
 
     >>> bart = new_person('Bart')
-    >>> flush_database_updates()
     >>> from canonical.launchpad.ftests.mailinglists_helper import new_team
     >>> team_one, list_one = new_team('team-one', with_list=True)
 
@@ -83,7 +84,7 @@ Once Anne validates her new address, she can post from it.
 
     >>> from canonical.launchpad.interfaces import EmailAddressStatus
     >>> alternative.status = EmailAddressStatus.VALIDATED
-    >>> flush_database_updates()
+    >>> syncUpdate(alternative)
     >>> sorted(email.email for email in list_one.getSenderAddresses())
     [u'anne.person@example.com', u'anne.x.person@example.net',
      u'aperson@example.org',
@@ -91,7 +92,7 @@ Once Anne validates her new address, she can post from it.
 
     # Reverse the validation so that it doesn't affect subsequent tests.
     >>> alternative.status = EmailAddressStatus.NEW
-    >>> flush_database_updates()
+    >>> syncUpdate(alternative)
 
 
 == MailingListSubscription objects ==
@@ -173,7 +174,7 @@ to post to the mailing list.
 Once Cris validates her new address, she can post from it.
 
     >>> alternative.status = EmailAddressStatus.VALIDATED
-    >>> flush_database_updates()
+    >>> syncUpdate(alternative)
     >>> sorted(email.email for email in list_one.getSenderAddresses())
     [u'anne.person@example.com', u'aperson@example.org',
      u'bart.person@example.com', u'bperson@example.org',
@@ -182,6 +183,7 @@ Once Cris validates her new address, she can post from it.
 
     # Reverse the validation so that it doesn't affect subsequent tests.
     >>> alternative.status = EmailAddressStatus.NEW
+    >>> syncUpdate(alternative)
 
 People can subscribe to both a superteam's mailing list and a subteam's
 mailing list.
@@ -269,7 +271,6 @@ preferred email address, this will automatically track changes to their
 preferred address.
 
     >>> elle = new_person('Elle')
-    >>> flush_database_updates()
     >>> elle.preferredemail.email
     u'elle.person@example.com'
     >>> elle_alternative = get_alternative_email(elle)
@@ -443,7 +444,6 @@ This is true even if they subscribe with an address that's different than
 their preferred email address.
 
     >>> kara = new_person('Kara')
-    >>> flush_database_updates()
     >>> kara.join(team_six)
     >>> kara_alternative = get_alternative_email(kara)
     >>> kara_alternative.email
@@ -510,8 +510,9 @@ subscription address.
 
 == Subscribing while requesting a team membership ==
 
-Someone who is not a member of a team may subscribe to the team's list
-at the time that they request team membership.
+Someone who is not a member of a team may subscribe to the team's
+mailing list.  Full membership is only required to post to or receive
+emails from it.
 
     >>> team_seven, list_seven = new_team('team-7', with_list=True)
     >>> sam = new_person('Samuel')
@@ -550,6 +551,7 @@ When a user deletes an email address, all of their mailing list
 subscriptions that use that address are automatically deleted as well.
 
     >>> list_six.changeAddress(kara, kara_alternative)
+    >>> flush_database_updates()
     >>> print sorted(email.email
     ...              for email in list_six.getSubscribedAddresses())
     [u'kperson@example.org']
@@ -558,10 +560,3 @@ subscriptions that use that address are automatically deleted as well.
     >>> print sorted(email.email
     ...              for email in list_six.getSubscribedAddresses())
     []
-
-
-    >>> # Why does the following fail? Something to do with deleting
-    >>> # addresses?
-    >>> # flush_database_updates()
-
-    >>> # NOTE: Tests beyond this point fail mysteriously.
