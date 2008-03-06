@@ -66,12 +66,12 @@ def migrate_translations_for_potmsgset(potmsgset, logger, ztm):
                             translations[index]))
                 else:
                     potranslations[index] = None
-            if len(potranslations) < 4:
-                for index in range(len(potranslations), 4):
+            if len(potranslations) < 6:
+                for index in range(len(potranslations), 6):
                     potranslations[index] = None
             existing_message = (
                 unprotected_potmsgset._findTranslationMessage(
-                    message.pofile, potranslations, 4))
+                    message.pofile, potranslations, 6))
             if existing_message:
                 if existing_message.id != message.id:
                     # Only transfer is_current and is_imported
@@ -88,6 +88,8 @@ def migrate_translations_for_potmsgset(potmsgset, logger, ztm):
                 message.msgstr1 = potranslations[1]
                 message.msgstr2 = potranslations[2]
                 message.msgstr3 = potranslations[3]
+                message.msgstr4 = potranslations[4]
+                message.msgstr5 = potranslations[5]
 
 def migrate_kde_potemplate_translations(potemplate, logger, ztm):
     assert(potemplate.source_file_format == TranslationFileFormat.KDEPO)
