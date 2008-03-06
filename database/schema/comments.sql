@@ -644,6 +644,33 @@ COMMENT ON COLUMN SprintSpecification.registrant IS 'The person who nominated th
 COMMENT ON COLUMN SprintSpecification.decider IS 'The person who approved or declined this specification for the sprint agenda.';
 COMMENT ON COLUMN SprintSpecification.date_decided IS 'The date this specification was approved or declined for the agenda.';
 
+-- TeamMembership
+COMMENT ON TABLE TeamMembership IS 'The direct membership of a person on a given team.';
+COMMENT ON COLUMN TeamMembership.person IS 'The person.';
+COMMENT ON COLUMN TeamMembership.team IS 'The team.';
+COMMENT ON COLUMN TeamMembership.status IS 'The state of the membership.';
+COMMENT ON COLUMN TeamMembership.date_created IS 'The date this membership was created.';
+COMMENT ON COLUMN TeamMembership.date_joined IS 'The date this membership was made active for the first time.';
+COMMENT ON COLUMN TeamMembership.date_expires IS 'The date this membership will expire, if any.';
+COMMENT ON COLUMN TeamMembership.last_changed_by IS 'The person who reviewed the last change to this membership.';
+COMMENT ON COLUMN TeamMembership.last_change_comment IS 'The comment left by the reviewer for the change.';
+COMMENT ON COLUMN TeamMembership.date_last_changed IS 'The date this membership was last changed.';
+COMMENT ON COLUMN TeamMembership.proposed_by IS 'The user who proposed the person as member of the team.';
+COMMENT ON COLUMN TeamMembership.proponent_comment IS 'The comment left by the proponent.';
+COMMENT ON COLUMN TeamMembership.date_proposed IS 'The date of the proposal.';
+COMMENT ON COLUMN TeamMembership.acknowledged_by IS 'The proposed person or a team admin in case the proposed member is in fact a team.';
+COMMENT ON COLUMN TeamMembership.date_acknowledged IS 'The date of acknowledgement.';
+COMMENT ON COLUMN TeamMembership.acknowledger_comment IS 'The comment left by the person who acknowledged the membership.';
+COMMENT ON COLUMN TeamMembership.reviewed_by IS 'The team admin who reviewed (approved/declined) the membership.';
+COMMENT ON COLUMN TeamMembership.reviewer_comment IS 'The comment left by the approver.';
+COMMENT ON COLUMN TeamMembership.date_reviewed IS 'The date the membership was
+approved/declined.';
+
+-- TeamParticipation
+COMMENT ON TABLE TeamParticipation IS 'The participation of a person on a team, which can be a direct or indirect membership.';
+COMMENT ON COLUMN TeamParticipation.person IS 'The person.';
+COMMENT ON COLUMN TeamParticipation.team IS 'The team.';
+
 -- TranslationMessage
 COMMENT ON TABLE TranslationMessage IS 'This table stores a concrete
 translation for a POTMsgSet message. It knows who, when and where did it,
