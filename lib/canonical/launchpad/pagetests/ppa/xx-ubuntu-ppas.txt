@@ -114,11 +114,13 @@ clickable link to his PPA page:
     'PPA for Celso Providelo'
 
 The PPA page "Actions" portlet list all the related pages, only
-'View build records' is allowed for unprivileged access.
+'View build records' and 'View PPA' is allowed for unprivileged 
+access.
 
     >>> print extract_text(
     ...    find_portlet(browser.contents, 'Actions'))
     Actions
+    View PPA
     Administer archive (disabled)
     Change details (disabled)
     View build records
