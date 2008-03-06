@@ -54,7 +54,7 @@ class IDistroSeriesSourcePackageRelease(ISourcePackageRelease):
         "published in this distroseries.")
 
     meta_binaries = Attribute(
-        "List of distinct meta binaries resulting from this "
+        "A list of distinct meta binaries built from this "
         "sourcepackagerelease and published in this distroseries.")
 
     current_published = Attribute("is last SourcePackagePublishing record "
