@@ -5,12 +5,11 @@ from psycopg2.extensions import ISOLATION_LEVEL_AUTOCOMMIT
 from storm.database import register_scheme
 from storm.databases.postgres import Postgres
 
-from canonical.config import config
-
 
 class LaunchpadSessionDatabase(Postgres):
 
     def _connect(self):
+        from canonical.config import config
         raw_connection = psycopg2.connect(
             user=config.launchpad.session.dbuser,
             #host=config.launchpad.session.dbhost or '',
