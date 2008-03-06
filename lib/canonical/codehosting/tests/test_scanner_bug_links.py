@@ -8,7 +8,8 @@ import unittest
 
 from zope.component import getUtility
 
-from canonical.codehosting.scanner.bzrsync import set_bug_branch_status
+from canonical.codehosting.scanner.bzrsync import (
+    BugBranchLinker, set_bug_branch_status)
 from canonical.codehosting.tests.test_scanner_bzrsync import BzrSyncTestCase
 from canonical.config import config
 from canonical.launchpad.interfaces import (
@@ -40,19 +41,19 @@ class RevisionPropertyParsing(BzrSyncTestCase):
 
     def setUp(self):
         BzrSyncTestCase.setUp(self)
-        self.bzrsync = self.makeBzrSync(self.makeDatabaseBranch())
+        self.bug_linker = BugBranchLinker(self.makeDatabaseBranch())
 
     def test_single(self):
         # Parsing a single line should give a dict with a single entry,
         # mapping the bug_id to the status.
-        bugs = self.bzrsync.extractBugInfo(
+        bugs = self.bug_linker.extractBugInfo(
             "https://launchpad.net/bugs/9999 fixed")
         self.assertEquals(bugs, {9999: BugBranchStatus.FIXAVAILABLE})
 
     def test_multiple(self):
         # Information about more than one bug can be specified. Make sure that
         # all the information is processed.
-        bugs = self.bzrsync.extractBugInfo(
+        bugs = self.bug_linker.extractBugInfo(
             "https://launchpad.net/bugs/9999 fixed\n"
             "https://launchpad.net/bugs/8888 fixed")
         self.assertEquals(bugs, {9999: BugBranchStatus.FIXAVAILABLE,
@@ -60,18 +61,18 @@ class RevisionPropertyParsing(BzrSyncTestCase):
 
     def test_empty(self):
         # If the property is empty, then return an empty dict.
-        bugs = self.bzrsync.extractBugInfo('')
+        bugs = self.bug_linker.extractBugInfo('')
         self.assertEquals(bugs, {})
 
     def test_bad_status(self):
         # If the given status is invalid or mispelled, then skip it.
-        bugs = self.bzrsync.extractBugInfo(
+        bugs = self.bug_linker.extractBugInfo(
             'https://launchpad.net/bugs/9999 faxed')
         self.assertEquals(bugs, {})
 
     def test_continues_processing_on_error(self):
         # Bugs that are mentioned after a bad line are still processed.
-        bugs = self.bzrsync.extractBugInfo(
+        bugs = self.bug_linker.extractBugInfo(
             'https://launchpad.net/bugs/9999 faxed\n'
             'https://launchpad.net/bugs/8888 fixed')
         self.assertEquals(bugs, {8888: BugBranchStatus.FIXAVAILABLE})
@@ -79,24 +80,26 @@ class RevisionPropertyParsing(BzrSyncTestCase):
     def test_bad_bug(self):
         # If the given bug is not a valid integer, then skip it, generate an
         # OOPS and continue processing.
-        bugs = self.bzrsync.extractBugInfo('https://launchpad.net/~jml fixed')
+        bugs = self.bug_linker.extractBugInfo(
+            'https://launchpad.net/~jml fixed')
         self.assertEquals(bugs, {})
 
     def test_non_launchpad_bug(self):
         # References to bugs on sites other than launchpad are ignored.
-        bugs = self.bzrsync.extractBugInfo(
+        bugs = self.bug_linker.extractBugInfo(
             'http://bugs.debian.org/1234 fixed')
         self.assertEquals(bugs, {})
 
     def test_bad_line(self):
         # If the line is malformed (doesn't contain enough fields), then skip
         # it.
-        bugs = self.bzrsync.extractBugInfo('https://launchpad.net/bugs/9999')
+        bugs = self.bug_linker.extractBugInfo(
+            'https://launchpad.net/bugs/9999')
         self.assertEquals(bugs, {})
 
     def test_blank_lines(self):
         # Blank lines are silently ignored.
-        bugs = self.bzrsync.extractBugInfo(
+        bugs = self.bug_linker.extractBugInfo(
             'https://launchpad.net/bugs/9999 fixed\n\n\n'
             'https://launchpad.net/bugs/8888 fixed\n\n')
         self.assertEquals(bugs, {9999: BugBranchStatus.FIXAVAILABLE,
@@ -104,17 +107,17 @@ class RevisionPropertyParsing(BzrSyncTestCase):
 
     def test_duplicated_line(self):
         # If a particular line is duplicated, silently ignore the duplicates.
-        bugs = self.bzrsync.extractBugInfo(
+        bugs = self.bug_linker.extractBugInfo(
             'https://launchpad.net/bugs/9999 fixed\n'
             'https://launchpad.net/bugs/9999 fixed')
         self.assertEquals(bugs, {9999: BugBranchStatus.FIXAVAILABLE})
 
     def test_strict_url_checking(self):
         # Ignore URLs that look like a Launchpad bug URL but aren't.
-        bugs = self.bzrsync.extractBugInfo(
+        bugs = self.bug_linker.extractBugInfo(
             'https://launchpad.net/people/1234 fixed')
         self.assertEquals(bugs, {})
-        bugs = self.bzrsync.extractBugInfo(
+        bugs = self.bug_linker.extractBugInfo(
             'https://launchpad.net/bugs/foo/1234 fixed')
         self.assertEquals(bugs, {})
 

@@ -35,6 +35,7 @@ from canonical.cachedproperty import cachedproperty
 from canonical.config import config
 from canonical.database.constants import UTC_NOW
 
+from canonical.launchpad import _
 from canonical.launchpad.browser.branchref import BranchRef
 from canonical.launchpad.browser.feeds import BranchFeedLink, FeedsMixin
 from canonical.launchpad.browser.launchpad import StructuralObjectPresentation
@@ -42,10 +43,23 @@ from canonical.launchpad.browser.objectreassignment import (
     ObjectReassignmentView)
 from canonical.launchpad.helpers import truncate_text
 from canonical.launchpad.interfaces import (
-    BranchCreationForbidden, BranchType, BranchVisibilityRule,
-    IBranch, IBranchMergeProposal, IBranchSet, IBranchSubscription, IBugSet,
-    ICodeImportSet, ILaunchpadCelebrities,
-    InvalidBranchMergeProposal, IPersonSet, UICreatableBranchType)
+    BranchCreationForbidden,
+    BranchType,
+    BranchVisibilityRule,
+    IBranch,
+    IBranchMergeProposal,
+    IBranchSet,
+    IBranchSubscription,
+    IBugBranch,
+    IBugSet,
+    ICodeImportSet,
+    ILaunchpadCelebrities,
+    InvalidBranchMergeProposal,
+    IPersonSet,
+    IProductSeries,
+    ISpecificationBranch,
+    UICreatableBranchType,
+    )
 from canonical.launchpad.webapp import (
     canonical_url, ContextMenu, Link, enabled_with_permission,
     LaunchpadView, Navigation, stepto, stepthrough, LaunchpadFormView,
@@ -165,7 +179,8 @@ class BranchContextMenu(ContextMenu):
     links = ['whiteboard', 'edit', 'delete_branch', 'browse_code',
              'browse_revisions',
              'reassign', 'subscription', 'addsubscriber', 'associations',
-             'registermerge', 'landingcandidates', 'linkbug']
+             'registermerge', 'landingcandidates', 'linkbug',
+             'link_blueprint']
 
     def whiteboard(self):
         text = 'Edit whiteboard'
@@ -179,8 +194,7 @@ class BranchContextMenu(ContextMenu):
     @enabled_with_permission('launchpad.Edit')
     def delete_branch(self):
         text = 'Delete branch'
-        enabled = self.context.canBeDeleted()
-        return Link('+delete', text, enabled=enabled)
+        return Link('+delete', text)
 
     def browse_code(self):
         """Return a link to the branch's file listing on codebrowse."""
@@ -242,6 +256,13 @@ class BranchContextMenu(ContextMenu):
         text = 'Link to bug report'
         return Link('+linkbug', text, icon='edit')
 
+    def link_blueprint(self):
+        text = 'Link to blueprint'
+        # Since the blueprints are only related to products, there is no
+        # point showing this link if the branch is junk.
+        enabled = self.context.product is not None
+        return Link('+linkblueprint', text, icon='edit', enabled=enabled)
+
 
 class BranchView(LaunchpadView, FeedsMixin):
 
@@ -277,9 +298,9 @@ class BranchView(LaunchpadView, FeedsMixin):
         timestamp = datetime.now(pytz.UTC) - timedelta(days=days)
         return self.context.revisions_since(timestamp).count()
 
-    def author_is_owner(self):
-        """Is the branch author set and equal to the registrant?"""
-        return self.context.author == self.context.owner
+    def owner_is_registrant(self):
+        """Is the branch owner the registrant?"""
+        return self.context.owner == self.context.registrant
 
     @property
     def codebrowse_url(self):
@@ -560,22 +581,72 @@ class BranchDeletionView(LaunchpadFormView):
     schema = IBranch
     field_names = []
 
-    @action('Delete Branch', name='delete_branch')
+    @cachedproperty
+    def display_deletion_requirements(self):
+        """Normal deletion requirements, indication of permissions.
+
+        :return: A list of tuples of (item, action, reason, allowed)
+        """
+        reqs = []
+        for item, (action, reason) in (
+            self.context.deletionRequirements().iteritems()):
+            allowed = check_permission('launchpad.Edit', item)
+            reqs.append((item, action, reason, allowed))
+        return reqs
+
+    def all_permitted(self):
+        """Return True if all deletion requirements are permitted, else False.
+
+        Uses display_deletion_requirements as its source data.
+        """
+        return len([item for item, action, reason, allowed in
+            self.display_deletion_requirements if not allowed]) == 0
+
+    @action('Delete', name='delete_branch',
+            condition=lambda x, y: x.all_permitted())
     def delete_branch_action(self, action, data):
         branch = self.context
-        if self.context.canBeDeleted():
+        if self.all_permitted():
             # Since the user is going to delete the branch, we need to have
             # somewhere valid to send them next.  Since most of the time it
             # will be the owner of the branch deleting it, we should send
             # them to the code listing for the owner.
             self.next_url = canonical_url(branch.owner)
             message = "Branch %s deleted." % branch.unique_name
-            branch.destroySelf()
+            self.context.destroySelf(break_references=True)
             self.request.response.addNotification(message)
         else:
             self.request.response.addNotification(
                 "This branch cannot be deleted.")
             self.next_url = canonical_url(branch)
+
+    @property
+    def branch_deletion_actions(self):
+        """Return the branch deletion actions as a zpt-friendly dict.
+
+        The keys are 'delete' and 'alter'; the values are dicts of
+        'item', 'reason' and 'allowed'.
+        """
+        branch = self.context
+        row_dict = {'delete': [], 'alter': [], 'break_link': []}
+        for item, action, reason, allowed in (
+            self.display_deletion_requirements):
+            if IBugBranch.providedBy(item):
+                action = 'break_link'
+            elif ISpecificationBranch.providedBy(item):
+                action = 'break_link'
+            elif IProductSeries.providedBy(item):
+                action = 'break_link'
+            row = {'item': item,
+                   'reason': reason,
+                   'allowed': allowed,
+                  }
+            row_dict[action].append(row)
+        return row_dict
+
+    @action(_('Cancel'), name='cancel', validator='validate_cancel')
+    def cancel_action(self, action, data):
+        """Do nothing and go back to the branch page."""
 
 
 class BranchEditView(BranchEditFormView, BranchNameValidationMixin):

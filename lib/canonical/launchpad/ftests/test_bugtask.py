@@ -258,9 +258,9 @@ class BugTaskSetFindExpirableBugTasksTest(unittest.TestCase):
         for target in supported_targets:
             expirable_bugtasks = self.bugtaskset.findExpirableBugTasks(
                 0, self.user, target=target)
-            self.assertNotEqual(len(expirable_bugtasks), 0,
+            self.assertNotEqual(expirable_bugtasks.count(), 0,
                  "%s has %d expirable bugtasks." %
-                 (self.distroseries, len(expirable_bugtasks)))
+                 (self.distroseries, expirable_bugtasks.count()))
 
     def testUnsupportedBugTargetParam(self):
         """Test that unsupported targets raise errors.
