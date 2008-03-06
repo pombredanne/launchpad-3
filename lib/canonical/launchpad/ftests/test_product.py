@@ -16,6 +16,9 @@ class TestProductFiles(unittest.TestCase):
 
     def test_adddownloadfile_nonascii_filename(self):
         """Test uploading a file with a non-ascii char in the filename."""
+        # XXX EdwinGrubbs 2008-03-06 bug=69988
+        # Doctests are difficult to use with non-ascii characters, so
+        # I have used a unittest.
         firefox_owner = setupBrowser(auth='Basic mark@hbd.com:test')
         filename = u'foo\xa5.txt'.encode('utf-8')
         firefox_owner.open(
