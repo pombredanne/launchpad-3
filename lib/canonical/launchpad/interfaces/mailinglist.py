@@ -15,7 +15,6 @@ __all__ = [
     'IMailingListSubscription',
     'MailingListAutoSubscribePolicy',
     'MailingListStatus',
-    'PersonalStanding',
     'PostedMessageStatus',
     'is_participant_in_beta_program'
     ]
@@ -158,43 +157,6 @@ class MailingListAutoSubscribePolicy(DBEnumeratedType):
 
         The user is automatically subscribed to any team mailing list when she
         is added to the team, regardless of who joins her to the team.
-        """)
-
-
-class PersonalStanding(DBEnumeratedType):
-    """A person's standing.
-
-    Standing is currently (just) used to determine whether a person's posts to
-    a mailing list require first-post moderation or not.  Any person with good
-    or excellent standing may post directly to the mailing list without
-    moderation.  Any person with unknown or poor standing must have their
-    first-posts moderated.
-    """
-
-    UNKNOWN = DBItem(0, """
-        Unknown standing
-
-        Nothing about this person's standing is known.
-        """)
-
-    POOR = DBItem(100, """
-        Poor standing
-
-        This person has poor standing.
-        """)
-
-    GOOD = DBItem(200, """
-        Good standing
-
-        This person has good standing and may post to a mailing list without
-        being subject to first-post moderation rules.
-        """)
-
-    EXCELLENT = DBItem(300, """
-        Excellent standing
-
-        This person has excellent standing and may post to a mailing list
-        without being subject to first-post moderation rules.
         """)
 
 
@@ -518,7 +480,7 @@ class IMailingListAPIView(Interface):
     """XMLRPC API that Mailman polls for mailing list actions."""
 
     def getPendingActions():
-        """Return all pending mailing list actions.
+        """Get all pending mailing list actions.
 
         In addition, any mailing list for which there are actions pending will
         have their states transitioned to the next node in the workflow.  For
@@ -560,7 +522,7 @@ class IMailingListAPIView(Interface):
         """
 
     def getMembershipInformation(teams):
-        """Return membership information for the listed teams.
+        """Get membership information for the listed teams.
 
         :param teams: The list of team names for which Mailman is requesting
             membership information.
@@ -577,11 +539,21 @@ class IMailingListAPIView(Interface):
         """
 
     def isRegisteredInLaunchpad(address):
-        """Return whether the address is a Launchpad member or not.
+        """Whether the address is a Launchpad member.
 
         :param address: The text email address to check.
         :return: True if the address is a validated or preferred email address
             owned by a Launchpad member.
+        """
+
+    def inGoodStanding(address):
+        """Whether the address is a Launchpad member in good standing.
+
+        :param address: The text email address to check.
+        :return: True if the address is a member of Launchpad in good or
+            better standing (e.g. GOOD or EXCELLENT).  False is returned if
+            the address is not registered in Launchpad, or is assigned to a
+            team.
         """
 
 

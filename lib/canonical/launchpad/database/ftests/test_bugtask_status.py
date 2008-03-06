@@ -3,17 +3,14 @@
 
 __metaclass__ = type
 
-from zope.testing.doctest import REPORT_NDIFF, NORMALIZE_WHITESPACE, ELLIPSIS
-
-from canonical.functional import FunctionalDocFileSuite
+from canonical.launchpad.testing.systemdocs import (
+    LayeredDocFileSuite, setUp, tearDown)
 from canonical.testing import LaunchpadFunctionalLayer
-from canonical.launchpad.ftests.test_system_documentation import (
-    setUp, tearDown)
+
 
 def test_suite():
-    suite = FunctionalDocFileSuite(
+    suite = LayeredDocFileSuite(
             'test_bugtask_status.txt',
-            optionflags=REPORT_NDIFF|NORMALIZE_WHITESPACE|ELLIPSIS,
             layer=LaunchpadFunctionalLayer, setUp=setUp, tearDown=tearDown,
             )
     return suite
