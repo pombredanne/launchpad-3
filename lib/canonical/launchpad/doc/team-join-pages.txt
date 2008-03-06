@@ -61,7 +61,8 @@ Someone subscribing to a team with a moderated list will be shown an
 informative message regarding the delayed subscription.
 
     >>> moderated_team = make_team(
-    ...		'moderated-team-with-list', TeamSubscriptionPolicy.MODERATED)
+    ...     'moderated-team-with-list',
+    ...     TeamSubscriptionPolicy.MODERATED)
     >>> moderated_list = new_list_for_team(moderated_team)
 
     >>> join_team(moderated_team)
