@@ -38,7 +38,7 @@ import canonical.launchpad.layers
 from canonical.launchpad.interfaces import (
     IFeedsApplication, IPrivateApplication, IOpenIdApplication,
     IShipItApplication, IWebServiceApplication, IOAuthConsumerSet,
-    OAuthPermission)
+    OAuthPermission, NonceAlreadyUsed)
 
 from canonical.launchpad.webapp.notifications import (
     NotificationRequest, NotificationResponse, NotificationList)
@@ -924,12 +924,12 @@ class WebServicePublication(LaunchpadBrowserPublication):
         token = consumer.getAccessToken(token_key)
         if token is None:
             raise Unauthorized('Unknown access token (%s).' % token_key)
-#         nonce = form.get('oauth_nonce')
-#         timestamp = form.get('oauth_timestamp')
-#         try:
-#             token.ensureNonce(nonce, timestamp)
-#         except NonceAlreadyUsed, e:
-#             raise Unauthorized('Invalid nonce/timestamp: %s.' % e)
+        nonce = form.get('oauth_nonce')
+        timestamp = form.get('oauth_timestamp')
+        try:
+            token.ensureNonce(nonce, timestamp)
+        except NonceAlreadyUsed, e:
+            raise Unauthorized('Invalid nonce/timestamp: %s.' % e)
         now = datetime.now(pytz.timezone('UTC'))
         if token.permission == OAuthPermission.UNAUTHORIZED:
             raise Unauthorized('Unauthorized token (%s).' % token.key)

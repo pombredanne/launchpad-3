@@ -10,6 +10,7 @@ __all__ = [
 
 import random
 import pytz
+import time
 from datetime import datetime, timedelta
 
 from zope.interface import implements
@@ -23,7 +24,7 @@ from canonical.database.sqlbase import SQLBase
 
 from canonical.launchpad.interfaces import (
     IOAuthAccessToken, IOAuthConsumer, IOAuthConsumerSet, IOAuthNonce,
-    IOAuthRequestToken, OAuthPermission)
+    IOAuthRequestToken, OAuthPermission, NonceAlreadyUsed)
 
 
 # How many hours should a request token be valid for?
@@ -92,6 +93,31 @@ class OAuthAccessToken(OAuthToken):
     """See `IOAuthAccessToken`."""
     implements(IOAuthAccessToken)
 
+    def ensureNonce(self, nonce, timestamp):
+        """See `IOAuthAccessToken`."""
+        # XXX: Is it okay to do this?
+        date = datetime.fromtimestamp(float(timestamp), pytz.timezone('UTC'))
+        # XXX: Questions about nonces and timestamps.
+        # http://xrl.us/bgusu
+        allowed_interval = 60
+        oauth_nonce = OAuthNonce.selectOneBy(access_token=self, nonce=nonce)
+        if oauth_nonce is not None:
+            # XXX: I'm not sure that's a problem, but when we do
+            # date.timetuple() we lose some precision (miliseconds).
+            # e.g:
+            # >>> t = time.time()
+            # >>> time.mktime(datetime.fromtimestamp(t).timetuple()) == t
+            # False
+            utc_timestamp = time.mktime(date.timetuple())
+            stored_timestamp = time.mktime(
+                oauth_nonce.request_timestamp.timetuple())
+            if abs(stored_timestamp - utc_timestamp) > allowed_interval:
+                raise NonceAlreadyUsed('This nonce has been used already.')
+            return oauth_nonce
+        else:
+            return OAuthNonce(
+                access_token=self, nonce=nonce, request_timestamp=date)
+
 
 class OAuthRequestToken(OAuthToken):
     """See `IOAuthAccessToken`."""
@@ -133,8 +159,8 @@ class OAuthNonce(SQLBase):
     """See `IOAuthNonce`."""
     implements(IOAuthNonce)
 
-    consumer = ForeignKey(
-        dbName='consumer', foreignKey='OAuthConsumer', notNull=True)
+    access_token = ForeignKey(
+        dbName='access_token', foreignKey='OAuthAccessToken', notNull=True)
     request_timestamp = UtcDateTimeCol(default=UTC_NOW, notNull=True)
     nonce = StringCol(notNull=True)
 

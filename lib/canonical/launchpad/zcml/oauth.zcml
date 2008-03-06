@@ -31,4 +31,7 @@
           set_schema="canonical.launchpad.interfaces.IOAuthAccessToken"/>
   </content>
 
+  <content class="canonical.launchpad.database.OAuthNonce">
+      <allow interface="canonical.launchpad.interfaces.IOAuthNonce"/>
+  </content>
 </configure>

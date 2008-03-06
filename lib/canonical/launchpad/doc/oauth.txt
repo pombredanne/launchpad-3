@@ -10,7 +10,7 @@ OAuthConsumerSet utility.
     >>> from canonical.launchpad.webapp.testing import verifyObject
     >>> from canonical.launchpad.interfaces import (
     ...     IOAuthAccessToken, IOAuthConsumer, IOAuthConsumerSet,
-    ...     IOAuthRequestToken, IPersonSet, OAuthPermission)
+    ...     IOAuthNonce, IOAuthRequestToken, IPersonSet, OAuthPermission)
     >>> consumer_set = getUtility(IOAuthConsumerSet)
     >>> verifyObject(IOAuthConsumerSet, consumer_set)
     True
@@ -148,9 +148,9 @@ permission.
 == Access tokens ==
 
 As shown above, access tokens can be created from any reviewed (and
-authorized) request tokens. These tokens are then stored by the consumer and
-included in all further requests made on behalf of the same user, so we need a
-way to retrieve an access token from any consumer.
+authorized) request tokens. These tokens are then stored by the consumer
+and included in all further requests made on behalf of the same user, so
+we need a way to retrieve an access token from any consumer.
 
     >>> consumer.getAccessToken(access_token.key) == access_token
     True
@@ -164,3 +164,27 @@ An access token can only be changed by the person associated with it.
     >>> login(access_token.person.preferredemail.email)
     >>> access_token.permission = OAuthPermission.WRITE_PUBLIC
 
+= Nonces and timestamps =
+
+The nonce is a consumer-generated value that is unique for all requests
+with a given timestamp.  A nonce is a random string, uniquely generated
+for each request.  The nonce allows Launchpad to verify that a request
+has never been made before and helps prevent replay attacks when
+requests are made over a non-secure channel (such as HTTP). 
+
+Whenever we process an OAuth request, we ensure that either the nonce
+exists and is associated with the given timestamp or that it doesn't
+exist yet and thus should be created.  All this is done by
+IOAuthAccessToken.ensureNonce(), which takes a nonce (string) and a
+timestamp as arguments.
+
+    >>> import time
+    >>> now = time.time()
+    >>> nonce = access_token.ensureNonce('boo', now)
+    >>> verifyObject(IOAuthNonce, nonce)
+    True
+
+    >>> nonce = access_token.ensureNonce('boo', now + 80)
+    Traceback (most recent call last):
+    ...
+    NonceAlreadyUsed: ...
