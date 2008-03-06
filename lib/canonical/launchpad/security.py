@@ -21,11 +21,12 @@ from canonical.launchpad.interfaces import (
     IPackaging, IPerson, IPoll, IPollOption, IPollSubset, IProduct,
     IProductRelease, IProductReleaseFile, IProductSeries, IQuestion,
     IQuestionTarget, IRequestedCDs, IShipItApplication, IShippingRequest,
-    IShippingRequestSet, IShippingRun, ISpecification, ISpecificationBranch,
-    ISpecificationSubscription, ISprint, ISprintSpecification,
-    IStandardShipItRequest, IStandardShipItRequestSet, ITeam, ITeamMembership,
-    ITranslationGroup, ITranslationGroupSet, ITranslationImportQueue,
-    ITranslationImportQueueEntry, ITranslator, PersonVisibility)
+    IShippingRequestSet, IShippingRun, ISourcePackageRelease, ISpecification,
+    ISpecificationBranch, ISpecificationSubscription, ISprint,
+    ISprintSpecification, IStandardShipItRequest, IStandardShipItRequestSet,
+    ITeam, ITeamMembership, ITranslationGroup, ITranslationGroupSet,
+    ITranslationImportQueue, ITranslationImportQueueEntry, ITranslator,
+    PersonVisibility)
 
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.interfaces import IAuthorization
@@ -1449,6 +1450,38 @@ class ViewArchive(AuthorizationBase):
     def checkUnauthenticated(self):
         """Unauthenticated users can see the PPA if it's not private."""
         return not self.obj.private
+
+
+class ViewSourcePackageRelease(AuthorizationBase):
+    """Restrict viewing of source packages.
+
+    Packages that are only published in private archives are subject to the
+    same viewing rules as the archive (see class ViewArchive).
+
+    If the package is published in any non-private archive, then it is
+    automatically viewable even if the package is also published in
+    a private archive.
+    """
+    permission = 'launchpad.View'
+    userfor = ISourcePackageRelease
+
+    def checkAuthenticated(self, user):
+        """Verify that the user can view the sourcepackagerelease."""
+        for archive in self.obj.published_archives:
+            if check_permission('launchpad.View', archive):
+                return True
+        return False
+
+    def checkUnauthenticated(self):
+        """Check unauthenticated users.
+
+        Unauthenticated users can see the package as long as it's published
+        in a non-private archive.
+        """
+        for archive in self.obj.published_archives:
+            if not archive.private:
+                return True
+        return False
 
 
 class MailingListApprovalByExperts(AuthorizationBase):
