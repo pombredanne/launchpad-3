@@ -133,6 +133,9 @@ class CodeImportNewView(LaunchpadFormView):
             render_context=self.render_context)
 
         self.form_fields = self.form_fields + name_field
+        if not self.show_review_status:
+            # Omit the field so it doesn't attempt to validate it.
+            self.form_fields = self.form_fields.omit('review_status')
 
     @property
     def show_review_status(self):
@@ -168,7 +171,7 @@ class CodeImportNewView(LaunchpadFormView):
             cvs_root=data['cvs_root'],
             cvs_module=data['cvs_module'],
             review_status=data.get('review_status'))
-        self.next_url = canonical_url(code_import)
+        self.next_url = canonical_url(code_import.branch)
 
     @action('Cancel', name='cancel', validator='validate_cancel')
     def cancel_action(self, action, data):
@@ -192,10 +195,9 @@ class CodeImportNewView(LaunchpadFormView):
             if code_import is not None:
                 self.addError(
                     "Those CVS details are already specified for"
-                    " <a href=\"%s\">%s %s</a>."
-                    % (quote(canonical_url(code_import)),
-                       quote(series.product.displayname),
-                       quote(series.displayname)))
+                    " the imported branch <a href=\"%s\">%s</a>."
+                    % (canonical_url(code_import.branch),
+                       code_import.branch.uniquename))
 
     def _validateSVN(self, svn_branch_url):
         if not (svn_branch_url or self.getFieldError('svn_branch_url')):
@@ -208,10 +210,9 @@ class CodeImportNewView(LaunchpadFormView):
                 self.setFieldError(
                     'svn_branch_url',
                     "This Subversion branch URL is already specified for"
-                    " <a href=\"%s\">%s %s</a>."
-                    % (quote(canonical_url(series)),
-                       quote(series.product.displayname),
-                       quote(series.displayname)))
+                    " the imported branch <a href=\"%s\">%s</a>."
+                    % (canonical_url(code_import.branch),
+                       code_import.branch.uniquename))
 
     def validate(self, data):
         # If the user has specified a subversion url, we need

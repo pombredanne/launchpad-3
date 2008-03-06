@@ -9,8 +9,7 @@
 
   <content class="canonical.launchpad.database.CodeImport">
     <implements interface="canonical.launchpad.interfaces.ICodeImport" />
-    <require
-      permission="launchpad.View"
+    <allow
       attributes="id date_created branch registrant owner assignee
                   product series review_status
                   rcs_type cvs_root cvs_module svn_branch_url
@@ -60,9 +59,7 @@
   <securedutility
     class="canonical.launchpad.database.CodeImportSet"
     provides="canonical.launchpad.interfaces.ICodeImportSet" >
-    <require
-      permission="launchpad.View"
-      interface="canonical.launchpad.interfaces.ICodeImportSet" />
+    <allow interface="canonical.launchpad.interfaces.ICodeImportSet" />
   </securedutility>
 
   <facet facet="branches">
