@@ -7,7 +7,8 @@ from cookielib import domain_match
 from zope.component import getUtility
 from zope.app.session.interfaces import ISession
 from zope.app.session.http import CookieClientIdManager
-from zope.app.rdb.interfaces import IZopeDatabaseAdapter
+
+from storm.zope.interfaces import IZStorm
 
 from canonical.config import config
 from canonical.launchpad.webapp.url import urlparse
@@ -54,10 +55,9 @@ class LaunchpadCookieClientIdManager(CookieClientIdManager):
         # Secret is looked up here rather than in __init__, because
         # we can't be sure the database connections are setup at that point.
         if self._secret is None:
-            da = getUtility(IZopeDatabaseAdapter, 'session')
-            cursor = da().cursor()
-            cursor.execute("SELECT secret FROM secret")
-            self._secret = cursor.fetchone()[0]
+            store = getUtility(IZStorm).get('session')
+            result = store.execute("SELECT secret FROM secret")
+            self._secret = result.get_one()[0]
         return self._secret
 
     def _set_secret(self, value):

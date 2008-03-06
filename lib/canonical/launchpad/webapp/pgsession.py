@@ -13,11 +13,10 @@ from datetime import datetime, timedelta
 
 from zope.component import getUtility
 from zope.interface import implements
-from zope.app.rdb.interfaces import IZopeDatabaseAdapter
 from zope.app.session.interfaces import (
-        ISessionDataContainer, ISessionData, ISessionPkgData
-        )
-from psycopgda.adapter import PG_ENCODING
+    ISessionDataContainer, ISessionData, ISessionPkgData)
+
+from storm.zope.interfaces import IZStorm
 
 SECONDS = 1
 MINUTES = 60 * SECONDS
@@ -25,12 +24,11 @@ HOURS = 60 * MINUTES
 DAYS = 24 * HOURS
 
 class PGSessionBase:
-    database_adapter_name = 'session'
+    store_name = 'session'
 
     @property
-    def cursor(self):
-        da = getUtility(IZopeDatabaseAdapter, self.database_adapter_name)
-        return da().cursor()
+    def store(self):
+        return getUtility(IZStorm).get(self.store_name)
 
 
 class PGSessionDataContainer(PGSessionBase):
@@ -73,10 +71,9 @@ class PGSessionDataContainer(PGSessionBase):
 
     def __setitem__(self, client_id, session_data):
         """See zope.app.session.interfaces.ISessionDataContainer"""
-        client_id = client_id.encode(PG_ENCODING)
-        self.cursor.execute(
-                "SELECT ensure_session_client_id(%(client_id)s)", vars()
-                )
+        self.store.execute(
+                "SELECT ensure_session_client_id(?)", (client_id,),
+                noresult=True)
 
     _last_sweep = datetime.utcnow()
     fuzz = 10 # Our sweeps may occur +- this many seconds to minimize races.
@@ -93,8 +90,7 @@ class PGSessionDataContainer(PGSessionBase):
             DELETE FROM SessionData WHERE last_accessed
                 < CURRENT_TIMESTAMP AT TIME ZONE 'UTC' - '%d seconds'::interval
             """ % self.timeout
-        cursor = self.cursor
-        cursor.execute(query)
+        self.store.execute(query, noresult=True)
 
 
 class PGSessionData(PGSessionBase):
@@ -113,10 +109,10 @@ class PGSessionData(PGSessionBase):
         table_name = session_data_container.session_data_table_name
         query = """
             UPDATE %s SET last_accessed = CURRENT_TIMESTAMP
-            WHERE client_id = %%s
+            WHERE client_id = ?
                 AND last_accessed < CURRENT_TIMESTAMP - '%d seconds'::interval
             """ % (table_name, session_data_container.resolution)
-        self.cursor.execute(query, [client_id.encode(PG_ENCODING)])
+        self.store.execute(query, (client_id,), noresult=True)
 
     def __getitem__(self, product_id):
         """Return an ISessionPkgData"""
@@ -134,8 +130,8 @@ class PGSessionPkgData(DictMixin, PGSessionBase):
     implements(ISessionPkgData)
 
     @property
-    def cursor(self):
-        return self.session_data.cursor
+    def store(self):
+        return self.session_data.store
 
     def __init__(self, session_data, product_id):
         self.session_data = session_data
@@ -149,39 +145,27 @@ class PGSessionPkgData(DictMixin, PGSessionBase):
     def _populate(self):
         self._data_cache = {}
         query = """
-            SELECT key, pickle FROM %s WHERE client_id = %%(client_id)s
-                AND product_id = %%(product_id)s
+            SELECT key, pickle FROM %s WHERE client_id = ?
+                AND product_id = ?
             """ % self.table_name
-        client_id = self.session_data.client_id.encode(PG_ENCODING)
-        product_id = self.product_id.encode(PG_ENCODING)
-        cursor = self.cursor
-        cursor.execute(query, vars())
-        for key, pickled_value in cursor.fetchall():
-            key = key.decode(PG_ENCODING)
-            value = pickle.loads(pickled_value)
+        result = self.store.execute(query, (self.session_data.client_id,
+                                   self.product_id))
+        for key, pickled_value in result:
+            value = pickle.loads(str(pickled_value))
             self._data_cache[key] = value
 
     def __getitem__(self, key):
         return self._data_cache[key]
 
     def __setitem__(self, key, value):
-        pickled_value = psycopg.Binary(
-                pickle.dumps(value, pickle.HIGHEST_PROTOCOL)
-                )
+        pickled_value =  pickle.dumps(value, pickle.HIGHEST_PROTOCOL)
 
-        org_key = key
-        key = key.encode(PG_ENCODING)
-        client_id = self.session_data.client_id.encode(PG_ENCODING)
-        product_id = self.product_id.encode(PG_ENCODING)
-
-        self.cursor.execute("""
-            SELECT set_session_pkg_data(
-                %(client_id)s, %(product_id)s, %(key)s, %(pickled_value)s
-                )
-            """, vars())
+        self.store.execute("SELECT set_session_pkg_data(?, ?, ?, ?)",
+                           (self.session_data.client_id, self.product_id,
+                            key, pickled_value), noresult=True)
 
         # Store the value in the cache too
-        self._data_cache[org_key] = value
+        self._data_cache[key] = value
 
     def __delitem__(self, key):
         """Delete an item.
@@ -197,14 +181,10 @@ class PGSessionPkgData(DictMixin, PGSessionBase):
             # fingers out of it.
             return
         query = """
-            DELETE FROM %s WHERE client_id = %%(client_id)s
-                AND product_id = %%(product_id)s AND key = %%(key)s
+            DELETE FROM %s WHERE client_id = ? AND product_id = ? AND key = ?
             """ % self.table_name
-        client_id = self.session_data.client_id.encode(PG_ENCODING)
-        product_id = self.product_id.encode(PG_ENCODING)
-        key = key.encode(PG_ENCODING)
-        cursor = self.cursor
-        cursor.execute(query, vars())
+        self.store.execute(query, (self.session_data.client_id,
+                                   self.product_id, key), noresult=True)
 
     def keys(self):
         return self._data_cache.keys()
