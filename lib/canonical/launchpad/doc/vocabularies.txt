@@ -338,6 +338,26 @@ All the teams the person is an active member of.
     >>> mirrors_admins in person_active_membership
     False
 
+The PersonActiveMembership vocabulary only shows teams where the
+membership is public.
+
+    >>> from canonical.launchpad.interfaces import PersonVisibility
+    >>> launchpad_team.visibility = PersonVisibility.PRIVATE_MEMBERSHIP
+    >>> vcs_imports = person_set.getByName('vcs-imports')
+    >>> vcs_imports.visibility = PersonVisibility.PRIVATE
+
+    >>> for term in person_active_membership:
+    ...     print term.token, term.value.displayname, term.title
+    guadamen GuadaMen GuadaMen
+    admins Launchpad Administrators Launchpad Administrators
+    launchpad-buildd-admins Launchpad Buildd Admins Launchpad Buildd Admins
+    testing-spanish-team testing Spanish team testing Spanish team
+    name18 Ubuntu Gnome Team Ubuntu Gnome Team
+    ubuntu-team Ubuntu Team Ubuntu Team
+
+    >>> launchpad_team.visibility = PersonVisibility.PUBLIC
+    >>> vcs_imports.visibility = PersonVisibility.PUBLIC
+
     >>> term = person_active_membership.getTerm(launchpad_team)
     >>> print term.token, term.value.displayname, term.title
     launchpad Launchpad Developers Launchpad Developers

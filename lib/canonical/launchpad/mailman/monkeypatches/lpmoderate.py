@@ -30,6 +30,10 @@ def process(mlist, msg, msgdata):
     in_good_standing = False
     proxy = xmlrpclib.ServerProxy(mm_cfg.XMLRPC_URL)
     try:
+        # If an exception occurs here, say because we can't talk to Launchpad,
+        # the message will end up in the normal moderation queue, held for
+        # approval by the team owner.  This will be done by handlers further
+        # along in the pipeline.
         in_good_standing = proxy.inGoodStanding(sender)
     except (xmlrpclib.ProtocolError, socket.error), error:
         syslog('xmlrpc', 'Cannot talk to Launchpad:\n%s', error)
