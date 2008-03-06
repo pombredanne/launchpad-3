@@ -119,16 +119,6 @@ associated with any specific address.
     None
 
 
-# XXX mars, 2008-02-14:
-# How do we fix this?
-
-# If a user is not subscribed to a mailing list, they will have no
-# MailingListSubscription object for that mailing list.
-#
-#     >>> print list_one.getSubscription(harry)
-#     None
-#
-
 == Nested teams ==
 
 Indirect members can subscribe to a team's mailing list.  To illustrate this,
@@ -225,29 +215,6 @@ allowed due to indirect membership in the superteam.
      u'cris.person@example.com', u'dirk.person@example.com']
     >>> sorted(email.email for email in list_three.getSubscribedAddresses())
     [u'dirk.person@example.com']
-
-# XXX mars 2008-02-15:
-#
-# Oops! This case hasn't been fully tested.  We really need to test
-# that sub-team subscriptions are properly de-activated when teams
-# part.
-
-# Once the subteam is deactivated from the superteam, subteam members who have
-# no other indirect membership in the superteam cannot subscribe to the
-# superteam's mailing list.
-
-#     >>> dirk.leave(team_two)
-#     >>> from canonical.launchpad.interfaces import TeamMembershipStatus
-#     >>> team_one.setMembershipData(team_three,
-#     ...     TeamMembershipStatus.DEACTIVATED, salgado)
-#     >>> sorted(email.email for email in list_one.getSubscribedAddresses())
-#     [u'anne.person@example.com', u'bperson@example.org',
-#      u'cris.person@example.com']
-
-#     >>> list_one.subscribe(dirk)
-#     Traceback (most recent call last):
-#     ...
-#     CannotSubscribe: Dirk Person is not a member of team Team One
 
 Once the subteam is deactivated from the superteam, subteam members who have
 no other indirect membership in the superteam will be unsubscribed to the
