@@ -683,6 +683,7 @@ class ProductSet:
             Product.id in (
                 select distinct(product) from Branch
                 where lifecycle_status in %s)
+            and Product.active
             ''' % sqlvalues(DEFAULT_BRANCH_STATUS_IN_LISTING),
             orderBy='name')
         if num_products is not None:
@@ -692,6 +693,7 @@ class ProductSet:
     def getProductsWithUserDevelopmentBranches(self):
         """See `IProductSet`."""
         return Product.select('''
+            Product.active and
             Product.development_focus = ProductSeries.id and
             ProductSeries.user_branch = Branch.id and
             Branch.branch_type in %s
