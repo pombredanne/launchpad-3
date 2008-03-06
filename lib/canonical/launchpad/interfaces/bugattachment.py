@@ -80,8 +80,16 @@ class IBugAttachmentSet(Interface):
     """A set for IBugAttachment objects."""
 
     def create(bug, filealias, title, message,
-               type=IBugAttachment['type'].default):
-        """Create a new attachment and return it."""
+               type=IBugAttachment['type'].default, send_notifications=False):
+        """Create a new attachment and return it.
+
+        bug: The bug to which the new attachment belongs.
+        filealias: The filealias containing the data.
+        message: The message to which this attachment belongs.
+        type: The type of attachment. See BugAttachmentType.
+        send_notifications: If True, a notification is sent to
+            subscribers of the bug.
+        """
 
     def __getitem__(id):
         """Get an IAttachment by its id.

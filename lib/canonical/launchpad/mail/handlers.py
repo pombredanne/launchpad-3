@@ -376,7 +376,7 @@ class MaloneHandler:
 
             getUtility(IBugAttachmentSet).create(
                 bug=bug, filealias=filealias, attach_type=attach_type,
-                title=filename, message=message)
+                title=filename, message=message, send_notifications=True)
 
 
 class AnswerTrackerHandler:

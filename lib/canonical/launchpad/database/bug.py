@@ -609,11 +609,9 @@ class Bug(SQLBase):
             message = self.newMessage(
                 owner=owner, subject=description, content=comment)
 
-        attachment = getUtility(IBugAttachmentSet).create(
+        return getUtility(IBugAttachmentSet).create(
             bug=self, filealias=filealias, attach_type=attach_type,
-            title=title, message=message)
-        notify(SQLObjectCreatedEvent(attachment))
-        return attachment
+            title=title, message=message, send_notifications=True)
 
     def hasBranch(self, branch):
         """See `IBug`."""

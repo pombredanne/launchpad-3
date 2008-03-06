@@ -1982,6 +1982,22 @@ An email may contain more than one attachment; all of them are stored.
     LibraryFileAlias sample.html text/html UNSPECIFIED
     <html></html>
 
+A bugnotification is sent for each attached file.
+
+    >>> bug_notifications = BugNotification.select(orderBy='-id', limit=3)
+    >>> for bug_notification in bug_notifications:
+    ...     print '-------------------'
+    ...     print bug_notification.message.chunks[0].content
+    -------------------
+    Found bug N+1 in Firefox. Nothing displayed. See attached files.
+    affects firefox
+    -------------------
+    ** Attachment added: "sample.html"
+       http://.../sample.html
+    -------------------
+    ** Attachment added: "firefox1.log"
+       http://.../firefox1.log
+
 If the content disposition header of a mail attachment does not start with
 "attachment", the attachment is not stored as a bug attachment.
 
