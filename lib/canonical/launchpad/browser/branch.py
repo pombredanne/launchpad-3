@@ -933,7 +933,7 @@ class BranchSubscriptionsView(LaunchpadView):
             return False
         celebs = getUtility(ILaunchpadCelebrities)
         return (self.user.inTeam(subscription.person) or
-                self.user.inTeam(celebs.admins) or
+                self.user.inTeam(celebs.admin) or
                 self.user.inTeam(celebs.bazaar_experts))
 
     def subscriptions(self):
