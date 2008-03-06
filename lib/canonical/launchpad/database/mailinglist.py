@@ -7,6 +7,8 @@ __all__ = [
     'MailingList',
     'MailingListSet',
     'MailingListSubscription',
+    'MessageApproval',
+    'MessageApprovalSet',
     ]
 
 from string import Template
@@ -26,9 +28,47 @@ from canonical.launchpad.event import SQLObjectModifiedEvent
 from canonical.launchpad.interfaces import (
     CannotChangeSubscription, CannotSubscribe, CannotUnsubscribe,
     EmailAddressStatus, IEmailAddressSet, ILaunchpadCelebrities, IMailingList,
-    IMailingListSet, IMailingListSubscription, MailingListStatus)
+    IMailingListSet, IMailingListSubscription, IMessageApproval,
+    IMessageApprovalSet, MailingListStatus, PostedMessageStatus)
 from canonical.launchpad.validators.person import public_person_validator
 from canonical.launchpad.webapp.snapshot import Snapshot
+
+
+class MessageApproval(SQLBase):
+    """A held message."""
+
+    implements(IMessageApproval)
+
+    message_id = StringCol()
+
+    posted_by = ForeignKey(
+        dbName='posted_by', foreignKey='Person',
+        validator=public_person_validator)
+
+    posted_message = ForeignKey(
+        dbName='posted_message', foreignKey='Message')
+
+    posted_date = UtcDateTimeCol(notNull=True, default=UTC_NOW)
+
+    mailing_list = ForeignKey(dbName='mailing_list', foreignKey='MailingList')
+
+    status = EnumCol(enum=PostedMessageStatus,
+                     default=PostedMessageStatus.NEW)
+
+    disposed_by = ForeignKey(
+        dbName='disposed_by', foreignKey='Person',
+        validator=public_person_validator,
+        default=None)
+
+    disposal_date = UtcDateTimeCol(default=None)
+
+    def approve(self, reviewer):
+        """See `MessageApproval`."""
+        pass
+
+    def reject(self, reviewer):
+        """See `MessageApproval`."""
+        pass
 
 
 class MailingList(SQLBase):
@@ -353,6 +393,14 @@ class MailingList(SQLBase):
                                          'TeamParticipation',
                                          'MailingList'])
 
+    def holdMessage(self, message):
+        """See `IMailingList`."""
+        return MessageApproval(message_id=message.rfc822msgid,
+                               posted_by=message.owner,
+                               posted_message=message,
+                               posted_date=message.datecreated,
+                               mailing_list=self)
+
 
 class MailingListSet:
     implements(IMailingListSet)
@@ -446,3 +494,15 @@ class MailingListSubscription(SQLBase):
         else:
             # Use the subscribed email address.
             return self.email_address
+
+
+class MessageApprovalSet:
+    """Sets of held messages."""
+
+    implements(IMessageApprovalSet)
+
+    def getHeldMessagesWithStatus(self, status):
+        """See `IMessageApprovalSet`."""
+        return MessageApproval.select("""
+            MessageApproval.status = %s
+            """ % sqlvalues(status))

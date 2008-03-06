@@ -29,6 +29,13 @@
          interface="canonical.launchpad.interfaces.IMailingListApplication"/>
     </securedutility>
 
+    <securedutility
+        class="canonical.launchpad.database.MessageApprovalSet"
+        provides="canonical.launchpad.interfaces.IMessageApprovalSet">
+        <allow
+         interface="canonical.launchpad.interfaces.IMessageApprovalSet"/>
+    </securedutility>
+
     <xmlrpc:view
         for="canonical.launchpad.interfaces.IMailingListApplication"
         interface="canonical.launchpad.interfaces.IMailingListAPIView"
