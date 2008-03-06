@@ -580,12 +580,6 @@ class IMailingListAPIView(Interface):
             team.
         """
 
-    def holdMessage(text):
-        """Hold the message for approval though the Launchpad u/i.
-
-        :param text: The original text of the message.
-        """
-
     def getMessageDispositions():
         """Get all new message dispositions.
 
