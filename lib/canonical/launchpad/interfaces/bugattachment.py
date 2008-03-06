@@ -61,7 +61,8 @@ class IBugAttachment(IHasBug):
         required=True)
     title = Title(
         title=_('Title'),
-        description=_('A short and descriptive description of the attachment'),
+        description=_(
+            'A short and descriptive description of the attachment'),
         required=True)
     libraryfile = Object(
         schema=ILibraryFileAlias,

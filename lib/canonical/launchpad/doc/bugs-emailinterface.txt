@@ -48,7 +48,6 @@ Now, in order to really submit the bug, this email would have to be PGP
 signed, so that the system can verify the sender. But to avoid having
 to sign each email, we'll create a class which fakes a signed email:
 
-    >>> import email
     >>> import email.Utils
     >>> class MockSignedMessage(email.Message.Message):
     ...     @property
@@ -129,8 +128,6 @@ A notification was added:
 
 We define a helper to pretty-print the notification recipients:
 
-    >>> from canonical.launchpad.mailnotification import (
-    ...     BugNotificationRecipients)
     >>> def getSubscribers(bug):
     ...     recipients = bug.getBugNotificationRecipients()
     ...     return recipients.getEmails()
@@ -1541,8 +1538,6 @@ which bug task to edit:
 
     >>> from canonical.launchpad.interfaces import (
     ...     IDistributionSet, ISourcePackageNameSet)
-    >>> from canonical.launchpad.database.packagebugcontact import (
-    ...     PackageBugContact)
 
     >>> commit()
     >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
