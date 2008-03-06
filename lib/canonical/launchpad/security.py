@@ -1246,7 +1246,8 @@ class AccessBranch(AuthorizationBase):
         for subscriber in self.obj.subscribers:
             if user.inTeam(subscriber):
                 return True
-        return user.inTeam(getUtility(ILaunchpadCelebrities).admin)
+        celebs = getUtility(ILaunchpadCelebrities)
+        return user.inTeam(celebs.admin) or user.inTeam(celebs.bazaar_experts)
 
     def checkUnauthenticated(self):
         return not self.obj.private
@@ -1277,8 +1278,10 @@ class BranchSubscriptionEdit(AuthorizationBase):
         Any team member can edit a branch subscription for their team.
         Launchpad Admins can also edit any branch subscription.
         """
-        admins = getUtility(ILaunchpadCelebrities).admin
-        return user.inTeam(self.obj.person) or user.inTeam(admins)
+        celebs = getUtility(ILaunchpadCelebrities)
+        return (user.inTeam(self.obj.person) or
+                user.inTeam(celebs.admin) or
+                user.inTeam(celebs.bazaar_experts))
 
 
 class BranchSubscriptionView(BranchSubscriptionEdit):
@@ -1323,12 +1326,13 @@ class BranchMergeProposalEdit(AuthorizationBase):
           * the reviewer for the target_branch
           * an administrator
         """
-        admins = getUtility(ILaunchpadCelebrities).admin
+        celebs = getUtility(ILaunchpadCelebrities)
         return (user.inTeam(self.obj.registrant) or
                 user.inTeam(self.obj.source_branch.owner) or
                 user.inTeam(self.obj.target_branch.owner) or
                 user.inTeam(self.obj.target_branch.reviewer) or
-                user.inTeam(admins))
+                user.inTeam(celebs.admin) or
+                user.inTeam(celebs.bazaar_experts))
 
 
 class ViewEntitlement(AuthorizationBase):
