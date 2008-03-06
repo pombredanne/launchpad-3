@@ -11,7 +11,7 @@ __all__ = [
 from sqlobject import SQLObjectNotFound
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.database.sqlbase import sqlvalues
+from canonical.database.sqlbase import cursor, sqlvalues
 
 from canonical.launchpad.database.pomsgid import POMsgID
 from canonical.launchpad.database.potemplate import POTemplate
@@ -28,13 +28,32 @@ def getOrCreatePOMsgID(msgid):
         pomsgid = POMsgID(msgid=msgid)
     return pomsgid
 
+def find_existing_translation(potmsgset, pofile, translations):
+    unprotected_potmsgset = removeSecurityProxy(potmsgset)
+    potranslations = {}
+    for index in range(len(translations)):
+        if translations != '':
+            potranslations[index] = (
+                POTranslation.getOrCreateTranslation(
+                    translations[index]))
+        else:
+            potranslations[index] = None
+    if len(potranslations) < 6:
+        for index in range(len(potranslations), 6):
+            potranslations[index] = None
+    existing_message = (
+        unprotected_potmsgset._findTranslationMessage(
+            pofile, potranslations, 6))
+    return (existing_message, potranslations)
+
 def migrate_translations_for_potmsgset(potmsgset, from_potmsgset, logger, ztm):
     # Fix translations for this potmsgset as well.
     # `from_potmsgset` is an old, unmigrated POTMsgSet we are migrating
     # translations from.
     messages = TranslationMessage.select(
         "potmsgset=%s" % sqlvalues(from_potmsgset))
-    logger.info("Fixing %d TranslationMessages..." % messages.count())
+    logger.debug("Migrating %d translations for '%s'..." % (
+        messages.count(), potmsgset.singular_text))
     for message in messages:
         msgstrs = message.translations
         # Let's see if translations have only the first plural
@@ -51,28 +70,16 @@ def migrate_translations_for_potmsgset(potmsgset, from_potmsgset, logger, ztm):
 
             # If there's only a single plural form, no need to change
             # anything.
-            if len(translations) == 1:
+            if len(translations) == 1 and potmsgset == from_potmsgset:
                 continue
 
+            #logger.info("OVDE JE STIGAO!")
             # If there is an existing TranslationMessage with
             # these translations, re-use that and remove this one,
             # otherwise modify this one in-place.
 
-            unprotected_potmsgset = removeSecurityProxy(potmsgset)
-            potranslations = {}
-            for index in range(len(translations)):
-                if translations != '':
-                    potranslations[index] = (
-                        POTranslation.getOrCreateTranslation(
-                            translations[index]))
-                else:
-                    potranslations[index] = None
-            if len(potranslations) < 6:
-                for index in range(len(potranslations), 6):
-                    potranslations[index] = None
-            existing_message = (
-                unprotected_potmsgset._findTranslationMessage(
-                    message.pofile, potranslations, 6))
+            existing_message, potranslations = find_existing_translation(
+                potmsgset, message.pofile, translations)
             if existing_message:
                 if existing_message.id != message.id:
                     # Only transfer is_current and is_imported
@@ -98,9 +105,9 @@ def migrate_translations_for_potmsgset(potmsgset, from_potmsgset, logger, ztm):
 
 def migrate_kde_potemplate_translations(potemplate, logger, ztm):
     assert(potemplate.source_file_format == TranslationFileFormat.KDEPO)
-
+    cur = cursor()
     cur.execute("""
-      SELECT old_msg, new_msg
+      SELECT old_msg.id, new_msg.id
         FROM POTMsgSet AS old_msg, POMsgID AS old_msgid,
              POTMsgSet AS new_msg, POMsgID AS singular, POMsgID AS plural
         WHERE
@@ -113,7 +120,7 @@ def migrate_kde_potemplate_translations(potemplate, logger, ztm):
           -- and no plural form
           old_msg.msgid_singular=old_msgid.id
           AND old_msg.msgid_plural IS NULL AND
-          old_msgid.msgid LIKE '_n: %' AND
+          old_msgid.msgid LIKE '_n: %%' AND
           -- and new POTMsgSet has singular and plural which when joined
           -- give the old plural form
           new_msg.msgid_singular=singular.id AND
@@ -131,7 +138,7 @@ def migrate_kde_potemplate_translations(potemplate, logger, ztm):
                                            logger, ztm)
 
     cur.execute("""
-      SELECT old_msg, new_msg
+      SELECT old_msg.id, new_msg.id
         FROM POTMsgSet AS old_msg, POMsgID AS old_msgid,
              POTMsgSet AS new_msg, POMsgID AS new_msgid
         WHERE
@@ -144,7 +151,7 @@ def migrate_kde_potemplate_translations(potemplate, logger, ztm):
           -- and no plural form
           old_msg.msgid_singular=old_msgid.id
           AND old_msg.msgid_plural IS NULL AND
-          old_msgid.msgid LIKE '_: %' AND
+          old_msgid.msgid LIKE '_: %%' AND
           -- and new POTMsgSet has singular and context which when joined
           -- give the old contextual message
           new_msg.msgid_singular=new_msgid.id AND
@@ -160,11 +167,11 @@ def migrate_kde_potemplate_translations(potemplate, logger, ztm):
         new_potmsgset = POTMsgSet.get(new_potmsgset_id)
         messages = TranslationMessage.select(
             "potmsgset=%s" % sqlvalues(old_potmsgset))
-        logger.info(
-            "Moving %d TranslationMessages from POTMsgSet %d to %d..." % (
+        logger.debug(
+            "Moving %d context translations from POTMsgSet %d to %d..." % (
                 messages.count(), old_potmsgset_id, new_potmsgset_id))
-        for message in messages:
-            message.potmsgset = new_potmsgset
+        migrate_translations_for_potmsgset(new_potmsgset, old_potmsgset,
+                                           logger, ztm)
 
     ztm.commit()
 
@@ -183,7 +190,7 @@ def migrate_potemplate(potemplate, logger, ztm):
       """ % sqlvalues(potemplate),
       clauseTables=['POMsgID'])
 
-    logger.info("Fixing %d POTMsgSets..." % potmsgsets.count())
+    logger.debug("Fixing %d POTMsgSets..." % potmsgsets.count())
 
     # We go potmsgset by potmsgset because it's easier to preserve
     # correctness.  It'd be faster to go through translation messages
