@@ -89,7 +89,7 @@ class AllVirtualHostsConfiguration:
         for section in config.getByCategory('vhost'):
             if section.hostname is None:
                 continue
-            category, vhost = section.name.split('.')
+            category, vhost = section.category_specific_names
             self._configs[vhost] = config = VirtualHostConfig(
                 section.hostname,
                 section.althostnames,

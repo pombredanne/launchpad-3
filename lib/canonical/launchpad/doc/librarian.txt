@@ -75,7 +75,12 @@ https one, depending on a config value.
     ...     ) is not None
     True
 
-    >>> config.push('test', '[vhosts]\nuse_https: true')
+    >>> from textwrap import dedent
+    >>> test_data = dedent("""
+    ...     [vhosts]
+    ...     use_https: true
+    ...     """)
+    >>> config.push('test', test_data)
     >>> re.search(
     ...     r'^https://localhost:58000/\d+/text.txt$', alias.getURL()
     ...     ) is not None

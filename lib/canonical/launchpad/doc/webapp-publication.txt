@@ -463,7 +463,12 @@ production. -- Leonard Richardson 2008-01-04
     >>> config.vhosts.expose_webservice
     True
 
-    >>> config.push('test', '[vhosts]\nexpose_webservice: false')
+    >>> from textwrap import dedent
+    >>> test_data = dedent("""
+    ...     [vhosts]
+    ...     expose_webservice: false
+    ...     """)
+    >>> config.push('test', test_data)
 
     >>> print_request_and_publication('api.launchpad.dev', method='GET')
     ProtocolErrorRequest
