@@ -580,18 +580,6 @@ class IMailingListAPIView(Interface):
             team.
         """
 
-    def getMessageDispositions():
-        """Get all new message dispositions.
-
-        This returns a dictionary mapping message ids to their disposition,
-        which will either be 'accept' or 'decline'.  This only returns
-        message-ids of disposed messages since the last time this method was
-        called.
-
-        :return: A dictionary mapping message-ids to the disposition, either
-            the string 'accept' or 'decline'.
-        """
-
 
 class IMailingListSubscription(Interface):
     """A mailing list subscription."""
