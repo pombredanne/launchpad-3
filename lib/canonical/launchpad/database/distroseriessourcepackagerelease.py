@@ -39,29 +39,29 @@ class DistroSeriesSourcePackageRelease:
 
     @property
     def distribution(self):
-        """See IDistroSeriesSourcePackageRelease."""
+        """See `IDistroSeriesSourcePackageRelease`."""
         return self.distroseries.distribution
 
     @property
     def displayname(self):
-        """See IDistroSeriesSourcePackageRelease."""
+        """See `IDistroSeriesSourcePackageRelease`."""
         return '%s %s' % (self.name, self.version)
 
     @property
     def title(self):
-        """See IDistroSeriesSourcePackageRelease."""
+        """See `IDistroSeriesSourcePackageRelease`."""
         return '%s %s (source) in %s %s' % (
             self.name, self.version, self.distribution.name,
             self.distroseries.name)
 
     @property
     def version(self):
-        """See IDistroSeriesSourcePackageRelease."""
+        """See `IDistroSeriesSourcePackageRelease`."""
         return self.sourcepackagerelease.version
 
     @property
     def pocket(self):
-        """See IDistroSeriesSourcePackageRelease."""
+        """See `IDistroSeriesSourcePackageRelease`."""
         currpub = self.current_publishing_record
         if currpub is None:
             return None
@@ -69,7 +69,7 @@ class DistroSeriesSourcePackageRelease:
 
     @property
     def section(self):
-        """See IDistroSeriesSourcePackageRelease."""
+        """See `IDistroSeriesSourcePackageRelease`."""
         currpub = self.current_publishing_record
         if currpub is None:
             return None
@@ -77,7 +77,7 @@ class DistroSeriesSourcePackageRelease:
 
     @property
     def component(self):
-        """See IDistroSeriesSourcePackageRelease."""
+        """See `IDistroSeriesSourcePackageRelease`."""
         currpub = self.current_publishing_record
         if currpub is None:
             return None
@@ -87,7 +87,7 @@ class DistroSeriesSourcePackageRelease:
 # content classes in order to be better maintained.
     @property
     def builds(self):
-        """See IDistroSeriesSourcePackageRelease."""
+        """See `IDistroSeriesSourcePackageRelease`."""
         return Build.select("""
             Build.sourcepackagerelease = %s AND
             Build.distroarchseries = DistroArchSeries.id AND
@@ -99,12 +99,12 @@ class DistroSeriesSourcePackageRelease:
 
     @property
     def files(self):
-        """See ISourcePackageRelease."""
+        """See `ISourcePackageRelease`."""
         return self.sourcepackagerelease.files
 
     @property
     def binaries(self):
-        """See IDistroSeriesSourcePackageRelease."""
+        """See `IDistroSeriesSourcePackageRelease`."""
         clauseTables = [
             'BinaryPackageRelease',
             'DistroArchSeries',
@@ -131,7 +131,7 @@ class DistroSeriesSourcePackageRelease:
 
     @property
     def meta_binaries(self):
-        """See IDistroSeriesSourcePackageRelease."""
+        """See `IDistroSeriesSourcePackageRelease`."""
         binary_pkg_names = sorted(
             set([pkg.binarypackagename for pkg in self.binaries]))
         return [self.distroseries.getBinaryPackage(name)
@@ -139,7 +139,7 @@ class DistroSeriesSourcePackageRelease:
 
     @property
     def changesfile(self):
-        """See IDistroSeriesSourcePackageRelease."""
+        """See `IDistroSeriesSourcePackageRelease`."""
         clauseTables = [
             'PackageUpload',
             'PackageUploadSource',
@@ -190,7 +190,7 @@ class DistroSeriesSourcePackageRelease:
 
     @property
     def publishing_history(self):
-        """See IDistroSeriesSourcePackage."""
+        """See `IDistroSeriesSourcePackage`."""
         return SourcePackagePublishingHistory.select("""
             distroseries = %s AND
             archive IN %s AND
@@ -213,7 +213,7 @@ class DistroSeriesSourcePackageRelease:
 
     @property
     def current_published(self):
-        """See IDistroArchSeriesSourcePackage."""
+        """See `IDistroArchSeriesSourcePackage`."""
         # Retrieve current publishing info
         current = SourcePackagePublishingHistory.selectFirst("""
         distroseries = %s AND

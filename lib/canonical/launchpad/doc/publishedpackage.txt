@@ -11,14 +11,6 @@ which distributions.
     >>> verifyObject(IPublishedPackageSet, pp_set)
     True
 
-There are also some meta objects to combine information from the DB
-model in more intuitive ones:
-
-    >>> from canonical.launchpad.database import SourcePackageRelease
-    >>> src = SourcePackageRelease.get(20)
-    >>> src.name
-    u'pmount'
-
 IDistroSeriesSourcePackageRelease.meta_binaries returns a list of unique
 binaries resulting from the sourcepackagerelease for a distroseries.
 The source package mozilla-firefox has two unique binaries:
