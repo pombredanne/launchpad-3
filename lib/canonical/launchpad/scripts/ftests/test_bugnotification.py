@@ -4,7 +4,7 @@
 __metaclass__ = type
 
 from datetime import datetime
-from unittest import TestLoader
+import unittest
 
 import pytz
 from zope.component import getUtility
@@ -12,13 +12,13 @@ from zope.interface import implements
 
 from canonical.config import config
 from canonical.database.sqlbase import commit
-from canonical.launchpad.ftests.harness import LaunchpadZopelessTestCase
 from canonical.launchpad.database import BugTask
 from canonical.launchpad.interfaces import (
     IBug, IBugSet, IMessageSet, IPersonSet, IProductSet)
 from canonical.launchpad.mailnotification import BugNotificationRecipients
 from canonical.launchpad.scripts.bugnotification import (
     get_email_notifications)
+from canonical.testing import LaunchpadZopelessLayer
 
 
 class MockBug:
@@ -83,14 +83,13 @@ class MockBugNotification:
         self.date_emailed = date_emailed
 
 
-class TestGetEmailNotificattions(LaunchpadZopelessTestCase):
+class TestGetEmailNotificattions(unittest.TestCase):
     """Tests for the exception handling in get_email_notifications()."""
-
-    dbuser = config.malone.bugnotification_dbuser
+    layer = LaunchpadZopelessLayer
 
     def setUp(self):
         """Set up some mock bug notifications to use."""
-        LaunchpadZopelessTestCase.setUp(self)
+        self.layer.switchDbUser(config.malone.bugnotification_dbuser)
         sample_person = getUtility(IPersonSet).getByEmail(
             'test@canonical.com')
         self.now = datetime.now(pytz.timezone('UTC'))
@@ -216,4 +215,4 @@ class TestGetEmailNotificattions(LaunchpadZopelessTestCase):
 
 
 def test_suite():
-    return TestLoader().loadTestsFromName(__name__)
+    return unittest.TestLoader().loadTestsFromName(__name__)

@@ -530,6 +530,8 @@ less nice.
     >>> logger.setLevel(logging.CRITICAL)
 
     >>> logout()
+    >>> from zope.app.testing.functional import HTTPCaller
+    >>> http = HTTPCaller()
     >>> print http("GET / HTTP/1.1\n"
     ...            "Host: nosuchhost.launchpad.dev")
     HTTP/1.1 404 Not Found

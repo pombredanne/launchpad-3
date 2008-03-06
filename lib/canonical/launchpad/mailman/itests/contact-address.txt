@@ -33,7 +33,6 @@ contact address of our new team.
     >>> browser.getControl('Apply for Mailing List').click()
 
     >>> list_one = itest_helper.review_list('itest-one')
-    >>> itest_helper.wait_for_mailman()
     >>> from Mailman.Utils import list_names
     >>> sorted(name for name in list_names() if name.startswith('itest-'))
     ['itest-one']
@@ -57,8 +56,9 @@ delivered.
     >>> list_one.subscribe(anne)
     >>> from canonical.database.sqlbase import commit
     >>> logout()
+    >>> serial_watcher = itest_helper.LogWatcher('serial')
     >>> commit()
-    >>> itest_helper.wait_for_mailman()
+    >>> serial_watcher.wait()
 
 It's possible to set the team as a project's answer contact.  Then creating
 new questions will email the mailing list.
@@ -92,7 +92,7 @@ message marked with headers to track bounces).  One copy goes to Anne and the
 other goes to the archive submission address.  The way to distinguish and sort
 these messages is by the Sender header, which will be unique in all cases.
 
-    >>> smtp_watcher.wait_for_growth()
+    >>> smtp_watcher.wait()
     >>> messages = smtpd.getMessages()
     >>> len(messages)
     3
@@ -198,7 +198,7 @@ sent to Anne and to the archive via the mailing list.
     >>> browser.getControl('Subscriber').value = 'itest-one'
     >>> browser.getControl('Continue').click()
 
-    >>> smtp_watcher.wait_for_growth()
+    >>> smtp_watcher.wait()
     >>> messages = smtpd.getMessages()
     >>> len(messages)
     2
@@ -279,7 +279,7 @@ mailing list, they'll be sent to the team members individually.
     >>> browser.getControl('Description').value = 'More detail.'
     >>> browser.getControl('Add').click()
 
-    >>> smtp_watcher.wait_for_growth()
+    >>> smtp_watcher.wait()
     'Timed out'
 
 There are now two messages in the mailbox.  One message goes to
@@ -356,7 +356,7 @@ delivered since the mailing list is still active.
     ...
     ... Hi, I am a member of Launchpad.
     ... """ % anne.preferredemail.email)
-    >>> smtp_watcher.wait_for_growth()
+    >>> smtp_watcher.wait()
     >>> messages = smtpd.getMessages()
 
 Anne (as the only member of the mailing list) and the archive submission
