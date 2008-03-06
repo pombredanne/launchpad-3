@@ -11,6 +11,7 @@ __metaclass__ = type
 from zope.component import getUtility
 from zope.interface import implements
 
+from storm.zope.interfaces import IZStorm
 from sqlobject import ForeignKey, StringCol, BoolCol
 
 from canonical.config import config
@@ -57,16 +58,13 @@ class PillarNameSet:
         """See `IPillarNameSet`."""
         # XXX flacoste 20071009 Workaround bug #90983.
         name = name.encode('ASCII')
-        cur = cursor()
-        cur.execute("""
+        store = getUtility(IZStorm).get('main')
+        result = store.execute("""
             SELECT TRUE
             FROM PillarName
-            WHERE name=%(name)s AND active IS TRUE
-            """, {'name': name})
-        if cur.fetchone() is None:
-            return False
-        else:
-            return True
+            WHERE name=? AND active IS TRUE
+            """, [name])
+        return result.get_one() is not None
 
     def __getitem__(self, name):
         """See `IPillarNameSet`."""
@@ -93,16 +91,17 @@ class PillarNameSet:
         name = name.encode('ASCII')
 
         # Retrieve information out of the PillarName table.
+        store = getUtility(IZStorm).get('main')
         cur = cursor()
         query = """
             SELECT id, product, project, distribution
             FROM PillarName
-            WHERE name=%(name)s
+            WHERE name=?
             """
         if ignore_inactive:
             query += " AND active IS TRUE"
-        cur.execute(query, {'name': name})
-        row = cur.fetchone()
+        result = store.execute(query, [name])
+        row = result.get_one()
         if row is None:
             return None
 
@@ -182,9 +181,8 @@ class PillarNameSet:
     def count_search_matches(self, text):
         base_query = self.build_search_query(text)
         count_query = "SELECT COUNT(*) FROM (%s) AS TMP_COUNT" % base_query
-        cur = cursor()
-        cur.execute(count_query)
-        return cur.fetchone()[0]
+        store = getUtility(IZStorm).get('main')
+        return store.execute(count_query).get_one()[0]
 
     def search(self, text, limit):
         """See `IPillarSet`."""
@@ -197,13 +195,13 @@ class PillarNameSet:
             ORDER BY rank DESC, name
             LIMIT %d
             """ % limit
-        cur = cursor()
-        cur.execute(query)
+        store = getUtility(IZStorm).get('main')
+        result = store.execute(query)
         keys = ['type', 'id', 'name', 'title', 'description', 'icon', 'rank']
         # People shouldn't be calling this method with too big limits
         longest_expected = 2 * config.launchpad.default_batch_size
         return shortlist(
-            [dict(zip(keys, values)) for values in cur.fetchall()],
+            [dict(zip(keys, values)) for values in result.get_all()],
             longest_expected=longest_expected)
 
     def add_featured_project(self, project):

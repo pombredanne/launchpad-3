@@ -8,20 +8,20 @@ import warnings
 import time
 from datetime import datetime
 
-from sqlos import SQLOS
-from sqlos.adapter import PostgresAdapter
-
-from sqlobject import connectionForURI, SQLObjectNotFound
+import psycopg2
+from psycopg2.extensions import ISOLATION_LEVEL_READ_COMMITTED
+import storm
+import storm.sqlobject
+from storm.zope.interfaces import IZStorm
 from sqlobject.sqlbuilder import sqlrepr
-from sqlobject.styles import Style
 
+from zope.component import getUtility
 from zope.interface import implements
 
 from canonical.database.interfaces import ISQLBase
 
 __all__ = [
     'alreadyInstalledMsg',
-    'AUTOCOMMIT_ISOLATION',
     'begin',
     'clear_current_connection_cache',
     'commit',
@@ -36,34 +36,17 @@ __all__ = [
     'quote_like',
     'quoteIdentifier',
     'RandomiseOrderDescriptor',
-    'READ_COMMITTED_ISOLATION',
     'rollback',
-    'SERIALIZABLE_ISOLATION',
     'SQLBase',
     'sqlvalues',
     'ZopelessTransactionManager',]
 
-# As per badly documented psycopg 1 constants
-AUTOCOMMIT_ISOLATION = 0
-READ_COMMITTED_ISOLATION = 1
-SERIALIZABLE_ISOLATION = 3
 # Default we want for scripts, and the PostgreSQL default. Note psycopg1 will
 # use SERIALIZABLE unless we override, but psycopg2 will not.
-DEFAULT_ISOLATION = READ_COMMITTED_ISOLATION
-
-# First, let's monkey-patch SQLObject a little:
-import zope.security.proxy
-import sqlobject.main
-import sqlobject.dbconnection
-# 1. Make its getID function work for proxied SQLObjects
-sqlobject.main.isinstance = zope.security.proxy.isinstance
-# 2. Make _SO_columnClause use the right isinstance so that Proxied
-# SQLObjects can be used in the RHS of a select*By expression (for
-# instance, selectBy(foo=obj))
-sqlobject.dbconnection.isinstance = zope.security.proxy.isinstance
+DEFAULT_ISOLATION = ISOLATION_LEVEL_READ_COMMITTED
 
 
-class LaunchpadStyle(Style):
+class LaunchpadStyle(storm.sqlobject.SQLObjectStyle):
     """A SQLObject style for launchpad.
 
     Python attributes and database columns are lowercase.
@@ -98,48 +81,7 @@ class LaunchpadStyle(Style):
         return table.__str__()
 
 
-class RandomiseOrderDescriptor:
-    """Return whether or not SQL queries should randomise results.
-
-    This object is used to exchange the randomise_select_results setting
-    between SQLBase class (and its descendants) and SQLObject.SelectResults.
-
-    The testrunner environment is configured so that random() is appended
-    to the ORDER BY clause of queries that do not use DISTINCT or SET.
-
-        >>> from canonical.config import config
-        >>> config.randomise_select_results
-        True
-
-    The SelectResults class decides whether to randomise the order by
-    checking the SQLBase._randomiseOrder class attribute that is assigned
-    to a local variable. The _randomiseOrder attribute is an instance of
-    RandomiseOrderDescriptor. When the class attribute is assigned to a
-    local variable, the variable should hold the config's state, not the
-    object. See bug 196329, where a property (a descriptor bound to an
-    instance) was passed instead of called during the assignment.
-
-        >>> SQLBase.__dict__['_randomiseOrder']
-        <canonical.database.sqlbase.RandomiseOrderDescriptor object ...>
-
-        >>> randomiseOrder = SQLBase._randomiseOrder
-        >>> randomiseOrder
-        True
-
-    When the config setting is False, that value is passed to
-    randomiseOrder when the descriptor is accessed.
-
-        >>> config.randomise_select_results = False
-        >>> randomiseOrder = SQLBase._randomiseOrder
-        >>> randomiseOrder
-        False
-    """
-    def __get__(self, obj, type=None):
-        from canonical.config import config
-        return config.randomise_select_results
-
-
-class SQLBase(SQLOS):
+class SQLBase(storm.sqlobject.SQLObjectBase):
     """Base class to use instead of SQLObject/SQLOS.
 
     Annoying hack to allow us to use SQLOS features in Zope, and plain
@@ -154,11 +96,13 @@ class SQLBase(SQLOS):
     implements(ISQLBase)
     _style = LaunchpadStyle()
 
-    _randomiseOrder = RandomiseOrderDescriptor()
-
     # Silence warnings in linter script, which complains about all
     # SQLBase-derived objects missing an id.
     id = None
+
+    @staticmethod
+    def _get_store():
+        return getUtility(IZStorm).get('main')
 
     def reset(self):
         if not self._SO_createValues:
@@ -179,7 +123,7 @@ class _ZopelessConnectionDescriptor(object):
     already exist.  If implicitActivate is not set, then this will return None
     for a thread until `_activate` is called, and after `_deactivate` is called.
     """
-    def __init__(self, connectionURI, sqlosAdapter=PostgresAdapter,
+    def __init__(self, connectionURI, sqlosAdapter=None,
                  debug=False, implicitActivate=True, reconnect=False,
                  isolation=DEFAULT_ISOLATION):
         self.connectionURI = connectionURI
@@ -713,18 +657,62 @@ def connect(user, dbname=None, isolation=DEFAULT_ISOLATION):
         con_str += ' user=%s' % user
     if config.dbhost:
         con_str += ' host=%s' % config.dbhost
-    con = psycopg.connect(con_str)
+    con = psycopg2.connect(con_str)
     con.set_isolation_level(isolation)
     return con
 
 
-def cursor():
-    '''Return a cursor from the current database connection.
+class cursor:
+    """A cursor like object for the current database connection.
 
-    This is useful for code that needs to issue database queries
-    directly rather than using the SQLObject interface
-    '''
-    return SQLBase._connection._connection.cursor()
+    This is actually a wrapper that proxies the queries through to
+    Storm.
+    """
+    encoding = 'UTF-8'
+
+    def __init__(self):
+        self._result = None
+
+    def execute(self, operation, parameters=None):
+        if isinstance(operation, unicode):
+            operation = operation.encode(self.encoding)
+        if parameters is not None:
+            parameters = self._prepareParameters(parameters)
+            operation = operation % parameters
+        self._result = getUtility(IZStorm).get('main').execute(operation)
+
+    def _prepareParameters(self, parameters):
+        # adapted from zope.app.rdb.ZopeCursor._prepareParameters()
+        if isinstance(parameters, list):
+            for i, v in enumerate(parameters):
+                if isinstance(v, unicode):
+                    v = v.encode(self.encoding)
+                parameters[i] = quote(v)
+        elif isinstance(parameters, tuple):
+            parameters = list(parameters)
+            for i, v in enumerate(parameters):
+                if isinstance(v, unicode):
+                    v = v.encode(self.encoding)
+                parameters[i] = quote(v)
+            parameters = tuple(parameters)
+        elif isinstance(parameters, dict):
+            encoding = self.encoding
+            class QuotingDict:
+                def __getitem__(self, key):
+                    value = parameters[key]
+                    if isinstance(value, unicode):
+                        value = value.encode(encoding)
+                    return quote(value)
+            return QuotingDict()
+        return parameters
+
+    def fetchone(self):
+        assert self._result is not None
+        return self._result.get_one()
+
+    def fetchall(self):
+        assert self._result is not None
+        return self._result.get_all()
 
 
 class FakeZopelessTransactionManager:

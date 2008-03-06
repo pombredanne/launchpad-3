@@ -14,8 +14,9 @@ import pytz
 from zope.component import getUtility
 from zope.interface import implements
 
+from storm.expr import Func
 from sqlobject import ForeignKey, StringCol, BoolCol
-from sqlobject.sqlbuilder import AND, func
+from sqlobject.sqlbuilder import AND
 
 from canonical.config import config
 
@@ -409,7 +410,7 @@ class DistributionMirrorSet:
         # The list of mirrors returned by this method is fed to apt through
         # launchpad.net, so we order the results randomly in a lame attempt to
         # balance the load on the mirrors.
-        order_by = [func.random()]
+        order_by = [Func('random')]
         mirrors = shortlist(
             DistributionMirror.select(query, orderBy=order_by),
             longest_expected=50)

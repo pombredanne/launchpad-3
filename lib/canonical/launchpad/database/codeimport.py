@@ -12,8 +12,9 @@ __all__ = [
 
 from datetime import timedelta
 
+from storm.references import Reference
 from sqlobject import (
-    ForeignKey, IntervalCol, SingleJoin, StringCol, SQLObjectNotFound)
+    ForeignKey, IntervalCol, StringCol, SQLObjectNotFound)
 from zope.component import getUtility
 from zope.interface import implements
 
@@ -86,7 +87,7 @@ class CodeImport(SQLBase):
         seconds = default_interval_dict[self.rcs_type]
         return timedelta(seconds=seconds)
 
-    import_job = SingleJoin('CodeImportJob', joinColumn='code_importID')
+    import_job = Reference("<primary key>", "CodeImportJob.code_importID")
 
     def updateFromData(self, data, user):
         """See `ICodeImport`."""

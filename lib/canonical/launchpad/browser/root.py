@@ -30,4 +30,3 @@ class LaunchpadRootIndexView(HasAnnouncementsView, LaunchpadView):
     @cachedproperty
     def featured_projects(self):
         return getUtility(IPillarNameSet).featured_projects
-

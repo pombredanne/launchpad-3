@@ -16,13 +16,13 @@ import psycopg2.extensions
 from storm.database import register_scheme
 from storm.databases.postgres import Postgres, PostgresTimeoutTracer
 from storm.exceptions import TimeoutError
-from storm.tracers import install_tracer
+from storm.tracer import install_tracer
 from storm.zope.interfaces import IZStorm
 
 from zope.component import getUtility
 
-from canonical.config import dbconfig
 from canonical.launchpad.webapp.opstats import OpStats
+from canonical.config import config, dbconfig
 
 __all__ = [
     'DisconnectionError',
@@ -219,7 +219,6 @@ class LaunchpadDatabase(Postgres):
 class LaunchpadSessionDatabase(Postgres):
 
     def raw_connect(self):
-        from canonical.config import config
         self._dsn = 'dbname=%s user=%s' % (config.launchpad.session.dbname,
                                            config.launchpad.session.dbuser)
         if config.launchpad.session.dbhost:
@@ -255,7 +254,7 @@ class LaunchpadTimeoutTracer(PostgresTimeoutTracer):
         """See `TimeoutTracer`"""
         # Only perform timeout handling on LaunchpadDatabase
         # connections.
-        if not isinstance(connection.database, LaunchpadDatabase):
+        if not isinstance(connection._database, LaunchpadDatabase):
             return
         # If we are outside of a request, don't do timeout adjustment.
         if self.get_remaining_time() is None:
@@ -278,7 +277,7 @@ class LaunchpadTimeoutTracer(PostgresTimeoutTracer):
         """See `TimeoutTracer`"""
         # Only perform timeout handling on LaunchpadDatabase
         # connections.
-        if not isinstance(connection.database, LaunchpadDatabase):
+        if not isinstance(connection._database, LaunchpadDatabase):
             return
         if isinstance(error, psycopg2.extensions.QueryCanceledError):
             OpStats.stats['timeouts'] += 1
@@ -305,7 +304,7 @@ class LaunchpadStatementTracer:
 
     def connection_raw_execute(self, connection, raw_cursor,
                                statement, params):
-        if not isinstance(connection.database, LaunchpadDatabase):
+        if not isinstance(connection._database, LaunchpadDatabase):
             return
         if self._debug_sql_extra:
             traceback.print_stack()
@@ -317,7 +316,7 @@ class LaunchpadStatementTracer:
         # XXX jamesh 20080306:
         # Storm doesn't have a post-execute trace point, so we are not
         # currently logging the duration of the statement.
-        now = time.time()
+        now = time()
         _log_statement(now, now, connection, statement)
 
 

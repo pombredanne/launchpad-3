@@ -79,7 +79,7 @@ class OpenIDRPConfig(SQLBase):
     description = StringCol(dbName='description', notNull=True)
     logo = ForeignKey(
         dbName='logo', foreignKey='LibraryFileAlias', default=None)
-    _allowed_sreg = StringCol(dbName='allowed_sreg', forceDBName=True)
+    _allowed_sreg = StringCol(dbName='allowed_sreg')
     creation_rationale = EnumCol(
         dbName='creation_rationale', notNull=True,
         schema=PersonCreationRationale,

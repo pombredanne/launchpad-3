@@ -16,6 +16,8 @@ import logging
 import types
 import urllib
 
+from storm.exceptions import TimeoutError
+
 from zope.interface import implements
 
 from zope.app.error.interfaces import IErrorReportingUtility
@@ -24,7 +26,7 @@ from zope.exceptions.exceptionformatter import format_exception
 from canonical.config import config
 from canonical.launchpad import versioninfo
 from canonical.launchpad.webapp.adapter import (
-    RequestExpired, get_request_statements, get_request_duration,
+    get_request_statements, get_request_duration,
     soft_timeout_expired)
 from canonical.launchpad.webapp.interfaces import (
     IErrorReport, IErrorReportRequest)
@@ -500,7 +502,7 @@ class ScriptRequest(ErrorReportRequest):
         return dict(self.items())
 
 
-class SoftRequestTimeout(RequestExpired):
+class SoftRequestTimeout(TimeoutError):
     """Soft request timeout expired"""
 
 
