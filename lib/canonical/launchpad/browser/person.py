@@ -114,7 +114,8 @@ from canonical.widgets.itemswidgets import LabeledMultiCheckBoxWidget
 from canonical.cachedproperty import cachedproperty
 
 from canonical.launchpad.interfaces import (
-    AccountStatus, BranchListingSort, BugTaskSearchParams, BugTaskStatus,
+    AccountStatus, BranchListingSort, BugTaskSearchParams,
+    BugTaskStatus, CannotUnsubscribe,
     DAYS_BEFORE_EXPIRATION_WARNING_IS_SENT, EmailAddressStatus,
     GPGKeyNotFoundError, IBranchSet, ICountry, IEmailAddress,
     IEmailAddressSet, IGPGHandler, IGPGKeySet, IIrcIDSet, IJabberIDSet,
@@ -1945,6 +1946,48 @@ class PersonView(LaunchpadView, FeedsMixin):
             raise AssertionError('Unknown subscription policy.')
         return description
 
+    @property
+    def user_can_subscribe_to_list(self):
+        """Can the user subscribe to this team's mailing list?
+
+        A user can subscribe to the list if the team has an active
+        mailing list, and if they do not already have a subscription.
+        """
+        # XXX mars 2008-02-26:
+        # Remove this check after the mailing list beta test is complete.
+        # See bug #190974.
+        if not self.isBetaUser:
+            return False
+
+        if self.team_has_mailing_list:
+            # If we are already subscribed, then we can not subscribe again.
+            return not self.user_is_subscribed_to_list
+        else:
+            return False
+
+    @property
+    def user_is_subscribed_to_list(self):
+        """Is the user subscribed to the team's mailing list?
+
+        Subscriptions hang around even if the list is deactivated, etc.
+
+        It is an error to ask if the user is subscribed to a mailing list
+        that doesn't exist.
+        """
+        if self.user is None:
+            return False
+
+        mailing_list = self.context.mailing_list
+        assert mailing_list is not None, "This team has no mailing list."
+        has_subscription = bool(mailing_list.getSubscription(self.user))
+        return has_subscription
+
+    @property
+    def team_has_mailing_list(self):
+        """Is the team mailing list available for subscription?"""
+        mailing_list = self.context.mailing_list
+        return mailing_list is not None and mailing_list.isUsable()
+
     def getURLToAssignedBugsInProgress(self):
         """Return an URL to a page which lists all bugs assigned to this
         person that are In Progress.
@@ -2107,6 +2150,11 @@ class PersonIndexView(XRDSContentNegotiationMixin, PersonView):
 
     xrds_template = ViewPageTemplateFile("../templates/person-xrds.pt")
 
+    def initialize(self):
+        super(PersonIndexView, self).initialize()
+        if self.request.method == "POST":
+            self.processForm()
+
     @cachedproperty
     def enable_xrds_discovery(self):
         """Only enable discovery if person is OpenID enabled."""
@@ -2116,6 +2164,31 @@ class PersonIndexView(XRDSContentNegotiationMixin, PersonView):
     def openid_identity_url(self):
         """The identity URL for the person."""
         return canonical_url(OpenIDPersistentIdentity(self.context))
+
+    def processForm(self):
+        if not self.request.form.get('unsubscribe'):
+            raise UnexpectedFormData(
+                "The mailing list form did not receive the expected form "
+                "fields.")
+
+        mailing_list = self.context.mailing_list
+        if mailing_list is None:
+            raise UnexpectedFormData(
+                _("This team does not have a mailing list."))
+        if not self.user:
+            raise Unauthorized(
+                _("You must be logged in to unsubscribe."))
+        try:
+            mailing_list.unsubscribe(self.user)
+        except CannotUnsubscribe:
+            self.request.response.addErrorNotification(
+                _("You could not be unsubscribed from the team mailing "
+                  "list."))
+        else:
+            self.request.response.addInfoNotification(
+                _("You have been unsubscribed from the team "
+                  "mailing list."))
+        self.request.response.redirect(canonical_url(self.context))
 
 
 class PersonRelatedProjectsView(LaunchpadView):
