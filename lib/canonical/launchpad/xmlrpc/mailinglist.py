@@ -176,3 +176,11 @@ class MailingListAPIView(LaunchpadXMLRPCView):
             return False
         return person.personal_standing in (PersonalStanding.GOOD,
                                             PersonalStanding.EXCELLENT)
+
+    def holdMessage(self, text):
+        """See `IMailingListAPIView`."""
+        pass
+
+    def getMessageDispositions(self):
+        """See `IMailingListAPIView`."""
+        pass
