@@ -31,6 +31,13 @@ from canonical.launchpad.interfaces import (
 REQUEST_TOKEN_VALIDITY = 12
 # How many days should an access token be valid for, by default?
 ACCESS_TOKEN_VALIDITY = 30
+# The OAuth Core 1.0 spec says that a nonce shall be "unique for all requests
+# with that timestamp", but this is likely to cause problems if the
+# client/consumer time is out of sync (as discussed in http://xrl.us/bgusu),
+# so we use a time window (relative to the timestamp of the existing
+# OAuthNonce) to check if the nonce can be used.
+# How many seconds for the time window in which a nonce is valid?
+NONCE_TIME_WINDOW = 60
 
 
 class OAuthConsumer(SQLBase):
@@ -95,11 +102,9 @@ class OAuthAccessToken(OAuthToken):
 
     def ensureNonce(self, nonce, timestamp):
         """See `IOAuthAccessToken`."""
-        # XXX: Is it okay to do this?
+        # XXX: Is it okay to do this?  I mean, we're converting the timestamp
+        # to UTC whenever we need to manipulate it.
         date = datetime.fromtimestamp(float(timestamp), pytz.timezone('UTC'))
-        # XXX: Questions about nonces and timestamps.
-        # http://xrl.us/bgusu
-        allowed_interval = 60
         oauth_nonce = OAuthNonce.selectOneBy(access_token=self, nonce=nonce)
         if oauth_nonce is not None:
             # XXX: I'm not sure that's a problem, but when we do
@@ -108,10 +113,12 @@ class OAuthAccessToken(OAuthToken):
             # >>> t = time.time()
             # >>> time.mktime(datetime.fromtimestamp(t).timetuple()) == t
             # False
+            # I think it shouldn't be a problem because we're not comparing it
+            # for (in)equality anyway, but there may be other issues.
             utc_timestamp = time.mktime(date.timetuple())
             stored_timestamp = time.mktime(
                 oauth_nonce.request_timestamp.timetuple())
-            if abs(stored_timestamp - utc_timestamp) > allowed_interval:
+            if abs(stored_timestamp - utc_timestamp) > NONCE_TIME_WINDOW:
                 raise NonceAlreadyUsed('This nonce has been used already.')
             return oauth_nonce
         else:

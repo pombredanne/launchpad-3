@@ -182,8 +182,8 @@ class IOAuthAccessToken(IOAuthToken):
         """Ensure the nonce hasn't been used with a different timestamp.
 
         :raises NonceAlreadyUsed: If the nonce has been used before with a
-            timestamp not in the accepted range (+/- 60 seconds from the
-            timestamp stored in the database).
+            timestamp not in the accepted range (+/- `NONCE_TIME_WINDOW`
+            seconds from the timestamp stored in the database).
 
         If the nonce has never been used together with this token before,
         we store it in the database with the given timestamp and associated

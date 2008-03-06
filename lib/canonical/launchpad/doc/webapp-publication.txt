@@ -1154,13 +1154,14 @@ not been used before (in a request with this same token) or its
 timestamp must be +/- 60 seconds of the timestamp associated with the
 OAuthNonce in our database.
 
+    >>> from canonical.launchpad.database.oauth import NONCE_TIME_WINDOW
     >>> form2 = form.copy()
-    >>> form2['oauth_timestamp'] += 59
+    >>> form2['oauth_timestamp'] += NONCE_TIME_WINDOW - 1
     >>> test_request = LaunchpadTestRequest(form=form2)
     >>> print publication.getPrincipal(test_request).title
     Guilherme Salgado
 
-    >>> form2['oauth_timestamp'] += 61
+    >>> form2['oauth_timestamp'] += NONCE_TIME_WINDOW + 1
     >>> test_request = LaunchpadTestRequest(form=form2)
     >>> print publication.getPrincipal(test_request).title
     Traceback (most recent call last):
