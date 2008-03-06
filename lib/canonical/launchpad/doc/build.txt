@@ -43,8 +43,8 @@ Let's check the complex properties of a build object.
     >>> firefox_build.calculated_buildstart
     datetime.datetime(2004, 9, 27, 11, 55, 12, tzinfo=<UTC>)
 
-    >>> firefox_build.is_trusted
-    True
+    >>> firefox_build.is_virtualised
+    False
 
 The currently published component is provided via the 'current_component'
 property.  It looks over the publishing records and finds the current

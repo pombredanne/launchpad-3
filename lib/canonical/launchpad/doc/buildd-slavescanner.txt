@@ -879,7 +879,7 @@ Similarly, PPA builds pass the 'archives' arguments:
     >>> from canonical.launchpad.interfaces import IPersonSet
     >>> cprov_archive = getUtility(IPersonSet).getByName('cprov').archive
     >>> removeSecurityProxy(a_build).archive = cprov_archive
-    >>> a_builder.trusted = False
+    >>> a_builder.virtualised = True
     >>> a_builder.vm_host = 'localhost.ppa'
     >>> commit()
     >>> a_builder.setSlaveForTesting(OkSlave())
@@ -947,7 +947,7 @@ dependencies from Mark's PPA.
 Clean up before continuing:
 
     >>> candidate.destroySelf()
-    >>> a_builder.trusted = True
+    >>> a_builder.virtualised = False
     >>> removeSecurityProxy(a_build).archive = ubuntu.main_archive
     >>> commit()
 

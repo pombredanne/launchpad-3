@@ -115,9 +115,9 @@ class Build(SQLBase):
         return self.distroarchseries.distroseries.distribution
 
     @property
-    def is_trusted(self):
+    def is_virtualised(self):
         """See `IBuild`"""
-        return self.archive.purpose != ArchivePurpose.PPA
+        return self.archive.require_virtualised
 
     @property
     def title(self):
@@ -166,9 +166,8 @@ class Build(SQLBase):
     def can_be_retried(self):
         """See `IBuild`."""
         # First check that the slave scanner would pick up the build record
-        # if we reset it.  Untrusted and Partner builds are always ok.
-        if (self.is_trusted and
-            self.archive.purpose != ArchivePurpose.PARTNER and
+        # if we reset it.  PPA and Partner builds are always ok.
+        if (self.archive.purpose == ArchivePurpose.PRIMARY and
             not self.distroseries.canUploadToPocket(self.pocket)):
             # The slave scanner would not pick this up, so it cannot be
             # re-tried.
@@ -410,7 +409,7 @@ class Build(SQLBase):
         # main archive candidates.
         # For PPA build notifications we include the archive.owner
         # contact_address.
-        if self.is_trusted:
+        if self.archive.purpose != ArchivePurpose.PPA:
             buildd_admins = getUtility(ILaunchpadCelebrities).buildd_admin
             recipients = recipients.union(
                 contactEmailAddresses(buildd_admins))

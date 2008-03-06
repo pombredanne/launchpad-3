@@ -64,8 +64,8 @@ class IBuilder(IHasOwner):
     machine is accessed through an XML-RPC interface; name, title,
     description for entity identification and browsing purposes; an LP-like
     owner which has unrestricted access to the instance; the build slave
-    machine status representation, including the field/properties: trusted,
-    builderok, status, failnotes and currentjob.
+    machine status representation, including the field/properties:
+    virtualised, builderok, status, failnotes and currentjob.
     """
     id = Attribute("Builder identifier")
     processor = Choice(
@@ -98,10 +98,10 @@ class IBuilder(IHasOwner):
                       'paragraphs of text, giving the highlights and '
                       'details.'))
 
-    trusted = Bool(
-        title=_('Trusted'), required=True,
-        description=_('Whether or not the builder is prepared to build '
-                      'untrusted packages.'))
+    virtualised = Bool(
+        title=_('Virtualised'), required=True,
+        description=_('Whether or not the builder is a virtual Xen '
+                      'instance.'))
 
     manual = Bool(
         title=_('Manual Mode'), required=False,
@@ -138,6 +138,7 @@ class IBuilder(IHasOwner):
         title=_("Whether or not a builder is available for building "
                 "new jobs. "),
         required=False)
+
 
     def cacheFileOnSlave(logger, libraryfilealias):
         """Ask the slave to cache a librarian file to its local disk.
@@ -191,8 +192,8 @@ class IBuilder(IHasOwner):
         Issues 'builddmaster.vm_resume_command' specified in the configuration
         to resume the slave.
 
-        :raises: CannotResumeHost: if builder is not virtual (untrusted),
-            or if the configuration command has failed.
+        :raises: CannotResumeHost: if builder is not virtual or if the
+            configuration command has failed.
 
         :return: command stdout and stderr buffers as a tuple.
         """
@@ -277,7 +278,7 @@ class IBuilderSet(Interface):
         """Retrieve a builder by name"""
 
     def new(processor, url, name, title, description, owner,
-            trusted=False):
+            virtualised=True):
         """Create a new Builder entry."""
 
     def count():

@@ -17,7 +17,8 @@ from zope.component import getUtility
 from zope.interface import implements
 
 from canonical.launchpad.interfaces import (
-    BuildStatus, IBuild, IBuildQueueSet, IHasBuildRecords, UnexpectedFormData)
+    ArchivePurpose, BuildStatus, IBuild, IBuildQueueSet, IHasBuildRecords,
+    UnexpectedFormData)
 from canonical.launchpad.webapp import (
     enabled_with_permission, ApplicationMenu, GetitemNavigation,
     Link, LaunchpadView, StandardLaunchpadFacets)
@@ -29,13 +30,12 @@ from canonical.launchpad.webapp.interfaces import ICanonicalUrlData
 class BuildUrl:
     """Dynamic URL declaration for IBuild.
 
-    When dealing with distribution builds ('trusted') we want to present them
+    When dealing with distribution builds we want to present them
     under IDistributionSourcePackageRelease url:
 
        /ubuntu/+source/foo/1.0/+build/1234
 
-    On the other hand, PPA builds ('untrusted') will be presented under the PPA
-    page:
+    On the other hand, PPA builds will be presented under the PPA page:
 
        /~cprov/+archive/+build/1235
     """
@@ -47,9 +47,10 @@ class BuildUrl:
 
     @property
     def inside(self):
-        if self.context.is_trusted:
+        if self.context.archive.purpose == ArchivePurpose.PPA:
+            return self.context.archive
+        else:
             return self.context.distributionsourcepackagerelease
-        return self.context.archive
 
     @property
     def path(self):

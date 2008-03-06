@@ -89,9 +89,9 @@ class BuildQueue(SQLBase):
         return None
 
     @property
-    def is_trusted(self):
+    def is_virtualised(self):
         """See `IBuildQueue`."""
-        return self.build.is_trusted
+        return self.build.is_virtualised
 
     @property
     def is_last_version(self):

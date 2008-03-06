@@ -81,8 +81,8 @@ Check if there are builders available:
   >>> bob_builder = builder_set['bob']
   >>> bob_builder.name
   u'bob'
-  >>> bob_builder.trusted
-  True
+  >>> bob_builder.virtualised
+  False
   >>> bob_builder.is_available
   True
 
@@ -104,7 +104,7 @@ builder 'bob':
 
   >>> job = bob_builder.findBuildCandidate()
 
-The single BuildQueue found is a trusted pending build:
+The single BuildQueue found is a non-virtual pending build:
 
   >>> job.id
   2
@@ -114,8 +114,8 @@ The single BuildQueue found is a trusted pending build:
   True
   >>> job.buildstart is None
   True
-  >>> job.is_trusted
-  True
+  >>> job.is_virtualised
+  False
 
 Update the SourcePackageReleaseFile corresponding to this job:
 
@@ -173,14 +173,14 @@ Create BuildQueue record and inspect some parameters:
   True
   >>> ppa_job.buildstart == None
   True
-  >>> ppa_job.is_trusted
-  False
+  >>> ppa_job.is_virtualised
+  True
 
 In order to enable 'bob' to find and build the PPA job, we have to
-change it to 'untrusted' mode.  This is because PPA builds will only build
-on untrusted builders.
+change it to virtualised.  This is because PPA builds will only build
+on virtualised builders.
 
-  >>> bob_builder.trusted = False
+  >>> bob_builder.virtualised = True
   >>> bob_builder.vm_host = 'localhost.ppa'
   >>> flush_database_updates()
 
@@ -193,20 +193,20 @@ Start buildd-slave to be able to dispatch jobs.
   >>> BuilddSlaveTestSetup().setUp()
 
 Before dispatching we can check if the builder is protected against
-mistakes in code that results in a attempt to build a untrusted job in
-a trusted build.
+mistakes in code that results in a attempt to build a virtual job in
+a non-virtual build.
 
-  >>> bob_builder.trusted = True
+  >>> bob_builder.virtualised = False
   >>> flush_database_updates()
   >>> bob_builder.dispatchBuildCandidate(ppa_job)
   Traceback (most recent call last):
   ...
-  AssertionError: Attempt to build untrusted item on a trusted-only builder.
+  AssertionError: Attempt to build non-virtual item on a virtual builder.
 
-Mark the builder as untrusted again, so we can dispatch the ppa job
+Mark the builder as virtual again, so we can dispatch the ppa job
 successfully.
 
-  >>> bob_builder.trusted = False
+  >>> bob_builder.virtualised = True
   >>> flush_database_updates()
 
   >>> bob_builder.dispatchBuildCandidate(ppa_job)
@@ -222,14 +222,14 @@ PPA job is building.
   CURRENT_TIMESTAMP AT TIME ZONE 'UTC'
 
 Shutdown builder slave, mark the ppa build record as failed, remove the
-buildqueue record and make 'bob' builder trusted again,  so the
+buildqueue record and make 'bob' builder non-virtual again,  so the
 environment is back to the initial state.
 
   >>> BuilddSlaveTestSetup().tearDown()
 
   >>> ppa_job.build.buildstate = BuildStatus.FAILEDTOBUILD
   >>> ppa_job.destroySelf()
-  >>> bob_builder.trusted = True
+  >>> bob_builder.virtualised = False
   >>> flush_database_updates()
 
 
@@ -256,8 +256,8 @@ Create BuildQueue record and inspect some parameters:
   None
   >>> print sec_job.buildstart
   None
-  >>> sec_job.is_trusted
-  True
+  >>> sec_job.is_virtualised
+  False
 
 In normal conditions the next available candidate would be the job
 targeted to SECURITY pocket. However, the builders are forbidden to
