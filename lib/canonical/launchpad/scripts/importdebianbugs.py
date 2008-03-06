@@ -6,8 +6,9 @@ __metaclass__ = type
 
 from zope.component import getUtility
 
-from canonical.database.sqlbase import ZopelessTransactionManager
-from canonical.launchpad.interfaces import IBugTaskSet, ILaunchpadCelebrities
+from canonical.database.sqlbase import commit, ZopelessTransactionManager
+from canonical.launchpad.interfaces import (
+    IBugSet, IBugTaskSet, ILaunchpadCelebrities)
 
 from canonical.launchpad.scripts.checkwatches import BugWatchUpdater
 from canonical.launchpad.scripts.logger import log
@@ -33,6 +34,13 @@ def import_debian_bugs(bugs_to_import):
             continue
         bug = bug_watch_updater.importBug(
             external_debbugs, debbugs, debian, debian_bug)
+        commit()
+
+        txn.begin()
+
+        # We're accessing bug across a transaction boundary here, so we
+        # need to reload it to ensure that we get sane data.
+        bug = getUtility(IBugSet).get(bug.id)
         [debian_task] = bug.bugtasks
         bug_watch_updater.updateBugWatches(
             external_debbugs, [debian_task.bugwatch])

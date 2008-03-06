@@ -360,32 +360,6 @@ class ExternalBugTracker:
         # Also put it in the log.
         log.error(message, exc_info=info)
 
-    def importBugComments(self, bug_watch):
-        """See `ISupportsCommentImport`."""
-        imported_comments = 0
-        for comment_id in self.getCommentIds(bug_watch):
-            displayname, email = self.getPosterForComment(
-                bug_watch, comment_id)
-
-            poster = getUtility(IPersonSet).ensurePerson(
-                email, displayname, PersonCreationRationale.BUGIMPORT,
-                comment='when importing comments for %s.' % bug_watch.title)
-
-            comment_message = self.getMessageForComment(
-                bug_watch, comment_id, poster)
-            if not bug_watch.hasComment(comment_id):
-                bug_watch.addComment(comment_id, comment_message)
-                imported_comments += 1
-
-        if imported_comments > 0:
-            self.info("Imported %(count)i comments for remote bug "
-                "%(remotebug)s on %(bugtracker_url)s into Launchpad bug "
-                "%(bug_id)s." %
-                {'count': imported_comments,
-                 'remotebug': bug_watch.remotebug,
-                 'bugtracker_url': self.baseurl,
-                 'bug_id': bug_watch.bug.id})
-
 
 #
 # Bugzilla
@@ -856,7 +830,7 @@ class DebBugs(ExternalBugTracker):
         return debian_bug.subject, debian_bug.description
 
     def getCommentIds(self, bug_watch):
-        """Return all the comment IDs for a given remote bug."""
+        """See `ISupportsCommentImport."""
         debian_bug = self._findBug(bug_watch.remotebug)
         self._loadLog(debian_bug)
 
@@ -868,7 +842,7 @@ class DebBugs(ExternalBugTracker):
         return comment_ids
 
     def getPosterForComment(self, bug_watch, comment_id):
-        """Return a tuple of (name, emailaddress) for a comment's poster."""
+        """See `ISupportsCommentImport."""
         debian_bug = self._findBug(bug_watch.remotebug)
         self._loadLog(debian_bug)
 
@@ -878,7 +852,7 @@ class DebBugs(ExternalBugTracker):
                 return parseaddr(parsed_comment['from'])
 
     def getMessageForComment(self, bug_watch, comment_id, poster):
-        """Return a Message object for a comment."""
+        """See `ISupportsCommentImport."""
         debian_bug = self._findBug(bug_watch.remotebug)
         self._loadLog(debian_bug)
 

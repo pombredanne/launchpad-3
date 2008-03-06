@@ -300,7 +300,7 @@ class BugWatchUpdater(object):
                             new_malone_importance)
                     if (ISupportsCommentImport.providedBy(remotesystem) and
                         remotesystem.import_comments):
-                        remotesystem.importBugComments(bug_watch)
+                        self.importBugComments(bug_watch, remotesystem)
 
             except (KeyboardInterrupt, SystemExit):
                 # We should never catch KeyboardInterrupt or SystemExit.
@@ -381,3 +381,36 @@ class BugWatchUpdater(object):
         flush_database_updates()
 
         return bug
+
+    def importBugComments(self, bug_watch, external_bugtracker):
+        """Import all the comments from a remote bug.
+
+        :param bug_watch: The bug watch for which the comments should be
+            imported.
+        :param external_bugtracker: An external bugtracker which
+            implements `ISupportsCommentImport`.
+        """
+        imported_comments = 0
+        for comment_id in external_bugtracker.getCommentIds(bug_watch):
+            displayname, email = external_bugtracker.getPosterForComment(
+                bug_watch, comment_id)
+
+            poster = getUtility(IPersonSet).ensurePerson(
+                email, displayname, PersonCreationRationale.BUGIMPORT,
+                comment='when importing comments for %s.' % bug_watch.title)
+
+            comment_message = external_bugtracker.getMessageForComment(
+                bug_watch, comment_id, poster)
+            if not bug_watch.hasComment(comment_id):
+                bug_watch.addComment(comment_id, comment_message)
+                imported_comments += 1
+
+        if imported_comments > 0:
+            self.log.info("Imported %(count)i comments for remote bug "
+                "%(remotebug)s on %(bugtracker_url)s into Launchpad bug "
+                "%(bug_id)s." %
+                {'count': imported_comments,
+                 'remotebug': bug_watch.remotebug,
+                 'bugtracker_url': external_bugtracker.baseurl,
+                 'bug_id': bug_watch.bug.id})
+
