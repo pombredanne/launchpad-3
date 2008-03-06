@@ -176,8 +176,7 @@ class BazaarProductView:
         # product series is shown in another colour.  Given the above
         # query, all the products will be in the cache anyway.
         user_branch_products = set(
-            [product.id for product in
-             product_set.getProductsWithUserDevelopmentBranches()])
+            product_set.getProductsWithUserDevelopmentBranches())
 
         branch_set = getUtility(IBranchSet)
         branch_summaries = branch_set.getActiveUserBranchSummaryForProducts(
@@ -187,6 +186,7 @@ class BazaarProductView:
             summary['branch_count'] for summary in branch_summaries.values()])
         # Lowest half are small.
         small_count = counts[len(counts)/2]
+
         # Top 20% are big.
         large_count = counts[-(len(counts)/5)]
 
@@ -214,7 +214,7 @@ class BazaarProductView:
             else:
                 branch_size = 'medium'
 
-            important = product.id in user_branch_products
+            important = product in user_branch_products
 
             items.append(ProductInfo(
                 product, num_branches, branch_size, elapsed, important))
