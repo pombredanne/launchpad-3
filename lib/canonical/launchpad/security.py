@@ -1253,6 +1253,18 @@ class AccessBranch(AuthorizationBase):
         return not self.obj.private
 
 
+class EditBranch(AuthorizationBase):
+    """The owner, bazaar experts or admins can edit branches."""
+    permission = 'launchpad.Edit'
+    usedfor = IBranch
+
+    def checkAuthenticated(self, user):
+        celebs = getUtility(ILaunchpadCelebrities)
+        return (user.inTeam(self.obj.owner) or
+                user.inTeam(celebs.admin) or
+                user.inTeam(celebs.bazaar_experts))
+
+
 class AdminPOTemplateSubset(OnlyRosettaExpertsAndAdmins):
     permission = 'launchpad.Admin'
     usedfor = IPOTemplateSubset
