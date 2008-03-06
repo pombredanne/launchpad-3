@@ -261,7 +261,8 @@ a cookbook.
 
 Here's the implementation of IAuthorEntry: a simple decorator on the
 original model object. It subclasses Entry, a simple base class that
-defines a constructor.
+defines a constructor. (See lazr/doc/decorates.txt for more on
+decorates().)
 
     >>> from zope.component import adapts
     >>> from canonical.lazr import decorates

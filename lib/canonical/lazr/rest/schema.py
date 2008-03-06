@@ -32,7 +32,5 @@ class CollectionField(AbstractCollection):
         collection.
         """
 
-        self.is_entry_container = kwargs.setdefault(
-            'is_entry_container', False)
-        del kwargs['is_entry_container']
+        self.is_entry_container = kwargs.pop('is_entry_container', False)
         super(CollectionField, self).__init__(*args, **kwargs)
