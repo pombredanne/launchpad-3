@@ -4,6 +4,7 @@
 
 __metaclass__ = type
 
+import logging
 import os
 import shutil
 import tempfile
@@ -335,7 +336,8 @@ class TestWorkerCore(WorkerTest):
         """Make an ImportWorker that only uses fake branches."""
         return ImportWorker(
             self.job.id, FakeForeignTreeStore(),
-            self.makeBazaarBranchStore())
+            self.makeBazaarBranchStore(),
+            logging.getLogger("silent"))
 
     def test_construct(self):
         # When we construct an ImportWorker, it has a CodeImportJob and a
@@ -412,7 +414,8 @@ class TestActualImportMixin:
     def makeImportWorker(self):
         """Make a new `ImportWorker`."""
         return ImportWorker(
-            self.job.id, self.foreign_store, self.bazaar_store)
+            self.job.id, self.foreign_store, self.bazaar_store,
+            logging.getLogger("silent"))
 
     def test_import(self):
         # Running the worker on a branch that hasn't been imported yet imports
