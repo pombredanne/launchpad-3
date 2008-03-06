@@ -1,4 +1,4 @@
-== Navigation a PPA ==
+== Navigating a PPA ==
 
 The main PPA page is accessible by using the Personal Package Archive
 link on the PPA owner page.
