@@ -1585,7 +1585,7 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
     def getLatestApprovedMembershipsForPerson(self, limit=5):
         """See `IPerson`."""
         result = self.myactivememberships
-        result.orderBy(['-datejoined'])
+        result.orderBy(['-date_joined'])
         return result[:limit]
 
     @property

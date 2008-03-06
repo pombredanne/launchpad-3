@@ -51,15 +51,12 @@ class TeamMembership(SQLBase):
         validator=public_person_validator, default=None)
     status = EnumCol(
         dbName='status', notNull=True, enum=TeamMembershipStatus)
+    # XXX: salgado, 2008-03-06: Need to rename datejoined and dateexpires to
+    # match their db names.
     datejoined = UtcDateTimeCol(
-        dbName='datejoined', default=UTC_NOW, notNull=True)
-    dateexpires = UtcDateTimeCol(dbName='dateexpires', default=None)
+        dbName='date_joined', default=UTC_NOW, notNull=True)
+    dateexpires = UtcDateTimeCol(dbName='date_expires', default=None)
     reviewercomment = StringCol(dbName='reviewercomment', default=None)
-
-    @property
-    def statusname(self):
-        """See `ITeamMembership`."""
-        return self.status.title
 
     def isExpired(self):
         """See `ITeamMembership`."""
@@ -449,7 +446,7 @@ class TeamMembershipSet:
         """See `ITeamMembershipSet`."""
         if when is None:
             when = datetime.now(pytz.timezone('UTC'))
-        query = ("dateexpires <= %s AND status IN (%s, %s)"
+        query = ("date_expires <= %s AND status IN (%s, %s)"
                  % sqlvalues(when, TeamMembershipStatus.ADMIN,
                              TeamMembershipStatus.APPROVED))
         return TeamMembership.select(query)

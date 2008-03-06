@@ -700,7 +700,7 @@ We can also change the sort order of the results of getMembersByStatus.
     ...  for person in t3.getMembersByStatus(deactivated)]
     [u'Celso Providelo (cprov)', u'Guilherme Salgado (salgado)']
 
-    >>> orderBy = '-TeamMembership.datejoined'
+    >>> orderBy = '-TeamMembership.date_joined'
     >>> [person.unique_displayname
     ...  for person in t3.getMembersByStatus(deactivated, orderBy=orderBy)]
     [u'Guilherme Salgado (salgado)', u'Celso Providelo (cprov)']

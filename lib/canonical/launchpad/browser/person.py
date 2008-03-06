@@ -1866,14 +1866,14 @@ class PersonView(LaunchpadView, FeedsMixin):
     def recently_approved_members(self):
         members = self.context.getMembersByStatus(
             TeamMembershipStatus.APPROVED,
-            orderBy='-TeamMembership.datejoined')
+            orderBy='-TeamMembership.date_joined')
         return members[:5]
 
     @cachedproperty
     def recently_proposed_members(self):
         members = self.context.getMembersByStatus(
             TeamMembershipStatus.PROPOSED,
-            orderBy='-TeamMembership.datejoined')
+            orderBy='-TeamMembership.date_joined')
         return members[:5]
 
     @cachedproperty

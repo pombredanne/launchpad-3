@@ -76,7 +76,7 @@
                   2005-06-14
                 </span>
               </td>
-              <td tal:content="membership/statusname"></td>
+              <td tal:content="membership/status/title"></td>
               <td tal:condition="context/required:launchpad.Edit">
                 <a tal:attributes="href membership/fmt:url"
                   ><img src="/@@/edit"
@@ -231,7 +231,7 @@
             </td>
             <td
               tal:condition="not: membership/isExpired"
-              tal:content="membership/statusname" />
+              tal:content="membership/status/title" />
             <td tal:condition="context/required:launchpad.Edit">
               <a tal:attributes="href membership/fmt:url"
                 ><img src="/@@/edit"
