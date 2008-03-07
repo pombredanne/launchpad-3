@@ -98,9 +98,10 @@ Now there are two messages waiting for Mailman to handle.
 
     >>> waiting = mailinglist_api.getMessageDispositions()
     >>> for message_id in sorted(waiting):
-    ...     print message_id, waiting[message_id]
-    <first-post> accept
-    <second-post> decline
+    ...     list_name, action = waiting[message_id]
+    ...     print message_id, list_name, action
+    <first-post>  team-one accept
+    <second-post> team-one decline
 
 Now that Mailman's received the dispositions, the messages have been
 transitioned to their permanent states.
