@@ -651,8 +651,7 @@ class IMessageApproval(Interface):
         title=_('Status'),
         description=_('The status of the held message.'),
         vocabulary='PostedMessageStatus',
-        required=True,
-        )
+        required=True)
 
     disposed_by = PublicPersonChoice(
         title=_('Approved or rejected by'),
@@ -683,7 +682,7 @@ class IMessageApproval(Interface):
         :param reviewer: The person who did the review.
         """
 
-    
+
 class IMessageApprovalSet(Interface):
     """Sets of held message."""
 
