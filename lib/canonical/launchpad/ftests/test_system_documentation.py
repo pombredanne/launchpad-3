@@ -612,6 +612,18 @@ special = {
             tearDown=tearDown,
             layer=LaunchpadFunctionalLayer,
             ),
+    'message-holds-xmlrpc.txt': LayeredDocFileSuite(
+            '../doc/message-holds-xmlrpc.txt',
+            setUp=mailingListXMLRPCInternalSetUp,
+            tearDown=tearDown,
+            layer=LaunchpadFunctionalLayer
+            ),
+    'message-holds-xmlrpc.txt-external': LayeredDocFileSuite(
+            '../doc/message-holds-xmlrpc.txt',
+            setUp=mailingListXMLRPCExternalSetUp,
+            tearDown=tearDown,
+            layer=LaunchpadFunctionalLayer,
+            ),
     'codeimport-machine.txt': LayeredDocFileSuite(
             '../doc/codeimport-machine.txt',
             setUp=zopelessLaunchpadSecuritySetUp,
