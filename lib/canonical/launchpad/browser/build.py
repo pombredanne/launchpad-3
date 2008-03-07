@@ -10,7 +10,7 @@ __all__ = [
     'BuildRecordsView',
     'BuildUrl',
     'BuildView',
-    'build_to_structualheading',
+    'build_to_structuralheading',
     ]
 
 from zope.component import getUtility
@@ -27,7 +27,7 @@ from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp.interfaces import ICanonicalUrlData
 
 
-def build_to_structualheading(build):
+def build_to_structuralheading(build):
     """Adapts an `IBuild` into an `IStructuralHeaderPresentation`."""
     return IStructuralHeaderPresentation(build.archive)
 
@@ -81,13 +81,13 @@ class BuildContextMenu(ContextMenu):
 
     def ppa(self):
         return Link(
-                canonical_url(self.context.archive),
-                text='View PPA', enabled=True)
+            canonical_url(self.context.archive), text='View PPA',
+            enabled=True)
 
     def records(self):
         return Link(
-                canonical_url(self.context.archive, view_name='+builds'),
-                text='View build records', enabled=True)
+            canonical_url(self.context.archive, view_name='+builds'),
+            text='View build records', enabled=True)
 
     @enabled_with_permission('launchpad.Edit')
     def retry(self):
