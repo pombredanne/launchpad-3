@@ -25,6 +25,7 @@ from zope.component import adapts, getMultiAdapter
 from zope.interface import implements, directlyProvides
 from zope.proxy import isProxy
 from zope.publisher.interfaces import NotFound
+from zope.schema import ValidationError
 from zope.schema.interfaces import IField, IObject
 from zope.security.proxy import removeSecurityProxy
 
@@ -113,6 +114,21 @@ class ReadOnlyResource(HTTPResource):
             self.request.response.setHeader("Allow", "GET")
 
 
+class ReadWriteResource(HTTPResource):
+    """A resource that responds to GET and PATCH."""
+    def __call__(self):
+        """Handle a GET request."""
+        if self.request.method == "GET":
+            return self.do_GET()
+        elif self.request.method == "PATCH":
+            type = self.request.headers['Content-Type']
+            representation = self.request.bodyStream.getCacheStream().read()
+            return self.do_PATCH(type, representation)
+        else:
+            self.request.response.setStatus(405)
+            self.request.response.setHeader("Allow", "GET PATCH")
+
+
 class CollectionEntryDummy:
     """An empty object providing the interface of the items in the collection.
 
@@ -124,7 +140,7 @@ class CollectionEntryDummy:
         directlyProvides(self, collection_field.value_type.schema)
 
 
-class EntryResource(ReadOnlyResource):
+class EntryResource(ReadWriteResource):
     """An individual object, published to the web."""
     implements(IEntryResource, IJSONPublishable)
 
@@ -216,7 +232,7 @@ class EntryResource(ReadOnlyResource):
                     key = name + '_link'
                     dict[key] = canonical_url(related_resource,
                                               request=self.request)
-            elif IField.providedBy(element) and name[0] != '_':
+            elif IField.providedBy(element) and not name.startswith('_'):
                 # It's a data field; display it as part of the
                 # representation.
                 dict[name] = getattr(self.context, name)
@@ -230,6 +246,46 @@ class EntryResource(ReadOnlyResource):
         """Render the entry as JSON."""
         self.request.response.setHeader('Content-type', 'application/json')
         return simplejson.dumps(self, cls=ResourceJSONEncoder)
+
+    def do_PATCH(self, media_type, representation):
+        """Apply a JSON patch to the entry."""
+        if media_type != 'application/json':
+            self.request.response.setStatus(415)
+            return
+        changeset = simplejson.loads(unicode(representation))
+        schema = self.context.schema
+        # TODO: need to strip off '_link' and '_collection_link', and make
+        # sure you don't set 'foo' when the real name is 'foo_link'.
+        import pdb; pdb.set_trace()
+        validated_changeset = {}
+        for name, value in changeset.items():
+            element = schema.get(name)
+            if name.startswith('_') or element is None:
+                self.request.response.setStatus(400)
+                return ("You tried to modify the nonexistent attribute "
+                        + name)
+            if ICollection.providedBy(element):
+                self.request.response.setStatus(400)
+                return ("You tried to modify the collection attribute "
+                        + name)
+            if element.readonly:
+                self.request.response.setStatus(400)
+                return ("You tried to modify the read-only attribute "
+                        + name)
+            if IObject.providedBy(element):
+                # TODO: 'value' is the URL to an object. Traverse
+                # the URL to find the actual object.
+                pass
+            try:
+                field = element.bind(self.context)
+                field.validate(value)
+            except ValidationError, e:
+                self.request.response.setStatus(400)
+                return e.getMessage()
+            validated_changeset[name] = value
+        for name, value in validated_changeset.items():
+            setattr(self.context, name, value)
+        return ''
 
 
 class CollectionResource(ReadOnlyResource):

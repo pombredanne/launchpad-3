@@ -1,15 +1,56 @@
 = People =
 
 Basic operations on people are described in xx-collections.txt. This
-document shows some of a person's associated collections and entries.
+document shows some of the other features of a person.
 
+== Modification ==
+
+A person can be modified.
+
+  >>> salgado = webservice(r"""
+  ... GET /people/salgado HTTP/1.1
+  ... Host: api.launchpad.dev
+  ... """).jsonBody()
+  >>> salgado['name']
+  u'salgado'
+
+  >>> print http(r"""
+  ... PATCH /people/salgado HTTP/1.1
+  ... Host: api.launchpad.dev
+  ... Content-type: application/json
+  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
+  ...
+  ... {"name" : "salgado2"}
+  ... """)
+  HTTP/1.1 200 Ok
+  Content-Length: 0
+  ...
+
+  >>> salgado = webservice(r"""
+  ... GET /people/salgado2 HTTP/1.1
+  ... Host: api.launchpad.dev
+  ... """).jsonBody()
+  >>> salgado['name']
+  u'salgado2'
+
+  >>> print http(r"""
+  ... PATCH /people/salgado2 HTTP/1.1
+  ... Host: api.launchpad.dev
+  ... Content-type: application/json
+  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
+  ...
+  ... {"name" : "salgado"}
+  ... """)
+  HTTP/1.1 200 Ok
+  Content-Length: 0
+  ...
 
 == Team memberships ==
 
 A person is linked to their team memberships.
 
   >>> salgado = webservice(r"""
-  ... GET /people/salgado HTTP/1.1
+  ... GET /people/salgado2 HTTP/1.1
   ... Host: api.launchpad.dev
   ... """).jsonBody()
   >>> salgado['team_memberships_collection_link']
