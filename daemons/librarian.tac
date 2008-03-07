@@ -8,22 +8,17 @@ import os
 from twisted.application import service, internet, strports
 from twisted.web import server
 
-from canonical.database.sqlbase import SQLBase
-from canonical.lp import initZopeless
-from canonical.config import config
+from canonical.config import config, dbconfig
 from canonical.launchpad.daemons import tachandler
+from canonical.launchpad.scripts import execute_zcml_for_scripts
 
 from canonical.librarian.libraryprotocol import FileUploadFactory
 from canonical.librarian import storage, db
 from canonical.librarian import web as fatweb
 
 # Connect to database
-initZopeless(
-    dbuser=config.librarian.dbuser,
-    dbhost=config.dbhost,
-    dbname=config.dbname,
-    implicitBegin=False
-    )
+dbconfig.setConfigSection('librarian')
+execute_zcml_for_scripts()
 
 application = service.Application('Librarian')
 librarianService = service.IServiceCollection(application)

@@ -3,11 +3,12 @@
 
 __metaclass__ = type
 
+import transaction
 from twisted.web import resource, static, error, util, server, proxy
 from twisted.internet.threads import deferToThread
 
 from canonical.librarian.client import quote
-from canonical.database.sqlbase import begin, commit, rollback
+
 
 defaultResource = static.Data("""
         <html>
@@ -76,7 +77,7 @@ class LibraryFileAliasResource(resource.Resource):
         return util.DeferredResource(deferred)
 
     def _getFileAlias(self, aliasID):
-        begin()
+        transaction.begin()
         try:
             try:
                 alias = self.storage.getFileAlias(aliasID)
@@ -85,7 +86,7 @@ class LibraryFileAliasResource(resource.Resource):
             except LookupError:
                 raise NotFound
         finally:
-            commit()
+            transaction.commit()
 
     def _eb_getFileAlias(self, failure):
         failure.trap(NotFound)
@@ -154,7 +155,7 @@ class DigestSearchResource(resource.Resource):
         return server.NOT_DONE_YET
 
     def _matchingAliases(self, digest):
-        begin()
+        transaction.begin()
         try:
             library = self.storage.library
             matches = ['%s/%s' % (aID, quote(aName))
@@ -162,7 +163,7 @@ class DigestSearchResource(resource.Resource):
                        for aID, aName, aType in library.getAliases(fID)]
             return matches
         finally:
-            rollback()
+            transaction.abort()
 
     def _cb_matchingAliases(self, matches, request):
         text = '\n'.join([str(len(matches))] + matches)
