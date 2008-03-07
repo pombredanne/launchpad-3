@@ -14,7 +14,8 @@ from zope.interface import implements
 from canonical.config import config
 from canonical.launchpad.interfaces import (
     EmailAddressStatus, IEmailAddressSet, IMailingListAPIView,
-    IMailingListSet, IPersonSet, MailingListStatus, PersonalStanding)
+    IMailingListSet, IMessageApprovalSet, IMessageSet, IPersonSet,
+    MailingListStatus, PersonalStanding, PostedMessageStatus)
 from canonical.launchpad.webapp import LaunchpadXMLRPCView
 from canonical.launchpad.xmlrpc import faults
 
@@ -177,10 +178,32 @@ class MailingListAPIView(LaunchpadXMLRPCView):
         return person.personal_standing in (PersonalStanding.GOOD,
                                             PersonalStanding.EXCELLENT)
 
-    def holdMessage(self, text):
+    def holdMessage(self, team_name, text):
         """See `IMailingListAPIView`."""
-        pass
+        mailing_list = getUtility(IMailingListSet).get(team_name)
+        message = getUtility(IMessageSet).fromEmail(text)
+        mailing_list.holdMessage(message)
+        return True
 
     def getMessageDispositions(self):
         """See `IMailingListAPIView`."""
-        pass
+        message_set = getUtility(IMessageApprovalSet)
+        # A mapping from message ids to statuses.
+        response = {}
+        # Start by iterating over all held messages that are pending approval.
+        # These are messages that the team owner has approved, but Mailman
+        # hasn't yet acted upon.  For each of these, set their state to final
+        # approval.
+        approved_messages = message_set.getHeldMessagesWithStatus(
+            PostedMessageStatus.APPROVAL_PENDING)
+        for held_message in approved_messages:
+            held_message.acknowledge()
+            response[held_message.message_id] = 'accept'
+        # Similarly handle all held messages that have been rejected by the
+        # team administrator but not yet handled by Mailman.
+        rejected_messages = message_set.getHeldMessagesWithStatus(
+            PostedMessageStatus.REJECTION_PENDING)
+        for held_message in rejected_messages:
+            held_message.acknowledge()
+            response[held_message.message_id] = 'decline'
+        return response
