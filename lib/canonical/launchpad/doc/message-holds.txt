@@ -21,7 +21,7 @@ created.
     ... To: test-one@lists.launchpad.dev
     ... Subject: My first test
     ... Message-ID: <first-post>
-    ... Date: Fri, 01 Aug 2008 01:08:59 -0000
+    ... Date: Fri, 01 Aug 2000 01:08:59 -0000
     ...
     ... This is my first post!
     ... """)
@@ -29,6 +29,10 @@ created.
 Then this message is inserted into the approval queue.
 
     >>> held_message = mailing_list.holdMessage(message)
+    >>> from canonical.launchpad.webapp.testing import verifyObject
+    >>> from canonical.launchpad.interfaces import IMessageApproval
+    >>> verifyObject(IMessageApproval, held_message)
+    True
 
 The new hold has several important pieces of information, such as the message
 id of the held message...
@@ -44,7 +48,7 @@ id of the held message...
 ...and the date it was posted.
 
     >>> print held_message.posted_date
-    XXX
+    2000-08-01 01:08:59+00:00
 
 The hold record contains a reference to the mailing list that the message was
 posted to....
@@ -52,15 +56,28 @@ posted to....
     >>> print held_message.mailing_list.team.displayname
     Test One
 
-...and to the IMessage object in the database.
+...and to the content of the message in the librarian.
 
-    >>> held_message.posted_message == message
-    True
+    >>> import transaction
+    >>> transaction.commit()
+    >>> held_message.posted_message.open()
+    >>> try:
+    ...     print held_message.posted_message.read()
+    ... finally:
+    ...     held_message.posted_message.close()
+    From: foo.bar@canonical.com
+    To: test-one@lists.launchpad.dev
+    Subject: My first test
+    Message-ID: <first-post>
+    Date: Fri, 01 Aug 2000 01:08:59 -0000
+    <BLANKLINE>
+    This is my first post!
+    <BLANKLINE>
 
 The record also contains the status of this held message.
 
     >>> held_message.status
-    <DBItem New...
+     <DBItem PostedMessageStatus.NEW, (0) New status>
 
 Because this message has not yet been approved, it has no disposition
 information.
@@ -73,22 +90,24 @@ information.
 
 == Approving the message ==
 
-Foo Bar is the team owner who reviews the held message, and he decides that it
-is appropriate for the mailing list, so he approves it.
+No Privileges Person is the team owner who reviews the held message, and he
+decides that it is appropriate for the mailing list, so he approves it.
 
-    >>> foobar = mailing_list.team.teamowner
-    >>> held_message.approve(foobar)
+    >>> owner = mailing_list.team.teamowner
+    >>> print owner.displayname
+    No Privileges Person
+    >>> held_message.approve(owner)
 
 This sets the status of the hold to APPROVAL_PENDING because Mailman still
 needs to see this approval.
 
     >>> held_message.status
-    <DBItem APPROVAL_PENDING...
+    <DBItem PostedMessageStatus.APPROVAL_PENDING, (20) Approval pending>
 
 The message has been disposed by Foo Bar on today's date.
 
     >>> print held_message.disposed_by.displayname
-    Foo Bar
+    No Privileges Person
     >>> held_message.disposal_date is not None
     True
 
@@ -102,19 +121,19 @@ Held messages can also be rejected.
     ... To: test-one@lists.launchpad.dev
     ... Subject: My second test
     ... Message-ID: <second-post>
-    ... Date: Fri, 01 Aug 2008 01:09:00 -0000
+    ... Date: Fri, 01 Aug 2000 01:09:00 -0000
     ...
     ... This is my second post!
     ... """)
     >>> held_message = mailing_list.holdMessage(message)
-    >>> held_message.reject(foobar)
+    >>> held_message.reject(owner)
 
     >>> print held_message.message_id
     <second-post>
     >>> held_message.status
-    <DBItem REJECTION_PENDING...
+    <DBItem PostedMessageStatus.REJECTION_PENDING, (30) Decline pending>
     >>> print held_message.disposed_by.displayname
-    Foo Bar
+    No Privileges Person
     >>> held_message.disposal_date is not None
     True
 
@@ -132,7 +151,7 @@ A few more messages are held for approval.
     ... To: test-one@lists.launchpad.dev
     ... Subject: My third test
     ... Message-ID: <third-post>
-    ... Date: Fri, 01 Aug 2008 01:09:01 -0000
+    ... Date: Fri, 01 Aug 2000 01:09:01 -0000
     ...
     ... This is my third post!
     ... """)
@@ -143,7 +162,7 @@ A few more messages are held for approval.
     ... To: test-one@lists.launchpad.dev
     ... Subject: My fourth test
     ... Message-ID: <fourth-post>
-    ... Date: Fri, 01 Aug 2008 01:09:02 -0000
+    ... Date: Fri, 01 Aug 2000 01:09:02 -0000
     ...
     ... This is my fourth post!
     ... """)
@@ -151,24 +170,29 @@ A few more messages are held for approval.
 
     >>> from canonical.launchpad.interfaces import IMessageApprovalSet
     >>> hold_set = getUtility(IMessageApprovalSet)
-    >>> from operator import itemgetter
+    >>> from operator import attrgetter
     >>> def print_messages(status):
-    ...     messages = hold_set.getHeldMessagesWithStatus(status)
-    ...     for message in sorted(messages, key=itemgetter('message-id')):
-    ...         print message['subject']
+    ...     held_messages = sorted(hold_set.getHeldMessagesWithStatus(status),
+    ...                            key=attrgetter('message_id'))
+    ...     for hold in held_messages:
+    ...         messages = message_set.get(hold.message_id)
+    ...         assert len(messages) <= 1, 'Duplicate message-ids'
+    ...         print hold.message_id, messages[0].subject
 
 Here are all the messages pending approval...
 
+    >>> flush_database_updates()
+    >>> from canonical.launchpad.interfaces import PostedMessageStatus
     >>> print_messages(PostedMessageStatus.APPROVAL_PENDING)
-    My first test
+    <first-post> My first test
 
 ...and all the messages pending rejection...
 
     >>> print_messages(PostedMessageStatus.REJECTION_PENDING)
-    My second test
+    <second-post> My second test
 
 ...and all the messages where are waiting for any disposition.
 
     >>> print_messages(PostedMessageStatus.NEW)
-    My fourth post
-    My third post
+    <fourth-post> My fourth test
+    <third-post> My third test

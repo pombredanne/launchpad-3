@@ -46,7 +46,7 @@ class MessageApproval(SQLBase):
         validator=public_person_validator)
 
     posted_message = ForeignKey(
-        dbName='posted_message', foreignKey='Message')
+        dbName='posted_message', foreignKey='LibraryFileAlias')
 
     posted_date = UtcDateTimeCol(notNull=True, default=UTC_NOW)
 
@@ -64,11 +64,15 @@ class MessageApproval(SQLBase):
 
     def approve(self, reviewer):
         """See `MessageApproval`."""
-        pass
+        self.disposed_by = reviewer
+        self.disposal_date = UTC_NOW
+        self.status = PostedMessageStatus.APPROVAL_PENDING
 
     def reject(self, reviewer):
         """See `MessageApproval`."""
-        pass
+        self.disposed_by = reviewer
+        self.disposal_date = UTC_NOW
+        self.status = PostedMessageStatus.REJECTION_PENDING
 
 
 class MailingList(SQLBase):
@@ -397,7 +401,7 @@ class MailingList(SQLBase):
         """See `IMailingList`."""
         return MessageApproval(message_id=message.rfc822msgid,
                                posted_by=message.owner,
-                               posted_message=message,
+                               posted_message=message.raw,
                                posted_date=message.datecreated,
                                mailing_list=self)
 
@@ -503,6 +507,4 @@ class MessageApprovalSet:
 
     def getHeldMessagesWithStatus(self, status):
         """See `IMessageApprovalSet`."""
-        return MessageApproval.select("""
-            MessageApproval.status = %s
-            """ % sqlvalues(status))
+        return MessageApproval.selectBy(status=status)
