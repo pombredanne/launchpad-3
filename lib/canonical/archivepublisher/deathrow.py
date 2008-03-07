@@ -109,7 +109,7 @@ class DeathRow:
         removal ('condemned') where the source/binary package that they
         refer to is not published somewhere else.
 
-        The returned results are already 'listified'.
+        Both sources and binaries are lists.
         """
         sources = SourcePackagePublishingHistory.select("""
             SourcePackagePublishingHistory.archive = %s AND
@@ -225,7 +225,7 @@ class DeathRow:
             """Check if the publishing record can be removed.
 
             It can only be removed if all files in its context are not
-            refered by any other 'published' publishing records.
+            referred to any other 'published' publishing records.
 
             See `canRemove` for more information.
             """
