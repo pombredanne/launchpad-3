@@ -1047,6 +1047,7 @@ class SpecificationFormatterAPI(CustomizableFormatter):
     """Adapter providing fmt support for Specification objects"""
 
     _link_summary_template = _('%(title)s')
+    _link_permission = 'zope.Public'
 
     def _link_summary_values(self):
         """See CustomizableFormatter._link_summary_values."""
