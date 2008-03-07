@@ -198,12 +198,14 @@ class MailingListAPIView(LaunchpadXMLRPCView):
             PostedMessageStatus.APPROVAL_PENDING)
         for held_message in approved_messages:
             held_message.acknowledge()
-            response[held_message.message_id] = 'accept'
+            response[held_message.message_id] = (
+                held_message.mailing_list.team.name, 'accept')
         # Similarly handle all held messages that have been rejected by the
         # team administrator but not yet handled by Mailman.
         rejected_messages = message_set.getHeldMessagesWithStatus(
             PostedMessageStatus.REJECTION_PENDING)
         for held_message in rejected_messages:
             held_message.acknowledge()
-            response[held_message.message_id] = 'decline'
+            response[held_message.message_id] = (
+                held_message.mailing_list.team.name, 'decline')
         return response

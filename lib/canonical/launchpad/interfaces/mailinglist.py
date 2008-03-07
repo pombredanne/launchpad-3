@@ -596,8 +596,9 @@ class IMailingListAPIView(Interface):
         message-ids of disposed messages since the last time this method was
         called.
 
-        :return: A dictionary mapping message-ids to the disposition, either
-            the string 'accept' or 'decline'.
+        :return: A dictionary mapping message-ids to the disposition tuple.
+            This tuple is of the form (team-name, action), where the action is
+            either the string 'accept' or 'decline'.
         """
 
 
