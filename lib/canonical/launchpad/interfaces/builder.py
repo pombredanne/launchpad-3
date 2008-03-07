@@ -139,7 +139,6 @@ class IBuilder(IHasOwner):
                 "new jobs. "),
         required=False)
 
-
     def cacheFileOnSlave(logger, libraryfilealias):
         """Ask the slave to cache a librarian file to its local disk.
 
