@@ -46,19 +46,18 @@ def _reconnect_sqlos(dbuser=None, database_config_section='launchpad'):
     dbconfig.setConfigSection(database_config_section)
 
     main_store = getUtility(IZStorm).get('main')
+    assert main_store is not None, 'Failed to reconnect'
 
     # Confirm the database has the right patchlevel
     confirm_dbrevision(cursor())
 
     # Confirm that SQLOS is again talking to the database (it connects
     # as soon as SQLBase._connection is accessed
-    r = SQLBase._connection.queryAll(
-            'SELECT count(*) FROM LaunchpadDatabaseRevision'
-            )
-    assert r[0][0] > 0, 'SQLOS is not talking to the database'
+    r = main_store.execute('SELECT count(*) FROM LaunchpadDatabaseRevision')
+    assert r.get_one()[0] > 0, 'Storm is not talking to the database'
 
-    store = getUtility(IZStorm).get('session')
-    assert store, 'Failed to reconnect'
+    session_store = getUtility(IZStorm).get('session')
+    assert session_store is not None, 'Failed to reconnect'
 
 
 class LaunchpadTestSetup(PgTestSetup):

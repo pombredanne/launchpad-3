@@ -28,10 +28,15 @@ _sqlStringReplace = [
     ('\t', '\\t'),
     ]
 
+# XXX 2007-03-07 jamesh:
+# This is a cut down version of sqlobject's sqlrepr() method.  Ideally
+# we can get rid of this as code is converted to use store.execute().
 def sqlrepr(value, dbname=None):
     assert dbname in [None, 'postgres']
     if hasattr(value, '__sqlrepr__'):
         return value.__sqlrepr__(dbname)
+    elif hasattr(value, 'getquoted'):
+        return value.getquoted()
     elif isinstance(value, (str, unicode)):
         for orig, repl in _sqlStringReplace:
             value = value.replace(orig, repl)

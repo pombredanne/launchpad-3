@@ -654,60 +654,13 @@ def connect(user, dbname=None, isolation=DEFAULT_ISOLATION):
     return con
 
 
-class cursor:
-    """A cursor like object for the current database connection.
+def cursor():
+    '''Return a cursor from the current database connection.
 
-    This is actually a wrapper that proxies the queries through to
-    Storm.
-    """
-    encoding = 'UTF-8'
-
-    def __init__(self):
-        self._result = None
-
-    def execute(self, operation, parameters=None):
-        if isinstance(operation, unicode):
-            operation = operation.encode(self.encoding)
-        if parameters is not None:
-            parameters = self._prepareParameters(parameters)
-            operation = operation % parameters
-        self._result = getUtility(IZStorm).get('main').execute(operation)
-
-    def _prepareParameters(self, parameters):
-        # adapted from zope.app.rdb.ZopeCursor._prepareParameters()
-        if isinstance(parameters, list):
-            for i, v in enumerate(parameters):
-                if isinstance(v, unicode):
-                    v = v.encode(self.encoding)
-                parameters[i] = quote(v)
-        elif isinstance(parameters, tuple):
-            parameters = list(parameters)
-            for i, v in enumerate(parameters):
-                if isinstance(v, unicode):
-                    v = v.encode(self.encoding)
-                parameters[i] = quote(v)
-            parameters = tuple(parameters)
-        elif isinstance(parameters, dict):
-            encoding = self.encoding
-            class QuotingDict:
-                def __getitem__(self, key):
-                    value = parameters[key]
-                    if isinstance(value, unicode):
-                        value = value.encode(encoding)
-                    return quote(value)
-            return QuotingDict()
-        return parameters
-
-    def fetchone(self):
-        assert self._result is not None
-        return self._result.get_one()
-
-    def fetchall(self):
-        assert self._result is not None
-        return self._result.get_all()
-
-    def close(self):
-        self._result = None
+    This is useful for code that needs to issue database queries
+    directly rather than using the SQLObject interface
+    '''
+    return getUtility(IZStorm).get('main')._connection.build_raw_cursor()
 
 
 class FakeZopelessTransactionManager:
