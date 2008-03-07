@@ -339,18 +339,28 @@ class MaloneHandler:
         following conditions are met:
 
             - the content disposition header explicitly says that
-              this is an attachment,
+              this is an attachment, or the content-disposition header
+              provides a file name.
             - the content type is not "irrelevant". At present,
               mail signatures, v-cards, and the resource for of MacOS
               files are considered to be irrelevant.
         """
+        # NOTE: The criterion used here to decide if a message chunk
+        # has "main content" or an attachment, must match the
+        # corresponding criterion used in MessageSet.fromEmail in
+        # in canonical.launchpad.database. Otherwise, some relevant
+        # mail parts may be either completely ignored or they may appear
+        # both as "main content" and as attachments.
+
         unnamed_count = 0
         for part in signed_mail.walk():
             content_type = part.get_content_type()
             content_disposition = part.get('Content-disposition', '').lower()
+            is_attachment = content_disposition.startswith('attachment')
+            filename = part.get_filename()
             if (part.is_multipart()
                 or content_type in self.irrelevant_content_types
-                or not content_disposition.startswith('attachment')):
+                or (filename is None and not is_attachment)):
                 continue
 
             content = part.get_payload(decode=True)
@@ -358,7 +368,6 @@ class MaloneHandler:
                 # storing empty files is pointless.
                 continue
 
-            filename = part.get_filename()
             if filename is None:
                 if unnamed_count:
                     filename = 'unnamed-%i' % unnamed_count
