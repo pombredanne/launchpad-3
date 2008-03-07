@@ -26,25 +26,12 @@ class BugTaskTargetNameCachesTunableLoop(object):
         self.offset = offset
         self.total_updated = 0
 
-        self.transaction.begin()
-        # XXX: kiko 2006-03-23:
-        # We use a special API here, which is kinda klunky, but which
-        # allows us to return all bug tasks (even private ones); this should
-        # eventually be changed to a more elaborate permissions scheme,
-        # pending the infrastructure to do so. See bug #198778.
-        self.bugtasks = list(getUtility(IBugTaskSet).dangerousGetAllTasks())
-        self.transaction.commit()
-
-        # We need to calculate the number of bugtasks that we need to
-        # update based on the inital offset we've been given.
-        self.bugtasks_to_update = len(self.bugtasks[offset:])
-
     def isDone(self):
         """See `ITunableLoop`."""
         # When the main loop has no more BugTasks to process it sets
         # offset to None. Until then, it always has a numerical
         # value.
-        return self.total_updated == self.bugtasks_to_update
+        return self.offset is None
 
     def __call__(self, chunk_size):
         """Retrieve a batch of BugTasks and update their targetname caches.
@@ -60,19 +47,29 @@ class BugTaskTargetNameCachesTunableLoop(object):
 
         start = self.offset
         end = self.offset + chunk_size
-        bugtasks = self.bugtasks[start:end]
-
-        starting_id = bugtasks[0].id
-        self.logger.info("Updating %i BugTasks (starting id: %i)." %
-            (len(bugtasks), starting_id))
 
         self.transaction.begin()
+        # XXX: kiko 2006-03-23:
+        # We use a special API here, which is kinda klunky, but which
+        # allows us to return all bug tasks (even private ones); this should
+        # eventually be changed to a more elaborate permissions scheme,
+        # pending the infrastructure to do so. See bug #198778.
+        bugtasks = list(
+            getUtility(IBugTaskSet).dangerousGetAllTasks()[start:end])
+
+        self.offset = None
+        if bugtasks:
+            starting_id = bugtasks[0].id
+            self.logger.info("Updating %i BugTasks (starting id: %i)." %
+                (len(bugtasks), starting_id))
+
         for bugtask in bugtasks:
             # We set the starting point of the next batch to the BugTask
             # id after the one we're looking at now. If there aren't any
             # bugtasks this loop will run for 0 iterations and start_id
             # will remain set to None.
-            self.offset += 1
+            start += 1
+            self.offset = start
             bugtask.updateTargetNameCache()
             self.total_updated += 1
 
