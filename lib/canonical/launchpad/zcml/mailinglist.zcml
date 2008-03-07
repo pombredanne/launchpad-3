@@ -16,6 +16,11 @@
          interface="canonical.launchpad.interfaces.IMailingListSubscription"/>
     </content>
 
+    <content class="canonical.launchpad.database.MessageApproval">
+        <allow
+         interface="canonical.launchpad.interfaces.IMessageApproval"/>
+    </content>
+
     <securedutility
         class="canonical.launchpad.database.MailingListSet"
         provides="canonical.launchpad.interfaces.IMailingListSet">
