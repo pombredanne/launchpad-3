@@ -19,8 +19,10 @@ from canonical.database.constants import UTC_NOW
 from canonical.database.sqlbase import sqlvalues
 
 from canonical.launchpad.database.publishing import (
-    SourcePackagePublishingHistory, SecureSourcePackagePublishingHistory,
-    BinaryPackagePublishingHistory, SecureBinaryPackagePublishingHistory)
+    BinaryPackagePublishingHistory, SourcePackagePublishingHistory,
+    SecureBinaryPackagePublishingHistory,
+    SecureSourcePackagePublishingHistory)
+
 from canonical.launchpad.interfaces import (
     ArchivePurpose, ISecureSourcePackagePublishingHistory,
     ISecureBinaryPackagePublishingHistory, NotInPool)
@@ -100,6 +102,15 @@ class DeathRow:
         self._markPublicationRemoved(records)
 
     def _collectCondemned(self):
+        """Return the condemned source and binary publications as a tuple.
+
+        Return all the `SourcePackagePublishingHistory` and
+        `BinaryPackagePublishingHistory` records that are eligible for
+        removal ('condemned') where the source/binary package that they
+        refer to is not published somewhere else.
+
+        The returned results are already 'listified'.
+        """
         sources = SourcePackagePublishingHistory.select("""
             SourcePackagePublishingHistory.archive = %s AND
             SourcePackagePublishingHistory.scheduleddeletiondate < %s AND
@@ -133,6 +144,7 @@ class DeathRow:
                         ELIGIBLE_DOMINATION_STATES), orderBy="id")
         sources = list(sources)
         self.logger.debug("%d Binaries" % len(sources))
+
         return (sources, binaries)
 
     def canRemove(self, publication_class, file_md5):
