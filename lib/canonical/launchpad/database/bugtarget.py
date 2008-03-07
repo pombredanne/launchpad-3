@@ -154,6 +154,5 @@ class BugTargetBase:
         cur.execute(
             "SELECT %s FROM BugTask, Bug WHERE %s" % (
                 ', '.join(select_columns), ' AND '.join(conditions)))
-        [counts] = cur.dictfetchall()
-        return dict(
-            [(status, counts[status.name.lower()]) for status in statuses])
+        [counts] = cur.fetchall()
+        return dict(zip(statuses, counts))

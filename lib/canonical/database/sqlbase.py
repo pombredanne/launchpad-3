@@ -714,6 +714,9 @@ class cursor:
         assert self._result is not None
         return self._result.get_all()
 
+    def close(self):
+        self._result = None
+
 
 class FakeZopelessTransactionManager:
     # XXX Andrew Bennetts 2005-07-12:
