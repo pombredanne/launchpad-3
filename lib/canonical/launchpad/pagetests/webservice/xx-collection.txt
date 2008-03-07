@@ -8,7 +8,6 @@ which responds to GET.
   ... Host: api.launchpad.dev
   ... """).jsonBody()
 
-  >>> import pdb; pdb.set_trace()
   >>> sorted(people_collection)[0]['name']
   u'skacel'
   >>> sorted(people_collection)[0]['self_link']

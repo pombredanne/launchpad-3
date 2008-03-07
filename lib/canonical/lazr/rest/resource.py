@@ -257,20 +257,37 @@ class EntryResource(ReadWriteResource):
         # TODO: need to strip off '_link' and '_collection_link', and make
         # sure you don't set 'foo' when the real name is 'foo_link'.
         validated_changeset = {}
-        for name, value in changeset.items():
+        for repr_name, value in changeset.items():
+            name = repr_name
+            if repr_name.endswith('_collection_link'):
+                name = repr_name[:-16]
+            elif repr_name.endswith('_link'):
+                name = repr_name[:-5]
             element = schema.get(name)
-            if name.startswith('_') or element is None:
+            if (name.startswith('_') or element is None
+                or ((ICollection.providedBy(element)
+                     or IObject.providedBy(element)) and repr_name == name)):
+                # That last clause needs some explaining. It's the
+                # situation where we have a collection represented as
+                # 'foo_collection_link' or an object represented as
+                # 'bar_link', and the user sent in a PATCH request
+                # that tried to change 'foo' or 'bar'. This code tells
+                # the user: you can't change 'foo' or 'bar' directly;
+                # you have to use 'foo_collection_link' or 'bar_link'.
+                # (Of course, you also can't change
+                # 'foo_collection_link', but that's taken care of
+                # directly below.)
                 self.request.response.setStatus(400)
-                return ("You tried to modify the nonexistent attribute "
-                        + name)
-            if ICollection.providedBy(element):
+                return ("You tried to modify the nonexistent attribute '%s'"
+                        % repr_name)
+            if ICollectionField.providedBy(element):
                 self.request.response.setStatus(400)
-                return ("You tried to modify the collection attribute "
-                        + name)
+                return ("You tried to modify the collection link '%s'"
+                        % repr_name)
             if element.readonly:
                 self.request.response.setStatus(400)
-                return ("You tried to modify the read-only attribute "
-                        + name)
+                return ("You tried to modify the read-only attribute '%s'"
+                        % repr_name)
             if IObject.providedBy(element):
                 # TODO: 'value' is the URL to an object. Traverse
                 # the URL to find the actual object.
@@ -280,7 +297,7 @@ class EntryResource(ReadWriteResource):
                 field.validate(value)
             except ValidationError, e:
                 self.request.response.setStatus(400)
-                return e.getMessage()
+                return str(e)
             validated_changeset[name] = value
         for name, value in validated_changeset.items():
             setattr(self.context, name, value)

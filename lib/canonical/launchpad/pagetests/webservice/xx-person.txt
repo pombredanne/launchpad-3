@@ -3,20 +3,30 @@
 Basic operations on people are described in xx-collections.txt. This
 document shows some of the other features of a person.
 
+
 == Modification ==
 
-A person can be modified.
+It's possible to modify a person by sending to the server a document
+asserting what the person should look like. The document may only
+describe part of the person's new state (in which case the client
+should use the PATCH HTTP method) [TODO: or it may describe the entire
+new state, in which case the cluent should use PUT.])
+
+
+=== What you can do ===
+
+A person's data fields can be modified.
 
   >>> import simplejson
-  >>> def patch_salgado(patch):
+  >>> def patch_person(person, patch):
   ...     return webservice(r"""
-  ... PATCH /people/salgado HTTP/1.1
+  ... PATCH /people/%s HTTP/1.1
   ... Host: api.launchpad.dev
   ... Content-type: application/json
   ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
   ...
   ... %s
-  ... """ % simplejson.dumps(patch))
+  ... """ % (person, simplejson.dumps(patch)))
 
 
   >>> salgado = webservice(r"""
@@ -26,7 +36,7 @@ A person can be modified.
   >>> salgado['displayname']
   u'Guilherme Salgado'
 
-  >>> print patch_salgado({'displayname' : 'GUILHERME SALGADO'})
+  >>> print patch_person('salgado', {'displayname' : 'GUILHERME SALGADO'})
   HTTP/1.1 200 Ok
   Content-Length: 0
   ...
@@ -38,14 +48,41 @@ A person can be modified.
   >>> salgado['displayname']
   u'GUILHERME SALGADO'
 
+# TODO: A link between a person and a related object can be modified.
+
+
+=== What you can't do. ===
+
 A person's read-only attributes can't be modified.
 
-  >>> print patch_salgado({'datecreated' : 'dummy-date'})
+  >>> print patch_person('salgado', {'datecreated' : 'dummy-date'})
   HTTP/1.1 400 Bad Request
-  Content-Length: 55
+  Content-Length: 57
   Content-Type: text/plain;charset=utf-8
   <BLANKLINE>
-  You tried to modify the read-only attribute datecreated
+  You tried to modify the read-only attribute 'datecreated'
+
+A client can't change the link to a person's associated
+collection.
+
+  >>> print patch_person('salgado',
+  ...                    {'team_memberships_collection_link' : 'dummy'})
+  HTTP/1.1 400 Bad Request
+  ...
+  You tried to modify the collection link 'team_memberships_collection_link'
+
+A client also can't refer to a link to an associated object or
+collection as though it were the actual object:
+
+  >>> print patch_person('salgado', {'team_memberships' : 'dummy'})
+  HTTP/1.1 400 Bad Request
+  ...
+  You tried to modify the nonexistent attribute 'team_memberships'
+
+  >>> print patch_person('landscape-developers', {'owner' : 'salgado'})
+  HTTP/1.1 400 Bad Request
+  ...
+  You tried to modify the nonexistent attribute 'owner'
 
 
 == Team memberships ==
