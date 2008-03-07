@@ -2,7 +2,6 @@
 
 __metaclass__ = type
 
-import psycopg
 import thread
 import warnings
 import time
@@ -155,7 +154,7 @@ class _ZopelessConnectionDescriptor(object):
             if conn is not None:
                 try:
                     conn.close()
-                except psycopg.Error:
+                except psycopg2.Error:
                     pass
                 conn = None
 
@@ -164,7 +163,7 @@ class _ZopelessConnectionDescriptor(object):
             try:
                 conn = connectionForURI(self.connectionURI).makeConnection()
                 cur = conn.cursor()
-            except psycopg.Error:
+            except psycopg2.Error:
                 continue
 
             # Check that the cursor really works, making sure to close it
@@ -172,7 +171,7 @@ class _ZopelessConnectionDescriptor(object):
             try:
                 try:
                     cur.execute('SELECT 1;')
-                except psycopg.Error:
+                except psycopg2.Error:
                     continue
             finally:
                 cur.close()
@@ -252,7 +251,7 @@ class _ZopelessConnectionDescriptor(object):
         for trans in descriptor.transactions.itervalues():
             try:
                 trans.rollback()
-            except psycopg.Error:
+            except psycopg2.Error:
                 pass
             trans._dbConnection._connection.close()
 

@@ -36,7 +36,7 @@ import time
 from unittest import TestCase, TestResult
 from urllib import urlopen
 
-import psycopg
+import psycopg2
 import transaction
 
 import zope.app.testing.functional
@@ -141,7 +141,7 @@ class BaseLayer:
         # Kill any database left lying around from a previous test run.
         try:
             DatabaseLayer.connect().close()
-        except psycopg.Error:
+        except psycopg2.Error:
             pass
         else:
             DatabaseLayer._dropDb()
@@ -441,7 +441,7 @@ class DatabaseLayer(BaseLayer):
         for count in range(0, attempts):
             try:
                 DatabaseLayer.connect().close()
-            except psycopg.Error:
+            except psycopg2.Error:
                 if count == attempts - 1:
                     raise
                 time.sleep(0.5)
@@ -494,11 +494,11 @@ class DatabaseLayer(BaseLayer):
             DatabaseLayer.script = ScriptRecorder(test_key)
 
         global _org_connect
-        _org_connect = psycopg.connect
+        _org_connect = psycopg2.connect
         # Proxy real connections with our mockdb.
         def fake_connect(*args, **kw):
             return DatabaseLayer.script.connect(_org_connect, *args, **kw)
-        psycopg.connect = fake_connect
+        psycopg2.connect = fake_connect
 
     @classmethod
     @profiled
@@ -514,7 +514,7 @@ class DatabaseLayer(BaseLayer):
 
         DatabaseLayer.mockdb_mode = None
         global _org_connect
-        psycopg.connect = _org_connect
+        psycopg2.connect = _org_connect
         _org_connect = None
 
     @classmethod

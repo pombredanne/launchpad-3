@@ -5,7 +5,6 @@
 __metaclass__ = type
 
 import time
-import psycopg
 import cPickle as pickle
 from UserDict import DictMixin
 from random import random
