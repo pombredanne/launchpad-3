@@ -7,52 +7,51 @@ document shows some of the other features of a person.
 
 A person can be modified.
 
-  >>> salgado = webservice(r"""
-  ... GET /people/salgado HTTP/1.1
-  ... Host: api.launchpad.dev
-  ... """).jsonBody()
-  >>> salgado['name']
-  u'salgado'
-
-  >>> print http(r"""
+  >>> import simplejson
+  >>> def patch_salgado(patch):
+  ...     return webservice(r"""
   ... PATCH /people/salgado HTTP/1.1
   ... Host: api.launchpad.dev
   ... Content-type: application/json
   ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
   ...
-  ... {"name" : "salgado2"}
-  ... """)
+  ... %s
+  ... """ % simplejson.dumps(patch))
+
+
+  >>> salgado = webservice(r"""
+  ... GET /people/salgado HTTP/1.1
+  ... Host: api.launchpad.dev
+  ... """).jsonBody()
+  >>> salgado['displayname']
+  u'Guilherme Salgado'
+
+  >>> print patch_salgado({'displayname' : 'GUILHERME SALGADO'})
   HTTP/1.1 200 Ok
   Content-Length: 0
   ...
 
   >>> salgado = webservice(r"""
-  ... GET /people/salgado2 HTTP/1.1
+  ... GET /people/salgado HTTP/1.1
   ... Host: api.launchpad.dev
   ... """).jsonBody()
-  >>> salgado['name']
-  u'salgado2'
+  >>> salgado['displayname']
+  u'GUILHERME SALGADO'
 
-  >>> print http(r"""
-  ... PATCH /people/salgado2 HTTP/1.1
-  ... Host: api.launchpad.dev
-  ... Content-type: application/json
-  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
-  ...
-  ... {"name" : "salgado"}
-  ... """)
-  HTTP/1.1 200 Ok
-  Content-Length: 0
-  ...
+A person's read-only attributes can't be modified.
+
+  >>> print patch_salgado({'datecreated' : 'dummy-date'})
+  HTTP/1.1 400 Bad Request
+  Content-Length: 55
+  Content-Type: text/plain;charset=utf-8
+  <BLANKLINE>
+  You tried to modify the read-only attribute datecreated
+
 
 == Team memberships ==
 
 A person is linked to their team memberships.
 
-  >>> salgado = webservice(r"""
-  ... GET /people/salgado2 HTTP/1.1
-  ... Host: api.launchpad.dev
-  ... """).jsonBody()
   >>> salgado['team_memberships_collection_link']
   u'http://api.launchpad.dev/people/salgado/team_memberships'
 
@@ -123,5 +122,5 @@ are the members.
   ... Host: api.launchpad.dev
   ... """).jsonBody()
   >>> [m['self_link'] for m in sorted(landscape_members)]
-  [u'http://api.launchpad.dev/people/name12',
-   u'http://api.launchpad.dev/people/salgado']
+  [u'http://api.launchpad.dev/people/salgado',
+   u'http://api.launchpad.dev/people/name12']

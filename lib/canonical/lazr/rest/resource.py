@@ -256,7 +256,6 @@ class EntryResource(ReadWriteResource):
         schema = self.context.schema
         # TODO: need to strip off '_link' and '_collection_link', and make
         # sure you don't set 'foo' when the real name is 'foo_link'.
-        import pdb; pdb.set_trace()
         validated_changeset = {}
         for name, value in changeset.items():
             element = schema.get(name)
@@ -285,6 +284,9 @@ class EntryResource(ReadWriteResource):
             validated_changeset[name] = value
         for name, value in validated_changeset.items():
             setattr(self.context, name, value)
+        # TODO: It's possible that one of these changes modified the
+        # object's canonical_url. If so, we need to send Moved Permanently
+        # instead of OK.
         return ''
 
 

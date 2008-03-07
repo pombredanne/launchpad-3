@@ -8,12 +8,13 @@ which responds to GET.
   ... Host: api.launchpad.dev
   ... """).jsonBody()
 
-  >>> people_collection[0]['name']
-  u'andrelop'
-  >>> people_collection[0]['self_link']
-  u'http://api.launchpad.dev/people/andrelop'
-  >>> people_collection[-1]['name']
-  u'ubuntu-team'
+  >>> import pdb; pdb.set_trace()
+  >>> sorted(people_collection)[0]['name']
+  u'skacel'
+  >>> sorted(people_collection)[0]['self_link']
+  u'http://api.launchpad.dev/people/skacel'
+  >>> sorted(people_collection)[-1]['name']
+  u'rosetta-admins'
 
 The elements of a collection can be looked up by unique identifier:
 
@@ -22,7 +23,9 @@ The elements of a collection can be looked up by unique identifier:
   ... Host: api.launchpad.dev
   ... """).jsonBody()
   >>> sorted(admins_team.items())
-  [(u'member_memberships_collection_link',
+  [(u'datecreated', u'2005-06-06T08:59:51.571899+00:00'),
+   (u'displayname', u'Launchpad Administrators'),
+   (u'member_memberships_collection_link',
     u'http://api.launchpad.dev/people/admins/member_memberships'),
    (u'members_collection_link',
       u'http://api.launchpad.dev/people/admins/members'),
@@ -41,9 +44,9 @@ A collection may be scoped to an element:
   >>> len(team_members)
   11
   >>> team_members[0]['name']
-  u'carlos'
+  u'spiv'
   >>> team_members[-1]['name']
-  u'stub'
+  u'kinnison'
 
 But not every element may have that collection scoped to it:
 

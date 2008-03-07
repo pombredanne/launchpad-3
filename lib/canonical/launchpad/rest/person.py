@@ -25,7 +25,7 @@ from canonical.lazr import decorates
 
 class IPersonEntry(IEntry):
     """The part of a person that we expose through the web service."""
-    use_template(IPerson, include=["name"])
+    use_template(IPerson, include=["name", "displayname", "datecreated"])
 
     teamowner = Object(schema=IPerson, title=u"Team owner")
 
