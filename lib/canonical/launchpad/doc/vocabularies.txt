@@ -1334,6 +1334,7 @@ returned.
     >>> sorted((team.displayname, team.teamowner.displayname)
     ...        for team in vocab.search(None))
     [(u'Bass Players', u'David Allouche'),
+     (u'Bazaar Experts', u'Tim Penhey'),
      (u'Drummers', u'David Allouche'),
      (u'Flautists', u'David Allouche'),
      (u'GuadaMen', u'Foo Bar'),
