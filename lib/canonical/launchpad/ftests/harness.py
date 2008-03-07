@@ -8,9 +8,6 @@ canonical.testing
 
 __metaclass__ = type
 
-import sqlos
-from sqlos.connection import connCache
-from sqlos.interfaces import IConnectionName
 from storm.zope.interfaces import IZStorm
 from zope.app.rdb.interfaces import IZopeDatabaseAdapter
 from zope.app.testing.functional import FunctionalTestSetup
@@ -36,44 +33,19 @@ __all__ = [
 
 
 def _disconnect_sqlos():
-    try:
-        name = getUtility(IConnectionName).name
-        da = ILaunchpadDatabaseAdapter(getUtility(IZopeDatabaseAdapter, name))
-        # we have to disconnect long enough to drop
-        # and recreate the DB
-        da.disconnect()
-        assert da._v_connection is None
-    except ComponentLookupError:
-        # configuration not yet loaded, no worries
-        pass
-
     zstorm = getUtility(IZStorm)
-    if 'session' in zstorm._named:
-        store = zstorm.get('session')
-        zstorm.remove(store)
-        store.close()
-
-    items = list(connCache.items())
-    for key, connection in items:
-        connection.rollback()
-        del connCache[key]
-    sqlos.connection.connCache.clear()
+    for store_name in ['main', 'session']:
+        if store_name in zstorm._named:
+            store = zstorm.get(store_name)
+            zstorm.remove(store)
+            store.close()
 
 
 def _reconnect_sqlos(dbuser=None, database_config_section='launchpad'):
     _disconnect_sqlos()
     dbconfig.setConfigSection(database_config_section)
-    name = getUtility(IConnectionName).name
-    da = getUtility(IZopeDatabaseAdapter, name)
-    da.switchUser(dbuser)
 
-    # Confirm that the database adapter *really is* connected.
-    assert da.isConnected(), 'Failed to reconnect'
-
-    # Confirm that the SQLOS connection cache has been emptied, so access
-    # to SQLBase._connection will get a fresh Tranaction
-    assert len(connCache.keys()) == 0, (
-        'SQLOS appears to have kept connections')
+    main_store = getUtility(IZStorm).get('main')
 
     # Confirm the database has the right patchlevel
     confirm_dbrevision(cursor())

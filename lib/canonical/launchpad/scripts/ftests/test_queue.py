@@ -11,17 +11,15 @@ import tempfile
 from unittest import TestCase, TestLoader
 from sha import sha
 
+from psycopg2.extensions import ISOLATION_LEVEL_READ_COMMITTED
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
-
-
 
 from canonical.archiveuploader.tests import (
     datadir, getPolicy, insertFakeChangesFileForAllPackageUploads,
     mock_logger_quiet)
 from canonical.archiveuploader.nascentupload import NascentUpload
 from canonical.config import config
-from canonical.database.sqlbase import READ_COMMITTED_ISOLATION
 from canonical.launchpad.database import PackageUploadBuild
 from canonical.launchpad.interfaces import (
     ArchivePurpose, DistroSeriesStatus, IArchiveSet, IBugSet, IBugTaskSet,
@@ -56,7 +54,7 @@ class TestQueueBase(TestCase):
         # to avoid SERIALIZATION exceptions with the Librarian.
         LaunchpadZopelessLayer.alterConnection(
                 dbuser=self.dbuser,
-                isolation=READ_COMMITTED_ISOLATION
+                isolation=ISOLATION_LEVEL_READ_COMMITTED
                 )
 
     def _test_display(self, text):

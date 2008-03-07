@@ -9,12 +9,13 @@ from subprocess import Popen, PIPE, STDOUT
 from cStringIO import StringIO
 from unittest import TestCase, TestSuite, makeSuite
 from datetime import datetime, timedelta
+
+from psycopg2.extensions import ISOLATION_LEVEL_AUTOCOMMIT
 from pytz import utc
+from sqlobject import SQLObjectNotFound
 
 from canonical.config import config
-from canonical.database.sqlbase import (
-        connect, cursor, SQLObjectNotFound, AUTOCOMMIT_ISOLATION,
-        )
+from canonical.database.sqlbase import connect, cursor
 from canonical.launchpad.database import LibraryFileAlias, LibraryFileContent
 from canonical.librarian import librariangc
 from canonical.librarian.client import LibrarianClient
@@ -76,7 +77,7 @@ class TestLibrarianGarbageCollection(TestCase):
         self.ztm.abort()
 
         self.con = connect(config.librarian.gc.dbuser)
-        self.con.set_isolation_level(AUTOCOMMIT_ISOLATION)
+        self.con.set_isolation_level(ISOLATION_LEVEL_AUTOCOMMIT)
 
     def tearDown(self):
         self.con.rollback()

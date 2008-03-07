@@ -17,9 +17,10 @@ from contrib.glock import GlobalLock, LockAlreadyAcquired
 import pytz
 from zope.component import getUtility
 
-from canonical.lp import initZopeless, DEFAULT_ISOLATION
+from canonical.database.sqlbase import DEFAULT_ISOLATION
 from canonical.launchpad import scripts
 from canonical.launchpad.interfaces import IScriptActivitySet
+from canonical.lp import initZopeless
 
 
 LOCK_PATH = "/var/lock/"

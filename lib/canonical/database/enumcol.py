@@ -2,8 +2,8 @@
 
 __metaclass__ = type
 
+from storm import sqlobject
 from storm.properties import Enum
-from storm.sqlobject import PropertyAdapter
 
 from canonical.lazr import DBEnumeratedType
 
@@ -11,7 +11,7 @@ __all__ = [
 'EnumCol',
     ]
 
-class DBSchemaEnumCol(PropertyAdapter, Enum):
+class DBSchemaEnumCol(sqlobject.PropertyAdapter, Enum):
     def __init__(self, **kw):
         try:
             self.enum = kw.pop('enum')

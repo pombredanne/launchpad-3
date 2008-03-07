@@ -597,6 +597,9 @@ def flush_database_updates():
         assert Beer.select("name LIKE 'Vic%'").count() == 0  # This will pass
 
     """
+    # XXX 2007-03-07 jamesh: short circuit this, since Storm should
+    # handle cache flushes automatically.
+    return
     # XXX: Andrew Bennetts 2005-02-16 bug=452:
     # Turn that bug into a doctest
     for object in list(SQLBase._connection._dm.objects):
@@ -614,22 +617,7 @@ def flush_database_caches():
     connection's cache, and synchronises them with the database.  This
     ensures that they all reflect the values in the database.
     """
-    for cache in SQLBase._connection.cache.allSubCaches():
-        # iterate over all the live objects
-        for obj in cache.cache.values():
-            try:
-                obj.sync()
-            except SQLObjectNotFound:
-                obj.expire()
-        # update all non-expired sqlobjects in the expiredCache dict.
-        for value in cache.expiredCache.values():
-            obj = value()
-            if obj is None or obj._expired:
-                continue
-            try:
-                obj.sync()
-            except SQLObjectNotFound:
-                obj.expire()
+    getUtility(IZStorm).get('main').invalidate()
 
 
 # Some helpers intended for use with initZopeless.  These allow you to avoid
