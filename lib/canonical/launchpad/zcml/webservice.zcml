@@ -63,6 +63,19 @@
         />
 
     <adapter
+        for="canonical.launchpad.interfaces.ITeamMembership"
+        provides="canonical.launchpad.rest.ITeamMembershipEntry"
+        factory="canonical.launchpad.rest.TeamMembershipEntry"
+        />
+
+    <adapter
+        for="canonical.launchpad.rest.IPersonEntry
+             canonical.launchpad.interfaces.ITeamMembership"
+        provides="canonical.lazr.interfaces.IScopedCollection"
+        factory="canonical.launchpad.rest.PersonTeamMembershipCollection"
+        />
+
+    <adapter
         for="canonical.launchpad.rest.IBugEntry
              canonical.launchpad.interfaces.IBug"
         provides="canonical.lazr.interfaces.IScopedCollection"
