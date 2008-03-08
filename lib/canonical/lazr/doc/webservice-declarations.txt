@@ -1,0 +1,98 @@
+= Web Service API Declarations =
+
+You can easily create a web service by tagging your content interfaces
+with some decorators. From this tagging the web service API will be
+created automatically.
+
+== Exporting the data model ==
+
+The LAZR Web Service data model consists of entries and collection (see
+webservice.txt for all the details). Entries support the IEntry
+interface and are basically a single resource exported. Think something
+like a bug, a person, an article, etc. Collections are a set of
+resources of the same types, think something like the set of bugs,
+persons, teams, articles, etc.
+
+Only entries are exported as data. You can mark that one of your content
+interface is exported on the web service as an entry, by using the
+export_entry declaration.
+
+You can mark the fields that should be part of the entry data model by
+using the export_field directive. It takes an optional 'as' parameter
+that can be used to change the name under which the field will be
+exported.
+
+For example, this example declares that the IBook interface is
+exported as an entry on the  web service. It exports the title, author,
+and base_price field, but not the inventory_number field.
+
+    >>> from zope.interface import Interface
+    >>> from zope.schema import TextLine, Float
+    >>> from canonical.lazr.rest.declarations import (
+    ...     export_entry, export_field)
+    >>> class IBook(Interface):
+    ...     """A simple book data model."""
+    ...     export_entry()
+    ...
+    ...     title = TextLine(title=u'The book title')
+    ...     export_field(title)
+    ...
+    ...     author = TextLine(title=u"The book's author.")
+    ...     export_field(author)
+    ...
+    ...     base_price = Float(title=u"The regular price of the book.")
+    ...     export_field(base_price, as='price')
+    ...
+    ...     inventory_number = TextLine(title=u'The inventory part number.')
+
+These declarations adds tagged value to the original interface elements.
+The tags are in the lazr.webservice namespace and are dictionaries of
+elements.
+
+    >>> def print_dict_tag(element, name):
+    ...     tag = element.queryTaggedValue(name)
+    ...     if tag is None:
+    ...         print "tag '%s' is not present" % name
+    ...     else:
+    ...         print "\n".join(
+    ...             "%s: %r" %(key, value)
+    ...             for key, value in sorted(tag.items()))
+    >>> print_dict_tag(IBook, 'lazr.webservice.exported')
+    type: 'entry'
+    >>> print_dict_tag(IBook['title'], 'lazr.webservice.exported')
+    as: 'title'
+    type: 'field'
+    >>> print_dict_tag(IBook['author'], 'lazr.webservice.exported')
+    as: 'author'
+    type: 'field'
+    >>> print_dict_tag(IBook['base_price'], 'lazr.webservice.exported')
+    as: 'price'
+    type: 'field'
+    >>> print_dict_tag(IBook['inventory_number'], 'lazr.webservice.exported')
+    tag 'lazr.webservice.exported' is not present
+
+Only IField can be exported as entry fields.
+
+    >>> from zope.interface import Attribute
+    >>> class NotAField1(Interface):
+    ...     an_attribute = Attribute('A standard attribute')
+    ...     export_field(an_attribute)
+    Traceback (most recent call last):
+      ...
+    TypeError: export_field() can only be used on IFields.
+
+In the same vein, export_entry() can only be used on Interface.
+
+    >>> class NotAnInterface(object):
+    ...     export_entry()
+    Traceback (most recent call last):
+      ...
+    TypeError: export_entry() can only be used on an interface.
+
+And from within a class declaration.
+    >>> export_entry()
+    Traceback (most recent call last):
+      ...
+    TypeError: export_entry() can only be used from within an interface
+    definition.
+

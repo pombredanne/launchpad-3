@@ -15,5 +15,6 @@ def test_suite():
         '../doc/decorates.txt',
         '../doc/config.txt',
         '../doc/interface.txt',
+        '../doc/webservice-declarations.txt',
         stdout_logging=False)
 
