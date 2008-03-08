@@ -68,6 +68,11 @@ class BranchListingItem(BranchBadges):
         return self.revision_date and (self._now - self.revision_date)
 
     @property
+    def since_updated(self):
+        """How long since the branch was last updated."""
+        return self._now - self.branch.date_last_modified
+
+    @property
     def since_created(self):
         """How long since the branch was created."""
         return self._now - self.branch.date_created
