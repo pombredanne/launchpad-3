@@ -101,7 +101,7 @@ registerLaunchpadFunction(hookUpFilterSubmission);
             2005-02-12 13:45 EST
           </span>
           <span tal:attributes="title branch/date_created/fmt:datetime"
-                tal:content="branch/since_created/fmt:approximateduration">
+                tal:content="branch/since_created/fmt:approximateduration/no-words">
             sometime
             </span> ago
         </td>
