@@ -17,6 +17,7 @@ from canonical.launchpad import _
 from canonical.launchpad.interfaces.language import ILanguage
 from canonical.launchpad.interfaces.pofile import IPOFile
 from canonical.launchpad.interfaces.potemplate import IPOTemplate
+from canonical.launchpad.interfaces.potmsgset import IPOTMsgSet
 
 
 class IVPOExportSet(Interface):
@@ -95,6 +96,10 @@ class IVPOExport(Interface):
     is_translation_header_fuzzy = Bool(
         title=u"See IPOFile.fuzzyheader",
         required=True, readonly=True)
+
+    potmsgset = Object(
+        title=u"See `IPOTMsgSet`.",
+        required=True, readonly=True, schema=IPOTMsgSet)
 
     sequence = Int(
         title=u"See IPOTMsgSet.sequence",

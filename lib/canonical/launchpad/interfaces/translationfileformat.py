@@ -1,4 +1,4 @@
-# Copyright 2007 Canonical Ltd.  All rights reserved.
+# Copyright 2007-2008 Canonical Ltd.  All rights reserved.
 # pylint: disable-msg=E0211,E0213
 
 """Enumeration type for translation file formats."""
@@ -42,3 +42,8 @@ class TranslationFileFormat(DBEnumeratedType):
         messages itself instead of using gettext features.
         """)
 
+    XPIPO = DBItem(5, """
+        XPI PO format
+
+        The .xpi translation strings using gettext standard text file format.
+        """)
