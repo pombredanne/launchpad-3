@@ -703,6 +703,22 @@ well shown in nascentupload-announcements.txt.
 
   >>> [notification, announcement] = pop_notifications()
 
+When accepting single sources we also immediately create its
+corresponding build records. It means that the source will be ready to
+build once it was accepted, using 'queue-tool' or via the Web UI.
+
+  >>> queue_source = items[1].sources[0]
+  >>> [build] = queue_source.sourcepackagerelease.builds
+
+  >>> print build.title
+  i386 build of alsa-utils 1.0.9a-4ubuntu1 in ubuntu hoary RELEASE
+
+  >>> print build.buildstate.name
+  NEEDSBUILD
+
+  >>> print build.buildqueue_record.lastscore
+  10
+
 Let's reject something in the queue:
 
   >>> try:

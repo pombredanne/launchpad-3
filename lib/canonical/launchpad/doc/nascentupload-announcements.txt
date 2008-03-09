@@ -279,6 +279,8 @@ AUTO_APPROVED source uploads for 'translations' section:
   DEBUG: Creating queue entry
   DEBUG: Setting it to ACCEPTED
   DEBUG: Creating PENDING publishing record.
+  DEBUG: Creating PENDING build for hppa.
+  DEBUG: Creating PENDING build for i386.
   DEBUG: Closing bugs.
   DEBUG: Skipping acceptance and announcement, it is a language-package upload.
 
@@ -392,6 +394,8 @@ AUTO-APPROVED upload to BACKPORTS pocket via 'sync' policy:
   DEBUG: Creating queue entry
   DEBUG: Setting it to ACCEPTED
   DEBUG: Creating PENDING publishing record.
+  DEBUG: Creating PENDING build for hppa.
+  DEBUG: Creating PENDING build for i386.
   DEBUG: Closing bugs.
   DEBUG: Building recipients list.
   ...
@@ -448,6 +452,8 @@ AUTO-APPROVED source upload to SECURITY pocket via 'security' policy:
   DEBUG: Creating queue entry
   DEBUG: Setting it to ACCEPTED
   DEBUG: Creating PENDING publishing record.
+  DEBUG: Creating PENDING build for hppa.
+  DEBUG: Creating PENDING build for i386.
   DEBUG: Closing bugs.
   DEBUG: Building recipients list.
   ...
