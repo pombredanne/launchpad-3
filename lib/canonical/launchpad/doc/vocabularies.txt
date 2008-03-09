@@ -338,6 +338,26 @@ All the teams the person is an active member of.
     >>> mirrors_admins in person_active_membership
     False
 
+The PersonActiveMembership vocabulary only shows teams where the
+membership is public.
+
+    >>> from canonical.launchpad.interfaces import PersonVisibility
+    >>> launchpad_team.visibility = PersonVisibility.PRIVATE_MEMBERSHIP
+    >>> vcs_imports = person_set.getByName('vcs-imports')
+    >>> vcs_imports.visibility = PersonVisibility.PRIVATE
+
+    >>> for term in person_active_membership:
+    ...     print term.token, term.value.displayname, term.title
+    guadamen GuadaMen GuadaMen
+    admins Launchpad Administrators Launchpad Administrators
+    launchpad-buildd-admins Launchpad Buildd Admins Launchpad Buildd Admins
+    testing-spanish-team testing Spanish team testing Spanish team
+    name18 Ubuntu Gnome Team Ubuntu Gnome Team
+    ubuntu-team Ubuntu Team Ubuntu Team
+
+    >>> launchpad_team.visibility = PersonVisibility.PUBLIC
+    >>> vcs_imports.visibility = PersonVisibility.PUBLIC
+
     >>> term = person_active_membership.getTerm(launchpad_team)
     >>> print term.token, term.value.displayname, term.title
     launchpad Launchpad Developers Launchpad Developers
@@ -682,10 +702,8 @@ most specific information possible.
 Let's demonstrate by searching for "mozilla-firefox", for which there is
 both a source and binary package of that name.
 
-    >>> from canonical.launchpad.interfaces import (
-    ...     ISourcePackageName, IBinaryPackageName)
-
-    >>> package_name_terms = package_name_vocabulary.searchForTerms("mozilla-firefox")
+    >>> package_name_terms = package_name_vocabulary.searchForTerms(
+    ...     "mozilla-firefox")
     >>> package_name_terms.count()
     2
     >>> [(term.token, term.title) for term in package_name_terms]
@@ -1316,6 +1334,7 @@ returned.
     >>> sorted((team.displayname, team.teamowner.displayname)
     ...        for team in vocab.search(None))
     [(u'Bass Players', u'David Allouche'),
+     (u'Bazaar Experts', u'Tim Penhey'),
      (u'Drummers', u'David Allouche'),
      (u'Flautists', u'David Allouche'),
      (u'GuadaMen', u'Foo Bar'),
@@ -1819,15 +1838,15 @@ PPA vocabulary terms contain:
  * value: the IArchive object;
  * title: the first line of the PPA description text.
 
-    >>> cprov_ppa = vocabulary.getTermByToken('cprov')
+    >>> cprov_term = vocabulary.getTermByToken('cprov')
 
-    >>> print cprov_ppa.token
+    >>> print cprov_term.token
     cprov
 
-    >>> print cprov_ppa.value
+    >>> print cprov_term.value
     <Archive ...>
 
-    >>> print cprov_ppa.title
+    >>> print cprov_term.title
     packages to help my friends.
 
 Not found terms result in LookupError.
@@ -1856,6 +1875,34 @@ PPA vocabulary searches consider the owner FTI and the PPA FTI itself.
     True
     >>> print friends_search[0].description
     packages to help my friends.
+
+As mentioned the PPA vocabulary term title only contains the first
+line of the PPA description.
+
+    >>> cprov = getUtility(IPersonSet).getByName('cprov')
+
+    >>> cprov.archive.description = "Single line."
+    >>> flush_database_updates()
+
+    >>> cprov_term = vocabulary.getTermByToken('cprov')
+    >>> print cprov_term.title
+    Single line.
+
+    >>> cprov.archive.description = "First line\nSecond line."
+    >>> flush_database_updates()
+
+    >>> cprov_term = vocabulary.getTermByToken('cprov')
+    >>> print cprov_term.title
+    First line
+
+PPAs with empty description are identified and have a title saying so.
+
+    >>> cprov.archive.description = None
+    >>> flush_database_updates()
+
+    >>> cprov_term = vocabulary.getTermByToken('cprov')
+    >>> print cprov_term.title
+    No description available
 
 Queries on empty strings also results in a valid SelectResults.
 
