@@ -279,15 +279,6 @@ class PropertyFile:
             raise TranslationFormatInvalidInputError, (
                 'Content is not valid unicode-escaped text')
 
-        # Now, to "normalize" all to the same encoding, we encode to
-        # unicode-escape first, and then decode it to unicode
-        # XXX: Danilo 2006-08-01: we _might_ get performance
-        # improvements if we reimplement this to work directly,
-        # though, it will be hard to beat C-based de/encoder.
-        # This call unescapes everything so we don't need to care about quotes
-        # escaping.
-        content = content.encode('unicode_escape').decode('unicode_escape')
-
         line_num = 0
         is_multi_line_comment = False
         last_comment = None
@@ -295,7 +286,16 @@ class PropertyFile:
         ignore_comment = False
         is_message = False
         translation = u''
-        for line in content.split(u'\n'):
+        for line in content.splitlines():
+            # Now, to "normalize" all to the same encoding, we encode to
+            # unicode-escape first, and then decode it to unicode
+            # XXX: Danilo 2006-08-01: we _might_ get performance
+            # improvements if we reimplement this to work directly,
+            # though, it will be hard to beat C-based de/encoder.
+            # This call unescapes everything so we don't need to care about
+            # quotes escaping.
+            line = line.encode('unicode_escape').decode('unicode_escape')
+
             line_num += 1
             if not is_multi_line_comment:
                 if line.startswith(u'#'):
