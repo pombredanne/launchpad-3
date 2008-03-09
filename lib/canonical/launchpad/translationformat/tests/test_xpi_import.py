@@ -155,7 +155,7 @@ class XpiTestCase(unittest.TestCase):
         # This format doesn't support any functionality like .po flags.
         self.assertEquals(message.flagscomment, u'')
 
-    def testTemplateImport(self):
+    def test_TemplateImport(self):
         """Test XPI template file import."""
         # Prepare the import queue to handle a new .xpi import.
         entry = self.setUpTranslationImportQueueForTemplate()
@@ -245,7 +245,35 @@ class XpiTestCase(unittest.TestCase):
              u'foozilla_something'],
             sorted(messages_msgid_list))
 
-    def testTranslationImport(self):
+    def test_TwiceTemplateImport(self):
+        """Test a template import done twice."""
+        # Prepare the import queue to handle a new .xpi import.
+        entry = self.setUpTranslationImportQueueForTemplate()
+
+        # Now, we tell the PO template to import from the file data it has.
+        (subject, body) = self.firefox_template.importFromQueue(entry)
+
+        # The status is now IMPORTED:
+        sync(entry)
+        self.assertEquals(entry.status, RosettaImportStatus.IMPORTED)
+
+        # Retrieve the number of messages we got in this initial import.
+        first_import_potmsgsets = self.firefox_template.getPOTMsgSets(
+            ).count()
+
+        # Force the entry to be imported again:
+        entry.status = RosettaImportStatus.APPROVED
+        # Now, we tell the PO template to import from the file data it has.
+        (subject, body) = self.firefox_template.importFromQueue(entry)
+
+        # Retrieve the number of messages we got in this second import.
+        second_import_potmsgsets = self.firefox_template.getPOTMsgSets(
+            ).count()
+
+        # Both must match.
+        self.assertEquals(first_import_potmsgsets, second_import_potmsgsets)
+
+    def test_TranslationImport(self):
         """Test XPI translation file import."""
         # Prepare the import queue to handle a new .xpi import.
         template_entry = self.setUpTranslationImportQueueForTemplate()
@@ -332,7 +360,7 @@ class XpiTestCase(unittest.TestCase):
                 self.spanish_firefox.language).translations,
             [u'm'])
 
-    def testGetLastTranslator(self):
+    def test_GetLastTranslator(self):
         """Tests whether we extract last translator information correctly."""
         translation_entry = self.setUpTranslationImportQueueForTranslation()
         importer = MozillaXpiImporter()
