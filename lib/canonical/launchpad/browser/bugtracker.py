@@ -24,10 +24,12 @@ from zope.app.form.browser import TextAreaWidget
 from zope.formlib import form
 from zope.schema import Choice
 
+from canonical.database.sqlbase import flush_database_updates
 from canonical.launchpad import _
 from canonical.launchpad.helpers import shortlist
 from canonical.launchpad.interfaces import (
-    BugTrackerType, IBugTracker, IBugTrackerSet, IRemoteBug, ILaunchBag)
+    BugTrackerType, IBugTracker, IBugTrackerSet, ILaunchBag,
+    ILaunchpadCelebrities, IRemoteBug)
 from canonical.launchpad.webapp import (
     ContextMenu, GetitemNavigation, LaunchpadEditFormView, LaunchpadFormView,
     LaunchpadView, Link, Navigation, action, canonical_url, custom_widget,
@@ -208,10 +210,67 @@ class BugTrackerEditView(LaunchpadEditFormView):
             data['aliases'].append(current_baseurl)
 
         self.updateContextFromData(data)
+        self.next_url = canonical_url(self.context)
 
-    @property
-    def next_url(self):
-        return canonical_url(self.context)
+    @action('Delete', name='delete')
+    def delete_action(self, action, data):
+        bug_tracker_set = getUtility(IBugTrackerSet)
+
+        # We go through all of the reasons why we won't delete the bug
+        # tracker, and show errors for all of them. We do this so that
+        # users can discover the logic behind the decision, and give
+        # up, try something else, or seek help as appropriate. Just
+        # showing the first problem, or hiding the delete button
+        # altogether, would stop users from helping themselves.
+
+        # Check that no products or projects use this bugtracker.
+        pillars = bug_tracker_set.getPillarsForBugtrackers([self.context])
+        if len(pillars) > 0:
+            for pillar in pillars[self.context]:
+                self.addError(
+                    'Cannot delete because this is the bug tracker '
+                    'for %s.' % (pillar.title,))
+
+        # Only admins and registry experts can delete bug watches en
+        # masse.
+        if self.context.watches.count() > 0:
+            celebs = getUtility(ILaunchpadCelebrities)
+            if not (self.user.inTeam(celebs.admin) or
+                    self.user.inTeam(celebs.registry_experts)):
+                self.addError(
+                    'Cannot delete because only members of %s and %s can '
+                    'delete linked bug watches en masse.' % (
+                        celebs.admin.title, celebs.registry_experts.title))
+
+        # Bugtrackers with imported messages cannot be deleted.
+        if self.context.imported_messages.count() > 0:
+            self.addError(
+                'Cannot delete because messages have been imported via '
+                'this bug tracker.')
+
+        # Don't continue if there have been any errors.
+        if len(self.errors) > 0:
+            return
+
+        # First unlink bug watches from all bugtasks, flush updates,
+        # then delete the watches themselves.
+        for watch in self.context.watches:
+            for bugtask in watch.bugtasks:
+                bugtask.bugwatch = None
+        flush_database_updates()
+        for watch in self.context.watches:
+            watch.destroySelf()
+
+        # Now delete the aliases and the bug tracker itself.
+        self.context.aliases = []
+        self.context.destroySelf()
+
+        # Hey, it worked! Tell the user.
+        self.request.response.addInfoNotification(
+            '%s has been deleted.' % (self.context.title,))
+
+        # Go back to the bug tracker listing.
+        self.next_url = canonical_url(bug_tracker_set)
 
 
 class BugTrackerNavigation(Navigation):

@@ -19,8 +19,7 @@ from urllib import splittype
 from zope.interface import implements
 
 from sqlobject import (
-    ForeignKey, OR, SQLMultipleJoin, SQLObjectNotFound, StringCol)
-from sqlobject.sqlbuilder import AND
+    AND, ForeignKey, OR, SQLMultipleJoin, SQLObjectNotFound, StringCol)
 
 from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import (
@@ -28,7 +27,9 @@ from canonical.database.sqlbase import (
 
 from canonical.launchpad.helpers import shortlist
 from canonical.launchpad.database.bug import Bug
+from canonical.launchpad.database.bugmessage import BugMessage
 from canonical.launchpad.database.bugwatch import BugWatch
+from canonical.launchpad.database.message import Message
 from canonical.launchpad.validators.person import public_person_validator
 from canonical.launchpad.interfaces import (
     BugTrackerType, IBugTracker, IBugTrackerAlias, IBugTrackerAliasSet,
@@ -205,6 +206,14 @@ class BugTracker(SQLBase):
         The aliases are found by querying BugTrackerAlias. Assign an
         iterable of URLs or None to set or remove aliases.
         """)
+
+    @property
+    def imported_messages(self):
+        """See `IBugTracker`."""
+        return Message.select(
+            AND((Message.q.id == BugMessage.q.messageID),
+                (BugMessage.q.bugwatchID == BugWatch.q.id),
+                (BugWatch.q.bugtrackerID == self.id)))
 
 
 class BugTrackerSet:
