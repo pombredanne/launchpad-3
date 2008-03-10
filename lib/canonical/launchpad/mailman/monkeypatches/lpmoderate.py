@@ -35,7 +35,7 @@ def process(mlist, msg, msgdata):
     # From here on out, we're dealing with senders who are not members of the
     # mailing list.  The are also not Launchpad members in good standing or
     # we'd have already approved the message.  So now the message must be held
-    # in Launchpad's librarian for approval via the LP u/i.
+    # in Launchpad for approval via the LP u/i.
     sender = msg.get_sender()
     # Hold the message in Mailman too so that it's easier to resubmit it after
     # approval via the LP u/i.  If the team administrator ends up rejecting
@@ -44,7 +44,7 @@ def process(mlist, msg, msgdata):
     # librarian if it gets approved.   However, unlike the standard Moderate
     # handler, we don't craft all the notification messages about this hold.
     # We also need to keep track of the message-id (which better be unique)
-    # because Launchpad only knows about the message id.
+    # because that's how we communicate about the message's status.
     request_id = mlist.HoldMessage(msg, msgdata)
     # This is a hack because by default Mailman cannot look up held messages
     # by message-id.  This works because Mailman's persistency layer simply
@@ -66,7 +66,7 @@ def process(mlist, msg, msgdata):
     # This will fail if we can't talk to Launchpad.  That's okay though
     # because Mailman's IncomingRunner will re-queue the message and re-start
     # processing at this handler.
-    proxy.holdMessage(msg.to_string())
+    proxy.holdMessage(mlist.internal_name(), msg.to_string())
     # Raise this exception, signaling to the incoming queue runner that it is
     # done processing this message, and should not send it through any further
     # handlers.
