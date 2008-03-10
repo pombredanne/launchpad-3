@@ -19,7 +19,7 @@ from zope.event import notify
 from zope.interface import implements, providedBy
 
 from canonical.config import config
-from canonical.database.constants import UTC_NOW
+from canonical.database.constants import DEFAULT, UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import SQLBase, sqlvalues
@@ -95,15 +95,15 @@ class MailingList(SQLBase):
         dbName='registrant', foreignKey='Person',
         validator=public_person_validator)
 
-    date_registered = UtcDateTimeCol(notNull=True, default=None)
+    date_registered = UtcDateTimeCol(notNull=True, default=DEFAULT)
 
     reviewer = ForeignKey(
         dbName='reviewer', foreignKey='Person',
         validator=public_person_validator, default=None)
 
-    date_reviewed = UtcDateTimeCol(notNull=True, default=None)
+    date_reviewed = UtcDateTimeCol(notNull=False, default=None)
 
-    date_activated = UtcDateTimeCol(notNull=True, default=None)
+    date_activated = UtcDateTimeCol(notNull=False, default=None)
 
     status = EnumCol(enum=MailingListStatus,
                      default=MailingListStatus.REGISTERED)
