@@ -19,6 +19,7 @@ __all__ = [
     'NoSuchBranch',
     'NoBranchForSeries',
     'NoSuchBug',
+    'NoSuchCodeImportMachine',
     'NoSuchDistribution',
     'NoSuchPackage',
     'NoSuchPerson',
@@ -41,7 +42,8 @@ class LaunchpadFault(xmlrpclib.Fault):
     """
 
     def __new__(cls, *args, **kw):
-        """Workaround for bug 52033: all faults must be plain Fault objects."""
+        """Work around bug 52033: all faults must be plain Fault objects."""
+        # pylint: disable-msg=E1002
         obj = super(LaunchpadFault, cls).__new__(cls, *args, **kw)
         obj.__init__(*args, **kw)
         return xmlrpclib.Fault(obj.faultCode, obj.faultString)
@@ -272,3 +274,12 @@ class NoSuchPersonWithUsername(LaunchpadFault):
     def __init__(self, username):
         LaunchpadFault.__init__(self, username=username)
 
+
+class NoSuchCodeImportMachine(LaunchpadFault):
+    """There is no CodeImportMachine known with the specified hostname."""
+
+    error_code = 210
+    msg_template = 'No such code import machine: %(hostname)s'
+
+    def __init__(self, hostname):
+        LaunchpadFault.__init__(self, hostname=hostname)

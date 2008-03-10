@@ -86,7 +86,7 @@ We also have an icon for bugs.
 datetimes can be formatted with fmt:date, fmt:time, fmt:datetime and
 fmt:rfc822utcdatetime.
 
-   >>> from datetime import datetime, timedelta
+   >>> from datetime import datetime
    >>> dt = datetime(2005, 4, 1, 16, 22)
    >>> test_tales('dt/fmt:date', dt=dt)
    '2005-04-01'
@@ -223,6 +223,8 @@ title might be interpreted by the browser.
 
 
 === Branch subscriptions ===
+Branch subscriptions show the person and branch name.  For users
+without adequate permissions, a link is not generated.
 
     >>> from canonical.launchpad.testing import LaunchpadObjectFactory
     >>> factory = LaunchpadObjectFactory()
@@ -230,6 +232,14 @@ title might be interpreted by the browser.
     ...     'My Person')
     >>> test_tales("subscription/fmt:link", subscription=subscription)
     u'Subscription of My Person to My Branch'
+
+But if we log in as the subscriber, a link is presented.
+
+    >>> login(subscription.person.preferredemail.email)
+    >>> test_tales("subscription/fmt:link", subscription=subscription)
+    u'<a href="...">Subscription of My Person to My Branch</a>'
+
+Merge proposals also have a link formatter, which displays branch titles:
 
 
 === Merge proposals ===
@@ -270,19 +280,19 @@ title might be interpreted by the browser.
 === Blueprints ===
 
     >>> login('test@canonical.com')
-    >>> specification = factory.makeSpec()
+    >>> specification = factory.makeSpecification()
     >>> test_tales("specification/fmt:link", specification=specification)
-    u'...<img ... src="/@@/blueprint-undefined" />&nbsp;...'
+    u'<a...<img ... src="/@@/blueprint-undefined" />&nbsp;...</a>'
 
 
 === Blueprint branches ===
 
-    >>> specification = factory.makeSpec()
+    >>> specification = factory.makeSpecification()
     >>> branch = factory.makeBranch()
     >>> specification_branch = specification.linkBranch(branch, branch.owner)
     >>> test_tales("specification_branch/fmt:link",
     ...     specification_branch=specification_branch)
-    u'...<img ... src="/@@/blueprint-undefined" />&nbsp;...'
+    u'<a...<img ... src="/@@/blueprint-undefined" />&nbsp;...</a>'
 
 
 === Projects ===

@@ -39,6 +39,7 @@ __all__ = [
     ]
 
 from operator import attrgetter
+import urllib
 
 import zope.security.interfaces
 from zope.component import getUtility
@@ -53,9 +54,10 @@ from canonical.config import config
 from canonical.launchpad import _
 from canonical.launchpad.interfaces import (
     BranchListingSort, IBranchSet, IBugTracker, ICountry, IDistribution,
-    IHasIcon, ILaunchBag, ILaunchpadCelebrities, IPillarNameSet, IProduct,
-    IProductSeries, IProductSet, IProject, ITranslationImportQueue, License,
-    NotFoundError, RESOLVED_BUGTASK_STATUSES, UnsafeFormGetSubmissionError)
+    IHasIcon, ILaunchBag, ILaunchpadCelebrities, ILibraryFileAliasSet,
+    IPillarNameSet, IProduct, IProductSeries, IProductSet, IProject,
+    ITranslationImportQueue, License, NotFoundError,
+    RESOLVED_BUGTASK_STATUSES, UnsafeFormGetSubmissionError)
 from canonical.launchpad import helpers
 from canonical.launchpad.browser.announcement import HasAnnouncementsView
 from canonical.launchpad.browser.branding import BrandingChangeView
@@ -78,13 +80,13 @@ from canonical.launchpad.browser.seriesrelease import (
 from canonical.launchpad.browser.sprint import SprintsMixinDynMenu
 from canonical.launchpad.mail import format_address, simple_sendmail
 from canonical.launchpad.webapp import (
-    action, ApplicationMenu, canonical_url, ContextMenu, custom_widget,
-    enabled_with_permission, LaunchpadView, LaunchpadEditFormView,
-    LaunchpadFormView, Link, Navigation, sorted_version_numbers,
-    StandardLaunchpadFacets, stepto, stepthrough, structured)
+    ApplicationMenu, ContextMenu, LaunchpadEditFormView, LaunchpadFormView,
+    LaunchpadView, Link, Navigation, StandardLaunchpadFacets, action,
+    canonical_url, custom_widget, enabled_with_permission,
+    sorted_version_numbers, stepthrough, stepto, structured, urlappend)
 from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp.dynmenu import DynMenu, neverempty
-from canonical.librarian.interfaces import ILibrarianClient
+from canonical.launchpad.webapp.uri import URI
 from canonical.widgets.product import LicenseWidget, ProductBugTrackerWidget
 from canonical.widgets.textwidgets import StrippedTextWidget
 
@@ -717,15 +719,16 @@ class ProductDownloadFileMixin:
         """Create a download URL for the `LibraryFileAlias`."""
         if release is None:
             release = self.context
-        return "%s/+download/%s" % (canonical_url(release),
-                                    file_.filename)
+        url = urlappend(canonical_url(release), '+download')
+        # Quote the filename to eliminate non-ascii characters which
+        # are invalid in the url.
+        url = urlappend(url, urllib.quote(file_.filename.encode('utf-8')))
+        return str(URI(url).replace(scheme='http'))
 
     def md5URL(self, file_, release=None):
         """Create a URL for the MD5 digest."""
-        if release is None:
-            release = self.context
-        return "%s/+download/%s/+md5" % (canonical_url(release),
-                                         file_.filename)
+        baseurl = self.fileURL(file_, release)
+        return urlappend(baseurl, '+md5')
 
     def processDeleteFiles(self):
         """If the 'delete_files' button was pressed, process the deletions."""
@@ -969,15 +972,10 @@ class Icon:
     """An icon for use with image:icon."""
 
     def __init__(self, library_id):
-        self.library_id = library_id
+        self.library_alias = getUtility(ILibraryFileAliasSet)[library_id]
 
     def getURL(self):
-        http_url = getUtility(
-            ILibrarianClient).getURLForAlias(self.library_id)
-        if config.launchpad.vhosts.use_https:
-            return http_url.replace('http', 'https', 1)
-        else:
-            return http_url
+        return self.library_alias.getURL()
 
 
 class PillarSearchItem:

@@ -150,6 +150,56 @@
 
 </metal:branch-bug-links>
 
+<metal:spec-branch-links define-macro="spec-branch-links">
+
+  <tal:comment condition="nothing">
+    This macro requires the following defined variables:
+      branch - the branch that has the spec branch links
+    The following variables define what is shown and are optional.
+      show_whiteboard - show the whiteboard for the specification branch
+      show_edit - show the edit form
+  </tal:comment>
+
+  <tal:spec-tasks repeat="spec_branch branch/spec_links">
+    <div tal:define="has_edit_permission spec_branch/required:launchpad.AnyPerson;
+                     show_edit show_edit|nothing;
+                     show_edit python: show_edit and has_edit_permission;
+                     spec spec_branch/specification;
+                     ">
+      <div class="spec-branch-summary">
+      <tal:link replace="structure spec/fmt:link" />
+      (<span tal:attributes="class string:specpriority${spec/priority/name}"
+             tal:content="spec/priority/title">High</span>)
+       <tal:show-edit condition="show_edit|nothing">
+         -
+         <a tal:attributes="href spec_branch/fmt:url;
+                            onclick string:return switchSpecBranchFormAndSummary('${spec_branch/id}')">
+         edit <img src="/@@/expand"/></a>
+       </tal:show-edit>
+       <tal:show-whiteboard condition="show_whiteboard|nothing">
+         <dl tal:condition="spec_branch/summary"
+             tal:attributes="id string:specbranch${spec_branch/id}-summary">
+           <dd>
+             <tal:summary content="structure spec_branch/summary/fmt:text-to-html">
+               The spec link summary.
+             </tal:summary>
+           </dd>
+         </dl>
+       </tal:show-whiteboard>
+       </div>
+       <div tal:condition="show_edit|nothing"
+            tal:attributes="id string:specbranch${spec_branch/id}"
+            style="display: none"
+            >
+         <dl><dd>
+         <tal:edit-form replace="structure spec_branch/@@+branch-edit"/>
+       </dd></dl>
+       </div>
+    </div>
+  </tal:spec-tasks>
+
+</metal:spec-branch-links>
+
 <metal:branch-revisions define-macro="branch-revisions">
 
   <tal:comment condition="nothing">
@@ -190,20 +240,28 @@
     </a><tal:revno condition="not: rev_no/branch/code_is_browseable"
                    replace="rev_no/sequence">1</tal:revno>.
     By
-    <strong>
-      <tal:not-anonymous condition="view/user">
-        <span tal:replace="rev_no/revision/revision_author/name">
-          John Doe &lt;john.doe@example.com&gt;
-        </span>
-      </tal:not-anonymous>
-      <tal:anonymous condition="not:view/user">
-        <span
-            tal:replace="rev_no/revision/revision_author/name_without_email">
-          John Doe
-        </span>
-        &lt;email address hidden&gt;
-      </tal:anonymous>
-    </strong>
+    <tal:revision-author define="revision_author rev_no/revision/revision_author">
+      <tal:known-person condition="revision_author/person">
+        <tal:person-link replace="structure revision_author/person/fmt:link"/>
+      </tal:known-person>
+      <tal:unknown-person condition="not: revision_author/person">
+        <strong>
+          <tal:not-anonymous condition="view/user"
+                             replace="revision_author/name">
+              John Doe &lt;john.doe@example.com&gt;
+          </tal:not-anonymous>
+          <tal:anonymous condition="not:view/user">
+            <tal:author-name replace="revision_author/name_without_email">
+              John Doe
+            </tal:author-name>
+            <tal:author-has-email condition="rev_no/revision/revision_author/email">
+              &lt;email address hidden&gt;
+            </tal:author-has-email>
+          </tal:anonymous>
+        </strong>
+      </tal:unknown-person>
+    </tal:revision-author>
+
     <tal:revision-date
         attributes="title rev_no/revision/revision_date/fmt:datetime"
         content="rev_no/revision/revision_date/fmt:displaydate"
@@ -217,5 +275,33 @@
   </dd>
 
 </metal:revision-text>
+
+<metal:no-revision-message define-macro="no-revision-message">
+
+  <tal:not-mirrored condition="not:branch/last_mirrored">
+    <tal:remote-branch tal:condition="branch/branch_type/enumvalue:REMOTE">
+      Revision details not available for <em>remote</em> branches.
+    </tal:remote-branch>
+    <tal:mirrored-branch tal:condition="branch/branch_type/enumvalue:MIRRORED">
+      This branch has not been mirrored yet.
+    </tal:mirrored-branch>
+    <tal:hosted-branch tal:condition="branch/branch_type/enumvalue:HOSTED">
+      This branch has not been pushed to yet.
+    </tal:hosted-branch>
+    <tal:imported-branch tal:condition="branch/branch_type/enumvalue:IMPORTED">
+      This branch has not been imported yet.
+    </tal:imported-branch>
+  </tal:not-mirrored>
+
+  <tal:mirrored condition="branch/last_mirrored">
+    <tal:not-scanned condition="not:branch/last_scanned">
+      This branch has not been scanned yet.
+    </tal:not-scanned>
+    <tal:scanned condition="branch/last_scanned">
+      This branch is empty.
+    </tal:scanned>
+  </tal:mirrored>
+
+</metal:no-revision-message>
 
 </tal:root>

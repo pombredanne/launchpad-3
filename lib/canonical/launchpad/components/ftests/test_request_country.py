@@ -3,11 +3,12 @@
 __metaclass__ = type
 
 import unittest
-from canonical.launchpad.ftests.harness import LaunchpadFunctionalTestCase
-from canonical.testing import LaunchpadFunctionalLayer
-from canonical.launchpad.components.request_country import request_country
 
-class RequestCountryTestCase(LaunchpadFunctionalTestCase):
+from canonical.launchpad.ftests import ANONYMOUS, login, logout
+from canonical.launchpad.components.request_country import request_country
+from canonical.testing import LaunchpadFunctionalLayer
+
+class RequestCountryTestCase(unittest.TestCase):
     """request_country needs functional tests because it accesses GeoIP
     using a Utility
     """
@@ -15,8 +16,10 @@ class RequestCountryTestCase(LaunchpadFunctionalTestCase):
     layer = LaunchpadFunctionalLayer
 
     def setUp(self):
-        LaunchpadFunctionalTestCase.setUp(self)
-        self.login()
+        login(ANONYMOUS)
+
+    def tearDown(self):
+        logout()
 
     def testRemoteAddr(self):
         country = request_country({'REMOTE_ADDR': self.lp})
@@ -49,7 +52,4 @@ class RequestCountryTestCase(LaunchpadFunctionalTestCase):
 
 
 def test_suite():
-    suite = unittest.TestSuite()
-    suite.addTest(unittest.makeSuite(RequestCountryTestCase))
-    return suite
-
+    return unittest.TestLoader().loadTestsFromName(__name__)

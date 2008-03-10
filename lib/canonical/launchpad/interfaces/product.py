@@ -375,7 +375,7 @@ class IProductSet(Interface):
         """
 
     def getProductsWithBranches(num_products=None):
-        """Return an iterator over all products that have branches.
+        """Return an iterator over all active products that have branches.
 
         If num_products is not None, then the first `num_products` are
         returned.
@@ -383,6 +383,8 @@ class IProductSet(Interface):
 
     def getProductsWithUserDevelopmentBranches():
         """Return products that have a user branch for the development series.
+
+        Only active products are returned.
 
         A user branch is one that is either HOSTED or MIRRORED, not IMPORTED.
         """
