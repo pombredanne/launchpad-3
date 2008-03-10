@@ -297,12 +297,17 @@ class EntryResource(ReadWriteResource):
                 self.request.response.setStatus(400)
                 return str(e)
             validated_changeset[name] = value
+        original_url = canonical_url(self, request=self.request)
         for name, value in validated_changeset.items():
             setattr(self.context, name, value)
-        # TODO: It's possible that one of these changes modified the
-        # object's canonical_url. If so, we need to send Moved Permanently
-        # instead of OK.
-        return ''
+        new_url = canonical_url(self, request=self.request)
+        if new_url == original_url:
+            return ''
+        else:
+            # The modification caused the entry's URL to change.
+            # Tell the client about the new URL.
+            self.request.response.setStatus(301)
+            self.request.response.setHeader('Location', new_url)
 
 
 class CollectionResource(ReadOnlyResource):

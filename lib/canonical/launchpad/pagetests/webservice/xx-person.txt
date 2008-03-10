@@ -9,8 +9,9 @@ document shows some of the other features of a person.
 It's possible to modify a person by sending to the server a document
 asserting what the person should look like. The document may only
 describe part of the person's new state (in which case the client
-should use the PATCH HTTP method) [TODO: or it may describe the entire
-new state, in which case the cluent should use PUT.])
+should use the PATCH HTTP method) [TODO leonardr 2008-03-10
+api-base-modify-data-entry]: or it may describe the entire new state,
+in which case the cluent should use PUT.])
 
 
 === What you can do ===
@@ -48,7 +49,23 @@ A person's data fields can be modified.
   >>> salgado['displayname']
   u'GUILHERME SALGADO'
 
-# TODO: A link between a person and a related object can be modified.
+The modification might cause the person's address to change:
+
+  >>> print patch_person('salgado', {'name' : 'salgado2'})
+  HTTP/1.1 301 Moved Permanently
+  ...
+  Location: http://api.launchpad.dev/people/salgado2
+  <BLANKLINE>
+
+  # Undo the previous change
+  >>> print patch_person('salgado2', {'name' : 'salgado'})
+  HTTP/1.1 301 Moved Permanently
+  ...
+  Location: http://api.launchpad.dev/people/salgado
+  <BLANKLINE>
+
+# [TODO leonardr 2008-03-10 modify-data-links]: A link between a
+# person and a related object can be modified.
 
 
 === What you can't do. ===
@@ -62,8 +79,7 @@ A person's read-only attributes can't be modified.
   <BLANKLINE>
   You tried to modify the read-only attribute 'datecreated'
 
-A client can't change the link to a person's associated
-collection.
+A client can't change the link to a person's associated collection.
 
   >>> print patch_person('salgado',
   ...                    {'team_memberships_collection_link' : 'dummy'})
