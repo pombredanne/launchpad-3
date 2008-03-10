@@ -16,8 +16,7 @@ for the member.
     ...     and transaction.commit after, to ensure the changes are flushed to
     ...     the database.
     ...     """
-    ...     membership.setStatus(
-    ...         status, reviewer=reviewer, reviewercomment=comment)
+    ...     membership.setStatus(status, reviewer, comment=comment)
     ...     flush_database_updates()
     ...     transaction.commit()
 

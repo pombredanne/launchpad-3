@@ -21,8 +21,8 @@
   <div tal:condition="context/status/enumvalue:INVITED"> 
     <div metal:use-macro="context/@@launchpad_form/form">
       <p metal:fill-slot="extra_info">
-        <a tal:attributes="href context/reviewer/fmt:url" 
-           tal:content="context/reviewer/unique_displayname">Somebody</a>
+        <a tal:attributes="href context/proposed_by/fmt:url" 
+           tal:content="context/proposed_by/unique_displayname">Somebody</a>
         has invited this team to join
         <a tal:attributes="href context/team/fmt:url"
            tal:content="context/team/unique_displayname">Some team</a>.
@@ -37,8 +37,8 @@
   </p>
 
   <p tal:condition="context/status/enumvalue:INVITATION_DECLINED">
-    <a tal:attributes="href context/reviewer/fmt:url" 
-       tal:content="context/reviewer/unique_displayname">Somebody</a>
+    <a tal:attributes="href context/proposed_by/fmt:url" 
+       tal:content="context/proposed_by/unique_displayname">Somebody</a>
     has declined the invitation for this team to join
     <a tal:attributes="href context/team/fmt:url"
        tal:content="context/team/unique_displayname">Some team</a>.

@@ -14,8 +14,8 @@ __all__ = [
     'TeamMembershipStatus',
     ]
 
-from zope.schema import Choice, Int, Text
-from zope.interface import Interface, Attribute
+from zope.schema import Choice, Datetime, Int, Text
+from zope.interface import Attribute, Interface
 
 from canonical.lazr import DBEnumeratedType, DBItem
 
@@ -96,22 +96,52 @@ class ITeamMembership(Interface):
     team = Int(title=_("Team"), required=True, readonly=False)
     person = Int(title=_("Member"), required=True, readonly=False)
     reviewer = Int(title=_("Reviewer"), required=False, readonly=False)
+    # XXX: salgado, 2008-03-10: Can't use Object(schema=IPerson) here because
+    # that would cause circular imports.
+    proposed_by = Attribute(_('Proponent'))
+    reviewed_by = Attribute(
+        _("The team admin who approved/rejected the member."))
+    acknowledged_by = Attribute(
+        _('The person (usually the member or someone acting on his behalf) '
+          'that acknowledged (accepted/declined) a membership invitation.'))
+    last_changed_by = Attribute(_('Last person who change this'))
 
-    datejoined = Text(
-        title=_("Date Joined"), required=True, readonly=True,
+    datejoined = Datetime(
+        title=_("Date joined"), required=False, readonly=False,
         description=_(
-            "If this is an active membership, it contains the date in which "
-            "the membership was approved. If this is a proposed membership, "
-            "it contains the date the user asked to join."))
-    dateexpires = Text(title=_("Date Expires"),
-                       required=False, readonly=False)
-    reviewercomment = Text(title=_("Reviewer Comment"), required=False,
-                           readonly=False)
-    status = Choice(title=_("If Membership was approved or not"),
-                    vocabulary='TeamMembershipStatus',
-                    required=True, readonly=True)
+            "The date in which this membership was made active for the "
+            "first time."))
+    dateexpires = Datetime(
+        title=_("Date expires"), required=False, readonly=False)
+    date_created = Datetime(
+        title=_("Date created"), required=False, readonly=True,
+        description=_("The date in which this membership was created."))
+    date_proposed = Datetime(
+        title=_("Date proposed"), required=False, readonly=False,
+        description=_("The date in which this membership was proposed."))
+    date_acknowledged = Datetime(
+        title=_("Date acknowledged"), required=False, readonly=False,
+        description=_("The date in which this membership was acknowledged by "
+                      "the member (or someone acting on their behalf)."))
+    date_reviewed = Datetime(
+        title=_("Date reviewed"), required=False, readonly=False,
+        description=_("The date in which this membership was approved/"
+                      "rejected by one of the team's admins."))
+    date_last_changed = Datetime(
+        title=_("Date last changed"), required=False, readonly=False,
+        description=_("The date in which this membership was last changed."))
 
-    statusname = Attribute("Status Name")
+    last_change_comment = Text(
+        title=_("Comment on the last change"), required=False, readonly=False)
+    proponent_comment = Text(
+        title=_("Proponent comment"), required=False, readonly=False)
+    acknowledger_comment = Text(
+        title=_("Acknowledger comment"), required=False, readonly=False)
+    reviewer_comment = Text(
+        title=_("Reviewer comment"), required=False, readonly=False)
+    status= Choice(
+        title=_("The state of this membership"), required=True,
+        readonly=True, vocabulary=TeamMembershipStatus)
 
     def isExpired():
         """Return True if this membership's status is EXPIRED."""
@@ -162,11 +192,14 @@ class ITeamMembership(Interface):
         expire soon.
         """
 
-    def setStatus(status, reviewer, reviewercomment=None):
+    def setStatus(status, reviewer, comment=None):
         """Set the status of this membership.
 
-        Also sets the reviewer and reviewercomment, filling or cleaning
-        the TeamParticipation table if necessary.
+        The reviewer and comment are stored in last_changed_by and
+        last_change_comment and may also be stored in proposed_by
+        (and proponent_comment), reviewed_by (and reviewer_comment) or
+        acknowledged_by (and acknowledger_comment), depending on the state
+        transition.
 
         The given status must be different than the current status.
         """

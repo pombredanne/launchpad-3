@@ -39,7 +39,7 @@
     <tr>
       <th>Comment:</th>
       <td><textarea cols="40" name="comment" 
-                    tal:content="request/comment|context/reviewercomment|nothing">
+                    tal:content="request/comment|context/last_change_comment|nothing">
                 </textarea>
           <div class="formHelp">This comment will be sent together with the
             notification of this change to all team administrators and this
@@ -245,8 +245,8 @@
               <th>Applied:</th>
               <td>
                 <span
-                  tal:attributes="title context/datejoined/fmt:datetime"
-                  tal:content="context/datejoined/fmt:approximatedate">
+                  tal:attributes="title context/date_created/fmt:datetime"
+                  tal:content="context/date_created/fmt:approximatedate">
                   2005-09-13
                 </span>
               </td>

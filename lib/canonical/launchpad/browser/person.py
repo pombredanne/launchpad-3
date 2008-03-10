@@ -410,13 +410,14 @@ class TeamMembershipSelfRenewalView(LaunchpadFormView):
 
 
 class TeamInvitationView(LaunchpadFormView):
+    """Where team admins can accept/decline membership invitations."""
 
     implements(IBrowserPublisher)
 
     schema = ITeamMembership
     label = 'Team membership invitation'
-    field_names = ['reviewercomment']
-    custom_widget('reviewercomment', TextAreaWidget, height=5, width=60)
+    field_names = ['acknowledger_comment']
+    custom_widget('acknowledger_comment', TextAreaWidget, height=5, width=60)
     template = ViewPageTemplateFile(
         '../templates/teammembership-invitation.pt')
 
@@ -444,7 +445,7 @@ class TeamInvitationView(LaunchpadFormView):
             return
         member = self.context.person
         member.acceptInvitationToBeMemberOf(
-            self.context.team, data['reviewercomment'])
+            self.context.team, data['acknowledger_comment'])
         self.request.response.addInfoNotification(
             _("This team is now a member of ${team}", mapping=dict(
                   team=self.context.team.browsername)))
@@ -457,7 +458,7 @@ class TeamInvitationView(LaunchpadFormView):
             return
         member = self.context.person
         member.declineInvitationToBeMemberOf(
-            self.context.team, data['reviewercomment'])
+            self.context.team, data['acknowledger_comment'])
         self.request.response.addInfoNotification(
             _("Declined the invitation to join ${team}", mapping=dict(
                   team=self.context.team.browsername)))
@@ -1873,7 +1874,7 @@ class PersonView(LaunchpadView, FeedsMixin):
     def recently_proposed_members(self):
         members = self.context.getMembersByStatus(
             TeamMembershipStatus.PROPOSED,
-            orderBy='-TeamMembership.date_joined')
+            orderBy='-TeamMembership.date_proposed')
         return members[:5]
 
     @cachedproperty
