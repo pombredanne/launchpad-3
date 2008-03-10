@@ -63,16 +63,26 @@ class MessageApproval(SQLBase):
     disposal_date = UtcDateTimeCol(default=None)
 
     def approve(self, reviewer):
-        """See `MessageApproval`."""
+        """See `IMessageApproval`."""
         self.disposed_by = reviewer
         self.disposal_date = UTC_NOW
         self.status = PostedMessageStatus.APPROVAL_PENDING
 
     def reject(self, reviewer):
-        """See `MessageApproval`."""
+        """See `IMessageApproval`."""
         self.disposed_by = reviewer
         self.disposal_date = UTC_NOW
         self.status = PostedMessageStatus.REJECTION_PENDING
+
+    def acknowledge(self):
+        """See `IMessageApproval`."""
+        if self.status == PostedMessageStatus.APPROVAL_PENDING:
+            self.status = PostedMessageStatus.APPROVED
+        elif self.status == PostedMessageStatus.REJECTION_PENDING:
+            self.status = PostedMessageStatus.REJECTED
+        else:
+            raise AssertionError('Not an acknowledgeable state: %s' %
+                                 self.status)
 
 
 class MailingList(SQLBase):
@@ -504,6 +514,13 @@ class MessageApprovalSet:
     """Sets of held messages."""
 
     implements(IMessageApprovalSet)
+
+    def getMessageByMessageID(self, message_id):
+        """See `IMessageApprovalSet`."""
+        response = MessageApproval.selectBy(message_id=message_id)
+        if response.count() == 0:
+            return None
+        return response[0]
 
     def getHeldMessagesWithStatus(self, status):
         """See `IMessageApprovalSet`."""
