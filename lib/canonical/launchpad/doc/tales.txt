@@ -282,7 +282,7 @@ Merge proposals also have a link formatter, which displays branch titles:
     >>> login('test@canonical.com')
     >>> specification = factory.makeSpecification()
     >>> test_tales("specification/fmt:link", specification=specification)
-    u'...<img ... src="/@@/blueprint-undefined" />&nbsp;...'
+    u'<a...<img ... src="/@@/blueprint-undefined" />&nbsp;...</a>'
 
 
 === Blueprint branches ===
@@ -292,7 +292,7 @@ Merge proposals also have a link formatter, which displays branch titles:
     >>> specification_branch = specification.linkBranch(branch, branch.owner)
     >>> test_tales("specification_branch/fmt:link",
     ...     specification_branch=specification_branch)
-    u'...<img ... src="/@@/blueprint-undefined" />&nbsp;...'
+    u'<a...<img ... src="/@@/blueprint-undefined" />&nbsp;...</a>'
 
 
 === Projects ===

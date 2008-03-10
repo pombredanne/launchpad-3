@@ -3,38 +3,12 @@
 Only Launchpad members are allowed to post to team mailing lists.  A message
 by a sender who is not a Launchpad member will be summarily discarded.
 
-    # This test requires us to start an SMTP server that accepts messages
-    # sent by Mailman's outgoing qrunner and stores these in a Unix mbox.
+First, create the mailing list, which will send a notification messages
+to all the members of the mailing list.  We can ignore these messages.
+
     >>> import itest_helper
-    >>> smtpd = itest_helper.SMTPServer()
-    >>> smtpd.start()
-
-    # Create a mailing list for this test.
-    >>> import itest_helper
-    >>> browser = itest_helper.make_browser()
-    >>> browser.open('http://launchpad.dev/people/+newteam')
-    >>> browser.getControl(name='field.name').value = 'itest-one'
-    >>> browser.getControl('Display Name').value = 'ITest One'
-    >>> browser.getControl(name='field.subscriptionpolicy').displayValue = [
-    ...     'Open Team']
-    >>> browser.getControl('Create').click()
-
-XXX BarryWarsaw 06-Dec-2007 The team must be a member of the mailing list beta
-program in order to apply for mailing lists.  When mailing lists go public,
-this stanza can be removed.
-
-    >>> itest_helper.beta_program_enable('itest-one')
-
-    >>> browser.reload()
-    >>> browser.getLink('Configure mailing list').click()
-    >>> browser.getControl('Apply for Mailing List').click()
-
-    >>> list_one = itest_helper.review_list('itest-one')
-    >>> from canonical.database.sqlbase import commit
-    >>> commit()
-    >>> from Mailman.Utils import list_names
-    >>> sorted(name for name in list_names() if name.startswith('itest-'))
-    ['itest-one']
+    >>> list_one = itest_helper.create_list('itest-one')
+    >>> smtpd.reset()
 
 
 == Non-member postings ==
@@ -74,6 +48,7 @@ equivalent to making it unvalidated.
 
     >>> from canonical.launchpad.ftests.mailinglists_helper import (
     ...     get_alternative_email, new_person)
+    >>> from canonical.database.sqlbase import commit
     >>> from canonical.launchpad.ftests import login, logout
     >>> login('foo.bar@canonical.com')
     >>> anne = new_person('Anne')
@@ -144,9 +119,9 @@ to the mailing list.
 
     >>> print anne.preferredemail.email, anne.preferredemail.statusname
     anne.person@example.com Preferred Email Address
-    >>> smtp_watcher = itest_helper.LogWatcher('smtp')
-    >>> archive_watcher = itest_helper.LogWatcher('mhonarc')
     >>> smtpd.reset()
+    >>> archive_watcher = itest_helper.LogWatcher('mhonarc')
+    >>> smtp_watcher = itest_helper.LogWatcher('smtp')
     >>> inject('itest-one', """\
     ... From: anne.person@example.com
     ... To: itest-one@lists.launchpad.dev
@@ -364,6 +339,117 @@ not need to re-subscribe to the mailing list.
     [Itest-one] A posting from a member once again
 
 
+== First post moderation ==
+
+Normally, Launchpad members who are not subscribed to the mailing list cannot
+post to it.
+
+    >>> login('foo.bar@canonical.com')
+    >>> bart = new_person('Bart')
+    >>> commit()
+    >>> bart.personal_standing
+    <DBItem PersonalStanding.UNKNOWN...
+
+    >>> def print_message_summaries():
+    ...     messages = sorted(smtpd.getMessages(), key=itemgetter('sender'))
+    ...     print 'Number of messages:', len(messages)
+    ...     for message in messages:
+    ...         print message['sender']
+    ...         print '   ', message['message-id']
+    ...         print '   ', message['from']
+    ...         print '   ', message['subject']
+
+    >>> smtpd.reset()
+    >>> vette_watcher.resync()
+    >>> inject('itest-one', """\
+    ... From: bperson@example.org
+    ... To: itest-one@lists.launchpad.dev
+    ... Subject: A non-member post
+    ... Message-ID: <tenth-injection>
+    ...
+    ... Hi, I am not a member of the mailing list.
+    ... """)
+    >>> vette_watcher.wait()
+    >>> print_message_summaries()
+    Number of messages: 0
+
+However, a Launchpad member in good standing is allowed to post to any mailing
+list.
+
+    >>> from canonical.launchpad.interfaces import PersonalStanding
+    >>> login('foo.bar@canonical.com')
+    >>> bart.personal_standing = PersonalStanding.GOOD
+    >>> commit()
+
+    >>> smtpd.reset()
+    >>> inject('itest-one', """\
+    ... From: bart.person@example.com
+    ... To: itest-one@lists.launchpad.dev
+    ... Subject: A member in good standing
+    ... Message-ID: <eleventh-injection>
+    ...
+    ... Hi, I am a Launchpad member in good standing!
+    ... """)
+    >>> smtp_watcher.wait()
+    >>> print_message_summaries()
+    Number of messages: 2
+    itest-one-bounces+anne.person=example.com@lists.launchpad.dev
+        <eleventh-injection>
+        bart.person@example.com
+        [Itest-one] A member in good standing
+    itest-one-bounces+archive=mail-archive.com@lists.launchpad.dev
+        <eleventh-injection>
+        bart.person@example.com
+        [Itest-one] A member in good standing
+
+A member in excellent standing can of course also post to the list.
+
+    >>> bart.personal_standing = PersonalStanding.EXCELLENT
+    >>> commit()
+
+    >>> smtpd.reset()
+    >>> inject('itest-one', """\
+    ... From: bart.person@example.com
+    ... To: itest-one@lists.launchpad.dev
+    ... Subject: A member in excellent standing
+    ... Message-ID: <twelfth-injection>
+    ...
+    ... Hi, I am a Launchpad member in excellent standing!
+    ... """)
+    >>> smtp_watcher.wait()
+    >>> print_message_summaries()
+    Number of messages: 2
+    itest-one-bounces+anne.person=example.com@lists.launchpad.dev
+        <twelfth-injection>
+        bart.person@example.com
+        [Itest-one] A member in excellent standing
+    itest-one-bounces+archive=mail-archive.com@lists.launchpad.dev
+        <twelfth-injection>
+        bart.person@example.com
+        [Itest-one] A member in excellent standing
+
+But a person in poor standing may not post to the mailing list.
+
+    >>> bart.personal_standing = PersonalStanding.POOR
+    >>> commit()
+
+    >>> smtpd.reset()
+    >>> vette_watcher.resync()
+    >>> inject('itest-one', """\
+    ... From: bperson@example.org
+    ... To: itest-one@lists.launchpad.dev
+    ... Subject: A non-member post
+    ... Message-ID: <thirteenth-injection>
+    ...
+    ... Hi, I am not a member of the mailing list.
+    ... """)
+    >>> vette_watcher.wait()
+    >>> print_message_summaries()
+    Number of messages: 0
+
+    >>> logout()
+
+
 == Preventing archiver forgeries ==
 
 We archive messages by sending them to a special address owned by the Mail
@@ -388,8 +474,3 @@ messages to the list.
     >>> vette_watcher.wait()
     >>> len(smtpd.getMessages())
     0
-
-
-== Clean up ==
-
-    >>> smtpd.stop()
