@@ -8,6 +8,7 @@ __metaclass__ = type
 __all__ = [
     'BranchSubscriptionDiffSize',
     'BranchSubscriptionNotificationLevel',
+    'CodeReviewNotificationLevel',
     'IBranchSubscription',
     ]
 
@@ -96,6 +97,27 @@ class BranchSubscriptionNotificationLevel(DBEnumeratedType):
         """)
 
 
+class CodeReviewNotificationLevel(DBEnumeratedType):
+    """Code Review Notification Level
+
+    The notification level is used to control the amount and content
+    of the email notifications send with respect to code reviews related
+    to this branch.
+    """
+
+    NOEMAIL = DBItem(0, """
+        No email
+
+        Do not send any email about code review for this branch.
+        """)
+
+    FULL = DBItem(1, """
+        Email about all changes
+
+        Send email about any code review activity for this branch.
+        """)
+
+
 class IBranchSubscription(Interface):
     """The relationship between a person and a branch."""
 
@@ -127,3 +149,11 @@ class IBranchSubscription(Interface):
             'sent to the subscriber.  The subscriber will still receive '
             'an email with the new revision details even if the diff '
             'is larger than the specified number of lines.'))
+    review_level = Choice(
+        title=_('Code review Level'), required=True,
+        vocabulary=CodeReviewNotificationLevel,
+        default=CodeReviewNotificationLevel.FULL,
+        description=_(
+            'Control the kind of review activity that triggers notifications.'
+            ))
+

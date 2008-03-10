@@ -539,7 +539,8 @@ class IBranch(IHasOwner):
         """
 
     # subscription-related methods
-    def subscribe(person, notification_level, max_diff_lines):
+    def subscribe(person, notification_level, max_diff_lines,
+                  code_review_level):
         """Subscribe this person to the branch.
 
         :return: new or existing BranchSubscription."""
