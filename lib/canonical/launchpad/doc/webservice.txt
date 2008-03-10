@@ -509,6 +509,9 @@ on any object that provides ICanonicalUrlData.
     >>> canonical_url(app, request=request)
     u'http://api.launchpad.dev/'
 
+
+== Collection resources ==
+
 The ServiceRoot has a list of top-level collections and implements
 IPublishTraverse, so that a request to a registered collection is
 delegated to the appropriate CollectionResource. The
@@ -535,6 +538,9 @@ parsed with standard tools.
 
     >>> import simplejson
     >>> representation = simplejson.loads(collection())
+
+
+== Entry resources ==
 
 The collection resource is a list of entries. Each entry has some
 associated information (like 'name'), a 'self_link' (the URL to the
@@ -642,3 +648,35 @@ NotFound exception:
     Traceback (most recent call last):
     ...
     NotFound: ... name: '104'
+
+
+=== Manipulating entries ===
+
+Most entry resources support write operations by responding to PATCH
+requests. The entity-body of a PATCH request should be a JSON document
+with new values for some of the entry's attributes. Basically, a set
+of assertions about what the object *should* look like.
+
+Here, we modify the name of one of the cookbooks.
+
+    >>> from StringIO import StringIO
+    >>> headers = { 'CONTENT_TYPE' : 'application/json' }
+    >>> body = StringIO('{"name" : "The Joy of Cooking (revised)"}')
+
+    >>> patch_request = LaunchpadTestRequest(body_instream=body,
+    ...                                      environ=headers, method='PATCH')
+    >>> patch_request.setPublication(WebServicePublication(None))
+    >>> patch_request.setApplicationServer('api.launchpad.dev')
+    >>> cookbooks_resource = app.publishTraverse(patch_request, "cookbooks")
+
+    >>> joy_resource_patch = cookbooks_resource.publishTraverse(patch_request,
+    ...     "The Joy of Cooking")
+    >>> joy_resource_patch()
+    ''
+
+The new name is reflected in the cookbook's representation.
+
+    >>> joy = simplejson.loads(joy_resource())
+    >>> joy['name']
+    u'The Joy of Cooking (revised)'
+

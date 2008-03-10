@@ -254,8 +254,6 @@ class EntryResource(ReadWriteResource):
             return
         changeset = simplejson.loads(unicode(representation))
         schema = self.context.schema
-        # TODO: need to strip off '_link' and '_collection_link', and make
-        # sure you don't set 'foo' when the real name is 'foo_link'.
         validated_changeset = {}
         for repr_name, value in changeset.items():
             name = repr_name
