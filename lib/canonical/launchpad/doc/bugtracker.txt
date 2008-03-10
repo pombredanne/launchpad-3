@@ -245,3 +245,20 @@ an alias.
     ...     print t.name, [p.name for p in pillars[t]]
     gnome-bugzilla [u'gnome']
 
+
+== Imported bug messages ==
+
+An iterable returning BugMessage objects for all the watches for a bug
+tracker:
+
+    >>> for tracker in bugtracker_set:
+    ...     for bug_message in tracker.imported_bug_messages:
+    ...         print '%s, bug %d, watch %d, message %d' % (
+    ...             tracker.name, bug_message.bug.id,
+    ...             bug_message.bugwatch.id, bug_message.message.id)
+    debbugs, bug 15, watch 11, message 49
+    debbugs, bug 15, watch 11, message 48
+    debbugs, bug 15, watch 11, message 47
+    debbugs, bug 15, watch 11, message 46
+    debbugs, bug 15, watch 11, message 45
+    debbugs, bug 15, watch 11, message 44

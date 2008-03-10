@@ -20,6 +20,7 @@ from zope.interface import implements
 
 from sqlobject import (
     AND, ForeignKey, OR, SQLMultipleJoin, SQLObjectNotFound, StringCol)
+from sqlobject.sqlbuilder import DESC
 
 from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import (
@@ -212,7 +213,8 @@ class BugTracker(SQLBase):
         """See `IBugTracker`."""
         return BugMessage.select(
             AND((BugMessage.q.bugwatchID == BugWatch.q.id),
-                (BugWatch.q.bugtrackerID == self.id)))
+                (BugWatch.q.bugtrackerID == self.id)),
+            orderBy=DESC(BugMessage.q.id))
 
 
 class BugTrackerSet:
