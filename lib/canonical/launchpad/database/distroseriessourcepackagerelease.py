@@ -9,6 +9,8 @@ __all__ = [
     'DistroSeriesSourcePackageRelease',
     ]
 
+from operator import attrgetter
+
 from zope.interface import implements
 
 from canonical.database.sqlbase import sqlvalues
@@ -133,7 +135,8 @@ class DistroSeriesSourcePackageRelease:
     def meta_binaries(self):
         """See `IDistroSeriesSourcePackageRelease`."""
         binary_pkg_names = sorted(
-            set([pkg.binarypackagename for pkg in self.binaries]))
+            set([pkg.binarypackagename for pkg in self.binaries]),
+            key=attrgetter('name'))
         return [self.distroseries.getBinaryPackage(name)
                 for name in binary_pkg_names]
 
