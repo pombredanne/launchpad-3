@@ -22,8 +22,8 @@ from zope.event import notify
 from zope.security.proxy import removeSecurityProxy
 
 from sqlobject import (
-    BoolCol, ForeignKey, IntCol, MultipleJoin, SQLMultipleJoin,
-    SQLObjectNotFound, SQLRelatedJoin, StringCol)
+    BoolCol, ForeignKey, IntCol, SQLMultipleJoin, SQLObjectNotFound,
+    SQLRelatedJoin, StringCol)
 from sqlobject.sqlbuilder import AND, OR, SQLConstant
 
 from canonical.config import config
@@ -211,7 +211,7 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
     # XXX: matsubara 2006-03-06 bug=33935:
     # Is this really needed? There's no attribute 'claimant' in the Bounty
     # database class or interface, but the column exists in the database.
-    claimedBounties = MultipleJoin('Bounty', joinColumn='claimant',
+    claimedBounties = SQLMultipleJoin('Bounty', joinColumn='claimant',
         orderBy='id')
     subscribedBounties = SQLRelatedJoin('Bounty', joinColumn='person',
         otherColumn='bounty', intermediateTable='BountySubscription',

@@ -18,7 +18,7 @@
 
     <content class="canonical.launchpad.database.MessageApproval">
         <allow
-         interface="canonical.launchpad.interfaces.IMessageApproval"/>
+          interface="canonical.launchpad.interfaces.IMessageApproval"/>
     </content>
 
     <securedutility
@@ -38,7 +38,7 @@
         class="canonical.launchpad.database.MessageApprovalSet"
         provides="canonical.launchpad.interfaces.IMessageApprovalSet">
         <allow
-         interface="canonical.launchpad.interfaces.IMessageApprovalSet"/>
+          interface="canonical.launchpad.interfaces.IMessageApprovalSet"/>
     </securedutility>
 
     <xmlrpc:view

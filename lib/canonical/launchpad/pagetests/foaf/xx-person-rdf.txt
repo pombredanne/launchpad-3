@@ -27,7 +27,7 @@ includes GPG information, if the user has any.
           <wot:hex_id>12345678</wot:hex_id>
           <wot:length>1024</wot:length>
           <wot:fingerprint>ABCDEF0123456789ABCDDCBA0000111112345678</wot:fingerprint>
-          <wot:pubkeyAddress rdf:resource="http://keyserver.ubuntu.com:11371/pks/lookup?search=0x12345678&amp;op=index"/>
+          <wot:pubkeyAddress rdf:resource="http://keyserver.ubuntu.com:11371/pks/lookup?search=0xABCDEF0123456789ABCDDCBA0000111112345678&amp;op=index"/>
         </wot:PubKey>
       </wot:hasKey>
     </foaf:Person>

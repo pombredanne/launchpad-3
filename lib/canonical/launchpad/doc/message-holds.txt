@@ -1,9 +1,9 @@
 = Message Holds =
 
-When messages are posted to mailing lists, they may sometimes get held for
-team administrator approval.  This happens for example, when the sender of the
-message is not a member of the mailing list and their personal standing in
-Launchpad is unknown.
+When messages are posted to mailing lists, they may sometimes get held
+for team administrator approval.  This happens for example, when the
+sender of the message is not a member of the mailing list and their
+personal standing in Launchpad is unknown.
 
     >>> from canonical.launchpad.ftests import mailinglists_helper
     >>> team, mailing_list = mailinglists_helper.new_team('test-one', True)
@@ -11,8 +11,8 @@ Launchpad is unknown.
 
 == Initial hold ==
 
-When the message is initially held for approval, a message object is first
-created.
+When the message is initially held for approval, a message object is
+first created.
 
     >>> from canonical.launchpad.interfaces import IMessageSet
     >>> message_set = getUtility(IMessageSet)
@@ -34,8 +34,8 @@ Then this message is inserted into the approval queue.
     >>> verifyObject(IMessageApproval, held_message)
     True
 
-The new hold has several important pieces of information, such as the message
-id of the held message...
+The new hold has several important pieces of information, such as the
+message id of the held message...
 
     >>> print held_message.message_id
     <first-post>
@@ -50,8 +50,8 @@ id of the held message...
     >>> print held_message.posted_date
     2000-08-01 01:08:59+00:00
 
-The hold record contains a reference to the mailing list that the message was
-posted to....
+The hold record contains a reference to the mailing list that the
+message was posted to....
 
     >>> print held_message.mailing_list.team.displayname
     Test One
@@ -90,16 +90,19 @@ information.
 
 == Approving the message ==
 
-No Privileges Person is the team owner who reviews the held message, and he
-decides that it is appropriate for the mailing list, so he approves it.
+No Privileges Person is the team owner who reviews the held message, and
+he decides that it is appropriate for the mailing list, so he approves
+it.
 
     >>> owner = mailing_list.team.teamowner
     >>> print owner.displayname
     No Privileges Person
     >>> held_message.approve(owner)
+    >>> from canonical.launchpad.ftests import syncUpdate
+    >>> syncUpdate(held_message)
 
-This sets the status of the hold to APPROVAL_PENDING because Mailman still
-needs to see this approval.
+This sets the status of the hold to APPROVAL_PENDING because Mailman
+still needs to see this approval.
 
     >>> held_message.status
     <DBItem PostedMessageStatus.APPROVAL_PENDING, (20) Approval pending>
@@ -127,6 +130,7 @@ Held messages can also be rejected.
     ... """)
     >>> held_message = mailing_list.holdMessage(message)
     >>> held_message.reject(owner)
+    >>> syncUpdate(held_message)
 
     >>> print held_message.message_id
     <second-post>
@@ -140,9 +144,9 @@ Held messages can also be rejected.
 
 == Message sets ==
 
-It's convenient to be able to request all of the new messages, or all messages
-that are pending approval or rejection.  The IMessageApprovalSet interface
-provides these conveniences.
+It's convenient to be able to request all of the new messages, or all
+messages that are pending approval or rejection.  The
+IMessageApprovalSet interface provides these conveniences.
 
 A few more messages are held for approval.
 
@@ -181,7 +185,6 @@ A few more messages are held for approval.
 
 Here are all the messages pending approval...
 
-    >>> flush_database_updates()
     >>> from canonical.launchpad.interfaces import PostedMessageStatus
     >>> print_messages(PostedMessageStatus.APPROVAL_PENDING)
     <first-post> My first test
