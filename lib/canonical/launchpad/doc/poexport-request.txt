@@ -108,6 +108,74 @@ Let's download it and make sure the contents look ok.
     pmount/pmount-cs.po
 
 
+== Duplicate requests ==
+
+On another occasion, the user requests just Catalan translation.  The
+queue is initially empty.
+
+    >>> def render_request(request):
+    ...     if request.pofile is None:
+    ...         return request.potemplate.name
+    ...     else:
+    ...         return "%s:%s" % (request.potemplate.name,
+    ...                           request.pofile.language.code)
+    >>> from canonical.launchpad.database.poexportrequest import (
+    ...     POExportRequest)
+    >>> def print_queue():
+    ...     requests = [
+    ...         render_request(request)
+    ...         for request in POExportRequest.select()]
+    ...     for request in sorted(requests):
+    ...         print request
+    >>> print_queue()
+
+    >>> request_set.addRequest(person, None, [ca])
+
+The request is on the queue, as you'd expect.
+
+    >>> print_queue()
+    pmount:ca
+
+The same user now makes a separate, new request for the Catalan and
+Czech translations.
+
+    >>> request_set.addRequest(person, None, [ca, cs])
+
+Since the request for the Catalan translation is a duplicate, only the
+Czech one is added to the export queue.
+
+    >>> print_queue()
+    pmount:ca
+    pmount:cs
+
+The user also requests the template again.
+
+    >>> request_set.addRequest(person, potemplate)
+    >>> print_queue()
+    pmount
+    pmount:ca
+    pmount:cs
+
+The user now requests all of these files again, as well as the Spanish
+translation.
+
+    >>> es = potemplate.getPOFileByLang('es')
+    >>> request_set.addRequest(person, potemplate, [ca, cs, es])
+
+Most of this request consists of duplications, and those are ignored.
+Only the Spanish request is new, and that goes into the queue.
+
+    >>> print_queue()
+    pmount
+    pmount:ca
+    pmount:cs
+    pmount:es
+
+    >>> # Clean up the queue again.
+    >>> for request in POExportRequest.select():
+    ...     request.destroySelf()
+
+
 == Requesting MO files ==
 
 Let's try requesting an export in MO format:
@@ -171,7 +239,6 @@ just PO files.
 The script is run.
 
     >>> import subprocess
-    >>> import sys
     >>> process = subprocess.Popen([
     ...     sys.executable, 'cronscripts/rosetta-export-queue.py', '-vv'
     ...     ], stdin=subprocess.PIPE, stdout=subprocess.PIPE,

@@ -40,10 +40,8 @@ class POExportRequestSet:
             raise AssertionError(
                 "Can't add a request with no PO templates and no PO files.")
 
-        all_templates = set(potemplates)
-        all_templates.update([pofile.potemplate for pofile in pofiles])
         potemplate_ids = ", ".join(
-            [quote(template) for template in all_templates])
+            [quote(template) for template in potemplates])
         # A null pofile stands for the template itself.  We represent it in
         # SQL as -1, because that's how it's indexed in the request table.
         pofile_ids = ", ".join([quote(pofile) for pofile in pofiles] + ["-1"])
@@ -68,6 +66,7 @@ class POExportRequestSet:
                 LEFT JOIN POExportRequest AS existing ON
                     existing.person = %(person)s AND
                     existing.potemplate = template.id AND
+                    existing.pofile IS NULL AND
                     existing.format = %(format)s
                 WHERE
                     template.id IN (%(templates)s) AND
