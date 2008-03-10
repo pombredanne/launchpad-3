@@ -586,6 +586,7 @@ class IMailingListAPIView(Interface):
         :param team_name: The name of the team/mailing list that this message
             was posted to.
         :param text: The original text of the message.
+        :return: True
         """
 
     def getMessageDispositions():
