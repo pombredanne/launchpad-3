@@ -243,7 +243,7 @@ class BugTrackerEditView(LaunchpadEditFormView):
                         celebs.admin.title, celebs.registry_experts.title))
 
         # Bugtrackers with imported messages cannot be deleted.
-        if self.context.imported_messages.count() > 0:
+        if self.context.imported_bug_messages.count() > 0:
             self.addError(
                 'Cannot delete because messages have been imported via '
                 'this bug tracker.')

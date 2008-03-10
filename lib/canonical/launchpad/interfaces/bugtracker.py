@@ -171,8 +171,8 @@ class IBugTracker(Interface):
     projects = Attribute('The projects that use this bug tracker.')
     products = Attribute('The products that use this bug tracker.')
     latestwatches = Attribute('The last 10 watches created.')
-    imported_messages = Attribute(
-        'The messages that have been imported from this bug tracker.')
+    imported_bug_messages = Attribute(
+        'Bug messages that have been imported from this bug tracker.')
 
     def getBugsWatching(remotebug):
         """Get the bugs watching the given remote bug in this bug tracker."""

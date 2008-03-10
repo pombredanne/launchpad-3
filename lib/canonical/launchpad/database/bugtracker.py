@@ -208,11 +208,10 @@ class BugTracker(SQLBase):
         """)
 
     @property
-    def imported_messages(self):
+    def imported_bug_messages(self):
         """See `IBugTracker`."""
-        return Message.select(
-            AND((Message.q.id == BugMessage.q.messageID),
-                (BugMessage.q.bugwatchID == BugWatch.q.id),
+        return BugMessage.select(
+            AND((BugMessage.q.bugwatchID == BugWatch.q.id),
                 (BugWatch.q.bugtrackerID == self.id)))
 
 
