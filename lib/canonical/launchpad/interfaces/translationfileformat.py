@@ -45,5 +45,7 @@ class TranslationFileFormat(DBEnumeratedType):
     XPIPO = DBItem(5, """
         XPI PO format
 
-        The .xpi translation strings using gettext standard text file format.
+        Variant of gettext format that always uses English message strings as
+        msgids, even if the source format uses symbolic identifiers.  Useful
+        for exporting XPI translations to the gettext world.
         """)

@@ -13,7 +13,6 @@ from zope.component import getUtility
 import canonical.launchpad
 from canonical.launchpad.helpers import test_diff
 from canonical.database.sqlbase import commit
-from canonical.launchpad.ftests import sync
 from canonical.launchpad.interfaces import (
     IPersonSet, IProductSet, IPOTemplateSet, ITranslationImportQueue,
     RosettaImportStatus)
@@ -165,7 +164,6 @@ class XpiTestCase(unittest.TestCase):
         (subject, body) = self.firefox_template.importFromQueue(entry)
 
         # The status is now IMPORTED:
-        sync(entry)
         self.assertEquals(entry.status, RosettaImportStatus.IMPORTED)
 
         # Let's validate the content of the messages.
@@ -255,7 +253,6 @@ class XpiTestCase(unittest.TestCase):
         (subject, body) = self.firefox_template.importFromQueue(entry)
 
         # The status is now IMPORTED:
-        sync(entry)
         self.assertEquals(entry.status, RosettaImportStatus.IMPORTED)
 
         # Retrieve the number of messages we got in this initial import.
@@ -288,8 +285,6 @@ class XpiTestCase(unittest.TestCase):
             translation_entry)
 
         # The status is now IMPORTED:
-        sync(translation_entry)
-        sync(template_entry)
         self.assertEquals(
             translation_entry.status, RosettaImportStatus.IMPORTED)
         self.assertEquals(template_entry.status, RosettaImportStatus.IMPORTED)

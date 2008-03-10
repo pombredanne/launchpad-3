@@ -1,4 +1,4 @@
-# Copyright 2004-2007 Canonical Ltd. All rights reserved.
+# Copyright 2008 Canonical Ltd. All rights reserved.
 
 __metaclass__ = type
 
@@ -41,8 +41,12 @@ class XPIPOExporterTestCase(unittest.TestCase):
             path='en-US.xpi',
             owner=self.importer)
 
-    def _compareImportAndExport(self, expected_file, exported_file):
-        """."""
+    def _compareExpectedAndExported(self, expected_file, exported_file):
+        """Compare an export with a previous export that is correct.
+
+        :arg expected_file: buffer with the expected file content.
+        :arg export_file: buffer with the output file content.
+        """
         expected_lines = [line for line in expected_file.split('\n')]
         # Remove time bombs in tests.
         exported_lines = [
@@ -51,9 +55,9 @@ class XPIPOExporterTestCase(unittest.TestCase):
                 not line.startswith('"POT-Creation-Date:') and
                 not line.startswith('"X-Generator: Launchpad'))]
 
-        for i in range(len(expected_lines)):
+        for number, expected_line in enumerate(expected_lines):
             self.assertEqual(
-                expected_lines[i], exported_lines[i],
+                expected_line, exported_lines[number],
                 "Output doesn't match:\n\n %s" % test_diff(
                     expected_lines, exported_lines))
 
@@ -91,7 +95,7 @@ class XPIPOExporterTestCase(unittest.TestCase):
             "XPIPOExporter doesn't follow the interface")
 
     def test_XPITemplateExport(self):
-        """Check an standard export from an XPI file."""
+        """Check a standard export from an XPI file."""
         # Prepare the import queue to handle a new .xpi import.
         self.setUpTranslationImportQueueForTemplate()
 
@@ -156,7 +160,7 @@ class XPIPOExporterTestCase(unittest.TestCase):
             msgstr ""
             ''').strip()
 
-        self._compareImportAndExport(
+        self._compareExpectedAndExported(
             expected_template, exported_template.read())
 
 def test_suite():

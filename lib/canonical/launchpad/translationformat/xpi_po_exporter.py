@@ -1,4 +1,4 @@
-# Copyright 2007 Canonical Ltd.  All rights reserved.
+# Copyright 2008 Canonical Ltd.  All rights reserved.
 # pylint: disable-msg=W0231
 """Export module for XPI files using .po file format."""
 
