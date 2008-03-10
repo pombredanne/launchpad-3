@@ -262,6 +262,7 @@ class EntryResource(ReadWriteResource):
             elif repr_name.endswith('_link'):
                 name = repr_name[:-5]
             element = schema.get(name)
+
             if (name.startswith('_') or element is None
                 or ((ICollection.providedBy(element)
                      or IObject.providedBy(element)) and repr_name == name)):
@@ -278,34 +279,42 @@ class EntryResource(ReadWriteResource):
                 self.request.response.setStatus(400)
                 return ("You tried to modify the nonexistent attribute '%s'"
                         % repr_name)
+
             if ICollectionField.providedBy(element):
                 self.request.response.setStatus(400)
                 return ("You tried to modify the collection link '%s'"
                         % repr_name)
+
             if element.readonly:
                 self.request.response.setStatus(400)
                 return ("You tried to modify the read-only attribute '%s'"
                         % repr_name)
+
             if IObject.providedBy(element):
                 # TODO: 'value' is the URL to an object. Traverse
                 # the URL to find the actual object.
                 pass
+
             try:
+                # Do any field-specific validation.
                 field = element.bind(self.context)
                 field.validate(value)
             except ValidationError, e:
                 self.request.response.setStatus(400)
                 return str(e)
             validated_changeset[name] = value
+
         original_url = canonical_url(self, request=self.request)
+        # Make the changes.
         for name, value in validated_changeset.items():
             setattr(self.context, name, value)
+
+        # If the modification caused the entry's URL to change, tell
+        # the client about the new URL.
         new_url = canonical_url(self, request=self.request)
         if new_url == original_url:
             return ''
         else:
-            # The modification caused the entry's URL to change.
-            # Tell the client about the new URL.
             self.request.response.setStatus(301)
             self.request.response.setHeader('Location', new_url)
 
