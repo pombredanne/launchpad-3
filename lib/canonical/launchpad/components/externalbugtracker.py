@@ -830,7 +830,7 @@ class DebBugs(ExternalBugTracker):
         return debian_bug.subject, debian_bug.description
 
     def getCommentIds(self, bug_watch):
-        """See `ISupportsCommentImport."""
+        """See `ISupportsCommentImport`."""
         debian_bug = self._findBug(bug_watch.remotebug)
         self._loadLog(debian_bug)
 
@@ -842,7 +842,7 @@ class DebBugs(ExternalBugTracker):
         return comment_ids
 
     def getPosterForComment(self, bug_watch, comment_id):
-        """See `ISupportsCommentImport."""
+        """See `ISupportsCommentImport`."""
         debian_bug = self._findBug(bug_watch.remotebug)
         self._loadLog(debian_bug)
 
@@ -852,7 +852,7 @@ class DebBugs(ExternalBugTracker):
                 return parseaddr(parsed_comment['from'])
 
     def getMessageForComment(self, bug_watch, comment_id, poster):
-        """See `ISupportsCommentImport."""
+        """See `ISupportsCommentImport`."""
         debian_bug = self._findBug(bug_watch.remotebug)
         self._loadLog(debian_bug)
 

@@ -300,7 +300,7 @@ class BugWatchUpdater(object):
                             new_malone_importance)
                     if (ISupportsCommentImport.providedBy(remotesystem) and
                         remotesystem.import_comments):
-                        self.importBugComments(bug_watch, remotesystem)
+                        self.importBugComments(remotesystem, bug_watch)
 
             except (KeyboardInterrupt, SystemExit):
                 # We should never catch KeyboardInterrupt or SystemExit.
@@ -382,13 +382,13 @@ class BugWatchUpdater(object):
 
         return bug
 
-    def importBugComments(self, bug_watch, external_bugtracker):
+    def importBugComments(self, external_bugtracker, bug_watch):
         """Import all the comments from a remote bug.
 
-        :param bug_watch: The bug watch for which the comments should be
-            imported.
         :param external_bugtracker: An external bugtracker which
             implements `ISupportsCommentImport`.
+        :param bug_watch: The bug watch for which the comments should be
+            imported.
         """
         imported_comments = 0
         for comment_id in external_bugtracker.getCommentIds(bug_watch):

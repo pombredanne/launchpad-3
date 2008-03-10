@@ -334,7 +334,7 @@ all of these.
     ...     txn, debbugs, {'1234': TestDebianBug(
     ...         package='evolution', id=1234)})
 
-getCommentIds() will return a list of the comment IDs for a give remote
+getCommentIds() will return a list of the comment IDs for a given remote
 bug. DebBugs comment IDs are RFC822 message IDs.
 
     >>> comment_ids = external_debbugs.getCommentIds(bug_watch)

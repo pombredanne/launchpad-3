@@ -78,7 +78,7 @@ comments in the comment_dict being imported into Launchpad.
 
     >>> from canonical.launchpad.scripts.checkwatches import BugWatchUpdater
     >>> bugwatch_updater = BugWatchUpdater(LaunchpadZopelessLayer.txn)
-    >>> bugwatch_updater.importBugComments(bug_watch, external_bugtracker)
+    >>> bugwatch_updater.importBugComments(external_bugtracker, bug_watch)
     INFO:...:Imported 3 comments for remote bug 123456 on ...
 
 These three comments will be linked to the bug watch from which they
@@ -101,7 +101,7 @@ If another comment is added on the remote tracker and the comment import
 process is run again only the new comment will be imported.
 
     >>> external_bugtracker.comment_dict['4'] = "Yet another comment."
-    >>> bugwatch_updater.importBugComments(bug_watch, external_bugtracker)
+    >>> bugwatch_updater.importBugComments(external_bugtracker, bug_watch)
     INFO:...:Imported 1 comments for remote bug 123456 on ...
 
 Once again, the newly-imported comment will be linked to the bug watch
