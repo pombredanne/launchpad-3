@@ -1616,16 +1616,19 @@ def notify_specification_subscription_modified(specsub, event):
     for address in contactEmailAddresses(person):
         simple_sendmail_from_person(user, address, subject, body)
 
+
 def notify_mailinglist_activated(mailinglist, event):
-    """Notify the active members of a team and its subteams that a mailing
-    list is available.
+    """Notification that a mailng list is available.
+
+    All active members of a team and its subteams receive notification when
+    the team's mailing list is available.
     """
     # We will use the setting of the date_activated field as a hint
     # that this list is new, and that noboby has subscribed yet.  See
     # `MailingList.transitionToStatus()` for the details.
     old_date = event.object_before_modification.date_activated
     new_date = event.object.date_activated
-    list_looks_new = (old_date is None) and (new_date is not None)
+    list_looks_new = old_date is None and new_date is not None
 
     if not (list_looks_new and mailinglist.isUsable()):
         return
@@ -1649,18 +1652,7 @@ def notify_mailinglist_activated(mailinglist, event):
             members.add(person)
         return members
 
-    beta_testers = getUtility(ILaunchpadCelebrities).launchpad_beta_testers
-
     for person in contacts_for(team):
-
-        # XXX mars 2008-02-21:
-        # This should be removed when the Mailing List Beta is over.
-        #
-        # Only send an invitation to Beta testers, because they are
-        # the only people that can sign up for the list!
-        if not person.inTeam(beta_testers):
-            continue
-
         to_address = [str(person.preferredemail.email)]
         replacements = {
             'user': person.displayname,

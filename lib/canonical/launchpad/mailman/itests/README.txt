@@ -23,11 +23,9 @@ NOTES:
   necessary if your var_dir is on a temporary file system and you've rebootted
   since the last time you ran the tests.  To clean everything out:
 
-  % rm -rf /tmp/var/mailman (or whatever var_dir points to above)
-  % rm -rf lib/mailman
+  % make LPCONFIG=mailman-itests clean
 
-  Then re-make mailman_instance as above.  If you don't remove lib/mailman,
-  'make mailman_instance' will not do anything.
+  Then re-run the schema target again.
 
 - Be sure that you have xmlrpc-private.launchpad.dev in your /etc/hosts file.
   This should point to the same IP address (127.0.0.88) as all your other

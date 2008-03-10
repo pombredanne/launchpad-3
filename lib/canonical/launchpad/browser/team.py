@@ -37,8 +37,7 @@ from canonical.launchpad.interfaces import (
     EmailAddressStatus, IEmailAddressSet, ILaunchBag, ILoginTokenSet,
     IMailingList, IMailingListSet, IPersonSet, ITeam, ITeamContactAddressForm,
     ITeamCreation, ITeamMember, LoginTokenType, MailingListStatus,
-    TeamContactMethod, TeamMembershipStatus, UnexpectedFormData,
-    is_participant_in_beta_program)
+    TeamContactMethod, TeamMembershipStatus, UnexpectedFormData)
 from canonical.launchpad.interfaces.validation import validate_new_team_email
 
 class HasRenewalPolicyMixin:
@@ -139,17 +138,6 @@ class MailingListTeamBaseView(LaunchpadFormView):
         if mailing_list is not None and mailing_list.status in statuses:
             return mailing_list
         return None
-
-    @property
-    def can_create_mailing_list(self):
-        """Is it allowed to create a mailing list for this team?
-
-        `list_is_usable` must return false and mailing lists must be enabled
-        for this team.  Once mailing lists are enabled globally, this should
-        be replacable with not list_is_usable.
-        """
-        return (is_participant_in_beta_program(self.context) and
-                not self.list_is_usable)
 
     @property
     def list_is_usable(self):
@@ -344,20 +332,6 @@ class TeamMailingListConfigurationView(MailingListTeamBaseView):
             context, request)
         list_set = getUtility(IMailingListSet)
         self.mailing_list = list_set.get(self.context.name)
-
-    def initialize(self):
-        """Hide this view if mailing lists are not enabled for this team.
-
-        Once mailing lists are enabled globally, this method should be
-        removed.
-        """
-        if is_participant_in_beta_program(self.context):
-            # It's okay to let this team configure its mailing list, so let
-            # the normal view initialization procedure continue.
-            super(TeamMailingListConfigurationView, self).initialize()
-        else:
-            # Pretend as if this view doesn't exist at all.
-            raise NotFound(self, '+mailinglist', request=self.request)
 
     @action('Save', name='save')
     def save_action(self, action, data):

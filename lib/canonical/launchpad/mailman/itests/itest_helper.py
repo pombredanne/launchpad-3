@@ -220,20 +220,6 @@ def review_list(list_name, status=None):
     return mailing_list
 
 
-def beta_program_enable(team_name):
-    """Helper for joining the mailing list beta program.
-
-    This is a pure convenience function, which can go away when mailing lists
-    go public.
-    """
-    # These imports are at file scope because the paths are not yet set up
-    # correctly when this module is imported.
-    from canonical.database.sqlbase import commit
-    from canonical.launchpad.ftests import mailinglists_helper
-    mailinglists_helper.beta_program_enable(team_name)
-    commit()
-
-
 def collect_archive_message_ids(team_name):
     """Collect all the X-Message-Id values in the team's archived messages."""
     # pylint: disable-msg=F0401
@@ -303,8 +289,6 @@ def create_list(team_name):
         'Open Team']
     browser.getControl('Create').click()
     # Create the mailing list.
-    beta_program_enable(team_name)
-    browser.reload()
     browser.getLink('Configure mailing list').click()
     browser.getControl('Apply for Mailing List').click()
     mailing_list = review_list(team_name)
