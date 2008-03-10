@@ -254,6 +254,84 @@ Multiple aliases can be entered by separating URLs with whitespace.
   https://wibble.example.com/ (Alias)
 
 
+== Deleting a bug tracker ==
+
+Bug trackers can be deleted by anyone, with some restrictions. Anyone
+can attempt to delete the tracker, but if the conditions are not met
+they will be shown all the failures so that they can seek help, try
+something else, or simply give up.
+
+The Delete button is in the Change Details page:
+
+  >>> user_browser.open('http://launchpad.dev/bugs/bugtrackers/savannah')
+  >>> user_browser.getLink('Change details').click()
+  >>> user_browser.getControl('Delete').click()
+
+  >>> user_browser.url
+  'http://launchpad.dev/bugs/bugtrackers'
+
+  >>> for message in get_feedback_messages(user_browser.contents):
+  ...     print message
+  GNU Savannah Bug Tracker has been deleted.
+
+There are three restrictions placed on deleting a bug tracker:
+
+- Firstly, deletion will be denied if bug tracker is set as the
+  official bug tracker for a product or product group.
+
+- Secondly, only certain privileged users can delete the bug watches
+  for a bug tracker en masse.
+
+- Thirdly, no bug tracker can be deleted if messages have been
+  imported via one if its bug watches.
+
+The first and second restrictions both apply to the GNOME Bugzilla:
+
+  >>> user_browser.open(
+  ...     'http://launchpad.dev/bugs/bugtrackers/gnome-bugzilla/+edit')
+  >>> user_browser.getControl('Delete').click()
+
+  >>> for message in get_feedback_messages(user_browser.contents):
+  ...     print message
+  There are 2 errors.
+  Cannot delete because this is the bug tracker for The GNOME Project.
+  Cannot delete because only members of Launchpad Administrators and
+    Registry Administrators can delete linked bug watches en masse.
+
+Note how we tell the user about _all_ the restrictions they face. In
+this instance the user would have the option of persuading the GNOME
+Project to use Launchpad to track bugs then asking an administrator to
+delete the bug tracker, or, more likely, abandon their quest. (And
+even if GNOME did switch to Launchpad, we'd probably still keep the
+tracker for historical purposes.)
+
+The second and third restrictions apply to the Debian Bug Tracker:
+
+  >>> user_browser.open(
+  ...     'http://launchpad.dev/bugs/bugtrackers/debbugs/+edit')
+  >>> user_browser.getControl('Delete').click()
+
+  >>> for message in get_feedback_messages(user_browser.contents):
+  ...     print message
+  There are 2 errors.
+  Cannot delete because only members of Launchpad Administrators and
+    Registry Administrators can delete linked bug watches en masse.
+  Cannot delete because messages have been imported via this bug tracker.
+
+Again, we tell the user about all the restrictions they have stumbled
+on. A more privileged user would not stumble at the second hurdle,
+deleting bug watches en masse:
+
+  >>> admin_browser.open(
+  ...     'http://launchpad.dev/bugs/bugtrackers/debbugs/+edit')
+  >>> admin_browser.getControl('Delete').click()
+
+  >>> for message in get_feedback_messages(admin_browser.contents):
+  ...     print message
+  There is 1 error.
+  Cannot delete because messages have been imported via this bug tracker.
+
+
 == Overview pages and private bugs ==
 
 When looking at a bug tracker page, a list of bug watches is
