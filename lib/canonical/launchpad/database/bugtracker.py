@@ -19,8 +19,8 @@ from urllib import splittype
 from zope.interface import implements
 
 from sqlobject import (
-    AND, ForeignKey, OR, SQLMultipleJoin, SQLObjectNotFound, StringCol)
-from sqlobject.sqlbuilder import DESC
+    ForeignKey, OR, SQLMultipleJoin, SQLObjectNotFound, StringCol)
+from sqlobject.sqlbuilder import AND, DESC
 
 from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import (
