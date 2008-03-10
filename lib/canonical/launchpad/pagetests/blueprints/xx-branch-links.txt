@@ -70,7 +70,7 @@ the user to specify a branch to link to the blueprint.
 
 There is a link back to the blueprint page, in case you change your mind.
 
-    >>> back_link = user_browser.getLink('Support Native SVG Objects')
+    >>> back_link = browser.getLink('Support Native SVG Objects')
     >>> back_link.url
     'http://blueprints.launchpad.dev/firefox/+spec/svg-support'
 
@@ -102,7 +102,7 @@ The edit link in the branches portlet takes us to a form that can be
 used to edit the summary of the branch link:
 
     >>> browser.getLink(url='branch/sabdfl/firefox/release-0.8').click()
-    >>> back_link = user_browser.getLink('Support Native SVG Objects')
+    >>> back_link = browser.getLink('Support Native SVG Objects')
     >>> back_link.url
     'http://blueprints.launchpad.dev/firefox/+spec/svg-support'
     >>> browser.getControl('Summary').value = 'New summary'
@@ -121,7 +121,7 @@ The new summary now appears in the branches portlet:
 Users can delete the branch link from the branch link page:
 
     >>> browser.getLink(url='+branch/sabdfl/firefox/release-0.8').click()
-    >>> back_link = user_browser.getLink('Support Native SVG Objects')
+    >>> back_link = browser.getLink('Support Native SVG Objects')
     >>> back_link.url
     'http://blueprints.launchpad.dev/firefox/+spec/svg-support'
     >>> browser.getControl('Delete').click()

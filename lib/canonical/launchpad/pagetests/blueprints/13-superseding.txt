@@ -16,13 +16,6 @@ modify that to Drafting, so this test will not run standalone.
 >>> 'Drafting' in browser.contents
 True
 
-The page contains a link back to the blueprint, in case we change our
-mind.
-
-    >>> back_link = user_browser.getLink('Extension Manager Upgrades')
-    >>> back_link.url
-    'http://blueprints.launchpad.dev/firefox/+spec/extension-manager-upgrades'
-
 Make sure Bug 4116 stays fixed
 
 >>> browser.open(
@@ -34,6 +27,13 @@ Make sure Bug 4116 stays fixed
 ''
 >>> superseded_control.displayOptions[0]
 '(Not Superseded)'
+
+The page contains a link back to the blueprint, in case we change our
+mind.
+
+    >>> back_link = browser.getLink('Extension Manager System Upgrades')
+    >>> back_link.url
+    'http://blueprints.launchpad.dev/firefox/+spec/extension-manager-upgrades'
 
 Next, we will POST to that form, setting the spec which supersedes this one:
 

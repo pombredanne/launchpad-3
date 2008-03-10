@@ -102,7 +102,7 @@ Any logged in user can edit a specification whiteboard.
   >>> user_browser.getLink('Edit whiteboard').click()
   >>> back_link = user_browser.getLink('The Krunch Desktop Plan')
   >>> back_link.url
-  'http://blueprints.launchpad.dev/firefox/+spec/krunch-desktop-plan'
+  'http://blueprints.launchpad.dev/kubuntu/+spec/krunch-desktop-plan'
 
   >>> user_browser.getControl('Whiteboard').value = 'XXX by Sample Person'
   >>> user_browser.getControl('Change').click()
@@ -144,6 +144,6 @@ But an administrator can.
     >>> admin_browser.getLink('Change priority').click()
     >>> admin_browser.url
     'http://blueprints.launchpad.dev/kubuntu/+spec/krunch-desktop-plan/+priority'
-    >>> back_link = user_browser.getLink('The Krunch Desktop Plan')
+    >>> back_link = admin_browser.getLink('The Krunch Desktop Plan')
     >>> back_link.url
-    'http://blueprints.launchpad.dev/firefox/+spec/krunch-desktop-plan'
+    'http://blueprints.launchpad.dev/kubuntu/+spec/krunch-desktop-plan'

@@ -12,7 +12,7 @@ First, we load the review request page.
     ...     'http://blueprints.launchpad.dev/firefox/+spec/canvas')
     >>> browser.getLink('Request feedback').click()
     >>> browser.url
-    'http://blueprints.launchpad.dev/firefox/+spec/canvas'
+    'http://blueprints.launchpad.dev/firefox/+spec/canvas/+requestfeedback'
 
 This page contains a link back to the blueprint page, in case you change
 your mind.

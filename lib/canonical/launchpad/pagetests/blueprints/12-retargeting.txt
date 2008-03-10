@@ -14,7 +14,7 @@ administrator:
 The page contains a link back to the blueprint, in case we change our
 mind.
 
-    >>> back_link = user_browser.getLink('Support Native SVG Objects')
+    >>> back_link = admin_browser.getLink('Support Native SVG Objects')
     >>> back_link.url
     'http://blueprints.launchpad.dev/firefox/+spec/svg-support'
 

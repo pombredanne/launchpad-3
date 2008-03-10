@@ -10,15 +10,16 @@ First we load the page to target to the series.
 
     >>> browser.addHeader(
     ...     'Authorization', 'Basic celso.providelo@canonical.com:cprov')
-    >>> browser.open('http://blueprints.launchpad.dev/firefox/+spec/e4x')
+    >>> browser.open(
+    ...     'http://blueprints.launchpad.dev/firefox/+spec/svg-support')
     >>> browser.getLink('Propose as goal').click()
-    >>> back_link = browser.getLink('Support E4X in EcmaScript')
+    >>> back_link = browser.getLink('Support Native SVG Objects')
     >>> back_link.url
-    'http://blueprints.launchpad.dev/firefox/+spec/e4x'
+    'http://blueprints.launchpad.dev/firefox/+spec/svg-support'
 
 We can see two potential series candidates, the "trunk" and the "1.0" series.
 
-    >>> print find_main_content(user_browser.contents)
+    >>> print find_main_content(browser.contents)
     <...
     <option value="">(no value)</option>
     <option value="2">firefox 1.0</option>
@@ -114,25 +115,26 @@ And now both should show up on the "+setgoals" page for that product series.
 Now, we will accept one of them, the svg-support one. We expect to be told
 that 1 was accepted.
 
-  >>> browser.addHeader('Authorization', 'Basic foo.bar@canonical.com:test')
-  >>> browser.open('http://blueprints.launchpad.dev/firefox/1.0/+setgoals')
-  >>> 'Support Native SVG' in browser.contents
-  True
-  >>> browser.getControl('Support Native SVG').selected = True
-  >>> browser.getControl('Accept').click()
-  >>> 'Accepted 1 specification(s)' in browser.contents
-  True
+    >>> driver_browser = setupBrowser(auth='Basic test@canonical.com:test')
+    >>> driver_browser.open(
+    ...     'http://blueprints.launchpad.dev/firefox/1.0/+setgoals')
+    >>> 'Support Native SVG' in driver_browser.contents
+    True
+    >>> driver_browser.getControl('Support Native SVG').selected = True
+    >>> driver_browser.getControl('Accept').click()
+    >>> 'Accepted 1 specification(s)' in driver_browser.contents
+    True
 
 
 We will now decline the remaining one. We expect to be redirected, since
 there are none left in the queue.
 
-  >>> browser.addHeader('Authorization', 'Basic foo.bar@canonical.com:test')
-  >>> browser.open('http://blueprints.launchpad.dev/firefox/1.0/+setgoals')
-  >>> browser.getControl('Support E4X').selected = True
-  >>> browser.getControl('Decline').click()
-  >>> 'Declined 1 specification(s)' in browser.contents
-  True
+    >>> driver_browser.open(
+    ...     'http://blueprints.launchpad.dev/firefox/1.0/+setgoals')
+    >>> driver_browser.getControl('Support E4X').selected = True
+    >>> driver_browser.getControl('Decline').click()
+    >>> 'Declined 1 specification(s)' in driver_browser.contents
+    True
 
 The accepted item should show up in the list of specs for this series:
 

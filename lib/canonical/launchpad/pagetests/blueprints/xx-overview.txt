@@ -88,6 +88,7 @@ Let's target an existing Mozilla Firefox blueprint to the 1.0 series:
     >>> browser.getLink('Propose as goal').click()
     >>> main = find_main_content(browser.contents)  
     >>> print extract_text(main).encode('ascii', 'backslashreplace')
+    Support Native SVG Objects
     Target to a product series...
     >>> series = browser.getControl('Series Goal')
     >>> series.displayValue = ['firefox 1.0']
@@ -113,6 +114,7 @@ Now we'll target our chosen blueprint to the new milestone:
     >>> browser.getLink('Target milestone').click()
     >>> main = find_main_content(browser.contents)  
     >>> print extract_text(main).encode('ascii', 'backslashreplace')
+    Support Native SVG Objects
     Target to a milestone...
     >>> milestones = browser.getControl('Milestone')
     >>> milestones.displayValue = ['Mozilla Firefox: 1.0.0']
@@ -179,7 +181,7 @@ Let's target an existing Ubuntu blueprint to the Grumpy series:
     >>> browser.getLink('Propose as goal').click()
     >>> main = find_main_content(browser.contents)  
     >>> print extract_text(main).encode('ascii', 'backslashreplace')
-    CD Media Integrity Check:
+    CD Media Integrity Check
     Target to a distribution series...
     >>> series = browser.getControl('Series Goal')
     >>> series.displayValue = ['ubuntu grumpy']
@@ -204,6 +206,7 @@ Now we'll target our chosen blueprint to the new milestone:
     >>> browser.getLink('media-integrity-check').click()
     >>> browser.getLink('Target milestone').click()
     >>> print extract_text(find_main_content(browser.contents))
+    CD Media Integrity Check
     Target to a milestone...
     >>> milestones = browser.getControl('Milestone')
     >>> milestones.displayValue = ['Ubuntu: drift-1']

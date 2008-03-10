@@ -17,7 +17,7 @@ milestone targeting.
   >>> admin_browser.getLink('Target milestone').click()
   >>> admin_browser.title
   'Target feature to milestone'
-  >>> back_link = browser.getLink('Support <canvas> Objects')
+  >>> back_link = admin_browser.getLink('Support <canvas> Objects')
   >>> back_link.url
   'http://blueprints.launchpad.dev/firefox/+spec/canvas'
 
