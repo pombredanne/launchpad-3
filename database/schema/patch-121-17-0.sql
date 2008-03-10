@@ -45,4 +45,9 @@ ALTER TABLE TeamMembership RENAME COLUMN dateexpires TO date_expires;
 -- We've changed the semantics of date_joined so it's now NULLable.
 ALTER TABLE TeamMembership ALTER COLUMN date_joined DROP NOT NULL;
 
+-- Set proposed_by for memberships in the INVITED state as this is the only
+-- thing we display in the UI.
+UPDATE TeamMembership SET proposed_by = last_changed_by
+    WHERE status = 7;
+
 INSERT INTO LaunchpadDatabaseRevision VALUES (121, 17, 0);
