@@ -35,8 +35,6 @@ class MessageEntry(Entry):
     decorates(IMessageEntry)
     schema = IMessageEntry
 
-    parent_collection_name = 'messages'
-
     @property
     def content(self):
         return self.context.text_contents

@@ -12,17 +12,23 @@ import transaction
 
 from canonical.database.sqlbase import flush_database_caches
 from canonical.launchpad.database import KarmaCache
-from canonical.launchpad.ftests.harness import LaunchpadFunctionalTestCase
-from canonical.launchpad.ftests import ANONYMOUS, login
+from canonical.launchpad.ftests import ANONYMOUS, login, logout
 from canonical.launchpad.interfaces import IPersonSet, IProductSet
+from canonical.testing import LaunchpadFunctionalLayer
 
 
-class TestKarmaCacheUpdater(LaunchpadFunctionalTestCase):
+class TestKarmaCacheUpdater(unittest.TestCase):
+    layer = LaunchpadFunctionalLayer
 
     def setUp(self):
-        LaunchpadFunctionalTestCase.setUp(self)
         login(ANONYMOUS)
         self.personset = getUtility(IPersonSet)
+
+    def tearDown(self):
+        logout()
+        # As the test performs DB changes in a subprocess, make sure
+        # the database is marked dirty.
+        self.layer.force_dirty_database()
 
     def _getCacheEntriesByPerson(self, person):
         return KarmaCache.selectBy(person=person)

@@ -142,16 +142,16 @@ listing tab.
     today...
 
     >>> print_landscape_code_listing(no_priv_browser)
-    testing-branch             New
+    ~no-priv/landscape/testing-branch      New   ...
 
     >>> print_landscape_code_listing(landscape_dev_browser)
-    feature-x  Sample Person   New
-    trunk      Sample Person   New
+    ~name12/landscape/feature-x            New   ...
+    ~landscape-developers/landscape/trunk  New   ...
 
     >>> print_landscape_code_listing(admin_browser)
-    feature-x  Sample Person   New
-    trunk      Sample Person   New
-    testing-branch             New
+    ~name12/landscape/feature-x            New   ...
+    ~landscape-developers/landscape/trunk  New   ...
+    ~no-priv/landscape/testing-branch      New   ...
 
 
 == Person code listing pages ==
@@ -180,34 +180,48 @@ viewable branches.
     >>> print_person_code_listing(anon_browser)
     Total of 10 branches listed
     No landscape branches
-    >>> print_person_code_listing(anon_browser, '/+authoredbranches')
-    Total of 3 branches listed
+    >>> print_person_code_listing(anon_browser, '/+ownedbranches')
+    Total of 9 branches listed
+    No landscape branches
+    >>> print_person_code_listing(anon_browser, '/+registeredbranches')
+    Total of 9 branches listed
     No landscape branches
 
     >>> print_person_code_listing(no_priv_browser)
     Total of 10 branches listed
     No landscape branches
-    >>> print_person_code_listing(no_priv_browser, '/+authoredbranches')
-    Total of 3 branches listed
+    >>> print_person_code_listing(no_priv_browser, '/+ownedbranches')
+    Total of 9 branches listed
+    No landscape branches
+    >>> print_person_code_listing(no_priv_browser, '/+registeredbranches')
+    Total of 9 branches listed
     No landscape branches
 
     >>> print_person_code_listing(landscape_dev_browser)
     Total of 12 branches listed
-    feature-x ... landscape Author
-    trunk ... landscape Author
-    >>> print_person_code_listing(landscape_dev_browser, '/+authoredbranches')
-    Total of 5 branches listed
-    feature-x ... landscape
-    trunk ... landscape
+    ~name12/landscape/feature-x            New   landscape ...
+    ~landscape-developers/landscape/trunk  New   landscape ...
+    >>> print_person_code_listing(landscape_dev_browser, '/+ownedbranches')
+    Total of 11 branches listed
+    ~name12/landscape/feature-x            New   landscape ...
+    ~landscape-developers/landscape/trunk  New   landscape ...
+    >>> print_person_code_listing(landscape_dev_browser, '/+registeredbranches')
+    Total of 11 branches listed
+    ~name12/landscape/feature-x            New   landscape ...
+    ~landscape-developers/landscape/trunk  New   landscape ...
 
     >>> print_person_code_listing(admin_browser)
     Total of 12 branches listed
-    feature-x ... landscape Author
-    trunk ... landscape Author
-    >>> print_person_code_listing(admin_browser, '/+authoredbranches')
-    Total of 5 branches listed
-    feature-x ... landscape
-    trunk ... landscape
+    ~name12/landscape/feature-x            New   landscape ...
+    ~landscape-developers/landscape/trunk  New   landscape ...
+    >>> print_person_code_listing(admin_browser, '/+ownedbranches')
+    Total of 11 branches listed
+    ~name12/landscape/feature-x            New   landscape ...
+    ~landscape-developers/landscape/trunk  New   landscape ...
+    >>> print_person_code_listing(admin_browser, '/+registeredbranches')
+    Total of 11 branches listed
+    ~name12/landscape/feature-x            New   landscape ...
+    ~landscape-developers/landscape/trunk  New   landscape ...
 
 
 == Bug branch links ==
@@ -259,18 +273,15 @@ blueprint index page.
 
 Link a private branch to this blueprint.
 
-    >>> landscape_dev_browser.getLink('Link branch').click()
+    >>> landscape_dev_browser.getLink('Link to branch').click()
     >>> landscape_dev_browser.getControl('Branch').value = (
     ...     '~landscape-developers/landscape/trunk')
-    >>> landscape_dev_browser.getControl('Link to Specification').click()
-
-XXX: thumper 2007-06-12
-Specification text should be changed to blueprints.
+    >>> landscape_dev_browser.getControl('Continue').click()
 
     >>> portlet = find_portlet(landscape_dev_browser.contents, 'Branches')
     >>> print extract_text(portlet)
     Branches
-    Landscape trunk
+    trunk: Landscape trunk
 
 The portlet is not shown at all to users that cannot see the associated
 branches.
@@ -298,14 +309,14 @@ are shown.
 
     >>> print extract_text(
     ...     find_tag_by_id(admin_browser.contents, 'branch-details'))
-    Landscape trunk - Sample Person
+    Landscape trunk - Landscape Developers
 
 Landscape developers can see it.
 
     >>> landscape_dev_browser.open('http://launchpad.dev/landscape/trunk')
     >>> print extract_text(find_tag_by_id(
     ...     landscape_dev_browser.contents, 'branch-details'))
-    Landscape trunk - Sample Person
+    Landscape trunk - Landscape Developers
 
 But normal people can't.
 

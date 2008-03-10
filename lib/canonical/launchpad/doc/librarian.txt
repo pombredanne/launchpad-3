@@ -81,7 +81,33 @@ https one, depending on a config value.
     ...     ) is not None
     True
 
-    # Let's reset the value of use_https to avoid problems in future tests
+However, we can force the use of HTTP by setting the 'X-SCHEME'
+header in the request to 'http', even when 'use_https' is True.
+
+    >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
+    >>> from zope.component import getMultiAdapter
+    >>> from urlparse import urlparse
+    >>> request = LaunchpadTestRequest(
+    ...     environ={'REQUEST_METHOD': 'GET',
+    ...              'X-SCHEME' : 'http' })
+    >>> view = getMultiAdapter((alias,request), name='+index')
+    >>> view.initialize()
+    >>> print urlparse(request.response.getHeader('Location'))[0]
+    http
+
+When the incoming scheme is 'https' then the redirect scheme is
+unaffected.
+
+    >>> request = LaunchpadTestRequest(
+    ...     environ={'REQUEST_METHOD': 'GET',
+    ...              'X-SCHEME' : 'https' })
+    >>> view = getMultiAdapter((alias,request), name='+index')
+    >>> view.initialize()
+    >>> print urlparse(request.response.getHeader('Location'))[0]
+    https
+
+Reset 'use_https' to its original state.
+
     >>> config.launchpad.vhosts.use_https = False
 
 However, we can't access its contents until we have committed
@@ -134,7 +160,6 @@ files in the Librarian.
 
     >>> from canonical.librarian.interfaces import ILibrarianClient
     >>> client = getUtility(ILibrarianClient)
-    >>> from canonical.launchpad.database import LibraryFileAlias
     >>> aid = client.addFile(
     ...     'text.txt', len(data), StringIO(data), 'text/plain', NEVER_EXPIRES
     ...     )
@@ -170,7 +195,7 @@ If we abort the transaction, it is still in there
 
 You can also set the expiry date on the file this way too:
 
-    >>> from datetime import datetime, timedelta
+    >>> from datetime import datetime
     >>> from pytz import utc
     >>> url = client.remoteAddFile(
     ...     'text.txt', len(data), StringIO(data), 'text/plain',

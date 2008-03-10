@@ -1,34 +1,14 @@
 = Mailing list subscriptions =
 
 Both direct and indirect members of a team may subscribe to a team's mailing
-list.  First, create the mailing list.
+list.  First, create the mailing list, which will send a notification messages
+to all the members of the mailing list.  We can ignore these messages.
 
     >>> import itest_helper
-    >>> browser = itest_helper.make_browser()
-    >>> browser.open('http://launchpad.dev/people/+newteam')
-    >>> browser.getControl(name='field.name').value = 'itest-one'
-    >>> browser.getControl('Display Name').value = 'ITest One'
-    >>> browser.getControl(name='field.subscriptionpolicy').displayValue = [
-    ...     'Open Team']
-    >>> browser.getControl('Create').click()
+    >>> list_one = itest_helper.create_list('itest-one')
+    >>> smtpd.reset()
 
-XXX BarryWarsaw 06-Dec-2007 The team must be a member of the mailing list beta
-program in order to apply for mailing lists.  When mailing lists go public,
-this stanza can be removed.
-
-    >>> itest_helper.beta_program_enable('itest-one')
-
-    >>> browser.reload()
-    >>> browser.getLink('Configure mailing list').click()
-    >>> browser.getControl('Apply for Mailing List').click()
-
-    >>> list_one = itest_helper.review_list('itest-one')
-    >>> from Mailman.Utils import list_names
-    >>> sorted(name for name in list_names() if name.startswith('itest-'))
-    ['itest-one']
-
-Because subscriptions are not yet exposed through the web, we'll add some
-people and join them to teams through the backdoor.
+Anne registers with Launchpad and decides to subscribe to the mailing list.
 
     >>> from canonical.launchpad.ftests.mailinglists_helper import (
     ...     get_alternative_email, new_person)
