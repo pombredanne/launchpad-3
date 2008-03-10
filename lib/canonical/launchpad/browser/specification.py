@@ -30,7 +30,6 @@ __all__ = [
     'SpecificationSHP',
     ]
 
-import cgi
 from subprocess import Popen, PIPE
 from operator import attrgetter
 
