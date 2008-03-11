@@ -14,8 +14,7 @@ import psycopg
 from canonical import lp
 from canonical.config import config
 from canonical.database.sqlbase import (
-        connect, READ_COMMITTED_ISOLATION, AUTOCOMMIT_ISOLATION,
-        )
+    connect, ISOLATION_LEVEL_AUTOCOMMIT, ISOLATION_LEVEL_READ_COMMITTED)
 from canonical.launchpad.scripts import logger, logger_options, db_options
 
 # Defines parser and locale to use.
@@ -259,7 +258,7 @@ def liverebuild(con):
                 # No commit - we are in autocommit mode
                 log.exception('psycopg error')
                 con = connect(lp.dbuser)
-                con.set_isolation_level(AUTOCOMMIT_ISOLATION)
+                con.set_isolation_level(ISOLATION_LEVEL_AUTOCOMMIT)
 
 
 def setup(con, configuration=DEFAULT_CONFIG):
@@ -612,10 +611,10 @@ def get_tsearch2_sql_path(con):
 def main():
     con = connect(lp.dbuser)
     if options.liverebuild:
-        con.set_isolation_level(AUTOCOMMIT_ISOLATION)
+        con.set_isolation_level(ISOLATION_LEVEL_AUTOCOMMIT)
         liverebuild(con)
     else:
-        con.set_isolation_level(READ_COMMITTED_ISOLATION)
+        con.set_isolation_level(ISOLATION_LEVEL_READ_COMMITTED)
         setup(con)
         if options.null:
             nullify(con)
