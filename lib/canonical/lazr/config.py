@@ -129,6 +129,7 @@ class ImplicitTypeSection(Section):
     re_types = re.compile(r'''
         (?P<false> ^false$) |
         (?P<true> ^true$) |
+        (?P<none> ^none$) |
         (?P<int> ^[+-]?\d+$) |
         (?P<str> ^.*$)
         ''', re.IGNORECASE | re.VERBOSE)
@@ -147,6 +148,8 @@ class ImplicitTypeSection(Section):
             return False
         elif match.group('true'):
             return True
+        elif match.group('none'):
+            return None
         elif match.group('int'):
             return int(value)
         else:
@@ -214,16 +217,22 @@ class ConfigSchema:
         """Set the SectionSchemas and category_names from the config."""
         category_names = set()
         templates = {}
+        # Retrieve all the templates first because section() does not
+        # follow the order of the conf file.
         for name in parser.sections():
             (section_name, category_name,
              is_template, is_optional) = self._parseSectionName(name)
+            if is_template:
+                templates[category_name] = dict(parser.items(name))
+        for name in parser.sections():
+            (section_name, category_name,
+             is_template, is_optional) = self._parseSectionName(name)
+            if is_template:
+                continue
             options = dict(templates.get(category_name, {}))
             options.update(parser.items(name))
-            if is_template:
-                templates[category_name] = options
-            else:
-                self._section_schemas[section_name] = SectionSchema(
-                    section_name, options, is_optional)
+            self._section_schemas[section_name] = SectionSchema(
+                section_name, options, is_optional)
             if category_name is not None:
                 category_names.add(category_name)
         self._category_names = list(category_names)
@@ -293,12 +302,13 @@ class ConfigSchema:
 
     def getByCategory(self, name):
         """See `IConfigSchema`."""
+        if name not in self.category_names:
+            raise NoCategoryError(name)
         section_schemas = []
         for key in self._section_schemas:
-            if key.startswith(name):
+            parts = key.split('.')
+            if name == parts[0]:
                 section_schemas.append(self._section_schemas[key])
-        if len(section_schemas) == 0:
-            raise NoCategoryError(name)
         return section_schemas
 
     def _getRequiredSections(self):
@@ -388,12 +398,13 @@ class ConfigData:
 
     def getByCategory(self, name):
         """See `IConfigData`."""
+        if name not in self.category_names:
+            raise NoCategoryError(name)
         sections = []
         for key in self._sections:
-            if key.startswith(name):
+            parts = key.split('.')
+            if name == parts[0]:
                 sections.append(self._sections[key])
-        if len(sections) == 0:
-            raise NoCategoryError(name)
         return sections
 
 

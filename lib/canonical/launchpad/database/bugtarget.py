@@ -134,14 +134,14 @@ class BugTargetBase:
         """See IBugTarget."""
         if statuses is None:
             statuses = BugTaskStatus.items
+        statuses = list(statuses)
 
         from_tables = ['BugTask', 'Bug']
         count_column = """
             COUNT (CASE WHEN BugTask.status = %s
-                        THEN BugTask.id ELSE NULL END) AS %s"""
-        select_columns = [
-            count_column % tuple(sqlvalues(status) + (status.name.lower(), ))
-            for status in statuses]
+                        THEN BugTask.id ELSE NULL END)"""
+        select_columns = [count_column % sqlvalues(status)
+                          for status in statuses]
         conditions = [
             '(%s)' % self._getBugTaskContextClause(),
             'BugTask.bug = Bug.id',
@@ -154,6 +154,5 @@ class BugTargetBase:
         cur.execute(
             "SELECT %s FROM BugTask, Bug WHERE %s" % (
                 ', '.join(select_columns), ' AND '.join(conditions)))
-        [counts] = cur.dictfetchall()
-        return dict(
-            [(status, counts[status.name.lower()]) for status in statuses])
+        counts = cur.fetchone()
+        return dict(zip(statuses, counts))
