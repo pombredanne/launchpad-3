@@ -315,5 +315,8 @@ class IBranchMergeProposal(Interface):
         source branch since it branched off the target branch.
         """
 
+    def createVote(person):
+        """Create a vote for the specified person."""
+
     def deleteProposal():
         """Delete the proposal to merge."""

@@ -19,6 +19,7 @@ from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import SQLBase, sqlvalues
 
 from canonical.launchpad.database.branchrevision import BranchRevision
+from canonical.launchpad.database.codereviewvote import CodeReviewVote
 from canonical.launchpad.interfaces import (
     BadStateTransition,
     BRANCH_MERGE_PROPOSAL_FINAL_STATES,
@@ -305,6 +306,13 @@ class BranchMergeProposal(SQLBase):
         # the old and the new proposal.
         self.syncUpdate()
         return proposal
+
+    def createVote(self, reviewer):
+        """See `IBranchMergeProposal`."""
+        registrant = reviewer
+        return CodeReviewVote(branch_merge_proposal=self,
+                              registrant=registrant,
+                              reviewer=reviewer)
 
     def deleteProposal(self):
         """See `IBranchMergeProposal`."""

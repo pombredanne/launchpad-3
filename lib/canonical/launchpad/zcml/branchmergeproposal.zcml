@@ -15,14 +15,14 @@
                        supersedes superseded_by
                        date_created date_review_requested date_reviewed
                        isPersonValidReviewer isMergable isValidTransition
-                       getUnlandedSourceBranchRevisions"/>
+                       getUnlandedSourceBranchRevisions" />
     <require
         permission="launchpad.Edit"
         set_attributes="whiteboard merged_revno commit_message"
         attributes="deleteProposal
                     setAsWorkInProgress requestReview approveBranch
                     rejectBranch mergeFailed markAsMerged resubmit
-                    enqueue dequeue moveToFrontOfQueue
+                    enqueue dequeue moveToFrontOfQueue createVote
                     " />
   </content>
 
