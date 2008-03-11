@@ -25,6 +25,7 @@ from zope.component import adapts, getMultiAdapter
 from zope.interface import implements, directlyProvides
 from zope.proxy import isProxy
 from zope.publisher.interfaces import NotFound
+from zope.schema import ValidationError
 from zope.schema.interfaces import IField, IObject
 from zope.security.proxy import removeSecurityProxy
 
@@ -113,6 +114,21 @@ class ReadOnlyResource(HTTPResource):
             self.request.response.setHeader("Allow", "GET")
 
 
+class ReadWriteResource(HTTPResource):
+    """A resource that responds to GET and PATCH."""
+    def __call__(self):
+        """Handle a GET request."""
+        if self.request.method == "GET":
+            return self.do_GET()
+        elif self.request.method == "PATCH":
+            type = self.request.headers['Content-Type']
+            representation = self.request.bodyStream.getCacheStream().read()
+            return self.do_PATCH(type, representation)
+        else:
+            self.request.response.setStatus(405)
+            self.request.response.setHeader("Allow", "GET PATCH")
+
+
 class CollectionEntryDummy:
     """An empty object providing the interface of the items in the collection.
 
@@ -124,7 +140,7 @@ class CollectionEntryDummy:
         directlyProvides(self, collection_field.value_type.schema)
 
 
-class EntryResource(ReadOnlyResource):
+class EntryResource(ReadWriteResource):
     """An individual object, published to the web."""
     implements(IEntryResource, IJSONPublishable)
 
@@ -216,7 +232,7 @@ class EntryResource(ReadOnlyResource):
                     key = name + '_link'
                     dict[key] = canonical_url(related_resource,
                                               request=self.request)
-            elif IField.providedBy(element) and name[0] != '_':
+            elif IField.providedBy(element) and not name.startswith('_'):
                 # It's a data field; display it as part of the
                 # representation.
                 dict[name] = getattr(self.context, name)
@@ -230,6 +246,82 @@ class EntryResource(ReadOnlyResource):
         """Render the entry as JSON."""
         self.request.response.setHeader('Content-type', 'application/json')
         return simplejson.dumps(self, cls=ResourceJSONEncoder)
+
+    def do_PATCH(self, media_type, representation):
+        """Apply a JSON patch to the entry."""
+        if media_type != 'application/json':
+            self.request.response.setStatus(415)
+            return
+
+        changeset = simplejson.loads(unicode(representation))
+        schema = self.context.schema
+        validated_changeset = {}
+        for repr_name, value in changeset.items():
+            # We chop off the end of the string rather than use .replace()
+            # because there's a chance the name of the field might already
+            # have "_link" or (very unlikely) "_collection_link" in it.
+            if repr_name.endswith('_collection_link'):
+                name = repr_name[:-16]
+            elif repr_name.endswith('_link'):
+                name = repr_name[:-5]
+            else:
+                name = repr_name
+            element = schema.get(name)
+
+            if (name.startswith('_') or element is None
+                or ((ICollection.providedBy(element)
+                     or IObject.providedBy(element)) and repr_name == name)):
+                # That last clause needs some explaining. It's the
+                # situation where we have a collection represented as
+                # 'foo_collection_link' or an object represented as
+                # 'bar_link', and the user sent in a PATCH request
+                # that tried to change 'foo' or 'bar'. This code tells
+                # the user: you can't change 'foo' or 'bar' directly;
+                # you have to use 'foo_collection_link' or 'bar_link'.
+                # (Of course, you also can't change
+                # 'foo_collection_link', but that's taken care of
+                # directly below.)
+                self.request.response.setStatus(400)
+                return ("You tried to modify the nonexistent attribute '%s'"
+                        % repr_name)
+
+            if ICollectionField.providedBy(element):
+                self.request.response.setStatus(400)
+                return ("You tried to modify the collection link '%s'"
+                        % repr_name)
+
+            if element.readonly:
+                self.request.response.setStatus(400)
+                return ("You tried to modify the read-only attribute '%s'"
+                        % repr_name)
+
+            if IObject.providedBy(element):
+                # TODO: 'value' is the URL to an object. Traverse
+                # the URL to find the actual object.
+                pass
+
+            try:
+                # Do any field-specific validation.
+                field = element.bind(self.context)
+                field.validate(value)
+            except ValidationError, e:
+                self.request.response.setStatus(400)
+                return str(e)
+            validated_changeset[name] = value
+
+        original_url = canonical_url(self, request=self.request)
+        # Make the changes.
+        for name, value in validated_changeset.items():
+            setattr(self.context, name, value)
+
+        # If the modification caused the entry's URL to change, tell
+        # the client about the new URL.
+        new_url = canonical_url(self, request=self.request)
+        if new_url == original_url:
+            return ''
+        else:
+            self.request.response.setStatus(301)
+            self.request.response.setHeader('Location', new_url)
 
 
 class CollectionResource(ReadOnlyResource):
