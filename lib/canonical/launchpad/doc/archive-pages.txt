@@ -133,3 +133,133 @@ situation and ignore it. See bug #185922 for reference.
     False
     >>> len(view.errors)
     2
+
+== ArchiveEditDependenciesView ==
+
+We use ArchiveEditDependenciesView to provide the mechnisms used to
+add and/or remove archive dependencies for a PPA via the UI.
+
+This view is only accessible by users with 'launchpad.Edit' permission
+in the archive, that would be only the PPA owner (or administrators of
+the Team owning the PPA) and Launchpad administrators. See further
+tests in pagetests/xx-edit-dependencies.txt.
+
+We will use the PPA owner, Celso user, to play with edit-dependencies
+corner-cases.
+
+    >>> login('celso.providelo@canonical.com')
+
+Issuing a empty request we can inspect the internal attributes used to
+build the page.
+
+    >>> empty_request = LaunchpadTestRequest(form={})
+    >>> view = getView(cprov.archive, "+edit-dependencies", empty_request)
+    >>> view.initialize()
+
+There is a property indicating whether or not the context PPA has
+recorded dependencies.
+
+    >>> view.has_dependencies
+    False
+
+Also the 'selected_dependencies' form field is present, even if it is empty.
+
+    >>> len(view.widgets.get('selected_dependencies').vocabulary)
+    0
+
+When there is no dependencies the form focus is set to the
+'dependency_candidate' input field. Where the user can directly type
+the owner of the PPA he wants to mark as dependency.
+
+    >>> print view.focusedElementScript()
+    <!--
+    setFocusByName('field.dependency_candidate');
+    // -->
+
+Let's emulate a dependency addition. Note that the form contains, a
+empty 'selected_dependencies' (as it was rendered in the empty
+request) and 'dependency_candidate' contains a valid PPA owner name.
+Validation checks are documented in
+pagetests/ppa/xx-edit-dependencies.txt.
+
+    >>> add_dependency_request = LaunchpadTestRequest(
+    ...     form={
+    ...         'field.selected_dependencies': [],
+    ...         'field.dependency_candidate': 'sabdfl',
+    ...         'field.actions.add': 'Add Dependency',
+    ...         })
+    >>> add_dependency_request.method = 'POST'
+    >>> view = getView(
+    ...    cprov.archive, "+edit-dependencies", add_dependency_request)
+    >>> view.initialize()
+
+Now we can see that the view properties correctly indicates the
+presence of a PPA dependency.
+
+    >>> view.has_dependencies
+    True
+
+The 'selected_dependencies' widget has on element representing a PPA
+dependency. Each element has:
+
+ * value: dependency IArchive,
+ * token: dependency IArchive.owner,
+ * title: link to the dependency IArchive in Launchpad redered as the
+          dependency title.
+
+    >>> [dependency] = view.widgets.get('selected_dependencies').vocabulary
+
+    >>> print dependency.value.title
+    PPA for Mark Shuttleworth
+
+    >>> print dependency.token
+    sabdfl
+
+    >>> print dependency.title
+    <a href="http://launchpad.dev/~sabdfl/+archive">PPA for Mark Shuttleworth</a>
+
+The form focus, now that we have a recorded dependencies, is set to the
+first listed dependency.
+
+    >>> print view.focusedElementScript()
+    <!--
+    setFocusByName('field.selected_dependencies');
+    // -->
+
+We simply let the zope infrastructure raise FormError on malformed requests.
+
+    >>> broken_request = LaunchpadTestRequest(
+    ...     form={'field.actions.remove': 'Remove Dependencies',})
+    >>> broken_request.method = 'POST'
+    >>> view = getView(
+    ...    cprov.archive, "+edit-dependencies", broken_request)
+    >>> view.initialize()
+    Traceback (most recent call last):
+    ...
+    FormError: ('No input', 'selected_dependencies')
+
+If we remove the just-added dependency, the view gets back to its
+initial/empty state.
+
+    >>> remove_dependency_request = LaunchpadTestRequest(
+    ...     form={
+    ...         'field.selected_dependencies': ['sabdfl'],
+    ...         'field.dependency_candidate': '',
+    ...         'field.actions.remove': 'Remove Dependencies',
+    ...         })
+    >>> remove_dependency_request.method = 'POST'
+    >>> view = getView(
+    ...    cprov.archive, "+edit-dependencies", remove_dependency_request)
+    >>> view.initialize()
+
+    >>> view.has_dependencies
+    False
+
+    >>> len(view.widgets.get('selected_dependencies').vocabulary)
+    0
+
+    >>> print view.focusedElementScript()
+    <!--
+    setFocusByName('field.dependency_candidate');
+    // -->
+

@@ -72,7 +72,7 @@ preamble.
     ...
     GPGKeyNotFoundError: ...
 
-Aparently GPGME is able to import an incomplete public key:
+Apparently GPGME is able to import an incomplete public key:
 
     >>> key = gpghandler.importPublicKey(pubkey[:-300])
     >>> assert key is not None
@@ -95,28 +95,23 @@ Keyserver URLs
 
 The gpghandler can also provide us with convenient links to the
 keyserver web interface. By default the action is to display the index
-page:
-
-    >>> gpghandler.getURLForKeyInServer("DFD20543")
-    'http://localhost:11371/pks/lookup?search=0xDFD20543&op=index'
-
-But you can also specify your own action:
-
-    >>> gpghandler.getURLForKeyInServer("DFD20543", action="get")
-    'http://localhost:11371/pks/lookup?search=0xDFD20543&op=get'
-
-The fingerprint can be both 8-byte, as above, or a longer string such as
-the 40-byte fingerprint we captured above:
+page. Notice that the fingerprint must be the 40-byte fingerprint, 
+to avoid the retrieval of more than one key.
 
     >>> fingerprint = "A419AE861E88BC9E04B9C26FBA2B9389DFD20543"
     >>> gpghandler.getURLForKeyInServer(fingerprint)
-    'http://localhost:11371/pks/lookup?search=0xDFD20543&op=index'
+    'http://localhost:11371/pks/lookup?search=0xA419AE861E88BC9E04B9C26FBA2B9389DFD20543&op=index'
+
+But you can also specify your own action:
+
+    >>> gpghandler.getURLForKeyInServer(fingerprint, action="get")
+    'http://localhost:11371/pks/lookup?search=0xA419AE861E88BC9E04B9C26FBA2B9389DFD20543&op=get'
 
 The method accepts a flag to retrieve a link to ubuntu's public
 keyserver web interface.
 
-    >>> gpghandler.getURLForKeyInServer("DFD20543", public=True)
-    'http://keyserver.ubuntu.com:11371/pks/lookup?search=0xDFD20543&op=index'
+    >>> gpghandler.getURLForKeyInServer(fingerprint, public=True)
+    'http://keyserver.ubuntu.com:11371/pks/lookup?search=0xA419AE861E88BC9E04B9C26FBA2B9389DFD20543&op=index'
 
 
 Fingerprint sanitizing

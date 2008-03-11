@@ -307,11 +307,12 @@ def create_list(team_name):
     browser.reload()
     browser.getLink('Configure mailing list').click()
     browser.getControl('Apply for Mailing List').click()
-    review_list(team_name)
+    mailing_list = review_list(team_name)
     # pylint: disable-msg=F0401
     from Mailman.Utils import list_names
     assert team_name in list_names(), (
         'Mailing list was not created: %s' % list_names())
+    return mailing_list
 
 
 def subscribe(first_name, team_name):
