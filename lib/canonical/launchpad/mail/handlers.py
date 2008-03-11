@@ -337,17 +337,7 @@ class MaloneHandler:
 
         A mail attachment is stored as a bugattachment if its
         content type is not listed in irrelevant_content_types.
-        
-        following conditions are met:
-
-            - the content disposition header explicitly says that
-              this is an attachment, or the content-disposition header
-              provides a file name.
-            - the content type is not "irrelevant". At present,
-              mail signatures, v-cards, and the resource for of MacOS
-              files are considered to be irrelevant.
         """
-        unnamed_count = 0
         for chunk in message.chunks:
             blob = chunk.blob
             if blob is None:

@@ -187,7 +187,7 @@ u'unnamed'
 u'application/xml; charset="utf16"'
 
 Only those chunks of content type text/plain with content-disposition 
-"inline" that have no filename are stored as content. If a inline 
+"inline" that have no filename are stored as content. If an inline 
 text/plain chunk has a filename, it is considered to be an attachment
 and is stored as a blob, as well as text/plain chunks with 
 content-disposition "attachment". Chunks with content-disposition
