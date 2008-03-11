@@ -180,6 +180,7 @@ COMMENT ON TABLE BugNotificationRecipient IS 'The recipient for a bug notificati
 COMMENT ON COLUMN BugNotificationRecipient.bugnotification IS 'The notification this recipient should get.';
 COMMENT ON COLUMN BugNotificationRecipient.person IS 'The person who should receive this notification.';
 COMMENT ON COLUMN BugNotificationRecipient.rationale IS 'The reason this person is receiving this notification (the value for the X-Launchpad-Message-Rationale header).';
+COMMENT ON COLUMN BugNotificationRecipient.reason IS 'A line of text describing the reason this person is receiving this notification (to be included in the email message).';
 
 
 -- BugPackageInfestation
