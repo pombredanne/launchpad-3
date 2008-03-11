@@ -8,7 +8,9 @@ import time
 from datetime import datetime
 
 import psycopg2
-from psycopg2.extensions import ISOLATION_LEVEL_READ_COMMITTED
+from psycopg2.extensions import (
+    ISOLATION_LEVEL_AUTOCOMMIT, ISOLATION_LEVEL_READ_COMMITTED,
+    ISOLATION_LEVEL_SERIALIZABLE)
 import storm
 import storm.sqlobject
 from storm.zope.interfaces import IZStorm
