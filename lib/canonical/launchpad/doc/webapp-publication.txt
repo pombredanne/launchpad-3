@@ -1095,7 +1095,7 @@ access token specified in the request.
     >>> print publication.getPrincipal(test_request).title
     Guilherme Salgado
 
-If the token is expired, unauthorized or doesn't exist, an Unauthorized
+If the token is expired, unauthorized, or doesn't exist, an Unauthorized
 exception is raised, though.
 
     # Must login in order to edit the token.

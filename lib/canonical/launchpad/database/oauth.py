@@ -33,11 +33,12 @@ REQUEST_TOKEN_VALIDITY = 12
 ACCESS_TOKEN_VALIDITY = 30
 # The OAuth Core 1.0 spec says that a nonce shall be "unique for all requests
 # with that timestamp", but this is likely to cause problems if the
-# client/consumer time is out of sync (as discussed in http://xrl.us/bgusu),
-# so we use a time window (relative to the timestamp of the existing
-# OAuthNonce) to check if the nonce can be used.
-# How many seconds for the time window in which a nonce is valid?
-NONCE_TIME_WINDOW = 60
+# client does request pipelining, so we use a time window (relative to
+# the timestamp of the existing OAuthNonce) to check if the nonce can be used.
+# As suggested by Robert, we use a window which is at least twice the size of
+# our hard time out. This is a safe bet since no requests should take more 
+# than one hard time out.
+NONCE_TIME_WINDOW = 60 # seconds
 
 
 class OAuthConsumer(SQLBase):
@@ -102,26 +103,18 @@ class OAuthAccessToken(OAuthToken):
 
     def ensureNonce(self, nonce, timestamp):
         """See `IOAuthAccessToken`."""
-        # XXX: Is it okay to do this?  I mean, we're converting the timestamp
-        # to UTC whenever we need to manipulate it.
-        date = datetime.fromtimestamp(float(timestamp), pytz.timezone('UTC'))
+        timestamp = float(timestamp)
         oauth_nonce = OAuthNonce.selectOneBy(access_token=self, nonce=nonce)
         if oauth_nonce is not None:
-            # XXX: I'm not sure that's a problem, but when we do
-            # date.timetuple() we lose some precision (miliseconds).
-            # e.g:
-            # >>> t = time.time()
-            # >>> time.mktime(datetime.fromtimestamp(t).timetuple()) == t
-            # False
-            # I think it shouldn't be a problem because we're not comparing it
-            # for (in)equality anyway, but there may be other issues.
-            utc_timestamp = time.mktime(date.timetuple())
+            # timetuple() returns the datetime as local time, so we need to
+            # subtract time.altzone from the result of time.mktime().
             stored_timestamp = time.mktime(
-                oauth_nonce.request_timestamp.timetuple())
-            if abs(stored_timestamp - utc_timestamp) > NONCE_TIME_WINDOW:
+                oauth_nonce.request_timestamp.timetuple()) - time.altzone
+            if abs(stored_timestamp - timestamp) > NONCE_TIME_WINDOW:
                 raise NonceAlreadyUsed('This nonce has been used already.')
             return oauth_nonce
         else:
+            date = datetime.fromtimestamp(timestamp, pytz.timezone('UTC'))
             return OAuthNonce(
                 access_token=self, nonce=nonce, request_timestamp=date)
 

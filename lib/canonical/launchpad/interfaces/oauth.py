@@ -239,7 +239,7 @@ class IOAuthNonce(Interface):
 
     request_timestamp = Datetime(
         title=_('Date issued'), required=True, readonly=True)
-    access_token = Object(schema=IOAuthAccessToken, title=_('The token.'))
+    access_token = Object(schema=IOAuthAccessToken, title=_('The token'))
     nonce = TextLine(title=_('Nonce'), required=True, readonly=True)
 
 
