@@ -14,10 +14,10 @@ identical are not repeated.
  
     >>> content = anon_browser.contents
     >>> print extract_text(find_tag_by_id(content, 'packaging'))
-    Ubuntu version                  Upstream version
-    hoary   development   release   1.0.9a-4ubuntu1   None defined
-    warty   current       release   1.0.9a-4          alsa-utils Series: trunk
-                                    1.0.8-1ubuntu1
+    Ubuntu version                                 Upstream version
+    hoary development main release 1.0.9a-4ubuntu1 None defined
+    warty current     main release 1.0.9a-4        alsa-utils Series: trunk
+                      main         1.0.8-1ubuntu1
 
 
 === Delete Link Button ===
@@ -49,10 +49,10 @@ Clicking this button deletes the corresponding packaging association.
     ...     print extract_text(tag)
     Removed upstream association between alsa-utils trunk and Warty.
     >>> print extract_text(find_tag_by_id(content, 'packaging'))
-    Ubuntu version                  Upstream version
-    hoary   development   release   1.0.9a-4ubuntu1   None defined
-    warty   current       release   1.0.9a-4          None defined
-                                    1.0.8-1ubuntu1
+    Ubuntu version                                 Upstream version
+    hoary development main release 1.0.9a-4ubuntu1 None defined
+    warty current     main release 1.0.9a-4        None defined
+                      main         1.0.8-1ubuntu1
 
 
 == Multiple package links ==
@@ -74,14 +74,15 @@ will be deleted.
     >>> user_browser.getControl(name='ubuntupkg').value = 'evolution'
     >>> user_browser.getControl('Update').click()
 
+
 When the user visits the source package page, only the latest link is
 displayed:
 
     >>> user_browser.open(
     ...     'http://launchpad.dev/ubuntu/+source/evolution')
     >>> print extract_text(find_tag_by_id(user_browser.contents, 'packaging'))
-    Ubuntu version                  Upstream version
-    hoary   development   release   1.0 Evolution Series: no-crashes
+    Ubuntu version                     Upstream version
+    hoary development main release 1.0 Evolution Series: no-crashes
 
 Once he deletes the link, the older link shows:
 
@@ -92,6 +93,5 @@ Once he deletes the link, the older link shows:
     Removed upstream association between Evolution no-crashes and Hoary.
 
     >>> print extract_text(find_tag_by_id(user_browser.contents, 'packaging'))
-    Ubuntu version                  Upstream version
-    hoary   development   release   1.0 Evolution Series: trunk
-
+    Ubuntu version                     Upstream version
+    hoary development main release 1.0 Evolution Series: trunk
