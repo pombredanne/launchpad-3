@@ -335,7 +335,9 @@ class MaloneHandler:
     def processAttachments(self, bug, message, signed_mail):
         """Create Bugattachments for "reasonable" mail attachments.
 
-        A mail attachment is stored as a bugattachment if all of the
+        A mail attachment is stored as a bugattachment if its
+        content type is not listed in irrelevant_content_types.
+        
         following conditions are met:
 
             - the content disposition header explicitly says that
@@ -345,38 +347,14 @@ class MaloneHandler:
               mail signatures, v-cards, and the resource for of MacOS
               files are considered to be irrelevant.
         """
-        # NOTE: The criterion used here to decide if a message chunk
-        # has "main content" or an attachment, must match the
-        # corresponding criterion used in MessageSet.fromEmail in
-        # in canonical.launchpad.database. Otherwise, some relevant
-        # mail parts may be either completely ignored or they may appear
-        # both as "main content" and as attachments.
-
         unnamed_count = 0
-        for part in signed_mail.walk():
-            content_type = part.get_content_type()
-            content_disposition = part.get('Content-disposition', '').lower()
-            is_attachment = content_disposition.startswith('attachment')
-            filename = part.get_filename()
-            if (part.is_multipart()
-                or content_type in self.irrelevant_content_types
-                or (filename is None and not is_attachment)):
+        for chunk in message.chunks:
+            blob = chunk.blob
+            if blob is None:
                 continue
-
-            content = part.get_payload(decode=True)
-            if len(content) == 0:
-                # storing empty files is pointless.
+            content_type = blob.mimetype
+            if content_type in self.irrelevant_content_types:
                 continue
-
-            if filename is None:
-                if unnamed_count:
-                    filename = 'unnamed-%i' % unnamed_count
-                else:
-                    filename = 'unnamed'
-                unnamed_count += 1
-            filealias = getUtility(ILibraryFileAliasSet).create(
-                name=filename, size=len(content), file=StringIO(content),
-                contentType=content_type)
 
             if content_type in ('text/x-diff', 'text/x-patch'):
                 attach_type = BugAttachmentType.PATCH
@@ -384,8 +362,8 @@ class MaloneHandler:
                 attach_type = BugAttachmentType.UNSPECIFIED
 
             getUtility(IBugAttachmentSet).create(
-                bug=bug, filealias=filealias, attach_type=attach_type,
-                title=filename, message=message)
+                bug=bug, filealias=blob, attach_type=attach_type,
+                title=blob.filename, message=message)
 
 
 class AnswerTrackerHandler:

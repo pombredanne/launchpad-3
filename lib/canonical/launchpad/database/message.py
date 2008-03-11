@@ -344,14 +344,7 @@ class MessageSet:
             #   this part is an attachment, text/plain content is stored
             #   as a blob,
             # - if the content-disposition header provides a filename,
-            #   text/plain content is stored as a blob,
-            #
-            # NOTE: The criterion used here to decide if a message chunk
-            # has "main content" or an attachment, must match the
-            # corresponding criterion used in MaloneHandler.processAttachments
-            # in canonical.launchpad.mail.handlers. Otherwise, some relevant
-            # mail parts may be either completely ignored or they may appear
-            # both as "main content" and as attachments.
+            #   text/plain content is stored as a blob.
             content_disposition = part.get('Content-disposition', '').lower()
             no_attachment = not content_disposition.startswith('attachment')
             if (mime_type == 'text/plain' and no_attachment 
