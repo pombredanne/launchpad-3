@@ -16,7 +16,7 @@ from canonical.launchpad import helpers
 
 from canonical.launchpad.interfaces import (
     BrokenTextError, ILanguageSet, IPOTMsgSet, ITranslationImporter,
-    RosettaTranslationOrigin, TranslationConflict,
+    RosettaTranslationOrigin, TranslationConflict, TranslationConstants,
     TranslationValidationStatus)
 from canonical.database.constants import UTC_NOW
 from canonical.launchpad.helpers import shortlist
@@ -295,8 +295,8 @@ class POTMsgSet(SQLBase):
     def _findPOTranslations(self, translations):
         """Find all POTranslation records for passed `translations`."""
         potranslations = {}
-        # Set all POTranslations we can have (up to 4)
-        for pluralform in range(4):
+        # Set all POTranslations we can have (up to MAX_PLURAL_FORMS)
+        for pluralform in xrange(TranslationConstants.MAX_PLURAL_FORMS):
             if (pluralform in translations and
                 translations[pluralform] is not None):
                 translation = translations[pluralform]
@@ -443,6 +443,9 @@ class POTMsgSet(SQLBase):
             else:
                 origin = RosettaTranslationOrigin.ROSETTAWEB
 
+            assert TranslationConstants.MAX_PLURAL_FORMS == 6, (
+                "Change this code to support %d plural forms."
+                % TranslationConstants.MAX_PLURAL_FORMS)
             new_message = TranslationMessage(
                 potmsgset=self,
                 pofile=pofile,
@@ -452,6 +455,8 @@ class POTMsgSet(SQLBase):
                 msgstr1=potranslations[1],
                 msgstr2=potranslations[2],
                 msgstr3=potranslations[3],
+                msgstr4=potranslations[4],
+                msgstr5=potranslations[5],
                 validation_status=validation_status)
 
             # It's a fuzzy one.

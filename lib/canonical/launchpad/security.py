@@ -22,11 +22,11 @@ from canonical.launchpad.interfaces import (
     IPollOption, IPollSubset, IProduct, IProductRelease, IProductReleaseFile,
     IProductSeries, IQuestion, IQuestionTarget, IRequestedCDs,
     IShipItApplication, IShippingRequest, IShippingRequestSet, IShippingRun,
-    ISpecification, ISpecificationBranch, ISpecificationSubscription, ISprint,
-    ISprintSpecification, IStandardShipItRequest, IStandardShipItRequestSet,
-    ITeam, ITeamMembership, ITranslationGroup, ITranslationGroupSet,
-    ITranslationImportQueue, ITranslationImportQueueEntry, ITranslator,
-    PersonVisibility)
+    ISourcePackageRelease, ISpecification, ISpecificationBranch,
+    ISpecificationSubscription, ISprint, ISprintSpecification,
+    IStandardShipItRequest, IStandardShipItRequestSet, ITeam, ITeamMembership,
+    ITranslationGroup, ITranslationGroupSet, ITranslationImportQueue,
+    ITranslationImportQueueEntry, ITranslator, PersonVisibility)
 
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.interfaces import IAuthorization
@@ -1255,10 +1255,23 @@ class AccessBranch(AuthorizationBase):
         for subscriber in self.obj.subscribers:
             if user.inTeam(subscriber):
                 return True
-        return user.inTeam(getUtility(ILaunchpadCelebrities).admin)
+        celebs = getUtility(ILaunchpadCelebrities)
+        return user.inTeam(celebs.admin) or user.inTeam(celebs.bazaar_experts)
 
     def checkUnauthenticated(self):
         return not self.obj.private
+
+
+class EditBranch(AuthorizationBase):
+    """The owner, bazaar experts or admins can edit branches."""
+    permission = 'launchpad.Edit'
+    usedfor = IBranch
+
+    def checkAuthenticated(self, user):
+        celebs = getUtility(ILaunchpadCelebrities)
+        return (user.inTeam(self.obj.owner) or
+                user.inTeam(celebs.admin) or
+                user.inTeam(celebs.bazaar_experts))
 
 
 class AdminPOTemplateSubset(OnlyRosettaExpertsAndAdmins):
@@ -1286,8 +1299,10 @@ class BranchSubscriptionEdit(AuthorizationBase):
         Any team member can edit a branch subscription for their team.
         Launchpad Admins can also edit any branch subscription.
         """
-        admins = getUtility(ILaunchpadCelebrities).admin
-        return user.inTeam(self.obj.person) or user.inTeam(admins)
+        celebs = getUtility(ILaunchpadCelebrities)
+        return (user.inTeam(self.obj.person) or
+                user.inTeam(celebs.admin) or
+                user.inTeam(celebs.bazaar_experts))
 
 
 class BranchSubscriptionView(BranchSubscriptionEdit):
@@ -1332,12 +1347,13 @@ class BranchMergeProposalEdit(AuthorizationBase):
           * the reviewer for the target_branch
           * an administrator
         """
-        admins = getUtility(ILaunchpadCelebrities).admin
+        celebs = getUtility(ILaunchpadCelebrities)
         return (user.inTeam(self.obj.registrant) or
                 user.inTeam(self.obj.source_branch.owner) or
                 user.inTeam(self.obj.target_branch.owner) or
                 user.inTeam(self.obj.target_branch.reviewer) or
-                user.inTeam(admins))
+                user.inTeam(celebs.admin) or
+                user.inTeam(celebs.bazaar_experts))
 
 
 class ViewEntitlement(AuthorizationBase):
@@ -1459,6 +1475,38 @@ class ViewArchive(AuthorizationBase):
     def checkUnauthenticated(self):
         """Unauthenticated users can see the PPA if it's not private."""
         return not self.obj.private
+
+
+class ViewSourcePackageRelease(AuthorizationBase):
+    """Restrict viewing of source packages.
+
+    Packages that are only published in private archives are subject to the
+    same viewing rules as the archive (see class ViewArchive).
+
+    If the package is published in any non-private archive, then it is
+    automatically viewable even if the package is also published in
+    a private archive.
+    """
+    permission = 'launchpad.View'
+    userfor = ISourcePackageRelease
+
+    def checkAuthenticated(self, user):
+        """Verify that the user can view the sourcepackagerelease."""
+        for archive in self.obj.published_archives:
+            if check_permission('launchpad.View', archive):
+                return True
+        return False
+
+    def checkUnauthenticated(self):
+        """Check unauthenticated users.
+
+        Unauthenticated users can see the package as long as it's published
+        in a non-private archive.
+        """
+        for archive in self.obj.published_archives:
+            if not archive.private:
+                return True
+        return False
 
 
 class MailingListApprovalByExperts(AuthorizationBase):

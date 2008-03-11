@@ -110,7 +110,7 @@ class Specification(SQLBase, BugLinkTargetMixin):
     date_goal_decided = UtcDateTimeCol(notNull=False, default=None)
     milestone = ForeignKey(dbName='milestone',
         foreignKey='Milestone', notNull=False, default=None)
-    specurl = StringCol(notNull=True)
+    specurl = StringCol(notNull=False, default=None)
     whiteboard = StringCol(notNull=False, default=None)
     direction_approved = BoolCol(notNull=True, default=False)
     man_days = IntCol(notNull=False, default=None)
