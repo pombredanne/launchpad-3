@@ -21,10 +21,8 @@ import apt_pkg
 import os
 import md5
 import sha
-import shutil
 import subprocess
 import sys
-import tempfile
 import time
 
 from zope.component import getUtility
@@ -705,7 +703,8 @@ class BaseBinaryUploadFile(PackageUploadFile):
                     future_files = tar_checker.future_files.keys()
                     if future_files:
                         first_file = future_files[0]
-                        timestamp = time.ctime(tar_checker.future_files[first_file])
+                        timestamp = time.ctime(
+                            tar_checker.future_files[first_file])
                         yield UploadError(
                             "%s: has %s file(s) with a time stamp too "
                             "far into the future (e.g. %s [%s])."
@@ -715,7 +714,8 @@ class BaseBinaryUploadFile(PackageUploadFile):
                     ancient_files = tar_checker.ancient_files.keys()
                     if ancient_files:
                         first_file = ancient_files[0]
-                        timestamp = time.ctime(tar_checker.ancient_files[first_file])
+                        timestamp = time.ctime(
+                            tar_checker.ancient_files[first_file])
                         yield UploadError(
                             "%s: has %s file(s) with a time stamp too "
                             "far into the future (e.g. %s [%s])."
