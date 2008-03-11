@@ -27,10 +27,13 @@ __all__ = [
     'ConflictingTransactionManagerError',
     'connect',
     'cursor',
-    'DEFAULT_ISOLATION',
     'expire_from_cache',
     'flush_database_caches',
     'flush_database_updates',
+    'ISOLATION_LEVEL_AUTOCOMMIT',
+    'ISOLATION_LEVEL_DEFAULT',
+    'ISOLATION_LEVEL_READ_COMMITTED',
+    'ISOLATION_LEVEL_SERIALIZABLE',
     'quote',
     'quote_like',
     'quoteIdentifier',
@@ -42,7 +45,7 @@ __all__ = [
 
 # Default we want for scripts, and the PostgreSQL default. Note psycopg1 will
 # use SERIALIZABLE unless we override, but psycopg2 will not.
-DEFAULT_ISOLATION = ISOLATION_LEVEL_READ_COMMITTED
+ISOLATION_LEVEL_DEFAULT = ISOLATION_LEVEL_READ_COMMITTED
 
 
 class LaunchpadStyle(storm.sqlobject.SQLObjectStyle):
@@ -129,7 +132,7 @@ class _ZopelessConnectionDescriptor(object):
     """
     def __init__(self, connectionURI, sqlosAdapter=None,
                  debug=False, implicitActivate=True, reconnect=False,
-                 isolation=DEFAULT_ISOLATION):
+                 isolation=ISOLATION_LEVEL_DEFAULT):
         self.connectionURI = connectionURI
         self.sqlosAdapter = sqlosAdapter
         self.transactions = {}
@@ -230,7 +233,7 @@ class _ZopelessConnectionDescriptor(object):
     @classmethod
     def install(cls, connectionURI, sqlClass=SQLBase, debug=False,
                 implicitActivate=True, reconnect=False,
-                isolation=DEFAULT_ISOLATION):
+                isolation=ISOLATION_LEVEL_DEFAULT):
         if isinstance(sqlClass.__dict__.get('_connection'),
                 _ZopelessConnectionDescriptor):
             # ZopelessTransactionManager.__new__ should now prevent this from
@@ -287,7 +290,7 @@ class ZopelessTransactionManager(object):
     reset_after_transaction = True
 
     def __new__(cls, connectionURI, sqlClass=SQLBase, debug=False,
-                implicitBegin=True, isolation=DEFAULT_ISOLATION):
+                implicitBegin=True, isolation=ISOLATION_LEVEL_DEFAULT):
         if cls._installed is not None:
             if (cls._installed.connectionURI != connectionURI or
                 cls._installed.sqlClass != sqlClass or
@@ -305,7 +308,7 @@ class ZopelessTransactionManager(object):
         return cls._installed
 
     def __init__(self, connectionURI, sqlClass=SQLBase, debug=False,
-                 implicitBegin=True, isolation=DEFAULT_ISOLATION):
+                 implicitBegin=True, isolation=ISOLATION_LEVEL_DEFAULT):
         # For some reason, Python insists on calling __init__ on anything
         # returned from __new__, even if it's not a newly constructed object
         # (i.e. type.__call__ calls __init__, rather than object.__new__ like
@@ -335,11 +338,12 @@ class ZopelessTransactionManager(object):
     def set_isolation_level(self, level):
         """Set the transaction isolation level.
 
-        Level can be one of AUTOCOMMIT_ISOLATION, READ_COMMITTED_ISOLATION
-        or SERIALIZABLE_ISOLATION. As changing the isolation level must be
-        done before any other queries are issued in the current transaction,
-        this method automatically issues a rollback to ensure this is the
-        case.
+        Level can be one of ISOLATION_LEVEL_AUTOCOMMIT,
+        ISOLATION_LEVEL_READ_COMMITTED or
+        ISOLATION_LEVEL_SERIALIZABLE. As changing the isolation level
+        must be done before any other queries are issued in the
+        current transaction, this method automatically issues a
+        rollback to ensure this is the case.
         """
         con = self.conn()
         # Changing the isolation level must be done before any other queries
@@ -635,7 +639,7 @@ def rollback():
 def commit():
     ZopelessTransactionManager._installed.commit()
 
-def connect(user, dbname=None, isolation=DEFAULT_ISOLATION):
+def connect(user, dbname=None, isolation=ISOLATION_LEVEL_DEFAULT):
     """Return a fresh DB-API connecction to the database.
 
     Use None for the user to connect as the default PostgreSQL user.
@@ -668,7 +672,8 @@ class FakeZopelessTransactionManager:
     # There really should be a formal interface that both this and
     # ZopelessTransactionManager implement.
 
-    def __init__(self, implicitBegin=False, isolation=DEFAULT_ISOLATION):
+    def __init__(self, implicitBegin=False,
+                 isolation=ISOLATION_LEVEL_DEFAULT):
         assert ZopelessTransactionManager._installed is None
         ZopelessTransactionManager._installed = self
         self.desc = FakeZopelessConnectionDescriptor.install(None)

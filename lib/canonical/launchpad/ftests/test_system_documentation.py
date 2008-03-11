@@ -9,15 +9,13 @@ import logging
 import os
 import unittest
 
-from psycopg2.extensions import ISOLATION_LEVEL_READ_COMMITTED
-
 from zope.component import getUtility
 from zope.security.management import setSecurityPolicy
 
 from canonical.authserver.tests.harness import AuthserverTacTestSetup
 from canonical.config import config
 from canonical.database.sqlbase import (
-    commit, flush_database_updates)
+    commit, flush_database_updates, ISOLATION_LEVEL_READ_COMMITTED)
 from canonical.launchpad.ftests import ANONYMOUS, login, logout
 from canonical.launchpad.ftests import mailinglists_helper
 from canonical.launchpad.ftests.bug import (

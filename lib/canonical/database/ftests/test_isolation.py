@@ -11,12 +11,11 @@ import sys
 from textwrap import dedent
 import unittest
 
-from psycopg2.extensions import (
-    ISOLATION_LEVEL_AUTOCOMMIT, ISOLATION_LEVEL_READ_COMMITTED,
-    ISOLATION_LEVEL_SERIALIZABLE)
-
 from canonical.config import config
-from canonical.database.sqlbase import connect, cursor, DEFAULT_ISOLATION
+from canonical.database.sqlbase import (
+    cursor, ISOLATION_LEVEL_AUTOCOMMIT, ISOLATION_LEVEL_DEFAULT,
+    ISOLATION_LEVEL_READ_COMMITTED, ISOLATION_LEVEL_SERIALIZABLE,
+    connect)
 from canonical.testing.layers import LaunchpadZopelessLayer
 
 class TestIsolation(unittest.TestCase):
@@ -38,7 +37,7 @@ class TestIsolation(unittest.TestCase):
         self.failUnlessEqual(self.getCurrentIsolation(), 'read committed')
 
     def test_default2(self):
-        self.txn.set_isolation_level(DEFAULT_ISOLATION)
+        self.txn.set_isolation_level(ISOLATION_LEVEL_DEFAULT)
         self.failUnlessEqual(self.getCurrentIsolation(), 'read committed')
 
     def test_autocommit(self):
@@ -140,7 +139,5 @@ class TestIsolation(unittest.TestCase):
 
 
 def test_suite():
-    suite = unittest.TestSuite()
-    suite.addTest(unittest.makeSuite(TestIsolation))
-    return suite
+    return unittest.TestLoader().loadTestsFromName(__name__)
 

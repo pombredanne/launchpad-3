@@ -14,7 +14,7 @@ import os
 
 from canonical.config import config
 from canonical.database.sqlbase import (
-    DEFAULT_ISOLATION, ZopelessTransactionManager)
+    ISOLATION_LEVEL_DEFAULT, ZopelessTransactionManager)
 
 
 __all__ = [
@@ -42,7 +42,7 @@ def isZopeless():
 
 
 def initZopeless(debug=False, dbname=None, dbhost=None, dbuser=None,
-                 implicitBegin=True, isolation=DEFAULT_ISOLATION):
+                 implicitBegin=True, isolation=ISOLATION_LEVEL_DEFAULT):
     """Initialize the Zopeless environment."""
     if dbuser is None:
         # Nothing calling initZopeless should be connecting as the
