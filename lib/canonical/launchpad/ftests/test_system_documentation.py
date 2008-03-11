@@ -1,4 +1,4 @@
-# Copyright 2004-2007 Canonical Ltd.  All rights reserved.
+# Copyright 2004-2008 Canonical Ltd.  All rights reserved.
 """
 Test the examples included in the system documentation in
 lib/canonical/launchpad/doc.
@@ -203,6 +203,15 @@ def uploadQueueBugLinkedToQuestionSetUp(test):
     LaunchpadZopelessLayer.commit()
     uploadQueueSetUp(test)
     login(ANONYMOUS)
+
+def translationMessageDestroySetUp(test):
+    """Set up the TranslationMessage.destroySelf() test."""
+    LaunchpadZopelessLayer.switchDbUser('rosettaadmin')
+    setUp(test)
+
+def translationMessageDestroyTearDown(test):
+    """Tear down the TranslationMessage.destroySelf() test."""
+    tearDown(test)
 
 
 # XXX BarryWarsaw 15-Aug-2007: See bug 132784 as a placeholder for improving
@@ -493,6 +502,13 @@ special = {
                 tearDown=tearDown,
                 layer=LaunchpadZopelessLayer
                 ),
+    'externalbugtracker-bug-imports.txt':
+            LayeredDocFileSuite(
+                '../doc/externalbugtracker-bug-imports.txt',
+                setUp=checkwatchesSetUp,
+                tearDown=tearDown,
+                layer=LaunchpadZopelessLayer
+                ),
     'externalbugtracker-bugzilla.txt':
             LayeredDocFileSuite(
                 '../doc/externalbugtracker-bugzilla.txt',
@@ -596,6 +612,18 @@ special = {
             tearDown=tearDown,
             layer=LaunchpadFunctionalLayer,
             ),
+    'message-holds-xmlrpc.txt': LayeredDocFileSuite(
+            '../doc/message-holds-xmlrpc.txt',
+            setUp=mailingListXMLRPCInternalSetUp,
+            tearDown=tearDown,
+            layer=LaunchpadFunctionalLayer
+            ),
+    'message-holds-xmlrpc.txt-external': LayeredDocFileSuite(
+            '../doc/message-holds-xmlrpc.txt',
+            setUp=mailingListXMLRPCExternalSetUp,
+            tearDown=tearDown,
+            layer=LaunchpadFunctionalLayer,
+            ),
     'codeimport-machine.txt': LayeredDocFileSuite(
             '../doc/codeimport-machine.txt',
             setUp=zopelessLaunchpadSecuritySetUp,
@@ -635,10 +663,16 @@ special = {
             ),
     'notification-text-escape.txt': LayeredDocFileSuite(
             '../doc/notification-text-escape.txt',
-	    setUp=test_notifications.setUp,
-	    tearDown=test_notifications.tearDown,
-            stdout_logging=False, layer=None,
-	    ),
+            setUp=test_notifications.setUp,
+            tearDown=test_notifications.tearDown,
+            stdout_logging=False, layer=None
+            ),
+    'translationmessage-destroy.txt': LayeredDocFileSuite(
+            '../doc/translationmessage-destroy.txt',
+            setUp=translationMessageDestroySetUp,
+            tearDown=translationMessageDestroyTearDown,
+            layer=LaunchpadZopelessLayer
+            ),
     }
 
 

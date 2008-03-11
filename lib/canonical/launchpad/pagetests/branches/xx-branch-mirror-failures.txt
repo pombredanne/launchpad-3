@@ -115,10 +115,10 @@ know that they have fixed the problem.
 
 Someone who is a bazaar expert is also able to see the detailed message.
 
-    >>> ddaa_browser = setupBrowser(
-    ...     auth='Basic david.allouche@canonical.com:test')
-    >>> ddaa_browser.open(branch_location)
-    >>> print_browser_tag(ddaa_browser, 'mirror-failure')
+    >>> bazaar_expert_browser = setupBrowser(
+    ...     auth='Basic tim@canonical.com:test')
+    >>> bazaar_expert_browser.open(branch_location)
+    >>> print_browser_tag(bazaar_expert_browser, 'mirror-failure')
     This branch may be out of date, as Launchpad has not been able to
     access between 2007-12-25 and ... ago.
     (Cannot access branch at "example.com".)
