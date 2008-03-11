@@ -16,9 +16,7 @@ IExternalBugTracker.
     >>> from canonical.launchpad.interfaces import (
     ...     BugTrackerType, IExternalBugTracker)
     >>> from canonical.launchpad.webapp.testing import verifyObject
-    >>> from canonical.testing import LaunchpadZopelessLayer
-    >>> txn = LaunchpadZopelessLayer.txn
-    >>> trac = Trac(txn, new_bugtracker(BugTrackerType.TRAC))
+    >>> trac = Trac('http://example.com/')
     >>> verifyObject(IExternalBugTracker, trac)
     True
 
@@ -78,9 +76,7 @@ overrides ExternalBugTracker.urlopen() so that we don't have to rely on a
 working network connection.
 
     >>> from canonical.launchpad.ftests.externalbugtracker import TestTrac
-    >>> trac = TestTrac(
-    ...     txn,
-    ...     new_bugtracker(BugTrackerType.TRAC, base_url='http://test.trac/'))
+    >>> trac = TestTrac(u'http://test.trac/')
     >>> trac.initializeRemoteBugDB([1])
     >>> sorted(trac.bugs.keys())
     [1]
@@ -164,8 +160,10 @@ Collect the Example.com watches:
 And have a Trac instance process them:
 
     >>> from canonical.launchpad.scripts.checkwatches import BugWatchUpdater
+    >>> from canonical.testing import LaunchpadZopelessLayer
+    >>> txn = LaunchpadZopelessLayer.txn
     >>> bug_watch_updater = BugWatchUpdater(txn)
-    >>> trac = TestTrac(txn, example_bug_tracker)
+    >>> trac = TestTrac(example_bug_tracker.baseurl)
     >>> bug_watch_updater.updateBugWatches(trac, example_bug_tracker.watches)
     INFO:...:Updating 1 watches on http://bugs.some.where
 
