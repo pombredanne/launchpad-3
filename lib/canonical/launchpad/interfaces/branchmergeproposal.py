@@ -193,6 +193,8 @@ class IBranchMergeProposal(Interface):
     date_queued = Datetime(
         title=_('Date Queued'), required=False, readonly=True)
 
+    votes = Attribute('The votes cast or expected for this proposal')
+
     def isValidTransition(next_state, user=None):
         """True if it is valid for user update the proposal to next_state."""
 
@@ -315,7 +317,7 @@ class IBranchMergeProposal(Interface):
         source branch since it branched off the target branch.
         """
 
-    def createVote(person):
+    def nominateReviewer(reviewer, registrant):
         """Create a vote for the specified person."""
 
     def deleteProposal():

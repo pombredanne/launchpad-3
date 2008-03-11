@@ -11,7 +11,7 @@ __all__ = [
 from zope.component import getUtility
 from zope.interface import implements
 
-from sqlobject import ForeignKey, IntCol, StringCol
+from sqlobject import ForeignKey, IntCol, StringCol, SQLMultipleJoin
 
 from canonical.database.constants import DEFAULT, UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
@@ -121,6 +121,9 @@ class BranchMergeProposal(SQLBase):
     date_review_requested = UtcDateTimeCol(notNull=False, default=None)
     date_reviewed = UtcDateTimeCol(notNull=False, default=None)
     date_queued = UtcDateTimeCol(notNull=False, default=None)
+
+    votes = SQLMultipleJoin(
+        'CodeReviewVote', joinColumn='branch_merge_proposal')
 
     def isValidTransition(self, next_state, user=None):
         """See `IBranchMergeProposal`."""
@@ -307,9 +310,8 @@ class BranchMergeProposal(SQLBase):
         self.syncUpdate()
         return proposal
 
-    def createVote(self, reviewer):
+    def nominateReviewer(self, reviewer, registrant):
         """See `IBranchMergeProposal`."""
-        registrant = reviewer
         return CodeReviewVote(branch_merge_proposal=self,
                               registrant=registrant,
                               reviewer=reviewer)

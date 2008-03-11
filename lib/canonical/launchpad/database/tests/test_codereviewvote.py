@@ -9,9 +9,12 @@ class TestCodeReviewVote(TestCaseWithFactory):
         """CodeReviewVotes can be created"""
         merge_proposal = self.factory.makeBranchMergeProposal()
         reviewer = self.factory.makePerson()
-        vote = merge_proposal.createVote(reviewer)
+        registrant = self.factory.makePerson()
+        vote = merge_proposal.nominateReviewer(reviewer, registrant)
         self.assertEqual(reviewer, vote.reviewer)
+        self.assertEqual(registrant, vote.registrant)
         self.assertEqual(merge_proposal, vote.branch_merge_proposal)
+        self.assertEqual([vote], list(merge_proposal.votes))
 
 
 def test_suite():

@@ -14,15 +14,15 @@
                        merged_revno date_merged merge_reporter
                        supersedes superseded_by
                        date_created date_review_requested date_reviewed
-                       isPersonValidReviewer isMergable isValidTransition
-                       getUnlandedSourceBranchRevisions" />
+                       votes isPersonValidReviewer isMergable
+                       isValidTransition getUnlandedSourceBranchRevisions" />
     <require
         permission="launchpad.Edit"
         set_attributes="whiteboard merged_revno commit_message"
         attributes="deleteProposal
                     setAsWorkInProgress requestReview approveBranch
                     rejectBranch mergeFailed markAsMerged resubmit
-                    enqueue dequeue moveToFrontOfQueue createVote
+                    enqueue dequeue moveToFrontOfQueue nominateReviewer
                     " />
   </content>
 
