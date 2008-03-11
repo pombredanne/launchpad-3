@@ -118,7 +118,7 @@ class MailingList(SQLBase):
     status = EnumCol(enum=MailingListStatus,
                      default=MailingListStatus.REGISTERED)
 
-    welcome_message_text = StringCol(default=None, dbName='welcome_message')
+    welcome_message = StringCol(default=None)
 
     @property
     def address(self):
@@ -262,7 +262,7 @@ class MailingList(SQLBase):
         self.destroySelf()
 
     def _get_welcome_message(self):
-        return self.welcome_message_text
+        return self.welcome_message
 
     def isUsable(self):
         """See `IMailingList`"""
@@ -287,7 +287,7 @@ class MailingList(SQLBase):
         else:
             raise AssertionError(
                 'Only registered or usable mailing lists may be modified')
-        self.welcome_message_text = text
+        self.welcome_message = text
 
     welcome_message = property(_get_welcome_message, _set_welcome_message)
 
