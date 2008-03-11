@@ -223,12 +223,12 @@ class BugTrackerEditView(LaunchpadEditFormView):
         reasons = []
         celebrities = getUtility(ILaunchpadCelebrities)
 
-        # We go through all of the reasons why we won't delete the bug
-        # tracker, and show errors for all of them. We do this so that
-        # users can discover the logic behind the decision, and give
-        # up, try something else, or seek help as appropriate. Just
-        # showing the first problem, or hiding the delete button
-        # altogether, would stop users from helping themselves.
+        # We go through all of the conditions why the bug tracker
+        # can't be deleted, and record reasons for all of them. We do
+        # this so that users can discover the logic behind the
+        # decision, and try something else, seek help, or give up as
+        # appropriate. Just showing the first problem would stop users
+        # from being able to help themselves.
 
         # Check that no products or projects use this bugtracker.
         pillars = (
@@ -264,7 +264,7 @@ class BugTrackerEditView(LaunchpadEditFormView):
             for name in ILaunchpadCelebrities.names())
         if self.context in celebrities_set:
             reasons.append(
-                'This bug tracker is specially protected from deletion.')
+                'This bug tracker is protected from deletion.')
 
         return reasons
 
