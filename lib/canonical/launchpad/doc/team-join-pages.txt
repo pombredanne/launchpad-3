@@ -23,7 +23,6 @@ Tests for the team '+join' page's raw view objects.
     >>> from canonical.launchpad.ftests.mailinglists_helper import (
     ...	     new_list_for_team)
     >>> from canonical.launchpad.interfaces import TeamSubscriptionPolicy
-    >>> from canonical.database.sqlbase import flush_database_updates
     >>> def make_team(teamname, subscription_policy):
     ...	    creator = personset.getByName('no-priv')
     ...     team = personset.newTeam(creator, teamname, teamname,
