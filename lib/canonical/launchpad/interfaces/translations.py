@@ -12,7 +12,7 @@ class TranslationConstants:
     PLURAL_FORM = 1
 
     # Largest number of plural forms any language can have.
-    MAX_PLURAL_FORMS = 4
+    MAX_PLURAL_FORMS = 6
 
     SPACE_CHAR = '<samp> </samp>'
     NEWLINE_CHAR = '<img alt="" src="/@@/translation-newline" /><br/>\n'

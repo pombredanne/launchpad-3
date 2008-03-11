@@ -90,7 +90,7 @@ class BugTaskEntry(Entry):
     decorates(IBugTaskEntry)
     schema = IBugTaskEntry
 
-    parent_collection_name = 'bugtasks'
+    _parent_collection_path = ['bugtasks']
 
     @property
     def status_explanation(self):

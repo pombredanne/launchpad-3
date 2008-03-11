@@ -336,7 +336,7 @@ But the imported one is unset using an 'empty' TranslationMessage.
 An empty TranslationMessage has all the translations set to None.
 
     >>> print imported.all_msgstrs
-    [None, None, None, None]
+    [None, None, None, None, None, None]
 
 The same with the fuzzy flags.
 

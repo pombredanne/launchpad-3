@@ -117,7 +117,7 @@ of the externalbugtracker module to ensure that it raises this error.
     >>> real_get_external_bugtracker = (
     ...     externalbugtracker.get_external_bugtracker)
 
-    >>> def broken_get_external_bugtracker(txn, bugtracker):
+    >>> def broken_get_external_bugtracker(bugtracker):
     ...     bugtrackertype = bugtracker.bugtrackertype
     ...     raise externalbugtracker.UnknownBugTrackerTypeError(
     ...         bugtrackertype.name, bugtracker.name)
