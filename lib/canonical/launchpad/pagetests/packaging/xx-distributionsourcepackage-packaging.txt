@@ -14,10 +14,10 @@ identical are not repeated.
  
     >>> content = anon_browser.contents
     >>> print extract_text(find_tag_by_id(content, 'packaging'))
-    Ubuntu version                                           Upstream version
-    hoary   development   main   release   1.0.9a-4ubuntu1   None defined
-    warty   current       main   release   1.0.9a-4          alsa-utils Series: trunk
-                          main             1.0.8-1ubuntu1
+    Ubuntu version                                      Upstream version
+    hoary  development  main  release  1.0.9a-4ubuntu1  None defined
+    warty  current      main  release  1.0.9a-4         alsa-utils Series: trunk
+                        main           1.0.8-1ubuntu1
 
 
 === Delete Link Button ===
