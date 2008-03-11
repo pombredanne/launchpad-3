@@ -245,8 +245,7 @@ class TestCopyPackage(unittest.TestCase):
         """Check the copy operation from PPA to PRIMARY Archive.
 
         That's the preliminary workflow for 'syncing' sources from PPA to
-        the ubuntu PRIMARY archive. Note that copying binaries it not allowed,
-        see testBinaryCopyFromPpaToPrimaryIsDenied.
+        the ubuntu PRIMARY archive.
         """
         copy_helper = self.getCopier(
             sourcename='iceweasel', from_ppa='cprov',
@@ -420,22 +419,6 @@ class TestCopyPackage(unittest.TestCase):
             SoyuzScriptError,
             "Cannot operate with destination PARTNER and PPA simultaneously.",
             copy_helper.mainTask)
-
-    def testBinaryCopyFromPpaToPrimaryIsDenied(self):
-        """Check if copying binaries from PPA to PRIMARY archive is denied.
-
-        SoyuzScriptError is raised if the user tries to copy binaries from
-        a PPA to PRIMARY archive.
-        """
-        copy_helper = self.getCopier(
-            sourcename='iceweasel', from_ppa='cprov',
-            from_suite='warty', to_suite='hoary')
-
-        self.assertRaisesWithContent(
-            SoyuzScriptError,
-            "Cannot copy binaries from PPA to PRIMARY archive.",
-            copy_helper.mainTask)
-
 
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)
