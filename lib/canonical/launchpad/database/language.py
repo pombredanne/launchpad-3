@@ -19,7 +19,7 @@ from canonical.launchpad.interfaces import (
 class Language(SQLBase):
     implements(ILanguage)
 
-    _table = 'language'
+    _table = 'Language'
 
     code = StringCol(
         dbName='code', notNull=True, unique=True, alternateID=True)
