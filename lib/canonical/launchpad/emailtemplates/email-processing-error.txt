@@ -10,3 +10,4 @@ Error message:
 -- 
 For more information about using Malone by e-mail, see
 https://help.launchpad.net/BugTrackerEmailInterface
+or send an email to help@launchpad.net

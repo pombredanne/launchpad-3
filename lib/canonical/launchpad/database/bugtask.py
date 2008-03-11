@@ -41,6 +41,7 @@ from canonical.lazr.enum import DBItem
 
 from canonical.launchpad.searchbuilder import all, any, NULL, not_equals
 from canonical.launchpad.database.pillar import pillar_sort_key
+from canonical.launchpad.validators.person import public_person_validator
 from canonical.launchpad.interfaces import (
     BUG_CONTACT_BUGTASK_STATUSES,
     BugNominationStatus,
@@ -365,6 +366,7 @@ class BugTask(SQLBase, BugTaskMixin):
         default=BugTaskImportance.UNDECIDED)
     assignee = ForeignKey(
         dbName='assignee', foreignKey='Person',
+        validator=public_person_validator,
         notNull=False, default=None)
     bugwatch = ForeignKey(dbName='bugwatch', foreignKey='BugWatch',
         notNull=False, default=None)
@@ -374,7 +376,9 @@ class BugTask(SQLBase, BugTaskMixin):
     date_inprogress = UtcDateTimeCol(notNull=False, default=None)
     date_closed = UtcDateTimeCol(notNull=False, default=None)
     date_incomplete = UtcDateTimeCol(notNull=False, default=None)
-    owner = ForeignKey(foreignKey='Person', dbName='owner', notNull=True)
+    owner = ForeignKey(
+        dbName='owner', foreignKey='Person',
+        validator=public_person_validator, notNull=True)
     # The targetnamecache is a value that is only supposed to be set
     # when a bugtask is created/modified or by the
     # update-bugtask-targetnamecaches cronscript. For this reason it's
@@ -1261,6 +1265,15 @@ class BugTaskSet:
                 extra_clauses.append(tags_clause)
                 clauseTables.append('BugTag')
 
+        # XXX Tom Berger 2008-02-14:
+        # We use StructuralSubscription to determine
+        # the bug contact relation for distribution source
+        # packages, following a conversion to use this object.
+        # We know that the behaviour remains the same, but we
+        # should change the terminology, or re-instate
+        # PackageBugContact, since the use of this relation here
+        # is not for subscription to notifications.
+        # See bug #191809
         if params.bug_contact:
             bug_contact_clause = """BugTask.id IN (
                 SELECT BugTask.id FROM BugTask, Product
@@ -1268,11 +1281,11 @@ class BugTaskSet:
                     AND Product.bugcontact = %(bug_contact)s
                 UNION ALL
                 SELECT BugTask.id
-                FROM BugTask, PackageBugContact
-                WHERE BugTask.distribution = PackageBugContact.distribution
+                FROM BugTask, StructuralSubscription
+                WHERE BugTask.distribution = StructuralSubscription.distribution
                     AND BugTask.sourcepackagename =
-                        PackageBugContact.sourcepackagename
-                    AND PackageBugContact.bugcontact = %(bug_contact)s
+                        StructuralSubscription.sourcepackagename
+                    AND StructuralSubscription.subscriber = %(bug_contact)s
                 UNION ALL
                 SELECT BugTask.id FROM BugTask, Distribution
                 WHERE BugTask.distribution = Distribution.id
@@ -1626,7 +1639,7 @@ class BugTaskSet:
                 bug_privacy_filter = "AND " + bug_privacy_filter
         unconfirmed_bug_join = self._getUnconfirmedBugJoin()
         (target_join, target_clause) = self._getTargetJoinAndClause(target)
-        all_bugtasks = BugTask.select("""
+        expirable_bugtasks = BugTask.select("""
             BugTask.bug = Bug.id
             AND BugTask.id IN (
                 SELECT BugTask.id
@@ -1648,13 +1661,7 @@ class BugTaskSet:
             clauseTables=['Bug'],
             orderBy='Bug.date_last_updated')
 
-        bugtasks = all_bugtasks
-
-        def date_last_updated_key(bugtask):
-            """Return the date the bugtask was last updated."""
-            return bugtask.bug.date_last_updated
-
-        return sorted(bugtasks, key=date_last_updated_key)
+        return expirable_bugtasks
 
     def _getUnconfirmedBugJoin(self):
         """Return the SQL to join BugTask to unconfirmed bugs.
@@ -1851,5 +1858,5 @@ class BugTaskSet:
 
     def dangerousGetAllTasks(self):
         """DO NOT USE THIS METHOD. For details, see `IBugTaskSet`"""
-        return BugTask.select()
+        return BugTask.select(orderBy='id')
 

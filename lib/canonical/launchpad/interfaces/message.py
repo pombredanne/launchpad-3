@@ -4,23 +4,27 @@
 __metaclass__ = type
 
 __all__ = [
-    'IMessage',
-    'IMessageSet',
-    'IMessageChunk',
-    'UnknownSender',
-    'MissingSubject',
     'DuplicateMessageId',
+    'IMessage',
+    'IMessageChunk',
+    'IMessageSet',
     'InvalidEmailMessage',
+    'MissingSubject',
+    'UnknownSender',
     ]
 
 from zope.interface import Interface, Attribute
-from zope.schema import Datetime, Int, Text, TextLine, Bool
+from zope.schema import Datetime, Int, Text, TextLine
 from canonical.launchpad import _
 from canonical.launchpad.interfaces import NotFoundError
 
+
 class IMessage(Interface):
-    """A message. This is like an email (RFC822) message, though it could be
-    created through the web as well."""
+    """A message.
+
+    This is like an email (RFC822) message, though it could be created through
+    the web as well.
+    """
 
     id = Int(
             title=_('ID'), required=True, readonly=True,
@@ -74,7 +78,8 @@ class IMessageSet(Interface):
         If no such messages exist, raise NotFoundError.
         """
 
-    def fromText(subject, content, owner=None, datecreated=None):
+    def fromText(subject, content, owner=None, datecreated=None,
+        rfc822msgid=None):
         """Construct a Message from a text string and return it."""
 
     def fromEmail(email_message, owner=None, filealias=None,

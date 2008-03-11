@@ -40,7 +40,8 @@ from zope.schema import Bool, Int, Choice, Text, TextLine, Datetime
 from canonical.config import config
 
 from canonical.launchpad import _
-from canonical.launchpad.fields import Title, Summary, URIField, Whiteboard
+from canonical.launchpad.fields import (
+    PublicPersonChoice, Summary, Title, URIField, Whiteboard)
 from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.interfaces import IHasOwner
 from canonical.launchpad.webapp.interfaces import ITableBatchNavigator
@@ -341,16 +342,16 @@ class IBranch(IHasOwner):
 
     # People attributes
     registrant = Attribute("The user that registered the branch.")
-    owner = Choice(
+    owner = PublicPersonChoice(
         title=_('Owner'), required=True,
         vocabulary='PersonActiveMembershipPlusSelf',
         description=_("Either yourself or a team you are a member of. "
                       "This controls who can modify the branch."))
-    author = Choice(
+    author = PublicPersonChoice(
         title=_('Author'), required=False, vocabulary='ValidPersonOrTeam',
         description=_("The author of the branch. Leave blank if the author "
                       "does not have a Launchpad account."))
-    reviewer = Choice(
+    reviewer = PublicPersonChoice(
         title=_('Reviewer'), required=False, vocabulary='ValidPersonOrTeam',
         description=_("The reviewer of a branch is the person or team that "
                       "is responsible for authorising code to be merged."))
@@ -462,6 +463,16 @@ class IBranch(IHasOwner):
     date_last_modified = Datetime(
         title=_('Date Last Modified'), required=True, readonly=False)
 
+    def destroySelf(break_references=False):
+        """Delete the specified branch.
+
+        BranchRevisions associated with this branch will also be deleted.
+        :param break_references: If supplied, break any references to this
+            branch by deleting items with mandatory references and
+            NULLing other references.
+        :raise: CannotDeleteBranch if the branch cannot be deleted.
+        """
+
     def latest_revisions(quantity=10):
         """A specific number of the latest revisions in that branch."""
 
@@ -495,11 +506,17 @@ class IBranch(IHasOwner):
             merge request.
         """
 
+    def getMergeQueue():
+        """The proposals that are QUEUED to land on this branch."""
+
     def revisions_since(timestamp):
         """Revisions in the history that are more recent than timestamp."""
 
     code_is_browseable = Attribute(
         "Is the code in this branch accessable through codebrowse?")
+
+    # Don't use Object-- that would cause an import loop with ICodeImport
+    code_import = Attribute("The associated CodeImport, if any.")
 
     def getBzrUploadURL(person=None):
         """Return the URL for this person to push to the branch.
@@ -526,6 +543,15 @@ class IBranch(IHasOwner):
         has no subscribers.
         """
 
+    def deletionRequirements():
+        """Determine what is required to delete this branch.
+
+        :return: a dict of {object: (operation, reason)}, where object is the
+            object that must be deleted or altered, operation is either
+            "delete" or "alter", and reason is a string explaining why the
+            object needs to be touched.
+        """
+
     def associatedProductSeries():
         """Return the product series that this branch is associated with.
 
@@ -548,6 +574,14 @@ class IBranch(IHasOwner):
 
     def unsubscribe(person):
         """Remove the person's subscription to this branch."""
+
+    def getSubscriptionsByLevel(notification_levels):
+        """Return the subscriptions that are at the given notification levels.
+
+        :param notification_levels: An iterable of
+            `BranchSubscriptionNotificationLevel`s
+        :return: An SQLObject query result.
+        """
 
     def getBranchRevision(sequence):
         """Get the `BranchRevision` for the given sequence number.
@@ -669,9 +703,6 @@ class IBranchSet(Interface):
         be a team, except for the special case of the ~vcs-imports celebrity.
         """
 
-    def delete(branch):
-        """Delete the specified branch."""
-
     def getByUniqueName(unique_name, default=None):
         """Find a branch by its ~owner/product/name unique name.
 
@@ -774,12 +805,6 @@ class IBranchSet(Interface):
         :type visible_by_user: `IPerson` or None
         """
 
-    def getLastCommitForBranches(branches):
-        """Return a map of branch to last commit time."""
-
-    def getBranchesForOwners(people):
-        """Return the branches that are owned by the people specified."""
-
     def getBranchesForPerson(
         person, lifecycle_statuses=DEFAULT_BRANCH_STATUS_IN_LISTING,
         visible_by_user=None, sort_by=None, hide_dormant=False):
@@ -794,9 +819,9 @@ class IBranchSet(Interface):
         updating ui attributes of the branch, committing code to the
         branch.
         Branches of most interest to a person are their subscribed
-        branches, and the branches that they have registered and authored.
+        branches, and the branches that they have registered or own.
 
-        All branches that are either registered or authored by person
+        All branches that are either registered or owned by person
         are shown, as well as their subscribed branches.
 
         If lifecycle_statuses evaluates to False then branches
@@ -820,12 +845,12 @@ class IBranchSet(Interface):
         :type hide_dormant: Boolean.
         """
 
-    def getBranchesAuthoredByPerson(
+    def getBranchesOwnedByPerson(
         person, lifecycle_statuses=DEFAULT_BRANCH_STATUS_IN_LISTING,
         visible_by_user=None, sort_by=None, hide_dormant=False):
-        """Branches authored by person with appropriate lifecycle.
+        """Branches owned by person with appropriate lifecycle.
 
-        Only branches that are authored by the person are returned.
+        Only branches that are owned by the person are returned.
 
         If lifecycle_statuses evaluates to False then branches
         of any lifecycle_status are returned, otherwise only branches
@@ -853,8 +878,7 @@ class IBranchSet(Interface):
         visible_by_user=None, sort_by=None, hide_dormant=False):
         """Branches registered by person with appropriate lifecycle.
 
-        Only branches registered by the person but *NOT* authored by
-        the person are returned.
+        Only branches registered by the person are returned.
 
         If lifecycle_statuses evaluates to False then branches
         of any lifecycle_status are returned, otherwise only branches

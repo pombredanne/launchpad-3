@@ -291,15 +291,15 @@ list (since the archiver will display an informative message to that effect).
     >>> logout()
 
     >>> browser.open('http://launchpad.dev/~landscape-developers')
-    >>> print extract_text(
+    >>> print extract_link_from_tag(
     ...     find_tag_by_id(browser.contents, 'mailing-list-archive'))
     http://lists.launchpad.dev/landscape-developers
 
 The archive link is clickable, though we won't click it because Mailman isn't
 running.
 
-    >>> browser.getLink('http://lists.launchpad.dev/landscape-developers')
-    <Link text='http://lists.launchpad.dev/landscape-developers'
+    >>> browser.getLink('Mailing list archive')
+    <Link text='Mailing list archive'
           url='http://lists.launchpad.dev/landscape-developers'>
 
 When the mailing list is constructed and made active, it can be used as
@@ -503,7 +503,7 @@ A deactivated mailing list still has a link to its archive, because archives
 are never deleted.
 
     >>> browser.open('http://launchpad.dev/~landscape-developers')
-    >>> print extract_text(
+    >>> print extract_link_from_tag(
     ...     find_tag_by_id(browser.contents, 'mailing-list-archive'))
     http://lists.launchpad.dev/landscape-developers
 
@@ -539,7 +539,7 @@ This does not restore the mailing list as the team's contact method:
 Of course, the reactivated list still has a link to its archive.
 
     >>> browser.open('http://launchpad.dev/~landscape-developers')
-    >>> print extract_text(
+    >>> print extract_link_from_tag(
     ...     find_tag_by_id(browser.contents, 'mailing-list-archive'))
     http://lists.launchpad.dev/landscape-developers
 

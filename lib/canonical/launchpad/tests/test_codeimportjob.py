@@ -8,24 +8,30 @@ __all__ = ['NewEvents', 'test_suite']
 
 from datetime import datetime
 from pytz import UTC
+import StringIO
+import transaction
 import unittest
+
+from sqlobject.sqlbuilder import SQLConstant
 
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.database.constants import UTC_NOW
-from canonical.database.sqlbase import sqlvalues
+from canonical.database.sqlbase import flush_database_updates, sqlvalues
 from canonical.launchpad.database import (
     CodeImportMachine, CodeImportResult)
 
+from canonical.launchpad.database import CodeImportJob
 from canonical.launchpad.interfaces import (
-    CodeImportJobState, CodeImportResultStatus, CodeImportEventType,
+    CodeImportEventType, CodeImportJobState, CodeImportResultStatus,
     CodeImportReviewStatus, ICodeImportEventSet, ICodeImportJobSet,
-    ICodeImportSet, ICodeImportJobWorkflow)
-from canonical.launchpad.ftests import login
+    ICodeImportJobWorkflow, ICodeImportResult, ICodeImportResultSet,
+    ICodeImportSet, ILibraryFileAliasSet)
+from canonical.launchpad.ftests import login, sync
 from canonical.launchpad.testing import LaunchpadObjectFactory
+from canonical.librarian.interfaces import ILibrarianClient
 from canonical.testing import LaunchpadFunctionalLayer
-
 
 def login_for_code_imports():
     """Login as a member of the vcs-imports team.
@@ -56,6 +62,136 @@ class TestCodeImportJobSet(unittest.TestCase):
         # with the specified id.
         no_job = getUtility(ICodeImportJobSet).getById(-1)
         self.assertEqual(no_job, None)
+
+
+class TestCodeImportJobSetGetJobForMachine(unittest.TestCase):
+    """Tests for the CodeImportJobSet.getJobForMachine method.
+
+    For brevity, these test cases describe jobs using specs: a 2- or 3-tuple:
+
+       (<job state>, <date_due time delta>, <requesting user, if present>).
+
+    The time delta is measured in seconds relative to the present, so using a
+    value of -1 creates a job with a date_due of 1 second ago.  The instance
+    method makeJob() creates actual CodeImportJob objects from these specs.
+    """
+
+    layer = LaunchpadFunctionalLayer
+
+    def setUp(self):
+        # Login so we can access the code import system, delete all jobs in
+        # the sample data and set up some objects.
+        login_for_code_imports()
+        for job in CodeImportJob.select():
+            job.destroySelf()
+        self.factory = LaunchpadObjectFactory()
+        self.machine = self.factory.makeCodeImportMachine()
+        self.machine.setOnline()
+
+    def makeJob(self, state, date_due_delta, requesting_user=None):
+        """Create a CodeImportJob object from a spec."""
+        code_import = self.factory.makeCodeImport()
+        job = self.factory.makeCodeImportJob(code_import)
+        if state == CodeImportJobState.RUNNING:
+            getUtility(ICodeImportJobWorkflow).startJob(job, self.machine)
+        naked_job = removeSecurityProxy(job)
+        naked_job.date_due = SQLConstant(
+            "CURRENT_TIMESTAMP AT TIME ZONE 'UTC' + '%d seconds'"
+            % date_due_delta)
+        naked_job.requesting_user = requesting_user
+        return job
+
+    def assertJobIsSelected(self, desired_job):
+        """Assert that the expected job is chosen by getJobForMachine."""
+        flush_database_updates()
+        observed_job = getUtility(ICodeImportJobSet).getJobForMachine(
+            self.machine)
+        self.assert_(observed_job is not None, "No job was selected.")
+        self.assertEqual(desired_job, observed_job,
+                         "Expected job not selected.")
+
+    def assertNoJobSelected(self):
+        """Assert that no job is selected."""
+        flush_database_updates()
+        observed_job = getUtility(ICodeImportJobSet).getJobForMachine(
+            self.machine)
+        self.assert_(observed_job is None, "Job unexpectedly selected.")
+
+    def test_nothingSelectedIfNothingCreated(self):
+        # There are no due jobs pending if we don't create any (this
+        # is mostly a test of setUp() above).
+        self.assertNoJobSelected()
+
+    def test_simple(self):
+        # The simplest case: there is one job, which is due.
+        self.assertJobIsSelected(
+            self.makeJob(CodeImportJobState.PENDING, -1))
+
+    def test_nothingDue(self):
+        # When there is a PENDING job but it is due in the future, no
+        # job should be returned.
+        self.makeJob(CodeImportJobState.PENDING, +1)
+        self.assertNoJobSelected()
+
+    def test_ignoreNonPendingJobs(self):
+        # Only PENDING jobs are returned -- it doesn't make sense to allocate
+        # a job that is already RUNNING to a machine.
+        self.makeJob(CodeImportJobState.RUNNING, -1)
+        self.assertNoJobSelected()
+
+    def test_mostOverdueJobsFirst(self):
+        # The job that was due longest ago should be selected, then the next
+        # longest, etc.
+        five_seconds_ago = self.makeJob(CodeImportJobState.PENDING, -5)
+        two_seconds_ago = self.makeJob(CodeImportJobState.PENDING, -2)
+        ten_seconds_ago = self.makeJob(CodeImportJobState.PENDING, -10)
+        self.assertJobIsSelected(ten_seconds_ago)
+        self.assertJobIsSelected(five_seconds_ago)
+        self.assertJobIsSelected(two_seconds_ago)
+
+    def test_requestedJobWins(self):
+        # A job that is requested by a user is selected over ones that
+        # are not, even over jobs that are more overdue.
+        person = self.factory.makePerson()
+        self.makeJob(CodeImportJobState.PENDING, -5)
+        self.makeJob(CodeImportJobState.PENDING, -2)
+        self.assertJobIsSelected(
+            self.makeJob(CodeImportJobState.PENDING, -1, person))
+
+    def test_mostOverdueRequestedJob(self):
+        # When multiple jobs are requested by users, we go back to the
+        # "most overdue wins" behaviour.
+        person_a = self.factory.makePerson()
+        person_b = self.factory.makePerson()
+        person_c = self.factory.makePerson()
+        five_seconds_ago = self.makeJob(
+            CodeImportJobState.PENDING, -5, person_b)
+        two_seconds_ago = self.makeJob(
+            CodeImportJobState.PENDING, -2, person_a)
+        ten_seconds_ago = self.makeJob(
+            CodeImportJobState.PENDING, -10, person_c)
+        self.assertJobIsSelected(ten_seconds_ago)
+        self.assertJobIsSelected(five_seconds_ago)
+        self.assertJobIsSelected(two_seconds_ago)
+
+    def test_independentOfCreationOrder(self):
+        # The order the jobs are created doesn't affect the outcome (the way
+        # the other tests are written, an implementation that returned the
+        # most recently created due job would pass).
+        ten_seconds_ago = self.makeJob(CodeImportJobState.PENDING, -10)
+        five_seconds_ago = self.makeJob(CodeImportJobState.PENDING, -5)
+        two_seconds_ago = self.makeJob(CodeImportJobState.PENDING, -2)
+        self.assertJobIsSelected(ten_seconds_ago)
+        self.assertJobIsSelected(five_seconds_ago)
+        self.assertJobIsSelected(two_seconds_ago)
+
+    def test_notReturnedTwice(self):
+        # Once a job has been selected by getJobForMachine, it should not be
+        # selected again (NB: without the flush_database_updates() chicken
+        # bones in the helper methods, this test would fail).
+        self.assertJobIsSelected(
+            self.makeJob(CodeImportJobState.PENDING, -1))
+        self.assertNoJobSelected()
 
 
 class AssertFailureMixin:
@@ -465,6 +601,220 @@ class TestCodeImportJobWorkflowStartJob(unittest.TestCase,
             "The machine %s is OFFLINE." % machine.hostname,
             getUtility(ICodeImportJobWorkflow).startJob,
             job, machine)
+
+class TestCodeImportJobWorkflowUpdateHeartbeat(unittest.TestCase,
+        AssertFailureMixin, AssertSqlDateMixin, AssertEventMixin):
+    """Unit tests for CodeImportJobWorkflow.updateHeartbeat."""
+
+    layer = LaunchpadFunctionalLayer
+
+    def setUp(self):
+        login_for_code_imports()
+        self.factory = LaunchpadObjectFactory()
+
+    def test_wrongJobState(self):
+        # Calling updateHeartbeat with a job whose state is not RUNNING is an
+        # error.
+        machine = self.factory.makeCodeImportMachine()
+        code_import = self.factory.makeCodeImport()
+        job = self.factory.makeCodeImportJob(code_import)
+        self.assertFailure(
+            "The CodeImportJob associated with %s is "
+            "PENDING." % code_import.branch.unique_name,
+            getUtility(ICodeImportJobWorkflow).updateHeartbeat,
+            job, u'')
+
+
+class TestCodeImportJobWorkflowFinishJob(unittest.TestCase,
+        AssertFailureMixin, AssertSqlDateMixin, AssertEventMixin):
+    """Unit tests for CodeImportJobWorkflow.finishJob."""
+
+    layer = LaunchpadFunctionalLayer
+
+    def setUp(self):
+        login_for_code_imports()
+        self.factory = LaunchpadObjectFactory()
+        self.machine = self.factory.makeCodeImportMachine()
+        self.machine.setOnline()
+
+    def makeRunningJob(self):
+        """Make and return a CodeImportJob object with state==RUNNING.
+
+        This is suitable for passing into finishJob().
+        """
+        code_import = self.factory.makeCodeImport()
+        job = self.factory.makeCodeImportJob(code_import)
+        getUtility(ICodeImportJobWorkflow).startJob(job, self.machine)
+        sync(job)
+        return job
+
+    # Precondition tests. Only one of these.
+
+    def test_wrongJobState(self):
+        # Calling finishJob with a job whose state is not RUNNING is an error.
+        machine = self.factory.makeCodeImportMachine()
+        code_import = self.factory.makeCodeImport()
+        job = self.factory.makeCodeImportJob(code_import)
+        self.assertFailure(
+            "The CodeImportJob associated with %s is "
+            "PENDING." % code_import.branch.unique_name,
+            getUtility(ICodeImportJobWorkflow).finishJob,
+            job, CodeImportResultStatus.SUCCESS, None)
+
+    # Postcondition tests. Several of these -- finishJob is quite a complex
+    # function!
+
+    def test_deletesPassedJob(self):
+        # finishJob() deletes the job it is passed.
+        running_job = self.makeRunningJob()
+        running_job_id = running_job.id
+        getUtility(ICodeImportJobWorkflow).finishJob(
+            running_job, CodeImportResultStatus.SUCCESS, None)
+        self.assertEqual(
+            None, getUtility(ICodeImportJobSet).getById(running_job_id))
+
+    def test_createsNewJob(self):
+        # finishJob() creates a new CodeImportJob for the given CodeImport,
+        # scheduled appropriately far in the future.
+        running_job = self.makeRunningJob()
+        running_job_date_due = running_job.date_due
+        code_import = running_job.code_import
+        getUtility(ICodeImportJobWorkflow).finishJob(
+            running_job, CodeImportResultStatus.SUCCESS, None)
+        new_job = code_import.import_job
+        self.assert_(new_job is not None)
+        self.assertEqual(new_job.state, CodeImportJobState.PENDING)
+        self.assertEqual(new_job.machine, None)
+        self.assertEqual(
+            new_job.date_due - running_job.date_due,
+            code_import.effective_update_interval)
+
+    def test_createsResultObject(self):
+        # finishJob() creates a CodeImportResult object for the given import.
+        running_job = self.makeRunningJob()
+        running_job_date_due = running_job.date_due
+        code_import = running_job.code_import
+        result_set = getUtility(ICodeImportResultSet)
+        # Before calling finishJob() there are no CodeImportResults for the
+        # given import...
+        results = list(result_set.getResultsForImport(code_import))
+        self.assertEqual(len(results), 0)
+        getUtility(ICodeImportJobWorkflow).finishJob(
+            running_job, CodeImportResultStatus.SUCCESS, None)
+        # ... and after, there is exactly one.
+        results = list(result_set.getResultsForImport(code_import))
+        self.assertEqual(len(results), 1)
+
+    def getResultForJob(self, job, status=CodeImportResultStatus.SUCCESS,
+                        log_alias=None):
+        """Call finishJob() on job and return the created result."""
+        code_import = job.code_import
+        getUtility(ICodeImportJobWorkflow).finishJob(
+            job, status, log_alias)
+        [result] = getUtility(ICodeImportResultSet).getResultsForImport(
+            code_import)
+        return result
+
+    def assertFinishJobPassesThroughJobField(self, from_field, to_field,
+                                             value):
+        """Assert that an attribute is carried from the job to the result.
+
+        This helper creates a job, sets the `from_field` attribute on
+        it to value, and then checks that this gets copied to the
+        `to_field` attribute on the result that gets created when
+        finishJob() is called on the job.
+        """
+        job = self.makeRunningJob()
+        # There are ways of setting all the fields through other workflow
+        # methods -- e.g. calling requestJob to set requesting_user -- but
+        # using removeSecurityProxy and forcing here is expedient.
+        setattr(removeSecurityProxy(job), from_field, value)
+        result = self.getResultForJob(job)
+        self.assertEqual(
+            value, getattr(result, to_field),
+            "Value %r in job field %r was not passed through to result field"
+            " %r." % (value, from_field, to_field))
+
+    def test_resultObjectFields(self):
+        # The CodeImportResult object that finishJob creates contains all the
+        # relevant details from the job object.
+
+        unchecked_result_fields = set(ICodeImportResult)
+
+        # We don't care about 'id'!
+        unchecked_result_fields.remove('id')
+        # Some result fields are tested in other tests:
+        unchecked_result_fields.difference_update(['log_file', 'status'])
+
+        code_import = self.factory.makeCodeImport()
+        # XXX MichaelHudson 2008-02026, bug=193876: When the referenced bug is
+        # fixed, we will be able to do this much more nicely than this.
+        removeSecurityProxy(code_import).review_status = \
+            CodeImportReviewStatus.REVIEWED
+        self.assertFinishJobPassesThroughJobField(
+            'code_import', 'code_import', code_import)
+        unchecked_result_fields.remove('code_import')
+        self.assertFinishJobPassesThroughJobField(
+            'machine', 'machine', self.factory.makeCodeImportMachine())
+        unchecked_result_fields.remove('machine')
+        self.assertFinishJobPassesThroughJobField(
+            'requesting_user', 'requesting_user', self.factory.makePerson())
+        unchecked_result_fields.remove('requesting_user')
+        self.assertFinishJobPassesThroughJobField(
+            'logtail', 'log_excerpt', "some pretend log output")
+        unchecked_result_fields.remove('log_excerpt')
+        self.assertFinishJobPassesThroughJobField(
+            'date_started', 'date_job_started',
+            datetime(2008, 1, 1, tzinfo=UTC))
+        unchecked_result_fields.remove('date_job_started')
+
+        result = self.getResultForJob(self.makeRunningJob())
+        self.assertSqlAttributeEqualsDate(result, 'date_created', UTC_NOW)
+        # date_job_finished is punned with date_created
+        unchecked_result_fields.difference_update(
+            ['date_created', 'date_job_finished'])
+
+        # By now we should have checked all the result fields.
+        self.assertEqual(
+            set(), unchecked_result_fields,
+            "These result field not checked %r!" % unchecked_result_fields)
+
+    def test_resultStatus(self):
+        # finishJob() sets the status appropriately on the result object.
+        for status in CodeImportResultStatus.items:
+            job = self.makeRunningJob()
+            result = self.getResultForJob(job, status)
+            self.assertEqual(result.status, status)
+
+    def test_resultLogFile(self):
+        # If you pass a link to a file in the librarian to finishJob(), it
+        # gets set on the result object.
+        log_data = 'several\nlines\nof\nlog data'
+        log_excerpt = log_data.splitlines()[-1]
+        log_alias_id = getUtility(ILibrarianClient).addFile(
+           'import_log.txt', len(log_data),
+           StringIO.StringIO(log_data), 'text/plain')
+        transaction.commit()
+        log_alias = getUtility(ILibraryFileAliasSet)[log_alias_id]
+
+        result = self.getResultForJob(
+            self.makeRunningJob(), log_alias=log_alias)
+
+        self.assertEqual(
+            result.log_file.read(), log_data)
+
+    def test_createsFinishCodeImportEvent(self):
+        # finishJob() creates a FINISH CodeImportEvent.
+        running_job = self.makeRunningJob()
+        code_import = running_job.code_import
+        machine = running_job.machine
+        new_events = NewEvents()
+        getUtility(ICodeImportJobWorkflow).finishJob(
+            running_job, CodeImportResultStatus.SUCCESS, None)
+        [finish_event] = list(new_events)
+        self.assertEventLike(
+            finish_event, CodeImportEventType.FINISH,
+            code_import, machine)
 
 
 def test_suite():

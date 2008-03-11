@@ -70,6 +70,17 @@ class ContextDisplayName(SubstitutionHelper):
         return self.text % context.displayname
 
 
+class FilteredTranslationsTitle(SubstitutionHelper):
+    """Return the formatted string with context's title and view's person."""
+    def __call__(self, context, view):
+        if view.person is not None:
+            person = view.person.displayname
+        else:
+            person = 'unknown'
+        return self.text % {'title' : context.title,
+                            'person' : person }
+
+
 class ContextId(SubstitutionHelper):
     """Return the formatted string with context's id."""
     def __call__(self, context, view):
@@ -114,11 +125,13 @@ archive_activate = 'Activate Personal Package Archive'
 
 archive_builds = ContextTitle('Builds for %s')
 
+archive_delete_packages = ContextTitle('Delete packages from %s')
+
 archive_edit = ContextTitle('Edit %s')
 
-archive_index = ContextTitle('%s')
+archive_edit_dependencies = ContextTitle('Edit dependencies for %s')
 
-archive_delete_packages = ContextTitle('Delete packages from %s')
+archive_index = ContextTitle('%s')
 
 bazaar_all_branches = 'All branches in the Launchpad Bazaar'
 
@@ -166,6 +179,9 @@ def branch_index(context, view):
 branch_link_to_bug = ContextDisplayName(smartquote(
     'Link branch "%s" to a bug report'))
 
+branch_link_to_spec = ContextDisplayName(smartquote(
+    'Link branch "%s" to a blueprint'))
+
 def branch_listing_cross_product(context, view):
     """Return the view's page_title."""
     return view.page_title
@@ -180,6 +196,8 @@ branchmergeproposal_edit = 'Edit proposal to merge branch'
 branchmergeproposal_index = 'Proposal to merge branch'
 
 branchmergeproposal_request_review = ViewLabel()
+
+branchmergeproposal_resubmit = ViewLabel()
 
 branchmergeproposal_review = ViewLabel()
 
@@ -441,8 +459,6 @@ distribution_allpackages = ContextTitle('All packages in %s')
 
 distribution_upstream_bug_report = ContextTitle('Upstream Bug Report for %s')
 
-distribution_bugcontact = ContextTitle('Change bug contact for %s')
-
 distribution_change_mirror_admin = 'Change mirror administrator'
 
 distribution_cvereport = ContextTitle('CVE reports for %s')
@@ -486,8 +502,8 @@ distributionsourcepackage_index = ContextTitle('%s')
 distributionsourcepackage_publishinghistory = ContextTitle(
     'Publishing history of %s')
 
-distributionsourcepackage_manage_bugcontacts = ContextTitle(
-    'Bug contacts for %s')
+structural_subscriptions_manage = ContextTitle(
+    'Bug subscriptions for %s')
 
 distributionsourcepackagerelease_index = ContextTitle('%s')
 
@@ -544,6 +560,8 @@ distroserieslanguage_index = ContextTitle('%s')
 distroseriessourcepackagerelease_index = ContextTitle('%s')
 
 distros_index = 'Distributions registered in Launchpad'
+
+edit_bugcontact = ContextTitle('Edit bug contact for %s')
 
 errorservice_config = 'Configure error log'
 
@@ -920,6 +938,9 @@ pofile_edit = ContextTitle(smartquote('Edit "%s" details'))
 
 pofile_export = ContextTitle(smartquote('Download translation for "%s"'))
 
+pofile_filter = FilteredTranslationsTitle(
+    smartquote('Translations by %(person)s in "%(title)s"'))
+
 pofile_index = ContextTitle(smartquote('Translation overview for "%s"'))
 
 def pofile_translate(context, view):
@@ -964,8 +985,6 @@ potemplate_export = ContextTitle(smartquote('Download translations for "%s"'))
 product_add = 'Register a project in Launchpad'
 
 product_admin = ContextTitle('Administer %s in Launchpad')
-
-product_bugcontact = ContextTitle('Edit bug contact for %s')
 
 product_bugs = ContextDisplayName('Bugs in %s')
 
@@ -1333,6 +1352,8 @@ standardshipitrequest_new = 'Create a new standard option'
 standardshipitrequest_edit = 'Edit standard option'
 
 team_addmember = ContextBrowsername('Add members to %s')
+
+team_add_my_teams = 'Propose/add one of your teams to another one'
 
 team_contactaddress = ContextDisplayName('%s contact address')
 

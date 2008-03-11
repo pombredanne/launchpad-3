@@ -1,5 +1,5 @@
 # Copyright 2004-2005 Canonical Ltd.  All rights reserved.
-# pylint: disable-msg=W0401
+# pylint: disable-msg=W0401,C0301
 
 __metaclass__ = type
 
@@ -32,6 +32,7 @@ from canonical.launchpad.interfaces.bugactivity import *
 from canonical.launchpad.interfaces.bugattachment import *
 from canonical.launchpad.interfaces.bug import *
 from canonical.launchpad.interfaces.bugbranch import *
+from canonical.launchpad.interfaces.bugcontact import *
 from canonical.launchpad.interfaces.bugcve import *
 from canonical.launchpad.interfaces.buglink import *
 from canonical.launchpad.interfaces.bugmessage import *
@@ -99,6 +100,7 @@ from canonical.launchpad.interfaces.mailinglist import *
 from canonical.launchpad.interfaces.mentoringoffer import *
 from canonical.launchpad.interfaces.message import *
 from canonical.launchpad.interfaces.milestone import *
+from canonical.launchpad.interfaces.oauth import *
 from canonical.launchpad.interfaces.openidserver import *
 from canonical.launchpad.interfaces.package import *
 from canonical.launchpad.interfaces.packagerelationship import *
@@ -151,6 +153,7 @@ from canonical.launchpad.interfaces.translationfileformat import *
 from canonical.launchpad.interfaces.translationimporter import *
 from canonical.launchpad.interfaces.translationmessage import *
 from canonical.launchpad.interfaces.translations import *
+from canonical.launchpad.interfaces.translationsoverview import *
 from canonical.launchpad.interfaces.question import *
 from canonical.launchpad.interfaces.questionbug import *
 from canonical.launchpad.interfaces.questioncollection import *
@@ -168,5 +171,5 @@ from canonical.launchpad.interfaces.vpotexport import *
 from canonical.launchpad.interfaces.wikiname import *
 from canonical.launchpad.interfaces.poexportrequest import *
 from canonical.launchpad.interfaces.distrocomponentuploader import *
-
 from canonical.launchpad.interfaces.archive import *
+from canonical.launchpad.interfaces.archivedependency import *

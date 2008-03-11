@@ -30,6 +30,7 @@ from canonical.buildd.slave import BuilderStatus
 from canonical.buildmaster.master import BuilddMaster
 from canonical.database.sqlbase import cursor, SQLBase, sqlvalues
 from canonical.launchpad.database.buildqueue import BuildQueue
+from canonical.launchpad.validators.person import public_person_validator
 from canonical.launchpad.helpers import filenameToContentType
 from canonical.launchpad.interfaces import (
     ArchivePurpose, BuildDaemonError, BuildSlaveFailure, BuildStatus,
@@ -92,7 +93,9 @@ class Builder(SQLBase):
     name = StringCol(dbName='name', notNull=True)
     title = StringCol(dbName='title', notNull=True)
     description = StringCol(dbName='description', notNull=True)
-    owner = ForeignKey(dbName='owner', foreignKey='Person', notNull=True)
+    owner = ForeignKey(
+        dbName='owner', foreignKey='Person',
+        validator=public_person_validator, notNull=True)
     builderok = BoolCol(dbName='builderok', notNull=True)
     failnotes = StringCol(dbName='failnotes', default=None)
     trusted = BoolCol(dbName='trusted', default=False, notNull=True)
@@ -237,12 +240,11 @@ class Builder(SQLBase):
         """Work out what sources.list lines should be passed to builder."""
         ogre_components = " ".join(build_queue_item.build.ogre_components)
         dist_name = build_queue_item.archseries.distroseries.name
-        archive_url = build_queue_item.build.archive.archive_url
+        target_archive = build_queue_item.build.archive
         ubuntu_source_lines = []
 
-        if (build_queue_item.build.archive.purpose == ArchivePurpose.PARTNER
-            or
-            build_queue_item.build.archive.purpose == ArchivePurpose.PPA):
+        if (target_archive.purpose == ArchivePurpose.PARTNER or
+            target_archive.purpose == ArchivePurpose.PPA):
             # Although partner and PPA builds are always in the release
             # pocket, they depend on the same pockets as though they
             # were in the updates pocket.
@@ -251,10 +253,17 @@ class Builder(SQLBase):
 
             # Partner and PPA may also depend on any component.
             ubuntu_components = 'main restricted universe multiverse'
-            source_line = (
-                'deb %s %s %s'
-                % (archive_url, dist_name, ogre_components))
-            ubuntu_source_lines.append(source_line)
+
+            # Calculate effects of current archive dependencies.
+            archive_dependencies = [target_archive]
+            archive_dependencies.extend(
+                [dependency.dependency
+                 for dependency in target_archive.dependencies])
+            for archive in archive_dependencies:
+                source_line = (
+                    'deb %s %s %s'
+                    % (archive.archive_url, dist_name, ogre_components))
+                ubuntu_source_lines.append(source_line)
         else:
             ubuntu_pockets = self.pocket_dependencies[
                 build_queue_item.build.pocket]
@@ -420,7 +429,6 @@ class Builder(SQLBase):
                 archive_name = current_build.archive.owner.name
                 return '%s [%s] (%s)' % (msg, archive_name, mode)
             return '%s (%s)' % (msg, mode)
-
         return 'IDLE (%s)' % mode
 
     def failbuilder(self, reason):
@@ -428,10 +436,10 @@ class Builder(SQLBase):
         self.builderok = False
         self.failnotes = reason
 
-    def getBuildRecords(self, build_state=None, name=None):
+    def getBuildRecords(self, build_state=None, name=None, user=None):
         """See IHasBuildRecords."""
         return getUtility(IBuildSet).getBuildsForBuilder(
-            self.id, build_state, name)
+            self.id, build_state, name, user)
 
     def slaveStatus(self):
         """See IBuilder."""

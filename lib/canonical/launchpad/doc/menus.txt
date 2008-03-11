@@ -373,22 +373,22 @@ Checking out the escapedtext attribute.
     >>> link = Link('+target', text)
 
     >>> ILink(link).escapedtext
-    'some <b> --&gt; </b> text'
+    u'some <b> --&gt; </b> text'
     >>> IFacetLink(link).escapedtext
-    'some <b> --&gt; </b> text'
+    u'some <b> --&gt; </b> text'
 
 
 We can test the 'structured' helper directly.
 
     >>> structured('foo').escapedtext
-    'foo'
+    u'foo'
     >>> structured('%s', 'a < b > c & d " e').escapedtext
-    'a &lt; b &gt; c &amp; d " e'
+    u'a &lt; b &gt; c &amp; d " e'
     >>> structured('a < b > c & d " e').escapedtext
-    'a < b > c & d " e'
+    u'a < b > c & d " e'
     >>> structured(
     ...     'replacement %(foo)s, %(bar)s', foo='<foo>', bar='bar').escapedtext
-    'replacement &lt;foo&gt;, bar'
+    u'replacement &lt;foo&gt;, bar'
     >>> structured('whatever', 'foo', 'bar', baz='baz')
     Traceback (most recent call last):
     ...

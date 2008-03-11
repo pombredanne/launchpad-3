@@ -10,18 +10,17 @@ import tempfile
 import unittest
 
 from canonical.config import config
-from canonical.launchpad.ftests.harness import LaunchpadZopelessTestCase
+from canonical.testing import LaunchpadZopelessLayer
 
 
-class TestProcessUpload(LaunchpadZopelessTestCase):
+class TestProcessUpload(unittest.TestCase):
     """Test the process-upload.py script."""
+    layer = LaunchpadZopelessLayer
 
     def setUp(self):
-        LaunchpadZopelessTestCase.setUp(self)
         self.queue_location = tempfile.mkdtemp()
 
     def tearDown(self):
-        LaunchpadZopelessTestCase.tearDown(self)
         shutil.rmtree(self.queue_location)
 
     def runProcessUpload(self, extra_args=None):

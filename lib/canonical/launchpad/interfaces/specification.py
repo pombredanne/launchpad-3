@@ -30,8 +30,8 @@ from zope.component import getUtility
 from zope.schema import Datetime, Int, Choice, Text, TextLine, Bool
 
 from canonical.launchpad import _
-from canonical.launchpad.fields import (ContentNameField, Summary,
-    Title)
+from canonical.launchpad.fields import (
+    ContentNameField, PublicPersonChoice, Summary, Title)
 from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.interfaces.launchpad import IHasOwner
 from canonical.launchpad.interfaces.mentoringoffer import ICanBeMentored
@@ -573,13 +573,16 @@ class INewSpecification(Interface):
         description=_(
             "The current status of the process to define the "
             "feature and get approval for the implementation plan."))
-    assignee = Choice(title=_('Assignee'), required=False,
+    assignee = PublicPersonChoice(
+        title=_('Assignee'), required=False,
         description=_("The person responsible for implementing the feature."),
         vocabulary='ValidPersonOrTeam')
-    drafter = Choice(title=_('Drafter'), required=False,
+    drafter = PublicPersonChoice(
+        title=_('Drafter'), required=False,
         description=_("The person responsible for drafting the specification."),
         vocabulary='ValidPersonOrTeam')
-    approver = Choice(title=_('Approver'), required=False,
+    approver = PublicPersonChoice(
+        title=_('Approver'), required=False,
         description=_(
             "The person responsible for approving the specification, "
             "and for reviewing the code when it's ready to be landed."),
@@ -645,7 +648,8 @@ class ISpecification(INewSpecification, INewSpecificationTarget, IHasOwner,
         default=SpecificationPriority.UNDEFINED, required=True)
     datecreated = Datetime(
         title=_('Date Created'), required=True, readonly=True)
-    owner = Choice(title=_('Owner'), required=True, readonly=True,
+    owner = PublicPersonChoice(
+        title=_('Owner'), required=True, readonly=True,
         vocabulary='ValidPersonOrTeam')
     # target
     product = Choice(title=_('Project'), required=False,
@@ -895,6 +899,17 @@ class ISpecificationSet(IHasSpecifications):
         drafter=None, whiteboard=None,
         priority=SpecificationPriority.UNDEFINED):
         """Create a new specification."""
+
+    def getDependencyDict(specifications):
+        """Return a dictionary mapping specifications to their dependencies.
+
+        The results are ordered by descending priority.
+
+        :specifications: a sequence of the specifications to look up.
+        """
+
+    def get(spec_id):
+        """Return the ISpecification with the given spec_id."""
 
 
 class ISpecificationDelta(Interface):

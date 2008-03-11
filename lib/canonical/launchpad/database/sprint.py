@@ -8,7 +8,6 @@ __all__ = [
     'HasSprintsMixin',
     ]
 
-import pytz
 
 from zope.component import getUtility
 from zope.interface import implements
@@ -27,6 +26,7 @@ from canonical.database.sqlbase import (
 from canonical.database.constants import DEFAULT
 from canonical.database.datetimecol import UtcDateTimeCol
 
+from canonical.launchpad.validators.person import public_person_validator
 from canonical.launchpad.database.sprintattendance import SprintAttendance
 from canonical.launchpad.database.sprintspecification import (
     SprintSpecification)
@@ -40,11 +40,15 @@ class Sprint(SQLBase):
     _defaultOrder = ['name']
 
     # db field names
-    owner = ForeignKey(dbName='owner', foreignKey='Person', notNull=True)
+    owner = ForeignKey(
+        dbName='owner', foreignKey='Person',
+        validator=public_person_validator, notNull=True)
     name = StringCol(notNull=True, alternateID=True)
     title = StringCol(notNull=True)
     summary = StringCol(notNull=True)
-    driver = ForeignKey(dbName='driver', foreignKey='Person')
+    driver = ForeignKey(
+        dbName='driver', foreignKey='Person',
+        validator=public_person_validator)
     home_page = StringCol(notNull=False, default=None)
     homepage_content = StringCol(default=None)
     icon = ForeignKey(
@@ -162,7 +166,8 @@ class Sprint(SQLBase):
     def all_specifications(self):
         return self.specifications(filter=[SpecificationFilter.ALL])
 
-    def specifications(self, sort=None, quantity=None, filter=None):
+    def specifications(self, sort=None, quantity=None, filter=None,
+                       prejoin_people=True):
         """See IHasSpecifications."""
 
         query = self.spec_filter_clause(filter=filter)
@@ -195,10 +200,11 @@ class Sprint(SQLBase):
                          '-SprintSpecification.date_created',
                          'Specification.id']
 
-        # now do the query, and remember to prejoin to people
         results = Specification.select(query, orderBy=order, limit=quantity,
             clauseTables=['SprintSpecification'])
-        return results.prejoin(['assignee', 'approver', 'drafter'])
+        if prejoin_people:
+            results = results.prejoin(['assignee', 'approver', 'drafter'])
+        return results
 
     def specificationLinks(self, sort=None, quantity=None, filter=None):
         """See `ISprint`."""
@@ -278,7 +284,8 @@ class Sprint(SQLBase):
     @property
     def attendances(self):
         ret = SprintAttendance.selectBy(sprint=self)
-        return sorted(ret.prejoin(['attendee']), key=lambda a: a.attendee.name)
+        return sorted(ret.prejoin(['attendee']),
+                      key=lambda a: a.attendee.name)
 
     # linking to specifications
     def linkSpecification(self, spec):

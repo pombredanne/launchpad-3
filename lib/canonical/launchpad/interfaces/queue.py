@@ -134,6 +134,14 @@ class IPackageUpload(Interface):
     def setRejected():
         """Set queue state to REJECTED."""
 
+    def acceptFromUploader(changesfile_path, logger=None):
+        """Perform upload acceptance during upload-time.
+
+         * Move the upload to accepted queue in all cases;
+         * Publish and close bugs for 'single-source' uploads;
+         * Skip bug-closing for PPA uploads.
+        """
+
     def acceptFromQueue(announce_list, logger=None, dry_run=False):
         """Call setAccepted, do a syncUpdate, and send notification email."""
 
@@ -149,6 +157,8 @@ class IPackageUpload(Interface):
 
         If a logger is provided, messages will be written to it as the upload
         is entered into the publishing records.
+
+        Return a list containing the publishing records created.
         """
 
     def addSource(spr):

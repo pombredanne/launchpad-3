@@ -14,23 +14,26 @@ from zope.component import adapts, getUtility
 from zope.schema import Object
 
 from canonical.lazr.rest import Collection, Entry, ScopedCollection
+from canonical.lazr.interface import use_template
 from canonical.lazr.interfaces import IEntry
 from canonical.lazr.rest.schema import CollectionField
 
-from canonical.launchpad.interfaces import (
-    IPerson, IPersonSet, make_person_name_field)
+from canonical.launchpad.interfaces import IPerson, IPersonSet, ITeamMembership
 
-from canonical.lp import decorates
+from canonical.lazr import decorates
+
 
 class IPersonEntry(IEntry):
     """The part of a person that we expose through the web service."""
+    use_template(IPerson, include=["name"])
 
-    # XXX leonardr 2008-01-28 bug=186702 A much better solution would
-    # let us reuse or copy fields from IPerson.
-    name = make_person_name_field()
-    teamowner = Object(schema=IPerson)
+    teamowner = Object(schema=IPerson, title=u"Team owner")
+
     members = CollectionField(value_type=Object(schema=IPerson))
-
+    team_memberships = CollectionField(
+        value_type=Object(schema=ITeamMembership))
+    member_memberships = CollectionField(
+        value_type=Object(schema=ITeamMembership))
 
 class PersonEntry(Entry):
     """A person or team."""
@@ -38,7 +41,7 @@ class PersonEntry(Entry):
     decorates(IPersonEntry)
     schema = IPersonEntry
 
-    parent_collection_name = 'people'
+    _parent_collection_path = ['people']
 
     @property
     def members(self):
@@ -46,6 +49,18 @@ class PersonEntry(Entry):
         if not self.context.isTeam():
             return None
         return self.context.activemembers
+
+    @property
+    def team_memberships(self):
+        """See `IPersonEntry`."""
+        return self.context.myactivememberships
+
+    @property
+    def member_memberships(self):
+        """See `IPersonEntry`."""
+        if not self.context.isTeam():
+            return None
+        return self.context.getActiveMemberships()
 
 
 class PersonCollection(Collection):

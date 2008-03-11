@@ -9,10 +9,10 @@ __all__ = [
     'IRevisionSet']
 
 from zope.interface import Interface, Attribute
-from zope.schema import Datetime, Int, Choice, Text, TextLine
+from zope.schema import Datetime, Int, Text, TextLine
 
-from canonical.launchpad.interfaces import IHasOwner
 from canonical.launchpad import _
+from canonical.launchpad.fields import PublicPersonChoice
 
 
 class IRevision(Interface):
@@ -44,8 +44,8 @@ class IRevisionAuthor(Interface):
     name_without_email = Attribute(
         "Revision author name without email address.")
     email = Attribute("The email address extracted from the author text.")
-    person = Choice(title=_('Author'), required=False, readonly=False,
-        vocabulary='ValidPersonOrTeam')
+    person = PublicPersonChoice(title=_('Author'), required=False,
+        readonly=False, vocabulary='ValidPersonOrTeam')
 
     def linkToLaunchpadPerson():
         """Attempt to link the revision author to a Launchpad `Person`.
@@ -92,4 +92,14 @@ class IRevisionSet(Interface):
 
         If it has, then associate the RevisionAuthor with the Launchpad person
         who owns this email address.
+        """
+
+    def getTipRevisionsForBranches(branches):
+        """Get the tip branch revisions for the specified branches.
+
+        The revision_authors are prejoined in to reduce the number of
+        database queries issued.
+
+        :return: ResultSet containing `Revision` or None if no matching
+            revisions found.
         """

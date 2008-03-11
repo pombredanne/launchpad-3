@@ -20,8 +20,7 @@ fulfill the implementation requirements of IExternalBugTracker.
     >>> from canonical.config import config
     >>> from canonical.launchpad.ftests.externalbugtracker import (
     ...     TestExternalBugTracker)
-    >>> import transaction
-    >>> tracker = TestExternalBugTracker(transaction)
+    >>> tracker = TestExternalBugTracker('http://example.com/')
     >>> (tracker.batch_query_threshold ==
     ...     config.checkwatches.batch_query_threshold)
     True
@@ -34,10 +33,13 @@ recorded against the bug watches themselves so that it can be displayed
 to users. We can test this by using a test version of
 ExternalBugTracker.
 
+    >>> import transaction
+    >>> from canonical.launchpad.scripts.checkwatches import BugWatchUpdater
     >>> from canonical.launchpad.ftests.externalbugtracker import (
     ...     TestBrokenExternalBugTracker)
     >>> external_bugtracker = TestBrokenExternalBugTracker(
-    ...     transaction, 'http://example.com')
+    ...     'http://example.com')
+    >>> bug_watch_updater = BugWatchUpdater(transaction)
 
 We'll create an example bug watch with which to test this. This will
 be passed to external_bugtracker's updateBugWatches() method and should
@@ -91,7 +93,8 @@ watch.
     ...     example_bugwatch.lastchecked = None
     ...     external_bugtracker.initialize_remote_bugdb_error = error
     ...     try:
-    ...         external_bugtracker.updateBugWatches([example_bugwatch])
+    ...         bug_watch_updater.updateBugWatches(
+    ...             external_bugtracker, [example_bugwatch])
     ...     except error:
     ...         pass
     ...     print "%s: %s" % (example_bugwatch.last_error_type.title,
@@ -104,7 +107,10 @@ watch.
 We can run the same test on getRemoteStatus(), which can raise different
 errors. We temporarily silence the logging from this function because
 we're not interested in it. Again, the watch's lastchecked field also be
-updated.
+updated. Errors in getRemoteStatus() will produce OOPS reports.
+
+    >>> from canonical.launchpad.ftests.externalbugtracker import oops_hook
+    >>> oops_hook.install()
 
     >>> from canonical.launchpad.scripts import log
     >>> loglevel = log._log.level
@@ -115,15 +121,17 @@ updated.
     ...                   Exception]:
     ...         example_bugwatch.lastchecked = None
     ...         external_bugtracker.get_remote_status_error = error
-    ...         try:
-    ...             external_bugtracker.updateBugWatches([example_bugwatch])
-    ...         except:
-    ...             pass
-    ...         print "%s: %s" % (example_bugwatch.last_error_type.title,
-    ...             example_bugwatch.lastchecked is not None)
+    ...         bug_watch_updater.updateBugWatches(
+    ...             external_bugtracker, [example_bugwatch])
+    ...         print "%s: %s (%s)" % (
+    ...             example_bugwatch.last_error_type.title,
+    ...             example_bugwatch.lastchecked is not None,
+    ...             oops_hook.oops_info.oopsid)
     ... finally:
     ...     log._log.setLevel(loglevel)
-    Bug Not Found: True
-    Invalid Bug ID: True
-    Unparsable Bug: True
-    Unknown: True
+    Bug Not Found: True (OOPS-...)
+    Invalid Bug ID: True (OOPS-...)
+    Unparsable Bug: True (OOPS-...)
+    Unknown: True (OOPS-...)
+
+    >>> oops_hook.uninstall()

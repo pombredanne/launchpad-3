@@ -194,6 +194,9 @@ A mailing list expert is required to approve the registration.
     >>> syncUpdate(list_one)
     >>> list_one.status.name
     'APPROVED'
+    >>> list_one.date_reviewed
+    CURRENT_TIMESTAMP AT TIME ZONE 'UTC'
+
 
 If Dirk becomes a member of the Mailing List Experts, he'll be able to approve
 a list.
@@ -305,6 +308,9 @@ team's contact address.
     >>> email_set = getUtility(IEmailAddressSet)
     >>> print email_set.getByEmail(list_one.address)
     None
+    >>> print list_one.date_activated
+    None
+
     >>> list_one.transitionToStatus(MailingListStatus.ACTIVE)
     >>> list_three.transitionToStatus(MailingListStatus.ACTIVE)
     >>> flush_database_updates()
@@ -314,6 +320,9 @@ team's contact address.
     'ACTIVE'
     >>> email_set.getByEmail(list_one.address).status.name
     'VALIDATED'
+    >>> list_one.date_activated
+    CURRENT_TIMESTAMP AT TIME ZONE 'UTC'
+
 
 Some list constructions may fail.
 
@@ -542,3 +551,39 @@ mailing list could have an archive and archives are never deleted.
     'INACTIVE'
     >>> list_one.archive_url
     u'http://lists.launchpad.dev/team-one'
+
+
+== Events ==
+
+Activating the mailing list (changing it's status to 'available for
+subscription') will fire an instance of the SQLObjectModifiedEvent.
+
+    # Register an event listener that will print event it receives.
+    >>> from canonical.launchpad.event.interfaces import (
+    ...     ISQLObjectModifiedEvent)
+    >>> from canonical.launchpad.interfaces import IMailingList
+    >>> from canonical.launchpad.ftests.event import TestEventListener
+    >>> def print_event(object, event):
+    ...     print "Received %s on %s" % (
+    ...         event.__class__.__name__.split('.')[-1],
+    ...         object.__class__.__name__.split('.')[-1])
+    >>> mailinglist_event_listener = TestEventListener(
+    ...     IMailingList, ISQLObjectModifiedEvent, print_event)
+
+
+    # We need to build a new mailing list to use in our tests
+    >>> list_six = list_set.new(team_six)
+    >>> list_six.review(dirk, MailingListStatus.APPROVED)
+    >>> syncUpdate(list_six)
+    >>> list_six.startConstructing()
+    >>> list_six.status.name
+    'CONSTRUCTING'
+
+    >>> list_six.transitionToStatus(MailingListStatus.ACTIVE)
+    Received SQLObjectModifiedEvent on MailingList
+    >>> syncUpdate(list_six)
+    >>> list_six.status.name
+    'ACTIVE'
+
+    # Cleanup
+    >>> mailinglist_event_listener.unregister()

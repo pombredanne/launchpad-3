@@ -7,7 +7,9 @@
 
 __metaclass__ = type
 __all__ = [
-    'Person', 'PersonSet', 'SSHKey', 'SSHKeySet', 'WikiName', 'WikiNameSet',
+    'Person', 'PersonSet',
+    'SSHKey', 'SSHKeySet',
+    'WikiName', 'WikiNameSet',
     'JabberID', 'JabberIDSet', 'IrcID', 'IrcIDSet']
 
 from datetime import datetime, timedelta
@@ -20,8 +22,8 @@ from zope.event import notify
 from zope.security.proxy import removeSecurityProxy
 
 from sqlobject import (
-    BoolCol, ForeignKey, IntCol, MultipleJoin, SQLMultipleJoin,
-    SQLObjectNotFound, SQLRelatedJoin, StringCol)
+    BoolCol, ForeignKey, IntCol, SQLMultipleJoin, SQLObjectNotFound,
+    SQLRelatedJoin, StringCol)
 from sqlobject.sqlbuilder import AND, OR, SQLConstant
 
 from canonical.config import config
@@ -54,14 +56,13 @@ from canonical.launchpad.interfaces import (
     IJabberID, IJabberIDSet, ILaunchBag, ILaunchpadCelebrities,
     ILaunchpadStatisticSet, ILoginTokenSet, IMailingListSet,
     INACTIVE_ACCOUNT_STATUSES, IPasswordEncryptor, IPerson, IPersonSet,
-    IPillarNameSet, IProduct, IRevisionSet,
-    ISSHKey, ISSHKeySet, ISignedCodeOfConductSet,
-    ISourcePackageNameSet, ITeam, ITranslationGroupSet, IWikiName,
-    IWikiNameSet, JoinNotAllowed, LoginTokenType,
-    PersonCreationRationale, PersonVisibility,
-    QUESTION_STATUS_DEFAULT_SEARCH, SSHKeyType, ShipItConstants,
-    ShippingRequestStatus, SpecificationDefinitionStatus, SpecificationFilter,
-    SpecificationImplementationStatus, SpecificationSort,
+    IPillarNameSet, IProduct, IRevisionSet, ISSHKey, ISSHKeySet,
+    ISignedCodeOfConductSet, ISourcePackageNameSet, ITeam,
+    ITranslationGroupSet, IWikiName, IWikiNameSet, JoinNotAllowed,
+    LoginTokenType, PersonCreationRationale, PersonVisibility,
+    PersonalStanding, QUESTION_STATUS_DEFAULT_SEARCH, SSHKeyType,
+    ShipItConstants, ShippingRequestStatus, SpecificationDefinitionStatus,
+    SpecificationFilter, SpecificationImplementationStatus, SpecificationSort,
     TeamMembershipRenewalPolicy, TeamMembershipStatus, TeamSubscriptionPolicy,
     UBUNTU_WIKI_URL, UNRESOLVED_BUGTASK_STATUSES)
 
@@ -77,7 +78,6 @@ from canonical.launchpad.database.pillar import PillarName
 from canonical.launchpad.database.pofile import POFileTranslator
 from canonical.launchpad.database.karma import KarmaAction, Karma
 from canonical.launchpad.database.mentoringoffer import MentoringOffer
-from canonical.launchpad.database.packagebugcontact import PackageBugContact
 from canonical.launchpad.database.shipit import (
     MIN_KARMA_ENTRIES_TO_BE_TRUSTED_ON_SHIPIT, ShippingRequest)
 from canonical.launchpad.database.sourcepackagerelease import (
@@ -95,6 +95,7 @@ from canonical.launchpad.database.teammembership import (
 from canonical.launchpad.database.question import QuestionPersonSearch
 
 from canonical.launchpad.searchbuilder import any
+from canonical.launchpad.validators.person import public_person_validator
 
 
 class ValidPersonOrTeamCache(SQLBase):
@@ -167,7 +168,8 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
     organization = StringCol(default=None)
 
     teamowner = ForeignKey(dbName='teamowner', foreignKey='Person',
-                           default=None)
+                           default=None,
+                           validator=public_person_validator)
 
     sshkeys = SQLMultipleJoin('SSHKey', joinColumn='person')
 
@@ -188,7 +190,8 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
     creation_rationale = EnumCol(enum=PersonCreationRationale, default=None)
     creation_comment = StringCol(default=None)
     registrant = ForeignKey(
-        dbName='registrant', foreignKey='Person', default=None)
+        dbName='registrant', foreignKey='Person', default=None,
+        validator=public_person_validator)
     hide_email_addresses = BoolCol(notNull=True, default=False)
     verbose_bugnotifications = BoolCol(notNull=True, default=True)
 
@@ -208,7 +211,7 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
     # XXX: matsubara 2006-03-06 bug=33935:
     # Is this really needed? There's no attribute 'claimant' in the Bounty
     # database class or interface, but the column exists in the database.
-    claimedBounties = MultipleJoin('Bounty', joinColumn='claimant',
+    claimedBounties = SQLMultipleJoin('Bounty', joinColumn='claimant',
         orderBy='id')
     subscribedBounties = SQLRelatedJoin('Bounty', joinColumn='person',
         otherColumn='bounty', intermediateTable='BountySubscription',
@@ -223,6 +226,12 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
     visibility = EnumCol(
         enum=PersonVisibility,
         default=PersonVisibility.PUBLIC)
+
+    personal_standing = EnumCol(
+        enum=PersonalStanding, default=PersonalStanding.UNKNOWN)
+
+    personal_standing_reason = StringCol(
+        default=None, dbName='personal_standing_reason_text')
 
     def _init(self, *args, **kw):
         """Mark the person as a team when created or fetched from database."""
@@ -393,7 +402,8 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
     def valid_specifications(self):
         return self.specifications(filter=[SpecificationFilter.VALID])
 
-    def specifications(self, sort=None, quantity=None, filter=None):
+    def specifications(self, sort=None, quantity=None, filter=None,
+                       prejoin_people=True):
         """See `IHasSpecifications`."""
 
         # Make a new list of the filter, so that we do not mutate what we
@@ -519,9 +529,10 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
                 query += ' AND Specification.fti @@ ftq(%s) ' % quote(
                     constraint)
 
-        # now do the query, and remember to prejoin to people
         results = Specification.select(query, orderBy=order,
-            limit=quantity, prejoins=['assignee', 'approver', 'drafter'])
+            limit=quantity)
+        if prejoin_people:
+            results = results.prejoin(['assignee', 'approver', 'drafter'])
         return results
 
     def searchQuestions(self, search_text=None,
@@ -620,26 +631,21 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
                              prejoins=["product"])
 
 
+    # XXX Tom Berger 2008-02-14:
+    # The name (and possibly the implementation) of these functions
+    # is no longer appropriate, since it now relies on subscriptions,
+    # rather than package bug contacts.
+    # See bug #191799
     def getBugContactPackages(self):
         """See `IPerson`."""
-        package_bug_contacts = shortlist(
-            PackageBugContact.selectBy(bugcontact=self),
-            longest_expected=25)
-
-        packages_for_bug_contact = [
-            package_bug_contact.distribution.getSourcePackage(
-                package_bug_contact.sourcepackagename)
-            for package_bug_contact in package_bug_contacts]
-
-        packages_for_bug_contact.sort(key=lambda x: x.name)
-
-        return packages_for_bug_contact
+        packages = [sub.target for sub in self.structural_subscriptions
+                    if (sub.distribution is not None and
+                        sub.sourcepackagename is not None)]
+        packages.sort(key=lambda x: x.name)
+        return packages
 
     def getBugContactOpenBugCounts(self, user):
         """See `IPerson`."""
-        # We could use IBugTask.search() to get all the counts, but
-        # that's slow, since we'd need to issue one query per package
-        # and count we want.
         open_bugs_cond = (
             'BugTask.status %s' % search_value_to_where_condition(
                 any(*UNRESOLVED_BUGTASK_STATUSES)))
@@ -659,9 +665,10 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
         conditions = [
             'Bug.id = BugTask.bug',
             open_bugs_cond,
-            'PackageBugContact.bugcontact = %s' % sqlvalues(self),
-            'BugTask.sourcepackagename = PackageBugContact.sourcepackagename',
-            'BugTask.distribution = PackageBugContact.distribution',
+            'StructuralSubscription.subscriber = %s' % sqlvalues(self),
+            'BugTask.sourcepackagename = '
+                'StructuralSubscription.sourcepackagename',
+            'BugTask.distribution = StructuralSubscription.distribution',
             'Bug.duplicateof is NULL']
         privacy_filter = get_bug_privacy_filter(user)
         if privacy_filter:
@@ -670,7 +677,7 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
         query = """SELECT BugTask.distribution,
                           BugTask.sourcepackagename,
                           %(sums)s
-                   FROM BugTask, Bug, PackageBugContact
+                   FROM BugTask, Bug, StructuralSubscription
                    WHERE %(conditions)s
                    GROUP BY BugTask.distribution, BugTask.sourcepackagename"""
         cur = cursor()
@@ -1098,14 +1105,15 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
 
         tm.setStatus(TeamMembershipStatus.DEACTIVATED, self)
 
-    def join(self, team):
+    def join(self, team, requester=None):
         """See `IPerson`."""
-        assert not self.isTeam(), (
-            "Teams take no actions in Launchpad, thus they can't join() "
-            "another team. Instead, you have to addMember() them.")
-
         if self in team.activemembers:
             return
+
+        if requester is None:
+            assert not self.isTeam(), (
+                "You need to specify a reviewer when a team joins another.")
+            requester = self
 
         expired = TeamMembershipStatus.EXPIRED
         proposed = TeamMembershipStatus.PROPOSED
@@ -1129,7 +1137,8 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
         # security configuration will verify that the logged in user
         # has the right permission to add the specified person to the team.
         naked_team = removeSecurityProxy(team)
-        naked_team.addMember(self, reviewer=self, status=status)
+        naked_team.addMember(
+            self, reviewer=requester, status=status, force_team_add=True)
 
     def clearInTeamCache(self):
         """See `IPerson`."""
@@ -1480,6 +1489,12 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
             email.status = EmailAddressStatus.NEW
         params = BugTaskSearchParams(self, assignee=self)
         for bug_task in self.searchTasks(params):
+            # If the bugtask has a conjoined master we don't try to
+            # update it, since we will update it correctly when we
+            # update its conjoined master (see bug 193983).
+            if bug_task.conjoined_master is not None:
+                continue
+
             # XXX flacoste 2007/11/26 The comparison using id in the assert
             # below works around a nasty intermittent failure.
             # See bug #164635.

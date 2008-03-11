@@ -18,9 +18,7 @@ version we can't parse, UnparseableBugTrackerVersion is raised:
     >>> from canonical.launchpad.interfaces import BugTrackerType
     >>> from canonical.testing import LaunchpadZopelessLayer
     >>> txn = LaunchpadZopelessLayer.txn
-    >>> invalid_version_bugzilla = new_bugtracker(BugTrackerType.BUGZILLA)
-    >>> external_bugzilla = Bugzilla(
-    ...     txn, invalid_version_bugzilla, version='A.B4')
+    >>> external_bugzilla = Bugzilla('http://example.com/', version='A.B4')
     Traceback (most recent call last):
       ...
     UnparseableBugTrackerVersion:
@@ -34,7 +32,7 @@ slightly modified implementation.
     ...     get_external_bugtracker)
     >>> from canonical.launchpad.interfaces import IBugTrackerSet
     >>> gnome_bugzilla = getUtility(IBugTrackerSet).getByName('gnome-bugzilla')
-    >>> external_bugzilla = TestBugzilla(txn, gnome_bugzilla)
+    >>> external_bugzilla = TestBugzilla(gnome_bugzilla.baseurl)
     >>> version = external_bugzilla._probe_version()
     >>> version
     (2, 20)
@@ -98,11 +96,14 @@ The main use of an ExternalBugtracker is to update bug watches. This is
 done through updateBugWatches(), which expects a list of bug watches to
 update:
 
+    >>> from canonical.launchpad.scripts.checkwatches import BugWatchUpdater
+    >>> bug_watch_updater = BugWatchUpdater(txn)
     >>> for bug_watch in gnome_bugzilla.watches:
     ...     print "%s: %s" % (bug_watch.remotebug, bug_watch.remotestatus)
     304070: None
     3224:
-    >>> external_bugzilla.updateBugWatches(gnome_bugzilla.watches)
+    >>> bug_watch_updater.updateBugWatches(
+    ...     external_bugzilla, gnome_bugzilla.watches)
     INFO:...:Updating 2 watches on http://bugzilla.gnome.org/bugs
     WARNING:...Didn't find bug u'304070' on
     http://bugzilla.gnome.org/bugs (local bugs: 15).
@@ -138,7 +139,8 @@ Set the batch threshold higher than the number of bug watches.
 Then updateBugWatches() will make one request per bug watch:
 
     >>> external_bugzilla.trace_calls = True
-    >>> external_bugzilla.updateBugWatches(gnome_bugzilla.watches)
+    >>> bug_watch_updater.updateBugWatches(
+    ...     external_bugzilla, gnome_bugzilla.watches)
     INFO:...:Updating 7 watches on http://bugzilla.gnome.org/bugs
     CALLED _postPage()
     CALLED _postPage()
@@ -179,7 +181,8 @@ Instead of issuing one request per bug watch, like was done before,
 updateBugWatches() issues only one request to update all watches:
 
     >>> external_bugzilla.trace_calls = True
-    >>> external_bugzilla.updateBugWatches(gnome_bugzilla.watches)
+    >>> bug_watch_updater.updateBugWatches(
+    ...     external_bugzilla, gnome_bugzilla.watches)
     INFO:...:Updating 207 watches on http://bugzilla.gnome.org/bugs
     CALLED _postPage()
     WARNING:...:Didn't find bug u'304070' on
@@ -210,7 +213,7 @@ updated:
     >>> now = datetime.now(pytz.timezone('UTC'))
     >>> bug_watch.lastchanged = now - timedelta(weeks=2)
     >>> old_last_changed = bug_watch.lastchanged
-    >>> external_bugzilla.updateBugWatches([bug_watch])
+    >>> bug_watch_updater.updateBugWatches(external_bugzilla, [bug_watch])
     INFO:...:Updating 1 watches on http://bugzilla.gnome.org/bugs
     >>> bug_watch.lastchanged == old_last_changed
     True
@@ -235,13 +238,14 @@ We need to create a new ExternalBugtracker for the Mozilla tracker:
 
     >>> mozilla_bugzilla = getUtility(IBugTrackerSet).getByName(
     ...     'mozilla.org')
-    >>> external_bugzilla = TestBugzilla(txn, mozilla_bugzilla, '2.20')
+    >>> external_bugzilla = TestBugzilla(mozilla_bugzilla.baseurl, '2.20')
     >>> external_bugzilla.bugzilla_bugs = {1234: ('ASSIGNED', '')}
 
 Let's update the bug watch, and see that the linked bug watch got
 synced:
 
-    >>> external_bugzilla.updateBugWatches([thunderbird_task.bugwatch])
+    >>> bug_watch_updater.updateBugWatches(
+    ...     external_bugzilla, [thunderbird_task.bugwatch])
     INFO:...:Updating 1 watches on https://bugzilla.mozilla.org
 
     >>> print thunderbird_task.status.title
@@ -259,7 +263,8 @@ status mapping.
     >>> thunderbird_task.transitionToStatus(
     ...     BugTaskStatus.CONFIRMED,
     ...     getUtility(IPersonSet).getByName('no-priv'))
-    >>> external_bugzilla.updateBugWatches([thunderbird_task.bugwatch])
+    >>> bug_watch_updater.updateBugWatches(
+    ...     external_bugzilla, [thunderbird_task.bugwatch])
     INFO:...:Updating 1 watches on https://bugzilla.mozilla.org
 
     >>> print thunderbird_task.status.title
@@ -278,7 +283,8 @@ same remote bug, both will of course be updated.
     >>> bug_watch2 = bug_watch_set.createBugWatch(
     ...     bug=bug_two, owner=sample_person, bugtracker=mozilla_bugzilla,
     ...     remotebug='42')
-    >>> external_bugzilla.updateBugWatches([bug_watch1, bug_watch2])
+    >>> bug_watch_updater.updateBugWatches(
+    ...     external_bugzilla, [bug_watch1, bug_watch2])
     INFO:...:Updating 2 watches on https://bugzilla.mozilla.org
 
     >>> print bug_watch1.remotestatus
@@ -291,7 +297,8 @@ bug tracker, an error is logged.
 
     >>> external_bugzilla._postPage = (
     ...     lambda self, data: '<invalid xml>')
-    >>> external_bugzilla.updateBugWatches([bug_watch1, bug_watch2])
+    >>> bug_watch_updater.updateBugWatches(
+    ...     external_bugzilla, [bug_watch1, bug_watch2])
     Traceback (most recent call last):
     ...
     UnparseableBugData:

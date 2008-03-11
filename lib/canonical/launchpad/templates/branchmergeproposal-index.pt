@@ -21,6 +21,21 @@
 
   <h1>Proposal to merge branch</h1>
 
+  <tal:superseded-proposal condition="context/supersedes">
+    <p id="superseded-proposal">
+      This proposal supersedes an
+      <a tal:attributes="href context/supersedes/fmt:url">
+        earlier proposal</a>.
+    </p>
+  </tal:superseded-proposal>
+  <tal:superseded-by condition="context/superseded_by">
+    <p id="superseded-by">
+      This proposal has been superseded by a
+      <a tal:attributes="href context/superseded_by/fmt:url">
+        later proposal</a>.
+    </p>
+  </tal:superseded-by>
+
   <tal:whiteboard condition="context/whiteboard">
     <h2>Whiteboard</h2>
     <div id="branch-whiteboard-value" class="whiteboard"

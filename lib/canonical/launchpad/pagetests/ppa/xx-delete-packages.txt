@@ -54,8 +54,7 @@ form.
     ...     packages = find_tags_by_class(contents, 'ppa_package_row')
     ...     for pkg in packages:
     ...         print extract_text(pkg)
-    ...     empty_section = find_tag_by_id(
-    ...         admin_browser.contents, 'empty-result')
+    ...     empty_section = find_tag_by_id(contents, 'empty-result')
     ...     if empty_section is not None:
     ...         print extract_text(empty_section)
 
@@ -94,11 +93,12 @@ Foo Bar can select one or more sources to be deleted and the
     ...     name='field.name_filter').value = ''
     >>> admin_browser.getControl(
     ...    name='field.selected_sources').value = ['27']
-    >>> admin_browser.getControl("Delete Packages").click()
+    >>> admin_browser.getControl("Request Deletion").click()
     >>> messages = get_feedback_messages(admin_browser.contents)
     >>> for msg in messages:
     ...     print msg
     There is 1 error.
+    Read the page help to understand how removals work.
     Deletion comment is required.
 
     >>> print_ppa_packages(admin_browser.contents)
@@ -111,12 +111,13 @@ Deletion requires, at least, one selected a source, otherwise an error
 is issued.
 
     >>> admin_browser.getControl("Deletion comment").value = "DO IT"
-    >>> admin_browser.getControl("Delete Packages").click()
+    >>> admin_browser.getControl("Request Deletion").click()
     >>> messages = get_feedback_messages(admin_browser.contents)
     >>> for msg in messages:
     ...     print msg
     There is 1 error.
     No sources selected.
+    Read the page help to understand how removals work.
 
 Once the deletion is successfully requested, Foo Bar sees an
 informational message containing the summary of the action
@@ -126,7 +127,7 @@ performed. The results should not include the just-deleted source.
     >>> admin_browser.getControl(
     ...    name='field.selected_sources').value = ['27']
     >>> admin_browser.getControl("Deletion comment").value = "DO IT"
-    >>> admin_browser.getControl("Delete Packages").click()
+    >>> admin_browser.getControl("Request Deletion").click()
 
     >>> messages = get_feedback_messages(admin_browser.contents)
     >>> for msg in messages:
@@ -134,6 +135,7 @@ performed. The results should not include the just-deleted source.
     Source and binaries deleted by Foo Bar request:
     cdrkit 1.0 in breezy-autotest
     Deletion comment: DO IT
+    Read the page help to understand how removals work.
 
     >>> print_ppa_packages(admin_browser.contents)
     Source           Published   Status     Series          Section
@@ -208,7 +210,7 @@ Multiple packages can be deleted in one single batch.
     ...    name='field.selected_sources').value = ['28', '29']
     >>> admin_browser.getControl(
     ...    "Deletion comment").value = "DO IT AGAIN !"
-    >>> admin_browser.getControl("Delete Packages").click()
+    >>> admin_browser.getControl("Request Deletion").click()
 
     >>> messages = get_feedback_messages(admin_browser.contents)
     >>> for msg in messages:
@@ -237,7 +239,7 @@ previous state to check if the bug 185922 is really fixed.
     ...    name='field.selected_sources').value = ['28', '29']
     >>> re_post_browser.getControl(
     ...    "Deletion comment").value = "DO IT AGAIN !"
-    >>> re_post_browser.getControl("Delete Packages").click()
+    >>> re_post_browser.getControl("Request Deletion").click()
 
     >>> print extract_text(find_main_content(re_post_browser.contents))
     Delete packages from PPA for Celso Providelo
@@ -272,3 +274,139 @@ The user can go back to the PPA index page using the breadcrumb link.
     >>> admin_browser.getLink('PPA for No Privileges Person').click()
     >>> admin_browser.title
     'PPA for No Privileges Person'
+
+
+== Removing source partially deleted ==
+
+The 'delete-packages' interface should allow users to enforce removal
+of packages partially removed or superseded. It happens, for instance,
+when:
+
+ 1. A source got deleted before it was completely built;
+
+ 2. The new source version in the series builds a smaller set of
+    binaries than the previous version.
+
+In order to reproduce this we will use SoyuzTestPublisher to create a
+SUPERSEDED source with a PUBLISHED binary in No Privileged Person's PPA.
+
+    >>> from zope.component import getUtility
+
+    >>> from canonical.database.constants import UTC_NOW
+    >>> from canonical.launchpad.ftests import login, logout
+    >>> from canonical.launchpad.interfaces import (
+    ...    IDistributionSet, IPersonSet, PackagePublishingStatus)
+    >>> from canonical.launchpad.tests.test_publishing import (
+    ...     SoyuzTestPublisher)
+
+    >>> login('foo.bar@canonical.com')
+
+    >>> ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
+    >>> hoary = ubuntu.getSeries('hoary')
+
+    >>> test_publisher = SoyuzTestPublisher()
+
+    >>> no_priv = getUtility(IPersonSet).getByName('no-priv')
+    >>> name16 = getUtility(IPersonSet).getByName('name16')
+    >>> test_publisher.person = name16
+
+    >>> foo_pub_src = test_publisher.getPubSource(
+    ...     version="1.0", architecturehintlist='i386',
+    ...     distroseries=hoary, archive=no_priv.archive,
+    ...     status=PackagePublishingStatus.SUPERSEDED)
+    >>> foo_pub_src.secure_record.datesuperseded = UTC_NOW
+    >>> foo_pub_src.secure_record.datemadepending = UTC_NOW
+
+    >>> foo_pub_binaries = test_publisher.getPubBinaries(
+    ...     distroseries=hoary, pub_source=foo_pub_src,
+    ...     status=PackagePublishingStatus.PUBLISHED)
+
+    >>> logout()
+    >>> import transaction
+    >>> transaction.commit()
+
+The SUPERSEDED source we have just added is listed in the PPA
+overview page.
+
+    >>> user_browser.open('http://launchpad.dev/~no-priv/+archive')
+    >>> user_browser.getControl(
+    ...    name='field.status_filter').value = ['superseded']
+    >>> user_browser.getControl("Search").click()
+    >>> print_ppa_packages(user_browser.contents)
+    Source           Published   Status     Series          Section
+    foo - 1.0                    Superseded Hoary           Base
+
+We don't show the publishing details for binary packages, but the
+presence of 'Built Packages' and the binary filename in the 'Files'
+section indicates to the user that it is still published.
+
+    >>> details_section_id = 'pub%d' % foo_pub_src.id
+    >>> details_section = find_tag_by_id(
+    ...     user_browser.contents, details_section_id)
+    >>> print extract_text(details_section)
+    Publishing details
+    Changelog
+    Built Packages
+      foo-bin Foo app is great
+    Files
+      foo-bin_i386.deb (18 bytes)
+      foo.dsc (28 bytes)
+
+Even if the source added is recorded as SUPERSEDED, it is still
+available for deletion because it contains a PUBLISHED binary.
+
+    >>> user_browser.getLink('Delete packages').click()
+    >>> user_browser.title
+    'Delete packages from PPA for No Privileges Person'
+
+    >>> print_ppa_packages(user_browser.contents)
+    Source           Published   Status     Series          Section
+    foo - 1.0                    Superseded Hoary           Base
+
+    >>> details_section = find_tag_by_id(
+    ...     user_browser.contents, details_section_id)
+    >>> print extract_text(details_section)
+    Publishing details
+    Changelog
+    Built Packages
+      foo-bin Foo app is great
+    Files
+      foo-bin_i386.deb (18 bytes)
+      foo.dsc (28 bytes)
+
+The deletion works exactly as it does for PUBLISHED sources, both,
+source and binaries are marked as DELETED and the corresponding
+'datesuperseded' as set to 'now'.
+
+    >>> user_browser.getControl(
+    ...    name='field.selected_sources').value = [str(foo_pub_src.id)]
+    >>> user_browser.getControl(
+    ...    "Deletion comment").value = "Go foo, go ..."
+    >>> user_browser.getControl("Request Deletion").click()
+
+    >>> messages = get_feedback_messages(user_browser.contents)
+    >>> for msg in messages:
+    ...     print msg
+    Source and binaries deleted by No Privileges Person request:
+    foo 1.0 in hoary
+    Deletion comment: Go foo, go ...
+
+Note that after deletion the binary filename is not present in the
+details 'Files' section and the 'Built Packages' section is omitted.
+
+    >>> user_browser.open('http://launchpad.dev/~no-priv/+archive')
+    >>> user_browser.getControl(
+    ...    name='field.status_filter').value = ['superseded']
+    >>> user_browser.getControl("Search").click()
+    >>> print_ppa_packages(user_browser.contents)
+    Source           Published   Status     Series          Section
+    foo - 1.0                    Deleted    Hoary           Base
+
+    >>> details_section = find_tag_by_id(
+    ...     user_browser.contents, details_section_id)
+    >>> print extract_text(details_section)
+    Publishing details
+    Deleted ... ago by No Privileges Person (Go foo, go ...)
+    Changelog
+    Files
+      foo.dsc (28 bytes)

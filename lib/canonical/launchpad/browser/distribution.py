@@ -17,7 +17,6 @@ __all__ = [
     'DistributionEditView',
     'DistributionSetView',
     'DistributionAddView',
-    'DistributionBugContactEditView',
     'DistributionArchiveMirrorsView',
     'DistributionCountryArchiveMirrorsView',
     'DistributionSeriesMirrorsView',
@@ -200,7 +199,7 @@ class DistributionOverviewMenu(ApplicationMenu):
              'mentorship', 'builds', 'cdimage_mirrors', 'archive_mirrors',
              'pending_review_mirrors', 'disabled_mirrors',
              'unofficial_mirrors', 'newmirror', 'announce', 'announcements',
-             'upload_admin', 'ppas']
+             'upload_admin', 'ppas', 'subscribe']
 
     @enabled_with_permission('launchpad.Edit')
     def edit(self):
@@ -317,6 +316,10 @@ class DistributionOverviewMenu(ApplicationMenu):
     def ppas(self):
         text = 'Personal Package Archives'
         return Link('+ppas', text, icon='info')
+
+    def subscribe(self):
+        text = 'Subscribe to bug mail'
+        return Link('+subscribe', text, icon='edit')
 
 
 class DistributionBugsMenu(ApplicationMenu):
@@ -574,45 +577,6 @@ class DistributionEditView(LaunchpadEditFormView):
     def change_action(self, action, data):
         self.updateContextFromData(data)
         self.next_url = canonical_url(self.context)
-
-
-class DistributionBugContactEditView(LaunchpadEditFormView):
-    """Browser view for editing the distribution bug contact."""
-    schema = IDistribution
-    field_names = ['bugcontact']
-
-    @action('Change', name='change')
-    def change_action(self, action, data):
-        """Save the new bug contact and display a notification."""
-        self.updateContextFromData(data)
-
-        distribution = self.context
-        contact_display_value = None
-
-        if distribution.bugcontact:
-            if distribution.bugcontact.preferredemail:
-                contact_display_value = (
-                    distribution.bugcontact.preferredemail.email)
-            else:
-                contact_display_value = distribution.bugcontact.displayname
-
-        # The bug contact was set to a new person or team.
-        if contact_display_value:
-            self.request.response.addNotification(
-                "Successfully changed the distribution bug contact to %s" %
-                contact_display_value)
-        else:
-            # The bug contact was set to noone.
-            self.request.response.addNotification(
-                "Successfully cleared the distribution bug contact. This "
-                "means that there is no longer a distro-wide contact for "
-                "bugmail. You can, of course, set a distribution bug "
-                "contact again whenever you want to.")
-
-    @property
-    def next_url(self):
-        """Redirect to the distribution page."""
-        return canonical_url(self.context)
 
 
 class DistributionLanguagePackAdminView(LaunchpadEditFormView):

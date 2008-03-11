@@ -8,10 +8,11 @@ Note that these are not interfaces to application content objects.
 __metaclass__ = type
 
 from zope.interface import Interface, Attribute
-from zope.schema import Bool, Choice, Int, TextLine
+from zope.schema import Bool, Choice, Int, Text, TextLine
 from persistent import IPersistent
 
 from canonical.launchpad import _
+from canonical.launchpad.fields import PublicPersonChoice
 from canonical.launchpad.webapp.interfaces import ILaunchpadApplication
 
 # XXX kiko 2007-02-08:
@@ -32,6 +33,7 @@ __all__ = [
     'IBreadcrumb',
     'ICrowd',
     'IFeedsApplication',
+    'IHWDBApplication',
     'IHasAppointedDriver',
     'IHasAssignee',
     'IHasBug',
@@ -44,7 +46,6 @@ __all__ = [
     'IHasProduct',
     'IHasProductAndAssignee',
     'IHasSecurityContact',
-    'IHWDBApplication',
     'ILaunchBag',
     'ILaunchpadCelebrities',
     'ILaunchpadRoot',
@@ -96,6 +97,7 @@ class ILaunchpadCelebrities(Interface):
     launchpad_developers = Attribute("The Launchpad development team.")
     mailing_list_experts = Attribute("The Mailing List Experts team.")
     rosetta_experts = Attribute("The Rosetta Experts team.")
+    savannah_tracker = Attribute("The GNU Savannah Bug Tracker.")
     shipit_admin = Attribute("The ShipIt Administrators.")
     sourceforge_tracker = Attribute("The SourceForge Bug Tracker")
     ubuntu_archive_mirror = Attribute("The main archive mirror for Ubuntu.")
@@ -350,7 +352,7 @@ class IHasProductAndAssignee(IHasProduct, IHasAssignee):
 class IHasSecurityContact(Interface):
     """An object that has a security contact."""
 
-    security_contact = Choice(
+    security_contact = PublicPersonChoice(
         title=_("Security Contact"),
         description=_(
             "The person or team who handles security-related bug reports"),

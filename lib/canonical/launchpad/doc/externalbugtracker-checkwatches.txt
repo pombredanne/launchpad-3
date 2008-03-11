@@ -42,8 +42,7 @@ get_external_bugtracker supports five external bug tracker types:
     ...     try:
     ...         # Suppress log messages in DebBugs
     ...         log.setLevel(log.level + 100)
-    ...         external_bugtracker = get_external_bugtracker(
-    ...             txn, bugtracker)
+    ...         external_bugtracker = get_external_bugtracker(bugtracker)
     ...     finally:
     ...         log.setLevel(log.level - 100)
     ...     print "%s --> %s" % (bugtracker_type.title,

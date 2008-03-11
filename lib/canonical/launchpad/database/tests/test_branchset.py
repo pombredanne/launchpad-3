@@ -92,14 +92,17 @@ class TestBranchSet(TestCase):
         login(branch_owner.preferredemail.email)
         try:
             branch_set = getUtility(IBranchSet)
-            branches = list(
+            branches = sorted(
+                branch.unique_name for branch in
                 branch_set.getHostedBranchesForPerson(branch_owner))
-            expected_branches = branch_set.getBranchesForOwners(
-                list(branch_owner.teams_participated_in) + [branch_owner])
-            expected_branches = [
-                branch for branch in expected_branches
-                if branch.branch_type == BranchType.HOSTED]
-            self.assertEqual(expected_branches, branches)
+            expected = [
+                u'~landscape-developers/landscape/trunk',
+                u'~name12/gnome-terminal/mirrored',
+                u'~name12/gnome-terminal/pushed',
+                u'~name12/gnome-terminal/scanned',
+                u'~name12/landscape/feature-x',
+                ]
+            self.assertEqual(expected, branches)
         finally:
             logout()
 
@@ -197,6 +200,7 @@ class TestMirroringForHostedBranches(BranchTestCase):
 
     def setUp(self):
         BranchTestCase.setUp(self)
+        self.branch_set = getUtility(IBranchSet)
         login(ANONYMOUS)
         self.emptyPullQueues()
         # The absolute minimum value for any time field set to 'now'.

@@ -28,11 +28,20 @@ XML-RPC API:
 
 The ICodeImportScheduler interface defines a single method,
 getJobForMachine(), that returns the id of the job that the code
-import slave should next run.  Currently it is hard coded to return
-the integer "4".
+import slave should next run.
 
-    >>> codeimportscheduler_api.getJobForMachine('bazaar-importd')
-    4
+    >>> codeimportscheduler_api.getJobForMachine('bazaar-importer')
+    1
+
+    >>> from canonical.database.sqlbase import flush_database_updates
+    >>> flush_database_updates()
+
+If you pass a bogus hostname, you get a NoSuchCodeImportMachine Fault.
+
+    >>> codeimportscheduler_api.getJobForMachine('does-not-exist')
+    Traceback (most recent call last):
+      ...
+    NoSuchCodeImportMachine: ...
 
 Of course, the point of all this is for it to be accessed over XMLRPC.
 
@@ -41,5 +50,5 @@ Of course, the point of all this is for it to be accessed over XMLRPC.
     >>> codeimportscheduler = xmlrpclib.ServerProxy(
     ...     'http://xmlrpc-private.launchpad.dev:8087/codeimportscheduler',
     ...     transport=XMLRPCTestTransport())
-    >>> codeimportscheduler.getJobForMachine('bazaar-importd')
-    4
+    >>> codeimportscheduler.getJobForMachine('bazaar-importer')
+    0

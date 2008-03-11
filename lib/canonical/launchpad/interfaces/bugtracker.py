@@ -118,6 +118,13 @@ class BugTrackerType(DBEnumeratedType):
         Bugs are tracked by email, perhaps on a mailing list.
         """)
 
+    SAVANNAH = DBItem(9, """
+        GNU / NoGNU Savannah
+
+        Savannah is a web-based project hosting system which includes
+        bug, support and request tracking.
+        """)
+
 
 class IBugTracker(Interface):
     """A remote bug system."""
@@ -229,6 +236,9 @@ class IBugTrackerSet(Interface):
         Returns a list of IBugTracker objects, ordered by the number
         of bugwatches for each tracker, from highest to lowest.
         """
+
+    def getPillarsForBugtrackers(bug_trackers):
+        """Return dict mapping bugtrackers to lists of pillars."""
 
 
 class IBugTrackerAlias(Interface):
