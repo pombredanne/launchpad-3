@@ -586,3 +586,19 @@ def truncate_text(text, max_length):
             break
         truncated += word
     return truncated[:max_length]
+
+
+def english_list(items, join='and'):
+    """Return all the items concatenated into a English-style string.
+
+    Follows the advice given in The Elements of Style, chapter II,
+    section 2.
+
+    :param join: The string used to join the last two elements.
+    """
+    items = list(items)
+    if len(items) <= 2:
+        return (' %s ' % join).join(items)
+    else:
+        items[-1] = '%s %s' % (join, items[-1])
+        return ', '.join(items)
