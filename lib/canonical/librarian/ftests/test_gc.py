@@ -7,14 +7,13 @@ import sys
 import os
 from subprocess import Popen, PIPE, STDOUT
 from cStringIO import StringIO
-from unittest import TestCase, TestSuite, makeSuite
+from unittest import TestCase, TestLoader
 from datetime import datetime, timedelta
 from pytz import utc
 
 from canonical.config import config
 from canonical.database.sqlbase import (
-        connect, cursor, SQLObjectNotFound, AUTOCOMMIT_ISOLATION,
-        )
+    connect, cursor, ISOLATION_LEVEL_AUTOCOMMIT, SQLObjectNotFound)
 from canonical.launchpad.database import LibraryFileAlias, LibraryFileContent
 from canonical.librarian import librariangc
 from canonical.librarian.client import LibrarianClient
@@ -76,7 +75,7 @@ class TestLibrarianGarbageCollection(TestCase):
         self.ztm.abort()
 
         self.con = connect(config.librarian.gc.dbuser)
-        self.con.set_isolation_level(AUTOCOMMIT_ISOLATION)
+        self.con.set_isolation_level(ISOLATION_LEVEL_AUTOCOMMIT)
 
     def tearDown(self):
         self.con.rollback()
@@ -577,7 +576,7 @@ class TestBlobCollection(TestCase):
 
         # Open a connection for our test
         self.con = connect(config.librarian.gc.dbuser)
-        self.con.set_isolation_level(AUTOCOMMIT_ISOLATION)
+        self.con.set_isolation_level(ISOLATION_LEVEL_AUTOCOMMIT)
 
         librariangc.log = MockLogger()
 
@@ -715,7 +714,4 @@ class TestBlobCollection(TestCase):
 
 
 def test_suite():
-    suite = TestSuite()
-    suite.addTest(makeSuite(TestLibrarianGarbageCollection))
-    suite.addTest(makeSuite(TestBlobCollection))
-    return suite
+    return TestLoader().loadTestsFromName(__name__)

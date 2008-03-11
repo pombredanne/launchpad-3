@@ -5,6 +5,7 @@ __metaclass__ = type
 __all__ = ['SourcePackageRelease']
 
 import datetime
+import operator
 import pytz
 from StringIO import StringIO
 import re
@@ -233,6 +234,19 @@ class SourcePackageRelease(SQLBase):
         return [DistroSeriesSourcePackageRelease(pub.distroseries, self)
                 for pub in self.publishings]
 
+    @property
+    def published_archives(self):
+        """See `ISourcePacakgeRelease`."""
+        archives = set()
+        publishings = self.publishings.prejoin(['archive'])
+        live_states = (PackagePublishingStatus.PENDING,
+                       PackagePublishingStatus.PUBLISHED)
+        for pub in publishings:
+            if pub.status in live_states:
+                archives.add(pub.archive)
+
+        return sorted(archives, key=operator.attrgetter('id'))
+
     def addFile(self, file):
         """See ISourcePackageRelease."""
         determined_filetype = None
@@ -396,7 +410,7 @@ class SourcePackageRelease(SQLBase):
             'PackageUpload',
             'PackageUploadSource',
             ]
-        preJoins= ['changesfile']
+        preJoins = ['changesfile']
         query = """
         PackageUpload.id = PackageUploadSource.packageupload AND
         PackageUpload.distroseries = %s AND

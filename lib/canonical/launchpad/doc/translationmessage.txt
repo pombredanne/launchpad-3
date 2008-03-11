@@ -21,17 +21,18 @@ implement ITranslationMessage interface:
     >>> verifyObject(ITranslationMessage, translationmessage)
     True
 
+    >>> serbian = getUtility(ILanguageSet)['sr']
     >>> dummy_translationmessage = potmsgset.getCurrentDummyTranslationMessage(
-    ...     getUtility(ILanguageSet)['sr'])
+    ...     serbian)
     >>> verifyObject(ITranslationMessage, dummy_translationmessage)
     True
 
 
 == plural_forms ==
 
-This property returns a number of plural forms needed for a TranslationMessage
-to be 'complete', i.e. contain all the necessary translations.
-
+This property returns a number of plural forms needed for a
+TranslationMessage to be 'complete', i.e. contain all the necessary
+translations.
 
 We can look at a POTMsgSet with no plural forms:
 
@@ -189,33 +190,101 @@ and last current translation is not hidden either.
     >>> new_current_translation.is_hidden
     False
 
+== translations & all_msgstrs ==
 
-== destroySelf ==
+The translations attribute is a list containing all translation strings
+for the message, up to and including the last plural form it can have.
 
-(Note: keep this test last because of tearDown())
+For a regular single-form message, that's always one.
 
-With this method, we allow to remove a submission, it comes from SQLObject,
-but we test it here to be sure it appears in our public interface.
+    >>> login('foo.bar@canonical.com')
+    >>> message = potmsgset.getCurrentTranslationMessage(serbian)
+    >>> message.translations
+    [u'new']
 
-We will need extra permissions to use this method.
+If the message has no actual translation, the translations attribute
+contains just a None.
 
-    >>> import transaction
-    >>> from canonical.launchpad.ftests.harness import (
-    ...     LaunchpadFunctionalTestSetup)
-    >>> LaunchpadFunctionalTestSetup(dbuser='rosettaadmin').setUp()
+    >>> empty_message = potmsgset.updateTranslation(
+    ...     pofile_sr, carlos, {}, is_fuzzy=False, is_imported=False,
+    ...     lock_timestamp=datetime.now(UTC))
+    >>> empty_message.translations
+    [None]
 
-Select an existing ITranslationMessage and try to remove it.
+For a message with plurals, it's the POFile's number of plural forms.
 
-    >>> translationmessage = TranslationMessage.get(1)
-    >>> translationmessage.destroySelf()
+    >>> spanish = getUtility(ILanguageSet)['es']
+    >>> plural_potmsgset = potemplate.getPOTMsgSetByMsgIDText('%d contact')
+    >>> plural_message = plural_potmsgset.getCurrentTranslationMessage(
+    ...     spanish)
+    >>> plural_message.translations
+    [u'%d contacto', u'%d contactos']
 
-It should not exist now.
+If the message does not translate all those forms, we get None entries
+in the list.
 
-    >>> translationmessage = TranslationMessage.get(1)
-    Traceback (most recent call last):
-    ...
-    SQLObjectNotFound:...
+    >>> empty_message = plural_potmsgset.updateTranslation(
+    ...     pofile_sr, carlos, {}, is_fuzzy=False, is_imported=False,
+    ...     lock_timestamp=datetime.now(UTC))
+    >>> empty_message.translations
+    [None, None, None]
 
-    # NOTE: Once this has executed, you may experience strange
-    # failures.  Keep this test at the bottom.
-    >>> LaunchpadFunctionalTestSetup().tearDown()
+The all_msgstrs attribute is simpler.  It gives us the full list of
+translations for all supported plural forms, even if they are None.
+These are POTranslation references, not strings.
+
+    >>> for translation in message.all_msgstrs:
+    ...     if translation is None:
+    ...         print 'None'
+    ...     else:
+    ...         print translation.translation
+    new
+    None
+    None
+    None
+    None
+    None
+
+
+== Composing SQL involving plural forms ==
+
+SQL Queries involving the TranslationMessage.msgstr* attributes often
+get repetitive.  We have some helper functions to make it easier on the
+eyes.
+
+    >>> from canonical.launchpad.database.translationmessage import (
+    ...     make_plurals_fragment, make_plurals_sql_fragment)
+
+The helper function make_plurals_fragment repeats a fragment of text
+for the number of plural forms we support (starting at zero).
+
+    >>> print make_plurals_fragment("x%(form)dx", ", ")
+    x0x,
+    x1x,
+    x2x,
+    x3x,
+    x4x,
+    x5x
+
+Composing text like this happens most in WHERE clauses of SQL queries.
+The make_plurals_sql_fragment helper adds some parentheses and spaces
+where you might otherwise forget them--or want to.
+
+    >>> print make_plurals_sql_fragment("msgstr%(form)d IS NOT NULL")
+    (msgstr0 IS NOT NULL) AND
+    (msgstr1 IS NOT NULL) AND
+    (msgstr2 IS NOT NULL) AND
+    (msgstr3 IS NOT NULL) AND
+    (msgstr4 IS NOT NULL) AND
+    (msgstr5 IS NOT NULL)
+
+The sub-clauses don't have to be tied together with AND:
+
+    >>> print make_plurals_sql_fragment("msgstr%(form)d IS NULL", "OR")
+    (msgstr0 IS NULL) OR
+    (msgstr1 IS NULL) OR
+    (msgstr2 IS NULL) OR
+    (msgstr3 IS NULL) OR
+    (msgstr4 IS NULL) OR
+    (msgstr5 IS NULL)
+
