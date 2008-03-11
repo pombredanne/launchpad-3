@@ -485,6 +485,7 @@ class XMLRPCRunner(Runner):
                                message_id)
                     else:
                         mlist.HandleRequest(request_id, mm_cfg.APPROVE)
+                        syslog('vette', 'Approved: %s', message_id)
                 for message_id in declines:
                     request_id = mlist.held_message_ids.pop(message_id, None)
                     if request_id is None:
@@ -492,6 +493,7 @@ class XMLRPCRunner(Runner):
                                message_id)
                     else:
                         mlist.HandleRequest(request_id, mm_cfg.DISCARD)
+                        syslog('vette', 'Discarded: %s', message_id)
                 mlist.Save()
             finally:
                 mlist.Unlock()

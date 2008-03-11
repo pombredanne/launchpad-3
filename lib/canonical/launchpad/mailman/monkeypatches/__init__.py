@@ -116,6 +116,7 @@ PRIVATE_EXTERNAL_ARCHIVER = PUBLIC_EXTERNAL_ARCHIVER
     for mm_name, lp_name in (('LaunchpadMember', 'lphandler'),
                              ('LaunchpadHeaders', 'lpheaders'),
                              ('LPStanding', 'lpstanding'),
+                             ('LPModerate', 'lpmoderate'),
                              ):
         handler_path = os.path.join(
             mailman_path, 'Mailman', 'Handlers', mm_name + '.py')

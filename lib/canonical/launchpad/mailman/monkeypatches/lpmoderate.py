@@ -6,7 +6,7 @@
 import socket
 import xmlrpclib
 
-from email.Utils import make_msgid
+from email.Utils import formatdate, make_msgid
 
 from Mailman import Errors
 from Mailman import mm_cfg
@@ -61,12 +61,16 @@ def process(mlist, msg, msgdata):
         syslog('vette', 'Discarding duplicate held message-id: %s', message_id)
         raise Errors.DiscardMessage
     holds[message_id] = request_id
+    # In addition to Message-ID, the librarian requires a Date header.
+    if msg.get('date') is None:
+        msg['Date'] = formatdate()
     # Store the message in the librarian.
     proxy = xmlrpclib.ServerProxy(mm_cfg.XMLRPC_URL)
     # This will fail if we can't talk to Launchpad.  That's okay though
     # because Mailman's IncomingRunner will re-queue the message and re-start
     # processing at this handler.
-    proxy.holdMessage(mlist.internal_name(), msg.to_string())
+    proxy.holdMessage(mlist.internal_name(), msg.as_string())
+    syslog('vette', 'Holding message for LP approval: %s', message_id)
     # Raise this exception, signaling to the incoming queue runner that it is
     # done processing this message, and should not send it through any further
     # handlers.
