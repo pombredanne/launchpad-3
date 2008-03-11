@@ -29,7 +29,8 @@ methods.
     >>> from canonical.launchpad.ftests.externalbugtracker import (
     ...     new_bugtracker)
     >>> bugtracker = new_bugtracker(BugTrackerType.BUGZILLA)
-    >>> external_bugtracker = BugImportingExternalBugTracker(None, bugtracker)
+    >>> external_bugtracker = BugImportingExternalBugTracker(
+    ...     'http://example.com/')
 
 When importing bugs, the reporter is automatically created in Launchpad,
 if he doesn't exist.

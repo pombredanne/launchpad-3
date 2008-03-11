@@ -12,9 +12,9 @@ import _pythonpath
 from zope.component import getUtility
 
 from canonical.config import config
+from canonical.database.sqlbase import ISOLATION_LEVEL_READ_COMMITTED
 from canonical.launchpad.interfaces import IDistributionSet
 from canonical.launchpad.scripts.base import LaunchpadCronScript
-from canonical.lp import READ_COMMITTED_ISOLATION
 
 
 class PackageCacheUpdater(LaunchpadCronScript):
@@ -33,7 +33,7 @@ class PackageCacheUpdater(LaunchpadCronScript):
             self.txn.commit()
 
     def main(self):
-        self.txn.set_isolation_level(READ_COMMITTED_ISOLATION)
+        self.txn.set_isolation_level(ISOLATION_LEVEL_READ_COMMITTED)
         self.logger.debug('Starting the sp cache update')
         # Do the cache update
         distroset = getUtility(IDistributionSet)

@@ -72,7 +72,7 @@ above.
     ...         return message
 
     >>> external_bugtracker = CommentImportingExternalBugTracker(
-    ...     None, new_bugtracker(BugTrackerType.BUGZILLA))
+    ...     'http://example.com/')
 
 Calling importBugComments() on our new comment-importing
 ExternalBugTracker instance will result in the three comments in the

@@ -140,8 +140,20 @@ class EntryResource(ReadOnlyResource):
         if parent_collection:
             self.parent_collection = parent_collection
         else:
-            self.parent_collection = self.root_resource.publishTraverse(
-                self.request, self.context.parent_collection_name)
+            resource = self.root_resource
+            for fragment in self.context._parent_collection_path:
+                if callable(fragment):
+                    # Ask the context to do the traversal from a
+                    # collection to a specific item in that
+                    # collection.
+                    resource = resource.makeEntryResource(
+                        fragment(self.context), self.request)
+                else:
+                    # Traverse from an entry to one of the entry's
+                    # collections, by name.
+                    resource = resource.publishTraverse(self.request,
+                                                        fragment)
+            self.parent_collection = resource
 
     @property
     def path(self):
@@ -169,7 +181,6 @@ class EntryResource(ReadOnlyResource):
         # scoped to.
         scoped_collection.collection = collection
         scoped_collection.relationship = field
-
         return ScopedCollectionResource(scoped_collection, self.request, name)
 
 
@@ -205,7 +216,7 @@ class EntryResource(ReadOnlyResource):
                     key = name + '_link'
                     dict[key] = canonical_url(related_resource,
                                               request=self.request)
-            elif IField.providedBy(element):
+            elif IField.providedBy(element) and name[0] != '_':
                 # It's a data field; display it as part of the
                 # representation.
                 dict[name] = getattr(self.context, name)
@@ -213,7 +224,6 @@ class EntryResource(ReadOnlyResource):
                 # It's a method or some other part of an interface.
                 # Ignore it.
                 pass
-
         return dict
 
     def do_GET(self):
@@ -246,10 +256,7 @@ class CollectionResource(ReadOnlyResource):
         return self.context.getEntryPath(entry)
 
     def makeEntryResource(self, entry, request):
-        """Construct an entry resource for the given entry.
-
-        This is a factory method to be overridden by subclasses.
-        """
+        """See `ICollectionResource`."""
         return EntryResource(entry, request)
 
     def publishTraverse(self, request, name):
@@ -354,17 +361,6 @@ class ScopedCollection:
         """
         self.context = context
         self.collection = collection
-
-    def child_fragment(self, child):
-        """Choose a URL fragment for one of this collection's entries.
-
-        The default behavior is to let the child entry choose its own
-        URL fragment. But sometimes the child doesn't have a top-level
-        collection or unique ID of its own; it only makes sense in
-        relation to its parent collection. In such cases it's the
-        parent collection's job to decide on a URL.
-        """
-        return None
 
     def lookupEntry(self, name):
         """See `ICollection`"""
