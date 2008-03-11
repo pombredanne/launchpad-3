@@ -73,7 +73,6 @@ def migrate_translations_for_potmsgset(potmsgset, from_potmsgset, logger, ztm):
             if len(translations) == 1 and potmsgset == from_potmsgset:
                 continue
 
-            #logger.info("OVDE JE STIGAO!")
             # If there is an existing TranslationMessage with
             # these translations, re-use that and remove this one,
             # otherwise modify this one in-place.
@@ -236,14 +235,12 @@ def migrate_translations_for_kdepo_templates(ztm, logger):
     """Migrate translations for already re-imported KDE PO templates."""
     potemplates = POTemplate.select("""source_file_format=%s AND
     POTemplate.id IN
-        (SELECT potemplate
+        (SELECT DISTINCT potemplate
           FROM POTMsgSet
           JOIN POMsgID ON POMsgID.id = POTMsgSet.msgid_singular
           WHERE POTMsgSet.potemplate = POTemplate.id AND
-                POTMsgSet.msgid_plural IS NOT NULL
-          LIMIT 1)
+                POTMsgSet.msgid_plural IS NOT NULL)
       """ % sqlvalues(TranslationFileFormat.KDEPO),
-      clauseTables=['POTMsgSet', 'POMsgID'],
       distinct=True)
 
     count = potemplates.count()
@@ -259,15 +256,13 @@ def migrate_unmigrated_templates_to_kdepo(ztm, logger):
 
     potemplates = POTemplate.select("""source_file_format=%s AND
     POTemplate.id IN
-        (SELECT potemplate
+        (SELECT DISTINCT potemplate
           FROM POTMsgSet
           JOIN POMsgID ON POMsgID.id = POTMsgSet.msgid_singular
           WHERE POTMsgSet.potemplate = POTemplate.id AND
                 POTMsgSet.msgid_plural IS NULL AND
-                (POMsgID.msgid LIKE '_n: %%' OR POMsgID.msgid LIKE '_: %%')
-          LIMIT 1)
+                (POMsgID.msgid LIKE '_n: %%' OR POMsgID.msgid LIKE '_: %%'))
       """ % sqlvalues(TranslationFileFormat.PO),
-      clauseTables=['POTMsgSet', 'POMsgID'],
       distinct=True)
 
     count = potemplates.count()
