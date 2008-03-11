@@ -254,7 +254,7 @@ Now Jdub can apply for team membership and mailing list access.
 
     >>> for tag in find_tags_by_class(browser.contents, 'informational'):
     ...     print tag.renderContents()
-    Subscription request pending approval.
+    Your request to join Rosetta Administrators is awaiting approval.
     Your mailing list subscription is awaiting approval.
 
 Jdub hasn't been approved for the team yet, so he is not subscribed to

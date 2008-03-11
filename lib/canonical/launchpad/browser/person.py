@@ -2821,17 +2821,19 @@ class TeamJoinView(PersonView):
             user.join(context)
             if self.team_is_moderated:
                 response.addInfoNotification(
-                    _('Subscription request pending approval.'))
+                    _('Your request to join ${team} is awaiting '
+                      'approval.',
+                      mapping={'team': context.displayname}))
             else:
                 response.addInfoNotification(
-                    _('Successfully joined ${team}.',
+                    _('You have successfully joined ${team}.',
                       mapping={'team': context.displayname}))
 
             if 'mailinglist_subscribe' in request.form:
                 self._subscribeToList()
 
         elif 'join' in request.form:
-            response.addInfoNotification(
+            response.addErrorNotification(
                 _('You cannot join ${team}.',
                   mapping={'team': context.displayname}))
         elif 'goback' in request.form:
@@ -2863,8 +2865,8 @@ class TeamJoinView(PersonView):
                       'approval.'))
             else:
                 response.addInfoNotification(
-                    _("You have been subscribed to this team's "
-                      "mailing list"))
+                    _("You have been subscribed to this team&#x2019;s "
+                      "mailing list."))
 
 
 class TeamAddMyTeamsView(LaunchpadFormView):

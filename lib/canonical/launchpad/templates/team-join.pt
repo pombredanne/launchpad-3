@@ -27,15 +27,14 @@
 
     <p tal:condition="view/team_is_moderated">
       Since this is a moderated team, one of its administrators will have to
-      approve your membership before you actually become a member of this
-      team.
+      approve your membership before you actually become a member.
     </p>
 
     <form class="actions" name="join" action="" method="post">
       <p tal:condition="view/user_can_subscribe_to_list">
 	<input type="checkbox" name="mailinglist_subscribe"
 	       value="checkbox" />
-	Subscribe me to this team's mailing list.
+	Subscribe me to this team's mailing list
       </p>
       <input type="submit" name="goback" value="Cancel" />
       <input type="submit" name="join" value="Join" />
