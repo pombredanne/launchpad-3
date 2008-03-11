@@ -2865,8 +2865,9 @@ class TeamJoinView(PersonView):
                       'approval.'))
             else:
                 response.addInfoNotification(
-                    _("You have been subscribed to this team&#x2019;s "
-                      "mailing list."))
+                    structured(
+                        _("You have been subscribed to this team&#x2019;s "
+                          "mailing list.")))
 
 
 class TeamAddMyTeamsView(LaunchpadFormView):

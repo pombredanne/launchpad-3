@@ -11,7 +11,7 @@
     'Register a new team in Launchpad'
 
     >>> browser.getControl(name='field.name').value = 'myemail'
-    >>> browser.getControl('Display Name').value = 'my own team'
+    >>> browser.getControl('Display Name').value = 'your own team'
     >>> browser.getControl(
     ...     'Team Description').value = 'my own team description'
     >>> browser.getControl('Subscription period').value = '365'
@@ -23,7 +23,7 @@
     'http://launchpad.dev/~myemail'
 
     >>> browser.title
-    'my own team in Launchpad'
+    'your own team in Launchpad'
 
 The owner of a team is always added as an administrator of his team.
 

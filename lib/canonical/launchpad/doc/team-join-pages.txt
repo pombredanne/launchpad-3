@@ -54,7 +54,7 @@ mangled form data.)
     ...	    'open-team-no-list', TeamSubscriptionPolicy.OPEN)
 
     >>> join_team(no_list_team)
-    Successfully joined open-team-no-list.
+    You have successfully joined open-team-no-list.
     Mailing list subscription failed.
 
 Someone subscribing to a moderated team's list will be shown an
@@ -66,7 +66,7 @@ informative message regarding the delayed subscription.
     >>> moderated_list = new_list_for_team(moderated_team)
 
     >>> join_team(moderated_team)
-    Subscription request pending approval.
+    Your request to join moderated-team-with-list is awaiting approval.
     Your mailing list subscription is awaiting approval.
 
     >>> sorted(email.email for email in
@@ -86,8 +86,8 @@ team's list.
     >>> open_list = new_list_for_team(open_team)
 
     >>> join_team(open_team)
-    Successfully joined open-team-with-list.
-    You have been subscribed to this team's mailing list
+    You have successfully joined open-team-with-list.
+    You have been subscribed to this team&#x2019;s mailing list.
 
     >>> sorted(email.email for email in
     ...	    open_list.getSubscribedAddresses())
