@@ -477,7 +477,21 @@ class XMLRPCRunner(Runner):
                        team_name)
                 continue
             try:
-                # XXX
+                accepts, declines = by_list[team_name]
+                for message_id in accepts:
+                    request_id = mlist.held_message_ids.pop(message_id, None)
+                    if request_id is None:
+                        syslog('xmlrpc', 'Missing accepted message-id: %s',
+                               message_id)
+                    else:
+                        mlist.HandleRequest(request_id, mm_cfg.APPROVE)
+                for message_id in declines:
+                    request_id = mlist.held_message_ids.pop(message_id, None)
+                    if request_id is None:
+                        syslog('xmlrpc', 'Missing declined message-id: %s',
+                               message_id)
+                    else:
+                        mlist.HandleRequest(request_id, mm_cfg.DISCARD)
                 mlist.Save()
             finally:
                 mlist.Unlock()
