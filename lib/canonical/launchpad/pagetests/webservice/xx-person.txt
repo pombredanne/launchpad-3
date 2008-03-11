@@ -11,7 +11,7 @@ asserting what the person should look like. The document may only
 describe part of the person's new state (in which case the client
 should use the PATCH HTTP method) [TODO leonardr 2008-03-10
 api-base-modify-data-entry]: or it may describe the entire new state,
-in which case the cluent should use PUT.])
+in which case the client should use PUT.)
 
 
 === What you can do ===
@@ -20,15 +20,18 @@ A person's data fields can be modified.
 
   >>> import simplejson
   >>> def patch_person(person, patch):
+  ...     "A helper function to send a PATCH request for a person."
   ...     return webservice(r"""
   ... PATCH /people/%s HTTP/1.1
   ... Host: api.launchpad.dev
   ... Content-type: application/json
-  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... Authorization: Basic foo.bar@canonical.com:test
   ...
   ... %s
   ... """ % (person, simplejson.dumps(patch)))
 
+The user 'salgado' starts out with a display name of 'Guilherme
+Salgado'.
 
   >>> salgado = webservice(r"""
   ... GET /people/salgado HTTP/1.1
@@ -36,6 +39,9 @@ A person's data fields can be modified.
   ... """).jsonBody()
   >>> salgado['displayname']
   u'Guilherme Salgado'
+
+Here we use the web service to change the user so that the display
+name is in uppercase.
 
   >>> print patch_person('salgado', {'displayname' : 'GUILHERME SALGADO'})
   HTTP/1.1 200 Ok
@@ -49,7 +55,8 @@ A person's data fields can be modified.
   >>> salgado['displayname']
   u'GUILHERME SALGADO'
 
-The modification might cause the person's address to change:
+The modification might cause the person's address to change. Here we
+use the web service to change the person's name to 'salgado2'.
 
   >>> print patch_person('salgado', {'name' : 'salgado2'})
   HTTP/1.1 301 Moved Permanently
@@ -57,7 +64,12 @@ The modification might cause the person's address to change:
   Location: http://api.launchpad.dev/people/salgado2
   <BLANKLINE>
 
-  # Undo the previous change
+At this point we can no longer manipulate the 'salgado' Person by
+sending HTTP requests to http://api.launchpad.dev/people/salgado,
+because that Person now 'lives' at
+http://api.launchpad.dev/people/salgado2. To change 'salgado2' back to
+'salgado', we need to send a PATCH request to the new address.
+
   >>> print patch_person('salgado2', {'name' : 'salgado'})
   HTTP/1.1 301 Moved Permanently
   ...
@@ -101,6 +113,13 @@ collection as though it were the actual object:
   HTTP/1.1 400 Bad Request
   ...
   You tried to modify the nonexistent attribute 'owner'
+
+And of course you can't modify attributes that don't exist.
+
+  >>> print patch_person('salgado', {'nonesuch' : 'dummy'})
+  HTTP/1.1 400 Bad Request
+  ...
+  You tried to modify the nonexistent attribute 'nonesuch'
 
 
 == Team memberships ==
