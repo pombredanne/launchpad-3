@@ -44,7 +44,7 @@ class ISupportsCommentImport(IExternalBugTracker):
         """Return a tuple of (name, emailaddress) for a comment's poster."""
 
     def getMessageForComment(bug_watch, comment_id, poster):
-        """Return a Message object for a comment."""
+        """Return an `IMessage` instance for a comment."""
 
 
 class ISupportsBugImport(IExternalBugTracker):
