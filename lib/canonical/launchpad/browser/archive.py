@@ -635,4 +635,8 @@ class ArchiveAdminView(BaseArchiveEditView):
 
 def archive_to_structualheading(archive):
     """Adapts an `IArchive` into an `IStructuralHeaderPresentation`."""
-    return IStructuralHeaderPresentation(archive.owner)
+    if archive.owner is not None:
+        return IStructuralHeaderPresentation(archive.owner)
+    else:
+        return IStructuralHeaderPresentation(archive.distribution)
+
