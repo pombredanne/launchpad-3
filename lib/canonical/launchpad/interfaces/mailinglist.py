@@ -580,6 +580,28 @@ class IMailingListAPIView(Interface):
             team.
         """
 
+    def holdMessage(team_name, text):
+        """Hold the message for approval though the Launchpad u/i.
+
+        :param team_name: The name of the team/mailing list that this message
+            was posted to.
+        :param text: The original text of the message.
+        :return: True
+        """
+
+    def getMessageDispositions():
+        """Get all new message dispositions.
+
+        This returns a dictionary mapping message ids to their disposition,
+        which will either be 'accept' or 'decline'.  This only returns
+        message-ids of disposed messages since the last time this method was
+        called.
+
+        :return: A dictionary mapping message-ids to the disposition tuple.
+            This tuple is of the form (team-name, action), where the action is
+            either the string 'accept' or 'decline'.
+        """
+
 
 class IMailingListSubscription(Interface):
     """A mailing list subscription."""
