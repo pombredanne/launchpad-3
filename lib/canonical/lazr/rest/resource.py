@@ -115,18 +115,21 @@ class ReadOnlyResource(HTTPResource):
 
 
 class ReadWriteResource(HTTPResource):
-    """A resource that responds to GET and PATCH."""
+    """A resource that responds to GET, PUT, and PATCH."""
     def __call__(self):
-        """Handle a GET request."""
+        """Handle a GET, PUT, or PATCH request."""
         if self.request.method == "GET":
             return self.do_GET()
-        elif self.request.method == "PATCH":
+        elif self.request.method in ["PUT", "PATCH"]:
             type = self.request.headers['Content-Type']
             representation = self.request.bodyStream.getCacheStream().read()
-            return self.do_PATCH(type, representation)
+            if self.request.method == "PUT":
+                return self.do_PUT(type, representation)
+            else:
+                return self.do_PATCH(type, representation)
         else:
             self.request.response.setStatus(405)
-            self.request.response.setHeader("Allow", "GET PATCH")
+            self.request.response.setHeader("Allow", "GET PUT PATCH")
 
 
 class CollectionEntryDummy:
@@ -247,6 +250,15 @@ class EntryResource(ReadWriteResource):
         self.request.response.setHeader('Content-type', 'application/json')
         return simplejson.dumps(self, cls=ResourceJSONEncoder)
 
+    def do_PUT(self, media_type, representation):
+        """Modify the entry's state to match the given representation.
+
+        A PUT is just like a PATCH, except the given representation
+        must be a complete representation of the entry.
+        """
+        pass
+
+
     def do_PATCH(self, media_type, representation):
         """Apply a JSON patch to the entry."""
         if media_type != 'application/json':
@@ -275,25 +287,33 @@ class EntryResource(ReadWriteResource):
                 # you have to use 'foo_collection_link' or 'bar_link'.
                 # (Of course, you also can't change
                 # 'foo_collection_link', but that's taken care of
-                # directly below.)
+                # below.)
                 self.request.response.setStatus(400)
                 return ("You tried to modify the nonexistent attribute '%s'"
-                        % repr_name)
-
-            if ICollectionField.providedBy(element):
-                self.request.response.setStatus(400)
-                return ("You tried to modify the collection link '%s'"
-                        % repr_name)
-
-            if element.readonly:
-                self.request.response.setStatus(400)
-                return ("You tried to modify the read-only attribute '%s'"
                         % repr_name)
 
             if IObject.providedBy(element):
                 # TODO: 'value' is the URL to an object. Traverse
                 # the URL to find the actual object.
                 pass
+
+            # Read-only attributes and collection links can't be
+            # modified. It's okay to provide a value for an attribute
+            # that can't be modified, but the new value must be the
+            # same as the current value.  This makes it possible to
+            # GET a document, modify one field, and send it back.
+            current_value = getattr(self.context, name)
+
+            if (ICollectionField.providedBy(element) and
+                value != canonical_url(current_value)):
+                self.request.response.setStatus(400)
+                return ("You tried to modify the collection link '%s'"
+                        % repr_name)
+
+            if element.readonly and value != current_value:
+                self.request.response.setStatus(400)
+                return ("You tried to modify the read-only attribute '%s'"
+                        % repr_name)
 
             try:
                 # Do any field-specific validation.

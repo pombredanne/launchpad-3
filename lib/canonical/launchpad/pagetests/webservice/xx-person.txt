@@ -70,7 +70,9 @@ The modification might cause the person's address to change:
 
 === What you can't do. ===
 
-A person's read-only attributes can't be modified.
+A person's read-only attributes can't be modified. You can send a
+document that includes a value for a read-only attribute, but it has
+to be the same as the current value.
 
   >>> print patch_person('salgado', {'datecreated' : 'dummy-date'})
   HTTP/1.1 400 Bad Request
