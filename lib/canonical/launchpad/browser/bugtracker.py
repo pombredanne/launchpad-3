@@ -277,6 +277,11 @@ class BugTrackerEditView(LaunchpadEditFormView):
         # then delete the watches themselves.
         for watch in self.context.watches:
             for bugtask in watch.bugtasks:
+                if len(bugtask.bug.bugtasks) < 2:
+                    raise AssertionError(
+                        'There should be more than one bugtask for a bug '
+                        'when one of them is linked to the original bug via '
+                        'a bug watch.')
                 bugtask.bugwatch = None
         flush_database_updates()
         for watch in self.context.watches:
