@@ -1,6 +1,5 @@
 from unittest import TestLoader
 
-from canonical.launchpad.ftests import login
 from canonical.launchpad.testing import TestCaseWithFactory
 
 class TestCodeReviewVote(TestCaseWithFactory):

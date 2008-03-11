@@ -135,8 +135,8 @@ class IBranchSubscription(Interface):
         vocabulary=BranchSubscriptionNotificationLevel,
         default=BranchSubscriptionNotificationLevel.ATTRIBUTEONLY,
         description=_(
-            'Attribute notifications are sent when branch details are changed '
-            'such as lifecycle status and name.  Revision notifications are '
+            'Attribute notifications are sent when branch details are changed'
+            ' such as lifecycle status and name.  Revision notifications are '
             'generated when new branch revisions are found due to the branch '
             'being updated through either pushes to the hosted branches or '
             'the mirrored branches being updated.'))
