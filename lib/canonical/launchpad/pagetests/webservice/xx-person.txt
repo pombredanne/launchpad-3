@@ -82,16 +82,22 @@ http://api.launchpad.dev/people/salgado2. To change 'salgado2' back to
 
 === What you can't do. ===
 
-A person's read-only attributes can't be modified. You can send a
-document that includes a value for a read-only attribute, but it has
-to be the same as the current value.
+A person's read-only attributes can't be modified.
 
-  >>> print patch_person('salgado', {'datecreated' : 'dummy-date'})
+  >>> print patch_person('salgado', {'datecreated' :
+  ...                                u'2001-01-01T01:01:01+00:00'})
   HTTP/1.1 400 Bad Request
   Content-Length: 57
   Content-Type: text/plain;charset=utf-8
   <BLANKLINE>
   You tried to modify the read-only attribute 'datecreated'
+
+You can send a document that includes a value for a read-only
+attribute, but it has to be the same as the current value.
+
+  >>> print patch_person('salgado', {'datecreated' : salgado['datecreated']})
+  HTTP/1.1 200 Ok
+  ...
 
 A client can't change the link to a person's associated collection.
 
@@ -101,8 +107,17 @@ A client can't change the link to a person's associated collection.
   ...
   You tried to modify the collection link 'team_memberships_collection_link'
 
-A client also can't refer to a link to an associated object or
-collection as though it were the actual object:
+Again, you can send a document that includes a value for an associated
+collection link; you just can't _change_ the value.
+
+  >>> print patch_person('salgado',
+  ...                    {'team_memberships_collection_link' :
+  ...                     'http://api.launchpad.dev/people/salgado/team_memberships'})
+  HTTP/1.1 200 Ok
+  ...
+
+A client can't refer to a link to an associated object or collection
+as though it were the actual object:
 
   >>> print patch_person('salgado', {'team_memberships' : 'dummy'})
   HTTP/1.1 400 Bad Request
@@ -113,6 +128,15 @@ collection as though it were the actual object:
   HTTP/1.1 400 Bad Request
   ...
   You tried to modify the nonexistent attribute 'owner'
+
+You can't set nonsensical values for attributes.
+
+  >>> print patch_person('salgado',
+  ...                    {'datecreated' : 'dummy'})
+  HTTP/1.1 400 Bad Request
+  ...
+  You set the attribute 'datecreated' to a value that doesn't look
+  like a date.
 
 And of course you can't modify attributes that don't exist.
 

@@ -18,14 +18,17 @@ __all__ = [
     ]
 
 from datetime import datetime
+import pytz
 import simplejson
 import urllib
 
+from zope.app.datetimeutils import (DateError, DateTimeError, DateTimeParser,
+                                    SyntaxError)
 from zope.component import adapts, getMultiAdapter
 from zope.interface import implements, directlyProvides
 from zope.proxy import isProxy
 from zope.publisher.interfaces import NotFound
-from zope.schema import ValidationError
+from zope.schema import Datetime, ValidationError
 from zope.schema.interfaces import IField, IObject
 from zope.security.proxy import removeSecurityProxy
 
@@ -269,6 +272,8 @@ class EntryResource(ReadWriteResource):
         schema = self.context.schema
         validated_changeset = {}
         for repr_name, value in changeset.items():
+            change_this_field = True
+
             # We chop off the end of the string rather than use .replace()
             # because there's a chance the name of the field might already
             # have "_link" or (very unlikely) "_collection_link" in it.
@@ -297,38 +302,67 @@ class EntryResource(ReadWriteResource):
                 return ("You tried to modify the nonexistent attribute '%s'"
                         % repr_name)
 
+            # Around this point the specific value provided by the client
+            # becomes relevant, so we pre-process it.
             if IObject.providedBy(element):
                 # TODO: 'value' is the URL to an object. Traverse
                 # the URL to find the actual object.
                 pass
+            elif isinstance(element, Datetime):
+                try:
+                    value = DateTimeParser().parse(value)
+                    seconds = int(value[-2])
+                    microseconds = int(round((value[-2] - seconds) * 1000000))
+                    timezone = value[-1] # Ignored for now.
+                    value = datetime(*value[:-2] + (seconds, microseconds,
+                                                    pytz.utc))
+                except (DateError, DateTimeError, SyntaxError):
+                    self.request.response.setStatus(400)
+                    return ("You set the attribute '%s' to a value "
+                            "that doesn't look like a date." % repr_name)
+
+            # The current value of the attribute also becomes
+            # relevant, so we obtain that. If the attribute designates
+            # an entry or collection, we obtain the resource for that
+            # entry or collection.
+            if ICollectionField.providedBy(element):
+                current_value = self.publishTraverse(self.request, name)
+            elif IObject.providedBy(element):
+                current_value = EntryResource(getattr(self.context, name),
+                                              self.request)
+            else:
+                current_value = getattr(self.context, name)
 
             # Read-only attributes and collection links can't be
             # modified. It's okay to provide a value for an attribute
             # that can't be modified, but the new value must be the
             # same as the current value.  This makes it possible to
             # GET a document, modify one field, and send it back.
-            current_value = getattr(self.context, name)
+            if ICollectionField.providedBy(element):
+                change_this_field = False
+                if value != canonical_url(current_value):
+                    self.request.response.setStatus(400)
+                    return ("You tried to modify the collection link '%s'"
+                            % repr_name)
 
-            if (ICollectionField.providedBy(element) and
-                value != canonical_url(current_value)):
-                self.request.response.setStatus(400)
-                return ("You tried to modify the collection link '%s'"
-                        % repr_name)
+            if element.readonly:
+                change_this_field = False
+                if value != current_value:
+                    self.request.response.setStatus(400)
+                    return ("You tried to modify the read-only attribute '%s'"
+                            % repr_name)
 
-            if element.readonly and value != current_value:
-                self.request.response.setStatus(400)
-                return ("You tried to modify the read-only attribute '%s'"
-                        % repr_name)
+            if change_this_field is True:
+                try:
+                    # Do any field-specific validation.
+                    field = element.bind(self.context)
+                    field.validate(value)
+                except ValidationError, e:
+                    self.request.response.setStatus(400)
+                    return str(e)
+                validated_changeset[name] = value
 
-            try:
-                # Do any field-specific validation.
-                field = element.bind(self.context)
-                field.validate(value)
-            except ValidationError, e:
-                self.request.response.setStatus(400)
-                return str(e)
-            validated_changeset[name] = value
-
+        # Store the entry's current URL so we can see if it changes.
         original_url = canonical_url(self, request=self.request)
         # Make the changes.
         for name, value in validated_changeset.items():
