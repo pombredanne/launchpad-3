@@ -36,6 +36,16 @@ The vcs-imports celebrity owns the branches created by importd.
     True
 
 
+== bazaar-experts ==
+
+The bazaar-experts celebrity effectively has admin type privileges
+for branches, and branch related objects.
+
+    >>> bazaar_experts = personset.getByName('bazaar-experts')
+    >>> celebs.bazaar_experts == bazaar_experts
+    True
+
+
 == registry_experts ==
 
 The registry_experts celebrity has permissions to perform registry gardening

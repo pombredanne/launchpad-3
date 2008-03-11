@@ -111,25 +111,18 @@ PRIVATE_EXTERNAL_ARCHIVER = PUBLIC_EXTERNAL_ARCHIVER
             'import *')
     finally:
         runner_file.close()
-    # Mailman needs an additional handler at the front of the global pipeline
-    # to determine whether the poster is a Launchpad member or not.
-    handler_path = os.path.join(
-        mailman_path, 'Mailman', 'Handlers', 'LaunchpadMember.py')
-    handler_file = open(handler_path, 'w')
-    try:
-        print >> handler_file, (
-            'from canonical.launchpad.mailman.monkeypatches.lphandler '
-            'import *')
-    finally:
-        handler_file.close()
-    # We also need a handler to insert RFC 2369 and RFC 5064 headers specific
-    # to Launchpad's mailing list architecture.
-    handler_path = os.path.join(
-        mailman_path, 'Mailman', 'Handlers', 'LaunchpadHeaders.py')
-    handler_file = open(handler_path, 'w')
-    try:
-        print >> handler_file, (
-            'from canonical.launchpad.mailman.monkeypatches.lpheaders '
-            'import *')
-    finally:
-        handler_file.close()
+    # Install our handler wrapper modules so that Mailman can find them.  Most
+    # of the actual code of the handler comes from our monkey patches modules.
+    for mm_name, lp_name in (('LaunchpadMember', 'lphandler'),
+                             ('LaunchpadHeaders', 'lpheaders'),
+                             ('LPModerate', 'lpmoderate'),
+                             ):
+        handler_path = os.path.join(
+            mailman_path, 'Mailman', 'Handlers', mm_name + '.py')
+        handler_file = open(handler_path, 'w')
+        try:
+            package = 'canonical.launchpad.mailman.monkeypatches'
+            module = package + '.' + lp_name
+            print >> handler_file, 'from', module, 'import *'
+        finally:
+            handler_file.close()

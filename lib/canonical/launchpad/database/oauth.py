@@ -50,8 +50,10 @@ class OAuthConsumerSet:
 class OAuthToken(SQLBase):
     """See `IOAuthToken`."""
 
-    consumer = ForeignKey('OAuthConsumer', dbName='consumer', notNull=True)
-    person = ForeignKey('Person', dbName='person', notNull=False, default=None)
+    consumer = ForeignKey(
+        foreignKey='OAuthConsumer', dbName='consumer', notNull=True)
+    person = ForeignKey(
+        foreignKey='Person', dbName='person', notNull=False, default=None)
     permission = EnumCol(
         enum=OAuthPermission, notNull=False, default=None)
     date_created = UtcDateTimeCol(default=UTC_NOW, notNull=True)
@@ -76,6 +78,7 @@ class OAuthNonce(SQLBase):
     """See `IOAuthNonce`."""
     implements(IOAuthNonce)
 
-    consumer = ForeignKey('OAuthConsumer', dbName='consumer', notNull=True)
+    consumer = ForeignKey(
+        foreignKey='OAuthConsumer', dbName='consumer', notNull=True)
     request_timestamp = UtcDateTimeCol(default=UTC_NOW, notNull=True)
     nonce = StringCol(notNull=True)
