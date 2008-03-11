@@ -84,8 +84,10 @@ def migrate_translations_for_potmsgset(potmsgset, from_potmsgset, logger, ztm):
                     # Only transfer is_current and is_imported
                     # properties to an existing translation.
                     if message.is_current:
+                        message.is_current = False
                         existing_message.is_current = True
                     if message.is_imported:
+                        message.is_imported = False
                         existing_message.is_imported = True
                     # And remove the current message.
                     message.destroySelf()
