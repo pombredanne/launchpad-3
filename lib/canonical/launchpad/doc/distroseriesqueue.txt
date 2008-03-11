@@ -84,7 +84,7 @@ what we expect the ed upload to produce. Let's find the queue item and
 convert it to an ACCEPTED item.
 
   >>> from canonical.launchpad.interfaces import (
-  ...      IDistributionSet, QueueInconsistentStateError)
+  ...      QueueInconsistentStateError)
   >>> from canonical.launchpad.interfaces import PackageUploadStatus
 
   >>> new_queue = hoary.getQueueItems(PackageUploadStatus.NEW)

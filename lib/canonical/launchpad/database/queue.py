@@ -197,16 +197,16 @@ class PackageUpload(SQLBase):
                 'Queue item already rejected')
         self._SO_set_status(PackageUploadStatus.REJECTED)
 
-    def _createBuilds(self, pub_source, logger=None, ignore_pas=False):
+    def _createBuilds(self, pub_source, ignore_pas=False, logger=None,):
         """Create corresponding Build records for a published source.
 
         :param pub_source: source publication record ,
              `ISourcePackagePublishingHistory`;
-        :param logger: optional context Logger object (used on DEBUG level);
-        :param ignore_pas: whether or not to initialise and respect P-a-s for
-             creating builds.
+        :param ignore_pas: whether or not to initialise and respect
+             Package-architecture-specific (P-a-s) for creating builds;
+        :param logger: optional context Logger object (used on DEBUG level).
 
-        P-a-s is should be only initialised and considered when accepting
+        P-a-s should be only initialised and considered when accepting
         sources to the PRIMARY archive (in drescher). We explicitly ignore
         P-a-s for sources targeted to PPAs and when accepting NEW sources
         (acceptFromQueue).
@@ -219,7 +219,7 @@ class PackageUpload(SQLBase):
 
         if self.isPPA():
             archs_available = [
-                das for das in self.distroseries.ppa_architectures]
+                arch for arch in self.distroseries.ppa_architectures]
         else:
             archs_available = self.distroseries.architectures
 
@@ -236,7 +236,7 @@ class PackageUpload(SQLBase):
             build_queue.score()
 
     def _closeBugs(self, changesfile_path, logger=None):
-        """Closing bugs for a just-accepted source.
+        """Close bugs for a just-accepted source.
 
         :param changesfile_path: path to the context changesfile.
         :param logger: optional context Logger object (used on DEBUG level);

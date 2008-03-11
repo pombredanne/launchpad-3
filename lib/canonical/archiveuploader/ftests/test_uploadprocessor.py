@@ -528,8 +528,8 @@ class TestUploadProcessor(TestUploadProcessorBase):
             name="foocomm")
         self.assertEqual(queue_items.count(), 1)
 
-        # Single source upload also get their corrsponding builds created
-        # in upload-time. 'foocomm' only builds in 'i386', thus only one
+        # Single source uploads also get their corrsponding builds created
+        # at upload-time. 'foocomm' only builds in 'i386', thus only one
         # build gets created.
         [foocomm_source] = partner_archive.getPublishedSources(
             name='foocomm', version='1.0-2')

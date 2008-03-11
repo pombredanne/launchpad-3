@@ -43,7 +43,6 @@ We need to be logged into the security model in order to get any further
 
 Helper functions to examine emails that were sent:
 
-  >>> import email
   >>> from canonical.launchpad.mail import stub
   >>> def by_to_addrs(a, b):
   ...     return cmp(a[1], b[1])
@@ -690,7 +689,6 @@ PackageUpload.notify() directly.  One of the arguments it can specify is
 dry_run, which when True will not send any emails.  It will also log at
 the INFO level what it /would/ have sent.
 
-  >>> from canonical.launchpad.interfaces import PackageUploadStatus
   >>> random_package_upload = hoary.getQueueItems()[2]
   >>> random_package_upload.notify(dry_run=True, logger=mock_logger)
   DEBUG: Building recipients list.
