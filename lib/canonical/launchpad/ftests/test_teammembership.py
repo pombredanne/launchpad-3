@@ -205,7 +205,8 @@ class TestTeamMembershipSetStatus(unittest.TestCase):
                         "There can be no acknowledger comment at this point.")
             tm.setStatus(status, self.foobar, "Did it 'cause I can")
             self.failUnlessEqual(tm.acknowledged_by, self.foobar)
-            self.failUnlessEqual(tm.acknowledger_comment, "Did it 'cause I can")
+            self.failUnlessEqual(
+                tm.acknowledger_comment, "Did it 'cause I can")
             self.failUnless(
                 tm.date_acknowledged <= datetime.now(pytz.timezone('UTC')))
             # Destroy the membership so that we can create another in a
@@ -236,7 +237,8 @@ class TestTeamMembershipSetStatus(unittest.TestCase):
                     "There can be no approver comment at this point.")
                 tm.setStatus(new_status, self.foobar, "Did it 'cause I can")
                 self.failUnlessEqual(tm.reviewed_by, self.foobar)
-                self.failUnlessEqual(tm.reviewer_comment, "Did it 'cause I can")
+                self.failUnlessEqual(
+                    tm.reviewer_comment, "Did it 'cause I can")
                 self.failUnless(
                     tm.date_reviewed <= datetime.now(pytz.timezone('UTC')))
 

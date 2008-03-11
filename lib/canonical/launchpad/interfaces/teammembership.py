@@ -139,7 +139,7 @@ class ITeamMembership(Interface):
         title=_("Acknowledger comment"), required=False, readonly=False)
     reviewer_comment = Text(
         title=_("Reviewer comment"), required=False, readonly=False)
-    status= Choice(
+    status = Choice(
         title=_("The state of this membership"), required=True,
         readonly=True, vocabulary=TeamMembershipStatus)
 
