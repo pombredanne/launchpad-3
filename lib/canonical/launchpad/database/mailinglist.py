@@ -55,7 +55,7 @@ class MailingList(SQLBase):
     status = EnumCol(enum=MailingListStatus,
                      default=MailingListStatus.REGISTERED)
 
-    welcome_message_text = StringCol(default=None)
+    welcome_message_text = StringCol(default=None, dbName='welcome_message')
 
     @property
     def address(self):

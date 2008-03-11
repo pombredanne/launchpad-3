@@ -366,7 +366,7 @@ COMMENT ON COLUMN MailingList.reviewer IS 'The id of the Person who reviewed the
 COMMENT ON COLUMN MailingList.date_reviewed IS 'The date the request was reviewed, or NULL if not yet reviewed.';
 COMMENT ON COLUMN MailingList.date_activated IS 'The date the list was (last) activated.  If the list is not yet active, this field will be NULL.';
 COMMENT ON COLUMN MailingList.status IS 'The current status of the mailing list, as a dbschema.MailingListStatus value.';
-COMMENT ON COLUMN MailingList.welcome_message_text IS 'Text sent to new members when they are subscribed to the team list.  If NULL, no welcome message is sent.';
+COMMENT ON COLUMN MailingList.welcome_message IS 'Text sent to new members when they are subscribed to the team list.  If NULL, no welcome message is sent.';
 
 -- MailingListSubscription
 
@@ -382,7 +382,7 @@ COMMENT ON TABLE MailingListBan IS 'Track explicit Launchpad-wide posting bans i
 COMMENT ON COLUMN MailingListBan.person IS 'The person who was banned.';
 COMMENT ON COLUMN MailingListBan.banned_by IS 'The administrator who imposed the ban.';
 COMMENT ON COLUMN MailingListBan.date_banned IS 'When the ban was imposed.';
-COMMENT ON COLUMN MailingListBan.reason_text IS 'The reason for the ban.';
+COMMENT ON COLUMN MailingListBan.reason IS 'The reason for the ban.';
 
 -- MentoringOffer
 COMMENT ON TABLE MentoringOffer IS 'An offer to provide mentoring if someone wa nts to help get a specific bug fixed or blueprint implemented. These offers are specifically associated with a team in which the offeror is a member, so it beco mes possible to encourage people who want to join a team to start by working on things that existing team members are willing to mentor.';
@@ -956,7 +956,7 @@ COMMENT ON COLUMN Person.creation_rationale IS 'The rationale for the creation o
 COMMENT ON COLUMN Person.creation_comment IS 'A text comment for the creation of this person.';
 COMMENT ON COLUMN Person.registrant IS 'The user who created this profile.';
 COMMENT ON COLUMN Person.personal_standing IS 'The standing of the person, which indicates (for now, just) whether the person can post to a mailing list without requiring first post moderation.  Values are documented in dbschema.PersonalStanding.';
-COMMENT ON COLUMN Person.personal_standing_reason_text IS 'The reason a person\'s standing has changed.';
+COMMENT ON COLUMN Person.personal_standing_reason IS 'The reason a person\'s standing has changed.';
 COMMENT ON COLUMN Person.mail_resumption_date IS 'A NULL resumption date or a date in the past indicates that there is no vacation in effect.  Vacations are granular to the day, so a datetime is not necessary.';
 COMMENT ON COLUMN Person.mailing_list_auto_subscribe_policy IS 'The auto-subscription policy for the person, i.e. whether and how the user is automatically subscribed to mailing lists for teams they join.  Values are described in dbschema.MailingListAutoSubscribePolicy.';
 COMMENT ON COLUMN Person.mailing_list_receive_duplicates IS 'True means the user wants to receive list copies of messages on which they are explicitly named as a recipient.';
