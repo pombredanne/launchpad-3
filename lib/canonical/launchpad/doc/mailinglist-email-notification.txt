@@ -3,12 +3,9 @@
 Notifications about changes to a mailing list's status are sent out
 via email.
 
-    >>> import email
     >>> from canonical.launchpad.mail import stub
-
     >>> from canonical.launchpad.tests.mail_helpers import (
     ...     pop_notifications, print_emails)
-
     >>> from canonical.launchpad.interfaces import IPersonSet
     >>> salgado = getUtility(IPersonSet).getByName('salgado')
 
