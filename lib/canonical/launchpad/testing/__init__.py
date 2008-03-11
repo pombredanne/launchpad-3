@@ -3,6 +3,7 @@
 
 from unittest import TestCase
 
+from canonical.database.sqlbase import cursor
 from canonical.testing import LaunchpadZopelessLayer
 
 from canonical.launchpad.ftests import login
@@ -15,3 +16,11 @@ class TestCaseWithFactory(TestCase):
     def setUp(self):
         login('test@canonical.com')
         self.factory = LaunchpadObjectFactory()
+
+    def assertIsDBNow(self, value):
+        cur = cursor()
+        cur.execute("SELECT CURRENT_TIMESTAMP AT TIME ZONE 'UTC';")
+        [database_now] = cur.fetchone()
+        self.assertEqual(
+            database_now.utctimetuple(), value.utctimetuple())
+

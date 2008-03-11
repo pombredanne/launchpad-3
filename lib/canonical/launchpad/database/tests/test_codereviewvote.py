@@ -15,6 +15,7 @@ class TestCodeReviewVote(TestCaseWithFactory):
         self.assertEqual(registrant, vote.registrant)
         self.assertEqual(merge_proposal, vote.branch_merge_proposal)
         self.assertEqual([vote], list(merge_proposal.votes))
+        self.assertIsDBNow(vote.date_created)
 
 
 def test_suite():
