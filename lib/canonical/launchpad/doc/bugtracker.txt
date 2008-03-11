@@ -248,8 +248,8 @@ an alias.
 
 == Imported bug messages ==
 
-An iterable returning BugMessage objects for all the watches for a bug
-tracker:
+Each BugTracker has an imported_bug_messages property that returns all
+bug messages which have been imported for a given bug tracker.
 
     >>> for tracker in bugtracker_set:
     ...     for bug_message in tracker.imported_bug_messages:
