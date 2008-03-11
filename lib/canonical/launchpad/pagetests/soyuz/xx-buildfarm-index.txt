@@ -17,24 +17,27 @@ processing.
     frog Automatic 386 Virtual  Launchpad Buildd Admins Not available
     Generated at ...
 
-This page also presents a porlet exposing the number of builds waiting
+This page also presents a portlet exposing the number of builds waiting
 in queue for each supported architecture.
 
-    >>> def printDepthFor(contents, queue_name):
+    >>> def print_depth(contents, queue_name):
     ...     portlet = find_portlet(contents, queue_name)
     ...     for td in portlet.fetch('td'):
     ...         print extract_text(td)
 
-    >>> printDepthFor(anon_browser.contents, 'Build queue depth')
+    >>> print_depth(anon_browser.contents, 'Build queue depth')
     i386     1
 
-From this page users with the appropriate permission can register new
+From this page, users with the appropriate permission can register new
 builders.
 
     >>> admin_browser.open("http://launchpad.dev/+builds/+index")
     >>> admin_browser.getLink("Add builder").click()
     >>> print admin_browser.title
     Register a new build machine
+
+While anonymous users are not given the option to register a new build
+and are not permitted if they go directly to the URL.
 
     >>> anon_browser.open("http://launchpad.dev/+builds/+index")
     >>> anon_browser.getLink("Add builder")
