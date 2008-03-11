@@ -13,7 +13,6 @@ import gettextpo
 import os
 import random
 import re
-import sys
 import tarfile
 import warnings
 from StringIO import StringIO
@@ -29,6 +28,7 @@ from canonical.launchpad.interfaces import (
     SourcePackageFileType)
 
 
+# pylint: disable-msg=W0102
 def text_replaced(text, replacements, _cache={}):
     """Return a new string with text replaced according to the dict provided.
 
