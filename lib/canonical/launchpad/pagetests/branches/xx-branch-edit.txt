@@ -13,6 +13,27 @@ that link to load the +edit form for the branch.
     >>> from canonical.launchpad.mail import stub
     >>> stub.test_emails = []
 
+The link to edit the branch details is only available to the branch owner,
+Launchpad administrators or members of the Bazaar Experts team.
+
+    >>> admin_browser.open(
+    ...     'http://launchpad.dev/~name12/gnome-terminal/klingon')
+    >>> link = admin_browser.getLink('Change branch details')
+
+    >>> bazaar_expert_browser = setupBrowser(
+    ...     auth='Basic tim@canonical.com:test')
+    >>> bazaar_expert_browser.open(
+    ...     'http://launchpad.dev/~name12/gnome-terminal/klingon')
+    >>> link = bazaar_expert_browser.getLink('Change branch details')
+
+    >>> nopriv_browser = setupBrowser(
+    ...     auth='Basic nopriv@canonical.com:test')
+    >>> nopriv_browser.open(
+    ...     'http://launchpad.dev/~name12/gnome-terminal/klingon')
+    >>> link = nopriv_browser.getLink('Change branch details')
+    Traceback (most recent call last):
+    LinkNotFoundError
+
     >>> browser = setupBrowser(auth='Basic test@canonical.com:test')
     >>> browser.open(
     ...     'http://launchpad.dev/~name12/gnome-terminal/klingon')

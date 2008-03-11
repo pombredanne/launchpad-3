@@ -14,15 +14,14 @@ import sys
 
 from zope.component import getUtility
 
+from canonical.database.sqlbase import ISOLATION_LEVEL_READ_COMMITTED
 from canonical.launchpad.interfaces import (
     IDistributionSet, NotFoundError, PackagePublishingPocket)
 from canonical.launchpad.scripts import (
     execute_zcml_for_scripts, logger_options, logger)
 from canonical.launchpad.scripts.ftpmaster import (
     ChrootManager, ChrootManagerError)
-
-from canonical.lp import (
-    initZopeless, READ_COMMITTED_ISOLATION)
+from canonical.lp import initZopeless
 
 def main():
     parser = OptionParser()
@@ -55,7 +54,8 @@ def main():
         return 1
 
     log.debug("Intitialising connetion.")
-    ztm = initZopeless(dbuser="fiera", isolation=READ_COMMITTED_ISOLATION)
+    ztm = initZopeless(dbuser="fiera",
+                       isolation=ISOLATION_LEVEL_READ_COMMITTED)
     execute_zcml_for_scripts()
 
     try:

@@ -22,10 +22,14 @@ The elements of a collection can be looked up by unique identifier:
   ... Host: api.launchpad.dev
   ... """).jsonBody()
   >>> sorted(admins_team.items())
-  [(u'members_collection_link',
+  [(u'member_memberships_collection_link',
+    u'http://api.launchpad.dev/people/admins/member_memberships'),
+   (u'members_collection_link',
       u'http://api.launchpad.dev/people/admins/members'),
    (u'name', u'admins'),
    (u'self_link', u'http://api.launchpad.dev/people/admins'),
+   (u'team_memberships_collection_link',
+    u'http://api.launchpad.dev/people/admins/team_memberships'),
    (u'teamowner_link', u'http://api.launchpad.dev/people/sabdfl')]
 
 A collection may be scoped to an element:
