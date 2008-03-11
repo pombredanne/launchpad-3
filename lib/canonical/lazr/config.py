@@ -70,7 +70,7 @@ class SectionSchema:
         return self._options[key]
 
     @property
-    def category_specific_names(self):
+    def category_and_section_names(self):
         """See `ISectionSchema`."""
         if '.' in self.name:
             return tuple(self.name.split('.'))
@@ -104,9 +104,9 @@ class Section:
                 "No section key named %s." % name)
 
     @property
-    def category_specific_names(self):
+    def category_and_section_names(self):
         """See `ISection`."""
-        return self.schema.category_specific_names
+        return self.schema.category_and_section_names
 
     def update(self, items):
         """Update the keys with new values.
@@ -320,7 +320,7 @@ class ConfigSchema:
         section_schemas = []
         for key in self._section_schemas:
             section = self._section_schemas[key]
-            category, specific = section.category_specific_names
+            category, dummy = section.category_and_section_names
             if name == category:
                 section_schemas.append(section)
         return section_schemas
@@ -387,7 +387,7 @@ class ConfigData:
         category_names = set()
         for section_name in self._sections:
             section = self._sections[section_name]
-            category, specific = section.category_specific_names
+            category, dummy = section.category_and_section_names
             if category is not None:
                 category_names.add(category)
         return tuple(category_names)
@@ -419,7 +419,7 @@ class ConfigData:
         sections = []
         for key in self._sections:
             section = self._sections[key]
-            category, specific = section.category_specific_names
+            category, dummy = section.category_and_section_names
             if name == category:
                 sections.append(section)
         return sections
