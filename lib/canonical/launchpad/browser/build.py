@@ -79,15 +79,20 @@ class BuildContextMenu(ContextMenu):
 
     links = ['ppa', 'records', 'retry', 'rescore']
 
+    @property
+    def is_ppa_build(self):
+        """Some links are only displayed on PPA."""
+        return self.context.archive.owner is not None
+
     def ppa(self):
         return Link(
             canonical_url(self.context.archive), text='View PPA',
-            enabled=True)
+            enabled=self.is_ppa_build)
 
     def records(self):
         return Link(
             canonical_url(self.context.archive, view_name='+builds'),
-            text='View build records', enabled=True)
+            text='View build records', enabled=self.is_ppa_build)
 
     @enabled_with_permission('launchpad.Edit')
     def retry(self):
