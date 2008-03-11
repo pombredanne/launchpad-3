@@ -690,6 +690,8 @@ class BaseBinaryUploadFile(PackageUploadFile):
             deb_file = open(self.filepath, "rb")
             apt_inst.debExtract(deb_file, tar_checker.callback,
                                 "control.tar.gz")
+            # Only one of these files is present in the archive, so loop
+            # until we find one of them, otherwise fail.
             data_files = ("data.tar.gz", "data.tar.bz2", "data.tar.lzma")
             for file in data_files:
                 deb_file.seek(0)
