@@ -263,15 +263,15 @@ class MailingList(SQLBase):
             "Only mailing lists in the REGISTERED state can be canceled.")
         self.destroySelf()
 
-    def _get_welcome_message(self):
-        return self.welcome_message_
-
     def isUsable(self):
         """See `IMailingList`"""
         return self.status in [MailingListStatus.ACTIVE,
                                MailingListStatus.MODIFIED,
                                MailingListStatus.UPDATING,
                                MailingListStatus.MOD_FAILED]
+
+    def _get_welcome_message(self):
+        return self.welcome_message_
 
     def _set_welcome_message(self, text):
         if self.status == MailingListStatus.REGISTERED:
