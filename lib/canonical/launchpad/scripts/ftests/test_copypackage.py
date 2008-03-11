@@ -171,7 +171,8 @@ class TestCopyPackage(unittest.TestCase):
 
         # We have to compare IDs because the copied list is actually a
         # list of Secure*PublishingHistory records and the lookups are
-        # the records from the correspondent DB view *PackagePublishingHistory.
+        # the records from the correspondent DB view
+        # *PackagePublishingHistory.
         copied_ids = [pub.id for pub in copied]
         pending_ids = sources_pending_ids + binaries_pending_ids
 
@@ -225,8 +226,8 @@ class TestCopyPackage(unittest.TestCase):
         time they were released.
         """
         copy_helper = self.getCopier(
-            sourcename='commercialpackage', from_partner=True, to_partner=True,
-            from_suite='breezy-autotest', to_suite='hoary')
+            sourcename='commercialpackage', from_partner=True,
+            to_partner=True, from_suite='breezy-autotest', to_suite='hoary')
         copied = copy_helper.mainTask()
 
         self.assertEqual(
