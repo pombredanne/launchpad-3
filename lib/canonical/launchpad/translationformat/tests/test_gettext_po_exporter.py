@@ -28,8 +28,8 @@ class GettextPOExporterTestCase(unittest.TestCase):
     def _compareImportAndExport(self, import_file, export_file):
         """Compare imported file and the export we got from it.
 
-        :arg import_file: buffer with the source file content.
-        :arg export_file: buffer with the output file content.
+        :param import_file: buffer with the source file content.
+        :param export_file: buffer with the output file content.
         """
         import_lines = [line for line in import_file.split('\n')]
         # Remove X-Launchpad-Export-Date line to prevent time bombs in tests.

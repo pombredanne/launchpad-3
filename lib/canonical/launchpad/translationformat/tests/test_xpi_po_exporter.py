@@ -44,8 +44,8 @@ class XPIPOExporterTestCase(unittest.TestCase):
     def _compareExpectedAndExported(self, expected_file, exported_file):
         """Compare an export with a previous export that is correct.
 
-        :arg expected_file: buffer with the expected file content.
-        :arg export_file: buffer with the output file content.
+        :param expected_file: buffer with the expected file content.
+        :param export_file: buffer with the output file content.
         """
         expected_lines = [line for line in expected_file.split('\n')]
         # Remove time bombs in tests.
