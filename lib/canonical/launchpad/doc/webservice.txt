@@ -638,7 +638,6 @@ in the collection (as with comments, below) or whether they're
 If the user tries to traverse to a nonexistent object, the result is a
 NotFound exception:
 
-    >>> from zope.publisher.interfaces import NotFound
     >>> app.publishTraverse(request, "nosuchcollection")
     Traceback (most recent call last):
     ...

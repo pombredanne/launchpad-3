@@ -8,11 +8,12 @@ which responds to GET.
   ... Host: api.launchpad.dev
   ... """).jsonBody()
 
-  >>> sorted(people_collection)[0]['name']
+  >>> people_collection = sorted(people_collection)
+  >>> people_collection[0]['name']
   u'skacel'
-  >>> sorted(people_collection)[0]['self_link']
+  >>> people_collection[0]['self_link']
   u'http://api.launchpad.dev/people/skacel'
-  >>> sorted(people_collection)[-1]['name']
+  >>> people_collection[-1]['name']
   u'rosetta-admins'
 
 The elements of a collection can be looked up by unique identifier:
@@ -40,6 +41,7 @@ A collection may be scoped to an element:
   ... GET /people/admins/members HTTP/1.1
   ... Host: api.launchpad.dev
   ... """).jsonBody()
+  >>> team_members = sorted(team_members)
   >>> len(team_members)
   11
   >>> team_members[0]['name']

@@ -18,7 +18,8 @@ from canonical.lazr.interface import use_template
 from canonical.lazr.interfaces import IEntry
 from canonical.lazr.rest.schema import CollectionField
 
-from canonical.launchpad.interfaces import IPerson, IPersonSet, ITeamMembership
+from canonical.launchpad.interfaces import (IPerson, IPersonSet,
+                                            ITeamMembership)
 
 from canonical.lazr import decorates
 

@@ -252,15 +252,20 @@ class EntryResource(ReadWriteResource):
         if media_type != 'application/json':
             self.request.response.setStatus(415)
             return
+
         changeset = simplejson.loads(unicode(representation))
         schema = self.context.schema
         validated_changeset = {}
         for repr_name, value in changeset.items():
-            name = repr_name
+            # We chop off the end of the string rather than use .replace()
+            # because there's a chance the name of the field might already
+            # have "_link" or (very unlikely) "_collection_link" in it.
             if repr_name.endswith('_collection_link'):
                 name = repr_name[:-16]
             elif repr_name.endswith('_link'):
                 name = repr_name[:-5]
+            else:
+                name = repr_name
             element = schema.get(name)
 
             if (name.startswith('_') or element is None
