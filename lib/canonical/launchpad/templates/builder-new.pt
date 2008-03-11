@@ -21,10 +21,6 @@
 
   <div metal:use-macro="context/@@launchpad_addform/addform">
 
-    <div metal:fill-slot="extra_info" class="documentDescription">
-      Use this page to register a new builder.
-    </div>
-
   </div>
 
 </div>

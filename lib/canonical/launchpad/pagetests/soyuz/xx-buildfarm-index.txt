@@ -1,7 +1,8 @@
 = BuildFarm page =
 
 The BuildFarm page is accessible from the root page, although we don't
-link to it.
+link to it yet because we are not yet sure of the benefits of doing
+this, since the audience of this page is still restricted.
 
     >>> anon_browser.open('http://launchpad.dev/+builds')
 
@@ -16,7 +17,7 @@ processing.
     frog Automatic 386 Virtual  Launchpad Buildd Admins Not available
     Generated at ...
 
-This page also presents a porlet exposing the number of build waiting
+This page also presents a porlet exposing the number of builds waiting
 in queue for each supported architecture.
 
     >>> def printDepthFor(contents, queue_name):
