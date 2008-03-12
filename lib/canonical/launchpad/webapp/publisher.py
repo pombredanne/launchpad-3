@@ -330,9 +330,20 @@ def canonical_url(
             request = current_request
 
     if view_name is not None:
+        # Look first for a view.
         if queryMultiAdapter((obj, request), name=view_name) is None:
-            raise AssertionError('View "%s" is not registered for "%s".' %
-                (view_name, obj.__class__.__name__))
+            # Look if this is a special name defined by Navigation.
+            navigation = queryMultiAdapter((obj, request), IBrowserPublisher)
+            if (not isinstance(navigation, Navigation) or
+                (view_name not in navigation.stepto_traversals and
+                 view_name not in navigation.stepthrough_traversals and
+                 view_name not in navigation.redirections)):
+                # Either the navigation isn't done by our Navigation 
+                # infrastructure or the name isn't available through 
+                # introspection. In either case, complain
+                raise AssertionError(
+                    'Name "%s" is not registered as a view or navigation '
+                    'step for "%s".' % (view_name, obj.__class__.__name__))
         urlparts.insert(0, view_name)
 
     if rootsite is None:
@@ -553,6 +564,23 @@ class Navigation:
         else:
             return nextobj
 
+    @property
+    def stepto_traversals(self):
+        """Return a dictionary containing all the stepto names defined."""
+        return self._combined_class_info('__stepto_traversals__')
+
+    @property
+    def stepthrough_traversals(self):
+        """Return a dictionary containing all the stepthrough names defined.
+        """
+        return self._combined_class_info('__stepthrough_traversals__')
+
+    @property
+    def redirections(self):
+        """Return a dictionary containing all the redirections names defined.
+        """
+        return self._combined_class_info('__redirections__')
+
     def _publishTraverse(self, request, name):
         """Traverse, like zope wants."""
 
@@ -573,7 +601,7 @@ class Navigation:
             self._append_breadcrumb(breadcrumb_text)
 
         # Next, see if we're being asked to stepto somewhere.
-        stepto_traversals = self._combined_class_info('__stepto_traversals__')
+        stepto_traversals = self.stepto_traversals
         if stepto_traversals is not None:
             if name in stepto_traversals:
                 handler = stepto_traversals[name]
@@ -588,8 +616,7 @@ class Navigation:
         # If so, see if the name is in the namespace_traversals, and if so,
         # dispatch to the appropriate function.  We can optimise by changing
         # the order of these checks around a bit.
-        namespace_traversals = self._combined_class_info(
-            '__stepthrough_traversals__')
+        namespace_traversals = self.stepthrough_traversals
         if namespace_traversals is not None:
             if name in namespace_traversals:
                 stepstogo = request.stepstogo
@@ -616,7 +643,7 @@ class Navigation:
         # Next, look up redirections.  Note that registered views take
         # priority over redirections, because you can always make your
         # view redirect, but you can't make your redirection 'view'.
-        redirections = self._combined_class_info('__redirections__')
+        redirections = self.redirections
         if redirections is not None:
             if name in redirections:
                 urlto, status = redirections[name]
