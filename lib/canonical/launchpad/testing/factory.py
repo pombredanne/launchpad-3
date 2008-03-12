@@ -30,7 +30,6 @@ from canonical.launchpad.interfaces import (
     ICodeImportEventSet,
     ICodeImportResultSet,
     ICodeImportSet,
-    ILaunchpadCelebrities,
     IPersonSet,
     IProductSet,
     IRevisionSet,
