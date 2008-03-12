@@ -19,46 +19,46 @@ in which case the client should use PUT.)
 A person's data fields can be modified.
 
   >>> import simplejson
-  >>> def patch_person(person, patch):
-  ...     "A helper function to send a PATCH request for a person."
-  ...     return webservice(r"""
-  ... PATCH /people/%s HTTP/1.1
+  >>> def modify_person(person, representation, method='PATCH'):
+  ...     "A helper function to send a PUT or PATCH request for a person."
+  ...     return webservice("""
+  ... %s /people/%s HTTP/1.1
   ... Host: api.launchpad.dev
   ... Content-type: application/json
   ... Authorization: Basic foo.bar@canonical.com:test
   ...
   ... %s
-  ... """ % (person, simplejson.dumps(patch)))
+  ... """ % (method, person, simplejson.dumps(representation)))
+
+  >>> def get_person(person):
+  ...     return webservice("""
+  ... GET /people/%s HTTP/1.1
+  ... Host: api.launchpad.dev
+  ... """ % person)
 
 The user 'salgado' starts out with a display name of 'Guilherme
 Salgado'.
 
-  >>> salgado = webservice(r"""
-  ... GET /people/salgado HTTP/1.1
-  ... Host: api.launchpad.dev
-  ... """).jsonBody()
+  >>> salgado = get_person('salgado').jsonBody()
   >>> salgado['displayname']
   u'Guilherme Salgado'
 
 Here we use the web service to change the user so that the display
 name is in uppercase.
 
-  >>> print patch_person('salgado', {'displayname' : 'GUILHERME SALGADO'})
+  >>> print modify_person('salgado', {'displayname' : 'GUILHERME SALGADO'})
   HTTP/1.1 200 Ok
   Content-Length: 0
   ...
 
-  >>> salgado = webservice(r"""
-  ... GET /people/salgado HTTP/1.1
-  ... Host: api.launchpad.dev
-  ... """).jsonBody()
+  >>> salgado = get_person('salgado').jsonBody()
   >>> salgado['displayname']
   u'GUILHERME SALGADO'
 
 The modification might cause the person's address to change. Here we
 use the web service to change the person's name to 'salgado2'.
 
-  >>> print patch_person('salgado', {'name' : 'salgado2'})
+  >>> print modify_person('salgado', {'name' : 'salgado2'})
   HTTP/1.1 301 Moved Permanently
   ...
   Location: http://api.launchpad.dev/people/salgado2
@@ -70,7 +70,7 @@ because that Person now 'lives' at
 http://api.launchpad.dev/people/salgado2. To change 'salgado2' back to
 'salgado', we need to send a PATCH request to the new address.
 
-  >>> print patch_person('salgado2', {'name' : 'salgado'})
+  >>> print modify_person('salgado2', {'name' : 'salgado'})
   HTTP/1.1 301 Moved Permanently
   ...
   Location: http://api.launchpad.dev/people/salgado
@@ -79,12 +79,49 @@ http://api.launchpad.dev/people/salgado2. To change 'salgado2' back to
 # [TODO leonardr 2008-03-10 modify-data-links]: A link between a
 # person and a related object can be modified.
 
+The PATCH HTTP method is useful for simple changes, but not all HTTP
+clients support PATCH, and sometimes it's easier to GET a document,
+modify it, and send it back. If you have the full document at hand,
+you can use the PUT method.
 
-=== What you can't do. ===
+We happen to have a full document from when we sent a GET request to
+the 'salgado' Person. Modifying that document and PUTting it back is
+less work than constructing a new document to PATCH.
+
+  >>> salgado['displayname']
+  u'GUILHERME SALGADO'
+
+  >>> salgado['displayname'] = 'Guilherme Salgado'
+  >>> print modify_person('salgado', salgado, 'PUT')
+  HTTP/1.1 200 Ok
+  ...
+
+  >>> salgado = get_person('salgado').jsonBody()
+  >>> salgado['displayname']
+  u'Guilherme Salgado'
+
+Because our patch format is the same as our representation format
+(JSON hashes), any document that will work with a PUT request will
+also work with a PATCH request.
+
+  >>> print modify_person('salgado', salgado, 'PATCH')
+  HTTP/1.1 200 Ok
+  ...
+
+
+=== What you can't do ===
+
+A document that would be acceptable as the payload of a PATCH request
+might not be acceptable as the payload of a PUT request.
+
+  >>> print modify_person('salgado', {'name' : 'salgado2'}, 'PUT')
+  HTTP/1.1 400 Bad Request
+  ...
+  You didn't specify a value for the attribute 'displayname'.
 
 A person's read-only attributes can't be modified.
 
-  >>> print patch_person('salgado', {'datecreated' :
+  >>> print modify_person('salgado', {'datecreated' :
   ...                                u'2001-01-01T01:01:01+00:00'})
   HTTP/1.1 400 Bad Request
   Content-Length: 57
@@ -95,13 +132,13 @@ A person's read-only attributes can't be modified.
 You can send a document that includes a value for a read-only
 attribute, but it has to be the same as the current value.
 
-  >>> print patch_person('salgado', {'datecreated' : salgado['datecreated']})
+  >>> print modify_person('salgado', {'datecreated' : salgado['datecreated']})
   HTTP/1.1 200 Ok
   ...
 
-A client can't change the link to a person's associated collection.
+You can't change the link to a person's associated collection.
 
-  >>> print patch_person('salgado',
+  >>> print modify_person('salgado',
   ...                    {'team_memberships_collection_link' : 'dummy'})
   HTTP/1.1 400 Bad Request
   ...
@@ -110,37 +147,53 @@ A client can't change the link to a person's associated collection.
 Again, you can send a document that includes a value for an associated
 collection link; you just can't _change_ the value.
 
-  >>> print patch_person('salgado',
+  >>> print modify_person('salgado',
   ...                    {'team_memberships_collection_link' :
   ...                     'http://api.launchpad.dev/people/salgado/team_memberships'})
   HTTP/1.1 200 Ok
   ...
 
-A client can't refer to a link to an associated object or collection
-as though it were the actual object:
+You can't directly change a person's address.
 
-  >>> print patch_person('salgado', {'team_memberships' : 'dummy'})
+  >>> print modify_person('salgado',
+  ...                    {'self_link' : 'dummy'})
+  HTTP/1.1 400 Bad Request
+  ...
+  You tried to modify the read-only attribute 'self_link'.
+
+You can't refer to a link to an associated object or collection as
+though it were the actual object:
+
+  >>> print modify_person('salgado', {'team_memberships' : 'dummy'})
   HTTP/1.1 400 Bad Request
   ...
   You tried to modify the nonexistent attribute 'team_memberships'
 
-  >>> print patch_person('landscape-developers', {'owner' : 'salgado'})
+  >>> print modify_person('landscape-developers', {'owner' : 'salgado'})
   HTTP/1.1 400 Bad Request
   ...
   You tried to modify the nonexistent attribute 'owner'
 
 You can't set nonsensical values for attributes.
 
-  >>> print patch_person('salgado',
+  >>> print modify_person('salgado',
   ...                    {'datecreated' : 'dummy'})
   HTTP/1.1 400 Bad Request
   ...
   You set the attribute 'datecreated' to a value that doesn't look
   like a date.
 
+You can't set values that violate Launchpad's data integrity rules.
+
+  >>> print modify_person('salgado',
+  ...                    {'name' : 'sabdfl'})
+  HTTP/1.1 400 Bad Request
+  ...
+  sabdfl is already in use by another person or team.
+
 And of course you can't modify attributes that don't exist.
 
-  >>> print patch_person('salgado', {'nonesuch' : 'dummy'})
+  >>> print modify_person('salgado', {'nonesuch' : 'dummy'})
   HTTP/1.1 400 Bad Request
   ...
   You tried to modify the nonexistent attribute 'nonesuch'
@@ -155,7 +208,7 @@ A person is linked to their team memberships.
 
 Similarly, a team is linked to the team memberships of its members.
 
-  >>> landscape_developers = webservice(r"""
+  >>> landscape_developers = webservice("""
   ... GET /people/landscape-developers HTTP/1.1
   ... Host: api.launchpad.dev
   ... """).jsonBody()
@@ -164,7 +217,7 @@ Similarly, a team is linked to the team memberships of its members.
 
 Team memberships are first-class objects with their own URLs.
 
-  >>> salgado_memberships = webservice(r"""
+  >>> salgado_memberships = webservice("""
   ... GET /people/salgado/team_memberships HTTP/1.1
   ... Host: api.launchpad.dev
   ... """).jsonBody()
@@ -201,7 +254,7 @@ person includes a link to that person's team memberships. But it's
 possible to navigate from a team, to the collection of peoples'
 memberships in the team.
 
-  >>> landscape_memberships = webservice(r"""
+  >>> landscape_memberships = webservice("""
   ... GET /people/landscape-developers/member_memberships HTTP/1.1
   ... Host: api.launchpad.dev
   ... """).jsonBody()
@@ -215,7 +268,7 @@ members. Members are people; memberships are TeamMemberships. You've
 seen the memberships for the 'landscape-developers' team above; here
 are the members.
 
-  >>> landscape_members = webservice(r"""
+  >>> landscape_members = webservice("""
   ... GET /people/landscape-developers/members HTTP/1.1
   ... Host: api.launchpad.dev
   ... """).jsonBody()

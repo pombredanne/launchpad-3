@@ -28,7 +28,7 @@ from zope.component import adapts, getMultiAdapter
 from zope.interface import implements, directlyProvides
 from zope.proxy import isProxy
 from zope.publisher.interfaces import NotFound
-from zope.schema import Datetime, ValidationError
+from zope.schema import Datetime, ValidationError, getFields
 from zope.schema.interfaces import IField, IObject
 from zope.security.proxy import removeSecurityProxy
 
@@ -205,7 +205,6 @@ class EntryResource(ReadWriteResource):
         scoped_collection.relationship = field
         return ScopedCollectionResource(scoped_collection, self.request, name)
 
-
     def toDataForJSON(self):
         """Turn the object into a simple data structure.
 
@@ -248,6 +247,30 @@ class EntryResource(ReadWriteResource):
                 pass
         return dict
 
+    def processAsJSONHash(self, media_type, representation):
+        """Process an incoming representation as a JSON hash.
+
+        :param media_type: The specified media type of the incoming
+        representation.
+
+        :representation: The incoming representation:
+
+        :return: A tuple (dictionary, error). 'dictionary' is a Python
+        dictionary corresponding to the incoming JSON hash. 'error' is
+        an error message if the incoming representation could not be
+        processed. If there is an error, this method will set an
+        appropriate HTTP response code.
+        """
+
+        if media_type != 'application/json':
+            self.request.response.setCode(415)
+            return None, 'Expected a media type of application/json.'
+        h = simplejson.loads(representation)
+        if not isinstance(h, dict):
+            self.request.response.setCode(400)
+            return None, 'Expected a JSON hash.'
+        return h, None
+
     def do_GET(self):
         """Render the entry as JSON."""
         self.request.response.setHeader('Content-type', 'application/json')
@@ -259,19 +282,55 @@ class EntryResource(ReadWriteResource):
         A PUT is just like a PATCH, except the given representation
         must be a complete representation of the entry.
         """
-        pass
+        changeset, error = self.processAsJSONHash(media_type, representation)
+        if error is not None:
+            return error
 
+        # Make sure the representation includes values for all
+        # writable attributes.
+        schema = self.context.schema
+        for name, field in getFields(schema).items():
+            if (name.startswith('_') or ICollectionField.providedBy(field)
+                or field.readonly):
+                continue
+            if IObject.providedBy(field):
+                repr_name = name + '_link'
+            else:
+                repr_name = name
+            if isinstance(changeset, unicode):
+                import pdb; pdb.set_trace()
+            if (changeset.get(repr_name) is None
+                and getattr(self.context, name) is not None):
+                self.request.response.setStatus(400)
+                return ("You didn't specify a value for the attribute '%s'."
+                        % repr_name)
+        return self._applyChanges(changeset)
 
     def do_PATCH(self, media_type, representation):
         """Apply a JSON patch to the entry."""
-        if media_type != 'application/json':
-            self.request.response.setStatus(415)
-            return
+        changeset, error = self.processAsJSONHash(media_type, representation)
+        if error is not None:
+            return error
+        return self._applyChanges(changeset)
 
-        changeset = simplejson.loads(unicode(representation))
-        schema = self.context.schema
+    def _applyChanges(self, changeset):
+        """Apply a dictionary of key-value pairs as changes to an entry.
+
+        :param changeset: A dictionary. Should come from an incoming
+        representation.
+        """
         validated_changeset = {}
         for repr_name, value in changeset.items():
+            if repr_name == 'self_link':
+                # The self link isn't part of the schema, so it's
+                # handled separately.
+                if value == canonical_url(self):
+                    continue
+                else:
+                    self.request.response.setStatus(400)
+                    return ("You tried to modify the read-only attribute "
+                            "'self_link'.")
+
             change_this_field = True
 
             # We chop off the end of the string rather than use .replace()
@@ -283,7 +342,7 @@ class EntryResource(ReadWriteResource):
                 name = repr_name[:-5]
             else:
                 name = repr_name
-            element = schema.get(name)
+            element = self.context.schema.get(name)
 
             if (name.startswith('_') or element is None
                 or ((ICollection.providedBy(element)
@@ -352,7 +411,7 @@ class EntryResource(ReadWriteResource):
                     return ("You tried to modify the read-only attribute '%s'"
                             % repr_name)
 
-            if change_this_field is True:
+            if change_this_field is True and value != current_value:
                 try:
                     # Do any field-specific validation.
                     field = element.bind(self.context)
