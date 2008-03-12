@@ -20,7 +20,7 @@ from canonical.launchpad.interfaces.librarian import ILibraryFileAlias
 class IPackageDiff(Interface):
     """Package diff request and storage.
 
-    See doc/package-diff.txt for details about the attributes.
+    See `doc/package-diff.txt` for details about the attributes.
     """
     from_source = Attribute(_(u"The base ISourcePackageRelease."))
     to_source = Attribute(_(u"The target ISourcePackageRelease."))
@@ -29,7 +29,7 @@ class IPackageDiff(Interface):
         title=_(u'Date Requested'), required=True)
 
     requester = Choice(
-        title=_('Requester'),
+        title=_('User'),
         required=True,
         vocabulary='ValidPerson',
         description=_("The person requesting the diff."))
@@ -39,10 +39,10 @@ class IPackageDiff(Interface):
 
     diff_content = Object(
         schema=ILibraryFileAlias,
-        title=_(u"The ILibraryFileAlias contaning the diff."),
+        title=_(u"The ILibraryFileAlias containing the diff."),
         required=False)
 
-    title = Attribute(_(u"The Package diff title"))
+    title = Attribute(_(u"The Package diff title."))
 
 
 class IPackageDiffSet(Interface):

@@ -5,13 +5,18 @@
 
 __metaclass__ = type
 
-__all__ = ['ISourcePackageRelease']
+__all__ = [
+    'ISourcePackageRelease',
+    'PackageDiffAlreadyRequestedError',
+    ]
+
 
 from zope.schema import TextLine
 from zope.interface import Interface, Attribute
 
 from canonical.launchpad import _
 from canonical.launchpad.interfaces import BuildStatus
+
 
 class ISourcePackageRelease(Interface):
     """A source package release, e.g. apache-utils 2.0.48-3"""
@@ -172,11 +177,26 @@ class ISourcePackageRelease(Interface):
             :tarball_alias:.
         """
 
-    def requestDiffTo(requester, to_source):
+    package_diffs = Attribute(
+        "All `IPackageDiff` generated from this context.")
+
+    def getDiffTo(to_sourcepackagerelease):
+        """Return an `IPackageDiff` to a given `ISourcePackageRelease`.
+
+        Return None if it was not yet requested.
+        """
+
+    def requestDiffTo(requester, to_sourcepackagerelease):
         """Request a package diff from the context source to a given source.
 
-        :param: requester: it's the diff request, any valid IPerson;
-        :param: to_source: it's the ISourcePackageRelease to diff against.
+        :param: requester: it's the diff request, any valid `IPerson`;
+        :param: to_source: it's the `ISourcePackageRelease` to diff against.
+        :raises `PackageDiffAlreadyRequested`: when there is already a
+            `PackageDiff` record matching the request being made.
 
-        :return: the corresponding IPackageDiff record.
+        :return: the corresponding `IPackageDiff` record.
         """
+
+
+class PackageDiffAlreadyRequestedError(Exception):
+    """Raised when an `IPackageDiff` request already exists."""

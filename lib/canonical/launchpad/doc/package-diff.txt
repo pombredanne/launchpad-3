@@ -4,7 +4,7 @@ The 'package-diff' subsystem allows users to request a diff between
 two SourcePackageReleases.
 
 The diff can be requested by any user with permission to view both
-packages and will be performed frequently by our infraestructure.
+packages and will be performed frequently by our infrastructure.
 
 
 == Requesting a Diff ==
@@ -21,6 +21,10 @@ let's use 'pmount' sources.
     >>> pmount_from = pmount['0.1-2'].sourcepackagerelease
     >>> pmount_to = pmount['0.1-1'].sourcepackagerelease
 
+A packageDiff can be created from the two packages by calling
+requestDiffTo(). It takes two arguments: the user requesting the
+packageDiff, and the sourcepackagerelease to that has the changes.
+
 Requesting a diff from pmount_0.1-2 to pmount_0.1-1.
 
     >>> cprov = getUtility(IPersonSet).getByName('cprov')
@@ -35,11 +39,34 @@ Let's inspect the PackageDiff record created.
     >>> verifyObject(IPackageDiff, package_diff)
     True
 
+Its main attributes are:
+
+ * 'requester', which maps to a `IPerson`, the user who made the diff
+   request.
+
+    >>> from canonical.launchpad.interfaces import IPerson
+    >>> verifyObject(IPerson, package_diff.requester)
+    True
+
     >>> print package_diff.requester.displayname
     Celso Providelo
 
+ * 'from_source', which maps to a `ISourcePackageRelease`, the base
+   source used in the diff.
+
+    >>> from canonical.launchpad.interfaces import ISourcePackageRelease
+    >>> verifyObject(ISourcePackageRelease, package_diff.from_source)
+    True
+
     >>> print package_diff.from_source.title
     pmount - 0.1-2
+
+ * 'to_source', which maps to a `ISourcePackageRelease`, the result
+   source used in the diff.
+
+    >>> from canonical.launchpad.interfaces import ISourcePackageRelease
+    >>> verifyObject(ISourcePackageRelease, package_diff.to_source)
+    True
 
     >>> print package_diff.to_source.title
     pmount - 0.1-1
@@ -53,7 +80,8 @@ and 'diff_content' attributes are empty.
     >>> print package_diff.diff_content
     None
 
-IPackageDiff offers a property that return the 'title' of the diff request.
+IPackageDiff offers a property that return the 'title' of the diff
+request.
 
     >>> print package_diff.title
     Package diff from pmount - 0.1-2 to pmount - 0.1-1
