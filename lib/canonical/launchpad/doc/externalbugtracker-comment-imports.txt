@@ -68,7 +68,7 @@ ExternalBugTracker class which implements these three methods.
     ...         return message
 
     >>> external_bugtracker = CommentImportingExternalBugTracker(
-    ...     None, new_bugtracker(BugTrackerType.BUGZILLA))
+    ...     'http://example.com/')
 
 The BugWatchUpdater method importBugComments() is responsible for
 calling the three methods of ISupportsCommentImport in turn to import
