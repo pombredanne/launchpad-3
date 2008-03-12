@@ -109,7 +109,6 @@
     <include file="project.zcml" />
     <include file="publishedpackage.zcml" />
     <include file="queue.zcml" />
-    <include file="registry.zcml" />
     <include file="revision.zcml" />
     <include file="scriptactivity.zcml" />
     <include file="securitycontact.zcml" />
