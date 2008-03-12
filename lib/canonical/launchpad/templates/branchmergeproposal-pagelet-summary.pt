@@ -16,7 +16,8 @@
     <tr>
       <th>Status:</th>
       <td>
-        <tal:status replace="context/queue_status/title">High</tal:status>
+        <tal:status replace="context/queue_status/title">
+        Work in progress</tal:status>
         <tal:queued condition="context/queue_status/enumvalue:QUEUED">
           (<a tal:attributes="href view/queue_location">view queue</a>)
         </tal:queued>

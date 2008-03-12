@@ -33,34 +33,33 @@
       </tr>
     </thead>
     <tbody>
-      <tr tal:repeat="queue_entry view/merge_queue">
+      <tr tal:repeat="proposal view/merge_queue">
         <td>
-          <tal:position replace="queue_entry/position"/>
-          <tal:dequeue condition="queue_entry/proposal/required:launchpad.Edit">
-            <tal:button replace="structure queue_entry/proposal/@@+dequeue-inline"/>
+          <tal:position replace="repeat/proposal/number"/>
+          <tal:dequeue condition="proposal/required:launchpad.Edit|nothing">
+            <tal:button replace="structure proposal/@@+dequeue-inline"/>
           </tal:dequeue>
-          <tal:show-button condition="not: repeat/queue_entry/start">
-          <tal:jump-queue condition="context/required:launchpad.Edit">
-            <tal:button replace="structure queue_entry/proposal/@@+jump-queue"/>
+          <tal:show-button condition="not: repeat/proposal/start">
+          <tal:jump-queue condition="context/required:launchpad.Edit|nothing">
+            <tal:button replace="structure proposal/@@+jump-queue"/>
           </tal:jump-queue>
           </tal:show-button>
         </td>
         <td>
-          <tal:proposal
-              condition="queue_entry/proposal"
-              define="mergeproposal queue_entry/proposal;
-                      branch mergeproposal/source_branch;
+          <tal:proposal condition="proposal"
+              define="mergeproposal proposal;
+                      branch proposal/source_branch;
                       show_associations python:True;
                       ">
             <metal:landing-target use-macro="context/@@+macros/merge-proposal"/>
           </tal:proposal>
-          <tal:cant-see-proposal condition="not: queue_entry/proposal">
-            You can't see this :-)
+          <tal:cant-see-proposal condition="not: proposal">
+            A merge either involving a branch you are not authorised to see.
           </tal:cant-see-proposal>
         </td>
         <td class="commit_message">
-          <tal:commit-message
-               content="structure queue_entry/proposal/commit_message/fmt:text-to-html">
+          <tal:commit-message condition="proposal"
+               content="structure proposal/commit_message/fmt:text-to-html">
             The commit message.
           </tal:commit-message>
         </td>

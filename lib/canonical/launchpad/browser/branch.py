@@ -180,8 +180,8 @@ class BranchContextMenu(ContextMenu):
     links = ['whiteboard', 'edit', 'delete_branch', 'browse_code',
              'browse_revisions',
              'reassign', 'subscription', 'add_subscriber', 'associations',
-             'register_merge', 'landing_candidates', 'link_bug',
-             'merge_queue', 'link_blueprint',
+             'register_merge', 'landing_candidates', 'merge_queue',
+             'link_bug', 'link_blueprint',
              ]
 
     def whiteboard(self):
@@ -954,27 +954,22 @@ class BranchSubscriptionsView(LaunchpadView):
                 for subscription in sorted_subscriptions]
 
 
-class QueueEntry:
-    """A utility class to represent a queued merge proposal."""
-    def __init__(self, position, proposal):
-        self.position = position
-        self.proposal = proposal
-
-
 class BranchMergeQueueView(LaunchpadView):
     """The view used to render the merge queue for a branch."""
+
     __used_for__ = IBranch
 
     @cachedproperty
     def merge_queue(self):
         """Get the merge queue and check visibility."""
         result = []
-        for position, proposal in enumerate(self.context.getMergeQueue()):
-            # Check for visibility.
+        for proposal in self.context.getMergeQueue():
+            # If the logged in user cannot view the proposal then we
+            # show a "place holder" in the queue position.
             if check_permission('launchpad.View', proposal):
-                result.append(QueueEntry(position+1, proposal))
+                result.append(proposal)
             else:
-                result.append(QueueEntry(position+1, None))
+                result.append(None)
         return result
 
 

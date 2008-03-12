@@ -389,7 +389,10 @@ new proposal that supersedes it.
 == Merge queues ==
 
 When a branch is the target of one or more merge proposals, a
-merge queue is visible for that branch.
+merge queue is visible for that branch.  The merge queue contains
+the branch merge proposals that target the branch and that are
+queued.  When a branch merge proposal is queued it indicates that
+the branch is ready to be merged with the target branch.
 
     >>> sample_browser.open('http://launchpad.dev/~name12/firefox/main')
     >>> printMergeProposals(sample_browser, 'landing-candidates')
@@ -402,6 +405,7 @@ merge queue is visible for that branch.
     Edit whiteboard: ...
     ...
     View merge queue: .../~name12/firefox/main/+merge-queue
+    ...
 
     >>> sample_browser.getLink('View merge queue').click()
     >>> def print_merge_queue(browser):
@@ -409,9 +413,8 @@ merge queue is visible for that branch.
     >>> print_merge_queue(sample_browser)
     The queue is empty.
 
-An approved proposal can be queued up, or if the user is a member of
-the review team of the target branch, they can queue any proposal and
-an implicit approval is recorded.
+You can queue an approved proposal for landing. If you're a reviewer,
+you can queue any proposal for landing, whether it is approved or not.
 
     >>> sample_browser.open('http://launchpad.dev/~name12/firefox/main')
     >>> sample_browser.getLink('view proposal details').click()
@@ -423,17 +426,19 @@ is writable, and defaults to the tip of the branch.
     >>> print sample_browser.getControl('Queue Revision').value
     1
 
-When enqueuing a proposal, a commit message is needed.
+When enqueuing a proposal, a commit message is needed.  This message
+will be used as the commit message of the merge.
 
     >>> sample_browser.getControl('Commit Message').value = (
     ...     'This is the commit message')
     >>> sample_browser.getControl('Enqueue').click()
 
-The status of the branch is now Queued.
+The status of the branch is now Queued, and Sample Person is also
+recorded as the reviewer of the proposal.
 
     >>> print_summary(sample_browser)
-    Source branch: ~sabdfl/firefox/release-0.9
-    Target branch: ~name12/firefox/main
+    Source branch: ...
+    ...
     Status: Queued (view queue)
     Reviewed by: Sample Person
     Reviewed revision: 1
@@ -450,8 +455,8 @@ proposal is queued in.
     ~sabdfl/firefox/release-0.9 - view proposal details
     This is the commit message
 
-If the user is not a reviewer of the target branch, then they cannot
-queue for merging until the branch is approved.
+If the user is not a reviewer of the target branch they can only
+queue for merging branches that have been approved.
 
     >>> nopriv_browser.open(
     ...     'http://code.launchpad.dev/~sabdfl/firefox/release-0.9.2')
