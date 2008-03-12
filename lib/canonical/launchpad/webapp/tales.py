@@ -1249,7 +1249,7 @@ class DurationFormatterAPI:
 
         return ', '.join(parts)
 
-    def approximateduration(self, use_words):
+    def approximateduration(self, use_words=True):
         """Return a nicely-formatted approximate duration.
 
         E.g. 'an hour', 'three minutes', '1 hour 10 minutes' and so
