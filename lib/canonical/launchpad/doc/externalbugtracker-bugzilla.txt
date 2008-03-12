@@ -248,6 +248,8 @@ synced:
     ...     external_bugzilla, [thunderbird_task.bugwatch])
     INFO:...:Updating 1 watches on https://bugzilla.mozilla.org
 
+    >>> bug_nine = getUtility(IBugSet).get(9)
+    >>> thunderbird_task = bug_nine.bugtasks[0]
     >>> print thunderbird_task.status.title
     In Progress
     >>> print thunderbird_task.importance.title
@@ -267,6 +269,8 @@ status mapping.
     ...     external_bugzilla, [thunderbird_task.bugwatch])
     INFO:...:Updating 1 watches on https://bugzilla.mozilla.org
 
+    >>> bug_nine = getUtility(IBugSet).get(9)
+    >>> thunderbird_task = bug_nine.bugtasks[0]
     >>> print thunderbird_task.status.title
     In Progress
     >>> print thunderbird_task.bugwatch.remotestatus
@@ -279,16 +283,20 @@ same remote bug, both will of course be updated.
     >>> bug_watch1 = bug_watch_set.createBugWatch(
     ...     bug=bug_one, owner=sample_person, bugtracker=mozilla_bugzilla,
     ...     remotebug='42')
+    >>> bug_watch1_id = bug_watch1.id
     >>> bug_two = getUtility(IBugSet).get(2)
     >>> bug_watch2 = bug_watch_set.createBugWatch(
     ...     bug=bug_two, owner=sample_person, bugtracker=mozilla_bugzilla,
     ...     remotebug='42')
+    >>> bug_watch2_id = bug_watch2.id
     >>> bug_watch_updater.updateBugWatches(
     ...     external_bugzilla, [bug_watch1, bug_watch2])
     INFO:...:Updating 2 watches on https://bugzilla.mozilla.org
 
+    >>> bug_watch1 = getUtility(IBugWatchSet).get(bug_watch1_id)
     >>> print bug_watch1.remotestatus
     RESOLVED FIXED
+    >>> bug_watch2 = getUtility(IBugWatchSet).get(bug_watch2_id)
     >>> print bug_watch2.remotestatus
     RESOLVED FIXED
 
@@ -307,7 +315,9 @@ bug tracker, an error is logged.
 The error is also recorded in each bug watch's last_error_type field so that
 it can be displayed to the user.
 
+    >>> bug_watch1 = getUtility(IBugWatchSet).get(bug_watch1_id)
     >>> bug_watch1.last_error_type.title
     'Unparsable Bug'
+    >>> bug_watch2 = getUtility(IBugWatchSet).get(bug_watch2_id)
     >>> bug_watch2.last_error_type.title
     'Unparsable Bug'

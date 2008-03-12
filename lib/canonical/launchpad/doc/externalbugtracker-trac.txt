@@ -177,10 +177,11 @@ We'll add some more watches now.
 
     >>> bug_watch_set = getUtility(IBugWatchSet)
     >>> bug_watches = dict(
-    ...     (int(bug_watch.remotebug), bug_watch)
+    ...     (int(bug_watch.remotebug), bug_watch.id)
     ...     for bug_watch in example_bug_tracker.watches)
 
-    >>> for remote_bug, bug_watch in bug_watches.items():
+    >>> for remote_bug, bug_watch_id in bug_watches.items():
+    ...     bug_watch = getUtility(IBugWatchSet).get(bug_watch_id)
     ...     print "%s: %s" % (remote_bug, bug_watch.remotestatus)
     1: fixed
 
@@ -203,7 +204,7 @@ We'll add some more watches now.
     ...         bug=example_bug, owner=sample_person,
     ...         bugtracker=example_bug_tracker,
     ...         remotebug=str(remote_bug_id))
-    ...     bug_watches[remote_bug_id] = bug_watch
+    ...     bug_watches[remote_bug_id] = bug_watch.id
 
     >>> trac.trace_calls = True
     >>> bug_watch_updater.updateBugWatches(trac, example_bug_tracker.watches)
@@ -211,7 +212,9 @@ We'll add some more watches now.
     CALLED urlopen(u'http://.../query?id=...
 
     >>> for remote_bug_id in sorted(bug_watches.keys()):
-    ...     remote_status = bug_watches[remote_bug_id].remotestatus
+    ...     bug_watch = getUtility(IBugWatchSet).get(
+    ...         bug_watches[remote_bug_id])
+    ...     remote_status = bug_watch.remotestatus
     ...     print 'Remote bug %d: %s' % (remote_bug_id, remote_status)
     Remote bug 1: fixed
     Remote bug 143: fixed
