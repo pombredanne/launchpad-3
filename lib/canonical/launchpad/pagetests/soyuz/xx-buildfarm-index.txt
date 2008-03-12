@@ -29,14 +29,20 @@ we have, 'virtualised' (PPA) and 'non-virtualised' (PRIMARY and PARTNER).
     ...     for td in portlet.fetch('td'):
     ...         print extract_text(td)
 
+The portlet simply lists the the architectures and their pending
+builds counter as:
 
-The portlet simple lists the tuples (arch, # of pending builds):
+  <ARCH 1>   <# of pending Builds>
+  <ARCH 1>   <# of pending Builds>
+  ...
+
+Architectures with no pending builds are omitted.
 
     >>> print_depth(anon_browser.contents, 'Non-virtual build queue depth')
     i386     1
 
-Portlets for empty build queues are omitted, as it's the case for the
-virtual build-farm.
+The portlet for the virtual build-farm is omitted, since the relevant
+build queue is empty.
 
     >>> print_depth(anon_browser.contents, 'Virtual build queue depth')
     Not presented
@@ -67,7 +73,7 @@ exposing one pending build record.
     >>> print_depth(anon_browser.contents, 'Virtual build queue depth')
     i386     1
 
-The non-virtual portlet still presented.
+The non-virtual portlet is still present.
 
     >>> print_depth(anon_browser.contents, 'Non-virtual build queue depth')
     i386     1

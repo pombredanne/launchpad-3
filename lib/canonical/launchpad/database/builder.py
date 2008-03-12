@@ -657,10 +657,10 @@ class BuilderSet(object):
             SELECT distroarchseries.architecturetag, COUNT(*)
             FROM Build
                 INNER JOIN DistroArchSeries
-                    ON Build.distroarchseries=DistroArchSeries.id
-                INNER JOIN Archive ON Build.archive=Archive.id
+                    ON Build.distroarchseries = DistroArchSeries.id
+                INNER JOIN Archive ON Build.archive = Archive.id
             WHERE
-                Build.buildstate=%s AND
+                Build.buildstate = %s AND
                 Archive.purpose IN %s
             GROUP BY distroarchseries.architecturetag
             ORDER BY distroarchseries.architecturetag

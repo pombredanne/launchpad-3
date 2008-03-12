@@ -141,20 +141,30 @@ class BuilderSetView(CommonBuilderView):
 
     @cachedproperty
     def non_virtual_build_queue_depth_by_arch(self):
+        """Wrap `IBuilder.getBuildQueueDepthByArch` for the non-vitualised farm.
+
+        Return the listified results.
+        """
         return shortlist(
             self.context.getBuildQueueDepthByArch(virtualised=False))
 
     @cachedproperty
     def has_non_virtual_queued_builds(self):
+        """Whether or not there are pending job in the non-virtual queue."""
         return bool(self.non_virtual_build_queue_depth_by_arch)
 
     @cachedproperty
     def virtual_build_queue_depth_by_arch(self):
+        """Wrap `IBuilder.getBuildQueueDepthByArch` for the vitualised farm.
+
+        Return the listified results.
+        """
         return shortlist(
             self.context.getBuildQueueDepthByArch(virtualised=True))
 
     @cachedproperty
     def has_virtual_queued_builds(self):
+        """Whether or not there are pending job in the virtual queue."""
         return bool(self.virtual_build_queue_depth_by_arch)
 
 
