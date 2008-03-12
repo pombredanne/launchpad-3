@@ -69,6 +69,14 @@ class SectionSchema:
         """See `ISectionSchema`"""
         return self._options[key]
 
+    @property
+    def category_and_section_names(self):
+        """See `ISectionSchema`."""
+        if '.' in self.name:
+            return tuple(self.name.split('.'))
+        else:
+            return (None, self.name)
+
 
 class Section:
     """See `ISection`."""
@@ -94,6 +102,11 @@ class Section:
         else:
             raise AttributeError(
                 "No section key named %s." % name)
+
+    @property
+    def category_and_section_names(self):
+        """See `ISection`."""
+        return self.schema.category_and_section_names
 
     def update(self, items):
         """Update the keys with new values.
@@ -306,9 +319,10 @@ class ConfigSchema:
             raise NoCategoryError(name)
         section_schemas = []
         for key in self._section_schemas:
-            parts = key.split('.')
-            if name == parts[0]:
-                section_schemas.append(self._section_schemas[key])
+            section = self._section_schemas[key]
+            category, dummy = section.category_and_section_names
+            if name == category:
+                section_schemas.append(section)
         return section_schemas
 
     def _getRequiredSections(self):
@@ -372,8 +386,10 @@ class ConfigData:
         """Return a tuple of category names that the `Section`s belong to."""
         category_names = set()
         for section_name in self._sections:
-            if '.' in section_name:
-                category_names.add(section_name.split('.')[0])
+            section = self._sections[section_name]
+            category, dummy = section.category_and_section_names
+            if category is not None:
+                category_names.add(category)
         return tuple(category_names)
 
     @property
@@ -402,9 +418,10 @@ class ConfigData:
             raise NoCategoryError(name)
         sections = []
         for key in self._sections:
-            parts = key.split('.')
-            if name == parts[0]:
-                sections.append(self._sections[key])
+            section = self._sections[key]
+            category, dummy = section.category_and_section_names
+            if name == category:
+                sections.append(section)
         return sections
 
 
