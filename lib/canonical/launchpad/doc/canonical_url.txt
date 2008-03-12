@@ -358,6 +358,7 @@ zope.publisher.interfaces.http.IHTTPApplicationRequest.
     ...
     ...     def __init__(self, applicationurl):
     ...         self.applicationurl = applicationurl
+    ...         self.interaction = None
     ...
     ...     def getApplicationURL(self, depth=0, path_only=False):
     ...         assert depth == 0, 'this is not a real IHTTPApplicationRequest'
@@ -375,9 +376,7 @@ given otherwise.
 
     >>> sesame_request = DummyRequest(
     ...     'http://muppet.example.com')
-    >>> participation = sesame_request
-    >>> participation.interaction = None
-    >>> login(ANONYMOUS, participation)
+    >>> login(ANONYMOUS, sesame_request)
     >>> canonical_url(country_instance)
     u'http://muppet.example.com/countries/England'
     >>> canonical_url(country_instance, mandrill_request)
