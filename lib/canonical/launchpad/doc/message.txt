@@ -186,6 +186,63 @@ u'unnamed'
 >>> blob2.mimetype
 u'application/xml; charset="utf16"'
 
+Only those chunks of content type text/plain with content-disposition 
+"inline" that have no filename are stored as content. If an inline 
+text/plain chunk has a filename, it is considered to be an attachment
+and is stored as a blob, as well as text/plain chunks with 
+content-disposition "attachment". Chunks with content-disposition
+"attachment" do not need a file name to be stored as blobs.
+
+    >>> raw_msg = """\
+    ... Content-Type: multipart/mixed; charset="latin-1";
+    ...               boundary="=====BOUNDARY====="
+    ... MIME-Version: 1.0
+    ... Subject: 
+    ... From: foo.bar@canonical.com
+    ... Message-Id: <20080603@localhost.localdomain>
+    ... Date: Thu Mar 06 13:00 MET 2008
+    ... To: cabal@ubuntu.com
+    ...
+    ... --=====BOUNDARY=====
+    ... Content-Type: text/plain; charset="us-ascii"
+    ... MIME-Version: 1.0
+    ... Content-Transfer-Encoding: 7bit
+    ...
+    ... Plain text
+    ... --=====BOUNDARY=====
+    ... Content-Type: text/plain; charset="us-ascii"
+    ... Content-Disposition: inline; filename="attachment.txt"
+    ... MIME-Version: 1.0
+    ... Content-Transfer-Encoding: 7bit
+    ...
+    ... some text in a file
+    ... --=====BOUNDARY=====
+    ... Content-Type: text/plain; charset="us-ascii"
+    ... Content-Disposition: attachment
+    ... MIME-Version: 1.0
+    ... Content-Transfer-Encoding: 7bit
+    ...
+    ... some text in another file
+    ... --=====BOUNDARY=====
+    ... Content-Type: text/plain; charset="us-ascii"
+    ... Content-Disposition: attachment; filename="attachment2.txt"
+    ... MIME-Version: 1.0
+    ... Content-Transfer-Encoding: 7bit
+    ...
+    ... some text in another file
+    ... --=====BOUNDARY=====
+    ... """
+    >>> msg = msgset.fromEmail(raw_msg)
+    >>> for chunk in msg.chunks:
+    ...     if chunk.content is not None:
+    ...         print '%d - %r' % (chunk.sequence, chunk.content)
+    ...     else:
+    ...         print '%d - file: %s' % (chunk.sequence, chunk.blob.filename)
+    1 - u'Plain text'
+    2 - file: attachment.txt
+    3 - file: unnamed
+    4 - file: attachment2.txt
+
 As per normal, we can't access the blobs in the same transaction
 as the request. I don't think this is important outside of tests.
 

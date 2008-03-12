@@ -7,9 +7,9 @@ confirm that the changes are actually being made by the API calls."""
 __metaclass__ = type
 __all__ = []
 
-from canonical.database.sqlbase import SERIALIZABLE_ISOLATION, cursor
-from canonical.lp import initZopeless
+from canonical.database.sqlbase import cursor, ISOLATION_LEVEL_SERIALIZABLE
 from canonical.launchpad.scripts import execute_zcml_for_scripts
+from canonical.lp import initZopeless
 
 execute_zcml_for_scripts()
 
@@ -34,11 +34,11 @@ txn.uninstall()
 
 # We run the checks twice to ensure that both methods of setting the
 # isolation level stick across transaction boundaries.
-txn = initZopeless(isolation=SERIALIZABLE_ISOLATION)
+txn = initZopeless(isolation=ISOLATION_LEVEL_SERIALIZABLE)
 check()
 txn.uninstall()
 
 txn = initZopeless()
-txn.set_isolation_level(SERIALIZABLE_ISOLATION)
+txn.set_isolation_level(ISOLATION_LEVEL_SERIALIZABLE)
 check()
 

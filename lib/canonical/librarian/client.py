@@ -72,13 +72,12 @@ class FileUploadClient:
         :param contentType: mime-type, e.g. text/plain
         :param expires: Expiry time of file. See LibrarianGarbageCollection.
             Set to None to only expire when it is no longer referenced.
-        :param debugID: Optional.  If set, causes extra logging for this request
-            on the server, which will be marked with the value given.
-
+        :param debugID: Optional.  If set, causes extra logging for this
+            request on the server, which will be marked with the value
+            given.
         :returns: aliasID as an integer
-
-        :raises UploadFailed: If the server rejects the upload for some reason,
-            or the size is 0.
+        :raises UploadFailed: If the server rejects the upload for some
+            reason, is 0.
         """
         if file is None:
             raise TypeError('Bad File Descriptor: %s' % repr(file))
@@ -94,9 +93,9 @@ class FileUploadClient:
 
         self._connect()
         try:
-            # Get the name of the database the client is using, so that the
-            # server can check that the client is using the same database as the
-            # server.
+            # Get the name of the database the client is using, so that
+            # the server can check that the client is using the same
+            # database as the server.
             cur = cursor()
             databaseName = self._getDatabaseName(cur)
 
@@ -175,8 +174,6 @@ class FileUploadClient:
         try:
             # Send command
             self._sendLine('STORE %d %s' % (size, name))
-            self._sendLine('Content-type: %s' % contentType)
-
             self._sendHeader('Database-Name', config.dbname)
             self._sendHeader('Content-Type', str(contentType))
             if expires is not None:

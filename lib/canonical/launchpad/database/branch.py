@@ -66,7 +66,7 @@ class Branch(SQLBase):
 
     name = StringCol(notNull=False)
     title = StringCol(notNull=False)
-    summary = StringCol(notNull=True)
+    summary = StringCol(notNull=False)
     url = StringCol(dbName='url')
     whiteboard = StringCol(default=None)
     mirror_status_message = StringCol(default=None)
@@ -463,6 +463,15 @@ class Branch(SQLBase):
         subscription = BranchSubscription.selectOneBy(
             person=person, branch=self)
         return subscription
+
+    def getSubscriptionsByLevel(self, notification_levels):
+        """See `IBranch`."""
+        notification_levels = [level.value for level in notification_levels]
+        return BranchSubscription.select(
+            "BranchSubscription.branch = Branch.id "
+            "AND BranchSubscription.notification_level IN (%s)"
+            % ', '.join(sqlvalues(*notification_levels)),
+            clauseTables=['Branch'])
 
     def hasSubscription(self, person):
         """See `IBranch`."""
@@ -1131,7 +1140,7 @@ class BranchSet:
                 FROM Branch
                 WHERE
                     Branch.owner = %(person)s
-                OR Branch.author = %(person)s
+                OR Branch.registrant = %(person)s
                 )
             %(lifecycle_clause)s
             %(dormant_clause)s
@@ -1142,13 +1151,13 @@ class BranchSet:
             self._generateBranchClause(query, visible_by_user),
             orderBy=self._listingSortToOrderBy(sort_by))
 
-    def getBranchesAuthoredByPerson(self, person, lifecycle_statuses=None,
-                                    visible_by_user=None, sort_by=None,
-                                    hide_dormant=False):
+    def getBranchesOwnedByPerson(self, person, lifecycle_statuses=None,
+                                 visible_by_user=None, sort_by=None,
+                                 hide_dormant=False):
         """See `IBranchSet`."""
         lifecycle_clause = self._lifecycleClause(lifecycle_statuses)
         dormant_clause = self._dormantClause(hide_dormant)
-        query = 'Branch.author = %s %s %s' % (
+        query = 'Branch.owner = %s %s %s' % (
             person.id, lifecycle_clause, dormant_clause)
         return BranchWithSortKeys.select(
             self._generateBranchClause(query, visible_by_user),
@@ -1160,12 +1169,8 @@ class BranchSet:
         """See `IBranchSet`."""
         lifecycle_clause = self._lifecycleClause(lifecycle_statuses)
         dormant_clause = self._dormantClause(hide_dormant)
-        query = ('''
-            Branch.owner = %s AND
-            (Branch.author is NULL OR
-            Branch.author != %s) %s %s
-            '''
-            % (person.id, person.id, lifecycle_clause, dormant_clause))
+        query = 'Branch.registrant = %s %s %s' % (
+            person.id, lifecycle_clause, dormant_clause)
         return BranchWithSortKeys.select(
             self._generateBranchClause(query, visible_by_user),
             orderBy=self._listingSortToOrderBy(sort_by))

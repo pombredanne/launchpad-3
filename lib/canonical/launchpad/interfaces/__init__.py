@@ -172,4 +172,5 @@ from canonical.launchpad.interfaces.wikiname import *
 from canonical.launchpad.interfaces.poexportrequest import *
 from canonical.launchpad.interfaces.distrocomponentuploader import *
 from canonical.launchpad.interfaces.archive import *
+from canonical.launchpad.interfaces.archivedependency import *
 from canonical.launchpad.interfaces.packagediff import *

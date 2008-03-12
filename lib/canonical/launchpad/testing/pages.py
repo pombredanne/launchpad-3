@@ -6,7 +6,6 @@
 
 __metaclass__ = type
 
-import doctest
 import os
 import re
 import simplejson
@@ -20,14 +19,11 @@ from urlparse import urljoin
 from zope.app.testing.functional import HTTPCaller, SimpleCookie
 from zope.proxy import ProxyBase
 from zope.testbrowser.testing import Browser
+from zope.testing import doctest
 
-from canonical.functional import SpecialOutputChecker
+from canonical.launchpad.testing.systemdocs import (
+    LayeredDocFileSuite, SpecialOutputChecker, strip_prefix)
 from canonical.testing import PageTestLayer
-
-
-default_optionflags = (doctest.REPORT_NDIFF |
-                       doctest.NORMALIZE_WHITESPACE |
-                       doctest.ELLIPSIS)
 
 
 class UnstickyCookieHTTPCaller(HTTPCaller):
@@ -485,6 +481,7 @@ def PageTestSuite(storydir, package=None, setUp=setUpGlobs):
     # files would be looked up relative to this module.
     package = doctest._normalize_module(package)
     abs_storydir = doctest._module_relative_path(package, storydir)
+    stripped_storydir = strip_prefix(abs_storydir)
 
     filenames = set(filename
                     for filename in os.listdir(abs_storydir)
@@ -502,19 +499,18 @@ def PageTestSuite(storydir, package=None, setUp=setUpGlobs):
 
     # Add unnumbered tests to the suite individually.
     checker = SpecialOutputChecker()
-    suite = doctest.DocFileSuite(
-        package=package, checker=checker,
-        optionflags=default_optionflags, setUp=setUp,
+    suite = LayeredDocFileSuite(
+        package=package, checker=checker, stdout_logging=False,
+        layer=PageTestLayer, setUp=setUp,
         *[os.path.join(storydir, filename)
           for filename in unnumberedfilenames])
-    suite.layer = PageTestLayer
 
     # Add numbered tests to the suite as a single story.
-    storysuite = doctest.DocFileSuite(
-        package=package, checker=checker,
-        optionflags=default_optionflags, setUp=setUp,
+    storysuite = LayeredDocFileSuite(
+        package=package, checker=checker, stdout_logging=False,
+        setUp=setUp,
         *[os.path.join(storydir, filename)
           for filename in numberedfilenames])
-    suite.addTest(PageStoryTestCase(abs_storydir, storysuite))
+    suite.addTest(PageStoryTestCase(stripped_storydir, storysuite))
 
     return suite

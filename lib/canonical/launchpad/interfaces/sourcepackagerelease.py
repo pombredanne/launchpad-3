@@ -115,6 +115,8 @@ class ISourcePackageRelease(Interface):
     current_publishings = Attribute("A list of the current places where "
         "this source package is published, in the form of a list of "
         "DistroSeriesSourcePackageReleases.")
+    published_archives = Attribute("A set of all the archives that this "
+        "source package is published in.")
     upload_archive = Attribute(
         "The archive for which this package was first uploaded in Launchpad")
     upload_changesfile = Attribute(
