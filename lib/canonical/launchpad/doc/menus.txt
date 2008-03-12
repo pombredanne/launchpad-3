@@ -321,12 +321,12 @@ Now, we can make an instance of this class.
 
 == The MenuLink and FacetLink adapter classes ==
 
-The menus system needs to be able to adapt ILinkData objects to objects
-that provide ILink or IFacetLink.  The menus system needs to be able to
-set the 'enabled', 'name', 'url', 'linked, and for IFacetLink, 'selected'
-attributes, but without altering the underlying ILinkData object.  Also,
-an ILink object provides an HTML escaped version of the text in the
-attribute 'escapedtext'.
+The menus system needs to be able to adapt ILinkData objects to
+objects that provide ILink or IFacetLink.  The menus system needs to
+be able to set the 'enabled', 'name', 'url', 'linked, and for
+IFacetLink, 'selected' attributes, but without altering the underlying
+ILinkData object.  ILink objects also provide an HTML-escaped version
+of the link text, and a TALES snippet for inserting the link into templates.
 
     >>> somelink = Link('target', 'text', 'summary', icon='icon')
     >>> ILinkData.providedBy(somelink)
@@ -393,6 +393,21 @@ We can test the 'structured' helper directly.
     Traceback (most recent call last):
     ...
     TypeError:...
+
+Next, we return the link as a TALES snippet.
+
+    >>> link = Link('+target', 'text-->', 'summary', icon='icon')
+
+    >>> ILink(link).render()
+    u'<span class="action">
+        <img alt="" tal:condition="link/icon" />
+	<tal:link replace="structure link/@@+link" />
+    </span>'
+    >>> IFacetLink(link).render()
+    u'<span class="action">
+        <img alt="" tal:condition="link/icon" />
+	<tal:link replace="structure link/@@+link" />
+    </span>'
 
 
 == How do we tell which link from a facetmenu is the selected one? ==
@@ -1042,6 +1057,15 @@ And thus, we don't have a facet to navigate to:
     Traceback (most recent call last):
     ...
     TraversalError: ..., 'foo')
+
+A thing's menu may be rendered directly as HTML, via a TALES template
+snippet, using the menu link's render() method.
+
+    >>> html = test_tales('context/menu:house/first/render', context=house)
+    >>> print html
+    <span class="action">
+	<a href="http://launchpad.dev/sesamestreet/number73/+firstcontext">???</a>
+    </span>
 
 
 == Cleaning up ==
