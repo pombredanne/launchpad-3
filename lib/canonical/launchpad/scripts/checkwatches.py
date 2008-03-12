@@ -213,6 +213,8 @@ class BugWatchUpdater(object):
         # bug id before we do so.
         remote_ids = sorted(
             [bug_watch.remotebug for bug_watch in bug_watches])
+
+        self.log.info("Updating remote bugs: %s." % ", ".join(remote_ids)
         if remotesystem.batch_size is not None:
             remote_ids = remote_ids[:remotesystem.batch_size]
 
