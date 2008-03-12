@@ -283,7 +283,6 @@ class PackageUpload(SQLBase):
         # to do this).
         if self._isSingleSourceUpload():
             [pub_source] = self.realiseUpload()
-            self._createBuilds(pub_source, ignore_pas=True)
 
         # When accepting packages, we must also check the changes file
         # for bugs to close automatically.
