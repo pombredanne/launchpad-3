@@ -588,17 +588,18 @@ def truncate_text(text, max_length):
     return truncated[:max_length]
 
 
-def english_list(items, join='and'):
+def english_list(items, conjunction='and'):
     """Return all the items concatenated into a English-style string.
 
     Follows the advice given in The Elements of Style, chapter II,
-    section 2.
+    section 2:
 
-    :param join: The string used to join the last two elements.
+    "In a series of three or more terms with a single conjunction, use
+     a comma after each term except the last."
     """
     items = list(items)
     if len(items) <= 2:
-        return (' %s ' % join).join(items)
+        return (' %s ' % conjunction).join(items)
     else:
-        items[-1] = '%s %s' % (join, items[-1])
+        items[-1] = '%s %s' % (conjunction, items[-1])
         return ', '.join(items)

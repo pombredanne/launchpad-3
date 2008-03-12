@@ -70,7 +70,7 @@ It does not convert non-string elements:
     ...
     TypeError: sequence item 0: expected string, int found
 
-The joining word between the last two elements can be changed:
+The conjunction can be changed:
 
     >>> english_list('123', 'or')
     '1, 2, or 3'
