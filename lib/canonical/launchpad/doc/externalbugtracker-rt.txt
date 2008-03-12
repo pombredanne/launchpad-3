@@ -9,9 +9,6 @@ instances.
 When importing bugs from remote RT instances, we use an RT-specific
 implementation of ExternalBugTracker, RequestTracker.
 
-    >>> from canonical.testing import LaunchpadZopelessLayer
-    >>> txn = LaunchpadZopelessLayer.txn
-
     >>> from canonical.launchpad.components.externalbugtracker import (
     ...     RequestTracker)
     >>> from canonical.launchpad.interfaces import (
@@ -21,7 +18,7 @@ implementation of ExternalBugTracker, RequestTracker.
     >>> from canonical.launchpad.webapp.testing import verifyObject
     >>> verifyObject(
     ...     IExternalBugTracker,
-    ...     RequestTracker(txn, new_bugtracker(BugTrackerType.RT)))
+    ...     RequestTracker('http://example.com/'))
     True
 
 The RequestTracker class offers an _opener property, an instance of
@@ -36,8 +33,7 @@ method for RequestTracker._logIn().
     ...         """This method does nothing but say it's been called."""
     ...         print "_logIn() has been called."
 
-    >>> request_tracker = NoLogInRequestTracker(
-    ...     txn, new_bugtracker(BugTrackerType.RT))
+    >>> request_tracker = NoLogInRequestTracker('http://example.com/')
     >>> request_tracker._opener
     _logIn() has been called.
     <urllib2.OpenerDirector...>
@@ -48,7 +44,7 @@ method for RequestTracker._logIn().
 The RequestTracker class can convert the default RT ticket statuses into
 Launchpad statuses:
 
-    >>> rt = RequestTracker(txn, new_bugtracker(BugTrackerType.RT))
+    >>> rt = RequestTracker('http://example.com/')
     >>> rt.convertRemoteStatus('new').title
     'New'
     >>> rt.convertRemoteStatus('open').title
@@ -80,7 +76,7 @@ connection.
 
     >>> from canonical.launchpad.ftests.externalbugtracker import (
     ...     TestRequestTracker)
-    >>> rt = TestRequestTracker(txn, new_bugtracker(BugTrackerType.RT))
+    >>> rt = TestRequestTracker('http://example.com/')
     >>> rt.initializeRemoteBugDB([1585, 1586, 1587, 1588, 1589])
     >>> sorted(rt.bugs.keys())
     [1585, 1586, 1587, 1588, 1589]
@@ -98,7 +94,7 @@ the bugs will be fetched one-at-a-time:
 
     >>> rt.trace_calls = True
     >>> rt.initializeRemoteBugDB([1585])
-    CALLED urlopen(u'REST/1.0/ticket/1585/show')
+    CALLED urlopen('REST/1.0/ticket/1585/show')
 
     >>> rt.bugs.keys()
     [1585]
@@ -107,7 +103,7 @@ If there are more than batch_query_threshold bugs to update then they are
 fetched as a batch:
 
     >>> rt.initializeRemoteBugDB([1585, 1586, 1587, 1588, 1589])
-    CALLED urlopen(u'REST/1.0/search/ticket/')
+    CALLED urlopen('REST/1.0/search/ticket/')
 
     >>> sorted(rt.bugs.keys())
     [1585, 1586, 1587, 1588, 1589]
@@ -148,7 +144,7 @@ Launchpad.dev bug #10 is the same bug as reported in example.com bug
     >>> sample_person = getUtility(IPersonSet).getByEmail(
     ...     'test@canonical.com')
     >>> example_bugwatch = example_bug.addWatch(
-    ...     example_bug_tracker, 1585, sample_person)
+    ...     example_bug_tracker, '1585', sample_person)
 
     >>> print_bugwatches(example_bug_tracker.watches)
     Remote bug 1585: None
@@ -157,8 +153,10 @@ Our RequestTracker ExternalBugTracker can now process, and retrieve a
 remote status for, the bug watch that we have created.
 
     >>> from canonical.launchpad.scripts.checkwatches import BugWatchUpdater
+    >>> from canonical.testing import LaunchpadZopelessLayer
+    >>> txn = LaunchpadZopelessLayer.txn
     >>> bug_watch_updater = BugWatchUpdater(txn)
-    >>> rt = TestRequestTracker(txn, example_bug_tracker)
+    >>> rt = TestRequestTracker(example_bug_tracker.baseurl)
     >>> bug_watch_updater.updateBugWatches(rt, example_bug_tracker.watches)
     INFO:...:Updating 1 watches on http://bugs.some.where
 

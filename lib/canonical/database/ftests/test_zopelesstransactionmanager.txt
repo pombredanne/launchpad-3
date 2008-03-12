@@ -84,7 +84,7 @@ raise an exception, but still make it possible to begin a new transaction.
 >>> andrew.name = 'sabdfl'
 >>> try: ztm.commit()
 ... except DatabaseError: print sys.exc_value
-ERROR:  duplicate key violates unique constraint "person_name_key"
+ERROR:  duplicate ... violates unique constraint "person_name_key"
 <BLANKLINE>
 UPDATE Person SET name = 'sabdfl' WHERE id = 7
 >>> ztm.begin()

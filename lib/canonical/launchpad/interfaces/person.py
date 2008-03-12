@@ -9,6 +9,7 @@ __all__ = [
     'AccountStatus',
     'IAdminPeopleMergeSchema',
     'IAdminTeamMergeSchema',
+    'IHasStanding',
     'INACTIVE_ACCOUNT_STATUSES',
     'INewPerson',
     'INewPersonForm',
@@ -18,7 +19,6 @@ __all__ = [
     'IPersonClaim',
     'IPersonEditRestricted',
     'IPersonPublic',
-    'IPersonEntry',
     'IPersonSet',
     'IPersonViewRestricted',
     'IRequestPeopleMerge',
@@ -29,23 +29,21 @@ __all__ = [
     'JoinNotAllowed',
     'PersonCreationRationale',
     'PersonVisibility',
+    'PersonalStanding',
     'TeamContactMethod',
     'TeamMembershipRenewalPolicy',
     'TeamSubscriptionPolicy',
-    'make_person_name_field',
     ]
 
 
 from zope.formlib.form import NoInputData
-from zope.schema import Bool, Choice, Datetime, Int, Object, Text, TextLine
+from zope.schema import Bool, Choice, Datetime, Int, Text, TextLine
 from zope.interface import Attribute, Interface
 from zope.interface.exceptions import Invalid
 from zope.interface.interface import invariant
 from zope.component import getUtility
 
 from canonical.lazr import DBEnumeratedType, DBItem, EnumeratedType, Item
-from canonical.lazr.interfaces import IEntry
-from canonical.lazr.rest.schema import CollectionField
 
 from canonical.launchpad import _
 
@@ -99,6 +97,43 @@ class AccountStatus(DBEnumeratedType):
 
 INACTIVE_ACCOUNT_STATUSES = [
     AccountStatus.DEACTIVATED, AccountStatus.SUSPENDED]
+
+
+class PersonalStanding(DBEnumeratedType):
+    """A person's standing.
+
+    Standing is currently (just) used to determine whether a person's posts to
+    a mailing list require first-post moderation or not.  Any person with good
+    or excellent standing may post directly to the mailing list without
+    moderation.  Any person with unknown or poor standing must have their
+    first-posts moderated.
+    """
+
+    UNKNOWN = DBItem(0, """
+        Unknown standing
+
+        Nothing about this person's standing is known.
+        """)
+
+    POOR = DBItem(100, """
+        Poor standing
+
+        This person has poor standing.
+        """)
+
+    GOOD = DBItem(200, """
+        Good standing
+
+        This person has good standing and may post to a mailing list without
+        being subject to first-post moderation rules.
+        """)
+
+    EXCELLENT = DBItem(300, """
+        Excellent standing
+
+        This person has excellent standing and may post to a mailing list
+        without being subject to first-post moderation rules.
+        """)
 
 
 class PersonCreationRationale(DBEnumeratedType):
@@ -349,22 +384,22 @@ class INewPerson(Interface):
         description=_("The reason why you're creating this profile."))
 
 
-def make_person_name_field():
-    """Construct a PersonNameField.
+# This has to be defined here to avoid circular import problems.
+class IHasStanding(Interface):
+    """An object that can have personal standing."""
 
-    This is used to define both IPerson and IPersonEntry. This is
-    not a long-term solution.
+    personal_standing = Choice(
+        title=_('Personal standing'),
+        required=True,
+        vocabulary=PersonalStanding,
+        description=_('The standing of a person for non-member mailing list '
+                      'posting privileges.'))
 
-    XXX leonardr 2008-01-28 bug=186702
-    """
-    return PersonNameField(
-            title=_('Name'), required=True, readonly=False,
-            constraint=name_validator,
-            description=_(
-                "A short unique name, beginning with a lower-case "
-                "letter or number, and containing only letters, "
-                "numbers, dots, hyphens, or plus signs.")
-            )
+    personal_standing_reason = Text(
+        title=_('Reason for personal standing'),
+        required=False,
+        description=_("The reason the person's standing is what it is."))
+
 
 class IPersonPublic(IHasSpecifications, IHasMentoringOffers,
                     IQuestionCollection, IHasLogo, IHasMugshot, IHasIcon):
@@ -373,7 +408,14 @@ class IPersonPublic(IHasSpecifications, IHasMentoringOffers,
     id = Int(
             title=_('ID'), required=True, readonly=True,
             )
-    name = make_person_name_field()
+    name = PersonNameField(
+            title=_('Name'), required=True, readonly=False,
+            constraint=name_validator,
+            description=_(
+                "A short unique name, beginning with a lower-case "
+                "letter or number, and containing only letters, "
+                "numbers, dots, hyphens, or plus signs.")
+            )
     displayname = StrippedTextLine(
             title=_('Display Name'), required=True, readonly=False,
             description=_("Your name as you would like it displayed "
@@ -1106,6 +1148,7 @@ class IPersonPublic(IHasSpecifications, IHasMentoringOffers,
         :target: An object providing `IBugTarget` to search within.
         """
 
+
 class IPersonViewRestricted(Interface):
     """IPerson attributes that require launchpad.View permission."""
 
@@ -1215,16 +1258,9 @@ class IPersonEditRestricted(Interface):
         """
 
 
-class IPerson(IPersonPublic, IPersonViewRestricted, IPersonEditRestricted):
+class IPerson(IPersonPublic, IPersonViewRestricted, IPersonEditRestricted,
+              IHasStanding):
     """A Person."""
-
-
-class IPersonEntry(IEntry):
-    """The part of a person that we expose through the web service."""
-
-    name = make_person_name_field()
-    teamowner = Object(schema=IPerson)
-    members = CollectionField(value_type=Object(schema=IPerson))
 
 
 class INewPersonForm(IPerson):

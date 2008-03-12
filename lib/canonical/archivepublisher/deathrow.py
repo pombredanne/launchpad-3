@@ -2,6 +2,7 @@
 """
 Processes removals of packages that are scheduled for deletion.
 """
+__metaclass__ = type
 
 import datetime
 import logging
@@ -18,8 +19,10 @@ from canonical.database.constants import UTC_NOW
 from canonical.database.sqlbase import sqlvalues
 
 from canonical.launchpad.database.publishing import (
-    SourcePackageFilePublishing, SecureSourcePackagePublishingHistory,
-    BinaryPackageFilePublishing, SecureBinaryPackagePublishingHistory)
+    BinaryPackagePublishingHistory, SourcePackagePublishingHistory,
+    SecureBinaryPackagePublishingHistory,
+    SecureSourcePackagePublishingHistory)
+
 from canonical.launchpad.interfaces import (
     ArchivePurpose, ISecureSourcePackagePublishingHistory,
     ISecureBinaryPackagePublishingHistory, NotInPool)
@@ -99,39 +102,50 @@ class DeathRow:
         self._markPublicationRemoved(records)
 
     def _collectCondemned(self):
-        source_files = SourcePackageFilePublishing.select("""
-            publishingstatus IN %s AND
-            sourcepackagefilepublishing.archive = %s AND
-            SourcePackagePublishingHistory.id =
-                 SourcePackageFilePublishing.sourcepackagepublishing AND
-            SourcePackagePublishingHistory.dateremoved is NULL AND
-            SourcePackagePublishingHistory.scheduleddeletiondate
-                 is not NULL AND
-            SourcePackagePublishingHistory.scheduleddeletiondate <= %s
-            """ % sqlvalues(ELIGIBLE_DOMINATION_STATES, self.archive,
-                            UTC_NOW),
-            clauseTables=['SourcePackagePublishingHistory'],
-            orderBy="id")
+        """Return the condemned source and binary publications as a tuple.
 
-        self.logger.debug("%d Sources" % source_files.count())
+        Return all the `SourcePackagePublishingHistory` and
+        `BinaryPackagePublishingHistory` records that are eligible for
+        removal ('condemned') where the source/binary package that they
+        refer to is not published somewhere else.
 
-        binary_files = BinaryPackageFilePublishing.select("""
-            publishingstatus IN %s AND
-            binarypackagefilepublishing.archive = %s AND
-            BinaryPackagePublishingHistory.id =
-                 BinaryPackageFilePublishing.binarypackagepublishing AND
-            BinaryPackagePublishingHistory.dateremoved is NULL AND
-            BinaryPackagePublishingHistory.scheduleddeletiondate
-                 is not NULL AND
-            BinaryPackagePublishingHistory.scheduleddeletiondate <= %s
-            """ % sqlvalues(ELIGIBLE_DOMINATION_STATES, self.archive,
-                            UTC_NOW),
-            clauseTables=['BinaryPackagePublishingHistory'],
-            orderBy="id")
+        Both sources and binaries are lists.
+        """
+        sources = SourcePackagePublishingHistory.select("""
+            SourcePackagePublishingHistory.archive = %s AND
+            SourcePackagePublishingHistory.scheduleddeletiondate < %s AND
+            SourcePackagePublishingHistory.dateremoved IS NULL AND
+            NOT EXISTS (
+              SELECT 1 FROM sourcepackagepublishinghistory as spph,
+                  sourcepackagerelease as spr
+              WHERE
+                  SourcePackagePublishingHistory.sourcepackagerelease =
+                      spph.sourcepackagerelease AND
+                  spph.archive = %s AND
+                  spph.status NOT IN %s)
+        """ % sqlvalues(self.archive, UTC_NOW, self.archive,
+                        ELIGIBLE_DOMINATION_STATES), orderBy="id")
+        sources = list(sources)
+        self.logger.debug("%d Sources" % len(sources))
 
-        self.logger.debug("%d Binaries" % binary_files.count())
+        binaries = BinaryPackagePublishingHistory.select("""
+            BinaryPackagePublishingHistory.archive = %s AND
+            BinaryPackagePublishingHistory.scheduleddeletiondate < %s AND
+            BinaryPackagePublishingHistory.dateremoved IS NULL AND
+            NOT EXISTS (
+              SELECT 1 FROM binarypackagepublishinghistory as bpph,
+                  binarypackagerelease as bpr
+              WHERE
+                  BinaryPackagePublishingHistory.binarypackagerelease =
+                      bpph.binarypackagerelease AND
+                  bpph.archive = %s AND
+                  bpph.status NOT IN %s)
+        """ % sqlvalues(self.archive, UTC_NOW, self.archive,
+                        ELIGIBLE_DOMINATION_STATES), orderBy="id")
+        sources = list(sources)
+        self.logger.debug("%d Binaries" % len(sources))
 
-        return (source_files, binary_files)
+        return (sources, binaries)
 
     def canRemove(self, publication_class, file_md5):
         """Check if given MD5 can be removed from the archive pool.
@@ -207,22 +221,29 @@ class DeathRow:
         considered_md5s = set()
         details = {}
 
-        content_files = (
-            (SecureSourcePackagePublishingHistory, condemned_source_files),
-            (SecureBinaryPackagePublishingHistory, condemned_binary_files),)
+        def checkPubRecord(pub_record, publication_class):
+            """Check if the publishing record can be removed.
 
-        for publication_class, pub_files in content_files:
-            for pub_file in pub_files:
+            It can only be removed if all files in its context are not
+            referred to any other 'published' publishing records.
+
+            See `canRemove` for more information.
+            """
+            for pub_file in pub_record.files:
+                filename = pub_file.libraryfilealiasfilename
                 file_md5 = pub_file.libraryfilealias.content.md5
+                self.logger.debug("Checking %s (%s)" % (filename, file_md5))
+
                 # Check if the LibraryFileAlias in question was already
                 # verified. If it was, continue.
                 if file_md5 in considered_md5s:
+                    self.logger.debug("Already verified.")
                     continue
                 considered_md5s.add(file_md5)
 
-                filename = pub_file.libraryfilealiasfilename
                 # Check if the removal is allowed, if not continue.
                 if not self.canRemove(publication_class, file_md5):
+                    self.logger.debug("Cannot remove.")
                     continue
 
                 # Update local containers, in preparation to file removal.
@@ -233,8 +254,18 @@ class DeathRow:
                     )
                 file_path = self.diskpool.pathFor(*pub_file_details)
                 details.setdefault(file_path, pub_file_details)
+
                 condemned_files.add(file_path)
                 condemned_records.add(pub_file.publishing_record)
+
+        # Check source and binary publishing records.
+        content_files = (
+            (SecureSourcePackagePublishingHistory, condemned_source_files),
+            (SecureBinaryPackagePublishingHistory, condemned_binary_files))
+
+        for publication_class, pub_records in content_files:
+            for pub_record in pub_records:
+                checkPubRecord(pub_record, publication_class)
 
         self.logger.info(
             "Removing %s files marked for reaping" % len(condemned_files))

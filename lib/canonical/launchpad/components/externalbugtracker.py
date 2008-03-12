@@ -29,13 +29,12 @@ from zope.interface import implements
 from canonical.cachedproperty import cachedproperty
 from canonical.config import config
 from canonical import encoding
-from canonical.database.sqlbase import flush_database_updates, commit
+from canonical.database.sqlbase import commit
 from canonical.launchpad.scripts import log, debbugs
 from canonical.launchpad.interfaces import (
     BugTaskImportance, BugTaskStatus, BugTrackerType, BugWatchErrorType,
-    CreateBugParams, IBugWatchSet, IDistribution, IExternalBugTracker,
-    ILaunchpadCelebrities, IMessageSet, IPersonSet,
-    PersonCreationRationale, ISupportsCommentImport,
+    IBugWatchSet, IExternalBugTracker, IMessageSet, IPersonSet,
+    PersonCreationRationale, ISupportsBugImport, ISupportsCommentImport,
     UNKNOWN_REMOTE_IMPORTANCE, UNKNOWN_REMOTE_STATUS)
 from canonical.launchpad.webapp import errorlog
 from canonical.launchpad.webapp.url import urlparse
@@ -201,10 +200,8 @@ class ExternalBugTracker:
     batch_query_threshold = config.checkwatches.batch_query_threshold
     import_comments = config.checkwatches.import_comments
 
-    def __init__(self, txn, bugtracker):
-        self.bugtracker = bugtracker
-        self.baseurl = bugtracker.baseurl.rstrip('/')
-        self.txn = txn
+    def __init__(self, baseurl):
+        self.baseurl = baseurl.rstrip('/')
 
     def urlopen(self, request, data=None):
         return urllib2.urlopen(request, data)
@@ -398,8 +395,8 @@ class Bugzilla(ExternalBugTracker):
     implements(IExternalBugTracker)
     batch_query_threshold = 0 # Always use the batch method.
 
-    def __init__(self, txn, bugtracker, version=None):
-        super(Bugzilla, self).__init__(txn, bugtracker)
+    def __init__(self, baseurl, version=None):
+        super(Bugzilla, self).__init__(baseurl)
         self.version = self._parseVersion(version)
         self.is_issuezilla = False
         self.remote_bug_status = {}
@@ -694,15 +691,15 @@ class DebBugsDatabaseNotFound(BugTrackerConnectError):
 class DebBugs(ExternalBugTracker):
     """A class that deals with communications with a debbugs db."""
 
-    implements(ISupportsCommentImport)
+    implements(ISupportsBugImport, ISupportsCommentImport)
 
     # We don't support different versions of debbugs.
     version = None
     debbugs_pl = os.path.join(
         os.path.dirname(debbugs.__file__), 'debbugs-log.pl')
 
-    def __init__(self, txn, bugtracker, db_location=None):
-        super(DebBugs, self).__init__(txn, bugtracker)
+    def __init__(self, baseurl, db_location=None):
+        super(DebBugs, self).__init__(baseurl)
         if db_location is None:
             self.db_location = config.malone.debbugs_db_location
         else:
@@ -840,41 +837,21 @@ class DebBugs(ExternalBugTracker):
             [debian_bug.status, severity] + debian_bug.tags)
         return new_remote_status
 
-    def importBug(self, bug_target, remote_bug):
-        """Import a remote bug into Launchpad."""
-        assert IDistribution.providedBy(bug_target), (
-            'We assume debbugs is used only by a distribution (Debian).')
+    def getBugReporter(self, remote_bug):
+        """See ISupportsBugImport."""
         debian_bug = self._findBug(remote_bug)
         reporter_name, reporter_email = parseaddr(debian_bug.originator)
-        reporter = getUtility(IPersonSet).ensurePerson(
-            reporter_email, reporter_name, PersonCreationRationale.BUGIMPORT,
-            comment='when importing debbugs bug #%s' % remote_bug)
-        package = bug_target.getSourcePackage(debian_bug.package)
-        if package is not None:
-            bug_target = package
-        else:
-            # Debbugs requires all bugs to be targeted to a package, so
-            # it shouldn't be empty.
-            self.warning(
-                'Unknown Debian package (debbugs #%s): %s' % (
-                    remote_bug, debian_bug.package))
-        bug = bug_target.createBug(
-            CreateBugParams(
-                reporter, debian_bug.subject, debian_bug.description,
-                subscribe_reporter=False))
+        return reporter_name, reporter_email
 
-        [debian_task] = bug.bugtasks
-        bug_watch = getUtility(IBugWatchSet).createBugWatch(
-            bug=bug,
-            owner=getUtility(ILaunchpadCelebrities).bug_watch_updater,
-            bugtracker=self.bugtracker, remotebug=remote_bug)
+    def getBugTargetName(self, remote_bug):
+        """See ISupportsBugImport."""
+        debian_bug = self._findBug(remote_bug)
+        return debian_bug.package
 
-        debian_task.bugwatch = bug_watch
-        # Need to flush databse updates, so that the bug watch knows it
-        # is linked from a bug task.
-        flush_database_updates()
-
-        return bug
+    def getBugSummaryAndDescription(self, remote_bug):
+        """See ISupportsBugImport."""
+        debian_bug = self._findBug(remote_bug)
+        return debian_bug.subject, debian_bug.description
 
     def getCommentIds(self, bug_watch):
         """Return all the comment IDs for a given remote bug."""
@@ -1397,10 +1374,7 @@ class Trac(ExternalBugTracker):
 
     ticket_url = 'ticket/%i?format=csv'
     batch_url = 'query?%s&order=resolution&format=csv'
-
-    def __init__(self, txn, bugtracker):
-        super(Trac, self).__init__(txn, bugtracker)
-        self.batch_query_threshold = 10
+    batch_query_threshold = 10
 
     def supportsSingleExports(self, bug_ids):
         """Return True if the Trac instance provides CSV exports for single
@@ -1573,7 +1547,7 @@ class Trac(ExternalBugTracker):
 class Roundup(ExternalBugTracker):
     """An ExternalBugTracker descendant for handling Roundup bug trackers."""
 
-    def __init__(self, txn, bugtracker):
+    def __init__(self, baseurl):
         """Create a new Roundup instance.
 
         :bugtracker: The Roundup bugtracker.
@@ -1585,7 +1559,7 @@ class Roundup(ExternalBugTracker):
         Python and in fact behaves rather more like SourceForge than
         Roundup.
         """
-        super(Roundup, self).__init__(txn, bugtracker)
+        super(Roundup, self).__init__(baseurl)
 
         if self.isPython():
             # The bug export URLs differ only from the base Roundup ones
@@ -1847,9 +1821,6 @@ class SourceForge(ExternalBugTracker):
     # avoid getting clobbered by SourceForge's rate limiting code.
     export_url = 'support/tracker.php?aid=%s'
     batch_size = 1
-
-    def __init__(self, txn, bugtracker):
-        super(SourceForge, self).__init__(txn, bugtracker)
 
     def initializeRemoteBugDB(self, bug_ids):
         """See `ExternalBugTracker`.
@@ -2215,12 +2186,12 @@ BUG_TRACKER_CLASSES = {
     }
 
 
-def get_external_bugtracker(txn, bugtracker):
+def get_external_bugtracker(bugtracker):
     """Return an `ExternalBugTracker` for bugtracker."""
     bugtrackertype = bugtracker.bugtrackertype
     bugtracker_class = BUG_TRACKER_CLASSES.get(bugtracker.bugtrackertype)
     if bugtracker_class is not None:
-        return bugtracker_class(txn, bugtracker)
+        return bugtracker_class(bugtracker.baseurl)
     else:
         raise UnknownBugTrackerTypeError(bugtrackertype.name,
             bugtracker.name)

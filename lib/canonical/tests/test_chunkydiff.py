@@ -1,8 +1,8 @@
 # Copyright 2004 Canonical Ltd.  All rights reserved.
 
-from zope.testing.doctestunit import DocFileSuite
+from canonical.launchpad.testing.systemdocs import LayeredDocFileSuite
+
 
 def test_suite():
-    suite = DocFileSuite('chunkydiff.txt')
-    return suite
+    return LayeredDocFileSuite('chunkydiff.txt', stdout_logging=False)
 
