@@ -527,6 +527,15 @@ class ProductSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         self.datelastsynced = UTC_NOW
         self.import_branch.requestMirror()
 
+    @property
+    def import_source_details(self):
+        if self.rcstype == RevisionControlSystems.CVS:
+            return '%s %s'%(self.cvsroot, self.cvsmodule)
+        elif self.rcstype == RevisionControlSystems.SVN:
+            return self.svnrepository
+        else:
+            raise AssertionError("XXX")
+
     def newMilestone(self, name, dateexpected=None, description=None):
         """See IProductSeries."""
         return Milestone(

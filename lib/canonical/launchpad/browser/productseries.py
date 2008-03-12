@@ -17,6 +17,7 @@ __all__ = [
     'ProductSeriesReviewView',
     'ProductSeriesShortLink',
     'ProductSeriesSOP',
+    'ProductSeriesSourceListView',
     'ProductSeriesSourceSetView',
     'ProductSeriesSourceView',
     'ProductSeriesSpecificationsMenu',
@@ -943,6 +944,18 @@ class ProductSeriesSourceSetView:
         html += '</select>\n'
         return html
 
+
+class ProductSeriesSourceListView:
+    """XXX."""
+
+    def __init__(self, context, request):
+        self.context = context
+        self.request = request
+        self.text = request.form.get('text', None)
+
+        results = getUtility(IProductSeriesSet).searchImports(
+            text=self.text, importstatus=ImportStatus.SYNCING)
+        self.batchnav = BatchNavigator(results, request)
 
 class ProductSeriesShortLink(DefaultShortLink):
 
