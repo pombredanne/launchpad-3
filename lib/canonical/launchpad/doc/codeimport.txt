@@ -51,7 +51,7 @@ Subversion, takes values from the 'RevisionControlSystems' vocabulary.
     >>> from canonical.launchpad.interfaces import RevisionControlSystems
     >>> for item in RevisionControlSystems:
     ...     print item.title
-    Concurrent Version System
+    Concurrent Versions System
     Subversion
 
 
@@ -71,8 +71,8 @@ in the repository, known as the "module".
     >>> verifyObject(ICodeImport, removeSecurityProxy(cvs_import))
     True
 
-When a new code import is created, an email is sent to the vcs-imports
-team.
+When a new code import is created, an email is sent to the each of the
+three members of the vcs-imports team.
 
     >>> import transaction
     >>> transaction.commit()
@@ -82,7 +82,6 @@ team.
     >>> from canonical.launchpad.helpers import contactEmailAddresses
     >>> from canonical.launchpad.interfaces import ILaunchpadCelebrities
     >>> vcs_imports = getUtility(ILaunchpadCelebrities).vcs_imports
-
     >>> len(contactEmailAddresses(vcs_imports))
     3
     >>> import email

@@ -106,8 +106,8 @@ class CodeImportSet:
     implements(ICodeImportSet)
 
     def new(self, registrant, product, branch_name, rcs_type,
-            svn_branch_url=None,
-            cvs_root=None, cvs_module=None, review_status=None):
+            svn_branch_url=None, cvs_root=None, cvs_module=None,
+            review_status=None):
         """See `ICodeImportSet`."""
         if rcs_type == RevisionControlSystems.CVS:
             assert cvs_root is not None and cvs_module is not None
@@ -126,7 +126,7 @@ class CodeImportSet:
         branch_set = getUtility(IBranchSet)
         if branch_set.getBranch(vcs_imports, product, branch_name):
             raise BranchCreationException(
-                "An branch already exists for the %s project owned by "
+                "A branch already exists for the %s project owned by "
                 "vcs-imports with the name %s" % (product.name, branch_name))
         import_branch = branch_set.new(
             branch_type=BranchType.IMPORTED, name=branch_name,
