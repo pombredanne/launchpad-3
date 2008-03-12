@@ -1,4 +1,6 @@
-# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# Copyright 2004-2008 Canonical Ltd.  All rights reserved.
+# We use global in this module.
+# pylint: disable-msg=W0602
 
 __metaclass__ = type
 
@@ -21,7 +23,7 @@ import psycopg
 import sqlos.connection
 from sqlos.interfaces import IConnectionName
 
-from canonical.config import config, dbconfig
+from canonical.config import config
 from canonical.database.interfaces import IRequestExpired
 from canonical.database.sqlbase import cursor, ISOLATION_LEVEL_AUTOCOMMIT
 from canonical.launchpad.webapp.interfaces import ILaunchpadDatabaseAdapter
@@ -39,6 +41,45 @@ __all__ = [
     'hard_timeout_expired',
     'soft_timeout_expired',
     ]
+
+
+class DBConfig:
+    """A singleton of the preferred database section."""
+
+    def __new__(cls, *args, **kwargs):
+        if '_instance' not in vars(cls):
+            cls._instance = super(DBConfig, cls).__new__(cls, *args, **kwargs)
+        return cls._instance
+
+    def __init__(self, section=None):
+        if section is None:
+            self._section = None
+        else:
+            self.section = section
+
+    def __getattr__(self, name):
+        """Return the value from the preferred or database section."""
+        if name in config[self.section]:
+            return config[self.section][name]
+        else:
+            return config['database'][name]
+
+    def section(self):
+        """The preferred section."""
+        return self._section
+
+    def _setsection(self, section):
+        """set the preferred section."""
+        # Force a NoSectionError if the section is not in the
+        # database category.
+        dummy = config[section]
+        self._section = section
+
+    section = property(section, _setsection, doc=section.__doc__)
+
+
+dbconfig = DBConfig('launchpad')
+
 
 def _get_dirty_commit_flags():
     """Return the current dirty commit status"""
@@ -272,9 +313,9 @@ class SessionDatabaseAdapter(ReconnectingDatabaseAdapter):
         """Ignore dsn"""
         super(SessionDatabaseAdapter, self).__init__(
             'dbi://%(dbuser)s:@%(dbhost)s/%(dbname)s' % dict(
-                dbuser=config.launchpad.session.dbuser,
-                dbhost=config.launchpad.session.dbhost or '',
-                dbname=config.launchpad.session.dbname))
+                dbuser=config.launchpad_session.dbuser,
+                dbhost=config.launchpad_session.dbhost or '',
+                dbname=config.launchpad_session.dbname))
 
     def _connection_factory(self):
         flags = _get_dirty_commit_flags()

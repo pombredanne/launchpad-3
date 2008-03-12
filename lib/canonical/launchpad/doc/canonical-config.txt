@@ -96,16 +96,16 @@ lazr.config value is returned. It is assumed that the callsite
 was updated to lazr.conf. For example, The lazr.config schema has
 a database category, and the ZConfig does not.
 
-    >>> config._config.database.answertracker.dbuser
-    'answertracker'
+    >>> config._config.launchpad_session.cookie
+    'launchpad_tests'
 
-    >>> config._cache.testrunner.database.answertracker.dbuser
+    >>> config._cache.testrunner.launchpad_session.cookie
     Traceback (most recent call last):
      ...
-    AttributeError: SectionValue instance has no attribute 'database'
+    AttributeError: SectionValue instance has no attribute 'launchpad_session'
 
-    >>> config.database.answertracker.dbuser
-    'answertracker'
+    >>> config.launchpad_session.cookie
+    'launchpad_tests'
 
 3. When the key is found in ZConfig, only, the ZConfig value is
 returned. The key was probably a ZConfig section; lazr.config does not

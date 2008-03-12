@@ -7,17 +7,21 @@ to confirm that the environment hasn't been corrupted by tests
 __metaclass__ = type
 
 from cStringIO import StringIO
-import os
 from urllib import urlopen
 import unittest
 
 import psycopg
 from zope.component import getUtility, ComponentLookupError
 
-from canonical.config import config, dbconfig
+from canonical.config import config
 from canonical.librarian.client import LibrarianClient, UploadFailed
 from canonical.librarian.interfaces import ILibrarianClient
-from canonical.testing import *
+from canonical.testing import (
+    BaseLayer, DatabaseLayer, FunctionalLayer, LaunchpadFunctionalLayer,
+    LaunchpadLayer, LaunchpadScriptLayer, LaunchpadZopelessLayer,
+    LibrarianLayer, ZopelessLayer)
+from canonical.launchpad.webapp.adapter import dbconfig
+
 
 class BaseTestCase(unittest.TestCase):
     """Both the Base layer tests, as well as the base Test Case

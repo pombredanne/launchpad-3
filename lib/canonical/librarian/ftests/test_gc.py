@@ -51,7 +51,7 @@ class TestLibrarianGarbageCollection(TestCase):
 
         # Connect to the database as a user with file upload privileges
         self.ztm = initZopeless(
-                dbuser=config.librarian.gc.dbuser, implicitBegin=False
+                dbuser=config.librarian_gc.dbuser, implicitBegin=False
                 )
 
         # A value we use in a number of tests
@@ -74,7 +74,7 @@ class TestLibrarianGarbageCollection(TestCase):
                 open(path, 'w').write('whatever')
         self.ztm.abort()
 
-        self.con = connect(config.librarian.gc.dbuser)
+        self.con = connect(config.librarian_gc.dbuser)
         self.con.set_isolation_level(ISOLATION_LEVEL_AUTOCOMMIT)
 
     def tearDown(self):
@@ -144,7 +144,8 @@ class TestLibrarianGarbageCollection(TestCase):
         # Confirm that our sample files are there.
         f1 = LibraryFileAlias.get(self.f1_id)
         f2 = LibraryFileAlias.get(self.f2_id)
-        # Grab the content IDs related to these unreferenced LibraryFileAliases
+        # Grab the content IDs related to these
+        # unreferenced LibraryFileAliases
         c1_id = f1.contentID
         c2_id = f2.contentID
         del f1, f2
@@ -240,7 +241,8 @@ class TestLibrarianGarbageCollection(TestCase):
         LibraryFileAlias.get(self.f2_id, None)
 
     def test_DeleteUnreferencedContent(self):
-        # Merge the duplicates. This creates an unreferenced LibraryFileContent
+        # Merge the duplicates. This creates an
+        # unreferenced LibraryFileContent
         librariangc.merge_duplicates(self.con)
 
         self.ztm.begin()
@@ -301,7 +303,8 @@ class TestLibrarianGarbageCollection(TestCase):
         # nothing can use unreferenced files anyway. This test ensures
         # that this all works.
 
-        # Merge the duplicates. This creates an unreferenced LibraryFileContent
+        # Merge the duplicates. This creates an
+        # unreferenced LibraryFileContent
         librariangc.merge_duplicates(self.con)
 
         self.ztm.begin()
@@ -357,19 +360,20 @@ class TestLibrarianGarbageCollection(TestCase):
         self.ztm.begin()
         cur = cursor()
 
-        # There are two sorts of unwanted files we might find on the filesystem.
-        # The first is where a file exists on the filesystem and there is
-        # no corresponding LibraryFileContent row. The second is where
-        # a file exists on the filesystem and the corresponding
+        # There are two sorts of unwanted files we might find on the
+        # filesystem. The first is where a file exists on the filesystem and
+        # there is no corresponding LibraryFileContent row. The second is
+        # where a file exists on the filesystem and the corresponding
         # LibraryFileContent row has had its 'deleted' flag set.
 
-        # Find a content_id we can easily delete and do so. This row is removed
-        # from the database, leaving an orphaned file on the filesystem that
-        # should be removed.
+        # Find a content_id we can easily delete and do so. This row is
+        # removed from the database, leaving an orphaned file on the
+        # filesystem that should be removed.
         cur.execute("""
             SELECT LibraryFileContent.id
             FROM LibraryFileContent
-            LEFT OUTER JOIN LibraryFileAlias ON LibraryFileContent.id = content
+            LEFT OUTER JOIN LibraryFileAlias
+                ON LibraryFileContent.id = content
             WHERE LibraryFileAlias.id IS NULL
             LIMIT 1
             """)
@@ -398,9 +402,9 @@ class TestLibrarianGarbageCollection(TestCase):
 
         # Ensure delete_unreferenced_files does not remove the file, because
         # it will have just been created (has a recent date_created). There
-        # is a window between file creation and the garbage collector bothering
-        # to remove the file to avoid the race condition where the garbage
-        # collector is run whilst a file is being uploaded.
+        # is a window between file creation and the garbage collector
+        # bothering to remove the file to avoid the race condition where the
+        # garbage collector is run whilst a file is being uploaded.
         librariangc.delete_unwanted_files(self.con)
         self.failUnless(os.path.exists(path))
         self.failUnless(os.path.exists(deleted_path))
@@ -439,7 +443,8 @@ class TestLibrarianGarbageCollection(TestCase):
         cmd = [sys.executable, script_path, '-q']
         process = Popen(cmd, stdout=PIPE, stderr=STDOUT, stdin=PIPE)
         (script_output, _empty) = process.communicate()
-        self.failUnlessEqual(process.returncode, 0, 'Error: %s' % script_output)
+        self.failUnlessEqual(
+            process.returncode, 0, 'Error: %s' % script_output)
         self.failUnlessEqual(script_output, '')
 
         # Make sure that our example files have been garbage collected
@@ -495,7 +500,8 @@ class TestBlobCollection(TestCase):
         self.expired_lfc_id = cur.fetchone()[0]
 
         cur.execute("""
-            INSERT INTO LibraryFileAlias (content, filename, mimetype, expires)
+            INSERT INTO LibraryFileAlias (
+                content, filename, mimetype, expires)
             VALUES (
                 %s, 'whatever', 'whatever',
                 CURRENT_TIMESTAMP - '1 day'::interval
@@ -521,7 +527,8 @@ class TestBlobCollection(TestCase):
         self.expired2_lfc_id = cur.fetchone()[0]
 
         cur.execute("""
-            INSERT INTO LibraryFileAlias (content, filename, mimetype, expires)
+            INSERT INTO LibraryFileAlias (
+                content, filename, mimetype, expires)
             VALUES (
                 %s, 'whatever', 'whatever',
                 CURRENT_TIMESTAMP - '1 day'::interval
@@ -556,7 +563,8 @@ class TestBlobCollection(TestCase):
         self.unexpired_lfc_id = cur.fetchone()[0]
 
         cur.execute("""
-            INSERT INTO LibraryFileAlias (content, filename, mimetype, expires)
+            INSERT INTO LibraryFileAlias (
+                content, filename, mimetype, expires)
             VALUES (
                 %s, 'whatever', 'whatever',
                 CURRENT_TIMESTAMP + '1 day'::interval
@@ -575,14 +583,14 @@ class TestBlobCollection(TestCase):
         con.close()
 
         # Open a connection for our test
-        self.con = connect(config.librarian.gc.dbuser)
+        self.con = connect(config.librarian_gc.dbuser)
         self.con.set_isolation_level(ISOLATION_LEVEL_AUTOCOMMIT)
 
         librariangc.log = MockLogger()
 
         # Make sure all the librarian files actually exist on disk
         ztm = initZopeless(
-                dbuser=config.librarian.gc.dbuser, implicitBegin=False
+                dbuser=config.librarian_gc.dbuser, implicitBegin=False
                 )
         ztm.begin()
         cur = cursor()
@@ -680,7 +688,8 @@ class TestBlobCollection(TestCase):
         cmd = [sys.executable, script_path, '-q']
         process = Popen(cmd, stdout=PIPE, stderr=STDOUT, stdin=PIPE)
         (script_output, _empty) = process.communicate()
-        self.failUnlessEqual(process.returncode, 0, 'Error: %s' % script_output)
+        self.failUnlessEqual(
+            process.returncode, 0, 'Error: %s' % script_output)
         self.failUnlessEqual(script_output, '')
 
         cur = self.con.cursor()
