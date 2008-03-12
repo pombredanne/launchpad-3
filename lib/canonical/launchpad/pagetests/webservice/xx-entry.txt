@@ -222,8 +222,8 @@ And of course you can't modify attributes that don't exist.
 Launchpad's web service serves and parses dates in ISO 8601
 format. Only UTC dates are allowed.
 
-The tests that follow will make a number of PATCH requests that
-include values for a person's 'datecreated' attribute.
+The tests that follow make a number of PATCH requests that include
+values for a person's 'datecreated' attribute.
 
   >>> salgado['datecreated']
   u'2005-06-06T08:59:51.596025+00:00'
@@ -243,8 +243,7 @@ read-only), the response code is also 400, but the error message talks
 about an attempt to modify a read-only attribute.
 
 The two 400 error codes below are caused by a failure to understand
-the assertion. For instance, the string used in the assertion might
-not be a date:
+the assertion. The string used in the assertion might not be a date.
 
   >>> print patch_salgado_datecreated('dummy')
   HTTP/1.1 400 Bad Request
@@ -252,7 +251,7 @@ not be a date:
   You set the attribute 'datecreated' to a value that doesn't look
   like a date.
 
-Or it might not be in UTC.
+Or it might be a date that's not in UTC.
 
   >>> print patch_salgado_datecreated(u'2005-06-06T13:59:51.596025+05:00')
   HTTP/1.1 400 Bad Request
