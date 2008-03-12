@@ -5,7 +5,9 @@
 __metaclass__ = type
 
 from unittest import TestCase, TestLoader
+import zope.event
 
+from canonical.launchpad.event import SQLObjectCreatedEvent
 from canonical.launchpad.ftests import ANONYMOUS, login, logout
 from canonical.launchpad.interfaces import (
     BadStateTransition, BranchMergeProposalStatus, EmailAddressStatus)
@@ -265,6 +267,45 @@ class TestBranchMergeProposalQueueing(TestCase):
             new_queue_order, queue_order,
             "There should be only two queued items now. "
             "Expected %s, got %s" % (new_queue_order, queue_order))
+
+
+class TestMergeProposalNotification(TestCase):
+    """Test that events are created when merge proposals are manipulated"""
+
+    layer = LaunchpadFunctionalLayer
+
+    def setUp(self):
+        TestCase.setUp(self)
+        login('foo.bar@canonical.com')
+        self.factory = LaunchpadObjectFactory()
+
+    def assertNotifies(self, event_type, callable_obj, *args, **kwargs):
+        notified_with = []
+        def on_notify(event):
+            notified_with.append(event)
+        old_subscribers = zope.event.subscribers[:]
+        try:
+            zope.event.subscribers[:] = [on_notify]
+            result = callable_obj(*args, **kwargs)
+            if len(notified_with) == 0:
+                raise AssertionError('No notification was performed.')
+            elif len(notified_with) > 1:
+                raise AssertionError('Too many (%d) notifications performed.'
+                    % len(notified_with))
+            elif not isinstance(notified_with[0], event_type):
+                raise AssertionError('Wrong event type: %r (expected %r).' %
+                    (notified_with[0], event_type))
+        finally:
+            zope.event.subscribers[:] = old_subscribers
+        return result, notified_with[0]
+
+    def test_notifyOnCreate(self):
+        source_branch = self.factory.makeBranch()
+        target_branch = self.factory.makeBranch(product=source_branch.product)
+        registrant = self.factory.makePerson()
+        result, event = self.assertNotifies(SQLObjectCreatedEvent,
+            source_branch.addLandingTarget, registrant, target_branch)
+        self.assertEqual(result, event.object)
 
 
 def test_suite():

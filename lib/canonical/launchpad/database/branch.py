@@ -202,10 +202,12 @@ class Branch(SQLBase):
         self.date_last_modified = date_created
         target_branch.date_last_modified = date_created
 
-        return BranchMergeProposal(
+        bmp = BranchMergeProposal(
             registrant=registrant, source_branch=self,
             target_branch=target_branch, dependent_branch=dependent_branch,
             whiteboard=whiteboard, date_created=date_created)
+        notify(SQLObjectCreatedEvent(bmp))
+        return bmp
 
     def getMergeQueue(self):
         """See `IBranch`."""
