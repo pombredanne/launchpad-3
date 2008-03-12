@@ -296,6 +296,10 @@ class EntryResource(ReadWriteResource):
         for name, field in getFields(schema).items():
             if (name.startswith('_') or ICollectionField.providedBy(field)
                 or field.readonly):
+                # This attribute is not part of the web service
+                # interface, is a collection link (which means it's
+                # read-only), or is marked read-only. It's okay for
+                # the client to omit a value for this attribute.
                 continue
             if IObject.providedBy(field):
                 repr_name = name + '_link'
@@ -303,6 +307,10 @@ class EntryResource(ReadWriteResource):
                 repr_name = name
             if (changeset.get(repr_name) is None
                 and getattr(self.context, name) is not None):
+                # This entry has a value for the attribute, but the
+                # entity-body of the PUT request didn't make any assertion
+                # about the attribute. The resource's behavior under HTTP
+                # is undefined; we choose to send an error.
                 self.request.response.setStatus(400)
                 return ("You didn't specify a value for the attribute '%s'."
                         % repr_name)
@@ -373,16 +381,18 @@ class EntryResource(ReadWriteResource):
             elif isinstance(element, Datetime):
                 try:
                     value = DateTimeParser().parse(value)
-                    seconds = int(value[-2])
-                    microseconds = int(round((value[-2] - seconds) * 1000000))
-                    timezone = value[-1]
+                    (year, month, day, hours, minutes, secondsAndMicroseconds,
+                     timezone) = value
+                    seconds = int(secondsAndMicroseconds)
+                    microseconds = int(round((secondsAndMicroseconds - seconds)
+                                             * 1000000))
                     if timezone not in ['Z', '+0000', '-0000']:
                         self.request.response.setStatus(400)
                         return ("You set the attribute '%s' to a time "
                                 "that's not UTC."
                                 % repr_name)
-                    value = datetime(*value[:-2] + (seconds, microseconds,
-                                                    pytz.utc))
+                    value = datetime(year, month, day, hours, minutes,
+                                     seconds, microseconds, pytz.utc)
                 except (DateError, DateTimeError, SyntaxError):
                     self.request.response.setStatus(400)
                     return ("You set the attribute '%s' to a value "
