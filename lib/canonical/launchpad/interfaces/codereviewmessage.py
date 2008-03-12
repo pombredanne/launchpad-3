@@ -24,28 +24,23 @@ class CodeReviewVote(DBEnumeratedType):
     Responses from the reviews to the code author.
     """
 
-    TWEAK = DBItem(1, """
-        Tweak
+    DISAPPROVE = DBItem(1, """
+        Disapprove
 
-        The code needs a small change, but not a re-review.
+        Reviewer does not want the proposed merge to happen.
         """)
 
-    RESUBMIT = DBItem(2, """
-        Resubmit
+    ABSTAIN = DBItem(2, """
+        Abstain
 
-        The code needs a change and should be reviewed afterwards.
+        Reviewer cannot or does not want to decide whether the proposed merge
+        should happen.
         """)
 
-    APPROVED = DBItem(3, """
-        Approved
+    APPROVE = DBItem(3, """
+        Approve
 
-        The code is accepted as is.
-        """)
-
-    VETO = DBItem(4, """
-        Vetoed
-
-        A strong rejection.
+        Reviewer wants the proposed merge to happen.
         """)
 
 

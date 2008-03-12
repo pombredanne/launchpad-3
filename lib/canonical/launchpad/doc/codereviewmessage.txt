@@ -36,7 +36,8 @@ default.
 
     >>> from canonical.launchpad.interfaces import CodeReviewVote
     >>> message2 = merge_proposal.createMessage(
-    ...     person, 'No!', 'You are ugly and stupid', CodeReviewVote.VETO)
+    ...     person, 'No!', 'You are ugly and stupid',
+    ...     CodeReviewVote.DISAPPROVE)
     >>> message2.message.parent == merge_proposal.root_message.message
     True
 

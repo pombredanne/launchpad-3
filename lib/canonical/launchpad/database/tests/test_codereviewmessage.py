@@ -36,19 +36,20 @@ class TestCodeReviewMessage(unittest.TestCase):
             self.submitter, 'Message subject', 'Message content')
         reply = self.bmp.createMessage(
             self.reviewer, 'Reply subject', 'Reply content',
-            CodeReviewVote.TWEAK, message)
+            CodeReviewVote.ABSTAIN, message)
         self.assertEqual(message, self.bmp.root_message)
         self.assertEqual(message.message.id, reply.message.parent.id)
         self.assertEqual(message.message, reply.message.parent)
         self.assertEqual('Reply subject', reply.message.subject)
         self.assertEqual('Reply content', reply.message.chunks[0].content)
-        self.assertEqual(CodeReviewVote.TWEAK, reply.vote)
+        self.assertEqual(CodeReviewVote.ABSTAIN, reply.vote)
 
     def test_createNoParentMessage(self):
         message = self.bmp.createMessage(
             self.submitter, 'Message subject', 'Message content')
         new_message = self.bmp.createMessage(
-            self.reviewer, 'New subject', 'New content', CodeReviewVote.TWEAK)
+            self.reviewer, 'New subject', 'New content',
+            CodeReviewVote.ABSTAIN)
         self.assertEqual(
             self.bmp.root_message.message, new_message.message.parent)
 
@@ -57,7 +58,7 @@ class TestCodeReviewMessage(unittest.TestCase):
             self.submitter, 'Message subject', 'Message content')
         self.assertRaises(AssertionError, self.bmp2.createMessage,
                           self.reviewer, 'Reply subject', 'Reply content',
-                          CodeReviewVote.TWEAK, message)
+                          CodeReviewVote.ABSTAIN, message)
 
 
 def test_suite():
