@@ -645,16 +645,27 @@ class BuilderSet(object):
                               % arch.processorfamily.id,
                               clauseTables=("Processor",))
 
-    def getBuildQueueDepthByArch(self):
+    def getBuildQueueDepthByArch(self, virtualised=False):
         """See `IBuilderSet`."""
+        if virtualised:
+            archive_purposes = [ArchivePurpose.PPA]
+        else:
+            archive_purposes = [ArchivePurpose.PRIMARY,
+                                ArchivePurpose.PARTNER]
+
         query = """
-            SELECT distroarchseries.architecturetag, COUNT(*) FROM
-                Build INNER JOIN DistroArchSeries
-                  ON Build.distroarchseries=DistroArchSeries.id
-            WHERE Build.buildstate=0
+            SELECT distroarchseries.architecturetag, COUNT(*)
+            FROM Build
+                INNER JOIN DistroArchSeries
+                    ON Build.distroarchseries=DistroArchSeries.id
+                INNER JOIN Archive ON Build.archive=Archive.id
+            WHERE
+                Build.buildstate=%s AND
+                Archive.purpose IN %s
             GROUP BY distroarchseries.architecturetag
             ORDER BY distroarchseries.architecturetag
-            """
+            """ % sqlvalues(BuildStatus.NEEDSBUILD, archive_purposes)
+
         cur = cursor()
         cur.execute(query)
         return cur.fetchall()

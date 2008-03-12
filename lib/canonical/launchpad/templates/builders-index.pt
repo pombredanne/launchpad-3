@@ -20,19 +20,35 @@
 </metal:block>
 
 <metal:portlets fill-slot="portlets">
+
   <div class="portlet" id="portlet-build-queue-depth"
-       tal:condition="view/hasQueuedBuilds">
-    <h2>Build queue depth</h2>
+       tal:condition="view/has_non_virtual_queued_builds">
+    <h2>Non-virtual build queue depth</h2>
     <div class="portletBody">
       <table width="100%">
         <tbody>
-          <tr tal:repeat="arch view/buildQueueDepthByArch">
+          <tr tal:repeat="arch view/non_virtual_build_queue_depth_by_arch">
             <td tal:repeat="value arch" tal:content="value" />
           </tr>
         </tbody>
       </table>
     </div>
   </div>
+
+  <div class="portlet" id="portlet-build-queue-depth"
+       tal:condition="view/has_virtual_queued_builds">
+    <h2>Virtual build queue depth</h2>
+    <div class="portletBody">
+      <table width="100%">
+        <tbody>
+          <tr tal:repeat="arch view/virtual_build_queue_depth_by_arch">
+            <td tal:repeat="value arch" tal:content="value" />
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
 </metal:portlets>
 
   <div metal:fill-slot="main">

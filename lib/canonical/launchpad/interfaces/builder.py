@@ -292,8 +292,14 @@ class IBuilderSet(Interface):
     def getBuildersByArch(arch):
         """Return all configured builders for a given DistroArchSeries."""
 
-    def getBuildQueueDepthByArch():
-        """Return a list of architectures and the number of Builds that are
+    def getBuildQueueDepthByArch(virtualised=False):
+        """Return a list of tuples containing (arch, # of pending builds).
+
+        'virtualised' controls whether the call site is interested in the
+        non-virtualised (default) build queue (PRIMARY and PARTNER archive)
+        or the virtualised build queue (PPAs).
+
+        Return a list of architectures and the number of Builds that are
         in the NEEDSBUILD state for each of them.
         """
 

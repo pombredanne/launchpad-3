@@ -140,12 +140,23 @@ class BuilderSetView(CommonBuilderView):
     __used_for__ = IBuilderSet
 
     @cachedproperty
-    def buildQueueDepthByArch(self):
-        return shortlist(self.context.getBuildQueueDepthByArch())
+    def non_virtual_build_queue_depth_by_arch(self):
+        return shortlist(
+            self.context.getBuildQueueDepthByArch(virtualised=False))
 
     @cachedproperty
-    def hasQueuedBuilds(self):
-        return bool(self.buildQueueDepthByArch)
+    def has_non_virtual_queued_builds(self):
+        return bool(self.non_virtual_build_queue_depth_by_arch)
+
+    @cachedproperty
+    def virtual_build_queue_depth_by_arch(self):
+        return shortlist(
+            self.context.getBuildQueueDepthByArch(virtualised=True))
+
+    @cachedproperty
+    def has_virtual_queued_builds(self):
+        return bool(self.virtual_build_queue_depth_by_arch)
+
 
 
 class HiddenBuilder:

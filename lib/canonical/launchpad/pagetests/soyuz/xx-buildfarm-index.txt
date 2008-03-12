@@ -17,15 +17,59 @@ processing.
     frog Automatic 386 Virtual  Launchpad Buildd Admins Not available
     Generated at ...
 
-This page also presents a portlet exposing the number of builds waiting
-in queue for each supported architecture.
+This page also presents 2 portlets, exposing the number of builds waiting
+in queue for each supported architecture on each separated build-farm
+we have, 'virtualised' (PPA) and 'non-virtualised' (PRIMARY and PARTNER).
 
     >>> def print_depth(contents, queue_name):
     ...     portlet = find_portlet(contents, queue_name)
+    ...     if portlet is None:
+    ...         print 'Not presented'
+    ...         return
     ...     for td in portlet.fetch('td'):
     ...         print extract_text(td)
 
-    >>> print_depth(anon_browser.contents, 'Build queue depth')
+
+The portlet simple lists the tuples (arch, # of pending builds):
+
+    >>> print_depth(anon_browser.contents, 'Non-virtual build queue depth')
+    i386     1
+
+Portlets for empty build queues are omitted, as it's the case for the
+virtual build-farm.
+
+    >>> print_depth(anon_browser.contents, 'Virtual build queue depth')
+    Not presented
+
+In order to test the 'virtual' build queue depth portlet we will retry
+a failed build in Celso's PPA.
+
+    >>> from zope.component import getUtility
+    >>> from canonical.database.sqlbase import flush_database_updates
+    >>> from canonical.launchpad.interfaces import (
+    ...     BuildStatus, IPersonSet)
+    >>> from canonical.launchpad.ftests import login, logout
+
+    >>> login('foo.bar@canonical.com')
+
+    >>> cprov = getUtility(IPersonSet).getByName('cprov')
+    >>> failed_build = cprov.archive.getBuildRecords(
+    ...     build_state=BuildStatus.FAILEDTOBUILD)[0]
+    >>> unused = failed_build.retry()
+
+    >>> flush_database_updates()
+    >>> logout()
+
+Now we can see the populated portlet for the virtual build-farm,
+exposing one pending build record.
+
+    >>> anon_browser.reload()
+    >>> print_depth(anon_browser.contents, 'Virtual build queue depth')
+    i386     1
+
+The non-virtual portlet still presented.
+
+    >>> print_depth(anon_browser.contents, 'Non-virtual build queue depth')
     i386     1
 
 From this page, users with the appropriate permission can register new
