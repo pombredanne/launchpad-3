@@ -12,10 +12,7 @@ The class that implements EBT is called Bugzilla. It works differently
 depending on which version of Bugzilla it is talking to. If it's a
 version we can't parse, UnparseableBugTrackerVersion is raised:
 
-    >>> from canonical.launchpad.ftests.externalbugtracker import (
-    ...     new_bugtracker)
     >>> from canonical.launchpad.components.externalbugtracker import Bugzilla
-    >>> from canonical.launchpad.interfaces import BugTrackerType
     >>> from canonical.testing import LaunchpadZopelessLayer
     >>> txn = LaunchpadZopelessLayer.txn
     >>> external_bugzilla = Bugzilla('http://example.com/', version='A.B4')
@@ -28,8 +25,6 @@ Since we don't want to depend on a working network connection, we use a
 slightly modified implementation.
 
     >>> from canonical.launchpad.ftests.externalbugtracker import TestBugzilla
-    >>> from canonical.launchpad.components.externalbugtracker import (
-    ...     get_external_bugtracker)
     >>> from canonical.launchpad.interfaces import IBugTrackerSet
     >>> gnome_bugzilla = getUtility(IBugTrackerSet).getByName('gnome-bugzilla')
     >>> external_bugzilla = TestBugzilla(gnome_bugzilla.baseurl)

@@ -108,7 +108,6 @@ another.
     >>> from canonical.launchpad.components.externalbugtracker import (
     ...     BugNotFound, BugTrackerConnectError, InvalidBugId,
     ...     UnparseableBugData, UnparseableBugTrackerVersion)
-    >>> from socket import timeout
 
 TestBrokenExternalBugTracker allows us to force errors to occur, so we
 can use it to check that bug watches' last_error_types are being set

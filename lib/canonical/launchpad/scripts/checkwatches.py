@@ -12,7 +12,7 @@ import sys
 from zope.component import getUtility
 
 from canonical.database.constants import UTC_NOW
-from canonical.database.sqlbase import commit, flush_database_updates
+from canonical.database.sqlbase import flush_database_updates
 from canonical.launchpad.components import externalbugtracker
 from canonical.launchpad.components.externalbugtracker import (
     BugNotFound, BugTrackerConnectError, BugWatchUpdateError, InvalidBugId,

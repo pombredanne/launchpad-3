@@ -17,7 +17,6 @@ You can specify the db_location explicitly:
 
     >>> from canonical.launchpad.components.externalbugtracker import (
     ...     DebBugs)
-    >>> from canonical.launchpad.interfaces import BugTrackerType
     >>> from canonical.testing import LaunchpadZopelessLayer
     >>> txn = LaunchpadZopelessLayer.txn
     >>> external_debbugs = DebBugs(
