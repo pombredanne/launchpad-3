@@ -197,7 +197,7 @@ class ExternalBugTracker:
 
     implements(IExternalBugTracker)
 
-    batch_size = 10
+    batch_size = 100
     batch_query_threshold = config.checkwatches.batch_query_threshold
     import_comments = config.checkwatches.import_comments
 
@@ -964,6 +964,12 @@ class Mantis(ExternalBugTracker):
     For a list of tested Mantis instances and their behaviour when
     exported from, see http://launchpad.canonical.com/MantisBugtrackers.
     """
+
+    # We set the batch query threshold higher than the batch size
+    # because Mantis has to do a full export every time we do a batch
+    # update. This is expensive and so not ideal.
+    batch_query_threshold = 11
+    batch_size = 10
 
     # Custom opener that automatically sends anonymous credentials to
     # Mantis if (and only if) needed.
