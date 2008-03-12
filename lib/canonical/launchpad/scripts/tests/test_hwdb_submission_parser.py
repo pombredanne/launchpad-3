@@ -14,7 +14,8 @@ import pytz
 from zope.testing.loghandler import Handler
 
 from canonical.config import config
-from canonical.launchpad.scripts.hwdbsubmissions import SubmissionParser
+from canonical.launchpad.scripts.hwdbsubmissions import (SubmissionParser,
+    ROOT_UDI)
 from canonical.testing import BaseLayer
 
 
@@ -354,7 +355,7 @@ class TestHWDBSubmissionParser(TestCase):
         result = parser._parseDevice(node)
         self.assertEqual(result,
                          {'id': 1,
-                          'udi': '/org/freedesktop/Hal/devices/computer',
+                          'udi': ROOT_UDI,
                           'parent': None,
                           'properties': 'parsed properties'},
                          'Invalid parsing result for <device> (1)')
@@ -935,32 +936,34 @@ class TestHWDBSubmissionParser(TestCase):
 
         questions.append({'targets': [{'id': -1}]})
         invalid_ids = parser.findInvalidIDReferences(submission)
-        self.assertEqual(invalid_ids, set((-1,)),
+        self.assertEqual(invalid_ids, set([-1]),
                          'Invalid ID reference not detected')
 
-
+    DEVICE_2_UDI = '/org/freedesktop/Hal/devices/acpi_AC'
+    DEVICE_3_UDI = '/org/freedesktop/Hal/devices/pci_8086_27c5'
+    DEVICE_4_UDI = '/org/freedesktop/Hal/devices/usb_device_0_0_0000_00_1d_7'
     _udi_device_test_data = [
-        {'udi': '/org/freedesktop/Hal/devices/computer',
+        {'udi': ROOT_UDI,
           'properties': {}},
-         {'udi': '/org/freedesktop/Hal/devices/acpi_AC',
+         {'udi': DEVICE_2_UDI,
           'properties': {
-              'info.parent': (u'/org/freedesktop/Hal/devices/computer',
+              'info.parent': (ROOT_UDI,
                               'dbus.String')}
          }]
 
     def testUDIDeviceMap(self):
         """Test the creation of the mapping UDI -> device."""
         device1 = {'id': 1,
-                   'udi': '/org/freedesktop/Hal/devices/computer'}
+                   'udi': ROOT_UDI}
         device2 = {'id': 2,
-                   'udi': '/org/freedesktop/Hal/devices/acpi_AC'}
+                   'udi': self.DEVICE_2_UDI}
         devices = [device1, device2]
 
         parser = SubmissionParser()
         udi_devices = parser.getUDIDeviceMap(devices)
         self.assertEqual(udi_devices,
-                         {'/org/freedesktop/Hal/devices/computer': device1,
-                          '/org/freedesktop/Hal/devices/acpi_AC': device2},
+                         {ROOT_UDI: device1,
+                          self.DEVICE_2_UDI: device2},
                          'Invalid result of SubmissionParser.getUDIDeviceMap')
 
         # Duplicate UDIs raise a ValueError.
@@ -970,53 +973,50 @@ class TestHWDBSubmissionParser(TestCase):
     def testIDUDIMaps(self):
         """Test of SubmissionParser._getIDUDIMaps."""
         device1 = {'id': 1,
-                   'udi': '/org/freedesktop/Hal/devices/computer'}
+                   'udi': ROOT_UDI}
         device2 = {'id': 2,
-                   'udi': '/org/freedesktop/Hal/devices/acpi_AC'}
+                   'udi': self.DEVICE_2_UDI}
         devices = [device1, device2]
 
         parser = SubmissionParser()
         id_to_udi, udi_to_id = parser._getIDUDIMaps(devices)
         self.assertEqual(id_to_udi,
-                         {1: '/org/freedesktop/Hal/devices/computer',
-                          2: '/org/freedesktop/Hal/devices/acpi_AC'},
+                         {1: ROOT_UDI,
+                          2: self.DEVICE_2_UDI},
                          '_getIDUDIMaps returned invalid ID -> UDI map')
         self.assertEqual(udi_to_id,
-                         {'/org/freedesktop/Hal/devices/computer': 1,
-                          '/org/freedesktop/Hal/devices/acpi_AC': 2},
+                         {ROOT_UDI: 1,
+                          self.DEVICE_2_UDI: 2},
                          '_getIDUDIMaps returned invalid UDI -> ID map')
 
     def testUDIChildren(self):
         """Test of SubmissionParser.getUDIChildren."""
         device1 = {'id': 1,
-                   'udi': '/org/freedesktop/Hal/devices/computer',
+                   'udi': ROOT_UDI,
                    'properties': {}}
         device2 = {'id': 2,
-                   'udi': '/org/freedesktop/Hal/devices/pci_8086_27cc',
+                   'udi': self.DEVICE_2_UDI,
                    'properties':
                        {'info.parent':
-                            ('/org/freedesktop/Hal/devices/computer', 'str')}}
+                            (ROOT_UDI, 'str')}}
         device3 = {'id': 3,
-                   'udi': '/org/freedesktop/Hal/devices/pci_8086_27c5',
+                   'udi': self.DEVICE_3_UDI,
                    'properties':
                        {'info.parent':
-                            ('/org/freedesktop/Hal/devices/computer', 'str')}}
+                            (ROOT_UDI, 'str')}}
         device4 = {'id': 4,
-                   'udi': '/org/freedesktop/Hal/devices/'
-                          'usb_device_0_0_0000_00_1d_7',
+                   'udi': self.DEVICE_4_UDI,
                    'properties':
                        {'info.parent':
-                            ('/org/freedesktop/Hal/devices/pci_8086_27cc',
+                            (self.DEVICE_2_UDI,
                              'str')}}
         devices = [device1, device2, device3, device4]
 
         parser = SubmissionParser()
         udi_device_map = parser.getUDIDeviceMap(devices)
         udi_children = parser.getUDIChildren(udi_device_map)
-        expected_data = {'/org/freedesktop/Hal/devices/computer':
-                             [device2, device3],
-                         '/org/freedesktop/Hal/devices/pci_8086_27cc':
-                             [device4]}
+        expected_data = {ROOT_UDI: [device2, device3],
+                         self.DEVICE_2_UDI: [device4]}
 
         # The order of the children lists returned by getUDIChildren
         # depends on the order of dict.items(), hence sort the children
@@ -1033,13 +1033,13 @@ class TestHWDBSubmissionParser(TestCase):
         """The root node of the devices must have a special UDI.
 
         getUDIChildren ensures that the only device without an info.parent
-        property has the UDI /org/freedesktop/Hal/devices/computer.
+        property has the UDI /org/freedesktop/Hal/devices/computer (ROOT_UDI).
         """
         device1 = {'id': 1,
                    'udi': 'invalid_root_node',
                    'properties': {}}
         device2 = {'id': 2,
-                   'udi': '/org/freedesktop/Hal/devices/pci_8086_27cc',
+                   'udi': self.DEVICE_2_UDI,
                    'properties':
                        {'info.parent':
                             ('invalid_root_node', 'str')}}
@@ -1052,47 +1052,46 @@ class TestHWDBSubmissionParser(TestCase):
     def testUDIDeviceMapMissingRootNode(self):
         """If no root node exists, getUDIChildren raises a ValueError."""
         device1 = {'id': 1,
-                   'udi': '/org/freedesktop/Hal/devices/pci_8086_27cc',
+                   'udi': self.DEVICE_2_UDI,
                    'properties':
                        {'info.parent':
-                            ('/org/freedesktop/Hal/devices/pci_8086_27c5',
-                             'str')}}
+                            (self.DEVICE_3_UDI, 'str')}}
         device2 = {'id': 2,
-                   'udi': '/org/freedesktop/Hal/devices/pci_8086_27c5',
+                   'udi': self.DEVICE_3_UDI,
                    'properties':
                        {'info.parent':
-                            ('/org/freedesktop/Hal/devices/pci_8086_27cc',
-                             'str')}}
+                            (self.DEVICE_2_UDI, 'str')}}
         devices = [device1, device2]
 
         parser = SubmissionParser()
         udi_device_map = parser.getUDIDeviceMap(devices)
         self.assertRaises(ValueError, parser.getUDIChildren, udi_device_map)
 
+    CIRCULAR_UDI_1 = '/org/freedesktop/Hal/devices/nonsense_1'
+    CIRCULAR_UDI_2 = '/org/freedesktop/Hal/devices/nonsense_2'
+
     def testParentChildInconsistency(self):
         """Test of SubmissionParser.checkHALDevicesParentChildConsistency."""
         device1 = {'id': 1,
-                   'udi': '/org/freedesktop/Hal/devices/computer',
+                   'udi': ROOT_UDI,
                    'properties': {}}
         device2 = {'id': 2,
-                   'udi': '/org/freedesktop/Hal/devices/pci_8086_27cc',
+                   'udi': self.DEVICE_2_UDI,
                    'properties':
                        {'info.parent':
-                            ('/org/freedesktop/Hal/devices/computer', 'str')}}
+                            (ROOT_UDI, 'str')}}
         circular_device1 = {
             'id': 3,
-            'udi': '/org/freedesktop/Hal/devices/nonsense_1',
+            'udi': self.CIRCULAR_UDI_1,
                    'properties':
                        {'info.parent':
-                            ('/org/freedesktop/Hal/devices/nonsense_2',
-                             'str')}}
+                            (self.CIRCULAR_UDI_2, 'str')}}
         circular_device2 = {
             'id': 4,
-            'udi': '/org/freedesktop/Hal/devices/nonsense_2',
+            'udi': self.CIRCULAR_UDI_2,
                    'properties':
                        {'info.parent':
-                            ('/org/freedesktop/Hal/devices/nonsense_1',
-                             'str')}}
+                            (self.CIRCULAR_UDI_1, 'str')}}
         devices = [device1, device2, circular_device1,  circular_device2]
         parser = SubmissionParser()
         udi_device_map = parser.getUDIDeviceMap(devices)
@@ -1100,8 +1099,7 @@ class TestHWDBSubmissionParser(TestCase):
         circular_udis = sorted(parser.checkHALDevicesParentChildConsistency(
             udi_children))
         self.assertEqual(circular_udis,
-                         ['/org/freedesktop/Hal/devices/nonsense_1',
-                          '/org/freedesktop/Hal/devices/nonsense_2'],
+                         [self.CIRCULAR_UDI_1, self.CIRCULAR_UDI_2],
                          'Circular parent/child relationship in UDIs not '
                          'detected')
 
@@ -1183,7 +1181,7 @@ class TestHWDBSubmissionParser(TestCase):
         test = self
         def findDuplicateIDs(self, parsed_data):
             test.assertTrue(isinstance(self, SubmissionParser))
-            return set((1,))
+            return set([1])
 
         parser = self._setupConsistencyCheckParser()
         parser.submission_key = 'Consistency check detects duplicate IDs'
@@ -1201,7 +1199,7 @@ class TestHWDBSubmissionParser(TestCase):
         test = self
         def findInvalidIDReferences(self, parsed_data):
             test.assertTrue(isinstance(self, SubmissionParser))
-            return set((1,))
+            return set([1])
 
         parser = self._setupConsistencyCheckParser()
         parser.submission_key = 'Consistency check detects invalid ID refs'

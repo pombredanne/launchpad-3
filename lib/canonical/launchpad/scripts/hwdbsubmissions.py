@@ -35,6 +35,7 @@ _time_regex = re.compile(r"""
     """,
     re.VERBOSE)
 
+ROOT_UDI = '/org/freedesktop/Hal/devices/computer'
 
 class SubmissionParser:
     """A Parser for the submissions to the hardware database."""
@@ -439,7 +440,7 @@ class SubmissionParser:
                 'Parsing submission %s: Unexpected tag <%s> in <xorg>'
                     % (self.submission_key, driver_node.tag))
             driver_info = dict(driver_node.attrib)
-            if driver_info.has_key('device'):
+            if 'device' in driver_info:
                 # The Relax NG validation ensures that driver_info['device']
                 # consists of only digits, if present.
                 driver_info['device'] = int(driver_info['device'])
@@ -632,6 +633,7 @@ class SubmissionParser:
         all_ids is updated with test_ids.
         """
         duplicates = set()
+        # Note that test_ids itself may contain an ID more than once.
         for test_id in test_ids:
             if test_id in all_ids:
                 duplicates.add(test_id)
@@ -657,8 +659,7 @@ class SubmissionParser:
         return duplicates
 
     def _getIDMap(self, parsed_data):
-        """Create a dictionary that maps IDs to devices and processors.
-        """
+        """Return a dictionary mapping IDs to devices and processors."""
         id_device_map = {}
         hal_devices = parsed_data['hardware']['hal']['devices']
         for device in hal_devices:
@@ -673,7 +674,7 @@ class SubmissionParser:
         """Return the set of invalid references to IDs.
 
         The sub-tag <target> of <question> references a device or processor
-        node by its ID; the submission must contain a <device> <processor>
+        node by its ID; the submission must contain a <device> or <processor>
         tag with this ID. This method returns a set of those IDs mentioned
         in <target> nodes that have no corresponding device or processor
         node.
@@ -685,8 +686,7 @@ class SubmissionParser:
         all_targets = []
         for target_list in target_lists:
             all_targets.extend(target_list)
-        all_target_ids = [target['id'] for target in all_targets]
-        all_target_ids = set(all_target_ids)
+        all_target_ids = set(target['id'] for target in all_targets)
         return all_target_ids.difference(known_ids)
 
     def getUDIDeviceMap(self, devices):
@@ -696,9 +696,10 @@ class SubmissionParser:
         """
         udi_device_map = {}
         for device in devices:
-            if udi_device_map.has_key(device['udi']):
+            if device['udi'] in udi_device_map:
                 raise ValueError('Duplicate UDI: %s' % device['udi'])
-            udi_device_map[device['udi']] = device
+            else:
+                udi_device_map[device['udi']] = device
         return udi_device_map
 
     def _getIDUDIMaps(self, devices):
@@ -707,8 +708,6 @@ class SubmissionParser:
         :return: two dictionaries id_to_udi and udi_to_id, where
                  id_2_udi has IDs as keys and UDI as values, and where
                  udi_to_id has UDIs as keys and IDs as values.
-
-                 If a UDI appears more than once, a ValueError is raised.
         """
         id_to_udi = {}
         udi_to_id = {}
@@ -724,7 +723,7 @@ class SubmissionParser:
 
         :return: A dictionary that maps UDIs to lists of children.
 
-        If any info.parent property points to an non-existing existing
+        If any info.parent property points to a non-existing existing
         device, a ValueError is raised.
         """
         # Each HAL device references its parent device (HAL attribute
@@ -732,14 +731,14 @@ class SubmissionParser:
         children = {}
         known_udis = set(udi_device_map.keys())
         for device in udi_device_map.values():
-            parent = device['properties'].get('info.parent', None)
-            if parent is not None:
-                parent = parent[0]
+            parent_property = device['properties'].get('info.parent', None)
+            if parent_property is not None:
+                parent = parent_property[0]
                 if not parent in known_udis:
                     raise ValueError(
                         'Unknown parent UDI %s in <device id="%s">'
                         % (parent, device['id']))
-                if children.has_key(parent):
+                if parent in children:
                     children[parent].append(device)
                 else:
                     children[parent] = [device]
@@ -749,19 +748,19 @@ class SubmissionParser:
                 # "/org/freedesktop/Hal/devices/computer".
                 # Other nodes without a parent UDI indicate an error, as well
                 # as a non-existing root node.
-                if device['udi'] != '/org/freedesktop/Hal/devices/computer':
+                if device['udi'] != ROOT_UDI:
                     raise ValueError(
                         'root device node found with unexpected UDI: '
                         '<device id="%s" udi="%s">' % (device['id'],
                                                        device['udi']))
 
-        if not children.has_key('/org/freedesktop/Hal/devices/computer'):
+        if not ROOT_UDI in children:
             raise ValueError('No root device found')
         return children
 
     def _removeChildren(self, udi, udi_test):
         """Remove recursively all children of the device named udi."""
-        if udi_test.has_key(udi):
+        if udi in udi_test:
             children = udi_test[udi]
             for child in children:
                 self._removeChildren(child['udi'], udi_test)
@@ -795,15 +794,14 @@ class SubmissionParser:
         udi_test = {}
         for udi, children in udi_children.items():
             udi_test[udi] = children[:]
-        self._removeChildren('/org/freedesktop/Hal/devices/computer',
-                             udi_test)
+        self._removeChildren(ROOT_UDI, udi_test)
         return udi_test.keys()
 
     def checkConsistency(self, parsed_data):
-        """Run consistency checks on the subitted data.
+        """Run consistency checks on the submitted data.
 
-        :return: True, if the data looks consistent, else False.
-        :param: parsed_data: parsed submission data, as returnd by
+        :return: True, if the data looks consistent, otherwise False.
+        :param: parsed_data: parsed submission data, as returned by
                              parseSubmission
         """
         duplicate_ids = self.findDuplicateIDs(parsed_data)
