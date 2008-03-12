@@ -67,7 +67,7 @@
         </tr>
       </tal:show-download-url>
 
-      <tal:hosted-branch condition="view/is_hosted_branch">
+      <tal:hosted-branch condition="context/branch_type/enumvalue:HOSTED">
         <tal:comment condition="nothing">
           <!-- This is a hosted branch, display upload directions -->
         </tal:comment>
