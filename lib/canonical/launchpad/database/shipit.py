@@ -653,8 +653,12 @@ class ShippingRequestSet:
         csv_file = StringIO()
         csv_writer = csv.writer(csv_file, quoting=csv.QUOTE_ALL)
         header = [
-            'Country', 'Total Shipped Ubuntu', 'Total Shipped Kubuntu',
-            'Total Shipped Edubuntu', 'Total Shipped',
+            'Country',
+            'Total Shipped Ubuntu',
+            'Total Shipped Kubuntu',
+            'Total Shipped Edubuntu',
+            'Total Shipped Server',
+            'Total Shipped',
             'Shipped Ubuntu x86 CDs', 'Shipped Ubuntu AMD64 CDs',
             'Shipped Kubuntu x86 CDs', 'Shipped Kubuntu AMD64 CDs',
             'Shipped Edubuntu x86 CDs', 'Shipped Edubuntu AMD64 CDs',
@@ -718,8 +722,14 @@ class ShippingRequestSet:
             total_ubuntu = sum(shipped_cds_per_arch[ubuntu].values())
             total_kubuntu = sum(shipped_cds_per_arch[kubuntu].values())
             total_edubuntu = sum(shipped_cds_per_arch[edubuntu].values())
-            row = [country_name, total_ubuntu, total_kubuntu, total_edubuntu,
-                   total_ubuntu + total_kubuntu + total_edubuntu,
+            total_server = sum(shipped_cds_per_arch[server].values())
+            row = [country_name,
+                   total_ubuntu,
+                   total_kubuntu,
+                   total_edubuntu,
+                   total_server,
+                   (total_ubuntu + total_kubuntu + total_edubuntu +
+                    total_server),
                    shipped_cds_per_arch[ubuntu][x86],
                    shipped_cds_per_arch[ubuntu][amd64],
                    shipped_cds_per_arch[kubuntu][x86],
