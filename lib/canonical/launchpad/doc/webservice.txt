@@ -672,7 +672,6 @@ Here, we modify the name of one of the cookbooks.
     ...     "The Joy of Cooking")
     >>> joy_resource_patch()
     ''
-
     >>> patch_request.response.getStatus()
     301
     >>> patch_request.response.getHeader('Location')

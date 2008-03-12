@@ -265,7 +265,11 @@ class EntryResource(ReadWriteResource):
         if media_type != 'application/json':
             self.request.response.setStatus(415)
             return None, 'Expected a media type of application/json.'
-        h = simplejson.loads(representation)
+        try:
+            h = simplejson.loads(representation)
+        except ValueError:
+            self.request.response.setStatus(400)
+            return None, "Entity-body was not a well-formed JSON document."
         if not isinstance(h, dict):
             self.request.response.setStatus(400)
             return None, 'Expected a JSON hash.'
@@ -362,8 +366,8 @@ class EntryResource(ReadWriteResource):
             # Around this point the specific value provided by the client
             # becomes relevant, so we pre-process it.
             if IObject.providedBy(element):
-                # [TODO leonardr 2008-03-10 modify-data-links] 'value'
-                # is the URL to an object. Traverse the URL to find
+                # XXX leonardr 2008-03-10 blueprint=modify-data-links:
+                # 'value' is the URL to an object. Traverse the URL to find
                 # the actual object.
                 pass
             elif isinstance(element, Datetime):

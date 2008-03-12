@@ -78,8 +78,8 @@ http://api.launchpad.dev/people/salgado2. To change 'salgado2' back to
   Location: http://api.launchpad.dev/people/salgado
   <BLANKLINE>
 
-# [TODO leonardr 2008-03-10 modify-data-links]: A link between a
-# person and a related object can be modified.
+# XXX leonardr 2008-03-10 blueprint=modify-data-links:
+# A link between a person and a related object can be modified.
 
 The PATCH HTTP method is useful for simple changes, but not all HTTP
 clients support PATCH, and sometimes it's easier to GET a document,
@@ -120,6 +120,27 @@ might not be acceptable as the payload of a PUT request.
   HTTP/1.1 400 Bad Request
   ...
   You didn't specify a value for the attribute 'displayname'.
+
+A document that's not a valid JSON document is also unacceptable.
+
+  >>> print webservice("""
+  ... PATCH /people/salgado HTTP/1.1
+  ... Host: api.launchpad.dev
+  ... Content-type: application/json
+  ... Authorization: Basic foo.bar@canonical.com:test
+  ...
+  ... {
+  ... """)
+  HTTP/1.1 400 Bad Request
+  ...
+  Entity-body was not a well-formed JSON document.
+
+So is a document that's valid JSON but is not a JSON hash.
+
+  >>> print modify_person('salgado', 'name=salgado2', 'PATCH')
+  HTTP/1.1 400 Bad Request
+  ...
+  Expected a JSON hash.
 
 A person's read-only attributes can't be modified.
 
@@ -201,11 +222,29 @@ And of course you can't modify attributes that don't exist.
 Launchpad's web service serves and parses dates in ISO 8601
 format. Only UTC dates are allowed.
 
+The tests that follow will make a number of PATCH requests that
+include values for a person's 'datecreated' attribute.
+
+  >>> salgado['datecreated']
+  u'2005-06-06T08:59:51.596025+00:00'
+
   >>> def patch_salgado_datecreated(date):
   ...     "A helper method to try and change a date field."
   ...     return modify_person('salgado', {'datecreated' : date}, 'PATCH')
 
-Strings that aren't dates won't work, obviously.
+These requests aren't actually trying to modify 'datecreated', which
+is read-only. They're asserting that 'datecreated' is a certain
+value. If the assertion succeeds (because 'datecreated' does in fact
+have that value), the response code is 200. If the assertion could not
+be understood (because the date is in the wrong format), the response
+code is 400, and the body is an error message about the date
+format. If the assertion _fails_ (because 'datecreated' happens to be
+read-only), the response code is also 400, but the error message talks
+about an attempt to modify a read-only attribute.
+
+The two 400 error codes below are caused by a failure to understand
+the assertion. For instance, the string used in the assertion might
+not be a date:
 
   >>> print patch_salgado_datecreated('dummy')
   HTTP/1.1 400 Bad Request
@@ -213,7 +252,7 @@ Strings that aren't dates won't work, obviously.
   You set the attribute 'datecreated' to a value that doesn't look
   like a date.
 
-Values with non-UTC timezones don't work:
+Or it might not be in UTC.
 
   >>> print patch_salgado_datecreated(u'2005-06-06T13:59:51.596025+05:00')
   HTTP/1.1 400 Bad Request
