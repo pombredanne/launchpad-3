@@ -373,9 +373,12 @@ Zero or more spaces may appear between the ":" and the "#".
 
 Lastly, note that sourcepackages know how to compare to each other:
 
-    >>> hoary_firefox_one = SourcePackage(sourcepackagename=firefox, distroseries=hoary)
-    >>> hoary_firefox_two = SourcePackage(sourcepackagename=firefox, distroseries=hoary)
-    >>> warty_firefox = SourcePackage(sourcepackagename=firefox, distroseries=warty)
+    >>> hoary_firefox_one = SourcePackage(
+    ...     sourcepackagename=firefox, distroseries=hoary)
+    >>> hoary_firefox_two = SourcePackage(
+    ...     sourcepackagename=firefox, distroseries=hoary)
+    >>> warty_firefox = SourcePackage(
+    ...     sourcepackagename=firefox, distroseries=warty)
 
     >>> hoary_firefox_one == hoary_firefox_two
     True
@@ -384,14 +387,47 @@ Lastly, note that sourcepackages know how to compare to each other:
     >>> hoary_firefox_one == warty_firefox
     False
 
+And they can be used as dictionary keys also:
+
+    >>> hash(hoary_firefox_one) == hash(hoary_firefox_two)
+    True
+    >>> hash(hoary_firefox_one) != hash(warty_firefox)
+    True
+
+    >>> a_map = {}
+    >>> a_map[hoary_firefox_one] = 'hoary'
+    >>> a_map[warty_firefox] = 'warty'
+    >>> a_map[hoary_firefox_two]
+    'hoary'
+    >>> a_map[warty_firefox]
+    'warty'
+
 
 == Direct Packagings ==
+
+The direct packaging returns the IPackaging related to the source
+package.
 
     >>> print sp.direct_packaging
     None
     >>> print hoary_firefox_one.direct_packaging.productseries.title
     Mozilla Firefox Series: 1.0
     >>> print warty_firefox.direct_packaging.productseries.title
+    Mozilla Firefox Series: trunk
+
+If multiple product series link to a sourcepackage, direct_packaging
+returns the last packaging added:
+
+    >>> from canonical.launchpad.interfaces import IProductSet
+    >>> firefox_product = getUtility(IProductSet).getByName('firefox')
+    >>> firefox_trunk = firefox_product.getSeries('trunk')
+    >>> PackagingUtil().createPackaging(
+    ...     sourcepackagename=firefox,
+    ...     distroseries=hoary,
+    ...     productseries=firefox_trunk,
+    ...     packaging=PackagingType.PRIME,
+    ...     owner=foobar)
+    >>> print hoary_firefox_one.direct_packaging.productseries.title
     Mozilla Firefox Series: trunk
 
 

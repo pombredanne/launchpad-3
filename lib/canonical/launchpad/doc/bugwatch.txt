@@ -431,7 +431,7 @@ slaves must be updated through their conjoined master.
     ...     TestRoundup)
     >>> from canonical.launchpad.scripts.checkwatches import BugWatchUpdater
     >>> bug_watch_updater = BugWatchUpdater(transaction)
-    >>> external_bugtracker = TestRoundup(transaction, bug_tracker)
+    >>> external_bugtracker = TestRoundup(bug_tracker.baseurl)
     >>> bug_watch_updater.updateBugWatches(external_bugtracker, [bug_watch])
 
     >>> bug.bugtasks[0].status.title
