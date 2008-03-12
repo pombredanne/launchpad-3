@@ -16,6 +16,10 @@ from canonical.launchpad.webapp import canonical_url
 
 def new_import(code_import, event):
     """Email the vcs-imports team about a new code import."""
+    if event.user is None:
+        # If there is no logged in user, then we are most likely in a
+        # test.
+        return
 
     headers = {'X-Launchpad-Branch': code_import.branch.unique_name}
     subject = 'New code import: %s/%s' % (
