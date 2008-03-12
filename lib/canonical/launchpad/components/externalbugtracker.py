@@ -296,29 +296,6 @@ class ExternalBugTracker:
         page_contents = url.read()
         return page_contents
 
-    def _getBugWatch(self, bug_watch_id):
-        """Return the bug watch with id `bug_watch_id`."""
-        return getUtility(IBugWatchSet).get(bug_watch_id)
-
-    def _getBugWatchesByRemoteBug(self, bug_watch_ids):
-        """Returns a dictionary of bug watches mapped to remote bugs.
-
-        For each bug watch id fetches the corresponding bug watch and
-        appends it to a list of bug watches pointing to one remote
-        bug - the key of the returned mapping."""
-        bug_watches_by_remote_bug = {}
-        for bug_watch_id in bug_watch_ids:
-            bug_watch = self._getBugWatch(bug_watch_id)
-            remote_bug = bug_watch.remotebug
-            # There can be multiple bug watches pointing to the same
-            # remote bug; because of that, we need to store lists of bug
-            # watches related to the remote bug, and later update the
-            # status of each one of them.
-            if remote_bug not in bug_watches_by_remote_bug:
-                bug_watches_by_remote_bug[remote_bug] = []
-            bug_watches_by_remote_bug[remote_bug].append(bug_watch)
-        return bug_watches_by_remote_bug
-
     @property
     def _oops_properties(self):
         """Properties that are useful to record in an OOPS report.
