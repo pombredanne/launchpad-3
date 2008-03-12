@@ -27,7 +27,7 @@ from canonical.launchpad.interfaces import (
     BranchSubscriptionNotificationLevel, BugBranchStatus,
     IBranchRevisionSet, IBugBranchSet, IBugSet,
     IRevisionSet, NotFoundError)
-from canonical.launchpad.mailnotification import (
+from canonical.launchpad.mailout.branch import (
     send_branch_revision_notifications)
 
 UTC = pytz.timezone('UTC')

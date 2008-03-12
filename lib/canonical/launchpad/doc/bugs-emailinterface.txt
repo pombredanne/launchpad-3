@@ -1920,7 +1920,7 @@ match the criteria described below).
     ... Content-type: text/plain
     ... Content-transfer-encoding: 7bit
     ...
-    ... Found bug N in Firefox. See attached debug output.
+    ... Found a bug in Firefox. See attached debug output.
     ...
     ...  affects firefox
     ... --BOUNDARY
@@ -1951,7 +1951,7 @@ An email may contain more than one attachment; all of them are stored.
     ... Content-type: text/plain
     ... Content-transfer-encoding: 7bit
     ...
-    ... Found bug N+1 in Firefox. Nothing displayed. See attached files.
+    ... Found a bug in Firefox. Nothing displayed. See attached files.
     ...
     ...  affects firefox
     ... --BOUNDARY
@@ -1977,24 +1977,9 @@ An email may contain more than one attachment; all of them are stored.
     LibraryFileAlias sample.html text/html UNSPECIFIED
     <html></html>
 
-A bugnotification is sent for each attached file.
-
-    >>> bug_notifications = BugNotification.select(orderBy='-id', limit=3)
-    >>> for bug_notification in bug_notifications:
-    ...     print '-------------------'
-    ...     print bug_notification.message.chunks[0].content
-    -------------------
-    Found bug N+1 in Firefox. Nothing displayed. See attached files.
-    affects firefox
-    -------------------
-    ** Attachment added: "sample.html"
-       http://.../sample.html
-    -------------------
-    ** Attachment added: "firefox1.log"
-       http://.../firefox1.log
-
-If the content disposition header of a mail attachment does not start with
-"attachment", the attachment is not stored as a bug attachment.
+If the content-disposition header of a message part begins with 
+"attachment" it is stored as a bug attachment, even if the 
+content-disposition header does not provide a filename.
 
     >>> submit_mail = """From: Sample Person <test@canonical.com>
     ... To: new@bugs.canonical.com
@@ -2006,7 +1991,37 @@ If the content disposition header of a mail attachment does not start with
     ... Content-type: text/plain
     ... Content-transfer-encoding: 7bit
     ...
-    ... Found bug N+2 in Firefox. See attached debug output.
+    ... Found a bug in Firefox. Nothing displayed. See attached files.
+    ...
+    ...  affects firefox
+    ... --BOUNDARY
+    ... Content-type: text/plain
+    ... Content-disposition: attachment
+    ...
+    ... some more or less important text
+    ... --BOUNDARY"""
+    >>>
+    >>> process_email(submit_mail)
+    >>> print_attachments(get_latest_added_bug().attachments)
+    LibraryFileAlias unnamed text/plain UNSPECIFIED
+    some more or less important text
+
+If the content-disposition header of a message part begins with "inline",
+it is stored as a bug attachment, if the header additionally provides
+a filename. This ensures that a message part containing debug information
+and the content type text/plain is stored as a bug attchment.
+
+    >>> submit_mail = """From: Sample Person <test@canonical.com>
+    ... To: new@bugs.canonical.com
+    ... Date: Fri Jun 17 10:20:23 BST 2005
+    ... Subject: Another bug in Firefox
+    ... Content-type: multipart/mixed; boundary="BOUNDARY"
+    ...
+    ... --BOUNDARY
+    ... Content-type: text/plain
+    ... Content-transfer-encoding: 7bit
+    ...
+    ... Found a bug in Firefox. See attached debug output.
     ...
     ...  affects firefox
     ... --BOUNDARY
@@ -2019,6 +2034,35 @@ If the content disposition header of a mail attachment does not start with
     ... --BOUNDARY"""
     >>>
     >>> process_email(submit_mail)
+    >>> print_attachments(get_latest_added_bug().attachments)
+    LibraryFileAlias firefox.log text/plain UNSPECIFIED
+    debug text line 1
+    debug text line 2
+    debug text line 3
+
+If the content-disposition header of a message part begins with "inline",
+but has no filename, it is not stored as a bug attachment.
+
+    >>> submit_mail = """From: Sample Person <test@canonical.com>
+    ... To: new@bugs.canonical.com
+    ... Date: Fri Jun 17 10:20:23 BST 2005
+    ... Subject: Another bug in Firefox
+    ... Content-type: multipart/mixed; boundary="BOUNDARY"
+    ...
+    ... --BOUNDARY
+    ... Content-type: text/plain
+    ... Content-transfer-encoding: 7bit
+    ...
+    ... Found a bug in Firefox. See attached debug output.
+    ...
+    ...  affects firefox
+    ... --BOUNDARY
+    ... Content-type: text/plain
+    ... Content-disposition: inline
+    ...
+    ... some text
+    ... --BOUNDARY"""
+    >>>
     >>> process_email(submit_mail)
     >>> print_attachments(get_latest_added_bug().attachments)
     No attachments
@@ -2036,7 +2080,7 @@ as a bug attachment.
     ... Content-type: text/plain
     ... Content-transfer-encoding: 7bit
     ...
-    ... Found bug N+3 in Firefox. See attached debug output.
+    ... Found a bug in Firefox. See attached debug output.
     ...
     ...  affects firefox
     ... --BOUNDARY
@@ -2066,7 +2110,7 @@ text/x-vcard, it is not stored.
     ... Content-type: text/plain
     ... Content-transfer-encoding: 7bit
     ...
-    ... Found bug N+4 in Firefox.
+    ... Found a bug in Firefox.
     ...
     ...  affects firefox
     ... --BOUNDARY
@@ -2112,7 +2156,7 @@ text/x-vcard, it is not stored.
     ... Content-type: text/plain
     ... Content-transfer-encoding: 7bit
     ...
-    ... Found bug N+5 in Firefox.
+    ... Found a bug in Firefox.
     ...
     ...  affects firefox
     ... --BOUNDARY
@@ -2182,7 +2226,7 @@ it is considered to contain a patch.
     ... Content-type: text/plain
     ... Content-transfer-encoding: 7bit
     ...
-    ... Found and fixed bug N+6 in Firefox. See attached patches.
+    ... Found and fixed a bug in Firefox. See attached patches.
     ...
     ...  affects firefox
     ... --BOUNDARY
@@ -2211,7 +2255,7 @@ it is considered to contain a patch.
     LibraryFileAlias logfile text/plain UNSPECIFIED
     this should be log data.
 
-A mail attachment without a filename is named "unnamed".
+Mail attachments without a filename are named "unnamed".
 
     >>> submit_mail = """From: Sample Person <test@canonical.com>
     ... To: new@bugs.canonical.com
@@ -2223,34 +2267,7 @@ A mail attachment without a filename is named "unnamed".
     ... Content-type: text/plain
     ... Content-transfer-encoding: 7bit
     ...
-    ... Found bug N+7 in Firefox. See attached patches.
-    ...
-    ...  affects firefox
-    ... --BOUNDARY
-    ... Content-type: text/plain
-    ... Content-disposition: attachment
-    ...
-    ... this could be some log data.
-    ... --BOUNDARY"""
-    >>>
-    >>> process_email(submit_mail)
-    >>> print_attachments(get_latest_added_bug().attachments)
-    LibraryFileAlias unnamed text/plain UNSPECIFIED
-    this could be some log data.
-
-Two or more unnamed attachments are sequentially numbered.
-
-    >>> submit_mail = """From: Sample Person <test@canonical.com>
-    ... To: new@bugs.canonical.com
-    ... Date: Fri Jun 17 10:20:23 BST 2005
-    ... Subject: Another bug in Firefox
-    ... Content-type: multipart/mixed; boundary="BOUNDARY"
-    ...
-    ... --BOUNDARY
-    ... Content-type: text/plain
-    ... Content-transfer-encoding: 7bit
-    ...
-    ... Found bug N+8 in Firefox. See attached patches.
+    ... Found a bug in Firefox. See attached patches.
     ...
     ...  affects firefox
     ... --BOUNDARY
@@ -2274,9 +2291,9 @@ Two or more unnamed attachments are sequentially numbered.
     >>> print_attachments(get_latest_added_bug().attachments)
     LibraryFileAlias unnamed text/plain UNSPECIFIED
     this could be some log data.
-    LibraryFileAlias unnamed-1 text/plain UNSPECIFIED
+    LibraryFileAlias unnamed text/plain UNSPECIFIED
     this could be logfile 2.
-    LibraryFileAlias unnamed-2 text/plain UNSPECIFIED
+    LibraryFileAlias unnamed text/plain UNSPECIFIED
     this could be logfile 3.
 
 If an email has two attachments with the same filename, the names are
@@ -2292,7 +2309,7 @@ not changed.
     ... Content-type: text/plain
     ... Content-transfer-encoding: 7bit
     ...
-    ... Found bug N+9 in Firefox. See attached patches.
+    ... Found a bug in Firefox. See attached patches.
     ...
     ...  affects firefox
     ... --BOUNDARY
@@ -2326,12 +2343,12 @@ Base64 encoded attachments are decoded before being stored.
     ... Content-type: text/plain
     ... Content-transfer-encoding: 7bit
     ...
-    ... Found bug N+10 in Firefox. Attached image file not properly
+    ... Found a bug in Firefox. Attached image file not properly
     ... displayed.
     ...
     ...  affects firefox
     ... --BOUNDARY
-    ... Content-Type: image/jpeg; name=image.jpg
+    ... Content-Type: image/jpeg
     ... Content-Transfer-Encoding: base64
     ... X-Attachment-Id: f_fcuhv1fz0
     ... Content-Disposition: attachment; filename=image.jpg
