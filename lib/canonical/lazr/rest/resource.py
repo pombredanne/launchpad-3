@@ -297,8 +297,6 @@ class EntryResource(ReadWriteResource):
                 repr_name = name + '_link'
             else:
                 repr_name = name
-            if isinstance(changeset, unicode):
-                import pdb; pdb.set_trace()
             if (changeset.get(repr_name) is None
                 and getattr(self.context, name) is not None):
                 self.request.response.setStatus(400)
