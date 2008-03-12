@@ -302,6 +302,7 @@ COMMENT ON TABLE CodeReviewMessage IS 'A message that is part of a code review d
 COMMENT ON COLUMN CodeReviewMessage.branch_merge_proposal IS 'The merge proposal that is being discussed.';
 COMMENT ON COLUMN CodeReviewMessage.message IS 'The actual message.';
 COMMENT ON COLUMN CodeReviewMessage.vote IS 'The reviewer''s vote for this message.';
+COMMENT ON COLUMN CodeReviewMessage.vote_tag IS 'A short description of the vote';
 
 -- CodeReviewVote
 

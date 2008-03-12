@@ -17,6 +17,9 @@ ALTER TABLE BranchSubscription
 ALTER TABLE BranchSubscription
   ALTER COLUMN review_level SET DEFAULT 0;
 
+-- Requested by sabdfl, a free-form string describing the vote
+ALTER TABLE CodeReviewMessage
+  ADD COLUMN vote_tag TEXT;
 
 CREATE TABLE CodeReviewVote (
     id SERIAL PRIMARY KEY,
@@ -25,7 +28,6 @@ CREATE TABLE CodeReviewVote (
     review_type TEXT,
     registrant INTEGER NOT NULL REFERENCES Person(id),
     vote_message INTEGER REFERENCES CodeReviewMessage(id),
-    vote_blurb TEXT,
     date_created TIMESTAMP WITHOUT TIME ZONE NOT NULL
       DEFAULT timezone('UTC'::text, now())
     );
