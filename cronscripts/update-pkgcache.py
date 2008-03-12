@@ -74,7 +74,7 @@ class PackageCacheUpdater(LaunchpadCronScript):
         self.txn.commit()
 
     def main(self):
-        self.txn.set_isolation_level(READ_COMMITTED_ISOLATION)
+        self.txn.set_isolation_level(ISOLATION_LEVEL_READ_COMMITTED)
         self.logger.debug('Starting the package cache update')
 
         # Do the package counter and cache update.
