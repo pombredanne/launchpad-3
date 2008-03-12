@@ -421,5 +421,28 @@ class TestCopyPackage(unittest.TestCase):
             "Cannot operate with destination PARTNER and PPA simultaneously.",
             copy_helper.mainTask)
 
+    def testBinaryCopyFromPpaToPrimaryWorks(self):
+        """Check if copying binaries from PPA to PRIMARY archive is working.
+
+        SoyuzScriptError is raised if the user tries to copy binaries from
+        a PPA to PRIMARY archive.
+        """
+        copy_helper = self.getCopier(
+            sourcename='iceweasel', from_ppa='cprov',
+            from_suite='warty', to_suite='hoary')
+        copied = copy_helper.mainTask()
+
+        self.assertEqual(
+            str(copy_helper.location),
+            'cprov: warty-RELEASE')
+        self.assertEqual(
+            str(copy_helper.destination),
+            'Primary Archive for Ubuntu Linux: hoary-RELEASE')
+
+        # 'iceweasel' has only one binary built for it
+        # The source and the binary got copied.
+        target_archive = copy_helper.destination.archive
+        self.checkCopies(copied, target_archive, 2)
+
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)
