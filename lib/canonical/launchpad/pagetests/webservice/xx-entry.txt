@@ -26,16 +26,15 @@ Salgado'.
 
 == Modification ==
 
-It's possible to modify a person by sending to the server a document
-asserting what the person should look like. The document may only
-describe part of the person's new state (in which case the client
-should use the PATCH HTTP method) [TODO leonardr 2008-03-10
-api-base-modify-data-entry]: or it may describe the entire new state,
-in which case the client should use PUT.)
+It's possible to modify an entry by sending to the server a document
+asserting what the entry should look like. The document may only
+describe part of the entry's new state, in which case the client
+should use the PATCH HTTP method. Or it may completely describe the
+entry's state, in which case the client should use PUT.
 
   >>> import simplejson
   >>> def modify_person(person, representation, method):
-  ...     "A helper function to send a PUT or PATCH request for a person."
+  ...     "A helper function to send a PUT or PATCH request to a person."
   ...     return webservice("""
   ... %s /people/%s HTTP/1.1
   ... Host: api.launchpad.dev
@@ -44,7 +43,6 @@ in which case the client should use PUT.)
   ...
   ... %s
   ... """ % (method, person, simplejson.dumps(representation)))
-
 
 Here we use the web service to change the user 'salgado' so that their
 display name is in uppercase.
@@ -126,7 +124,7 @@ might not be acceptable as the payload of a PUT request.
 A person's read-only attributes can't be modified.
 
   >>> print modify_person('salgado', {'datecreated' :
-  ...                                 u'2001-01-01T01:01:01+00:00'}, 'PATCH')
+  ...                                 u'2001-01-01T01:01:01+00:00Z'}, 'PATCH')
   HTTP/1.1 400 Bad Request
   Content-Length: 57
   Content-Type: text/plain;charset=utf-8
@@ -182,15 +180,6 @@ though it were the actual object:
   ...
   You tried to modify the nonexistent attribute 'owner'
 
-You can't set nonsensical values for attributes.
-
-  >>> print modify_person('salgado',
-  ...                    {'datecreated' : 'dummy'}, 'PATCH')
-  HTTP/1.1 400 Bad Request
-  ...
-  You set the attribute 'datecreated' to a value that doesn't look
-  like a date.
-
 You can't set values that violate Launchpad's data integrity rules.
 
   >>> print modify_person('salgado',
@@ -205,4 +194,57 @@ And of course you can't modify attributes that don't exist.
   HTTP/1.1 400 Bad Request
   ...
   You tried to modify the nonexistent attribute 'nonesuch'
+
+
+=== Date formats ===
+
+Launchpad's web service serves and parses dates in ISO 8601
+format. Only UTC dates are allowed.
+
+  >>> def patch_salgado_datecreated(date):
+  ...     "A helper method to try and change a date field."
+  ...     return modify_person('salgado', {'datecreated' : date}, 'PATCH')
+
+Strings that aren't dates won't work, obviously.
+
+  >>> print patch_salgado_datecreated('dummy')
+  HTTP/1.1 400 Bad Request
+  ...
+  You set the attribute 'datecreated' to a value that doesn't look
+  like a date.
+
+Values with non-UTC timezones don't work:
+
+  >>> print patch_salgado_datecreated(u'2005-06-06T13:59:51.596025+05:00')
+  HTTP/1.1 400 Bad Request
+  ...
+  You set the attribute 'datecreated' to a time that's not UTC.
+
+There are five ways to specify UTC:
+
+  >>> print patch_salgado_datecreated(u'2005-06-06T08:59:51.596025Z')
+  HTTP/1.1 200 Ok
+  ...
+
+  >>> print patch_salgado_datecreated(u'2005-06-06T08:59:51.596025+00:00')
+  HTTP/1.1 200 Ok
+  ...
+
+  >>> print patch_salgado_datecreated(u'2005-06-06T08:59:51.596025+0000')
+  HTTP/1.1 200 Ok
+  ...
+
+  >>> print patch_salgado_datecreated(u'2005-06-06T08:59:51.596025-00:00')
+  HTTP/1.1 200 Ok
+  ...
+
+  >>> print patch_salgado_datecreated(u'2005-06-06T08:59:51.596025-0000')
+  HTTP/1.1 200 Ok
+  ...
+
+A value with a missing timezone is treated as UTC.
+
+  >>> print patch_salgado_datecreated(u'2005-06-06T08:59:51.596025')
+  HTTP/1.1 200 Ok
+  ...
 

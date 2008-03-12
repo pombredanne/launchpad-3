@@ -324,7 +324,7 @@ class EntryResource(ReadWriteResource):
             if repr_name == 'self_link':
                 # The self link isn't part of the schema, so it's
                 # handled separately.
-                if value == canonical_url(self):
+                if value == canonical_url(self, request=self.request):
                     continue
                 else:
                     self.request.response.setStatus(400)
@@ -364,15 +364,21 @@ class EntryResource(ReadWriteResource):
             # Around this point the specific value provided by the client
             # becomes relevant, so we pre-process it.
             if IObject.providedBy(element):
-                # TODO: 'value' is the URL to an object. Traverse
-                # the URL to find the actual object.
+                # [TODO leonardr 2008-03-10 modify-data-links] 'value'
+                # is the URL to an object. Traverse the URL to find
+                # the actual object.
                 pass
             elif isinstance(element, Datetime):
                 try:
                     value = DateTimeParser().parse(value)
                     seconds = int(value[-2])
                     microseconds = int(round((value[-2] - seconds) * 1000000))
-                    timezone = value[-1] # Ignored for now.
+                    timezone = value[-1]
+                    if timezone not in ['Z', '+0000', '-0000']:
+                        self.request.response.setStatus(400)
+                        return ("You set the attribute '%s' to a time "
+                                "that's not UTC."
+                                % repr_name)
                     value = datetime(*value[:-2] + (seconds, microseconds,
                                                     pytz.utc))
                 except (DateError, DateTimeError, SyntaxError):
@@ -386,10 +392,11 @@ class EntryResource(ReadWriteResource):
             # considered to be the URL to that entry or collection.
             if ICollectionField.providedBy(element):
                 current_value = canonical_url(
-                    self.publishTraverse(self.request, name))
+                    self.publishTraverse(self.request, name), self.request)
             elif IObject.providedBy(element):
                 current_value = canonical_url(
-                    EntryResource(getattr(self.context, name), self.request))
+                    EntryResource(getattr(self.context, name), self.request),
+                    self.request)
             else:
                 current_value = getattr(self.context, name)
 
@@ -431,12 +438,10 @@ class EntryResource(ReadWriteResource):
         # If the modification caused the entry's URL to change, tell
         # the client about the new URL.
         new_url = canonical_url(self, request=self.request)
-        if new_url == original_url:
-            return ''
-        else:
+        if new_url != original_url:
             self.request.response.setStatus(301)
             self.request.response.setHeader('Location', new_url)
-
+        return ''
 
 class CollectionResource(ReadOnlyResource):
     """A resource that serves a list of entry resources."""
