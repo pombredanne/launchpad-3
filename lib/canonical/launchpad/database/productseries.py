@@ -597,7 +597,8 @@ class ProductSeriesSet:
         """See `IProductSeriesSet`."""
         query = self.composeQueryString(text, importstatus)
         return ProductSeries.select(
-            query, distinct=True, clauseTables=['Product', 'Project'])
+            query, orderBy=['product.name', 'productseries.name'],
+            clauseTables=['Product'])
 
     def composeQueryString(self, text=None, importstatus=None):
         """Build SQL "where" clause for `ProductSeries` search.
@@ -633,7 +634,9 @@ class ProductSeriesSet:
                               % sqlvalues(importstatus))
 
         query = " AND ".join(conditions)
-        return query
+        return """productseries.id IN
+            (SELECT productseries.id FROM productseries, product, project
+             WHERE %s) AND productseries.product = product.id""" % query
 
     def getByCVSDetails(self, cvsroot, cvsmodule, cvsbranch, default=None):
         """See IProductSeriesSet."""
