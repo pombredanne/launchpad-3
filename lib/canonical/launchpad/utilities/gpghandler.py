@@ -293,7 +293,7 @@ class GPGHandler:
     def getURLForKeyInServer(self, fingerprint, action='index', public=False):
         """See IGPGHandler"""
         params = {
-            'search': '0x%s' % fingerprint[-8:],
+            'search': '0x%s' % fingerprint,
             'op': action
         }
         if public:
