@@ -33,7 +33,7 @@ class QueueBuilder(LaunchpadCronScript):
         """Invoke rebuildQueue.
 
         Check if the cron.daily is running, quietly exits if true.
-        Force isolation level to READ_COMMITTED_ISOLATION.
+        Force isolation level to ISOLATION_LEVEL_READ_COMMITTED.
         Deals with the current transaction according the dry-run option.
         """
         if self.args:

@@ -14,8 +14,8 @@ from zope.component import getUtility
 from canonical.config import config
 from canonical.launchpad.interfaces import (
     ArchivePurpose, IDistributionSet)
+from canonical.database.sqlbase import ISOLATION_LEVEL_READ_COMMITTED
 from canonical.launchpad.scripts.base import LaunchpadCronScript
-from canonical.lp import READ_COMMITTED_ISOLATION
 
 
 class PackageCacheUpdater(LaunchpadCronScript):

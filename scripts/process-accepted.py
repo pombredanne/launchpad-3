@@ -14,13 +14,13 @@ from optparse import OptionParser
 from zope.component import getUtility
 
 from canonical.config import config
+from canonical.database.sqlbase import ISOLATION_LEVEL_READ_COMMITTED
 from canonical.launchpad.interfaces import (
     IDistributionSet, PackageUploadStatus)
 from canonical.launchpad.scripts import (
     execute_zcml_for_scripts, logger, logger_options)
 from canonical.launchpad.scripts.processaccepted import close_bugs
-from canonical.lp import (
-    initZopeless, READ_COMMITTED_ISOLATION)
+from canonical.lp import initZopeless
 
 from contrib.glock import GlobalLock
 
@@ -54,8 +54,8 @@ def main():
 
     log.debug("Initialising connection.")
 
-    ztm = initZopeless(
-        dbuser=config.uploadqueue.dbuser, isolation=READ_COMMITTED_ISOLATION)
+    ztm = initZopeless(dbuser=config.uploadqueue.dbuser,
+                       isolation=ISOLATION_LEVEL_READ_COMMITTED)
     execute_zcml_for_scripts()
 
     processed_queue_ids = []
