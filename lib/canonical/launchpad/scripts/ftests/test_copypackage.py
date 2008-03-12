@@ -422,10 +422,7 @@ class TestCopyPackage(unittest.TestCase):
             copy_helper.mainTask)
 
     def testBinaryCopyFromPpaToPrimaryWorks(self):
-        """Check if copying binaries from PPA to PRIMARY archive is working.
-
-        SoyuzScriptError is raised if the user tries to copy binaries from
-        a PPA to PRIMARY archive.
+        """Check whether copying binaries from PPA to PRIMARY archive works.
         """
         copy_helper = self.getCopier(
             sourcename='iceweasel', from_ppa='cprov',
