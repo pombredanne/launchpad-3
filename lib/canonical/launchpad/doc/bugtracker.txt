@@ -251,14 +251,40 @@ an alias.
 Each BugTracker has an imported_bug_messages property that returns all
 bug messages which have been imported for a given bug tracker.
 
-    >>> for tracker in bugtracker_set:
-    ...     for bug_message in tracker.imported_bug_messages:
-    ...         print '%s, bug %d, watch %d, message %d' % (
-    ...             tracker.name, bug_message.bug.id,
-    ...             bug_message.bugwatch.id, bug_message.message.id)
-    debbugs, bug 15, watch 11, message 49
-    debbugs, bug 15, watch 11, message 48
-    debbugs, bug 15, watch 11, message 47
-    debbugs, bug 15, watch 11, message 46
-    debbugs, bug 15, watch 11, message 45
-    debbugs, bug 15, watch 11, message 44
+    >>> from canonical.launchpad.helpers import truncate_text
+    >>> def print_bug_messages(bug_messages):
+    ...     for bug_message in bug_messages:
+    ...         print '* bug: %d' % bug_message.bug.id
+    ...         print '- remote bug: %s' % bug_message.bugwatch.remotebug
+    ...         print '- message subject: %s' % (
+    ...             truncate_text(bug_message.message.subject, 20))
+
+The Mozilla Bugzilla has no imported bug messages:
+
+    >>> print_bug_messages(mozilla_bugzilla.imported_bug_messages)
+
+We will forge some BugMessage records before trying again:
+
+    >>> from canonical.launchpad.interfaces import IBugMessageSet
+    >>> from zope.security.proxy import removeSecurityProxy
+
+    >>> for num, bug_watch in enumerate(mozilla_bugzilla.watches):
+    ...     bug_message = getUtility(IBugMessageSet).createMessage(
+    ...         'You are Number %d.' % (num + 1),
+    ...         bug_watch.bug, sample_person)
+    ...     removeSecurityProxy(bug_message).bugwatch = bug_watch
+    >>> flush_database_updates()
+
+    >>> print_bug_messages(mozilla_bugzilla.imported_bug_messages)
+    * bug: 1
+    - remote bug: 2000
+    - message subject: You are Number 1.
+    * bug: 1
+    - remote bug: 123543
+    - message subject: You are Number 2.
+    * bug: 1
+    - remote bug: 42
+    - message subject: You are Number 3.
+    * bug: 2
+    - remote bug: 42
+    - message subject: You are Number 4.
