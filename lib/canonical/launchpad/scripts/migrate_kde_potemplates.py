@@ -84,10 +84,8 @@ def migrate_translations_for_potmsgset(potmsgset, from_potmsgset, logger, ztm):
                     # Only transfer is_current and is_imported
                     # properties to an existing translation.
                     if message.is_current:
-                        message.is_current = False
                         existing_message.is_current = True
                     if message.is_imported:
-                        message.is_imported = False
                         existing_message.is_imported = True
                     # And remove the current message.
                     message.destroySelf()
@@ -101,8 +99,13 @@ def migrate_translations_for_potmsgset(potmsgset, from_potmsgset, logger, ztm):
                 message.msgstr5 = potranslations[5]
                 if potmsgset != from_potmsgset:
                     # Point TranslationMessage to a new POTMsgSet.
+                    stored_is_current = message.is_current
+                    stored_is_imported = message.is_imported
+                    message.is_current = False
+                    message.is_imported = False
                     message.potmsgset = potmsgset
-
+                    message.is_current = stored_is_current
+                    message.is_imported = stored_is_imported
 
 def migrate_kde_potemplate_translations(potemplate, logger, ztm):
     assert(potemplate.source_file_format == TranslationFileFormat.KDEPO)
