@@ -1,5 +1,5 @@
 #!/usr/bin/python2.4
-# Copyright 2006 Canonical Ltd.  All rights reserved.
+# Copyright 2006-2008 Canonical Ltd.  All rights reserved.
 # pylint: disable-msg=W0403
 
 """Furnish distroseries with lacking translations that its parent does have.
@@ -15,6 +15,8 @@ from zope.component import getUtility
 from canonical.config import config
 from canonical.launchpad.interfaces import IDistributionSet
 from canonical.launchpad.scripts.base import LaunchpadCronScript
+from canonical.launchpad.scripts.copy_distroseries_translations import (
+    update_translations)
 
 
 class TranslationsCopier(LaunchpadCronScript):
@@ -44,74 +46,25 @@ class TranslationsCopier(LaunchpadCronScript):
         distribution = getUtility(IDistributionSet)[self.options.distro]
         series = self._getTargetSeries()
 
-        series_hide_translations = series.hide_all_translations
-        series_defer_imports = series.defer_translation_imports
-
         # Both translation UI and imports for this series should be blocked
         # while the copy is in progress, to reduce the chances of deadlocks or
         # other conflicts.
-        blocked = (series_hide_translations and series_defer_imports)
-        if not blocked:
-            if not self.options.force:
-                self.txn.abort()
-                self.logger.error(
-                    'Before this process starts, set the '
-                    'hide_all_translations and defer_translation_imports '
-                    'flags for distribution %s, series %s; or use the '
-                    '--force option to make it happen automatically.' % (
-                        self.options.distro, self.options.series))
-                sys.exit(1)
-            else:
-                series.hide_all_translations = True
-                series.defer_translation_imports = True
-                self.txn.commit()
-                self.txn.begin()
+        blocked = (
+            series.hide_all_translations and series.defer_translation_imports)
+        if not blocked and not self.options.force:
+            self.txn.abort()
+            self.logger.error(
+                'Before this process starts, set the '
+                'hide_all_translations and defer_translation_imports '
+                'flags for distribution %s, series %s; or use the '
+                '--force option to make it happen automatically.' % (
+                    self.options.distro, self.options.series))
+            sys.exit(1)
 
         self.logger.info('Starting...')
 
-        try:
-            # XXX JeroenVermeulen 2008-02-12: In python2.5 and up we'll be
-            # able to combine these two try blocks.  In 2.4, we can't.
-            try:
-                # Do the actual work.
-                series.copyMissingTranslationsFromParent(
-                    self.txn, self.logger)
-            except:
-                # Give us a fresh transaction for proper cleanup.
-                self.txn.abort()
-                self.txn.begin()
-                raise
-        finally:
-            # We've crossed transaction boundaries.  Forget the old ORM
-            # object.
-            series = None
-
-            if not blocked:
-                # We messed with the series' flags.  Restore them.
-                series = self._getTargetSeries()
-                changed = (
-                    series.hide_all_translations !=
-                        series_hide_translations or
-                    series.defer_translation_imports != series_defer_imports)
-                if changed:
-                    # The flags have been changed while we were working.  Play
-                    # safe and don't touch them.
-                    self.logger.warning("Translations flags for %s have been "
-                        "changed while copy was in progress: "
-                        "hide_all_translations was %d, is now %d; "
-                        "defer_translation_imports was %d and is now %d. "
-                        "Please review this change, since it may affect "
-                        "users' ability to work on this series' translations."
-                            % (self.options.series,
-                               series_hide_translations,
-                               series.hide_all_translations,
-                               series_defer_imports,
-                               series.defer_translation_imports))
-                else:
-                    # No worries.  Restore flags.
-                    series.hide_all_translations = series_hide_translations
-                    series.defer_translation_imports = series_defer_imports
-                    self.txn.commit()
+        # Actual work is done here.
+        update_translations(series, self.txn, self.logger)
 
         # We would like to update the DistroRelase statistics, but it takes
         # too long so this should be done after.
@@ -122,8 +75,7 @@ class TranslationsCopier(LaunchpadCronScript):
         # series.updateStatistics(self.txn)
 
         self.txn.commit()
-
-        self.logger.info('Done...')
+        self.logger.info('Done.')
 
     @property
     def lockfilename(self):
