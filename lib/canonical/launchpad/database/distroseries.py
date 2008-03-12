@@ -173,19 +173,19 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
 
     @property
     def milestones(self):
-        """See IDistroSeries."""
+        """See `IDistroSeries`."""
         return Milestone.selectBy(
             distroseries=self, visible=True,
             orderBy=['-dateexpected', 'name'])
 
     @property
     def parent(self):
-        """See IDistroSeries."""
+        """See `IDistroSeries`."""
         return self.distribution
 
     @property
     def drivers(self):
-        """See IDistroSeries."""
+        """See `IDistroSeries`."""
         drivers = set()
         drivers.add(self.driver)
         drivers = drivers.union(self.distribution.drivers)
@@ -194,12 +194,12 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
 
     @property
     def bugcontact(self):
-        """See IDistroSeries."""
+        """See `IDistroSeries`."""
         return self.distribution.bugcontact
 
     @property
     def security_contact(self):
-        """See IDistroSeries."""
+        """See `IDistroSeries`."""
         return self.distribution.security_contact
 
     @property
@@ -261,7 +261,7 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
 
     @cachedproperty('_previous_serieses_cached')
     def previous_serieses(self):
-        """See IDistroSeries."""
+        """See `IDistroSeries`."""
         # This property is cached because it is used intensely inside
         # sourcepackage.py; avoiding regeneration reduces a lot of
         # count(*) queries.
@@ -282,7 +282,7 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         return self.distribution.bug_reporting_guidelines
 
     def canUploadToPocket(self, pocket):
-        """See IDistroSeries."""
+        """See `IDistroSeries`."""
         # Allow everything for distroseries in FROZEN state.
         if self.status == DistroSeriesStatus.FROZEN:
             return True
@@ -305,7 +305,7 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         return True
 
     def updatePackageCount(self):
-        """See IDistroSeries."""
+        """See `IDistroSeries`."""
 
         # first update the source package count
         query = """
@@ -353,7 +353,7 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
 
     @property
     def architecturecount(self):
-        """See IDistroSeries."""
+        """See `IDistroSeries`."""
         return self.architectures.count()
 
     @property
@@ -529,19 +529,19 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         return self.distribution.getSpecification(name)
 
     def getDistroSeriesLanguage(self, language):
-        """See IDistroSeries."""
+        """See `IDistroSeries`."""
         return DistroSeriesLanguage.selectOneBy(
             distroseries=self, language=language)
 
     def getDistroSeriesLanguageOrDummy(self, language):
-        """See IDistroSeries."""
+        """See `IDistroSeries`."""
         drl = self.getDistroSeriesLanguage(language)
         if drl is not None:
             return drl
         return DummyDistroSeriesLanguage(self, language)
 
     def updateStatistics(self, ztm):
-        """See IDistroSeries."""
+        """See `IDistroSeries`."""
         # first find the set of all languages for which we have pofiles in
         # the distribution that are visible and not English
         langidset = set(
@@ -577,7 +577,7 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         ztm.commit()
 
     def getSourcePackage(self, name):
-        """See IDistroSeries."""
+        """See `IDistroSeries`."""
         if not ISourcePackageName.providedBy(name):
             try:
                 name = SourcePackageName.byName(name)
@@ -586,7 +586,7 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         return SourcePackage(sourcepackagename=name, distroseries=self)
 
     def getBinaryPackage(self, name):
-        """See IDistroSeries."""
+        """See `IDistroSeries`."""
         if not IBinaryPackageName.providedBy(name):
             try:
                 name = BinaryPackageName.byName(name)
@@ -595,11 +595,11 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         return DistroSeriesBinaryPackage(self, name)
 
     def getSourcePackageRelease(self, sourcepackagerelease):
-        """See IDistroSeries."""
+        """See `IDistroSeries`."""
         return DistroSeriesSourcePackageRelease(self, sourcepackagerelease)
 
     def __getitem__(self, archtag):
-        """See IDistroSeries."""
+        """See `IDistroSeries`."""
         item = DistroArchSeries.selectOneBy(
             distroseries=self, architecturetag=archtag)
         if item is None:
@@ -608,7 +608,7 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         return item
 
     def getTranslatableSourcePackages(self):
-        """See IDistroSeries."""
+        """See `IDistroSeries`."""
         query = """
             POTemplate.sourcepackagename = SourcePackageName.id AND
             POTemplate.iscurrent = TRUE AND
@@ -619,7 +619,7 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
             spn in result]
 
     def getUnlinkedTranslatableSourcePackages(self):
-        """See IDistroSeries."""
+        """See `IDistroSeries`."""
         # Note that both unlinked packages and
         # linked-with-no-productseries packages are considered to be
         # "unlinked translatables".
@@ -644,7 +644,7 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
     def getPublishedReleases(self, sourcepackage_or_name, version=None,
                              pocket=None, include_pending=False,
                              exclude_pocket=None, archive=None):
-        """See IDistroSeries."""
+        """See `IDistroSeries`."""
         # XXX cprov 2006-02-13 bug 31317:
         # We need a standard and easy API, no need
         # to support multiple type arguments, only string name should be
@@ -692,7 +692,7 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         return shortlist(published)
 
     def isUnstable(self):
-        """See IDistroSeries."""
+        """See `IDistroSeries`."""
         return self.status in [
             DistroSeriesStatus.FROZEN,
             DistroSeriesStatus.DEVELOPMENT,
@@ -730,7 +730,7 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
             orderBy="BinaryPackagePublishingHistory.id")
 
     def getSourcesPublishedForAllArchives(self):
-        """See IDistroSeries."""
+        """See `IDistroSeries`."""
         # Both, PENDING and PUBLISHED sources will be considered for
         # as PUBLISHED. It's part of the assumptions made in:
         # https://launchpad.net/soyuz/+spec/build-unpublished-source
@@ -765,7 +765,7 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
 
     def getSourcePackagePublishing(self, status, pocket, component=None,
                                    archive=None):
-        """See IDistroSeries."""
+        """See `IDistroSeries`."""
         archives = self.distribution.getArchiveIDList(archive)
 
         clause = """
@@ -794,7 +794,7 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
     def getBinaryPackagePublishing(
         self, name=None, version=None, archtag=None, sourcename=None,
         orderBy=None, pocket=None, component=None, archive=None):
-        """See IDistroSeries."""
+        """See `IDistroSeries`."""
         archives = self.distribution.getArchiveIDList(archive)
 
         query = ["""
@@ -852,7 +852,7 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         return result
 
     def publishedBinaryPackages(self, component=None):
-        """See IDistroSeries."""
+        """See `IDistroSeries`."""
         # XXX sabdfl 2005-07-04: This can become a utility when that works
         # this is used by the debbugs import process, mkdebwatches
         pubpkgset = getUtility(IPublishedPackageSet)
@@ -880,7 +880,7 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         dsc_maintainer_rfc822, dsc_standards_version, dsc_format,
         dsc_binaries, archive, copyright, build_conflicts,
         build_conflicts_indep, dateuploaded=DEFAULT):
-        """See IDistroSeries."""
+        """See `IDistroSeries`."""
         return SourcePackageRelease(
             upload_distroseries=self, sourcepackagename=sourcepackagename,
             version=version, maintainer=maintainer, dateuploaded=dateuploaded,
@@ -896,7 +896,7 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
             build_conflicts_indep=build_conflicts_indep)
 
     def getComponentByName(self, name):
-        """See IDistroSeries."""
+        """See `IDistroSeries`."""
         comp = Component.byName(name)
         if comp is None:
             raise NotFoundError(name)
@@ -906,7 +906,7 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         raise NotFoundError(name)
 
     def getSectionByName(self, name):
-        """See IDistroSeries."""
+        """See `IDistroSeries`."""
         section = Section.byName(name)
         if section is None:
             raise NotFoundError(name)
@@ -916,7 +916,7 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         raise NotFoundError(name)
 
     def getBinaryPackageCaches(self, archive=None):
-        """See IDistroSeries."""
+        """See `IDistroSeries`."""
         if archive is not None:
             archives = [archive.id]
         else:
@@ -931,7 +931,7 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         return caches
 
     def removeOldCacheItems(self, archive, log):
-        """See IDistroSeries."""
+        """See `IDistroSeries`."""
 
         # get the set of package names that should be there
         bpns = set(BinaryPackageName.select("""
@@ -959,9 +959,8 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
                 cache.destroySelf()
 
     def updateCompletePackageCache(self, archive, log, ztm):
-        """See IDistroSeries."""
-
-        # get the set of package names to deal with
+        """See `IDistroSeries`."""
+        # Get the set of package names to deal with.
         bpns = list(BinaryPackageName.select("""
             BinaryPackagePublishingHistory.distroarchseries =
                 DistroArchSeries.id AND
@@ -978,8 +977,8 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
                           'DistroArchSeries',
                           'BinaryPackageRelease']))
 
-        # now ask each of them to update themselves. commit every 100
-        # packages
+        # Now ask each of them to update themselves. commit every 100
+        # packages.
         counter = 0
         for bpn in bpns:
             log.debug("Considering binary '%s'" % bpn.name)
@@ -992,7 +991,7 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
                     ztm.commit()
 
     def updatePackageCache(self, binarypackagename, archive, log):
-        """See IDistroSeries."""
+        """See `IDistroSeries`."""
 
         # get the set of published binarypackagereleases
         bprs = BinaryPackageRelease.select("""
@@ -1046,7 +1045,7 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         cache.descriptions = ' '.join(sorted(descriptions))
 
     def searchPackages(self, text):
-        """See IDistroSeries."""
+        """See `IDistroSeries`."""
         drpcaches = DistroSeriesPackageCache.select("""
             distroseries = %s AND
             archive IN %s AND
@@ -1065,7 +1064,7 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
 
     def newArch(self, architecturetag, processorfamily, official, owner,
                 ppa_supported=False):
-        """See IDistroSeries."""
+        """See `IDistroSeries`."""
         distroarchseries = DistroArchSeries(
             architecturetag=architecturetag, processorfamily=processorfamily,
             official=official, distroseries=self, owner=owner,
@@ -1073,13 +1072,13 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         return distroarchseries
 
     def newMilestone(self, name, dateexpected=None, description=None):
-        """See IDistroSeries."""
+        """See `IDistroSeries`."""
         return Milestone(
             name=name, dateexpected=dateexpected, description=description,
             distribution=self.distribution, distroseries=self)
 
     def getLatestUploads(self):
-        """See IDistroSeries."""
+        """See `IDistroSeries`."""
         query = """
         sourcepackagerelease.id=packageuploadsource.sourcepackagerelease
         AND sourcepackagerelease.sourcepackagename=sourcepackagename.id
@@ -1105,7 +1104,7 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
 
     def createQueueEntry(self, pocket, changesfilename, changesfilecontent,
                          archive, signing_key=None):
-        """See IDistroSeries."""
+        """See `IDistroSeries`."""
         # We store the changes file in the librarian to avoid having to
         # deal with broken encodings in these files; this will allow us
         # to regenerate these files as necessary.
@@ -1124,12 +1123,12 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
             changesfile=changes_file, signing_key=signing_key)
 
     def getPackageUploadQueue(self, state):
-        """See IDistroSeries."""
+        """See `IDistroSeries`."""
         return PackageUploadQueue(self, state)
 
     def getQueueItems(self, status=None, name=None, version=None,
                       exact_match=False, pocket=None, archive=None):
-        """See IDistroSeries."""
+        """See `IDistroSeries`."""
 
         default_clauses = ["""
             packageupload.distroseries = %s""" % sqlvalues(self)]
@@ -1288,7 +1287,7 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         return 'BugTask.distroseries = %s' % sqlvalues(self)
 
     def initialiseFromParent(self):
-        """See IDistroSeries."""
+        """See `IDistroSeries`."""
         archives = self.distribution.all_distro_archive_ids
         assert self.parent_series is not None, "Parent series must be present"
         assert SourcePackagePublishingHistory.select("""
@@ -1582,29 +1581,29 @@ class DistroSeriesSet:
     implements(IDistroSeriesSet)
 
     def get(self, distroseriesid):
-        """See IDistroSeriesSet."""
+        """See `IDistroSeriesSet`."""
         return DistroSeries.get(distroseriesid)
 
     def translatables(self):
-        """See IDistroSeriesSet."""
+        """See `IDistroSeriesSet`."""
         return DistroSeries.select(
             "POTemplate.distroseries=DistroSeries.id",
             clauseTables=['POTemplate'], distinct=True)
 
     def findByName(self, name):
-        """See IDistroSeriesSet."""
+        """See `IDistroSeriesSet`."""
         return DistroSeries.selectBy(name=name)
 
     def queryByName(self, distribution, name):
-        """See IDistroSeriesSet."""
+        """See `IDistroSeriesSet`."""
         return DistroSeries.selectOneBy(distribution=distribution, name=name)
 
     def findByVersion(self, version):
-        """See IDistroSeriesSet."""
+        """See `IDistroSeriesSet`."""
         return DistroSeries.selectBy(version=version)
 
     def search(self, distribution=None, isreleased=None, orderBy=None):
-        """See IDistroSeriesSet."""
+        """See `IDistroSeriesSet`."""
         where_clause = ""
         if distribution is not None:
             where_clause += "distribution = %s" % sqlvalues(distribution.id)
@@ -1629,7 +1628,7 @@ class DistroSeriesSet:
 
     def new(self, distribution, name, displayname, title, summary,
             description, version, parent_series, owner):
-        """See IDistroSeriesSet."""
+        """See `IDistroSeriesSet`."""
         return DistroSeries(
             distribution=distribution,
             name=name,
