@@ -1985,7 +1985,8 @@ A bugnotification is sent for each attached file.
     ...     print bug_notification.message.chunks[0].content
     -------------------
     Found a bug in Firefox. Nothing displayed. See attached files.
-    affects firefox
+    <BLANKLINE>
+     affects firefox
     -------------------
     ** Attachment added: "sample.html"
        http://.../sample.html

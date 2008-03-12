@@ -27,10 +27,9 @@ from sqlobject import SQLObjectNotFound
 from canonical.launchpad.interfaces import (
     BugAttachmentType, BugTaskStatus, BugTrackerType, DistroSeriesStatus,
     IBug, IBugAttachmentSet, IBugBecameQuestionEvent, IBugBranch, IBugSet,
-    IBugTaskSet, IBugWatchSet, ICveSet, IDistribution,
-    IDistroSeries, ILaunchpadCelebrities,
-    ILibraryFileAliasSet, IMessage, IProduct, IProductSeries,
-    IQuestionTarget, ISourcePackage,
+    IBugTaskSet, IBugWatchSet, ICveSet, IDistribution, IDistroSeries,
+    ILaunchpadCelebrities, ILibraryFileAliasSet, IMessage, IProduct,
+    IProductSeries, IQuestionTarget, ISourcePackage,
     IStructuralSubscriptionTarget, NominationError,
     NominationSeriesObsoleteError, NotFoundError, UNRESOLVED_BUGTASK_STATUSES)
 from canonical.launchpad.helpers import shortlist

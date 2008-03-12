@@ -60,7 +60,7 @@ class BugAttachmentSet:
 
     def create(self, bug, filealias, title, message,
                attach_type=None, send_notifications=False):
-        """See IBugAttachmentSet."""
+        """See `IBugAttachmentSet`."""
         if attach_type is None:
             # XXX kiko 2005-08-03 bug=1659: this should use DEFAULT.
             attach_type = IBugAttachment['type'].default

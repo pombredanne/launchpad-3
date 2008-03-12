@@ -84,11 +84,11 @@ class IBugAttachmentSet(Interface):
                type=IBugAttachment['type'].default, send_notifications=False):
         """Create a new attachment and return it.
 
-        bug: The bug to which the new attachment belongs.
-        filealias: The filealias containing the data.
-        message: The message to which this attachment belongs.
-        type: The type of attachment. See BugAttachmentType.
-        send_notifications: If True, a notification is sent to
+        :param bug: The `IBug` to which the new attachment belongs.
+        :param filealias: The `IFilealias` containing the data.
+        :param message: The `IMessage` to which this attachment belongs.
+        :param type: The type of attachment. See `BugAttachmentType`.
+        :param send_notifications: If True, a notification is sent to
             subscribers of the bug.
         """
 
