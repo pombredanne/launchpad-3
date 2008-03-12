@@ -161,7 +161,6 @@
     <!-- System homepages -->
     <include file="translations.zcml" />
     <include file="malone.zcml" />
-    <include file="registry.zcml" />
     <include file="bazaar.zcml" />
 
     <!-- Event configuration -->
