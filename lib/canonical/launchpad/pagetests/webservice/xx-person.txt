@@ -8,6 +8,11 @@ document shows some of the other features of a person.
 
 A person is linked to their team memberships.
 
+  >>> salgado = webservice("""
+  ... GET /people/salgado HTTP/1.1
+  ... Host: api.launchpad.dev
+  ... """).jsonBody()
+
   >>> salgado['team_memberships_collection_link']
   u'http://api.launchpad.dev/people/salgado/team_memberships'
 

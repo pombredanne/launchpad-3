@@ -1,8 +1,9 @@
 = Entries =
 
 All entries in the Launchpad web service work pretty much the same
-way. This document illustrates the general features of entries using
+way. This document illustrates the general features of entries, using
 Launchpad people as examples.
+
 
 == Reading ==
 
@@ -33,7 +34,7 @@ api-base-modify-data-entry]: or it may describe the entire new state,
 in which case the client should use PUT.)
 
   >>> import simplejson
-  >>> def modify_person(person, representation):
+  >>> def modify_person(person, representation, method):
   ...     "A helper function to send a PUT or PATCH request for a person."
   ...     return webservice("""
   ... %s /people/%s HTTP/1.1
@@ -125,7 +126,7 @@ might not be acceptable as the payload of a PUT request.
 A person's read-only attributes can't be modified.
 
   >>> print modify_person('salgado', {'datecreated' :
-  ...                                u'2001-01-01T01:01:01+00:00'})
+  ...                                 u'2001-01-01T01:01:01+00:00'}, 'PATCH')
   HTTP/1.1 400 Bad Request
   Content-Length: 57
   Content-Type: text/plain;charset=utf-8
@@ -135,14 +136,16 @@ A person's read-only attributes can't be modified.
 You can send a document that includes a value for a read-only
 attribute, but it has to be the same as the current value.
 
-  >>> print modify_person('salgado', {'datecreated' : salgado['datecreated']})
+  >>> print modify_person('salgado', {'datecreated' : salgado['datecreated']},
+  ...                     'PATCH')
   HTTP/1.1 200 Ok
   ...
 
 You can't change the link to a person's associated collection.
 
   >>> print modify_person('salgado',
-  ...                    {'team_memberships_collection_link' : 'dummy'})
+  ...                    {'team_memberships_collection_link' : 'dummy'},
+  ...                     'PATCH')
   HTTP/1.1 400 Bad Request
   ...
   You tried to modify the collection link 'team_memberships_collection_link'
@@ -150,16 +153,17 @@ You can't change the link to a person's associated collection.
 Again, you can send a document that includes a value for an associated
 collection link; you just can't _change_ the value.
 
+  >>> link = 'http://api.launchpad.dev/people/salgado/team_memberships'
   >>> print modify_person('salgado',
-  ...                    {'team_memberships_collection_link' :
-  ...                     'http://api.launchpad.dev/people/salgado/team_memberships'})
+  ...                    {'team_memberships_collection_link' : link },
+  ...                    'PATCH')
   HTTP/1.1 200 Ok
   ...
 
 You can't directly change a person's address.
 
   >>> print modify_person('salgado',
-  ...                    {'self_link' : 'dummy'})
+  ...                    {'self_link' : 'dummy'}, 'PATCH')
   HTTP/1.1 400 Bad Request
   ...
   You tried to modify the read-only attribute 'self_link'.
@@ -167,12 +171,13 @@ You can't directly change a person's address.
 You can't refer to a link to an associated object or collection as
 though it were the actual object:
 
-  >>> print modify_person('salgado', {'team_memberships' : 'dummy'})
+  >>> print modify_person('salgado', {'team_memberships' : 'dummy'}, 'PATCH')
   HTTP/1.1 400 Bad Request
   ...
   You tried to modify the nonexistent attribute 'team_memberships'
 
-  >>> print modify_person('landscape-developers', {'owner' : 'salgado'})
+  >>> print modify_person('landscape-developers', {'owner' :
+  ...                     'salgado'}, 'PATCH')
   HTTP/1.1 400 Bad Request
   ...
   You tried to modify the nonexistent attribute 'owner'
@@ -180,7 +185,7 @@ though it were the actual object:
 You can't set nonsensical values for attributes.
 
   >>> print modify_person('salgado',
-  ...                    {'datecreated' : 'dummy'})
+  ...                    {'datecreated' : 'dummy'}, 'PATCH')
   HTTP/1.1 400 Bad Request
   ...
   You set the attribute 'datecreated' to a value that doesn't look
@@ -189,14 +194,14 @@ You can't set nonsensical values for attributes.
 You can't set values that violate Launchpad's data integrity rules.
 
   >>> print modify_person('salgado',
-  ...                    {'name' : 'sabdfl'})
+  ...                    {'name' : 'sabdfl'}, 'PATCH')
   HTTP/1.1 400 Bad Request
   ...
   sabdfl is already in use by another person or team.
 
 And of course you can't modify attributes that don't exist.
 
-  >>> print modify_person('salgado', {'nonesuch' : 'dummy'})
+  >>> print modify_person('salgado', {'nonesuch' : 'dummy'}, 'PATCH')
   HTTP/1.1 400 Bad Request
   ...
   You tried to modify the nonexistent attribute 'nonesuch'

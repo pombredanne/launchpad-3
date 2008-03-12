@@ -263,11 +263,11 @@ class EntryResource(ReadWriteResource):
         """
 
         if media_type != 'application/json':
-            self.request.response.setCode(415)
+            self.request.response.setStatus(415)
             return None, 'Expected a media type of application/json.'
         h = simplejson.loads(representation)
         if not isinstance(h, dict):
-            self.request.response.setCode(400)
+            self.request.response.setStatus(400)
             return None, 'Expected a JSON hash.'
         return h, None
 
@@ -382,24 +382,25 @@ class EntryResource(ReadWriteResource):
 
             # The current value of the attribute also becomes
             # relevant, so we obtain that. If the attribute designates
-            # an entry or collection, we obtain the resource for that
-            # entry or collection.
+            # an entry or collection, the 'current value' is
+            # considered to be the URL to that entry or collection.
             if ICollectionField.providedBy(element):
-                current_value = self.publishTraverse(self.request, name)
+                current_value = canonical_url(
+                    self.publishTraverse(self.request, name))
             elif IObject.providedBy(element):
-                current_value = EntryResource(getattr(self.context, name),
-                                              self.request)
+                current_value = canonical_url(
+                    EntryResource(getattr(self.context, name), self.request))
             else:
                 current_value = getattr(self.context, name)
 
             # Read-only attributes and collection links can't be
-            # modified. It's okay to provide a value for an attribute
+            # modified. It's okay to specify a value for an attribute
             # that can't be modified, but the new value must be the
             # same as the current value.  This makes it possible to
             # GET a document, modify one field, and send it back.
             if ICollectionField.providedBy(element):
                 change_this_field = False
-                if value != canonical_url(current_value):
+                if value != current_value:
                     self.request.response.setStatus(400)
                     return ("You tried to modify the collection link '%s'"
                             % repr_name)
