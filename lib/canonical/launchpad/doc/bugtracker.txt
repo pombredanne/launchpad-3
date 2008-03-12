@@ -251,13 +251,11 @@ an alias.
 Each BugTracker has an imported_bug_messages property that returns all
 bug messages which have been imported for a given bug tracker.
 
-    >>> from canonical.launchpad.helpers import truncate_text
     >>> def print_bug_messages(bug_messages):
     ...     for bug_message in bug_messages:
     ...         print '* bug: %d' % bug_message.bug.id
     ...         print '- remote bug: %s' % bug_message.bugwatch.remotebug
-    ...         print '- message subject: %s' % (
-    ...             truncate_text(bug_message.message.subject, 20))
+    ...         print '- message subject: %s' % bug_message.message.subject
 
 The Mozilla Bugzilla has no imported bug messages:
 
