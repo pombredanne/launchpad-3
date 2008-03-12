@@ -18,7 +18,9 @@ from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import config
 from canonical.launchpad.webapp.authentication import SSHADigestEncryptor
-from canonical.launchpad.database import ScriptActivity
+# Use the scriptactivity module directly to avoid importing codehosting,
+# triggering a circular import.
+from canonical.launchpad.database.scriptactivity import ScriptActivity
 from canonical.launchpad.interfaces import (
     BranchCreationException, BranchType, IBranchSet, IPersonSet, IProductSet,
     UnknownBranchTypeError)
