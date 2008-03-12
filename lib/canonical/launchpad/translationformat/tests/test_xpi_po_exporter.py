@@ -115,20 +115,20 @@ class XPIPOExporterTestCase(unittest.TestCase):
             "Content-Type: text/plain; charset=UTF-8\\n"
             "Content-Transfer-Encoding: 8bit\\n"
 
-            #: en-US.xpi/chrome/en-US.jar!/test1.properties:1(foozilla.title)
-            msgid "FooZilla Zilla Thingy"
+            #: en-US.xpi/chrome/en-US.jar!/subdir/test2.dtd(foozilla.menu.title)
+            msgid "MENU"
             msgstr ""
 
-            #: en-US.xpi/chrome/en-US.jar!/test1.properties:3(foozilla.happytitle)
-            msgid "FooZillingy"
+            #: en-US.xpi/chrome/en-US.jar!/subdir/test2.dtd(foozilla.menu.accesskey)
+            msgid "foozilla.menu.accesskey"
             msgstr ""
 
-            #: en-US.xpi/chrome/en-US.jar!/test1.properties:4(foozilla.nocomment)
-            msgid "No Comment"
+            #: en-US.xpi/chrome/en-US.jar!/subdir/test2.dtd(foozilla.menu.commandkey)
+            msgid "foozilla.menu.commandkey"
             msgstr ""
 
-            #: en-US.xpi/chrome/en-US.jar!/test1.properties:5(foozilla.utf8)
-            msgid "\xd0\x94\xd0\xb0\xd0\xbd=Day"
+            #: en-US.xpi/chrome/en-US.jar!/subdir/test2.properties:6(foozilla_something)
+            msgid "SomeZilla"
             msgstr ""
 
             #: en-US.xpi/chrome/en-US.jar!/test1.dtd(foozilla.name)
@@ -143,20 +143,20 @@ class XPIPOExporterTestCase(unittest.TestCase):
             msgid "Play with ice?"
             msgstr ""
 
-            #: en-US.xpi/chrome/en-US.jar!/subdir/test2.properties:6(foozilla_something)
-            msgid "SomeZilla"
+            #: en-US.xpi/chrome/en-US.jar!/test1.properties:1(foozilla.title)
+            msgid "FooZilla Zilla Thingy"
             msgstr ""
 
-            #: en-US.xpi/chrome/en-US.jar!/subdir/test2.dtd(foozilla.menu.title)
-            msgid "MENU"
+            #: en-US.xpi/chrome/en-US.jar!/test1.properties:3(foozilla.happytitle)
+            msgid "FooZillingy"
             msgstr ""
 
-            #: en-US.xpi/chrome/en-US.jar!/subdir/test2.dtd(foozilla.menu.accesskey)
-            msgid "foozilla.menu.accesskey"
+            #: en-US.xpi/chrome/en-US.jar!/test1.properties:4(foozilla.nocomment)
+            msgid "No Comment"
             msgstr ""
 
-            #: en-US.xpi/chrome/en-US.jar!/subdir/test2.dtd(foozilla.menu.commandkey)
-            msgid "foozilla.menu.commandkey"
+            #: en-US.xpi/chrome/en-US.jar!/test1.properties:5(foozilla.utf8)
+            msgid "\xd0\x94\xd0\xb0\xd0\xbd=Day"
             msgstr ""
             ''').strip()
 

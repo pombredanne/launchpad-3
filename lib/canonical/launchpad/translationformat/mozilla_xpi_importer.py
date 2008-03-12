@@ -87,7 +87,7 @@ class MozillaZipFile:
         self.last_translator = None
 
         zip = ZipFile(StringIO(content), 'r')
-        for entry in zip.namelist():
+        for entry in sorted(zip.namelist()):
             if entry.endswith('.properties'):
                 data = zip.read(entry)
                 pf = PropertyFile(filename=entry, content=data)
