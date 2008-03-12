@@ -138,8 +138,8 @@ class CommonBuilderView:
         see the build on the builder.
         """
         current_job = builder.currentjob
-        if current_job and not check_permission(
-            'launchpad.View', current_job.build):
+        if (current_job and
+            not check_permission('launchpad.View', current_job.build)):
             # Cloak the builder.
             return HiddenBuilder(builder)
         else:
@@ -169,11 +169,7 @@ class BuilderSetView(CommonBuilderView):
         as a HiddenBuilder.
         """
         builders = self.context.getBuilders()
-        results = []
-        for builder in builders:
-            results.append(self.overrideHiddenBuilder(builder))
-
-        return results
+        return [self.overrideHiddenBuilder(builder) for builder in builders]
 
 
 class HiddenBuilder:

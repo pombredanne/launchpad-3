@@ -35,6 +35,7 @@ the "frog" builder.
     >>> frog.builderok = True
     >>> random_build = 2
     >>> trash = BuildQueue(build=cprov_builds[random_build], builder=frog)
+    >>> random_build_id = cprov_builds[random_build].id
 
 We'll also make name12 a member of the launchpad-buildd-admins team, so we
 can use him to see builds from a buildd-admin perspective.
@@ -124,6 +125,23 @@ and also the main area:
     Current status
     i386 build of iceweasel 1.0 in ubuntu warty RELEASE
     ...
+
+IBuild is also wrapped in a Zope security proxy to prevent unauthorised
+access.  This prevents direct access to the build URL by unauthorised
+users:
+
+    >>> anon_browser.open("http://launchpad.dev/~cprov/+archive/+build/%s" %
+    ...     random_build_id)
+    Traceback (most recent call last):
+    ...
+    Unauthorized...
+
+But it is fine for authorised users:
+
+    >>> cprov_browser.open("http://launchpad.dev/~cprov/+archive/+build/%s" %
+    ...     random_build_id)
+    >>> print cprov_browser.url
+    http://launchpad.dev/~cprov/+archive/+build/...
 
 
 == Builder history page ==
