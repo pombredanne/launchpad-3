@@ -280,24 +280,34 @@ class TestMergeProposalNotification(TestCase):
         self.factory = LaunchpadObjectFactory()
 
     def assertNotifies(self, event_type, callable_obj, *args, **kwargs):
-        notified_with = []
+        """Assert that a callable performs a given notification
+
+        :param event_type: The type of event that notification is expected
+            for.
+        :param callable_obj: The callable to call.
+        :param *args: The arguments to pass to the callable.
+        :param **kwargs: The keyword arguments to pass to the callable.
+        :return: (result, event), where result was the return value of the
+            callable, and event was the event emitted by the callable.
+        """
+        events = []
         def on_notify(event):
-            notified_with.append(event)
+            events.append(event)
         old_subscribers = zope.event.subscribers[:]
         try:
             zope.event.subscribers[:] = [on_notify]
             result = callable_obj(*args, **kwargs)
-            if len(notified_with) == 0:
+            if len(events) == 0:
                 raise AssertionError('No notification was performed.')
-            elif len(notified_with) > 1:
+            elif len(events) > 1:
                 raise AssertionError('Too many (%d) notifications performed.'
-                    % len(notified_with))
-            elif not isinstance(notified_with[0], event_type):
+                    % len(events))
+            elif not isinstance(events[0], event_type):
                 raise AssertionError('Wrong event type: %r (expected %r).' %
-                    (notified_with[0], event_type))
+                    (events[0], event_type))
         finally:
             zope.event.subscribers[:] = old_subscribers
-        return result, notified_with[0]
+        return result, events[0]
 
     def test_notifyOnCreate(self):
         source_branch = self.factory.makeBranch()
