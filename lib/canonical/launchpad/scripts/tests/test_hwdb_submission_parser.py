@@ -139,7 +139,6 @@ class TestHWDBSubmissionParser(TestCase):
         self.assertEqual(
             summary, expected_data,
             'SubmissionParser.parseSummary returned an unexpected result')
-        
 
     def _runPropertyTest(self, xml):
         parser = SubmissionParser(self.log)
@@ -224,8 +223,8 @@ class TestHWDBSubmissionParser(TestCase):
             xml = xml_template % property_type
             result = self._runPropertyTest(xml)
             self.assertEqual(result, ('floattest', (1.25, property_type)),
-                             'Invalid parsing result for float property type: '
-                             '%s' % property_type)
+                             'Invalid parsing result for float property'
+                             'type: %s' % property_type)
 
     def testListPropertyTypes(self):
         """List properties are converted into ('name', a_list).
@@ -694,7 +693,6 @@ class TestHWDBSubmissionParser(TestCase):
               'comment': 'The WLAN adapter drops the connection very '
                          'frequently.'}],
             'Invalid parsing result for multiple choice question')
-                         
 
     def testMeasurementQuestion(self):
         """The <questions> node is converted into a Python dictionary."""
@@ -722,7 +720,7 @@ class TestHWDBSubmissionParser(TestCase):
                            'id': 87}],
               'command': 'hdparm -t /dev/sda'}],
             'Invalid parsing result for measurement question')
-                         
+
     def testMainParser(self):
         """Test SubmissionParser.parseMainSections
 
@@ -795,7 +793,7 @@ class TestHWDBSubmissionParser(TestCase):
         self.assertEqual(result, None,
                          'Not-well-formed XML data accepted by '
                          'SubmissionParser.parseSubmission')
-        
+
         # ...or if RelaxNG validation fails...
         result = parser.parseSubmission(
             sample_data.replace('<summary', '<summary foo="bar"'),
@@ -819,8 +817,465 @@ class TestHWDBSubmissionParser(TestCase):
         self.assertEqual(result, None,
                          'XML data that does pass the Relax NG validation '
                          'accepted by SubmissionParser.parseSubmission')
-        
-        
+
+    def testFindDuplicates(self):
+        """Test of SubmissionParser._findDuplicates."""
+        # If all_ids is empty before the call of _findDuplicates, all
+        # elements of test_ids is copied to all_ids. Since test_ids does
+        # not contains duplicates, the return value of _findDuplicates
+        # is empty.
+        all_ids = set()
+        test_ids = [1, 2, 3]
+        parser = SubmissionParser()
+        result = parser._findDuplicates(all_ids, test_ids)
+        self.assertEqual(result, set(),
+                         '_findDuplicates found duplicates where none exist')
+        self.assertEqual(all_ids, set((1, 2, 3)),
+                         '_findDuplicates did not update all_ids properly'
+                         'with unique elements (1, 2, 3)')
+
+        # An element that appears both in all_ids and test_ids is included
+        # in the return value.
+        test_ids = [3, 4]
+        result = parser._findDuplicates(all_ids, test_ids)
+        self.assertEqual(result, set((3,)),
+                         '_findDuplicates did not detect an element in '
+                         'test_ids which already existed in all_ids')
+        self.assertEqual(all_ids, set((1, 2, 3, 4)),
+                         '_findDuplicates did not update all_ids with '
+                         'test_ids (3, 4)')
+
+        # If an element exists twice in test_ids, it is detected as a
+        # duplicate.
+        test_ids = [5, 5]
+        result = parser._findDuplicates(all_ids, test_ids)
+        self.assertEqual(result, set((5,)),
+                         '_findDuplicates did not detect a element which '
+                         'exists twice in test_ids')
+        self.assertEqual(all_ids, set((1, 2, 3, 4, 5)),
+                         '_findDuplicates did not update all_ids with a '
+                         'duplicate element of test_ids')
+
+    def testFindDuplicateIDs(self):
+        """SubmissionParser.findDuplicateIDs lists duplicate IDS.
+
+        The IDs of HAL devices, processors and packages should be
+        unique.
+        """
+        devices = [{'id': 1},
+                   {'id': 2}]
+        processors = [{'id': 3},
+                      {'id': 4}]
+        submission = {
+            'hardware': {
+                'hal': {'devices': devices},
+                'processors': processors}}
+
+        parser = SubmissionParser()
+        duplicates = parser.findDuplicateIDs(submission)
+        self.assertEqual(
+            duplicates, set(),
+            'Duplicate IDs detected, where no duplicates exist.')
+
+        for duplicate_entry in ({'id': 1},
+                                {'id': 3}):
+            devices.append(duplicate_entry)
+            duplicates = parser.findDuplicateIDs(submission)
+            self.assertEqual(
+                duplicates, set((duplicate_entry['id'],)),
+                'Duplicate ID %i in HAL devices not detected.'
+                % duplicate_entry['id'])
+            devices.pop()
+
+            processors.append(duplicate_entry)
+            duplicates = parser.findDuplicateIDs(submission)
+            self.assertEqual(
+                duplicates, set((duplicate_entry['id'],)),
+                'Duplicate ID %i in processors not detected.'
+                % duplicate_entry['id'])
+            processors.pop()
+
+    def testIDMap(self):
+        """Test of SubmissionParser._getIDMap."""
+        devices = [{'id': 1},
+                   {'id': 2}]
+        processors = [{'id': 3},
+                      {'id': 4}]
+        submission = {
+            'hardware': {
+                'hal': {'devices': devices},
+                        'processors': processors}}
+        parser = SubmissionParser()
+        result = parser._getIDMap(submission)
+        self.assertEqual(result,
+                         {1: devices[0],
+                          2: devices[1],
+                          3: processors[0],
+                          4: processors[1]},
+                         'Invalid result of SubmissionParser._getIDMap')
+
+    def testInvalidIDReferences(self):
+        """Test of SubmissionParser.checkIDReferences."""
+        devices = [{'id': 1},
+                   {'id': 2}]
+        processors = [{'id': 3},
+                      {'id': 4}]
+        questions = [{'targets': [{'id': 1}]},
+                     {'targets': [{'id': 2},
+                                  {'id': 3}]}]
+        submission = {
+            'hardware': {
+                'hal': {'devices': devices},
+                        'processors': processors},
+            'questions': questions}
+        parser = SubmissionParser()
+        invalid_ids = parser.findInvalidIDReferences(submission)
+        self.assertEqual(invalid_ids, set(),
+                         'Invalid ID references detected where none exist')
+
+        questions.append({'targets': [{'id': -1}]})
+        invalid_ids = parser.findInvalidIDReferences(submission)
+        self.assertEqual(invalid_ids, set((-1,)),
+                         'Invalid ID reference not detected')
+
+
+    _udi_device_test_data = [
+        {'udi': '/org/freedesktop/Hal/devices/computer',
+          'properties': {}},
+         {'udi': '/org/freedesktop/Hal/devices/acpi_AC',
+          'properties': {
+              'info.parent': (u'/org/freedesktop/Hal/devices/computer',
+                              'dbus.String')}
+         }]
+
+    def testUDIDeviceMap(self):
+        """Test the creation of the mapping UDI -> device."""
+        device1 = {'id': 1,
+                   'udi': '/org/freedesktop/Hal/devices/computer'}
+        device2 = {'id': 2,
+                   'udi': '/org/freedesktop/Hal/devices/acpi_AC'}
+        devices = [device1, device2]
+
+        parser = SubmissionParser()
+        udi_devices = parser.getUDIDeviceMap(devices)
+        self.assertEqual(udi_devices,
+                         {'/org/freedesktop/Hal/devices/computer': device1,
+                          '/org/freedesktop/Hal/devices/acpi_AC': device2},
+                         'Invalid result of SubmissionParser.getUDIDeviceMap')
+
+        # Duplicate UDIs raise a ValueError.
+        devices.append(device2)
+        self.assertRaises(ValueError, parser.getUDIDeviceMap, devices)
+
+    def testIDUDIMaps(self):
+        """Test of SubmissionParser._getIDUDIMaps."""
+        device1 = {'id': 1,
+                   'udi': '/org/freedesktop/Hal/devices/computer'}
+        device2 = {'id': 2,
+                   'udi': '/org/freedesktop/Hal/devices/acpi_AC'}
+        devices = [device1, device2]
+
+        parser = SubmissionParser()
+        id_to_udi, udi_to_id = parser._getIDUDIMaps(devices)
+        self.assertEqual(id_to_udi,
+                         {1: '/org/freedesktop/Hal/devices/computer',
+                          2: '/org/freedesktop/Hal/devices/acpi_AC'},
+                         '_getIDUDIMaps returned invalid ID -> UDI map')
+        self.assertEqual(udi_to_id,
+                         {'/org/freedesktop/Hal/devices/computer': 1,
+                          '/org/freedesktop/Hal/devices/acpi_AC': 2},
+                         '_getIDUDIMaps returned invalid UDI -> ID map')
+
+    def testUDIChildren(self):
+        """Test of SubmissionParser.getUDIChildren."""
+        device1 = {'id': 1,
+                   'udi': '/org/freedesktop/Hal/devices/computer',
+                   'properties': {}}
+        device2 = {'id': 2,
+                   'udi': '/org/freedesktop/Hal/devices/pci_8086_27cc',
+                   'properties':
+                       {'info.parent':
+                            ('/org/freedesktop/Hal/devices/computer', 'str')}}
+        device3 = {'id': 3,
+                   'udi': '/org/freedesktop/Hal/devices/pci_8086_27c5',
+                   'properties':
+                       {'info.parent':
+                            ('/org/freedesktop/Hal/devices/computer', 'str')}}
+        device4 = {'id': 4,
+                   'udi': '/org/freedesktop/Hal/devices/'
+                          'usb_device_0_0_0000_00_1d_7',
+                   'properties':
+                       {'info.parent':
+                            ('/org/freedesktop/Hal/devices/pci_8086_27cc',
+                             'str')}}
+        devices = [device1, device2, device3, device4]
+
+        parser = SubmissionParser()
+        udi_device_map = parser.getUDIDeviceMap(devices)
+        udi_children = parser.getUDIChildren(udi_device_map)
+        expected_data = {'/org/freedesktop/Hal/devices/computer':
+                             [device2, device3],
+                         '/org/freedesktop/Hal/devices/pci_8086_27cc':
+                             [device4]}
+
+        # The order of the children lists returned by getUDIChildren
+        # depends on the order of dict.items(), hence sort the children
+        # lists before comparing them.
+        for children in udi_children.values():
+            children.sort()
+        for children in expected_data.values():
+            children.sort()
+
+        self.assertEqual(udi_children, expected_data,
+                         'Invalid result of SubmissionParser.getUDIChildren')
+
+    def testUDIDeviceMapInvalidRootNode(self):
+        """The root node of the devices must have a special UDI.
+
+        getUDIChildren ensures that the only device without an info.parent
+        property has the UDI /org/freedesktop/Hal/devices/computer.
+        """
+        device1 = {'id': 1,
+                   'udi': 'invalid_root_node',
+                   'properties': {}}
+        device2 = {'id': 2,
+                   'udi': '/org/freedesktop/Hal/devices/pci_8086_27cc',
+                   'properties':
+                       {'info.parent':
+                            ('invalid_root_node', 'str')}}
+        devices = [device1, device2]
+
+        parser = SubmissionParser()
+        udi_device_map = parser.getUDIDeviceMap(devices)
+        self.assertRaises(ValueError, parser.getUDIChildren, udi_device_map)
+
+    def testUDIDeviceMapMissingRootNode(self):
+        """If no root node exists, getUDIChildren raises a ValueError."""
+        device1 = {'id': 1,
+                   'udi': '/org/freedesktop/Hal/devices/pci_8086_27cc',
+                   'properties':
+                       {'info.parent':
+                            ('/org/freedesktop/Hal/devices/pci_8086_27c5',
+                             'str')}}
+        device2 = {'id': 2,
+                   'udi': '/org/freedesktop/Hal/devices/pci_8086_27c5',
+                   'properties':
+                       {'info.parent':
+                            ('/org/freedesktop/Hal/devices/pci_8086_27cc',
+                             'str')}}
+        devices = [device1, device2]
+
+        parser = SubmissionParser()
+        udi_device_map = parser.getUDIDeviceMap(devices)
+        self.assertRaises(ValueError, parser.getUDIChildren, udi_device_map)
+
+    def testParentChildInconsistency(self):
+        """Test of SubmissionParser.checkHALDevicesParentChildConsistency."""
+        device1 = {'id': 1,
+                   'udi': '/org/freedesktop/Hal/devices/computer',
+                   'properties': {}}
+        device2 = {'id': 2,
+                   'udi': '/org/freedesktop/Hal/devices/pci_8086_27cc',
+                   'properties':
+                       {'info.parent':
+                            ('/org/freedesktop/Hal/devices/computer', 'str')}}
+        circular_device1 = {
+            'id': 3,
+            'udi': '/org/freedesktop/Hal/devices/nonsense_1',
+                   'properties':
+                       {'info.parent':
+                            ('/org/freedesktop/Hal/devices/nonsense_2',
+                             'str')}}
+        circular_device2 = {
+            'id': 4,
+            'udi': '/org/freedesktop/Hal/devices/nonsense_2',
+                   'properties':
+                       {'info.parent':
+                            ('/org/freedesktop/Hal/devices/nonsense_1',
+                             'str')}}
+        devices = [device1, device2, circular_device1,  circular_device2]
+        parser = SubmissionParser()
+        udi_device_map = parser.getUDIDeviceMap(devices)
+        udi_children = parser.getUDIChildren(udi_device_map)
+        circular_udis = sorted(parser.checkHALDevicesParentChildConsistency(
+            udi_children))
+        self.assertEqual(circular_udis,
+                         ['/org/freedesktop/Hal/devices/nonsense_1',
+                          '/org/freedesktop/Hal/devices/nonsense_2'],
+                         'Circular parent/child relationship in UDIs not '
+                         'detected')
+
+    def _setupConsistencyCheckParser(self):
+        """Prepare and return a SubmissionParser instance.
+
+        All "method substitutes" return a valid result.
+        """
+        test = self
+        def findDuplicateIDs(self, parsed_data):
+            test.assertTrue(isinstance(self, SubmissionParser))
+            return set()
+
+        def findInvalidIDReferences(self, parsed_data):
+            test.assertTrue(isinstance(self, SubmissionParser))
+            return set()
+
+        def getUDIDeviceMap(self, devices):
+            test.assertTrue(isinstance(self, SubmissionParser))
+            return {}
+
+        def getUDIChildren(self, udi_device_map):
+            test.assertTrue(isinstance(self, SubmissionParser))
+            return {}
+
+        def checkHALDevicesParentChildConsistency(self, devices):
+            test.assertTrue(isinstance(self, SubmissionParser))
+            return []
+
+        parser = SubmissionParser(self.log)
+        parser.findDuplicateIDs = (
+            lambda parsed_data: findDuplicateIDs(parser, parsed_data))
+        parser.findInvalidIDReferences = (
+            lambda parsed_data: findInvalidIDReferences(parser, parsed_data))
+        parser.getUDIDeviceMap = (
+            lambda devices: getUDIDeviceMap(parser, devices))
+        parser.getUDIChildren = (
+            lambda udi_device_map: getUDIChildren(parser, udi_device_map))
+        parser.checkHALDevicesParentChildConsistency = (
+            lambda udi_children: checkHALDevicesParentChildConsistency(
+                parser, udi_children))
+        return parser
+
+    def assertErrorMessage(self, submission_key, log_message):
+        """Search for message in the log entries for submission_key.
+
+        assertErrorMessage requires that
+        (a) a log message starts with "Parsing submisson <submission_key>:"
+        (b) the error message passed as the parameter message appears
+            in a log string that matches (a)
+        (c) result, which is supposed to contain an object representing
+            the result of parsing a submission, is None.
+
+        If all three criteria match, assertErrormessage does not raise any
+        exception.
+        """
+        expected_message = ('Parsing submission %s: %s'
+                            % (submission_key, log_message))
+        last_log_messages = []
+        for r in self.handler.records:
+            if r.levelno != logging.ERROR:
+                continue
+            candidate = r.getMessage()
+            if candidate == expected_message:
+                return
+        raise AssertionError('No log message found: %s' % expected_message)
+
+    def testConsistencyCheck(self):
+        """Test of SubmissionParser.checkConsistency."""
+        parser = self._setupConsistencyCheckParser()
+        result = parser.checkConsistency({'hardware':
+                                              {'hal': {'devices': []}}})
+        self.assertEqual(result, True,
+                         'checkConsistency failed, but all partial checks '
+                         'succeeded')
+
+    def testConsistencyCheckWithDuplicateIDs(self):
+        """SubmissionParser.checkConsistency detects duplicate IDs."""
+        test = self
+        def findDuplicateIDs(self, parsed_data):
+            test.assertTrue(isinstance(self, SubmissionParser))
+            return set((1,))
+
+        parser = self._setupConsistencyCheckParser()
+        parser.submission_key = 'Consistency check detects duplicate IDs'
+        parser.findDuplicateIDs = (
+            lambda parsed_data: findDuplicateIDs(parser, parsed_data))
+        result = parser.checkConsistency({'hardware':
+                                              {'hal': {'devices': []}}})
+        self.assertEqual(result, False,
+                         'checkConsistency did not detect duplicate IDs')
+        self.assertErrorMessage('Consistency check detects duplicate IDs',
+                                'Duplicate IDs found: set([1])')
+
+    def testConsistencyCheckWithInvalidIDReferences(self):
+        """SubmissionParser.checkConsistency detects invalid ID references."""
+        test = self
+        def findInvalidIDReferences(self, parsed_data):
+            test.assertTrue(isinstance(self, SubmissionParser))
+            return set((1,))
+
+        parser = self._setupConsistencyCheckParser()
+        parser.submission_key = 'Consistency check detects invalid ID refs'
+        parser.findInvalidIDReferences = (
+            lambda parsed_data: findInvalidIDReferences(parser, parsed_data))
+        result = parser.checkConsistency({'hardware':
+                                              {'hal': {'devices': []}}})
+        self.assertEqual(result, False,
+                         'checkConsistency did not detect invalid ID refs')
+        self.assertErrorMessage('Consistency check detects invalid ID refs',
+                                'Invalid ID references found: set([1])')
+
+    def testConsistencyCheckWithDuplicateUDI(self):
+        """SubmissionParser.checkConsistency detects duplicate UDIs."""
+        test = self
+        def getUDIDeviceMap(self, parsed_data):
+            test.assertTrue(isinstance(self, SubmissionParser))
+            raise ValueError(
+                'Duplicate UDI: /org/freedesktop/Hal/devices/computer')
+
+        parser = self._setupConsistencyCheckParser()
+        parser.submission_key = 'Consistency check detects invalid ID refs'
+        parser.getUDIDeviceMap = (
+            lambda devices: getUDIDeviceMap(parser, devices))
+        result = parser.checkConsistency({'hardware':
+                                              {'hal': {'devices': []}}})
+        self.assertEqual(result, False,
+                         'checkConsistency did not detect duplicate UDIs')
+        self.assertErrorMessage(
+            'Consistency check detects invalid ID refs',
+            'Duplicate UDI: /org/freedesktop/Hal/devices/computer')
+
+    def testConsistencyCheckChildUDIWithoutParent(self):
+        """SubmissionParser.checkConsistency detects "orphaned" devices."""
+        test = self
+        def getUDIChildren(self, udi_device_map):
+            test.assertTrue(isinstance(self, SubmissionParser))
+            raise ValueError('Unknown parent UDI /foo in <device id="3">')
+
+        parser = self._setupConsistencyCheckParser()
+        parser.submission_key = 'Consistency check detects invalid ID refs'
+        parser.getUDIChildren = (
+            lambda udi_device_map: getUDIChildren(parser, udi_device_map))
+        result = parser.checkConsistency({'hardware':
+                                              {'hal': {'devices': []}}})
+        self.assertEqual(result, False,
+                         'checkConsistency did not detect orphaned devices')
+        self.assertErrorMessage(
+            'Consistency check detects invalid ID refs',
+            'Unknown parent UDI /foo in <device id="3">')
+
+    def testConsistencyCheckCircularParentChildRelation(self):
+        """SubmissionParser.checkConsistency detects "orphaned" devices."""
+        test = self
+        def checkHALDevicesParentChildConsistency(self, devices):
+            test.assertTrue(isinstance(self, SubmissionParser))
+            return ['/foo', '/bar']
+
+        parser = self._setupConsistencyCheckParser()
+        parser.submission_key = ('Consistency check detects circular '
+                                 'parent-child relationships')
+        parser.checkHALDevicesParentChildConsistency = (
+            lambda devices: checkHALDevicesParentChildConsistency(
+                parser, devices))
+        result = parser.checkConsistency({'hardware':
+                                              {'hal': {'devices': []}}})
+        self.assertEqual(result, False,
+                         'checkConsistency did not detect circular parent/'
+                             'child relationship')
+        self.assertErrorMessage(
+            'Consistency check detects circular parent-child relationships',
+            "Found HAL devices with circular parent/child "
+                "relationship: ['/foo', '/bar']")
+
 
 def test_suite():
     return TestLoader().loadTestsFromName(__name__)

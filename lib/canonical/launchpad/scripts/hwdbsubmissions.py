@@ -294,7 +294,7 @@ class SubmissionParser:
         device_data['parent'] = parent
         device_data['properties'] = self._parseProperties(device_node)
         return device_data
-    
+
     def _parseHAL(self, hal_node):
         """Parse the <hal> section of a submission.
 
@@ -606,7 +606,6 @@ class SubmissionParser:
             self._logError(value, self.submission_key)
             return None
         return submission_data
-        
 
     def parseSubmission(self, submission, submission_key):
         """Parse the data of a HWDB submission.
@@ -622,3 +621,217 @@ class SubmissionParser:
             return None
 
         return self.parseMainSections(submission_doc)
+
+    def _findDuplicates(self, all_ids, test_ids):
+        """Search for duplicate elements in test_ids.
+
+        :return: A set of those elements in the sequence test_ids that
+        are elements of the set all_ids or that appear more than once
+        in test_ids.
+
+        all_ids is updated with test_ids.
+        """
+        duplicates = set()
+        for test_id in test_ids:
+            if test_id in all_ids:
+                duplicates.add(test_id)
+            else:
+                all_ids.add(test_id)
+        return duplicates
+
+    def findDuplicateIDs(self, parsed_data):
+        """Return the set of duplicate IDs.
+
+        The IDs of devices and processors should be unique; this
+        method returns a list of duplicate IDs found in a submission.
+        """
+        all_ids = set()
+        duplicates = self._findDuplicates(
+            all_ids,
+            [device['id']
+             for device in parsed_data['hardware']['hal']['devices']])
+        duplicates.update(self._findDuplicates(
+            all_ids,
+            [processor['id']
+             for processor in parsed_data['hardware']['processors']]))
+        return duplicates
+
+    def _getIDMap(self, parsed_data):
+        """Create a dictionary that maps IDs to devices and processors.
+        """
+        id_device_map = {}
+        hal_devices = parsed_data['hardware']['hal']['devices']
+        for device in hal_devices:
+            id_device_map[device['id']] = device
+
+        for processor in parsed_data['hardware']['processors']:
+            id_device_map[processor['id']] = processor
+
+        return id_device_map
+
+    def findInvalidIDReferences(self, parsed_data):
+        """Return the set of invalid references to IDs.
+
+        The sub-tag <target> of <question> references a device or processor
+        node by its ID; the submission must contain a <device> <processor>
+        tag with this ID. This method returns a set of those IDs mentioned
+        in <target> nodes that have no corresponding device or processor
+        node.
+        """
+        id_device_map = self._getIDMap(parsed_data)
+        known_ids = set(id_device_map.keys())
+        questions = parsed_data['questions']
+        target_lists = [question['targets'] for question in questions]
+        all_targets = []
+        for target_list in target_lists:
+            all_targets.extend(target_list)
+        all_target_ids = [target['id'] for target in all_targets]
+        all_target_ids = set(all_target_ids)
+        return all_target_ids.difference(known_ids)
+
+    def getUDIDeviceMap(self, devices):
+        """Return a dictionary which maps UDIs to HAL devices.
+
+        If a UDI is used more than once, a ValueError is raised.
+        """
+        udi_device_map = {}
+        for device in devices:
+            if udi_device_map.has_key(device['udi']):
+                raise ValueError('Duplicate UDI: %s' % device['udi'])
+            udi_device_map[device['udi']] = device
+        return udi_device_map
+
+    def _getIDUDIMaps(self, devices):
+        """Return two mappings describing the relation between IDs and UDIs.
+
+        :return: two dictionaries id_to_udi and udi_to_id, where
+                 id_2_udi has IDs as keys and UDI as values, and where
+                 udi_to_id has UDIs as keys and IDs as values.
+
+                 If a UDI appears more than once, a ValueError is raised.
+        """
+        id_to_udi = {}
+        udi_to_id = {}
+        for device in devices:
+            id = device['id']
+            udi = device['udi']
+            id_to_udi[id] = udi
+            udi_to_id[udi] = id
+        return id_to_udi, udi_to_id
+
+    def getUDIChildren(self, udi_device_map):
+        """Build lists of all children of a UDI.
+
+        :return: A dictionary that maps UDIs to lists of children.
+
+        If any info.parent property points to an non-existing existing
+        device, a ValueError is raised.
+        """
+        # Each HAL device references its parent device (HAL attribute
+        # info.parent), except for the "root node", which has no parent.
+        children = {}
+        known_udis = set(udi_device_map.keys())
+        for device in udi_device_map.values():
+            parent = device['properties'].get('info.parent', None)
+            if parent is not None:
+                parent = parent[0]
+                if not parent in known_udis:
+                    raise ValueError(
+                        'Unknown parent UDI %s in <device id="%s">'
+                        % (parent, device['id']))
+                if children.has_key(parent):
+                    children[parent].append(device)
+                else:
+                    children[parent] = [device]
+            else:
+                # A node without a parent is a root node. Only one root node
+                # is allowed, which must have the UDI
+                # "/org/freedesktop/Hal/devices/computer".
+                # Other nodes without a parent UDI indicate an error, as well
+                # as a non-existing root node.
+                if device['udi'] != '/org/freedesktop/Hal/devices/computer':
+                    raise ValueError(
+                        'root device node found with unexpected UDI: '
+                        '<device id="%s" udi="%s">' % (device['id'],
+                                                       device['udi']))
+
+        if not children.has_key('/org/freedesktop/Hal/devices/computer'):
+            raise ValueError('No root device found')
+        return children
+
+    def _removeChildren(self, udi, udi_test):
+        """Remove recursively all children of the device named udi."""
+        if udi_test.has_key(udi):
+            children = udi_test[udi]
+            for child in children:
+                self._removeChildren(child['udi'], udi_test)
+            del udi_test[udi]
+
+    def checkHALDevicesParentChildConsistency(self, udi_children):
+        """Ensure that HAL devices are represented in exactly one tree.
+
+        :return: A list of those UDIs that are not "connected" to the root
+                 node /org/freedesktop/Hal/devices/computer
+
+        HAL devices "know" their parent device; each device has a parent,
+        except the root element. This means that it is possible to traverse
+        all existing devices, beginning at the root node.
+
+        Several inconsistencies are possible:
+
+        (a) we may have more than one root device (i.e., one without a
+            parent)
+        (b) we may have no root element
+        (c) circular parent/child references may exist.
+
+        (a) and (b) are already checked in _getUDIChildren; this method
+        implements (c),
+        """
+        # If we build a copy of udi_children and if we remove, starting at
+        # the root UDI, recursively all children from this copy, we should
+        # get a dictionary, where all values are empty lists. Any remaining
+        # nodes must have circular parent references.
+
+        udi_test = {}
+        for udi, children in udi_children.items():
+            udi_test[udi] = children[:]
+        self._removeChildren('/org/freedesktop/Hal/devices/computer',
+                             udi_test)
+        return udi_test.keys()
+
+    def checkConsistency(self, parsed_data):
+        """Run consistency checks on the subitted data.
+
+        :return: True, if the data looks consistent, else False.
+        :param: parsed_data: parsed submission data, as returnd by
+                             parseSubmission
+        """
+        duplicate_ids = self.findDuplicateIDs(parsed_data)
+        if duplicate_ids:
+            self._logError('Duplicate IDs found: %s' % duplicate_ids,
+                           self.submission_key)
+            return False
+
+        invalid_id_references = self.findInvalidIDReferences(parsed_data)
+        if invalid_id_references:
+            self._logError(
+                'Invalid ID references found: %s' % invalid_id_references,
+                self.submission_key)
+            return False
+
+        try:
+            udi_device_map = self.getUDIDeviceMap(
+                parsed_data['hardware']['hal']['devices'])
+            udi_children = self.getUDIChildren(udi_device_map)
+        except ValueError, value:
+            self._logError(value, self.submission_key)
+            return False
+
+        circular = self.checkHALDevicesParentChildConsistency(udi_children)
+        if circular:
+            self._logError('Found HAL devices with circular parent/child '
+                           'relationship: %s' % circular,
+                           self.submission_key)
+            return False
+
+        return True
