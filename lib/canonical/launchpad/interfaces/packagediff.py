@@ -8,6 +8,7 @@ __metaclass__ = type
 __all__ = [
     'IPackageDiff',
     'IPackageDiffSet',
+    'PackageDiffAlreadyRequested',
     ]
 
 from zope.interface import Interface, Attribute
@@ -15,6 +16,10 @@ from zope.schema import Choice, Datetime, Object
 
 from canonical.launchpad import _
 from canonical.launchpad.interfaces.librarian import ILibraryFileAlias
+
+
+class PackageDiffAlreadyRequested(Exception):
+    """Raised on attempts to request an already recorded diff request. """
 
 
 class IPackageDiff(Interface):

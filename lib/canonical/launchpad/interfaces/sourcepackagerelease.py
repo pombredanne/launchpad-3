@@ -189,9 +189,9 @@ class ISourcePackageRelease(Interface):
     def requestDiffTo(requester, to_sourcepackagerelease):
         """Request a package diff from the context source to a given source.
 
-        :param: requester: it's the diff request, any valid `IPerson`;
+        :param: requester: it's the diff requester, any valid `IPerson`;
         :param: to_source: it's the `ISourcePackageRelease` to diff against.
-        :raises `PackageDiffAlreadyRequested`: when there is already a
+        :raise `PackageDiffAlreadyRequested`: when there is already a
             `PackageDiff` record matching the request being made.
 
         :return: the corresponding `IPackageDiff` record.

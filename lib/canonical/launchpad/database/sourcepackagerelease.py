@@ -498,7 +498,8 @@ class SourcePackageRelease(SQLBase):
 
         if candidate is not None:
             raise PackageDiffAlreadyRequested(
-                "%s was already requested by " % candidate.title)
+                "%s was already requested by %s"
+                % (candidate.title, candidate.requester.displayname))
 
         return PackageDiff(
             from_source=self, to_source=to_sourcepackagerelease,

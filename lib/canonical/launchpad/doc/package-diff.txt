@@ -29,7 +29,7 @@ Requesting a diff from pmount_0.1-2 to pmount_0.1-1.
 
     >>> cprov = getUtility(IPersonSet).getByName('cprov')
     >>> package_diff = pmount_from.requestDiffTo(
-    ...     requester=cprov, to_source=pmount_to)
+    ...     requester=cprov, to_sourcepackagerelease=pmount_to)
 
 Let's inspect the PackageDiff record created.
 
@@ -85,6 +85,16 @@ request.
 
     >>> print package_diff.title
     Package diff from pmount - 0.1-2 to pmount - 0.1-1
+
+An attempt to record an already recorded DiffRequest will result in an
+error:
+
+    >>> dup_diff = pmount_from.requestDiffTo(
+    ...     requester=cprov, to_sourcepackagerelease=pmount_to)
+    Traceback (most recent call last):
+    ...
+    PackageDiffAlreadyRequested: Package diff from pmount - 0.1-2 to
+    pmount - 0.1-1 was already requested by Celso Providelo
 
 
 == Performing a Diff ==
