@@ -299,7 +299,7 @@ class BugWatchUpdater(object):
                             new_malone_importance)
                     if (ISupportsCommentImport.providedBy(remotesystem) and
                         remotesystem.import_comments):
-                        remotesystem.importBugComments(bug_watch)
+                        self.importBugComments(remotesystem, bug_watch)
 
             except (KeyboardInterrupt, SystemExit):
                 # We should never catch KeyboardInterrupt or SystemExit.
@@ -362,8 +362,8 @@ class BugWatchUpdater(object):
                 'Unknown %s package (#%s at %s): %s' % (
                     bug_target.name, remote_bug,
                     external_bugtracker.baseurl, package_name))
-        summary, description = external_bugtracker.getBugSummaryAndDescription(
-            remote_bug)
+        summary, description = (
+            external_bugtracker.getBugSummaryAndDescription(remote_bug))
         bug = bug_target.createBug(
             CreateBugParams(
                 reporter, summary, description, subscribe_reporter=False))
@@ -380,3 +380,36 @@ class BugWatchUpdater(object):
         flush_database_updates()
 
         return bug
+
+    def importBugComments(self, external_bugtracker, bug_watch):
+        """Import all the comments from a remote bug.
+
+        :param external_bugtracker: An external bugtracker which
+            implements `ISupportsCommentImport`.
+        :param bug_watch: The bug watch for which the comments should be
+            imported.
+        """
+        imported_comments = 0
+        for comment_id in external_bugtracker.getCommentIds(bug_watch):
+            displayname, email = external_bugtracker.getPosterForComment(
+                bug_watch, comment_id)
+
+            poster = getUtility(IPersonSet).ensurePerson(
+                email, displayname, PersonCreationRationale.BUGIMPORT,
+                comment='when importing comments for %s.' % bug_watch.title)
+
+            comment_message = external_bugtracker.getMessageForComment(
+                bug_watch, comment_id, poster)
+            if not bug_watch.hasComment(comment_id):
+                bug_watch.addComment(comment_id, comment_message)
+                imported_comments += 1
+
+        if imported_comments > 0:
+            self.log.info("Imported %(count)i comments for remote bug "
+                "%(remotebug)s on %(bugtracker_url)s into Launchpad bug "
+                "%(bug_id)s." %
+                {'count': imported_comments,
+                 'remotebug': bug_watch.remotebug,
+                 'bugtracker_url': external_bugtracker.baseurl,
+                 'bug_id': bug_watch.bug.id})
+
