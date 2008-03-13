@@ -16,9 +16,10 @@ from canonical.launchpad.components.externalbugtracker import (
     UnparseableBugTrackerVersion, UnsupportedBugTrackerVersion,
     UnknownBugTrackerTypeError, UnknownRemoteStatusError)
 from canonical.launchpad.interfaces import (
-    BugWatchErrorType, CreateBugParams, IBugTrackerSet, IBugWatchSet,
-    IDistribution, ILaunchpadCelebrities, IPersonSet, ISupportsCommentImport,
-    PersonCreationRationale, UNKNOWN_REMOTE_STATUS)
+    BugTaskStatus, BugWatchErrorType, CreateBugParams, IBugTrackerSet,
+    IBugWatchSet, IDistribution, ILaunchpadCelebrities, IPersonSet,
+    ISupportsCommentImport, PersonCreationRationale,
+    UNKNOWN_REMOTE_STATUS)
 from canonical.launchpad.webapp import errorlog
 from canonical.launchpad.webapp.interfaces import IPlacelessAuthUtility
 from canonical.launchpad.webapp.interaction import (
@@ -255,11 +256,11 @@ class BugWatchUpdater(object):
         try:
             launchpad_status = remotesystem.convertRemoteStatus(
                 remote_status)
-        except UnknownRemoteStatus, error:
+        except UnknownRemoteStatusError, error:
             # We log the warning, since we need to know about statuses
             # that we don't handle correctly.
             self.warning("Unknown remote status '%s'." % remote_status,
-                remotesystem._oops_properties, sys.exc_info())
+                self._getOOPSProperties(remotesystem), sys.exc_info())
 
             launchpad_status = BugTaskStatus.UNKNOWN
 
