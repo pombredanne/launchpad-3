@@ -174,8 +174,8 @@ class MenuLink:
 
     def render(self):
         """See `ILink`."""
-        return getMultiAdapter((self, get_current_browser_request()),
-            name="+inline")()
+        return getMultiAdapter(
+            (self, get_current_browser_request()), name="+inline")()
 
 
 class FacetLink(MenuLink):
