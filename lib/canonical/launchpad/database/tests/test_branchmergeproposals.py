@@ -6,7 +6,7 @@ __metaclass__ = type
 
 from unittest import TestCase, TestLoader
 
-from canonical.launchpad.ftests import ANONYMOUS, login, logout
+from canonical.launchpad.ftests import ANONYMOUS, login, logout, syncUpdate
 from canonical.launchpad.interfaces import (
     BadStateTransition, BranchMergeProposalStatus, EmailAddressStatus)
 from canonical.launchpad.testing import LaunchpadObjectFactory
@@ -255,6 +255,7 @@ class TestBranchMergeProposalQueueing(TestCase):
         # Remove the proposal from the middle of the queue.
         proposal = queued_proposals[1]
         proposal.dequeue()
+        syncUpdate(proposal)
 
         del new_queue_order[1]
 
