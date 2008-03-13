@@ -11,8 +11,8 @@ import zipfile
 from zope.component import getUtility
 
 import canonical.launchpad
+from canonical.launchpad.helpers import test_diff
 from canonical.database.sqlbase import commit
-from canonical.launchpad.ftests import sync
 from canonical.launchpad.interfaces import (
     IPersonSet, IProductSet, IPOTemplateSet, ITranslationImportQueue,
     RosettaImportStatus)
@@ -155,7 +155,7 @@ class XpiTestCase(unittest.TestCase):
         # This format doesn't support any functionality like .po flags.
         self.assertEquals(message.flagscomment, u'')
 
-    def testTemplateImport(self):
+    def test_TemplateImport(self):
         """Test XPI template file import."""
         # Prepare the import queue to handle a new .xpi import.
         entry = self.setUpTranslationImportQueueForTemplate()
@@ -164,7 +164,6 @@ class XpiTestCase(unittest.TestCase):
         (subject, body) = self.firefox_template.importFromQueue(entry)
 
         # The status is now IMPORTED:
-        sync(entry)
         self.assertEquals(entry.status, RosettaImportStatus.IMPORTED)
 
         # Let's validate the content of the messages.
@@ -183,7 +182,7 @@ class XpiTestCase(unittest.TestCase):
                 self.assertEquals(message.singular_text, u'FooZilla!')
                 self.assertEquals(
                     message.filereferences,
-                    u'en-US.xpi/chrome/en-US.jar/test1.dtd(foozilla.name)')
+                    u'en-US.xpi/chrome/en-US.jar!/test1.dtd(foozilla.name)')
                 self.assertEquals(message.sourcecomment, None)
 
             elif message.msgid_singular.msgid == u'foozilla.play.fire':
@@ -193,7 +192,7 @@ class XpiTestCase(unittest.TestCase):
                     message.singular_text, u'Do you want to play with fire?')
                 self.assertEquals(
                     message.filereferences,
-                    u'en-US.xpi/chrome/en-US.jar/test1.dtd' +
+                    u'en-US.xpi/chrome/en-US.jar!/test1.dtd' +
                         u'(foozilla.play.fire)')
                 self.assertEquals(
                     message.sourcecomment,
@@ -206,7 +205,7 @@ class XpiTestCase(unittest.TestCase):
                     message.singular_text, u'\u0414\u0430\u043d=Day')
                 self.assertEquals(
                     message.filereferences,
-                    u'en-US.xpi/chrome/en-US.jar/test1.properties:5' +
+                    u'en-US.xpi/chrome/en-US.jar!/test1.properties:5' +
                         u'(foozilla.utf8)')
                 self.assertEquals(message.sourcecomment, None)
             elif message.msgid_singular.msgid == u'foozilla.menu.accesskey':
@@ -216,7 +215,7 @@ class XpiTestCase(unittest.TestCase):
                     message.singular_text, u'foozilla.menu.accesskey')
                 self.assertEquals(
                     message.filereferences,
-                    u'en-US.xpi/chrome/en-US.jar/subdir/test2.dtd' +
+                    u'en-US.xpi/chrome/en-US.jar!/subdir/test2.dtd' +
                         u'(foozilla.menu.accesskey)')
                 # The comment shows the key used when there is no translation,
                 # which is noted as the en_US translation.
@@ -229,7 +228,7 @@ class XpiTestCase(unittest.TestCase):
                     message.singular_text, u'foozilla.menu.commandkey')
                 self.assertEquals(
                     message.filereferences,
-                    u'en-US.xpi/chrome/en-US.jar/subdir/test2.dtd' +
+                    u'en-US.xpi/chrome/en-US.jar!/subdir/test2.dtd' +
                         u'(foozilla.menu.commandkey)')
                 # The comment shows the key used when there is no translation,
                 # which is noted as the en_US translation.
@@ -245,7 +244,34 @@ class XpiTestCase(unittest.TestCase):
              u'foozilla_something'],
             sorted(messages_msgid_list))
 
-    def testTranslationImport(self):
+    def test_TwiceTemplateImport(self):
+        """Test a template import done twice."""
+        # Prepare the import queue to handle a new .xpi import.
+        entry = self.setUpTranslationImportQueueForTemplate()
+
+        # Now, we tell the PO template to import from the file data it has.
+        (subject, body) = self.firefox_template.importFromQueue(entry)
+
+        # The status is now IMPORTED:
+        self.assertEquals(entry.status, RosettaImportStatus.IMPORTED)
+
+        # Retrieve the number of messages we got in this initial import.
+        first_import_potmsgsets = self.firefox_template.getPOTMsgSets(
+            ).count()
+
+        # Force the entry to be imported again:
+        entry.status = RosettaImportStatus.APPROVED
+        # Now, we tell the PO template to import from the file data it has.
+        (subject, body) = self.firefox_template.importFromQueue(entry)
+
+        # Retrieve the number of messages we got in this second import.
+        second_import_potmsgsets = self.firefox_template.getPOTMsgSets(
+            ).count()
+
+        # Both must match.
+        self.assertEquals(first_import_potmsgsets, second_import_potmsgsets)
+
+    def test_TranslationImport(self):
         """Test XPI translation file import."""
         # Prepare the import queue to handle a new .xpi import.
         template_entry = self.setUpTranslationImportQueueForTemplate()
@@ -259,8 +285,6 @@ class XpiTestCase(unittest.TestCase):
             translation_entry)
 
         # The status is now IMPORTED:
-        sync(translation_entry)
-        sync(template_entry)
         self.assertEquals(
             translation_entry.status, RosettaImportStatus.IMPORTED)
         self.assertEquals(template_entry.status, RosettaImportStatus.IMPORTED)
@@ -332,7 +356,7 @@ class XpiTestCase(unittest.TestCase):
                 self.spanish_firefox.language).translations,
             [u'm'])
 
-    def testGetLastTranslator(self):
+    def test_GetLastTranslator(self):
         """Tests whether we extract last translator information correctly."""
         translation_entry = self.setUpTranslationImportQueueForTranslation()
         importer = MozillaXpiImporter()
