@@ -17,6 +17,7 @@ from sqlobject.styles import Style
 
 from zope.interface import implements
 
+from canonical.config import config
 from canonical.database.interfaces import ISQLBase
 
 __all__ = [
@@ -708,15 +709,20 @@ def connect(user, dbname=None, isolation=ISOLATION_LEVEL_DEFAULT):
 
     Default database name is the one specified in the main configuration file.
     """
-    from canonical.config import config
+    con_str = connect_string(user, dbname)
+    con = psycopg.connect(con_str)
+    con.set_isolation_level(isolation)
+    return con
+
+
+def connect_string(user, dbname=None):
+    """Return a PostgreSQL connection string."""
     con_str = 'dbname=%s' % (dbname or config.dbname)
     if user:
         con_str += ' user=%s' % user
     if config.dbhost:
         con_str += ' host=%s' % config.dbhost
-    con = psycopg.connect(con_str)
-    con.set_isolation_level(isolation)
-    return con
+    return con_str
 
 
 def cursor():
