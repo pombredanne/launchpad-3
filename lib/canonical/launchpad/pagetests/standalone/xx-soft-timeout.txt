@@ -39,12 +39,13 @@ If we set soft_request_timeout to some value, the page will take
 slightly longer then the soft_request_timeout value to generate, thus
 causing a soft timeout to be logged.
 
+    >>> from textwrap import dedent
     >>> from canonical.launchpad.webapp.errorlog import globalErrorUtility
     >>> old_lastid = globalErrorUtility.lastid
-    >>> test_data = ("""
-    ... [launchpad]
-    ... soft_request_timeout: 1
-    ... """)
+    >>> test_data = (dedent("""
+    ...     [launchpad]
+    ...     soft_request_timeout: 1
+    ...     """))
     >>> config.push('base_test_data', test_data)
 
     >>> print http(r"""

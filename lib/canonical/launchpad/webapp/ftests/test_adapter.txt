@@ -67,10 +67,12 @@ the Postgres statement timeout (a value of zero means no timeout):
 Using the builtin pg_sleep() function, we can trigger the
 timeout by sleeping for 200ms with a 100ms statement timeout:
 
-    >>> config.push('base_test_data', """
-    ... [launchpad]
-    ... db_statement_timeout: 100
-    ... """)
+    >>> from textwrap import dedent
+    >>> test_data = dedent("""
+    ...     [launchpad]
+    ...     db_statement_timeout: 100
+    ...     """)
+    >>> config.push('base_test_data', test_data)
     >>> conn = da()
     >>> cursor = conn.cursor()
     >>> set_request_started()
@@ -101,11 +103,12 @@ Now issue three statements, the first one taking less than the precision
 time but the second going over the threshold. We use the time machine
 to fake how long things take.
 
-    >>> config.push('test', """
-    ... [launchpad]
-    ... db_statement_timeout: 10000
-    ... db_statement_timeout_precision: 1000
-    ... """)
+    >>> test_data = dedent("""
+    ...     [launchpad]
+    ...     db_statement_timeout: 10000
+    ...     db_statement_timeout_precision: 1000
+    ...     """)
+    >>> config.push('test', test_data)
     >>> conn = da()
     >>> cursor = conn.cursor()
     >>> set_request_started()
@@ -148,10 +151,11 @@ Turn off the timemachine so nobody hurts themselves:
 
 Set the timeout to 5000ms for the next tests:
 
-    >>> config.push('test', """
-    ... [launchpad]
-    ... db_statement_timeout: 5000
-    ... """)
+    >>> test_data = dedent("""
+    ...     [launchpad]
+    ...     db_statement_timeout: 5000
+    ...     """)
+    >>> config.push('test', test_data)
     >>> conn = da()
     >>> cursor = conn.cursor()
     >>> set_request_started()
@@ -259,10 +263,11 @@ remove the timout:
 
 If no timeout has been set, then requests will not time out:
 
-    >>> config.push('test', """
-    ... [launchpad]
-    ... db_statement_timeout: none
-    ... """)
+    >>> test_data = dedent("""
+    ...     [launchpad]
+    ...     db_statement_timeout: none
+    ...     """)
+    >>> config.push('test', test_data)
     >>> da.disconnect()
     >>> conn = da()
     >>> cursor = conn.cursor()
