@@ -328,7 +328,7 @@ objects that provide ILink or IFacetLink.  The menus system needs to
 be able to set the 'enabled', 'name', 'url', 'linked, and for
 IFacetLink, 'selected' attributes, but without altering the underlying
 ILinkData object.  ILink objects also provide an HTML-escaped version
-of the link text, and a TALES snippet for inserting the link into templates.
+of the link text, and a render() method for returning the link as HTML.
 
     >>> somelink = Link('target', 'text', 'summary', icon='icon')
     >>> ILinkData.providedBy(somelink)
@@ -396,7 +396,7 @@ We can test the 'structured' helper directly.
     ...
     TypeError:...
 
-Next, we return the link as a TALES snippet.
+Next, we return the link as HTML.
 
     # We need to use a real launchpad test request so the view adapter
     # lookups will work.  That request also needs to implement
@@ -416,13 +416,11 @@ Next, we return the link as a TALES snippet.
 
     >>> link = Link('+target', 'text-->', 'summary', icon='icon')
 
-    >>> ILink(link).render()
-    u'<span class="action">
-        <img alt=""
-            tal:condition="link/icon"
-            tal:attributes="src link/icon" />
-	<tal:link replace="structure link/@@+link" />
-    </span>'
+    >>> print ILink(link).render() #doctest: +NORMALIZE_WHITESPACE
+    <span class="action">
+        <img alt="" src="icon" />
+        <a class="menu-link-None" title="summary">text--&gt;</a>
+    </span>
 
     # Clean up our special login.
     >>> login(ANONYMOUS)
@@ -1081,8 +1079,8 @@ And thus, we don't have a facet to navigate to:
 
 == Shortcuts for rendering menu items ==
 
-A thing's menu may be rendered directly as HTML, via a TALES template
-snippet, using the menu link's render() method.
+A thing's menu may be rendered directly as HTML using the menu link's
+render() method.
 
     >>> request = InteractiveTestRequest(
     ...     'http://launchpad.dev/sesamestreet/+baz',
@@ -1092,7 +1090,11 @@ snippet, using the menu link's render() method.
 
     >>> html = test_tales('context/menu:foo/first/render',
     ...                   context=house, view=view, request=request)
-    >>> print html
+    >>> print html #doctest: +NORMALIZE_WHITESPACE
+    <span class="action">
+        <a href="http://127.0.0.1/sesamestreet/number73/+first"
+            class="menu-link-first">First menu</a>
+    </span>
 
     # Clean up our special login.
     >>> login(ANONYMOUS)
