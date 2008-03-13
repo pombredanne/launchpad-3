@@ -171,7 +171,6 @@ just PO files.
 The script is run.
 
     >>> import subprocess
-    >>> import sys
     >>> process = subprocess.Popen([
     ...     sys.executable, 'cronscripts/rosetta-export-queue.py', '-vv'
     ...     ], stdin=subprocess.PIPE, stdout=subprocess.PIPE,
