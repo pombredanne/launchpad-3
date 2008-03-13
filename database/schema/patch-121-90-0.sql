@@ -32,5 +32,8 @@ CREATE TABLE CodeReviewVote (
       DEFAULT timezone('UTC'::text, now())
     );
 
+-- Need indexes for people merge
+CREATE INDEX codereviewvote__registrant__idx ON CodeReviewVote(registrant);
+CREATE INDEX codereviewvote__reviewer__idx ON CodeReviewVote(reviewer);
 
 INSERT INTO LaunchpadDatabaseRevision VALUES (121, 90, 0);
