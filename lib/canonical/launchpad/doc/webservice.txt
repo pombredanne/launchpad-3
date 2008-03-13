@@ -112,30 +112,30 @@ Here are simple implementations of IAuthor, ICookbook, IDish, and IRecipe.
 
 Here are the "model objects" themselves:
 
-    >>> A1 = Author("Julia Child")
-    >>> A2 = Author("Irma S. Rombauer")
-    >>> A3 = Author("James Beard")
+    >>> A1 = Author(u"Julia Child")
+    >>> A2 = Author(u"Irma S. Rombauer")
+    >>> A3 = Author(u"James Beard")
 
-    >>> C1 = Cookbook("Mastering the Art of French Cooking", A1)
-    >>> C2 = Cookbook("The Joy of Cooking", A2)
-    >>> C3 = Cookbook("James Beard's American Cookery", A3)
+    >>> C1 = Cookbook(u"Mastering the Art of French Cooking", A1)
+    >>> C2 = Cookbook(u"The Joy of Cooking", A2)
+    >>> C3 = Cookbook(u"James Beard's American Cookery", A3)
 
     >>> D1 = Dish("Roast chicken")
-    >>> C1_D1 = Recipe(1, C1, D1, "You can always judge...")
-    >>> C2_D1 = Recipe(2, C2, D1, "Draw, singe, stuff, and truss...")
-    >>> C3_D1 = Recipe(3, C3, D1, "A perfectly roasted chicken is...")
+    >>> C1_D1 = Recipe(1, C1, D1, u"You can always judge...")
+    >>> C2_D1 = Recipe(2, C2, D1, u"Draw, singe, stuff, and truss...")
+    >>> C3_D1 = Recipe(3, C3, D1, u"A perfectly roasted chicken is...")
 
     >>> D2 = Dish("Baked beans")
-    >>> C2_D2 = Recipe(4, C2, D2, "Preheat oven to...")
-    >>> C3_D2 = Recipe(5, C3, D2, "Without doubt the most famous...")
+    >>> C2_D2 = Recipe(4, C2, D2, u"Preheat oven to...")
+    >>> C3_D2 = Recipe(5, C3, D2, u"Without doubt the most famous...")
 
-    >>> D3 = Dish("Foies de voilaille en aspic")
-    >>> C1_D3 = Recipe(6, C1, D3, "Chicken livers sauteed in butter...")
+    >>> D3 = Dish(u"Foies de voilaille en aspic")
+    >>> C1_D3 = Recipe(6, C1, D3, u"Chicken livers sauteed in butter...")
 
-    >>> COM1 = Comment("Clear and concise.")
+    >>> COM1 = Comment(u"Clear and concise.")
     >>> C2_D1.comments.append(COM1)
 
-    >>> COM2 = Comment("A kitchen staple.")
+    >>> COM2 = Comment(u"A kitchen staple.")
     >>> C2.comments.append(COM2)
 
 Here's a simple CookbookSet with a predefined list of cookbooks.
@@ -656,34 +656,47 @@ requests. The entity-body of a PATCH request should be a JSON document
 with new values for some of the entry's attributes. Basically, a set
 of assertions about what the object *should* look like.
 
-Here, we modify the name of one of the cookbooks.
+From this point on we'll use a helper function to build request
+objects and traverse the resource tree.
 
     >>> from StringIO import StringIO
-    >>> headers = { 'CONTENT_TYPE' : 'application/json' }
-    >>> body = StringIO('{"name" : "The Joy of Cooking (revised)"}')
+    >>> def make_request(method, url_path_fragments, body=''):
+    ...     if method in ['PUT', 'PATCH']:
+    ...         headers = { 'CONTENT_TYPE' : 'application/json' }
+    ...         body = simplejson.dumps(body)
+    ...     else:
+    ...         body = ''
+    ...         headers = {}
+    ...     request = LaunchpadTestRequest(body_instream=StringIO(body),
+    ...                                    environ=headers, method=method)
+    ...     request.setPublication(WebServicePublication(None))
+    ...     request.setApplicationServer('api.launchpad.dev')
+    ...     resource = MyServiceRootResource()
+    ...     for fragment in url_path_fragments:
+    ...         resource = resource.publishTraverse(request, fragment)
+    ...     return request, resource
 
-    >>> patch_request = LaunchpadTestRequest(body_instream=body,
-    ...                                      environ=headers, method='PATCH')
-    >>> patch_request.setPublication(WebServicePublication(None))
-    >>> patch_request.setApplicationServer('api.launchpad.dev')
-    >>> cookbooks_resource = app.publishTraverse(patch_request, "cookbooks")
+Here, we modify the name of one of the cookbooks.
 
-    >>> joy_resource_patch = cookbooks_resource.publishTraverse(patch_request,
-    ...     "The Joy of Cooking")
-    >>> joy_resource_patch()
+    >>> body = { "name" : "The Joy of Cooking (revised)" }
+    >>> request, resource = make_request('PATCH',
+    ...                                  ['cookbooks', 'The Joy of Cooking'],
+    ...                                  body)
+    >>> resource()
     ''
 
-    >>> patch_request.response.getStatus()
+    >>> request.response.getStatus()
     301
-    >>> patch_request.response.getHeader('Location')
+    >>> request.response.getHeader('Location')
     'http://api.launchpad.dev/cookbooks/The%20Joy%20of%20Cooking%20%28revised%29'
 
 The new name is reflected in the cookbook's representation, and the
 cookbook's URL has changed as well.
 
-    >>> joy_resource = collection.publishTraverse(request,
-    ...     "The Joy of Cooking (revised)")
-    >>> joy = simplejson.loads(joy_resource())
+    >>> request, resource = make_request('GET',
+    ...                                  ['cookbooks',
+    ...                                   'The Joy of Cooking (revised)'])
+    >>> joy = simplejson.loads(resource())
     >>> joy['name']
     u'The Joy of Cooking (revised)'
 
@@ -693,32 +706,43 @@ whole thing back to the server, whereas with PATCH you're creating a
 new document that describes a subset of the entry's state.
 
 Here, we use PUT to change the cookbook's name back to what it was
-before. Note that we send the entire JSON hash back to the server.
+before. Note that we send the entire dictionary back to the server.
 
     >>> joy['name'] = 'The Joy of Cooking'
-    >>> body = StringIO(simplejson.dumps(joy))
-    >>> put_request = LaunchpadTestRequest(body_instream=body,
-    ...                                    environ=headers, method='PUT')
-    >>> put_request.setPublication(WebServicePublication(None))
-    >>> put_request.setApplicationServer('api.launchpad.dev')
-
-    >>> cookbooks_resource = app.publishTraverse(put_request, "cookbooks")
-    >>> joy_resource_put = cookbooks_resource.publishTraverse(put_request,
-    ...     "The Joy of Cooking (revised)")
-    >>> joy_resource_put()
+    >>> request, resource = make_request('PUT',
+    ...                                  ['cookbooks',
+    ...                                   'The Joy of Cooking (revised)'],
+    ...                                  joy)
+    >>> resource()
     ''
 
 The cookbook's URL has changed back to what it was before.
 
-    >>> put_request.response.getStatus()
+    >>> request.response.getStatus()
     301
-    >>> put_request.response.getHeader('Location')
+    >>> request.response.getHeader('Location')
     'http://api.launchpad.dev/cookbooks/The%20Joy%20of%20Cooking'
 
 So has the cookbook's name.
 
-    >>> joy_resource = collection.publishTraverse(request,
-    ...     "The Joy of Cooking")
-    >>> joy = simplejson.loads(joy_resource())
+    >>> get_request, get_resource = make_request('GET',
+    ...                                          ['cookbooks',
+    ...                                           'The Joy of Cooking'])
+    >>> joy = simplejson.loads(get_resource())
     >>> joy['name']
     u'The Joy of Cooking'
+
+It's also possible to change the relationships between objects. Here,
+we change a cookbook's author. Since all objects are identified by
+their URLs, we make the change by modifying the cookbook's
+'author_link' field to point to another author.
+
+    >>> joy['author_link'] = u'http://api.launchpad.dev/authors/Julia%20Child'
+    >>> request, resource = make_request('PUT', ['cookbooks',
+    ...                                          'The Joy of Cooking'], joy)
+    >>> resource()
+    ''
+
+    >>> joy = simplejson.loads(get_resource())
+    >>> joy['author_link']
+    u'http://api.launchpad.dev/authors/Julia%20Child'

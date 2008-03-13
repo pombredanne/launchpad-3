@@ -50,7 +50,7 @@ class IServiceRootResource(IHTTPResource):
 
 
 class IEntryResource(IHTTPResource):
-    """A resource that represents an individual Launchpad object."""
+    """A resource that represents an individual object."""
 
     def path():
         """Find the URL fragment the entry uses for itself."""
@@ -60,6 +60,9 @@ class IEntryResource(IHTTPResource):
 
         :return: A string representation.
         """
+
+    def getContext():
+        """Return the underlying entry for this resource."""
 
 
 class ICollectionResource(IHTTPResource, IPublishTraverse):

@@ -20,7 +20,9 @@ __all__ = [
 from datetime import datetime
 import pytz
 import simplejson
+from StringIO import StringIO
 import urllib
+import urlparse
 
 from zope.app.datetimeutils import (DateError, DateTimeError, DateTimeParser,
                                     SyntaxError)
@@ -28,6 +30,8 @@ from zope.component import adapts, getMultiAdapter
 from zope.interface import implements, directlyProvides
 from zope.proxy import isProxy
 from zope.publisher.interfaces import NotFound
+from zope.publisher.interfaces.browser import IBrowserApplicationRequest
+from zope.publisher.base import BaseRequest
 from zope.schema import Datetime, ValidationError, getFields
 from zope.schema.interfaces import IField, IObject
 from zope.security.proxy import removeSecurityProxy
@@ -36,6 +40,7 @@ from canonical.lazr.enum import BaseItem
 
 # XXX leonardr 2008-01-25 bug=185958:
 # canonical_url code should be moved into lazr.
+from canonical.launchpad.layers import setFirstLayer
 from canonical.launchpad.webapp import canonical_url
 from canonical.lazr.interfaces import (
     ICollection, ICollectionField, ICollectionResource, IEntry,
@@ -103,6 +108,37 @@ class HTTPResource:
             return self.request.publication.getApplication(self.request)
         except NotFound:
             return None
+
+    def dereference_url(self, url):
+        """Look up a resource in the web service by URL.
+
+        Representations use URLs to refer to other resources in the
+        web service. When processing an incoming representation it's
+        often neccessary to see which object a URL refers to. This
+        method calls the URL traversal code to dereference a URL into
+        a published object.
+
+        Raises a NotFoundError if the URL does not designate a
+        published object.
+
+        :param url: The URL to a resource.
+        """
+        (protocol, host, path, query, fragment) = urlparse.urlsplit(url)
+        # XXX leonardr 2008-03-13 blueprint=api-base-modify-data-links:
+        # We need to check the protocol and host to make sure they're
+        # the same as the web service uses. If not, raise NotFound.
+        if query != '' or fragment != '':
+            raise NotFound(url)
+        path = map(urllib.unquote, path.split('/')[1:])
+        path.reverse()
+
+        request = BaseRequest(StringIO(), {})
+        setFirstLayer(request, IBrowserApplicationRequest)
+        request.setTraversalStack(path)
+
+        publication = self.request.publication
+        request.setPublication(publication)
+        return request.traverse(publication.getApplication(self.request))
 
 
 class ReadOnlyResource(HTTPResource):
@@ -176,6 +212,9 @@ class EntryResource(ReadWriteResource):
                     resource = resource.publishTraverse(self.request,
                                                         fragment)
             self.parent_collection = resource
+
+    def getContext(self):
+        return self.context
 
     @property
     def path(self):
@@ -266,7 +305,7 @@ class EntryResource(ReadWriteResource):
             self.request.response.setStatus(415)
             return None, 'Expected a media type of application/json.'
         try:
-            h = simplejson.loads(representation)
+            h = simplejson.loads(unicode(representation))
         except ValueError:
             self.request.response.setStatus(400)
             return None, "Entity-body was not a well-formed JSON document."
@@ -372,12 +411,24 @@ class EntryResource(ReadWriteResource):
                         % repr_name)
 
             # Around this point the specific value provided by the client
-            # becomes relevant, so we pre-process it.
-            if IObject.providedBy(element):
-                # XXX leonardr 2008-03-10 blueprint=modify-data-links:
-                # 'value' is the URL to an object. Traverse the URL to find
-                # the actual object.
-                pass
+            # becomes relevant, so we pre-process it if neccessary.
+            if (IObject.providedBy(element)
+                and not ICollectionField.providedBy(element)):
+                # 'value' is the URL to an object. Dereference the URL
+                # to find the actual object.
+                try:
+                    value = self.dereference_url(value).getContext()
+                except NotFound:
+                    self.request.response.setStatus(400)
+                    return ("Your value for the attribute '%s' wasn't "
+                            "the URL to any object published by this web "
+                            "service." % repr_name)
+                # The URL points to an object, but is it an object of the
+                # right type?
+                if not element.schema.providedBy(value):
+                    self.request.response.setStatus(400)
+                    return ("Your value for the attribute '%s' doesn't "
+                            "point to the right kind of object." % repr_name)
             elif isinstance(element, Datetime):
                 try:
                     value = DateTimeParser().parse(value)
@@ -400,15 +451,14 @@ class EntryResource(ReadWriteResource):
 
             # The current value of the attribute also becomes
             # relevant, so we obtain that. If the attribute designates
-            # an entry or collection, the 'current value' is
-            # considered to be the URL to that entry or collection.
+            # a collection, the 'current value' is considered to be
+            # the URL to that entry or collection.
             if ICollectionField.providedBy(element):
                 current_value = canonical_url(
                     self.publishTraverse(self.request, name), self.request)
             elif IObject.providedBy(element):
-                current_value = canonical_url(
-                    EntryResource(getattr(self.context, name), self.request),
-                    self.request)
+                current_value = EntryResource(
+                    getattr(self.context, name), self.request)
             else:
                 current_value = getattr(self.context, name)
 
@@ -421,8 +471,8 @@ class EntryResource(ReadWriteResource):
                 change_this_field = False
                 if value != current_value:
                     self.request.response.setStatus(400)
-                    return ("You tried to modify the collection link '%s'"
-                            % repr_name)
+                    return ("You tried to modify the collection link '%s': %s vs. %s"
+                            % (repr_name, value, current_value))
 
             if element.readonly:
                 change_this_field = False
@@ -432,13 +482,21 @@ class EntryResource(ReadWriteResource):
                             % repr_name)
 
             if change_this_field is True and value != current_value:
+                if (IObject.providedBy(element)
+                    and not ICollectionField.providedBy(element)):
+                    underlying_object = removeSecurityProxy(value)
+                    value = underlying_object.context
                 try:
                     # Do any field-specific validation.
                     field = element.bind(self.context)
                     field.validate(value)
                 except ValidationError, e:
+                    import pdb; pdb.set_trace()
                     self.request.response.setStatus(400)
-                    return str(e)
+                    error = str(e)
+                    if error is "":
+                        error = "Validation error"
+                    return error
                 validated_changeset[name] = value
 
         # Store the entry's current URL so we can see if it changes.
@@ -454,6 +512,7 @@ class EntryResource(ReadWriteResource):
             self.request.response.setStatus(301)
             self.request.response.setHeader('Location', new_url)
         return ''
+
 
 class CollectionResource(ReadOnlyResource):
     """A resource that serves a list of entry resources."""
