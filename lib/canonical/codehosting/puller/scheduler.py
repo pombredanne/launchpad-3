@@ -25,7 +25,7 @@ from twisted.python import failure
 from contrib.glock import GlobalLock, LockAlreadyAcquired
 
 import canonical
-from canonical.authserver.client.twistedclient import get_twisted_proxy
+from canonical.authserver.client import get_twisted_proxy
 from canonical.cachedproperty import cachedproperty
 from canonical.codehosting import branch_id_to_path
 from canonical.codehosting.puller.worker import (

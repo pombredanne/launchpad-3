@@ -16,12 +16,16 @@ from zope.interface import implements
 from zope.security.interfaces import Unauthorized
 from zope.security.proxy import removeSecurityProxy
 
+from canonical.config import config
 from canonical.launchpad.webapp.authentication import SSHADigestEncryptor
-from canonical.launchpad.database import ScriptActivity
+# Use the scriptactivity module directly to avoid importing codehosting,
+# triggering a circular import.
+from canonical.launchpad.database.scriptactivity import ScriptActivity
 from canonical.launchpad.interfaces import (
     BranchCreationException, BranchType, IBranchSet, IPersonSet, IProductSet,
     UnknownBranchTypeError)
 from canonical.launchpad.ftests import login, logout, ANONYMOUS
+from canonical.launchpad.scripts import execute_zcml_for_scripts
 from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.database.sqlbase import (
     clear_current_connection_cache, ZopelessTransactionManager)
@@ -49,7 +53,16 @@ def getTxnManager():
     # FIXME: That uses a protected attribute in ZopelessTransactionManager
     # -- David Allouche 2005-02-16
     if ZopelessTransactionManager._installed is None:
-        return initZopeless(implicitBegin=False)
+        # The authserver methods use getUtility. That needs ZCML to work. We
+        # do the set up here because these methods are (in tests) invoked
+        # directly from subprocesses.
+        #
+        # We set use_web_security to True in order to take advantage of the
+        # existing Zope security model. This is used to make sure that people
+        # don't gain access to branches which out to be hidden from them.
+        execute_zcml_for_scripts(use_web_security=True)
+        return initZopeless(
+            implicitBegin=False, dbuser=config.authserver.dbuser)
     else:
         return ZopelessTransactionManager._installed
 
