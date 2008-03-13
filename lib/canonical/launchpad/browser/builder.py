@@ -150,7 +150,7 @@ class BuilderSetView(CommonBuilderView):
 
     @cachedproperty
     def has_non_virtual_queued_builds(self):
-        """Whether or not there are pending job in the non-virtual queue."""
+        """Whether there are pending job in the non-virtual queue."""
         return bool(self.non_virtual_build_queue_depth_by_arch)
 
     @cachedproperty
@@ -164,7 +164,7 @@ class BuilderSetView(CommonBuilderView):
 
     @cachedproperty
     def has_virtual_queued_builds(self):
-        """Whether or not there are pending job in the virtual queue."""
+        """Whether there are pending job in the virtual queue."""
         return bool(self.virtual_build_queue_depth_by_arch)
 
 
