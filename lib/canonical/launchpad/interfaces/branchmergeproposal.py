@@ -193,6 +193,9 @@ class IBranchMergeProposal(Interface):
     date_queued = Datetime(
         title=_('Date Queued'), required=False, readonly=True)
 
+    def getCreationNotificationRecipients(min_level):
+        """Return the people who should be notified on creation"""
+
     def isValidTransition(next_state, user=None):
         """True if it is valid for user update the proposal to next_state."""
 

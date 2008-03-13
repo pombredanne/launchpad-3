@@ -10,7 +10,9 @@ import zope.event
 from canonical.launchpad.event import SQLObjectCreatedEvent
 from canonical.launchpad.ftests import ANONYMOUS, login, logout
 from canonical.launchpad.interfaces import (
-    BadStateTransition, BranchMergeProposalStatus, EmailAddressStatus)
+    BadStateTransition, BranchMergeProposalStatus,
+    BranchSubscriptionNotificationLevel, CodeReviewNotificationLevel,
+    EmailAddressStatus)
 from canonical.launchpad.testing import LaunchpadObjectFactory
 
 from canonical.testing import LaunchpadFunctionalLayer
@@ -317,6 +319,49 @@ class TestMergeProposalNotification(TestCase):
             source_branch.addLandingTarget, registrant, target_branch)
         self.assertEqual(result, event.object)
 
+    def test_getCreationNotificationRecipients(self):
+        bmp = self.factory.makeBranchMergeProposal()
+        self.assertEqual({},
+        bmp.getCreationNotificationRecipients(
+            BranchSubscriptionNotificationLevel.NOEMAIL))
+        source_subscriber = self.factory.makePerson()
+        bmp.source_branch.subscribe(source_subscriber,
+            BranchSubscriptionNotificationLevel.NOEMAIL, None,
+            CodeReviewNotificationLevel.FULL)
+        recipients = bmp.getCreationNotificationRecipients(
+            CodeReviewNotificationLevel.FULL)
+        self.assertEqual([source_subscriber], recipients.keys())
+        bmp.source_branch.subscribe(source_subscriber,
+            BranchSubscriptionNotificationLevel.NOEMAIL, None,
+            CodeReviewNotificationLevel.NOEMAIL)
+        recipients = bmp.getCreationNotificationRecipients(
+            CodeReviewNotificationLevel.FULL)
+        self.assertEqual([], recipients.keys())
+
+    def test_getCreationNotificationRecipientsAnyBranch(self):
+        dependent_branch = self.factory.makeBranch()
+        bmp = self.factory.makeBranchMergeProposal(
+            dependent_branch=dependent_branch)
+        self.assertEqual({},
+        bmp.getCreationNotificationRecipients(
+            BranchSubscriptionNotificationLevel.NOEMAIL))
+        source_subscriber = self.factory.makePerson()
+        bmp.source_branch.subscribe(source_subscriber,
+            BranchSubscriptionNotificationLevel.NOEMAIL, None,
+            CodeReviewNotificationLevel.FULL)
+        target_subscriber = self.factory.makePerson()
+        bmp.target_branch.subscribe(target_subscriber,
+            BranchSubscriptionNotificationLevel.NOEMAIL, None,
+            CodeReviewNotificationLevel.FULL)
+        dependent_subscriber = self.factory.makePerson()
+        bmp.dependent_branch.subscribe(dependent_subscriber,
+            BranchSubscriptionNotificationLevel.NOEMAIL, None,
+            CodeReviewNotificationLevel.FULL)
+        recipients = bmp.getCreationNotificationRecipients(
+            CodeReviewNotificationLevel.FULL)
+        self.assertEqual(set([source_subscriber, target_subscriber,
+                          dependent_subscriber]),
+                          set(recipients.keys()))
 
 def test_suite():
     return TestLoader().loadTestsFromName(__name__)
