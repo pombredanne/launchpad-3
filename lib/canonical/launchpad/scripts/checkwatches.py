@@ -175,6 +175,31 @@ class BugWatchUpdater(object):
                 self.log.info(
                     "No watches to update on %s" % bug_tracker.baseurl)
 
+    def _convertRemoteStatus(self, remotesystem, remote_status):
+        """Convert a remote bug status to a Launchpad status and return it.
+
+        :param remotesystem: The `IExternalBugTracker` instance
+            representing the remote system.
+        :param remote_status: The remote status to be converted into a
+            Launchpad status.
+
+        If the remote status cannot be mapped to a Launchpad status,
+        BugTaskStatus.UNKNOWN will be returned and a warning will be
+        logged.
+        """
+        try:
+            launchpad_status = remotesystem.convertRemoteStatus(
+                remote_status)
+        except UnknownRemoteStatus, error:
+            # We log the warning, since we need to know about statuses
+            # that we don't handle correctly.
+            self.warning("Unknown remote status '%s'." % remote_status,
+                remotesystem._oops_properties, sys.exc_info())
+
+            launchpad_status = BugTaskStatus.UNKNOWN
+
+        return launchpad_status
+
     def updateBugWatches(self, remotesystem, bug_watches_to_update):
         """Update the given bug watches."""
         # Save the url for later, since we might need it to report an
@@ -242,8 +267,8 @@ class BugWatchUpdater(object):
                 #      136391 is dealt with.
                 try:
                     new_remote_status = remotesystem.getRemoteStatus(bug_id)
-                    new_malone_status = remotesystem.convertRemoteStatus(
-                        new_remote_status)
+                    new_malone_status = self._convertRemoteStatus(
+                        remotesystem, new_remote_status)
 
                     new_remote_importance = remotesystem.getRemoteImportance(
                         bug_id)
