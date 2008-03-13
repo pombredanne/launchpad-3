@@ -447,7 +447,7 @@ A "Delete Files" button is available.
 == Scheme redirection ==
 
 Files may be downloaded over http or https with the URL for the
-librarian file constructed based upon the scheme of the orginal
+librarian file constructed based upon the scheme of the original
 request.  The Apache configuration for Launchpad production servers
 sets a header called 'X-SCHEME' to indicate the original scheme
 (http or https).
@@ -478,6 +478,30 @@ If the original scheme is https the redirect URL should be https too.
 
 However if the original scheme is http then the redirect URL should be
 over http.
+
+    >>> redirect_resp = http(dedent("""\
+    ...     GET %s HTTP/1.1
+    ...     X-SCHEME: http
+    ...     """ % url_path))
+    >>> location = redirect_resp.getOutput().split("\n")[3]
+    >>> redirect_url = location.split()[1]
+    >>> print redirect_url
+    http://localhost:58000/.../foo.txt
+
+When 'use_https' is False the result will always be http.
+
+    >>> config.vhosts.use_https = False
+    >>> firefox_owner.open('http://launchpad.dev/firefox/+download')
+    >>> link = firefox_owner.getLink('foo.txt')
+    >>> url_path = urlparse(link.url)[2]
+    >>> redirect_resp = http(dedent("""\
+    ...     GET %s HTTP/1.1
+    ...     X-SCHEME: https
+    ...     """ % url_path))
+    >>> location = redirect_resp.getOutput().split("\n")[3]
+    >>> redirect_url = location.split()[1]
+    >>> print redirect_url
+    http://localhost:58000/.../foo.txt
 
     >>> redirect_resp = http(dedent("""\
     ...     GET %s HTTP/1.1
