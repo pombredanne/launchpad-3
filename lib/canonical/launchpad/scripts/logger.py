@@ -270,9 +270,7 @@ def _logger(level, out_stream, name=None):
         fmt = '%(asctime)s %(levelname)-7s %(message)s'
     formatter = LibrarianFormatter(
         fmt=fmt,
-        # Put date back if we need it, but I think just time is fine and
-        # saves space.
-        datefmt="%H:%M:%S",
+        datefmt="%Y-%m-%d %H:%M:%S",
         )
     formatter.converter = time.gmtime # Output should be UTC
     hdlr.setFormatter(formatter)
