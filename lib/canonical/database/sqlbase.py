@@ -12,6 +12,7 @@ from psycopg2.extensions import (
     ISOLATION_LEVEL_AUTOCOMMIT, ISOLATION_LEVEL_READ_COMMITTED,
     ISOLATION_LEVEL_SERIALIZABLE)
 import storm
+from storm.databases.postgres import compile as postgres_compile
 import storm.sqlobject
 from storm.zope.interfaces import IZStorm
 from sqlobject.sqlbuilder import sqlrepr
@@ -48,6 +49,15 @@ __all__ = [
 # Default we want for scripts, and the PostgreSQL default. Note psycopg1 will
 # use SERIALIZABLE unless we override, but psycopg2 will not.
 ISOLATION_LEVEL_DEFAULT = ISOLATION_LEVEL_READ_COMMITTED
+
+
+# XXX 20080313 jamesh:
+# When quoting names in SQL statements, PostgreSQL treats them as case
+# sensitive.  Storm includes a list of reserved words that it
+# automatically quotes, which includes a few of our table names.  We
+# remove them here due to case mismatches between the DB and Launchpad
+# code.
+postgres_compile.remove_reserved_words(['language', 'section'])
 
 
 class LaunchpadStyle(storm.sqlobject.SQLObjectStyle):
