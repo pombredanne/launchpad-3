@@ -51,7 +51,7 @@
         content_factory="canonical.launchpad.database.Builder"
         class="canonical.launchpad.browser.BuilderSetAddView"
         permission="launchpad.Admin"
-        template="../templates/launchpad-addform.pt"
+        template="../templates/builder-new.pt"
         facet="overview"
         >
         <browser:widget

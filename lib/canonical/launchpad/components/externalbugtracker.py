@@ -33,9 +33,9 @@ from canonical.database.sqlbase import commit
 from canonical.launchpad.scripts import log, debbugs
 from canonical.launchpad.interfaces import (
     BugTaskImportance, BugTaskStatus, BugTrackerType, BugWatchErrorType,
-    IBugWatchSet, IExternalBugTracker, IMessageSet, IPersonSet,
-    PersonCreationRationale, ISupportsBugImport, ISupportsCommentImport,
-    UNKNOWN_REMOTE_IMPORTANCE, UNKNOWN_REMOTE_STATUS)
+    IBugWatchSet, IExternalBugTracker, IMessageSet, ISupportsBugImport,
+    ISupportsCommentImport, UNKNOWN_REMOTE_IMPORTANCE,
+    UNKNOWN_REMOTE_STATUS)
 from canonical.launchpad.webapp import errorlog
 from canonical.launchpad.webapp.url import urlparse
 
@@ -200,10 +200,8 @@ class ExternalBugTracker:
     batch_query_threshold = config.checkwatches.batch_query_threshold
     import_comments = config.checkwatches.import_comments
 
-    def __init__(self, txn, bugtracker):
-        self.bugtracker = bugtracker
-        self.baseurl = bugtracker.baseurl.rstrip('/')
-        self.txn = txn
+    def __init__(self, baseurl):
+        self.baseurl = baseurl.rstrip('/')
 
     def urlopen(self, request, data=None):
         return urllib2.urlopen(request, data)
@@ -360,32 +358,6 @@ class ExternalBugTracker:
         # Also put it in the log.
         log.error(message, exc_info=info)
 
-    def importBugComments(self, bug_watch):
-        """See `ISupportsCommentImport`."""
-        imported_comments = 0
-        for comment_id in self.getCommentIds(bug_watch):
-            displayname, email = self.getPosterForComment(
-                bug_watch, comment_id)
-
-            poster = getUtility(IPersonSet).ensurePerson(
-                email, displayname, PersonCreationRationale.BUGIMPORT,
-                comment='when importing comments for %s.' % bug_watch.title)
-
-            comment_message = self.getMessageForComment(
-                bug_watch, comment_id, poster)
-            if not bug_watch.hasComment(comment_id):
-                bug_watch.addComment(comment_id, comment_message)
-                imported_comments += 1
-
-        if imported_comments > 0:
-            self.info("Imported %(count)i comments for remote bug "
-                "%(remotebug)s on %(bugtracker_url)s into Launchpad bug "
-                "%(bug_id)s." %
-                {'count': imported_comments,
-                 'remotebug': bug_watch.remotebug,
-                 'bugtracker_url': self.baseurl,
-                 'bug_id': bug_watch.bug.id})
-
 
 #
 # Bugzilla
@@ -397,8 +369,8 @@ class Bugzilla(ExternalBugTracker):
     implements(IExternalBugTracker)
     batch_query_threshold = 0 # Always use the batch method.
 
-    def __init__(self, txn, bugtracker, version=None):
-        super(Bugzilla, self).__init__(txn, bugtracker)
+    def __init__(self, baseurl, version=None):
+        super(Bugzilla, self).__init__(baseurl)
         self.version = self._parseVersion(version)
         self.is_issuezilla = False
         self.remote_bug_status = {}
@@ -700,8 +672,8 @@ class DebBugs(ExternalBugTracker):
     debbugs_pl = os.path.join(
         os.path.dirname(debbugs.__file__), 'debbugs-log.pl')
 
-    def __init__(self, txn, bugtracker, db_location=None):
-        super(DebBugs, self).__init__(txn, bugtracker)
+    def __init__(self, baseurl, db_location=None):
+        super(DebBugs, self).__init__(baseurl)
         if db_location is None:
             self.db_location = config.malone.debbugs_db_location
         else:
@@ -856,7 +828,7 @@ class DebBugs(ExternalBugTracker):
         return debian_bug.subject, debian_bug.description
 
     def getCommentIds(self, bug_watch):
-        """Return all the comment IDs for a given remote bug."""
+        """See `ISupportsCommentImport`."""
         debian_bug = self._findBug(bug_watch.remotebug)
         self._loadLog(debian_bug)
 
@@ -868,7 +840,7 @@ class DebBugs(ExternalBugTracker):
         return comment_ids
 
     def getPosterForComment(self, bug_watch, comment_id):
-        """Return a tuple of (name, emailaddress) for a comment's poster."""
+        """See `ISupportsCommentImport`."""
         debian_bug = self._findBug(bug_watch.remotebug)
         self._loadLog(debian_bug)
 
@@ -878,7 +850,7 @@ class DebBugs(ExternalBugTracker):
                 return parseaddr(parsed_comment['from'])
 
     def getMessageForComment(self, bug_watch, comment_id, poster):
-        """Return a Message object for a comment."""
+        """See `ISupportsCommentImport`."""
         debian_bug = self._findBug(bug_watch.remotebug)
         self._loadLog(debian_bug)
 
@@ -1376,10 +1348,7 @@ class Trac(ExternalBugTracker):
 
     ticket_url = 'ticket/%i?format=csv'
     batch_url = 'query?%s&order=resolution&format=csv'
-
-    def __init__(self, txn, bugtracker):
-        super(Trac, self).__init__(txn, bugtracker)
-        self.batch_query_threshold = 10
+    batch_query_threshold = 10
 
     def supportsSingleExports(self, bug_ids):
         """Return True if the Trac instance provides CSV exports for single
@@ -1552,7 +1521,7 @@ class Trac(ExternalBugTracker):
 class Roundup(ExternalBugTracker):
     """An ExternalBugTracker descendant for handling Roundup bug trackers."""
 
-    def __init__(self, txn, bugtracker):
+    def __init__(self, baseurl):
         """Create a new Roundup instance.
 
         :bugtracker: The Roundup bugtracker.
@@ -1564,7 +1533,7 @@ class Roundup(ExternalBugTracker):
         Python and in fact behaves rather more like SourceForge than
         Roundup.
         """
-        super(Roundup, self).__init__(txn, bugtracker)
+        super(Roundup, self).__init__(baseurl)
 
         if self.isPython():
             # The bug export URLs differ only from the base Roundup ones
@@ -1826,9 +1795,6 @@ class SourceForge(ExternalBugTracker):
     # avoid getting clobbered by SourceForge's rate limiting code.
     export_url = 'support/tracker.php?aid=%s'
     batch_size = 1
-
-    def __init__(self, txn, bugtracker):
-        super(SourceForge, self).__init__(txn, bugtracker)
 
     def initializeRemoteBugDB(self, bug_ids):
         """See `ExternalBugTracker`.
@@ -2194,12 +2160,12 @@ BUG_TRACKER_CLASSES = {
     }
 
 
-def get_external_bugtracker(txn, bugtracker):
+def get_external_bugtracker(bugtracker):
     """Return an `ExternalBugTracker` for bugtracker."""
     bugtrackertype = bugtracker.bugtrackertype
     bugtracker_class = BUG_TRACKER_CLASSES.get(bugtracker.bugtrackertype)
     if bugtracker_class is not None:
-        return bugtracker_class(txn, bugtracker)
+        return bugtracker_class(bugtracker.baseurl)
     else:
         raise UnknownBugTrackerTypeError(bugtrackertype.name,
             bugtracker.name)

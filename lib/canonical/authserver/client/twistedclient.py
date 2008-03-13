@@ -1,14 +1,11 @@
-import xmlrpclib
+# Copyright 2008 Canonical Ltd.  All rights reserved.
 
-from twisted.web.xmlrpc import Proxy
+"""Twisted client code."""
 
+__metaclass__ = type
+__all__ = ['TwistedAuthServer']
 
-def get_twisted_proxy(url):
-    return Proxy(url)
-
-
-def get_blocking_proxy(url):
-    return xmlrpclib.ServerProxy(url)
+from canonical.authserver.client.proxy import get_twisted_proxy
 
 
 class TwistedAuthServer:
