@@ -30,7 +30,7 @@ class BinaryAndSourcePackageName(SQLBase):
 
     _table = 'BinaryAndSourcePackageNameView'
     _idName = 'name'
-    _idType = str
+    _idType = unicode
     _defaultOrder = 'name'
 
     name = StringCol(dbName='name', notNull=True, unique=True,

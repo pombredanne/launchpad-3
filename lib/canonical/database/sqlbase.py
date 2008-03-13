@@ -108,11 +108,6 @@ class SQLBase(storm.sqlobject.SQLObjectBase):
     def _get_store():
         return getUtility(IZStorm).get('main')
 
-    @classmethod
-    def get(cls, id):
-        # XXX 2007-03-07 jamesh: Some Launchpad code passes a string here :(
-        return super(SQLBase, cls).get(int(id))
-
     def reset(self):
         if not self._SO_createValues:
             return
