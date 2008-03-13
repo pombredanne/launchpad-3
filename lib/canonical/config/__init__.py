@@ -117,7 +117,7 @@ class CanonicalConfig(object):
             self._config.validate()
         except ConfigErrors, error:
             message = '\n'.join([str(e) for e in error.errors])
-            self.fail(message)
+            raise ConfigErrors(message)
 
     def _magic_settings(self, config, root_options):
         """Modify the config, adding automatically generated settings"""
@@ -181,15 +181,16 @@ def failover_to_zconfig(func):
             # Try to get the value of the section key from lazr.config.
             # e.g. config.section.key
             lazr_value = func(self, name)
+            is_lazr_config = True
         except AttributeError:
-            lazr_value = None
+            is_lazr_config = False
 
-        if not is_zconfig and lazr_value is None:
+        if not is_zconfig and not is_lazr_config:
             # The callsite was converted to lazr config, but has an error.
             raise AttributeError(
-                "ZConfig or lazr.config instances have no attribute '%s'." %
-                name)
-        elif lazr_value is not None:
+                "ZConfig or lazr.config instances have no attribute %s.%s." %
+                (self.name, name))
+        elif is_lazr_config:
             # The callsite was converted to lazr.config. It is assumed
             # that the once a key is added to the config, all callsites
             # are adapted.

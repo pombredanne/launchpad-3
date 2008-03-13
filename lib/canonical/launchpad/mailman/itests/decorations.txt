@@ -5,40 +5,17 @@ decorations that help users interact better with the list, and its archive.
 These decorations live in the message headers, and in the text footer that
 Mailman adds to the bottom of very message.
 
+First, create the mailing list, which will send a notification messages
+to all the members of the mailing list.  We can ignore these messages.
+
     >>> import itest_helper
-    >>> smtpd = itest_helper.SMTPServer()
-    >>> smtpd.start()
-
-    # Create a mailing list for this test.
-    >>> import itest_helper
-    >>> browser = itest_helper.make_browser()
-    >>> browser.open('http://launchpad.dev/people/+newteam')
-    >>> browser.getControl(name='field.name').value = 'itest-one'
-    >>> browser.getControl('Display Name').value = 'ITest One'
-    >>> browser.getControl(name='field.subscriptionpolicy').displayValue = [
-    ...     'Open Team']
-    >>> browser.getControl('Create').click()
-
-XXX BarryWarsaw 06-Dec-2007 The team must be a member of the mailing list beta
-program in order to apply for mailing lists.  When mailing lists go public,
-this stanza can be removed.
-
-    >>> itest_helper.beta_program_enable('itest-one')
-
-    >>> browser.reload()
-    >>> browser.getLink('Configure mailing list').click()
-    >>> browser.getControl('Apply for Mailing List').click()
-
-    >>> list_one = itest_helper.review_list('itest-one')
-    >>> from canonical.database.sqlbase import commit
-    >>> commit()
-    >>> from Mailman.Utils import list_names
-    >>> sorted(name for name in list_names() if name.startswith('itest-'))
-    ['itest-one']
+    >>> list_one = itest_helper.create_list('itest-one')
+    >>> smtpd.reset()
 
 Add a member of the mailing list so that we can post messages to the list.
 
     >>> from operator import itemgetter
+    >>> from canonical.database.sqlbase import commit
     >>> from canonical.launchpad.ftests import login, logout
     >>> from canonical.launchpad.ftests.mailinglists_helper import new_person
     >>> from canonical.launchpad.interfaces import IPersonSet
@@ -150,6 +127,7 @@ list.  It is a list-wide url, not a url-specific to the individual message
 
 This url should exactly match the link given on the team's overview page.
 
+    >>> browser = itest_helper.make_browser()
     >>> browser.open('http://launchpad.dev/~itest-one/')
     >>> browser.getLink(id='mailing-list-archive')
     <Link text='Mailing list archive'
@@ -198,8 +176,3 @@ separator.
     More help   : http://help.launchpad.dev/ListHelp
     <BLANKLINE>
     <BLANKLINE>
-
-
-== Clean up ==
-
-    >>> smtpd.stop()

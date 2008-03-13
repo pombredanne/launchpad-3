@@ -132,4 +132,5 @@ from canonical.launchpad.database.openidserver import *
 from canonical.launchpad.database.entitlement import *
 from canonical.launchpad.database.mailinglist import *
 from canonical.launchpad.database.hwdb import *
+from canonical.launchpad.database.archivedependency import *
 from canonical.launchpad.database.codereviewmessage import *

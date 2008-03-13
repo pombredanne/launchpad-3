@@ -8,6 +8,7 @@ __metaclass__ = type
 __all__ = [
     'IExternalBugTracker',
     'ISupportsCommentImport',
+    'ISupportsBugImport',
     'UNKNOWN_REMOTE_IMPORTANCE',
     'UNKNOWN_REMOTE_STATUS',
     ]
@@ -35,3 +36,31 @@ class IExternalBugTracker(Interface):
 
 class ISupportsCommentImport(IExternalBugTracker):
     """A an external bug tracker that supports comment imports."""
+
+    def getCommentIds(bug_watch):
+        """Return all the comment IDs for a given remote bug."""
+
+    def getPosterForComment(bug_watch, comment_id):
+        """Return a tuple of (name, emailaddress) for a comment's poster."""
+
+    def getMessageForComment(bug_watch, comment_id, poster):
+        """Return an `IMessage` instance for a comment."""
+
+
+class ISupportsBugImport(IExternalBugTracker):
+    """A an external bug tracker that supports bug imports."""
+
+    def getBugReporter(remote_bug):
+        """Return the person who submitted the given bug.
+
+        A tuple of (display name, email) is returned.
+        """
+
+    def getBugSummaryAndDescription(remote_bug):
+        """Return a tuple of summary and description for the given bug."""
+
+    def getBugTargetName(remote_bug):
+        """Return the specific target name of the bug.
+
+        Return None if no target can be determined.
+        """

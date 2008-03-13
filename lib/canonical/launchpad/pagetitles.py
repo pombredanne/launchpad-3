@@ -125,11 +125,13 @@ archive_activate = 'Activate Personal Package Archive'
 
 archive_builds = ContextTitle('Builds for %s')
 
+archive_delete_packages = ContextTitle('Delete packages from %s')
+
 archive_edit = ContextTitle('Edit %s')
 
-archive_index = ContextTitle('%s')
+archive_edit_dependencies = ContextTitle('Edit dependencies for %s')
 
-archive_delete_packages = ContextTitle('Delete packages from %s')
+archive_index = ContextTitle('%s')
 
 bazaar_all_branches = 'All branches in the Launchpad Bazaar'
 
@@ -384,6 +386,8 @@ builder_history = ContextTitle('Build history for %s')
 builder_index = ContextTitle('Build machine %s')
 
 builder_mode = ContextTitle('Change mode for %s')
+
+builder_new = 'Register a new build machine'
 
 builders_index = 'Launchpad build farm'
 

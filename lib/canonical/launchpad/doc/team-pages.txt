@@ -56,3 +56,15 @@ If new members are added/proposed, they'll show up at the top of the lists.
     name12: Proposed
     justdave: Proposed
 
+Posting malformed data to the team home page raises an error.
+
+    >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
+    >>> broken_request = LaunchpadTestRequest(
+    ...     form={})
+    >>> broken_request.method = 'POST'
+    >>> team_home = getView(ubuntu_team, '+index', broken_request)
+    >>> team_home.initialize()
+    Traceback (most recent call last):
+    ...
+    UnexpectedFormData: The mailing list form did not receive the expected
+    form fields.
