@@ -386,3 +386,71 @@ Reset out config:
 
     >>> base_test_data = config.pop('base_test_data')
 
+
+== DBConfig ==
+
+The timeout functions and LaunchpadDatabaseAdapter used and instance
+of DBConfig to choose which section in the config the data comes from.
+DBConfig is a singleton that stores the name of the preferred section,
+the dbconfig variable uses the 'launchpad' section by default.
+
+    >>> from canonical.launchpad.webapp.adapter import DBConfig, dbconfig
+    >>> dbconfig.section
+    'launchpad'
+
+    >>> dbconfig_1 = DBConfig()
+    >>> print dbconfig_1.section
+    None
+
+    >>> dbconfig_2 = DBConfig('answertracker')
+    >>> dbconfig_2.section
+    'answertracker'
+
+    >>> dbconfig.section
+    'answertracker'
+
+    >>> dbconfig is dbconfig_1 is dbconfig_2
+    True
+
+The section can be changed by assigning a new section name to the
+section property. Assigning an non existent section will raise
+an error.
+
+    >>> dbconfig.section = 'launchpad'
+    >>> dbconfig.section
+    'launchpad'
+
+    >>> dbconfig.section = 'launchpad_bugus'
+    Traceback (most recent call last):
+     ...
+    NoSectionError: ...
+
+    >>> dbconfig.section
+    'launchpad'
+
+The class first checks for the data in the preferred section, if it is
+not present, it will get the data from the default 'database' section.
+The dbuser is always set in the preferred section. The default section
+does define it.
+
+    >>> 'dbuser' in  config.database
+    False
+
+    >>> config.launchpad.dbuser
+    'launchpad'
+
+    >>> dbconfig.dbuser
+    'launchpad'
+
+The 'dbname' is defined in the 'database' section. The 'launchpad'
+section does not define it.
+
+    >>> 'dbname' in config.launchpad
+    False
+
+    >>> config.database.dbname
+    'launchpad_ftest'
+
+    >>> dbconfig.dbname
+    'launchpad_ftest'
+

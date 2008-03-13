@@ -49,6 +49,15 @@ launchpad.testrunner.conf, which extends the default conf.
     >>> config.extends.filename
     '.../configs/default/launchpad-lazr.conf'
 
+CanonicalConfig provides __contains__ and __getitem__ to check and
+access lazr.config sections and keys.
+
+    >>> 'launchpad' in config
+    True
+
+    >>> config['launchpad']['default_batch_size']
+    5
+
 
 == Transition from ZConfig to LAZR ==
 
