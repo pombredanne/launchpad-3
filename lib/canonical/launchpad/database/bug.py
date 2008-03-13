@@ -27,11 +27,9 @@ from sqlobject import SQLObjectNotFound
 from canonical.launchpad.interfaces import (
     BugAttachmentType, BugTaskStatus, BugTrackerType, DistroSeriesStatus,
     IBug, IBugAttachmentSet, IBugBecameQuestionEvent, IBugBranch, IBugSet,
-    IBugTaskSet, IBugWatchSet, ICveSet, IDistribution, IDistroBugTask,
-    IDistroSeries, IDistroSeriesBugTask, ILaunchpadCelebrities,
-    ILibraryFileAliasSet, IMessage, IProduct, IProductSeries,
-    IProductSeriesBugTask, IQuestionTarget, ISourcePackage,
-    IStructuralSubscriptionTarget, IUpstreamBugTask, NominationError,
+    IBugTaskSet, IBugWatchSet, ICveSet, IDistribution, IDistroSeries,
+    ILaunchpadCelebrities, ILibraryFileAliasSet, IMessage, IProduct,
+    IProductSeries, IQuestionTarget, ISourcePackage, NominationError,
     NominationSeriesObsoleteError, NotFoundError, UNRESOLVED_BUGTASK_STATUSES)
 from canonical.launchpad.helpers import shortlist
 from canonical.database.sqlbase import cursor, SQLBase, sqlvalues
@@ -396,7 +394,7 @@ class Bug(SQLBase):
         """See `IBug`."""
         if self.private:
             return []
-        
+
         duplicate_subscriptions = set(
             BugSubscription.select("""
                 BugSubscription.bug = Bug.id AND
