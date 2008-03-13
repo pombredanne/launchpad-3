@@ -32,7 +32,7 @@ def find_existing_translation(potmsgset, pofile, translations):
     unprotected_potmsgset = removeSecurityProxy(potmsgset)
     potranslations = {}
     for index in range(len(translations)):
-        if translations != '':
+        if translations[index] != '':
             potranslations[index] = (
                 POTranslation.getOrCreateTranslation(
                     translations[index]))
