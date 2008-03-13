@@ -11,6 +11,8 @@ import os.path
 import re
 import unittest
 
+import psycopg
+
 from canonical.config import config
 from canonical.database.sqlbase import cursor
 from canonical.database.revision import (
@@ -98,6 +100,19 @@ class TestRevision(unittest.TestCase):
         self.failUnlessRaises(
                 InvalidDatabaseRevision, confirm_dbrevision, self.cur
                 )
+
+    def test_assert_patch_applied(self):
+        # assert_patch_applied() is a stored procedure that raises
+        # an exception if the given patch has not been applied to the
+        # database. It is used in slonik scripts to catch and abort
+        # on a bad patch.
+        self.cur.execute("""
+            INSERT INTO LaunchpadDatabaseRevision VALUES (999,999,999)
+            """)
+        self.cur.execute("SELECT assert_patch_applied(999,999,999)")
+        self.failUnlessRaises(
+                psycopg.ProgrammingError, self.cur.execute,
+                "SELECT assert_patch_applied(1,999,999)")
 
 
 def test_suite():
