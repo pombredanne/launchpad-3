@@ -1,3 +1,4 @@
+#!/usr/bin/python2.4
 # Copyright 2008 Canonical Ltd.  All rights reserved.
 
 """When passed a CodeImportJob id on the command line, process that job."""

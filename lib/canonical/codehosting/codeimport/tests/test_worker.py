@@ -7,6 +7,7 @@ __metaclass__ = type
 import logging
 import os
 import shutil
+import subprocess
 import tempfile
 import time
 import unittest
@@ -17,6 +18,7 @@ from bzrlib.tests import TestCaseWithTransport
 from bzrlib.transport import get_transport
 from bzrlib.urlutils import join as urljoin
 
+import canonical
 from canonical.cachedproperty import cachedproperty
 from canonical.codehosting.codeimport.worker import (
     BazaarBranchStore, ForeignTreeStore, ImportWorker,
@@ -415,7 +417,7 @@ class TestActualImportMixin:
         """Make a new `ImportWorker`."""
         return ImportWorker(
             self.job.id, self.foreign_store, self.bazaar_store,
-            logging.getLogger("silent"))
+            logging.getLogger())
 
     def test_import(self):
         # Running the worker on a branch that hasn't been imported yet imports
@@ -447,6 +449,37 @@ class TestActualImportMixin:
         # Check that the new revisions are in the Bazaar branch.
         bazaar_tree = worker.getBazaarWorkingTree()
         self.assertEqual(3, len(bazaar_tree.branch.revision_history()))
+
+    def test_import_script(self):
+        # XXX
+        treestore = get_default_foreign_tree_store()
+        tree_transport = treestore.transport
+        archive_name = treestore._getTarballName(self.job.code_import)
+        if tree_transport.has(archive_name):
+            tree_transport.delete(archive_name)
+        import transaction
+        transaction.commit()
+        script_path = os.path.join(
+            os.path.dirname(
+                os.path.dirname(os.path.dirname(canonical.__file__))),
+            'scripts', 'code-import-worker.py')
+        retcode = subprocess.call([script_path, str(self.job.id), '-qqqqqq'])
+        if retcode != 0:
+            print self.job.code_import.svn_branch_url
+            import time
+            time.sleep(1000)
+        self.assertEqual(retcode, 0)
+
+        self.addCleanup(lambda: tree_transport.delete(archive_name))
+
+        tree_path = tempfile.mkdtemp()
+        self.addCleanup(lambda: shutil.rmtree(tree_path))
+
+        bazaar_tree = get_default_bazaar_branch_store().pull(
+            self.job.code_import.branch, tree_path)
+
+        self.assertEqual(2, len(bazaar_tree.branch.revision_history()))
+
 
 
 class TestCVSImport(WorkerTest, TestActualImportMixin):
