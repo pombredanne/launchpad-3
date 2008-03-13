@@ -251,6 +251,7 @@ are as we expect.
     icon: None
     linked: True
     name: foo
+    render: <bound method FacetLink.render ...>
     selected: False
     site: None
     sort_key: 0
@@ -264,6 +265,7 @@ are as we expect.
     icon: None
     linked: True
     name: bar
+    render: <bound method FacetLink.render ...>
     selected: False
     site: None
     sort_key: 1
@@ -422,7 +424,7 @@ Next, we return the link as a TALES snippet.
 	<tal:link replace="structure link/@@+link" />
     </span>'
 
-    # Clean up.
+    # Clean up our special login.
     >>> login(ANONYMOUS)
 
 
@@ -716,6 +718,7 @@ are as we expect.
     icon: None
     linked: True
     name: first
+    render: <bound method MenuLink.render ...>
     site: None
     sort_key: 0
     summary: None
@@ -778,6 +781,7 @@ are as we expect.
     icon: None
     linked: True
     name: first
+    render: <bound method MenuLink.render ...>
     site: None
     sort_key: 0
     summary: None
