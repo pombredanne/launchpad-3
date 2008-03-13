@@ -334,13 +334,11 @@ def canonical_url(
         if queryMultiAdapter((obj, request), name=view_name) is None:
             # Look if this is a special name defined by Navigation.
             navigation = queryMultiAdapter((obj, request), IBrowserPublisher)
-            if (not isinstance(navigation, Navigation) or
-                (view_name not in navigation.stepto_traversals and
-                 view_name not in navigation.stepthrough_traversals and
-                 view_name not in navigation.redirections)):
-                # Either the navigation isn't done by our Navigation 
-                # infrastructure or the name isn't available through 
-                # introspection. In either case, complain
+            if isinstance(navigation, Navigation):
+                all_names = navigation.all_traversal_and_redirection_names
+            else:
+                all_names = []
+            if view_name not in all_names:
                 raise AssertionError(
                     'Name "%s" is not registered as a view or navigation '
                     'step for "%s".' % (view_name, obj.__class__.__name__))
@@ -563,6 +561,15 @@ class Navigation:
                 nextobj.toname, request, status=nextobj.status)
         else:
             return nextobj
+
+    @property
+    def all_traversal_and_redirection_names(self):
+        """Return the names of all the traversals and redirections defined."""
+        all_names = set()
+        all_names.update(self.stepto_traversals.keys())
+        all_names.update(self.stepthrough_traversals.keys())
+        all_names.update(self.redirections.keys())
+        return list(all_names)
 
     @property
     def stepto_traversals(self):
