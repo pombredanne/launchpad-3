@@ -24,6 +24,9 @@ export DBSCRIPTS=/home/stub/lp/replication/database/schema
 export SLAVE1CON="--host=$SLAVE1HOST --port=$SLAVE1PORT"
 export SLAVE2CON="--host=$SLAVE2HOST --port=$SLAVE2PORT"
 
+# Kill any slon daemons running
+killall slon
+
 # Build a fresh Launchpad database
 #make -C $DBSCRIPTS
 dropdb --host=$MASTERHOST $MASTERDBNAME
@@ -31,27 +34,27 @@ createdb -E UNICODE --template=launchpad_ftest_template \
     --host=$MASTERHOST $MASTERDBNAME
 
 # Create slony superusers.
-createuser --host=$MASTERHOST --superuser slony
-createuser $SLAVE1CON --superuser slony
-createuser $SLAVE2CON --superuser slony
+createuser --host=$MASTERHOST --superuser slony 2>&1 | grep -v 'already exists'
+createuser $SLAVE1CON --superuser slony 2>&1 | grep -v 'already exists'
+## createuser $SLAVE2CON --superuser slony 2>&1 | grep -v 'already exists'
 
 # Drop existing slave databases
 dropdb $SLAVE1CON $SLAVE1DBNAME
-dropdb $SLAVE2CON $SLAVE2DBNAME
+## dropdb $SLAVE2CON $SLAVE2DBNAME
 
 # Create fresh slave databases
 createdb -E UNICODE $SLAVE1CON $SLAVE1DBNAME
-createdb -E UNICODE $SLAVE2CON $SLAVE2DBNAME
+## createdb -E UNICODE $SLAVE2CON $SLAVE2DBNAME
 pg_dump --schema-only --no-privileges \
     --username=$REPLICATIONUSER --host=$MASTERHOST $MASTERDBNAME \
     | psql -q -U $REPLICATIONUSER $SLAVE1CON $SLAVE1DBNAME
-pg_dump --schema-only --no-privileges \
-    --username=$REPLICATIONUSER --host=$MASTERHOST $MASTERDBNAME \
-    | psql -q -U $REPLICATIONUSER $SLAVE2CON $SLAVE2DBNAME
+## pg_dump --schema-only --no-privileges \
+##     --username=$REPLICATIONUSER --host=$MASTERHOST $MASTERDBNAME \
+##     | psql -q -U $REPLICATIONUSER $SLAVE2CON $SLAVE2DBNAME
 PGPORT=$SLAVE1PORT $DBSCRIPTS/security.py -qqq \
     -d $SLAVE1DBNAME -H $SLAVE1HOST -U postgres
-PGPORT=$SLAVE2PORT $DBSCRIPTS/security.py -qqq \
-    -d $SLAVE2DBNAME -H $SLAVE2HOST -U postgres
+##  PGPORT=$SLAVE2PORT $DBSCRIPTS/security.py -qqq \
+##      -d $SLAVE2DBNAME -H $SLAVE2HOST -U postgres
 
 # Build slonik config
 cat > slon_tools.conf << EOM
@@ -64,8 +67,8 @@ EOM
 slonik_build_env \
     -node $MASTERHOST:$MASTERDBNAME:slony \
     -node $SLAVE1HOST:$SLAVE1DBNAME:slony::$SLAVE1PORT \
-    -node $SLAVE2HOST:$SLAVE2DBNAME:slony::$SLAVE2PORT \
     >> slon_tools.conf
+##     -node $SLAVE2HOST:$SLAVE2DBNAME:slony::$SLAVE2PORT \
 
 #cat >> slon_tools.conf << EOM
 #\$SLONY_SETS = {
@@ -98,29 +101,34 @@ EOM
 
 sudo cp slon_tools.conf $SLONYNODES
 
+# Create the slon startup script
+cat > startslon.sh << EOM
+# slon startup script
+killall slon
+sleep 2
+slon -d 1 $CLUSTERNAME "dbname=$MASTERDBNAME user=$REPLICATIONUSER host=$MASTERHOST" &
+slon -d 1 $CLUSTERNAME "dbname=$SLAVE1DBNAME user=$REPLICATIONUSER host=$SLAVE1HOST port=$SLAVE1PORT" &
+## slon -d 1 $CLUSTERNAME "dbname=$SLAVE2DBNAME user=$REPLICATIONUSER host=$SLAVE2HOST port=$SLAVE2PORT" &
+# end
+EOM
+chmod a+rx startslon.sh
+
 # Initialize the cluster
-slonik_init_cluster | slonik
+slonik_init_cluster > .init_cluster.sk
+slonik .init_cluster.sk
 
 # Start slon daemons
-slon -d 1 $CLUSTERNAME "dbname=$MASTERDBNAME user=$REPLICATIONUSER host=$MASTERHOST"&
-slon -d 1 $CLUSTERNAME "dbname=$SLAVE1DBNAME user=$REPLICATIONUSER host=$SLAVE1HOST port=$SLAVE1PORT"&
-slon -d 1 $CLUSTERNAME "dbname=$SLAVE2DBNAME user=$REPLICATIONUSER host=$SLAVE2HOST port=$SLAVE2PORT"&
+sh -x ./startslon.sh
 
 # Create set1
-slonik_create_set 1 | slonik
+slonik_create_set 1 > .create_set_1.sk
+slonik .create_set_1.sk
 
 # Subscribe slave to set1
-slonik_subscribe_set 1 2 | slonik
-slonik_subscribe_set 1 3 | slonik
-
-
-# Start the slon daemons
-echo "# slon startup script" > startslon.sh
-chmod a+rx startslon.sh
-echo slon -d 1 $CLUSTERNAME \"dbname=$MASTERDBNAME user=$REPLICATIONUSER host=$MASTERHOST\"\& >> startslon.sh
-echo slon -d 1 $CLUSTERNAME \"dbname=$SLAVE1DBNAME user=$REPLICATIONUSER host=$SLAVE1HOST port=$SLAVE1PORT\"\& >> startslon.sh
-echo slon -d 1 $CLUSTERNAME \"dbname=$SLAVE2DBNAME user=$REPLICATIONUSER host=$SLAVE2HOST port=$SLAVE2PORT\"\& >> startslon.sh
-echo '# end' >> startslon.sh
+slonik_subscribe_set 1 2 > .subscribe_set_1_2.sk
+slonik .subscribe_set_1_2.sk
+## slonik_subscribe_set 1 3 > .subscribe_set_1_3.sk
+## slonik .subscribe_set_1_3.sk
 
 exit
 
