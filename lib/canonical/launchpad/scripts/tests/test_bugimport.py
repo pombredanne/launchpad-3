@@ -767,6 +767,11 @@ class TestExternalBugTracker(ExternalBugTracker):
     in order to simulate the syncing of two bug watches, one of which
     is guaranteed to trigger a database error.
     """
+
+    def __init__(self, bugtracker):
+        super(TestExternalBugTracker, self).__init__(bugtracker.baseurl)
+        self.bugtracker = bugtracker
+
     def getRemoteBug(self, bug_id):
         """Return the bug_id and an empty dictionary for data.
 
@@ -774,7 +779,7 @@ class TestExternalBugTracker(ExternalBugTracker):
         in `getRemoteStatus` and `convertRemoteStatus`.
         """
         return bug_id, {}
-    
+
     def getRemoteStatus(self, bug_id):
         """Returns a remote status as a string.
 
@@ -822,10 +827,10 @@ class TestExternalBugTracker(ExternalBugTracker):
 
 class TestBugWatchUpdater(BugWatchUpdater):
     """A mock `BugWatchUpdater` object."""
-    
+
     def _getExternalBugTracker(self, bug_tracker):
         """See `BugWatchUpdater`."""
-        return TestExternalBugTracker(self.txn, bug_tracker)
+        return TestExternalBugTracker(bug_tracker)
 
 
 class CheckBugWatchesErrorRecoveryTestCase(unittest.TestCase):

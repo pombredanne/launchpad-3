@@ -269,13 +269,6 @@ published source packages.
     Delete packages from PPA for No Privileges Person
     This PPA does not contain any source packages published.
 
-The user can go back to the PPA index page using the breadcrumb link.
-
-    >>> admin_browser.getLink('PPA for No Privileges Person').click()
-    >>> admin_browser.title
-    'PPA for No Privileges Person'
-
-
 == Removing source partially deleted ==
 
 The 'delete-packages' interface should allow users to enforce removal
