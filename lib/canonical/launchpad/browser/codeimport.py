@@ -22,8 +22,8 @@ from zope.schema import Choice, TextLine
 from canonical.launchpad import _
 from canonical.launchpad.interfaces import (
     BranchSubscriptionDiffSize, BranchSubscriptionNotificationLevel,
-    branch_name_validator, CodeImportReviewStatus, ICodeImport, ICodeImportSet,
-    ILaunchpadCelebrities, ILaunchpadRoot,
+    branch_name_validator, CodeImportReviewStatus, ICodeImport,
+    ICodeImportSet, ILaunchpadCelebrities, ILaunchpadRoot,
     RevisionControlSystems)
 from canonical.launchpad.webapp import (
     action, canonical_url, custom_widget, LaunchpadFormView, LaunchpadView)
