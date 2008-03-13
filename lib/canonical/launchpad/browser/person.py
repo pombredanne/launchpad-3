@@ -115,7 +115,7 @@ from canonical.cachedproperty import cachedproperty
 
 from canonical.launchpad.interfaces import (
     AccountStatus, BranchListingSort, BugTaskSearchParams,
-    BugTaskStatus, CannotUnsubscribe,
+    BugTaskStatus, CannotSubscribe, CannotUnsubscribe,
     DAYS_BEFORE_EXPIRATION_WARNING_IS_SENT, EmailAddressStatus,
     GPGKeyNotFoundError, IBranchSet, ICountry, IEmailAddress,
     IEmailAddressSet, IGPGHandler, IGPGKeySet, IIrcIDSet, IJabberIDSet,
@@ -2764,6 +2764,11 @@ class PersonBrandingView(BrandingChangeView):
 
 class TeamJoinView(PersonView):
 
+    def initialize(self):
+        super(TeamJoinView, self).initialize()
+        if self.request.method == "POST":
+            self.processForm()
+
     @property
     def join_allowed(self):
         """Is the logged in user allowed to join this team?
@@ -2796,35 +2801,73 @@ class TeamJoinView(PersonView):
             return False
         return not (self.userIsActiveMember() or self.userIsProposedMember())
 
+    @property
+    def team_is_moderated(self):
+        """Is this team a moderated team?
+
+        Return True if the team's subscription policy is MODERATED.
+        """
+        policy = self.context.subscriptionpolicy
+        return policy == TeamSubscriptionPolicy.MODERATED
+
     def processForm(self):
         request = self.request
-        if request.method != "POST":
-            # Nothing to do
-            return
-
         user = self.user
         context = self.context
+        response = self.request.response
 
         notification = None
         if 'join' in request.form and self.user_can_request_to_join:
-            policy = context.subscriptionpolicy
             user.join(context)
-            if policy == TeamSubscriptionPolicy.MODERATED:
-                notification = _('Subscription request pending approval.')
+            if self.team_is_moderated:
+                response.addInfoNotification(
+                    _('Your request to join ${team} is awaiting '
+                      'approval.',
+                      mapping={'team': context.displayname}))
             else:
-                notification = _(
-                    'Successfully joined %s.' % context.displayname)
+                response.addInfoNotification(
+                    _('You have successfully joined ${team}.',
+                      mapping={'team': context.displayname}))
+
+            if 'mailinglist_subscribe' in request.form:
+                self._subscribeToList()
+
         elif 'join' in request.form:
-            notification = _('You cannot join %s.' % context.displayname)
+            response.addErrorNotification(
+                _('You cannot join ${team}.',
+                  mapping={'team': context.displayname}))
         elif 'goback' in request.form:
             # User clicked on the 'Go back' button, so we'll simply redirect.
             pass
         else:
             raise UnexpectedFormData(
                 "Couldn't find any of the expected actions.")
-        if notification is not None:
-            request.response.addInfoNotification(notification)
         self.request.response.redirect(canonical_url(context))
+
+    def _subscribeToList(self):
+        """Subscribe the user to the team's mailing list."""
+        response = self.request.response
+
+        if not self.user_can_subscribe_to_list:
+            response.addErrorNotification(
+                _('Mailing list subscription failed.'))
+            return
+
+        try:
+            self.context.mailing_list.subscribe(self.user)
+        except CannotSubscribe, error:
+            response.addErrorNotification(
+                _('Mailing list subscription failed.'))
+        else:
+            if self.team_is_moderated:
+                response.addInfoNotification(
+                    _('Your mailing list subscription is awaiting '
+                      'approval.'))
+            else:
+                response.addInfoNotification(
+                    structured(
+                        _("You have been subscribed to this team&#x2019;s "
+                          "mailing list.")))
 
 
 class TeamAddMyTeamsView(LaunchpadFormView):

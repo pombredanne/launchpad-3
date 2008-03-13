@@ -20,7 +20,7 @@ Since this is an open team, he's automatically approved.
 
     >>> for tag in find_tags_by_class(browser.contents, 'informational'):
     ...     print tag.renderContents()
-    Successfully joined my own team.
+    You have successfully joined your own team.
 
 Now, the link to join the team is not present anymore and the +join page will
 say that there's no need to join since the user is already a member of that
@@ -66,7 +66,7 @@ approved, though.
     <BLANKLINE>
     ...
     Since this is a moderated team, one of its administrators will have to
-    approve your membership before you actually become a member of this team.
+    approve your membership before you actually become a member.
     ...
 
 If the user changes his mind because this is a moderated team, he can hit
@@ -85,7 +85,7 @@ the 'Cancel' button, going back to the team's page...
 
     >>> for tag in find_tags_by_class(browser.contents, 'informational'):
     ...     print tag.renderContents()
-    Subscription request pending approval.
+    Your request to join your own team is awaiting approval.
 
 If it was a restricted team, users wouldn't even see a link to join the team.
 
@@ -115,7 +115,7 @@ message explaining that this is a restricted team.
 
     >>> for tag in find_tags_by_class(browser.contents, 'warning'):
     ...     print tag.renderContents()
-    my own team is a restricted team.
+    your own team is a restricted team.
     Only a team administrator can add new members.
 
 But we provide a 'Back to team' button to take the user back to the team's
