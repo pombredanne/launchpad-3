@@ -21,12 +21,12 @@ Tests for the team '+join' page's raw view objects.
     # Define a helper for creating teams with a specific subscription
     # policy.
     >>> from canonical.launchpad.ftests.mailinglists_helper import (
-    ...	     new_list_for_team)
+    ...     new_list_for_team)
     >>> from canonical.launchpad.interfaces import TeamSubscriptionPolicy
     >>> def make_team(teamname, subscription_policy):
-    ...	    creator = personset.getByName('no-priv')
+    ...     creator = personset.getByName('no-priv')
     ...     team = personset.newTeam(creator, teamname, teamname,
-    ...	        subscriptionpolicy=subscription_policy)
+    ...         subscriptionpolicy=subscription_policy)
     ...     return team
 
     >>> from canonical.launchpad.interfaces import IMailingListSet
@@ -42,7 +42,7 @@ mangled form data.)
     # Remove this when the mailing list beta is over.  See bug #190974.
     >>> from canonical.launchpad.interfaces import ILaunchpadCelebrities
     >>> beta_testers = getUtility(
-    ...	    ILaunchpadCelebrities).launchpad_beta_testers
+    ...     ILaunchpadCelebrities).launchpad_beta_testers
     >>> salgado = personset.getByName('salgado')
     >>> login(salgado.preferredemail.email)
     >>> beta_testers.addMember(sample_person, reviewer=salgado)
@@ -50,7 +50,7 @@ mangled form data.)
     >>> login(sample_person.preferredemail.email)
 
     >>> no_list_team = make_team(
-    ...	    'open-team-no-list', TeamSubscriptionPolicy.OPEN)
+    ...     'open-team-no-list', TeamSubscriptionPolicy.OPEN)
 
     >>> join_team(no_list_team)
     You have successfully joined open-team-no-list.
@@ -69,7 +69,7 @@ informative message regarding the delayed subscription.
     Your mailing list subscription is awaiting approval.
 
     >>> sorted(email.email for email in
-    ...	    moderated_list.getSubscribedAddresses())
+    ...     moderated_list.getSubscribedAddresses())
     []
 
     # The subscription object is in the database, waiting for the
@@ -81,7 +81,7 @@ Users joining an open team will be immediately subscribed to the
 team's list.
 
     >>> open_team = make_team(
-    ...	    'open-team-with-list', TeamSubscriptionPolicy.OPEN)
+    ...     'open-team-with-list', TeamSubscriptionPolicy.OPEN)
     >>> open_list = new_list_for_team(open_team)
 
     >>> join_team(open_team)
@@ -89,5 +89,5 @@ team's list.
     You have been subscribed to this team&#x2019;s mailing list.
 
     >>> sorted(email.email for email in
-    ...	    open_list.getSubscribedAddresses())
+    ...     open_list.getSubscribedAddresses())
     [u'test@canonical.com']
