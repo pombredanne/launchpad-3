@@ -173,7 +173,7 @@ class HiddenBuilder:
         return "NOT OK: (%s)" % mode
 
     # This method is required because the builder history page will have this
-    # cloaked context if the builder is currently building a private build.
+    # cloaked context if the builder is currently processing a private build.
     def getBuildRecords(self, build_state=None, name=None, user=None):
         """See `IHasBuildRecords`."""
         return self.context.getBuildRecords(build_state, name, user)
