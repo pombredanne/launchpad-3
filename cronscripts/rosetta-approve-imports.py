@@ -7,14 +7,14 @@
 import _pythonpath
 
 from canonical.config import config
-from canonical.lp import READ_COMMITTED_ISOLATION
+from canonical.database.sqlbase import ISOLATION_LEVEL_READ_COMMITTED
 from canonical.launchpad.scripts.po_import import AutoApproveProcess
 from canonical.launchpad.scripts.base import LaunchpadCronScript
 
 
 class RosettaImportApprover(LaunchpadCronScript):
     def main(self):
-        self.txn.set_isolation_level(READ_COMMITTED_ISOLATION)
+        self.txn.set_isolation_level(ISOLATION_LEVEL_READ_COMMITTED)
         process = AutoApproveProcess(self.txn, self.logger)
         self.logger.debug('Starting auto-approval of translation imports')
         process.run()

@@ -43,7 +43,6 @@ We need to be logged into the security model in order to get any further
 
 Helper functions to examine emails that were sent:
 
-  >>> import email
   >>> from canonical.launchpad.mail import stub
   >>> def by_to_addrs(a, b):
   ...     return cmp(a[1], b[1])
@@ -279,6 +278,8 @@ AUTO_APPROVED source uploads for 'translations' section:
   DEBUG: Creating queue entry
   DEBUG: Setting it to ACCEPTED
   DEBUG: Creating PENDING publishing record.
+  DEBUG: Creating PENDING build for hppa.
+  DEBUG: Creating PENDING build for i386.
   DEBUG: Closing bugs.
   DEBUG: Skipping acceptance and announcement, it is a language-package upload.
 
@@ -392,6 +393,8 @@ AUTO-APPROVED upload to BACKPORTS pocket via 'sync' policy:
   DEBUG: Creating queue entry
   DEBUG: Setting it to ACCEPTED
   DEBUG: Creating PENDING publishing record.
+  DEBUG: Creating PENDING build for hppa.
+  DEBUG: Creating PENDING build for i386.
   DEBUG: Closing bugs.
   DEBUG: Building recipients list.
   ...
@@ -448,6 +451,8 @@ AUTO-APPROVED source upload to SECURITY pocket via 'security' policy:
   DEBUG: Creating queue entry
   DEBUG: Setting it to ACCEPTED
   DEBUG: Creating PENDING publishing record.
+  DEBUG: Creating PENDING build for hppa.
+  DEBUG: Creating PENDING build for i386.
   DEBUG: Closing bugs.
   DEBUG: Building recipients list.
   ...
@@ -684,7 +689,6 @@ PackageUpload.notify() directly.  One of the arguments it can specify is
 dry_run, which when True will not send any emails.  It will also log at
 the INFO level what it /would/ have sent.
 
-  >>> from canonical.launchpad.interfaces import PackageUploadStatus
   >>> random_package_upload = hoary.getQueueItems()[2]
   >>> random_package_upload.notify(dry_run=True, logger=mock_logger)
   DEBUG: Building recipients list.
