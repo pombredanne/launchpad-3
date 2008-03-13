@@ -396,16 +396,29 @@ We can test the 'structured' helper directly.
 
 Next, we return the link as a TALES snippet.
 
+    # We need to use a real launchpad test request so the view adapter
+    # lookups will work.  That request also needs to implement
+    # IParticipation so that the login machinery will work.
+    >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
+    >>> from zope.security.interfaces import IParticipation
+    >>> class InteractiveTestRequest(LaunchpadTestRequest):
+    ...     implements(IParticipation)
+    ...     principal = None
+    ...     interaction = None
+
+    >>> request = InteractiveTestRequest(
+    ...     'http://launchpad.dev/sesamestreet/+baz',
+    ...     url1='http://launchpad.dev/sesamestreet/')
+
+    >>> login(ANONYMOUS, request)
+
     >>> link = Link('+target', 'text-->', 'summary', icon='icon')
 
     >>> ILink(link).render()
     u'<span class="action">
-        <img alt="" tal:condition="link/icon" />
-	<tal:link replace="structure link/@@+link" />
-    </span>'
-    >>> IFacetLink(link).render()
-    u'<span class="action">
-        <img alt="" tal:condition="link/icon" />
+        <img alt=""
+            tal:condition="link/icon"
+            tal:attributes="src link/icon" />
 	<tal:link replace="structure link/@@+link" />
     </span>'
 
@@ -1058,14 +1071,21 @@ And thus, we don't have a facet to navigate to:
     ...
     TraversalError: ..., 'foo')
 
+
+== Shortcuts for rendering menu items ==
+
 A thing's menu may be rendered directly as HTML, via a TALES template
 snippet, using the menu link's render() method.
 
-    >>> html = test_tales('context/menu:house/first/render', context=house)
+    >>> request = InteractiveTestRequest(
+    ...     'http://launchpad.dev/sesamestreet/+baz',
+    ...     url1='http://launchpad.dev/sesamestreet/')
+
+    >>> login(ANONYMOUS, request)
+
+    >>> html = test_tales('context/menu:foo/first/render',
+    ...                   context=house, view=view, request=request)
     >>> print html
-    <span class="action">
-	<a href="http://launchpad.dev/sesamestreet/number73/+firstcontext">???</a>
-    </span>
 
 
 == Cleaning up ==
@@ -1114,4 +1134,3 @@ Now, we log in as foo.bar@canonical.com, an admin.
     >>> foolink = somemenu.foo()
     >>> foolink.enabled
     True
-

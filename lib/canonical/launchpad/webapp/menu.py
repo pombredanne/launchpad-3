@@ -22,6 +22,7 @@ import cgi
 
 from zope.i18n import translate, Message, MessageID
 from zope.interface import implements
+from zope.component import getMultiAdapter
 
 from canonical.lazr import decorates
 
@@ -170,6 +171,11 @@ class MenuLink:
             return text.escapedtext
         else:
             return cgi.escape(text)
+
+    def render(self):
+        """See `ILink`."""
+        return getMultiAdapter((self, get_current_browser_request()),
+            name="+inline")()
 
 
 class FacetLink(MenuLink):
