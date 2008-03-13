@@ -359,9 +359,9 @@ class TestMergeProposalNotification(TestCase):
             CodeReviewNotificationLevel.FULL)
         recipients = bmp.getCreationNotificationRecipients(
             CodeReviewNotificationLevel.FULL)
-        self.assertEqual(set([source_subscriber, target_subscriber,
-                          dependent_subscriber]),
-                          set(recipients.keys()))
+        self.assertEqual(
+            set([source_subscriber, target_subscriber, dependent_subscriber]),
+            set(recipients.keys()))
 
 def test_suite():
     return TestLoader().loadTestsFromName(__name__)

@@ -194,7 +194,15 @@ class IBranchMergeProposal(Interface):
         title=_('Date Queued'), required=False, readonly=True)
 
     def getCreationNotificationRecipients(min_level):
-        """Return the people who should be notified on creation"""
+        """Return the people who should be notified on creation
+
+        Recipients will be returned as a dictionary where the key is the
+        person, and the values are (subscription, rationale) tuples.
+
+        :param min_level: The minimum notification level needed to be
+            notified.
+        """
+
 
     def isValidTransition(next_state, user=None):
         """True if it is valid for user update the proposal to next_state."""
