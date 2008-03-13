@@ -47,7 +47,7 @@ dish. Users may comment on cookbooks and on individual recipes.
     ...     instructions = Text(title=u"How to prepare the recipe.",
     ...         required=True)
     ...     comments = Attribute("List of comments on the recipe.")
-    
+
     >>> class IRecipeComment(IComment):
     ...     recipe = Object(schema=IRecipe)
 
@@ -126,7 +126,7 @@ Here are simple implementations of IAuthor, ICookbook, IDish, and IRecipe.
     ...     implements(IRecipeComment)
     ...     def __init__(self, text, recipe):
     ...         super(RecipeComment, self).__init__(text)
-    ...         self.recipe = recipe 
+    ...         self.recipe = recipe
     ...         recipe.comments.append(self)
 
 Here are the "model objects" themselves:
@@ -205,30 +205,34 @@ Finally, a simple DishSet with predefined dishes.
 
 The web service uses the standard Navigation components to map URLs to
 components to publish (see navigation.txt) and the standard ICanonicalUrlData
-to map content object back to URL (see canonical_url.txt). 
+to map content object back to URL (see canonical_url.txt).
 
 The navigation for these components:
 
     >>> from canonical.launchpad.webapp.publisher import (
     ...     Navigation, stepthrough)
     >>> from zope.component import provideAdapter
-    >>> from zope.publisher.interfaces.browser import IBrowserPublisher
+    >>> from zope.publisher.interfaces.browser import (
+    ...     IBrowserPublisher, IDefaultBrowserLayer)
+
+    >>> def register_navigation(navigation, for_):
+    ...     provideAdapter(navigation, [for_, IDefaultBrowserLayer],
+    ...         IBrowserPublisher)
 
     >>> class DishSetNavigation(Navigation):
     ...     def traverse(self, name):
     ...         return self.context.get(name)
-    >>> provideAdapter(DishSetNavigation, [IDishSet], IBrowserPublisher)
+    >>> register_navigation(DishSetNavigation, IDishSet)
 
     >>> class AuthorSetNavigation(Navigation):
     ...     def traverse(self, name):
     ...         return self.context.getAuthor(name)
-    >>> provideAdapter(AuthorSetNavigation, [IAuthorSet], IBrowserPublisher)
+    >>> register_navigation(AuthorSetNavigation, IAuthorSet)
 
     >>> class CookbookSetNavigation(Navigation):
     ...     def traverse(self, name):
     ...         return self.context.get(name)
-    >>> provideAdapter(
-    ...     CookbookSetNavigation, [ICookbookSet], IBrowserPublisher)
+    >>> register_navigation(CookbookSetNavigation, ICookbookSet)
 
     >>> class CookbookNavigation(Navigation):
     ...     @stepthrough('comments')
@@ -244,8 +248,8 @@ The navigation for these components:
     ...             if recipe.id == int(name):
     ...                 return recipe
     ...         return None
-    >>> provideAdapter(CookbookNavigation, [ICookbook], IBrowserPublisher)
-    
+    >>> register_navigation(CookbookNavigation, ICookbook)
+
     >>> class RecipeNavigation(Navigation):
     ...     @stepthrough('comments')
     ...     def traverse_comments(self, name):
@@ -253,17 +257,16 @@ The navigation for these components:
     ...             return self.context.comments[int(name)-1]
     ...         except (IntexError, TypeError, ValueError):
     ...             return None
-    >>> provideAdapter(RecipeNavigation, [IRecipe], IBrowserPublisher)
+    >>> register_navigation(RecipeNavigation, IRecipe)
 
     >>> class RootNavigation(Navigation):
     ...     top_level_names = {
     ...         'dishes': DishSet(),
     ...         'cookbooks': CookbookSet(),
     ...         'authors': AuthorSet()}
-    ... 
+    ...
     ...     def traverse(self, name):
     ...         return self.top_level_names.get(name)
-    
 
 The canonical URLs for these components:
 
@@ -284,7 +287,7 @@ The canonical URLs for these components:
     ...     def inside(self):
     ...         return AuthorSet()
     >>> provideAdapter(AuthorUrlData, [IAuthor], ICanonicalUrlData)
-        
+
     >>> class DishUrlData(BaseUrlData):
     ...     @property
     ...     def inside(self):
