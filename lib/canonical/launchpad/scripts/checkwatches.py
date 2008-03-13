@@ -45,6 +45,68 @@ def get_bugwatcherrortype_for_error(error):
         return BugWatchErrorType.UNKNOWN
 
 
+#
+# OOPS reporting.
+#
+
+
+def report_oops(message=None, properties=None, info=None):
+    """Record an oops for the current exception.
+
+    This must only be called while handling an exception.
+
+    :param message: custom explanatory error message. Do not use
+        str(exception) to fill in this parameter, it should only be
+        set when a human readable error has been explicitly generated.
+
+    :param properties: Properties to record in the OOPS report.
+    :type properties: An iterable of (name, value) tuples.
+
+    :param info: Exception info.
+    :type info: The return value of `sys.exc_info()`.
+    """
+    # Get the current exception info first of all.
+    if info is None:
+        info = sys.exc_info()
+
+    # Collect properties to report.
+    if properties is None:
+        properties = []
+    else:
+        properties = list(properties)
+
+    if message is not None:
+        properties.append(('error-explanation', message))
+
+    # Create the dummy request object.
+    request = errorlog.ScriptRequest(properties)
+    errorlog.globalErrorUtility.raising(info, request)
+
+    return request
+
+
+def report_warning(message, properties=None, info=None):
+    """Create and report a warning as an OOPS.
+
+    If no exception info is passed in this will create a generic
+    `BugWatchUpdateWarning` to record. The reason is that the stack
+    trace may be useful for later diagnosis.
+
+    :param message: See `report_oops`.
+    :param properties: See `report_oops`.
+    :param info: See `report_oops`.
+    """
+    if info is None:
+        # Raise and catch the exception so that sys.exc_info will
+        # return our warning and stack trace.
+        try:
+            raise BugWatchUpdateWarning
+        except BugWatchUpdateWarning:
+            return report_oops(message, properties)
+    else:
+        return report_oops(message, properties, info)
+
+
 class BugWatchUpdater(object):
     """Takes responsibility for updating remote bug watches."""
 
