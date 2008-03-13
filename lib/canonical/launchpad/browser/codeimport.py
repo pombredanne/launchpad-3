@@ -11,8 +11,6 @@ __all__ = [
     ]
 
 
-import operator
-
 from BeautifulSoup import BeautifulSoup
 from zope.app.form import CustomWidgetFactory
 from zope.app.form.interfaces import IInputWidget
@@ -23,6 +21,7 @@ from zope.schema import Choice, TextLine
 
 from canonical.launchpad import _
 from canonical.launchpad.interfaces import (
+    BranchSubscriptionDiffSize, BranchSubscriptionNotificationLevel,
     branch_name_validator, CodeImportReviewStatus, ICodeImport, ICodeImportSet,
     ILaunchpadCelebrities, ILaunchpadRoot,
     RevisionControlSystems)
@@ -72,10 +71,6 @@ class CodeImportSetView(LaunchpadView):
             imports = self.context.search(review_status=status)
         else:
             imports = self.context.getAll()
-
-        # Don't listify the imports here, it completely defeats
-        # the purpose of using a batch navigator.
-        # imports = sorted(imports, key=operator.attrgetter('id'))
 
         self.batchnav = BatchNavigator(imports, self.request)
 
@@ -161,7 +156,7 @@ class CodeImportNewView(LaunchpadFormView):
 
     @action(_('Continue'), name='continue')
     def continue_action(self, action, data):
-
+        """Create the code_import, and subscribe the user to the branch."""
         code_import = getUtility(ICodeImportSet).new(
             registrant=self.user,
             product=data['product'],
@@ -171,6 +166,12 @@ class CodeImportNewView(LaunchpadFormView):
             cvs_root=data['cvs_root'],
             cvs_module=data['cvs_module'],
             review_status=data.get('review_status'))
+
+        code_import.branch.subscribe(
+            self.user,
+            BranchSubscriptionNotificationLevel.FULL,
+            BranchSubscriptionDiffSize.NODIFF)
+
         self.next_url = canonical_url(code_import.branch)
 
     @action('Cancel', name='cancel', validator='validate_cancel')
