@@ -458,8 +458,8 @@ use of X-SCHEME we must set 'use_https' to True and remember
 to reset it when we're done.
 
     >>> from canonical.config import config
-    >>> old_use_https = config.launchpad.vhosts.use_https
-    >>> config.launchpad.vhosts.use_https = True
+    >>> old_use_https = config.vhosts.use_https
+    >>> config.vhosts.use_https = True
 
 If the original scheme is https the redirect URL should be https too.
 
@@ -490,4 +490,4 @@ over http.
 
 Return 'use_https' to its original value to not mess up future tests.
 
-    >>> config.launchpad.vhosts.use_https = old_use_https
+    >>> config.vhosts.use_https = old_use_https
