@@ -1,7 +1,3 @@
-# Copyright 2006 Canonical Ltd.  All rights reserved.
-
-"""Helper functions for the checkwatches.py cronscript."""
-
 __metaclass__ = type
 
 
@@ -15,14 +11,15 @@ from canonical.database.constants import UTC_NOW
 from canonical.database.sqlbase import flush_database_updates
 from canonical.launchpad.components import externalbugtracker
 from canonical.launchpad.components.externalbugtracker import (
-    BugNotFound, BugTrackerConnectError, BugWatchUpdateError, InvalidBugId,
-    UnparseableBugData, UnparseableBugTrackerVersion,
-    UnsupportedBugTrackerVersion, UnknownBugTrackerTypeError,
-    UnknownRemoteStatusError)
+    BugNotFound, BugTrackerConnectError, BugWatchUpdateError,
+    BugWatchUpdateWarning, InvalidBugId, UnparseableBugData,
+    UnparseableBugTrackerVersion, UnsupportedBugTrackerVersion,
+    UnknownBugTrackerTypeError, UnknownRemoteStatusError)
 from canonical.launchpad.interfaces import (
     BugWatchErrorType, CreateBugParams, IBugTrackerSet, IBugWatchSet,
     IDistribution, ILaunchpadCelebrities, IPersonSet, ISupportsCommentImport,
     PersonCreationRationale, UNKNOWN_REMOTE_STATUS)
+from canonical.launchpad.webapp import errorlog
 from canonical.launchpad.webapp.interfaces import IPlacelessAuthUtility
 from canonical.launchpad.webapp.interaction import (
     setupInteraction, endInteraction)
@@ -179,20 +176,22 @@ class BugWatchUpdater(object):
                 # continue: a failure shouldn't break the updating of
                 # the other bug trackers.
                 info = sys.exc_info()
-                externalbugtracker.report_oops(
-                    info=info, properties=[
-                        ('bugtracker', bug_tracker_name),
-                        ('baseurl', bug_tracker_url)])
+                properties = [
+                    ('bugtracker', bug_tracker_name),
+                    ('baseurl', bug_tracker_url)]
                 if isinstance(error, BugWatchUpdateError):
-                    self.log.error(str(error))
+                    self.error(
+                        str(error), properties=properties, info=info)
                 elif isinstance(error, socket.timeout):
-                    self.log.error(
-                        "Connection timed out when updating %s" % (
-                            bug_tracker_url))
+                    self.error(
+                        "Connection timed out when updating %s" % 
+                        bug_tracker_url,
+                        properties=properties, info=info)
                 else:
-                    self.log.error(
+                    self.error(
                         "An exception was raised when updating %s" %
-                        bug_tracker_url, exc_info=info)
+                        bug_tracker_url,
+                        properties=properties, info=info)
                 self.txn.abort()
         self._logout()
 
@@ -229,7 +228,6 @@ class BugWatchUpdater(object):
             message = (
                 "ExternalBugtracker for BugTrackerType '%s' is not known." % (
                     error.bugtrackertypename))
-            externalbugtracker.report_warning(message)
             self.warning(message)
         else:
             if bug_watches_to_update.count() > 0:
@@ -293,7 +291,7 @@ class BugWatchUpdater(object):
                 if bug_watch.remotebug not in remote_ids:
                     bug_watches.remove(bug_watch)
 
-        remotesystem.info("Updating %i watches on %s" %
+        self.log.info("Updating %i watches on %s" %
             (len(bug_watches), bug_tracker_url))
 
         bug_watch_ids = [bug_watch.id for bug_watch in bug_watches]
@@ -349,7 +347,8 @@ class BugWatchUpdater(object):
                              (bug_id, remotesystem.baseurl, local_ids),
                         properties=[
                             ('bug_id', bug_id),
-                            ('local_ids', local_ids)],
+                            ('local_ids', local_ids)] +
+                            self._getOOPSProperties(remotesystem),
                         info=sys.exc_info())
                 except BugNotFound:
                     error = BugWatchErrorType.BUG_NOT_FOUND
@@ -358,7 +357,8 @@ class BugWatchUpdater(object):
                              (bug_id, remotesystem.baseurl, local_ids),
                         properties=[
                             ('bug_id', bug_id),
-                            ('local_ids', local_ids)],
+                            ('local_ids', local_ids)] +
+                            self._getOOPSProperties(remotesystem),
                         info=sys.exc_info())
 
                 for bug_watch in bug_watches:
@@ -490,26 +490,26 @@ class BugWatchUpdater(object):
                  'bugtracker_url': external_bugtracker.baseurl,
                  'bug_id': bug_watch.bug.id})
 
-    def info(self, message):
-        """Record an informational message related to this bug tracker."""
-        log.info(message)
+    def _getOOPSProperties(self, remotesystem):
+        """Return an iterable of 2-tuples (name, value) of OOPS properties.
+
+        :remotesystem: The `ExternalBugTracker` instance from which the
+            OOPS properties should be extracted.
+        """
+        return [('batch_size', remotesystem.batch_size),
+                ('batch_query_threshold', remotesystem.batch_query_threshold),
+                ('import_comments', remotesystem.import_comments),
+                ('externalbugtracker', remotesystem.__class__.__name__),
+                ('baseurl', remotesystem.baseurl)]
 
     def warning(self, message, properties=None, info=None):
         """Record a warning related to this bug tracker."""
-        if properties is None:
-            properties = self._oops_properties
-        else:
-            properties = chain(properties, self._oops_properties)
         report_warning(message, properties, info)
         # Also put it in the log.
-        log.warning(message)
+        self.log.warning(message)
 
     def error(self, message, properties=None, info=None):
         """Record an error related to this external bug tracker."""
-        if properties is None:
-            properties = self._oops_properties
-        else:
-            properties = chain(properties, self._oops_properties)
         report_oops(message, properties, info)
         # Also put it in the log.
-        log.error(message, exc_info=info)
+        self.log.error(message)

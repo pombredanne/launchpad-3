@@ -36,7 +36,6 @@ from canonical.launchpad.interfaces import (
     IBugWatchSet, IExternalBugTracker, IMessageSet, ISupportsBugImport,
     ISupportsCommentImport, UNKNOWN_REMOTE_IMPORTANCE,
     UNKNOWN_REMOTE_STATUS)
-from canonical.launchpad.webapp import errorlog
 from canonical.launchpad.webapp.url import urlparse
 
 
@@ -257,21 +256,6 @@ class ExternalBugTracker:
                 bug_watches_by_remote_bug[remote_bug] = []
             bug_watches_by_remote_bug[remote_bug].append(bug_watch)
         return bug_watches_by_remote_bug
-
-    @property
-    def _oops_properties(self):
-        """Properties that are useful to record in an OOPS report.
-
-        Return an iterable of 2-tuples (name, value).
-
-        Subclasses should override this, but chain their properties
-        after these, perhaps with the use of `itertools.chain`.
-        """
-        return [('batch_size', self.batch_size),
-                ('batch_query_threshold', self.batch_query_threshold),
-                ('import_comments', self.import_comments),
-                ('externalbugtracker', self.__class__.__name__),
-                ('baseurl', self.baseurl)]
 
 
 #
@@ -1487,7 +1471,7 @@ class Roundup(ExternalBugTracker):
                     8: BugTaskStatus.WONTFIX,      # Resolution: rejected
                     9: BugTaskStatus.CONFIRMED,    # Resolution: remind
                     10: BugTaskStatus.WONTFIX,     # Resolution: wontfix
-                    11: BugTaskStatus.INVALID,     # Resolution: works for me
+                    11: BugTaskStatus.INVALID},    # Resolution: works for me
 
                 # Closed issues (status=2)
                 2: {
@@ -1515,7 +1499,7 @@ class Roundup(ExternalBugTracker):
                 5: BugTaskStatus.INPROGRESS,   # Roundup status 'in-progress'
                 6: BugTaskStatus.INPROGRESS,   # Roundup status 'testing'
                 7: BugTaskStatus.FIXCOMMITTED, # Roundup status 'done-cbb'
-                8: BugTaskStatus.FIXRELEASED,  # Roundup status 'resolved'
+                8: BugTaskStatus.FIXRELEASED,} # Roundup status 'resolved'
 
     def isPython(self):
         """Return True if the remote bug tracker is at bugs.python.org.
