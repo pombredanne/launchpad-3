@@ -188,7 +188,7 @@ Now, let's repeat the whole exercise with a Blueprint.
   >>> browser.getLink(menu_mentoring_offer).click()
   >>> print browser.title
   Offer to mentor this work
-  >>> back_link = user_browser.getLink('Facilitate mass installs')
+  >>> back_link = browser.getLink('Facilitate mass installs')
   >>> back_link.url
   'http://blueprints.launchpad.dev/kubuntu/+spec/cluster-installation'
   >>> browser.getControl('Offer Mentoring').click()
@@ -569,7 +569,7 @@ mentoring again.
   >>> browser.getLink(menu_mentoring_retract).click()
   >>> print browser.title
   Retract offer of mentorship
-  >>> back_link = user_browser.getLink('Facilitate mass installs')
+  >>> back_link = browser.getLink('Facilitate mass installs')
   >>> back_link.url
   'http://blueprints.launchpad.dev/kubuntu/+spec/cluster-installation'
   >>> browser.getControl('Retract Mentoring').click()
