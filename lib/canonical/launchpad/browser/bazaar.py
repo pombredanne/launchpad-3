@@ -22,7 +22,7 @@ from canonical.config import config
 from canonical.launchpad.interfaces import (
     IBazaarApplication, IBranchSet, IProduct, IProductSet, IProductSeriesSet)
 from canonical.launchpad.webapp import (
-    ApplicationMenu, canonical_url, enabled_with_permission, LaunchpadView,
+    ApplicationMenu, enabled_with_permission, LaunchpadView,
     Link, Navigation, stepto)
 import canonical.launchpad.layers
 
