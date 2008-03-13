@@ -445,7 +445,7 @@ the view's name.
     >>> canonical_url(country_instance, view_name="+map")
     u'http://bugs.launchpad.dev/countries/England/+map'
 
-view_named also works when the view_name refers to a Navigation stepto,
+view_name also works when the view_name refers to a Navigation stepto,
 stepthrough, or redirection:
 
     >>> canonical_url(country_instance, view_name="+greenwich")
