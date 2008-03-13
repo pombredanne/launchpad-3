@@ -18,6 +18,7 @@ __all__ = [
 
 
 import datetime
+import operator
 
 from sqlobject import (
     ForeignKey, StringCol, SQLObjectNotFound)
@@ -66,6 +67,7 @@ from canonical.launchpad.interfaces import (
     IProject,
     IProjectMilestone,
     ISourcePackage,
+    IStructuralSubscriptionTarget,
     IUpstreamBugTask,
     NotFoundError,
     PackagePublishingStatus,
@@ -906,6 +908,36 @@ class BugTask(SQLBase, BugTaskMixin):
             return BugTaskDelta(**changes)
         else:
             return None
+
+    def getIndirectSubscribers(self, recipients=None):
+        """See `IBugTask`."""
+        also_notified_subscribers = set()
+
+        # Assignees are indirect subscribers.
+        if self.assignee:
+            also_notified_subscribers.add(self.assignee)
+            if recipients is not None:
+                recipients.addAssignee(self.assignee)
+
+        if IStructuralSubscriptionTarget.providedBy(self.target):
+            also_notified_subscribers.update(
+                self.target.getBugNotificationsRecipients(recipients))
+
+        if self.milestone is not None:
+            also_notified_subscribers.update(
+                self.milestone.getBugNotificationsRecipients(recipients))
+
+        # If the target's bug contact isn't set,
+        # we add the owner as a subscriber.
+        pillar = self.pillar
+        if pillar.bugcontact is None:
+            also_notified_subscribers.add(pillar.owner)
+            if recipients is not None:
+                recipients.addRegistrant(pillar.owner, pillar)
+
+        return sorted(
+            also_notified_subscribers,
+            key=operator.attrgetter('displayname'))
 
 
 def search_value_to_where_condition(search_value):

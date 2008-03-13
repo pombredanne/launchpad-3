@@ -97,6 +97,12 @@ getAlsoNotifiedSubscribers() and getSubscribersFromDuplicates().
     >>> linux_source_bug.getSubscribersFromDuplicates()
     []
 
+It is also possible to get the list of indirect subscribers for an
+individual bug task.
+
+    >>> linux_source_bug.bugtasks[0].getIndirectSubscribers()
+    [<Person at ...>]
+
 The list of all bug subscribers can also be accessed via
 IBugTask.bug_subscribers. Our event handling machinery compares a
 "snapshot" of this value, before a bug was changed, to the current

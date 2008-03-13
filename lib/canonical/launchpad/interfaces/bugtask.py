@@ -496,6 +496,19 @@ class IBugTask(IHasDateCreated, IHasBug, ICanBeMentored):
         None.
         """
 
+    def getIndirectSubscribers(self, recipients=None):
+        """Return the task's indirect subscribers.
+
+        Return the list of people who should get notifications about
+        changes to the task because of having an indirect subscription
+        relationship with it (by subscribing to its target, being an
+        assignee or owner, etc...)
+
+        If `recipients` is present, add the subscribers to the set of
+        bug notification recipients.
+        """
+
+
 class INullBugTask(IBugTask):
     """A marker interface for an IBugTask that doesn't exist in a context.
 
