@@ -330,6 +330,10 @@ def canonical_url(
             request = current_request
 
     if view_name is not None:
+        assert request is not None, (
+            "Cannot check view_name parameter when there request is not "
+            "available.")
+
         # Look first for a view.
         if queryMultiAdapter((obj, request), name=view_name) is None:
             # Look if this is a special name defined by Navigation.
