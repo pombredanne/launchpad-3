@@ -162,7 +162,8 @@ class BuilderSetView(CommonBuilderView):
     def hasQueuedBuilds(self):
         return bool(self.buildQueueDepthByArch)
 
-    def getBuilders(self):
+    @property
+    def builders(self):
         """Return all active builders, with private builds cloaked.
 
         Any builders building a private build will be cloaked and returned

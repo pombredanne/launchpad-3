@@ -47,7 +47,7 @@
         </tr>
       </thead>
       <tbody>
-        <tal:builder repeat="builder view/getBuilders">
+        <tal:builder repeat="builder view/builders">
           <tr class="builder-row">
             <td>
               <a tal:attributes="href builder/fmt:url"
