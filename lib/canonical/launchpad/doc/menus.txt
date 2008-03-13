@@ -422,6 +422,9 @@ Next, we return the link as a TALES snippet.
 	<tal:link replace="structure link/@@+link" />
     </span>'
 
+    # Clean up.
+    >>> login(ANONYMOUS)
+
 
 == How do we tell which link from a facetmenu is the selected one? ==
 
