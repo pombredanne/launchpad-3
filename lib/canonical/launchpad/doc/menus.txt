@@ -152,7 +152,6 @@ mark is as being "structured".
     >>> full_link.enabled
     False
 
-
 The menu infrastructure adapts a Link instance to ILink (for context and
 application menus) and IFacetLink (for facet menus).  This (morally speaking)
 allows the menu infrastructure to set the 'name', 'url', 'linked' and
@@ -361,7 +360,6 @@ if we want to, and have distinct views on facet and other links.
     >>> somelink.enabled
     True
 
-
 Checking out the escapedtext attribute.
 
     >>> link = Link('+target', 'text -->')
@@ -378,7 +376,6 @@ Checking out the escapedtext attribute.
     u'some <b> --&gt; </b> text'
     >>> IFacetLink(link).escapedtext
     u'some <b> --&gt; </b> text'
-
 
 We can test the 'structured' helper directly.
 
