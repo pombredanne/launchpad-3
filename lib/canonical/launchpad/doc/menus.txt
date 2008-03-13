@@ -1094,6 +1094,9 @@ snippet, using the menu link's render() method.
     ...                   context=house, view=view, request=request)
     >>> print html
 
+    # Clean up our special login.
+    >>> login(ANONYMOUS)
+
 
 == Cleaning up ==
 
