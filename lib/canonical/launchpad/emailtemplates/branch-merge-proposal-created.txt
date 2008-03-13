@@ -1,0 +1,6 @@
+%(proposal_registrant)s has proposed merging %(source_branch)s into %(target_branch)s.
+
+--
+%(proposal_url)s
+
+%(reason)s%(edit_subscription)s
