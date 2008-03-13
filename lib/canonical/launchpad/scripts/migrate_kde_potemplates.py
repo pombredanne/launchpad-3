@@ -97,15 +97,20 @@ def migrate_translations_for_potmsgset(potmsgset, from_potmsgset, logger, ztm):
                 message.msgstr3 = potranslations[3]
                 message.msgstr4 = potranslations[4]
                 message.msgstr5 = potranslations[5]
-                if potmsgset != from_potmsgset:
+                if potmsgset.id != from_potmsgset.id:
                     # Point TranslationMessage to a new POTMsgSet.
+                    # To avoid hitting constraints, first unset
+                    # the is_current and is_imported flags, and
+                    # restore them afterwards.
                     stored_is_current = message.is_current
                     stored_is_imported = message.is_imported
                     message.is_current = False
                     message.is_imported = False
                     message.potmsgset = potmsgset
+                    message.sync()
                     message.is_current = stored_is_current
                     message.is_imported = stored_is_imported
+                    message.sync()
 
 def migrate_kde_potemplate_translations(potemplate, logger, ztm):
     assert(potemplate.source_file_format == TranslationFileFormat.KDEPO)
