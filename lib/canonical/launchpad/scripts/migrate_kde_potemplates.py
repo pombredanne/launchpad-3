@@ -184,6 +184,16 @@ def migrate_kde_potemplate_translations(potemplate, logger, ztm):
 
     ztm.commit()
 
+def existing_potmsgset(potemplate, msgid_singular, context):
+    clauses = ['potemplate=%s' % sqlvalues(potemplate),
+               'msgid_singular=%s' % sqlvalues(msgid_singular)]
+    if context is None:
+        clauses.append("context IS NULL")
+    else:
+        clauses.append("context=%s" % sqlvalues(context))
+
+    return POTMsgSet.selectOne(" AND ".join(clauses))
+
 def migrate_potemplate(potemplate, logger, ztm):
     """Fix plural translations for PO files with mismatching headers."""
 
@@ -212,20 +222,34 @@ def migrate_potemplate(potemplate, logger, ztm):
         # logic as in translationformat/kde_po_importer.py.
         if msgid.startswith(plural_prefix) and '\n' in msgid:
             # This is a KDE plural form.
-            singular_text, plural_text = msgid[len(plural_prefix):].split(
-                '\n')
+            singular_text, plural_text = (
+                msgid[len(plural_prefix):].split('\n', 1))
 
-            potmsgset.msgid_singular = getOrCreatePOMsgID(singular_text)
-            potmsgset.msgid_plural = getOrCreatePOMsgID(plural_text)
-            fix_plurals = True
+            msgid_singular = getOrCreatePOMsgID(singular_text)
+
+            if existing_potmsgset(potemplate, msgid_singular, None):
+                logger.warn("POTMsgSet %d conflicts with another one." % (
+                    potmsgset.id))
+            else:
+                potmsgset.msgid_singular = msgid_singular
+                potmsgset.msgid_plural = getOrCreatePOMsgID(plural_text)
+                potmsgset.sync()
+                fix_plurals = True
         elif msgid.startswith(context_prefix) and '\n' in msgid:
             # This is a KDE context message: it needs no fixing apart
             # from changing msgid_singular.
             context, singular_text = (
                 msgid[len(context_prefix):].split('\n', 1))
-            potmsgset.msgid_singular = getOrCreatePOMsgID(singular_text)
-            potmsgset.context = context
-            fix_context = True
+            msgid_singular = getOrCreatePOMsgID(singular_text)
+
+            if existing_potmsgset(potemplate, msgid_singular, context):
+                logger.warn("POTMsgSet %d conflicts with another one." % (
+                    potmsgset.id))
+            else:
+                potmsgset.context = context
+                potmsgset.msgid_singular = msgid_singular
+                potmsgset.sync()
+                fix_context = True
         else:
             # Other messages here are the ones which begin like
             # context or plural form messages, but are actually neither.
