@@ -18,7 +18,6 @@ __all__ = [
 
 
 import datetime
-import operator
 
 from sqlobject import (
     ForeignKey, StringCol, SQLObjectNotFound)
@@ -50,9 +49,8 @@ from canonical.launchpad.interfaces import (
     IDistribution, IDistributionSourcePackage, IDistroBugTask, IDistroSeries,
     IDistroSeriesBugTask, ILaunchpadCelebrities, INullBugTask, IProduct,
     IProductSeries, IProductSeriesBugTask, IProject, IProjectMilestone,
-    ISourcePackage, IStructuralSubscriptionTarget, IUpstreamBugTask,
-    NotFoundError, PackagePublishingStatus, RESOLVED_BUGTASK_STATUSES,
-    UNRESOLVED_BUGTASK_STATUSES)
+    ISourcePackage, IUpstreamBugTask, NotFoundError, PackagePublishingStatus,
+    RESOLVED_BUGTASK_STATUSES, UNRESOLVED_BUGTASK_STATUSES)
 from canonical.launchpad.helpers import shortlist
 # XXX: kiko 2006-06-14 bug=49029
 
@@ -887,36 +885,6 @@ class BugTask(SQLBase, BugTaskMixin):
             return BugTaskDelta(**changes)
         else:
             return None
-
-    def getIndirectSubscribers(self, recipients=None):
-        """See `IBugTask`."""
-        also_notified_subscribers = set()
-
-        # Assignees are indirect subscribers.
-        if self.assignee:
-            also_notified_subscribers.add(self.assignee)
-            if recipients is not None:
-                recipients.addAssignee(self.assignee)
-
-        if IStructuralSubscriptionTarget.providedBy(self.target):
-            also_notified_subscribers.update(
-                self.target.getBugNotificationsRecipients(recipients))
-
-        if self.milestone is not None:
-            also_notified_subscribers.update(
-                self.milestone.getBugNotificationsRecipients(recipients))
-
-        # If the target's bug contact isn't set,
-        # we add the owner as a subscriber.
-        pillar = self.pillar
-        if pillar.bugcontact is None:
-            also_notified_subscribers.add(pillar.owner)
-            if recipients is not None:
-                recipients.addRegistrant(pillar.owner, pillar)
-
-        return sorted(
-            also_notified_subscribers,
-            key=operator.attrgetter('displayname'))
 
 
 def search_value_to_where_condition(search_value):
@@ -1867,7 +1835,7 @@ class BugTaskSet:
 
         return orderby_arg
 
+
     def dangerousGetAllTasks(self):
         """DO NOT USE THIS METHOD. For details, see `IBugTaskSet`"""
         return BugTask.select(orderBy='id')
-

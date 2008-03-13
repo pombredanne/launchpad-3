@@ -24,6 +24,8 @@ from sqlobject import BoolCol, IntCol, ForeignKey, StringCol
 from sqlobject import SQLMultipleJoin, SQLRelatedJoin
 from sqlobject import SQLObjectNotFound
 
+from canonical.launchpad.mailnotification import (
+    get_bugtask_indirect_subscribers)
 from canonical.launchpad.interfaces import (
     BugAttachmentType, BugTaskStatus, BugTrackerType, DistroSeriesStatus,
     IBug, IBugAttachmentSet, IBugBecameQuestionEvent, IBugBranch, IBugSet,
@@ -468,8 +470,9 @@ class Bug(SQLBase):
         also_notified_subscribers = set()
 
         for bugtask in self.bugtasks:
-            also_notified_subscribers.update(
-                bugtask.getIndirectSubscribers(recipients=recipients))
+            bugtask_subscribers = get_bugtask_indirect_subscribers(
+                bugtask, recipients=recipients)
+            also_notified_subscribers.update(bugtask_subscribers)
 
         # Direct subscriptions always take precedence over indirect
         # subscriptions.

@@ -39,8 +39,7 @@
                         title related_tasks other_affected_pillars
                         asEmailHeaderValue getDelta pillar
                         target_uses_malone bugtask_branches
-                        conjoined_master conjoined_slave subscribe
-                        getIndirectSubscribers" />
+                        conjoined_master conjoined_slave subscribe" />
         <require
             permission="launchpad.Edit"
             attributes="setStatusFromDebbugs setImportanceFromDebbugs
