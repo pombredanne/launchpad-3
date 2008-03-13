@@ -14,10 +14,10 @@ from zope.interface import implements
 
 from sqlobject import BoolCol, ForeignKey, StringCol
 
+from canonical.database.constants import DEFAULT, UTC_NOW
+from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import SQLBase, sqlvalues
-from canonical.database.constants import UTC_NOW
-from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.launchpad.validators.name import valid_name
 from canonical.launchpad.interfaces import (
     EmailAddressStatus, HWSubmissionFormat, HWSubmissionKeyNotUnique,
@@ -32,7 +32,7 @@ class HWSubmission(SQLBase):
 
     implements(IHWSubmission)
     _table = 'HWSubmission'
-    
+
     date_created = UtcDateTimeCol(notNull=True, default=UTC_NOW)
     date_submitted = UtcDateTimeCol(notNull=True, default=UTC_NOW)
     format = EnumCol(enum=HWSubmissionFormat, notNull=True)
@@ -40,14 +40,14 @@ class HWSubmission(SQLBase):
     private = BoolCol(notNull=True)
     contactable = BoolCol(notNull=True)
     submission_key = StringCol(notNull=True)
-    owner = ForeignKey(
-        dbName='owner', foreignKey='Person', validator=public_person_validator)
-    distroarchseries = ForeignKey(dbName='DistroArchSeries',
+    owner = ForeignKey(dbName='owner', foreignKey='Person',
+                       validator=public_person_validator)
+    distroarchseries = ForeignKey(dbName='distroarchseries',
                                   foreignKey='DistroArchSeries',
                                   notNull=True)
     raw_submission = ForeignKey(dbName='raw_submission',
                                 foreignKey='LibraryFileAlias',
-                                notNull=True)
+                                notNull=False, default=DEFAULT)
     system_fingerprint = ForeignKey(dbName='system_fingerprint',
                                     foreignKey='HWSystemFingerprint',
                                     notNull=True)
