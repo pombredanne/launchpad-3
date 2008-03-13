@@ -485,3 +485,26 @@ class BugWatchUpdater(object):
                  'bugtracker_url': external_bugtracker.baseurl,
                  'bug_id': bug_watch.bug.id})
 
+    def info(self, message):
+        """Record an informational message related to this bug tracker."""
+        log.info(message)
+
+    def warning(self, message, properties=None, info=None):
+        """Record a warning related to this bug tracker."""
+        if properties is None:
+            properties = self._oops_properties
+        else:
+            properties = chain(properties, self._oops_properties)
+        report_warning(message, properties, info)
+        # Also put it in the log.
+        log.warning(message)
+
+    def error(self, message, properties=None, info=None):
+        """Record an error related to this external bug tracker."""
+        if properties is None:
+            properties = self._oops_properties
+        else:
+            properties = chain(properties, self._oops_properties)
+        report_oops(message, properties, info)
+        # Also put it in the log.
+        log.error(message, exc_info=info)
