@@ -336,7 +336,7 @@ class WebServiceRequestPublicationFactory(
         """
         super(WebServiceRequestPublicationFactory, self).__init__(
             vhost_name, request_factory, publication_factory, port,
-            ['GET', 'HEAD', 'POST', 'PUT', 'DELETE', 'OPTIONS'])
+            ['GET', 'HEAD', 'POST', 'PATCH', 'PUT', 'DELETE', 'OPTIONS'])
 
 
     def canHandle(self, environment):

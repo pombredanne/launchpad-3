@@ -1975,6 +1975,7 @@ INSERT INTO emailaddress (id, email, person, status, date_created) VALUES (71, '
 INSERT INTO emailaddress (id, email, person, status, date_created) VALUES (72, 'jbuhl_nospam@gmx.de', 243614, 1, '2007-12-18 16:31:34.790641');
 INSERT INTO emailaddress (id, email, person, status, date_created) VALUES (73, 'sjoerd@spring.luon.net', 243615, 1, '2007-12-18 16:31:34.790641');
 INSERT INTO emailaddress (id, email, person, status, date_created) VALUES (74, 'mpitt@debian.org', 243616, 1, '2007-12-18 16:31:34.790641');
+INSERT INTO emailaddress (id, email, person, status, date_created) VALUES (75, 'tim@canonical.com', 243617, 4, '2008-03-06 09:55:27.289842');
 
 
 ALTER TABLE emailaddress ENABLE TRIGGER ALL;
@@ -4092,6 +4093,8 @@ INSERT INTO person (id, displayname, "password", teamowner, teamdescription, nam
 INSERT INTO person (id, displayname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, icon, mugshot, hide_email_addresses, creation_rationale, creation_comment, registrant, logo, renewal_policy, openid_identifier, account_status_comment, account_status, personal_standing, personal_standing_reason_text, mail_resumption_date, mailing_list_auto_subscribe_policy, mailing_list_receive_duplicates, visibility, verbose_bugnotifications) VALUES (243614, 'josh', NULL, NULL, NULL, 'jbuhl-nospam', NULL, NULL, NULL, NULL, 1, NULL, '2007-12-18 16:31:34.790641', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, 15, 'when the comments for debbugs #308994 were imported into Launchpad.', 62, NULL, 10, '6KHNEe3', NULL, 10, 0, NULL, NULL, 1, true, 1, false);
 INSERT INTO person (id, displayname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, icon, mugshot, hide_email_addresses, creation_rationale, creation_comment, registrant, logo, renewal_policy, openid_identifier, account_status_comment, account_status, personal_standing, personal_standing_reason_text, mail_resumption_date, mailing_list_auto_subscribe_policy, mailing_list_receive_duplicates, visibility, verbose_bugnotifications) VALUES (243615, 'Sjoerd Simons', NULL, NULL, NULL, 'sjoerd', NULL, NULL, NULL, NULL, 1, NULL, '2007-12-18 16:31:34.790641', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, 15, 'when the comments for debbugs #308994 were imported into Launchpad.', 62, NULL, 10, 'yEzBPbd', NULL, 10, 0, NULL, NULL, 1, true, 1, false);
 INSERT INTO person (id, displayname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, icon, mugshot, hide_email_addresses, creation_rationale, creation_comment, registrant, logo, renewal_policy, openid_identifier, account_status_comment, account_status, personal_standing, personal_standing_reason_text, mail_resumption_date, mailing_list_auto_subscribe_policy, mailing_list_receive_duplicates, visibility, verbose_bugnotifications) VALUES (243616, 'Martin Pitt', NULL, NULL, NULL, 'mpitt', NULL, NULL, NULL, NULL, 1, NULL, '2007-12-18 16:31:34.790641', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, 15, 'when the comments for debbugs #308994 were imported into Launchpad.', 62, NULL, 10, 'R8FpwXd', NULL, 10, 0, NULL, NULL, 1, true, 1, false);
+INSERT INTO person (id, displayname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, icon, mugshot, hide_email_addresses, creation_rationale, creation_comment, registrant, logo, renewal_policy, openid_identifier, account_status_comment, account_status, personal_standing, personal_standing_reason_text, mail_resumption_date, mailing_list_auto_subscribe_policy, mailing_list_receive_duplicates, visibility, verbose_bugnotifications) VALUES (243617, 'Tim Penhey', '8Z3kccpOP4HerugZDi/VS5VePtVDHk48XE11Mx0DmpnqiPsDLczI3g==', NULL, NULL, 'thumper', NULL, NULL, NULL, NULL, 1, NULL, '2008-03-06 09:55:27.289842', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, 1, NULL, NULL, NULL, 10, 'CALDpFr', NULL, 10, 0, NULL, NULL, 1, true, 1, true);
+INSERT INTO person (id, displayname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, icon, mugshot, hide_email_addresses, creation_rationale, creation_comment, registrant, logo, renewal_policy, openid_identifier, account_status_comment, account_status, personal_standing, personal_standing_reason_text, mail_resumption_date, mailing_list_auto_subscribe_policy, mailing_list_receive_duplicates, visibility, verbose_bugnotifications) VALUES (243618, 'Bazaar Experts', NULL, 243617, 'This team is responsible for the management of Bazaar branches in Launchpad.', 'bazaar-experts', NULL, NULL, NULL, NULL, 3, NULL, '2008-03-06 09:57:59.957489', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, NULL, NULL, NULL, NULL, 10, 'DxX7xPn', NULL, 10, 0, NULL, NULL, 1, true, 1, true);
 
 
 ALTER TABLE person ENABLE TRIGGER ALL;
@@ -8392,6 +8395,7 @@ INSERT INTO teammembership (id, person, team, status, datejoined, dateexpires, r
 INSERT INTO teammembership (id, person, team, status, datejoined, dateexpires, reviewer, reviewercomment) VALUES (75, 4, 19, 2, '2008-01-16 23:51:57.088993', NULL, 1, NULL);
 INSERT INTO teammembership (id, person, team, status, datejoined, dateexpires, reviewer, reviewercomment) VALUES (76, 33, 19, 2, '2008-01-16 23:53:40.266137', NULL, 1, NULL);
 INSERT INTO teammembership (id, person, team, status, datejoined, dateexpires, reviewer, reviewercomment) VALUES (77, 19, 17, 2, '2008-01-16 23:56:17.986769', NULL, 1, 'Yeah, we want in!');
+INSERT INTO teammembership (id, person, team, status, datejoined, dateexpires, reviewer, reviewercomment) VALUES (78, 243617, 243618, 3, '2008-03-06 09:57:59.957489', NULL, 243617, NULL);
 
 
 ALTER TABLE teammembership ENABLE TRIGGER ALL;
@@ -8554,6 +8558,9 @@ INSERT INTO teamparticipation (id, team, person) VALUES (169, 17, 19);
 INSERT INTO teamparticipation (id, team, person) VALUES (170, 32, 4);
 INSERT INTO teamparticipation (id, team, person) VALUES (171, 32, 33);
 INSERT INTO teamparticipation (id, team, person) VALUES (172, 17, 33);
+INSERT INTO teamparticipation (id, team, person) VALUES (173, 243617, 243617);
+INSERT INTO teamparticipation (id, team, person) VALUES (174, 243618, 243618);
+INSERT INTO teamparticipation (id, team, person) VALUES (175, 243618, 243617);
 
 
 ALTER TABLE teamparticipation ENABLE TRIGGER ALL;
@@ -9355,6 +9362,8 @@ INSERT INTO validpersonorteamcache (id) VALUES (243610);
 INSERT INTO validpersonorteamcache (id) VALUES (243611);
 INSERT INTO validpersonorteamcache (id) VALUES (243612);
 INSERT INTO validpersonorteamcache (id) VALUES (243613);
+INSERT INTO validpersonorteamcache (id) VALUES (243617);
+INSERT INTO validpersonorteamcache (id) VALUES (243618);
 
 
 ALTER TABLE validpersonorteamcache ENABLE TRIGGER ALL;
@@ -9478,6 +9487,7 @@ INSERT INTO wikiname (id, person, wiki, wikiname) VALUES (62, 243611, 'https://w
 INSERT INTO wikiname (id, person, wiki, wikiname) VALUES (63, 243614, 'https://wiki.ubuntu.com/', 'Josh');
 INSERT INTO wikiname (id, person, wiki, wikiname) VALUES (64, 243615, 'https://wiki.ubuntu.com/', 'SjoerdSimons');
 INSERT INTO wikiname (id, person, wiki, wikiname) VALUES (65, 243616, 'https://wiki.ubuntu.com/', 'MartinPitt2');
+INSERT INTO wikiname (id, person, wiki, wikiname) VALUES (66, 243617, 'https://wiki.ubuntu.com/', 'TimPenhey');
 
 
 ALTER TABLE wikiname ENABLE TRIGGER ALL;

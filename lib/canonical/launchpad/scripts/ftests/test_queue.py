@@ -21,7 +21,7 @@ from canonical.archiveuploader.tests import (
     mock_logger_quiet)
 from canonical.archiveuploader.nascentupload import NascentUpload
 from canonical.config import config
-from canonical.database.sqlbase import READ_COMMITTED_ISOLATION
+from canonical.database.sqlbase import ISOLATION_LEVEL_READ_COMMITTED
 from canonical.launchpad.database import PackageUploadBuild
 from canonical.launchpad.interfaces import (
     ArchivePurpose, DistroSeriesStatus, IArchiveSet, IBugSet, IBugTaskSet,
@@ -56,8 +56,7 @@ class TestQueueBase(TestCase):
         # to avoid SERIALIZATION exceptions with the Librarian.
         LaunchpadZopelessLayer.alterConnection(
                 dbuser=self.dbuser,
-                isolation=READ_COMMITTED_ISOLATION
-                )
+                isolation=ISOLATION_LEVEL_READ_COMMITTED)
 
     def _test_display(self, text):
         """Store output from queue tool for inspection."""

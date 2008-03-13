@@ -926,9 +926,10 @@ class BranchSubscriptionsView(LaunchpadView):
         # is the same as the person of the subscription.
         if self.user is None or self.user == subscription.person:
             return False
-        admins = getUtility(ILaunchpadCelebrities).admin
+        celebs = getUtility(ILaunchpadCelebrities)
         return (self.user.inTeam(subscription.person) or
-                self.user.inTeam(admins))
+                self.user.inTeam(celebs.admin) or
+                self.user.inTeam(celebs.bazaar_experts))
 
     def subscriptions(self):
         """Return a decorated list of branch subscriptions."""

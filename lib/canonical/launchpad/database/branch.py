@@ -66,7 +66,7 @@ class Branch(SQLBase):
 
     name = StringCol(notNull=False)
     title = StringCol(notNull=False)
-    summary = StringCol(notNull=True)
+    summary = StringCol(notNull=False)
     url = StringCol(dbName='url')
     whiteboard = StringCol(default=None)
     mirror_status_message = StringCol(default=None)
