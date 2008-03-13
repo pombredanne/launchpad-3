@@ -407,15 +407,10 @@ Next, we return the link as HTML.
     ...     implements(IParticipation)
     ...     principal = None
     ...     interaction = None
-
-    >>> request = InteractiveTestRequest(
-    ...     'http://launchpad.dev/sesamestreet/+baz',
-    ...     url1='http://launchpad.dev/sesamestreet/')
-
+    >>> request = InteractiveTestRequest()
     >>> login(ANONYMOUS, request)
 
     >>> link = Link('+target', 'text-->', 'summary', icon='icon')
-
     >>> print ILink(link).render() #doctest: +NORMALIZE_WHITESPACE
     <span class="action">
         <img alt="" src="icon" />
@@ -1082,10 +1077,7 @@ And thus, we don't have a facet to navigate to:
 A thing's menu may be rendered directly as HTML using the menu link's
 render() method.
 
-    >>> request = InteractiveTestRequest(
-    ...     'http://launchpad.dev/sesamestreet/+baz',
-    ...     url1='http://launchpad.dev/sesamestreet/')
-
+    >>> request = InteractiveTestRequest()
     >>> login(ANONYMOUS, request)
 
     >>> html = test_tales('context/menu:foo/first/render',
