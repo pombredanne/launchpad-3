@@ -29,8 +29,8 @@ def protect_schema(type_, schema, read_permission=CheckerPublic,
     :param write_permission: If this is not None, set access to the writable
         attributes of the schema will be added to the checker.
     """
-    read_permissions= {}
-    write_permissions= {}
+    read_permissions = {}
+    write_permissions = {}
     for name in schema.names(True):
         read_permissions[name] = read_permission
         if write_permission is not None:
