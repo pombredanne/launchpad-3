@@ -792,11 +792,10 @@ class MantisLoginHandler(ClientCookie.HTTPRedirectHandler):
             query = cgi.parse_qs(query, True)
             query['username'] = query['password'] = ['guest']
             if 'return' not in query:
-                message = (
+                raise BugWatchUpdateWarning(
                     "Mantis redirected us to the login page "
                     "but did not set a return path.")
-                report_warning(message)
-                log.warning(message)
+
             query = urllib.urlencode(query, True)
             url = urlunparse(
                 (scheme, host, path, params, query, fragment))

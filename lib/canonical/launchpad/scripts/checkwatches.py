@@ -401,12 +401,13 @@ class BugWatchUpdater(object):
                 self.txn.commit()
                 self.txn.begin()
 
-                remotesystem.error(
+                self.error(
                     "Failure updating bug %r on %s (local bugs: %s)." %
                             (bug_id, bug_tracker_url, local_ids),
                     properties=[
                         ('bug_id', bug_id),
-                        ('local_ids', local_ids)])
+                        ('local_ids', local_ids)] +
+                        self._getOOPSProperties(remotesystem))
 
     def importBug(self, external_bugtracker, bugtracker, bug_target,
                   remote_bug):
