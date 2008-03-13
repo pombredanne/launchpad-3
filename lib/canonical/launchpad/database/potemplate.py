@@ -999,7 +999,7 @@ class POTemplateToTranslationFileDataAdapter:
         messages = []
 
         for row in rows:
-            assert row.potemplate == potemplate, (
+            assert row.potemplate.id == potemplate.id, (
                 'Got a row for a different IPOTemplate.')
 
             # Skip messages which aren't anymore in the PO template.
@@ -1011,7 +1011,9 @@ class POTemplateToTranslationFileDataAdapter:
             msgset.sequence = row.sequence
             msgset.obsolete = False
             msgset.msgid_singular = row.msgid_singular
+            msgset.singular_text = row.potmsgset.singular_text
             msgset.msgid_plural = row.msgid_plural
+            msgset.plural_text = row.potmsgset.plural_text
             msgset.context = row.context
             msgset.comment = row.comment
             msgset.source_comment = row.source_comment
