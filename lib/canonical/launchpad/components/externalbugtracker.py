@@ -113,6 +113,10 @@ class BugNotFound(BugWatchUpdateWarning):
     """The bug was not found in the external bug tracker."""
 
 
+class UnknownRemoteStatusError(BugWatchUpdateWarning):
+    """Raised when a remote bug's status isn't mapped to a `BugTaskStatus`."""
+
+
 _exception_to_bugwatcherrortype = [
    (BugTrackerConnectError, BugWatchErrorType.CONNECTION_ERROR),
    (UnparseableBugData, BugWatchErrorType.UNPARSABLE_BUG),
@@ -368,8 +372,6 @@ class Bugzilla(ExternalBugTracker):
         Bugzilla status consist of two parts separated by space, where
         the last part is the resolution. The resolution is optional.
         """
-        if not remote_status or remote_status == UNKNOWN_REMOTE_STATUS:
-            return BugTaskStatus.UNKNOWN
         if ' ' in remote_status:
             remote_status, resolution = remote_status.split(' ', 1)
         else:
@@ -418,10 +420,7 @@ class Bugzilla(ExternalBugTracker):
         elif remote_status in ['UNCONFIRMED']:
             malone_status = BugTaskStatus.NEW
         else:
-            self.warning(
-                "Unknown Bugzilla status '%s' at %s." % (
-                    remote_status, self.baseurl))
-            malone_status = BugTaskStatus.UNKNOWN
+            raise UnknownRemoteStatusError()
 
         return malone_status
 
@@ -629,12 +628,10 @@ class DebBugs(ExternalBugTracker):
         optional tags. The tags are also separated with a space
         character.
         """
-        if not remote_status or remote_status == UNKNOWN_REMOTE_STATUS:
-            return BugTaskStatus.UNKNOWN
         parts = remote_status.split(' ')
         if len(parts) < 2:
-            self.warning('Malformed debbugs status: %r.' % remote_status)
-            return BugTaskStatus.UNKNOWN
+            raise UnknownRemoteStatusError()
+
         status = parts[0]
         severity = parts[1]
         tags = parts[2:]
@@ -643,8 +640,7 @@ class DebBugs(ExternalBugTracker):
         try:
             malone_status = debbugsstatusmap[status]
         except KeyError:
-            self.warning('Unknown debbugs status "%s".' % status)
-            malone_status = BugTaskStatus.UNKNOWN
+            raise UnknownRemoteStatusError()
         if status == 'open':
             confirmed_tags = [
                 'help', 'confirmed', 'upstream', 'fixed-upstream']
@@ -1217,10 +1213,6 @@ class Mantis(ExternalBugTracker):
         return BugTaskImportance.UNKNOWN
 
     def convertRemoteStatus(self, status_and_resolution):
-        if (not status_and_resolution or
-            status_and_resolution == UNKNOWN_REMOTE_STATUS):
-            return BugTaskStatus.UNKNOWN
-
         remote_status, remote_resolution = status_and_resolution.split(
             ": ", 1)
 
@@ -1249,9 +1241,7 @@ class Mantis(ExternalBugTracker):
                 # XXX: kiko 2007-07-05: Pretty inconsistently used
                 return BugTaskStatus.FIXRELEASED
 
-        self.warning("Unknown status/resolution %s/%s." %
-                     (remote_status, remote_resolution))
-        return BugTaskStatus.UNKNOWN
+        raise UnknownRemoteStatusError()
 
 
 class Trac(ExternalBugTracker):
@@ -1390,9 +1380,8 @@ class Trac(ExternalBugTracker):
                 return remote_bug['status']
             except KeyError:
                 # Some Trac instances don't include the bug status in their
-                # CSV exports. In those cases we raise a warning.
-                self.warning("Trac ticket %i defines no status." % bug_id)
-                return UNKNOWN_REMOTE_STATUS
+                # CSV exports. In those cases we raise a error.
+                raise UnknownRemoteStatusError()
 
     def convertRemoteImportance(self, remote_importance):
         """See `ExternalBugTracker`.
@@ -1419,14 +1408,12 @@ class Trac(ExternalBugTracker):
             'reopened': BugTaskStatus.NEW,
             'wontfix': BugTaskStatus.WONTFIX,
             'worksforme': BugTaskStatus.INVALID,
-            UNKNOWN_REMOTE_STATUS: BugTaskStatus.UNKNOWN,
         }
 
         try:
             return status_map[remote_status]
         except KeyError:
-            self.warning("Unknown remote status '%s'." % remote_status)
-            return BugTaskStatus.UNKNOWN
+            raise UnknownRemoteStatusError()
 
 
 class Roundup(ExternalBugTracker):
@@ -1501,7 +1488,6 @@ class Roundup(ExternalBugTracker):
                     9: BugTaskStatus.CONFIRMED,    # Resolution: remind
                     10: BugTaskStatus.WONTFIX,     # Resolution: wontfix
                     11: BugTaskStatus.INVALID,     # Resolution: works for me
-                    UNKNOWN_REMOTE_STATUS: BugTaskStatus.UNKNOWN},
 
                 # Closed issues (status=2)
                 2: {
@@ -1530,7 +1516,6 @@ class Roundup(ExternalBugTracker):
                 6: BugTaskStatus.INPROGRESS,   # Roundup status 'testing'
                 7: BugTaskStatus.FIXCOMMITTED, # Roundup status 'done-cbb'
                 8: BugTaskStatus.FIXRELEASED,  # Roundup status 'resolved'
-                UNKNOWN_REMOTE_STATUS: BugTaskStatus.UNKNOWN}
 
     def isPython(self):
         """Return True if the remote bug tracker is at bugs.python.org.
@@ -1634,24 +1619,13 @@ class Roundup(ExternalBugTracker):
 
     def convertRemoteStatus(self, remote_status):
         """See `IExternalBugTracker`."""
-        # XXX: 2007-09-04 Graham Binns
-        #      We really shouldn't have to do this here because we
-        #      should logically never be passed UNKNOWN_REMOTE_STATUS as
-        #      a status to convert in the first place. Unfortunately,
-        #      that's exactly what ExternalBugTracker.updateBugWatches()
-        #      does (LP bug 136391), so until that bug is fixed we make
-        #      this check here for the sake of avoiding silly errors.
-        if remote_status == UNKNOWN_REMOTE_STATUS:
-            return BugTaskStatus.UNKNOWN
-
         if self.isPython():
             return self._convertPythonRemoteStatus(remote_status)
         else:
             try:
                 return self.status_map[int(remote_status)]
             except (KeyError, ValueError):
-                self.warning("Unknown remote status '%s'." % remote_status)
-                return BugTaskStatus.UNKNOWN
+                raise UnknownRemoteStatusError()
 
     def _convertPythonRemoteStatus(self, remote_status):
         """Convert a Python bug status into a BugTaskStatus.
@@ -1674,8 +1648,7 @@ class Roundup(ExternalBugTracker):
             # If we can't find the status in our status map we can give
             # up now.
             if not self.status_map.has_key(status):
-                self.warning("Unknown remote status '%s'." % remote_status)
-                return BugTaskStatus.UNKNOWN
+                raise UnknownRemoteStatusError()
         except ValueError:
             raise AssertionError("The remote status must be an integer.")
 
@@ -1695,8 +1668,7 @@ class Roundup(ExternalBugTracker):
         elif self.status_map[1].has_key(resolution):
             return self.status_map[1][resolution]
         else:
-            self.warning("Unknown remote status '%s'." % remote_status)
-            return BugTaskStatus.UNKNOWN
+            raise UnknownRemoteStatusError()
 
 
 class SourceForge(ExternalBugTracker):
@@ -1793,14 +1765,6 @@ class SourceForge(ExternalBugTracker):
 
     def convertRemoteStatus(self, remote_status):
         """See `IExternalBugTracker`."""
-        # XXX: 2007-09-06 Graham Binns
-        #      We shouldn't have to do this, but
-        #      ExternalBugTracker.updateBugWatches() will pass us
-        #      UNKNOWN_BUG_STATUS if it gets it from getRemoteStatus()
-        #      (Launchpad bug 136391).
-        if remote_status == UNKNOWN_REMOTE_STATUS:
-            return BugTaskStatus.UNKNOWN
-
         # SourceForge statuses come in two parts: status and
         # resolution. Both of these are strings. We can look
         # them up in the form status_map[status][resolution]
@@ -1852,14 +1816,12 @@ class SourceForge(ExternalBugTracker):
             resolution = None
 
         if status not in status_map:
-            self.warning("Unknown status '%s'" % remote_status)
-            return BugTaskStatus.UNKNOWN
+            raise UnknownRemoteStatusError()
 
         local_status = status_map[status].get(
             resolution, status_map['Open'].get(resolution))
         if local_status is None:
-            self.warning("Unknown status '%s'" % remote_status)
-            return BugTaskStatus.UNKNOWN
+            raise UnknownRemoteStatusError()
         else:
             return local_status
 
@@ -2049,15 +2011,13 @@ class RequestTracker(ExternalBugTracker):
             'open': BugTaskStatus.CONFIRMED,
             'stalled': BugTaskStatus.CONFIRMED,
             'rejected': BugTaskStatus.INVALID,
-            'resolved': BugTaskStatus.FIXRELEASED,
-            UNKNOWN_REMOTE_STATUS.lower(): BugTaskStatus.UNKNOWN}
+            'resolved': BugTaskStatus.FIXRELEASED,}
 
         try:
             remote_status = remote_status.lower()
             return status_map[remote_status]
         except KeyError:
-            self.warning("Unknown status '%s'." % remote_status)
-            return BugTaskStatus.UNKNOWN
+            raise UnknownRemoteStatusError()
 
 
 BUG_TRACKER_CLASSES = {

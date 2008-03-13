@@ -17,11 +17,12 @@ from canonical.launchpad.components import externalbugtracker
 from canonical.launchpad.components.externalbugtracker import (
     BugNotFound, BugTrackerConnectError, BugWatchUpdateError, InvalidBugId,
     UnparseableBugData, UnparseableBugTrackerVersion,
-    UnsupportedBugTrackerVersion, UnknownBugTrackerTypeError)
+    UnsupportedBugTrackerVersion, UnknownBugTrackerTypeError,
+    UnknownRemoteStatusError)
 from canonical.launchpad.interfaces import (
     BugWatchErrorType, CreateBugParams, IBugTrackerSet, IBugWatchSet,
     IDistribution, ILaunchpadCelebrities, IPersonSet, ISupportsCommentImport,
-    PersonCreationRationale)
+    PersonCreationRationale, UNKNOWN_REMOTE_STATUS)
 from canonical.launchpad.webapp.interfaces import IPlacelessAuthUtility
 from canonical.launchpad.webapp.interaction import (
     setupInteraction, endInteraction)
@@ -229,7 +230,7 @@ class BugWatchUpdater(object):
                 "ExternalBugtracker for BugTrackerType '%s' is not known." % (
                     error.bugtrackertypename))
             externalbugtracker.report_warning(message)
-            self.log.warning(message)
+            self.warning(message)
         else:
             if bug_watches_to_update.count() > 0:
                 self.updateBugWatches(remotesystem, bug_watches_to_update)
@@ -249,6 +250,10 @@ class BugWatchUpdater(object):
         BugTaskStatus.UNKNOWN will be returned and a warning will be
         logged.
         """
+        # We don't bother trying to convert UNKNOWN_REMOTE_STATUS.
+        if remote_status == UNKNOWN_REMOTE_STATUS:
+            return BugTaskStatus.UNKNOWN
+
         try:
             launchpad_status = remotesystem.convertRemoteStatus(
                 remote_status)
@@ -339,7 +344,7 @@ class BugWatchUpdater(object):
                             new_remote_importance))
                 except InvalidBugId:
                     error = BugWatchErrorType.INVALID_BUG_ID
-                    remotesystem.warning(
+                    self.warning(
                         "Invalid bug %r on %s (local bugs: %s)." %
                              (bug_id, remotesystem.baseurl, local_ids),
                         properties=[
@@ -348,7 +353,7 @@ class BugWatchUpdater(object):
                         info=sys.exc_info())
                 except BugNotFound:
                     error = BugWatchErrorType.BUG_NOT_FOUND
-                    remotesystem.warning(
+                    self.warning(
                         "Didn't find bug %r on %s (local bugs: %s)." %
                              (bug_id, remotesystem.baseurl, local_ids),
                         properties=[
@@ -430,7 +435,7 @@ class BugWatchUpdater(object):
         if package is not None:
             bug_target = package
         else:
-            external_bugtracker.warning(
+            self.warning(
                 'Unknown %s package (#%s at %s): %s' % (
                     bug_target.name, remote_bug,
                     external_bugtracker.baseurl, package_name))
