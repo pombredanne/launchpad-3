@@ -90,3 +90,7 @@ class ShipItEdUbuntuLayer(ShipItLayer):
 class FeedsLayer(LaunchpadLayer):
     """The `FeedsLayer` Layer."""
 
+
+class WebServiceLayer(LaunchpadLayer):
+    """The layer for web service requests."""
+

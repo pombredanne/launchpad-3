@@ -911,6 +911,7 @@ class WebServicePublication(LaunchpadBrowserPublication):
 
 class WebServiceClientRequest(LaunchpadBrowserRequest):
     """Request type for a resource published through the web service."""
+    implements(canonical.launchpad.layers.WebServiceLayer)
 
 # ---- openid
 
