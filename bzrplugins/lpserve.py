@@ -19,7 +19,7 @@ from bzrlib import urlutils, ui
 from bzrlib.smart import medium, server
 from bzrlib.transport import chroot, get_transport, remote
 
-from canonical.authserver.client.twistedclient import get_blocking_proxy
+from canonical.authserver.client import get_blocking_proxy
 from canonical.config import config
 
 
