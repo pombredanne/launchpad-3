@@ -71,6 +71,8 @@ class BMPMailer:
 
     def generateEmail(self, recipient):
         subscription, rationale = self.recipients[recipient]
+        headers = {'X-Launchpad-Branch': subscription.branch.unique_name,
+                   'X-Launchpad-Message-Rationale': rationale}
         subject = 'Merge of %s into %s proposed' % (
             self.merge_proposal.source_branch.displayname,
             self.merge_proposal.target_branch.displayname,)
@@ -85,4 +87,4 @@ class BMPMailer:
             'edit_subscription': ''
             }
         body = template % params
-        return ('', subject, body)
+        return (headers, subject, body)

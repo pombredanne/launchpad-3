@@ -58,6 +58,10 @@ Baz Qux has proposed merging foo into bar.
 %s
 """ % (canonical_url(bmp), mailer.getReason(subscriber)), body)
         self.assertEqual('Merge of foo into bar proposed', subject)
+        self.assertEqual(
+            {'X-Launchpad-Branch': bmp.source_branch.unique_name,
+             'X-Launchpad-Message-Rationale': 'Subscriber'},
+            headers)
 
     def test_getReasonPerson(self):
         """Ensure the correct reason is generated for individuals."""
