@@ -32,8 +32,8 @@ This is a dummy logger class to capture the export's log messages.
 
 Here's somebody to make a request.
 
-  >>> from canonical.launchpad.database import Person
-  >>> person = Person.get(1)
+    >>> from canonical.launchpad.database import Person
+    >>> person = Person.get(1)
 
 
 == Requesting PO files ==

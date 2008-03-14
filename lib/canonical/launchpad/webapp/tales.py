@@ -635,6 +635,13 @@ class BugTaskImageDisplayAPI(ObjectImageDisplayAPI):
         return " ".join(badges)
 
 
+class QuestionImageDisplayAPI(ObjectImageDisplayAPI):
+    """Adapter for IQuestion to a formatted string. Used for image:icon."""
+
+    def icon(self):
+        return '<img alt="" height="14" width="14" src="/@@/question" />'
+
+
 class SpecificationImageDisplayAPI(ObjectImageDisplayAPI):
     """Adapter for ISpecification objects to a formatted string. This inherits
     from the generic ObjectImageDisplayAPI and overrides the icon
@@ -1041,6 +1048,17 @@ class ProductSeriesFormatterAPI(CustomizableFormatter):
         """See CustomizableFormatter._link_summary_values."""
         return {'series': self._context.name,
                 'product': self._context.product.displayname}
+
+
+class QuestionFormatterAPI(CustomizableFormatter):
+    """Adapter providing fmt support for question objects."""
+
+    _link_summary_template = _('%(id)s: %(title)s')
+    _link_permission = 'zope.Public'
+
+    def _link_summary_values(self):
+        """See CustomizableFormatter._link_summary_values."""
+        return {'id': str(self._context.id), 'title': self._context.title}
 
 
 class SpecificationFormatterAPI(CustomizableFormatter):
