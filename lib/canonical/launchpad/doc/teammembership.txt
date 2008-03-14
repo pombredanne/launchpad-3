@@ -102,7 +102,7 @@ approved.  Note, though, that in the case of teams we need to pass a
 requester to the join() method.
 
     >>> ubuntu_team = personset.getByName('ubuntu-team')
-    >>> from canonical.launchpad.ftests import ANONYMOUS, login, logout
+    >>> from canonical.launchpad.ftests import ANONYMOUS, login
     >>> login(ubuntu_team.teamowner.preferredemail.email)
     >>> ubuntu_team.join(t3, ubuntu_team.teamowner)
     >>> t3.subscriptionpolicy
@@ -141,9 +141,9 @@ to a team.
     ...     print "No exception raised"
     zope.security.interfaces.Unauthorized (..., 'addMember', 'launchpad.Edit')
 
-Log in as the team owner.
-
+    # Log in as the team owner.
     >>> login(t3.teamowner.preferredemail.email)
+
     >>> t3.addMember(
     ...     salgado, reviewer=sabdfl, status=TeamMembershipStatus.ADMIN)
     >>> from canonical.launchpad.interfaces import ITeamMembershipSet
@@ -163,6 +163,13 @@ Log in as the team owner.
     >>> flush_database_updates()
     >>> marilize in t3.activemembers
     False
+
+As expected, the membership object implements ITeamMembership.
+
+    >>> from canonical.launchpad.webapp.testing import verifyObject
+    >>> from canonical.launchpad.interfaces import ITeamMembership
+    >>> verifyObject(ITeamMembership, membership)
+    True
 
 Note that, by default, the ITeam.addMember() API works slightly different
 when the added member is a team. In that case the team will actually be

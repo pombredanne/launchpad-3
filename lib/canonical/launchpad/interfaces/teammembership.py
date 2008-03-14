@@ -95,9 +95,8 @@ class ITeamMembership(Interface):
     id = Int(title=_('ID'), required=True, readonly=True)
     team = Int(title=_("Team"), required=True, readonly=False)
     person = Int(title=_("Member"), required=True, readonly=False)
-    reviewer = Int(title=_("Reviewer"), required=False, readonly=False)
-    # XXX: salgado, 2008-03-10: Can't use Object(schema=IPerson) here because
-    # that would cause circular imports.
+    # Can't use Object(schema=IPerson) here because that would cause circular
+    # imports.
     proposed_by = Attribute(_('Proponent'))
     reviewed_by = Attribute(
         _("The team admin who approved/rejected the member."))
@@ -107,7 +106,7 @@ class ITeamMembership(Interface):
     last_changed_by = Attribute(_('Last person who change this'))
 
     datejoined = Datetime(
-        title=_("Date joined"), required=False, readonly=False,
+        title=_("Date joined"), required=False, readonly=True,
         description=_(
             "The date in which this membership was made active for the "
             "first time."))
@@ -117,28 +116,28 @@ class ITeamMembership(Interface):
         title=_("Date created"), required=False, readonly=True,
         description=_("The date in which this membership was created."))
     date_proposed = Datetime(
-        title=_("Date proposed"), required=False, readonly=False,
+        title=_("Date proposed"), required=False, readonly=True,
         description=_("The date in which this membership was proposed."))
     date_acknowledged = Datetime(
-        title=_("Date acknowledged"), required=False, readonly=False,
+        title=_("Date acknowledged"), required=False, readonly=True,
         description=_("The date in which this membership was acknowledged by "
                       "the member (or someone acting on their behalf)."))
     date_reviewed = Datetime(
-        title=_("Date reviewed"), required=False, readonly=False,
+        title=_("Date reviewed"), required=False, readonly=True,
         description=_("The date in which this membership was approved/"
                       "rejected by one of the team's admins."))
     date_last_changed = Datetime(
-        title=_("Date last changed"), required=False, readonly=False,
+        title=_("Date last changed"), required=False, readonly=True,
         description=_("The date in which this membership was last changed."))
 
     last_change_comment = Text(
-        title=_("Comment on the last change"), required=False, readonly=False)
+        title=_("Comment on the last change"), required=False, readonly=True)
     proponent_comment = Text(
-        title=_("Proponent comment"), required=False, readonly=False)
+        title=_("Proponent comment"), required=False, readonly=True)
     acknowledger_comment = Text(
-        title=_("Acknowledger comment"), required=False, readonly=False)
+        title=_("Acknowledger comment"), required=False, readonly=True)
     reviewer_comment = Text(
-        title=_("Reviewer comment"), required=False, readonly=False)
+        title=_("Reviewer comment"), required=False, readonly=True)
     status = Choice(
         title=_("The state of this membership"), required=True,
         readonly=True, vocabulary=TeamMembershipStatus)

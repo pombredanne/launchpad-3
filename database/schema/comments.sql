@@ -658,7 +658,7 @@ COMMENT ON COLUMN TeamMembership.date_last_changed IS 'The date this membership 
 COMMENT ON COLUMN TeamMembership.proposed_by IS 'The user who proposed the person as member of the team.';
 COMMENT ON COLUMN TeamMembership.proponent_comment IS 'The comment left by the proponent.';
 COMMENT ON COLUMN TeamMembership.date_proposed IS 'The date of the proposal.';
-COMMENT ON COLUMN TeamMembership.acknowledged_by IS 'The proposed person or a team admin in case the proposed member is in fact a team.';
+COMMENT ON COLUMN TeamMembership.acknowledged_by IS 'The member (or someone acting on his behalf) who accepts an invitation to join a team';
 COMMENT ON COLUMN TeamMembership.date_acknowledged IS 'The date of acknowledgement.';
 COMMENT ON COLUMN TeamMembership.acknowledger_comment IS 'The comment left by the person who acknowledged the membership.';
 COMMENT ON COLUMN TeamMembership.reviewed_by IS 'The team admin who reviewed (approved/declined) the membership.';
@@ -668,7 +668,7 @@ approved/declined.';
 
 -- TeamParticipation
 COMMENT ON TABLE TeamParticipation IS 'The participation of a person on a team, which can be a direct or indirect membership.';
-COMMENT ON COLUMN TeamParticipation.person IS 'The person.';
+COMMENT ON COLUMN TeamParticipation.person IS 'The member.';
 COMMENT ON COLUMN TeamParticipation.team IS 'The team.';
 
 -- TranslationMessage

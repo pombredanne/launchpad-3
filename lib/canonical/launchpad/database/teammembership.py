@@ -69,8 +69,7 @@ class TeamMembership(SQLBase):
     date_acknowledged = UtcDateTimeCol(default=None)
     date_reviewed = UtcDateTimeCol(default=None)
     date_last_changed = UtcDateTimeCol(default=None)
-    last_change_comment = StringCol(
-        dbName='last_change_comment', default=None)
+    last_change_comment = StringCol(default=None)
     proponent_comment = StringCol(default=None)
     acknowledger_comment = StringCol(default=None)
     reviewer_comment = StringCol(default=None)
