@@ -7,7 +7,6 @@ __metaclass__ = type
 
 __all__ = [
     'DAYS_BEFORE_EXPIRATION_WARNING_IS_SENT',
-    'ITeamMember',
     'ITeamMembership',
     'ITeamMembershipSet',
     'ITeamParticipation',
@@ -20,7 +19,6 @@ from zope.interface import Attribute, Interface
 from canonical.lazr import DBEnumeratedType, DBItem
 
 from canonical.launchpad import _
-from canonical.launchpad.fields import PublicPersonChoice
 
 # One week before a membership expires we send a notification to the member,
 # either inviting him to renew his own membership or asking him to get a team
@@ -239,16 +237,6 @@ class ITeamMembershipSet(Interface):
         If the given person or team is None, there will obviously be no
         TeamMembership and I'll return None.
         """
-
-
-class ITeamMember(Interface):
-    """The interface used in the form to add a new member to a team."""
-
-    newmember = PublicPersonChoice(
-        title=_('New member'), required=True,
-        vocabulary='ValidTeamMember',
-        description=_("The user or team which is going to be "
-                        "added as the new member of this team."))
 
 
 class ITeamParticipation(Interface):

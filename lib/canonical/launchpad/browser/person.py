@@ -97,11 +97,11 @@ import urllib
 from zope.app.form.browser import SelectWidget, TextAreaWidget
 from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 from zope.formlib import form
-from zope.interface import implements
+from zope.interface import implements, Interface
 from zope.component import getUtility
 from zope.publisher.interfaces import NotFound
 from zope.publisher.interfaces.browser import IBrowserPublisher
-from zope.schema import Choice, List, TextLine
+from zope.schema import Choice, List, Text, TextLine
 from zope.schema.vocabulary import SimpleVocabulary, SimpleTerm
 from zope.security.interfaces import Unauthorized
 
@@ -114,20 +114,20 @@ from canonical.widgets.itemswidgets import LabeledMultiCheckBoxWidget
 from canonical.cachedproperty import cachedproperty
 
 from canonical.launchpad.interfaces import (
-    AccountStatus, BranchListingSort, BugTaskSearchParams,
-    BugTaskStatus, CannotUnsubscribe,
-    DAYS_BEFORE_EXPIRATION_WARNING_IS_SENT, EmailAddressStatus,
-    GPGKeyNotFoundError, IBranchSet, ICountry, IEmailAddress,
-    IEmailAddressSet, IGPGHandler, IGPGKeySet, IIrcIDSet, IJabberIDSet,
-    ILanguageSet, ILaunchBag, ILoginTokenSet, IMailingListSet, INewPerson,
-    IPOTemplateSet, IPasswordEncryptor, IPerson, IPersonChangePassword,
-    IPersonClaim, IPersonSet, IPollSet, IPollSubset, IOpenLaunchBag,
-    IRequestPreferredLanguages, ISSHKeySet, ISignedCodeOfConductSet, ITeam,
-    ITeamMembership, ITeamMembershipSet, ITeamReassignment, IWikiNameSet,
-    LoginTokenType, NotFoundError, PersonCreationRationale, PersonVisibility,
-    QuestionParticipation, SSHKeyType, SpecificationFilter,
-    TeamMembershipRenewalPolicy, TeamMembershipStatus, TeamSubscriptionPolicy,
-    UBUNTU_WIKI_URL, UNRESOLVED_BUGTASK_STATUSES, UnexpectedFormData,
+    AccountStatus, BranchListingSort, BugTaskSearchParams, BugTaskStatus,
+    CannotUnsubscribe, DAYS_BEFORE_EXPIRATION_WARNING_IS_SENT,
+    EmailAddressStatus, GPGKeyNotFoundError, IBranchSet, ICountry,
+    IEmailAddress, IEmailAddressSet, IGPGHandler, IGPGKeySet, IIrcIDSet,
+    IJabberIDSet, ILanguageSet, ILaunchBag, ILoginTokenSet, IMailingListSet,
+    INewPerson, IPOTemplateSet, IPasswordEncryptor, IPerson,
+    IPersonChangePassword, IPersonClaim, IPersonSet, IPollSet, IPollSubset,
+    IOpenLaunchBag, IRequestPreferredLanguages, ISSHKeySet,
+    ISignedCodeOfConductSet, ITeam, ITeamMembership, ITeamMembershipSet,
+    ITeamReassignment, IWikiNameSet, LoginTokenType, NotFoundError,
+    PersonCreationRationale, PersonVisibility, QuestionParticipation,
+    SSHKeyType, SpecificationFilter, TeamMembershipRenewalPolicy,
+    TeamMembershipStatus, TeamSubscriptionPolicy, UBUNTU_WIKI_URL,
+    UNRESOLVED_BUGTASK_STATUSES, UnexpectedFormData,
     is_participant_in_beta_program)
 
 from canonical.launchpad.browser.bugtask import (
@@ -409,12 +409,24 @@ class TeamMembershipSelfRenewalView(LaunchpadFormView):
         pass
 
 
+class ITeamMembershipInvitationAcknowledgementForm(Interface):
+    """Schema for the form in which team admins acknowledge invitations.
+
+    We could use ITeamMembership for that, but the acknowledger_comment is
+    marked readonly there and that means LaunchpadFormView won't include the
+    value of that in the data given to our action handler.
+    """
+
+    acknowledger_comment = Text(
+        title=_("Comment"), required=False, readonly=False)
+
+
 class TeamInvitationView(LaunchpadFormView):
     """Where team admins can accept/decline membership invitations."""
 
     implements(IBrowserPublisher)
 
-    schema = ITeamMembership
+    schema = ITeamMembershipInvitationAcknowledgementForm
     label = 'Team membership invitation'
     field_names = ['acknowledger_comment']
     custom_widget('acknowledger_comment', TextAreaWidget, height=5, width=60)
