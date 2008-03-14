@@ -20,6 +20,7 @@ import urlparse
 from email.mime.text import MIMEText
 from email.utils import formataddr
 
+from bzrlib.branch import Branch
 from bzrlib.smtp_connection import SMTPConnection
 
 
@@ -131,7 +132,6 @@ def get_branch_and_user(filename):
 
 def get_this_branch():
     """Get the branch that this review script lives in."""
-    from bzrlib.branch import Branch
     branch_root = os.path.dirname(os.path.dirname(__file__))
     return Branch.open(branch_root)
 
