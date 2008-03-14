@@ -117,41 +117,4 @@
     </div>
   </tal:hosted-branch>
 
-  <tal:hosted-branch tal:condition="branch/branch_type/enumvalue:IMPORTED">
-    <tal:comment condition="nothing">
-      <!-- Once we have the handy link to the code import object, we
-           should provide details here. -->
-    </tal:comment>
-
-    <h2>Import details</h2>
-    <p>This branch is updated by the Launchpad import system.</p>
-
-    <tal:has-codeimport condition="branch/code_import"
-                        define="code_import branch/code_import">
-      <table id="code_import_details">
-        <tr>
-          <th>Review Status:</th>
-          <td tal:content="code_import/review_status/title"/>
-        </tr>
-      <tal:cvs-import condition="code_import/rcs_type/enumvalue:CVS">
-        <tr>
-          <th>CVS Repository:</th>
-          <td tal:content="code_import/cvs_root"/>
-        </tr>
-        <tr>
-          <th>CVS Module:</th>
-          <td tal:content="code_import/cvs_module"/>
-        </tr>
-      </tal:cvs-import>
-      <tal:svn-import condition="code_import/rcs_type/enumvalue:SVN">
-        <tr>
-          <th>Subversion Branch:</th>
-          <td tal:content="code_import/svn_branch_url"/>
-        </tr>
-      </tal:svn-import>
-      </table>
-    </tal:has-codeimport>
-
-  </tal:hosted-branch>
-
 </div>

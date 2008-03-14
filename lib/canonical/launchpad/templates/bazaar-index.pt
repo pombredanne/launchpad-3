@@ -39,7 +39,7 @@
             </tal:production-site>
             <tal:non-production-site
                 condition="not: config/launchpad/is_production_data">
-              <a href="/+code-imports/+new">
+              <a href="/+code-imports/+new" id="new-code-import">
                 <img alt="Import your project"
                      src="/+icing/but-lrg-importyourproject.gif"/>
               </a>

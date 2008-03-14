@@ -5,8 +5,8 @@
 __metaclass__ = type
 
 __all__ = [
-    'CodeImportSetView',
     'CodeImportNewView',
+    'CodeImportSetView',
     'CodeImportView',
     ]
 
@@ -22,17 +22,17 @@ from zope.schema import Choice, TextLine
 from canonical.launchpad import _
 from canonical.launchpad.interfaces import (
     BranchSubscriptionDiffSize, BranchSubscriptionNotificationLevel,
-    branch_name_validator, CodeImportReviewStatus, ICodeImport,
+    branch_name_validator, CodeImportReviewStatus, IBranchSet, ICodeImport,
     ICodeImportSet, ILaunchpadCelebrities, ILaunchpadRoot,
     RevisionControlSystems)
 from canonical.launchpad.webapp import (
     action, canonical_url, custom_widget, LaunchpadFormView, LaunchpadView)
 from canonical.launchpad.webapp.batching import BatchNavigator
+from canonical.launchpad.webapp.menu import structured
 from canonical.widgets import LaunchpadDropdownWidget
 from canonical.widgets.itemswidgets import (
     LaunchpadRadioWidget, LaunchpadRadioWidgetWithDescription)
 from canonical.widgets.textwidgets import StrippedTextWidget, URIWidget
-
 
 class ReviewStatusDropdownWidget(LaunchpadDropdownWidget):
     """A <select> widget with a more appropriate 'no value' message.
@@ -194,11 +194,11 @@ class CodeImportNewView(LaunchpadFormView):
                 cvs_root, cvs_module)
 
             if code_import is not None:
-                self.addError(
-                    "Those CVS details are already specified for"
-                    " the imported branch <a href=\"%s\">%s</a>."
-                    % (canonical_url(code_import.branch),
-                       code_import.branch.uniquename))
+                self.addError(structured("""
+                    Those CVS details are already specified for
+                    the imported branch <a href="%s">%s</a>.""",
+                    canonical_url(code_import.branch),
+                    code_import.branch.unique_name))
 
     def _validateSVN(self, svn_branch_url):
         if not (svn_branch_url or self.getFieldError('svn_branch_url')):
@@ -210,10 +210,11 @@ class CodeImportNewView(LaunchpadFormView):
             if code_import is not None:
                 self.setFieldError(
                     'svn_branch_url',
-                    "This Subversion branch URL is already specified for"
-                    " the imported branch <a href=\"%s\">%s</a>."
-                    % (canonical_url(code_import.branch),
-                       code_import.branch.uniquename))
+                    structured("""
+                    This Subversion branch URL is already specified for
+                    the imported branch <a href="%s">%s</a>.""",
+                    canonical_url(code_import.branch),
+                    code_import.branch.unique_name))
 
     def validate(self, data):
         # If the user has specified a subversion url, we need
@@ -236,3 +237,23 @@ class CodeImportNewView(LaunchpadFormView):
             self._validateSVN(data.get('svn_branch_url'))
         else:
             raise AssertionError('Unknown revision control type.')
+
+        # Check for an existing branch owned by the vcs-imports
+        # for the product and name specified.
+        if data.get('product') and data.get('branch_name'):
+            existing_branch = getUtility(IBranchSet).getBranch(
+                getUtility(ILaunchpadCelebrities).vcs_imports,
+                data['product'],
+                data['branch_name'])
+            if existing_branch is not None:
+                self.setFieldError(
+                    'branch_name',
+                    structured("""
+                    There is already an existing import for
+                    <a href="%(product_url)s">%(product_name)s</a>
+                    with the name of
+                    <a href="%(branch_url)s">%(branch_name)s</a>.""",
+                    product_url=canonical_url(existing_branch.product),
+                    product_name=existing_branch.product.name,
+                    branch_url=canonical_url(existing_branch),
+                    branch_name=existing_branch.name))
