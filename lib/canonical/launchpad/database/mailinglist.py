@@ -304,9 +304,6 @@ class MailingList(SQLBase):
         if person.isTeam():
             raise CannotSubscribe('Teams cannot be mailing list members: %s' %
                                   person.displayname)
-        if not person.hasParticipationEntryFor(self.team):
-            raise CannotSubscribe('%s is not a member of team %s' %
-                                  (person.displayname, self.team.displayname))
         if address is not None and address.person != person:
             raise CannotSubscribe('%s does not own the email address: %s' %
                                   (person.displayname, address.email))

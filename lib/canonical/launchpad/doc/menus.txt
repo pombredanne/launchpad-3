@@ -466,6 +466,8 @@ To test this, we need a dummy request object that provides `getURL()`.
     >>> class DummyRequest:
     ...     implements(IHTTPApplicationRequest, IBrowserRequest)
     ...
+    ...     interaction = None
+    ...
     ...     def __init__(self, url, query=None, url1=None):
     ...         self.url = url
     ...         self.query = query
@@ -491,7 +493,9 @@ To test this, we need a dummy request object that provides `getURL()`.
     ...             return default
     ...         else:
     ...             return self.query
-
+    ...
+    ...     def setPrincipal(self, principal):
+    ...         self.principal = principal
     >>> from canonical.launchpad.webapp.uri import URI
 
 The following request is for a url that is different from all of the facet
@@ -911,7 +915,6 @@ Let's try again, this time with a request from the participation.
 
     >>> participation = DummyRequest(
     ...     'http://launchpad.dev/sesamestreet/+bar')
-    >>> participation.interaction = None
     >>> login(ANONYMOUS, participation)
 
     >>> links = test_tales(
