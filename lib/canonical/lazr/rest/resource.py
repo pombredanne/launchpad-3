@@ -139,6 +139,7 @@ class HTTPResource:
         if (host != request_host or protocol != site_protocol or
             query != '' or fragment != ''):
             raise NotFound(self, url, self.request)
+
         path = map(urllib.unquote, path.split('/')[1:])
         path.reverse()
 
@@ -495,12 +496,6 @@ class EntryResource(ReadWriteResource):
 
             if change_this_field is True and value != current_value:
                 if not IObject.providedBy(element):
-                    # XXX leonardr 2008-03-13:
-                    # Calling field.validate on an IObject will not just check
-                    # whether the IObject is a good fit for this field; it
-                    # will go into the IObject's fields and validate them
-                    # as though we were creating a new object. This causes
-                    # false failures, so for the time being we skip this.
                     try:
                         # Do any field-specific validation.
                         field = element.bind(self.context)
