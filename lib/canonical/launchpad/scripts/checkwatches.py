@@ -1,3 +1,7 @@
+# Copyright 2006 Canonical Ltd.  All rights reserved.
+
+"""Helper functions for the checkwatches.py cronscript."""
+
 __metaclass__ = type
 
 
