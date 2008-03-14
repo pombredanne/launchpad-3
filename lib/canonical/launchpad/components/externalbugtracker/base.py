@@ -4,7 +4,6 @@
 
 __metaclass__ = type
 __all__ = [
-    'get_external_bugtracker',
     'BugNotFound',
     'BugTrackerConnectError',
     'BugWatchUpdateError',
@@ -53,8 +52,8 @@ from canonical import encoding
 from canonical.database.sqlbase import commit
 from canonical.launchpad.scripts import debbugs
 from canonical.launchpad.interfaces import (
-    BugTaskImportance, BugTaskStatus, BugTrackerType, BugWatchErrorType,
-    IBugWatchSet, IExternalBugTracker, IMessageSet, ISupportsBugImport,
+    BugTaskImportance, BugTaskStatus, BugWatchErrorType, IBugWatchSet,
+    IExternalBugTracker, IMessageSet, ISupportsBugImport,
     ISupportsCommentImport, UNKNOWN_REMOTE_IMPORTANCE)
 from canonical.launchpad.webapp.url import urlparse
 
@@ -2022,24 +2021,3 @@ class RequestTracker(ExternalBugTracker):
         except KeyError:
             raise UnknownRemoteStatusError()
 
-
-BUG_TRACKER_CLASSES = {
-    BugTrackerType.BUGZILLA: Bugzilla,
-    BugTrackerType.DEBBUGS: DebBugs,
-    BugTrackerType.MANTIS: Mantis,
-    BugTrackerType.TRAC: Trac,
-    BugTrackerType.ROUNDUP: Roundup,
-    BugTrackerType.RT: RequestTracker,
-    BugTrackerType.SOURCEFORGE: SourceForge
-    }
-
-
-def get_external_bugtracker(bugtracker):
-    """Return an `ExternalBugTracker` for bugtracker."""
-    bugtrackertype = bugtracker.bugtrackertype
-    bugtracker_class = BUG_TRACKER_CLASSES.get(bugtracker.bugtrackertype)
-    if bugtracker_class is not None:
-        return bugtracker_class(bugtracker.baseurl)
-    else:
-        raise UnknownBugTrackerTypeError(bugtrackertype.name,
-            bugtracker.name)

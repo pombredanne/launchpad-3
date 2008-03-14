@@ -29,3 +29,26 @@ __all__ = [
     ]
 
 from canonical.launchpad.components.externalbugtracker.base import *
+from canonical.launchpad.interfaces import BugTrackerType
+
+
+BUG_TRACKER_CLASSES = {
+    BugTrackerType.BUGZILLA: Bugzilla,
+    BugTrackerType.DEBBUGS: DebBugs,
+    BugTrackerType.MANTIS: Mantis,
+    BugTrackerType.TRAC: Trac,
+    BugTrackerType.ROUNDUP: Roundup,
+    BugTrackerType.RT: RequestTracker,
+    BugTrackerType.SOURCEFORGE: SourceForge
+    }
+
+
+def get_external_bugtracker(bugtracker):
+    """Return an `ExternalBugTracker` for bugtracker."""
+    bugtrackertype = bugtracker.bugtrackertype
+    bugtracker_class = BUG_TRACKER_CLASSES.get(bugtracker.bugtrackertype)
+    if bugtracker_class is not None:
+        return bugtracker_class(bugtracker.baseurl)
+    else:
+        raise UnknownBugTrackerTypeError(bugtrackertype.name,
+            bugtracker.name)
