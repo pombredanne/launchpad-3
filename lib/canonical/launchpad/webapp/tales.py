@@ -181,6 +181,17 @@ class MenuAPI:
             links = list(menu.iterlinks(requesturi=self._requesturi()))
             return dict((link.name, link) for link in links)
 
+    @property
+    def navigation(self):
+        """Navigation menu links dictionary."""
+        menu = INavigationMenu(self._context, None)
+        if menu is None:
+            return {}
+        else:
+            menu.request = self._request
+            links = list(menu.iterlinks(requesturi=self._requesturi()))
+            return dict((link.name, link) for link in links)
+
 
 class CountAPI:
     """Namespace to provide counting-related functions, such as length.

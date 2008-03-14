@@ -12,6 +12,7 @@ __all__ = [
     'FacetMenu',
     'ApplicationMenu',
     'ContextMenu',
+    'NavigationMenu',
     'Link',
     'LinkData',
     'FacetLink',
@@ -323,6 +324,14 @@ class ContextMenu(MenuBase):
     implements(IContextMenu)
 
     _baseclassname = 'ContextMenu'
+
+
+class NavigationMenu(MenuBase):
+    """Base class for navigation menus."""
+
+    implements(INavigationMenu)
+
+    _baseclassname = 'NavigationMenu'
 
 
 class enabled_with_permission:

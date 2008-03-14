@@ -126,6 +126,10 @@ class IContextMenu(IMenuBase):
     """Context menu for an object."""
 
 
+class INavigationMenu(IMenuBase):
+    """Navigation menu for an object."""
+
+
 class ILinkData(Interface):
     """An object with immutable attributes that represents the data a
     programmer provides about a link in a menu.
