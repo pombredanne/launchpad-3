@@ -281,7 +281,7 @@ class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin,
             ''' % sqlvalues(self.sourcepackagename, self.distribution,
                             self.distribution.all_distro_archive_ids),
             clauseTables=['DistroSeries', 'SourcePackagePublishingHistory'],
-            selectAlso="%s" % (SQLConstant(order_const)),
+            #selectAlso="%s" % (SQLConstant(order_const)),
             orderBy=[SQLConstant(order_const+" DESC")])
         return releases.distinct()
 
