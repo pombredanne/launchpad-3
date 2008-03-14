@@ -662,7 +662,8 @@ objects and traverse the resource tree.
     >>> from StringIO import StringIO
     >>> def make_request(method, url_path_fragments, body=''):
     ...     if method in ['PUT', 'PATCH']:
-    ...         headers = { 'CONTENT_TYPE' : 'application/json' }
+    ...         headers = { 'CONTENT_TYPE' : 'application/json',
+    ...                     'HTTP_HOST' : 'api.launchpad.dev' }
     ...         body = simplejson.dumps(body)
     ...     else:
     ...         body = ''

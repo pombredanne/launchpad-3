@@ -128,9 +128,6 @@ class HTTPResource:
         (protocol, host, path, query, fragment) = urlparse.urlsplit(url)
 
         request_host = self.request.get('HTTP_HOST')
-        request_port = self.request.get('SERVER_PORT')
-        if request_port is not None:
-            request_host = request_host + ':' + request_port
         if config.vhosts.use_https:
             site_protocol = 'https'
         else:
