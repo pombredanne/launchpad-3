@@ -7,9 +7,8 @@ An object has a facetmenu if it can be adapted to IFacetMenu.
     >>> from canonical.launchpad.webapp import (
     ...     nearest_adapter, nearest_context_with_adapter, canonical_url)
     >>> from canonical.launchpad.webapp.interfaces import (
-    ...     ICanonicalUrlData, IFacetMenu, IApplicationMenu, IContextMenu,
-    ...     ILink, ILinkData, IFacetLink
-    ...     )
+    ...     IApplicationMenu, ICanonicalUrlData, IContextMenu, IFacetLink,
+    ...     IFacetMenu, ILink, ILinkData, INavigationMenu)
     >>> from zope.interface import implements, directlyProvides, Interface
     >>> from zope.component import queryAdapter
 
@@ -753,6 +752,68 @@ are as we expect.
     target: +firstcontext
     text: First context menu item
     url: http://launchpad.dev/sesamestreet/number73/+firstcontext
+
+
+== Navigation Menus ==
+
+Navigation menus are defined for a context or view object.  Each object has
+just one navigation menu, and it is available at all times.
+
+Defining a NavigationMenu works like defining a FacetMenu.
+
+    >>> from canonical.launchpad.webapp import NavigationMenu
+
+NavigationMenu is meant to be used as a base-class for writing your own
+INavigationMenu classes.  Here's what happens when you use it on its own.
+
+    >>> bad_idea_menu = NavigationMenu(object())
+    >>> for link in bad_idea_menu.iterlinks():
+    ...     pass
+    Traceback (most recent call last):
+    ...
+    AssertionError: Subclasses of NavigationMenu must provide self.links
+
+So, we must test NavigationMenu by making our own menu subclass.  We'll
+just call our menu 'MyNavigationMenu'.
+
+One thing missing from this class is the 'usedfor' declaration, which tells
+the registration machinery how to render this menu as an adapter.  For this
+part of the test, we won't worry about that.
+
+    >>> class MyNavigationMenu(NavigationMenu):
+    ...
+    ...     links = ['first']
+    ...
+    ...     def first(self):
+    ...         target = '+firstnavigation'
+    ...         text = 'First navigation menu item'
+    ...         return Link(target, text)
+
+Now, we can make an instance of this MyNavigationMenu class.  We should
+really be using some link text that shows that its methods can access
+`self.context`. That's a minor TODO item.
+
+    >>> housefoonavigationmenu = MyNavigationMenu(house)
+
+We can go through each attribute of each of the links, checking that they
+are as we expect.
+
+    >>> for link in housefoonavigationmenu.iterlinks():
+    ...     print '--- link %s ---' % link.name
+    ...     for attrname in sorted(ILink.names(all=True)):
+    ...         print '%s: %s' % (attrname, getattr(link, attrname))
+    --- link first ---
+    enabled: True
+    escapedtext: First navigation menu item
+    icon: None
+    linked: True
+    name: first
+    site: None
+    sort_key: 0
+    summary: None
+    target: +firstnavigation
+    text: First navigation menu item
+    url: http://launchpad.dev/sesamestreet/number73/+firstnavigation
 
 
 == Registering menus in ZCML ==

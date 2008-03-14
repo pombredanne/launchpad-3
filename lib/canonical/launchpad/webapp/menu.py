@@ -27,8 +27,8 @@ from zope.interface import implements
 from canonical.lazr import decorates
 
 from canonical.launchpad.webapp.interfaces import (
-    IMenuBase, IFacetMenu, IApplicationMenu, IContextMenu,
-    IFacetLink, ILink, ILinkData, IStructuredString)
+    IApplicationMenu, IContextMenu, IFacetLink, IFacetMenu, ILink, ILinkData,
+    IMenuBase, INavigationMenu, IStructuredString)
 from canonical.launchpad.webapp.publisher import (
     canonical_url, canonical_url_iterator,
     get_current_browser_request, UserAttributeCache)
