@@ -8,6 +8,8 @@ __all__ = [
     'BranchMergeProposal',
     ]
 
+from email.Utils import make_msgid
+
 from zope.component import getUtility
 from zope.interface import implements
 
@@ -19,6 +21,8 @@ from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import SQLBase, sqlvalues
 
 from canonical.launchpad.database.branchrevision import BranchRevision
+from canonical.launchpad.database.codereviewmessage import CodeReviewMessage
+from canonical.launchpad.database.message import Message, MessageChunk
 from canonical.launchpad.interfaces import (
     BadStateTransition,
     BRANCH_MERGE_PROPOSAL_FINAL_STATES,
@@ -119,6 +123,18 @@ class BranchMergeProposal(SQLBase):
     date_created = UtcDateTimeCol(notNull=True, default=DEFAULT)
     date_review_requested = UtcDateTimeCol(notNull=False, default=None)
     date_reviewed = UtcDateTimeCol(notNull=False, default=None)
+
+    @property
+    def root_message(self):
+        return CodeReviewMessage.selectOne("""
+            CodeReviewMessage.id in (
+                SELECT CodeReviewMessage.id
+                    FROM CodeReviewMessage, Message
+                    WHERE CodeReviewMessage.branch_merge_proposal = %d AND
+                          CodeReviewMessage.message = Message.id
+                    ORDER BY Message.datecreated LIMIT 1)
+            """ % self.id)
+
     date_queued = UtcDateTimeCol(notNull=False, default=None)
 
     def getCreationNotificationRecipients(self, min_level):
@@ -279,7 +295,8 @@ class BranchMergeProposal(SQLBase):
 
     def mergeFailed(self, merger):
         """See `IBranchMergeProposal`."""
-        self._transitionToState(BranchMergeProposalStatus.MERGE_FAILED, merger)
+        self._transitionToState(BranchMergeProposalStatus.MERGE_FAILED,
+            merger)
         self.merger = merger
 
     def markAsMerged(self, merged_revno=None, date_merged=None,
@@ -340,3 +357,28 @@ class BranchMergeProposal(SQLBase):
               WHERE branch = %s)
             ''' % sqlvalues(self.source_branch, self.target_branch),
             prejoins=['revision'], orderBy='-sequence')
+
+    def createMessage(self, owner, subject, content=None, vote=None,
+                      parent=None, _date_created=None):
+        """See IBranchMergeProposal.createMessage"""
+        assert owner is not None, 'Merge proposal messages need a sender'
+        parent_message = None
+        if parent is None:
+            if self.root_message is not None:
+                parent_message = self.root_message.message
+        else:
+            assert parent.branch_merge_proposal == self, \
+                    'Replies must use the same merge proposal as their parent'
+            parent_message = parent.message
+        msgid = make_msgid('codereview')
+        # Can't pass None into Message constructor to get the default, so
+        # we have to supply datecreated only when we want to override the
+        # default.
+        kwargs = {}
+        if _date_created is not None:
+            kwargs['datecreated'] = _date_created
+        msg = Message(parent=parent_message, owner=owner,
+                      rfc822msgid=msgid, subject=subject, **kwargs)
+        chunk = MessageChunk(message=msg, content=content, sequence=1)
+        return CodeReviewMessage(
+            branch_merge_proposal=self, message=msg, vote=vote)

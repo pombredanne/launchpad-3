@@ -16,13 +16,7 @@ stores a base URL which it will use to construct URLs to pull a CSV
 export from.
 
     >>> from canonical.launchpad.components.externalbugtracker import Mantis
-    >>> from canonical.launchpad.ftests.externalbugtracker import (
-    ...     new_bugtracker)
-    >>> from canonical.launchpad.interfaces import BugTrackerType
-    >>> from canonical.testing import LaunchpadZopelessLayer
-    >>> txn = LaunchpadZopelessLayer.txn
-    >>> alsa_mantis = Mantis(
-    ...     txn, new_bugtracker(BugTrackerType.MANTIS))
+    >>> alsa_mantis = Mantis('http://example.com')
 
 As with all ExternalBugTrackers, Mantis contains a function for converting one
 of its own status to a Malone status. Mantis' function takes a string
@@ -66,6 +60,9 @@ Tracker:
 
     >>> sample_person = getUtility(IPersonSet).getByEmail('test@canonical.com')
 
+    >>> from canonical.launchpad.interfaces import BugTrackerType
+    >>> from canonical.launchpad.ftests.externalbugtracker import (
+    ...     new_bugtracker)
     >>> example_bug_tracker = new_bugtracker(BugTrackerType.MANTIS)
     >>> example_bug = getUtility(IBugSet).get(10)
     >>> example_bugwatch = example_bug.addWatch(
@@ -75,7 +72,7 @@ We use a specially hacked Mantis instance that doesn't do network
 calls to verify here. We set its batch_query_threshold to 0 so as to
 force it to use the CSV import code:
 
-    >>> example_ext_bug_tracker = TestMantis(txn, example_bug_tracker)
+    >>> example_ext_bug_tracker = TestMantis(example_bug_tracker.baseurl)
     >>> example_ext_bug_tracker.batch_query_threshold = 0
 
 Collect the Example.com watches:
