@@ -14,9 +14,9 @@ is thread safe (not that this will be a problem if we stick with
 simple configuration).
 
     >>> from canonical.config import config
-    >>> config.dbhost
-    'localhost'
-    >>> config.launchpad.db_statement_timeout is None
+    >>> print config.database.dbhost
+    None
+    >>> config.database.db_statement_timeout is None
     True
     >>> config.launchpad.dbuser
     'launchpad'

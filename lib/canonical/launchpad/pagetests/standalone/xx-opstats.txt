@@ -119,7 +119,7 @@ particular need to differentiate these cases though:
     >>> from textwrap import dedent
     >>> from canonical.config import config
     >>> test_data = dedent("""
-    ...     [launchpad]
+    ...     [database]
     ...     soft_request_timeout: 1
     ...     """)
     >>> config.push('base_test_data', test_data)
@@ -142,7 +142,7 @@ Launchpad code may well return this status and an XML-RPC request may
 also return a timeout Fault:
 
     >>> test_data = dedent("""
-    ...     [launchpad]
+    ...     [database]
     ...     db_statement_timeout: 1
     ...     soft_request_timeout: 2
     ...     """)

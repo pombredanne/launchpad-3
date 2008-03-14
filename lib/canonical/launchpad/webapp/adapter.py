@@ -43,44 +43,6 @@ __all__ = [
     ]
 
 
-class DBConfig:
-    """A singleton of the preferred database section."""
-
-    def __new__(cls, *args, **kwargs):
-        if '_instance' not in vars(cls):
-            cls._instance = super(DBConfig, cls).__new__(cls, *args, **kwargs)
-        return cls._instance
-
-    def __init__(self, section=None):
-        if section is None:
-            self._section = None
-        else:
-            self.section = section
-
-    def __getattr__(self, name):
-        """Return the value from the preferred or database section."""
-        if name in config[self.section]:
-            return config[self.section][name]
-        else:
-            return config['database'][name]
-
-    def section(self):
-        """The preferred section."""
-        return self._section
-
-    def _setsection(self, section):
-        """set the preferred section."""
-        # Force a NoSectionError if the section is not in the
-        # database category.
-        dummy = config[section]
-        self._section = section
-
-    section = property(section, _setsection, doc=section.__doc__)
-
-
-dbconfig = DBConfig('launchpad')
-
-
 def _get_dirty_commit_flags():
     """Return the current dirty commit status"""
     from canonical.ftests.pgsql import ConnectionWrapper
@@ -427,17 +389,18 @@ def _check_expired(timeout):
 
 def hard_timeout_expired():
     """Returns True if the hard request timeout been reached."""
-    return _check_expired(dbconfig.db_statement_timeout)
+    return _check_expired(config.database.db_statement_timeout)
 
 
 def soft_timeout_expired():
     """Returns True if the soft request timeout been reached."""
-    return _check_expired(dbconfig.soft_request_timeout)
+    return _check_expired(config.database.soft_request_timeout)
 
 
 def reset_hard_timeout(execute_func):
     """Reset the statement_timeout to remaining wallclock time."""
-    if dbconfig.db_statement_timeout is None:
+    timeout = config.database.db_statement_timeout
+    if timeout is None:
         return # No timeout - nothing to do
 
     global _local
@@ -447,15 +410,14 @@ def reset_hard_timeout(execute_func):
         return # Not in a request - nothing to do
 
     now = time()
-    remaining_ms = (
-            dbconfig.db_statement_timeout - int((now - start_time) * 1000))
+    remaining_ms = (timeout - int((now - start_time) * 1000))
 
     if remaining_ms <= 0:
         return # Already timed out - nothing to do
 
     # Only reset the statement timeout once in this many milliseconds
     # to avoid too many database round trips.
-    precision = config.launchpad.db_statement_timeout_precision
+    precision = config.database.db_statement_timeout_precision
 
     current_statement_timeout = getattr(
             _local, 'current_statement_timeout', None)
@@ -573,11 +535,10 @@ class LaunchpadDatabaseAdapter(ReconnectingDatabaseAdapter):
         """Override method provided by PsycopgAdapter to pull
         connection settings from the config file
         """
-        dbuser = getattr(self._local, 'dbuser', None)
         self.setDSN('dbi://%s@%s/%s' % (
-            dbuser or dbconfig.dbuser,
-            dbconfig.dbhost or '',
-            dbconfig.dbname
+            self.getUser(),
+            config.database.dbhost or '',
+            config.database.dbname
             ))
 
         flags = _get_dirty_commit_flags()
@@ -600,6 +561,10 @@ class LaunchpadDatabaseAdapter(ReconnectingDatabaseAdapter):
         self.disconnect()
         self._local.dbuser = dbuser
         self.connect()
+
+    def getUser(self):
+        """Return the dbuser used by this connection."""
+        return getattr(self._local, 'dbuser', None) or config.launchpad.dbuser
 
 
 class SQLOSAccessFromMainThread(Exception):

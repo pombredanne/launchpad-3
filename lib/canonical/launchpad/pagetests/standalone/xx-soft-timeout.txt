@@ -24,7 +24,7 @@ Foo Bar is a Launchpad developer, so he has access to the page. Since
 no timeout value is set, no soft timeout will be generated, though.
 
     >>> from canonical.config import config
-    >>> config.launchpad.soft_request_timeout is None
+    >>> config.database.soft_request_timeout is None
     True
 
     >>> print http(r"""
@@ -43,7 +43,7 @@ causing a soft timeout to be logged.
     >>> from canonical.launchpad.webapp.errorlog import globalErrorUtility
     >>> old_lastid = globalErrorUtility.lastid
     >>> test_data = (dedent("""
-    ...     [launchpad]
+    ...     [database]
     ...     soft_request_timeout: 1
     ...     """))
     >>> config.push('base_test_data', test_data)

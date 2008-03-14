@@ -43,7 +43,7 @@ Statement Timeout
 The timeout is set in launchpad.conf file.  By default it is unset,
 which corresponds to no timeout:
 
-    >>> print config.launchpad.db_statement_timeout
+    >>> print config.database.db_statement_timeout
     None
 
 
@@ -69,7 +69,7 @@ timeout by sleeping for 200ms with a 100ms statement timeout:
 
     >>> from textwrap import dedent
     >>> test_data = dedent("""
-    ...     [launchpad]
+    ...     [database]
     ...     db_statement_timeout: 100
     ...     """)
     >>> config.push('base_test_data', test_data)
@@ -104,7 +104,7 @@ time but the second going over the threshold. We use the time machine
 to fake how long things take.
 
     >>> test_data = dedent("""
-    ...     [launchpad]
+    ...     [database]
     ...     db_statement_timeout: 10000
     ...     db_statement_timeout_precision: 1000
     ...     """)
@@ -152,7 +152,7 @@ Turn off the timemachine so nobody hurts themselves:
 Set the timeout to 5000ms for the next tests:
 
     >>> test_data = dedent("""
-    ...     [launchpad]
+    ...     [database]
     ...     db_statement_timeout: 5000
     ...     """)
     >>> config.push('test', test_data)
@@ -264,7 +264,7 @@ remove the timout:
 If no timeout has been set, then requests will not time out:
 
     >>> test_data = dedent("""
-    ...     [launchpad]
+    ...     [database]
     ...     db_statement_timeout: none
     ...     """)
     >>> config.push('test', test_data)
@@ -335,14 +335,19 @@ The read only status only lasts until the end of the transaction.:
     >>> transaction.abort()
 
 
-Switching Database Users
-========================
+== Switching Database Users ==
 
-We can also change the user we are connected as, which is useful in tests.
-You should only change the user at the start of a transaction, or else any
-uncommitted changes made may be lost:
+We can also change the user we are connected as, which is useful in
+tests. The getUser() method will return the current database user. The
+switchUser() method will change the connection to the user that that
+is passed as an argument. You should only change the user at the start
+of a transaction, or else any uncommitted changes made may be lost:
 
+    >>> da.getUser()
+    'launchpad'
     >>> da.switchUser(config.statistician.dbuser)
+    >>> da.getUser()
+    'statistician'
     >>> cursor = da().cursor()
     >>> cursor.execute("SELECT current_user")
     >>> cursor.fetchone()[0] == config.statistician.dbuser
@@ -371,9 +376,11 @@ Unlike readonly, this is not reset at the end of the transaction:
     ...
     >>> transaction.abort()
 
-So you need to explicity set the user back:
+So you need to explicitly set the user back:
 
     >>> da.switchUser()
+    >>> da.getUser()
+    'launchpad'
     >>> cursor = da().cursor()
     >>> cursor.execute("""
     ...     INSERT INTO SourcePackageName(name) VALUES ('fnord4')
@@ -385,72 +392,4 @@ So you need to explicity set the user back:
 Reset out config:
 
     >>> base_test_data = config.pop('base_test_data')
-
-
-== DBConfig ==
-
-The timeout functions and LaunchpadDatabaseAdapter used and instance
-of DBConfig to choose which section in the config the data comes from.
-DBConfig is a singleton that stores the name of the preferred section,
-the dbconfig variable uses the 'launchpad' section by default.
-
-    >>> from canonical.launchpad.webapp.adapter import DBConfig, dbconfig
-    >>> dbconfig.section
-    'launchpad'
-
-    >>> dbconfig_1 = DBConfig()
-    >>> print dbconfig_1.section
-    None
-
-    >>> dbconfig_2 = DBConfig('answertracker')
-    >>> dbconfig_2.section
-    'answertracker'
-
-    >>> dbconfig.section
-    'answertracker'
-
-    >>> dbconfig is dbconfig_1 is dbconfig_2
-    True
-
-The section can be changed by assigning a new section name to the
-section property. Assigning an non existent section will raise
-an error.
-
-    >>> dbconfig.section = 'launchpad'
-    >>> dbconfig.section
-    'launchpad'
-
-    >>> dbconfig.section = 'launchpad_bugus'
-    Traceback (most recent call last):
-     ...
-    NoSectionError: ...
-
-    >>> dbconfig.section
-    'launchpad'
-
-The class first checks for the data in the preferred section, if it is
-not present, it will get the data from the default 'database' section.
-The dbuser is always set in the preferred section. The default section
-does define it.
-
-    >>> 'dbuser' in  config.database
-    False
-
-    >>> config.launchpad.dbuser
-    'launchpad'
-
-    >>> dbconfig.dbuser
-    'launchpad'
-
-The 'dbname' is defined in the 'database' section. The 'launchpad'
-section does not define it.
-
-    >>> 'dbname' in config.launchpad
-    False
-
-    >>> config.database.dbname
-    'launchpad_ftest'
-
-    >>> dbconfig.dbname
-    'launchpad_ftest'
 

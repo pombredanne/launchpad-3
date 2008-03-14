@@ -9,11 +9,9 @@ causing a soft timeout to be logged.
     >>> from textwrap import dedent
     >>> from canonical.config import config
     >>> from canonical.launchpad.webapp.errorlog import globalErrorUtility
-    >>> old_soft_request_timeout = config.launchpad.soft_request_timeout
-    >>> old_db_statement_timeout = config.launchpad.db_statement_timeout
     >>> old_lastid = globalErrorUtility.lastid
     >>> test_data = dedent("""
-    ...     [launchpad]
+    ...     [database]
     ...     db_statement_timeout: 1
     ...     soft_request_timeout: 2
     ...     """)
