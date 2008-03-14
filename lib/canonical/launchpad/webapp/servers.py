@@ -344,7 +344,6 @@ class WebServiceRequestPublicationFactory(
             vhost_name, request_factory, publication_factory, port,
             ['GET', 'HEAD', 'POST', 'PUT', 'DELETE', 'OPTIONS'])
 
-
     def canHandle(self, environment):
         """See `IRequestPublicationFactory`.
 
@@ -914,6 +913,10 @@ class WebServicePublication(LaunchpadBrowserPublication):
         """
         return (ob, None)
 
+    def finishReadOnlyRequest(self, txn):
+        """Commit the transaction so that created OAuthNonces are stored."""
+        txn.commit()
+
     def getPrincipal(self, request):
         form = request.form
         consumer_key = form.get('oauth_consumer_key')
@@ -929,7 +932,7 @@ class WebServicePublication(LaunchpadBrowserPublication):
         try:
             token.ensureNonce(nonce, timestamp)
         except NonceAlreadyUsed, e:
-            raise Unauthorized('Invalid nonce/timestamp: %s.' % e)
+            raise Unauthorized('Invalid nonce/timestamp: %s' % e)
         now = datetime.now(pytz.timezone('UTC'))
         if token.permission == OAuthPermission.UNAUTHORIZED:
             raise Unauthorized('Unauthorized token (%s).' % token.key)
