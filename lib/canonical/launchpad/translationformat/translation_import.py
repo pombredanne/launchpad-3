@@ -423,8 +423,14 @@ class TranslationImporter:
             if self.pofile is not None:
                 # Mark this message as seen in the import
                 pofile_in_db.markMessageAsSeen(message)
-                if (pofile_in_db.isAlreadyTranslatedTheSame(message) or
-                    pofile_in_db.isAlreadyImportedTheSame(message)):
+                if translation_import_queue_entry.is_published:
+                    same_translation = pofile_in_db.isAlreadyImportedTheSame(
+                        message)
+                else:
+                    same_translation = (
+                        pofile_in_db.isAlreadyTranslatedTheSame(message))
+
+                if same_translation:
                     count += 1
                     continue
 
