@@ -4,7 +4,6 @@
   xmlns:i18n="http://xml.zope.org/namespaces/i18n"
   omit-tag="">
 
-<tal:do-this-first tal:content="view/processForm" />
 <html
   xmlns="http://www.w3.org/1999/xhtml"
   xmlns:tal="http://xml.zope.org/namespaces/tal"
@@ -26,14 +25,19 @@
 
     <h2>Are you sure you want to join this team?</h2>
 
-    <p tal:condition="context/subscriptionpolicy/enumvalue:MODERATED">
+    <p tal:condition="view/team_is_moderated">
       Since this is a moderated team, one of its administrators will have to
-      approve your membership before you actually become a member of this
-      team.
+      approve your membership before you actually become a member.
     </p>
+
     <form class="actions" name="join" action="" method="post">
-        <input type="submit" name="goback" value="Cancel" />
-        <input type="submit" name="join" value="Join" />
+      <p tal:condition="view/user_can_subscribe_to_list">
+	<input type="checkbox" name="mailinglist_subscribe"
+	       value="checkbox" />
+	Subscribe me to this team's mailing list
+      </p>
+      <input type="submit" name="goback" value="Cancel" />
+      <input type="submit" name="join" value="Join" />
     </form>
   </tal:block>
 
@@ -62,7 +66,7 @@
     </form>
   </tal:block>
 
-</div> 
+</div>
 
 </body>
 </html>

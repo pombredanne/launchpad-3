@@ -78,6 +78,8 @@ class ISectionSchema(Interface):
     """Defines the valid keys and default values for a configuration group."""
     name = Attribute("The section name.")
     optional = Attribute("Is the section optional in the config?")
+    category_and_section_names = Attribute(
+        "A 2-Tuple of the category and specific name parts.")
 
     def __iter__():
         """Iterate over the keys."""

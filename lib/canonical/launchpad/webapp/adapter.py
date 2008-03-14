@@ -23,7 +23,7 @@ from sqlos.interfaces import IConnectionName
 
 from canonical.config import config, dbconfig
 from canonical.database.interfaces import IRequestExpired
-from canonical.database.sqlbase import AUTOCOMMIT_ISOLATION, cursor
+from canonical.database.sqlbase import cursor, ISOLATION_LEVEL_AUTOCOMMIT
 from canonical.launchpad.webapp.interfaces import ILaunchpadDatabaseAdapter
 from canonical.launchpad.webapp.opstats import OpStats
 
@@ -279,7 +279,7 @@ class SessionDatabaseAdapter(ReconnectingDatabaseAdapter):
     def _connection_factory(self):
         flags = _get_dirty_commit_flags()
         connection = super(SessionDatabaseAdapter, self)._connection_factory()
-        connection.set_isolation_level(AUTOCOMMIT_ISOLATION)
+        connection.set_isolation_level(ISOLATION_LEVEL_AUTOCOMMIT)
         connection.cursor().execute("SET client_encoding TO UTF8")
         _reset_dirty_commit_flags(*flags)
         return connection

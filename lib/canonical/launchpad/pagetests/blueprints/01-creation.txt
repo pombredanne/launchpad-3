@@ -233,8 +233,9 @@ Ubuntu distribution, then redirects the user to the new blueprint's page:
     >>> control('Register Blueprint').click()
     >>> user_browser.url
     'http://blueprints.launchpad.dev/ubuntu/+spec/networkmagic'
-    >>> print extract_text(find_main_content(user_browser.contents))
-    Blueprint overview...
+    >>> main = find_main_content(user_browser.contents)
+    >>> print extract_text(main).encode('ascii', 'backslashreplace')
+    Network Magic: Auto Network Detection...
 
 
 === Registering a blueprint from a distribution ===
@@ -257,7 +258,7 @@ Ubuntu distribution, then redirects the user to the new blueprint's page:
     >>> user_browser.url
     'http://blueprints.launchpad.dev/ubuntu/+spec/networkmagic-1'
     >>> print extract_text(find_main_content(user_browser.contents))
-    Blueprint overview...
+    Network Magic: Auto Network Detection...
 
 
 === Registering a blueprint from a distribution series ===
@@ -288,7 +289,7 @@ Ubuntu distribution, then redirects the user to the new blueprint's page:
     >>> user_browser.url
     'http://blueprints.launchpad.dev/ubuntu/+spec/networkmagic-2'
     >>> print extract_text(find_main_content(user_browser.contents))
-    Blueprint overview...
+    Network Magic: Auto Network Detection...
 
 The new blueprint is not proposed as a series goal:
 
@@ -315,7 +316,7 @@ Ubuntu distribution, then redirects the user to the new blueprint's page:
     >>> user_browser.url
     'http://blueprints.launchpad.dev/ubuntu/+spec/networkmagic-3'
     >>> print extract_text(find_main_content(user_browser.contents))
-    Blueprint overview...
+    Network Magic: Auto Network Detection...
 
 As requested, the new blueprint is proposed as a series goal:
 
@@ -336,7 +337,7 @@ for the series, the new blueprint is automatically accepted as a series goal:
     >>> control('series goal').control.value = True
     >>> control('Register Blueprint').click()
     >>> print extract_text(find_main_content(admin_browser.contents))
-    Blueprint overview...
+    Network Magic: Auto Network Detection...
     >>> print(first_tag_by_class(admin_browser.contents, 'summary'))
     <...Series goal:...Accepted...for...hoary...
 
@@ -362,7 +363,7 @@ Mozilla Firefox product, then redirects the user to the new blueprint's page:
     >>> user_browser.url
     'http://blueprints.launchpad.dev/firefox/+spec/svg-support-1'
     >>> print extract_text(find_main_content(user_browser.contents))
-    Blueprint overview...
+    SVG Support...
 
 
 === Registering a blueprint from a product series ===
@@ -393,7 +394,7 @@ Mozilla Firefox product, then redirects the user to the new blueprint's page:
     >>> user_browser.url
     'http://blueprints.launchpad.dev/firefox/+spec/svg-support-2'
     >>> print extract_text(find_main_content(user_browser.contents))
-    Blueprint overview...
+    SVG Support...
 
 The new blueprint is not proposed as a series goal:
 
@@ -420,7 +421,7 @@ Mozilla Firefox product, then redirects the user to the new blueprint's page:
     >>> user_browser.url
     'http://blueprints.launchpad.dev/firefox/+spec/svg-support-3'
     >>> print extract_text(find_main_content(user_browser.contents))
-    Blueprint overview...
+    SVG Support...
 
 As requested, the new blueprint is proposed as a series goal:
 
@@ -441,7 +442,7 @@ for the series, the new blueprint is automatically accepted as a series goal:
     >>> control('series goal').control.value = True
     >>> control('Register Blueprint').click()
     >>> print extract_text(find_main_content(admin_browser.contents))
-    Blueprint overview...
+    SVG Support...
     >>> print(first_tag_by_class(admin_browser.contents, 'summary'))
     <...Series goal:...Accepted...for...1.0...
 
@@ -476,7 +477,7 @@ Mozilla Firefox project, then redirects the user to the new blueprint's page:
     >>> user_browser.url
     'http://blueprints.launchpad.dev/firefox/+spec/svg-support-5'
     >>> print extract_text(find_main_content(user_browser.contents))
-    Blueprint overview...
+    SVG Support...
 
 
 === Registering a blueprint from a sprint ===
@@ -562,7 +563,7 @@ permission, the blueprint will be automatically added to the sprint agenda:
     >>> sample_browser.url
     'http://blueprints.launchpad.dev/jokosher/+spec/spec-for-sprint'
     >>> print extract_text(find_main_content(sample_browser.contents))
-    Blueprint overview...
+    Spec for Sprint...
     >>> sample_browser.open('http://blueprints.launchpad.dev/sprints/paris')
     >>> find_tag_by_id(sample_browser.contents, 'speclisting')
     <...spec-for-sprint...>
@@ -641,7 +642,7 @@ automatically for the user:
     >>> user_browser.url
     'http://blueprints.launchpad.dev/ubuntu/+spec/new-network-magic'
     >>> print extract_text(find_main_content(user_browser.contents))
-    Blueprint overview...
+    Network Magic: Automatic Network Detection...
 
 
 === URLs must be unique ===

@@ -1,0 +1,92 @@
+== Navigating a PPA ==
+
+The main PPA page is accessible by using the Personal Package Archive
+link on the PPA owner page.
+
+    >>> anon_browser.open('http://launchpad.dev/~cprov')
+    >>> anon_browser.getLink('Personal Package Archive').click()
+    >>> anon_browser.url
+    'http://launchpad.dev/~cprov/+archive'
+    >>> anon_browser.title
+    'PPA for Celso Providelo'
+
+While navigating around the PPA the "structural location" remains the
+"PPA owner":
+
+    >>> def print_structural_info(contents):
+    ...     doc = find_tag_by_id(contents, 'document')
+    ...     breadcrumbs = doc.findAll(attrs='breadcrumb')
+    ...     print "Location: %s" % " > ".join(
+    ...         extract_text(tag) for tag in breadcrumbs)
+    ...     print "Structural title: %s" % extract_text(
+    ...         doc.find(id='structuralobject'))
+    ...     print 'Tabs:'
+    ...     for tab in doc.find(id='applicationchooser').findAll('li'):
+    ...         if tab.a:
+    ...             link = tab.a['href']
+    ...         else:
+    ...             link = 'Not active'
+    ...         print "* %s (%s)" % (extract_text(tab), link)
+    ...     title = doc.h1
+    ...     if title:
+    ...         title = extract_text(title)
+    ...     else:
+    ...         title = '(No page title)'
+    ...     print "Page title: %s" % title
+
+    >>> print_structural_info(anon_browser.contents)
+    Location: Celso Providelo
+    Structural title: Celso Providelo
+    Tabs:
+    * Overview (http://launchpad.dev/~cprov/)
+    * Code (http://code.launchpad.dev/~cprov/)
+    * Bugs (http://bugs.launchpad.dev/~cprov/)
+    * Blueprints (http://blueprints.launchpad.dev/~cprov/)
+    * Translations (http://translations.launchpad.dev/~cprov/)
+    * Answers (http://answers.launchpad.dev/~cprov/)
+    Page title: PPA for Celso Providelo
+
+You can see the build details of the packages in the archive by using
+the 'View build records' link.
+
+    >>> anon_browser.getLink('View build records').click()
+    >>> anon_browser.title
+    'Builds for PPA for Celso Providelo'
+    >>> anon_browser.url
+    'http://launchpad.dev/~cprov/+archive/+builds'
+
+The user could return to the 'PPA' overview by using the 'View PPA'
+link:
+
+    >>> anon_browser.getLink('View PPA').url
+    'http://launchpad.dev/~cprov/+archive'
+
+The user can navigate to an individual build details:
+
+    >>> anon_browser.getControl('All states').click()
+    >>> anon_browser.getControl('Update').click()
+    >>> anon_browser.getLink('i386 build of iceweasel').click()
+    >>> anon_browser.title
+    'Build details for i386 build of iceweasel 1.0 in ubuntu warty RELEASE'
+
+    >>> print_structural_info(anon_browser.contents)
+    Location: Celso Providelo
+    Structural title: Celso Providelo
+    Tabs:
+    * Overview (http://launchpad.dev/~cprov/)
+    * Code (http://code.launchpad.dev/~cprov/)
+    * Bugs (http://bugs.launchpad.dev/~cprov/)
+    * Blueprints (http://blueprints.launchpad.dev/~cprov/)
+    * Translations (http://translations.launchpad.dev/~cprov/)
+    * Answers (http://answers.launchpad.dev/~cprov/)
+    Page title:
+    Build details for i386 build of iceweasel 1.0 in ubuntu warty RELEASE
+
+From that page the user could return either to the build records listing
+or the PPA overview.
+
+    >>> anon_browser.getLink('View build records').url
+    'http://launchpad.dev/~cprov/+archive/+builds'
+    >>> anon_browser.getLink('View PPA').url
+    'http://launchpad.dev/~cprov/+archive'
+

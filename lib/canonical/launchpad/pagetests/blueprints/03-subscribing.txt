@@ -26,6 +26,12 @@ Carlos.
     >>> browser.addHeader('Authorization', 'Basic carlos@canonical.com:test')
     >>> browser.open("http://blueprints.launchpad.dev/firefox/+spec/e4x/+subscribe")
 
+The page links back to the blueprint page, in case we change our minds.
+
+    >>> back_link = browser.getLink('Support E4X in EcmaScript')
+    >>> back_link.url
+    'http://blueprints.launchpad.dev/firefox/+spec/e4x'
+
 There should be a control to set whether or not participation in discussions
 of this feature is essential. We will say we want to be essential to this
 feature planning:
@@ -100,6 +106,10 @@ When we want other users to track a specification we can subscribe them.
 
     >>> browser.open("http://blueprints.launchpad.dev/firefox/+spec/e4x")
     >>> browser.getLink('Subscribe someone else').click()
+    >>> back_link = browser.getLink('Support E4X in EcmaScript')
+    >>> back_link.url
+    'http://blueprints.launchpad.dev/firefox/+spec/e4x'
+
     >>> browser.getControl('Subscriber').value = 'stub'
     >>> browser.getControl('Continue').click()
 
