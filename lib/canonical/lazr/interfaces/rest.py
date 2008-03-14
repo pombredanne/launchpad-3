@@ -1,4 +1,6 @@
 # Copyright 2008 Canonical Ltd.  All rights reserved.
+# Pylint doesn't grok zope interfaces.
+# pylint: disable-msg=E0211,E0213
 
 """Interfaces for different kinds of HTTP resources."""
 
@@ -16,10 +18,8 @@ __all__ = [
     ]
 
 from zope.interface import Interface, Attribute
-from zope.publisher.interfaces import IPublishTraverse
-from zope.schema import List
 from zope.schema.interfaces import IObject
-from canonical.launchpad.webapp.interfaces import ICanonicalUrlData
+
 
 class ICollectionField(IObject):
     """A collection associated with an entry.
@@ -28,7 +28,7 @@ class ICollectionField(IObject):
     """
 
 
-class IHTTPResource(IPublishTraverse, ICanonicalUrlData):
+class IHTTPResource(Interface):
     """An object published through HTTP."""
 
     def __call__():
@@ -52,9 +52,6 @@ class IServiceRootResource(IHTTPResource):
 class IEntryResource(IHTTPResource):
     """A resource that represents an individual Launchpad object."""
 
-    def path():
-        """Find the URL fragment the entry uses for itself."""
-
     def do_GET():
         """Retrieve this entry.
 
@@ -62,14 +59,8 @@ class IEntryResource(IHTTPResource):
         """
 
 
-class ICollectionResource(IHTTPResource, IPublishTraverse):
+class ICollectionResource(IHTTPResource):
     """A resource that represents a collection of entry resources."""
-
-    def path():
-        """Find the URL fragment that names this collection."""
-
-    def getEntryPath(entry):
-        """Find the URL fragment that names the given entry."""
 
     def do_GET():
         """Retrieve this collection.
@@ -91,29 +82,6 @@ class ICollectionResource(IHTTPResource, IPublishTraverse):
 class IEntry(IJSONPublishable):
     """An entry, exposed as a resource by an IEntryResource."""
 
-    # Soon, Launchpad's existing Navigation classes will substitute for
-    # web service-specific path information, and this will be removed.
-    _parent_collection_path = List(
-        title=u"Instructions for traversing to the parent collection",
-        description=u"This is an alternating list of strings and callables. "
-            "The first element in the list, a string, designates one of the "
-            "web service's top-level collections. The second element (if "
-            "there is one) is a callable which takes the IEntry "
-            "implementation as its only argument. It's expected to return one "
-            "of the entries in the top-level collection. The third element "
-            "(if there is one) is a string which designates one of the scoped "
-            "collections associated with that entry. And so on. Strings and "
-            "callables alternate, traversing the object graph. The list must "
-            "end with a string.")
-
-    def fragment():
-        """Return a URI fragment that uniquely identifies this entry.
-
-        This might be the entry's unique ID or some other unique identifier.
-        It must be possible to use this fragment to find the entry again
-        in a collection of all such entries.
-        """
-
 
 class ICollection(Interface):
     """A collection, driven by an ICollectionResource."""
@@ -129,9 +97,6 @@ class ICollection(Interface):
 
         :return: A list of IEntry objects.
         """
-
-    def getEntryPath(child):
-        """Choose a URL fragment for one of this collection's entries."""
 
 
 class IScopedCollection(ICollection):
