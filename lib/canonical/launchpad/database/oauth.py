@@ -6,7 +6,8 @@ __all__ = [
     'OAuthConsumer',
     'OAuthConsumerSet',
     'OAuthNonce',
-    'OAuthRequestToken']
+    'OAuthRequestToken',
+    'OAuthRequestTokenSet']
 
 import random
 import pytz
@@ -24,7 +25,8 @@ from canonical.database.sqlbase import SQLBase
 
 from canonical.launchpad.interfaces import (
     IOAuthAccessToken, IOAuthConsumer, IOAuthConsumerSet, IOAuthNonce,
-    IOAuthRequestToken, OAuthPermission, NonceAlreadyUsed)
+    IOAuthRequestToken, IOAuthRequestTokenSet, OAuthPermission,
+    NonceAlreadyUsed)
 
 
 # How many hours should a request token be valid for?
@@ -120,13 +122,13 @@ class OAuthAccessToken(OAuthToken):
 
 
 class OAuthRequestToken(OAuthToken):
-    """See `IOAuthAccessToken`."""
+    """See `IOAuthRequestToken`."""
     implements(IOAuthRequestToken)
 
     date_reviewed = UtcDateTimeCol(default=None, notNull=False)
 
     def review(self, user, permission):
-        """See `IOAuthConsumer`."""
+        """See `IOAuthRequestToken`."""
         assert not self.is_reviewed, (
             "Request tokens can be reviewed only once.")
         self.date_reviewed = datetime.now(pytz.timezone('UTC'))
@@ -134,7 +136,7 @@ class OAuthRequestToken(OAuthToken):
         self.permission = permission
 
     def createAccessToken(self):
-        """See `IOAuthConsumer`."""
+        """See `IOAuthRequestToken`."""
         assert self.is_reviewed, (
             'Cannot create an access token from an unreviewed request token.')
         assert self.permission != OAuthPermission.UNAUTHORIZED, (
@@ -151,8 +153,17 @@ class OAuthRequestToken(OAuthToken):
 
     @property
     def is_reviewed(self):
-        """See `IOAuthConsumer`."""
+        """See `IOAuthRequestToken`."""
         return self.date_reviewed is not None
+
+
+class OAuthRequestTokenSet:
+    """See `IOAuthRequestTokenSet`."""
+    implements(IOAuthRequestTokenSet)
+
+    def getByKey(self, key):
+        """See `IOAuthRequestTokenSet`."""
+        return OAuthRequestToken.selectOneBy(key=key)
 
 
 class OAuthNonce(SQLBase):

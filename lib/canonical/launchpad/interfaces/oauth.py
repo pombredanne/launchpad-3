@@ -12,6 +12,7 @@ __all__ = [
     'IOAuthConsumerSet',
     'IOAuthNonce',
     'IOAuthRequestToken',
+    'IOAuthRequestTokenSet',
     'NonceAlreadyUsed',
     'OAuthPermission']
 
@@ -32,7 +33,7 @@ class OAuthPermission(DBEnumeratedType):
     """The permission granted by the user to the OAuth consumer."""
 
     UNAUTHORIZED = DBItem(10, """
-        Not authorized
+        No access
 
         The user didn't authorize the consumer to act on his behalf.
         """)
@@ -152,9 +153,10 @@ class IOAuthToken(Interface):
         schema=IPerson, title=_('Person'), required=False, readonly=False,
         description=_('The user on whose behalf the consumer is accessing.'))
     permission = Choice(
-        title=_('Permission'), required=False, readonly=False,
+        title=_('Access level'), required=True, readonly=False,
         vocabulary=OAuthPermission,
-        description=_('The permission granted by the user to this consumer.'))
+        description=_('The level of access given to the application acting '
+                      'on your behalf.'))
     date_created = Datetime(
         title=_('Date created'), required=True, readonly=True)
     date_expires = Datetime(
@@ -226,6 +228,16 @@ class IOAuthRequestToken(IOAuthToken):
 
         You must not attempt to create an access token if the request token
         hasn't been reviewed or if its permission is UNAUTHORIZED.
+        """
+
+
+class IOAuthRequestTokenSet(Interface):
+    """The set of `IOAuthRequestToken`s."""
+
+    def getByKey(key):
+        """Return the IOAuthRequestToken with the given key.
+
+        If it doesn't exist, return None.
         """
 
 

@@ -1,0 +1,111 @@
+= Authorizing a request token =
+
+Once the consumer gets a request token, it must send the user to
+Launchpad's +oauth-authorize page in order for the user to authenticate
+and authorize or not the consumer to act on his behalf.
+
+    # Create a new request token.
+    >>> from canonical.launchpad.interfaces import IOAuthConsumerSet
+    >>> from zope.component import getUtility
+    >>> from canonical.launchpad.ftests import login, logout
+    >>> login('salgado@ubuntu.com')
+    >>> consumer = getUtility(IOAuthConsumerSet).getByKey('foobar123451432')
+    >>> token = consumer.newRequestToken()
+    >>> logout()
+
+According to the OAuth Core 1.0 spec, the request to the service
+provider's user authorization URL (+oauth-authorize in our case) must
+use the HTTP GET method and may include the oauth_token and
+oauth_callback parameters.
+
+    >>> from urllib import urlencode
+    >>> params = dict(
+    ...     oauth_token=token.key, oauth_callback='http://launchpad.dev/bzr')
+    >>> anon_browser.open(
+    ...     "http://launchpad.dev/+oauth-authorize?%s" % urlencode(params))
+    Traceback (most recent call last):
+    ...
+    Unauthorized:...
+
+    >>> user_browser.open(
+    ...     "http://launchpad.dev/+oauth-authorize?%s" % urlencode(params))
+    >>> user_browser.title
+    'Authorize application to access Launchpad on your behalf'
+
+    >>> from BeautifulSoup import BeautifulSoup
+    >>> soup = BeautifulSoup(user_browser.contents)
+    >>> print extract_text(soup.findAll('form')[1])
+    Authorize programs to access Launchpad on your behalf
+    The program identified as foobar123451432 wants to access Launchpad on
+    your behalf. What level of access you grant to it?
+    ...
+
+Once the user authorizes the application to access Launchpad on his
+behalf, we issue a redirect to the given oauth_callback (if it was
+specified by the application).
+
+    >>> user_browser.getControl('Access level').displayValue
+    ['No access']
+    >>> user_browser.getControl('Access level').displayValue = [
+    ...     'Read public data']
+    >>> user_browser.getControl('Continue').click()
+
+    # This is the URL given to Launchpad in oauth_callback.
+    >>> user_browser.url
+    'http://launchpad.dev/bzr'
+
+If no oauth_callback is specified, we redirect the user to
++authorized-token.
+
+    # Create a new (unreviewed) token.
+    >>> login('salgado@ubuntu.com')
+    >>> token = consumer.newRequestToken()
+    >>> logout()
+
+    >>> params = dict(oauth_token=token.key)
+    >>> user_browser.open(
+    ...     "http://launchpad.dev/+oauth-authorize?%s" % urlencode(params))
+
+    >>> user_browser.getControl('Access level').displayValue = [
+    ...     'Read public and private data']
+    >>> user_browser.getControl('Continue').click()
+
+    >>> user_browser.url
+    'http://launchpad.dev/+token-authorized?...'
+    >>> print extract_text(
+    ...     find_tag_by_id(user_browser.contents, 'maincontent'))
+    Almost finished ...
+    To finish authorizing the application identified as foobar123451432 to
+    access Launchpad on your behalf you should go back to the application
+    window in which you started the process and inform it that you have done
+    your part of the process.
+
+If the oauth_token is not provided we respond with a 400 Bad Request.
+
+    >>> params = dict(oauth_callback='http://example.com/oauth')
+    >>> user_browser.open(
+    ...     "http://launchpad.dev/+oauth-authorize?%s" % urlencode(params))
+    Traceback (most recent call last):
+    ...
+    HTTPError: HTTP Error 400: Bad Request
+
+If the token is provided but doesn't exist or has been reviewed already,
+we respond with a 401 Unauthorized.
+
+    >>> params = dict(
+    ...     oauth_token='zzzzzz', oauth_callback='http://example.com/oauth')
+    >>> user_browser.open(
+    ...     "http://launchpad.dev/+oauth-authorize?%s" % urlencode(params))
+    Traceback (most recent call last):
+    ...
+    HTTPError: HTTP Error 401: Unauthorized
+
+    >>> token.is_reviewed
+    True
+    >>> params = dict(
+    ...     oauth_token=token.key, oauth_callback='http://example.com/oauth')
+    >>> user_browser.open(
+    ...     "http://launchpad.dev/+oauth-authorize?%s" % urlencode(params))
+    Traceback (most recent call last):
+    ...
+    HTTPError: HTTP Error 401: Unauthorized

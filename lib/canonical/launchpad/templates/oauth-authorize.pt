@@ -1,0 +1,36 @@
+<html
+  xmlns="http://www.w3.org/1999/xhtml"
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  xml:lang="en"
+  lang="en"
+  dir="ltr"
+  metal:use-macro="view/macro:page/freeform"
+  i18n:domain="launchpad"
+>
+<body>
+  <metal:portlets fill-slot="portlets" />
+
+  <div metal:fill-slot="main">
+    <div metal:use-macro="context/@@launchpad_form/form">
+      <div metal:fill-slot="extra_top">
+        <p>The program identified as
+          <strong tal:content="view/token/consumer/key">consumer</strong>
+        wants to access Launchpad on your behalf. What level of access you
+        grant to it?</p>
+      </div>
+      <div metal:fill-slot="extra_bottom">
+        <input type="hidden" name="oauth_token"
+               tal:condition="request/form/oauth_token|nothing"
+               tal:attributes="value request/form/oauth_token" />
+        <input type="hidden" name="oauth_callback"
+               tal:condition="request/form/oauth_callback|nothing"
+               tal:attributes="value request/form/oauth_callback" />
+      </div>
+    </div>
+  </div>
+
+</body>
+</html>
+

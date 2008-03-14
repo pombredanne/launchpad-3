@@ -105,6 +105,22 @@ associated with another consumer, getRequestToken() will return None.
     >>> print consumer2.getRequestToken(request_token.key)
     None
 
+We also have OAuthRequestTokenSet.getByKey(), which allows us to get a
+request token with the given key regardless of the consumer associated
+with it.
+
+    >>> from canonical.launchpad.interfaces import IOAuthRequestTokenSet
+    >>> token_set = getUtility(IOAuthRequestTokenSet)
+    >>> token_set.getByKey(request_token.key) == request_token
+    True
+
+    >>> request_token2 = consumer2.newRequestToken()
+    >>> token_set.getByKey(request_token2.key) == request_token2
+    True
+
+    >>> print token_set.getByKey('zzzzzzzzz')
+    None
+
 
 === Exchanging request tokens for access tokens ===
 
