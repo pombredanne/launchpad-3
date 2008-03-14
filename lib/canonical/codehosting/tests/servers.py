@@ -5,8 +5,9 @@
 __metaclass__ = type
 
 __all__ = [
-    'CodeHostingServer', 'SSHCodeHostingServer', 'make_bzr_ssh_server',
-    'make_launchpad_server', 'make_sftp_server', 'NullAuthserverWithKeys']
+    'Authserver', 'AuthserverWithKeys', 'CodeHostingServer',
+    'SSHCodeHostingServer', 'make_bzr_ssh_server', 'make_launchpad_server',
+    'make_sftp_server']
 
 
 import gc
@@ -28,7 +29,9 @@ from twisted.python.util import sibpath
 
 from canonical.config import config
 from canonical.database.sqlbase import commit
+from canonical.launchpad.daemons.tachandler import TacTestSetup
 from canonical.launchpad.daemons.sftp import SSHService
+from canonical.launchpad.daemons.authserver import AuthserverService
 from canonical.launchpad.interfaces import (
     IPersonSet, ISSHKeySet, SSHKeyType, TeamSubscriptionPolicy)
 
@@ -46,14 +49,14 @@ def make_launchpad_server():
 
 
 def make_sftp_server():
-    authserver = NullAuthserverWithKeys('testuser', 'testteam')
+    authserver = AuthserverWithKeys('testuser', 'testteam')
     branches_root = config.codehosting.branches_root
     mirror_root = config.supermirror.branchesdest
     return SFTPCodeHostingServer(authserver, branches_root, mirror_root)
 
 
 def make_bzr_ssh_server():
-    authserver = NullAuthserverWithKeys('testuser', 'testteam')
+    authserver = AuthserverWithKeys('testuser', 'testteam')
     branches_root = config.codehosting.branches_root
     mirror_root = config.supermirror.branchesdest
     return BazaarSSHCodeHostingServer(authserver, branches_root, mirror_root)
@@ -96,6 +99,68 @@ class ConnectionTrackingParamikoVendor(ssh.ParamikoVendor):
             connection.close()
 
 
+class Authserver(Server):
+
+    def __init__(self):
+        self.authserver = None
+
+    def setUp(self):
+        self.authserver = AuthserverService()
+        self.authserver.startService()
+
+    def tearDown(self):
+        return self.authserver.stopService()
+
+    def get_url(self):
+        return config.codehosting.authserver
+
+
+class AuthserverTac(TacTestSetup):
+    """Handler for running the Authserver .tac file.
+
+    Used to run the authserver out-of-process.
+    """
+    def setUpRoot(self):
+        pass
+
+    @property
+    def root(self):
+        return ''
+
+    @property
+    def tacfile(self):
+        import canonical
+        return os.path.abspath(os.path.join(
+            os.path.dirname(canonical.__file__), os.pardir, os.pardir,
+            'daemons/authserver.tac'
+            ))
+
+    @property
+    def pidfile(self):
+        return '/tmp/authserver.pid'
+
+    @property
+    def logfile(self):
+        return '/tmp/authserver.log'
+
+
+class AuthserverOutOfProcess(Server):
+    """Server to run the authserver out-of-process."""
+
+    def __init__(self):
+        self.tachandler = AuthserverTac()
+
+    def setUp(self):
+        self.tachandler.setUp()
+
+    def tearDown(self):
+        self.tachandler.tearDown()
+        return defer.succeed(None)
+
+    def get_url(self):
+        return config.codehosting.authserver
+
+
 class AuthserverWithKeysMixin:
     """Server to run the authserver, setting up SSH key configuration."""
 
@@ -110,12 +175,11 @@ class AuthserverWithKeysMixin:
         parent = os.path.dirname(key_pair_path)
         if not os.path.isdir(parent):
             os.makedirs(parent)
-        shutil.copytree(
-            sibpath(__file__, 'keys'), os.path.join(key_pair_path))
+        shutil.copytree(sibpath(__file__, 'keys'), os.path.join(key_pair_path))
 
     def setUpTestUser(self):
-        """Prepare 'testUser' and 'testTeam' Persons, giving 'testUser' a
-        known SSH key.
+        """Prepare 'testUser' and 'testTeam' Persons, giving 'testUser' a known
+        SSH key.
         """
         person_set = getUtility(IPersonSet)
         testUser = person_set.getByName('no-priv')
@@ -127,12 +191,12 @@ class AuthserverWithKeysMixin:
         ssh_key_set = getUtility(ISSHKeySet)
         ssh_key_set.new(
             testUser, SSHKeyType.DSA,
-            'AAAAB3NzaC1kc3MAAABBAL5VoWG5sy3CnLYeOw47L8m9A15hA/PzdX2u0B7c2Z1k'
-            'tFPcEaEuKbLqKVSkXpYm7YwKj9y88A9Qm61CdvI0c50AAAAVAKGY0YON9dEFH3Dz'
-            'eVYHVEBGFGfVAAAAQCoe0RhBcefm4YiyQVwMAxwTlgySTk7FSk6GZ95EZ5Q8/OTd'
-            'ViTaalvGXaRIsBdaQamHEBB+Vek/VpnF1UGGm8YAAABAaCXDl0r1k93JhnMdF0ap'
-            '4UJQ2/NnqCyoE8Xd5KdUWWwqwGdMzqB1NOeKN6ladIAXRggLc2E00UsnUXh3GE3R'
-            'gw==', 'testuser')
+            'AAAAB3NzaC1kc3MAAABBAL5VoWG5sy3CnLYeOw47L8m9A15hA/PzdX2u0B7c2Z1kt'
+            'FPcEaEuKbLqKVSkXpYm7YwKj9y88A9Qm61CdvI0c50AAAAVAKGY0YON9dEFH3DzeV'
+            'YHVEBGFGfVAAAAQCoe0RhBcefm4YiyQVwMAxwTlgySTk7FSk6GZ95EZ5Q8/OTdViT'
+            'aalvGXaRIsBdaQamHEBB+Vek/VpnF1UGGm8YAAABAaCXDl0r1k93JhnMdF0ap4UJQ'
+            '2/NnqCyoE8Xd5KdUWWwqwGdMzqB1NOeKN6ladIAXRggLc2E00UsnUXh3GE3Rgw==',
+            'testuser')
         commit()
         self.setUpKeys()
 
@@ -147,16 +211,26 @@ class AuthserverWithKeysMixin:
             data=open(sibpath(__file__, 'id_dsa.pub'), 'rb').read())
 
 
-class NullAuthserverWithKeys(AuthserverWithKeysMixin):
+class AuthserverWithKeys(AuthserverOutOfProcess, AuthserverWithKeysMixin):
+
+    def __init__(self, testUser, testTeam):
+        AuthserverOutOfProcess.__init__(self)
+        AuthserverWithKeysMixin.__init__(self, testUser, testTeam)
 
     def setUp(self):
         self.setUpTestUser()
+        AuthserverOutOfProcess.setUp(self)
 
-    def get_url(self):
-        return config.codehosting.authserver
 
-    def tearDown(self):
-        return defer.succeed(None)
+class AuthserverWithKeysInProcess(Authserver, AuthserverWithKeysMixin):
+
+    def __init__(self, testUser, testTeam):
+        Authserver.__init__(self)
+        AuthserverWithKeysMixin.__init__(self, testUser, testTeam)
+
+    def setUp(self):
+        self.setUpTestUser()
+        Authserver.setUp(self)
 
 
 class FakeLaunchpadServer(LaunchpadServer):
@@ -194,7 +268,6 @@ class FakeLaunchpadServer(LaunchpadServer):
 class CodeHostingServer(Server):
 
     def __init__(self, authserver, branches_root, mirror_root):
-        super(CodeHostingServer, self).__init__(self)
         self.authserver = authserver
         self._branches_root = branches_root
         self._mirror_root = mirror_root
@@ -281,8 +354,8 @@ class SFTPCodeHostingServer(SSHCodeHostingServer):
             self, 'sftp', authserver, branches_root, mirror_root)
 
     def runAndWaitForDisconnect(self, func, *args, **kwargs):
-        """Run the given function, close all SFTP connections, and wait for
-        the server to acknowledge the end of the session.
+        """Run the given function, close all SFTP connections, and wait for the
+        server to acknowledge the end of the session.
         """
         ever_connected = threading.Event()
         done = threading.Event()
@@ -359,13 +432,12 @@ class BazaarSSHCodeHostingServer(SSHCodeHostingServer):
                 try:
                     os.waitpid(pid, 0)
                 except OSError:
-                    # Process has already been killed.
-                    pass
+                    """Process has already been killed."""
 
 
 class _TestSSHService(SSHService):
-    """SSH service that uses the the _TestLaunchpadAvatar and installs the
-    test keys in a place that the SSH server can find them.
+    """SSH service that uses the the _TestLaunchpadAvatar and installs the test
+    keys in a place that the SSH server can find them.
 
     This class, _TestLaunchpadAvatar and _TestBazaarFileTransferServer work
     together to provide a threading event which is set when the first
