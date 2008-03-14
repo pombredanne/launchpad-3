@@ -20,8 +20,6 @@ access.
     ...     batch_size = None
     ...     def info(self, msg):
     ...         pass
-    ...     def _getBugWatchesByRemoteBug(self, foo):
-    ...         return {}
     ...     def initializeRemoteBugDB(self, remote_bug_ids):
     ...         print "initializeRemoteBugDB() called"
 

@@ -13,7 +13,7 @@ __all__ = [
 from zope.interface import Interface
 from zope.schema import Int, Object, Text
 
-from canonical.launchpad.interfaces import IPOTemplate
+from canonical.launchpad.interfaces import IPOTemplate, IPOTMsgSet
 
 
 class IVPOTExportSet(Interface):
@@ -33,6 +33,10 @@ class IVPOTExport(Interface):
     template_header = Text(
         title=u"See IPOTemplate.header",
         required=True, readonly=True)
+
+    potmsgset = Object(
+        title=u"See `IPOTMsgSet`.",
+        required=True, readonly=True, schema=IPOTMsgSet)
 
     sequence = Int(
         title=u"See `IPOTMsgSet`.sequence",

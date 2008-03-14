@@ -40,6 +40,15 @@ class IExternalBugTracker(Interface):
 class ISupportsCommentImport(IExternalBugTracker):
     """A an external bug tracker that supports comment imports."""
 
+    def getCommentIds(bug_watch):
+        """Return all the comment IDs for a given remote bug."""
+
+    def getPosterForComment(bug_watch, comment_id):
+        """Return a tuple of (name, emailaddress) for a comment's poster."""
+
+    def getMessageForComment(bug_watch, comment_id, poster):
+        """Return an `IMessage` instance for a comment."""
+
 
 class ISupportsBugImport(IExternalBugTracker):
     """A an external bug tracker that supports bug imports."""

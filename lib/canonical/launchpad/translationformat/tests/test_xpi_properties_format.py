@@ -177,6 +177,19 @@ ucci\u00F3n
                    for message in property_file.messages])
         self.assertEquals(expected, parsed)
 
+    def test_MultilinePropertyFileTest(self):
+        """Test parsing of multiline entries."""
+        content = (
+            'multiline-key = This is the first one\\nThis is the second one.')
+        property_file = PropertyFile('test.properties', content)
+        expected = {
+            u'multiline-key': (
+                [u'This is the first one\nThis is the second one.'])
+            }
+        parsed = dict([(message.msgid_singular, message.translations)
+                   for message in property_file.messages])
+        self.assertEquals(expected, parsed)
+
 
 def test_suite():
     return unittest.defaultTestLoader.loadTestsFromName(__name__)

@@ -26,7 +26,7 @@ from canonical.tests.test_twisted import TwistedTestCase
 
 from canonical.codehosting import plugins
 from canonical.config import config
-from canonical.codehosting.tests.servers import Authserver
+from canonical.codehosting.tests.servers import NullAuthserverWithKeys
 
 from canonical.testing import TwistedLaunchpadZopelessLayer
 from canonical.twistedsupport import defer_to_thread
@@ -52,7 +52,7 @@ class TestLaunchpadServerCommand(TwistedTestCase, TestCaseInTempDir):
         self._reapAllProcesses = process.reapAllProcesses
         process.reapAllProcesses = lambda: None
         self.make_empty_directory(config.codehosting.branches_root)
-        self._authserver = Authserver()
+        self._authserver = NullAuthserverWithKeys()
         self._authserver.setUp()
 
     def tearDown(self):
