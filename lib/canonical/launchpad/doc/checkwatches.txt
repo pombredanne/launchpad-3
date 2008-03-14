@@ -145,56 +145,6 @@ the error that was raised:
     'Unsupported Bugtracker'
 
 
-== Converting Remote Statuses ==
-
-The BugWatchUpdater class places a wrapper, _convertRemoteStatus()
-around ExternalBugTracker.convertRemoteStatus(). This allows it to
-handle unknown remote statuses correctly and also means that
-ExternalBugTracker implementations don't have to care about handling
-the UNKNOWN_REMOTE_STATUS constant correctly.
-
-This can be demonstrating using an example externalbugtracker class.
-
-    >>> from canonical.launchpad.components.externalbugtracker import (
-    ...     ExternalBugTracker, UnknownRemoteStatusError)
-    >>> from canonical.launchpad.interfaces import BugTaskStatus
-    >>> class ExampleExternalBugTracker(ExternalBugTracker):
-    ...     def convertRemoteStatus(self, remote_status):
-    ...         """Convert a remote status to a `BugTaskStatus`."""
-    ...         status_map = {
-    ...             'open': BugTaskStatus.NEW,
-    ...             'closed': BugTaskStatus.FIXRELEASED}
-    ...
-    ...         try:
-    ...             return status_map[remote_status]
-    ...         except KeyError:
-    ...             raise UnknownRemoteStatusError()
-
-    >>> example_bugtracker = ExampleExternalBugTracker('http://example.com')
-    >>> launchpad_status = updater._convertRemoteStatus(
-    ...     example_bugtracker, 'open')
-    >>> print launchpad_status.title
-    New
-
-If an unknown remote status is passed to the ExternalBugTracker's own
-convertRemoteStatus() method an UnknownRemoteStatusError will be raised.
-
-    >>> example_bugtracker.convertRemoteStatus('spoon')
-    Traceback (most recent call last):
-      ...
-    UnknownRemoteStatusError
-
-However, _convertRemoteStatus() wraps error handling around this.
-It will catch the error, log a warning and return BugTaskStatus.UNKNOWN,
-allowing checkwatches to continue its run.
-
-    >>> status = updater._convertRemoteStatus(example_bugtracker, 'spoon')
-    WARNING...Unknown remote status 'spoon'.
-
-    >>> print status.title
-    Unknown
-
-
 == Batched Bugwatch Updating ==
 
 checkwatches.py will only update those bugs that need updating, but
