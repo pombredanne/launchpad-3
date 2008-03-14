@@ -134,9 +134,14 @@ permission to the consumer when reviewing the request.
     >>> verifyObject(IOAuthAccessToken, access_token)
     True
 
-After the access token is generated, the access token is deleted.
+After the access token is generated, the request token is deleted.
 
     >>> print consumer.getRequestToken(request_token.key)
+    None
+
+By default, access tokens don't expire.
+
+    >>> print access_token.date_expires
     None
 
 If the request token hasn't been reviewed yet, it can't be used to

@@ -31,8 +31,6 @@ from canonical.launchpad.interfaces import (
 
 # How many hours should a request token be valid for?
 REQUEST_TOKEN_VALIDITY = 12
-# How many days should an access token be valid for, by default?
-ACCESS_TOKEN_VALIDITY = 30
 # The OAuth Core 1.0 spec says that a nonce shall be "unique for all requests
 # with that timestamp", but this is likely to cause problems if the
 # client does request pipelining, so we use a time window (relative to
@@ -142,12 +140,9 @@ class OAuthRequestToken(OAuthToken):
         assert self.permission != OAuthPermission.UNAUTHORIZED, (
             'The user did not grant access to this consumer.')
         key, secret = create_token_key_and_secret(table=OAuthAccessToken)
-        date_expires = datetime.now(pytz.timezone('UTC')) + timedelta(
-            days=ACCESS_TOKEN_VALIDITY)
         access_token = OAuthAccessToken(
             consumer=self.consumer, person=self.person, key=key,
-            secret=secret, permission=self.permission,
-            date_expires=date_expires)
+            secret=secret, permission=self.permission)
         self.destroySelf()
         return access_token
 
