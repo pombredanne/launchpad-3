@@ -19,20 +19,34 @@ class TestMergeProposalMailing(TestCase):
     """Test that reasonable mailings are generated"""
 
     layer = LaunchpadFunctionalLayer
+
     def setUp(self):
         TestCase.setUp(self)
         login('foo.bar@canonical.com')
         self.factory = LaunchpadObjectFactory()
 
-    def test_generateCreationEmail(self):
+    def makeProposalWithSubscriber(self):
         bmp = self.factory.makeBranchMergeProposal()
         bmp.registrant.displayname = 'Baz Qux'
         subscriber = self.factory.makePerson()
+        subscriber.displayname = 'Baz Quxx'
         bmp.source_branch.subscribe(subscriber,
             BranchSubscriptionNotificationLevel.NOEMAIL, None,
             CodeReviewNotificationLevel.FULL)
         bmp.source_branch.title = 'foo'
         bmp.target_branch.title = 'bar'
+        return bmp, subscriber
+
+    def makeTeam(self, team_member):
+        team = self.factory.makePerson(displayname='Qux')
+        team.teamowner = team_member
+        team.subscriptionpolicy = TeamSubscriptionPolicy.OPEN
+        team_member.join(team, team)
+        return team
+
+    def test_generateCreationEmail(self):
+        """Ensure that the contents of the mail are as expected"""
+        bmp, subscriber = self.makeProposalWithSubscriber()
         mailer = BMPMailer.forCreation(bmp)
         headers, subject, body = mailer.generateEmail(subscriber)
         self.assertEqual("""\
@@ -45,30 +59,18 @@ Baz Qux has proposed merging foo into bar.
 """ % (canonical_url(bmp), mailer.getReason(subscriber)), body)
         self.assertEqual('Merge of foo into bar proposed', subject)
 
-    def makeProposalWithSubscriber(self):
-        bmp = self.factory.makeBranchMergeProposal()
-        bmp.registrant.displayname = 'Baz Qux'
-        subscriber = self.factory.makePerson()
-        bmp.source_branch.subscribe(subscriber,
-            BranchSubscriptionNotificationLevel.NOEMAIL, None,
-            CodeReviewNotificationLevel.FULL)
-        bmp.source_branch.title = 'foo'
-        return bmp, subscriber
-
     def test_getReasonPerson(self):
+        """Ensure the correct reason is generated for individuals."""
         bmp, subscriber = self.makeProposalWithSubscriber()
         mailer = BMPMailer.forCreation(bmp)
         self.assertEqual('You are subscribed to branch foo.',
             mailer.getReason(subscriber))
 
     def test_getReasonTeam(self):
+        """Ensure the correct reason is generated for teams."""
         bmp, subscriber = self.makeProposalWithSubscriber()
-        subscriber.displayname = 'Baz Quxx'
-        team = self.factory.makePerson(displayname='Qux')
         team_member = self.factory.makePerson(displayname='Foo Bar')
-        team.teamowner = team_member
-        team.subscriptionpolicy = TeamSubscriptionPolicy.OPEN
-        team_member.join(team)
+        team = self.makeTeam(team_member)
         bmp.source_branch.subscribe(team,
             BranchSubscriptionNotificationLevel.NOEMAIL, None,
             CodeReviewNotificationLevel.FULL)
@@ -83,6 +85,15 @@ Baz Qux has proposed merging foo into bar.
                 'Baz Quxx does not participate in team Qux.', str(e))
         else:
             self.fail('Did not detect bogus team recipient.')
+
+    def test_getRealRecipientsIndirect(self):
+        """Ensure getRealRecipients uses indirect memberships."""
+        team_member = self.factory.makePerson(displayname='Foo Bar')
+        team = self.makeTeam(team_member)
+        super_team = self.makeTeam(team)
+        recipients = BMPMailer.getRealRecipients(
+            {super_team: 42})
+        self.assertEqual([(team_member, 42)], recipients.items())
 
 
 def test_suite():
