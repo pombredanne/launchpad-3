@@ -14,8 +14,6 @@ from sha import sha
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
-
-
 from canonical.archiveuploader.tests import (
     datadir, getPolicy, insertFakeChangesFileForAllPackageUploads,
     mock_logger_quiet)

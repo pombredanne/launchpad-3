@@ -30,7 +30,6 @@ __all__ = [
     'SpecificationSHP',
     ]
 
-import cgi
 from subprocess import Popen, PIPE
 from operator import attrgetter
 
@@ -1097,8 +1096,8 @@ class SpecificationSetView(AppFrontPageSearchView, HasSpecificationsView):
 class SpecificationSHP(StructuralHeaderPresentation):
 
     def getIntroHeading(self):
-        return "Blueprint for %s" % cgi.escape(self.context.target.title)
+        return None
 
     def getMainHeading(self):
-        return self.context.title
+        return self.context.target.title
 
