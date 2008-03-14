@@ -268,22 +268,17 @@ class FileDownloadClient:
 
         :raises: DownloadFailed if the alias is invalid
         """
+        from canonical.launchpad.database import LibraryFileAlias
+        from sqlobject import SQLObjectNotFound
         aliasID = int(aliasID)
-        q = """
-            SELECT filename, deleted
-            FROM LibraryFileAlias, LibraryFileContent
-            WHERE LibraryFileContent.id = LibraryFileAlias.content
-                AND LibraryFileAlias.id = %d
-            """ % aliasID
-        cur = cursor()
-        cur.execute(q)
-        row = cur.fetchone()
-        if row is None:
+        try:
+            # Use SQLObjects to maximize caching benefits
+            lfa = LibraryFileAlias.get(aliasID)
+        except SQLObjectNotFound:
             raise DownloadFailed('Alias %d not found' % aliasID)
-        filename, deleted = row
-        if deleted:
+        if lfa.content.deleted:
             return None
-        return '/%d/%s' % (aliasID, quote(filename.encode('utf-8')))
+        return '/%d/%s' % (aliasID, quote(lfa.filename.encode('utf-8')))
 
     def getURLForAlias(self, aliasID, is_buildd=False):
         """Returns the url for talking to the librarian about the given

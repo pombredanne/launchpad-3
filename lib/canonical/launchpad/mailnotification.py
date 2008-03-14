@@ -6,6 +6,7 @@ __metaclass__ = type
 
 import datetime
 from difflib import unified_diff
+import operator
 
 from email.MIMEText import MIMEText
 from email.MIMEMultipart import MIMEMultipart
@@ -25,7 +26,7 @@ from canonical.launchpad.event.interfaces import ISQLObjectModifiedEvent
 from canonical.launchpad.interfaces import (
     IBugTask, IEmailAddressSet, ILaunchpadCelebrities,
     INotificationRecipientSet, IPersonSet, ISpecification,
-    ITeamMembershipSet, IUpstreamBugTask,
+    IStructuralSubscriptionTarget, ITeamMembershipSet, IUpstreamBugTask,
     QuestionAction, TeamMembershipStatus)
 from canonical.launchpad.mail import (
     sendmail, simple_sendmail, simple_sendmail_from_person, format_address)
@@ -734,6 +735,45 @@ def notify_bug_modified(modified_bug, event):
     assert bug_delta is not None
     add_bug_change_notifications(bug_delta)
 
+
+def get_bugtask_indirect_subscribers(bugtask, recipients=None):
+    """Return the indirect subscribers for a bug task.
+
+    Return the list of people who should get notifications about
+    changes to the task because of having an indirect subscription
+    relationship with it (by subscribing to its target, being an
+    assignee or owner, etc...)
+
+    If `recipients` is present, add the subscribers to the set of
+    bug notification recipients.
+    """
+    also_notified_subscribers = set()
+
+    # Assignees are indirect subscribers.
+    if bugtask.assignee:
+        also_notified_subscribers.add(bugtask.assignee)
+        if recipients is not None:
+            recipients.addAssignee(bugtask.assignee)
+
+    if IStructuralSubscriptionTarget.providedBy(bugtask.target):
+        also_notified_subscribers.update(
+            bugtask.target.getBugNotificationsRecipients(recipients))
+
+    if bugtask.milestone is not None:
+        also_notified_subscribers.update(
+            bugtask.milestone.getBugNotificationsRecipients(recipients))
+
+    # If the target's bug contact isn't set,
+    # we add the owner as a subscriber.
+    pillar = bugtask.pillar
+    if pillar.bugcontact is None:
+        also_notified_subscribers.add(pillar.owner)
+        if recipients is not None:
+            recipients.addRegistrant(pillar.owner, pillar)
+
+    return sorted(
+        also_notified_subscribers,
+        key=operator.attrgetter('displayname'))
 
 def add_bug_change_notifications(bug_delta):
     """Generate bug notifications and add them to the bug."""

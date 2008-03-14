@@ -37,6 +37,8 @@ class LibraryFileContent(SQLBase):
 
 class LibraryFileAlias(SQLBase):
     """A filename and mimetype that we can serve some given content with."""
+    # The updateLastAccessed method has unreachable code.
+    # pylint: disable-msg=W0101
 
     implements(ILibraryFileAlias)
 
@@ -74,7 +76,7 @@ class LibraryFileAlias(SQLBase):
 
     def getURL(self):
         """See ILibraryFileAlias.getURL"""
-        if config.launchpad.vhosts.use_https:
+        if config.vhosts.use_https:
             return self.https_url
         else:
             return self.http_url
@@ -142,7 +144,8 @@ class LibraryFileAliasSet(object):
 
     implements(ILibraryFileAliasSet)
 
-    def create(self, name, size, file, contentType, expires=None, debugID=None):
+    def create(
+        self, name, size, file, contentType, expires=None, debugID=None):
         """See ILibraryFileAliasSet.create"""
         client = getUtility(ILibrarianClient)
         fid = client.addFile(name, size, file, contentType, expires, debugID)
