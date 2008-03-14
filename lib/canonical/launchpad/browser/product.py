@@ -773,13 +773,6 @@ class ProductView(HasAnnouncementsView, SortSeriesMixin,
         return self.context.getLatestBranches(visible_by_user=self.user)
 
 
-        url = urlappend(canonical_url(release), '+download')
-        # Quote the filename to eliminate non-ascii characters which
-        # are invalid in the url.
-        url = urlappend(url, urllib.quote(file_.filename.encode('utf-8')))
-        return str(URI(url).replace(scheme='http'))
-        baseurl = self.fileURL(file_, release)
-        return urlappend(baseurl, '+md5')
 class ProductDownloadFilesView(LaunchpadView,
                                SortSeriesMixin,
                                ProductDownloadFileMixin):
