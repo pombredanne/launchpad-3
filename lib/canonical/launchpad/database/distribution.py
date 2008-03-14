@@ -1109,7 +1109,7 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
                 AND Bugtask.status IN %(unresolved)s
                 AND Bug.private = 'F'
                 AND Bug.duplicateof IS NULL
-            GROUP BY SPN.name, SPN.id
+            GROUP BY SPN.id, SPN.name
             HAVING COUNT(DISTINCT Bugtask.bug) > 0
             ORDER BY total_bugs DESC, SPN.name LIMIT %(limit)s
         """ % {'invalid': quote(BugTaskStatus.INVALID),
