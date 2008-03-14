@@ -33,13 +33,11 @@ import email
 import os.path
 import re
 import socket
-import sys
 import urllib
 import urllib2
 import xml.parsers.expat
 
 from email.Utils import parseaddr
-from itertools import chain
 from urlparse import urlunparse
 from xml.dom import minidom
 
@@ -53,12 +51,11 @@ from canonical.cachedproperty import cachedproperty
 from canonical.config import config
 from canonical import encoding
 from canonical.database.sqlbase import commit
-from canonical.launchpad.scripts import log, debbugs
+from canonical.launchpad.scripts import debbugs
 from canonical.launchpad.interfaces import (
     BugTaskImportance, BugTaskStatus, BugTrackerType, BugWatchErrorType,
     IBugWatchSet, IExternalBugTracker, IMessageSet, ISupportsBugImport,
-    ISupportsCommentImport, UNKNOWN_REMOTE_IMPORTANCE,
-    UNKNOWN_REMOTE_STATUS)
+    ISupportsCommentImport, UNKNOWN_REMOTE_IMPORTANCE)
 from canonical.launchpad.webapp.url import urlparse
 
 
