@@ -332,16 +332,8 @@ class ShipItRequestView(GeneralFormView):
 
     def standardShipItRequests(self):
         """Return all standard ShipIt Requests sorted by quantity of CDs."""
-        request_set = getUtility(IStandardShipItRequestSet)
-        requests = request_set.getByFlavour(self.flavour, self.user)
-        # XXX: Guilherme Salgado, 2008-02-22: Evil hack to allow users to
-        # request Ubuntu Server CDs on https://shipit.ubuntu.com/.  A more
-        # reasonable solution will replace this one before we start shipping
-        # Hardy.  When removing this hack, one should remember to remove the
-        # rest of it, from the process() method of this view.
-        if self.flavour == ShipItFlavour.UBUNTU:
-            server_requests = request_set.getByFlavour(ShipItFlavour.SERVER)
-            requests = list(requests) + list(server_requests)
+        requests = getUtility(IStandardShipItRequestSet).getByFlavour(
+            self.flavour, self.user)
         return sorted(requests, key=attrgetter('totalCDs'))
 
     @cachedproperty
@@ -471,16 +463,7 @@ class ShipItRequestView(GeneralFormView):
             assert not self._extra_fields
             request_type = getUtility(IStandardShipItRequestSet).get(
                 request_type_id)
-            allowed_flavour = False
-            if self.flavour == ShipItFlavour.UBUNTU:
-                # We're currently accepting requests for Desktop/Server CDs on
-                # shipit.ubuntu.com/myrequest.  Soon we'll use a separate page
-                # for that and drop this.
-                allowed_flavour = request_type.flavour in [
-                    ShipItFlavour.UBUNTU, ShipItFlavour.SERVER]
-            else:
-                allowed_flavour = request_type.flavour == self.flavour
-            if request_type is None or not allowed_flavour:
+            if request_type is None or request_type.flavour != self.flavour:
                 # Either a shipit admin removed this option after the user
                 # loaded the page or the user is poisoning the form.
                 return ("The option you chose was not found. Please select "
@@ -495,19 +478,13 @@ class ShipItRequestView(GeneralFormView):
                 quantities[arch] = intOrZero(kw.get(field_name))
                 total_cds += quantities[arch]
 
-        # This is only necessary because we're allowing users to request
-        # Server CDs on shipit.ubuntu.com and so we need to use the standard
-        # option's flavour in those cases.
-        flavour = self.flavour
-        if request_type_id:
-            flavour = request_type.flavour
         # Here we set both requested and approved quantities. This is not a
         # problem because if this order needs manual approval, it'll be
         # flagged as pending approval, meaning that somebody will have to
         # check (and possibly change) its approved quantities before it can be
         # shipped.
         current_order.setQuantities(
-            {flavour: quantities}, distroseries=self.series)
+            {self.flavour: quantities}, distroseries=self.series)
 
         # Make sure that subsequent queries will see the RequestedCDs objects
         # created/updated when we set the order quantities above.
