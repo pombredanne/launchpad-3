@@ -642,13 +642,13 @@ configuration file:
 There is a separate location for private PPAs that is used if the
 archive is marked as private:
 
-    >>> (config.personalpackagearchive.private_root != 
+    >>> (config.personalpackagearchive.private_root !=
     ...  config.personalpackagearchive.root)
     True
 
     >>> naked_cprov_archive.private = True
     >>> private_pubconfig = naked_cprov_archive.getPubConfig()
-    >>> (private_pubconfig.distroroot == 
+    >>> (private_pubconfig.distroroot ==
     ...  config.personalpackagearchive.private_root)
     True
 
@@ -882,7 +882,7 @@ are published to a secure location.
 
     >>> naked_cprov_archive.private = True
     >>> naked_cprov_archive.archive_url
-    u'http://private.ppa.launchpad.net/cprov/ubuntutest'
+    u'http://private.ppa.launchpad.dev/cprov/ubuntutest'
 
 The publisher config for PARTNER contains only 'partner' in its
 components.  This prevents non-partner being published in the partner
