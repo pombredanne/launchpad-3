@@ -207,7 +207,7 @@ class ExternalBugTracker:
         return urllib2.urlopen(request, data)
 
     def initializeRemoteBugDB(self, bug_ids):
-        """See IExternalBugTracker."""
+        """See `IExternalBugTracker`."""
         self.bugs = {}
         if len(bug_ids) > self.batch_query_threshold:
             self.bugs = self.getRemoteBugBatch(bug_ids)
