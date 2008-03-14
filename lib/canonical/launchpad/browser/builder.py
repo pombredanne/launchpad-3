@@ -131,6 +131,21 @@ class CommonBuilderView:
         UTC = pytz.timezone('UTC')
         return DateTimeFormatterAPI(datetime.datetime.now(UTC)).datetime()
 
+    def overrideHiddenBuilder(self, builder):
+        """Override the builder to HiddenBuilder as necessary.
+
+        HiddenBuilder is used if the user does not have permission to
+        see the build on the builder.
+        """
+        current_job = builder.currentjob
+        if (current_job and
+            not check_permission('launchpad.View', current_job.build)):
+            # Cloak the builder.
+            return HiddenBuilder(builder)
+        else:
+            # The build is public, don't cloak it.
+            return builder
+
 
 class BuilderSetView(CommonBuilderView):
     """Default BuilderSet view class
@@ -146,6 +161,16 @@ class BuilderSetView(CommonBuilderView):
     @cachedproperty
     def hasQueuedBuilds(self):
         return bool(self.buildQueueDepthByArch)
+
+    @property
+    def builders(self):
+        """Return all active builders, with private builds cloaked.
+
+        Any builders building a private build will be cloaked and returned
+        as a HiddenBuilder.
+        """
+        builders = self.context.getBuilders()
+        return [self.overrideHiddenBuilder(builder) for builder in builders]
 
 
 class HiddenBuilder:
@@ -187,11 +212,7 @@ class BuilderView(CommonBuilderView, BuildRecordsView):
     __used_for__ = IBuilder
 
     def __init__(self, context, request):
-        current_job = context.currentjob
-        if current_job and not check_permission(
-            'launchpad.View', current_job.build):
-            # Cloak the builder.
-            context = HiddenBuilder(context)
+        context = self.overrideHiddenBuilder(context)
         super(BuilderView, self).__init__(context, request)
 
     def cancelBuildJob(self):

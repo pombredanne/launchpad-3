@@ -8,9 +8,10 @@ from zope.interface import implements
 
 from sqlobject import StringCol, SQLRelatedJoin, ForeignKey
 
+from canonical.database.constants import DEFAULT
+from canonical.database.sqlbase import SQLBase
 from canonical.launchpad.interfaces import (
     ICountry, ICountrySet, IContinent, NotFoundError)
-from canonical.database.sqlbase import SQLBase
 
 
 class Country(SQLBase):
@@ -29,7 +30,7 @@ class Country(SQLBase):
                              notNull=True)
     iso3166code3 = StringCol(dbName='iso3166code3', unique=True,
                              notNull=True)
-    title = StringCol(dbName='title', notNull=True)
+    title = StringCol(dbName='title', notNull=False, default=DEFAULT)
     description = StringCol(dbName='description')
     continent = ForeignKey(
         dbName='continent', foreignKey='Continent', default=None)
