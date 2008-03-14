@@ -220,7 +220,7 @@ And of course you can't modify attributes that don't exist.
 === Changing object relationships ===
 
 In addition to changing an object's data fields, you can change its
-relationships to other people. Here we change the owner of the
+relationships to other objects. Here we change the owner of the
 'admins' team from 'sabdfl' to 'salgado'.
 
   >>> admins = get_person('admins').jsonBody()
@@ -241,7 +241,8 @@ string won't work.
   Your value for the attribute 'teamowner_link' wasn't the URL to any
   object published by this web service.
 
-But but not just any URL will do.
+But but not just any URL will do. It has to identify an object in the
+web service.
 
   >>> admins['teamowner_link'] = u'http://www.canonical.com/'
   >>> print modify_person('admins', admins, 'PUT')
@@ -257,7 +258,7 @@ But but not just any URL will do.
   Your value for the attribute 'teamowner_link' wasn't the URL to any
   object published by this web service.
 
-  # This URL would be valid except it uses the wrong protocol.
+  # This URL would be valid, but it uses the wrong protocol.
   >>> admins['teamowner_link'] = u'https://api.launchpad.dev/people/admins'
   >>> print modify_person('admins', admins, 'PUT')
   HTTP/1.1 400 Bad Request
