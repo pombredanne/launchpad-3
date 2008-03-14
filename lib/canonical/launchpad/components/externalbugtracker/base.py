@@ -1733,4 +1733,3 @@ class RequestTracker(ExternalBugTracker):
         except KeyError:
             raise UnknownRemoteStatusError()
 
-
