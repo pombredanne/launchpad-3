@@ -73,10 +73,90 @@ class BranchStatusClient:
             'recordSuccess', name, hostname, started_tuple, completed_tuple)
 
 
+class MonitorProtocol(ProcessProtocol, TimeoutMixin):
+
+    def __init__(self, deferred, monitor, clock=None):
+        """Construct an instance of the protocol, for listening to a worker.
+
+        :param clock: A provider of Twisted's IReactorTime.  This parameter
+            exists to allow testing that does not depend on an external clock.
+            If a clock is not passed in explicitly the reactor is used.
+        :param deferred: A Deferred that will be fired when the worker has
+            finished (either successfully or unsuccesfully).
+        """
+        self.deferred = deferred
+        self.monitor = monitor
+        if clock is None:
+            clock = reactor
+        self.clock = clock
+        self.notification_deferred = defer.succeed(None)
+        self._termination_failure = None
+
+    def sendEvent(self, method_name, *args):
+        method = getattr(self.monitor, method_name, None)
+        if method is None:
+            self.unexpectedError(failure.Failure(BadMessage(method_name)))
+        def actually_send_event(ignored):
+            d = defer.maybeDeferred(method, *args))
+            d.addErrback(self.unexpectedError)
+            return d
+        self.notification_deferred.addCallback(actually_send_event)
+
+    def unexpectedError(self, failure):
+        """
+        XXX.
+        """
+        self._termination_failure = failure
+        try:
+            self.transport.signalProcess('INT')
+            self._sigkill_delayed_call = self.clock.callLater(
+                5, self._sigkill)
+        except error.ProcessExitedAlready:
+            # The process has already died. Fine.
+            pass
+
+    def _sigkill(self):
+        """Send SIGKILL to the child process.
+
+        We rely on this killing the process, i.e. we assume that
+        processEnded() will be called soon after this.
+        """
+        self._sigkill_delayed_call = None
+        try:
+            self.transport.signalProcess('KILL')
+        except error.ProcessExitedAlready:
+            # The process has already died. Fine.
+            pass
+
+    def processEnded(self, reason):
+        """See `ProcessProtocol.processEnded`.
+
+        Fires the termination deferred with reason or, if the process died
+        because we killed it, why we killed it.
+        """
+        ProcessProtocol.processEnded(self, reason)
+        if self._sigkill_delayed_call is not None:
+            self._sigkill_delayed_call.cancel()
+            self._sigkill_delayed_call = None
+
+        if self._termination_failure is not None:
+            reason = self._termination_failure
+
+        def cb(ignored):
+            if reason.check(error.ProcessEnded):
+                # self._termination_failure will have been set if a
+                # notification that was pending when processEnded was
+                # called failed, or None otherwise.
+                self.deferred.callback(self._termination_failure)
+            else:
+                self.deferred.errback(reason)
+
+        self.notifications_deferred.addCallback(cb)
+
+
+
 class PullerMasterProtocol(ProcessProtocol, NetstringReceiver, TimeoutMixin):
     """The protocol for receiving events from the puller worker."""
-
-    unexpected_error_received = False
 
     def __init__(self, deferred, listener, clock=None):
         """Construct an instance of the protocol, for listening to a worker.
