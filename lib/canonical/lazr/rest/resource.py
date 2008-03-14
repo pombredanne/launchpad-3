@@ -36,16 +36,18 @@ from zope.schema import Datetime, ValidationError, getFields
 from zope.schema.interfaces import IField, IObject
 from zope.security.proxy import removeSecurityProxy
 
+from canonical.config import config
+
 from canonical.lazr.enum import BaseItem
+from canonical.lazr.interfaces import (
+    ICollection, ICollectionField, ICollectionResource, IEntry,
+    IEntryResource, IHTTPResource, IJSONPublishable, IScopedCollection,
+    IServiceRootResource)
 
 # XXX leonardr 2008-01-25 bug=185958:
 # canonical_url code should be moved into lazr.
 from canonical.launchpad.layers import setFirstLayer
 from canonical.launchpad.webapp import canonical_url
-from canonical.lazr.interfaces import (
-    ICollection, ICollectionField, ICollectionResource, IEntry,
-    IEntryResource, IHTTPResource, IJSONPublishable, IScopedCollection,
-    IServiceRootResource)
 
 
 class ResourceJSONEncoder(simplejson.JSONEncoder):
@@ -124,11 +126,19 @@ class HTTPResource:
         :param url: The URL to a resource.
         """
         (protocol, host, path, query, fragment) = urlparse.urlsplit(url)
-        # XXX leonardr 2008-03-13 blueprint=api-base-modify-data-links:
-        # We need to check the protocol and host to make sure they're
-        # the same as the web service uses. If not, raise NotFound.
-        if query != '' or fragment != '':
-            raise NotFound(url)
+
+        request_host = self.request.get('HTTP_HOST')
+        request_port = self.request.get('SERVER_PORT')
+        if request_port is not None:
+            request_host = request_host + ':' + request_port
+        if config.vhosts.use_https:
+            site_protocol = 'https'
+        else:
+            site_protocol = 'http'
+
+        if (host != request_host or protocol != site_protocol or
+            query != '' or fragment != ''):
+            raise NotFound(self, url, self.request)
         path = map(urllib.unquote, path.split('/')[1:])
         path.reverse()
 
@@ -423,6 +433,8 @@ class EntryResource(ReadWriteResource):
                     return ("Your value for the attribute '%s' wasn't "
                             "the URL to any object published by this web "
                             "service." % repr_name)
+                underlying_object = removeSecurityProxy(value)
+                value = underlying_object.context
                 # The URL points to an object, but is it an object of the
                 # right type?
                 if not element.schema.providedBy(value):
@@ -471,8 +483,8 @@ class EntryResource(ReadWriteResource):
                 change_this_field = False
                 if value != current_value:
                     self.request.response.setStatus(400)
-                    return ("You tried to modify the collection link '%s': %s vs. %s"
-                            % (repr_name, value, current_value))
+                    return ("You tried to modify the collection link '%s'"
+                            % repr_name)
 
             if element.readonly:
                 change_this_field = False
@@ -482,21 +494,23 @@ class EntryResource(ReadWriteResource):
                             % repr_name)
 
             if change_this_field is True and value != current_value:
-                if (IObject.providedBy(element)
-                    and not ICollectionField.providedBy(element)):
-                    underlying_object = removeSecurityProxy(value)
-                    value = underlying_object.context
-                try:
-                    # Do any field-specific validation.
-                    field = element.bind(self.context)
-                    field.validate(value)
-                except ValidationError, e:
-                    import pdb; pdb.set_trace()
-                    self.request.response.setStatus(400)
-                    error = str(e)
-                    if error is "":
-                        error = "Validation error"
-                    return error
+                if not IObject.providedBy(element):
+                    # XXX leonardr 2008-03-13:
+                    # Calling field.validate on an IObject will not just check
+                    # whether the IObject is a good fit for this field; it
+                    # will go into the IObject's fields and validate them
+                    # as though we were creating a new object. This causes
+                    # false failures, so for the time being we skip this.
+                    try:
+                        # Do any field-specific validation.
+                        field = element.bind(self.context)
+                        field.validate(value)
+                    except ValidationError, e:
+                        self.request.response.setStatus(400)
+                        error = str(e)
+                        if error is "":
+                            error = "Validation error"
+                        return error
                 validated_changeset[name] = value
 
         # Store the entry's current URL so we can see if it changes.
