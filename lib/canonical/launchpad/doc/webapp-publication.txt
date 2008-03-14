@@ -12,15 +12,15 @@ The configuration defines a number of domains, one for the main
 Launchpad site and one for the sites of the various applications.
 
     >>> from canonical.config import config
-    >>> config.launchpad.vhosts.mainsite.hostname
+    >>> config.vhost.mainsite.hostname
     'launchpad.dev'
-    >>> config.launchpad.vhosts.blueprints.hostname
+    >>> config.vhost.blueprints.hostname
     'blueprints.launchpad.dev'
 
 It also says whether we use http or https (although this setting can be
 overridden for the root URL of a particular host).
 
-    >>> config.launchpad.vhosts.use_https
+    >>> config.vhosts.use_https
     False
 
 These are parsed into webapp.vhost.allvhosts.
@@ -460,16 +460,21 @@ production. -- Leonard Richardson 2008-01-04
 (https://launchpad.net/launchpad/+spec/api-bugs-remote)
 
     >>> from canonical.config import config
-    >>> config.launchpad.vhosts.expose_webservice
+    >>> config.vhosts.expose_webservice
     True
 
-    >>> config.launchpad.vhosts.expose_webservice = False
+    >>> from textwrap import dedent
+    >>> test_data = dedent("""
+    ...     [vhosts]
+    ...     expose_webservice: false
+    ...     """)
+    >>> config.push('test', test_data)
 
     >>> print_request_and_publication('api.launchpad.dev', method='GET')
     ProtocolErrorRequest
     ProtocolErrorPublication: status=404
 
-    >>> config.launchpad.vhosts.expose_webservice = True
+    >>> test_config_data = config.pop('test')
 
 The XML-RPC RequestPublicationFactory only responds to POST requests,
 and then only when the MIME type is text/xml.
@@ -530,6 +535,8 @@ less nice.
     >>> logger.setLevel(logging.CRITICAL)
 
     >>> logout()
+    >>> from zope.app.testing.functional import HTTPCaller
+    >>> http = HTTPCaller()
     >>> print http("GET / HTTP/1.1\n"
     ...            "Host: nosuchhost.launchpad.dev")
     HTTP/1.1 404 Not Found

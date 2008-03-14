@@ -24,14 +24,14 @@ from sqlobject import BoolCol, IntCol, ForeignKey, StringCol
 from sqlobject import SQLMultipleJoin, SQLRelatedJoin
 from sqlobject import SQLObjectNotFound
 
+from canonical.launchpad.mailnotification import (
+    get_bugtask_indirect_subscribers)
 from canonical.launchpad.interfaces import (
     BugAttachmentType, BugTaskStatus, BugTrackerType, DistroSeriesStatus,
     IBug, IBugAttachmentSet, IBugBecameQuestionEvent, IBugBranch, IBugSet,
-    IBugTaskSet, IBugWatchSet, ICveSet, IDistribution, IDistroBugTask,
-    IDistroSeries, IDistroSeriesBugTask, ILaunchpadCelebrities,
-    ILibraryFileAliasSet, IMessage, IProduct, IProductSeries,
-    IProductSeriesBugTask, IQuestionTarget, ISourcePackage,
-    IStructuralSubscriptionTarget, IUpstreamBugTask, NominationError,
+    IBugTaskSet, IBugWatchSet, ICveSet, IDistribution, IDistroSeries,
+    ILaunchpadCelebrities, ILibraryFileAliasSet, IMessage, IProduct,
+    IProductSeries, IQuestionTarget, ISourcePackage, NominationError,
     NominationSeriesObsoleteError, NotFoundError, UNRESOLVED_BUGTASK_STATUSES)
 from canonical.launchpad.helpers import shortlist
 from canonical.database.sqlbase import cursor, SQLBase, sqlvalues
@@ -298,7 +298,7 @@ class Bug(SQLBase):
         # view all bugs.
         bugtasks = getUtility(IBugTaskSet).findExpirableBugTasks(
             0, getUtility(ILaunchpadCelebrities).janitor, bug=self)
-        return len(bugtasks) > 0
+        return bugtasks.count() > 0
 
     @property
     def initial_message(self):
@@ -396,7 +396,7 @@ class Bug(SQLBase):
         """See `IBug`."""
         if self.private:
             return []
-        
+
         duplicate_subscriptions = set(
             BugSubscription.select("""
                 BugSubscription.bug = Bug.id AND
@@ -470,29 +470,9 @@ class Bug(SQLBase):
         also_notified_subscribers = set()
 
         for bugtask in self.bugtasks:
-            # Assignees are indirect subscribers.
-            if bugtask.assignee:
-                also_notified_subscribers.add(bugtask.assignee)
-                if recipients is not None:
-                    recipients.addAssignee(bugtask.assignee)
-
-            if IStructuralSubscriptionTarget.providedBy(bugtask.target):
-                also_notified_subscribers.update(
-                    bugtask.target.getBugNotificationsRecipients(recipients))
-
-            if bugtask.milestone is not None:
-                also_notified_subscribers.update(
-                    bugtask.milestone.getBugNotificationsRecipients(
-                    recipients))
-
-            # If the target's bug contact isn't set,
-            # we add the owner as a subscriber.
-            pillar = bugtask.pillar
-            if pillar.bugcontact is None:
-                also_notified_subscribers.add(pillar.owner)
-                if recipients is not None:
-                    recipients.addRegistrant(
-                        pillar.owner, pillar)
+            bugtask_subscribers = get_bugtask_indirect_subscribers(
+                bugtask, recipients=recipients)
+            also_notified_subscribers.update(bugtask_subscribers)
 
         # Direct subscriptions always take precedence over indirect
         # subscriptions.

@@ -1,18 +1,19 @@
 # Copyright 2005 Canonical Ltd.  All rights reserved.
 
-import unittest
 import logging
+import unittest
+
+import gpgme
+from zope.component import getUtility
 
 from canonical.launchpad.ftests import keys_for_tests
-from canonical.launchpad.ftests.harness import (
-        LaunchpadZopelessTestCase, LaunchpadFunctionalTestCase
-        )
-from canonical.testing import LaunchpadFunctionalLayer
 from canonical.launchpad.interfaces import (
     IGPGHandler, IPersonSet, IEmailAddressSet, EmailAddressStatus)
-from canonical.launchpad.scripts.keyringtrustanalyser import *
-from zope.component import getUtility
-import gpgme
+from canonical.launchpad.scripts.keyringtrustanalyser import (
+    addTrustedKeyring, addOtherKeyring, getValidUids, findEmailClusters,
+    mergeClusters)
+from canonical.testing import LaunchpadZopelessLayer
+
 
 test_fpr = 'A419AE861E88BC9E04B9C26FBA2B9389DFD20543'
 foobar_fpr = '340CA3BB270E2716C9EE0B768E7EB7086C64A8C5'
@@ -42,19 +43,16 @@ def setupLogger(name='test_keyringtrustanalyser'):
     return logger, handler
 
 
-class TestKeyringTrustAnalyser(LaunchpadFunctionalTestCase):
-    layer = LaunchpadFunctionalLayer
+class TestKeyringTrustAnalyser(unittest.TestCase):
+    layer = LaunchpadZopelessLayer
 
     def setUp(self):
-        LaunchpadFunctionalTestCase.setUp(self)
-        self.login()
         self.gpg_handler = getUtility(IGPGHandler)
 
     def tearDown(self):
         # XXX stub 2005-10-27: this should be a zope test cleanup
         # thing per SteveA.
         self.gpg_handler.resetLocalState()
-        LaunchpadFunctionalTestCase.tearDown(self)
 
     def _addTrustedKeys(self):
         # Add trusted key with ULTIMATE validity.  This will mark UIDs as
@@ -98,13 +96,15 @@ class TestKeyringTrustAnalyser(LaunchpadFunctionalTestCase):
 
         # test@canonical.com's non-revoked UIDs are valid
         self.assertTrue((test_fpr, 'test@canonical.com') in validuids)
-        self.assertTrue((test_fpr, 'sample.person@canonical.com') in validuids)
+        self.assertTrue((test_fpr,
+                         'sample.person@canonical.com') in validuids)
         self.assertTrue((test_fpr, 'sample.revoked@canonical.com')
                         not in validuids)
 
         # foo.bar@canonical.com's non-revoked signed UIDs are valid
         self.assertTrue((foobar_fpr, 'foo.bar@canonical.com') in validuids)
-        self.assertTrue((foobar_fpr, 'revoked@canonical.com') not in validuids)
+        self.assertTrue((foobar_fpr,
+                         'revoked@canonical.com') not in validuids)
         self.assertTrue((foobar_fpr, 'untrusted@canonical.com')
                         not in validuids)
 
@@ -124,8 +124,9 @@ class TestKeyringTrustAnalyser(LaunchpadFunctionalTestCase):
         self.assertTrue(set(['foo.bar@canonical.com']) in clusters)
 
 
-class TestMergeClusters(LaunchpadZopelessTestCase):
+class TestMergeClusters(unittest.TestCase):
     """Tests of the mergeClusters() routine."""
+    layer = LaunchpadZopelessLayer
 
     def _getEmails(self, person):
         emailset = getUtility(IEmailAddressSet)
@@ -281,9 +282,4 @@ class TestMergeClusters(LaunchpadZopelessTestCase):
 
 
 def test_suite():
-    loader=unittest.TestLoader()
-    result = loader.loadTestsFromName(__name__)
-    return result
-
-if __name__ == "__main__":
-    unittest.main(defaultTest=test_suite())
+    return unittest.TestLoader().loadTestsFromName(__name__)

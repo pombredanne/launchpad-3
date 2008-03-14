@@ -68,21 +68,52 @@ And we even have a convenient method which returns either the http URL or the
 https one, depending on a config value.
 
     >>> from canonical.config import config
-    >>> config.launchpad.vhosts.use_https
+    >>> config.vhosts.use_https
     False
     >>> re.search(
     ...     r'^http://localhost:58000/\d+/text.txt$', alias.getURL()
     ...     ) is not None
     True
 
-    >>> config.launchpad.vhosts.use_https = True
+    >>> from textwrap import dedent
+    >>> test_data = dedent("""
+    ...     [vhosts]
+    ...     use_https: true
+    ...     """)
+    >>> config.push('test', test_data)
     >>> re.search(
     ...     r'^https://localhost:58000/\d+/text.txt$', alias.getURL()
     ...     ) is not None
     True
 
-    # Let's reset the value of use_https to avoid problems in future tests
-    >>> config.launchpad.vhosts.use_https = False
+However, we can force the use of HTTP by setting the 'HTTP_X_SCHEME'
+header in the request to 'http', even when 'use_https' is True.
+
+    >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
+    >>> from zope.component import getMultiAdapter
+    >>> from urlparse import urlparse
+    >>> request = LaunchpadTestRequest(
+    ...     environ={'REQUEST_METHOD': 'GET',
+    ...              'HTTP_X_SCHEME' : 'http' })
+    >>> view = getMultiAdapter((alias,request), name='+index')
+    >>> view.initialize()
+    >>> print urlparse(request.response.getHeader('Location'))[0]
+    http
+
+When the incoming scheme is 'https' then the redirect scheme is
+unaffected.
+
+    >>> request = LaunchpadTestRequest(
+    ...     environ={'REQUEST_METHOD': 'GET',
+    ...              'HTTP_X_SCHEME' : 'https' })
+    >>> view = getMultiAdapter((alias,request), name='+index')
+    >>> view.initialize()
+    >>> print urlparse(request.response.getHeader('Location'))[0]
+    https
+
+Reset 'use_https' to its original state.
+
+    >>> test_config_data = config.pop('test')
 
 However, we can't access its contents until we have committed
 
@@ -134,7 +165,6 @@ files in the Librarian.
 
     >>> from canonical.librarian.interfaces import ILibrarianClient
     >>> client = getUtility(ILibrarianClient)
-    >>> from canonical.launchpad.database import LibraryFileAlias
     >>> aid = client.addFile(
     ...     'text.txt', len(data), StringIO(data), 'text/plain', NEVER_EXPIRES
     ...     )
@@ -170,7 +200,7 @@ If we abort the transaction, it is still in there
 
 You can also set the expiry date on the file this way too:
 
-    >>> from datetime import datetime, timedelta
+    >>> from datetime import datetime
     >>> from pytz import utc
     >>> url = client.remoteAddFile(
     ...     'text.txt', len(data), StringIO(data), 'text/plain',

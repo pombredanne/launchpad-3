@@ -45,6 +45,7 @@
     <include file="codeimportmachine.zcml" />
     <include file="codeimportresult.zcml" />
     <include file="codeofconduct.zcml" />
+    <include file="codereviewmessage.zcml" />
     <include file="country.zcml" />
     <include file="crowd.zcml" />
     <include file="cve.zcml" />
@@ -83,10 +84,12 @@
     <include file="librarian.zcml" />
     <include file="logintoken.zcml" />
     <include file="mailinglist.zcml" />
+    <include file="mailinglist-events.zcml" />
     <include file="marketing.zcml" />
     <include file="mentoringoffer.zcml" />
     <include file="message.zcml" />
     <include file="milestone.zcml" />
+    <include file="oauth.zcml" />
     <include file="openid.zcml" />
     <include file="packagebugcontact.zcml" />
     <include file="packagerelationship.zcml" />
@@ -107,7 +110,6 @@
     <include file="project.zcml" />
     <include file="publishedpackage.zcml" />
     <include file="queue.zcml" />
-    <include file="registry.zcml" />
     <include file="revision.zcml" />
     <include file="scriptactivity.zcml" />
     <include file="securitycontact.zcml" />
@@ -150,6 +152,7 @@
     <include file="vpoexport.zcml" />
     <include file="vpotexport.zcml" />
     <include file="archive.zcml" />
+    <include file="archivedependency.zcml" />
     <include file="webservice.zcml" />
 
     <include file="fields.zcml" />
@@ -159,7 +162,6 @@
     <!-- System homepages -->
     <include file="translations.zcml" />
     <include file="malone.zcml" />
-    <include file="registry.zcml" />
     <include file="bazaar.zcml" />
 
     <!-- Event configuration -->

@@ -1,4 +1,4 @@
-# Copyright 2004-2007 Canonical Ltd.  All rights reserved.
+# Copyright 2004-2008 Canonical Ltd.  All rights reserved.
 # pylint: disable-msg=E0611,W0212,W0231
 
 """`SQLObject` implementation of `IPOFile` interface."""
@@ -31,14 +31,15 @@ from canonical.launchpad.components.rosettastats import RosettaStats
 from canonical.launchpad.validators.person import public_person_validator
 from canonical.launchpad.database.potmsgset import POTMsgSet
 from canonical.launchpad.database.translationmessage import (
-    DummyTranslationMessage, TranslationMessage)
+    DummyTranslationMessage, make_plurals_sql_fragment, TranslationMessage)
 from canonical.launchpad.interfaces import (
     ILaunchpadCelebrities, IPersonSet, IPOFile, IPOFileSet, IPOFileTranslator,
     ITranslationExporter, ITranslationFileData, ITranslationImporter,
     IVPOExportSet, NotExportedFromLaunchpad, NotFoundError,
     OutdatedTranslationError, RosettaImportStatus, TooManyPluralFormsError,
-    TranslationFormatInvalidInputError, TranslationFormatSyntaxError,
-    TranslationPermission, TranslationValidationStatus)
+    TranslationConstants, TranslationFormatInvalidInputError,
+    TranslationFormatSyntaxError, TranslationPermission,
+    TranslationValidationStatus)
 from canonical.launchpad.translationformat import TranslationMessageData
 from canonical.launchpad.webapp import canonical_url
 from canonical.librarian.interfaces import ILibrarianClient
@@ -114,15 +115,10 @@ def _can_edit_translations(pofile, person):
     # We should not check the permissions here but use the standard
     # security system.
 
-    # XXX Carlos Perello Marin 2006-02-08 bug=30789:
-    # The check person.id == rosetta_experts.id must be removed as soon as
-    # the is closed.
-
     # Rosetta experts and admins can always edit translations.
     admins = getUtility(ILaunchpadCelebrities).admin
     rosetta_experts = getUtility(ILaunchpadCelebrities).rosetta_experts
-    if (person.inTeam(admins) or person.inTeam(rosetta_experts) or
-        person.id == rosetta_experts.id):
+    if (person.inTeam(admins) or person.inTeam(rosetta_experts)):
         return True
 
     # The owner of the product is also able to edit translations.
@@ -455,9 +451,8 @@ class POFile(SQLBase, POFileMixIn):
                 POTMsgSet.potemplate = %s AND
                 (TranslationMessage.id IS NULL OR
                  (NOT TranslationMessage.is_fuzzy AND (%s))))
-            """ % tuple(
-                sqlvalues(self, self.potemplate) +
-                (' OR '.join(incomplete_check),))
+            """ % (quote(self), quote(self.potemplate),
+                   ' OR '.join(incomplete_check))
         return POTMsgSet.select(query, orderBy='POTMsgSet.sequence')
 
     def getPOTMsgSetWithNewSuggestions(self):
@@ -496,6 +491,9 @@ class POFile(SQLBase, POFileMixIn):
         # TranslationMessage objects for empty strings in imported files), all
         # the 'imported.msgstr? IS NOT NULL' conditions can be removed because
         # they will not be needed anymore.
+        not_nulls = make_plurals_sql_fragment(
+            "imported.msgstr%(form)d IS NOT NULL", "OR")
+
         results = POTMsgSet.select('''POTMsgSet.id IN (
             SELECT POTMsgSet.id
             FROM POTMsgSet
@@ -512,11 +510,8 @@ class POFile(SQLBase, POFileMixIn):
             WHERE
                 POTMsgSet.sequence > 0 AND
                 POTMsgSet.potemplate = %s AND
-                (imported.msgstr0 IS NOT NULL OR
-                 imported.msgstr1 IS NOT NULL OR
-                 imported.msgstr2 IS NOT NULL OR
-                 imported.msgstr3 IS NOT NULL))
-            ''' % sqlvalues(self, self.potemplate),
+                (%s))
+            ''' % (quote(self), quote(self.potemplate), not_nulls),
             orderBy='POTmsgSet.sequence')
 
         return results
@@ -633,6 +628,8 @@ class POFile(SQLBase, POFileMixIn):
         # TranslationMessage objects for empty strings in imported files), all
         # the 'imported.msgstr? IS NOT NULL' conditions can be removed because
         # they will not be needed anymore.
+        not_nulls = make_plurals_sql_fragment(
+            "imported.msgstr%(form)d IS NOT NULL", "OR")
         query.append('''NOT EXISTS (
             SELECT TranslationMessage.id
             FROM TranslationMessage AS imported
@@ -641,10 +638,7 @@ class POFile(SQLBase, POFileMixIn):
                 imported.pofile = TranslationMessage.pofile AND
                 imported.is_imported IS TRUE AND
                 NOT imported.was_fuzzy_in_last_import AND
-                (imported.msgstr0 IS NOT NULL OR
-                 imported.msgstr1 IS NOT NULL OR
-                 imported.msgstr2 IS NOT NULL OR
-                 imported.msgstr3 IS NOT NULL))''')
+                (%s))''' % not_nulls)
         query.append('TranslationMessage.potmsgset = POTMsgSet.id')
         query.append('POTMsgSet.sequence > 0')
         rosetta = TranslationMessage.select(
@@ -769,6 +763,7 @@ class POFile(SQLBase, POFileMixIn):
             'importer': entry_to_import.importer.displayname,
             'language': self.language.displayname,
             'language_code': self.language.code,
+            'max_plural_forms': TranslationConstants.MAX_PLURAL_FORMS,
             'numberofmessages': msgsets_imported,
             'template': self.potemplate.displayname,
             }
@@ -1275,7 +1270,9 @@ class POFileToTranslationFileDataAdapter:
             msgset = TranslationMessageData()
             msgset.is_obsolete = (row.sequence == 0)
             msgset.msgid_singular = row.msgid_singular
+            msgset.singular_text = row.potmsgset.singular_text
             msgset.msgid_plural = row.msgid_plural
+            msgset.plural_text = row.potmsgset.plural_text
 
             forms = [
                 (0, row.translation0), (1, row.translation1),

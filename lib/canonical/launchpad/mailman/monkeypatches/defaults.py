@@ -1,6 +1,7 @@
 # Copyright 2007 Canonical Ltd.  All rights reserved.
 
 # Pick up the standard Mailman defaults
+# pylint: disable-msg=W0401
 from Mailman.Defaults import *
 
 # Use a name for the site list that is very unlikely to conflict with any
@@ -28,6 +29,7 @@ QRUNNERS = [
     ]
 
 # Other list defaults.
+# pylint: disable-msg=E0602
 DEFAULT_GENERIC_NONMEMBER_ACTION = 3 # Discard
 DEFAULT_SEND_REMINDERS = No
 DEFAULT_SEND_WELCOME_MSG = Yes
@@ -36,6 +38,7 @@ DEFAULT_DIGESTABLE = No
 DEFAULT_BOUNCE_NOTIFY_OWNER_ON_DISABLE = No
 DEFAULT_BOUNCE_NOTIFY_OWNER_ON_REMOVAL = No
 VERP_PERSONALIZED_DELIVERIES = Yes
+DEFAULT_FORWARD_AUTO_DISCARDS = No
 
 # Modify the global pipeline to add some handlers for Launchpad specific
 # functionality.
@@ -45,3 +48,8 @@ GLOBAL_PIPELINE.insert(0, 'LaunchpadMember')
 #   CookHeaders
 index = GLOBAL_PIPELINE.index('CookHeaders')
 GLOBAL_PIPELINE.insert(index + 1, 'LaunchpadHeaders')
+# - Insert our own moderation handler just before the standard Mailman
+#   handler.  We can still keep the latter, it just will not do anything
+#   currently.
+index = GLOBAL_PIPELINE.index('Moderate')
+GLOBAL_PIPELINE.insert(index, 'LPModerate')

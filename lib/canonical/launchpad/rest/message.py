@@ -11,9 +11,9 @@ __all__ = [
 from zope.component import adapts
 from zope.schema import Datetime, Object, Text, TextLine
 
+from canonical.lazr import decorates
 from canonical.lazr.interfaces import IEntry
-from canonical.lazr.rest import Entry, Collection
-from canonical.lp import decorates
+from canonical.lazr.rest import Entry
 from canonical.launchpad.interfaces import IMessage, IPerson
 
 
@@ -34,8 +34,6 @@ class MessageEntry(Entry):
     adapts(IMessage)
     decorates(IMessageEntry)
     schema = IMessageEntry
-
-    parent_collection_name = 'messages'
 
     @property
     def content(self):

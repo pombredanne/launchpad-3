@@ -53,6 +53,9 @@ class Bounty(SQLBase):
     owner = ForeignKey(
         dbName='owner', foreignKey='Person',
         validator=public_person_validator, notNull=True)
+    claimant = ForeignKey(
+        dbName='claimant', foreignKey='Person',
+        validator=public_person_validator, notNull=False, default=None)
 
     # useful joins
     subscriptions = SQLMultipleJoin('BountySubscription', joinColumn='bounty',

@@ -53,6 +53,7 @@ from canonical.launchpad.interfaces.codeimportmachine import *
 from canonical.launchpad.interfaces.codeimportresult import *
 from canonical.launchpad.interfaces.codeimportscheduler import *
 from canonical.launchpad.interfaces.codeofconduct import *
+from canonical.launchpad.interfaces.codereviewmessage import *
 from canonical.launchpad.interfaces.component import *
 from canonical.launchpad.interfaces.country import *
 from canonical.launchpad.interfaces.cve import *
@@ -65,7 +66,8 @@ from canonical.launchpad.interfaces.distributionsourcepackagecache import *
 from canonical.launchpad.interfaces.distributionsourcepackagerelease import *
 from canonical.launchpad.interfaces.distroarchseries import *
 from canonical.launchpad.interfaces.distroarchseriesbinarypackage import *
-from canonical.launchpad.interfaces.distroarchseriesbinarypackagerelease import *
+from canonical.launchpad.interfaces.distroarchseriesbinarypackagerelease\
+    import *
 from canonical.launchpad.interfaces.distroseries import *
 from canonical.launchpad.interfaces.distroseriesbinarypackage import *
 from canonical.launchpad.interfaces.distroserieslanguage import *
@@ -100,6 +102,7 @@ from canonical.launchpad.interfaces.mailinglist import *
 from canonical.launchpad.interfaces.mentoringoffer import *
 from canonical.launchpad.interfaces.message import *
 from canonical.launchpad.interfaces.milestone import *
+from canonical.launchpad.interfaces.oauth import *
 from canonical.launchpad.interfaces.openidserver import *
 from canonical.launchpad.interfaces.package import *
 from canonical.launchpad.interfaces.packagerelationship import *
@@ -152,6 +155,7 @@ from canonical.launchpad.interfaces.translationfileformat import *
 from canonical.launchpad.interfaces.translationimporter import *
 from canonical.launchpad.interfaces.translationmessage import *
 from canonical.launchpad.interfaces.translations import *
+from canonical.launchpad.interfaces.translationsoverview import *
 from canonical.launchpad.interfaces.question import *
 from canonical.launchpad.interfaces.questionbug import *
 from canonical.launchpad.interfaces.questioncollection import *
@@ -169,5 +173,5 @@ from canonical.launchpad.interfaces.vpotexport import *
 from canonical.launchpad.interfaces.wikiname import *
 from canonical.launchpad.interfaces.poexportrequest import *
 from canonical.launchpad.interfaces.distrocomponentuploader import *
-
 from canonical.launchpad.interfaces.archive import *
+from canonical.launchpad.interfaces.archivedependency import *

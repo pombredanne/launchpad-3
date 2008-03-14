@@ -6,7 +6,6 @@
 
 __metaclass__ = type
 
-import doctest
 import os
 import re
 import simplejson
@@ -20,8 +19,10 @@ from urlparse import urljoin
 from zope.app.testing.functional import HTTPCaller, SimpleCookie
 from zope.proxy import ProxyBase
 from zope.testbrowser.testing import Browser
+from zope.testing import doctest
 
-from canonical.functional import PageTestDocFileSuite, SpecialOutputChecker
+from canonical.launchpad.testing.systemdocs import (
+    LayeredDocFileSuite, SpecialOutputChecker, strip_prefix)
 from canonical.testing import PageTestLayer
 
 
@@ -480,6 +481,7 @@ def PageTestSuite(storydir, package=None, setUp=setUpGlobs):
     # files would be looked up relative to this module.
     package = doctest._normalize_module(package)
     abs_storydir = doctest._module_relative_path(package, storydir)
+    stripped_storydir = strip_prefix(abs_storydir)
 
     filenames = set(filename
                     for filename in os.listdir(abs_storydir)
@@ -497,18 +499,18 @@ def PageTestSuite(storydir, package=None, setUp=setUpGlobs):
 
     # Add unnumbered tests to the suite individually.
     checker = SpecialOutputChecker()
-    suite = PageTestDocFileSuite(
-        package=package, checker=checker,
+    suite = LayeredDocFileSuite(
+        package=package, checker=checker, stdout_logging=False,
         layer=PageTestLayer, setUp=setUp,
         *[os.path.join(storydir, filename)
           for filename in unnumberedfilenames])
 
     # Add numbered tests to the suite as a single story.
-    storysuite = PageTestDocFileSuite(
-        package=package, checker=checker,
-        layer=PageTestLayer, setUp=setUp,
+    storysuite = LayeredDocFileSuite(
+        package=package, checker=checker, stdout_logging=False,
+        setUp=setUp,
         *[os.path.join(storydir, filename)
           for filename in numberedfilenames])
-    suite.addTest(PageStoryTestCase(abs_storydir, storysuite))
+    suite.addTest(PageStoryTestCase(stripped_storydir, storysuite))
 
     return suite

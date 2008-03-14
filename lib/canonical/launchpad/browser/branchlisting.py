@@ -13,13 +13,13 @@ __all__ = [
 
 from datetime import datetime
 
+import pytz
 from zope.component import getUtility
 from zope.interface import implements
 from zope.formlib import form
 from zope.schema import Choice
 
 from canonical.config import config
-from canonical.lp import decorates
 
 from canonical.cachedproperty import cachedproperty
 from canonical.launchpad.browser.branch import BranchBadges
@@ -27,13 +27,20 @@ from canonical.launchpad.browser.feeds import (
     FeedsMixin, PersonBranchesFeedLink, ProductBranchesFeedLink,
     ProjectBranchesFeedLink)
 from canonical.launchpad.interfaces import (
-    BranchLifecycleStatus, BranchLifecycleStatusFilter,
+    BranchLifecycleStatus,
+    BranchLifecycleStatusFilter,
     BranchListingSort,
-    DEFAULT_BRANCH_STATUS_IN_LISTING, IBranch, IBranchSet,
-    IBranchBatchNavigator, IBranchListingFilter, IBugBranchSet,
+    DEFAULT_BRANCH_STATUS_IN_LISTING,
+    IBranch,
+    IBranchSet,
+    IBranchBatchNavigator,
+    IBranchListingFilter,
+    IBugBranchSet,
+    IRevisionSet,
     ISpecificationBranchSet)
 from canonical.launchpad.webapp import LaunchpadFormView, custom_widget
 from canonical.launchpad.webapp.batching import TableBatchNavigator
+from canonical.lazr import decorates
 from canonical.widgets import LaunchpadDropdownWidget
 
 
@@ -46,33 +53,53 @@ class BranchListingItem(BranchBadges):
     """
     decorates(IBranch, 'branch')
 
-    def __init__(self, branch, last_commit, now, role, show_bug_badge,
+    def __init__(self, branch, last_commit, now, show_bug_badge,
                  show_blueprint_badge, is_dev_focus):
         BranchBadges.__init__(self, branch)
         self.last_commit = last_commit
         self.show_bug_badge = show_bug_badge
         self.show_blueprint_badge = show_blueprint_badge
-        self.role = role
         self._now = now
         self.is_development_focus = is_dev_focus
 
     @property
     def elapsed_time(self):
         """How long since the branch's last commit."""
-        return self.last_commit and (self._now - self.last_commit)
+        return self.revision_date and (self._now - self.revision_date)
 
     @property
     def since_created(self):
         """How long since the branch was created."""
-        # Need to make an TZ unaware date in order to subtract it.
-        unaware_date = self.branch.date_created.replace(tzinfo=None)
-        return self._now - unaware_date
+        return self._now - self.branch.date_created
 
     def isBugBadgeVisible(self):
         return self.show_bug_badge
 
     def isBlueprintBadgeVisible(self):
         return self.show_blueprint_badge
+
+    @property
+    def revision_author(self):
+        return self.last_commit.revision_author
+
+    @property
+    def revision_number(self):
+        return self.branch.revision_count
+
+    @property
+    def revision_log(self):
+        return self.last_commit.log_body
+
+    @property
+    def revision_date(self):
+        return self.last_commit.revision_date
+
+    @property
+    def revision_codebrowse_link(self):
+        return "%(codebrowse_root)s%(branch)s/revision/%(rev_no)s" % {
+            'codebrowse_root': config.codehosting.codebrowse_root,
+            'branch': self.branch.unique_name,
+            'rev_no': self.branch.revision_count}
 
 
 class BranchListingBatchNavigator(TableBatchNavigator):
@@ -86,19 +113,17 @@ class BranchListingBatchNavigator(TableBatchNavigator):
             size=config.launchpad.branchlisting_batch_size)
         self.view = view
         self.column_count = 4 + len(view.extra_columns)
-        self._now = datetime.utcnow()
+        self._now = datetime.now(pytz.UTC)
 
     @cachedproperty
-    def last_commit(self):
-        """Get the last commit times for the current batch."""
-        return getUtility(IBranchSet).getLastCommitForBranches(
-            self.currentBatch())
+    def _branches_for_current_batch(self):
+        return list(self.currentBatch())
 
     @cachedproperty
     def has_bug_branch_links(self):
         """Return a set of branch ids that should show bug badges."""
         bug_branches = getUtility(IBugBranchSet).getBugBranchesForBranches(
-            self.batch, self.view.user)
+            self._branches_for_current_batch, self.view.user)
         result = set()
         for bug_branch in bug_branches:
             result.add(bug_branch.branch.id)
@@ -109,17 +134,31 @@ class BranchListingBatchNavigator(TableBatchNavigator):
         """Return a set of branch ids that should show blueprint badges."""
         spec_branches = getUtility(
             ISpecificationBranchSet).getSpecificationBranchesForBranches(
-            self.batch, self.view.user)
+            self._branches_for_current_batch, self.view.user)
         result = set()
         for spec_branch in spec_branches:
             result.add(spec_branch.branch.id)
         return result
 
+    @cachedproperty
+    def tip_revisions(self):
+        """Return a set of branch ids that should show blueprint badges."""
+        revisions = getUtility(IRevisionSet).getTipRevisionsForBranches(
+            self._branches_for_current_batch)
+        if revisions is None:
+            revision_map = {}
+        else:
+            # Key the revisions by revision id.
+            revision_map = dict((revision.revision_id, revision)
+                                for revision in revisions)
+        # Return a dict keyed on branch id.
+        return dict((branch.id, revision_map.get(branch.last_scanned_id))
+                     for branch in self._branches_for_current_batch)
+
     def _createItem(self, branch):
-        last_commit = self.last_commit[branch]
+        last_commit = self.tip_revisions[branch.id]
         show_bug_badge = branch.id in self.has_bug_branch_links
         show_blueprint_badge = branch.id in self.has_branch_spec_links
-        role = self.view.roleForBranch(branch)
         # XXX thumper 2007-11-14
         # We can't do equality checks here due to BranchWithSortKeys
         # being constructed from the BranchSet queries, and the development
@@ -130,12 +169,13 @@ class BranchListingBatchNavigator(TableBatchNavigator):
             is_dev_focus = (
                 branch.id == self.view.development_focus_branch.id)
         return BranchListingItem(
-            branch, last_commit, self._now, role, show_bug_badge,
+            branch, last_commit, self._now, show_bug_badge,
             show_blueprint_badge, is_dev_focus)
 
     def branches(self):
         """Return a list of BranchListingItems."""
-        return [self._createItem(branch) for branch in self.currentBatch()]
+        return [self._createItem(branch)
+                for branch in self._branches_for_current_batch]
 
     @cachedproperty
     def multiple_pages(self):
@@ -245,11 +285,6 @@ class BranchListingView(LaunchpadFormView, FeedsMixin):
             frame is specified in config.launchpad.branch_dormant_days.
         """
         raise NotImplementedError("Derived classes must implement _branches.")
-
-    def roleForBranch(self, branch):
-        """Overridden by derived classes to display something in
-        the role column if the role column is visible."""
-        return None
 
     @property
     def no_branch_message(self):

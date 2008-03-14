@@ -5,15 +5,15 @@
 __metaclass__ = type
 __all__ = []
 
-import unittest
-import doctest
+from canonical.launchpad.testing.systemdocs import LayeredDocFileSuite
+
 
 def test_suite():
-    options = (doctest.ELLIPSIS|
-               doctest.NORMALIZE_WHITESPACE|
-               doctest.REPORT_NDIFF)
-    suite = unittest.TestSuite()
-    suite.addTest(doctest.DocFileSuite(
-        '../doc/debug.txt', optionflags=options))
-    return suite
+    """See `zope.testing.testrunner`."""
+    return LayeredDocFileSuite(
+        '../doc/debug.txt',
+        '../doc/decorates.txt',
+        '../doc/config.txt',
+        '../doc/interface.txt',
+        stdout_logging=False)
 
