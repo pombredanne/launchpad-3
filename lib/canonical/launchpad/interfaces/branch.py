@@ -229,7 +229,7 @@ class BranchURIField(URIField):
         # URIField has already established that we have a valid URI
         uri = URI(value)
         supermirror_root = URI(config.codehosting.supermirror_root)
-        launchpad_domain = config.launchpad.vhosts.mainsite.hostname
+        launchpad_domain = config.vhost.mainsite.hostname
         if uri.underDomain(launchpad_domain):
             message = _(
                 "For Launchpad to mirror a branch, the original branch "

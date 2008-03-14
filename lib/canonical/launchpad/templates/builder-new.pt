@@ -6,16 +6,20 @@
   xml:lang="en"
   lang="en"
   dir="ltr"
-  metal:use-macro="context/@@main_template/master"
+  metal:use-macro="view/macro:page/pillarindex"
   i18n:domain="launchpad"
 >
   <body>
 
+<metal:leftportlets fill-slot="portlets_one">
+</metal:leftportlets>
+
+<metal:rightportlets fill-slot="portlets_two">
+</metal:rightportlets>
+
 <div metal:fill-slot="main">
 
-      <div tal:content="structure context/fmt:link" />
-
-  <div metal:use-macro="context/@@launchpad_generalform/generalform">
+  <div metal:use-macro="context/@@launchpad_addform/addform">
 
   </div>
 
