@@ -1079,7 +1079,7 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
         # tuples.
         cur = cursor()
         cur.execute("""
-            SELECT SPN.name, SPN.id,
+            SELECT SPN.id, SPN.name,
             COUNT(DISTINCT Bugtask.bug) AS total_bugs,
             COUNT(DISTINCT CASE WHEN Bugtask.status = %(triaged)s THEN
                   Bugtask.bug END) AS bugs_triaged,
@@ -1110,16 +1110,15 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
                 AND Bug.private = 'F'
                 AND Bug.duplicateof IS NULL
             GROUP BY SPN.name, SPN.id
+            HAVING COUNT(DISTINCT Bugtask.bug) > 0
             ORDER BY total_bugs DESC, SPN.name LIMIT %(limit)s
         """ % {'invalid': quote(BugTaskStatus.INVALID),
                'triaged': quote(BugTaskStatus.TRIAGED),
                'limit': limit,
                'distro': self.id,
                'unresolved': quote(UNRESOLVED_BUGTASK_STATUSES)})
-        counts = cur.dictfetchall()
+        counts = cur.fetchall()
         cur.close()
-        # Filter out packages for which there are no counts.
-        counts = [data for data in counts if data['total_bugs'] > 0]
         if not counts:
             # If no counts are returned it means that there are no
             # source package names in the database -- because the counts
@@ -1129,7 +1128,7 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
 
         # Next step is to extract which IDs actually show up in the
         # output we generate, and cache them.
-        spn_ids = [item['id'] for item in counts]
+        spn_ids = [item[0] for item in counts]
         list(SourcePackageName.select("SourcePackageName.id IN %s"
              % sqlvalues(spn_ids)))
 
@@ -1164,8 +1163,8 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
         # Okay, we have all the information good to go, so assemble it
         # in a reasonable data structure.
         results = []
-        for count in counts:
-            spn_id = count['id']
+        for (spn_id, spn_name, total_bugs, bugs_triaged,
+             bugs_affecting_upstream, bugs_with_upstream_bugwatch) in counts:
             sourcepackagename = SourcePackageName.get(spn_id)
             dsp = self.getSourcePackage(sourcepackagename)
             if spn_id in sources_to_products:
@@ -1173,10 +1172,9 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
                 product = Product.get(product_id)
             else:
                 product = None
-            results.append((dsp, product, count['total_bugs'],
-                            count['bugs_triaged'],
-                            count['bugs_affecting_upstream'],
-                            count['bugs_with_upstream_bugwatch']))
+            results.append(
+                (dsp, product, total_bugs, bugs_triaged,
+                 bugs_affecting_upstream, bugs_with_upstream_bugwatch))
         return results
 
     def setBugContact(self, bugcontact, user):
