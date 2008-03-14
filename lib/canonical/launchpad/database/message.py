@@ -337,15 +337,25 @@ class MessageSet:
             content = part.get_payload(decode=True)
 
             # Store the part as a MessageChunk
-            if mime_type == 'text/plain':
+            #
+            # We want only the content type text/plain as "main content".
+            # Exceptions to this rule:
+            # - if the content disposition header explicitly says that
+            #   this part is an attachment, text/plain content is stored
+            #   as a blob,
+            # - if the content-disposition header provides a filename,
+            #   text/plain content is stored as a blob.
+            content_disposition = part.get('Content-disposition', '').lower()
+            no_attachment = not content_disposition.startswith('attachment')
+            if (mime_type == 'text/plain' and no_attachment 
+                and part.get_filename() is None):
                 charset = part.get_content_charset()
                 if charset:
                     content = content.decode(charset, 'replace')
                 if content.strip():
                     MessageChunk(
                         message=message, sequence=sequence,
-                        content=content
-                        )
+                        content=content)
                     sequence += 1
             else:
                 filename = part.get_filename() or 'unnamed'

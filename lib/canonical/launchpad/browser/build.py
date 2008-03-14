@@ -5,25 +5,31 @@
 __metaclass__ = type
 
 __all__ = [
-    'BuildFacets',
+    'BuildContextMenu',
     'BuildNavigation',
-    'BuildOverviewMenu',
     'BuildRecordsView',
     'BuildUrl',
     'BuildView',
+    'build_to_structuralheading',
     ]
 
 from zope.component import getUtility
 from zope.interface import implements
 
 from canonical.launchpad.interfaces import (
-    BuildStatus, IBuild, IBuildQueueSet, IHasBuildRecords, UnexpectedFormData)
+    BuildStatus, IBuild, IBuildQueueSet, IHasBuildRecords,
+    IStructuralHeaderPresentation, UnexpectedFormData)
 from canonical.launchpad.webapp import (
-    enabled_with_permission, ApplicationMenu, GetitemNavigation,
+    canonical_url, enabled_with_permission, ContextMenu, GetitemNavigation,
     Link, LaunchpadView, StandardLaunchpadFacets)
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp.interfaces import ICanonicalUrlData
+
+
+def build_to_structuralheading(build):
+    """Adapts an `IBuild` into an `IStructuralHeaderPresentation`."""
+    return IStructuralHeaderPresentation(build.archive)
 
 
 class BuildUrl:
@@ -66,11 +72,27 @@ class BuildFacets(StandardLaunchpadFacets):
 
     usedfor = IBuild
 
-class BuildOverviewMenu(ApplicationMenu):
+
+class BuildContextMenu(ContextMenu):
     """Overview menu for build records """
     usedfor = IBuild
-    facet = 'overview'
-    links = ['retry', 'rescore']
+
+    links = ['ppa', 'records', 'retry', 'rescore']
+
+    @property
+    def is_ppa_build(self):
+        """Some links are only displayed on PPA."""
+        return self.context.archive.owner is not None
+
+    def ppa(self):
+        return Link(
+            canonical_url(self.context.archive), text='View PPA',
+            enabled=self.is_ppa_build)
+
+    def records(self):
+        return Link(
+            canonical_url(self.context.archive, view_name='+builds'),
+            text='View build records', enabled=self.is_ppa_build)
 
     @enabled_with_permission('launchpad.Edit')
     def retry(self):

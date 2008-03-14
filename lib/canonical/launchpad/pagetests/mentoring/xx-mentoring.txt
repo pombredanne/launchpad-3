@@ -164,7 +164,7 @@ which allow us to retract this offer of mentorship.
   True
 
 However, somebody ELSE should still be able to offer mentoring, and not yet
-offer mentoring:
+retract mentoring:
 
   >>> browser = setupBrowser(auth="Basic test@canonical.com:test")
   >>> browser.open('http://bugs.launchpad.dev/tomcat/+bug/2')
@@ -188,6 +188,9 @@ Now, let's repeat the whole exercise with a Blueprint.
   >>> browser.getLink(menu_mentoring_offer).click()
   >>> print browser.title
   Offer to mentor this work
+  >>> back_link = browser.getLink('Facilitate mass installs')
+  >>> back_link.url
+  'http://blueprints.launchpad.dev/kubuntu/+spec/cluster-installation'
   >>> browser.getControl('Offer Mentoring').click()
   >>> 'Facilitate mass installs' in browser.title
   True
@@ -218,7 +221,7 @@ which allow us to retract this offer of mentorship.
   True
 
 However, somebody ELSE should still be able to offer mentoring, and not yet
-offer mentoring:
+retract mentoring:
 
   >>> browser = setupBrowser(auth="Basic test@canonical.com:test")
   >>> browser.open('http://blueprints.launchpad.dev/kubuntu/+spec/cluster-installation')
@@ -566,6 +569,9 @@ mentoring again.
   >>> browser.getLink(menu_mentoring_retract).click()
   >>> print browser.title
   Retract offer of mentorship
+  >>> back_link = browser.getLink('Facilitate mass installs')
+  >>> back_link.url
+  'http://blueprints.launchpad.dev/kubuntu/+spec/cluster-installation'
   >>> browser.getControl('Retract Mentoring').click()
   >>> 'Facilitate mass installs' in browser.title
   True

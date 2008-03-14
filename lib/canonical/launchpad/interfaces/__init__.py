@@ -53,6 +53,7 @@ from canonical.launchpad.interfaces.codeimportmachine import *
 from canonical.launchpad.interfaces.codeimportresult import *
 from canonical.launchpad.interfaces.codeimportscheduler import *
 from canonical.launchpad.interfaces.codeofconduct import *
+from canonical.launchpad.interfaces.codereviewmessage import *
 from canonical.launchpad.interfaces.codereviewvote import *
 from canonical.launchpad.interfaces.component import *
 from canonical.launchpad.interfaces.country import *
@@ -66,7 +67,8 @@ from canonical.launchpad.interfaces.distributionsourcepackagecache import *
 from canonical.launchpad.interfaces.distributionsourcepackagerelease import *
 from canonical.launchpad.interfaces.distroarchseries import *
 from canonical.launchpad.interfaces.distroarchseriesbinarypackage import *
-from canonical.launchpad.interfaces.distroarchseriesbinarypackagerelease import *
+from canonical.launchpad.interfaces.distroarchseriesbinarypackagerelease\
+    import *
 from canonical.launchpad.interfaces.distroseries import *
 from canonical.launchpad.interfaces.distroseriesbinarypackage import *
 from canonical.launchpad.interfaces.distroserieslanguage import *
