@@ -3,6 +3,29 @@
 """External bugtrackers."""
 
 __metaclass__ = type
+__all__ = [
+    'get_external_bugtracker',
+    'BugNotFound',
+    'BugTrackerConnectError',
+    'BugWatchUpdateError',
+    'BugWatchUpdateWarning',
+    'Bugzilla',
+    'DebBugs',
+    'DebBugsDatabaseNotFound',
+    'ExternalBugTracker',
+    'InvalidBugId',
+    'Mantis',
+    'MantisLoginHandler',
+    'RequestTracker',
+    'Roundup',
+    'SourceForge',
+    'Trac',
+    'UnknownBugTrackerTypeError',
+    'UnknownRemoteStatusError',
+    'UnparseableBugData',
+    'UnparseableBugTrackerVersion',
+    'UnsupportedBugTrackerVersion',
+    ]
 
 import cgi
 import csv
