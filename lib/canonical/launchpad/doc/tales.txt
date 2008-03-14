@@ -639,6 +639,9 @@ Make a mock-up IBrowserRequest, and use this as the interaction.
     ...
     ...     def getApplicationURL(self):
     ...         return 'https://mandrill.example.org:23'
+    ...     
+    ...     def setPrincipal(self, principal):
+    ...         self.principal = principal
 
     >>> participation = MockBrowserRequest()
 
