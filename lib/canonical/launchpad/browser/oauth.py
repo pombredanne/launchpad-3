@@ -54,22 +54,19 @@ class OAuthAuthorizeTokenView(LaunchpadFormView):
     label = "Authorize programs to access Launchpad on your behalf"
     schema = IOAuthRequestToken
     field_names = ['permission']
+    token = None
 
     def initialize(self):
         key = self.request.form.get('oauth_token')
-        if not key:
-            self.request.response.setStatus(400)
-            self.render = lambda : u'Missing oauth_token parameter'
-            return
-        self.token = getUtility(IOAuthRequestTokenSet).getByKey(key)
-        if self.token is None or self.token.is_reviewed:
-            self.request.unauthorized(OAUTH_CHALLENGE)
-            self.render = lambda : (
-                u'Token does not exist or has been reviewed already')
-        else:
-            super(OAuthAuthorizeTokenView, self).initialize()
+        if key:
+            self.token = getUtility(IOAuthRequestTokenSet).getByKey(key)
+        super(OAuthAuthorizeTokenView, self).initialize()
 
-    @action(_("Continue"), name="continue")
+    def tokenExistsAndIsNotReviewed(self, action):
+        return self.token is not None and not self.token.is_reviewed
+
+    @action(
+        _("Continue"), name="continue", condition=tokenExistsAndIsNotReviewed)
     def continue_action(self, action, data):
         self.token.review(self.user, data['permission'])
         callback = self.request.form.get('oauth_callback')

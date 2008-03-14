@@ -45,9 +45,7 @@ Note how the query parameters are kept.
     >>> browser.title
     'Authorize application to access Launchpad on your behalf'
 
-    >>> from BeautifulSoup import BeautifulSoup
-    >>> soup = BeautifulSoup(browser.contents)
-    >>> print extract_text(soup.findAll('form')[1])
+    >>> print extract_text(find_tag_by_id(browser.contents, 'maincontent'))
     Authorize programs to access Launchpad on your behalf
     The program identified as foobar123451432 wants to access Launchpad on
     your behalf. What level of access you grant to it?
@@ -101,25 +99,30 @@ If no oauth_callback is specified, we redirect the user to
     window in which you started the process and inform it that you have done
     your part of the process.
 
-If the oauth_token is not provided we respond with a 400 Bad Request.
+If we can't find the token, we will explain that to the user.
 
     >>> params = dict(oauth_callback='http://example.com/oauth')
     >>> browser.open(
     ...     "http://launchpad.dev/+oauth-authorize?%s" % urlencode(params))
-    Traceback (most recent call last):
-    ...
-    HTTPError: HTTP Error 400: Bad Request
-
-If the token is provided but doesn't exist or has been reviewed already,
-we respond with a 401 Unauthorized.
+    >>> print extract_text(find_tag_by_id(browser.contents, 'maincontent'))
+    Unable to identify application
+    The information provided by the remote application was incorrect or
+    incomplete. Because of that we were unable to identify the application
+    which would access Launchpad on your behalf.
 
     >>> params = dict(
     ...     oauth_token='zzzzzz', oauth_callback='http://example.com/oauth')
     >>> browser.open(
     ...     "http://launchpad.dev/+oauth-authorize?%s" % urlencode(params))
-    Traceback (most recent call last):
-    ...
-    HTTPError: HTTP Error 401: Unauthorized
+    >>> print extract_text(find_tag_by_id(browser.contents, 'maincontent'))
+    Unable to identify application
+    The information provided by the remote application was incorrect or
+    incomplete. Because of that we were unable to identify the application
+    which would access Launchpad on your behalf.
+
+The same happens if the token is already reviewed.  Although that's
+probably an indication that the user has already reviewed that token in
+another window/tab so there's no need to worry.
 
     >>> token.is_reviewed
     True
@@ -127,6 +130,8 @@ we respond with a 401 Unauthorized.
     ...     oauth_token=token.key, oauth_callback='http://example.com/oauth')
     >>> browser.open(
     ...     "http://launchpad.dev/+oauth-authorize?%s" % urlencode(params))
-    Traceback (most recent call last):
-    ...
-    HTTPError: HTTP Error 401: Unauthorized
+    >>> print extract_text(find_tag_by_id(browser.contents, 'maincontent'))
+    Request already reviewed
+    This request for accessing Launchpad on your behalf has been
+    reviewed ... ago.
+
