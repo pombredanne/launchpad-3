@@ -30,6 +30,7 @@ __all__ = [
 
 from canonical.launchpad.components.externalbugtracker.base import *
 from canonical.launchpad.components.externalbugtracker.bugzilla import *
+from canonical.launchpad.components.externalbugtracker.debbugs import *
 from canonical.launchpad.interfaces import BugTrackerType
 
 
