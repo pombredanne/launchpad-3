@@ -30,6 +30,7 @@ from canonical.launchpad.interfaces import (
     EmailAddressStatus, IEmailAddressSet, ILaunchpadCelebrities, IMailingList,
     IMailingListSet, IMailingListSubscription, IMessageApproval,
     IMessageApprovalSet, MailingListStatus, PostedMessageStatus)
+from canonical.launchpad.mailman.config import hostname
 from canonical.launchpad.validators.person import public_person_validator
 from canonical.launchpad.webapp.snapshot import Snapshot
 
@@ -123,7 +124,8 @@ class MailingList(SQLBase):
     @property
     def address(self):
         """See `IMailingList`."""
-        return '%s@%s' % (self.team.name, config.mailman.build.host_name)
+        return '%s@%s' % (
+            self.team.name, hostname(config.mailman.build_host_name))
 
     @property
     def archive_url(self):

@@ -120,7 +120,7 @@ hostnames: 'mailman.build.build'.
     >>> config._cache.testrunner.mailman.build.build
     False
 
-    >>> config.mailman.build.build
+    >>> config.mailman.build_build
     False
 
 
