@@ -307,9 +307,9 @@ class BranchView(LaunchpadView, FeedsMixin):
         timestamp = datetime.now(pytz.UTC) - timedelta(days=days)
         return self.context.revisions_since(timestamp).count()
 
-    def author_is_owner(self):
-        """Is the branch author set and equal to the registrant?"""
-        return self.context.author == self.context.owner
+    def owner_is_registrant(self):
+        """Is the branch owner the registrant?"""
+        return self.context.owner == self.context.registrant
 
     @property
     def codebrowse_url(self):
@@ -940,9 +940,10 @@ class BranchSubscriptionsView(LaunchpadView):
         # is the same as the person of the subscription.
         if self.user is None or self.user == subscription.person:
             return False
-        admins = getUtility(ILaunchpadCelebrities).admin
+        celebs = getUtility(ILaunchpadCelebrities)
         return (self.user.inTeam(subscription.person) or
-                self.user.inTeam(admins))
+                self.user.inTeam(celebs.admin) or
+                self.user.inTeam(celebs.bazaar_experts))
 
     def subscriptions(self):
         """Return a decorated list of branch subscriptions."""

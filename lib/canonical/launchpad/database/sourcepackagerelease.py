@@ -5,6 +5,7 @@ __metaclass__ = type
 __all__ = ['SourcePackageRelease']
 
 import datetime
+import operator
 import pytz
 from StringIO import StringIO
 import re
@@ -17,10 +18,10 @@ from sqlobject import StringCol, ForeignKey, SQLMultipleJoin
 
 from canonical.cachedproperty import cachedproperty
 
-from canonical.database.sqlbase import SQLBase, sqlvalues
-from canonical.database.constants import UTC_NOW
+from canonical.database.constants import DEFAULT, UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
+from canonical.database.sqlbase import SQLBase, sqlvalues
 
 from canonical.librarian.interfaces import ILibrarianClient
 
@@ -62,7 +63,7 @@ class SourcePackageRelease(SQLBase):
     dateuploaded = UtcDateTimeCol(dbName='dateuploaded', notNull=True,
         default=UTC_NOW)
     dsc = StringCol(dbName='dsc')
-    copyright = StringCol(dbName='copyright', notNull=True)
+    copyright = StringCol(dbName='copyright', notNull=False, default=DEFAULT)
     version = StringCol(dbName='version', notNull=True)
     changelog_entry = StringCol(dbName='changelog_entry')
     builddepends = StringCol(dbName='builddepends')
@@ -233,6 +234,19 @@ class SourcePackageRelease(SQLBase):
         return [DistroSeriesSourcePackageRelease(pub.distroseries, self)
                 for pub in self.publishings]
 
+    @property
+    def published_archives(self):
+        """See `ISourcePacakgeRelease`."""
+        archives = set()
+        publishings = self.publishings.prejoin(['archive'])
+        live_states = (PackagePublishingStatus.PENDING,
+                       PackagePublishingStatus.PUBLISHED)
+        for pub in publishings:
+            if pub.status in live_states:
+                archives.add(pub.archive)
+
+        return sorted(archives, key=operator.attrgetter('id'))
+
     def addFile(self, file):
         """See ISourcePackageRelease."""
         determined_filetype = None
@@ -396,7 +410,7 @@ class SourcePackageRelease(SQLBase):
             'PackageUpload',
             'PackageUploadSource',
             ]
-        preJoins= ['changesfile']
+        preJoins = ['changesfile']
         query = """
         PackageUpload.id = PackageUploadSource.packageupload AND
         PackageUpload.distroseries = %s AND

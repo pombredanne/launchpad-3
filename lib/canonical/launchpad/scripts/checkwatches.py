@@ -12,15 +12,16 @@ import sys
 from zope.component import getUtility
 
 from canonical.database.constants import UTC_NOW
-from canonical.database.sqlbase import commit
+from canonical.database.sqlbase import commit, flush_database_updates
 from canonical.launchpad.components import externalbugtracker
 from canonical.launchpad.components.externalbugtracker import (
     BugNotFound, BugTrackerConnectError, InvalidBugId, UnparseableBugData,
     UnparseableBugTrackerVersion, UnsupportedBugTrackerVersion,
     UnknownBugTrackerTypeError)
 from canonical.launchpad.interfaces import (
-    BugWatchErrorType, ILaunchpadCelebrities, IBugTrackerSet,
-    ISupportsCommentImport)
+    BugWatchErrorType, CreateBugParams, IBugTrackerSet, IBugWatchSet,
+    IDistribution, ILaunchpadCelebrities, IPersonSet, ISupportsCommentImport,
+    PersonCreationRationale)
 from canonical.launchpad.webapp.interfaces import IPlacelessAuthUtility
 from canonical.launchpad.webapp.interaction import (
     setupInteraction, endInteraction)
@@ -133,8 +134,7 @@ class BugWatchUpdater(object):
 
     def _getExternalBugTracker(self, bug_tracker):
         """Return an `ExternalBugTracker` instance for `bug_tracker`."""
-        return externalbugtracker.get_external_bugtracker(
-            self.txn, bug_tracker)
+        return externalbugtracker.get_external_bugtracker(bug_tracker)
 
     def updateBugTracker(self, bug_tracker):
         """Updates the given bug trackers's bug watches."""
@@ -299,7 +299,7 @@ class BugWatchUpdater(object):
                             new_malone_importance)
                     if (ISupportsCommentImport.providedBy(remotesystem) and
                         remotesystem.import_comments):
-                        remotesystem.importBugComments(bug_watch)
+                        self.importBugComments(remotesystem, bug_watch)
 
             except (KeyboardInterrupt, SystemExit):
                 # We should never catch KeyboardInterrupt or SystemExit.
@@ -330,4 +330,86 @@ class BugWatchUpdater(object):
                     properties=[
                         ('bug_id', bug_id),
                         ('local_ids', local_ids)])
+
+    def importBug(self, external_bugtracker, bugtracker, bug_target,
+                  remote_bug):
+        """Import a remote bug into Launchpad.
+
+        :param external_bugtracker: An ISupportsBugImport, which talks
+            to the external bug tracker.
+        :param bugtracker: An IBugTracker, to which the created bug
+            watch will be linked. 
+        :param bug_target: An IBugTarget, to which the created bug will
+            be linked.
+        :param remote_bug: The remote bug id as a string.
+
+        :return: The created Launchpad bug.
+        """
+        assert IDistribution.providedBy(bug_target), (
+            'Only imports of bugs for a distribution is implemented.')
+        reporter_name, reporter_email = external_bugtracker.getBugReporter(
+            remote_bug)
+        reporter = getUtility(IPersonSet).ensurePerson(
+            reporter_email, reporter_name, PersonCreationRationale.BUGIMPORT,
+            comment='when importing bug #%s from %s' % (
+                remote_bug, external_bugtracker.baseurl))
+        package_name = external_bugtracker.getBugTargetName(remote_bug)
+        package = bug_target.getSourcePackage(package_name)
+        if package is not None:
+            bug_target = package
+        else:
+            external_bugtracker.warning(
+                'Unknown %s package (#%s at %s): %s' % (
+                    bug_target.name, remote_bug,
+                    external_bugtracker.baseurl, package_name))
+        summary, description = (
+            external_bugtracker.getBugSummaryAndDescription(remote_bug))
+        bug = bug_target.createBug(
+            CreateBugParams(
+                reporter, summary, description, subscribe_reporter=False))
+
+        [added_task] = bug.bugtasks
+        bug_watch = getUtility(IBugWatchSet).createBugWatch(
+            bug=bug,
+            owner=getUtility(ILaunchpadCelebrities).bug_watch_updater,
+            bugtracker=bugtracker, remotebug=remote_bug)
+
+        added_task.bugwatch = bug_watch
+        # Need to flush databse updates, so that the bug watch knows it
+        # is linked from a bug task.
+        flush_database_updates()
+
+        return bug
+
+    def importBugComments(self, external_bugtracker, bug_watch):
+        """Import all the comments from a remote bug.
+
+        :param external_bugtracker: An external bugtracker which
+            implements `ISupportsCommentImport`.
+        :param bug_watch: The bug watch for which the comments should be
+            imported.
+        """
+        imported_comments = 0
+        for comment_id in external_bugtracker.getCommentIds(bug_watch):
+            displayname, email = external_bugtracker.getPosterForComment(
+                bug_watch, comment_id)
+
+            poster = getUtility(IPersonSet).ensurePerson(
+                email, displayname, PersonCreationRationale.BUGIMPORT,
+                comment='when importing comments for %s.' % bug_watch.title)
+
+            comment_message = external_bugtracker.getMessageForComment(
+                bug_watch, comment_id, poster)
+            if not bug_watch.hasComment(comment_id):
+                bug_watch.addComment(comment_id, comment_message)
+                imported_comments += 1
+
+        if imported_comments > 0:
+            self.log.info("Imported %(count)i comments for remote bug "
+                "%(remotebug)s on %(bugtracker_url)s into Launchpad bug "
+                "%(bug_id)s." %
+                {'count': imported_comments,
+                 'remotebug': bug_watch.remotebug,
+                 'bugtracker_url': external_bugtracker.baseurl,
+                 'bug_id': bug_watch.bug.id})
 

@@ -22,8 +22,7 @@ so on.
 
     >>> from canonical.launchpad.interfaces import (
     ...     IMaloneApplication, IBazaarApplication,
-    ...     IRosettaApplication, ILaunchpadRoot, IRegistryApplication,
-    ...     IQuestionSet
+    ...     IRosettaApplication, ILaunchpadRoot, IQuestionSet
     ...     )
 
 The Launchpad homepage.
@@ -40,11 +39,6 @@ The Rosetta homepage.
 
     >>> canonical_url(getUtility(IRosettaApplication))
     u'http://launchpad.dev/translations'
-
-The Registry homepage.
-
-    >>> canonical_url(getUtility(IRegistryApplication))
-    u'http://launchpad.dev/registry'
 
 The Bazaar homepage.
 
