@@ -122,7 +122,7 @@ class BugTracker(SQLBase):
         schema=BugTrackerType, notNull=True)
     name = StringCol(notNull=True, unique=True)
     title = StringCol(notNull=True)
-    summary = StringCol(notNull=True)
+    summary = StringCol(notNull=False)
     baseurl = StringCol(notNull=True)
     owner = ForeignKey(
         dbName='owner', foreignKey='Person',

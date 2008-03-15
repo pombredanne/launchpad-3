@@ -10,17 +10,15 @@
   i18n:domain="launchpad"
 >
   <body>
-    <metal:heading fill-slot="pageheading">
-      <h1>Build details</h1>
-    </metal:heading>
-
-    <metal:leftportlets fill-slot="portlets_one">
+    <metal:portlets fill-slot="portlets">
       <div tal:replace="structure context/@@+portlet-details" />
       <div tal:replace="structure context/@@+portlet-binaries"
            tal:condition="context/binarypackages"/>
-    </metal:leftportlets>
+    </metal:portlets>
 
     <div metal:fill-slot="main">
+        
+      <h1 tal:content="CONTEXTS/fmt:pagetitle">PPA for user</h1>
 
       <div class="informational message"
            tal:condition="view/user_can_retry_build">

@@ -22,6 +22,13 @@ see the page to add a dependency.
   >>> admin_browser.url
   'http://blueprints.launchpad.dev/firefox/+spec/canvas/+linkdependency'
 
+The page contains a link back to the blueprint, in case we change our
+mind.
+
+    >>> back_link = admin_browser.getLink('Support <canvas> Objects')
+    >>> back_link.url
+    'http://blueprints.launchpad.dev/firefox/+spec/canvas'
+
 Now, lets POST the form, saying we want extension-manager-upgrades as the
 dependency.
 
@@ -44,6 +51,13 @@ dependencies we could remove. The extension manager one, and "e4x".
 
   >>> admin_browser.getControl('Dependency').displayOptions
   ['Extension Manager System Upgrades', 'Support E4X in EcmaScript']
+
+Again, the page contains a link back to the blueprint in case we change
+our mind.
+
+    >>> back_link = admin_browser.getLink('Support <canvas> Objects')
+    >>> back_link.url
+    'http://blueprints.launchpad.dev/firefox/+spec/canvas'
 
 We'll POST the form selecting "extension-manager-upgrades" for removal. We
 expect to be redirected to the blueprint page.

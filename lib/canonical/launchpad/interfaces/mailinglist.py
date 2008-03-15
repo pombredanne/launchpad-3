@@ -580,6 +580,28 @@ class IMailingListAPIView(Interface):
             team.
         """
 
+    def holdMessage(team_name, text):
+        """Hold the message for approval though the Launchpad u/i.
+
+        :param team_name: The name of the team/mailing list that this message
+            was posted to.
+        :param text: The original text of the message.
+        :return: True
+        """
+
+    def getMessageDispositions():
+        """Get all new message dispositions.
+
+        This returns a dictionary mapping message ids to their disposition,
+        which will either be 'accept' or 'decline'.  This only returns
+        message-ids of disposed messages since the last time this method was
+        called.
+
+        :return: A dictionary mapping message-ids to the disposition tuple.
+            This tuple is of the form (team-name, action), where the action is
+            either the string 'accept' or 'decline'.
+        """
+
 
 class IMailingListSubscription(Interface):
     """A mailing list subscription."""
@@ -682,9 +704,24 @@ class IMessageApproval(Interface):
         :param reviewer: The person who did the review.
         """
 
+    def acknowledge():
+        """Acknowledge the pending status of a message.
+
+        This changes APPROVAL_PENDING to APPROVED status and REJECTION_PENDING
+        to REJECTED status.  It is illegal to call this function when the
+        status is not one of those two.
+        """
+
 
 class IMessageApprovalSet(Interface):
     """Sets of held message."""
+
+    def getMessageByMessageID(message_id):
+        """Return the held message with the matching Message-ID.
+
+        :param message_id: The RFC 2822 Message-ID header.
+        :return: The matching IMessageApproval or None if no match was found.
+        """
 
     def getHeldMessagesWithStatus(status):
         """Return a sequence of message holds matching status.

@@ -11,6 +11,8 @@
 
 <body>
 
+      <div tal:content="structure context/fmt:link" />
+
   <div class="documentDescription" metal:fill-slot="extra_info">
     This will <em>remove</em> the link between the blueprint and
     the selected bug reports.
