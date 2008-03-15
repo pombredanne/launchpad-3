@@ -246,7 +246,7 @@ class ReviewForm(Interface):
 
     revision_number = Int(
         title=_("Reviewed Revision"), required=True,
-        description=_("The revision number on the target branch which "
+        description=_("The revision number on the source branch which "
                       "has been reviewed."))
 
     whiteboard = Whiteboard(
