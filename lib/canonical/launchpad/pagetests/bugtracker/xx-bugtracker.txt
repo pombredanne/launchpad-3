@@ -323,7 +323,7 @@ Tracker:
     There are linked bug watches and only members of Launchpad
       Administrators and Registry Administrators can delete them en masse.
     Bug comments have been imported via this bug tracker.
-    This bug tracker is specially protected from deletion.
+    This bug tracker is protected from deletion.
 
   >>> user_browser.getControl('Delete')
   Traceback (most recent call last):
@@ -340,7 +340,7 @@ deleting bug watches en masse:
   ...     admin_browser.contents, 'bugtracker-delete-not-possible-reasons'))
   Please note, this bug tracker cannot be deleted because:
     Bug comments have been imported via this bug tracker.
-    This bug tracker is specially protected from deletion.
+    This bug tracker is protected from deletion.
 
   >>> admin_browser.getControl('Delete')
   Traceback (most recent call last):
