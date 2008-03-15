@@ -2,8 +2,8 @@
 
 __metaclass__ = type
 
-import os, os.path, shutil
-from signal import SIGTERM
+import os
+import shutil
 
 import canonical
 from canonical.config import config

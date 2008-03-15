@@ -1,6 +1,8 @@
 #!/usr/bin/python2.4
 
 # Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# This module uses relative imports.
+# pylint: disable-msg=W0403
 
 __metaclass__ = type
 
