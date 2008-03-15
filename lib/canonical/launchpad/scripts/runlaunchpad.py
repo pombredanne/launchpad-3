@@ -136,13 +136,13 @@ class CodebrowseService(Service):
 
 
 def prepare_for_librarian():
-    if not os.path.isdir(config.librarian.server.root):
-        os.makedirs(config.librarian.server.root, 0700)
+    if not os.path.isdir(config.librarian_server.root):
+        os.makedirs(config.librarian_server.root, 0700)
 
 
 SERVICES = {
     'librarian': TacFile('librarian', 'daemons/librarian.tac',
-                         config.librarian.server, prepare_for_librarian),
+                         config.librarian_server, prepare_for_librarian),
     'buildsequencer': TacFile('buildsequencer',
                               'daemons/buildd-sequencer.tac',
                               config.buildsequencer),

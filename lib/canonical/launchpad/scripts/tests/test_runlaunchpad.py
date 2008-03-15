@@ -66,7 +66,7 @@ class ServersToStart(unittest.TestCase):
     def setUp(self):
         """Make sure that only the Librarian is configured to launch."""
         unittest.TestCase.setUp(self)
-        self.configs = [config.librarian.server,
+        self.configs = [config.librarian_server,
                         config.buildsequencer,
                         config.authserver,
                         config.codehosting]

@@ -377,7 +377,7 @@ def get_file_path(content_id):
     assert isinstance(content_id, (int, long)), 'Invalid content_id %r' % (
             content_id,
             )
-    storage_root = config.librarian.server.root
+    storage_root = config.librarian_server.root
     # Do a basic sanity check.
     if not os.path.isdir(os.path.join(storage_root, 'incoming')):
         raise RuntimeError(
