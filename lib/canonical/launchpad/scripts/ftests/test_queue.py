@@ -255,6 +255,29 @@ class TestQueueTool(TestQueueBase):
         self.assertEmail(
             ['Daniel Silverstone <daniel.silverstone@canonical.com>'])
 
+    def testAcceptingSourceCreateBuilds(self):
+        """Check if accepting a source package creates build records."""
+        LaunchpadZopelessLayer.switchDbUser("testadmin")
+        upload_bar_source()
+        # Swallow email generated at the upload stage.
+        stub.test_emails.pop()
+        LaunchpadZopelessLayer.txn.commit()
+
+        LaunchpadZopelessLayer.switchDbUser("queued")
+        queue_action = self.execute_command(
+            'accept bar', no_mail=False)
+        self.assertEqual(1, queue_action.items_size)
+        self.assertEqual(2, len(stub.test_emails))
+
+        [queue_item] = queue_action.items
+        [queue_source] = queue_item.sources
+        sourcepackagerelease = queue_source.sourcepackagerelease
+        [build] = sourcepackagerelease.builds
+        self.assertEqual(
+            'i386 build of bar 1.0-1 in ubuntu breezy-autotest RELEASE',
+            build.title)
+        self.assertEqual(build.buildqueue_record.lastscore, 255)
+
     def testAcceptingBinaryDoesntGenerateEmail(self):
         """Check if accepting a binary package does not generate email."""
         queue_action = self.execute_command(

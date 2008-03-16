@@ -80,13 +80,15 @@ The timeout will also produce an OOPS report.
     >>> import urllib2
     >>> urlopen = urllib2.urlopen
 
+    >>> transaction.commit()
     >>> def do_not_urlopen(url=None, data=None):
     ...     raise socket.timeout("Connection timed out.")
     >>> try:
     ...     urllib2.urlopen = do_not_urlopen
     ...     updater = BugWatchUpdater(transaction)
     ...     updater._login()
-    ...     updater.updateBugTracker(example_bug_tracker)
+    ...     updater.updateBugTrackers(
+    ...         bug_tracker_names=[example_bug_tracker.name])
     ...     print oops_hook.formatted_oops_info
     ... finally:
     ...     urllib2.urlopen = urlopen
@@ -122,23 +124,7 @@ of the externalbugtracker module to ensure that it raises this error.
     ...     raise externalbugtracker.UnknownBugTrackerTypeError(
     ...         bugtrackertype.name, bugtracker.name)
 
-We need to re-create the example bugtracker, bug and watch, since they
-were destroyed when the timeout error above caused the transaction to be
-reset.
-
-    >>> example_bug_tracker = BugTracker(
-    ...     name="example-bugs",
-    ...     title="Example.com Roundup",
-    ...     bugtrackertype=BugTrackerType.ROUNDUP,
-    ...     baseurl="http://bugs.example.com",
-    ...     summary="Contains bugs for Example.com",
-    ...     contactdetails="foo.bar@example.com",
-    ...     owner=sample_person)
-
-    >>> example_bug = getUtility(IBugSet).get(10)
-    >>> example_bugwatch = example_bug.addWatch(
-    ...     example_bug_tracker, 1235, sample_person)
-
+    >>> login(ANONYMOUS)
     >>> try:
     ...     externalbugtracker.get_external_bugtracker = (
     ...         broken_get_external_bugtracker)
@@ -177,7 +163,7 @@ Since we know how many bugwatches example_bug has we will be able to see
 when checkwatches only updates a subset of them.
 
     >>> example_bug.watches.count()
-    10
+    9
 
 Since our example bug tracker is a Roundup bug tracker we can
 monkey-patch the Roundup ExternalBugTrackerClass in order to set its
@@ -188,13 +174,14 @@ requests are actually made.
     >>> from canonical.launchpad.scripts import FakeLogger
     >>> original_log = externalbugtracker.log
     >>> batch_size = externalbugtracker.Roundup.batch_size
+    >>> transaction.commit()
     >>> try:
     ...     updater = BugWatchUpdater(transaction)
     ...     updater._login()
     ...     urllib2.urlopen = do_not_urlopen
     ...     externalbugtracker.Roundup.batch_size = 5
     ...     externalbugtracker.log = FakeLogger()
-    ...     updater.updateBugTracker(example_bug_tracker)
+    ...     updater.updateBugTrackers([example_bug_tracker.name])
     ... finally:
     ...     externalbugtracker.log = original_log
     ...     externalbugtracker.Roundup.batch_size = batch_size
