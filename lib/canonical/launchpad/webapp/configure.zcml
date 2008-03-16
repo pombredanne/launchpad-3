@@ -133,6 +133,13 @@
         />
 
     <adapter
+        for="canonical.launchpad.interfaces.IQuestion"
+        provides="zope.app.traversing.interfaces.IPathAdapter"
+        factory="canonical.launchpad.webapp.tales.QuestionImageDisplayAPI"
+        name="image"
+        />
+
+    <adapter
         for="canonical.launchpad.interfaces.IBugTask"
         provides="zope.app.traversing.interfaces.IPathAdapter"
         factory="canonical.launchpad.webapp.tales.BugTaskImageDisplayAPI"
@@ -340,7 +347,12 @@
         factory="canonical.launchpad.webapp.tales.ProductSeriesFormatterAPI"
         name="fmt"
         />
-
+    <adapter
+        for="canonical.launchpad.interfaces.IQuestion"
+        provides="zope.app.traversing.interfaces.IPathAdapter"
+        factory="canonical.launchpad.webapp.tales.QuestionFormatterAPI"
+        name="fmt"
+        />
     <adapter
         for="canonical.launchpad.interfaces.ISpecification"
         provides="zope.app.traversing.interfaces.IPathAdapter"

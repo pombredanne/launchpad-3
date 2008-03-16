@@ -178,6 +178,9 @@ class ILink(ILinkData):
 
     escapedtext = Attribute("Text string, escaped as necessary.")
 
+    def render():
+        """Return a HTML representation of the link."""
+
 
 class IFacetLink(ILink):
     """A link in a facet menu.

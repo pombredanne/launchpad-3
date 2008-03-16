@@ -158,8 +158,8 @@ class ICodeImport(Interface):
 class ICodeImportSet(Interface):
     """Interface representing the set of code imports."""
 
-    def new(registrant, branch, rcs_type, svn_branch_url=None,
-            cvs_root=None, cvs_module=None):
+    def new(registrant, product, branch_name, rcs_type, svn_branch_url=None,
+            cvs_root=None, cvs_module=None, review_status=None):
         """Create a new CodeImport."""
 
     def getAll():
@@ -173,6 +173,12 @@ class ICodeImportSet(Interface):
 
     def getByBranch(branch):
         """Get the CodeImport, if any, associated to a Branch."""
+
+    def getByCVSDetails(cvs_root, cvs_module):
+        """Get the CodeImport with the specified CVS details."""
+
+    def getBySVNDetails(svn_branch_url):
+        """Get the CodeImport with the specified SVN details."""
 
     def delete(id):
         """Delete a CodeImport given its id."""

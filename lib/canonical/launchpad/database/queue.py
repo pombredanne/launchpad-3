@@ -24,6 +24,7 @@ from canonical.archivepublisher.customupload import CustomUploadError
 from canonical.archiveuploader.tagfiles import parse_tagfile_lines
 from canonical.archiveuploader.utils import safe_fix_maintainer
 from canonical.buildmaster.master import determineArchitecturesToBuild
+from canonical.buildmaster.pas import BuildDaemonPackagesArchSpecific
 from canonical.cachedproperty import cachedproperty
 from canonical.config import config
 from canonical.database.sqlbase import SQLBase, sqlvalues
@@ -196,9 +197,65 @@ class PackageUpload(SQLBase):
                 'Queue item already rejected')
         self._SO_set_status(PackageUploadStatus.REJECTED)
 
+    def _createBuilds(self, pub_source, ignore_pas=False, logger=None,):
+        """Create corresponding Build records for a published source.
+
+        :param pub_source: source publication record ,
+             `ISourcePackagePublishingHistory`;
+        :param ignore_pas: whether or not to initialise and respect
+             Package-architecture-specific (P-a-s) for creating builds;
+        :param logger: optional context Logger object (used on DEBUG level).
+
+        P-a-s should be only initialised and considered when accepting
+        sources to the PRIMARY archive (in drescher). We explicitly ignore
+        P-a-s for sources targeted to PPAs and when accepting NEW sources
+        (acceptFromQueue).
+        """
+        if self.isPPA() or ignore_pas:
+            pas_verify = None
+        else:
+            pas_verify = BuildDaemonPackagesArchSpecific(
+                config.builddmaster.root, self.distroseries)
+
+        if self.isPPA():
+            archs_available = [
+                arch for arch in self.distroseries.ppa_architectures]
+        else:
+            archs_available = self.distroseries.architectures
+
+        build_archs = determineArchitecturesToBuild(
+            pub_source, archs_available, self.distroseries, pas_verify)
+
+        for arch in build_archs:
+            debug(logger,
+                  "Creating PENDING build for %s." % arch.architecturetag)
+            build = pub_source.sourcepackagerelease.createBuild(
+                distroarchseries=arch, archive=self.archive,
+                pocket=self.pocket)
+            build_queue = build.createBuildQueueEntry()
+            build_queue.score()
+
+    def _closeBugs(self, changesfile_path, logger=None):
+        """Close bugs for a just-accepted source.
+
+        :param changesfile_path: path to the context changesfile.
+        :param logger: optional context Logger object (used on DEBUG level);
+
+        It does not close bugs for PPA sources.
+        """
+        if self.isPPA():
+            debug(logger, "Not closing bugs for PPA source.")
+            return
+
+        debug(logger, "Closing bugs.")
+        changesfile_object = open(changesfile_path, 'r')
+        close_bugs_for_queue_item(
+            self, changesfile_object=changesfile_object)
+        changesfile_object.close()
+
     def acceptFromUploader(self, changesfile_path, logger=None):
         """See `IPackageUpload`."""
-        logger.debug("Setting it to ACCEPTED")
+        debug(logger, "Setting it to ACCEPTED")
         self.setAccepted()
 
         # If it is a pure-source upload we can further process it
@@ -208,31 +265,10 @@ class PackageUpload(SQLBase):
         if not self._isSingleSourceUpload():
             return
 
-        logger.debug("Creating PENDING publishing record.")
+        debug(logger, "Creating PENDING publishing record.")
         [pub_source] = self.realiseUpload()
-
-        if self.isPPA():
-            # Create a Build record.
-            ppa_archs = [das for das in self.distroseries.ppa_architectures]
-            build_archs = determineArchitecturesToBuild(
-                pub_source, ppa_archs, self.distroseries)
-            for arch in build_archs:
-                logger.debug(
-                    "Creating PENDING build for %s." % arch.architecturetag)
-                build = pub_source.sourcepackagerelease.createBuild(
-                    distroarchseries=arch, archive=self.archive,
-                    pocket=self.pocket)
-                build_queue = build.createBuildQueueEntry()
-                build_queue.score()
-            # Do not even try to close bugs for PPA uploads
-            return
-
-        # Closing bugs.
-        logger.debug("Closing bugs.")
-        changesfile_object = open(changesfile_path, 'r')
-        close_bugs_for_queue_item(
-            self, changesfile_object=changesfile_object)
-        changesfile_object.close()
+        self._createBuilds(pub_source, logger=logger)
+        self._closeBugs(changesfile_path, logger)
 
     def acceptFromQueue(self, announce_list, logger=None, dry_run=False):
         """See `IPackageUpload`."""
@@ -246,7 +282,8 @@ class PackageUpload(SQLBase):
         # wait for a publisher cycle (which calls process-accepted
         # to do this).
         if self._isSingleSourceUpload():
-            self.realiseUpload()
+            [pub_source] = self.realiseUpload()
+            self._createBuilds(pub_source, ignore_pas=True)
 
         # When accepting packages, we must also check the changes file
         # for bugs to close automatically.

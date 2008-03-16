@@ -268,6 +268,14 @@
       permission="zope.Public"
       />
 
+  <browser:page
+      for="canonical.launchpad.webapp.interfaces.ILink"
+      name="+inline"
+      class="canonical.launchpad.browser.launchpad.LinkView"
+      template="../templates/launchpad-inline-link.pt"
+      permission="zope.Public"
+      />
+
   <!-- breadcrumbs -->
   <browser:page
       for="zope.interface.Interface"
