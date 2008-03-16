@@ -225,6 +225,7 @@ class LaunchpadObjectFactory:
         elif set_state == BranchMergeProposalStatus.MERGE_FAILED:
             proposal.mergeFailed(proposal.target_branch.owner)
         elif set_state == BranchMergeProposalStatus.QUEUED:
+            proposal.commit_message = self.getUniqueString('commit message')
             proposal.enqueue(
                 proposal.target_branch.owner, 'some_revision')
         elif set_state == BranchMergeProposalStatus.SUPERSEDED:
