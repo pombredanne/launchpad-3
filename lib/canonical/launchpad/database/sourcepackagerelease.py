@@ -30,12 +30,13 @@ from canonical.launchpad.searchbuilder import any
 from canonical.launchpad.interfaces import (
     ArchivePurpose, BugTaskSearchParams, BuildStatus, IArchiveSet,
     ILaunchpadCelebrities, ISourcePackageRelease, ITranslationImportQueue,
-    PackagePublishingStatus, PackageUploadStatus, NotFoundError,
-    SourcePackageFileType, SourcePackageFormat, SourcePackageUrgency,
-    UNRESOLVED_BUGTASK_STATUSES)
+    PackageDiffAlreadyRequested, PackagePublishingStatus, PackageUploadStatus,
+    NotFoundError, SourcePackageFileType, SourcePackageFormat,
+    SourcePackageUrgency, UNRESOLVED_BUGTASK_STATUSES)
 
 from canonical.launchpad.database.build import Build
 from canonical.launchpad.database.files import SourcePackageReleaseFile
+from canonical.launchpad.database.packagediff import PackageDiff
 from canonical.launchpad.validators.person import public_person_validator
 from canonical.launchpad.database.publishing import (
     SourcePackagePublishingHistory)
@@ -93,6 +94,9 @@ class SourcePackageRelease(SQLBase):
         joinColumn='sourcepackagerelease', orderBy="libraryfile")
     publishings = SQLMultipleJoin('SourcePackagePublishingHistory',
         joinColumn='sourcepackagerelease', orderBy="-datecreated")
+    package_diffs = SQLMultipleJoin(
+        'PackageDiff', joinColumn='from_source', orderBy="-date_requested")
+
 
     @property
     def builds(self):
@@ -483,3 +487,20 @@ class SourcePackageRelease(SQLBase):
                 sourcepackagename=self.sourcepackagename,
                 distroseries=self.upload_distroseries)
 
+    def getDiffTo(self, to_sourcepackagerelease):
+        """See ISourcePackageRelease."""
+        return PackageDiff.selectOneBy(
+            from_source=self, to_source=to_sourcepackagerelease)
+
+    def requestDiffTo(self, requester, to_sourcepackagerelease):
+        """See ISourcePackageRelease."""
+        candidate = self.getDiffTo(to_sourcepackagerelease)
+
+        if candidate is not None:
+            raise PackageDiffAlreadyRequested(
+                "%s was already requested by %s"
+                % (candidate.title, candidate.requester.displayname))
+
+        return PackageDiff(
+            from_source=self, to_source=to_sourcepackagerelease,
+            requester=requester)

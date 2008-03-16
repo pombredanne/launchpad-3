@@ -687,10 +687,11 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
         sourcepackagename_set = getUtility(ISourcePackageNameSet)
         packages_with_bugs = set()
         L = []
-        for row in shortlist(cur.dictfetchall()):
-            distribution = distribution_set.get(row['distribution'])
-            sourcepackagename = sourcepackagename_set.get(
-                row['sourcepackagename'])
+        for (distro_id, spn_id, open_bugs,
+             open_critical_bugs, open_unassigned_bugs,
+             open_inprogress_bugs) in shortlist(cur.fetchall()):
+            distribution = distribution_set.get(distro_id)
+            sourcepackagename = sourcepackagename_set.get(spn_id)
             source_package = distribution.getSourcePackage(sourcepackagename)
             # XXX: Bjorn Tillenius 2006-12-15:
             # Add a tuple instead of the distribution package
@@ -699,10 +700,10 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
             packages_with_bugs.add((distribution, sourcepackagename))
             package_counts = dict(
                 package=source_package,
-                open=row['open_bugs'],
-                open_critical=row['open_critical_bugs'],
-                open_unassigned=row['open_unassigned_bugs'],
-                open_inprogress=row['open_inprogress_bugs'])
+                open=open_bugs,
+                open_critical=open_critical_bugs,
+                open_unassigned=open_unassigned_bugs,
+                open_inprogress=open_inprogress_bugs)
             L.append(package_counts)
 
         # Only packages with open bugs were included in the query. Let's
