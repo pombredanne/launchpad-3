@@ -175,6 +175,13 @@ COMMENT ON COLUMN BugNotification.message IS 'The message the contains the textu
 COMMENT ON COLUMN BugNotification.is_comment IS 'Is the change a comment addition.';
 COMMENT ON COLUMN BugNotification.date_emailed IS 'When this notification was emailed to the bug subscribers.';
 
+-- BugNotificationRecipient
+COMMENT ON TABLE BugNotificationRecipient IS 'The recipient for a bug notification.';
+COMMENT ON COLUMN BugNotificationRecipient.bug_notification IS 'The notification this recipient should get.';
+COMMENT ON COLUMN BugNotificationRecipient.person IS 'The person who should receive this notification.';
+COMMENT ON COLUMN BugNotificationRecipient.reason_header IS 'The reason this person is receiving this notification (the value for the X-Launchpad-Message-Rationale header).';
+COMMENT ON COLUMN BugNotificationRecipient.reason_body IS 'A line of text describing the reason this person is receiving this notification (to be included in the email message).';
+
 
 -- BugPackageInfestation
 
