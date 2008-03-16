@@ -9,11 +9,13 @@ from subprocess import Popen, PIPE, STDOUT
 from cStringIO import StringIO
 from unittest import TestCase, TestLoader
 from datetime import datetime, timedelta
+
 from pytz import utc
+from sqlobject import SQLObjectNotFound
 
 from canonical.config import config
 from canonical.database.sqlbase import (
-    connect, cursor, ISOLATION_LEVEL_AUTOCOMMIT, SQLObjectNotFound)
+    connect, cursor, ISOLATION_LEVEL_AUTOCOMMIT)
 from canonical.launchpad.database import LibraryFileAlias, LibraryFileContent
 from canonical.librarian import librariangc
 from canonical.librarian.client import LibrarianClient

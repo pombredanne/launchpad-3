@@ -496,6 +496,7 @@ class IBugTask(IHasDateCreated, IHasBug, ICanBeMentored):
         None.
         """
 
+
 class INullBugTask(IBugTask):
     """A marker interface for an IBugTask that doesn't exist in a context.
 

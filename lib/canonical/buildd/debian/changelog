@@ -1,3 +1,15 @@
+launchpad-buildd (43) dapper-cat; urgency=low
+
+  * unpack-chroot: Move the ntpdate calls below the bunzip/exec bit,
+    so we don't run ntpdate twice when unzipping tarballs, which 
+    happens on every single build on Xen hosts (like the PPA hosts).
+  * debian/control: We use adduser in postinst, depending on it helps.
+  * debian/control: Set myself as the Maintainer, since I'm in here.
+  * debian/control: Change our section from "misc" to "admin".
+  * sbuild{,-package}: Pass DEB_BUILD_OPTIONS="parallel=N" to dpkg.
+
+ -- Adam Conrad <adconrad@ubuntu.com>  Thu, 24 Jan 2008 15:39:20 -0700
+
 launchpad-buildd (42) dapper-cat; urgency=low
 
   * sbuild: using "eq" to evaluate strings instead of "==" is ever

@@ -335,39 +335,16 @@ class MaloneHandler:
     def processAttachments(self, bug, message, signed_mail):
         """Create Bugattachments for "reasonable" mail attachments.
 
-        A mail attachment is stored as a bugattachment if all of the
-        following conditions are met:
-
-            - the content disposition header explicitly says that
-              this is an attachment,
-            - the content type is not "irrelevant". At present,
-              mail signatures, v-cards, and the resource for of MacOS
-              files are considered to be irrelevant.
+        A mail attachment is stored as a bugattachment if its
+        content type is not listed in irrelevant_content_types.
         """
-        unnamed_count = 0
-        for part in signed_mail.walk():
-            content_type = part.get_content_type()
-            content_disposition = part.get('Content-disposition', '').lower()
-            if (part.is_multipart()
-                or content_type in self.irrelevant_content_types
-                or not content_disposition.startswith('attachment')):
+        for chunk in message.chunks:
+            blob = chunk.blob
+            if blob is None:
                 continue
-
-            content = part.get_payload(decode=True)
-            if len(content) == 0:
-                # storing empty files is pointless.
+            content_type = blob.mimetype
+            if content_type in self.irrelevant_content_types:
                 continue
-
-            filename = part.get_filename()
-            if filename is None:
-                if unnamed_count:
-                    filename = 'unnamed-%i' % unnamed_count
-                else:
-                    filename = 'unnamed'
-                unnamed_count += 1
-            filealias = getUtility(ILibraryFileAliasSet).create(
-                name=filename, size=len(content), file=StringIO(content),
-                contentType=content_type)
 
             if content_type in ('text/x-diff', 'text/x-patch'):
                 attach_type = BugAttachmentType.PATCH
@@ -375,8 +352,8 @@ class MaloneHandler:
                 attach_type = BugAttachmentType.UNSPECIFIED
 
             getUtility(IBugAttachmentSet).create(
-                bug=bug, filealias=filealias, attach_type=attach_type,
-                title=filename, message=message)
+                bug=bug, filealias=blob, attach_type=attach_type,
+                title=blob.filename, message=message)
 
 
 class AnswerTrackerHandler:

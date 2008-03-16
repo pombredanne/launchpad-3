@@ -252,7 +252,7 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
         # Add the owner as a team admin manually because we know what we're
         # doing and we don't want any email notifications to be sent.
         TeamMembershipSet().new(
-            team_owner, self, TeamMembershipStatus.ADMIN, reviewer=team_owner)
+            team_owner, self, TeamMembershipStatus.ADMIN, team_owner)
 
     @cachedproperty
     def _location(self):
@@ -687,10 +687,11 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
         sourcepackagename_set = getUtility(ISourcePackageNameSet)
         packages_with_bugs = set()
         L = []
-        for row in shortlist(cur.dictfetchall()):
-            distribution = distribution_set.get(row['distribution'])
-            sourcepackagename = sourcepackagename_set.get(
-                row['sourcepackagename'])
+        for (distro_id, spn_id, open_bugs,
+             open_critical_bugs, open_unassigned_bugs,
+             open_inprogress_bugs) in shortlist(cur.fetchall()):
+            distribution = distribution_set.get(distro_id)
+            sourcepackagename = sourcepackagename_set.get(spn_id)
             source_package = distribution.getSourcePackage(sourcepackagename)
             # XXX: Bjorn Tillenius 2006-12-15:
             # Add a tuple instead of the distribution package
@@ -699,10 +700,10 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
             packages_with_bugs.add((distribution, sourcepackagename))
             package_counts = dict(
                 package=source_package,
-                open=row['open_bugs'],
-                open_critical=row['open_critical_bugs'],
-                open_unassigned=row['open_unassigned_bugs'],
-                open_inprogress=row['open_inprogress_bugs'])
+                open=open_bugs,
+                open_critical=open_critical_bugs,
+                open_unassigned=open_unassigned_bugs,
+                open_inprogress=open_inprogress_bugs)
             L.append(package_counts)
 
         # Only packages with open bugs were included in the query. Let's
@@ -1202,16 +1203,14 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
         tm = TeamMembership.selectOneBy(person=person, team=self)
         if tm is not None:
             old_status = tm.status
-            tm.reviewer = reviewer
             # We can't use tm.setExpirationDate() here because the reviewer
             # here will be the member themselves when they join an OPEN team.
             tm.dateexpires = expires
-            tm.reviewercomment = comment
-            tm.setStatus(status, reviewer)
+            tm.setStatus(status, reviewer, comment)
         else:
             TeamMembershipSet().new(
-                person, self, status, dateexpires=expires, reviewer=reviewer,
-                reviewercomment=comment)
+                person, self, status, reviewer, dateexpires=expires,
+                comment=comment)
             notify(event(person, self))
 
     # The three methods below are not in the IPerson interface because we want
@@ -1230,7 +1229,7 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
         assert tm.status == TeamMembershipStatus.INVITED
         tm.setStatus(
             TeamMembershipStatus.APPROVED, getUtility(ILaunchBag).user,
-            reviewercomment=comment)
+            comment=comment)
 
     def declineInvitationToBeMemberOf(self, team, comment):
         """Decline an invitation to become a member of the given team.
@@ -1244,7 +1243,7 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
         assert tm.status == TeamMembershipStatus.INVITED
         tm.setStatus(
             TeamMembershipStatus.INVITATION_DECLINED,
-            getUtility(ILaunchBag).user, reviewercomment=comment)
+            getUtility(ILaunchBag).user, comment=comment)
 
     def renewTeamMembership(self, team):
         """Renew the TeamMembership for this person on the given team.
@@ -1281,7 +1280,7 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
         tm = TeamMembership.selectOneBy(person=person, team=self)
         assert tm is not None
         tm.setExpirationDate(expires, reviewer)
-        tm.setStatus(status, reviewer, reviewercomment=comment)
+        tm.setStatus(status, reviewer, comment=comment)
 
     def getAdministratedTeams(self):
         """See `IPerson`."""
@@ -1585,7 +1584,7 @@ class Person(SQLBase, HasSpecificationsMixin, HasTranslationImportsMixin):
     def getLatestApprovedMembershipsForPerson(self, limit=5):
         """See `IPerson`."""
         result = self.myactivememberships
-        result.orderBy(['-datejoined'])
+        result.orderBy(['-date_joined'])
         return result[:limit]
 
     @property
@@ -1996,7 +1995,7 @@ class PersonSet:
         # we're doing (so we don't need to do any sanity checks) and we don't
         # want any email notifications to be sent.
         TeamMembershipSet().new(
-            teamowner, team, TeamMembershipStatus.ADMIN, reviewer=teamowner)
+            teamowner, team, TeamMembershipStatus.ADMIN, teamowner)
         return team
 
     def createPersonAndEmail(
