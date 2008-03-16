@@ -207,10 +207,7 @@ class ExternalBugTracker:
         return urllib2.urlopen(request, data)
 
     def initializeRemoteBugDB(self, bug_ids):
-        """Do any initialization before each bug watch is updated.
-
-        It's optional to override this method.
-        """
+        """See `IExternalBugTracker`."""
         self.bugs = {}
         if len(bug_ids) > self.batch_query_threshold:
             self.bugs = self.getRemoteBugBatch(bug_ids)
