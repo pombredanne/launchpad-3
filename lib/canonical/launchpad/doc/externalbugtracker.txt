@@ -24,8 +24,6 @@ access.
     ...     batch_query_threshold = 0
     ...     import_comments = False
     ...
-    ...     def _getBugWatchesByRemoteBug(self, foo):
-    ...         return {}
     ...     def initializeRemoteBugDB(self, remote_bug_ids):
     ...         print "initializeRemoteBugDB() called"
     ...     def convertRemoteStatus(self, remote_status):
