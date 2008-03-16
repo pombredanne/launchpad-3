@@ -956,7 +956,7 @@ def notify_invitation_to_join_team(event):
         member, team)
     assert membership is not None
 
-    reviewer = membership.reviewer
+    reviewer = membership.proposed_by
     admin_addrs = member.getTeamAdminsEmailAddresses()
     from_addr = format_address(team.displayname, config.noreply_from_address)
     subject = 'Invitation for %s to join' % member.name
@@ -977,7 +977,7 @@ def notify_invitation_to_join_team(event):
 
 
 def notify_team_join(event):
-    """Notify team admins that a new person choose to join the team.
+    """Notify team admins that someone has asked to join the team.
 
     If the team's policy is Moderated, the email will say that the membership
     is pending approval. Otherwise it'll say that the person has joined the
@@ -988,15 +988,15 @@ def notify_team_join(event):
     membership = getUtility(ITeamMembershipSet).getByPersonAndTeam(
         person, team)
     assert membership is not None
-    reviewer = membership.reviewer
     approved, admin, proposed = [
         TeamMembershipStatus.APPROVED, TeamMembershipStatus.ADMIN,
         TeamMembershipStatus.PROPOSED]
     admin_addrs = team.getTeamAdminsEmailAddresses()
-
     from_addr = format_address(team.displayname, config.noreply_from_address)
 
+    reviewer = membership.proposed_by
     if reviewer != person and membership.status in [approved, admin]:
+        reviewer = membership.reviewed_by
         # Somebody added this person as a member, we better send a
         # notification to the person too.
         member_addrs = contactEmailAddresses(person)
