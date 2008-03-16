@@ -13,7 +13,6 @@ import gettextpo
 import os
 import random
 import re
-import sys
 import tarfile
 import warnings
 from StringIO import StringIO
@@ -29,6 +28,7 @@ from canonical.launchpad.interfaces import (
     SourcePackageFileType)
 
 
+# pylint: disable-msg=W0102
 def text_replaced(text, replacements, _cache={}):
     """Return a new string with text replaced according to the dict provided.
 
@@ -586,3 +586,20 @@ def truncate_text(text, max_length):
             break
         truncated += word
     return truncated[:max_length]
+
+
+def english_list(items, conjunction='and'):
+    """Return all the items concatenated into a English-style string.
+
+    Follows the advice given in The Elements of Style, chapter II,
+    section 2:
+
+    "In a series of three or more terms with a single conjunction, use
+     a comma after each term except the last."
+    """
+    items = list(items)
+    if len(items) <= 2:
+        return (' %s ' % conjunction).join(items)
+    else:
+        items[-1] = '%s %s' % (conjunction, items[-1])
+        return ', '.join(items)
