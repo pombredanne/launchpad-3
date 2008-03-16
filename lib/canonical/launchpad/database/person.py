@@ -2364,7 +2364,7 @@ class PersonSet:
             # closed -- StuartBishop 20060602
             ('votecast', 'person'),
             ('vote', 'person'),
-            # This table is handled entirely by triggers
+            # This table is handled entirely by triggers.
             ('validpersonorteamcache', 'id'),
             ]
 
@@ -2390,13 +2390,13 @@ class PersonSet:
         to_id = to_person.id
         from_id = from_person.id
 
-        # Update PersonLocation, which is a Person-decorator table
+        # Update PersonLocation, which is a Person-decorator table.
         self._merge_person_decoration(
             to_person, from_person, skip, cur, 'PersonLocation', 'person',
             ['last_modified_by', ])
 
         # Update GPGKey. It won't conflict, but our sanity checks don't
-        # know that
+        # know that.
         cur.execute(
             'UPDATE GPGKey SET owner=%(to_id)d WHERE owner=%(from_id)d'
             % vars())
@@ -2426,7 +2426,7 @@ class PersonSet:
             )
         skip.append(('wikiname', 'person'))
 
-        # Update shipit shipments
+        # Update shipit shipments.
         cur.execute('''
             UPDATE ShippingRequest SET recipient=%(to_id)s
             WHERE recipient = %(from_id)s AND (
@@ -2466,7 +2466,7 @@ class PersonSet:
         skip.append(('shippingrequest', 'recipient'))
 
         # Update the Branches that will not conflict, and fudge the names of
-        # ones that *do* conflict
+        # ones that *do* conflict.
         cur.execute('''
             SELECT product, name FROM Branch WHERE owner = %(to_id)d
             ''' % vars())
@@ -2494,7 +2494,7 @@ class PersonSet:
         # Update MailingListSubscription. Note that no remaining records
         # will have email_address set, as we assert earlier that the
         # from_person has no email addresses.
-        # Update records that don't conflict
+        # Update records that don't conflict.
         cur.execute('''
             UPDATE MailingListSubscription
             SET person=%(to_id)d
@@ -2505,13 +2505,13 @@ class PersonSet:
                     WHERE person=%(to_id)d
                     )
             ''' % vars())
-        # Then trash the remainders
+        # Then trash the remainders.
         cur.execute('''
             DELETE FROM MailingListSubscription WHERE person=%(from_id)d
             ''' % vars())
         skip.append(('mailinglistsubscription', 'person'))
 
-        # Update only the BranchSubscription that will not conflict
+        # Update only the BranchSubscription that will not conflict.
         cur.execute('''
             UPDATE BranchSubscription
             SET person=%(to_id)d
@@ -2522,15 +2522,13 @@ class PersonSet:
                 WHERE person = %(to_id)d
                 )
             ''' % vars())
-        # and delete those left over
+        # and delete those left over.
         cur.execute('''
             DELETE FROM BranchSubscription WHERE person=%(from_id)d
             ''' % vars())
         skip.append(('branchsubscription', 'person'))
 
-        # Update only the BountySubscriptions that will not conflict
-        # XXX: StuartBishop 2005-03-31:
-        # Add sampledata and test to confirm this case
+        # Update only the BountySubscriptions that will not conflict.
         cur.execute('''
             UPDATE BountySubscription
             SET person=%(to_id)d
@@ -2541,13 +2539,13 @@ class PersonSet:
                 WHERE person = %(to_id)d
                 )
             ''' % vars())
-        # and delete those left over
+        # and delete those left over.
         cur.execute('''
             DELETE FROM BountySubscription WHERE person=%(from_id)d
             ''' % vars())
         skip.append(('bountysubscription', 'person'))
 
-        # Update only the AnswerContacts that will not conflict
+        # Update only the AnswerContacts that will not conflict.
         cur.execute('''
             UPDATE AnswerContact
             SET person=%(to_id)d
@@ -2570,13 +2568,13 @@ class PersonSet:
                     WHERE person = %(to_id)d
                     )
             ''' % vars())
-        # and delete those left over
+        # and delete those left over.
         cur.execute('''
             DELETE FROM AnswerContact WHERE person=%(from_id)d
             ''' % vars())
         skip.append(('answercontact', 'person'))
 
-        # Update only the QuestionSubscriptions that will not conflict
+        # Update only the QuestionSubscriptions that will not conflict.
         cur.execute('''
             UPDATE QuestionSubscription
             SET person=%(to_id)d
@@ -2587,13 +2585,13 @@ class PersonSet:
                 WHERE person = %(to_id)d
                 )
             ''' % vars())
-        # and delete those left over
+        # and delete those left over.
         cur.execute('''
             DELETE FROM QuestionSubscription WHERE person=%(from_id)d
             ''' % vars())
         skip.append(('questionsubscription', 'person'))
 
-        # Update only the MentoringOffers that will not conflict
+        # Update only the MentoringOffers that will not conflict.
         cur.execute('''
             UPDATE MentoringOffer
             SET owner=%(to_id)d
@@ -2614,7 +2612,7 @@ class PersonSet:
                 WHERE team = %(to_id)d
                 )
             ''' % vars())
-        # and delete those left over
+        # and delete those left over.
         cur.execute('''
             DELETE FROM MentoringOffer
             WHERE owner=%(from_id)d OR team=%(from_id)d
@@ -2622,7 +2620,23 @@ class PersonSet:
         skip.append(('mentoringoffer', 'owner'))
         skip.append(('mentoringoffer', 'team'))
 
-        # Update PackageBugContact entries
+        # Update BugNotificationRecipient entries that will not conflict.
+        cur.execute('''
+            UPDATE BugNotificationRecipient
+            SET person=%(to_id)d
+            WHERE person=%(from_id)d AND id NOT IN (
+                SELECT id FROM BugNotificationRecipient
+                WHERE person=%(to_id)d
+                )
+            ''' % vars())
+        # and delete those left over.
+        cur.execute('''
+            DELETE FROM BugNotificationRecipient
+            WHERE person=%(from_id)d
+            ''' % vars())
+        skip.append(('bugnotificationrecipient', 'person'))
+
+        # Update PackageBugContact entries.
         cur.execute('''
             UPDATE PackageBugContact SET bugcontact=%(to_id)s
             WHERE bugcontact=%(from_id)s
