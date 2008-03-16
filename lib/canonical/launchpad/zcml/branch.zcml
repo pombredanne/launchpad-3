@@ -103,6 +103,14 @@
   </browser:pages>
 
   <browser:page
+    name="+merge-queue"
+    for="canonical.launchpad.interfaces.IBranch"
+    class="canonical.launchpad.browser.BranchMergeQueueView"
+    facet="branches"
+    permission="zope.Public"
+    template="../templates/branch-merge-queue.pt" />
+
+  <browser:page
     name="+portlet-subscribers"
     for="canonical.launchpad.interfaces.IBranch"
     class="canonical.launchpad.browser.BranchSubscriptionsView"
