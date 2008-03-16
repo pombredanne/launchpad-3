@@ -249,7 +249,7 @@ class BugWatchUpdater(object):
             # date to ensure that they don't get checked for another
             # 24 hours (see above).
             error_type = (
-                externalbugtracker.get_bugwatcherrortype_for_error(error))
+                get_bugwatcherrortype_for_error(error))
             for bug_watch in bug_watches_to_update:
                 bug_watch.last_error_type = error_type
                 bug_watch.lastchecked = UTC_NOW
