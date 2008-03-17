@@ -458,6 +458,7 @@ class TeamMembershipSet:
         tm.date_proposed = now
         tm.proponent_comment = comment
         if status in [approved, admin]:
+            tm.datejoined = now
             tm.reviewed_by = user
             tm.date_reviewed = now
             tm.reviewer_comment = comment
