@@ -25,32 +25,28 @@ dish. Users may comment on cookbooks and on individual recipes.
     >>> class IAuthor(Interface):
     ...     name = TextLine(title=u"Name", required=True)
 
+    >>> class ICommentTarget(Interface):
+    ...     comments = Attribute('List of comments about this object.')
+
     >>> class IComment(Interface):
+    ...     target = Attribute('The object containing this comment.')
     ...     text = TextLine(title=u"Text", required=True)
 
-    >>> class ICookbook(Interface):
+    >>> class ICookbook(ICommentTarget):
     ...     name = TextLine(title=u"Name", required=True)
     ...     author = Object(schema=IAuthor)
     ...     recipes = Attribute("List of recipes published in this cookbook.")
-    ...     comments = Attribute("List of comments about this cookbook.")
-
-    >>> class ICookbookComment(IComment):
-    ...     cookbook = Object(schema=ICookbook)
 
     >>> class IDish(Interface):
     ...     name = TextLine(title=u"Name", required=True)
     ...     recipes = Attribute("List of recipes for this dish.")
 
-    >>> class IRecipe(Interface):
+    >>> class IRecipe(ICommentTarget):
     ...     id = Int(title=u"Unique ID", required=True)
     ...     dish = Object(schema=IDish)
     ...     cookbook = Object(schema=ICookbook)
     ...     instructions = Text(title=u"How to prepare the recipe.",
     ...         required=True)
-    ...     comments = Attribute("List of comments on the recipe.")
-
-    >>> class IRecipeComment(IComment):
-    ...     recipe = Object(schema=IRecipe)
 
 Here's the interface for the 'set' objects that manage the authors,
 cookbooks, and dishes. The inconsistent naming is intentional.
@@ -91,8 +87,10 @@ Here are simple implementations of IAuthor, ICookbook, IDish, and IRecipe.
 
     >>> class Comment(object):
     ...     implements(IComment)
-    ...     def __init__(self, text):
+    ...     def __init__(self, target, text):
+    ...         self.target = target
     ...         self.text = text
+    ...         self.target.comments.append(self)
     >>> protect_schema(Comment, IComment, write_permission=CheckerPublic)
 
     >>> class Cookbook:
@@ -103,15 +101,6 @@ Here are simple implementations of IAuthor, ICookbook, IDish, and IRecipe.
     ...         self.recipes = []
     ...         self.comments = []
     >>> protect_schema(Cookbook, ICookbook, write_permission=CheckerPublic)
-
-    >>> class CookbookComment(Comment):
-    ...     implements(ICookbookComment)
-    ...     def __init__(self, text, cookbook):
-    ...         super(CookbookComment, self).__init__(text)
-    ...         self.cookbook = cookbook
-    ...         cookbook.comments.append(self)
-    >>> protect_schema(
-    ...     CookbookComment, ICookbookComment, write_permission=CheckerPublic)
 
     >>> class Dish:
     ...     implements(IDish)
@@ -131,15 +120,6 @@ Here are simple implementations of IAuthor, ICookbook, IDish, and IRecipe.
     ...         self.instructions = instructions
     ...         self.comments = []
     >>> protect_schema(Recipe, IRecipe, write_permission=CheckerPublic)
-
-    >>> class RecipeComment(Comment):
-    ...     implements(IRecipeComment)
-    ...     def __init__(self, text, recipe):
-    ...         super(RecipeComment, self).__init__(text)
-    ...         self.recipe = recipe
-    ...         recipe.comments.append(self)
-    >>> protect_schema(
-    ...     RecipeComment, IRecipeComment, write_permission=CheckerPublic)
 
 Here are the "model objects" themselves:
 
@@ -163,8 +143,8 @@ Here are the "model objects" themselves:
     >>> D3 = Dish("Foies de voilaille en aspic")
     >>> C1_D3 = Recipe(6, C1, D3, "Chicken livers sauteed in butter...")
 
-    >>> COM1 = RecipeComment("Clear and concise.", C2_D1)
-    >>> COM2 = CookbookComment("A kitchen staple.", C2)
+    >>> COM1 = Comment(C2_D1, "Clear and concise.")
+    >>> COM2 = Comment(C2, "A kitchen staple.")
 
 Here's a simple CookbookSet with a predefined list of cookbooks.
 
@@ -337,27 +317,15 @@ The canonical URLs for these components:
     ...     path = 'authors'
     >>> provideAdapter(AuthorSetUrlData, [IAuthorSet], ICanonicalUrlData)
 
-    >>> class CookbookCommentUrlData(BaseUrlData):
+    >>> class CommentUrlData(BaseUrlData):
     ...     @property
     ...     def path(self):
     ...         return "comments/%d" % (
-    ...             self.context.cookbook.comments.index(self.context)+1)
+    ...             self.context.target.comments.index(self.context)+1)
     ...     @property
     ...     def inside(self):
-    ...         return self.context.cookbook
-    >>> provideAdapter(
-    ...     CookbookCommentUrlData, [ICookbookComment], ICanonicalUrlData)
-
-    >>> class RecipeCommentUrlData(BaseUrlData):
-    ...     @property
-    ...     def path(self):
-    ...         return "comments/%d" % (
-    ...             self.context.recipe.comments.index(self.context)+1)
-    ...     @property
-    ...     def inside(self):
-    ...         return self.context.recipe
-    >>> provideAdapter(
-    ...     RecipeCommentUrlData, [IRecipeComment], ICanonicalUrlData)
+    ...         return self.context.target
+    >>> provideAdapter(CommentUrlData, [Comment], ICanonicalUrlData)
 
 
 == Defining the resources ==
