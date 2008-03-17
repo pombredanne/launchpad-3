@@ -15,6 +15,8 @@ from canonical.launchpad.webapp import canonical_url
 
 def send_merge_proposal_created_notifications(merge_proposal, event):
     """Notify branch subscribers when merge proposals are created."""
+    if event.user is None:
+        return
     BMPMailer.forCreation(merge_proposal, event.user).sendAll()
 
 
