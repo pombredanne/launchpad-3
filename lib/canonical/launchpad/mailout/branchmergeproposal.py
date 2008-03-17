@@ -66,7 +66,7 @@ class BMPMailer:
             come from.
         """
         recipients = merge_proposal.getCreationNotificationRecipients(
-            CodeReviewNotificationLevel.FULL)
+            CodeReviewNotificationLevel.STATUS)
         assert from_user.preferredemail is not None, (
             'The sender must have an email address.')
         from_address = format_address(
