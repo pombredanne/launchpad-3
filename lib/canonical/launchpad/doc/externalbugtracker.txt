@@ -9,28 +9,22 @@ ExternalBugTracker instances.
 All the ExternalBugTrackers know how to update the status of a bug
 watch. The method that updates the bug watches is
 BugWatchUpdater.updateBugWatches(), which expects an IExternalBugTracker
-and the bug watches to update. Before updating the bug watches, the
-initializeRemoteBugDB() method on the ExternalBugTracker is called. It
-gets the information for the bug watches from the external bug tracker,
-and it's called outside a DB transaction, since it doesn't need DB
-access.
+and the bug watches to update.
 
-    >>> from canonical.launchpad.interfaces import BugTaskStatus
-    >>> from canonical.launchpad.components.externalbugtracker import (
-    ...     UnknownRemoteStatusError)
-    >>> class FakeExternalBugTracker:
-    ...     baseurl = 'http://example.com/'
-    ...     batch_size = None
-    ...     batch_query_threshold = 0
-    ...     import_comments = False
+
+=== Initializing ===
+
+Before updating the bug watches, the initializeRemoteBugDB() method on
+the ExternalBugTracker is called. It gets the information for the bug
+watches from the external bug tracker, and it's called outside a DB
+transaction, since it doesn't need DB access.
+
+    >>> from canonical.launchpad.ftests.externalbugtracker import (
+    ...     TestExternalBugTracker)
+    >>> class InitializingExternalBugTracker(TestExternalBugTracker):
     ...
     ...     def initializeRemoteBugDB(self, remote_bug_ids):
     ...         print "initializeRemoteBugDB() called"
-    ...     def convertRemoteStatus(self, remote_status):
-    ...         if remote_status == 'new':
-    ...             return BugTaskStatus.NEW
-    ...         else:
-    ...             raise UnknownRemoteStatusError()
 
     >>> class FakeTransaction:
     ...     """Transaction class to track transaction boundaries."""
@@ -43,10 +37,14 @@ access.
 
     >>> from canonical.launchpad.scripts.checkwatches import BugWatchUpdater
     >>> bug_watch_updater = BugWatchUpdater(FakeTransaction())
-    >>> bug_watch_updater.updateBugWatches(FakeExternalBugTracker(), [])
+    >>> bug_watch_updater.updateBugWatches(
+    ...     InitializingExternalBugTracker(), [])
     COMMIT
     initializeRemoteBugDB() called
     BEGIN
+
+
+=== Converting statuses ===
 
 Once it has retrieved the bugs from the remote server, BugWatchUpdater
 attempts to convert their statuses into Launchpad BugTaskStatuses by
@@ -55,17 +53,29 @@ its own _convertRemoteStatus() method.
 
 ExternalBugTracker.convertRemoteStatus() will either return a
 BugTaskStatus or will raise an UnknownRemoteStatusError.
+
+    >>> from canonical.launchpad.interfaces import BugTaskStatus
+    >>> from canonical.launchpad.components.externalbugtracker import (
+    ...     UnknownRemoteStatusError)
+    >>> class StatusConvertingExternalBugTracker(TestExternalBugTracker):
+    ...
+    ...     def convertRemoteStatus(self, remote_status):
+    ...         if remote_status == 'new':
+    ...             return BugTaskStatus.NEW
+    ...         else:
+    ...             raise UnknownRemoteStatusError()
+
 BugWatchUpdater._convertRemoteStatus() will handle these errors and will
 return BugTaskStatus.UNKNOWN when they occur. It will also log a
 warning.
 
     >>> status = bug_watch_updater._convertRemoteStatus(
-    ...     FakeExternalBugTracker(), 'new')
+    ...     StatusConvertingExternalBugTracker(), 'new')
     >>> print status.title
     New
 
     >>> status = bug_watch_updater._convertRemoteStatus(
-    ...     FakeExternalBugTracker(), 'spam')
+    ...     StatusConvertingExternalBugTracker(), 'spam')
     WARNING...Unknown remote status 'spam'.
     >>> print status.title
     Unknown

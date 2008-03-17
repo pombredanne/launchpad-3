@@ -21,7 +21,8 @@ from canonical.launchpad.components.externalbugtracker import (
     DebBugs, Mantis, Trac, Roundup, RequestTracker, SourceForge)
 from canonical.launchpad.ftests import login, logout
 from canonical.launchpad.interfaces import (
-    BugTaskStatus, UNKNOWN_REMOTE_STATUS)
+    BugTaskImportance, BugTaskStatus, UNKNOWN_REMOTE_IMPORTANCE,
+    UNKNOWN_REMOTE_STATUS)
 from canonical.launchpad.database import BugTracker
 from canonical.launchpad.interfaces import IBugTrackerSet, IPersonSet
 from canonical.launchpad.scripts import checkwatches, debbugs
@@ -160,12 +161,27 @@ class TestExternalBugTracker(ExternalBugTracker):
     implementation, though it doesn't actually do anything.
     """
 
+    def __init__(self, baseurl='http://example.com/'):
+        super(TestExternalBugTracker, self).__init__(baseurl)
+
     def convertRemoteStatus(self, remote_status):
         """Always return UNKNOWN_REMOTE_STATUS.
 
         This method exists to satisfy the implementation requirements of
         `IExternalBugTracker`.
         """
+        return BugTaskStatus.UNKNOWN
+
+    def getRemoteImportance(self, bug_id):
+        """Stub implementation."""
+        return UNKNOWN_REMOTE_IMPORTANCE
+
+    def convertRemoteImportance(self, remote_importance):
+        """Stub implementation."""
+        return BugTaskImportance.UNKNOWN
+
+    def getRemoteStatus(self, bug_id):
+        """Stub implementation."""
         return UNKNOWN_REMOTE_STATUS
 
 
