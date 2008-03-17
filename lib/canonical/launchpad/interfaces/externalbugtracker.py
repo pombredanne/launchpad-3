@@ -27,6 +27,13 @@ UNKNOWN_REMOTE_IMPORTANCE = 'UNKNOWN'
 class IExternalBugTracker(Interface):
     """A class used to talk with an external bug tracker."""
 
+    def getCurrentDBTime():
+        """Return the current time of the bug tracker's DB server.
+
+        The local time should be returned, as a timezone-aware datetime
+        instance.
+        """
+
     def getModifiedRemoteBugs(remote_bug_ids, utc_now):
         """Return the bug ids that have been modified.
 
