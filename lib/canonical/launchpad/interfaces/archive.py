@@ -56,8 +56,8 @@ class IArchive(IHasOwner):
         title=_("Private"), required=False,
         description=_("Whether the PPA is private to the owner or not."))
 
-    require_virtualised = Bool(
-        title=_("Require Virtualised Builder"), required=False,
+    require_virtualized = Bool(
+        title=_("Require Virtualized Builder"), required=False,
         description=_("Whether this archive requires its packages to be "
                       "built on a virtual builder."))
 

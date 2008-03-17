@@ -55,8 +55,8 @@ class Archive(SQLBase):
 
     private = BoolCol(dbName='private', notNull=True, default=False)
 
-    require_virtualised = BoolCol(
-        dbName='require_virtualised', notNull=True, default=True)
+    require_virtualized = BoolCol(
+        dbName='require_virtualized', notNull=True, default=True)
 
     authorized_size = IntCol(
         dbName='authorized_size', notNull=False, default=1024)

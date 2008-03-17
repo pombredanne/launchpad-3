@@ -63,7 +63,7 @@ class IBuild(Interface):
         "Emulates a buildstart timestamp by calculating it from "
         "datebuilt - buildduration.")
 
-    is_virtualised = Attribute(
+    is_virtualized = Attribute(
         "Whether or not this build requires a virtual build host or not.")
 
     package_upload = Attribute(

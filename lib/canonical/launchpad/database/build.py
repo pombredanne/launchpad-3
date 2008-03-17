@@ -115,9 +115,9 @@ class Build(SQLBase):
         return self.distroarchseries.distroseries.distribution
 
     @property
-    def is_virtualised(self):
+    def is_virtualized(self):
         """See `IBuild`"""
-        return self.archive.require_virtualised
+        return self.archive.require_virtualized
 
     @property
     def title(self):

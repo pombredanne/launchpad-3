@@ -65,7 +65,7 @@ class IBuilder(IHasOwner):
     description for entity identification and browsing purposes; an LP-like
     owner which has unrestricted access to the instance; the build slave
     machine status representation, including the field/properties:
-    virtualised, builderok, status, failnotes and currentjob.
+    virtualized, builderok, status, failnotes and currentjob.
     """
     id = Attribute("Builder identifier")
     processor = Choice(
@@ -98,7 +98,7 @@ class IBuilder(IHasOwner):
                       'paragraphs of text, giving the highlights and '
                       'details.'))
 
-    virtualised = Bool(
+    virtualized = Bool(
         title=_('Virtualised'), required=True,
         description=_('Whether or not the builder is a virtual Xen '
                       'instance.'))
@@ -277,7 +277,7 @@ class IBuilderSet(Interface):
         """Retrieve a builder by name"""
 
     def new(processor, url, name, title, description, owner,
-            virtualised=True):
+            virtualized=True):
         """Create a new Builder entry."""
 
     def count():

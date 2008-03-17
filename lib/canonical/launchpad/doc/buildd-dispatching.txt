@@ -81,7 +81,7 @@ Check if there are builders available:
     >>> bob_builder = builder_set['bob']
     >>> bob_builder.name
     u'bob'
-    >>> bob_builder.virtualised
+    >>> bob_builder.virtualized
     False
     >>> bob_builder.is_available
     True
@@ -114,7 +114,7 @@ The single BuildQueue found is a non-virtual pending build:
     True
     >>> job.buildstart is None
     True
-    >>> job.is_virtualised
+    >>> job.is_virtualized
     False
 
 Update the SourcePackageReleaseFile corresponding to this job:
@@ -173,14 +173,14 @@ Create BuildQueue record and inspect some parameters:
     True
     >>> ppa_job.buildstart == None
     True
-    >>> ppa_job.is_virtualised
+    >>> ppa_job.is_virtualized
     True
 
 In order to enable 'bob' to find and build the PPA job, we have to
-change it to virtualised.  This is because PPA builds will only build
-on virtualised builders.
+change it to virtualized.  This is because PPA builds will only build
+on virtualized builders.
 
-    >>> bob_builder.virtualised = True
+    >>> bob_builder.virtualized = True
     >>> bob_builder.vm_host = 'localhost.ppa'
     >>> flush_database_updates()
 
@@ -196,7 +196,7 @@ Before dispatching we can check if the builder is protected against
 mistakes in code that results in a attempt to build a virtual job in
 a non-virtual build.
 
-    >>> bob_builder.virtualised = False
+    >>> bob_builder.virtualized = False
     >>> flush_database_updates()
     >>> bob_builder.dispatchBuildCandidate(ppa_job)
     Traceback (most recent call last):
@@ -206,7 +206,7 @@ a non-virtual build.
 Mark the builder as virtual again, so we can dispatch the ppa job
 successfully.
 
-    >>> bob_builder.virtualised = True
+    >>> bob_builder.virtualized = True
     >>> flush_database_updates()
 
     >>> bob_builder.dispatchBuildCandidate(ppa_job)
@@ -229,7 +229,7 @@ environment is back to the initial state.
 
     >>> ppa_job.build.buildstate = BuildStatus.FAILEDTOBUILD
     >>> ppa_job.destroySelf()
-    >>> bob_builder.virtualised = False
+    >>> bob_builder.virtualized = False
     >>> flush_database_updates()
 
 
@@ -256,7 +256,7 @@ Create BuildQueue record and inspect some parameters:
     None
     >>> print sec_job.buildstart
     None
-    >>> sec_job.is_virtualised
+    >>> sec_job.is_virtualized
     False
 
 In normal conditions the next available candidate would be the job

@@ -59,7 +59,7 @@
             <td>
               <span tal:replace="builder/processor/name">i386</span>
               <tal:hardened
-                 condition="builder/virtualised">&nbsp;Virtual</tal:hardened>
+                 condition="builder/virtualized">&nbsp;Virtual</tal:hardened>
             </td>
             <td>
               <a tal:replace="structure builder/owner/fmt:link" />
