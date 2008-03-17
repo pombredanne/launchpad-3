@@ -14,4 +14,4 @@ WHERE id IN (
     AND branch.branch_type = 1
 );
 
-INSERT INTO LaunchpadDatabaseRevision VALUES (88, 99, 0);
+INSERT INTO LaunchpadDatabaseRevision VALUES (121, 14, 0);
