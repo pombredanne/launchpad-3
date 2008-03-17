@@ -199,7 +199,6 @@ watches, the getModifiedRemoteBugs() method won't be called.
     getRemoteStatus() called: u'3'
     getRemoteStatus() called: u'4'
 
-
 If the bug watches have the lastchecked attribute set, they will be
 passed to getModifiedRemoteBugs(). Only the bugs that have been modified
 will then be passed on to initializeRemoteBugDB().
@@ -224,7 +223,7 @@ will then be passed on to initializeRemoteBugDB().
     getRemoteStatus() called: u'1'
     getRemoteStatus() called: u'4'
 
-The bug watches that were deemed as not being modified were still marked
+The bug watches that are deemed as not being modified are still marked
 as being checked.
 
     >>> bug_watches = [
