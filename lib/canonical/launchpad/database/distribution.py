@@ -756,6 +756,7 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
             clauseTables=['SourcePackagePublishingHistory', 'DistroSeries',
                 'SourcePackageRelease']))
 
+        # XXX cprov 20080317: I'm not sure why we need to commit that often.
         # Now update, committing every 50 packages.
         counter = 0
         for spn in spns:

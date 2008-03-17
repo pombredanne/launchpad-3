@@ -57,6 +57,9 @@ class PackageCacheUpdater(LaunchpadCronScript):
             archive=archive, ztm=self.txn, log=self.logger)
         self.txn.commit()
 
+        # Only PPAs package counters are cached in the Archive records,
+        # PRIMARY and PARTNER counter are already stored in DistroSeries
+        # and DistroArchSeries records.
         if archive.purpose == ArchivePurpose.PPA:
             archive.updateArchiveCache()
             self.txn.commit()
