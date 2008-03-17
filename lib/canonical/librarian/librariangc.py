@@ -7,7 +7,6 @@ from datetime import datetime, timedelta
 import sys
 from time import time
 import os
-#import os.path
 
 from canonical.config import config
 from canonical.librarian.storage import _relFileLocation as relative_file_path
