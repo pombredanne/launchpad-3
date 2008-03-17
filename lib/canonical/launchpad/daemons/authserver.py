@@ -37,12 +37,12 @@ class AuthserverService(service.Service):
     def __init__(self, dbpool=None, port=config.authserver.port):
         """Construct an AuthserverService.
 
-        :param dbpool: An ADBAPI ConnectionPool to use for the authserver. If
-        None, one is constructed based on settings in the Launchpad
-        configuration.
+        :param dbpool: An ADBAPI ConnectionPool to use for the authserver.
+            If None, one is constructed based on settings in the Launchpad
+            configuration.
 
-        :param port: The port to run the server on, in Twisted strports format.
-        Defaults to config.authserver.port.
+        :param port: The port to run the server on, in Twisted
+            strports format. Defaults to config.authserver.port.
         """
         if dbpool is None:
             self.dbpool = self._makeConnectionPool()
@@ -54,13 +54,13 @@ class AuthserverService(service.Service):
         """Construct a ConnectionPool from the database settings in the
         Launchpad config.
         """
-        if config.dbhost is None:
+        if config.database.dbhost is None:
             dbhost = ''
         else:
-            dbhost = 'host=' + config.dbhost
+            dbhost = 'host=' + config.database.dbhost
         dbpool = ConnectionPool(
             'psycopg', 'dbname=%s %s user=%s' % (
-                config.dbname, dbhost, config.authserver.dbuser),
+                config.database.dbname, dbhost, config.authserver.dbuser),
             cp_reconnect=True)
         return dbpool
 
@@ -81,8 +81,8 @@ class AuthserverService(service.Service):
                                     debug=debug)
         v2API = UserDetailsResourceV2(DatabaseUserDetailsStorageV2(dbpool),
                                       debug=debug)
-        branchAPI = BranchDetailsResource(DatabaseBranchDetailsStorage(dbpool),
-                                          debug=debug)
+        branchAPI = BranchDetailsResource(
+            DatabaseBranchDetailsStorage(dbpool), debug=debug)
         return self.buildTree(v1API, v2API, branchAPI)
 
     def startService(self):

@@ -3,6 +3,7 @@
 # This module uses relative imports.
 # pylint: disable-msg=W0403
 
+
 """
 Gina launcher script. Handles commandline options and makes the proper
 calls to the other classes and instances.
@@ -13,7 +14,9 @@ The callstack is essentially:
                 -> import_binarypackages -> do_one_binarypackage
 """
 
+
 __metaclass__ = type
+
 
 # Set to non-zero if you'd like to be warned every so often
 COUNTDOWN = 0
@@ -127,8 +130,8 @@ def run_gina(options, ztm, target_section):
 
     dry_run = options.dry_run
 
-    LPDB = config.dbname
-    LPDB_HOST = config.dbhost
+    LPDB = config.database.dbname
+    LPDB_HOST = config.database.dbhost
     LPDB_USER = config.gina.dbuser
     KTDB = target_section.katie_dbname
 
