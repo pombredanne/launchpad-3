@@ -120,7 +120,7 @@ def report_warning(message, properties=None, info=None):
 class BugWatchUpdater(object):
     """Takes responsibility for updating remote bug watches."""
 
-    ACCEPTABLE_TIME_SKEW = timedelta(minutes=2)
+    ACCEPTABLE_TIME_SKEW = timedelta(minutes=10)
 
     def __init__(self, txn, log=None):
         if log is None:
