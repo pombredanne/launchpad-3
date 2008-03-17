@@ -153,18 +153,12 @@ class TranslationMessage(SQLBase, TranslationMessageMixIn):
     assert TranslationConstants.MAX_PLURAL_FORMS == 6, (
         "Change this code to support %d plural forms."
         % TranslationConstants.MAX_PLURAL_FORMS)
-    msgstr0 = ForeignKey(
-        foreignKey='POTranslation', dbName='msgstr0', notNull=True)
-    msgstr1 = ForeignKey(
-        foreignKey='POTranslation', dbName='msgstr1', notNull=True)
-    msgstr2 = ForeignKey(
-        foreignKey='POTranslation', dbName='msgstr2', notNull=True)
-    msgstr3 = ForeignKey(
-        foreignKey='POTranslation', dbName='msgstr3', notNull=True)
-    msgstr4 = ForeignKey(
-        foreignKey='POTranslation', dbName='msgstr4', notNull=True)
-    msgstr5 = ForeignKey(
-        foreignKey='POTranslation', dbName='msgstr5', notNull=True)
+    msgstr0 = ForeignKey(foreignKey='POTranslation', dbName='msgstr0')
+    msgstr1 = ForeignKey(foreignKey='POTranslation', dbName='msgstr1')
+    msgstr2 = ForeignKey(foreignKey='POTranslation', dbName='msgstr2')
+    msgstr3 = ForeignKey(foreignKey='POTranslation', dbName='msgstr3')
+    msgstr4 = ForeignKey(foreignKey='POTranslation', dbName='msgstr4')
+    msgstr5 = ForeignKey(foreignKey='POTranslation', dbName='msgstr5')
 
     comment = StringCol(
         dbName='comment', notNull=False, default=None)
