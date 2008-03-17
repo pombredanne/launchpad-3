@@ -20,8 +20,8 @@ from canonical.librarian import web as fatweb
 # Connect to database
 initZopeless(
     dbuser=config.librarian.dbuser,
-    dbhost=config.dbhost,
-    dbname=config.dbname,
+    dbhost=config.database.dbhost,
+    dbname=config.database.dbname,
     implicitBegin=False
     )
 

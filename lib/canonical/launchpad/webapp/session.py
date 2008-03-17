@@ -42,7 +42,7 @@ class LaunchpadCookieClientIdManager(CookieClientIdManager):
 
     def __init__(self):
         CookieClientIdManager.__init__(self)
-        self.namespace = config.launchpad.session.cookie
+        self.namespace = config.launchpad_session.cookie
         # Set the cookie life time to something big.
         # It should be larger than our session expiry time.
         self.cookieLifetime = 1 * YEARS
