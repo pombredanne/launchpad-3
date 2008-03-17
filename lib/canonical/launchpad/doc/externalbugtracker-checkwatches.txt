@@ -53,4 +53,4 @@ get_external_bugtracker supports five external bug tracker types:
     Roundup --> <canonical...base.Roundup ...>
     Request Tracker (RT) --> <canonical...base.RequestTracker ...>
     SourceForge --> <canonical...base.SourceForge ...>
-    Trac --> <canonical...base.Trac ...>
+    Trac --> <canonical...trac.Trac ...>
