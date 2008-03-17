@@ -1351,7 +1351,7 @@ COMMENT ON COLUMN Build.build_warnings IS 'Warnings and diagnosis messages provi
 COMMENT ON TABLE Builder IS 'Builder: This table stores the build-slave registry and status information as: name, url, trusted, builderok, builderaction, failnotes.';
 COMMENT ON COLUMN Builder.builderok IS 'Should a builder fail for any reason, from out-of-disk-space to not responding to the buildd master, the builderok flag is set to false and the failnotes column is filled with a reason.';
 COMMENT ON COLUMN Builder.failnotes IS 'This column gets filled out with a textual description of how/why a builder has failed. If the builderok column is true then the value in this column is irrelevant and should be treated as NULL or empty.';
-COMMENT ON COLUMN Builder.trusted IS 'Whether or not the builder is able to build only trusted or untrusted packages. Packages coming via ubuntu workflow are trusted and do not need facist behaviour to be built. Other packages like ppa/grumpy incoming packages can contain malicious code, so are unstrusted. Building these packages will require isolated environment (xen-based builder) and extra network access restrictions.';
+COMMENT ON COLUMN Builder.virtualized IS 'Whether or not the builder is a virtual Xen builder. Packages coming via ubuntu workflow are trusted to build on non-Xen and do not need facist behaviour to be built. Other packages like ppa/grumpy incoming packages can contain malicious code, so are unstrusted and build in a Xen virtual machine.';
 COMMENT ON COLUMN Builder.url IS 'The url to the build slave. There may be more than one build slave on a given host so this url includes the port number to use. The default port number for a build slave is 8221';
 COMMENT ON COLUMN Builder.manual IS 'Whether or not builder was manual mode, i.e., collect any result from the it, but do not dispach anything to it automatically.';
 COMMENT ON COLUMN Builder.vm_host IS 'The virtual machine host associated to this builder. It should be empty for "native" builders (old fashion or architectures not yet supported by XEN).';
@@ -1675,6 +1675,7 @@ COMMENT ON COLUMN Archive.private IS 'Whether or not the archive is private. Thi
 COMMENT ON COLUMN Archive.package_description_cache IS 'Text blob containing all source and binary names and descriptions concatenated. Used to to build the tsearch indexes on this table.';
 COMMENT ON COLUMN Archive.sources_cached IS 'Number of sources already cached for this archive.';
 COMMENT ON COLUMN Archive.binaries_cached IS 'Number of binaries already cached for this archive.';
+COMMENT ON COLUMN Archive.require_virtualized IS 'Whether this archive has binaries that should be built on a virtual machine, e.g. PPAs';
 
 
 -- ArchiveDependency

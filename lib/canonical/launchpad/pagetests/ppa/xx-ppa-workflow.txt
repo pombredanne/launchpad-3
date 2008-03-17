@@ -284,12 +284,15 @@ The administration procedure allows us to:
  * Enable/Disable: disabled PPA that won't accept uploads (not
    implemented yet)
  * Make the PPA private or public.
+ * Set whether the archive should be built on a virtualized machine.
  * Set a maximum disk size: uploads will be rejected if the resulting
    PPA size is exceeding the authorized size. (not implemented yet)
  * Edit the whiteboard: to communicate & record administration decisions.
 
     >>> admin_browser.getControl(name="field.enabled").value = False
     >>> admin_browser.getControl(name="field.private").value = True
+    >>> admin_browser.getControl(
+    ...     name="field.require_virtualized").value = True
     >>> admin_browser.getControl(name="field.authorized_size").value = '1'
     >>> admin_browser.getControl(name="field.whiteboard").value = (
     ...    'Here lives a lazy community.')
