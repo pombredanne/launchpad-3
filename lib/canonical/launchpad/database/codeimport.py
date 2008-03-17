@@ -29,6 +29,7 @@ from canonical.launchpad.interfaces import (
     BranchCreationException, BranchType, CodeImportReviewStatus, IBranchSet,
     ICodeImport, ICodeImportEventSet, ICodeImportSet,
     ILaunchpadCelebrities, NotFoundError, RevisionControlSystems)
+from canonical.launchpad.mailout.codeimport import code_import_status_updated
 from canonical.launchpad.validators.person import public_person_validator
 
 
@@ -90,6 +91,24 @@ class CodeImport(SQLBase):
         return timedelta(seconds=seconds)
 
     import_job = SingleJoin('CodeImportJob', joinColumn='code_importID')
+
+    def approve(self, data, user):
+        """See `ICodeImport`."""
+        self._setStatusAndEmail(data, user, CodeImportReviewStatus.REVIEWED)
+
+    def suspend(self, data, user):
+        """See `ICodeImport`."""
+        self._setStatusAndEmail(data, user, CodeImportReviewStatus.SUSPENDED)
+
+    def invalidate(self, data, user):
+        """See `ICodeImport`."""
+        self._setStatusAndEmail(data, user, CodeImportReviewStatus.INVALID)
+
+    def _setStatusAndEmail(self, data, user, status):
+        """Update the review_status and email interested parties."""
+        data['review_status'] = status
+        self.updateFromData(data, user)
+        code_import_status_updated(self, user)
 
     def updateFromData(self, data, user):
         """See `ICodeImport`."""
