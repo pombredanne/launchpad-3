@@ -261,15 +261,18 @@ class TestPullerMasterProtocol(TrialTestCase):
 
     def test_processTermination(self):
         """The protocol fires a Deferred when it is terminated."""
+        # XXX! should be a ProcessMonitorProtocol test!
+        self.protocol.do_mirrorSucceeded(1)
         self.protocol.processEnded(failure.Failure(error.ProcessDone(None)))
         return self.termination_deferred
 
     def test_processTerminationCancelsTimeout(self):
         """When the process ends (for any reason) cancel the timeout."""
-        self.protocol._processTerminated(
+        self.protocol.processEnded(
             failure.Failure(error.ConnectionDone()))
         self.clock.advance(config.supermirror.worker_timeout * 2)
-        self.assertProtocolSuccess()
+        return self.assertFailure(
+            self.termination_deferred, error.ConnectionDone)
 
     def test_terminatesWithError(self):
         """When the child process terminates with an unexpected error, raise
@@ -633,6 +636,7 @@ class TestPullerMasterIntegration(BranchTestCase, TrialTestCase):
 
         check_lock_id_script = """
         branch.lock_write()
+        protocol.mirrorSucceeded('a', 'b')
         protocol.sendEvent(
             'lock_id', branch.control_files._lock.peek()['user'])
         sys.stdout.flush()

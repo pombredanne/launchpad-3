@@ -73,34 +73,29 @@ class BranchStatusClient:
             'recordSuccess', name, hostname, started_tuple, completed_tuple)
 
 
-class MonitorProtocol(ProcessProtocol, TimeoutMixin):
+class ProcessMonitorProtocol(ProcessProtocol):
+    """XXX."""
 
-    def __init__(self, deferred, monitor, clock=None):
+    def __init__(self, deferred, clock=None):
         """Construct an instance of the protocol, for listening to a worker.
 
+        :param deferred: A Deferred that will be fired when the worker has
+            finished (either successfully or unsuccesfully).
         :param clock: A provider of Twisted's IReactorTime.  This parameter
             exists to allow testing that does not depend on an external clock.
             If a clock is not passed in explicitly the reactor is used.
-        :param deferred: A Deferred that will be fired when the worker has
-            finished (either successfully or unsuccesfully).
         """
         self.deferred = deferred
-        self.monitor = monitor
         if clock is None:
             clock = reactor
         self.clock = clock
-        self.notification_deferred = defer.succeed(None)
+        self.notification_lock = defer.DeferredLock()
+        self._sigkill_delayed_call = None
         self._termination_failure = None
 
-    def sendEvent(self, method_name, *args):
-        method = getattr(self.monitor, method_name, None)
-        if method is None:
-            self.unexpectedError(failure.Failure(BadMessage(method_name)))
-        def actually_send_event(ignored):
-            d = defer.maybeDeferred(method, *args))
-            d.addErrback(self.unexpectedError)
-            return d
-        self.notification_deferred.addCallback(actually_send_event)
+    def runNotification(self, func, *args):
+        d = self.notification_lock.run(func, *args)
+        return d.addErrback(self.unexpectedError)
 
     def unexpectedError(self, failure):
         """
@@ -142,8 +137,8 @@ class MonitorProtocol(ProcessProtocol, TimeoutMixin):
         if self._termination_failure is not None:
             reason = self._termination_failure
 
-        def cb(ignored):
-            if reason.check(error.ProcessEnded):
+        def fire_final_deferred():
+            if reason.check(error.ProcessDone):
                 # self._termination_failure will have been set if a
                 # notification that was pending when processEnded was
                 # called failed, or None otherwise.
@@ -151,11 +146,11 @@ class MonitorProtocol(ProcessProtocol, TimeoutMixin):
             else:
                 self.deferred.errback(reason)
 
-        self.notifications_deferred.addCallback(cb)
+        self.notification_lock.run(fire_final_deferred)
 
 
-
-class PullerMasterProtocol(ProcessProtocol, NetstringReceiver, TimeoutMixin):
+class PullerMasterProtocol(ProcessMonitorProtocol, NetstringReceiver,
+                           TimeoutMixin):
     """The protocol for receiving events from the puller worker."""
 
     def __init__(self, deferred, listener, clock=None):
@@ -169,28 +164,11 @@ class PullerMasterProtocol(ProcessProtocol, NetstringReceiver, TimeoutMixin):
             exists to allow testing that does not depend on an external clock.
             If a clock is not passed in explicitly the reactor is used.
         """
-        # This Deferred is created when branch mirroring starts and is fired
-        # when it finishes (successfully or otherwise). Once this deferred is
-        # created, the termination deferred will not be fired unless
-        # _branch_mirror_complete_deferred is fired first.
-        self._branch_mirror_complete_deferred = None
         # If the subprocess terminates before it tells us whether the
         # mirroring succeeded or failed, we assume it failed.  That means we
         # have to record whether the subprocess has told us such or not...
+        ProcessMonitorProtocol.__init__(self, deferred, clock)
         self.reported_mirror_finished = False
-        # This Deferred is fired only when the child process has terminated
-        # *and* any other operations have completed.
-        self._termination_deferred = deferred
-        # When an unexpected error occurs, we terminate the subprocess which
-        # will cause processEnded to be called with a ProcessTerminated
-        # failure -- which isn't very interesting, we want to report to the
-        # listener _why_ we killed the process so we store that here.
-        self._termination_failure = None
-        # When we SIGINT the process, we schedule a call to SIGKILL it a few
-        # seconds later, to be sure it exits, but we want to be able to cancel
-        # the call if the SIGINT does indeed kill the process so we stash it
-        # here.
-        self._sigkill_delayed_call = None
         self.listener = listener
         self._resetState()
         self._stderr = StringIO()
@@ -198,32 +176,32 @@ class PullerMasterProtocol(ProcessProtocol, NetstringReceiver, TimeoutMixin):
             clock = reactor
         self.clock = clock
 
-    def _processTerminated(self, reason):
-        self.setTimeout(None)
-        if self._termination_deferred is None:
-            # We have already fired the deferred and do not want to do so
-            # again.
-            return
-        # Make sure we won't fire the Deferred twice
-        deferred = self._termination_deferred
-        self._termination_deferred = None
-        if self._branch_mirror_complete_deferred is not None:
-            # If we've started mirroring the branch, wait for that to finish
-            # before firing the termination deferred.
-            self._branch_mirror_complete_deferred.addCallback(
-                self._fireTerminationDeferred, deferred, reason)
-            self._branch_mirror_complete_deferred.addErrback(deferred.errback)
-        else:
-            # Otherwise, just fire it.
-            self._fireTerminationDeferred(None, deferred, reason)
+        self.deferred.addBoth(self.checkReportingFinished)
 
-    def _fireTerminationDeferred(self, ignored, deferred, reason):
-        if reason.check(error.ConnectionDone):
-            deferred.callback(None)
+    def checkReportingFinished(self, reason):
+        if not self.reported_mirror_finished:
+            # If the process finished before reporting, this is a failure.  If
+            # there was any output on stderr, it was probably a traceback and
+            # so we use the last line of it as the reason for failing.
+            error = self._stderr.getvalue()
+            if isinstance(reason, failure.Failure):
+                reason.error = error
+            if error:
+                errorline = error.splitlines()[-1]
+            elif isinstance(reason, failure.Failure):
+                errorline = str(reason.value)
+            else:
+                errorline = ('Process exited successfully without reporting '
+                             'success or failure?')
+                reason = failure.Failure(AssertionError(errorline))
+            d = defer.maybeDeferred(
+                self.listener.mirrorFailed, errorline, None)
+            return d.addBoth(lambda result: reason)
         else:
-            reason.error = self._stderr.getvalue()
-            self._stderr.truncate(0)
-            deferred.errback(reason)
+            return reason
+
+    def reportMirrorFinished(self, ignored):
+        self.reported_mirror_finished = True
 
     def _resetState(self):
         self._current_command = None
@@ -272,21 +250,23 @@ class PullerMasterProtocol(ProcessProtocol, NetstringReceiver, TimeoutMixin):
 
     def do_startMirroring(self):
         self.resetTimeout()
-        self._branch_mirror_complete_deferred = defer.maybeDeferred(
-            self.listener.startMirroring)
-        self._branch_mirror_complete_deferred.addErrback(self.unexpectedError)
+        self.runNotification(self.listener.startMirroring)
 
     def do_mirrorSucceeded(self, latest_revision):
-        self.reported_mirror_finished = True
-        def mirrorSucceeded(ignored):
-            return self.listener.mirrorSucceeded(latest_revision)
-        self._branch_mirror_complete_deferred.addCallback(mirrorSucceeded)
+        def mirrorSucceeded():
+            d = defer.maybeDeferred(
+                self.listener.mirrorSucceeded, latest_revision)
+            d.addCallback(self.reportMirrorFinished)
+            return d
+        self.runNotification(mirrorSucceeded)
 
     def do_mirrorFailed(self, reason, oops):
-        self.reported_mirror_finished = True
-        def mirrorFailed(ignored):
-            return self.listener.mirrorFailed(reason, oops)
-        self._branch_mirror_complete_deferred.addCallback(mirrorFailed)
+        def mirrorFailed():
+            d = defer.maybeDeferred(
+                self.listener.mirrorFailed, reason, oops)
+            d.addCallback(self.reportMirrorFinished)
+            return d
+        self.runNotification(mirrorFailed)
 
     def do_progressMade(self):
         """Any progress resets the timout counter."""
@@ -303,68 +283,14 @@ class PullerMasterProtocol(ProcessProtocol, NetstringReceiver, TimeoutMixin):
         """
         self.unexpectedError(failure.Failure(TimeoutError()))
 
-    def unexpectedError(self, failure):
-        """Called when we receive malformed data, or on timeout.
-
-        Causes of malformed data could be the client not sending a netstring,
-        or sending an recognized command, or sending the wrong number of
-        arguments for a command etc.
-
-        Calling this method sends SIGINT to the child process, arranges to
-        SIGKILL the process in a few seconds if it doesn't exit and records
-        the failure for later use by processEnded().
-        """
-        self._termination_failure = failure
-        try:
-            self.transport.signalProcess('INT')
-            self._sigkill_delayed_call = self.clock.callLater(
-                5, self._sigkill)
-        except error.ProcessExitedAlready:
-            # The process has already died. Fine.
-            pass
-
-    def _sigkill(self):
-        """Send SIGKILL to the child process.
-
-        We rely on this killing the process, i.e. we assume that
-        processEnded() will be called soon after this.
-        """
-        self._sigkill_delayed_call = None
-        try:
-            self.transport.signalProcess('KILL')
-        except error.ProcessExitedAlready:
-            # The process has already died. Fine.
-            pass
-
     def processEnded(self, reason):
         """See `ProcessProtocol.processEnded`.
 
         Fires the termination deferred with reason or, if the process died
         because we killed it, why we killed it.
         """
-        ProcessProtocol.processEnded(self, reason)
-        if self._sigkill_delayed_call is not None:
-            self._sigkill_delayed_call.cancel()
-            self._sigkill_delayed_call = None
-        if self._termination_failure is not None:
-            reason = self._termination_failure
-        if self.reported_mirror_finished:
-            # If the subprocess already reported whether it succeeded or
-            # failed, we're done.
-            self._processTerminated(reason)
-        else:
-            # If the process finished before reporting, this is a failure.  If
-            # there was any output on stderr, it was probably a traceback and
-            # so we use the last line of it as the reason for failing.
-            error = self._stderr.getvalue()
-            if error:
-                error = error.splitlines()[-1]
-            else:
-                error = str(reason.value)
-            self.mirror_failed_deferred = defer.maybeDeferred(
-                self.listener.mirrorFailed, error, None)
-            self.mirror_failed_deferred.addBoth(
-                lambda ignored: self._processTerminated(reason))
+        self.setTimeout(None)
+        ProcessMonitorProtocol.processEnded(self, reason)
 
 
 class PullerMaster:
