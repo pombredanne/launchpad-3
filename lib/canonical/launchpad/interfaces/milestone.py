@@ -126,7 +126,7 @@ class IHasMilestones(Interface):
     """An interface for classes providing milestones."""
 
     milestones = Attribute(_(
-        "The visible milestones associated with this object, "
+        "The visible and active milestones associated with this object, "
         "ordered by date expected."))
 
     all_milestones = Attribute(_(

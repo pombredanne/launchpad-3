@@ -8,9 +8,13 @@ objects as resources through a web service.
 
 == Example model objects ==
 
-Here's the interface for a simple model object that contains a
-recipe. This is the kind of model object you'd find in any Zope
-application, with no special knowledge of web services.
+Here's the interface for a simple set of model objects. This is the
+kind of model object you'd find in any Zope application, with no
+special knowledge of web services. The model is of a group of
+cookbooks. Each cookbook has a known person as the author. Each
+cookbook contains multiple recipes. A recipe is a recipe _for_ a dish,
+and two or more cookbooks may provide different recipes for the same
+dish. Users may comment on cookbooks and on individual recipes.
 
     # All classes defined in this test are new-style classes.
     >>> __metaclass__ = type
@@ -20,26 +24,29 @@ application, with no special knowledge of web services.
 
     >>> class IAuthor(Interface):
     ...     name = TextLine(title=u"Name", required=True)
-    ...     favorites = Attribute("List of this author's favorite recipes.")
+
+    >>> class IComment(Interface):
+    ...     text = TextLine(title=u"Text", required=True)
+
+    >>> class ICookbook(Interface):
+    ...     name = TextLine(title=u"Name", required=True)
+    ...     author = Object(schema=IAuthor)
+    ...     recipes = Attribute("List of recipes published in this cookbook.")
+
+    >>> class IDish(Interface):
+    ...     name = TextLine(title=u"Name", required=True)
+    ...     recipes = Attribute("List of recipes for this dish.")
 
     >>> class IRecipe(Interface):
     ...     id = Int(title=u"Unique ID", required=True)
-    ...     name = TextLine(title=u"Name", required=True)
-    ...     author = Object(schema=IAuthor)
-    ...     comments = Attribute("Comments on this recipe")
+    ...     dish = Object(schema=IDish)
+    ...     cookbook = Object(schema=ICookbook)
+    ...     instructions = Text(title=u"How to prepare the recipe.",
+    ...         required=True)
 
-    >>> class IComment(Interface):
-    ...     comment = Text(title=u"Comment text", required=True)
 
-Here's the interface for the 'set' objects that manage the recipes and
-authors. The inconsistent naming is intentional.
-
-    >>> class IRecipeSet(Interface):
-    ...     def getAll(self):
-    ...         "Get all recipes."
-    ...
-    ...     def get(self, id):
-    ...         "Retrieve a single recipe by ID."
+Here's the interface for the 'set' objects that manage the authors,
+cookbooks, and dishes. The inconsistent naming is intentional.
 
     >>> class IAuthorSet(Interface):
     ...     def getAllAuthors(self):
@@ -48,8 +55,22 @@ authors. The inconsistent naming is intentional.
     ...     def getAuthor(self, name):
     ...         "Retrieve a single author by name."
 
+    >>> class ICookbookSet(Interface):
+    ...     def getAll(self):
+    ...         "Get all cookbooks."
+    ...
+    ...     def get(self, name):
+    ...         "Retrieve a single cookbook by name."
 
-Here are simple implementations of IAuthor, IRecipe, and IComment.
+    >>> class IDishSet(Interface):
+    ...     def getAll(self):
+    ...         "Get all dishes."
+    ...
+    ...     def get(self, name):
+    ...         "Retrieve a single dish by name."
+
+
+Here are simple implementations of IAuthor, ICookbook, IDish, and IRecipe.
 
     >>> from zope.interface import implements
 
@@ -57,49 +78,78 @@ Here are simple implementations of IAuthor, IRecipe, and IComment.
     ...     implements(IAuthor)
     ...     def __init__(self, name):
     ...         self.name = name
-    ...         self.favorites = []
-
-    >>> class Recipe:
-    ...     implements(IRecipe)
-    ...     def __init__(self, id, name, author):
-    ...         self.id = id
-    ...         self.name = name
-    ...         self.author = author
-    ...         self.comments = []
 
     >>> class Comment:
     ...     implements(IComment)
-    ...     def __init__(self, comment):
-    ...         self.comment = comment
+    ...     def __init__(self, text):
+    ...         self.text = text
+
+    >>> class Cookbook:
+    ...     implements(ICookbook)
+    ...     def __init__(self, name, author):
+    ...         self.name = name
+    ...         self.author = author
+    ...         self.recipes = []
+    ...         self.comments = []
+
+    >>> class Dish:
+    ...     implements(IDish)
+    ...     def __init__(self, name):
+    ...         self.name = name
+    ...         self.recipes = []
+
+    >>> class Recipe:
+    ...     implements(IRecipe)
+    ...     def __init__(self, id, cookbook, dish, instructions):
+    ...         self.id = id
+    ...         self.cookbook = cookbook
+    ...         self.cookbook.recipes.append(self)
+    ...         self.dish = dish
+    ...         self.dish.recipes.append(self)
+    ...         self.instructions = instructions
+    ...         self.comments = []
 
 
 Here are the "model objects" themselves:
 
-    >>> P1 = Author("Jacob Berendes")
-    >>> P2 = Author("Julia Child")
+    >>> A1 = Author("Julia Child")
+    >>> A2 = Author("Irma S. Rombauer")
+    >>> A3 = Author("James Beard")
 
-    >>> R1 = Recipe(1, "Green eggs and ham", P1)
-    >>> R2 = Recipe(7, "Steak au poivre", P2)
-    >>> R3 = Recipe(10, "Raw celery", P1)
+    >>> C1 = Cookbook("Mastering the Art of French Cooking", A1)
+    >>> C2 = Cookbook("The Joy of Cooking", A2)
+    >>> C3 = Cookbook("James Beard's American Cookery", A3)
 
-    >>> C1 = Comment("Excellent!")
-    >>> C2 = Comment("Terrible!")
+    >>> D1 = Dish("Roast chicken")
+    >>> C1_D1 = Recipe(1, C1, D1, "You can always judge...")
+    >>> C2_D1 = Recipe(2, C2, D1, "Draw, singe, stuff, and truss...")
+    >>> C3_D1 = Recipe(3, C3, D1, "A perfectly roasted chicken is...")
 
-    >>> P1.favorites = [R1, R2]
-    >>> R3.comments = [C1, C2]
+    >>> D2 = Dish("Baked beans")
+    >>> C2_D2 = Recipe(4, C2, D2, "Preheat oven to...")
+    >>> C3_D2 = Recipe(5, C3, D2, "Without doubt the most famous...")
 
-Here's a simple RecipeSet with a predefined list of recipes.
+    >>> D3 = Dish("Foies de voilaille en aspic")
+    >>> C1_D3 = Recipe(6, C1, D3, "Chicken livers sauteed in butter...")
 
-    >>> class RecipeSet:
-    ...     implements(IRecipeSet)
+    >>> COM1 = Comment("Clear and concise.")
+    >>> C2_D1.comments.append(COM1)
+
+    >>> COM2 = Comment("A kitchen staple.")
+    >>> C2.comments.append(COM2)
+
+Here's a simple CookbookSet with a predefined list of cookbooks.
+
+    >>> class CookbookSet:
+    ...     implements(ICookbookSet)
     ...     def __init__(self):
-    ...         self.recipes = [R1, R2, R3]
+    ...         self.cookbooks = [C1, C2, C3]
     ...
     ...     def getAll(self):
-    ...         return self.recipes
+    ...         return self.cookbooks
     ...
-    ...     def get(self, id):
-    ...         match = [r for r in self.recipes if r.id == id]
+    ...     def get(self, name):
+    ...         match = [c for c in self.cookbooks if c.name == name]
     ...         if len(match) > 0:
     ...             return match[0]
     ...         return None
@@ -109,13 +159,29 @@ Here's a simple AuthorSet with predefined authors.
     >>> class AuthorSet:
     ...     implements(IAuthorSet)
     ...     def __init__(self):
-    ...         self.authors = [P1, P2]
+    ...         self.authors = [A1, A2, A3]
     ...
     ...     def getAllAuthors(self):
     ...         return self.authors
     ...
     ...     def getAuthor(self, name):
     ...         match = [p for p in self.authors if p.name == name]
+    ...         if len(match) > 0:
+    ...             return match[0]
+    ...         return None
+
+Finally, a simple DishSet with predefined dishes.
+
+    >>> class DishSet:
+    ...     implements(IDishSet)
+    ...     def __init__(self):
+    ...         self.dishes = [D1, D2, D3]
+    ...
+    ...     def getAll(self):
+    ...         return self.dishes
+    ...
+    ...     def get(self, name):
+    ...         match = [d for d in self.dishes if d.name == name]
     ...         if len(match) > 0:
     ...             return match[0]
     ...         return None
@@ -130,12 +196,16 @@ same kind of fields defined by a model interface like IRecipe.
 
 If there's not much to an interface, you can expose it through the web
 service exactly as it's defined, by defining a class that inherits
-from both the interface and IEntry. Since IComment is so simple, we can
-implement ICommentEntry this way:
+from both the interface and IEntry. Since IAuthor and IComment are so
+simple, we can implement IAuthorEntry and ICommentEntry this way:
+
+    >>> from canonical.lazr.interfaces import IEntry
+    >>> class IAuthorEntry(IAuthor, IEntry):
+    ...     """The part of an author we expose through the web service."""
 
     >>> from canonical.lazr.interfaces import IEntry
     >>> class ICommentEntry(IComment, IEntry):
-    ...     """The part of a comment we exposed through the web service."""
+    ...     """The part of a comment we expose through the web service."""
 
 That usually doesn't work, though, because we usually don't want to
 expose to the web service the same data model we expose
@@ -145,43 +215,57 @@ different type under a different name, and so on. This is why we have
 IEntry in the first place: the IEntry subclass defines the interface
 we _do_ want to expose through the web service.
 
-The reason we can't just define IAuthorEntry(IAuthor, IEntry) is that
-IAuthor defines the "favorites" collection as an Attribute. Attribute
-is about as generic as "object", and doesn't convey any information
-about what kind of object is in the collection, or even that
-"favorites" is a collection at all. To expose the corresponding field
-to the web service we use CollectionField.
+The reason we can't just define IDishEntry(IDish, IEntry) is that
+IDish defines the "recipes" collection as an Attribute. Attribute is
+about as generic as "object", and doesn't convey any information about
+what kind of object is in the collection, or even that "recipes" is a
+collection at all. To expose the corresponding field to the web
+service we use CollectionField.
 
     >>> from canonical.lazr.rest.schema import CollectionField
-    >>> class IAuthorEntry(IEntry):
-    ...     "The part of an author that we expose through the web service."
-    ...     name = TextLine(title=u"Name", required=True)
-    ...     favorites = CollectionField(value_type=Object(schema=IRecipe))
+    >>> class IDishEntry(IEntry):
+    ...     "The part of a dish that we expose through the web service."
+    ...     recipes = CollectionField(value_type=Object(schema=IRecipe))
+
 
 In the following code block we define an interface that exposes the
 underlying Recipe's name but not its ID. References to associated
-objects (like the recipe's author) are represented with the
+objects (like the recipe's cookbook) are represented with the
 zope.schema.Object type: this makes it possible to serve a link from a
-recipe to its author.
-
-Note that CollectionField is used slightly differently here than in
-IAuthorEntry. This is because a recipe's comments are exposed beneath
-the recipe, where an author's favorites are recipes, and are exposed
-with the rest of the recipes in a top-level collection.
+recipe to its cookbook.
 
     >>> class IRecipeEntry(IEntry):
     ...     "The part of a recipe that we expose through the web service."
-    ...     name = TextLine(title=u"Name", required=True)
-    ...     author = Object(schema=IAuthor)
+    ...     cookbook = Object(schema=ICookbook)
+    ...     dish = Object(schema=IDish)
+    ...     instructions = Text(title=u"Name", required=True)
     ...     comments = CollectionField(value_type=Object(schema=IComment),
     ...         is_entry_container=True)
 
+Note that CollectionField is used slightly differently here than in
+IDishEntry. We pass in a new argument, is_entry_container=True. This
+is because a recipe's comments are exposed beneath the recipe: the
+recipe actually contains its comments. is_entry_container allows us to
+have one 'comment' type that can be associated with either a recipe or
+a cookbook.
+
+    >>> class ICookbookEntry(IEntry):
+    ...     name = TextLine(title=u"Name", required=True)
+    ...     author = Object(schema=IAuthor)
+    ...     recipes = CollectionField(value_type=Object(schema=IRecipe))
+    ...     comments = CollectionField(value_type=Object(schema=IComment),
+    ...         is_entry_container=True)
+
+
+== Implementing the resources ==
+
 Here's the implementation of IAuthorEntry: a simple decorator on the
 original model object. It subclasses Entry, a simple base class that
-defines a constructor.
+defines a constructor. (See lazr/doc/decorates.txt for more on
+decorates().)
 
     >>> from zope.component import adapts
-    >>> from canonical.lp import decorates
+    >>> from canonical.lazr import decorates
     >>> from canonical.lazr.rest import Entry
 
     >>> class AuthorEntry(Entry):
@@ -190,30 +274,56 @@ defines a constructor.
     ...     decorates(IAuthorEntry)
     ...     schema = IAuthorEntry
     ...
-    ...     parent_collection_name = 'authors'
+    ...     _parent_collection_path = ['authors']
 
 The "schema" attribute points to the interface class that defines the
 attributes exposed through the web service. Above, "schema" is
 IAuthorEntry, which exposes only "name". Below, "schema" is
-IRecipeEntry, which exposes both "name" and "author".
+ICookbookEntry, which exposes "name" and "author", "recipes", and
+"comments".
 
-    >>> class RecipeEntry(Entry):
-    ...     """A recipe, as exposed through the web service."""
-    ...     adapts(IRecipe)
-    ...     decorates(IRecipeEntry)
-    ...     schema = IRecipeEntry
+    >>> class CookbookEntry(Entry):
+    ...     """A cookbook, as exposed through the web service."""
+    ...     adapts(ICookbook)
+    ...     decorates(ICookbookEntry)
+    ...     schema = ICookbookEntry
     ...
-    ...     parent_collection_name = 'recipes'
+    ...     _parent_collection_path = ['cookbooks']
+
+    >>> class DishEntry(Entry):
+    ...     """A dish, as exposed through the web service."""
+    ...     adapts(IDish)
+    ...     decorates(IDishEntry)
+    ...     schema = IDishEntry
+    ...
+    ...     _parent_collection_path = ['dishes']
 
 The comment entry is a little different. Note that it doesn't define
-parent_collection_name. That's because a comment will be delegating
-many of an entry's tasks to the collection that contains it.
+_parent_collection_path. That's because a comment will delegates many
+of an entry's tasks to whatever collection contains it. This is the
+flip side of the is_entry_container we saw earlier.
 
     >>> class CommentEntry(Entry):
     ...     """A comment, as exposed through the web service."""
     ...     adapts(IComment)
     ...     decorates(ICommentEntry)
     ...     schema = ICommentEntry
+
+The recipe entry is also different. It defines a
+_parent_collection_path of more than one element. A recipe's canonical
+home is 'beneath' the cookbook it was published in. The
+_parent_collection_path will be used whether the recipe in question was
+found in a cookbook's collection of recipes or with some other
+collection (such as the recipes for a specific dish).
+
+    >>> class RecipeEntry(Entry):
+    ...     adapts(IRecipe)
+    ...     decorates(IRecipeEntry)
+    ...     schema = IRecipeEntry
+    ...
+    ...     _parent_collection_path = [
+    ...         'cookbooks', lambda r: r.cookbook, 'recipes']
+
 
 We need to register these entries as an adapter from (eg.) IAuthor to
 (eg.) IAuthorEntry. In ZCML a registration would look like this.
@@ -229,13 +339,16 @@ in Python code:
 
     >>> from zope.component import provideAdapter
     >>> provideAdapter(AuthorEntry, [IAuthor], IAuthorEntry)
-    >>> provideAdapter(RecipeEntry, [IRecipe], IRecipeEntry)
+    >>> provideAdapter(CookbookEntry, [ICookbook], ICookbookEntry)
+    >>> provideAdapter(DishEntry, [IDish], IDishEntry)
     >>> provideAdapter(CommentEntry, [IComment], ICommentEntry)
+    >>> provideAdapter(RecipeEntry, [IRecipe], IRecipeEntry)
 
 LAZR also defines an interface and a base class for collections of
-objects. I'll use it to expose the RecipeSet collection through the
-web service. A collection must define a method called find(), which
-returns the model objects in the collection.
+objects. I'll use it to expose the AuthorSet collection and other
+top-level collections through the web service. A collection must
+define a method called find(), which returns the model objects in the
+collection.
 
     >>> from canonical.lazr.rest import Collection
     >>> from canonical.lazr.interfaces import ICollection
@@ -254,58 +367,82 @@ returns the model objects in the collection.
     ...     def getEntryPath(self, entry):
     ...         """Use an author's name as its URI fragment."""
     ...         return entry.name
-
     >>> provideAdapter(AuthorCollection, [IAuthorSet], ICollection)
 
-    >>> class RecipeCollection(Collection):
-    ...     """A collection of recipes, as exposed through the web service."""
+    >>> class CookbookCollection(Collection):
+    ...     """A collection of cookbooks, as exposed through the web service."""
     ...
     ...     def find(self):
-    ...        """Find all the recipes."""
+    ...        """Find all the cookbooks."""
     ...        return self.context.getAll()
     ...
-    ...     def lookupEntry(self, id):
-    ...        """Find a single recipe by ID."""
-    ...        return self.context.get(int(id))
+    ...     def lookupEntry(self, name):
+    ...        """Find a single cookbook by name."""
+    ...        return self.context.get(name)
     ...
     ...     def getEntryPath(self, entry):
-    ...         """Use a recipe's ID as its URI fragment."""
-    ...         return str(entry.context.id)
+    ...         """Use a cookbook's name as its URI fragment."""
+    ...         return entry.context.name
+    >>> provideAdapter(CookbookCollection, [ICookbookSet], ICollection)
 
-    >>> provideAdapter(RecipeCollection, [IRecipeSet], ICollection)
+    >>> class DishCollection(Collection):
+    ...     """A collection of dishes, as exposed through the web service."""
+    ...
+    ...     def find(self):
+    ...        """Find all the dishes."""
+    ...        return self.context.getAll()
+    ...
+    ...     def lookupEntry(self, name):
+    ...        """Find a single dish by name."""
+    ...        return self.context.get(name)
+    ...
+    ...     def getEntryPath(self, entry):
+    ...         """Use a dish's name as its URI fragment."""
+    ...         return entry.context.name
+    >>> provideAdapter(DishCollection, [IDishSet], ICollection)
 
 Like Entry, Collection is a simple base class that defines a
 constructor.
 
-We need to define a collection of the recipes associated with an
-author. We say that the collection is scoped to an author. This class
-manages an author-scoped collection of recipes.
+We need to define a collection of the recipes associated with a
+cookbook. We say that the collection of recipes is scoped to a
+cookbook. This class manages a collection of a cookbook's or dish's
+recipes. It'll work with any collection of recipes.
 
     >>> from canonical.lazr.rest import ScopedCollection
-    >>> class AuthorRecipeCollection(ScopedCollection):
+    >>> class RecipeScopedCollection(ScopedCollection):
     ...
     ...     def lookupEntry(self, name):
-    ...         recipe = RecipeSet().get(name)
-    ...         if recipe in self.collection:
-    ...             return recipe
+    ...         for recipe in self.collection:
+    ...             if recipe.dish.name == name:
+    ...                 return recipe
     ...         return None
+    ...
+    ...     def getEntryPath(self, entry):
+    ...         return entry.dish.name
 
     >>> from canonical.lazr.interfaces import IScopedCollection
-    >>> provideAdapter(AuthorRecipeCollection, [IAuthorEntry, IRecipe],
+    >>> provideAdapter(RecipeScopedCollection, [ICookbookEntry, IRecipe],
+    ...                IScopedCollection)
+    >>> provideAdapter(RecipeScopedCollection, [IDishEntry, IRecipe],
     ...                IScopedCollection)
 
-We also need to define a collection of the comments associated with a
-recipe. This is another scoped collection, but it's a little different
-from an author-scoped collection of recipes. Recipes have their own
-top-level collection, but comments don't exist except in terms of a
-recipe. So the list of comments scoped to a recipe needs to take on
-some of the duties of a top-level collection. Fortunately, there's a
-predefined class that works in cases like this one, where the elements
-are indexed by their order within a parent collection:
+We also need to define collections of the comments associated with a
+recipe or cookbook. These will be scoped collections too, but they're
+a little different from an cookbook-scoped collection of
+recipes. RecipeEntry defines _parent_collection_path and CommentEntry
+doesn't. So the list of comments scoped to a recipe (or cookbook)
+needs to take on some of the duties handled by the kind of collection
+that defines _parent_collection_path. Fortunately, there's a predefined
+class that works in cases like this one, where the elements are
+indexed by their order within a parent collection:
 OrderBasedScopedCollection.
 
     >>> from canonical.lazr.rest.resource import OrderBasedScopedCollection
     >>> provideAdapter(OrderBasedScopedCollection, [IRecipeEntry, IComment],
+    ...                IScopedCollection)
+
+    >>> provideAdapter(OrderBasedScopedCollection, [ICookbookEntry, IComment],
     ...                IScopedCollection)
 
 
@@ -322,7 +459,7 @@ isn't implemented yet).
 
 Of course, a CollectionResource has to expose a collection _of_
 something. That's why each CollectionResource is associated with some
-concrete implementation of ICollection, like RecipeCollection. All you
+concrete implementation of ICollection, like AuthorCollection. All you
 have to do is define the behaviour of the collection, and
 CollectionResource takes care of exposing the collection through HTTP.
 
@@ -343,7 +480,8 @@ root of the object tree.
     ...    @property
     ...    def top_level_collections(self):
     ...        return { 'authors' : AuthorSet(),
-    ...                 'recipes' : RecipeSet() }
+    ...                 'cookbooks' : CookbookSet(),
+    ...                 'dishes' : DishSet() }
 
 If you call the service root resource, and pass in an HTTP request, it
 will act as though you had performed a GET on the URL
@@ -371,26 +509,29 @@ on any object that provides ICanonicalUrlData.
     >>> canonical_url(app, request=request)
     u'http://api.launchpad.dev/'
 
+
+== Collection resources ==
+
 The ServiceRoot has a list of top-level collections and implements
 IPublishTraverse, so that a request to a registered collection is
 delegated to the appropriate CollectionResource. The
 top_level_collections attribute maps URL fragments to factory methods
 or other callables, and the return value of the factory method is
 used as the context of a CollectionResource. In MyServiceRootResource,
-the URL fragment "recipes" is mapped to the RecipeSet class.
+the URL fragment "cookbooks" is mapped to the CookbookSet class.
 
 The following example is equivalent to requesting
-'http://api.launchpad.net/recipes/'. The code calls the registered
-factory method (RecipeSet()) and wraps the resulting model object
+'http://api.launchpad.net/cookbooks/'. The code calls the registered
+factory method (CookbookSet()) and wraps the resulting model object
 in a CollectionResource.
 
-    >>> collection = app.publishTraverse(request, "recipes")
+    >>> collection = app.publishTraverse(request, "cookbooks")
     >>> collection
     <canonical.lazr.rest.resource.CollectionResource object ...>
     >>> ICanonicalUrlData.providedBy(collection)
     True
     >>> canonical_url(collection, request=request)
-    u'http://api.launchpad.dev/recipes'
+    u'http://api.launchpad.dev/cookbooks'
 
 Calling the collection resource yields a JSON document, which can be
 parsed with standard tools.
@@ -398,21 +539,24 @@ parsed with standard tools.
     >>> import simplejson
     >>> representation = simplejson.loads(collection())
 
+
+== Entry resources ==
+
 The collection resource is a list of entries. Each entry has some
 associated information (like 'name'), a 'self_link' (the URL to the
 entry's resource), and possibly links to associated resources.
 
     >>> len(representation)
     3
-    >>> representation[0]['name']
-    u'Green eggs and ham'
-    >>> representation[0]['self_link']
-    u'http://api.launchpad.dev/recipes/1'
+    >>> representation[1]['name']
+    u'The Joy of Cooking'
+    >>> representation[1]['self_link']
+    u'http://api.launchpad.dev/cookbooks/The%20Joy%20of%20Cooking'
 
-Each recipe, for instance, has a link to its author.
+Each cookbook, for instance, has a link to its author.
 
-    >>> representation[0]['author_link']
-    u'http://api.launchpad.dev/authors/Jacob%20Berendes'
+    >>> representation[1]['author_link']
+    u'http://api.launchpad.dev/authors/Irma%20S.%20Rombauer'
 
 Calling the CollectionResource object makes it process the incoming
 request. Since this is a GET request, calling the resource publishes
@@ -426,59 +570,74 @@ navigate from a collection to one of the entries in that collection.
 It's the corresponding Collection's job to implement lookupEntry() so
 that (for instance) /recipes/10 is mapped to the "Raw celery" Entry.
 
-    >>> recipe_ten_resource = collection.publishTraverse(request, "10")
-    >>> recipe_ten_resource
+    >>> joy_resource = collection.publishTraverse(request,
+    ...     "The Joy of Cooking")
+    >>> joy_resource
     <canonical.lazr.rest.resource.EntryResource object ...>
-    >>> canonical_url(recipe_ten_resource, request=request)
-    u'http://api.launchpad.dev/recipes/10'
+    >>> canonical_url(joy_resource, request=request)
+    u'http://api.launchpad.dev/cookbooks/The%20Joy%20of%20Cooking'
 
-    >>> recipe_ten = simplejson.loads(recipe_ten_resource())
-    >>> sorted(recipe_ten.items())
-    [(u'author_link', u'http://api.launchpad.dev/authors/Jacob%20Berendes'),
+    >>> joy = simplejson.loads(joy_resource())
+    >>> sorted(joy.items())
+    [(u'author_link',
+      u'http://api.launchpad.dev/authors/Irma%20S.%20Rombauer'),
      (u'comments_collection_link',
-        u'http://api.launchpad.dev/recipes/10/comments'),
-     (u'name', u'Raw celery'),
-     (u'self_link', u'http://api.launchpad.dev/recipes/10')]
+      u'http://api.launchpad.dev/cookbooks/The%20Joy%20of%20Cooking/comments'),
+     (u'name', u'The Joy of Cooking'),
+     (u'recipes_collection_link',
+      u'http://api.launchpad.dev/cookbooks/The%20Joy%20of%20Cooking/recipes'),
+     (u'self_link',
+      u'http://api.launchpad.dev/cookbooks/The%20Joy%20of%20Cooking')]
 
 You can also traverse from an entry to an associated collection:
 
-    >>> authors = app.publishTraverse(request, "authors")
-    >>> jacob_resource = authors.publishTraverse(request, "Jacob Berendes")
-    >>> jacob = simplejson.loads(jacob_resource())
-    >>> sorted(jacob.items())
-    [(u'favorites_collection_link',
-        u'http://api.launchpad.dev/authors/Jacob%20Berendes/favorites'),
-     (u'name', u'Jacob Berendes'),
-     (u'self_link', u'http://api.launchpad.dev/authors/Jacob%20Berendes')]
+    >>> joy_recipes = joy_resource.publishTraverse(request, "recipes")
+    >>> chicken_recipe_resource = joy_recipes.publishTraverse(request,
+    ...     "Roast chicken")
+    >>> chicken_recipe = simplejson.loads(chicken_recipe_resource())
+    >>> sorted(chicken_recipe.items())
+    [(u'comments_collection_link',
+      u'http://api.launchpad.dev/cookbooks/The%20Joy%20of%20Cooking/recipes/Roast%20chicken/comments'),
+    (u'cookbook_link',
+     u'http://api.launchpad.dev/cookbooks/The%20Joy%20of%20Cooking'),
+    (u'dish_link', u'http://api.launchpad.dev/dishes/Roast%20chicken'),
+    (u'instructions', u'Draw, singe, stuff, and truss...'),
+    (u'self_link',
+     u'http://api.launchpad.dev/cookbooks/The%20Joy%20of%20Cooking/recipes/Roast%20chicken')]
 
-    >>> jacob_favorites = jacob_resource.publishTraverse(request, "favorites")
-    >>> favorites = simplejson.loads(jacob_favorites())
-    >>> sorted(f['name'] for f in favorites)
-    [u'Green eggs and ham', u'Steak au poivre']
+Note that the address of a recipe depends on its cookbook, even when
+the path traversed to the recipe doesn't go through a cookbook. This
+is handled by RecipeEntry's _parent_collection_path.
+
+    >>> dish_collection = app.publishTraverse(request, "dishes")
+    >>> chicken_dish_resource = dish_collection.publishTraverse(
+    ...     request, "Roast chicken")
+    >>> canonical_url(chicken_dish_resource, request=request)
+    u'http://api.launchpad.dev/dishes/Roast%20chicken'
 
 Scoped collections work the same way whether the entries are "really"
 in the collection (as with comments, below) or whether they're
 "really" in a top-level collection (as with recipes, above).
 
-    >>> comments_resource = recipe_ten_resource.publishTraverse(
+    >>> comments_resource = chicken_recipe_resource.publishTraverse(
     ...     request, "comments")
     >>> canonical_url(comments_resource, request=request)
-    u'http://api.launchpad.dev/recipes/10/comments'
+    u'http://api.launchpad.dev/cookbooks/The%20Joy%20of%20Cooking/recipes/Roast%20chicken/comments'
 
     >>> comments = simplejson.loads(comments_resource())
-    >>> [c['comment'] for c in comments]
-    [u'Excellent!', u'Terrible!']
+    >>> [c['text'] for c in comments]
+    [u'Clear and concise.']
 
     >>> comment_one_resource = comments_resource.publishTraverse(request, "1")
     >>> comment_one = simplejson.loads(comment_one_resource())
     >>> sorted(comment_one.items())
-    [(u'comment', u'Excellent!'),
-     (u'self_link', u'http://api.launchpad.dev/recipes/10/comments/1')]
+    [(u'self_link',
+      u'http://api.launchpad.dev/cookbooks/The%20Joy%20of%20Cooking/recipes/Roast%20chicken/comments/1'),
+     (u'text', u'Clear and concise.')]
 
 If the user tries to traverse to a nonexistent object, the result is a
 NotFound exception:
 
-    >>> from zope.publisher.interfaces import NotFound
     >>> app.publishTraverse(request, "nosuchcollection")
     Traceback (most recent call last):
     ...
@@ -488,3 +647,78 @@ NotFound exception:
     Traceback (most recent call last):
     ...
     NotFound: ... name: '104'
+
+
+=== Manipulating entries ===
+
+Most entry resources support write operations by responding to PATCH
+requests. The entity-body of a PATCH request should be a JSON document
+with new values for some of the entry's attributes. Basically, a set
+of assertions about what the object *should* look like.
+
+Here, we modify the name of one of the cookbooks.
+
+    >>> from StringIO import StringIO
+    >>> headers = { 'CONTENT_TYPE' : 'application/json' }
+    >>> body = StringIO('{"name" : "The Joy of Cooking (revised)"}')
+
+    >>> patch_request = LaunchpadTestRequest(body_instream=body,
+    ...                                      environ=headers, method='PATCH')
+    >>> patch_request.setPublication(WebServicePublication(None))
+    >>> patch_request.setApplicationServer('api.launchpad.dev')
+    >>> cookbooks_resource = app.publishTraverse(patch_request, "cookbooks")
+
+    >>> joy_resource_patch = cookbooks_resource.publishTraverse(patch_request,
+    ...     "The Joy of Cooking")
+    >>> joy_resource_patch()
+    ''
+
+    >>> patch_request.response.getStatus()
+    301
+    >>> patch_request.response.getHeader('Location')
+    'http://api.launchpad.dev/cookbooks/The%20Joy%20of%20Cooking%20%28revised%29'
+
+The new name is reflected in the cookbook's representation, and the
+cookbook's URL has changed as well.
+
+    >>> joy_resource = collection.publishTraverse(request,
+    ...     "The Joy of Cooking (revised)")
+    >>> joy = simplejson.loads(joy_resource())
+    >>> joy['name']
+    u'The Joy of Cooking (revised)'
+
+An entry that responds to PATCH will also respond to PUT. With PUT you
+modify the document you got in response to a GET request, and send the
+whole thing back to the server, whereas with PATCH you're creating a
+new document that describes a subset of the entry's state.
+
+Here, we use PUT to change the cookbook's name back to what it was
+before. Note that we send the entire JSON hash back to the server.
+
+    >>> joy['name'] = 'The Joy of Cooking'
+    >>> body = StringIO(simplejson.dumps(joy))
+    >>> put_request = LaunchpadTestRequest(body_instream=body,
+    ...                                    environ=headers, method='PUT')
+    >>> put_request.setPublication(WebServicePublication(None))
+    >>> put_request.setApplicationServer('api.launchpad.dev')
+
+    >>> cookbooks_resource = app.publishTraverse(put_request, "cookbooks")
+    >>> joy_resource_put = cookbooks_resource.publishTraverse(put_request,
+    ...     "The Joy of Cooking (revised)")
+    >>> joy_resource_put()
+    ''
+
+The cookbook's URL has changed back to what it was before.
+
+    >>> put_request.response.getStatus()
+    301
+    >>> put_request.response.getHeader('Location')
+    'http://api.launchpad.dev/cookbooks/The%20Joy%20of%20Cooking'
+
+So has the cookbook's name.
+
+    >>> joy_resource = collection.publishTraverse(request,
+    ...     "The Joy of Cooking")
+    >>> joy = simplejson.loads(joy_resource())
+    >>> joy['name']
+    u'The Joy of Cooking'

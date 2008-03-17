@@ -43,35 +43,14 @@ from canonical.launchpad.searchbuilder import all, any, NULL, not_equals
 from canonical.launchpad.database.pillar import pillar_sort_key
 from canonical.launchpad.validators.person import public_person_validator
 from canonical.launchpad.interfaces import (
-    BUG_CONTACT_BUGTASK_STATUSES,
-    BugNominationStatus,
-    BugTaskImportance,
-    BugTaskSearchParams,
-    BugTaskStatus,
-    BugTaskStatusSearch,
-    ConjoinedBugTaskEditError,
-    IBugTask,
-    IBugTaskDelta,
-    IBugTaskSet,
-    IDistribution,
-    IDistributionSourcePackage,
-    IDistroBugTask,
-    IDistroSeries,
-    IDistroSeriesBugTask,
-    ILaunchpadCelebrities,
-    INullBugTask,
-    IProduct,
-    IProductSeries,
-    IProductSeriesBugTask,
-    IProject,
-    IProjectMilestone,
-    ISourcePackage,
-    IUpstreamBugTask,
-    NotFoundError,
-    PackagePublishingStatus,
-    RESOLVED_BUGTASK_STATUSES,
-    UNRESOLVED_BUGTASK_STATUSES,
-    )
+    BUG_CONTACT_BUGTASK_STATUSES, BugNominationStatus, BugTaskImportance,
+    BugTaskSearchParams, BugTaskStatus, BugTaskStatusSearch,
+    ConjoinedBugTaskEditError, IBugTask, IBugTaskDelta, IBugTaskSet,
+    IDistribution, IDistributionSourcePackage, IDistroBugTask, IDistroSeries,
+    IDistroSeriesBugTask, ILaunchpadCelebrities, INullBugTask, IProduct,
+    IProductSeries, IProductSeriesBugTask, IProject, IProjectMilestone,
+    ISourcePackage, IUpstreamBugTask, NotFoundError, PackagePublishingStatus,
+    RESOLVED_BUGTASK_STATUSES, UNRESOLVED_BUGTASK_STATUSES)
 from canonical.launchpad.helpers import shortlist
 # XXX: kiko 2006-06-14 bug=49029
 
@@ -1639,7 +1618,7 @@ class BugTaskSet:
                 bug_privacy_filter = "AND " + bug_privacy_filter
         unconfirmed_bug_join = self._getUnconfirmedBugJoin()
         (target_join, target_clause) = self._getTargetJoinAndClause(target)
-        all_bugtasks = BugTask.select("""
+        expirable_bugtasks = BugTask.select("""
             BugTask.bug = Bug.id
             AND BugTask.id IN (
                 SELECT BugTask.id
@@ -1661,13 +1640,7 @@ class BugTaskSet:
             clauseTables=['Bug'],
             orderBy='Bug.date_last_updated')
 
-        bugtasks = all_bugtasks
-
-        def date_last_updated_key(bugtask):
-            """Return the date the bugtask was last updated."""
-            return bugtask.bug.date_last_updated
-
-        return sorted(bugtasks, key=date_last_updated_key)
+        return expirable_bugtasks
 
     def _getUnconfirmedBugJoin(self):
         """Return the SQL to join BugTask to unconfirmed bugs.
@@ -1862,7 +1835,7 @@ class BugTaskSet:
 
         return orderby_arg
 
+
     def dangerousGetAllTasks(self):
         """DO NOT USE THIS METHOD. For details, see `IBugTaskSet`"""
-        return BugTask.select()
-
+        return BugTask.select(orderBy='id')

@@ -5,6 +5,7 @@ __metaclass__ = type
 
 __all__ = [
     'HasSpecificationsView',
+    'SpecificationRoadmapView',
     'RegisterABlueprintButtonView',
     ]
 
@@ -20,20 +21,21 @@ from canonical.launchpad.interfaces import (
     IProject,
     IProjectSeries,
     ISprint,
+    ISpecificationSet,
     ISpecificationTarget,
     SpecificationFilter,
     SpecificationSort,
     )
 
 from canonical.config import config
-from canonical.database.sqlbase import cursor, sqlvalues
 from canonical.launchpad import _
 from canonical.launchpad.webapp import LaunchpadView
 from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.helpers import shortlist
 from canonical.cachedproperty import cachedproperty
 from canonical.launchpad.webapp import canonical_url
-from zope.component import queryMultiAdapter
+from zope.component import getUtility, queryMultiAdapter
+
 
 class HasSpecificationsView(LaunchpadView):
     """Base class for several context-specific views that involve lists of
@@ -75,10 +77,6 @@ class HasSpecificationsView(LaunchpadView):
     # See https://bugs.launchpad.net/blueprint/+bug/173972.
     def initialize(self):
         mapping = {'name': self.context.displayname}
-        if self.is_person:
-            self.title = _('Specifications involving $name', mapping=mapping)
-        else:
-            self.title = _('Specifications for $name', mapping=mapping)
         if IPerson.providedBy(self.context):
             self.is_person = True
         elif (IDistribution.providedBy(self.context) or
@@ -104,8 +102,15 @@ class HasSpecificationsView(LaunchpadView):
             self.show_target = True
         else:
             raise AssertionError, 'Unknown blueprint listing site'
+
+        if self.is_person:
+            self.title = _('Specifications involving $name', mapping=mapping)
+        else:
+            self.title = _('Specifications for $name', mapping=mapping)
+
         if IHasDrivers.providedBy(self.context):
             self.has_drivers = True
+
         self.batchnav = BatchNavigator(
             self.specs, self.request,
             size=config.launchpad.default_batch_size)
@@ -251,7 +256,7 @@ class HasSpecificationsView(LaunchpadView):
 
         return filter
 
-    @cachedproperty
+    @property
     def specs(self):
         filter = self.spec_filter
         return self.context.specifications(filter=filter)
@@ -304,97 +309,46 @@ class HasSpecificationsView(LaunchpadView):
         is used by the +portlet-latestspecs view.
         """
         return self.context.specifications(sort=SpecificationSort.DATE,
-            quantity=quantity)
+            quantity=quantity, prejoin_people=False)
 
-    def specPlan(self):
-        """Return the current sequence of recommended spec implementations,
-        based on their priority and dependencies.
-        """
-        if not hasattr(self, '_plan'):
-            # we have not done this before so make the plan
-            self.makeSpecPlan()
-        return self._plan
 
-    def danglingSpecs(self):
-        """Return the specs that are currently in a messy state because
-        their dependencies do not allow them to be implemented (circular
-        deps, for example.
-        """
-        if not hasattr(self, '_dangling'):
-            # we have not done this before so figure out if any are dangling
-            self.makeSpecPlan()
-        return self._dangling
+class SpecificationRoadmapView(LaunchpadView):
+    """View for the +roadmap pages for specifications."""
 
-    def makeSpecPlan(self):
-        """Figure out what the best sequence of implementation is for the
-        specs currently in the queue for this target. Save the plan in
-        self._plan, and put any dangling specs in self._dangling.
+    @cachedproperty
+    def spec_plan(self):
+        """Return the optimised sequence of specs for this target.
+
+        Figures out what the best sequence of implementation is for the
+        specs registered on this target. Essentially, orders by
+        decreasing priority, but uses recursion to include dependencies
+        (in decreasing order, too, thanks to getDependencyDict()) first.
         """
-        # XXX sabdfl 2006-04-07: This is incomplete and will not build a
-        # proper comprehensive roadmap.
-        plan = []
         filter = [
             SpecificationFilter.INCOMPLETE,
             SpecificationFilter.ACCEPTED]
-        specs = set(self.context.specifications(filter=filter))
+        specs = self.context.specifications(
+            filter=filter, prejoin_people=False)
+        if specs.count() == 0:
+            return []
 
-        # In order to optimize this for targets with a large
-        # set of blueprints, we first fetch all the dependencies
-        # in one go (rather than ask SQLObject to get a related
-        # join for every iteration).
-        if len(specs):
-            cur = cursor()
-            cur.execute("""
-            SELECT specification, dependency
-            FROM SpecificationDependency
-            WHERE specification IN %s
-            """ % sqlvalues([spec.id for spec in specs]))
-            dependencies = cur.fetchall()
-            cur.close()
-        else:
-            dependencies = []
+        specification_set = getUtility(ISpecificationSet)
+        dependencies = specification_set.getDependencyDict(specs)
 
-        # We loop over all the blueprints, adding them only
-        # after their dependencies have been added.
-        found_spec = True
-        while found_spec:
-            found_spec = False
+        def update_plan(specs, plan):
+            """Update the plan with this spec's dependencies."""
             for spec in specs:
                 if spec in plan:
                     continue
-                # Check whether the spec has
-                # any dependencies by looking
-                # at the cached dependencies list
-                spec_has_dependencies = False
-                for spec_id, dep_id in dependencies:
-                    if spec_id == spec.id:
-                        spec_has_dependencies = True
-                        break
-                if not spec_has_dependencies:
-                    found_spec = True
-                    plan.append(spec)
-                    continue
-                all_clear = True
-                spec_dependencies = [
-                    dep_id for (spec_id, dep_id)
-                    in dependencies
-                    if spec_id == spec.id]
-                planned_spec_dependencies = [p_spec.id for p_spec in plan]
-                for depspec_id in spec_dependencies:
-                    if depspec_id not in planned_spec_dependencies:
-                        all_clear = False
-                        break
-                if all_clear:
-                    found_spec = True
-                    plan.append(spec)
-        # At this point, plan contains the ones that can move
-        # immediately. we need to find the dangling ones
-        dangling = []
-        for spec in specs:
-            if spec not in plan:
-                dangling.append(spec)
-        self._plan = plan
-        self._dangling = dangling
+                my_deps = dependencies.get(spec.id)
+                if my_deps is not None:
+                    update_plan(my_deps, plan)
+                plan.append(spec)
+
+        the_plan = []
+        update_plan(specs, the_plan)
+
+        return the_plan
 
 
 class RegisterABlueprintButtonView:
@@ -417,3 +371,4 @@ class RegisterABlueprintButtonView:
                 />
               </a>
         """ % canonical_url(target, rootsite='blueprints')
+

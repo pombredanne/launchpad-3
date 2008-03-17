@@ -496,7 +496,8 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
     def valid_specifications(self):
         return self.specifications(filter=[SpecificationFilter.VALID])
 
-    def specifications(self, sort=None, quantity=None, filter=None):
+    def specifications(self, sort=None, quantity=None, filter=None,
+                       prejoin_people=True):
         """See `IHasSpecifications`."""
 
         # Make a new list of the filter, so that we do not mutate what we
@@ -574,9 +575,10 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
                 query += ' AND Specification.fti @@ ftq(%s) ' % quote(
                     constraint)
 
-        # now do the query, and remember to prejoin to people
         results = Specification.select(query, orderBy=order, limit=quantity)
-        return results.prejoin(['assignee', 'approver', 'drafter'])
+        if prejoin_people:
+            results = results.prejoin(['assignee', 'approver', 'drafter'])
+        return results
 
     def getSpecification(self, name):
         """See `ISpecificationTarget`."""
@@ -681,6 +683,7 @@ class ProductSet:
             Product.id in (
                 select distinct(product) from Branch
                 where lifecycle_status in %s)
+            and Product.active
             ''' % sqlvalues(DEFAULT_BRANCH_STATUS_IN_LISTING),
             orderBy='name')
         if num_products is not None:
@@ -690,6 +693,7 @@ class ProductSet:
     def getProductsWithUserDevelopmentBranches(self):
         """See `IProductSet`."""
         return Product.select('''
+            Product.active and
             Product.development_focus = ProductSeries.id and
             ProductSeries.user_branch = Branch.id and
             Branch.branch_type in %s

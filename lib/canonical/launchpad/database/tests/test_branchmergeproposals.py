@@ -6,10 +6,10 @@ __metaclass__ = type
 
 from unittest import TestCase, TestLoader
 
-from canonical.launchpad.ftests import ANONYMOUS, login, logout
+from canonical.launchpad.ftests import ANONYMOUS, login, logout, syncUpdate
 from canonical.launchpad.interfaces import (
     BadStateTransition, BranchMergeProposalStatus, EmailAddressStatus)
-from canonical.launchpad.testing import LaunchpadObjectFactory
+from canonical.launchpad.testing import LaunchpadObjectFactory, time_counter
 
 from canonical.testing import LaunchpadFunctionalLayer
 
@@ -150,6 +150,15 @@ class TestBranchMergeProposalTransitions(TestCase):
         """Superseded is a terminal state, so no transitions are valid."""
         self.assertTerminatingState(BranchMergeProposalStatus.SUPERSEDED)
 
+    def test_valid_transition_graph_is_complete(self):
+        """The valid transition graph should have a key for all possible
+        queue states."""
+        from canonical.launchpad.database.branchmergeproposal import (
+            VALID_TRANSITION_GRAPH)
+        keys = VALID_TRANSITION_GRAPH.keys()
+        all_states = BranchMergeProposalStatus.items
+        self.assertEqual(sorted(all_states), sorted(keys),
+                         "Missing possible states from the transition graph.")
 
 class TestBranchMergeProposalCanReview(TestCase):
     """Test the different cases that makes a branch deletable or not."""
@@ -246,6 +255,7 @@ class TestBranchMergeProposalQueueing(TestCase):
         # Remove the proposal from the middle of the queue.
         proposal = queued_proposals[1]
         proposal.dequeue()
+        syncUpdate(proposal)
 
         del new_queue_order[1]
 
@@ -256,6 +266,36 @@ class TestBranchMergeProposalQueueing(TestCase):
             new_queue_order, queue_order,
             "There should be only two queued items now. "
             "Expected %s, got %s" % (new_queue_order, queue_order))
+
+
+class TestRootMessage(TestCase):
+    """Test the behavior of the root_message attribute"""
+
+    layer = LaunchpadFunctionalLayer
+
+    def setUp(self):
+        TestCase.setUp(self)
+        login('foo.bar@canonical.com')
+        self.factory = LaunchpadObjectFactory()
+        self.merge_proposal = self.factory.makeBranchMergeProposal()
+
+    def test_orderedByDateNotInsertion(self):
+        """Root is determined by create date, not insert order"""
+        counter = time_counter()
+        oldest_date, middle_date, newest_date = [counter.next() for index in
+            (1, 2, 3)]
+        message1 = self.merge_proposal.createMessage(
+            self.merge_proposal.registrant, "Subject",
+            _date_created=middle_date)
+        self.assertEqual(message1, self.merge_proposal.root_message)
+        message2 = self.merge_proposal.createMessage(
+            self.merge_proposal.registrant, "Subject",
+            _date_created=newest_date)
+        self.assertEqual(message1, self.merge_proposal.root_message)
+        message3 = self.merge_proposal.createMessage(
+            self.merge_proposal.registrant, "Subject",
+            _date_created=oldest_date)
+        self.assertEqual(message3, self.merge_proposal.root_message)
 
 
 def test_suite():

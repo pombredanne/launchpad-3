@@ -73,7 +73,6 @@ from canonical.launchpad.interfaces import (
     IProductSet,
     IProjectSet,
     IQuestionSet,
-    IRegistryApplication,
     IRosettaApplication,
     ISourcePackageNameSet,
     ISpecificationSet,
@@ -454,7 +453,6 @@ class LaunchpadRootNavigation(Navigation):
         'people': IPersonSet,
         'projects': IProductSet,
         'projectgroups': IProjectSet,
-        'registry': IRegistryApplication,
         'sourcepackagenames': ISourcePackageNameSet,
         'specs': ISpecificationSet,
         'sprints': ISprintSet,
@@ -534,7 +532,7 @@ class LaunchpadRootNavigation(Navigation):
             return None
 
         # If no redirection host is set, don't redirect.
-        mainsite_host = config.launchpad.vhosts.mainsite.hostname
+        mainsite_host = config.vhost.mainsite.hostname
         redirection_host = config.launchpad.beta_testers_redirection_host
         if redirection_host is None:
             return None
@@ -584,7 +582,7 @@ class SoftTimeoutView(LaunchpadView):
             raise Unauthorized
 
         self.request.response.setHeader('content-type', 'text/plain')
-        soft_timeout = intOrZero(config.launchpad.soft_request_timeout)
+        soft_timeout = intOrZero(config.database.soft_request_timeout)
         if soft_timeout == 0:
             return 'No soft timeout threshold is set.'
 
@@ -653,7 +651,8 @@ class OneZeroTemplateStatus(LaunchpadView):
                 output_category = self.pages
 
             num_one_zero_comments = 0
-            html_comments = soup.findAll(text=lambda text:isinstance(text, Comment))
+            html_comments = soup.findAll(
+                text=lambda text:isinstance(text, Comment))
             for html_comment in html_comments:
                 matchobj = self.onezero_re.match(html_comment)
                 if matchobj:
@@ -661,7 +660,8 @@ class OneZeroTemplateStatus(LaunchpadView):
                     status, comment = matchobj.groups()
                     if status not in self.valid_status_values:
                         status = 'error'
-                        comment = 'status not one of %s' % ', '.join(sorted(self.valid_status_values))
+                        comment = 'status not one of %s' % ', '.join(
+                            sorted(self.valid_status_values))
 
             if num_one_zero_comments == 0:
                 is_page = soup.html is not None
@@ -673,14 +673,15 @@ class OneZeroTemplateStatus(LaunchpadView):
                     continue
             elif num_one_zero_comments > 1:
                 status = "error"
-                comment = "There were %s one-zero comments in the document." % num_one_zero_comments
+                comment = (
+                    "There were %s one-zero comments in the document." %
+                    num_one_zero_comments)
 
             xmlcomment = cgi.escape(comment)
             xmlcomment = xmlcomment.replace('\n', '<br />')
 
             helptextsoup = soup.find(attrs={'metal:fill-slot':'help'})
             if helptextsoup:
-                #helptext = ''.join(unicode(t) for t in helptextsoup.findAll(recursive=False))
                 helptext = unicode(helptextsoup)
             else:
                 helptext = ''

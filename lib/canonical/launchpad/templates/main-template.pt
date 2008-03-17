@@ -21,7 +21,8 @@
       icingroot string:${rooturl}+icing/rev${revno};
       site_message modules/canonical.config/config/launchpad/site_message;
       devmode modules/canonical.config/config/devmode;
-      is_demo modules/canonical.config/config/launchpad/is_demo"
+      is_demo modules/canonical.config/config/launchpad/is_demo;
+      is_edge modules/canonical.config/config/launchpad/is_edge"
 >
   <head>
     <title tal:content="CONTEXTS/fmt:pagetitle">Launchpad</title>
@@ -328,12 +329,14 @@
             &copy;&nbsp;2004-2008&nbsp;<a
                 href="http://canonical.com/">Canonical&nbsp;Ltd.</a>
           <tal:block>
-              | build
+              | <a href="https://help.launchpad.net/LaunchpadReleases">
+              Version 1.2.3</a> | build
               <tal:block condition="revno" replace="revno" />
               <tal:block condition="not: revno">unknown</tal:block>
           </tal:block>
           <tal:devmode condition="devmode">| DEVMODE</tal:devmode>
           <tal:demo condition="is_demo">| DEMO</tal:demo>
+          <tal:edge condition="is_edge">| EDGE</tal:edge>
         </div>
         <ul style="clear: both; margin-top:20px;" tal:condition="nothing">
             <li>Facet name:
@@ -373,7 +376,7 @@
         <div id="help-bottom">&nbsp;</div>
       </div>
     </div>
-    <div id="menupreload" style="visibility:hidden" 
+    <div id="menupreload" style="visibility:hidden"
       xml:lang="en" lang="en" dir="ltr">
       <ul class="menu" lpm:mid="root">
         <tal:condition condition="request/lp:person">

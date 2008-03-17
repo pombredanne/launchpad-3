@@ -171,6 +171,8 @@ class IBugTracker(Interface):
     projects = Attribute('The projects that use this bug tracker.')
     products = Attribute('The products that use this bug tracker.')
     latestwatches = Attribute('The last 10 watches created.')
+    imported_bug_messages = Attribute(
+        'Bug messages that have been imported from this bug tracker.')
 
     def getBugsWatching(remotebug):
         """Get the bugs watching the given remote bug in this bug tracker."""
@@ -182,6 +184,9 @@ class IBugTracker(Interface):
         :hours_since_last_check: hours are considered needing to be
         updated.
         """
+
+    def destroySelf():
+        """Delete this bug tracker."""
 
 
 class IBugTrackerSet(Interface):
@@ -236,6 +241,9 @@ class IBugTrackerSet(Interface):
         Returns a list of IBugTracker objects, ordered by the number
         of bugwatches for each tracker, from highest to lowest.
         """
+
+    def getPillarsForBugtrackers(bug_trackers):
+        """Return dict mapping bugtrackers to lists of pillars."""
 
 
 class IBugTrackerAlias(Interface):

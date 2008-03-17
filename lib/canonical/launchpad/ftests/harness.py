@@ -8,35 +8,30 @@ canonical.testing
 
 __metaclass__ = type
 
-import unittest
-from zope.component import getUtility
-from zope.component.exceptions import ComponentLookupError
-from zope.app.rdb.interfaces import IZopeDatabaseAdapter
-from sqlos.interfaces import IConnectionName
-
-from canonical.testing import (
-        BaseLayer, LibrarianLayer, FunctionalLayer, LaunchpadZopelessLayer,
-        )
-from canonical.ftests.pgsql import PgTestSetup
-from canonical.functional import FunctionalTestSetup
-from canonical.config import dbconfig
-from canonical.database.revision import confirm_dbrevision
-from canonical.database.sqlbase import (
-        cursor, SQLBase, ZopelessTransactionManager,
-        )
-from canonical.lp import initZopeless
-from canonical.launchpad.ftests import login, ANONYMOUS, logout
-from canonical.launchpad.webapp.interfaces import ILaunchpadDatabaseAdapter
-
 import sqlos
 from sqlos.connection import connCache
+from sqlos.interfaces import IConnectionName
+from zope.app.rdb.interfaces import IZopeDatabaseAdapter
+from zope.app.testing.functional import FunctionalTestSetup
+from zope.component import getUtility
+from zope.component.exceptions import ComponentLookupError
+
+from canonical.config import config
+from canonical.database.revision import confirm_dbrevision
+from canonical.database.sqlbase import (
+    cursor, SQLBase, ZopelessTransactionManager)
+from canonical.ftests.pgsql import PgTestSetup
+from canonical.launchpad.webapp.interfaces import ILaunchpadDatabaseAdapter
+from canonical.lp import initZopeless
+from canonical.testing import BaseLayer, FunctionalLayer, ZopelessLayer
+
 
 __all__ = [
-    'LaunchpadTestSetup', 'LaunchpadTestCase',
-    'LaunchpadZopelessTestSetup',
-    'LaunchpadFunctionalTestSetup', 'LaunchpadFunctionalTestCase',
+    'LaunchpadTestSetup', 'LaunchpadZopelessTestSetup',
+    'LaunchpadFunctionalTestSetup',
     '_disconnect_sqlos', '_reconnect_sqlos'
     ]
+
 
 def _disconnect_sqlos():
     try:
@@ -64,9 +59,11 @@ def _disconnect_sqlos():
         del connCache[key]
     sqlos.connection.connCache.clear()
 
+
 def _reconnect_sqlos(dbuser=None, database_config_section='launchpad'):
     _disconnect_sqlos()
-    dbconfig.setConfigSection(database_config_section)
+    if dbuser is None:
+        dbuser = config[database_config_section].dbuser
     name = getUtility(IConnectionName).name
     da = getUtility(IZopeDatabaseAdapter, name)
     da.switchUser(dbuser)
@@ -76,7 +73,8 @@ def _reconnect_sqlos(dbuser=None, database_config_section='launchpad'):
 
     # Confirm that the SQLOS connection cache has been emptied, so access
     # to SQLBase._connection will get a fresh Tranaction
-    assert len(connCache.keys()) == 0, 'SQLOS appears to have kept connections'
+    assert len(connCache.keys()) == 0, (
+        'SQLOS appears to have kept connections')
 
     # Confirm the database has the right patchlevel
     confirm_dbrevision(cursor())
@@ -128,7 +126,14 @@ class LaunchpadZopelessTestSetup(LaunchpadTestSetup):
 
 
 class LaunchpadFunctionalTestSetup(LaunchpadTestSetup):
+    def _checkLayerInvariants(self):
+        assert FunctionalLayer.isSetUp or ZopelessLayer.isSetUp, """
+                FunctionalTestSetup invoked at an inappropriate time.
+                May only be invoked in the FunctionalLayer or ZopelessLayer
+                """
+
     def setUp(self, dbuser=None):
+        self._checkLayerInvariants()
         if dbuser is not None:
             self.dbuser = dbuser
         _disconnect_sqlos()
@@ -137,67 +142,7 @@ class LaunchpadFunctionalTestSetup(LaunchpadTestSetup):
         _reconnect_sqlos(self.dbuser)
 
     def tearDown(self):
+        self._checkLayerInvariants()
         FunctionalTestSetup().tearDown()
         _disconnect_sqlos()
         super(LaunchpadFunctionalTestSetup, self).tearDown()
-
-
-class LaunchpadTestCase(unittest.TestCase):
-    dbuser = LaunchpadTestSetup.dbuser
-    dbname = LaunchpadTestSetup.dbname
-    template = LaunchpadTestSetup.template
-    # XXX StuartBishop 2006-07-13: Should be Launchpad, but we need to
-    # specify how to change the db user to connect as.
-    layer = LibrarianLayer
-
-    def setUp(self):
-        self._setup = LaunchpadTestSetup()
-        self._setup.dbuser = self.dbuser
-        self._setup.dbname = self.dbname
-        self._setup.template = self.template
-
-        self._setup.setUp()
-
-    def tearDown(self):
-        self._setup.tearDown()
-
-    def connect(self):
-        return self._setup.connect()
-
-
-class LaunchpadFunctionalTestCase(unittest.TestCase):
-    # XXX StuartBishop 2006-07-13: Should be LaunchpadFunctional, but we
-    # first need to implement a way of specifying the dbuser to connect as.
-    layer = FunctionalLayer
-    dbuser = None
-    def login(self, user=None):
-        """Login the current zope request as user.
-
-        If no user is provided, ANONYMOUS is used.
-        """
-        if user is None:
-            user = ANONYMOUS
-        login(user)
-        self.__logged_in = True
-
-    def setUp(self, dbuser=None):
-        if dbuser is not None:
-            self.dbuser = dbuser
-        unittest.TestCase.setUp(self)
-        LaunchpadFunctionalTestSetup(dbuser=self.dbuser).setUp()
-        self.__logged_in = False
-
-    def tearDown(self):
-        if self.__logged_in:
-            logout()
-            self.__logged_in = False
-        LaunchpadFunctionalTestSetup(dbuser=self.dbuser).tearDown()
-        unittest.TestCase.tearDown(self)
-
-    def connect(self):
-        return LaunchpadFunctionalTestSetup(dbuser=self.dbuser).connect()
-
-
-class LaunchpadZopelessTestCase(unittest.TestCase):
-    layer = LaunchpadZopelessLayer
-

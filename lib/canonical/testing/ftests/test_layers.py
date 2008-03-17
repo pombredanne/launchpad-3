@@ -7,16 +7,24 @@ to confirm that the environment hasn't been corrupted by tests
 __metaclass__ = type
 
 from cStringIO import StringIO
-import psycopg
 from urllib import urlopen
 import unittest
 
+import psycopg
+
+from sqlos.interfaces import IConnectionName
+
+from zope.app.rdb.interfaces import IZopeDatabaseAdapter
 from zope.component import getUtility, ComponentLookupError
 
-from canonical.config import config, dbconfig
+from canonical.config import config
 from canonical.librarian.client import LibrarianClient, UploadFailed
 from canonical.librarian.interfaces import ILibrarianClient
-from canonical.testing import *
+from canonical.testing import (
+    BaseLayer, DatabaseLayer, FunctionalLayer, LaunchpadFunctionalLayer,
+    LaunchpadLayer, LaunchpadScriptLayer, LaunchpadZopelessLayer,
+    LibrarianLayer, ZopelessLayer)
+
 
 class BaseTestCase(unittest.TestCase):
     """Both the Base layer tests, as well as the base Test Case
@@ -134,7 +142,8 @@ class LibrarianTestCase(BaseTestCase):
     def testUploadsFail(self):
         # This layer is not particularly useful by itself, as the Librarian
         # cannot function correctly as there is no database setup.
-        # We can test this using remoteAddFile (it does not need the CA loaded)
+        # We can test this using remoteAddFile (it does not need the CA
+        # loaded)
         client = LibrarianClient()
         data = 'This is a test'
         self.failUnlessRaises(
@@ -296,9 +305,11 @@ class LaunchpadScriptTestCase(BaseTestCase):
     def testSwitchDbConfig(self):
         # Test that we can switch database configurations, and that we
         # end up connected as the right user.
-        self.assertEqual(dbconfig.dbuser, 'launchpad')
+        name = getUtility(IConnectionName).name
+        da = getUtility(IZopeDatabaseAdapter, name)
+        self.assertEqual(da.getUser(), 'launchpad')
         LaunchpadScriptLayer.switchDbConfig('librarian')
-        self.assertEqual(dbconfig.dbuser, 'librarian')
+        self.assertEqual(da.getUser(), 'librarian')
 
         from canonical.database.sqlbase import cursor
         cur = cursor()

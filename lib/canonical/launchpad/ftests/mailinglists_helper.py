@@ -160,6 +160,15 @@ def new_team(team_name, with_list=False):
                              subscriptionpolicy=policy)
     if not with_list:
         return team
+    else:
+        return team, new_list_for_team(team)
+
+
+def new_list_for_team(team):
+    """A helper that creates a new, active mailing list for a team.
+
+    Used in doctests.
+    """
     # Any member of the mailing-list-experts team can review a list
     # registration.  It doesn't matter which one.
     experts = getUtility(ILaunchpadCelebrities).mailing_list_experts
@@ -170,7 +179,7 @@ def new_team(team_name, with_list=False):
     team_list.startConstructing()
     team_list.transitionToStatus(MailingListStatus.ACTIVE)
     flush_database_updates()
-    return team, team_list
+    return team_list
 
 
 def apply_for_list(browser, team_name):

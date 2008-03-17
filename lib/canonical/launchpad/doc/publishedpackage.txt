@@ -11,30 +11,22 @@ which distributions.
     >>> verifyObject(IPublishedPackageSet, pp_set)
     True
 
-There are also some meta objects to combine information from the DB
-model in more intuitive ones:
+IDistroSeriesSourcePackageRelease.meta_binaries returns a list of unique
+binaries resulting from the sourcepackagerelease for a distroseries.
+The source package mozilla-firefox has two unique binaries:
+"mozilla-firefox-data" and "mozilla-firefox". Although the latter
+is published twice in two architectures it is only returned once.
 
- >>> from canonical.launchpad.database import SourcePackageRelease
- >>> src = SourcePackageRelease.get(20)
- >>> src.name
- u'pmount'
+    >>> from canonical.launchpad.interfaces import IDistributionSet
+    >>> ubuntu = getUtility(IDistributionSet)['ubuntu']
+    >>> warty = ubuntu['warty']
+    >>> ff_sp = warty.getSourcePackage('mozilla-firefox')
+    >>> ff_drspr = ff_sp['0.9']
+    >>> for package in ff_drspr.meta_binaries:
+    ...     print package.name
+    mozilla-firefox
+    mozilla-firefox-data
 
-IDistroSeriesSourcePackageRelease.meta_binaries returns a list of binaries
-resulting from the sourcepackagerelease for a distroseries.
-This test makes sure that the meta_binaries method exists and the
-returned objects meet the IDistroSeriesBinaryPackage interface.
-There should only be one package in the binaries collection for
-mozilla-firefox.  This is a feature of the sample data that we are relying
-upon.
-
- >>> from canonical.launchpad.interfaces import IDistributionSet
- >>> ubuntu = getUtility(IDistributionSet)['ubuntu']
- >>> warty = ubuntu['warty']
- >>> ff_sp = warty.getSourcePackage('mozilla-firefox')
- >>> ff_drspr = ff_sp['0.9']
- >>> len(ff_drspr.meta_binaries)
- 3
-
- >>> from canonical.launchpad.interfaces import IDistroSeriesBinaryPackage
- >>> verifyObject(IDistroSeriesBinaryPackage, ff_drspr.meta_binaries[0])
- True
+    >>> from canonical.launchpad.interfaces import IDistroSeriesBinaryPackage
+    >>> verifyObject(IDistroSeriesBinaryPackage, ff_drspr.meta_binaries[0])
+    True

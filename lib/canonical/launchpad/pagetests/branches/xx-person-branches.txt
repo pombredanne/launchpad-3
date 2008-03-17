@@ -47,55 +47,56 @@ message.
   distributed version control.
 
 
-== Authored Branches ==
+== Owned Branches ==
 
 There is a link in the branch context menu for person which points to
-the authored branches page.
+the owned branches page.
 
-   >>> browser.open('http://code.launchpad.dev/~name12')
-   >>> browser.getLink('Show authored branches').click()
-   >>> print browser.title
-   Bazaar branches authored by Sample Person
-   >>> table = find_tag_by_id(browser.contents, 'branchtable')
-   >>> for row in table.tbody.fetch('tr'):
-   ...     print extract_text(row)
-   main           New           firefox
-   klingon        Experimental  gnome-terminal
-   feature-x      New           landscape
-   trunk          New           landscape
-   junk.contrib   New    ... weeks ago
+    >>> browser.open('http://code.launchpad.dev/~name12')
+    >>> browser.getLink('Owned').click()
+    >>> print browser.title
+    Bazaar branches owned by Sample Person
+    >>> table = find_tag_by_id(browser.contents, 'branchtable')
+    >>> for row in table.tbody.fetch('tr'):
+    ...     print extract_text(row)
+    ~name12/firefox/main             New            firefox ...
+    ~name12/gnome-terminal/2.6       Mature         gnome-terminal ...
+    ~name12/gnome-terminal/main      Development    gnome-terminal ...
+    ~name12/gnome-terminal/klingon   Experimental   gnome-terminal ...
+    ~name12/gnome-terminal/mirrored  New            gnome-terminal ...
+    ~name12/gnome-terminal/pushed    New            gnome-terminal ...
 
 
 == Registered Branches ==
 
 There is also a link which points to the registered branches page.
 
-   >>> browser.open('http://code.launchpad.dev/~name12')
-   >>> browser.getLink('Show registered branches').click()
-   >>> print browser.title
-   Bazaar branches registered by Sample Person
-   >>> table = find_tag_by_id(browser.contents, 'branchtable')
-   >>> for row in table.tbody.fetch('tr'):
-   ...     print extract_text(row)
-   2.6                    Mature       gnome-terminal
-   main                   Development  gnome-terminal
-   mirrored               New          gnome-terminal
-   pushed                 New          gnome-terminal
-   scanned                New          gnome-terminal
-   junk.dev Ubuntu Team   Experimental  ... weeks ago
+    >>> browser.open('http://code.launchpad.dev/~name12')
+    >>> browser.getLink('Registered').click()
+    >>> print browser.title
+    Bazaar branches registered by Sample Person
+    >>> table = find_tag_by_id(browser.contents, 'branchtable')
+    >>> for row in table.tbody.fetch('tr'):
+    ...     print extract_text(row)
+    ~name12/firefox/main              New            firefox ...
+    ~name12/gnome-terminal/2.6        Mature         gnome-terminal ...
+    ~name12/gnome-terminal/main       Development    gnome-terminal ...
+    ~name12/gnome-terminal/klingon    Experimental   gnome-terminal ...
+    ~name12/gnome-terminal/mirrored   New            gnome-terminal ...
+    ~name12/gnome-terminal/pushed     New            gnome-terminal ...
+
 
 == Subscribed branches ==
 
 From the persons main listing page, there is also a link to subscribed
 branches.
 
-   >>> browser.open('http://code.launchpad.dev/~name12')
-   >>> browser.getLink('Show subscribed branches').click()
-   >>> print browser.title
-   Bazaar branches subscribed to by Sample Person
-   >>> table = find_tag_by_id(browser.contents, 'branchtable')
-   >>> for row in table.tbody.fetch('tr'):
-   ...     print extract_text(row)
-   launchpad   Launchpad Developers   New           gnome-terminal
-   junk.dev    Ubuntu Team            Experimental
-      ... weeks ago
+    >>> browser.open('http://code.launchpad.dev/~name12')
+    >>> browser.getLink('Subscribed').click()
+    >>> print browser.title
+    Bazaar branches subscribed to by Sample Person
+    >>> table = find_tag_by_id(browser.contents, 'branchtable')
+    >>> for row in table.tbody.fetch('tr'):
+    ...     print extract_text(row)
+    ~launchpad/gnome-terminal/launchpad  New           gnome-terminal  ...
+    ~name12/+junk/junk.dev               Experimental  ...

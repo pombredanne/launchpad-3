@@ -30,8 +30,7 @@ also sends the email to the list of recipients.
     >>> from canonical.launchpad.interfaces import (
     ...     BranchSubscriptionNotificationLevel, BranchSubscriptionDiffSize,
     ...     IBranchSet)
-    >>> from canonical.launchpad.mail import stub
-    >>> from canonical.launchpad.mailnotification import (
+    >>> from canonical.launchpad.mailout.branch import (
     ...     email_branch_modified_notifications)
     >>> from canonical.launchpad.tests.mail_helpers import pop_notifications
     >>> branch = getUtility(IBranchSet).getByUniqueName(
@@ -200,7 +199,7 @@ We need to create some sufficiently large diffs to compare against.
     >>> diff = '\n'.join([str(value) for value in xrange(6000)])
     >>> message = 'Test message.\n'
 
-    >>> from canonical.launchpad.mailnotification import (
+    >>> from canonical.launchpad.mailout.branch import (
     ...     send_branch_revision_notifications)
 
 Send the revision notifications.

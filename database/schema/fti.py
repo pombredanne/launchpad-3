@@ -1,5 +1,8 @@
 #!/usr/bin/python2.4
 # Copyright 2006 Canonical Ltd.  All rights reserved.
+# This modules uses relative imports.
+# pylint: disable-msg=W0403
+
 """
 Add full text indexes to the launchpad database
 """
@@ -14,8 +17,7 @@ import psycopg
 from canonical import lp
 from canonical.config import config
 from canonical.database.sqlbase import (
-        connect, READ_COMMITTED_ISOLATION, AUTOCOMMIT_ISOLATION,
-        )
+    connect, ISOLATION_LEVEL_AUTOCOMMIT, ISOLATION_LEVEL_READ_COMMITTED)
 from canonical.launchpad.scripts import logger, logger_options, db_options
 
 # Defines parser and locale to use.
@@ -149,7 +151,7 @@ def quote_identifier(identifier):
     quote_dict = {'\"': '""', "\\": "\\\\"}
     for dkey in quote_dict.keys():
         if identifier.find(dkey) >= 0:
-            identifier=quote_dict[dkey].join(identifier.split(dkey))
+            identifier = quote_dict[dkey].join(identifier.split(dkey))
     return '"%s"' % identifier
 
 
@@ -250,20 +252,24 @@ def liverebuild(con):
         log.info("Rebuilding fti column on %s", table)
         for id in range(0, max_id, batch_size):
             try:
-                query = "UPDATE %s SET fti=NULL WHERE id BETWEEN %d AND %d" % (
-                    table, id+1, id + batch_size
-                    )
+                query = """
+                    UPDATE %s SET fti=NULL WHERE id BETWEEN %d AND %d
+                    """ % (table, id + 1, id + batch_size)
                 log.debug(query)
                 cur.execute(query)
             except psycopg.Error:
                 # No commit - we are in autocommit mode
                 log.exception('psycopg error')
                 con = connect(lp.dbuser)
-                con.set_isolation_level(AUTOCOMMIT_ISOLATION)
+                con.set_isolation_level(ISOLATION_LEVEL_AUTOCOMMIT)
 
 
 def setup(con, configuration=DEFAULT_CONFIG):
     """Setup and install tsearch2 if isn't already"""
+
+    # tsearch2 is out-of-the-box in 8.3+
+    v83 = get_pgversion(con).startswith('8.3')
+
     try:
         execute(con, 'SET search_path = ts2, public;')
     except psycopg.ProgrammingError:
@@ -277,15 +283,15 @@ def setup(con, configuration=DEFAULT_CONFIG):
     try:
         execute(con, 'SELECT * from pg_ts_cfg')
         log.debug('tsearch2 already installed. Updating dictionaries.')
-        update_dicts(con)
         con.commit()
     except psycopg.ProgrammingError:
         con.rollback()
         log.debug('Installing tsearch2')
-        if config.dbhost:
-            cmd = 'psql -d %s -h %s -f -' % (config.dbname, config.dbhost)
+        if config.database.dbhost:
+            cmd = 'psql -d %s -h %s -f -' % (
+                config.database.dbname, config.database.dbhost)
         else:
-            cmd = 'psql -d %s -f -' % (config.dbname, )
+            cmd = 'psql -d %s -f -' % (config.database.dbname, )
         if options.dbuser:
             cmd += ' -U %s' % options.dbuser
         p = popen2.Popen4(cmd)
@@ -295,11 +301,6 @@ def setup(con, configuration=DEFAULT_CONFIG):
         print >> c, open(tsearch2_sql_path).read().replace(
                 'public;','ts2, public;'
                 )
-        if get_pgversion(con).startswith('7.4.'):
-            patch_sql_path = os.path.join(
-                    os.path.dirname(__file__), 'regprocedure_update.sql'
-                    )
-            print >> c, open(patch_sql_path).read()
         p.tochild.close()
         rv = p.wait()
         if rv != 0:
@@ -451,7 +452,8 @@ def setup(con, configuration=DEFAULT_CONFIG):
             r"Convert a string to a tsearch2 query using the preferred "
             r"configuration. eg. "
             r""""SELECT * FROM Bug WHERE fti @@ ftq(''fatal crash'')". """
-            r"The query is lowercased, and multiple words searched using AND.'"
+            r"The query is lowercased, and multiple words searched using "
+            r"AND.'"
             )
     execute(con,
             r"COMMENT ON FUNCTION ftq(text) IS '"
@@ -485,11 +487,9 @@ def setup(con, configuration=DEFAULT_CONFIG):
             sql = []
             for i in range(0, len(args), 2):
                 sql.append(
-                        "setweight(to_tsvector(''default'', coalesce("
-                        "substring(ltrim($%d) from 1 for 2500),'''')),$%d)" % (
-                            i + 1, i + 2
-                            )
-                        )
+                        "ts2.setweight(ts2.to_tsvector(''default'', coalesce("
+                        "substring(ltrim($%d) from 1 for 2500),'''')),"
+                        "CAST($%d AS \\"char\\"))" % (i + 1, i + 2))
                 args[i] = new[args[i]]
 
             sql = "SELECT %s AS fti" % "||".join(sql)
@@ -522,20 +522,30 @@ def setup(con, configuration=DEFAULT_CONFIG):
             "Non-english database locales are not supported with launchpad. "
             "Fresh initdb required."
             )
-    r = locale.split('.',1)
+    r = locale.split('.', 1)
     if len(r) > 1:
         assert r[1].upper() in ("UTF8", "UTF-8"), \
                 "Only UTF8 encodings supported. Fresh initdb required."
     else:
         assert len(r) == 1, 'Invalid database locale %s' % repr(locale)
 
-    execute(con, r"""
-            UPDATE ts2.pg_ts_cfg SET locale=(
-                SELECT setting FROM pg_settings
-                WHERE context='internal' AND name='lc_ctype'
-                )
-            WHERE ts_name='default'
-            """)
+    if v83:
+        r = execute(con,
+                "SELECT COUNT(*) FROM pg_ts_config WHERE cfgname='default'",
+                results=True)
+        if r[0][0] == 0:
+            execute(con, """
+                CREATE TEXT SEARCH CONFIGURATION ts2.default (
+                    COPY = pg_catalog.english)""")
+    else:
+        # Remove block when running 8.3 everywhere.
+        execute(con, r"""
+                UPDATE ts2.pg_ts_cfg SET locale=(
+                    SELECT setting FROM pg_settings
+                    WHERE context='internal' AND name='lc_ctype'
+                    )
+                WHERE ts_name='default'
+                """)
 
     # Don't bother with this - the setting is not exported with dumps
     # or propogated  when duplicating the database. Only reliable
@@ -543,6 +553,7 @@ def setup(con, configuration=DEFAULT_CONFIG):
     #
     # Set the default schema search path so this stuff can be found
     #execute(con, 'ALTER DATABASE %s SET search_path = public,ts2;' % dbname)
+
     con.commit()
 
 
@@ -590,16 +601,10 @@ def get_pgversion(con):
 
 def get_tsearch2_sql_path(con):
     pgversion = get_pgversion(con)
-    if pgversion.startswith('8.0.'):
-        path = os.path.join(PGSQL_BASE, '8.0', 'contrib', 'tsearch2.sql')
-    elif pgversion.startswith('8.1.'):
-        path = os.path.join(PGSQL_BASE, '8.1', 'contrib', 'tsearch2.sql')
-    elif pgversion.startswith('8.2.'):
+    if pgversion.startswith('8.2.'):
         path = os.path.join(PGSQL_BASE, '8.2', 'contrib', 'tsearch2.sql')
-    elif pgversion.startswith('7.4.'):
-        path = os.path.join(PGSQL_BASE, '7.4', 'contrib', 'tsearch2.sql')
-        if not os.path.exists(path):
-            path = os.path.join(PGSQL_BASE, 'contrib', 'tsearch2.sql')
+    elif pgversion.startswith('8.3.'):
+        path = os.path.join(PGSQL_BASE, '8.3', 'contrib', 'tsearch2.sql')
     else:
         raise RuntimeError('Unknown version %s' % pgversion)
 
@@ -607,33 +612,13 @@ def get_tsearch2_sql_path(con):
     return path
 
 
-def update_dicts(con):
-    '''Fix paths to the stop word lists.
-
-    The PostgreSQL 7.4 installation had absolute paths to the stop words
-    lists. This path changed with breezy. Update the paths to the
-    newer relative paths.
-    '''
-    if get_pgversion(con).startswith('7.4.'):
-        return
-
-    execute(con, '''
-        UPDATE pg_ts_dict SET dict_initoption='contrib/english.stop'
-        WHERE dict_initoption like '/%/english.stop'
-        ''')
-    execute(con, '''
-        UPDATE pg_ts_dict SET dict_initoption='contrib/russian.stop'
-        WHERE dict_initoption like '/%/russian.stop'
-        ''')
-
-
 def main():
     con = connect(lp.dbuser)
     if options.liverebuild:
-        con.set_isolation_level(AUTOCOMMIT_ISOLATION)
+        con.set_isolation_level(ISOLATION_LEVEL_AUTOCOMMIT)
         liverebuild(con)
     else:
-        con.set_isolation_level(READ_COMMITTED_ISOLATION)
+        con.set_isolation_level(ISOLATION_LEVEL_READ_COMMITTED)
         setup(con)
         if options.null:
             nullify(con)
@@ -643,7 +628,8 @@ def main():
                     log.info("Rebuilding full text index on %s", table)
                     fti(con, table, columns)
                 else:
-                    log.info("No need to rebuild full text index on %s", table)
+                    log.info(
+                        "No need to rebuild full text index on %s", table)
 
 
 if __name__ == '__main__':

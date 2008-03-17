@@ -18,6 +18,7 @@ from zope.app.event.objectevent import ObjectCreatedEvent
 from zope.app.form.browser import TextAreaWidget
 from zope.component import getUtility
 from zope.formlib import form
+from zope.interface import Interface
 from zope.publisher.interfaces import NotFound
 from zope.schema import Choice
 from zope.schema.vocabulary import SimpleTerm, SimpleVocabulary
@@ -27,17 +28,18 @@ from canonical.widgets import (
     HiddenUserWidget, LaunchpadRadioWidget, SinglePopupWidget)
 
 from canonical.launchpad import _
+from canonical.launchpad.fields import PublicPersonChoice
 from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.webapp import (
     action, canonical_url, custom_widget, LaunchpadEditFormView,
     LaunchpadFormView)
+from canonical.launchpad.webapp.menu import structured
 from canonical.launchpad.browser.branding import BrandingChangeView
 from canonical.launchpad.interfaces import (
     EmailAddressStatus, IEmailAddressSet, ILaunchBag, ILoginTokenSet,
     IMailingList, IMailingListSet, IPersonSet, ITeam, ITeamContactAddressForm,
-    ITeamCreation, ITeamMember, LoginTokenType, MailingListStatus,
-    TeamContactMethod, TeamMembershipStatus, UnexpectedFormData,
-    is_participant_in_beta_program)
+    ITeamCreation, LoginTokenType, MailingListStatus, TeamContactMethod,
+    TeamMembershipStatus, UnexpectedFormData, is_participant_in_beta_program)
 from canonical.launchpad.interfaces.validation import validate_new_team_email
 
 class HasRenewalPolicyMixin:
@@ -243,7 +245,11 @@ class TeamContactAddressView(MailingListTeamBaseView):
                 try:
                     validate_new_team_email(data['contact_address'])
                 except LaunchpadValidationError, error:
-                    self.setFieldError('contact_address', str(error))
+                    # We need to wrap this in structured, so that the
+                    # markup is preserved.  Note that this puts the
+                    # responsibility for security on the exception thrower.
+                    self.setFieldError('contact_address',
+                                       structured(str(error)))
         elif data['contact_method'] == TeamContactMethod.HOSTED_LIST:
             mailing_list = getUtility(IMailingListSet).get(self.context.name)
             if mailing_list is None or not mailing_list.isUsable():
@@ -634,6 +640,16 @@ class TeamBrandingView(BrandingChangeView):
 
     schema = ITeam
     field_names = ['icon', 'logo', 'mugshot']
+
+
+class ITeamMember(Interface):
+    """The interface used in the form to add a new member to a team."""
+
+    newmember = PublicPersonChoice(
+        title=_('New member'), required=True,
+        vocabulary='ValidTeamMember',
+        description=_("The user or team which is going to be "
+                        "added as the new member of this team."))
 
 
 class TeamMemberAddView(LaunchpadFormView):

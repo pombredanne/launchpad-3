@@ -6,7 +6,6 @@ longer than length of time to execute.
 Imports and test setup:
 
     >>> import threading
-    >>> import time
     >>> import psycopg
     >>> import transaction
     >>> from zope.component import getUtility
@@ -14,11 +13,9 @@ Imports and test setup:
     >>> from sqlos.interfaces import IConnectionName
     >>> from canonical.config import config
     >>> import canonical.launchpad.webapp.adapter
-    >>> from canonical.launchpad.webapp.adapter import *
-    >>> orig_db_statement_timeout = config.launchpad.db_statement_timeout
-    >>> orig_db_statement_timeout_precision = (
-    ...     config.launchpad.db_statement_timeout_precision)
-
+    >>> from canonical.launchpad.webapp.adapter import (
+    ...     clear_request_started, get_request_statements,
+    ...     LaunchpadDatabaseAdapter, set_request_started)
 
 The Launchpad database connection is created by getting the
 IZopeDatabaseAdapter for the connection name in question.  The
@@ -46,7 +43,7 @@ Statement Timeout
 The timeout is set in launchpad.conf file.  By default it is unset,
 which corresponds to no timeout:
 
-    >>> print config.launchpad.db_statement_timeout
+    >>> print config.database.db_statement_timeout
     None
 
 
@@ -70,7 +67,12 @@ the Postgres statement timeout (a value of zero means no timeout):
 Using the builtin pg_sleep() function, we can trigger the
 timeout by sleeping for 200ms with a 100ms statement timeout:
 
-    >>> config.launchpad.db_statement_timeout = 100
+    >>> from textwrap import dedent
+    >>> test_data = dedent("""
+    ...     [database]
+    ...     db_statement_timeout: 100
+    ...     """)
+    >>> config.push('base_test_data', test_data)
     >>> conn = da()
     >>> cursor = conn.cursor()
     >>> set_request_started()
@@ -101,8 +103,12 @@ Now issue three statements, the first one taking less than the precision
 time but the second going over the threshold. We use the time machine
 to fake how long things take.
 
-    >>> config.launchpad.db_statement_timeout = 10000
-    >>> config.launchpad.db_statement_timeout_precision = 1000
+    >>> test_data = dedent("""
+    ...     [database]
+    ...     db_statement_timeout: 10000
+    ...     db_statement_timeout_precision: 1000
+    ...     """)
+    >>> config.push('test', test_data)
     >>> conn = da()
     >>> cursor = conn.cursor()
     >>> set_request_started()
@@ -145,7 +151,11 @@ Turn off the timemachine so nobody hurts themselves:
 
 Set the timeout to 5000ms for the next tests:
 
-    >>> config.launchpad.db_statement_timeout = 5000
+    >>> test_data = dedent("""
+    ...     [database]
+    ...     db_statement_timeout: 5000
+    ...     """)
+    >>> config.push('test', test_data)
     >>> conn = da()
     >>> cursor = conn.cursor()
     >>> set_request_started()
@@ -253,7 +263,11 @@ remove the timout:
 
 If no timeout has been set, then requests will not time out:
 
-    >>> config.launchpad.db_statement_timeout = None
+    >>> test_data = dedent("""
+    ...     [database]
+    ...     db_statement_timeout: none
+    ...     """)
+    >>> config.push('test', test_data)
     >>> da.disconnect()
     >>> conn = da()
     >>> cursor = conn.cursor()
@@ -321,14 +335,19 @@ The read only status only lasts until the end of the transaction.:
     >>> transaction.abort()
 
 
-Switching Database Users
-========================
+== Switching Database Users ==
 
-We can also change the user we are connected as, which is useful in tests.
-You should only change the user at the start of a transaction, or else any
-uncommitted changes made may be lost:
+We can also change the user we are connected as, which is useful in
+tests. The getUser() method will return the current database user. The
+switchUser() method will change the connection to the user that that
+is passed as an argument. You should only change the user at the start
+of a transaction, or else any uncommitted changes made may be lost:
 
+    >>> da.getUser()
+    'launchpad'
     >>> da.switchUser(config.statistician.dbuser)
+    >>> da.getUser()
+    'statistician'
     >>> cursor = da().cursor()
     >>> cursor.execute("SELECT current_user")
     >>> cursor.fetchone()[0] == config.statistician.dbuser
@@ -357,9 +376,11 @@ Unlike readonly, this is not reset at the end of the transaction:
     ...
     >>> transaction.abort()
 
-So you need to explicity set the user back:
+So you need to explicitly set the user back:
 
     >>> da.switchUser()
+    >>> da.getUser()
+    'launchpad'
     >>> cursor = da().cursor()
     >>> cursor.execute("""
     ...     INSERT INTO SourcePackageName(name) VALUES ('fnord4')
@@ -368,11 +389,7 @@ So you need to explicity set the user back:
     >>> cursor.fetchone()[0] == config.launchpad.dbuser
     True
 
-
 Reset out config:
 
-    >>> config.launchpad.db_statement_timeout = orig_db_statement_timeout
-    >>> config.launchpad.db_statement_timeout_precision = (
-    ...     orig_db_statement_timeout_precision)
-
+    >>> base_test_data = config.pop('base_test_data')
 

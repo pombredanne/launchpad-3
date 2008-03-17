@@ -1,73 +1,99 @@
 #!/usr/bin/python2.4
-"""Death row kickoff script."""
+# Copyright 2004-2008 Canonical Ltd.  All rights reserved.
+
+# Stop lint warning about relative import:
+# pylint: disable-msg=W0403
+
+
+"""Death row processor script.
+
+This script removes obsolete files from the selected archive(s) pool.
+
+You can select a specific distribution or let it default to 'ubuntu'.
+
+It operates in 2 modes:
+ * all distribution archive (PRIMARY and PARTNER) [default]
+ * all PPAs [--ppa]
+
+You can optionally specify a different 'pool-root' path which will be used
+as the base path for removing files, instead of the real archive pool root.
+This feature is used to inspect the removed files without actually modifying
+the archive tree.
+
+There is also a 'dry-run' mode that can be used to operate on the real
+archive tree without removing the files.
+"""
 
 import _pythonpath
 
-from optparse import OptionParser
-
 from zope.component import getUtility
 
-from canonical.launchpad.interfaces import IDistributionSet
-from canonical.config import config
-from canonical.launchpad.scripts import (
-    execute_zcml_for_scripts, logger, logger_options)
-from canonical.lp import initZopeless
-
 from canonical.archivepublisher.deathrow import getDeathRow
+from canonical.config import config
+from canonical.launchpad.interfaces import IDistributionSet
+from canonical.launchpad.scripts.base import LaunchpadScript
 
 
-def main():
-    parser = OptionParser()
-    parser.add_option("-n", "--dry-run", action="store_true",
-                      dest="dry_run", metavar="", default=False,
-                      help=("Dry run: goes through the motions but "
-                            "commits to nothing."))
-    parser.add_option("-d", "--distribution",
-                      dest="distribution", metavar="DISTRO",
-                      help="Specified the distribution name.")
-    parser.add_option("-p", "--pool-root", metavar="PATH",
-                      help="Override the path to the pool folder")
-    parser.add_option("--ppa", action="store_true",
-                      dest="ppa", metavar="PPA", default=False,
-                      help="Run only over PPA archives.")
+class DeathRowProcessor(LaunchpadScript):
 
-    logger_options(parser)
-    (options, args) = parser.parse_args()
-    log = logger(options, "deathrow-distro")
+    def add_my_options(self):
+        self.parser.add_option(
+            "-n", "--dry-run", action="store_true", default=False,
+            help="Dry run: goes through the motions but commits to nothing.")
 
-    log.debug("Initialising zopeless.")
+        self.parser.add_option(
+            "-d", "--distribution", metavar="DISTRO", default='ubuntu',
+            help="Specified the distribution name.")
 
-    txn = initZopeless(dbuser=config.archivepublisher.dbuser)
-    execute_zcml_for_scripts()
+        self.parser.add_option(
+            "-p", "--pool-root", metavar="PATH",
+            help="Override the path to the pool folder")
 
-    distribution = getUtility(IDistributionSet).getByName(
-        options.distribution)
+        self.parser.add_option(
+            "--ppa", action="store_true", default=False,
+            help="Run only over PPA archives.")
 
-    if not options.ppa:
-        archives = distribution.all_distro_archives
-    else:
-        archives = distribution.getAllPPAs()
+    def main(self):
+        distribution = getUtility(IDistributionSet).getByName(
+            self.options.distribution)
 
-    for archive in archives:
-        death_row = getDeathRow(archive, log, options.pool_root)
+        if self.options.ppa:
+            archives = distribution.getAllPPAs()
+        else:
+            archives = distribution.all_distro_archives
+
+        for archive in archives:
+            self.processDeathRow(archive)
+
+    def processDeathRow(self, archive):
+        """Process death-row for the given archive.
+
+        It handles the current DB transaction according with the results
+        of the operatin just executed, i.e, commits successfull runs and
+        aborts runs with errors. It also respects 'dry-run' command-line
+        option.
+        """
+        death_row = getDeathRow(
+            archive, self.logger, self.options.pool_root)
+        self.logger.debug(
+            "Unpublishing death row for %s." % archive.title)
         try:
-            # Unpublish death row
-            log.debug("Unpublishing death row for %s." % archive.title)
-            death_row.reap(options.dry_run)
-
-            if options.dry_run:
-                log.debug("Dry run mode; rolling back.")
-                txn.abort()
-            else:
-                log.debug("Committing")
-                txn.commit()
+            death_row.reap(self.options.dry_run)
         except:
-            log.exception("Unexpected exception while doing death-row "
-                          "unpublish")
-            txn.abort()
-            # Continue with other archives.
+            self.logger.exception(
+                "Unexpected exception while doing death-row unpublish")
+            self.txn.abort()
+        else:
+            if self.options.dry_run:
+                self.logger.debug("Dry run mode; rolling back.")
+                self.txn.abort()
+            else:
+                self.logger.debug("Committing")
+                self.txn.commit()
 
 
 if __name__ == "__main__":
-    main()
+    script = DeathRowProcessor(
+        'process-death-row', dbuser=config.archivepublisher.dbuser)
+    script.lock_and_run()
 

@@ -4,16 +4,14 @@
 
 __metaclass__ = type
 
-__all__ = [
-    'BugContactEditView'
-    ]
+__all__ = ['BugContactEditView']
 
-import cgi
 
 from canonical.launchpad.interfaces import IHasBugContact
 from canonical.launchpad.webapp import (
     action, canonical_url, LaunchpadEditFormView)
 from canonical.launchpad.webapp.menu import structured
+
 
 class BugContactEditView(LaunchpadEditFormView):
     """Browser view class for editing the bug contact."""
@@ -74,7 +72,7 @@ class BugContactEditView(LaunchpadEditFormView):
                 'bugcontact',
                 'You must choose a valid person or team to be the bug contact'
                 ' for %s.' %
-                cgi.escape(self.context.displayname))
+                self.context.displayname)
 
             return
 
@@ -82,17 +80,16 @@ class BugContactEditView(LaunchpadEditFormView):
 
         if (contact is not None and contact.isTeam() and
             contact not in self.user.getAdministratedTeams()):
-            error = (
+            error = structured(
                 "You cannot set %(team)s as the bug contact for "
                 "%(target)s because you are not an administrator of that "
                 "team.<br />If you believe that %(team)s should be the bug"
                 " contact for %(target)s, please notify one of the "
-                "<a href=\"%(url)s\">%(team)s administrators</a>."
-
-                % {'team': cgi.escape(contact.displayname),
-                   'target': cgi.escape(self.context.displayname),
-                   'url': canonical_url(contact, rootsite='mainsite')
-                          + '/+members'})
+                "<a href=\"%(url)s\">%(team)s administrators</a>.",
+                team=contact.displayname,
+                target=self.context.displayname,
+                url=(canonical_url(contact, rootsite='mainsite') +
+                     '/+members'))
             self.setFieldError('bugcontact', error)
 
 

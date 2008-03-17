@@ -11,7 +11,7 @@ __all__ = [
 
 
 from zope.component import adapts
-from zope.schema import Bool, Choice, Datetime, Int, Object, Text, TextLine
+from zope.schema import Bool, Choice, Datetime, Object, Text
 
 from canonical.lazr.interfaces import IEntry
 from canonical.lazr.rest import Collection, Entry
@@ -19,7 +19,7 @@ from canonical.lazr.rest.schema import CollectionField
 
 from canonical.launchpad.interfaces import (
     BugTaskImportance, BugTaskStatus, IBug, IBugTask, IPerson)
-from canonical.lp import decorates
+from canonical.lazr import decorates
 
 
 class IBugTaskEntry(IEntry):
@@ -90,7 +90,7 @@ class BugTaskEntry(Entry):
     decorates(IBugTaskEntry)
     schema = IBugTaskEntry
 
-    parent_collection_name = 'bugtasks'
+    _parent_collection_path = ['bugtasks']
 
     @property
     def status_explanation(self):

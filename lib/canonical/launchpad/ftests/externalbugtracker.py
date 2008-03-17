@@ -1,10 +1,10 @@
 # Copyright 2006 Canonical Ltd.  All rights reserved.
+# pylint: disable-msg=W0231
 
 """Helper classes for testing ExternalSystem."""
 
 __metaclass__ = type
 
-import email
 import os
 import re
 import urlparse
@@ -24,7 +24,7 @@ from canonical.launchpad.interfaces import (
     BugTaskStatus, UNKNOWN_REMOTE_STATUS)
 from canonical.launchpad.database import BugTracker
 from canonical.launchpad.interfaces import IBugTrackerSet, IPersonSet
-from canonical.launchpad.scripts import debbugs
+from canonical.launchpad.scripts import checkwatches, debbugs
 from canonical.testing.layers import LaunchpadZopelessLayer
 
 
@@ -126,11 +126,12 @@ def set_bugwatch_error_type(bug_watch, error_type):
 
 class OOPSHook:
     def install(self):
-        self.original_report_oops = externalbugtracker.report_oops
-        externalbugtracker.report_oops = self.reportOOPS
+        self.reset()
+        self.original_report_oops = checkwatches.report_oops
+        checkwatches.report_oops = self.reportOOPS
 
     def uninstall(self):
-        externalbugtracker.report_oops = self.original_report_oops
+        checkwatches.report_oops = self.original_report_oops
         del self.original_report_oops
 
     def reportOOPS(self, message=None, properties=None, info=None):
@@ -138,9 +139,9 @@ class OOPSHook:
             message=message, properties=properties, info=info)
         return self.oops_info
 
-    @property
-    def oopsed(self):
-        return hasattr(self, 'oops_info')
+    def reset(self):
+        if hasattr(self, 'oops_info'):
+            del self.oops_info
 
     @property
     def formatted_oops_info(self):
@@ -159,25 +160,6 @@ class TestExternalBugTracker(ExternalBugTracker):
     implementation, though it doesn't actually do anything.
     """
 
-    def __init__(self, txn, bugtracker=None):
-        """Initialise a new `TestExternalBugTracker`.
-
-        This method exists because the tests that use this class don't
-        need to know about `BugTracker` objects or the new_bugtracker
-        function.
-        """
-        if bugtracker is not None:
-            # If bugtracker is present, we call the superclass
-            # initializer which uses members of the bugtracker object
-            # to set some local parameters. The superclass initializer
-            # will also set the reference to `txn`.
-            super(TestExternalBugTracker, self).__init__(txn, bugtracker)
-        else:
-            # If the bugtracker is None, we don't want to call the
-            # superclass initializer, since it will choke, but we still
-            # want to set the transaction.
-            self.txn = txn
-
     def convertRemoteStatus(self, remote_status):
         """Always return UNKNOWN_REMOTE_STATUS.
 
@@ -190,11 +172,8 @@ class TestExternalBugTracker(ExternalBugTracker):
 class TestBrokenExternalBugTracker(TestExternalBugTracker):
     """A test version of ExternalBugTracker, designed to break."""
 
-    def __init__(self, txn, baseurl):
-        super(TestBrokenExternalBugTracker, self).__init__(txn)
-        self.baseurl = baseurl
-        self.initialize_remote_bugdb_error = None
-        self.get_remote_status_error = None
+    initialize_remote_bugdb_error = None
+    get_remote_status_error = None
 
     def initializeRemoteBugDB(self, bug_ids):
         """Raise the error specified in initialize_remote_bugdb_error.
@@ -240,8 +219,8 @@ class TestBugzilla(Bugzilla):
     buglist_page = 'buglist.cgi'
     bug_id_form_element = 'bug_id'
 
-    def __init__(self, txn, baseurl, version=None):
-        Bugzilla.__init__(self, txn, baseurl, version=version)
+    def __init__(self, baseurl, version=None):
+        Bugzilla.__init__(self, baseurl, version=version)
         self.bugzilla_bugs = self._getBugsToTest()
 
     def _getBugsToTest(self):
@@ -547,8 +526,8 @@ class TestDebBugs(DebBugs):
     """
     import_comments = False
 
-    def __init__(self, txn, bugtracker, bugs):
-        super(TestDebBugs, self).__init__(txn, bugtracker)
+    def __init__(self, baseurl, bugs):
+        super(TestDebBugs, self).__init__(baseurl)
         self.bugs = bugs
         self.debbugs_db = TestDebBugsDB()
 
