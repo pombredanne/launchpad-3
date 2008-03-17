@@ -120,6 +120,8 @@ def report_warning(message, properties=None, info=None):
 class BugWatchUpdater(object):
     """Takes responsibility for updating remote bug watches."""
 
+    ACCEPTABLE_TIME_SKEW = timedelta(minutes=2)
+
     def __init__(self, txn, log=None):
         if log is None:
             self.log = getLogger()
@@ -336,11 +338,10 @@ class BugWatchUpdater(object):
         server_time = None
         if now is None:
             now = datetime.now(pytz.timezone('UTC'))
-        acceptable_skew = timedelta(minutes=2)
         try:
             server_time = remotesystem.getCurrentDBTime()
             if (server_time is not None and
-                abs(server_time - now) > acceptable_skew):
+                abs(server_time - now) > self.ACCEPTABLE_TIME_SKEW):
                 raise TooMuchTimeSkew(abs(server_time - now))
             remotesystem.initializeRemoteBugDB(remote_ids)
         except Exception, error:
