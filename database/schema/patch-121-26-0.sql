@@ -36,4 +36,10 @@ CREATE TABLE CodeReviewVote (
 CREATE INDEX codereviewvote__registrant__idx ON CodeReviewVote(registrant);
 CREATE INDEX codereviewvote__reviewer__idx ON CodeReviewVote(reviewer);
 
-INSERT INTO LaunchpadDatabaseRevision VALUES (121, 90, 0);
+-- Indexes on foreign keys
+CREATE INDEX codereviewvote__branch_merge_proposal__idx
+    ON CodeReviewVote(branch_merge_proposal);
+CREATE INDEX codereviewvote__vote_message__idx
+    ON CodeReviewVote(vote_message);
+
+INSERT INTO LaunchpadDatabaseRevision VALUES (121, 26, 0);
