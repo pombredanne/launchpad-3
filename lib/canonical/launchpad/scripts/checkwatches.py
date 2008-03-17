@@ -364,7 +364,7 @@ class BugWatchUpdater(object):
         self.txn.begin()
         bug_watches_by_remote_bug = self._getBugWatchesByRemoteBug(
             bug_watch_ids)
-        non_modifed_bugs = set(remote_ids).difference(remote_ids_to_check)
+        non_modified_bugs = set(remote_ids).difference(remote_ids_to_check)
         can_import_comments = (
             ISupportsCommentImport.providedBy(remotesystem) and
             remotesystem.import_comments)
@@ -377,7 +377,7 @@ class BugWatchUpdater(object):
             bug_watches = bug_watches_by_remote_bug[bug_id]
             for bug_watch in bug_watches:
                 bug_watch.lastchecked = UTC_NOW
-            if bug_id in non_modifed_bugs:
+            if bug_id in non_modified_bugs:
                 # No need to try to update it, if it wasn't modified.
                 continue
 
