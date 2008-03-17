@@ -143,8 +143,12 @@ network, each IExternalBugTracker has the ability to filter out bugs
 that haven't been modified. The method responsible for this is
 getModifiedRemoteBugs(), which accepts the set of bugs that should be
 checked, as well as the oldest time any of the bugs were last checked.
+The getModifiedRemoteBugs() is only called for bug trackers where we
+know that their time is similar to ours.
 
     >>> class CheckModifiedExternalBugTracker(InitializingExternalBugTracker):
+    ...     def getCurrentDBTime(self):
+    ...         return datetime.now(pytz.timezone('UTC'))
     ...     def getModifiedRemoteBugs(self, remote_bug_ids, last_checked):
     ...         print "last_checked: %s" % last_checked
     ...         print "getModifiedRemoteBugs() called: %r" % (
@@ -265,6 +269,26 @@ initializeRemoteBugDB() since we do need to update them.
     COMMIT
     last_checked: 2007-03-16 15:5...:...
     getModifiedRemoteBugs() called: [u'1', u'4']
+    initializeRemoteBugDB() called: [u'1', u'2', u'3', u'4']
+    BEGIN
+    getRemoteStatus() called: u'1'
+    getRemoteStatus() called: u'2'
+    getRemoteStatus() called: u'3'
+    getRemoteStatus() called: u'4'
+
+As mentioned earlier, getModifiedRemoteBugs() is only called if we can
+get the current time of the remote system. If the time is unknown, we
+always update all the bug watches.
+
+    >>> class TimeUnknownExternalBugTracker(CheckModifiedExternalBugTracker):
+    ...     def getCurrentDBTime(self):
+    ...         return None
+    >>> for bug_watch in bug_watches:
+    ...     bug_watch.lastchecked = some_time_ago
+    >>> flush_database_updates()
+    >>> bug_watch_updater.updateBugWatches(
+    ...     TimeUnknownExternalBugTracker(), bug_watches)
+    COMMIT
     initializeRemoteBugDB() called: [u'1', u'2', u'3', u'4']
     BEGIN
     getRemoteStatus() called: u'1'
