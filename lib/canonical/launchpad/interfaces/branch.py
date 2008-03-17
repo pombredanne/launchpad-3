@@ -692,6 +692,9 @@ class IBranchSet(Interface):
         Return the default value if there is no such branch.
         """
 
+    def getBranch(owner, product, branch_name):
+        """Return the branch identified by owner/product/branch_name."""
+
     def new(branch_type, name, creator, owner, product, url, title=None,
             lifecycle_status=BranchLifecycleStatus.NEW, author=None,
             summary=None, home_page=None, whiteboard=None, date_created=None):

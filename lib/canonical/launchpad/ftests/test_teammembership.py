@@ -4,7 +4,7 @@ __metaclass__ = type
 
 import subprocess
 import unittest
-from datetime import datetime
+from datetime import datetime, timedelta
 
 import pytz
 
@@ -31,17 +31,57 @@ class TestTeamMembershipSet(unittest.TestCase):
         marilize = self.personset.getByName('marilize')
         ubuntu_team = self.personset.getByName('ubuntu-team')
         membership = self.membershipset.new(
-            marilize, ubuntu_team, TeamMembershipStatus.APPROVED)
+            marilize, ubuntu_team, TeamMembershipStatus.APPROVED, marilize)
         self.assertEqual(
             membership,
             self.membershipset.getByPersonAndTeam(marilize, ubuntu_team))
         self.assertEqual(membership.status, TeamMembershipStatus.APPROVED)
 
+    def test_active_membership_creation_stores_proponent_and_reviewer(self):
+        """Memberships created in the any active state have reviewer stored.
+
+        The reviewer_comment, date_reviewed and attributes related to the
+        proponent are also stored, but everything related to acknowledger
+        will be left empty.
+        """
+        marilize = self.personset.getByName('marilize')
+        ubuntu_team = self.personset.getByName('ubuntu-team')
+        membership = self.membershipset.new(
+            marilize, ubuntu_team, TeamMembershipStatus.APPROVED,
+            ubuntu_team.teamowner, comment="I like her")
+        self.assertEqual(ubuntu_team.teamowner, membership.proposed_by)
+        self.assertEqual(membership.proponent_comment, "I like her")
+        self.failUnless(
+            membership.date_proposed <= datetime.now(pytz.timezone('UTC')))
+        self.assertEqual(ubuntu_team.teamowner, membership.reviewed_by)
+        self.assertEqual(membership.reviewer_comment, "I like her")
+        self.failUnless(
+            membership.date_reviewed <= datetime.now(pytz.timezone('UTC')))
+        self.assertEqual(membership.acknowledged_by, None)
+
+    def test_membership_creation_stores_proponent(self):
+        """Memberships created in the proposed state have proponent stored.
+
+        The proponent_comment and date_proposed are also stored, but
+        everything related to reviewer and acknowledger will be left empty.
+        """
+        marilize = self.personset.getByName('marilize')
+        ubuntu_team = self.personset.getByName('ubuntu-team')
+        membership = self.membershipset.new(
+            marilize, ubuntu_team, TeamMembershipStatus.PROPOSED, marilize,
+            comment="I'd like to join")
+        self.assertEqual(marilize, membership.proposed_by)
+        self.assertEqual(membership.proponent_comment, "I'd like to join")
+        self.failUnless(
+            membership.date_proposed <= datetime.now(pytz.timezone('UTC')))
+        self.assertEqual(membership.reviewed_by, None)
+        self.assertEqual(membership.acknowledged_by, None)
+
     def test_admin_membership_creation(self):
         ubuntu_team = self.personset.getByName('ubuntu-team')
         no_priv = self.personset.getByName('no-priv')
         membership = self.membershipset.new(
-            no_priv, ubuntu_team, TeamMembershipStatus.ADMIN)
+            no_priv, ubuntu_team, TeamMembershipStatus.ADMIN, no_priv)
         self.assertEqual(
             membership,
             self.membershipset.getByPersonAndTeam(no_priv, ubuntu_team))
@@ -113,6 +153,120 @@ class TestTeamMembership(unittest.TestCase):
         cur.execute("SELECT status FROM teammembership WHERE id = %d" % tm.id)
         [new_status] = cur.fetchone()
         self.assertEqual(new_status, TeamMembershipStatus.DEACTIVATED.value)
+
+
+class TestTeamMembershipSetStatus(unittest.TestCase):
+    """Test the behaviour of TeamMembership's setStatus()."""
+    layer = LaunchpadFunctionalLayer
+
+    def setUp(self):
+        login('foo.bar@canonical.com')
+        self.foobar = getUtility(IPersonSet).getByName('name16')
+        self.no_priv = getUtility(IPersonSet).getByName('no-priv')
+        self.ubuntu_team = getUtility(IPersonSet).getByName('ubuntu-team')
+        self.admins = getUtility(IPersonSet).getByName('admins')
+
+    def test_proponent_is_stored(self):
+        for status in [TeamMembershipStatus.DEACTIVATED,
+                       TeamMembershipStatus.EXPIRED,
+                       TeamMembershipStatus.DECLINED]:
+            tm = TeamMembership(
+                person=self.no_priv, team=self.ubuntu_team, status=status)
+            self.failIf(
+                tm.proposed_by, "There can be no proponent at this point.")
+            self.failIf(
+                tm.date_proposed, "There can be no proposed date this point.")
+            self.failIf(tm.proponent_comment,
+                        "There can be no proponent comment at this point.")
+            tm.setStatus(
+                TeamMembershipStatus.PROPOSED, self.foobar,
+                "Did it 'cause I can")
+            self.failUnlessEqual(tm.proposed_by, self.foobar)
+            self.failUnlessEqual(tm.proponent_comment, "Did it 'cause I can")
+            self.failUnless(
+                tm.date_proposed <= datetime.now(pytz.timezone('UTC')))
+            # Destroy the membership so that we can create another in a
+            # different state.
+            tm.destroySelf()
+
+    def test_acknowledger_is_stored(self):
+        for status in [TeamMembershipStatus.APPROVED,
+                       TeamMembershipStatus.INVITATION_DECLINED]:
+            tm = TeamMembership(
+                person=self.admins, team=self.ubuntu_team,
+                status=TeamMembershipStatus.INVITED)
+            self.failIf(
+                tm.acknowledged_by,
+                "There can be no acknowledger at this point.")
+            self.failIf(
+                tm.date_acknowledged,
+                "There can be no accepted date this point.")
+            self.failIf(tm.acknowledger_comment,
+                        "There can be no acknowledger comment at this point.")
+            tm.setStatus(status, self.foobar, "Did it 'cause I can")
+            self.failUnlessEqual(tm.acknowledged_by, self.foobar)
+            self.failUnlessEqual(
+                tm.acknowledger_comment, "Did it 'cause I can")
+            self.failUnless(
+                tm.date_acknowledged <= datetime.now(pytz.timezone('UTC')))
+            # Destroy the membership so that we can create another in a
+            # different state.
+            tm.destroySelf()
+
+    def test_reviewer_is_stored(self):
+        transitions_mapping = {
+            TeamMembershipStatus.DEACTIVATED: [TeamMembershipStatus.APPROVED],
+            TeamMembershipStatus.EXPIRED: [TeamMembershipStatus.APPROVED],
+            TeamMembershipStatus.PROPOSED: [
+                TeamMembershipStatus.APPROVED, TeamMembershipStatus.DECLINED],
+            TeamMembershipStatus.DECLINED: [TeamMembershipStatus.APPROVED],
+            TeamMembershipStatus.INVITATION_DECLINED: [
+                TeamMembershipStatus.APPROVED]}
+        for status, new_statuses in transitions_mapping.items():
+            for new_status in new_statuses:
+                tm = TeamMembership(
+                    person=self.no_priv, team=self.ubuntu_team, status=status)
+                self.failIf(
+                    tm.reviewed_by,
+                    "There can be no approver at this point.")
+                self.failIf(
+                    tm.date_reviewed,
+                    "There can be no approved date this point.")
+                self.failIf(
+                    tm.reviewer_comment,
+                    "There can be no approver comment at this point.")
+                tm.setStatus(new_status, self.foobar, "Did it 'cause I can")
+                self.failUnlessEqual(tm.reviewed_by, self.foobar)
+                self.failUnlessEqual(
+                    tm.reviewer_comment, "Did it 'cause I can")
+                self.failUnless(
+                    tm.date_reviewed <= datetime.now(pytz.timezone('UTC')))
+
+                # Destroy the membership so that we can create another in a
+                # different state.
+                tm.destroySelf()
+
+    def test_datejoined(self):
+        """TeamMembership.datejoined stores the date in which this membership
+        was made active for the first time.
+        """
+        tm = TeamMembership(
+            person=self.no_priv, team=self.ubuntu_team,
+            status=TeamMembershipStatus.PROPOSED)
+        self.failIf(
+            tm.datejoined, "There can be no datejoined at this point.")
+        tm.setStatus(TeamMembershipStatus.APPROVED, self.foobar)
+        now = datetime.now(pytz.timezone('UTC'))
+        self.failUnless(tm.datejoined <= now)
+
+        # We now set the status to deactivated and change datejoined to a
+        # date in the past just so that we can easily show it's not changed
+        # again by setStatus().
+        one_minute_ago = now - timedelta(minutes=1)
+        tm.setStatus(TeamMembershipStatus.DEACTIVATED, self.foobar)
+        tm.datejoined = one_minute_ago
+        tm.setStatus(TeamMembershipStatus.APPROVED, self.foobar)
+        self.failUnless(tm.datejoined <= one_minute_ago)
 
 
 class TestCheckTeamParticipationScript(unittest.TestCase):

@@ -26,6 +26,8 @@
       <tal:landing-candidate
           define="branch mergeproposal/source_branch;
                   dependent_branch nothing;
+                  show_whiteboard python:True;
+                  show_status python:True;
                   show_associations python:True;
                   show_lifecycle python:True;
                   ">

@@ -13,7 +13,8 @@ from zope.interface import Interface, Attribute
 
 class IDistributionSourcePackageCache(Interface):
 
-    distribution = Attribute("The distribution.")
+    archive = Attribute("The cache target archive.")
+    distribution = Attribute("The cache target distribution.")
     sourcepackagename = Attribute("The source package name.")
 
     name = Attribute("The source package name as text.")

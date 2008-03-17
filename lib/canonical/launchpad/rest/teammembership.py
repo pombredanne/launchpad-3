@@ -28,12 +28,12 @@ class ITeamMembershipEntry(IEntry):
     # let us reuse or copy fields from IPerson.
     team = Object(schema=IPerson)
     member = Object(schema=IPerson)
-    reviewer = Object(schema=IPerson)
+    last_changed_by = Object(schema=IPerson)
 
     date_joined = Text(title=u"Date Joined", required=True, readonly=True)
     date_expires = Text(title=u"Date Expires", required=False, readonly=False)
-    reviewer_comment = Text(title=u"Reviewer Comment", required=False,
-                           readonly=False)
+    last_change_comment = Text(
+        title=u"Comment on the last change", required=False, readonly=False)
     status = Text(title=u"Status of the membership", required=True)
 
 
@@ -68,9 +68,9 @@ class TeamMembershipEntry(Entry):
         return self.context.dateexpires
 
     @property
-    def reviewer_comment(self):
+    def last_change_comment(self):
         """See `ITeamMembershipEntry`."""
-        return self.context.reviewercomment
+        return self.context.last_change_comment
 
 
 class PersonTeamMembershipCollection(ScopedCollection):

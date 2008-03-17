@@ -8,7 +8,7 @@ from unittest import TestCase, TestLoader
 import zope.event
 
 from canonical.launchpad.event import SQLObjectCreatedEvent
-from canonical.launchpad.ftests import ANONYMOUS, login, logout
+from canonical.launchpad.ftests import ANONYMOUS, login, logout, syncUpdate
 from canonical.launchpad.interfaces import (
     BadStateTransition, BranchMergeProposalStatus,
     BranchSubscriptionNotificationLevel, CodeReviewNotificationLevel,
@@ -259,6 +259,7 @@ class TestBranchMergeProposalQueueing(TestCase):
         # Remove the proposal from the middle of the queue.
         proposal = queued_proposals[1]
         proposal.dequeue()
+        syncUpdate(proposal)
 
         del new_queue_order[1]
 

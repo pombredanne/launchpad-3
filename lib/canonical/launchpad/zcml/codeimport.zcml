@@ -26,6 +26,11 @@
       appropriate. -->
   </content>
 
+  <subscriber
+      for="canonical.launchpad.interfaces.ICodeImport
+           canonical.launchpad.event.interfaces.ISQLObjectCreatedEvent"
+      handler="canonical.launchpad.mailout.codeimport.new_import" />
+
   <browser:url
     for="canonical.launchpad.interfaces.ICodeImport"
     path_expression="string:+code-import"
