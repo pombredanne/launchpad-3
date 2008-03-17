@@ -441,31 +441,38 @@ Perform `post publication` override:
 
    >>> override = netapplet_srcrel.current_published.changeOverride(
    ...     new_section=new_section)
+
    >>> override.section == new_section
    True
-   >>> override.status.name
-   'PENDING'
-   >>> pub_hist = netapplet_srcrel.publishing_history
-   >>> pub_hist.count()
+
+   >>> print override.status.name
+   PENDING
+
+   >>> netapplet_srcrel.publishing_history.count()
    2
 
 Override information about 'pmount' is pending publication:
 
-   >>> pub_hist[0].status.name, pub_hist[0].section.name
-   ('PENDING', u'base')
+   >>> print netapplet_srcrel.current_published.status.name
+   PENDING
 
-Supersede current publication:
+   >>> print netapplet_srcrel.current_published.section.name
+   base
 
-   >>> superseded_netapplet = netapplet_srcrel.current_published.supersede()
+Supersede previous netapplet publication:
+
+   >>> last_published = netapplet_srcrel.publishing_history[1]
+   >>> superseded_netapplet = last_published.supersede()
+   >>> flush_database_updates()
+
    >>> netapplet_srcrel.publishing_history.count()
    2
 
-We need to flush cached values.
+   >>> print superseded_netapplet.status.name
+   SUPERSEDED
 
-   >>> flush_database_updates()
-
-   >>> superseded_netapplet.status.name, superseded_netapplet.datesuperseded
-   ('SUPERSEDED', CURRENT_TIMESTAMP AT TIME ZONE 'UTC')
+   >>> superseded_netapplet.datesuperseded
+   CURRENT_TIMESTAMP AT TIME ZONE 'UTC'
 
 
 == DistroSeries Translations migration ==
@@ -1040,6 +1047,15 @@ the future.
 
    >>> hoary_pub_sources.count()
    6
+
+   >>> for pub in hoary_pub_sources:
+   ...     print pub.displayname
+   alsa-utils 1.0.9a-4ubuntu1 in hoary
+   cnews cr.g7-37 in hoary
+   evolution 1.0 in hoary
+   libstdc++ b8p in hoary
+   linux-source-2.6.15 2.6.15.3 in hoary
+   pmount 0.1-2 in hoary
 
    >>> hoary_pub_source = hoary_pub_sources[0]
 
