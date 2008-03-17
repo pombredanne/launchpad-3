@@ -32,6 +32,7 @@ dish. Users may comment on cookbooks and on individual recipes.
     ...     name = TextLine(title=u"Name", required=True)
     ...     author = Object(schema=IAuthor)
     ...     recipes = Attribute("List of recipes published in this cookbook.")
+    ...     comments = Attribute("List of comments about this cookbook.")
 
     >>> class ICookbookComment(IComment):
     ...     cookbook = Object(schema=ICookbook)
@@ -79,16 +80,20 @@ cookbooks, and dishes. The inconsistent naming is intentional.
 Here are simple implementations of IAuthor, ICookbook, IDish, and IRecipe.
 
     >>> from zope.interface import implements
+    >>> from zope.security.checker import CheckerPublic
+    >>> from canonical.lazr.security import protect_schema
 
     >>> class Author:
     ...     implements(IAuthor)
     ...     def __init__(self, name):
     ...         self.name = name
+    >>> protect_schema(Author, IAuthor, write_permission=CheckerPublic)
 
     >>> class Comment(object):
     ...     implements(IComment)
     ...     def __init__(self, text):
     ...         self.text = text
+    >>> protect_schema(Comment, IComment, write_permission=CheckerPublic)
 
     >>> class Cookbook:
     ...     implements(ICookbook)
@@ -97,6 +102,7 @@ Here are simple implementations of IAuthor, ICookbook, IDish, and IRecipe.
     ...         self.author = author
     ...         self.recipes = []
     ...         self.comments = []
+    >>> protect_schema(Cookbook, ICookbook, write_permission=CheckerPublic)
 
     >>> class CookbookComment(Comment):
     ...     implements(ICookbookComment)
@@ -104,12 +110,15 @@ Here are simple implementations of IAuthor, ICookbook, IDish, and IRecipe.
     ...         super(CookbookComment, self).__init__(text)
     ...         self.cookbook = cookbook
     ...         cookbook.comments.append(self)
+    >>> protect_schema(
+    ...     CookbookComment, ICookbookComment, write_permission=CheckerPublic)
 
     >>> class Dish:
     ...     implements(IDish)
     ...     def __init__(self, name):
     ...         self.name = name
     ...         self.recipes = []
+    >>> protect_schema(Dish, IDish, write_permission=CheckerPublic)
 
     >>> class Recipe:
     ...     implements(IRecipe)
@@ -121,6 +130,7 @@ Here are simple implementations of IAuthor, ICookbook, IDish, and IRecipe.
     ...         self.dish.recipes.append(self)
     ...         self.instructions = instructions
     ...         self.comments = []
+    >>> protect_schema(Recipe, IRecipe, write_permission=CheckerPublic)
 
     >>> class RecipeComment(Comment):
     ...     implements(IRecipeComment)
@@ -128,6 +138,8 @@ Here are simple implementations of IAuthor, ICookbook, IDish, and IRecipe.
     ...         super(RecipeComment, self).__init__(text)
     ...         self.recipe = recipe
     ...         recipe.comments.append(self)
+    >>> protect_schema(
+    ...     RecipeComment, IRecipeComment, write_permission=CheckerPublic)
 
 Here are the "model objects" themselves:
 
@@ -169,6 +181,7 @@ Here's a simple CookbookSet with a predefined list of cookbooks.
     ...         if len(match) > 0:
     ...             return match[0]
     ...         return None
+    >>> protect_schema(CookbookSet, ICookbookSet)
 
 Here's a simple AuthorSet with predefined authors.
 
@@ -185,6 +198,7 @@ Here's a simple AuthorSet with predefined authors.
     ...         if len(match) > 0:
     ...             return match[0]
     ...         return None
+    >>> protect_schema(AuthorSet, IAuthorSet)
 
 Finally, a simple DishSet with predefined dishes.
 
@@ -201,7 +215,7 @@ Finally, a simple DishSet with predefined dishes.
     ...         if len(match) > 0:
     ...             return match[0]
     ...         return None
-
+    >>> protect_schema(DishSet, IDishSet)
 
 The web service uses the standard Navigation components to map URLs to
 components to publish (see navigation.txt) and the standard ICanonicalUrlData
@@ -209,6 +223,7 @@ to map content object back to URL (see canonical_url.txt).
 
 The navigation for these components:
 
+    >>> from urllib import unquote
     >>> from canonical.launchpad.webapp.publisher import (
     ...     Navigation, stepthrough)
     >>> from zope.component import provideAdapter
@@ -221,17 +236,17 @@ The navigation for these components:
 
     >>> class DishSetNavigation(Navigation):
     ...     def traverse(self, name):
-    ...         return self.context.get(name)
+    ...         return self.context.get(unquote(name))
     >>> register_navigation(DishSetNavigation, IDishSet)
 
     >>> class AuthorSetNavigation(Navigation):
     ...     def traverse(self, name):
-    ...         return self.context.getAuthor(name)
+    ...         return self.context.getAuthor(unquote(name))
     >>> register_navigation(AuthorSetNavigation, IAuthorSet)
 
     >>> class CookbookSetNavigation(Navigation):
     ...     def traverse(self, name):
-    ...         return self.context.get(name)
+    ...         return self.context.get(unquote(name))
     >>> register_navigation(CookbookSetNavigation, ICookbookSet)
 
     >>> class CookbookNavigation(Navigation):
@@ -239,13 +254,14 @@ The navigation for these components:
     ...     def traverse_comments(self, name):
     ...         try:
     ...             return self.context.comments[int(name)-1]
-    ...         except (IntexError, TypeError, ValueError):
+    ...         except (IndexError, TypeError, ValueError):
     ...             return None
     ...
     ...     @stepthrough('recipes')
     ...     def traverse_recipes(self, name):
+    ...         name = unquote(name)
     ...         for recipe in self.context.recipes:
-    ...             if recipe.id == int(name):
+    ...             if recipe.dish.name == name:
     ...                 return recipe
     ...         return None
     >>> register_navigation(CookbookNavigation, ICookbook)
@@ -255,7 +271,7 @@ The navigation for these components:
     ...     def traverse_comments(self, name):
     ...         try:
     ...             return self.context.comments[int(name)-1]
-    ...         except (IntexError, TypeError, ValueError):
+    ...         except (IndexError, TypeError, ValueError):
     ...             return None
     >>> register_navigation(RecipeNavigation, IRecipe)
 
@@ -270,7 +286,7 @@ The navigation for these components:
 
 The canonical URLs for these components:
 
-    >>> import urllib
+    >>> from urllib import quote
     >>> from canonical.launchpad.webapp.interfaces import ICanonicalUrlData
     >>> class BaseUrlData(object):
     ...     inside = None
@@ -280,7 +296,7 @@ The canonical URLs for these components:
     ...
     ...     @property
     ...     def path(self):
-    ...         return urllib.quote(self.context.name)
+    ...         return quote(self.context.name)
 
     >>> class AuthorUrlData(BaseUrlData):
     ...     @property
@@ -300,7 +316,7 @@ The canonical URLs for these components:
     ...         return self.context.cookbook
     ...     @property
     ...     def path(self):
-    ...         return str(self.context.id)
+    ...         return quote(u"recipes/%s" % str(self.context.dish.name))
     >>> provideAdapter(RecipeUrlData, [IRecipe], ICanonicalUrlData)
 
     >>> class CookbookUrlData(BaseUrlData):
@@ -526,7 +542,8 @@ collection.
     >>> provideAdapter(AuthorCollection, [IAuthorSet], ICollection)
 
     >>> class CookbookCollection(Collection):
-    ...     """A collection of cookbooks, as exposed through the web service."""
+    ...     """A collection of cookbooks, as exposed through the web service.
+    ...     """
     ...
     ...     def find(self):
     ...        """Find all the cookbooks."""
@@ -578,9 +595,9 @@ recipes. It'll work with any collection of recipes.
     ...         return entry.dish.name
 
     >>> from canonical.lazr.interfaces import IScopedCollection
-    >>> provideAdapter(RecipeScopedCollection, [ICookbookEntry, IRecipe],
+    >>> provideAdapter(RecipeScopedCollection, [ICookbook, IRecipe],
     ...                IScopedCollection)
-    >>> provideAdapter(RecipeScopedCollection, [IDishEntry, IRecipe],
+    >>> provideAdapter(RecipeScopedCollection, [IDish, IRecipe],
     ...                IScopedCollection)
 
 We also need to define collections of the comments associated with a
@@ -595,10 +612,10 @@ indexed by their order within a parent collection:
 OrderBasedScopedCollection.
 
     >>> from canonical.lazr.rest.resource import OrderBasedScopedCollection
-    >>> provideAdapter(OrderBasedScopedCollection, [IRecipeEntry, IComment],
+    >>> provideAdapter(OrderBasedScopedCollection, [IRecipe, IComment],
     ...                IScopedCollection)
 
-    >>> provideAdapter(OrderBasedScopedCollection, [ICookbookEntry, IComment],
+    >>> provideAdapter(OrderBasedScopedCollection, [ICookbook, IComment],
     ...                IScopedCollection)
 
 
@@ -632,62 +649,67 @@ root of the object tree.
     >>> from canonical.lazr.rest import ServiceRootResource
     >>> from canonical.launchpad.interfaces import IWebServiceApplication
     >>> class MyServiceRootResource(ServiceRootResource):
-    ...    implements(IWebServiceApplication)
-    ...    @property
-    ...    def top_level_collections(self):
-    ...        return { 'authors' : AuthorSet(),
-    ...                 'cookbooks' : CookbookSet(),
-    ...                 'dishes' : DishSet() }
+    ...     implements(IWebServiceApplication)
+    >>> register_navigation(RootNavigation, IWebServiceApplication)
 
 If you call the service root resource, and pass in an HTTP request, it
 will act as though you had performed a GET on the URL
 'http://api.launchpad.net/'.
 
-    >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
+    >>> from canonical.launchpad.webapp.servers import WebServiceTestRequest
     >>> from canonical.launchpad.webapp.servers import WebServicePublication
-    >>> request = LaunchpadTestRequest()
-    >>> request.setPublication(WebServicePublication(None))
-    >>> request.setApplicationServer('api.launchpad.dev')
-    >>> app = MyServiceRootResource()
-    >>> from canonical.launchpad.interfaces import IOpenLaunchBag
-    >>> getUtility(IOpenLaunchBag).add(app)
 
+    >>> def create_web_service_request(
+    ...     path_info, method='GET', body_instream=None, environ=None):
+    ...     test_environ = {
+    ...         'SERVER_URL': 'http://api.launchpad.dev',
+    ...         'HTTP_HOST': 'api.lauchpad.dev',
+    ...         'PATH_INFO': path_info,
+    ...     }
+    ...     if environ:
+    ...         test_environ.update(environ)
+    ...     request = WebServiceTestRequest(
+    ...         body_instream=body_instream, environ=test_environ,
+    ...         method=method)
+    ...     request.setPublication(WebServicePublication(None))
+    ...     # Set the "current" request.
+    ...     login(ANONYMOUS, request)
+    ...     return request
+
+    >>> request = create_web_service_request('/')
+    >>> app = MyServiceRootResource()
     >>> app(request)
     'This is a web service.'
 
-The canonical_url function generates the URL to a resource. It works
-on any object that provides ICanonicalUrlData.
+The standard canonical_url() function can be used to generate URLs to
+content objects published on the web service. It works for the web
+service root also.
 
     >>> from canonical.launchpad.webapp import canonical_url
     >>> from canonical.launchpad.webapp.interfaces import ICanonicalUrlData
     >>> ICanonicalUrlData.providedBy(app)
     True
-    >>> canonical_url(app, request=request)
+    >>> canonical_url(app)
     u'http://api.launchpad.dev/'
 
 
 == Collection resources ==
 
-The ServiceRoot has a list of top-level collections and implements
-IPublishTraverse, so that a request to a registered collection is
-delegated to the appropriate CollectionResource. The
-top_level_collections attribute maps URL fragments to factory methods
-or other callables, and the return value of the factory method is
-used as the context of a CollectionResource. In MyServiceRootResource,
-the URL fragment "cookbooks" is mapped to the CookbookSet class.
+The default root navigation defined in our model contains the top-level
+Set objects that should be published. When these sets are published on
+the web service, they will we wrapped in the appropriate
+CollectionResource. (It doesn't need navigation, because the default
+Zope which traverse to attributes is fine.)
 
 The following example is equivalent to requesting
-'http://api.launchpad.net/cookbooks/'. The code calls the registered
-factory method (CookbookSet()) and wraps the resulting model object
-in a CollectionResource.
+'http://api.launchpad.net/cookbooks/'. The code will traverse to the
+CookbookSet published normally at '/cookbooks' and it will be wrapped
+into a CollectionResource.
 
-    >>> collection = app.publishTraverse(request, "cookbooks")
+    >>> request = create_web_service_request('/cookbooks')
+    >>> collection = request.traverse(app)
     >>> collection
     <canonical.lazr.rest.resource.CollectionResource object ...>
-    >>> ICanonicalUrlData.providedBy(collection)
-    True
-    >>> canonical_url(collection, request=request)
-    u'http://api.launchpad.dev/cookbooks'
 
 Calling the collection resource yields a JSON document, which can be
 parsed with standard tools.
@@ -721,17 +743,21 @@ EntryResources, and the base EntryResource class knows how to use the
 entry schema class (in this case, IRecipeEntry) to publish a JSON
 document.
 
+The same way collections are wrapped into CollectionResource, navigating
+to an object that has an IEntry adapter, will wrap it into an
+EntryResource.
+
+For instance, requesting "/cookbooks/The%20Joy%20of%20Cooking" will wrap
 A CollectionResource object also implements IPublishTraverse: you can
 navigate from a collection to one of the entries in that collection.
 It's the corresponding Collection's job to implement lookupEntry() so
 that (for instance) /recipes/10 is mapped to the "Raw celery" Entry.
 
-    >>> joy_resource = collection.publishTraverse(request,
-    ...     "The Joy of Cooking")
+    >>> request = create_web_service_request(
+    ...     quote('/cookbooks/The Joy of Cooking'))
+    >>> joy_resource = request.traverse(app)
     >>> joy_resource
     <canonical.lazr.rest.resource.EntryResource object ...>
-    >>> canonical_url(joy_resource, request=request)
-    u'http://api.launchpad.dev/cookbooks/The%20Joy%20of%20Cooking'
 
     >>> joy = simplejson.loads(joy_resource())
     >>> sorted(joy.items())
@@ -747,9 +773,13 @@ that (for instance) /recipes/10 is mapped to the "Raw celery" Entry.
 
 You can also traverse from an entry to an associated collection:
 
-    >>> joy_recipes = joy_resource.publishTraverse(request, "recipes")
-    >>> chicken_recipe_resource = joy_recipes.publishTraverse(request,
-    ...     "Roast chicken")
+    >>> request = create_web_service_request(
+    ...     quote('/cookbooks/The Joy of Cooking/recipes'))
+    >>> joy_recipes = request.traverse(app)
+
+    >>> request = create_web_service_request(
+    ...     quote('/cookbooks/The Joy of Cooking/recipes/Roast chicken'))
+    >>> chicken_recipe_resource = request.traverse(app)
     >>> chicken_recipe = simplejson.loads(chicken_recipe_resource())
     >>> sorted(chicken_recipe.items())
     [(u'comments_collection_link',
@@ -761,51 +791,52 @@ You can also traverse from an entry to an associated collection:
     (u'self_link',
      u'http://api.launchpad.dev/cookbooks/The%20Joy%20of%20Cooking/recipes/Roast%20chicken')]
 
-Note that the address of a recipe depends on its cookbook, even when
-the path traversed to the recipe doesn't go through a cookbook. This
-is handled by RecipeEntry's _parent_collection_path.
-
-    >>> dish_collection = app.publishTraverse(request, "dishes")
-    >>> chicken_dish_resource = dish_collection.publishTraverse(
-    ...     request, "Roast chicken")
-    >>> canonical_url(chicken_dish_resource, request=request)
-    u'http://api.launchpad.dev/dishes/Roast%20chicken'
-
 Scoped collections work the same way whether the entries are "really"
 in the collection (as with comments, below) or whether they're
 "really" in a top-level collection (as with recipes, above).
 
-    >>> comments_resource = chicken_recipe_resource.publishTraverse(
-    ...     request, "comments")
-    >>> canonical_url(comments_resource, request=request)
-    u'http://api.launchpad.dev/cookbooks/The%20Joy%20of%20Cooking/recipes/Roast%20chicken/comments'
+    >>> roast_chicken_comments_url = quote(
+    ... '/cookbooks/The Joy of Cooking/recipes/Roast chicken/comments')
+    >>> request = create_web_service_request(roast_chicken_comments_url)
+    >>> comments_resource = request.traverse(app)
 
     >>> comments = simplejson.loads(comments_resource())
     >>> [c['text'] for c in comments]
     [u'Clear and concise.']
 
-    >>> comment_one_resource = comments_resource.publishTraverse(request, "1")
+    >>> request = create_web_service_request(
+    ...     roast_chicken_comments_url + '/1')
+    >>> comment_one_resource = request.traverse(app)
     >>> comment_one = simplejson.loads(comment_one_resource())
     >>> sorted(comment_one.items())
     [(u'self_link',
       u'http://api.launchpad.dev/cookbooks/The%20Joy%20of%20Cooking/recipes/Roast%20chicken/comments/1'),
      (u'text', u'Clear and concise.')]
 
+
+== Requesting non available resources ==
+
 If the user tries to traverse to a nonexistent object, the result is a
-NotFound exception:
+NotFound exception.
 
-    >>> app.publishTraverse(request, "nosuchcollection")
+Requesting a non-existent top-level collection:
+
+    >>> request = create_web_service_request('/nosuchcollection')
+    >>> request.traverse(app)
     Traceback (most recent call last):
     ...
-    NotFound: ... name: 'nosuchcollection'
+    NotFound: ... name: u'nosuchcollection'
 
-    >>> collection.publishTraverse(request, "104")
+Requesting a non-existent cookbook:
+
+    >>> request = create_web_service_request('/cookbooks/104')
+    >>> request.traverse(app)
     Traceback (most recent call last):
     ...
-    NotFound: ... name: '104'
+    NotFound: ... name: u'104'
 
 
-=== Manipulating entries ===
+== Manipulating entries ==
 
 Most entry resources support write operations by responding to PATCH
 requests. The entity-body of a PATCH request should be a JSON document
@@ -818,25 +849,22 @@ Here, we modify the name of one of the cookbooks.
     >>> headers = { 'CONTENT_TYPE' : 'application/json' }
     >>> body = StringIO('{"name" : "The Joy of Cooking (revised)"}')
 
-    >>> patch_request = LaunchpadTestRequest(body_instream=body,
-    ...                                      environ=headers, method='PATCH')
-    >>> patch_request.setPublication(WebServicePublication(None))
-    >>> patch_request.setApplicationServer('api.launchpad.dev')
-    >>> cookbooks_resource = app.publishTraverse(patch_request, "cookbooks")
-
-    >>> joy_resource_patch = cookbooks_resource.publishTraverse(patch_request,
-    ...     "The Joy of Cooking")
+    >>> patch_request = create_web_service_request(
+    ...     '/cookbooks/The%20Joy%20of%20Cooking', body_instream=body,
+    ...     environ=headers, method='PATCH')
+    >>> joy_resource_patch = patch_request.traverse(app)
     >>> joy_resource_patch()
     >>> patch_request.response.getStatus()
     301
     >>> patch_request.response.getHeader('Location')
-    'http://api.launchpad.dev/cookbooks/The%20Joy%20of%20Cooking%20%28revised%29'
+    'http://api.../cookbooks/The%20Joy%20of%20Cooking%20%28revised%29'
 
 The new name is reflected in the cookbook's representation, and the
 cookbook's URL has changed as well.
 
-    >>> joy_resource = collection.publishTraverse(request,
-    ...     "The Joy of Cooking (revised)")
+    >>> request = create_web_service_request(
+    ...     '/cookbooks/The%20Joy%20of%20Cooking%20%28revised%29')
+    >>> joy_resource = request.traverse(app)
     >>> joy = simplejson.loads(joy_resource())
     >>> joy['name']
     u'The Joy of Cooking (revised)'
