@@ -49,13 +49,24 @@ class IServiceRootResource(IHTTPResource):
     """A service root object that also acts as a resource."""
 
 
-class IEntryResource(IHTTPResource):
+class IEntryResource(IHTTPResource, IJSONPublishable):
     """A resource that represents an individual Launchpad object."""
 
     def do_GET():
         """Retrieve this entry.
 
         :return: A string representation.
+        """
+
+    def do_PATCH(representation):
+        """Update this entry.
+
+        Try to update the entry to the field and values sent by the client.
+
+        :param representation: A JSON representation of the field and values
+            that should be modified.
+        :return: Nothing or an error message describing validation errors. The
+            HTTP status code should be set appropriately.
         """
 
 
@@ -68,29 +79,16 @@ class ICollectionResource(IHTTPResource):
         :return: A string representation.
         """
 
-    def makeEntryResource(entry, request):
-        """Construct an entry resource for the given entry.
 
-        The entry is presumed to be have this collection as its
-        parent.
-
-        :param entry: The entry that needs to be made into a resource.
-        :param request: The HTTP request that's being processed.
-        """
-
-
-class IEntry(IJSONPublishable):
+class IEntry(Interface):
     """An entry, exposed as a resource by an IEntryResource."""
+
+    schema = Attribute(
+        'The schema describing the date fields on this entry.')
 
 
 class ICollection(Interface):
     """A collection, driven by an ICollectionResource."""
-
-    def lookupEntry(name):
-        """Look up an entry in the collection by unique identifier.
-
-        :return: An IEntry object.
-        """
 
     def find():
         """Retrieve all entries in the collection under the given scope.

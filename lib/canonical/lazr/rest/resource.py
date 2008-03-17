@@ -310,31 +310,10 @@ class ScopedCollection:
         # Unknown at this time. Should be set by our call-site.
         self.relationship = None
 
-    def lookupEntry(self, name):
-        """See `ICollection`"""
-        raise KeyError(name)
-
     def find(self):
         """See `ICollection`."""
         return self.collection
 
 
 class OrderBasedScopedCollection(ScopedCollection):
-    """A scoped collection where the entries are identified by order.
-
-    The entries in this collection don't have unique IDs of their own.
-    They're identified by their ordering within this collection. So
-    their URLs look like /collection/1, /collection/2, etc. The
-    numbers start from 1.
-    """
-
-    def lookupEntry(self, number):
-        """Find a message by its order number."""
-        try:
-            number = int(number)
-        except ValueError:
-            return None
-        try:
-            return self.collection[number-1]
-        except IndexError:
-            return None
+    """Obsolete will be removed."""
