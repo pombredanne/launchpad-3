@@ -258,3 +258,87 @@ class CodeImportNewView(LaunchpadFormView):
                     product_name=existing_branch.product.name,
                     branch_url=canonical_url(existing_branch),
                     branch_name=existing_branch.name))
+
+
+class CodeImportEditView(LaunchpadFormView):
+    """View for editing code imports.
+
+    This view is registered against the branch, but edits the
+    code import for that branch.  If the branch has no associated
+    code import, then the result is a 404.  If the branch does have
+    a code import, then the adapters property allows the form
+    internals to do the associated mappings.
+    """
+
+    schema = ICodeImport
+
+    field_names = ['svn_branch_url', 'cvs_root', 'cvs_module']
+
+    def initialize(self):
+        """Show a 404 if the branch has no code import."""
+        self.code_import = self.context.code_import
+        if self.code_import is None:
+            raise NotFoundError
+        # The next location is the branch details page.
+        self.next_url = canonical_url(self.context)
+        LaunchpadFormView.initialize(self)
+
+    @property
+    def adapters(self):
+        """See `LaunchpadFormView`"""
+        return {ICodeImport: self.code_import}
+
+    def setUpFields(self):
+        LaunchpadFormView.setUpFields(self)
+
+        # If the import is a Subversion import, then omit the CVS
+        # fields, and vice versa.
+        if self.code_import.rcs_type == RevisionControlSystems.CVS:
+            self.form_fields = self.form_fields.omit('svn_branch_url')
+        elif self.code_import.rcs_type == RevisionControlSystems.SVN:
+            self.form_fields = self.form_fields.omit('cvs_root', 'cvs_module')
+        else:
+            raise AssertionError('Unknown rcs_type for code import.')
+
+    @cachedproperty
+    def _super_user(self):
+        """Is the user an admin or member of vcs-imports?"""
+        celebs = getUtility(ILaunchpadCelebrities)
+        return (self.user.inTeam(celebs.admin) or
+                self.user.inTeam(celebs.vcs_imports))
+
+    def _showButtonForStatus(self, status):
+        """If the status is different, and the user is super, show button."""
+        return self._super_user and self.code_import.review_status != status
+
+    def _showApprove(self):
+        """Show the Approve button if the import is not reviewed."""
+        return self._showButtonForStatus(CodeImportReviewStatus.REVIEWED)
+
+    @action(_('Approve'), name='approve', condition=_showApprove)
+    def approve_action(self, action, data):
+        """Approve the import."""
+        self.code_import.approve(data, self.user)
+
+    def _showInvalidate(self):
+        """Show the Approve button if the import is not invalid."""
+        return self._showButtonForStatus(CodeImportReviewStatus.INVALID)
+
+    @action(_('Set Invalid'), name='invalidate', condition=_showInvalidate)
+    def invalidate_action(self, action, data):
+        """Invalidate the import."""
+        self.code_import.invalidate(data, self.user)
+
+    def _showSuspend(self):
+        """Show the Suspend button if the import is not suspended."""
+        return self._showButtonForStatus(CodeImportReviewStatus.SUSPENDED)
+
+    @action(_('Suspend'), name='suspend', condition=_showSuspend)
+    def suspend_action(self, action, data):
+        """Approve the import."""
+        self.code_import.suspend(data, self.user)
+
+    @action(_('Update'), name='update')
+    def update_action(self, action, data):
+        """Update the details."""
+        self.code_import.updateFromData(data, self.user)
