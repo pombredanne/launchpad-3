@@ -5,9 +5,12 @@
 __metaclass__ = type
 
 
+from datetime import datetime, timedelta
 from logging import getLogger
 import socket
 import sys
+
+import pytz
 
 from zope.component import getUtility
 
@@ -46,6 +49,10 @@ def get_bugwatcherrortype_for_error(error):
             return bugwatcherrortype
     else:
         return BugWatchErrorType.UNKNOWN
+
+
+class TooMuchTimeSkew(BugWatchUpdateError):
+    """Time difference between ourselves and the remote server is too much."""
 
 
 #
@@ -294,7 +301,7 @@ class BugWatchUpdater(object):
 
         return launchpad_status
 
-    def updateBugWatches(self, remotesystem, bug_watches_to_update):
+    def updateBugWatches(self, remotesystem, bug_watches_to_update, now=None):
         """Update the given bug watches."""
         # Save the url for later, since we might need it to report an
         # error after a transaction has been aborted.
@@ -326,7 +333,15 @@ class BugWatchUpdater(object):
         bug_watch_ids = [bug_watch.id for bug_watch in bug_watches]
 
         self.txn.commit()
+        server_time = None
+        if now is None:
+            now = datetime.now(pytz.timezone('UTC'))
+        acceptable_skew = timedelta(minutes=2)
         try:
+            server_time = remotesystem.getCurrentDBTime()
+            if (server_time is not None and
+                abs(server_time - now) > acceptable_skew):
+                raise TooMuchTimeSkew(abs(server_time - now))
             remotesystem.initializeRemoteBugDB(remote_ids)
         except Exception, error:
             # We record the error against all the bugwatches that should
