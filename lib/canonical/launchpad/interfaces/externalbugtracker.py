@@ -27,6 +27,12 @@ UNKNOWN_REMOTE_IMPORTANCE = 'UNKNOWN'
 class IExternalBugTracker(Interface):
     """A class used to talk with an external bug tracker."""
 
+    def getModifiedRemoteBugs(remote_bug_ids, utc_now):
+        """Return the bug ids that have been modified.
+
+        Return all ids if the modified bugs can't be determined.
+        """
+
     def initializeRemoteBugDB(remote_bug_ids):
         """Do any initialization before each bug watch is updated."""
 

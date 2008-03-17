@@ -206,6 +206,11 @@ class ExternalBugTracker:
     def urlopen(self, request, data=None):
         return urllib2.urlopen(request, data)
 
+    def getModifiedRemoteBugs(self, bug_ids):
+        """See `IExternalBugTracker`."""
+        # Return all bugs, since we don't know which have been modified.
+        return list(bug_ids)
+
     def initializeRemoteBugDB(self, bug_ids):
         """See `IExternalBugTracker`."""
         self.bugs = {}

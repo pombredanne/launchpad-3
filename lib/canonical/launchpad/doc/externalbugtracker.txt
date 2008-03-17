@@ -9,19 +9,25 @@ ExternalBugTracker instances.
 All the ExternalBugTrackers know how to update the status of a bug
 watch. The method that updates the bug watches is
 BugWatchUpdater.updateBugWatches(), which expects an IExternalBugTracker
-and the bug watches to update. Before updating the bug watches, the
+and the bug watches to update.
+
+
+=== Initializing ===
+
+Before updating the bug watches, the
 initializeRemoteBugDB() method on the ExternalBugTracker is called. It
 gets the information for the bug watches from the external bug tracker,
 and it's called outside a DB transaction, since it doesn't need DB
 access.
 
-    >>> class FakeExternalBugTracker:
-    ...     baseurl = 'http://example.com/'
-    ...     batch_size = None
+    >>> from canonical.launchpad.ftests.externalbugtracker import (
+    ...     TestExternalBugTracker)
+    >>> class FakeExternalBugTracker(TestExternalBugTracker):
     ...     def info(self, msg):
     ...         pass
     ...     def initializeRemoteBugDB(self, remote_bug_ids):
-    ...         print "initializeRemoteBugDB() called"
+    ...         print "initializeRemoteBugDB() called: %r" % (
+    ...             remote_bug_ids, )
 
     >>> class FakeTransaction:
     ...     """Transaction class to track transaction boundaries."""
@@ -34,10 +40,69 @@ access.
 
     >>> from canonical.launchpad.scripts.checkwatches import BugWatchUpdater
     >>> bug_watch_updater = BugWatchUpdater(FakeTransaction())
-    >>> bug_watch_updater.updateBugWatches(FakeExternalBugTracker(), [])
+    >>> bug_watch_updater.updateBugWatches(
+    ...     FakeExternalBugTracker('http://example.com/'), [])
     COMMIT
-    initializeRemoteBugDB() called
+    initializeRemoteBugDB() called: []
     BEGIN
+
+
+=== Limiting which bug watches to update ===
+
+    >>> from canonical.launchpad.database import BugTracker
+    >>> from canonical.launchpad.interfaces import (
+    ...     BugTrackerType, IBugSet, IBugWatchSet, IPersonSet)
+
+    >>> sample_person = getUtility(IPersonSet).getByEmail(
+    ...     'test@canonical.com')
+
+    >>> example_bug_tracker = BugTracker(
+    ...     name="example-bugs",
+    ...     title="Example.com Bug Tracker",
+    ...     bugtrackertype=BugTrackerType.BUGZILLA,
+    ...     baseurl="http://bugs.example.com",
+    ...     summary="Contains bugs for Example.com",
+    ...     contactdetails="foo.bar@example.com",
+    ...     owner=sample_person)
+    >>> example_bug = getUtility(IBugSet).get(10)
+
+    >>> def create_bug_watches(remote_bug_ids):
+    ...     return [
+    ...         getUtility(IBugWatchSet).createBugWatch(
+    ...             example_bug, sample_person, example_bug_tracker, bug_id)
+    ...         for bug_id in remote_bug_ids]
+    >>> bug_watches = create_bug_watches(['1', '2', '3', '4'])
+    >>> bug_watch_ids = [bug_watch.id for bug_watch in bug_watches]
+    >>> class CheckModifiedExternalBugTracker(FakeExternalBugTracker):
+    ...     def getModifiedRemoteBugs(self, remote_bug_ids):
+    ...         print "getModifiedRemoteBugs() called: %r" % (
+    ...             remote_bug_ids, )
+    ...         return [remote_bug_ids[0], remote_bug_ids[-1]]
+    ...     def getRemoteStatus(self, bug_id):
+    ...         print "getRemoteStatus() called: %r" % bug_id
+    ...         return 'UNKNOWN'
+    >>> bug_watch_updater.updateBugWatches(
+    ...     CheckModifiedExternalBugTracker('http://example.com/'),
+    ...     bug_watches)
+    COMMIT
+    getModifiedRemoteBugs() called: [u'1', u'2', u'3', u'4']
+    initializeRemoteBugDB() called: [u'1', u'4']
+    BEGIN
+    getRemoteStatus() called: u'1'
+    getRemoteStatus() called: u'4'
+
+    >>> bug_watches = [
+    ...     getUtility(IBugWatchSet).get(bug_watch_id)
+    ...     for bug_watch_id in bug_watch_ids]
+    >>> for bug_watch in bug_watches:
+    ...     if bug_watch.lastchecked is None:
+    ...         print "Bug %s was NOT marked checked" % bug_watch.remotebug
+    ...     else:
+    ...         print "Bug %s was marked checked" % bug_watch.remotebug
+    Bug 1 was marked checked
+    Bug 2 was marked checked
+    Bug 3 was marked checked
+    Bug 4 was marked checked
 
 
 == Configuration Options ==
@@ -81,25 +146,8 @@ have errors recorded against it. We log in as Sample Person to make
 these changes since there's no particular need to use one Person over
 another.
 
-    >>> from canonical.launchpad.database import BugTracker
-    >>> from canonical.launchpad.interfaces import (
-    ...     BugTrackerType, IBugSet, IPersonSet)
-
-    >>> sample_person = getUtility(IPersonSet).getByEmail(
-    ...     'test@canonical.com')
-
-    >>> example_bug_tracker = BugTracker(
-    ...     name="example-bugs",
-    ...     title="Example.com Bug Tracker",
-    ...     bugtrackertype=BugTrackerType.BUGZILLA,
-    ...     baseurl="http://bugs.example.com",
-    ...     summary="Contains bugs for Example.com",
-    ...     contactdetails="foo.bar@example.com",
-    ...     owner=sample_person)
-
     >>> login('test@canonical.com')
 
-    >>> example_bug = getUtility(IBugSet).get(10)
     >>> example_bugwatch = example_bug.addWatch(
     ...     example_bug_tracker, 1, sample_person)
 

@@ -232,7 +232,9 @@ class BugWatchUpdater(object):
 
         self.txn.commit()
         try:
-            remotesystem.initializeRemoteBugDB(remote_ids)
+            remote_ids_to_check = remotesystem.getModifiedRemoteBugs(
+                remote_ids)
+            remotesystem.initializeRemoteBugDB(remote_ids_to_check)
         except Exception, error:
             # We record the error against all the bugwatches that should
             # have been updated before re-raising it. We also update the
@@ -250,8 +252,15 @@ class BugWatchUpdater(object):
         self.txn.begin()
         bug_watches_by_remote_bug = self._getBugWatchesByRemoteBug(
             bug_watch_ids)
+        non_modifed_bugs = set(remote_ids).difference(remote_ids_to_check)
         for bug_id in remote_ids:
             bug_watches = bug_watches_by_remote_bug[bug_id]
+            for bug_watch in bug_watches:
+                bug_watch.lastchecked = UTC_NOW
+            if bug_id in non_modifed_bugs:
+                # No need to try to update it, if it wasn't modified.
+                continue
+
             local_ids = ", ".join(str(watch.bug.id) for watch in bug_watches)
             try:
                 new_remote_status = None
@@ -294,7 +303,6 @@ class BugWatchUpdater(object):
                         info=sys.exc_info())
 
                 for bug_watch in bug_watches:
-                    bug_watch.lastchecked = UTC_NOW
                     bug_watch.last_error_type = error
                     if new_malone_status is not None:
                         bug_watch.updateStatus(new_remote_status,
