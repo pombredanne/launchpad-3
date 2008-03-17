@@ -15,7 +15,7 @@ simple configuration).
 
     >>> from canonical.config import config
     >>> print config.database.dbhost
-    None
+    localhost
     >>> config.database.db_statement_timeout is None
     True
     >>> config.launchpad.dbuser
