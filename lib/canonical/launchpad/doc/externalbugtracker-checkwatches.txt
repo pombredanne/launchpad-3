@@ -49,7 +49,7 @@ get_external_bugtracker supports five external bug tracker types:
     ...         external_bugtracker)
     Bugzilla --> <canonical...bugzilla.Bugzilla ...>
     Debbugs --> <canonical...debbugs.DebBugs ...>
-    Mantis --> <canonical...base.Mantis object at ...>
+    Mantis --> <canonical...mantis.Mantis object at ...>
     Roundup --> <canonical...base.Roundup ...>
     Request Tracker (RT) --> <canonical...base.RequestTracker ...>
     SourceForge --> <canonical...base.SourceForge ...>

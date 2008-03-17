@@ -16,6 +16,7 @@ __all__ = [
     'ExternalBugTracker',
     'InvalidBugId',
     'Mantis',
+    'MantisLoginHandler',
     'RequestTracker',
     'Roundup',
     'SourceForge',

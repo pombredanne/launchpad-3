@@ -3,7 +3,7 @@
 """Mantis ExternalBugTracker utility."""
 
 __metaclass__ = type
-__all__ = ['Mantis']
+__all__ = ['Mantis', 'MantisLoginHandler']
 
 import cgi
 import csv
