@@ -149,6 +149,14 @@ class CanonicalConfig(object):
             pass
         return getattr(self.getConfig(), name)
 
+    def __contains__(self, key):
+        self._getConfig()
+        return key in self._config
+
+    def __getitem__(self, key):
+        self._getConfig()
+        return self._config[key]
+
     def default_section(self):
         return self._default_config_section
     default_section = property(default_section)
