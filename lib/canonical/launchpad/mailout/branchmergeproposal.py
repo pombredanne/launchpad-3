@@ -8,21 +8,22 @@ __metaclass__ = type
 
 
 from canonical.launchpad.helpers import get_email_template
+from canonical.launchpad.mail import simple_sendmail, format_address
 from canonical.launchpad.interfaces import CodeReviewNotificationLevel
 from canonical.launchpad.webapp import canonical_url
 
 
 def send_merge_proposal_created_notifications(merge_proposal, event):
     """Notify branch subscribers when merge proposals are created."""
-    recipients = merge_proposal.getCreationNotificationRecipients(
-        CodeReviewNotificationLevel.FULL)
+    BMPMailer.forCreation(merge_proposal, event.user).sendAll()
 
 
 class BMPMailer:
 
-    def __init__(self, recipients, merge_proposal):
+    def __init__(self, recipients, merge_proposal, from_address):
         self.recipients = self.getRealRecipients(recipients)
         self.merge_proposal = merge_proposal
+        self.from_address = from_address
 
     @staticmethod
     def getRealRecipients(recipients):
@@ -52,10 +53,14 @@ class BMPMailer:
         return new_recipients
 
     @staticmethod
-    def forCreation(merge_proposal):
+    def forCreation(merge_proposal, from_user):
         recipients = merge_proposal.getCreationNotificationRecipients(
             CodeReviewNotificationLevel.FULL)
-        return BMPMailer(recipients, merge_proposal)
+        assert from_user.preferredemail is not None, (
+            'The sender must have an email address.')
+        from_address = format_address(
+            from_user.displayname, from_user.preferredemail.email)
+        return BMPMailer(recipients, merge_proposal, from_address)
 
     def getReason(self, recipient):
         entity = 'You are'
@@ -71,6 +76,8 @@ class BMPMailer:
 
     def generateEmail(self, recipient):
         subscription, rationale = self.recipients[recipient]
+        headers = {'X-Launchpad-Branch': subscription.branch.unique_name,
+                   'X-Launchpad-Message-Rationale': rationale}
         subject = 'Merge of %s into %s proposed' % (
             self.merge_proposal.source_branch.displayname,
             self.merge_proposal.target_branch.displayname,)
@@ -85,4 +92,15 @@ class BMPMailer:
             'edit_subscription': ''
             }
         body = template % params
-        return ('', subject, body)
+        return (headers, subject, body)
+
+    def sendAll(self):
+        """Send notifications to all recipients"""
+        for recipient in self.recipients:
+            if recipient.preferredemail is None:
+                continue
+            to_address = format_address(
+                recipient.displayname, recipient.preferredemail.email)
+            headers, subject, body = self.generateEmail(recipient)
+            simple_sendmail(
+                self.from_address, to_address, subject, body, headers)

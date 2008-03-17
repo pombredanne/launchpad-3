@@ -162,7 +162,6 @@ class BranchMergeProposal(SQLBase):
         [wip, needs_review, code_approved, rejected,
          merged, merge_failed, queued, superseded
          ] = BranchMergeProposalStatus.items
-
         # Transitioning to code approved, rejected or queued from
         # work in progress, needs review or merge failed needs the
         # user to be a valid reviewer, other states are fine.
@@ -282,7 +281,6 @@ class BranchMergeProposal(SQLBase):
         self.date_queued = None
         # Remove from the queue.
         self.queue_position = None
-        self.syncUpdate()
 
     def moveToFrontOfQueue(self):
         """See `IBranchMergeProposal`."""
@@ -299,8 +297,8 @@ class BranchMergeProposal(SQLBase):
 
     def mergeFailed(self, merger):
         """See `IBranchMergeProposal`."""
-        self._transitionToState(BranchMergeProposalStatus.MERGE_FAILED,
-            merger)
+        self._transitionToState(
+            BranchMergeProposalStatus.MERGE_FAILED, merger)
         self.merger = merger
 
     def markAsMerged(self, merged_revno=None, date_merged=None,

@@ -27,6 +27,9 @@ UNKNOWN_REMOTE_IMPORTANCE = 'UNKNOWN'
 class IExternalBugTracker(Interface):
     """A class used to talk with an external bug tracker."""
 
+    def initializeRemoteBugDB(remote_bug_ids):
+        """Do any initialization before each bug watch is updated."""
+
     def convertRemoteStatus(remote_status):
         """Convert a remote status string to a BugTaskStatus item."""
 
