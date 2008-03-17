@@ -241,8 +241,8 @@ string won't work.
   Your value for the attribute 'teamowner_link' wasn't the URL to any
   object published by this web service.
 
-But but not just any URL will do. It has to identify an object in the
-web service.
+But not just any URL will do. It has to identify an object in the web
+service.
 
   >>> admins['teamowner_link'] = u'http://www.canonical.com/'
   >>> print modify_person('admins', admins, 'PUT')
@@ -258,7 +258,9 @@ web service.
   Your value for the attribute 'teamowner_link' wasn't the URL to any
   object published by this web service.
 
-  # This URL would be valid, but it uses the wrong protocol.
+This URL would be valid, but it uses the wrong protocol (HTTPS instead
+of HTTP).
+
   >>> admins['teamowner_link'] = u'https://api.launchpad.dev/people/admins'
   >>> print modify_person('admins', admins, 'PUT')
   HTTP/1.1 400 Bad Request
@@ -266,8 +268,8 @@ web service.
   Your value for the attribute 'teamowner_link' wasn't the URL to any
   object published by this web service.
 
-Even a URL that identifies an object in the web service won't work,
-if the object isn't the kind of object that can own a team:
+Even a URL that identifies an object in the web service won't work, if
+the object isn't the kind of object that can own a team:
 
   >>> admins['teamowner_link'] = u'http://api.launchpad.dev/bugs/1'
   >>> print modify_person('admins', admins, 'PUT')
@@ -277,7 +279,8 @@ if the object isn't the kind of object that can own a team:
   right kind of object.
 
 And even if the URL identifies the right kind of object, it might
-violate some other constraint. For instance, a team can't be its own owner.
+violate some other constraint. For instance, a team can't be its own
+owner.
 
   >>> admins['teamowner_link'] = u'http://api.launchpad.dev/people/admins'
   >>> print modify_person('admins', admins, 'PUT')

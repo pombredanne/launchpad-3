@@ -116,14 +116,14 @@ class HTTPResource:
 
         Representations use URLs to refer to other resources in the
         web service. When processing an incoming representation it's
-        often neccessary to see which object a URL refers to. This
+        often necessary to see which object a URL refers to. This
         method calls the URL traversal code to dereference a URL into
         a published object.
 
-        Raises a NotFoundError if the URL does not designate a
-        published object.
-
         :param url: The URL to a resource.
+
+        :raise NotFoundError: If the URL does not designate a
+        published object.
         """
         (protocol, host, path, query, fragment) = urlparse.urlsplit(url)
 
@@ -222,6 +222,7 @@ class EntryResource(ReadWriteResource):
             self.parent_collection = resource
 
     def getContext(self):
+        """See `IEntryResource`."""
         return self.context
 
     @property
@@ -239,7 +240,7 @@ class EntryResource(ReadWriteResource):
         if collection is None:
             raise NotFound(self, name)
         # Create a dummy object that implements the field's interface.
-        # This is neccessary because we can't pass the interface itself
+        # This is necessary because we can't pass the interface itself
         # into getMultiAdapter.
         example_entry = CollectionEntryDummy(field)
         scoped_collection = getMultiAdapter((self.context, example_entry),
@@ -419,7 +420,7 @@ class EntryResource(ReadWriteResource):
                         % repr_name)
 
             # Around this point the specific value provided by the client
-            # becomes relevant, so we pre-process it if neccessary.
+            # becomes relevant, so we pre-process it if necessary.
             if (IObject.providedBy(element)
                 and not ICollectionField.providedBy(element)):
                 # 'value' is the URL to an object. Dereference the URL
@@ -445,8 +446,8 @@ class EntryResource(ReadWriteResource):
                     (year, month, day, hours, minutes, secondsAndMicroseconds,
                      timezone) = value
                     seconds = int(secondsAndMicroseconds)
-                    microseconds = int(round((secondsAndMicroseconds - seconds)
-                                             * 1000000))
+                    microseconds = int(round(
+                            (secondsAndMicroseconds - seconds) * 1000000))
                     if timezone not in ['Z', '+0000', '-0000']:
                         self.request.response.setStatus(400)
                         return ("You set the attribute '%s' to a time "
@@ -500,7 +501,7 @@ class EntryResource(ReadWriteResource):
                     except ValidationError, e:
                         self.request.response.setStatus(400)
                         error = str(e)
-                        if error is "":
+                        if error == "":
                             error = "Validation error"
                         return error
                 validated_changeset[name] = value

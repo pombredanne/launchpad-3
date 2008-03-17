@@ -597,13 +597,13 @@ You can also traverse from an entry to an associated collection:
     >>> chicken_recipe = simplejson.loads(chicken_recipe_resource())
     >>> sorted(chicken_recipe.items())
     [(u'comments_collection_link',
-      u'http://api.launchpad.dev/cookbooks/The%20Joy%20of%20Cooking/recipes/Roast%20chicken/comments'),
+      u'http://api...Joy%20of%20Cooking/recipes/Roast%20chicken/comments'),
     (u'cookbook_link',
      u'http://api.launchpad.dev/cookbooks/The%20Joy%20of%20Cooking'),
     (u'dish_link', u'http://api.launchpad.dev/dishes/Roast%20chicken'),
     (u'instructions', u'Draw, singe, stuff, and truss...'),
     (u'self_link',
-     u'http://api.launchpad.dev/cookbooks/The%20Joy%20of%20Cooking/recipes/Roast%20chicken')]
+     u'http://api.../The%20Joy%20of%20Cooking/recipes/Roast%20chicken')]
 
 Note that the address of a recipe depends on its cookbook, even when
 the path traversed to the recipe doesn't go through a cookbook. This
@@ -622,7 +622,7 @@ in the collection (as with comments, below) or whether they're
     >>> comments_resource = chicken_recipe_resource.publishTraverse(
     ...     request, "comments")
     >>> canonical_url(comments_resource, request=request)
-    u'http://api.launchpad.dev/cookbooks/The%20Joy%20of%20Cooking/recipes/Roast%20chicken/comments'
+    u'http://api.../The%20Joy%20of%20Cooking/recipes/Roast%20chicken/comments'
 
     >>> comments = simplejson.loads(comments_resource())
     >>> [c['text'] for c in comments]
@@ -632,7 +632,7 @@ in the collection (as with comments, below) or whether they're
     >>> comment_one = simplejson.loads(comment_one_resource())
     >>> sorted(comment_one.items())
     [(u'self_link',
-      u'http://api.launchpad.dev/cookbooks/The%20Joy%20of%20Cooking/recipes/Roast%20chicken/comments/1'),
+      u'http://api...Joy%20of%20Cooking/recipes/Roast%20chicken/comments/1'),
      (u'text', u'Clear and concise.')]
 
 If the user tries to traverse to a nonexistent object, the result is a
@@ -689,7 +689,7 @@ Here, we modify the name of one of the cookbooks.
     >>> request.response.getStatus()
     301
     >>> request.response.getHeader('Location')
-    'http://api.launchpad.dev/cookbooks/The%20Joy%20of%20Cooking%20%28revised%29'
+    'http://api.../cookbooks/The%20Joy%20of%20Cooking%20%28revised%29'
 
 The new name is reflected in the cookbook's representation, and the
 cookbook's URL has changed as well.

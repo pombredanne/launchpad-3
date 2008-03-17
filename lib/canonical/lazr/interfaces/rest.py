@@ -1,4 +1,5 @@
 # Copyright 2008 Canonical Ltd.  All rights reserved.
+# pylint: disable-msg=E0211,E0213
 
 """Interfaces for different kinds of HTTP resources."""
 
@@ -102,12 +103,12 @@ class IEntry(IJSONPublishable):
             "The first element in the list, a string, designates one of the "
             "web service's top-level collections. The second element (if "
             "there is one) is a callable which takes the IEntry "
-            "implementation as its only argument. It's expected to return one "
-            "of the entries in the top-level collection. The third element "
-            "(if there is one) is a string which designates one of the scoped "
-            "collections associated with that entry. And so on. Strings and "
-            "callables alternate, traversing the object graph. The list must "
-            "end with a string.")
+            "implementation as its only argument. It's expected to return "
+            "one of the entries in the top-level collection. The third "
+            "element (if there is one) is a string which designates one of "
+            "the scoped collections associated with that entry. And so on. "
+            "Strings and callables alternate, traversing the object graph. "
+            "The list must end with a string.")
 
     def fragment():
         """Return a URI fragment that uniquely identifies this entry.
