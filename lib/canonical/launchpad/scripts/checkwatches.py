@@ -303,6 +303,13 @@ class BugWatchUpdater(object):
 
         return launchpad_status
 
+    def _getOldestLastChecked(self, bug_watches):
+        if len(bug_watches) == 0:
+            return None
+        bug_watch_lastchecked_times = sorted(
+            bug_watch.lastchecked for bug_watch in bug_watches)
+        return bug_watch_lastchecked_times[0]
+
     def updateBugWatches(self, remotesystem, bug_watches_to_update, now=None):
         """Update the given bug watches."""
         # Save the url for later, since we might need it to report an
@@ -314,6 +321,10 @@ class BugWatchUpdater(object):
         # list here to ensure that were're doing sane things with it
         # later on.
         bug_watches = list(bug_watches_to_update)
+        old_bug_watches = [
+            bug_watch for bug_watch in bug_watches
+            if bug_watch.lastchecked is not None]
+        oldest_lastchecked = self._getOldestLastChecked(old_bug_watches)
 
         # We limit the number of watches we're updating by the
         # ExternalBugTracker's batch_size. In an ideal world we'd just
@@ -322,6 +333,11 @@ class BugWatchUpdater(object):
         # bug id before we do so.
         remote_ids = sorted(
             set(bug_watch.remotebug for bug_watch in bug_watches))
+        remote_old_ids = sorted(
+            set(bug_watch.remotebug for bug_watch in old_bug_watches))
+        remote_new_ids = sorted(
+            set(bug_watch.remotebug for bug_watch in bug_watches
+                if bug_watch not in old_bug_watches))
         if remotesystem.batch_size is not None:
             remote_ids = remote_ids[:remotesystem.batch_size]
 
@@ -339,13 +355,19 @@ class BugWatchUpdater(object):
         if now is None:
             now = datetime.now(pytz.timezone('UTC'))
         try:
-            remotesystem.initializeRemoteBugDB(remote_ids_to_check)
             server_time = remotesystem.getCurrentDBTime()
             if (server_time is not None and
                 abs(server_time - now) > self.ACCEPTABLE_TIME_SKEW):
                 raise TooMuchTimeSkew(abs(server_time - now))
-            remote_ids_to_check = remotesystem.getModifiedRemoteBugs(
-                remote_ids)
+
+            if len(remote_old_ids) > 0:
+                old_ids_to_check = remotesystem.getModifiedRemoteBugs(
+                    remote_old_ids, oldest_lastchecked)
+            else:
+                old_ids_to_check = []
+
+            remote_ids_to_check = sorted(
+                set(remote_new_ids + old_ids_to_check))
             remotesystem.initializeRemoteBugDB(remote_ids_to_check)
         except Exception, error:
             # We record the error against all the bugwatches that should

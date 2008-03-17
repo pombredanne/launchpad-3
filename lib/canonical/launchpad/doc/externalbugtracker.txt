@@ -62,7 +62,7 @@ the time is.
     ...     TimeUnknownExternalBugTracker(), [])
     COMMIT
     getCurrentDBTime() called
-    initializeRemoteBugDB() called
+    initializeRemoteBugDB() called: []
     BEGIN
 
 If the difference between what we and the remote system think the time
@@ -130,7 +130,7 @@ logged saying that comments won't be imported.
     ...     CommentImportExternalBugTracker(), [], now=utc_now)
     COMMIT
     getCurrentDBTime() called
-    initializeRemoteBugDB() called
+    initializeRemoteBugDB() called: []
     BEGIN
     WARNING:...:Comment importing supported, but server time can't be
                 trusted. No comments will be imported.
@@ -162,18 +162,47 @@ logged saying that comments won't be imported.
     ...         for bug_id in remote_bug_ids]
     >>> bug_watches = create_bug_watches(['1', '2', '3', '4'])
     >>> bug_watch_ids = [bug_watch.id for bug_watch in bug_watches]
-    >>> class CheckModifiedExternalBugTracker(FakeExternalBugTracker):
-    ...     def getModifiedRemoteBugs(self, remote_bug_ids):
+    >>> class CheckModifiedExternalBugTracker(InitializingExternalBugTracker):
+    ...     def getModifiedRemoteBugs(self, remote_bug_ids, last_checked):
+    ...         print "last_checked: %s" % last_checked
     ...         print "getModifiedRemoteBugs() called: %r" % (
     ...             remote_bug_ids, )
     ...         return [remote_bug_ids[0], remote_bug_ids[-1]]
     ...     def getRemoteStatus(self, bug_id):
     ...         print "getRemoteStatus() called: %r" % bug_id
     ...         return 'UNKNOWN'
+    >>> [bug_watch.lastchecked for bug_watch in bug_watches
+    ...  if bug_watch.lastchecked is not None]
+    []
     >>> bug_watch_updater.updateBugWatches(
     ...     CheckModifiedExternalBugTracker('http://example.com/'),
     ...     bug_watches)
     COMMIT
+    initializeRemoteBugDB() called: [u'1', u'2', u'3', u'4']
+    BEGIN
+    getRemoteStatus() called: u'1'
+    getRemoteStatus() called: u'2'
+    getRemoteStatus() called: u'3'
+    getRemoteStatus() called: u'4'
+
+
+Non-modifed bugs are marked as being checked.
+
+
+    >>> some_time_ago = datetime(
+    ...     2007, 03, 17, 16, 00, tzinfo=pytz.timezone('UTC'))
+    >>> bug_watches = [
+    ...     getUtility(IBugWatchSet).get(bug_watch_id)
+    ...     for bug_watch_id in bug_watch_ids]
+    >>> for bug_watch in bug_watches:
+    ...     bug_watch.lastchecked = some_time_ago
+    >>> flush_database_updates()
+
+    >>> bug_watch_updater.updateBugWatches(
+    ...     CheckModifiedExternalBugTracker('http://example.com/'),
+    ...     bug_watches)
+    COMMIT
+    last_checked: 2007-03-17 16:00:00...
     getModifiedRemoteBugs() called: [u'1', u'2', u'3', u'4']
     initializeRemoteBugDB() called: [u'1', u'4']
     BEGIN
@@ -192,6 +221,36 @@ logged saying that comments won't be imported.
     Bug 2 was marked checked
     Bug 3 was marked checked
     Bug 4 was marked checked
+
+Which time?
+
+    >>> bug_watches[0].lastchecked = some_time_ago
+    >>> bug_watches[1].lastchecked = some_time_ago + timedelta(days=1)
+    >>> bug_watches[2].lastchecked = some_time_ago - timedelta(hours=1)
+    >>> bug_watches[3].lastchecked = some_time_ago - timedelta(days=1)
+    >>> flush_database_updates()
+
+    >>> bug_watch_updater.updateBugWatches(
+    ...     CheckModifiedExternalBugTracker(), bug_watches)
+    COMMIT
+    last_checked: 2007-03-16 16:00:00...
+
+    >>> bug_watches[0].lastchecked = some_time_ago
+    >>> bug_watches[1].lastchecked = None
+    >>> bug_watches[2].lastchecked = None
+    >>> bug_watches[3].lastchecked = some_time_ago - timedelta(days=1)
+    >>> flush_database_updates()
+    >>> bug_watch_updater.updateBugWatches(
+    ...     CheckModifiedExternalBugTracker(), bug_watches)
+    COMMIT
+    last_checked: 2007-03-16 16:00:00...
+    getModifiedRemoteBugs() called: [u'1', u'4']
+    initializeRemoteBugDB() called: [u'1', u'2', u'3', u'4']
+    BEGIN
+    getRemoteStatus() called: u'1'
+    getRemoteStatus() called: u'2'
+    getRemoteStatus() called: u'3'
+    getRemoteStatus() called: u'4'
 
 
 === Converting statuses ===

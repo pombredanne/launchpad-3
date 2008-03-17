@@ -161,7 +161,7 @@ class ExternalBugTracker:
         # which is a good default.
         return None
 
-    def getModifiedRemoteBugs(self, bug_ids):
+    def getModifiedRemoteBugs(self, bug_ids, last_accessed):
         """See `IExternalBugTracker`."""
         # Return all bugs, since we don't know which have been modified.
         return list(bug_ids)
