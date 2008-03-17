@@ -20,10 +20,10 @@ not show any files.
 Look at a project with a release but no download files.  Ensure the download
 page does not show any files.
 
-    >>> anon_browser.open('http://launchpad.dev/alsa-utils/')
+    >>> anon_browser.open('http://launchpad.dev/thunderbird/')
     >>> anon_browser.getLink('Download project files').click()
     >>> anon_browser.url
-    'http://launchpad.dev/alsa-utils/+download'
+    'http://launchpad.dev/thunderbird/+download'
     >>> content = find_main_content(anon_browser.contents)
     >>> form = content('form')[0]
     >>> para = form('p')[0]
@@ -77,13 +77,13 @@ Now, login as a firefox admin and see the delete fields.
 
 A project owner should not see the delete button when there are no files.
 
-    >>> alsa_owner = setupBrowser(
+    >>> tbird_owner = setupBrowser(
     ...     auth='Basic foo.bar@canonical.com:test')
-    >>> alsa_owner.open('http://launchpad.dev/alsa-utils/')
-    >>> alsa_owner.getLink('Download project files').click()
-    >>> alsa_owner.title
-    'alsa-utils project files'
-    >>> content = find_main_content(alsa_owner.contents)
+    >>> tbird_owner.open('http://launchpad.dev/thunderbird/')
+    >>> tbird_owner.getLink('Download project files').click()
+    >>> tbird_owner.title
+    'Mozilla Thunderbird project files'
+    >>> content = find_main_content(tbird_owner.contents)
     >>> form = content('form')[0]
     >>> para = form('p')
     >>> print para[0].string.strip()
@@ -93,7 +93,7 @@ A project owner should not see the delete button when there are no files.
     Release series &#8220;trunk&#8221;
     >>> print para[1].contents[0].string.strip()
     Add download file for release:...
-    >>> alsa_owner.getControl('Delete Files')
+    >>> tbird_owner.getControl('Delete Files')
     Traceback (most recent call last):
     ...
     LookupError: label 'Delete Files'
