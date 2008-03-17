@@ -34,7 +34,7 @@ class IExternalBugTracker(Interface):
         instance.
         """
 
-    def getModifiedRemoteBugs(remote_bug_ids, utc_now):
+    def getModifiedRemoteBugs(remote_bug_ids, last_checked):
         """Return the bug ids that have been modified.
 
         Return all ids if the modified bugs can't be determined.

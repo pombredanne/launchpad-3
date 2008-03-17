@@ -304,6 +304,7 @@ class BugWatchUpdater(object):
         return launchpad_status
 
     def _getOldestLastChecked(self, bug_watches):
+        """Return the oldest lastchecked attribute of the bug watches."""
         if len(bug_watches) == 0:
             return None
         bug_watch_lastchecked_times = sorted(

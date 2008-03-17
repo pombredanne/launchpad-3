@@ -236,7 +236,7 @@ as being checked.
     Bug 3 was marked checked
     Bug 4 was marked checked
 
-The time being passed to getModifiedRemoteBugs() is the oldes one of the
+The time being passed to getModifiedRemoteBugs() is the oldest one of the
 bug watches' lastchecked attribute.
 
     >>> bug_watches[0].lastchecked = some_time_ago
@@ -250,9 +250,9 @@ bug watches' lastchecked attribute.
     COMMIT
     last_checked: 2007-03-16 16:00:00...
 
-If some of the bug watches are new, the won't be passed on to
+If some of the bug watches are new, they won't be passed on to
 getModifiedRemoteBugs(), but they will still be passed to
-initializeRemoteBugDB(), since we need to update them.
+initializeRemoteBugDB() since we do need to update them.
 
     >>> bug_watches[0].lastchecked = some_time_ago
     >>> bug_watches[1].lastchecked = None
