@@ -47,7 +47,7 @@ def main(argv):
 
     # Setup zcml machinery to be able to use getUtility
     execute_zcml_for_scripts()
-    ztm = initZopeless(dbuser=config.rosetta.poimport.dbuser)
+    ztm = initZopeless(dbuser=config.poimport.dbuser)
 
     rosetta_expert = getUtility(ILaunchpadCelebrities).rosetta_expert
     cur = cursor()

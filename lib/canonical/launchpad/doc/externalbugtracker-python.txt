@@ -23,12 +23,8 @@ status and resolution, to make the test more readable.
     >>> from canonical.launchpad.components.externalbugtracker import (
     ...     Roundup)
     >>> from canonical.launchpad.ftests.externalbugtracker import (
-    ...     convert_python_status, new_bugtracker)
-    >>> from canonical.launchpad.interfaces import BugTrackerType
-    >>> from canonical.testing import LaunchpadZopelessLayer
-    >>> txn = LaunchpadZopelessLayer.txn
-    >>> python = Roundup(txn, new_bugtracker(
-    ...     BugTrackerType.ROUNDUP, base_url='http://bugs.python.org'))
+    ...     convert_python_status)
+    >>> python = Roundup('http://bugs.python.org')
     >>> python.convertRemoteStatus(
     ...     convert_python_status('open', 'None')).title
     'New'
@@ -85,17 +81,10 @@ status and resolution, to make the test more readable.
     "Won't Fix"
 
 If the status isn't something that our Python ExternalBugTracker can
-understand, Unknown will be returned and a warning logged.
+understand an UnknownRemoteStatusError will be raised.
 
     >>> python.convertRemoteStatus('7:13').title
-    WARNING:...:Unknown remote status '7:13'.
-    'Unknown'
-
-UNKNOWN_REMOTE_STATUS maps to Unknown without generating a warning. This
-handles the case where we've tried to probe for a bug but didn't
-succeed. For example, if the bug number was invalid.
-
-    >>> from canonical.launchpad.interfaces import UNKNOWN_REMOTE_STATUS
-    >>> python.convertRemoteStatus(UNKNOWN_REMOTE_STATUS).title
-    'Unknown'
+    Traceback (most recent call last):
+      ...
+    UnknownRemoteStatusError
 

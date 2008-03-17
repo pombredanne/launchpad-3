@@ -12,16 +12,19 @@ import sys
 from zope.component import getUtility
 
 from canonical.database.constants import UTC_NOW
-from canonical.database.sqlbase import commit, flush_database_updates
+from canonical.database.sqlbase import flush_database_updates
 from canonical.launchpad.components import externalbugtracker
 from canonical.launchpad.components.externalbugtracker import (
-    BugNotFound, BugTrackerConnectError, InvalidBugId, UnparseableBugData,
+    BugNotFound, BugTrackerConnectError, BugWatchUpdateError,
+    BugWatchUpdateWarning, InvalidBugId, UnparseableBugData,
     UnparseableBugTrackerVersion, UnsupportedBugTrackerVersion,
-    UnknownBugTrackerTypeError)
+    UnknownBugTrackerTypeError, UnknownRemoteStatusError)
 from canonical.launchpad.interfaces import (
-    BugWatchErrorType, CreateBugParams, IBugTrackerSet, IBugWatchSet,
-    IDistribution, ILaunchpadCelebrities, IPersonSet, ISupportsCommentImport,
-    PersonCreationRationale)
+    BugTaskStatus, BugWatchErrorType, CreateBugParams, IBugTrackerSet,
+    IBugWatchSet, IDistribution, ILaunchpadCelebrities, IPersonSet,
+    ISupportsCommentImport, PersonCreationRationale,
+    UNKNOWN_REMOTE_STATUS)
+from canonical.launchpad.webapp import errorlog
 from canonical.launchpad.webapp.interfaces import IPlacelessAuthUtility
 from canonical.launchpad.webapp.interaction import (
     setupInteraction, endInteraction)
@@ -43,6 +46,68 @@ def get_bugwatcherrortype_for_error(error):
             return bugwatcherrortype
     else:
         return BugWatchErrorType.UNKNOWN
+
+
+#
+# OOPS reporting.
+#
+
+
+def report_oops(message=None, properties=None, info=None):
+    """Record an oops for the current exception.
+
+    This must only be called while handling an exception.
+
+    :param message: custom explanatory error message. Do not use
+        str(exception) to fill in this parameter, it should only be
+        set when a human readable error has been explicitly generated.
+
+    :param properties: Properties to record in the OOPS report.
+    :type properties: An iterable of (name, value) tuples.
+
+    :param info: Exception info.
+    :type info: The return value of `sys.exc_info()`.
+    """
+    # Get the current exception info first of all.
+    if info is None:
+        info = sys.exc_info()
+
+    # Collect properties to report.
+    if properties is None:
+        properties = []
+    else:
+        properties = list(properties)
+
+    if message is not None:
+        properties.append(('error-explanation', message))
+
+    # Create the dummy request object.
+    request = errorlog.ScriptRequest(properties)
+    errorlog.globalErrorUtility.raising(info, request)
+
+    return request
+
+
+def report_warning(message, properties=None, info=None):
+    """Create and report a warning as an OOPS.
+
+    If no exception info is passed in this will create a generic
+    `BugWatchUpdateWarning` to record. The reason is that the stack
+    trace may be useful for later diagnosis.
+
+    :param message: See `report_oops`.
+    :param properties: See `report_oops`.
+    :param info: See `report_oops`.
+    """
+    if info is None:
+        # Raise and catch the exception so that sys.exc_info will
+        # return our warning and stack trace.
+        try:
+            raise BugWatchUpdateWarning
+        except BugWatchUpdateWarning:
+            return report_oops(message, properties)
+    else:
+        return report_oops(message, properties, info)
 
 
 class BugWatchUpdater(object):
@@ -73,27 +138,28 @@ class BugWatchUpdater(object):
         If bug tracker names are specified in bug_tracker_names only
         those bug trackers will be checked.
         """
+        self.txn.begin()
         ubuntu_bugzilla = getUtility(ILaunchpadCelebrities).ubuntu_bugzilla
+        # Save the name, so we can use it in other transactions.
+        ubuntu_bugzilla_name = ubuntu_bugzilla.name
 
         # Set up an interaction as the Bug Watch Updater since the
         # notification code expects a logged in user.
         self._login()
 
-        bug_tracker_set = getUtility(IBugTrackerSet)
-        for bug_tracker in bug_tracker_set:
-            # If a set of bug tracker names to check has been specified
-            # we discard those bug trackers whose names don't appear in
-            # that set.
-            if (bug_tracker_names is not None and
-                bug_tracker.name not in bug_tracker_names):
-                continue
-
+        if bug_tracker_names is None:
+            bug_tracker_names = [
+                bugtracker.name for bugtracker in getUtility(IBugTrackerSet)]
+        self.txn.commit()
+        for bug_tracker_name in bug_tracker_names:
             self.txn.begin()
+            bug_tracker = getUtility(IBugTrackerSet).getByName(
+                bug_tracker_name)
             # Save the url for later, since we might need it to report an
             # error after a transaction has been aborted.
             bug_tracker_url = bug_tracker.baseurl
             try:
-                if bug_tracker == ubuntu_bugzilla:
+                if bug_tracker_name == ubuntu_bugzilla_name:
                     # XXX: 2007-09-11 Graham Binns
                     #      We automatically ignore the Ubuntu Bugzilla
                     #      here as all its bugs have been imported into
@@ -106,36 +172,61 @@ class BugWatchUpdater(object):
                 else:
                     self.updateBugTracker(bug_tracker)
 
-                # XXX 2008-01-22 gmb:
-                #     We should be using self.txn.commit() here, however
-                #     there's a known issue with ztm.commit() in that it
-                #     only works once per Zopeless script run (bug
-                #     3989). Using commit() directly is the best
-                #     available workaround, but we need to change this
-                #     once the bug is resolved.
-                commit()
+                self.txn.commit()
             except (KeyboardInterrupt, SystemExit):
                 # We should never catch KeyboardInterrupt or SystemExit.
                 raise
-            except:
+            except Exception, error:
                 # If something unexpected goes wrong, we log it and
                 # continue: a failure shouldn't break the updating of
                 # the other bug trackers.
                 info = sys.exc_info()
-                externalbugtracker.report_oops(
-                    info=info, properties=[
-                        ('bugtracker', bug_tracker.name),
-                        ('baseurl', bug_tracker_url)])
-                self.log.error(
-                    "An exception was raised when updating %s" %
-                    bug_tracker_url, exc_info=info)
+                properties = [
+                    ('bugtracker', bug_tracker_name),
+                    ('baseurl', bug_tracker_url)]
+                if isinstance(error, BugWatchUpdateError):
+                    self.error(
+                        str(error), properties=properties, info=info)
+                elif isinstance(error, socket.timeout):
+                    self.error(
+                        "Connection timed out when updating %s" % 
+                        bug_tracker_url,
+                        properties=properties, info=info)
+                else:
+                    self.error(
+                        "An exception was raised when updating %s" %
+                        bug_tracker_url,
+                        properties=properties, info=info)
                 self.txn.abort()
         self._logout()
 
+    def _getBugWatch(self, bug_watch_id):
+        """Return the bug watch with id `bug_watch_id`."""
+        return getUtility(IBugWatchSet).get(bug_watch_id)
+
+    def _getBugWatchesByRemoteBug(self, bug_watch_ids):
+        """Returns a dictionary of bug watches mapped to remote bugs.
+
+        For each bug watch id fetches the corresponding bug watch and
+        appends it to a list of bug watches pointing to one remote
+        bug - the key of the returned mapping.
+        """
+        bug_watches_by_remote_bug = {}
+        for bug_watch_id in bug_watch_ids:
+            bug_watch = self._getBugWatch(bug_watch_id)
+            remote_bug = bug_watch.remotebug
+            # There can be multiple bug watches pointing to the same
+            # remote bug; because of that, we need to store lists of bug
+            # watches related to the remote bug, and later update the
+            # status of each one of them.
+            if remote_bug not in bug_watches_by_remote_bug:
+                bug_watches_by_remote_bug[remote_bug] = []
+            bug_watches_by_remote_bug[remote_bug].append(bug_watch)
+        return bug_watches_by_remote_bug
+
     def _getExternalBugTracker(self, bug_tracker):
         """Return an `ExternalBugTracker` instance for `bug_tracker`."""
-        return externalbugtracker.get_external_bugtracker(
-            self.txn, bug_tracker)
+        return externalbugtracker.get_external_bugtracker(bug_tracker)
 
     def updateBugTracker(self, bug_tracker):
         """Updates the given bug trackers's bug watches."""
@@ -158,7 +249,7 @@ class BugWatchUpdater(object):
             # date to ensure that they don't get checked for another
             # 24 hours (see above).
             error_type = (
-                externalbugtracker.get_bugwatcherrortype_for_error(error))
+                get_bugwatcherrortype_for_error(error))
             for bug_watch in bug_watches_to_update:
                 bug_watch.last_error_type = error_type
                 bug_watch.lastchecked = UTC_NOW
@@ -166,34 +257,42 @@ class BugWatchUpdater(object):
             message = (
                 "ExternalBugtracker for BugTrackerType '%s' is not known." % (
                     error.bugtrackertypename))
-            externalbugtracker.report_warning(message)
-            self.log.warning(message)
+            self.warning(message)
         else:
             if bug_watches_to_update.count() > 0:
-                try:
-                    self.updateBugWatches(remotesystem, bug_watches_to_update)
-                except externalbugtracker.BugWatchUpdateError, error:
-                    externalbugtracker.report_oops(
-                        properties=[
-                            ('bugtracker', bug_tracker.name),
-                            ('baseurl', bug_tracker.baseurl)])
-                    self.log.error(str(error))
-                    self.txn.abort()
-                except socket.timeout:
-                    # We don't want to die on a timeout, since most likely
-                    # it's just a problem for this iteration. Nevertheless
-                    # we log the problem.
-                    externalbugtracker.report_oops(
-                        properties=[
-                            ('bugtracker', bug_tracker.name),
-                            ('baseurl', bug_tracker.baseurl)])
-                    self.log.error(
-                        "Connection timed out when updating %s" % (
-                            bug_tracker.baseurl))
-                    self.txn.abort()
+                self.updateBugWatches(remotesystem, bug_watches_to_update)
             else:
                 self.log.info(
                     "No watches to update on %s" % bug_tracker.baseurl)
+
+    def _convertRemoteStatus(self, remotesystem, remote_status):
+        """Convert a remote bug status to a Launchpad status and return it.
+
+        :param remotesystem: The `IExternalBugTracker` instance
+            representing the remote system.
+        :param remote_status: The remote status to be converted into a
+            Launchpad status.
+
+        If the remote status cannot be mapped to a Launchpad status,
+        BugTaskStatus.UNKNOWN will be returned and a warning will be
+        logged.
+        """
+        # We don't bother trying to convert UNKNOWN_REMOTE_STATUS.
+        if remote_status == UNKNOWN_REMOTE_STATUS:
+            return BugTaskStatus.UNKNOWN
+
+        try:
+            launchpad_status = remotesystem.convertRemoteStatus(
+                remote_status)
+        except UnknownRemoteStatusError, error:
+            # We log the warning, since we need to know about statuses
+            # that we don't handle correctly.
+            self.warning("Unknown remote status '%s'." % remote_status,
+                self._getOOPSProperties(remotesystem), sys.exc_info())
+
+            launchpad_status = BugTaskStatus.UNKNOWN
+
+        return launchpad_status
 
     def updateBugWatches(self, remotesystem, bug_watches_to_update):
         """Update the given bug watches."""
@@ -213,7 +312,7 @@ class BugWatchUpdater(object):
         # to ensure that the list of bug watches is ordered by remote
         # bug id before we do so.
         remote_ids = sorted(
-            [bug_watch.remotebug for bug_watch in bug_watches])
+            set(bug_watch.remotebug for bug_watch in bug_watches))
         if remotesystem.batch_size is not None:
             remote_ids = remote_ids[:remotesystem.batch_size]
 
@@ -221,32 +320,32 @@ class BugWatchUpdater(object):
                 if bug_watch.remotebug not in remote_ids:
                     bug_watches.remove(bug_watch)
 
-        remotesystem.info("Updating %i watches on %s" %
+        self.log.info("Updating %i watches on %s" %
             (len(bug_watches), bug_tracker_url))
 
         bug_watch_ids = [bug_watch.id for bug_watch in bug_watches]
-        bug_watches_by_remote_bug = remotesystem._getBugWatchesByRemoteBug(
-            bug_watch_ids)
 
-        # Do things in a fixed order, mainly to help with testing.
-        bug_ids_to_update = sorted(bug_watches_by_remote_bug)
-
+        self.txn.commit()
         try:
-            remotesystem.initializeRemoteBugDB(bug_ids_to_update)
+            remotesystem.initializeRemoteBugDB(remote_ids)
         except Exception, error:
             # We record the error against all the bugwatches that should
             # have been updated before re-raising it. We also update the
             # bug watches' lastchecked dates so that checkwatches
             # doesn't keep trying to update them every time it runs.
+            self.txn.begin()
             errortype = get_bugwatcherrortype_for_error(error)
-            for bugwatch in bug_watches:
+            for bug_watch_id in bug_watch_ids:
+                bugwatch = getUtility(IBugWatchSet).get(bug_watch_id)
                 bugwatch.lastchecked = UTC_NOW
                 bugwatch.last_error_type = errortype
+            self.txn.commit()
             raise
 
-        # Again, fixed order here to help with testing.
-        bug_ids = sorted(bug_watches_by_remote_bug.keys())
-        for bug_id in bug_ids:
+        self.txn.begin()
+        bug_watches_by_remote_bug = self._getBugWatchesByRemoteBug(
+            bug_watch_ids)
+        for bug_id in remote_ids:
             bug_watches = bug_watches_by_remote_bug[bug_id]
             local_ids = ", ".join(str(watch.bug.id) for watch in bug_watches)
             try:
@@ -262,8 +361,8 @@ class BugWatchUpdater(object):
                 #      136391 is dealt with.
                 try:
                     new_remote_status = remotesystem.getRemoteStatus(bug_id)
-                    new_malone_status = remotesystem.convertRemoteStatus(
-                        new_remote_status)
+                    new_malone_status = self._convertRemoteStatus(
+                        remotesystem, new_remote_status)
 
                     new_remote_importance = remotesystem.getRemoteImportance(
                         bug_id)
@@ -272,21 +371,23 @@ class BugWatchUpdater(object):
                             new_remote_importance))
                 except InvalidBugId:
                     error = BugWatchErrorType.INVALID_BUG_ID
-                    remotesystem.warning(
+                    self.warning(
                         "Invalid bug %r on %s (local bugs: %s)." %
                              (bug_id, remotesystem.baseurl, local_ids),
                         properties=[
                             ('bug_id', bug_id),
-                            ('local_ids', local_ids)],
+                            ('local_ids', local_ids)] +
+                            self._getOOPSProperties(remotesystem),
                         info=sys.exc_info())
                 except BugNotFound:
                     error = BugWatchErrorType.BUG_NOT_FOUND
-                    remotesystem.warning(
+                    self.warning(
                         "Didn't find bug %r on %s (local bugs: %s)." %
                              (bug_id, remotesystem.baseurl, local_ids),
                         properties=[
                             ('bug_id', bug_id),
-                            ('local_ids', local_ids)],
+                            ('local_ids', local_ids)] +
+                            self._getOOPSProperties(remotesystem),
                         info=sys.exc_info())
 
                 for bug_watch in bug_watches:
@@ -300,7 +401,7 @@ class BugWatchUpdater(object):
                             new_malone_importance)
                     if (ISupportsCommentImport.providedBy(remotesystem) and
                         remotesystem.import_comments):
-                        remotesystem.importBugComments(bug_watch)
+                        self.importBugComments(remotesystem, bug_watch)
 
             except (KeyboardInterrupt, SystemExit):
                 # We should never catch KeyboardInterrupt or SystemExit.
@@ -313,9 +414,8 @@ class BugWatchUpdater(object):
                 # bug watches will get recorded.
                 self.txn.abort()
                 self.txn.begin()
-                bug_watches_by_remote_bug = (
-                    remotesystem._getBugWatchesByRemoteBug(
-                        bug_watch_ids))
+                bug_watches_by_remote_bug = self._getBugWatchesByRemoteBug(
+                    bug_watch_ids)
 
                 # We record errors against the bug watches and update
                 # their lastchecked dates so that we don't try to
@@ -324,13 +424,18 @@ class BugWatchUpdater(object):
                 for bugwatch in bug_watches:
                     bugwatch.lastchecked = UTC_NOW
                     bugwatch.last_error_type = errortype
+                # We need to commit the transaction, in case the next
+                # bug fails to update as well.
+                self.txn.commit()
+                self.txn.begin()
 
-                remotesystem.error(
+                self.error(
                     "Failure updating bug %r on %s (local bugs: %s)." %
                             (bug_id, bug_tracker_url, local_ids),
                     properties=[
                         ('bug_id', bug_id),
-                        ('local_ids', local_ids)])
+                        ('local_ids', local_ids)] +
+                        self._getOOPSProperties(remotesystem))
 
     def importBug(self, external_bugtracker, bugtracker, bug_target,
                   remote_bug):
@@ -359,12 +464,12 @@ class BugWatchUpdater(object):
         if package is not None:
             bug_target = package
         else:
-            external_bugtracker.warning(
+            self.warning(
                 'Unknown %s package (#%s at %s): %s' % (
                     bug_target.name, remote_bug,
                     external_bugtracker.baseurl, package_name))
-        summary, description = external_bugtracker.getBugSummaryAndDescription(
-            remote_bug)
+        summary, description = (
+            external_bugtracker.getBugSummaryAndDescription(remote_bug))
         bug = bug_target.createBug(
             CreateBugParams(
                 reporter, summary, description, subscribe_reporter=False))
@@ -381,3 +486,59 @@ class BugWatchUpdater(object):
         flush_database_updates()
 
         return bug
+
+    def importBugComments(self, external_bugtracker, bug_watch):
+        """Import all the comments from a remote bug.
+
+        :param external_bugtracker: An external bugtracker which
+            implements `ISupportsCommentImport`.
+        :param bug_watch: The bug watch for which the comments should be
+            imported.
+        """
+        imported_comments = 0
+        for comment_id in external_bugtracker.getCommentIds(bug_watch):
+            displayname, email = external_bugtracker.getPosterForComment(
+                bug_watch, comment_id)
+
+            poster = getUtility(IPersonSet).ensurePerson(
+                email, displayname, PersonCreationRationale.BUGIMPORT,
+                comment='when importing comments for %s.' % bug_watch.title)
+
+            comment_message = external_bugtracker.getMessageForComment(
+                bug_watch, comment_id, poster)
+            if not bug_watch.hasComment(comment_id):
+                bug_watch.addComment(comment_id, comment_message)
+                imported_comments += 1
+
+        if imported_comments > 0:
+            self.log.info("Imported %(count)i comments for remote bug "
+                "%(remotebug)s on %(bugtracker_url)s into Launchpad bug "
+                "%(bug_id)s." %
+                {'count': imported_comments,
+                 'remotebug': bug_watch.remotebug,
+                 'bugtracker_url': external_bugtracker.baseurl,
+                 'bug_id': bug_watch.bug.id})
+
+    def _getOOPSProperties(self, remotesystem):
+        """Return an iterable of 2-tuples (name, value) of OOPS properties.
+
+        :remotesystem: The `ExternalBugTracker` instance from which the
+            OOPS properties should be extracted.
+        """
+        return [('batch_size', remotesystem.batch_size),
+                ('batch_query_threshold', remotesystem.batch_query_threshold),
+                ('import_comments', remotesystem.import_comments),
+                ('externalbugtracker', remotesystem.__class__.__name__),
+                ('baseurl', remotesystem.baseurl)]
+
+    def warning(self, message, properties=None, info=None):
+        """Record a warning related to this bug tracker."""
+        report_warning(message, properties, info)
+        # Also put it in the log.
+        self.log.warning(message)
+
+    def error(self, message, properties=None, info=None):
+        """Record an error related to this external bug tracker."""
+        report_oops(message, properties, info)
+        # Also put it in the log.
+        self.log.error(message)

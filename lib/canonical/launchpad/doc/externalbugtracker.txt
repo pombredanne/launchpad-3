@@ -4,6 +4,72 @@ ExternalBugTracker instances are used to communicate with remote bug
 trackers. This document tests those features that are common to all
 ExternalBugTracker instances.
 
+== Updating bug watches ==
+
+All the ExternalBugTrackers know how to update the status of a bug
+watch. The method that updates the bug watches is
+BugWatchUpdater.updateBugWatches(), which expects an IExternalBugTracker
+and the bug watches to update. Before updating the bug watches, the
+initializeRemoteBugDB() method on the ExternalBugTracker is called. It
+gets the information for the bug watches from the external bug tracker,
+and it's called outside a DB transaction, since it doesn't need DB
+access.
+
+    >>> from canonical.launchpad.interfaces import BugTaskStatus
+    >>> from canonical.launchpad.components.externalbugtracker import (
+    ...     UnknownRemoteStatusError)
+    >>> class FakeExternalBugTracker:
+    ...     baseurl = 'http://example.com/'
+    ...     batch_size = None
+    ...     batch_query_threshold = 0
+    ...     import_comments = False
+    ...
+    ...     def initializeRemoteBugDB(self, remote_bug_ids):
+    ...         print "initializeRemoteBugDB() called"
+    ...     def convertRemoteStatus(self, remote_status):
+    ...         if remote_status == 'new':
+    ...             return BugTaskStatus.NEW
+    ...         else:
+    ...             raise UnknownRemoteStatusError()
+
+    >>> class FakeTransaction:
+    ...     """Transaction class to track transaction boundaries."""
+    ...     def commit(self):
+    ...         print "COMMIT"
+    ...     def abort(self):
+    ...         print "ABORT"
+    ...     def begin(self):
+    ...         print "BEGIN"
+
+    >>> from canonical.launchpad.scripts.checkwatches import BugWatchUpdater
+    >>> bug_watch_updater = BugWatchUpdater(FakeTransaction())
+    >>> bug_watch_updater.updateBugWatches(FakeExternalBugTracker(), [])
+    COMMIT
+    initializeRemoteBugDB() called
+    BEGIN
+
+Once it has retrieved the bugs from the remote server, BugWatchUpdater
+attempts to convert their statuses into Launchpad BugTaskStatuses by
+calling the convertRemoteStatus() method on the ExternalBugTracker via
+its own _convertRemoteStatus() method.
+
+ExternalBugTracker.convertRemoteStatus() will either return a
+BugTaskStatus or will raise an UnknownRemoteStatusError.
+BugWatchUpdater._convertRemoteStatus() will handle these errors and will
+return BugTaskStatus.UNKNOWN when they occur. It will also log a
+warning.
+
+    >>> status = bug_watch_updater._convertRemoteStatus(
+    ...     FakeExternalBugTracker(), 'new')
+    >>> print status.title
+    New
+
+    >>> status = bug_watch_updater._convertRemoteStatus(
+    ...     FakeExternalBugTracker(), 'spam')
+    WARNING...Unknown remote status 'spam'.
+    >>> print status.title
+    Unknown
+
 
 == Configuration Options ==
 
@@ -20,8 +86,7 @@ fulfill the implementation requirements of IExternalBugTracker.
     >>> from canonical.config import config
     >>> from canonical.launchpad.ftests.externalbugtracker import (
     ...     TestExternalBugTracker)
-    >>> import transaction
-    >>> tracker = TestExternalBugTracker(transaction)
+    >>> tracker = TestExternalBugTracker('http://example.com/')
     >>> (tracker.batch_query_threshold ==
     ...     config.checkwatches.batch_query_threshold)
     True
@@ -34,11 +99,11 @@ recorded against the bug watches themselves so that it can be displayed
 to users. We can test this by using a test version of
 ExternalBugTracker.
 
-    >>> from canonical.launchpad.scripts.checkwatches import BugWatchUpdater
+    >>> import transaction
     >>> from canonical.launchpad.ftests.externalbugtracker import (
     ...     TestBrokenExternalBugTracker)
     >>> external_bugtracker = TestBrokenExternalBugTracker(
-    ...     transaction, 'http://example.com')
+    ...     'http://example.com')
     >>> bug_watch_updater = BugWatchUpdater(transaction)
 
 We'll create an example bug watch with which to test this. This will
@@ -72,7 +137,6 @@ another.
     >>> from canonical.launchpad.components.externalbugtracker import (
     ...     BugNotFound, BugTrackerConnectError, InvalidBugId,
     ...     UnparseableBugData, UnparseableBugTrackerVersion)
-    >>> from socket import timeout
 
 TestBrokenExternalBugTracker allows us to force errors to occur, so we
 can use it to check that bug watches' last_error_types are being set
