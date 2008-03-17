@@ -16,7 +16,6 @@ __all__ = [
     'ExternalBugTracker',
     'InvalidBugId',
     'Mantis',
-    'MantisLoginHandler',
     'RequestTracker',
     'Roundup',
     'SourceForge',
@@ -31,6 +30,7 @@ __all__ = [
 from canonical.launchpad.components.externalbugtracker.base import *
 from canonical.launchpad.components.externalbugtracker.bugzilla import *
 from canonical.launchpad.components.externalbugtracker.debbugs import *
+from canonical.launchpad.components.externalbugtracker.mantis import *
 from canonical.launchpad.interfaces import BugTrackerType
 
 
