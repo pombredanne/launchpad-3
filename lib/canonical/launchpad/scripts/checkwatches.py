@@ -326,6 +326,10 @@ class BugWatchUpdater(object):
             bug_watch for bug_watch in bug_watches
             if bug_watch.lastchecked is not None]
         oldest_lastchecked = self._getOldestLastChecked(old_bug_watches)
+        if oldest_lastchecked is not None:
+            # Adjust for possible time skew, and some more, just to be safe.
+            oldest_lastchecked -= (
+                self.ACCEPTABLE_TIME_SKEW + timedelta(minutes=1))
 
         # We limit the number of watches we're updating by the
         # ExternalBugTracker's batch_size. In an ideal world we'd just
