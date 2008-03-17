@@ -7,6 +7,9 @@
 #
 # Copyright 2007 Canonical Ltd.  All rights reserved.
 #
+# This modules uses relative imports.
+# pylint: disable-msg=W0403
+
 import sys
 import logging
 
@@ -30,5 +33,5 @@ class FixPOFilePluralFormsScript(LaunchpadScript):
 if __name__ == '__main__':
     script = FixPOFilePluralFormsScript(
         'canonical.launchpad.scripts.fix_pofile_plurals',
-        dbuser=config.rosetta.rosettaadmin.dbuser)
+        dbuser=config.rosettaadmin.dbuser)
     script.run()
