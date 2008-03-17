@@ -38,7 +38,7 @@ def _disconnect_sqlos():
         if store_name in zstorm._named:
             store = zstorm.get(store_name)
             zstorm.remove(store)
-            store.close()
+            #store.close()
 
 
 def _reconnect_sqlos(dbuser=None, database_config_section='launchpad'):
