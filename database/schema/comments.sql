@@ -85,6 +85,7 @@ COMMENT ON COLUMN BranchSubscription.person IS 'The person or team associated wi
 COMMENT ON COLUMN BranchSubscription.branch IS 'The branch associated with the person or team.';
 COMMENT ON COLUMN BranchSubscription.notification_level IS 'The level of email the person wants to receive from branch updates.';
 COMMENT ON COLUMN BranchSubscription.max_diff_lines IS 'If the generated diff for a revision is larger than this number, then the diff is not sent in the notification email.';
+COMMENT ON COLUMN BranchSubscription.review_level IS 'The level of email the person wants to receive from review activity';
 
 -- BranchVisibilityPolicy
 
@@ -174,6 +175,13 @@ COMMENT ON COLUMN BugNotification.bug IS 'The bug that was changed.';
 COMMENT ON COLUMN BugNotification.message IS 'The message the contains the textual representation of the change.';
 COMMENT ON COLUMN BugNotification.is_comment IS 'Is the change a comment addition.';
 COMMENT ON COLUMN BugNotification.date_emailed IS 'When this notification was emailed to the bug subscribers.';
+
+-- BugNotificationRecipient
+COMMENT ON TABLE BugNotificationRecipient IS 'The recipient for a bug notification.';
+COMMENT ON COLUMN BugNotificationRecipient.bug_notification IS 'The notification this recipient should get.';
+COMMENT ON COLUMN BugNotificationRecipient.person IS 'The person who should receive this notification.';
+COMMENT ON COLUMN BugNotificationRecipient.reason_header IS 'The reason this person is receiving this notification (the value for the X-Launchpad-Message-Rationale header).';
+COMMENT ON COLUMN BugNotificationRecipient.reason_body IS 'A line of text describing the reason this person is receiving this notification (to be included in the email message).';
 
 
 -- BugPackageInfestation
@@ -301,6 +309,17 @@ COMMENT ON TABLE CodeReviewMessage IS 'A message that is part of a code review d
 COMMENT ON COLUMN CodeReviewMessage.branch_merge_proposal IS 'The merge proposal that is being discussed.';
 COMMENT ON COLUMN CodeReviewMessage.message IS 'The actual message.';
 COMMENT ON COLUMN CodeReviewMessage.vote IS 'The reviewer''s vote for this message.';
+COMMENT ON COLUMN CodeReviewMessage.vote_tag IS 'A short description of the vote';
+
+-- CodeReviewVote
+
+COMMENT ON TABLE CodeReviewVote IS 'Reference to a person''s last vote in a code review discussion.';
+COMMENT ON COLUMN CodeReviewVote.branch_merge_proposal IS 'The BranchMergeProposal for the code review.';
+COMMENT ON COLUMN CodeReviewVote.reviewer IS 'The person performing the review.';
+COMMENT ON COLUMN CodeReviewVote.review_type IS 'The aspect of the code being reviewed.';
+COMMENT ON COLUMN CodeReviewVote.registrant IS 'The person who registered this vote';
+COMMENT ON COLUMN CodeReviewVote.vote_message IS 'The message associated with the vote';
+COMMENT ON COLUMN CodeReviewVote.date_created IS 'The date this vote reference was created';
 
 -- CVE
 
@@ -643,6 +662,33 @@ COMMENT ON COLUMN SprintSpecification.whiteboard IS 'A place to store comments s
 COMMENT ON COLUMN SprintSpecification.registrant IS 'The person who nominated this specification for the agenda of the sprint.';
 COMMENT ON COLUMN SprintSpecification.decider IS 'The person who approved or declined this specification for the sprint agenda.';
 COMMENT ON COLUMN SprintSpecification.date_decided IS 'The date this specification was approved or declined for the agenda.';
+
+-- TeamMembership
+COMMENT ON TABLE TeamMembership IS 'The direct membership of a person on a given team.';
+COMMENT ON COLUMN TeamMembership.person IS 'The person.';
+COMMENT ON COLUMN TeamMembership.team IS 'The team.';
+COMMENT ON COLUMN TeamMembership.status IS 'The state of the membership.';
+COMMENT ON COLUMN TeamMembership.date_created IS 'The date this membership was created.';
+COMMENT ON COLUMN TeamMembership.date_joined IS 'The date this membership was made active for the first time.';
+COMMENT ON COLUMN TeamMembership.date_expires IS 'The date this membership will expire, if any.';
+COMMENT ON COLUMN TeamMembership.last_changed_by IS 'The person who reviewed the last change to this membership.';
+COMMENT ON COLUMN TeamMembership.last_change_comment IS 'The comment left by the reviewer for the change.';
+COMMENT ON COLUMN TeamMembership.date_last_changed IS 'The date this membership was last changed.';
+COMMENT ON COLUMN TeamMembership.proposed_by IS 'The user who proposed the person as member of the team.';
+COMMENT ON COLUMN TeamMembership.proponent_comment IS 'The comment left by the proponent.';
+COMMENT ON COLUMN TeamMembership.date_proposed IS 'The date of the proposal.';
+COMMENT ON COLUMN TeamMembership.acknowledged_by IS 'The member (or someone acting on his behalf) who accepts an invitation to join a team';
+COMMENT ON COLUMN TeamMembership.date_acknowledged IS 'The date of acknowledgement.';
+COMMENT ON COLUMN TeamMembership.acknowledger_comment IS 'The comment left by the person who acknowledged the membership.';
+COMMENT ON COLUMN TeamMembership.reviewed_by IS 'The team admin who reviewed (approved/declined) the membership.';
+COMMENT ON COLUMN TeamMembership.reviewer_comment IS 'The comment left by the approver.';
+COMMENT ON COLUMN TeamMembership.date_reviewed IS 'The date the membership was
+approved/declined.';
+
+-- TeamParticipation
+COMMENT ON TABLE TeamParticipation IS 'The participation of a person on a team, which can be a direct or indirect membership.';
+COMMENT ON COLUMN TeamParticipation.person IS 'The member.';
+COMMENT ON COLUMN TeamParticipation.team IS 'The team.';
 
 -- TranslationMessage
 COMMENT ON TABLE TranslationMessage IS 'This table stores a concrete
@@ -1859,8 +1905,7 @@ COMMENT ON COLUMN OAuthAccessToken.secret IS 'The secret used by the consumer (t
 COMMENT ON COLUMN OAuthAccessToken.date_created IS 'The date/time in which the token was created.';
 COMMENT ON COLUMN OAuthAccessToken.date_expires IS 'The date/time in which this token will stop being accepted by Launchpad.';
 
-COMMENT ON TABLE OAuthNonce IS 'The unique nonce for any request with a
-given timestamp. This is generated by the consumer.';
-COMMENT ON COLUMN OAuthNonce.consumer IS 'The consumer which is going to access the protected resources.';
+COMMENT ON TABLE OAuthNonce IS 'The unique nonce for any request with a given timestamp and access token. This is generated by the consumer.';
+COMMENT ON COLUMN OAuthNonce.access_token IS 'The access token.';
 COMMENT ON COLUMN OAuthNonce.nonce IS 'The nonce itself.';
 COMMENT ON COLUMN OAuthNonce.request_timestamp IS 'The date and time (as a timestamp) in which the request was made.';

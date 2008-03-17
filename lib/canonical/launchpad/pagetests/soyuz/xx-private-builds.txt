@@ -35,6 +35,7 @@ the "frog" builder.
     >>> frog.builderok = True
     >>> random_build = 2
     >>> trash = BuildQueue(build=cprov_builds[random_build], builder=frog)
+    >>> random_build_id = cprov_builds[random_build].id
 
 We'll also make name12 a member of the launchpad-buildd-admins team, so we
 can use him to see builds from a buildd-admin perspective.
@@ -125,6 +126,23 @@ and also the main area:
     i386 build of iceweasel 1.0 in ubuntu warty RELEASE
     ...
 
+IBuild is also wrapped in a Zope security proxy to prevent unauthorised
+access.  This prevents direct access to the build URL by unauthorised
+users:
+
+    >>> anon_browser.open("http://launchpad.dev/~cprov/+archive/+build/%s" %
+    ...     random_build_id)
+    Traceback (most recent call last):
+    ...
+    Unauthorized...
+
+But it is fine for authorised users:
+
+    >>> cprov_browser.open("http://launchpad.dev/~cprov/+archive/+build/%s" %
+    ...     random_build_id)
+    >>> print cprov_browser.url
+    http://launchpad.dev/~cprov/+archive/+build/...
+
 
 == Builder history page ==
 
@@ -202,3 +220,87 @@ If cprov browses the list he will also see his own builds in the list.
     5 of 17 results
     ...
 
+"Frog" is currently building a private build but again the unauthorised user
+cannot see any of the private details.
+
+    >>> anon_browser.open("http://launchpad.dev/+builds/frog/+history")
+    >>> [builds_list] = find_tags_by_class(
+    ...     anon_browser.contents, 'builds_list')
+    >>> print extract_text(builds_list)
+    Package:
+    ...
+    No build records.
+
+    >>> print extract_text(
+    ...     find_tag_by_id(anon_browser.contents, 'portlet-details'))
+    The frog builder details
+    ...
+    Status NOT OK: (AUTO)
+    ...
+
+An authorised user will see the build however:
+
+    >>> cprov_browser.open("http://launchpad.dev/+builds/frog/+history")
+    >>> [builds_list] = find_tags_by_class(
+    ...     cprov_browser.contents, 'builds_list')
+    >>> print extract_text(builds_list)
+    Package:
+    ...
+    No build records.
+
+    >>> print extract_text(
+    ...     find_tag_by_id(cprov_browser.contents, 'portlet-details'))
+    The frog builder details
+    ...
+    Status BUILDING i386 build of ... RELEASE [cprov] (AUTO)
+    ...
+
+
+== Build farm index page ==
+
+The build farm index page at /+builds is described in detail at
+xx-buildfarm-index.txt.  However, if a private build is running on
+a builder then it is hidden as in the examples above.
+
+An admin user can see builds even if they are private:
+
+    >>> admin_browser.open("http://launchpad.dev/+builds")
+    >>> print extract_text(find_main_content(admin_browser.contents))
+    Build machines for Launchpad
+    Builder        Architecture  Owner                    Status
+    bob Automatic  386           Launchpad Buildd Admins  Not available
+    frog Automatic 386 Virtual   Launchpad Buildd Admins  Building iceweasel
+                                    1.0 for Celso Providelo Ubuntu Warty PPA
+    Generated at ...
+
+Launchpad Buildd admins can also see private builds.
+
+    >>> name12_browser.open("http://launchpad.dev/+builds")
+    >>> print extract_text(find_main_content(name12_browser.contents))
+    Build machines for Launchpad
+    Builder        Architecture  Owner                    Status
+    bob Automatic  386           Launchpad Buildd Admins  Not available
+    frog Automatic 386 Virtual   Launchpad Buildd Admins  Building iceweasel
+                                    1.0 for Celso Providelo Ubuntu Warty PPA
+    Generated at ...
+
+cprov can see his own private build:
+
+    >>> cprov_browser.open("http://launchpad.dev/+builds")
+    >>> print extract_text(find_main_content(cprov_browser.contents))
+    Build machines for Launchpad
+    Builder        Architecture  Owner                    Status
+    bob Automatic  386           Launchpad Buildd Admins  Not available
+    frog Automatic 386 Virtual   Launchpad Buildd Admins  Building iceweasel
+                                    1.0 for Celso Providelo Ubuntu Warty PPA
+    Generated at ...
+
+Anonymous users cannot see the private build:
+
+    >>> anon_browser.open("http://launchpad.dev/+builds")
+    >>> print extract_text(find_main_content(anon_browser.contents))
+    Build machines for Launchpad
+    Builder        Architecture  Owner                    Status
+    bob Automatic  386           Launchpad Buildd Admins  Not available
+    frog Automatic 386 Virtual   Launchpad Buildd Admins  Not available
+    Generated at ...
