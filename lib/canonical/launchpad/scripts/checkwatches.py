@@ -360,6 +360,14 @@ class BugWatchUpdater(object):
         self.txn.begin()
         bug_watches_by_remote_bug = self._getBugWatchesByRemoteBug(
             bug_watch_ids)
+        can_import_comments = (
+            ISupportsCommentImport.providedBy(remotesystem) and
+            remotesystem.import_comments)
+        if can_import_comments and server_time is None:
+            can_import_comments = False
+            self.warning(
+                "Comment importing supported, but server time can't be"
+                " trusted. No comments will be imported.")
         for bug_id in remote_ids:
             bug_watches = bug_watches_by_remote_bug[bug_id]
             local_ids = ", ".join(str(watch.bug.id) for watch in bug_watches)
@@ -414,8 +422,7 @@ class BugWatchUpdater(object):
                     if new_malone_importance is not None:
                         bug_watch.updateImportance(new_remote_importance,
                             new_malone_importance)
-                    if (ISupportsCommentImport.providedBy(remotesystem) and
-                        remotesystem.import_comments):
+                    if can_import_comments:
                         self.importBugComments(remotesystem, bug_watch)
 
             except (KeyboardInterrupt, SystemExit):
