@@ -448,7 +448,7 @@ A "Delete Files" button is available.
 
 Download files are shown in a portlet on the product overview page.
 Only the files for the most recent release that actually has
-downloadble files is show.  For instance if Firefox has a trunk with
+downloadble files are shown.  For instance if Firefox has a trunk with
 no releases and a 3.0 series with releases 3.0b1 and 3.0, each of
 which has downloadable files, only the 3.0 release files will be shown.
 
