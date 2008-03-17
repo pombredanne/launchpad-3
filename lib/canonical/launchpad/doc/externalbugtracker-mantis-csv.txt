@@ -16,13 +16,7 @@ stores a base URL which it will use to construct URLs to pull a CSV
 export from.
 
     >>> from canonical.launchpad.components.externalbugtracker import Mantis
-    >>> from canonical.launchpad.ftests.externalbugtracker import (
-    ...     new_bugtracker)
-    >>> from canonical.launchpad.interfaces import BugTrackerType
-    >>> from canonical.testing import LaunchpadZopelessLayer
-    >>> txn = LaunchpadZopelessLayer.txn
-    >>> alsa_mantis = Mantis(
-    ...     txn, new_bugtracker(BugTrackerType.MANTIS))
+    >>> alsa_mantis = Mantis('http://example.com')
 
 As with all ExternalBugTrackers, Mantis contains a function for converting one
 of its own status to a Malone status. Mantis' function takes a string
@@ -39,20 +33,12 @@ in the form "status: resolution" as follows:
     >>> alsa_mantis.convertRemoteStatus('closed: fixed').title
     'Fix Released'
 
-If the status can't be converted, Unknown is returned, and a warning
-is logged.
+If the status can't be converted an UnknownRemoteStatusError is raised.
 
     >>> alsa_mantis.convertRemoteStatus(('foo: bar')).title
-    WARNING:...:Unknown status/resolution foo/bar.
-    'Unknown'
-
-UNKNOWN_REMOTE_STATUS maps to Unknown without generating a
-warning. This handles the case where we've tried to probe for a bug
-but didn't succeed. For example, if the bug number was invalid.
-
-    >>> from canonical.launchpad.interfaces import UNKNOWN_REMOTE_STATUS
-    >>> alsa_mantis.convertRemoteStatus(UNKNOWN_REMOTE_STATUS).title
-    'Unknown'
+    Traceback (most recent call last):
+      ...
+    UnknownRemoteStatusError
 
 
 == Updating Bug Watches ==
@@ -66,16 +52,19 @@ Tracker:
 
     >>> sample_person = getUtility(IPersonSet).getByEmail('test@canonical.com')
 
+    >>> from canonical.launchpad.interfaces import BugTrackerType
+    >>> from canonical.launchpad.ftests.externalbugtracker import (
+    ...     new_bugtracker)
     >>> example_bug_tracker = new_bugtracker(BugTrackerType.MANTIS)
     >>> example_bug = getUtility(IBugSet).get(10)
     >>> example_bugwatch = example_bug.addWatch(
-    ...     example_bug_tracker, 3224, sample_person)
+    ...     example_bug_tracker, '3224', sample_person)
 
 We use a specially hacked Mantis instance that doesn't do network
 calls to verify here. We set its batch_query_threshold to 0 so as to
 force it to use the CSV import code:
 
-    >>> example_ext_bug_tracker = TestMantis(txn, example_bug_tracker)
+    >>> example_ext_bug_tracker = TestMantis(example_bug_tracker.baseurl)
     >>> example_ext_bug_tracker.batch_query_threshold = 0
 
 Collect the Example.com watches:
@@ -86,7 +75,10 @@ Collect the Example.com watches:
 
 And have our special Mantis instance process them:
 
-    >>> example_ext_bug_tracker.updateBugWatches(example_bug_tracker.watches)
+    >>> from canonical.launchpad.scripts.checkwatches import BugWatchUpdater
+    >>> bug_watch_updater = BugWatchUpdater(transaction)
+    >>> bug_watch_updater.updateBugWatches(
+    ...     example_ext_bug_tracker, example_bug_tracker.watches)
     INFO:...:Updating 1 watches on http://bugs.some.where
 
     >>> for bug_watch in example_bug_tracker.watches:
@@ -127,7 +119,8 @@ updateBugWatches() issues only one request to update all watches:
 
     >>> example_ext_bug_tracker.trace_calls = True
     >>> example_ext_bug_tracker.cleanCache()
-    >>> example_ext_bug_tracker.updateBugWatches(example_bug_tracker.watches)
+    >>> bug_watch_updater.updateBugWatches(
+    ...     example_ext_bug_tracker, example_bug_tracker.watches)
     INFO:...:Updating 6 watches on http://bugs.some.where
     CALLED _postPage('view_all_set.php?f=3', ...)
     CALLED _getPage('csv_export.php')
@@ -181,7 +174,8 @@ updated:
     >>> now = datetime.now(pytz.timezone('UTC'))
     >>> bug_watch.lastchanged = now - timedelta(weeks=2)
     >>> old_last_changed = bug_watch.lastchanged
-    >>> example_ext_bug_tracker.updateBugWatches([bug_watch])
+    >>> bug_watch_updater.updateBugWatches(
+    ...     example_ext_bug_tracker, [bug_watch])
     INFO:...:Updating 1 watches on http://bugs.some.where
 
     >>> bug_watch.lastchanged == old_last_changed

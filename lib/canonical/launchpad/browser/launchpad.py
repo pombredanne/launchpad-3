@@ -5,6 +5,7 @@ __metaclass__ = type
 __all__ = [
     'AppFrontPageSearchView',
     'Breadcrumbs',
+    'LinkView',
     'LoginStatus',
     'MaintenanceMessage',
     'MenuBox',
@@ -64,6 +65,7 @@ from canonical.launchpad.interfaces import (
     ILaunchpadRoot,
     ILaunchpadStatisticSet,
     ILoginTokenSet,
+    IMailingListSet,
     IMaloneApplication,
     IMentoringOfferSet,
     IPersonSet,
@@ -71,7 +73,6 @@ from canonical.launchpad.interfaces import (
     IProductSet,
     IProjectSet,
     IQuestionSet,
-    IRegistryApplication,
     IRosettaApplication,
     ISourcePackageNameSet,
     ISpecificationSet,
@@ -155,12 +156,15 @@ class MenuBox(LaunchpadView):
 
     def initialize(self):
         menuapi = MenuAPI(self.context)
+        # We are only interested on enabled links in non development mode.
         context_menu_links = menuapi.context
         self.contextmenuitems = sorted([
-            link for link in context_menu_links.values() if link.enabled],
+            link for link in context_menu_links.values() if (link.enabled or
+                                                             config.devmode)],
             key=operator.attrgetter('sort_key'))
         self.applicationmenuitems = sorted([
-            link for link in menuapi.application() if link.enabled],
+            link for link in menuapi.application() if (link.enabled or
+                                                       config.devmode)],
             key=operator.attrgetter('sort_key'))
 
     def render(self):
@@ -168,6 +172,21 @@ class MenuBox(LaunchpadView):
             return ''
         else:
             return self.template()
+
+
+class LinkView(LaunchpadView):
+    """View class that helps its template render a menu link.
+
+    The link is not rendered if it's not enabled and we are not in development
+    mode.
+    """
+
+    def render(self):
+        """Render the menu link if it's enabled or we're in dev mode."""
+        if self.context.enabled or config.devmode:
+            return self.template()
+        else:
+            return ''
 
 
 class Breadcrumbs(LaunchpadView):
@@ -393,7 +412,7 @@ class LaunchpadRootNavigation(Navigation):
     @stepto('support')
     def redirect_support(self):
         """Redirect /support to Answers root site."""
-        target_url= canonical_url(
+        target_url = canonical_url(
             getUtility(ILaunchpadRoot), rootsite='answers')
         return self.redirectSubTree(target_url + 'questions', status=301)
 
@@ -429,11 +448,11 @@ class LaunchpadRootNavigation(Navigation):
         'karmaaction': IKarmaActionSet,
         '+imports': ITranslationImportQueue,
         '+languages': ILanguageSet,
+        '+mailinglists': IMailingListSet,
         '+mentoring': IMentoringOfferSet,
         'people': IPersonSet,
         'projects': IProductSet,
         'projectgroups': IProjectSet,
-        'registry': IRegistryApplication,
         'sourcepackagenames': ISourcePackageNameSet,
         'specs': ISpecificationSet,
         'sprints': ISprintSet,
@@ -492,23 +511,28 @@ class LaunchpadRootNavigation(Navigation):
         user = getUtility(ILaunchBag).user
         ignore_inactive = True
         if user and user.inTeam(admins):
-            # Admins should be able to access deactivated projects too
+            # Admins should be able to access deactivated projects too.
             ignore_inactive = False
         pillar = getUtility(IPillarNameSet).getByName(
             name, ignore_inactive=ignore_inactive)
         return pillar
 
     def _getBetaRedirectionView(self):
-        # If the inhibit_beta_redirect cookie is set, don't redirect:
+        # If the inhibit_beta_redirect cookie is set, don't redirect.
         if self.request.cookies.get('inhibit_beta_redirect', '0') == '1':
             return None
 
-        # If we are looking at the front page, don't redirect:
+        # If we are looking at the front page, don't redirect.
         if self.request['PATH_INFO'] == '/':
             return None
 
+        # If this is a HTTP POST, we don't want to issue a redirect.
+        # Doing so would go against the HTTP standard.
+        if self.request.method == 'POST':
+            return None
+
         # If no redirection host is set, don't redirect.
-        mainsite_host = config.launchpad.vhosts.mainsite.hostname
+        mainsite_host = config.vhost.mainsite.hostname
         redirection_host = config.launchpad.beta_testers_redirection_host
         if redirection_host is None:
             return None
@@ -525,10 +549,10 @@ class LaunchpadRootNavigation(Navigation):
             getUtility(ILaunchpadCelebrities).launchpad_beta_testers):
             return None
 
-        # Alter the host name to point at the redirection target:
+        # Alter the host name to point at the redirection target.
         new_host = uri.host[:-len(mainsite_host)] + redirection_host
         uri = uri.replace(host=new_host)
-        # Complete the URL from the environment:
+        # Complete the URL from the environment.
         uri = uri.replace(path=self.request['PATH_INFO'])
         query_string = self.request.get('QUERY_STRING')
         if query_string:
@@ -558,7 +582,7 @@ class SoftTimeoutView(LaunchpadView):
             raise Unauthorized
 
         self.request.response.setHeader('content-type', 'text/plain')
-        soft_timeout = intOrZero(config.launchpad.soft_request_timeout)
+        soft_timeout = intOrZero(config.database.soft_request_timeout)
         if soft_timeout == 0:
             return 'No soft timeout threshold is set.'
 
@@ -627,7 +651,8 @@ class OneZeroTemplateStatus(LaunchpadView):
                 output_category = self.pages
 
             num_one_zero_comments = 0
-            html_comments = soup.findAll(text=lambda text:isinstance(text, Comment))
+            html_comments = soup.findAll(
+                text=lambda text:isinstance(text, Comment))
             for html_comment in html_comments:
                 matchobj = self.onezero_re.match(html_comment)
                 if matchobj:
@@ -635,7 +660,8 @@ class OneZeroTemplateStatus(LaunchpadView):
                     status, comment = matchobj.groups()
                     if status not in self.valid_status_values:
                         status = 'error'
-                        comment = 'status not one of %s' % ', '.join(sorted(self.valid_status_values))
+                        comment = 'status not one of %s' % ', '.join(
+                            sorted(self.valid_status_values))
 
             if num_one_zero_comments == 0:
                 is_page = soup.html is not None
@@ -647,14 +673,15 @@ class OneZeroTemplateStatus(LaunchpadView):
                     continue
             elif num_one_zero_comments > 1:
                 status = "error"
-                comment = "There were %s one-zero comments in the document." % num_one_zero_comments
+                comment = (
+                    "There were %s one-zero comments in the document." %
+                    num_one_zero_comments)
 
             xmlcomment = cgi.escape(comment)
             xmlcomment = xmlcomment.replace('\n', '<br />')
 
             helptextsoup = soup.find(attrs={'metal:fill-slot':'help'})
             if helptextsoup:
-                #helptext = ''.join(unicode(t) for t in helptextsoup.findAll(recursive=False))
                 helptext = unicode(helptextsoup)
             else:
                 helptext = ''

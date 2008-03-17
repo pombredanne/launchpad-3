@@ -14,19 +14,17 @@ from sha import sha
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
-
-
 from canonical.archiveuploader.tests import (
     datadir, getPolicy, insertFakeChangesFileForAllPackageUploads,
     mock_logger_quiet)
 from canonical.archiveuploader.nascentupload import NascentUpload
 from canonical.config import config
-from canonical.database.sqlbase import READ_COMMITTED_ISOLATION
+from canonical.database.sqlbase import ISOLATION_LEVEL_READ_COMMITTED
 from canonical.launchpad.database import PackageUploadBuild
 from canonical.launchpad.interfaces import (
     ArchivePurpose, DistroSeriesStatus, IArchiveSet, IBugSet, IBugTaskSet,
-    IComponentSet, IDistributionSet, IPackageUploadSet, IPersonSet,
-    PackagePublishingPocket, PackagePublishingStatus, PackageUploadStatus)
+    IDistributionSet, IPackageUploadSet, IPersonSet, PackagePublishingPocket,
+    PackagePublishingStatus, PackageUploadStatus)
 from canonical.launchpad.mail import stub
 from canonical.launchpad.scripts.queue import (
     CommandRunner, CommandRunnerError, name_queue_map)
@@ -56,8 +54,7 @@ class TestQueueBase(TestCase):
         # to avoid SERIALIZATION exceptions with the Librarian.
         LaunchpadZopelessLayer.alterConnection(
                 dbuser=self.dbuser,
-                isolation=READ_COMMITTED_ISOLATION
-                )
+                isolation=ISOLATION_LEVEL_READ_COMMITTED)
 
     def _test_display(self, text):
         """Store output from queue tool for inspection."""
@@ -258,6 +255,29 @@ class TestQueueTool(TestQueueBase):
         self.assertEmail(
             ['Daniel Silverstone <daniel.silverstone@canonical.com>'])
 
+    def testAcceptingSourceCreateBuilds(self):
+        """Check if accepting a source package creates build records."""
+        LaunchpadZopelessLayer.switchDbUser("testadmin")
+        upload_bar_source()
+        # Swallow email generated at the upload stage.
+        stub.test_emails.pop()
+        LaunchpadZopelessLayer.txn.commit()
+
+        LaunchpadZopelessLayer.switchDbUser("queued")
+        queue_action = self.execute_command(
+            'accept bar', no_mail=False)
+        self.assertEqual(1, queue_action.items_size)
+        self.assertEqual(2, len(stub.test_emails))
+
+        [queue_item] = queue_action.items
+        [queue_source] = queue_item.sources
+        sourcepackagerelease = queue_source.sourcepackagerelease
+        [build] = sourcepackagerelease.builds
+        self.assertEqual(
+            'i386 build of bar 1.0-1 in ubuntu breezy-autotest RELEASE',
+            build.title)
+        self.assertEqual(build.buildqueue_record.lastscore, 255)
+
     def testAcceptingBinaryDoesntGenerateEmail(self):
         """Check if accepting a binary package does not generate email."""
         queue_action = self.execute_command(
@@ -324,66 +344,6 @@ class TestQueueTool(TestQueueBase):
         self.assertEqual(
             bug_status, 'FIXRELEASED',
             'Bug status is %s, expected FIXRELEASED')
-
-    def testAcceptNewSingleSourceUploadOverridesToUniverse(self):
-        """Ensure new single source uploads are overridden to universe."""
-        # Upload a new package called "bar".
-        self.uploadPackage()
-
-        # bar starts life as "main":
-        queue_action = self.execute_command(
-            'info bar', queue_name='new')
-        [bar_item] = queue_action.items
-        self.assertEqual(
-            'main', bar_item.sources[0].sourcepackagerelease.component.name)
-
-        # Now accept it.
-        queue_action = self.execute_command(
-            'accept bar', queue_name='new')
-
-        # Its publishing record is now overridden to universe.
-        breezy_autotest = getUtility(
-            IDistributionSet)['ubuntu']['breezy-autotest']
-        published = breezy_autotest.getPublishedReleases(
-            'bar', include_pending=True)
-        [published_bar] = published
-        component_name = published_bar.component.name
-        self.assertEqual(
-            component_name, 'universe',
-            "Expected 'universe', got %s" % component_name)
-
-    def testAcceptNewSingleSourceUploadNotMainDoesNotAutoOverride(self):
-        """Ensure new non-main single source uploads are not overridden.
-
-        NEW uploads that are not in the main component should not be
-        overridden to universe.
-        """
-        # Upload a new package called "bar".
-        self.uploadPackage()
-
-        # bar starts life as "main", so change it for the test to
-        # "restricted".
-        queue_action = self.execute_command(
-            'info bar', queue_name='new')
-        [bar_item] = queue_action.items
-        spr = removeSecurityProxy(
-            bar_item.sources[0].sourcepackagerelease)
-        spr.component = getUtility(IComponentSet)['restricted']
-
-        # Now accept it.
-        queue_action = self.execute_command(
-            'accept bar', queue_name='new')
-
-        # Its publishing record is still main:
-        breezy_autotest = getUtility(
-            IDistributionSet)['ubuntu']['breezy-autotest']
-        published = breezy_autotest.getPublishedReleases(
-            'bar', include_pending=True)
-        [published_bar] = published
-        component_name = published_bar.component.name
-        self.assertEqual(
-            component_name, 'restricted',
-            "Expected 'restricted', got %s" % component_name)
 
     def testAcceptActionWithMultipleIDs(self):
         """Check if accepting multiple items at once works.

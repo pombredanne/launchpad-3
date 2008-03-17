@@ -18,7 +18,16 @@ $Id: test.py 25177 2004-06-02 13:17:31Z jim $
 """
 import sys, os, psycopg, time, logging, warnings, re
 
-os.setpgrp() # So test_on_merge.py can reap its children
+
+if os.getsid(0) == os.getsid(os.getppid()):
+    # We need to become the process group leader so test_on_merge.py
+    # can reap its children.
+    #
+    # Note that if setpgrp() is used to move a process from one
+    # process group to another (as is done by some shells when
+    # creating pipelines), then both process groups must be part of
+    # the same session.
+    os.setpgrp()
 
 # Make tests run in a timezone no launchpad developers live in.
 # Our tests need to run in any timezone.
@@ -137,7 +146,16 @@ if __name__ == '__main__':
     if options.verbose >= 3 and main_process:
         profiled.setup_profiling()
 
-    result = testrunner.run(defaults)
+    # The working directory change is just so that the test script
+    # can be invoked from places other than the root of the source
+    # tree. This is very useful for IDE integration, so an IDE can
+    # e.g. run the test that you are currently editing.
+    try:
+        there = os.getcwd()
+        os.chdir(here)
+        result = testrunner.run(defaults)
+    finally:
+        os.chdir(there)
     # Cribbed from sourcecode/zope/test.py - avoid spurious error during exit.
     logging.disable(999999999)
 

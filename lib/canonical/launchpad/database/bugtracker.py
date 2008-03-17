@@ -11,10 +11,10 @@ __all__ = [
 import re
 
 from itertools import chain
-# splithost and splittype are not formally documented, but are in
-# urllib.__all__, are simple, and are heavily used by the rest of
-# urllib, hence are unlikely to change or go away.
-from urllib import splithost, splittype
+# splittype is not formally documented, but is in urllib.__all__, is
+# simple, and is heavily used by the rest of urllib, hence is unlikely
+# to change or go away.
+from urllib import splittype
 
 from zope.interface import implements
 
@@ -28,10 +28,14 @@ from canonical.database.sqlbase import (
 
 from canonical.launchpad.helpers import shortlist
 from canonical.launchpad.database.bug import Bug
+from canonical.launchpad.database.bugmessage import BugMessage
 from canonical.launchpad.database.bugwatch import BugWatch
+from canonical.launchpad.validators.person import public_person_validator
 from canonical.launchpad.interfaces import (
     BugTrackerType, IBugTracker, IBugTrackerAlias, IBugTrackerAliasSet,
     IBugTrackerSet, NotFoundError)
+from canonical.launchpad.validators.email import valid_email
+from canonical.launchpad.webapp.uri import URI
 
 
 def normalise_leading_slashes(rest):
@@ -83,6 +87,24 @@ def base_url_permutations(base_url):
             alternative_urls.append(url + '/')
     return alternative_urls
 
+def make_bugtracker_name(uri):
+    """Return a name string for a bug tracker based on a URI.
+
+    :param uri: The base URI to be used to identify the bug tracker,
+        e.g. http://bugs.example.com or mailto:bugs@example.com
+    """
+    base_uri = URI(uri)
+    if base_uri.scheme == 'mailto':
+        if valid_email(base_uri.path):
+            base_name = base_uri.path.split('@', 1)[0]
+        else:
+            raise ValueError(
+                'Not a valid email address: %s' % base_uri.path)
+    else:
+        base_name = base_uri.host
+
+    return 'auto-%s' % base_name
+
 
 class BugTracker(SQLBase):
     """A class to access the BugTracker table in the database.
@@ -100,9 +122,11 @@ class BugTracker(SQLBase):
         schema=BugTrackerType, notNull=True)
     name = StringCol(notNull=True, unique=True)
     title = StringCol(notNull=True)
-    summary = StringCol(notNull=True)
+    summary = StringCol(notNull=False)
     baseurl = StringCol(notNull=True)
-    owner = ForeignKey(dbName='owner', foreignKey='Person', notNull=True)
+    owner = ForeignKey(
+        dbName='owner', foreignKey='Person',
+        validator=public_person_validator, notNull=True)
     contactdetails = StringCol(notNull=False)
     projects = SQLMultipleJoin(
         'Project', joinColumn='bugtracker', orderBy='name')
@@ -118,6 +142,12 @@ class BugTracker(SQLBase):
 
     def getBugsWatching(self, remotebug):
         """See IBugTracker"""
+        # We special-case email address bug trackers. Since we don't
+        # record a remote bug id for them we can never know which bugs
+        # are already watching a remote bug.
+        if self.bugtrackertype == BugTrackerType.EMAILADDRESS:
+            return []
+
         return shortlist(Bug.select(AND(BugWatch.q.bugID == Bug.q.id,
                                         BugWatch.q.bugtrackerID == self.id,
                                         BugWatch.q.remotebug == remotebug),
@@ -177,6 +207,14 @@ class BugTracker(SQLBase):
         iterable of URLs or None to set or remove aliases.
         """)
 
+    @property
+    def imported_bug_messages(self):
+        """See `IBugTracker`."""
+        return BugMessage.select(
+            AND((BugMessage.q.bugwatchID == BugWatch.q.id),
+                (BugWatch.q.bugtrackerID == self.id)),
+            orderBy=BugMessage.q.id)
+
 
 class BugTrackerSet:
     """Implements IBugTrackerSet for a container or set of BugTracker's,
@@ -188,7 +226,7 @@ class BugTrackerSet:
     table = BugTracker
 
     def __init__(self):
-        self.title = 'Bug trackers registered in Malone'
+        self.title = 'Bug trackers registered in Launchpad'
 
     def get(self, bugtracker_id, default=None):
         """See `IBugTrackerSet`."""
@@ -262,9 +300,16 @@ class BugTrackerSet:
         # create the bugtracker, we don't know about it. we'll use the
         # normalised base url
         if name is None:
-            scheme, host = splittype(baseurl)
-            host, path = splithost(host)
-            name = 'auto-%s' % host
+            base_name = make_bugtracker_name(baseurl)
+
+            # If we detect that this name exists already we mutate it
+            # until it doesn't.
+            name = base_name
+            name_increment = 1
+            while self.getByName(name) is not None:
+                name = "%s-%d" % (base_name, name_increment)
+                name_increment += 1
+
         if title is None:
             title = quote('Bug tracker at %s' % baseurl)
         bugtracker = BugTracker(name=name,
@@ -287,6 +332,22 @@ class BugTrackerSet:
         else:
             return result
 
+    def getPillarsForBugtrackers(self, bugtrackers):
+        """See `IBugTrackerSet`."""
+        from canonical.launchpad.database.product import Product
+        from canonical.launchpad.database.project import Project
+        ids = [str(b.id) for b in bugtrackers]
+        products = Product.select(
+            "bugtracker in (%s)" % ",".join(ids), orderBy="name")
+        projects = Project.select(
+            "bugtracker in (%s)" % ",".join(ids), orderBy="name")
+        ret = {}
+        for product in products:
+            ret.setdefault(product.bugtracker, []).append(product)
+        for project in projects:
+            ret.setdefault(project.bugtracker, []).append(project)
+        return ret
+
 
 class BugTrackerAlias(SQLBase):
     """See `IBugTrackerAlias`."""
@@ -306,3 +367,4 @@ class BugTrackerAliasSet:
     def queryByBugTracker(self, bugtracker):
         """See IBugTrackerSet."""
         return self.table.selectBy(bugtracker=bugtracker.id)
+

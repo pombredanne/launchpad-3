@@ -83,6 +83,22 @@ No data matches the non-existent search string "bustmybuffers".
     >>> len(find_tags_by_class(browser.contents, 'ppa_batch_row'))
     0
 
+We have to update the archive caches, in order to be able to search
+them properly, see doc/package-archive.txt.
+
+    >>> from zope.component import getUtility
+
+    >>> from canonical.database.sqlbase import flush_database_updates
+    >>> from canonical.launchpad.interfaces import IDistributionSet
+    >>> from canonical.launchpad.ftests import ANONYMOUS, login, logout
+
+    >>> login(ANONYMOUS)
+    >>> ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
+    >>> for archive in ubuntu.getAllPPAs():
+    ...     archive.updateArchiveCache()
+    >>> logout()
+    >>> flush_database_updates()
+
 In the three sample data PPAs, only one matches the search string "Celso".
 
     >>> field = browser.getControl("PPAs containing:")
@@ -97,9 +113,7 @@ In the three sample data PPAs, only one matches the search string "Celso".
 Let's start by adding an extra package to Celso's archive:
 
     >>> import transaction
-    >>> from canonical.database.sqlbase import flush_database_updates
     >>> from canonical.launchpad.ftests.ppa import publishToPPA
-    >>> from canonical.launchpad.ftests import ANONYMOUS, login, logout
     >>> login(ANONYMOUS)
     >>> publishToPPA("cprov", "warty", "commercialpackage", "1.0-1")
     >>> logout()
@@ -112,6 +126,20 @@ clickable link to his PPA page:
     >>> browser.getLink("Celso Providelo").click()
     >>> browser.title
     'PPA for Celso Providelo'
+
+The PPA page "Actions" portlet list all the related pages, only
+'View build records' and 'View PPA' is allowed for unprivileged 
+access.
+
+    >>> print extract_text(
+    ...    find_portlet(browser.contents, 'Actions'))
+    Actions
+    View PPA
+    Administer archive (disabled)
+    Change details (disabled)
+    View build records
+    Delete packages (disabled)
+    Edit dependencies (disabled)
 
 The PPA page contains a portlet listing all series and architectures
 which supports PPA building in ubuntu.
@@ -229,6 +257,25 @@ LP-admins user.
     commercialpackage - 1.0-1  (changesfile)             Pending Warty  Devel
     ...
 
+Each data row is expandable to contain some sections containing:
+
+ * Publishing details
+ * The source package's changelog
+ * Any built packages and their description
+ * The list of files for this package
+
+    >>> iceweasel_data = find_tag_by_id(browser.contents, 'pub28')
+    >>> print extract_text(iceweasel_data)
+    Publishing details
+      Published on 2007-07-09
+    Changelog
+    Built Packages
+      mozilla-firefox ff from iceweasel
+    Files
+      firefox-0.9.2.orig.tar.gz (9.5 MiB)
+      iceweasel-1.0.dsc (123 bytes)
+      mozilla-firefox_0.9_i386.deb (3 bytes)
+
 
 == Searching an archive ==
 
@@ -331,6 +378,25 @@ distribution's current release, as a guess.
     ...
     This PPA does not contain any packages yet.
     ...
+
+
+== PPA Builds ==
+
+Each PPA provides a public page where the users can browse build
+records by name and/or state. See pagetests/soyuz/23-builds-pages.txt
+for more information.
+
+    >>> anon_browser.open("http://launchpad.dev/~cprov/+archive")
+    >>> anon_browser.getLink("View build records").click()
+
+The only difference introduced in the PPA builds page is the fact that
+it presents NEEDSBUILD records by default, which is the most accessed
+status in the PPA workflow.
+
+    >>> print extract_text(find_main_content(anon_browser.contents))
+    Builds for PPA for Celso Providelo
+    ...
+    No 'Needs building' build records.
 
 
 == Single-publication PPAs ==

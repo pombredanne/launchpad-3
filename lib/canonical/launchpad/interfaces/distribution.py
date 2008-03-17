@@ -17,7 +17,7 @@ from zope.interface import (
 
 from canonical.launchpad import _
 from canonical.launchpad.fields import (
-    Title, Summary, Description)
+    Description, PublicPersonChoice, Summary, Title)
 from canonical.launchpad.interfaces.archive import IArchive
 from canonical.launchpad.interfaces.karma import IKarmaContext
 from canonical.launchpad.interfaces.mentoringoffer import IHasMentoringOffers
@@ -104,13 +104,7 @@ class IDistribution(IBugTarget, IHasAppointedDriver, IHasDrivers,
         title=_("Owner"),
         description=_("The distro's owner."), required=True)
     date_created = Attribute("The date this distribution was registered.")
-    bugcontact = Choice(
-        title=_("Bug Contact"),
-        description=_(
-            "The person or team who will receive all bugmail for this "
-            "distribution"),
-        required=False, vocabulary='ValidPersonOrTeam')
-    driver = Choice(
+    driver = PublicPersonChoice(
         title=_("Driver"),
         description=_(
             "The person or team responsible for decisions about features "
@@ -122,11 +116,11 @@ class IDistribution(IBugTarget, IHasAppointedDriver, IHasDrivers,
     drivers = Attribute(
         "Presents the distro driver as a list for consistency with "
         "IProduct.drivers where the list might include a project driver.")
-    members = Choice(
+    members = PublicPersonChoice(
         title=_("Members"),
         description=_("The distro's members team."), required=True,
         vocabulary='ValidPersonOrTeam')
-    mirror_admin = Choice(
+    mirror_admin = PublicPersonChoice(
         title=_("Mirror Administrator"),
         description=_("The person or team that has the rights to administer "
                       "this distribution's mirrors"),
@@ -147,8 +141,6 @@ class IDistribution(IBugTarget, IHasAppointedDriver, IHasDrivers,
     serieses = Attribute("DistroSeries'es inside this Distribution")
     bounties = Attribute(_("The bounties that are related to this distro."))
     bugCounter = Attribute("The distro bug counter")
-    source_package_caches = Attribute("The set of all source package "
-        "info caches for this distribution.")
     is_read_only = Attribute(
         "True if this distro is just monitored by Launchpad, rather than "
         "allowing you to use Launchpad to actually modify the distro.")
@@ -156,7 +148,7 @@ class IDistribution(IBugTarget, IHasAppointedDriver, IHasDrivers,
         title=_("Uploader sender"),
         description=_("The default upload processor sender name."),
         required=False)
-    upload_admin = Choice(
+    upload_admin = PublicPersonChoice(
         title=_("Upload Manager"),
         description=_("The distribution upload admin."),
         required=False, vocabulary='ValidPersonOrTeam')
@@ -253,10 +245,17 @@ class IDistribution(IBugTarget, IHasAppointedDriver, IHasDrivers,
         """Return a (distroseries,pocket) tuple which is the given textual
         distroseriesname in this distribution."""
 
-    def removeOldCacheItems(log):
+    def getSourcePackageCaches(archive=None):
+        """The set of all source package info caches for this distribution.
+
+        If 'archive' is not given it will return all caches stored for the
+        distribution main archives (PRIMARY and PARTNER).
+        """
+
+    def removeOldCacheItems(archive, log):
         """Delete any cache records for removed packages."""
 
-    def updateCompleteSourcePackageCache(log, ztm):
+    def updateCompleteSourcePackageCache(archive, log, ztm):
         """Update the source package cache.
 
         Consider every non-REMOVED sourcepackage.
@@ -265,7 +264,7 @@ class IDistribution(IBugTarget, IHasAppointedDriver, IHasDrivers,
         are committed.
         """
 
-    def updateSourcePackageCache(log, sourcepackagename):
+    def updateSourcePackageCache(sourcepackagename, archive, log):
         """Update cached source package details.
 
         Update cache details for a given ISourcePackageName, including
@@ -335,6 +334,20 @@ class IDistribution(IBugTarget, IHasAppointedDriver, IHasDrivers,
         partner), this method will return the archive for that component.
 
         If the component_name supplied is unknown, None is returned.
+        """
+
+    def getPackagesAndPublicUpstreamBugCounts(limit=50):
+        """Return list of tuples of packages, upstreams and public bug counts.
+
+        Returns: [(IDistroSourcePackage, IProduct, int, int, int, int), ...]
+
+        This API is quite specialized; it returns a list of up to limit
+        tuples containing IProducts and three different bug counts:
+            - open bugs
+            - triaged bugs
+            - triaged bugs with an upstream task
+            - triaged bugs with upstream tasks that are either linked to
+              bug watches or to products that use_malone.
         """
 
 

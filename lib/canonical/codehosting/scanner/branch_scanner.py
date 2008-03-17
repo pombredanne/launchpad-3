@@ -50,8 +50,7 @@ class BranchScanner:
     def scanOneBranch(self, branch):
         """Run BzrSync on a single branch and handle expected exceptions."""
         try:
-            bzrsync = BzrSync(
-                self.ztm, branch, branch.warehouse_url, self.log)
+            bzrsync = BzrSync(self.ztm, branch, self.log)
         except NotBranchError:
             # The branch is not present in the Warehouse
             self.logScanFailure(branch, "No branch found")

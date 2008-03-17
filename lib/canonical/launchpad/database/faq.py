@@ -26,6 +26,7 @@ from canonical.database.sqlbase import quote, SQLBase, sqlvalues
 from canonical.launchpad.event import SQLObjectCreatedEvent
 from canonical.launchpad.interfaces import (
     IDistribution, IFAQ, IFAQSet, FAQSort, IPerson, IProduct, IProject)
+from canonical.launchpad.validators.person import public_person_validator
 
 
 class FAQ(SQLBase):
@@ -36,7 +37,9 @@ class FAQ(SQLBase):
     _table = 'FAQ'
     _defaultOrder = ['date_created', 'id']
 
-    owner = ForeignKey(dbName='owner', foreignKey='Person', notNull=True)
+    owner = ForeignKey(
+        dbName='owner', foreignKey='Person',
+        validator=public_person_validator, notNull=True)
 
     title = StringCol(notNull=True)
 
@@ -47,7 +50,8 @@ class FAQ(SQLBase):
     date_created = UtcDateTimeCol(notNull=True, default=DEFAULT)
 
     last_updated_by = ForeignKey(
-        dbName='last_updated_by', foreignKey='Person', notNull=False,
+        dbName='last_updated_by', foreignKey='Person',
+        validator=public_person_validator, notNull=False,
         default=None)
 
     date_last_updated = UtcDateTimeCol(notNull=False, default=None)

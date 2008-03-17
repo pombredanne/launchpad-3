@@ -4,32 +4,30 @@
 import datetime
 import operator
 import os
-import pytz
-from unittest import TestLoader
 import shutil
 from StringIO import StringIO
 import tempfile
+import unittest
 
+import pytz
 from zope.component import getUtility
+
 from canonical.archivepublisher.config import Config
 from canonical.archivepublisher.diskpool import DiskPool
 from canonical.config import config
 from canonical.database.constants import UTC_NOW
-from canonical.database.sqlbase import commit
-from canonical.launchpad.ftests.harness import (
-    LaunchpadZopelessTestCase)
 from canonical.launchpad.database.publishing import (
     SourcePackagePublishingHistory, SecureSourcePackagePublishingHistory,
     BinaryPackagePublishingHistory, SecureBinaryPackagePublishingHistory)
 from canonical.launchpad.database.processor import ProcessorFamily
 from canonical.launchpad.interfaces import (
-    BinaryPackageFormat, ILibraryFileAliasSet, IDistributionSet, IPersonSet,
-    ISectionSet, IComponentSet, ISourcePackageNameSet, IBinaryPackageNameSet,
-    IGPGKeySet, PackagePublishingStatus, PackagePublishingPocket,
-    PackagePublishingPriority, SourcePackageUrgency)
+    BinaryPackageFormat, IBinaryPackageNameSet, IComponentSet,
+    IDistributionSet, ILibraryFileAliasSet, IPersonSet, ISectionSet,
+    ISourcePackageNameSet, PackagePublishingPocket, PackagePublishingPriority,
+    PackagePublishingStatus, SourcePackageUrgency)
 from canonical.launchpad.scripts import FakeLogger
-
 from canonical.librarian.client import LibrarianClient
+from canonical.testing import LaunchpadZopelessLayer
 
 
 class SoyuzTestPublisher:
@@ -42,15 +40,13 @@ class SoyuzTestPublisher:
         """
         self.ubuntutest = getUtility(IDistributionSet)['ubuntutest']
         self.breezy_autotest = self.ubuntutest['breezy-autotest']
-        self.person = getUtility(IPersonSet).getByName('sabdfl')
+        self.person = getUtility(IPersonSet).getByName('name16')
         self.breezy_autotest_i386 = self.breezy_autotest.newArch(
             'i386', ProcessorFamily.get(1), False, self.person,
             ppa_supported=True)
         self.breezy_autotest_hppa = self.breezy_autotest.newArch(
             'hppa', ProcessorFamily.get(4), False, self.person)
         self.breezy_autotest.nominatedarchindep = self.breezy_autotest_i386
-        self.signingkey = getUtility(IGPGKeySet).get(1)
-        self.section = getUtility(ISectionSet)['base']
 
     def addMockFile(self, filename, filecontent='nothing'):
         """Add a mock file in Librarian.
@@ -61,14 +57,14 @@ class SoyuzTestPublisher:
         alias_id = library.addFile(
             filename, len(filecontent), StringIO(filecontent),
             'application/text')
-        commit()
         return getUtility(ILibraryFileAliasSet)[alias_id]
 
     def getPubSource(self, sourcename='foo', version='666', component='main',
-                     filename=None,
+                     filename=None, section='base',
                      filecontent='I do not care about sources.',
                      status=PackagePublishingStatus.PENDING,
                      pocket=PackagePublishingPocket.RELEASE,
+                     urgency=SourcePackageUrgency.LOW,
                      scheduleddeletiondate=None, dateremoved=None,
                      distroseries=None, archive=None, builddepends=None,
                      builddependsindep=None, architecturehintlist='all',
@@ -80,6 +76,7 @@ class SoyuzTestPublisher:
         spn = getUtility(ISourcePackageNameSet).getOrCreateByName(sourcename)
 
         component = getUtility(IComponentSet)[component]
+        section = getUtility(ISectionSet)[section]
 
         if distroseries is None:
             distroseries = self.breezy_autotest
@@ -91,8 +88,8 @@ class SoyuzTestPublisher:
             maintainer=self.person,
             creator=self.person,
             component=component,
-            section=self.section,
-            urgency=SourcePackageUrgency.LOW,
+            section=section,
+            urgency=urgency,
             version=version,
             builddepends=builddepends,
             builddependsindep=builddependsindep,
@@ -102,7 +99,7 @@ class SoyuzTestPublisher:
             changelog_entry=None,
             dsc=None,
             copyright='placeholder ...',
-            dscsigningkey=self.signingkey,
+            dscsigningkey=self.person.gpgkeys[0],
             dsc_maintainer_rfc822=dsc_maintainer_rfc822,
             dsc_standards_version=dsc_standards_version,
             dsc_format=dsc_format,
@@ -247,13 +244,13 @@ class SoyuzTestPublisher:
                 for pub in secure_pub_binaries]
 
 
-class TestNativePublishingBase(LaunchpadZopelessTestCase,
-                               SoyuzTestPublisher):
+class TestNativePublishingBase(unittest.TestCase, SoyuzTestPublisher):
+    layer = LaunchpadZopelessLayer
     dbuser = config.archivepublisher.dbuser
 
     def setUp(self):
         """Setup a pool dir, the librarian, and instantiate the DiskPool."""
-        LaunchpadZopelessTestCase.setUp(self)
+        self.layer.switchDbUser(config.archivepublisher.dbuser)
         self.prepareBreezyAutotest()
         self.config = Config(self.ubuntutest)
         self.config.setupArchiveDirs()
@@ -268,7 +265,26 @@ class TestNativePublishingBase(LaunchpadZopelessTestCase,
     def tearDown(self):
         """Tear down blows the pool dir away."""
         shutil.rmtree(self.config.distroroot)
-        LaunchpadZopelessTestCase.tearDown(self)
+
+    def getPubSource(self, *args, **kwargs):
+        """Overrides `SoyuzTestPublisher.getPubSource`.
+
+        Commits the transaction before returning, this way the rest of
+        the test will immediately notice the just-created records.
+        """
+        source = SoyuzTestPublisher.getPubSource(self, *args, **kwargs)
+        self.layer.commit()
+        return source
+
+    def getPubBinaries(self, *args, **kwargs):
+        """Overrides `SoyuzTestPublisher.getPubBinaries`.
+
+        Commits the transaction before returning, this way the rest of
+        the test will immediately notice the just-created records.
+        """
+        binaries = SoyuzTestPublisher.getPubBinaries(self, *args, **kwargs)
+        self.layer.commit()
+        return binaries
 
     def checkSourcePublication(self, source, status):
         """Assert the source publications has the given status.
@@ -488,4 +504,4 @@ class TestNativePublishing(TestNativePublishingBase):
 
 
 def test_suite():
-    return TestLoader().loadTestsFromName(__name__)
+    return unittest.TestLoader().loadTestsFromName(__name__)

@@ -2,7 +2,7 @@
 
 """Export module for gettext's .po file format.
 
-You can read more about this file format from:
+You can read more about this file format at:
 http://www.gnu.org/software/gettext/manual/html_chapter/gettext_10.html#PO-Files
 """
 
@@ -13,6 +13,8 @@ __all__ = [
     ]
 
 import os
+import tempfile
+
 from cStringIO import StringIO
 from zope.interface import implements
 
@@ -432,6 +434,83 @@ def export_translation_message(translation_message, wrap_width=77):
         ]).strip()
 
 
+class SinglePoFileStorageStrategy:
+    """Store a single file for export.
+
+    Provides a way to store a single PO or POT file, but through the same API
+    that `TarballFileStorageStrategy` offers to store any number of files into
+    a single tarball.  Both classes have an `addFile` operation, though a
+    `SinglePoFileStorageStrategy` instance will only let you add a single
+    file.
+
+    (The type of the stored file matters in this strategy because the storage
+    strategy declares the MIME type of the file it produces).
+    """
+    path = None
+    extension = None
+
+    def addFile(self, path, extension, content):
+        """Add file to be stored.  This type of storage takes exactly 1 file.
+
+        :param path: location and name of this file.
+        :param extension: filename suffix (as found at end of path).
+        :param content: contents of file.
+        """
+        assert path is not None, "Storing file without path."
+        assert self.path is None, "Multiple files added; expected just one."
+        self.path = path
+        self.extension = extension
+        self.content = content
+
+    def export(self):
+        """Export as `ExportedTranslationFile`."""
+        assert self.path is not None, "Exporting empty file."
+        output = ExportedTranslationFile(StringIO(self.content))
+        output.path = self.path
+        # We use x-po for consistency with other .po editors like GTranslator.
+        output.content_type = 'application/x-po'
+        output.file_extension = self.extension
+        return output
+
+
+class TarballFileStorageStrategy:
+    """Store any number of files for export as a tarball.
+
+    Similar to `SinglePoFileStorageStrategy`, but lets you store any number of
+    files using the same API.  Each file is written into the resulting tarball
+    as soon as it is added.  There is no need to keep the full contents of the
+    tarball in memory at any single time.
+    """
+    def __init__(self):
+        self.buffer = tempfile.TemporaryFile()
+        self.tar_writer = LaunchpadWriteTarFile(self.buffer)
+
+    def addFile(self, path, extension, content):
+        """Add file to be stored.
+
+        :param path: location and name of this file, relative to root of tar
+            archive.
+        :param extension: filename suffix (ignored here).
+        :param content: contents of file.
+        """
+        self.tar_writer.add_file(path, content)
+
+    def export(self):
+        """Export as `ExportedTranslationFile`."""
+        self.tar_writer.close()
+        self.buffer.seek(0)
+        output = ExportedTranslationFile(self.buffer)
+
+        # Don't set path; let the caller decide.
+
+        # For tar.gz files, the standard content type is application/x-gtar.
+        # You can see more info on
+        #   http://en.wikipedia.org/wiki/List_of_archive_formats
+        output.content_type = 'application/x-gtar'
+        output.file_extension = 'tar.gz'
+        return output
+
+
 class GettextPOExporter:
     """Support class to export Gettext .po files."""
     implements(ITranslationFormatExporter)
@@ -442,8 +521,7 @@ class GettextPOExporter:
         self.format = TranslationFileFormat.PO
         self.supported_source_formats = [
             TranslationFileFormat.PO,
-            TranslationFileFormat.KDEPO,
-            TranslationFileFormat.XPI]
+            TranslationFileFormat.KDEPO]
 
     def _getHeaderAsMessage(self, translation_file):
         """Return an `ITranslationMessageData` with the header content."""
@@ -467,7 +545,16 @@ class GettextPOExporter:
         assert len(translation_file_list) > 0, (
             'Got an empty list of files to export!')
 
-        exported_files = {}
+        # XXX JeroenVermeulen 2008-02-06: Is there anything here that we can
+        # unify with the language-pack export code?
+
+        if len(translation_file_list) == 1:
+            # Export single file.
+            storage = SinglePoFileStorageStrategy()
+        else:
+            # Export multiple files, wrapped up as a tarball.
+            storage = TarballFileStorageStrategy()
+
         for translation_file in translation_file_list:
             dirname = os.path.dirname(translation_file.path)
             if dirname == '':
@@ -533,27 +620,7 @@ class GettextPOExporter:
             # Gettext .po files are supposed to end with a new line.
             exported_file_content += '\n'
 
-            exported_files[file_path] = exported_file_content
+            storage.addFile(file_path, file_extension, exported_file_content)
 
-        if len(exported_files) == 1:
-            # It's a single file export.
-            exported_file = ExportedTranslationFile(
-                StringIO(exported_file_content))
-            exported_file.path = file_path
-            # We use x-po for consistency with other .po editors like
-            # GTranslator.
-            exported_file.content_type = 'application/x-po'
-            exported_file.file_extension = file_extension
-        else:
-            # There are multiple files being exported. We need to generate an
-            # archive that include all them.
-            exported_file = ExportedTranslationFile(
-                LaunchpadWriteTarFile.files_to_stream(exported_files))
-            # For tar.gz files, the standard content type is
-            # application/x-gtar. You can see more info on
-            # http://en.wikipedia.org/wiki/List_of_archive_formats
-            exported_file.content_type = 'application/x-gtar'
-            exported_file.file_extension = 'tar.gz'
-            # By leaving path set to None, we let the caller decide.
+        return storage.export()
 
-        return exported_file

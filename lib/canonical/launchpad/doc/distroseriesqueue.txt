@@ -55,9 +55,13 @@ launchpad.Edit on the records:
   >>> from canonical.launchpad.ftests import login
   >>> login("foo.bar@canonical.com")
 
-  >>> from canonical.launchpad.interfaces import IDistributionSet
+  >>> from canonical.launchpad.interfaces import (
+  ...     IComponentSet, IDistributionSet)
+  >>> from canonical.launchpad.database import ComponentSelection
   >>> ubuntu = getUtility(IDistributionSet)['ubuntu']
   >>> hoary = ubuntu['hoary']
+  >>> universe = getUtility(IComponentSet)['universe']
+  >>> trash = ComponentSelection(distroseries=hoary, component=universe)
 
 Construct an upload.
 
@@ -80,7 +84,7 @@ what we expect the ed upload to produce. Let's find the queue item and
 convert it to an ACCEPTED item.
 
   >>> from canonical.launchpad.interfaces import (
-  ...      IDistributionSet, QueueInconsistentStateError)
+  ...      QueueInconsistentStateError)
   >>> from canonical.launchpad.interfaces import PackageUploadStatus
 
   >>> new_queue = hoary.getQueueItems(PackageUploadStatus.NEW)
@@ -107,7 +111,7 @@ Make the modification real in the DB (XXX cprov 20051209: see bug #3889)
   >>> for item in accepted_queue:
   ...     for source in item.sources:
   ...         print source.sourcepackagerelease.name
-  ...     item.realiseUpload(mock_logger)
+  ...     pub_records = item.realiseUpload(mock_logger)
   ed
   DEBUG: Publishing source ed/0.2-20 to ubuntu/hoary
   DEBUG: Publishing build to ubuntu/hoary/i386
@@ -626,33 +630,19 @@ UNAPPROVED queue items are expected to be private:
 
   >>> priv_qitem = getUtility(IPackageUploadSet)[5]
 
-Anonymous don't have access any kind of access to both, private and
-public queue items:
+Anonymous can view all queue items, public and private ones.
 
   >>> login(ANONYMOUS)
-
-  >>> pub_qitem.displayname
-  Traceback (most recent call last):
-  ...
-  Unauthorized: (<PackageUpload ..., 'displayname', 'launchpad.View')
-
-  >>> priv_qitem.displayname
-  Traceback (most recent call last):
-  ...
-  Unauthorized: (<PackageUpload ..., 'displayname', 'launchpad.View')
-
-A normal user may see the public, but not the private, and can't act
-in both of them:
-
-  >>> login('test@canonical.com')
 
   >>> pub_qitem.displayname
   u'mozilla-firefox'
 
   >>> priv_qitem.displayname
-  Traceback (most recent call last):
-  ...
-  Unauthorized: (<PackageUpload ..., 'displayname', 'launchpad.View')
+  u'netapplet-1.0.0.tar.gz'
+
+A normal user can't act on both of them:
+
+  >>> login('test@canonical.com')
 
   >>> pub_qitem.setDone()
   Traceback (most recent call last):
@@ -663,7 +653,6 @@ in both of them:
   Traceback (most recent call last):
   ...
   Unauthorized: (<PackageUpload ..., 'setDone', 'launchpad.Edit')
-
 
 Only the members of distroseries drivers in question have
 launchpad.Edit on a packageupload record.
@@ -713,6 +702,22 @@ Two emails are generated.  We won't look what is inside them here, that is
 well shown in nascentupload-announcements.txt.
 
   >>> [notification, announcement] = pop_notifications()
+
+When accepting single sources we also immediately create its
+corresponding build records. It means that the source will be ready to
+build once it was accepted, using 'queue-tool' or via the Web UI.
+
+  >>> queue_source = items[1].sources[0]
+  >>> [build] = queue_source.sourcepackagerelease.builds
+
+  >>> print build.title
+  i386 build of alsa-utils 1.0.9a-4ubuntu1 in ubuntu hoary RELEASE
+
+  >>> print build.buildstate.name
+  NEEDSBUILD
+
+  >>> print build.buildqueue_record.lastscore
+  10
 
 Let's reject something in the queue:
 

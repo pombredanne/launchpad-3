@@ -6,23 +6,22 @@ __metaclass__ = type
 import unittest
 import psycopg
 
-from canonical.launchpad.ftests.harness import (
-    LaunchpadTestSetup, LaunchpadFunctionalTestCase)
+from canonical.database.sqlbase import cursor
+from canonical.testing import LaunchpadZopelessLayer
 
 
-class RoUserTestCase(LaunchpadFunctionalTestCase):
+class RoUserTestCase(unittest.TestCase):
     """Test that the read-only PostgreSQL user actually has read access"""
-    # XXX sinzui 2007-07-12 bug=125569
-    # This test should subclass unittest.TestCase. Some reworking
-    # is required to migrate this test.
-    dbuser = 'ro'
+    layer = LaunchpadZopelessLayer
+
+    def setUp(self):
+        self.layer.switchDbUser('ro')
 
     def test(self):
         """Test that read-only users cannot make changes to the database."""
         # Only one uncancelled, possibly approved unshipped order
         # per user.
-        con = self.connect()
-        cur = con.cursor()
+        cur = cursor()
 
         # SELECTs should pass
         cur.execute("SELECT * FROM Person")
@@ -49,15 +48,8 @@ class RoUserTestCase(LaunchpadFunctionalTestCase):
                 )
         cur.execute("ROLLBACK TO SAVEPOINT attempt")
 
-    def tearDown(self):
-        """Tear down this test and recycle the database."""
-        # XXX sinzui 2007-07-12 bug=125569
-        # Use the DatabaseLayer mechanism to tear this test down.
-        LaunchpadTestSetup().force_dirty_database()
-        LaunchpadFunctionalTestCase.tearDown(self)
-
 
 def test_suite():
     """Create the test suite."""
-    return unittest.makeSuite(RoUserTestCase)
+    return unittest.TestLoader().loadTestsFromName(__name__)
 

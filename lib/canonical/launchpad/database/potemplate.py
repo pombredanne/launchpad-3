@@ -29,6 +29,7 @@ from canonical.database.sqlbase import (
 from canonical.launchpad import helpers
 from canonical.launchpad.components.rosettastats import RosettaStats
 from canonical.launchpad.database.language import Language
+from canonical.launchpad.validators.person import public_person_validator
 from canonical.launchpad.database.pofile import POFile, DummyPOFile
 from canonical.launchpad.database.pomsgid import POMsgID
 from canonical.launchpad.database.potmsgset import POTMsgSet
@@ -77,7 +78,6 @@ class POTemplate(SQLBase, RosettaStats):
     translation_domain = StringCol(dbName='translation_domain', notNull=True)
     description = StringCol(dbName='description', notNull=False, default=None)
     copyright = StringCol(dbName='copyright', notNull=False, default=None)
-    license = IntCol(dbName='license', notNull=False, default=None)
     datecreated = UtcDateTimeCol(dbName='datecreated', default=DEFAULT)
     path = StringCol(dbName='path', notNull=False, default=None)
     source_file = ForeignKey(foreignKey='LibraryFileAlias',
@@ -87,7 +87,9 @@ class POTemplate(SQLBase, RosettaStats):
         notNull=True)
     iscurrent = BoolCol(dbName='iscurrent', notNull=True, default=True)
     messagecount = IntCol(dbName='messagecount', notNull=True, default=0)
-    owner = ForeignKey(foreignKey='Person', dbName='owner', notNull=True)
+    owner = ForeignKey(
+        dbName='owner', foreignKey='Person',
+        validator=public_person_validator, notNull=True)
     sourcepackagename = ForeignKey(foreignKey='SourcePackageName',
         dbName='sourcepackagename', notNull=False, default=None)
     from_sourcepackagename = ForeignKey(foreignKey='SourcePackageName',
@@ -629,11 +631,6 @@ class POTemplate(SQLBase, RosettaStats):
         return self.createPOTMsgSetFromMsgIDs(msgid_singular, msgid_plural,
                                               context)
 
-    def invalidateCache(self):
-        """See `IPOTemplate`."""
-        for pofile in self.pofiles:
-            pofile.invalidateCache()
-
     def importFromQueue(self, entry_to_import, logger=None):
         """See `IPOTemplate`."""
         assert entry_to_import is not None, "Attempt to import None entry."
@@ -655,13 +652,16 @@ class POTemplate(SQLBase, RosettaStats):
         try:
             translation_importer.importFile(entry_to_import, logger)
         except (TranslationFormatSyntaxError,
-                TranslationFormatInvalidInputError):
+                TranslationFormatInvalidInputError), exception:
             if logger:
-                logger.warning(
+                logger.info(
                     'We got an error importing %s', self.title, exc_info=1)
             subject = 'Import problem - %s' % self.displayname
             template_mail = 'poimport-syntax-error.txt'
             entry_to_import.status = RosettaImportStatus.FAILED
+            error_text = str(exception)
+        else:
+            error_text = None
 
         replacements = {
             'dateimport': entry_to_import.dateimported.strftime('%F %R%z'),
@@ -671,6 +671,9 @@ class POTemplate(SQLBase, RosettaStats):
             'importer': entry_to_import.importer.displayname,
             'template': self.displayname,
             }
+
+        if error_text is not None:
+            replacements['error'] = error_text
 
         if entry_to_import.status != RosettaImportStatus.FAILED:
             entry_to_import.status = RosettaImportStatus.IMPORTED
@@ -996,7 +999,7 @@ class POTemplateToTranslationFileDataAdapter:
         messages = []
 
         for row in rows:
-            assert row.potemplate == potemplate, (
+            assert row.potemplate.id == potemplate.id, (
                 'Got a row for a different IPOTemplate.')
 
             # Skip messages which aren't anymore in the PO template.
@@ -1008,7 +1011,9 @@ class POTemplateToTranslationFileDataAdapter:
             msgset.sequence = row.sequence
             msgset.obsolete = False
             msgset.msgid_singular = row.msgid_singular
+            msgset.singular_text = row.potmsgset.singular_text
             msgset.msgid_plural = row.msgid_plural
+            msgset.plural_text = row.potmsgset.plural_text
             msgset.context = row.context
             msgset.comment = row.comment
             msgset.source_comment = row.source_comment

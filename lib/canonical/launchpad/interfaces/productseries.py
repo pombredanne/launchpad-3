@@ -22,7 +22,8 @@ from zope.interface import Interface, Attribute
 
 from CVS.protocol import CVSRoot, CvsRootError
 
-from canonical.launchpad.fields import ContentNameField, URIField
+from canonical.launchpad.fields import (
+    ContentNameField, PublicPersonChoice, URIField)
 from canonical.launchpad.interfaces.bugtarget import IBugTarget
 from canonical.launchpad.interfaces.launchpad import (
     IHasAppointedDriver, IHasOwner, IHasDrivers)
@@ -109,7 +110,7 @@ class RevisionControlSystems(DBEnumeratedType):
     """
 
     CVS = DBItem(1, """
-        Concurrent Version System
+        Concurrent Versions System
 
         The Concurrent Version System is very widely used among
         older open source projects, it was the first widespread
@@ -195,9 +196,10 @@ class IProductSeries(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
         "or 'trunk'."), constraint=name_validator)
     datecreated = Datetime(title=_('Date Registered'), required=True,
         readonly=True)
-    owner = Choice(title=_('Owner'), required=True, vocabulary='ValidOwner',
+    owner = PublicPersonChoice(
+        title=_('Owner'), required=True, vocabulary='ValidOwner',
         description=_('Project owner, either a valid Person or Team'))
-    driver = Choice(
+    driver = PublicPersonChoice(
         title=_("Driver"),
         description=_(
             "The person or team responsible for decisions about features "

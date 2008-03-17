@@ -10,15 +10,14 @@ from zope.interface import implements
 from zope.component import getUtility
 
 from sqlobject import ForeignKey, IntCol, StringCol, SQLObjectNotFound
+
+from canonical.database.constants import DEFAULT, UTC_NOW
 from canonical.database.sqlbase import SQLBase, sqlvalues
-
 from canonical.launchpad import helpers
-
 from canonical.launchpad.interfaces import (
     BrokenTextError, ILanguageSet, IPOTMsgSet, ITranslationImporter,
-    RosettaTranslationOrigin, TranslationConflict,
+    RosettaTranslationOrigin, TranslationConflict, TranslationConstants,
     TranslationValidationStatus)
-from canonical.database.constants import UTC_NOW
 from canonical.launchpad.helpers import shortlist
 from canonical.launchpad.interfaces.pofile import IPOFileSet
 from canonical.launchpad.database.pomsgid import POMsgID
@@ -36,7 +35,7 @@ class POTMsgSet(SQLBase):
     msgid_singular = ForeignKey(foreignKey='POMsgID', dbName='msgid_singular',
         notNull=True)
     msgid_plural = ForeignKey(foreignKey='POMsgID', dbName='msgid_plural',
-        notNull=True)
+        notNull=False, default=DEFAULT)
     sequence = IntCol(dbName='sequence', notNull=True)
     potemplate = ForeignKey(foreignKey='POTemplate', dbName='potemplate',
         notNull=True)
@@ -240,7 +239,8 @@ class POTMsgSet(SQLBase):
         If there are `translations` with greater pluralforms than allowed,
         sanitize and keep them.
         """
-        # Fix the trailing and leading whitespaces
+        # Strip any trailing or leading whitespace, and normalize empty
+        # translations to None.
         sanitized_translations = {}
         for pluralform in range(pluralforms):
             if pluralform < len(translations):
@@ -294,8 +294,8 @@ class POTMsgSet(SQLBase):
     def _findPOTranslations(self, translations):
         """Find all POTranslation records for passed `translations`."""
         potranslations = {}
-        # Set all POTranslations we can have (up to 4)
-        for pluralform in range(4):
+        # Set all POTranslations we can have (up to MAX_PLURAL_FORMS)
+        for pluralform in xrange(TranslationConstants.MAX_PLURAL_FORMS):
             if (pluralform in translations and
                 translations[pluralform] is not None):
                 translation = translations[pluralform]
@@ -442,6 +442,9 @@ class POTMsgSet(SQLBase):
             else:
                 origin = RosettaTranslationOrigin.ROSETTAWEB
 
+            assert TranslationConstants.MAX_PLURAL_FORMS == 6, (
+                "Change this code to support %d plural forms."
+                % TranslationConstants.MAX_PLURAL_FORMS)
             new_message = TranslationMessage(
                 potmsgset=self,
                 pofile=pofile,
@@ -451,6 +454,8 @@ class POTMsgSet(SQLBase):
                 msgstr1=potranslations[1],
                 msgstr2=potranslations[2],
                 msgstr3=potranslations[3],
+                msgstr4=potranslations[4],
+                msgstr5=potranslations[5],
                 validation_status=validation_status)
 
             # It's a fuzzy one.
@@ -521,6 +526,8 @@ class POTMsgSet(SQLBase):
 
     def applySanityFixes(self, text):
         """See `IPOTMsgSet`."""
+        if text is None:
+            return None
 
         # Fix the visual point that users copy & paste from the web interface.
         new_text = self.convertDotToSpace(text)

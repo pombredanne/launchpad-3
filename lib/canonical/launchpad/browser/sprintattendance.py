@@ -8,7 +8,7 @@ __all__ = [
     'SprintAttendanceRegisterView',
     ]
 
-import datetime
+from datetime import timedelta
 import pytz
 
 from canonical.launchpad import _
@@ -31,10 +31,20 @@ class BaseSprintAttendanceAddView(LaunchpadFormView):
         self.ends_widget = self.widgets['time_ends']
         self.starts_widget.required_timezone = tz
         self.ends_widget.required_timezone = tz
-        self.starts_widget.from_date = self.context.time_starts.date()
-        self.starts_widget.to_date = self.context.time_ends.date()
-        self.ends_widget.from_date = self.context.time_starts.date()
-        self.ends_widget.to_date = self.context.time_ends.date()
+        # We don't need to display seconds
+        timeformat = '%Y-%m-%d %H:%M'
+        self.starts_widget.timeformat = timeformat
+        self.ends_widget.timeformat = timeformat
+        # Constrain the widget to dates from the day before to the day
+        # after the sprint. We will accept a time just before or just after
+        # and map those to the beginning and end times, respectively, in
+        # self.getDates().
+        from_date = self.context.time_starts.astimezone(tz)
+        to_date = self.context.time_ends.astimezone(tz)
+        self.starts_widget.from_date = from_date - timedelta(days=1)
+        self.starts_widget.to_date = to_date
+        self.ends_widget.from_date = from_date
+        self.ends_widget.to_date = to_date + timedelta(days=1)
 
     def validate(self, data):
         """Verify that the entered times are valid.
@@ -67,7 +77,7 @@ class BaseSprintAttendanceAddView(LaunchpadFormView):
                 # the end of the day.
                 data['time_ends'] = min(
                     self.context.time_ends,
-                    time_ends + datetime.timedelta(days=1, seconds=-1))
+                    time_ends + timedelta(days=1, seconds=-1))
 
     def getDates(self, data):
         time_starts = data['time_starts']
@@ -77,7 +87,7 @@ class BaseSprintAttendanceAddView(LaunchpadFormView):
             # We assume the user entered just a date, which gives them
             # midnight in the morning of that day, when they probably want
             # the end of the day.
-            time_ends = time_ends + datetime.timedelta(days=1, seconds=-1)
+            time_ends = time_ends + timedelta(days=1, seconds=-1)
         if time_starts < self.context.time_starts:
             # Can't arrive before the conference starts, we assume that you
             # meant to say you will get there at the beginning
@@ -115,11 +125,15 @@ class SprintAttendanceAttendView(BaseSprintAttendanceAddView):
 
     @property
     def initial_values(self):
+        """Show committed attendance, or default to the sprint times."""
         for attendance in self.context.attendances:
             if attendance.attendee == self.user:
                 return dict(time_starts=attendance.time_starts,
                             time_ends=attendance.time_ends)
-        return {}
+        # If this person is not yet registered, then default to showing the
+        # full sprint dates.
+        return {'time_starts': self.context.time_starts,
+                'time_ends': self.context.time_ends}
 
     @action(_('Register'), name='register')
     def register_action(self, action, data):
@@ -131,6 +145,12 @@ class SprintAttendanceRegisterView(BaseSprintAttendanceAddView):
     """A view used to register someone else's attendance at a sprint."""
 
     field_names = ['attendee', 'time_starts', 'time_ends']
+
+    @property
+    def initial_values(self):
+        """Default to displaying the full span of the sprint."""
+        return {'time_starts': self.context.time_starts,
+                'time_ends': self.context.time_ends}
 
     @action(_('Register'), name='register')
     def register_action(self, action, data):

@@ -283,7 +283,8 @@ def canonical_url_iterator(obj):
 
 
 def canonical_url(
-    obj, request=None, rootsite=None, path_only_if_possible=False):
+    obj, request=None, rootsite=None, path_only_if_possible=False,
+    view_name=None):
     """Return the canonical URL string for the object.
 
     If the canonical url configuration for the given object binds it to a
@@ -304,7 +305,11 @@ def canonical_url(
     If there is no request available, the protocol, host and port are taken
     from the root_url given in launchpad.conf.
 
-    Raises NoCanonicalUrl if a canonical url is not available.
+    :param path_only_if_possible: If the protocol and hostname can be omitted
+        for the current request, return a url containing only the path.
+    :param view_name: Provide the canonical url for the specified view,
+        rather than the default view.
+    :raises: NoCanonicalUrl if a canonical url is not available.
     """
     urlparts = [urldata.path
                 for urldata in canonical_urldata_iterator(obj)
@@ -323,6 +328,25 @@ def canonical_url(
         current_request = get_current_browser_request()
         if current_request is not None:
             request = current_request
+
+    if view_name is not None:
+        assert request is not None, (
+            "Cannot check view_name parameter when there request is not "
+            "available.")
+
+        # Look first for a view.
+        if queryMultiAdapter((obj, request), name=view_name) is None:
+            # Look if this is a special name defined by Navigation.
+            navigation = queryMultiAdapter((obj, request), IBrowserPublisher)
+            if isinstance(navigation, Navigation):
+                all_names = navigation.all_traversal_and_redirection_names
+            else:
+                all_names = []
+            if view_name not in all_names:
+                raise AssertionError(
+                    'Name "%s" is not registered as a view or navigation '
+                    'step for "%s".' % (view_name, obj.__class__.__name__))
+        urlparts.insert(0, view_name)
 
     if rootsite is None:
         # This means we should use the request, or fall back to the main site.
@@ -522,7 +546,8 @@ class Navigation:
         else:
             has_menu = menuview.submenuHasItems('')
         self.request.breadcrumbs.append(
-            Breadcrumb(self.request.getURL(1, path_only=False), text, has_menu))
+            Breadcrumb(self.request.getURL(1, path_only=False), text,
+                       has_menu))
 
     def _handle_next_object(self, nextobj, request, name):
         """Do the right thing with the outcome of traversal.
@@ -540,6 +565,32 @@ class Navigation:
                 nextobj.toname, request, status=nextobj.status)
         else:
             return nextobj
+
+    @property
+    def all_traversal_and_redirection_names(self):
+        """Return the names of all the traversals and redirections defined."""
+        all_names = set()
+        all_names.update(self.stepto_traversals.keys())
+        all_names.update(self.stepthrough_traversals.keys())
+        all_names.update(self.redirections.keys())
+        return list(all_names)
+
+    @property
+    def stepto_traversals(self):
+        """Return a dictionary containing all the stepto names defined."""
+        return self._combined_class_info('__stepto_traversals__')
+
+    @property
+    def stepthrough_traversals(self):
+        """Return a dictionary containing all the stepthrough names defined.
+        """
+        return self._combined_class_info('__stepthrough_traversals__')
+
+    @property
+    def redirections(self):
+        """Return a dictionary containing all the redirections names defined.
+        """
+        return self._combined_class_info('__redirections__')
 
     def _publishTraverse(self, request, name):
         """Traverse, like zope wants."""
@@ -561,7 +612,7 @@ class Navigation:
             self._append_breadcrumb(breadcrumb_text)
 
         # Next, see if we're being asked to stepto somewhere.
-        stepto_traversals = self._combined_class_info('__stepto_traversals__')
+        stepto_traversals = self.stepto_traversals
         if stepto_traversals is not None:
             if name in stepto_traversals:
                 handler = stepto_traversals[name]
@@ -576,8 +627,7 @@ class Navigation:
         # If so, see if the name is in the namespace_traversals, and if so,
         # dispatch to the appropriate function.  We can optimise by changing
         # the order of these checks around a bit.
-        namespace_traversals = self._combined_class_info(
-            '__stepthrough_traversals__')
+        namespace_traversals = self.stepthrough_traversals
         if namespace_traversals is not None:
             if name in namespace_traversals:
                 stepstogo = request.stepstogo
@@ -592,7 +642,8 @@ class Navigation:
                         nextobj = handler(self, nextstep)
                     except NotFoundError:
                         nextobj = None
-                    return self._handle_next_object(nextobj, request, nextstep)
+                    return self._handle_next_object(nextobj, request,
+                        nextstep)
 
         # Next, look up views on the context object.  If a view exists,
         # use it.
@@ -603,7 +654,7 @@ class Navigation:
         # Next, look up redirections.  Note that registered views take
         # priority over redirections, because you can always make your
         # view redirect, but you can't make your redirection 'view'.
-        redirections = self._combined_class_info('__redirections__')
+        redirections = self.redirections
         if redirections is not None:
             if name in redirections:
                 urlto, status = redirections[name]
@@ -671,7 +722,7 @@ class RenamedView:
 
     def publishTraverse(self, request, name):
         """See zope.publisher.interfaces.browser.IBrowserPublisher."""
-        raise NotFound(name)
+        raise NotFound(name, self.context)
 
     def browserDefault(self, request):
         """See zope.publisher.interfaces.browser.IBrowserPublisher."""

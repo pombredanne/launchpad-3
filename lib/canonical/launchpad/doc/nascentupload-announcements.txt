@@ -43,7 +43,6 @@ We need to be logged into the security model in order to get any further
 
 Helper functions to examine emails that were sent:
 
-  >>> import email
   >>> from canonical.launchpad.mail import stub
   >>> def by_to_addrs(a, b):
   ...     return cmp(a[1], b[1])
@@ -56,14 +55,17 @@ Import the test keys to use 'insecure' policy.
 
 For the purpose of this test, hoary needs to be an open (development)
 distroseries so that we can upload to it. Also adjust 'changeslist'
-address:
+address and allow uploads to universe:
 
   >>> from canonical.launchpad.interfaces import (
-  ...     DistroSeriesStatus, IDistributionSet)
+  ...     DistroSeriesStatus, IComponentSet, IDistributionSet)
   >>> ubuntu = getUtility(IDistributionSet)['ubuntu']
   >>> hoary = ubuntu['hoary']
   >>> hoary.status = DistroSeriesStatus.DEVELOPMENT
   >>> hoary.changeslist = "hoary-announce@lists.ubuntu.com"
+  >>> from canonical.launchpad.database import ComponentSelection
+  >>> universe = getUtility(IComponentSet)['universe']
+  >>> trash = ComponentSelection(distroseries=hoary, component=universe)
 
 NEW source upload to RELEASE pocket via 'sync' policy (it presents
 the same behaviour than using insecure policy, apart from allowing
@@ -114,7 +116,7 @@ Let's ACCEPT bar sources in order to make the next uploads of this
 series *known* in hoary:
 
   >>> bar_src.queue_root.setAccepted()
-  >>> bar_src.queue_root.realiseUpload()
+  >>> pub_records = bar_src.queue_root.realiseUpload()
 
 Make the uploaded orig file available to librarian lookups
 
@@ -227,7 +229,7 @@ Let's accept & publish bar binary in order to make the next uploads of
 this series *known* in hoary:
 
   >>> bar_src.queue_root.setAccepted()
-  >>> bar_src.queue_root.realiseUpload()
+  >>> pub_records = bar_src.queue_root.realiseUpload()
 
 
 NEW source uploads for 'translations' section via sync policy:
@@ -258,7 +260,7 @@ No messages were generated since this upload is targeted for the
 Accept and publish this series:
 
   >>> lang_pack.queue_root.setAccepted()
-  >>> lang_pack.queue_root.realiseUpload()
+  >>> pub_records = lang_pack.queue_root.realiseUpload()
 
 
 AUTO_APPROVED source uploads for 'translations' section:
@@ -276,6 +278,9 @@ AUTO_APPROVED source uploads for 'translations' section:
   DEBUG: Creating queue entry
   DEBUG: Setting it to ACCEPTED
   DEBUG: Creating PENDING publishing record.
+  DEBUG: Creating PENDING build for hppa.
+  DEBUG: Creating PENDING build for i386.
+  DEBUG: Closing bugs.
   DEBUG: Skipping acceptance and announcement, it is a language-package upload.
 
   >>> lang_pack.queue_root.status.name
@@ -388,6 +393,9 @@ AUTO-APPROVED upload to BACKPORTS pocket via 'sync' policy:
   DEBUG: Creating queue entry
   DEBUG: Setting it to ACCEPTED
   DEBUG: Creating PENDING publishing record.
+  DEBUG: Creating PENDING build for hppa.
+  DEBUG: Creating PENDING build for i386.
+  DEBUG: Closing bugs.
   DEBUG: Building recipients list.
   ...
   DEBUG: Skipping announcement, it is a BACKPORT.
@@ -397,7 +405,7 @@ AUTO-APPROVED upload to BACKPORTS pocket via 'sync' policy:
   DEBUG:  OK: bar_1.0.orig.tar.gz
   DEBUG:  OK: bar_1.0-4.diff.gz
   DEBUG:  OK: bar_1.0-4.dsc
-  DEBUG:      -> Component: main Section: devel
+  DEBUG:      -> Component: universe Section: devel
   ...
   DEBUG: Announcing to hoary-announce@lists.ubuntu.com
   DEBUG:
@@ -443,6 +451,9 @@ AUTO-APPROVED source upload to SECURITY pocket via 'security' policy:
   DEBUG: Creating queue entry
   DEBUG: Setting it to ACCEPTED
   DEBUG: Creating PENDING publishing record.
+  DEBUG: Creating PENDING build for hppa.
+  DEBUG: Creating PENDING build for i386.
+  DEBUG: Closing bugs.
   DEBUG: Building recipients list.
   ...
   DEBUG: Sent a mail:
@@ -451,7 +462,7 @@ AUTO-APPROVED source upload to SECURITY pocket via 'security' policy:
   DEBUG:  OK: bar_1.0.orig.tar.gz
   DEBUG:  OK: bar_1.0-2.diff.gz
   DEBUG:  OK: bar_1.0-2.dsc
-  DEBUG:      -> Component: main Section: devel
+  DEBUG:      -> Component: universe Section: devel
   ...
   DEBUG: Announcing to hoary-announce@lists.ubuntu.com
   ...
@@ -601,7 +612,7 @@ pockets can work:
   >>> foo_v1.process()
   >>> result = foo_v1.do_accept()
   >>> foo_v1.queue_root.setAccepted()
-  >>> foo_v1.queue_root.realiseUpload()
+  >>> pub_records = foo_v1.queue_root.realiseUpload()
   >>> hoary.status = DistroSeriesStatus.CURRENT
 
 Get rid of any emails generated:
@@ -678,7 +689,6 @@ PackageUpload.notify() directly.  One of the arguments it can specify is
 dry_run, which when True will not send any emails.  It will also log at
 the INFO level what it /would/ have sent.
 
-  >>> from canonical.launchpad.interfaces import PackageUploadStatus
   >>> random_package_upload = hoary.getQueueItems()[2]
   >>> random_package_upload.notify(dry_run=True, logger=mock_logger)
   DEBUG: Building recipients list.

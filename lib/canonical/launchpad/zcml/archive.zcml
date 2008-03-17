@@ -1,7 +1,6 @@
 <configure
   xmlns="http://namespaces.zope.org/zope"
   xmlns:browser="http://namespaces.zope.org/browser"
-  xmlns:lp="http://launchpad.canonical.com"
   xmlns:i18n="http://namespaces.zope.org/i18n"
   i18n_domain="launchpad">
 
@@ -19,14 +18,20 @@
       />
   </content>
 
+  <adapter
+      for="canonical.launchpad.interfaces.IArchive"
+      provides="canonical.launchpad.interfaces.IStructuralHeaderPresentation"
+      factory="canonical.launchpad.browser.archive_to_structualheading"
+      />
+
+  <browser:menus
+    module="canonical.launchpad.browser"
+    classes="ArchiveContextMenu"
+    />
+
   <browser:defaultView
     for="canonical.launchpad.interfaces.IArchive"
     name="+index"
-    />
-
-  <browser:menus
-    module="canonical.launchpad.browser.archive"
-    classes="ArchiveFacets ArchiveOverviewMenu"
     />
 
   <browser:navigation
@@ -99,6 +104,18 @@
       name="+delete-packages"
       />
   </browser:pages>
+
+  <browser:pages
+    for="canonical.launchpad.interfaces.IArchive"
+    permission="launchpad.Edit"
+    class="canonical.launchpad.browser.ArchiveEditDependenciesView">
+    <browser:page
+      template="../templates/archive-edit-dependencies.pt"
+      facet="overview"
+      name="+edit-dependencies"
+      />
+  </browser:pages>
+
 
   <!-- ArchiveSet -->
   <content class="canonical.launchpad.database.ArchiveSet">

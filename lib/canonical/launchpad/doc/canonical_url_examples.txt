@@ -22,8 +22,7 @@ so on.
 
     >>> from canonical.launchpad.interfaces import (
     ...     IMaloneApplication, IBazaarApplication,
-    ...     IRosettaApplication, ILaunchpadRoot, IRegistryApplication,
-    ...     IQuestionSet
+    ...     IRosettaApplication, ILaunchpadRoot, IQuestionSet
     ...     )
 
 The Launchpad homepage.
@@ -41,11 +40,6 @@ The Rosetta homepage.
     >>> canonical_url(getUtility(IRosettaApplication))
     u'http://launchpad.dev/translations'
 
-The Registry homepage.
-
-    >>> canonical_url(getUtility(IRegistryApplication))
-    u'http://launchpad.dev/registry'
-
 The Bazaar homepage.
 
     >>> canonical_url(getUtility(IBazaarApplication))
@@ -55,6 +49,13 @@ The Answer Tracker
 
     >>> canonical_url(getUtility(IQuestionSet))
     u'http://answers.launchpad.dev/questions'
+
+The set of mailing lists
+
+    >>> from canonical.launchpad.interfaces import IMailingListSet
+    >>> canonical_url(getUtility(IMailingListSet))
+    u'http://launchpad.dev/+mailinglists'
+
 
 == Persons and Teams ==
 

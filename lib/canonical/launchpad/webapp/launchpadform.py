@@ -18,7 +18,7 @@ from zope.interface import classImplements, providedBy
 from zope.interface.advice import addClassAdvisor
 from zope.event import notify
 from zope.formlib import form
-from zope.formlib.form import action
+from zope.formlib.form import action # imported so it may be exported
 from zope.app.form import CustomWidgetFactory
 from zope.app.form.interfaces import IInputWidget
 from zope.app.form.browser import (
@@ -27,6 +27,7 @@ from zope.app.form.browser import (
 from canonical.launchpad.webapp.interfaces import (
     IMultiLineWidgetLayout, ICheckBoxWidgetLayout,
     IAlwaysSubmittedWidget, UnsafeFormGetSubmissionError)
+from canonical.launchpad.webapp.menu import escape
 from canonical.launchpad.webapp.publisher import LaunchpadView
 from canonical.launchpad.webapp.snapshot import Snapshot
 from canonical.launchpad.event import SQLObjectModifiedEvent
@@ -181,9 +182,15 @@ class LaunchpadFormView(LaunchpadView):
         return {}
 
     def addError(self, message):
-        """Add a form wide error"""
-        self.form_wide_errors.append(message)
-        self.errors.append(message)
+        """Add a form wide error.
+
+        The 'message' parameter is CGI-escaped in accordance with the
+        `INotificationResponse.addNotification()` API.  Please see it
+        for details re: internationalized and markup text.
+        """
+        cleanmsg = escape(message)
+        self.form_wide_errors.append(cleanmsg)
+        self.errors.append(cleanmsg)
 
     def getFieldError(self, field_name):
         """Get the error associated with a particular field.
@@ -202,9 +209,23 @@ class LaunchpadFormView(LaunchpadView):
 
         If the validator for the field also flagged an error, the
         message passed to this method will be used in preference.
+
+        The 'message' parameter is CGI-escaped in accordance with the
+        `INotificationResponse.addNotification()` API.  Please see it
+        for details re: internationalized and markup text.
         """
-        self.widget_errors[field_name] = message
-        self.errors.append(message)
+        cleanmsg = escape(message)
+        self.widget_errors[field_name] = cleanmsg
+        self.errors.append(cleanmsg)
+
+    @staticmethod
+    def validate_none(self, action, data):
+        """Do not do any validation.
+
+        This is to be used in subclasses that have actions in which no
+        validation is wanted (e.g. a cancel action).
+        """
+        return []
 
     def validate_widgets(self, data, names=None):
         """Validate the named form widgets.

@@ -3,33 +3,57 @@
 The Launchpad web service exposes a collection of people and teams,
 which responds to GET.
 
-  >>> print http(r"""
+  >>> people_collection = webservice(r"""
   ... GET /people HTTP/1.1
   ... Host: api.launchpad.dev
-  ... """)
-  HTTP/1.1 200 Ok
-  ...
-  Content-Type: application/json
-  <BLANKLINE>
-  [{"self_link": "http:\/\/api.launchpad.dev\/people\/limi", "name": "limi"},
-  ...
-  {"self_link": "http:\/\/api.launchpad.dev\/people\/rosetta-admins",
-  "teamowner_link": "http:\/\/api.launchpad.dev\/people\/admins",
-  "name": "rosetta-admins"},
-  ...
-  {"self_link": "http:\/\/api.launchpad.dev\/people\/skacel",
-   "name": "skacel"}]
+  ... """).jsonBody()
+
+  >>> people_collection = sorted(people_collection)
+  >>> people_collection[0]['name']
+  u'skacel'
+  >>> people_collection[0]['self_link']
+  u'http://api.launchpad.dev/people/skacel'
+  >>> people_collection[-1]['name']
+  u'rosetta-admins'
 
 The elements of a collection can be looked up by unique identifier:
 
-  >>> print http(r"""
+  >>> admins_team = webservice(r"""
   ... GET /people/admins HTTP/1.1
   ... Host: api.launchpad.dev
-  ... """)
-  HTTP/1.1 200 Ok
-  ...
-  Content-Type: application/json
-  <BLANKLINE>
-  {"self_link": "http:\/\/api.launchpad.dev\/people\/admins",
-  "teamowner_link": "http:\/\/api.launchpad.dev\/people\/sabdfl",
-   "name": "admins"}
+  ... """).jsonBody()
+  >>> sorted(admins_team.items())
+  [(u'datecreated', u'2005-06-06T08:59:51.571899+00:00'),
+   (u'displayname', u'Launchpad Administrators'),
+   (u'member_memberships_collection_link',
+    u'http://api.launchpad.dev/people/admins/member_memberships'),
+   (u'members_collection_link',
+      u'http://api.launchpad.dev/people/admins/members'),
+   (u'name', u'admins'),
+   (u'self_link', u'http://api.launchpad.dev/people/admins'),
+   (u'team_memberships_collection_link',
+    u'http://api.launchpad.dev/people/admins/team_memberships'),
+   (u'teamowner_link', u'http://api.launchpad.dev/people/sabdfl')]
+
+A collection may be scoped to an element:
+
+  >>> team_members = webservice(r"""
+  ... GET /people/admins/members HTTP/1.1
+  ... Host: api.launchpad.dev
+  ... """).jsonBody()
+  >>> team_members = sorted(team_members)
+  >>> len(team_members)
+  11
+  >>> team_members[0]['name']
+  u'spiv'
+  >>> team_members[-1]['name']
+  u'kinnison'
+
+But not every element may have that collection scoped to it:
+
+  >>> print webservice(r"""
+  ... GET /people/spiv/members HTTP/1.1
+  ... Host: api.launchpad.dev
+  ... """).getStatus()
+  404
+

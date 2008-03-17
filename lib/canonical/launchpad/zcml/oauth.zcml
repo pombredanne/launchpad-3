@@ -1,0 +1,31 @@
+<configure
+    xmlns="http://namespaces.zope.org/zope"
+    xmlns:i18n="http://namespaces.zope.org/i18n"
+    xmlns:xmlrpc="http://namespaces.zope.org/xmlrpc"
+    xmlns:browser="http://namespaces.zope.org/browser"
+    i18n_domain="launchpad">
+
+  <content class="canonical.launchpad.database.OAuthConsumer">
+      <allow interface="canonical.launchpad.interfaces.IOAuthConsumer"/>
+  </content>
+
+  <content class="canonical.launchpad.database.OAuthConsumerSet">
+      <allow interface="canonical.launchpad.interfaces.IOAuthConsumerSet"/>
+  </content>
+
+  <securedutility
+      class="canonical.launchpad.database.OAuthConsumerSet"
+      provides="canonical.launchpad.interfaces.IOAuthConsumerSet">
+      <allow
+          interface="canonical.launchpad.interfaces.IOAuthConsumerSet"/>
+  </securedutility>
+
+  <content class="canonical.launchpad.database.OAuthRequestToken">
+      <allow interface="canonical.launchpad.interfaces.IOAuthRequestToken"/>
+  </content>
+
+  <content class="canonical.launchpad.database.OAuthAccessToken">
+      <allow interface="canonical.launchpad.interfaces.IOAuthAccessToken"/>
+  </content>
+
+</configure>

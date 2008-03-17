@@ -51,6 +51,8 @@ from canonical.launchpad.webapp.authorization import check_permission
 from canonical.widgets.bug import BugTagsWidget
 from canonical.widgets.launchpadtarget import LaunchpadTargetWidget
 from canonical.launchpad.vocabularies import ValidPersonOrTeamVocabulary
+from canonical.launchpad.webapp.menu import structured
+
 
 class FileBugData:
     """Extra data to be added to the bug."""
@@ -460,15 +462,17 @@ class FileBugViewBase(LaunchpadFormView):
             self.request.response.addNotification(notification)
         if bug.security_related:
             self.request.response.addNotification(
+                structured(
                 'Security-related bugs are by default private '
                 '(visible only to their direct subscribers). '
                 'You may choose to <a href="+secrecy">publicly '
-                'disclose</a> this bug.')
+                'disclose</a> this bug.'))
         if bug.private and not bug.security_related:
             self.request.response.addNotification(
+                structured(
                 'This bug report has been marked private '
                 '(visible only to its direct subscribers). '
-                'You may choose to <a href="+secrecy">change this</a>.')
+                'You may choose to <a href="+secrecy">change this</a>.'))
 
         self.request.response.redirect(canonical_url(bug.bugtasks[0]))
 
@@ -562,35 +566,26 @@ class FileBugViewBase(LaunchpadFormView):
             return LaunchpadFormView.showOptionalMarker(self, field_name)
 
     def getRelevantBugTask(self, bug):
-        """Return the first bugtask from this bug that's relevant in
-        the current context.
+        """Return the first bugtask from this bug that's relevant in the
+        current context.
 
-        XXX Gavin Panella 2007-07-13:
-        This is a pragmatic function, not general purpose. It
-        tries to find a bugtask that can be used to pretty-up the
-        page, making it more user-friendly and informative. It's not
-        concerned by total accuracy, and will return the first
-        'relevant' bugtask it finds even if there are other
-        candidates. Be warned!
+        This is a pragmatic function, not general purpose. It tries to
+        find a bugtask that can be used to pretty-up the page, making
+        it more user-friendly and informative. It's not concerned by
+        total accuracy, and will return the first 'relevant' bugtask
+        it finds even if there are other candidates. Be warned!
         """
         context = self.context
-        bugtasks = bug.bugtasks
 
-        if IDistribution.providedBy(context):
-            def isRelevant(bugtask, context):
-                return bugtask.distribution == context
-        elif IProject.providedBy(context):
-            def isRelevant(bugtask, context):
-                return bugtask.pillar.project == context
+        if IProject.providedBy(context):
+            contexts = set(context.products)
         else:
-            def isRelevant(bugtask, context):
-                return bugtask.target == context
+            contexts = [context]
 
-        for bugtask in bugtasks:
-            if isRelevant(bugtask, context):
+        for bugtask in bug.bugtasks:
+            if bugtask.target in contexts or bugtask.pillar in contexts:
                 return bugtask
-        else:
-            return None
+        return None
 
 
 class FileBugAdvancedView(FileBugViewBase):

@@ -26,6 +26,14 @@
 
       <h2>Current status</h2>
 
+      <div class="informational message" tal:condition="not: job">
+        <p><tal:builder content="context/title" />
+           <tal:builderok condition="context/builderok"
+             >is idle.</tal:builderok>
+           <tal:buildernok condition="not: context/builderok"
+             >is deactivated.</tal:buildernok></p>
+      </div>
+
       <tal:job condition="job">
         <table class="listing sortable">
           <tbody>
@@ -55,9 +63,6 @@
           tal:content="structure job/logtail/fmt:text-to-html"
         >Things are crashing and burning all over the place.</div>
       </tal:job>
-      <p tal:condition="not: job">
-        <tal:builder content="context/title" /> is idle.
-      </p>
 
       <p>Last updated <span tal:replace="view/now"/></p>
 

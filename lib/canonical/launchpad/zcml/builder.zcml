@@ -51,7 +51,7 @@
         content_factory="canonical.launchpad.database.Builder"
         class="canonical.launchpad.browser.BuilderSetAddView"
         permission="launchpad.Admin"
-        template="../templates/launchpad-addform.pt"
+        template="../templates/builder-new.pt"
         facet="overview"
         >
         <browser:widget
@@ -107,14 +107,10 @@
             name="+builds-list"
             facet="overview"
             />
-    </browser:pages>
-
-    <browser:pages
-        for="canonical.launchpad.interfaces.IBuilder"
-        permission="zope.Public">
         <browser:page
             template="../templates/builder-portlet-details.pt"
             name="+portlet-details"
+            facet="overview"
             />
     </browser:pages>
 

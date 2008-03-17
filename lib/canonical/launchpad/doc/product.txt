@@ -394,6 +394,19 @@ the number of products returned.
     firefox
     gnome-terminal
 
+Only active products are returned.
+
+    >>> firefox.active = False
+    >>> from canonical.launchpad.ftests import syncUpdate
+    >>> syncUpdate(firefox)
+    >>> for product in productset.getProductsWithBranches():
+    ...     print product.name
+    evolution
+    gnome-terminal
+    iso-codes
+    landscape
+
+
 == Primary translatable ==
 
 Primary translatable series in a product should follow series where

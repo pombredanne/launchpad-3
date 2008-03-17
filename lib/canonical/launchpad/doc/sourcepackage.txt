@@ -105,6 +105,56 @@ component. If there are no PUBLISHED records, None is returned.
     >>> print firefox_warty.latest_published_component
     None
 
+SourcePackage traversing is also provided through the available
+published versions. Note that all versions ever published in the
+SourcePackage context will be reachable.
+
+    >>> pmount_hoary = ubuntu['hoary'].getSourcePackage('pmount')
+
+    >>> for release in pmount_hoary.releases:
+    ...     print release.title, release.publishing_history[0].status.name
+    pmount 0.1-1 (source) in Ubuntu SUPERSEDED
+    pmount 0.1-2 (source) in Ubuntu PUBLISHED
+
+    >>> print pmount_hoary['0.1-1'].title
+    pmount 0.1-1 (source) in ubuntu hoary
+
+    >>> print pmount_hoary['0.1-2'].title
+    pmount 0.1-2 (source) in ubuntu hoary
+
+    >>> len(list(pmount_hoary.distinctreleases))
+    2
+
+'pmount_0.1-1' in hoary is SUPERSEDED but not yet 'removed from disk'.
+
+    >>> secure_pub =  SecureSourcePackagePublishingHistory.get(
+    ...     pmount_hoary['0.1-1'].publishing_history[0].id)
+    >>> secure_pub.datesuperseded is not None
+    True
+    >>> secure_pub.dateremoved is None
+    True
+
+We will emulate disk-removal to ensure it will continue to be
+reachable. See bug #179028 for further information.
+
+    >>> from datetime import timedelta
+    >>> secure_pub.dateremoved = secure_pub.datesuperseded + timedelta(days=1)
+    >>> syncUpdate(secure_pub)
+
+    >>> for release in pmount_hoary.releases:
+    ...     print release.title, release.publishing_history[0].status.name
+    pmount 0.1-1 (source) in Ubuntu SUPERSEDED
+    pmount 0.1-2 (source) in Ubuntu PUBLISHED
+
+    >>> print pmount_hoary['0.1-1'].title
+    pmount 0.1-1 (source) in ubuntu hoary
+
+    >>> len(list(pmount_hoary.distinctreleases))
+    2
+
+We will leave the pmount_0.1-1 marked as 'removed from disk' because
+we do want it to affect the next test cases.
+
 
 == Distribution Source Packages ==
 
@@ -319,28 +369,16 @@ Zero or more spaces may appear between the ":" and the "#".
     <a href="/bugs/7" title="A test bug">#7</a>'
 
 
-Checking handy Sourcepackage properties:
-
-XXX cprov 20060125: it's still very primitive test but it's better
-than nothing ... bug # 29659
-
-    >>> len(sp.releases)
-    2
-
-SQLObject won't let us use .count on the results set returned from 
-distinctreleases, so we use this ugly hack:
-
-    >>> len(list(sp.distinctreleases))
-    2
-
-
 == Comparing Sourcepackages ==
 
 Lastly, note that sourcepackages know how to compare to each other:
 
-    >>> hoary_firefox_one = SourcePackage(sourcepackagename=firefox, distroseries=hoary)
-    >>> hoary_firefox_two = SourcePackage(sourcepackagename=firefox, distroseries=hoary)
-    >>> warty_firefox = SourcePackage(sourcepackagename=firefox, distroseries=warty)
+    >>> hoary_firefox_one = SourcePackage(
+    ...     sourcepackagename=firefox, distroseries=hoary)
+    >>> hoary_firefox_two = SourcePackage(
+    ...     sourcepackagename=firefox, distroseries=hoary)
+    >>> warty_firefox = SourcePackage(
+    ...     sourcepackagename=firefox, distroseries=warty)
 
     >>> hoary_firefox_one == hoary_firefox_two
     True
@@ -349,14 +387,47 @@ Lastly, note that sourcepackages know how to compare to each other:
     >>> hoary_firefox_one == warty_firefox
     False
 
+And they can be used as dictionary keys also:
+
+    >>> hash(hoary_firefox_one) == hash(hoary_firefox_two)
+    True
+    >>> hash(hoary_firefox_one) != hash(warty_firefox)
+    True
+
+    >>> a_map = {}
+    >>> a_map[hoary_firefox_one] = 'hoary'
+    >>> a_map[warty_firefox] = 'warty'
+    >>> a_map[hoary_firefox_two]
+    'hoary'
+    >>> a_map[warty_firefox]
+    'warty'
+
 
 == Direct Packagings ==
+
+The direct packaging returns the IPackaging related to the source
+package.
 
     >>> print sp.direct_packaging
     None
     >>> print hoary_firefox_one.direct_packaging.productseries.title
     Mozilla Firefox Series: 1.0
     >>> print warty_firefox.direct_packaging.productseries.title
+    Mozilla Firefox Series: trunk
+
+If multiple product series link to a sourcepackage, direct_packaging
+returns the last packaging added:
+
+    >>> from canonical.launchpad.interfaces import IProductSet
+    >>> firefox_product = getUtility(IProductSet).getByName('firefox')
+    >>> firefox_trunk = firefox_product.getSeries('trunk')
+    >>> PackagingUtil().createPackaging(
+    ...     sourcepackagename=firefox,
+    ...     distroseries=hoary,
+    ...     productseries=firefox_trunk,
+    ...     packaging=PackagingType.PRIME,
+    ...     owner=foobar)
+    >>> print hoary_firefox_one.direct_packaging.productseries.title
     Mozilla Firefox Series: trunk
 
 

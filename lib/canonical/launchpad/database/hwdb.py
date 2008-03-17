@@ -14,16 +14,17 @@ from zope.interface import implements
 
 from sqlobject import BoolCol, ForeignKey, StringCol
 
+from canonical.database.constants import DEFAULT, UTC_NOW
+from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import SQLBase, sqlvalues
-from canonical.database.constants import UTC_NOW
-from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.launchpad.validators.name import valid_name
 from canonical.launchpad.interfaces import (
     EmailAddressStatus, HWSubmissionFormat, HWSubmissionKeyNotUnique,
     HWSubmissionProcessingStatus, IHWSubmission, IHWSubmissionSet,
     IHWSystemFingerprint, IHWSystemFingerprintSet, ILaunchpadCelebrities,
     ILibraryFileAliasSet, IPersonSet)
+from canonical.launchpad.validators.person import public_person_validator
 
 
 class HWSubmission(SQLBase):
@@ -31,7 +32,7 @@ class HWSubmission(SQLBase):
 
     implements(IHWSubmission)
     _table = 'HWSubmission'
-    
+
     date_created = UtcDateTimeCol(notNull=True, default=UTC_NOW)
     date_submitted = UtcDateTimeCol(notNull=True, default=UTC_NOW)
     format = EnumCol(enum=HWSubmissionFormat, notNull=True)
@@ -39,13 +40,14 @@ class HWSubmission(SQLBase):
     private = BoolCol(notNull=True)
     contactable = BoolCol(notNull=True)
     submission_key = StringCol(notNull=True)
-    owner = ForeignKey(dbName='owner', foreignKey='Person')
-    distroarchseries = ForeignKey(dbName='DistroArchSeries',
+    owner = ForeignKey(dbName='owner', foreignKey='Person',
+                       validator=public_person_validator)
+    distroarchseries = ForeignKey(dbName='distroarchseries',
                                   foreignKey='DistroArchSeries',
                                   notNull=True)
     raw_submission = ForeignKey(dbName='raw_submission',
                                 foreignKey='LibraryFileAlias',
-                                notNull=True)
+                                notNull=False, default=DEFAULT)
     system_fingerprint = ForeignKey(dbName='system_fingerprint',
                                     foreignKey='HWSystemFingerprint',
                                     notNull=True)
@@ -106,7 +108,8 @@ class HWSubmissionSet:
             raw_emailaddress=emailaddress)
 
     def _userHasAccessClause(self, user):
-        """Limit results of HWSubmission queries to rows the user can access."""
+        """Limit results of HWSubmission queries to rows the user can access.
+        """
         admins = getUtility(ILaunchpadCelebrities).admin
         if user is None:
             return " AND NOT HWSubmission.private"
@@ -167,7 +170,6 @@ class HWSubmissionSet:
     def submissionIdExists(self, submission_key):
         """See `IHWSubmissionSet`."""
         rows = HWSubmission.selectBy(submission_key=submission_key)
-        return bool(rows)
         return rows.count() > 0
 
     def setOwnership(self, email):

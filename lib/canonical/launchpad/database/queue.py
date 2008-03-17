@@ -23,6 +23,8 @@ from sqlobject import (
 from canonical.archivepublisher.customupload import CustomUploadError
 from canonical.archiveuploader.tagfiles import parse_tagfile_lines
 from canonical.archiveuploader.utils import safe_fix_maintainer
+from canonical.buildmaster.master import determineArchitecturesToBuild
+from canonical.buildmaster.pas import BuildDaemonPackagesArchSpecific
 from canonical.cachedproperty import cachedproperty
 from canonical.config import config
 from canonical.database.sqlbase import SQLBase, sqlvalues
@@ -35,7 +37,7 @@ from canonical.launchpad.database.publishing import (
     SecureBinaryPackagePublishingHistory)
 from canonical.launchpad.helpers import get_email_template
 from canonical.launchpad.interfaces import (
-    ArchivePurpose, IComponentSet, ILaunchpadCelebrities, IPackageUpload,
+    ArchivePurpose, ILaunchpadCelebrities, IPackageUpload,
     IPackageUploadBuild, IPackageUploadSource, IPackageUploadCustom,
     IPackageUploadQueue, IPackageUploadSet, IPersonSet, NotFoundError,
     PackagePublishingPocket, PackagePublishingStatus, PackageUploadStatus,
@@ -195,21 +197,81 @@ class PackageUpload(SQLBase):
                 'Queue item already rejected')
         self._SO_set_status(PackageUploadStatus.REJECTED)
 
+    def _createBuilds(self, pub_source, ignore_pas=False, logger=None,):
+        """Create corresponding Build records for a published source.
+
+        :param pub_source: source publication record ,
+             `ISourcePackagePublishingHistory`;
+        :param ignore_pas: whether or not to initialise and respect
+             Package-architecture-specific (P-a-s) for creating builds;
+        :param logger: optional context Logger object (used on DEBUG level).
+
+        P-a-s should be only initialised and considered when accepting
+        sources to the PRIMARY archive (in drescher). We explicitly ignore
+        P-a-s for sources targeted to PPAs and when accepting NEW sources
+        (acceptFromQueue).
+        """
+        if self.isPPA() or ignore_pas:
+            pas_verify = None
+        else:
+            pas_verify = BuildDaemonPackagesArchSpecific(
+                config.builddmaster.root, self.distroseries)
+
+        if self.isPPA():
+            archs_available = [
+                arch for arch in self.distroseries.ppa_architectures]
+        else:
+            archs_available = self.distroseries.architectures
+
+        build_archs = determineArchitecturesToBuild(
+            pub_source, archs_available, self.distroseries, pas_verify)
+
+        for arch in build_archs:
+            debug(logger,
+                  "Creating PENDING build for %s." % arch.architecturetag)
+            build = pub_source.sourcepackagerelease.createBuild(
+                distroarchseries=arch, archive=self.archive,
+                pocket=self.pocket)
+            build_queue = build.createBuildQueueEntry()
+            build_queue.score()
+
+    def _closeBugs(self, changesfile_path, logger=None):
+        """Close bugs for a just-accepted source.
+
+        :param changesfile_path: path to the context changesfile.
+        :param logger: optional context Logger object (used on DEBUG level);
+
+        It does not close bugs for PPA sources.
+        """
+        if self.isPPA():
+            debug(logger, "Not closing bugs for PPA source.")
+            return
+
+        debug(logger, "Closing bugs.")
+        changesfile_object = open(changesfile_path, 'r')
+        close_bugs_for_queue_item(
+            self, changesfile_object=changesfile_object)
+        changesfile_object.close()
+
+    def acceptFromUploader(self, changesfile_path, logger=None):
+        """See `IPackageUpload`."""
+        debug(logger, "Setting it to ACCEPTED")
+        self.setAccepted()
+
+        # If it is a pure-source upload we can further process it
+        # in order to have a pending publishing record in place.
+        # This change is based on discussions for bug #77853 and aims
+        # to fix a deficiency on published file lookup system.
+        if not self._isSingleSourceUpload():
+            return
+
+        debug(logger, "Creating PENDING publishing record.")
+        [pub_source] = self.realiseUpload()
+        self._createBuilds(pub_source, logger=logger)
+        self._closeBugs(changesfile_path, logger)
+
     def acceptFromQueue(self, announce_list, logger=None, dry_run=False):
         """See `IPackageUpload`."""
-        if (self._isSingleSourceUpload() and
-            self.status == PackageUploadStatus.NEW and
-            self.sources[0].sourcepackagerelease.component.name == 'main'):
-            # If the queue item is coming from the NEW queue and is a
-            # single source upload, we override its component to
-            # 'universe' to save the archive admins some work, since
-            # they do this with the majority of new packages.
-
-            # XXX Julian 2008-01-28
-            # This is a temporary hack until bug 120052 is correctly fixed.
-            self.sources[0].sourcepackagerelease.component = getUtility(
-                IComponentSet)['universe']
-
         self.setAccepted()
         self.notify(announce_list=announce_list, logger=logger,
                     dry_run=dry_run)
@@ -220,7 +282,8 @@ class PackageUpload(SQLBase):
         # wait for a publisher cycle (which calls process-accepted
         # to do this).
         if self._isSingleSourceUpload():
-            self.realiseUpload()
+            [pub_source] = self.realiseUpload()
+            self._createBuilds(pub_source, ignore_pas=True)
 
         # When accepting packages, we must also check the changes file
         # for bugs to close automatically.
@@ -356,14 +419,15 @@ class PackageUpload(SQLBase):
                 "series in the '%s' state." % (
                 self.pocket.name, self.distroseries.status.name))
 
+        publishing_records = []
         # In realising an upload we first load all the sources into
         # the publishing tables, then the binaries, then we attempt
         # to publish the custom objects.
         for queue_source in self.sources:
             queue_source.verifyBeforePublish()
-            queue_source.publish(logger)
+            publishing_records.append(queue_source.publish(logger))
         for queue_build in self.builds:
-            queue_build.publish(logger)
+            publishing_records.extend(queue_build.publish(logger))
         for customfile in self.customfiles:
             try:
                 customfile.publish(logger)
@@ -373,6 +437,8 @@ class PackageUpload(SQLBase):
                 return
 
         self.setDone()
+
+        return publishing_records
 
     def addSource(self, spr):
         """See `IPackageUpload`."""

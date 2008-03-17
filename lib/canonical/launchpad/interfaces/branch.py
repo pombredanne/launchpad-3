@@ -40,7 +40,8 @@ from zope.schema import Bool, Int, Choice, Text, TextLine, Datetime
 from canonical.config import config
 
 from canonical.launchpad import _
-from canonical.launchpad.fields import Title, Summary, URIField, Whiteboard
+from canonical.launchpad.fields import (
+    PublicPersonChoice, Summary, Title, URIField, Whiteboard)
 from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.interfaces import IHasOwner
 from canonical.launchpad.webapp.interfaces import ITableBatchNavigator
@@ -57,14 +58,11 @@ class BranchLifecycleStatus(DBEnumeratedType):
     Essentially, this tells us what the author of the branch thinks of the
     code in the branch.
     """
-    sort_order = (
-        'MATURE', 'DEVELOPMENT', 'EXPERIMENTAL', 'MERGED', 'ABANDONED', 'NEW')
 
     NEW = DBItem(1, """
         New
 
-        This branch has just been created, and we know nothing else about
-        it.
+        This branch has just been created.
         """)
 
     EXPERIMENTAL = DBItem(10, """
@@ -124,7 +122,7 @@ class BranchType(DBEnumeratedType):
         Mirrored
 
         Primarily hosted elsewhere and is periodically mirrored
-        from the remote location into Launchpad.
+        from the external location into Launchpad.
         """)
 
     IMPORTED = DBItem(3, """
@@ -230,7 +228,7 @@ class BranchURIField(URIField):
         # URIField has already established that we have a valid URI
         uri = URI(value)
         supermirror_root = URI(config.codehosting.supermirror_root)
-        launchpad_domain = config.launchpad.vhosts.mainsite.hostname
+        launchpad_domain = config.vhost.mainsite.hostname
         if uri.underDomain(launchpad_domain):
             message = _(
                 "For Launchpad to mirror a branch, the original branch "
@@ -328,10 +326,8 @@ class IBranch(IHasOwner):
         allow_query=False,
         allow_fragment=False,
         trailing_slash=False,
-        description=_("The URL where the Bazaar branch is hosted. This is "
-            "the URL used to checkout the branch. The only branch format "
-            "supported is that of the Bazaar revision control system, see "
-            "www.bazaar-vcs.org for more information."))
+        description=_("This is the external location where the Bazaar "
+                      "branch is hosted."))
 
     whiteboard = Whiteboard(title=_('Whiteboard'), required=False,
         description=_('Notes on the current status of the branch.'))
@@ -345,13 +341,17 @@ class IBranch(IHasOwner):
         default=False)
 
     # People attributes
-    owner = Choice(title=_('Owner'), required=True, vocabulary='ValidOwner',
-        description=_("Branch owner, either a valid Person or Team."))
-    author = Choice(
+    registrant = Attribute("The user that registered the branch.")
+    owner = PublicPersonChoice(
+        title=_('Owner'), required=True,
+        vocabulary='PersonActiveMembershipPlusSelf',
+        description=_("Either yourself or a team you are a member of. "
+                      "This controls who can modify the branch."))
+    author = PublicPersonChoice(
         title=_('Author'), required=False, vocabulary='ValidPersonOrTeam',
         description=_("The author of the branch. Leave blank if the author "
                       "does not have a Launchpad account."))
-    reviewer = Choice(
+    reviewer = PublicPersonChoice(
         title=_('Reviewer'), required=False, vocabulary='ValidPersonOrTeam',
         description=_("The reviewer of a branch is the person or team that "
                       "is responsible for authorising code to be merged."))
@@ -463,6 +463,16 @@ class IBranch(IHasOwner):
     date_last_modified = Datetime(
         title=_('Date Last Modified'), required=True, readonly=False)
 
+    def destroySelf(break_references=False):
+        """Delete the specified branch.
+
+        BranchRevisions associated with this branch will also be deleted.
+        :param break_references: If supplied, break any references to this
+            branch by deleting items with mandatory references and
+            NULLing other references.
+        :raise: CannotDeleteBranch if the branch cannot be deleted.
+        """
+
     def latest_revisions(quantity=10):
         """A specific number of the latest revisions in that branch."""
 
@@ -496,11 +506,17 @@ class IBranch(IHasOwner):
             merge request.
         """
 
+    def getMergeQueue():
+        """The proposals that are QUEUED to land on this branch."""
+
     def revisions_since(timestamp):
         """Revisions in the history that are more recent than timestamp."""
 
     code_is_browseable = Attribute(
         "Is the code in this branch accessable through codebrowse?")
+
+    # Don't use Object-- that would cause an import loop with ICodeImport
+    code_import = Attribute("The associated CodeImport, if any.")
 
     def getBzrUploadURL(person=None):
         """Return the URL for this person to push to the branch.
@@ -527,6 +543,15 @@ class IBranch(IHasOwner):
         has no subscribers.
         """
 
+    def deletionRequirements():
+        """Determine what is required to delete this branch.
+
+        :return: a dict of {object: (operation, reason)}, where object is the
+            object that must be deleted or altered, operation is either
+            "delete" or "alter", and reason is a string explaining why the
+            object needs to be touched.
+        """
+
     def associatedProductSeries():
         """Return the product series that this branch is associated with.
 
@@ -549,6 +574,14 @@ class IBranch(IHasOwner):
 
     def unsubscribe(person):
         """Remove the person's subscription to this branch."""
+
+    def getSubscriptionsByLevel(notification_levels):
+        """Return the subscriptions that are at the given notification levels.
+
+        :param notification_levels: An iterable of
+            `BranchSubscriptionNotificationLevel`s
+        :return: An SQLObject query result.
+        """
 
     def getBranchRevision(sequence):
         """Get the `BranchRevision` for the given sequence number.
@@ -658,6 +691,9 @@ class IBranchSet(Interface):
         Return the default value if there is no such branch.
         """
 
+    def getBranch(owner, product, branch_name):
+        """Return the branch identified by owner/product/branch_name."""
+
     def new(branch_type, name, creator, owner, product, url, title=None,
             lifecycle_status=BranchLifecycleStatus.NEW, author=None,
             summary=None, home_page=None, whiteboard=None, date_created=None):
@@ -669,9 +705,6 @@ class IBranchSet(Interface):
         If product is None (indicating a +junk branch) then the owner must not
         be a team, except for the special case of the ~vcs-imports celebrity.
         """
-
-    def delete(branch):
-        """Delete the specified branch."""
 
     def getByUniqueName(unique_name, default=None):
         """Find a branch by its ~owner/product/name unique name.
@@ -775,12 +808,6 @@ class IBranchSet(Interface):
         :type visible_by_user: `IPerson` or None
         """
 
-    def getLastCommitForBranches(branches):
-        """Return a map of branch to last commit time."""
-
-    def getBranchesForOwners(people):
-        """Return the branches that are owned by the people specified."""
-
     def getBranchesForPerson(
         person, lifecycle_statuses=DEFAULT_BRANCH_STATUS_IN_LISTING,
         visible_by_user=None, sort_by=None, hide_dormant=False):
@@ -795,9 +822,9 @@ class IBranchSet(Interface):
         updating ui attributes of the branch, committing code to the
         branch.
         Branches of most interest to a person are their subscribed
-        branches, and the branches that they have registered and authored.
+        branches, and the branches that they have registered or own.
 
-        All branches that are either registered or authored by person
+        All branches that are either registered or owned by person
         are shown, as well as their subscribed branches.
 
         If lifecycle_statuses evaluates to False then branches
@@ -821,12 +848,12 @@ class IBranchSet(Interface):
         :type hide_dormant: Boolean.
         """
 
-    def getBranchesAuthoredByPerson(
+    def getBranchesOwnedByPerson(
         person, lifecycle_statuses=DEFAULT_BRANCH_STATUS_IN_LISTING,
         visible_by_user=None, sort_by=None, hide_dormant=False):
-        """Branches authored by person with appropriate lifecycle.
+        """Branches owned by person with appropriate lifecycle.
 
-        Only branches that are authored by the person are returned.
+        Only branches that are owned by the person are returned.
 
         If lifecycle_statuses evaluates to False then branches
         of any lifecycle_status are returned, otherwise only branches
@@ -854,8 +881,7 @@ class IBranchSet(Interface):
         visible_by_user=None, sort_by=None, hide_dormant=False):
         """Branches registered by person with appropriate lifecycle.
 
-        Only branches registered by the person but *NOT* authored by
-        the person are returned.
+        Only branches registered by the person are returned.
 
         If lifecycle_statuses evaluates to False then branches
         of any lifecycle_status are returned, otherwise only branches

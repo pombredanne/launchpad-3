@@ -13,9 +13,10 @@ __all__ = [
     'IMailingListApplication',
     'IMailingListSet',
     'IMailingListSubscription',
+    'IMessageApproval',
+    'IMessageApprovalSet',
     'MailingListAutoSubscribePolicy',
     'MailingListStatus',
-    'PersonalStanding',
     'PostedMessageStatus',
     'is_participant_in_beta_program'
     ]
@@ -25,7 +26,9 @@ from zope.interface import Interface
 from zope.schema import Choice, Datetime, Object, Set, Text, TextLine
 
 from canonical.launchpad import _
+from canonical.launchpad.fields import PublicPersonChoice
 from canonical.launchpad.interfaces import IEmailAddress
+from canonical.launchpad.interfaces.message import IMessage
 from canonical.launchpad.webapp.interfaces import ILaunchpadApplication
 from canonical.lazr.enum import DBEnumeratedType, DBItem
 
@@ -160,43 +163,6 @@ class MailingListAutoSubscribePolicy(DBEnumeratedType):
         """)
 
 
-class PersonalStanding(DBEnumeratedType):
-    """A person's standing.
-
-    Standing is currently (just) used to determine whether a person's posts to
-    a mailing list require first-post moderation or not.  Any person with good
-    or excellent standing may post directly to the mailing list without
-    moderation.  Any person with unknown or poor standing must have their
-    first-posts moderated.
-    """
-
-    UNKNOWN = DBItem(0, """
-        Unknown standing
-
-        Nothing about this person's standing is known.
-        """)
-
-    POOR = DBItem(100, """
-        Poor standing
-
-        This person has poor standing.
-        """)
-
-    GOOD = DBItem(200, """
-        Good standing
-
-        This person has good standing and may post to a mailing list without
-        being subject to first-post moderation rules.
-        """)
-
-    EXCELLENT = DBItem(300, """
-        Excellent standing
-
-        This person has excellent standing and may post to a mailing list
-        without being subject to first-post moderation rules.
-        """)
-
-
 class PostedMessageStatus(DBEnumeratedType):
     """The status of a posted message.
 
@@ -211,13 +177,27 @@ class PostedMessageStatus(DBEnumeratedType):
         disposition of the message has yet been made.
         """)
 
-    APPROVED = DBItem(1, """
+    APPROVAL_PENDING = DBItem(20, """
+        Approval pending
+
+        The team administrator has approved this message, but Mailman has not
+        yet been informed of this status.
+        """)
+
+    REJECTION_PENDING = DBItem(30, """
+        Decline pending
+
+        The team administrator has declined this message, but Mailman has not
+        yet been informed of this status.
+        """)
+
+    APPROVED = DBItem(40, """
         Approved
 
         A message held for first-post moderation has been approved.
         """)
 
-    REJECTED = DBItem(2, """
+    REJECTED = DBItem(50, """
         Rejected
 
         A message held for first-post moderation has been rejected.
@@ -227,13 +207,13 @@ class PostedMessageStatus(DBEnumeratedType):
 class IMailingList(Interface):
     """A mailing list."""
 
-    team = Choice(
+    team = PublicPersonChoice(
         title=_('Team'),
         description=_('The team that this mailing list is associated with.'),
         vocabulary='ValidTeam',
         required=True, readonly=True)
 
-    registrant = Choice(
+    registrant = PublicPersonChoice(
         title=_('Registrant'),
         description=_('The person who registered the mailing list.'),
         vocabulary='ValidPersonOrTeam',
@@ -244,7 +224,7 @@ class IMailingList(Interface):
         description=_('The date on which this mailing list was registered.'),
         required=True, readonly=True)
 
-    reviewer = Choice(
+    reviewer = PublicPersonChoice(
         title=_('Reviewer'),
         description=_(
             'The person who reviewed this mailing list registration, or '
@@ -443,9 +423,21 @@ class IMailingList(Interface):
             allowed to post to the mailing list.
         """
 
+    def holdMessage(message):
+        """Hold a message for approval on this mailing list.
+
+        :param message: The IMessage to hold.
+        :return: The IMessageApproval representing the held message.
+        """
+
 
 class IMailingListSet(Interface):
     """A set of mailing lists."""
+
+    title = TextLine(
+        title=_('Title'),
+        description=_('The hard coded title.'),
+        readonly=True)
 
     def new(team, registrant=None):
         """Register a new team mailing list.
@@ -512,7 +504,7 @@ class IMailingListAPIView(Interface):
     """XMLRPC API that Mailman polls for mailing list actions."""
 
     def getPendingActions():
-        """Return all pending mailing list actions.
+        """Get all pending mailing list actions.
 
         In addition, any mailing list for which there are actions pending will
         have their states transitioned to the next node in the workflow.  For
@@ -554,7 +546,7 @@ class IMailingListAPIView(Interface):
         """
 
     def getMembershipInformation(teams):
-        """Return membership information for the listed teams.
+        """Get membership information for the listed teams.
 
         :param teams: The list of team names for which Mailman is requesting
             membership information.
@@ -571,18 +563,50 @@ class IMailingListAPIView(Interface):
         """
 
     def isRegisteredInLaunchpad(address):
-        """Return whether the address is a Launchpad member or not.
+        """Whether the address is a Launchpad member.
 
         :param address: The text email address to check.
         :return: True if the address is a validated or preferred email address
             owned by a Launchpad member.
         """
 
+    def inGoodStanding(address):
+        """Whether the address is a Launchpad member in good standing.
+
+        :param address: The text email address to check.
+        :return: True if the address is a member of Launchpad in good or
+            better standing (e.g. GOOD or EXCELLENT).  False is returned if
+            the address is not registered in Launchpad, or is assigned to a
+            team.
+        """
+
+    def holdMessage(team_name, text):
+        """Hold the message for approval though the Launchpad u/i.
+
+        :param team_name: The name of the team/mailing list that this message
+            was posted to.
+        :param text: The original text of the message.
+        :return: True
+        """
+
+    def getMessageDispositions():
+        """Get all new message dispositions.
+
+        This returns a dictionary mapping message ids to their disposition,
+        which will either be 'accept' or 'decline'.  This only returns
+        message-ids of disposed messages since the last time this method was
+        called.
+
+        :return: A dictionary mapping message-ids to the disposition tuple.
+            This tuple is of the form (team-name, action), where the action is
+            either the string 'accept' or 'decline'.
+        """
+
 
 class IMailingListSubscription(Interface):
     """A mailing list subscription."""
 
-    person = Choice(
+    person = PublicPersonChoice(
         title=_('Person'),
         description=_('The person who is subscribed to this mailing list.'),
         vocabulary='ValidTeamMember',
@@ -612,6 +636,99 @@ class IMailingListSubscription(Interface):
         title=_('Email Address'),
         description=_('The IEmailAddress this person is subscribed with.'),
         readonly=True)
+
+
+class IMessageApproval(Interface):
+    """A held message."""
+
+    message_id = Text(
+        title=_('Message-ID'),
+        description=_('The RFC 2822 Message-ID header.'),
+        required=True, readonly=True)
+
+    posted_by = PublicPersonChoice(
+        title=_('Posted by'),
+        description=_('The Launchpad member who posted the message.'),
+        vocabulary='ValidPersonOrTeam',
+        required=True, readonly=True)
+
+    posted_message = Object(
+        schema=IMessage,
+        title=_('Posted message'),
+        description=_('The message that was posted and held.'),
+        required=True, readonly=True)
+
+    posted_date = Datetime(
+        title=_('Date posted'),
+        description=_('The date this message was posted.'),
+        required=True, readonly=True)
+
+    mailing_list = Object(
+        schema=IMailingList,
+        title=_('The mailing list'),
+        description=_('The mailing list this message was posted to.'),
+        required=True, readonly=True)
+
+    status = Choice(
+        title=_('Status'),
+        description=_('The status of the held message.'),
+        vocabulary='PostedMessageStatus',
+        required=True)
+
+    disposed_by = PublicPersonChoice(
+        title=_('Approved or rejected by'),
+        description=_('The person who approved or rejected this message.'),
+        vocabulary='ValidPersonOrTeam',
+        required=False)
+
+    disposal_date = Datetime(
+        title=_('Date approved or rejected'),
+        description=_('The date this message was approved or rejected.'),
+        required=False)
+
+    def approve(reviewer):
+        """Approve the message.
+
+        This sets the status to APPROVAL_PENDING because the approval must
+        still be recognized by Mailman.
+
+        :param reviewer: The person who did the review.
+        """
+
+    def reject(reviewer):
+        """Reject the message.
+
+        This sets the status to REJECTION_PENDING because the approval must
+        still be recognized by Mailman.
+
+        :param reviewer: The person who did the review.
+        """
+
+    def acknowledge():
+        """Acknowledge the pending status of a message.
+
+        This changes APPROVAL_PENDING to APPROVED status and REJECTION_PENDING
+        to REJECTED status.  It is illegal to call this function when the
+        status is not one of those two.
+        """
+
+
+class IMessageApprovalSet(Interface):
+    """Sets of held message."""
+
+    def getMessageByMessageID(message_id):
+        """Return the held message with the matching Message-ID.
+
+        :param message_id: The RFC 2822 Message-ID header.
+        :return: The matching IMessageApproval or None if no match was found.
+        """
+
+    def getHeldMessagesWithStatus(status):
+        """Return a sequence of message holds matching status.
+
+        :param status: A PostedMessageStatus enum value.
+        :return: An iterator over all the matching held messages.
+        """
 
 
 class CannotSubscribe(Exception):

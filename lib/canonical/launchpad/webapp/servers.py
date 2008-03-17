@@ -16,6 +16,7 @@ from zope.app.publication.requestpublicationregistry import (
     factoryRegistry as publisher_factory_registry)
 from zope.app.server import wsgi
 from zope.app.wsgi import WSGIPublisherApplication
+from zope.component import getUtility
 from zope.interface import implements
 from zope.publisher.browser import (
     BrowserRequest, BrowserResponse, TestRequest)
@@ -40,7 +41,7 @@ from canonical.launchpad.webapp.notifications import (
 from canonical.launchpad.webapp.interfaces import (
     ILaunchpadBrowserApplicationRequest, ILaunchpadProtocolError,
     IBasicLaunchpadRequest, IBrowserFormNG, INotificationRequest,
-    INotificationResponse, UnexpectedFormData)
+    INotificationResponse, IPlacelessAuthUtility, UnexpectedFormData)
 from canonical.launchpad.webapp.errorlog import ErrorReportRequest
 from canonical.launchpad.webapp.uri import URI
 from canonical.launchpad.webapp.vhosts import allvhosts
@@ -335,7 +336,7 @@ class WebServiceRequestPublicationFactory(
         """
         super(WebServiceRequestPublicationFactory, self).__init__(
             vhost_name, request_factory, publication_factory, port,
-            ['GET', 'HEAD', 'POST', 'PUT', 'DELETE', 'OPTIONS'])
+            ['GET', 'HEAD', 'POST', 'PATCH', 'PUT', 'DELETE', 'OPTIONS'])
 
 
     def canHandle(self, environment):
@@ -348,7 +349,7 @@ class WebServiceRequestPublicationFactory(
         """
         result = super(WebServiceRequestPublicationFactory, self).canHandle(
             environment)
-        return result and config.launchpad.vhosts.expose_webservice
+        return result and config.vhosts.expose_webservice
 
 
 class NotFoundRequestPublicationFactory:
@@ -661,7 +662,7 @@ class LaunchpadTestResponse(LaunchpadBrowserResponse):
     >>> INotificationResponse.providedBy(response)
     True
 
-    >>> response.addWarningNotification('%(val)s Notification', val='Warning')
+    >>> response.addWarningNotification('Warning Notification')
     >>> request.notifications[0].message
     u'Warning Notification'
     """
@@ -733,9 +734,11 @@ class LaunchpadAccessLogger(CommonAccessLogger):
         referer = request_headers.get('REFERER', '')
         user_agent = request_headers.get('USER_AGENT', '')
 
+        log_template = (' - "%s" "%s" [%s] "%s" %s %d %d %s %s '
+                        '%s "%s" "%s" "%s" "%s"\n')
         self.output.logRequest(
             task.channel.addr[0],
-            ' - "%s" "%s" [%s] "%s" %s %d %d %s %s %s "%s" "%s" "%s" "%s"\n' % (
+            log_template % (
                 x_forwarded_for,
                 host,
                 start_time,
@@ -871,6 +874,11 @@ class FeedsPublication(LaunchpadBrowserPublication):
         else:
             # There are still url segments to traverse.
             return result
+
+    def getPrincipal(self, request):
+        """For feeds always return the anonymous user."""
+        auth_utility = getUtility(IPlacelessAuthUtility)
+        return auth_utility.unauthenticatedPrincipal()
 
 
 class FeedsBrowserRequest(LaunchpadBrowserRequest):

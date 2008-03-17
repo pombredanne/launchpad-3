@@ -153,6 +153,8 @@ easier you can use IBugWatchSet.fromText().
     ...         http://some.sf/tracker/index.php?func=detail&aid=1568562&group_id=84122&atid=42
     ...     An unrecognised URL:
     ...         http://some.host/some/path
+    ...     A mailto: URI:
+    ...         mailto:foo.bar@canonical.com
     ... """
     >>> bug_watches = getUtility(IBugWatchSet).fromText(
     ...     text, bug_one, sample_person)
@@ -189,6 +191,18 @@ bugs.gnome.org vs. bugzilla.gnome.org).
     >>> new_bugtracker_count = getUtility(IBugTrackerSet).search().count()
     >>> old_bugtracker_count == new_bugtracker_count
     True
+
+One special case when calling IBugWatchSet.fromText() is the
+EMAILADDRESS BugTrackerType. URIs for this bug tracker type are in the
+form mailto:emailaddress, however Launchpad does not automatically
+create bug watches or bug trackers from such URIs if they are found in
+the text passed to fromText().
+
+    >>> text = "mailto:some.one@example.com"
+    >>> bug_watches = getUtility(IBugWatchSet).fromText(text, bug_one,
+    ...     sample_person)
+    >>> bug_watches
+    []
 
 
 == Syncing the Status with Linked Bugtasks ==
@@ -415,8 +429,10 @@ slaves must be updated through their conjoined master.
     >>> import transaction
     >>> from canonical.launchpad.ftests.externalbugtracker import (
     ...     TestRoundup)
-    >>> external_bugtracker = TestRoundup(transaction, bug_tracker)
-    >>> external_bugtracker.updateBugWatches([bug_watch])
+    >>> from canonical.launchpad.scripts.checkwatches import BugWatchUpdater
+    >>> bug_watch_updater = BugWatchUpdater(transaction)
+    >>> external_bugtracker = TestRoundup(bug_tracker.baseurl)
+    >>> bug_watch_updater.updateBugWatches(external_bugtracker, [bug_watch])
 
     >>> bug.bugtasks[0].status.title
     'New'

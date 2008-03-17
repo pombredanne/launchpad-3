@@ -2,6 +2,13 @@
 
 __metaclass__ = type
 
+__all__ = [
+    'PlacelessAuthUtility',
+    'SSHADigestEncryptor',
+    'LaunchpadLoginSource',
+    'LaunchpadPrincipal',
+    ]
+
 import binascii
 import random
 import sha
@@ -14,39 +21,16 @@ from zope.security.proxy import removeSecurityProxy
 
 from zope.app.session.interfaces import ISession
 from zope.app.security.interfaces import ILoginPassword
-from zope.app.security.interfaces import IUnauthenticatedPrincipal
 from zope.app.security.principalregistry import UnauthenticatedPrincipal
 
 from canonical.config import config
 from canonical.launchpad.interfaces import IPersonSet, IPasswordEncryptor
-from canonical.launchpad.webapp.interfaces import ILoggedOutEvent
 from canonical.launchpad.webapp.interfaces import IPlacelessAuthUtility
 from canonical.launchpad.webapp.interfaces import IPlacelessLoginSource
 from canonical.launchpad.webapp.interfaces import ILaunchpadPrincipal
 from canonical.launchpad.webapp.interfaces import BasicAuthLoggedInEvent
 from canonical.launchpad.webapp.interfaces import (
         CookieAuthPrincipalIdentifiedEvent)
-
-
-def handle(event):
-    """Event handler for traversal and login/logout events that performs
-    authentication.
-
-    Each of these events has a `request` attribute.
-    """
-    request = event.request
-    if not ILoggedOutEvent.providedBy(event):
-        if not IUnauthenticatedPrincipal.providedBy(request.principal):
-            # We've already got an authenticated user. There's nothing to do.
-            # Note that beforeTraversal guarentees that user is not None.
-            return
-
-    auth_utility = getUtility(IPlacelessAuthUtility)
-    principal = auth_utility.authenticate(request)
-    if principal is None:
-        principal = auth_utility.unauthenticatedPrincipal()
-        if principal is not None:
-            request.setPrincipal(principal)
 
 
 class PlacelessAuthUtility:
@@ -74,7 +58,8 @@ class PlacelessAuthUtility:
                         # We send a LoggedInEvent here, when the
                         # cookie auth below sends a PrincipalIdentified,
                         # as the login form is never visited for BasicAuth.
-                        # This we treat each request as a seperate login/logout
+                        # This we treat each request as a separate
+                        # login/logout.
                         notify(BasicAuthLoggedInEvent(
                             request, login, principal
                             ))
@@ -124,7 +109,7 @@ class PlacelessAuthUtility:
             # Hack to make us not even think of using a session if there
             # isn't already a cookie in the request, or one waiting to be
             # set in the response.
-            cookie_name = config.launchpad.session.cookie
+            cookie_name = config.launchpad_session.cookie
             if (request.cookies.get(cookie_name) is not None or
                 request.response.getCookie(cookie_name) is not None):
                 return self._authenticateUsingCookieAuth(request)
@@ -192,7 +177,8 @@ class SSHADigestEncryptor:
             # Not valid base64.
             return False
         salt = ref[20:]
-        v = binascii.b2a_base64(sha.new(plaintext + salt).digest() + salt)[:-1]
+        v = binascii.b2a_base64(
+            sha.new(plaintext + salt).digest() + salt)[:-1]
         pw1 = (v or '').strip()
         pw2 = (encrypted or '').strip()
         return pw1 == pw2
@@ -246,7 +232,7 @@ class LaunchpadLoginSource:
         principal.__parent__ = self
         return principal
 
-# Fake a containment heirarchy because Zope3 is on crack
+# Fake a containment hierarchy because Zope3 is on crack.
 authService = PlacelessAuthUtility()
 loginSource = LaunchpadLoginSource()
 loginSource.__parent__ = authService
@@ -269,5 +255,3 @@ class LaunchpadPrincipal:
         pw1 = (pw or '').strip()
         pw2 = (self.__pwd or '').strip()
         return encryptor.validate(pw1, pw2)
-
-

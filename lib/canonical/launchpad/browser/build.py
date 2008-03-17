@@ -5,25 +5,31 @@
 __metaclass__ = type
 
 __all__ = [
-    'BuildFacets',
+    'BuildContextMenu',
     'BuildNavigation',
-    'BuildOverviewMenu',
     'BuildRecordsView',
     'BuildUrl',
     'BuildView',
+    'build_to_structuralheading',
     ]
 
 from zope.component import getUtility
 from zope.interface import implements
 
 from canonical.launchpad.interfaces import (
-    BuildStatus, IBuild, IBuildQueueSet, IHasBuildRecords, UnexpectedFormData)
+    BuildStatus, IBuild, IBuildQueueSet, IHasBuildRecords,
+    IStructuralHeaderPresentation, UnexpectedFormData)
 from canonical.launchpad.webapp import (
-    enabled_with_permission, ApplicationMenu, GetitemNavigation,
+    canonical_url, enabled_with_permission, ContextMenu, GetitemNavigation,
     Link, LaunchpadView, StandardLaunchpadFacets)
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp.interfaces import ICanonicalUrlData
+
+
+def build_to_structuralheading(build):
+    """Adapts an `IBuild` into an `IStructuralHeaderPresentation`."""
+    return IStructuralHeaderPresentation(build.archive)
 
 
 class BuildUrl:
@@ -66,11 +72,27 @@ class BuildFacets(StandardLaunchpadFacets):
 
     usedfor = IBuild
 
-class BuildOverviewMenu(ApplicationMenu):
+
+class BuildContextMenu(ContextMenu):
     """Overview menu for build records """
     usedfor = IBuild
-    facet = 'overview'
-    links = ['retry', 'rescore']
+
+    links = ['ppa', 'records', 'retry', 'rescore']
+
+    @property
+    def is_ppa_build(self):
+        """Some links are only displayed on PPA."""
+        return self.context.archive.owner is not None
+
+    def ppa(self):
+        return Link(
+            canonical_url(self.context.archive), text='View PPA',
+            enabled=self.is_ppa_build)
+
+    def records(self):
+        return Link(
+            canonical_url(self.context.archive, view_name='+builds'),
+            text='View build records', enabled=self.is_ppa_build)
 
     @enabled_with_permission('launchpad.Edit')
     def retry(self):
@@ -208,7 +230,7 @@ class BuildRecordsView(LaunchpadView):
 
         # request context build records according the selected state
         builds = self.context.getBuildRecords(
-            build_state=self.state, name=self.text)
+            build_state=self.state, name=self.text, user=self.user)
         self.batchnav = BatchNavigator(builds, self.request)
         # We perform this extra step because we don't what to issue one
         # extra query to retrieve the BuildQueue for each Build (batch item)
@@ -242,7 +264,7 @@ class BuildRecordsView(LaunchpadView):
             }
         # include pristine (not yet assigned to a builder) builds
         # if requested.
-        if self.showBuilderInfo():
+        if self.show_builder_info:
             extra_state_map = {
                 'building': BuildStatus.BUILDING,
                 'pending': BuildStatus.NEEDSBUILD,
@@ -258,7 +280,7 @@ class BuildRecordsView(LaunchpadView):
                 raise UnexpectedFormData(
                     'No suitable state found for value "%s"' % tag)
         else:
-            self.state = self.defaultBuildState()
+            self.state = self.default_build_state
 
         # build a dictionary with organized information for rendering
         # the HTML <select> section.
@@ -278,15 +300,17 @@ class BuildRecordsView(LaunchpadView):
                 dict(name=name, value=tag, selected=selected)
                 )
 
-    def defaultBuildState(self):
-        """Return the build state to be present as default.
+    @property
+    def default_build_state(self):
+        """The build state to be present as default.
 
         It allows the callsites to control which default status they
         want to present when the page is first loaded.
         """
         return BuildStatus.BUILDING
 
-    def showBuilderInfo(self):
+    @property
+    def show_builder_info(self):
         """Control the presentation of builder information.
 
         It allows the callsite to control if they want a builder column
@@ -294,7 +318,8 @@ class BuildRecordsView(LaunchpadView):
         """
         return True
 
-    def searchName(self):
+    @property
+    def search_name(self):
         """Control the presentation of search box."""
         return True
 

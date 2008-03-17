@@ -1,4 +1,4 @@
-# Copyright 2006 Canonical Ltd.  All rights reserved.
+# Copyright 2006-2008 Canonical Ltd.  All rights reserved.
 
 """Testing helpers"""
 
@@ -8,8 +8,9 @@ __all__ = [
     'reset_logging',
     'BaseLayer', 'DatabaseLayer', 'LibrarianLayer', 'FunctionalLayer',
     'LaunchpadLayer', 'ZopelessLayer', 'LaunchpadFunctionalLayer',
-    'LaunchpadZopelessLayer', 'PageTestLayer', 'TwistedLayer',
-    'LaunchpadScriptLayer',
+    'LaunchpadZopelessLayer', 'PageTestLayer', 'TwistedLaunchpadZopelessLayer',
+    'LaunchpadScriptLayer', 'ExperimentalLaunchpadZopelessLayer',
+    'TwistedLayer'
     ]
 
 import logging
@@ -52,6 +53,8 @@ def reset_logging():
 
 # Imported here to avoid circular import issues
 from canonical.testing.layers import (
+    ExperimentalLaunchpadZopelessLayer,
     BaseLayer, DatabaseLayer, LibrarianLayer, FunctionalLayer,
     LaunchpadLayer, ZopelessLayer, LaunchpadFunctionalLayer,
-    LaunchpadZopelessLayer, PageTestLayer, TwistedLayer, LaunchpadScriptLayer)
+    LaunchpadZopelessLayer, PageTestLayer, TwistedLaunchpadZopelessLayer,
+    LaunchpadScriptLayer, TwistedLayer)

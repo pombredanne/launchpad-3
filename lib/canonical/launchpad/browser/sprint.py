@@ -293,6 +293,9 @@ class SprintAddView(LaunchpadFormView):
 
     def setUpWidgets(self):
         LaunchpadFormView.setUpWidgets(self)
+        timeformat = '%Y-%m-%d %H:%M'
+        self.widgets['time_starts'].timeformat = timeformat
+        self.widgets['time_ends'].timeformat = timeformat
         time_zone_widget = self.widgets['time_zone']
         if time_zone_widget.hasValidInput():
             tz = pytz.timezone(time_zone_widget.getInputValue())
@@ -351,6 +354,9 @@ class SprintEditView(LaunchpadEditFormView):
 
     def setUpWidgets(self):
         LaunchpadEditFormView.setUpWidgets(self)
+        timeformat = '%Y-%m-%d %H:%M'
+        self.widgets['time_starts'].timeformat = timeformat
+        self.widgets['time_ends'].timeformat = timeformat
         time_zone_widget = self.widgets['time_zone']
         # What time zone are the start and end values relative to?
         if time_zone_widget.hasValidInput():
@@ -534,6 +540,7 @@ class SprintAttendeesCsvExportView(LaunchpadView):
         rows = [('Launchpad username',
                  'Display name',
                  'Email',
+                 'IRC nickname',
                  'Phone',
                  'Organization',
                  'City',
@@ -542,10 +549,14 @@ class SprintAttendeesCsvExportView(LaunchpadView):
                  'Arriving',
                  'Leaving')]
         for attendance in self.context.attendances:
+            irc_nicknames = ', '.join(sorted(set(
+                [ircid.nickname for ircid
+                 in attendance.attendee.ircnicknames])))
             rows.append(
                 (attendance.attendee.name,
                  attendance.attendee.displayname,
                  attendance.attendee.safe_email_or_blank,
+                 irc_nicknames,
                  attendance.attendee.phone,
                  attendance.attendee.organization,
                  attendance.attendee.city,

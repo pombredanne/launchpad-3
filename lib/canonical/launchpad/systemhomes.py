@@ -9,7 +9,6 @@ __all__ = [
     'FeedsApplication',
     'MailingListApplication',
     'MaloneApplication',
-    'RegistryApplication',
     'RosettaApplication',
     'ShipItApplication',
     ]
@@ -24,9 +23,10 @@ from canonical.launchpad.interfaces import (
     IBugTaskSet, IBugTrackerSet, IBugWatchSet,
     ICodeImportSchedulerApplication, IDistroSeriesSet, IFeedsApplication,
     IHWDBApplication, ILanguageSet, ILaunchBag, ILaunchpadStatisticSet,
-    IMailingListApplication, IMaloneApplication, IOpenIdApplication,
-    IPersonSet, IProductSet, IRegistryApplication, IRosettaApplication,
-    IShipItApplication, ITranslationGroupSet, IWebServiceApplication)
+    IMailingListApplication, IMaloneApplication,
+    IOpenIdApplication, IPersonSet, IProductSet, IRosettaApplication,
+    IShipItApplication, ITranslationGroupSet, ITranslationsOverview,
+    IWebServiceApplication)
 from canonical.lazr.rest import ServiceRootResource
 
 class AuthServerApplication:
@@ -41,10 +41,6 @@ class CodeImportSchedulerApplication:
     implements(ICodeImportSchedulerApplication)
 
     title = "Code Import Scheduler"
-
-
-class RegistryApplication:
-    implements(IRegistryApplication)
 
 
 class ShipItApplication:
@@ -155,8 +151,10 @@ class RosettaApplication:
 
     def featured_products(self):
         """See IRosettaApplication."""
-        products = getUtility(IProductSet)
-        return products.featuredTranslatables()
+        projects = getUtility(ITranslationsOverview)
+        for project in projects.getMostTranslatedPillars():
+            yield { 'pillar' : project['pillar'],
+                    'font_size' : project['weight'] * 10 }
 
     def translatable_distroseriess(self):
         """See IRosettaApplication."""
@@ -192,7 +190,9 @@ class WebServiceApplication(ServiceRootResource):
     """See IWebServiceApplication."""
     implements(IWebServiceApplication)
 
-    # See ServiceRootResource for more on top_level_collections
+    # See ServiceRootResource for more on top_level_collections.
     @property
     def top_level_collections(self):
-        return { 'people' : getUtility(IPersonSet) }
+        return {'bugtasks': getUtility(IBugTaskSet),
+                'bugs': getUtility(IBugSet),
+                'people': getUtility(IPersonSet)}
