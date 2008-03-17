@@ -343,6 +343,7 @@ class TestMergeProposalNotification(TestCase):
         return result, events[0]
 
     def test_notifyOnCreate(self):
+        """Ensure that a notification is emitted on creation"""
         source_branch = self.factory.makeBranch()
         target_branch = self.factory.makeBranch(product=source_branch.product)
         registrant = self.factory.makePerson()
@@ -351,23 +352,43 @@ class TestMergeProposalNotification(TestCase):
         self.assertEqual(result, event.object)
 
     def test_getCreationNotificationRecipients(self):
+        """Ensure that recipients can be added/removed with subscribe"""
         bmp = self.factory.makeBranchMergeProposal()
         self.assertEqual({},
-        bmp.getCreationNotificationRecipients(
-            BranchSubscriptionNotificationLevel.NOEMAIL))
+            bmp.getCreationNotificationRecipients(
+            CodeReviewNotificationLevel.STATUS))
         source_subscriber = self.factory.makePerson()
         bmp.source_branch.subscribe(source_subscriber,
             BranchSubscriptionNotificationLevel.NOEMAIL, None,
             CodeReviewNotificationLevel.FULL)
         recipients = bmp.getCreationNotificationRecipients(
-            CodeReviewNotificationLevel.FULL)
+            CodeReviewNotificationLevel.STATUS)
         self.assertEqual([source_subscriber], recipients.keys())
         bmp.source_branch.subscribe(source_subscriber,
             BranchSubscriptionNotificationLevel.NOEMAIL, None,
             CodeReviewNotificationLevel.NOEMAIL)
         recipients = bmp.getCreationNotificationRecipients(
-            CodeReviewNotificationLevel.FULL)
+            CodeReviewNotificationLevel.STATUS)
         self.assertEqual([], recipients.keys())
+
+    def test_getCreationNotificationRecipientLevels(self):
+        """Ensure that only recipients with the right level are returned"""
+        bmp = self.factory.makeBranchMergeProposal()
+        full_subscriber = self.factory.makePerson()
+        bmp.source_branch.subscribe(full_subscriber,
+            BranchSubscriptionNotificationLevel.NOEMAIL, None,
+            CodeReviewNotificationLevel.FULL)
+        status_subscriber = self.factory.makePerson()
+        bmp.source_branch.subscribe(status_subscriber,
+            BranchSubscriptionNotificationLevel.NOEMAIL, None,
+            CodeReviewNotificationLevel.STATUS)
+        recipients = bmp.getCreationNotificationRecipients(
+            CodeReviewNotificationLevel.STATUS)
+        self.assertEqual(set([full_subscriber, status_subscriber]),
+            set(recipients.keys()))
+        recipients = bmp.getCreationNotificationRecipients(
+            CodeReviewNotificationLevel.FULL)
+        self.assertEqual([full_subscriber], recipients.keys())
 
     def test_getCreationNotificationRecipientsAnyBranch(self):
         dependent_branch = self.factory.makeBranch()
