@@ -23,6 +23,8 @@ from canonical.database.sqlbase import (
     cursor, quote, quote_like, sqlvalues, SQLBase)
 from canonical.launchpad.database.archivedependency import (
     ArchiveDependency)
+from canonical.launchpad.database.distributionsourcepackagecache import (
+    DistributionSourcePackageCache)
 from canonical.launchpad.database.librarian import LibraryFileContent
 from canonical.launchpad.database.publishing import (
     SourcePackagePublishingHistory, BinaryPackagePublishingHistory)
@@ -59,6 +61,9 @@ class Archive(SQLBase):
         dbName='authorized_size', notNull=False, default=1024)
 
     whiteboard = StringCol(dbName='whiteboard', notNull=False, default=None)
+
+    package_description_cache = StringCol(
+        dbName='package_description_cache', notNull=False, default=None)
 
     @property
     def title(self):
@@ -476,6 +481,23 @@ class Archive(SQLBase):
             permission = False
 
         return permission
+
+    def updateArchiveCache(self):
+        """See `IArchive`."""
+        cache_contents = set()
+
+        cache_contents.add(self.owner.name)
+        cache_contents.add(self.owner.displayname)
+
+        sources_cached = DistributionSourcePackageCache.selectBy(
+            archive=self)
+
+        for cache in sources_cached:
+            cache_contents.add(cache.name)
+            cache_contents.add(cache.binpkgnames)
+            cache_contents.add(cache.binpkgsummaries)
+
+        self.package_description_cache = " ".join(cache_contents)
 
     def getArchiveDependency(self, dependency):
         """See `IArchive`."""

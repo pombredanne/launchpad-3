@@ -245,3 +245,44 @@ an alias.
     ...     print t.name, [p.name for p in pillars[t]]
     gnome-bugzilla [u'gnome']
 
+
+== Imported bug messages ==
+
+Each BugTracker has an imported_bug_messages property that returns all
+bug messages which have been imported for a given bug tracker.
+
+    >>> def print_bug_messages(bug_messages):
+    ...     for bug_message in bug_messages:
+    ...         print '* bug: %d' % bug_message.bug.id
+    ...         print '- remote bug: %s' % bug_message.bugwatch.remotebug
+    ...         print '- message subject: %s' % bug_message.message.subject
+
+The Mozilla Bugzilla has no imported bug messages:
+
+    >>> print_bug_messages(mozilla_bugzilla.imported_bug_messages)
+
+We will forge some BugMessage records before trying again:
+
+    >>> from canonical.launchpad.interfaces import IBugMessageSet
+    >>> from zope.security.proxy import removeSecurityProxy
+
+    >>> for num, bug_watch in enumerate(mozilla_bugzilla.watches):
+    ...     bug_message = getUtility(IBugMessageSet).createMessage(
+    ...         'You are Number %d.' % (num + 1),
+    ...         bug_watch.bug, sample_person)
+    ...     removeSecurityProxy(bug_message).bugwatch = bug_watch
+    >>> flush_database_updates()
+
+    >>> print_bug_messages(mozilla_bugzilla.imported_bug_messages)
+    * bug: 1
+    - remote bug: 2000
+    - message subject: You are Number 1.
+    * bug: 1
+    - remote bug: 123543
+    - message subject: You are Number 2.
+    * bug: 1
+    - remote bug: 42
+    - message subject: You are Number 3.
+    * bug: 2
+    - remote bug: 42
+    - message subject: You are Number 4.
