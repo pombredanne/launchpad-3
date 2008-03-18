@@ -65,13 +65,13 @@ class TestImportUpdated(ImportdTestCase):
         return ProductSeries.get(series_id)
 
     def testNoBranchError(self):
-        # setDateLastSynced must raise an exception if the series does not have
-        # its import_branch set.
+        # setDateLastSynced must raise an exception if the series does not
+        # have its import_branch set.
         #
         # The import_branch attribute is set when the import branch is pushed
         # to the internal server. The setDateLastSynced method is only called
-        # for successful production jobs, so there must always be an internally
-        # published import branch at this point.
+        # for successful production jobs, so there must always be an
+        # internally published import branch at this point.
         self.series().import_branch = None
         self.assertRaises(NoImportBranchError,
             self.series().importUpdated)
@@ -85,18 +85,18 @@ class TestImportUpdated(ImportdTestCase):
         self.assertRaises(DatePublishedSyncError,
             self.series().importUpdated)
 
-    # WARNING: RACE CONDITION if the mirroring starts after the branch has been
-    # published internally, but before importUpdated is called. The supermirror
-    # will be up-to-date with the latest import when mirroring completes, but
-    # importUpdated will see that the branch is out of date, and will not
-    # update datepublishedsync. When the mirroring completes,
-    # import_branch.last_mirrored will be older than datelastsynced, because it
-    # records the date when mirroring started, so Launchpad will believe that
-    # the branch is out of date. Since this fails on the pessimistic side, this
-    # is acceptable -- DavidAllouche 2006-12-12.
+    # WARNING: RACE CONDITION if the mirroring starts after the branch has
+    # been published internally, but before importUpdated is called. The
+    # supermirror will be up-to-date with the latest import when mirroring
+    # completes, but importUpdated will see that the branch is out of date,
+    # and will not update datepublishedsync. When the mirroring completes,
+    # import_branch.last_mirrored will be older than datelastsynced, because
+    # it records the date when mirroring started, so Launchpad will believe
+    # that the branch is out of date. Since this fails on the pessimistic
+    # side, this is acceptable -- DavidAllouche 2006-12-12.
 
-    # XXX DavidAllouche 2006-12-21: This race condition can be avoided if
-    # the branch puller only runs for vcs-imports branches when
+    # XXX DavidAllouche 2006-12-21: This race condition can be avoided if the
+    # branch puller only runs for vcs-imports branches when
     # importd_branch.last_mirrored < datelastsynced.
 
     # XXX DavidAllouche 2006-12-21: The race can be resolved if we record
@@ -158,7 +158,8 @@ class TestImportUpdated(ImportdTestCase):
             2001, 1, 1, tzinfo=UTC)
         series.datelastsynced = datetime.datetime(2002, 1, 1, tzinfo=UTC)
         series.importUpdated()
-        self.assertEqual(str(series.datepublishedsync), str(datepublishedsync))
+        self.assertEqual(
+            str(series.datepublishedsync), str(datepublishedsync))
         self.assertEqual(str(series.datelastsynced), str(UTC_NOW))
 
     def testLastSyncWasMirrored(self):
