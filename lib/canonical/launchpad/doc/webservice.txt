@@ -550,7 +550,7 @@ LAZR's Resource objects are the objects that actually handle incoming
 HTTP requests. There are a few very common types of HTTP resources,
 and LAZR defines classes for some of them. For instance, there's the
 "collection" resource that responds to GET (to get the items in the
-collection) and POST (to add a new item to the collection). LAZR
+collection) and POST (to call methods on the collection). LAZR
 implements this as a CollectionResource which uses the HTTP arguments
 to drive Collection methods like find().
 
@@ -622,8 +622,7 @@ service root also.
 The default root navigation defined in our model contains the top-level
 Set objects that should be published. When these sets are published on
 the web service, they will we wrapped in the appropriate
-CollectionResource. (It doesn't need navigation, because the default
-Zope which traverse to attributes is fine.)
+CollectionResource.
 
 The following example is equivalent to requesting
 'http://api.launchpad.net/cookbooks/'. The code will traverse to the
@@ -692,7 +691,7 @@ the "Joy of Cooking" cookbook object into an EntryResource.
      (u'self_link',
       u'http://api.launchpad.dev/cookbooks/The%20Joy%20of%20Cooking')]
 
-You can also traverse from an entry to an associated collection:
+You can also traverse from an entry to an item in a scoped collection:
 
     >>> request = create_web_service_request(
     ...     quote('/cookbooks/The Joy of Cooking/recipes/Roast chicken'))
@@ -708,9 +707,7 @@ You can also traverse from an entry to an associated collection:
     (u'self_link',
      u'http://api.launchpad.dev/cookbooks/The%20Joy%20of%20Cooking/recipes/Roast%20chicken')]
 
-Scoped collections work the same way whether the entries are "really"
-in the collection (as with comments, below) or whether they're
-"really" in a top-level collection (as with recipes, above).
+Another example traversing to a comment:
 
     >>> roast_chicken_comments_url = quote(
     ... '/cookbooks/The Joy of Cooking/recipes/Roast chicken/comments')
