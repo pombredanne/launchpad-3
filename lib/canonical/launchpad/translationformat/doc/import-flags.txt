@@ -61,11 +61,11 @@ And lets define a nice printout function for PO files.
     ...         imported_fuzzy = fuzzy = ''
     ...         imported_translation = translation = None
     ...         if imported is not None:
-    ...		    imported_translation = imported.msgstr0.translation
+    ...             imported_translation = imported.msgstr0.translation
     ...             if imported.was_fuzzy_in_last_import:
     ...                 imported_fuzzy = 'yes'
     ...         if current is not None:
-    ...		    translation = current.msgstr0.translation
+    ...             translation = current.msgstr0.translation
     ...             if current.is_fuzzy:
     ...                 fuzzy = 'yes'
     ...         print "% 2d. %-18s %-18s %-4s %-18s %-4s *" % (
@@ -543,3 +543,24 @@ Neither contents nor statistics have changed, so we've got the same output.
       imported: 5
         changed: 2
       new: 1
+
+Sometimes, people will send back their translations to upstream, which will
+be back with next automatic sync from upstream:
+
+    >>> entry = import_pofile_or_potemplate(test_translation_update3,
+    ...                                     carlos, firefox_trunk,
+    ...                                     pofile=firefox_serbian,
+    ...                                     is_imported=True)
+    >>> print entry.status.name
+    IMPORTED
+
+Imported strings match the ones translated in Launchpad.
+
+    >>> print_pofile(firefox_serbian)
+    no. msgid              translation        fuz  imported           ifuz
+     1. first              a                       a                       *
+     2. second             b-from-LP-three         b-from-LP-three         *
+     3. third              c                       c                       *
+     4. fourth             d                       d                       *
+     5. fifth              e-from-LP-two           e-from-LP-two           *
+     6. sixth              f                       f                       *

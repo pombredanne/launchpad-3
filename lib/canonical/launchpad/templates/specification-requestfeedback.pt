@@ -18,6 +18,8 @@
 
 <div metal:fill-slot="main">
 
+      <div tal:content="structure context/fmt:link" />
+
   <div metal:use-macro="context/@@launchpad_addform/addform">
 
     <p metal:fill-slot="extra_info" class="documentDescription">

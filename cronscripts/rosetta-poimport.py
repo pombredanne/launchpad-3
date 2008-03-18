@@ -26,7 +26,7 @@ class RosettaPOImporter(LaunchpadCronScript):
 
 if __name__ == '__main__':
     script = RosettaPOImporter('rosetta-poimport',
-        dbuser=config.rosetta.poimport.dbuser)
+        dbuser=config.poimport.dbuser)
     script.lock_or_quit()
     try:
         script.run()
