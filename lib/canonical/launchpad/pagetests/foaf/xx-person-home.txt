@@ -122,38 +122,36 @@ The persistant OpenID URL is displayed privately in the Contact
 Details portlet.
 
     # XXX mars 2008-03-18
-    # Only members of the team configured by openid_testers should see
-    # the link.  This team is 'launchpad' in testing, and
-    # 'openid-testers' in production.
-    #
     # Remove these tests after the beta program is done.
     # See bug #201963.
     #
     >>> from canonical.launchpad.interfaces import IPersonSet
     >>> from zope.component import getUtility
     >>> from canonical.launchpad.ftests import login, logout
+    >>> from canonical.config import config
     >>> login('foo.bar@canonical.com')   # Needed for PersonSet.getByName().
     >>> person_set = getUtility(IPersonSet)
-    >>> sabdfl = person_set.getByName('sabdfl')
-    >>> openid_testers = getUtility(IPersonSet).getByName('launchpad')
+    >>> jdub = person_set.getByName('jdub')
+    >>> openid_testers = getUtility(IPersonSet).getByName(
+    ...     config.launchpad.openid_users)
     >>> openid_testers is not None
     True
-    >>> openid_testers in sabdfl.teams_participated_in
+    >>> openid_testers in jdub.teams_participated_in
     False
     >>> logout()
     >>> browser = setupBrowser(auth='Basic mark@hbd.com:test')
-    >>> browser.open('http://launchpad.dev/~sabdfl')
+    >>> browser.open('http://launchpad.dev/~jdub')
     >>> print extract_text(find_tag_by_id(browser.contents, 'contact-details'))
     Contact details
     Email:
-    mark@hbd.com
+    jeff.waugh@ubuntulinux.com
     Wiki:
-    https://wiki.ubuntu.com/MarkShuttleworth
+    https://wiki.ubuntu.com/JeffWaugh
     IRC:
-    mark
+    jeff
     on network irc.freenode.net
     Jabber:
-    &#109;&#97;&#114;&#107;&#115;&#104;&#117;&#116;&#116;&#108;&#101;&#119;&#111;&#114;&#116;&#104;&#64;&#106;&#97;&#98;&#98;&#101;&#114;&#46;&#111;&#114;&#103;
+    &#106;&#101;&#102;&#102;&#64;&#106;&#97;&#98;&#98;&#101;&#114;&#46;&#111;&#114;&#103;
     >>> login('foo.bar@canonical.com')   # Needed for PersonSet.getByName().
     >>> name16 = getUtility(IPersonSet).getByName('name16')
     >>> openid_testers in name16.teams_participated_in
