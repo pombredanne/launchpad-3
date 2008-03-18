@@ -18,6 +18,8 @@
 
 <div metal:fill-slot="main">
 
+      <div tal:content="structure context/fmt:link" />
+
   <tal:subscribed condition="view/subscription">
 
     <h1>Modify subscription</h1>

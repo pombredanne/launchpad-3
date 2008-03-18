@@ -4,125 +4,14 @@ Basic operations on people are described in xx-collections.txt. This
 document shows some of the other features of a person.
 
 
-== Modification ==
-
-It's possible to modify a person by sending to the server a document
-asserting what the person should look like. The document may only
-describe part of the person's new state (in which case the client
-should use the PATCH HTTP method) [TODO leonardr 2008-03-10
-api-base-modify-data-entry]: or it may describe the entire new state,
-in which case the client should use PUT.)
-
-
-=== What you can do ===
-
-A person's data fields can be modified.
-
-  >>> import simplejson
-  >>> def patch_person(person, patch):
-  ...     "A helper function to send a PATCH request for a person."
-  ...     return webservice(r"""
-  ... PATCH /~%s HTTP/1.1
-  ... Host: api.launchpad.dev
-  ... Content-type: application/json
-  ... Authorization: Basic foo.bar@canonical.com:test
-  ...
-  ... %s
-  ... """ % (person, simplejson.dumps(patch)))
-
-The user 'salgado' starts out with a display name of 'Guilherme
-Salgado'.
-
-  >>> salgado = webservice(r"""
-  ... GET /~salgado HTTP/1.1
-  ... Host: api.launchpad.dev
-  ... """).jsonBody()
-  >>> salgado['displayname']
-  u'Guilherme Salgado'
-
-Here we use the web service to change the user so that the display
-name is in uppercase.
-
-  >>> print patch_person('salgado', {'displayname' : 'GUILHERME SALGADO'})
-  HTTP/1.1 200 Ok
-  Content-Length: 0
-  ...
-
-  >>> salgado = webservice(r"""
-  ... GET /~salgado HTTP/1.1
-  ... Host: api.launchpad.dev
-  ... """).jsonBody()
-  >>> salgado['displayname']
-  u'GUILHERME SALGADO'
-
-The modification might cause the person's address to change. Here we
-use the web service to change the person's name to 'salgado2'.
-
-  >>> print patch_person('salgado', {'name' : 'salgado2'})
-  HTTP/1.1 301 Moved Permanently
-  ...
-  Location: http://api.launchpad.dev/~salgado2
-  <BLANKLINE>
-
-At this point we can no longer manipulate the 'salgado' Person by
-sending HTTP requests to http://api.launchpad.dev/~salgado,
-because that Person now 'lives' at
-http://api.launchpad.dev/~salgado2. To change 'salgado2' back to
-'salgado', we need to send a PATCH request to the new address.
-
-  >>> print patch_person('salgado2', {'name' : 'salgado'})
-  HTTP/1.1 301 Moved Permanently
-  ...
-  Location: http://api.launchpad.dev/~salgado
-  <BLANKLINE>
-
-# [TODO leonardr 2008-03-10 modify-data-links]: A link between a
-# person and a related object can be modified.
-
-
-=== What you can't do. ===
-
-A person's read-only attributes can't be modified.
-
-  >>> print patch_person('salgado', {'datecreated' : 'dummy-date'})
-  HTTP/1.1 400 Bad Request
-  Content-Length: 57
-  Content-Type: text/plain;charset=utf-8
-  <BLANKLINE>
-  You tried to modify the read-only attribute 'datecreated'
-
-A client can't change the link to a person's associated collection.
-
-  >>> print patch_person('salgado',
-  ...                    {'team_memberships_collection_link' : 'dummy'})
-  HTTP/1.1 400 Bad Request
-  ...
-  You tried to modify the collection link 'team_memberships_collection_link'
-
-A client also can't refer to a link to an associated object or
-collection as though it were the actual object:
-
-  >>> print patch_person('salgado', {'team_memberships' : 'dummy'})
-  HTTP/1.1 400 Bad Request
-  ...
-  You tried to modify the nonexistent attribute 'team_memberships'
-
-  >>> print patch_person('landscape-developers', {'owner' : 'salgado'})
-  HTTP/1.1 400 Bad Request
-  ...
-  You tried to modify the nonexistent attribute 'owner'
-
-And of course you can't modify attributes that don't exist.
-
-  >>> print patch_person('salgado', {'nonesuch' : 'dummy'})
-  HTTP/1.1 400 Bad Request
-  ...
-  You tried to modify the nonexistent attribute 'nonesuch'
-
-
 == Team memberships ==
 
 A person is linked to their team memberships.
+
+  >>> salgado = webservice("""
+  ... GET /~salgado HTTP/1.1
+  ... Host: api.launchpad.dev
+  ... """).jsonBody()
 
   >>> salgado['team_memberships_collection_link']
   u'http://api.launchpad.dev/~salgado/team_memberships'
@@ -150,13 +39,13 @@ Team memberships also have data fields.
 
   >>> salgado_landscape = sorted(salgado_memberships)[1]
   >>> sorted(salgado_landscape)
-  [u'date_expires', u'date_joined', u'member_link',
-   u'reviewer_comment', u'reviewer_link', u'self_link', u'status',
-   u'team_link']
+  [u'date_expires', u'date_joined',
+   u'last_change_comment', u'last_changed_by_link', u'member_link',
+   u'self_link', u'status', u'team_link']
 
 Each team membership links to the person who approved the link.
 
-  >>> salgado_landscape['reviewer_link']
+  >>> salgado_landscape['last_changed_by_link']
   u'http://api.launchpad.dev/~name16'
 
 Also to the person whose membership it is.

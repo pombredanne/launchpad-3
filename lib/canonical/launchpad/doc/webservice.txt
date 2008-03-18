@@ -784,6 +784,8 @@ Here, we modify the name of one of the cookbooks.
     ...     environ=headers, method='PATCH')
     >>> joy_resource_patch = patch_request.traverse(app)
     >>> joy_resource_patch()
+    ''
+
     >>> patch_request.response.getStatus()
     301
     >>> patch_request.response.getHeader('Location')
@@ -799,3 +801,35 @@ cookbook's URL has changed as well.
     >>> joy['name']
     u'The Joy of Cooking (revised)'
 
+An entry that responds to PATCH will also respond to PUT. With PUT you
+modify the document you got in response to a GET request, and send the
+whole thing back to the server, whereas with PATCH you're creating a
+new document that describes a subset of the entry's state.
+
+Here, we use PUT to change the cookbook's name back to what it was
+before. Note that we send the entire JSON hash back to the server.
+
+    >>> joy['name'] = 'The Joy of Cooking'
+    >>> body = StringIO(simplejson.dumps(joy))
+    >>> put_request = create_web_service_request(
+    ...     '/cookbooks/The%20Joy%20of%20Cooking%20%28revised%29',
+    ...     body_instream=body, environ=headers, method='PUT')
+
+    >>> joy_resource_put = put_request.traverse(app)
+    >>> joy_resource_put()
+    ''
+
+The cookbook's URL has changed back to what it was before.
+
+    >>> put_request.response.getStatus()
+    301
+    >>> put_request.response.getHeader('Location')
+    'http://api.launchpad.dev/cookbooks/The%20Joy%20of%20Cooking'
+
+So has the cookbook's name.
+
+    >>> joy_resource = create_web_service_request(
+    ...     '/cookbooks/The%20Joy%20of%20Cooking').traverse(app)
+    >>> joy = simplejson.loads(joy_resource())
+    >>> joy['name']
+    u'The Joy of Cooking'

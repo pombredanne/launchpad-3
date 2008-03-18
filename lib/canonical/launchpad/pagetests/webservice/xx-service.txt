@@ -40,7 +40,7 @@ resource yields a 405 error.
   ... Host: api.launchpad.dev
   ... """)
   HTTP/1.1 405 Method Not Allowed
-  Allow: GET PATCH
+  Allow: GET PUT PATCH
   ...
 
 

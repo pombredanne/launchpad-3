@@ -64,19 +64,12 @@ statuses. SourceForge.convertRemoteStatus() handles the conversion.
     "Won't Fix"
 
 If the status isn't something that our SourceForge ExternalBugTracker can
-understand, Unknown will be returned and a warning logged.
+understand an UnknownRemoteStatusError will be raised.
 
     >>> sourceforge.convertRemoteStatus('eggs').title
-    WARNING:...:Unknown status 'eggs'
-    'Unknown'
-
-UNKNOWN_REMOTE_STATUS maps to Unknown without generating a warning. This
-handles the case where we've tried to probe for a bug but didn't succeed. For
-example, if the bug number was invalid.
-
-    >>> from canonical.launchpad.interfaces import UNKNOWN_REMOTE_STATUS
-    >>> sourceforge.convertRemoteStatus(UNKNOWN_REMOTE_STATUS).title
-    'Unknown'
+    Traceback (most recent call last):
+      ...
+    UnknownRemoteStatusError
 
 
 == Initialization ==
@@ -184,6 +177,9 @@ updated:
 For the sake of this test we can set the bug tracker's batch_size to
 None so that it will process all the updates at once:
 
+    >>> from canonical.launchpad.ftests import sync
+    >>> for bug_watch in example_bug_tracker.watches:
+    ...     sync(bug_watch)
     >>> sourceforge.batch_size = None
     >>> bug_watch_updater.updateBugWatches(
     ...     sourceforge, example_bug_tracker.watches)

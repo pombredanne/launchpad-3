@@ -3,10 +3,11 @@
 LAZR provides utility functions to make it easy to define security
 checkers for content class.
 
+
 == protect_schema() ==
 
-The protect_schema will define a checker for a class based on the schema
-passed in as parameter.
+The protect_schema() function will define a checker for a class based on
+the schema passed in as parameter.
 
     >>> from canonical.lazr.security import protect_schema
     >>> from zope.interface import Attribute, Interface, implements

@@ -45,12 +45,12 @@
 
           <tr>
             <th>Archive:</th>
-            <td tal:condition="not: context/is_trusted">
+            <td tal:condition="context/archive/purpose/enumvalue:PPA">
               <a tal:attributes="href context/archive/fmt:url">
                <span tal:replace="context/archive/owner/displayname"/> PPA
               </a>
             </td>
-            <td tal:condition="context/is_trusted">
+            <td tal:condition="not: context/archive/purpose/enumvalue:PPA">
                <span tal:replace="context/distribution/name"/> archive
             </td>
           </tr>
